@@ -34,6 +34,7 @@ Tooling (mandated): OpenCode + Antigravity + **Cognee** (shared memory — every
   - `bland.mjs` — Bland voice calls (HMAC-SHA256 shared secret, ⚠️ confirm scheme). Finished call → `call.completed` (in-progress calls emit nothing).
   - `calcom.mjs` — bookings (real Cal.com X-Cal-Signature-256). `BOOKING_CREATED`/`BOOKING_RESCHEDULED` → `booking.created`; cancelled/other ignored.
 - **105 unit tests pass without a live Postgres** (`npm test`) — bus + 7 adapters. Each verifies signature accept/reject, normalize, canonical mapping, idempotent re-delivery, and handler dispatch.
+- **Validated live against real Postgres 16** (2026-07-24, throwaway Docker container): `npm run migrate` applies all 27 tables + 7 pipelines / 42 stages + default org clean; an end-to-end signed Commas webhook emitted `payment.received`+`deposit.paid`, a re-delivery deduped at the DB `ON CONFLICT` level (handlers did NOT re-fire), and a bad signature returned 401. The schema, migrations runner, idempotency constraint, JSONB payload storage, and handler dispatch are all proven — not just mocked.
 
 ## Next
 Provision a Postgres, run `npm install` + `npm run migrate` to validate the schema live, then register HANDLERS on the bus (the reactions: GHL field writes, Airtable sync, CRS pulls, letter gen). Each adapter's `⚠️ CONFIRM` block must be checked against a real payload before that source cuts over. Deferred behind the Monday launch — builds in parallel.
