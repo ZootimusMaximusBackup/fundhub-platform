@@ -184,6 +184,7 @@ export async function handleCommasWebhook({ db, rawBody, signatureHeader, secret
       productName: evt.name,
       amount: evt.amount,
       email: evt.email,
+      providerRef: evt.id, // Commas txn id — lets the payment handler dedup on replay
       source: "commas"
     };
     const idKey = evt.id ? `commas:${evt.id}:${c.name}` : undefined;
