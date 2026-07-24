@@ -24,7 +24,9 @@ Tooling (mandated): OpenCode + Antigravity + **Cognee** (shared memory — every
 - `db/schema/001_init.sql` — 27-table schema (§3).
 - `db/seed/002_pipelines.sql` — 7 pipelines + stages (§5).
 - `db/migrate.mjs` — idempotent migrations runner (tracks `schema_migrations`, one txn per file). Run: `DATABASE_URL=… npm run migrate`.
-- `src/events/` — the **event bus** (§4 + §16 replay harness): `emit()` (append-only, idempotent by key, dispatches handlers), `replay()` (re-fires stored events — the V1 validator's tool), `canonical.mjs` (the event names), `registry.mjs` (handler registration). `src/db.mjs` = pg pool. **4 unit tests pass without a live Postgres** (`npm test`).
+- `src/events/` — the **event bus** (§4 + §16 replay harness): `emit()` (append-only, idempotent by key, dispatches handlers), `replay()` (re-fires stored events — the V1 validator's tool), `canonical.mjs` (the event names), `registry.mjs` (handler registration). `src/db.mjs` = pg pool.
+- `src/adapters/commas.mjs` — **first B2 adapter** (Commas/FanBasis payments). Verifies the webhook HMAC (fail-closed), normalizes the body, and maps money-in → canonical events: `$32 Business Financial Assessment` → `payment.received` + `diagnostic.paid`; `Consulting Services Deposit` → `deposit.paid`; `Consulting Services Package` (DIY) → `sale.closed`; failures → `payment.failed`. Routes **strictly on product name, never amount** (prices vary per client). Idempotent per webhook re-delivery. Ported from the live `underwrite-iq-lite/commas-payment.js`, but emits events instead of doing GHL/Airtable side effects inline (those become handlers). 
+- **15 unit tests pass without a live Postgres** (`npm test`) — 4 bus + 11 Commas adapter.
 
 ## Next
-Provision a Postgres, run `npm install` + `npm run migrate` to validate the schema live. Then B2 adapters (ClickFunnels, Commas, Twilio, Mailgun, CRS, Bland, Cal.com) register handlers on the bus. Deferred behind the Monday launch — builds in parallel.
+Provision a Postgres, run `npm install` + `npm run migrate` to validate the schema live. Then the remaining B2 adapters (ClickFunnels, Twilio, Mailgun, CRS, Bland, Cal.com) follow the Commas pattern — verify → normalize → `emit()` canonical events; the GHL/Airtable/CRS reactions become handlers registered on the bus. Deferred behind the Monday launch — builds in parallel.
