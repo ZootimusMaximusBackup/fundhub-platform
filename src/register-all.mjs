@@ -1,0 +1,22 @@
+// Boot wiring — register every handler module onto the event bus exactly once.
+// Call ensureRegistered() before serving traffic (the HTTP router does this).
+// on() dedupes by fn reference, so calling register() twice is harmless; the flag
+// just avoids redundant work.
+
+import { register as registerLifecycle } from "./handlers/client-lifecycle.mjs";
+import { register as registerComms } from "./handlers/comms.mjs";
+
+let _done = false;
+
+export function registerAll() {
+  registerLifecycle();
+  registerComms();
+  _done = true;
+}
+
+export function ensureRegistered() {
+  if (!_done) registerAll();
+}
+
+// Test helper — force re-registration on the next ensureRegistered().
+export const _resetRegistered = () => { _done = false; };
