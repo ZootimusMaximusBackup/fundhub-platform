@@ -3,6 +3,7 @@
 // Returns most-recent-first; default limit 50, override via ?limit=N.
 // No writes. SELECT only. ESM. Mirrors api/health.mjs style.
 import { db } from "../../src/db.mjs";
+import { checkDashboardAuth } from "../../src/http/dashboard-auth.mjs";
 
 const SQL = `
   SELECT
@@ -43,6 +44,7 @@ const SQL = `
 `;
 
 export default async function handler(req, res) {
+  if (!checkDashboardAuth(req)) return res.status(401).json({ ok: false, error: "unauthorized" });
   try {
     const limit = Math.min(parseInt(req.query?.limit ?? "50", 10) || 50, 500);
     const { rows } = await db.query(SQL, [limit]);

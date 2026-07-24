@@ -3,8 +3,10 @@
 // Returns the client row + related transactions[], crs_results[], messages[], tasks[].
 // No writes. SELECT only. ESM. Mirrors api/health.mjs style.
 import { db } from "../../src/db.mjs";
+import { checkDashboardAuth } from "../../src/http/dashboard-auth.mjs";
 
 export default async function handler(req, res) {
+  if (!checkDashboardAuth(req)) return res.status(401).json({ ok: false, error: "unauthorized" });
   const { id } = req.query ?? {};
   if (!id) return res.status(400).json({ ok: false, error: "?id= required" });
 

@@ -245,30 +245,42 @@
 </div>
 
 <script>
+// Shared-secret gate: open /dashboard.html?key=<DASHBOARD_SECRET>. The key is sent
+// as the x-dashboard-key header on every API call (never rendered into the page).
+const DASH_KEY = new URLSearchParams(location.search).get('key') || '';
+const authHeaders = () => DASH_KEY ? { 'x-dashboard-key': DASH_KEY } : {};
+
 let allClients = [];
 let sortCol = 'created_at';
 let sortDir = -1;
 let activeId = null;
 
 const status = (msg) => { document.getElementById('status-bar').textContent = msg; };
+// Escape ALL dynamic values before interpolating into innerHTML. Client data
+// (names, emails, inbound SMS/email bodies, product names, task titles) is
+// attacker-controllable, so every interpolation below goes through esc() to
+// prevent stored XSS.
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 const fmt = (v) => v == null ? '—' : v;
+const cell = (v) => esc(fmt(v));                 // escaped text cell
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
 const fmtMoney = (v) => v == null ? '—' : '$' + Number(v).toLocaleString('en-US', {minimumFractionDigits:0});
 
 function tierBadge(tier) {
-  const cls = 'badge tier-' + (tier || 'null');
-  return `<span class="${cls}">${tier || 'none'}</span>`;
+  // Restrict the tier to a safe class-name charset; escape the visible text.
+  const safe = esc(tier || 'null').replace(/[^A-Za-z0-9_-]/g, '');
+  return `<span class="badge tier-${safe}">${esc(tier || 'none')}</span>`;
 }
 function flag(val, label) {
-  return `<span class="flag" title="${label}">${val ? '✅' : '⬜'}</span>`;
+  return `<span class="flag" title="${esc(label)}">${val ? '✅' : '⬜'}</span>`;
 }
 
 async function load() {
   status('Fetching clients…');
   try {
-    const r = await fetch('/api/dashboard/clients?limit=200');
+    const r = await fetch('/api/dashboard/clients?limit=200', { headers: authHeaders() });
     const data = await r.json();
-    if (!data.ok) throw new Error(data.error);
+    if (!data.ok) throw new Error(data.error === 'unauthorized' ? 'unauthorized — add ?key=… to the URL' : data.error);
     allClients = data.clients;
     document.getElementById('client-count').textContent = `${data.count} clients`;
     status(`Loaded ${data.count} clients — ${new Date().toLocaleTimeString()}`);
@@ -307,16 +319,16 @@ function render() {
 
   let th = cols.map(c => {
     const arrow = sortCol === c.key ? (sortDir === 1 ? ' ↑' : ' ↓') : '';
-    return `<th onclick="sortBy('${c.key}')">${c.label}${arrow}</th>`;
+    return `<th data-key="${c.key}">${c.label}${arrow}</th>`;
   }).join('');
 
   let tbody = sorted.map(c => {
     const name = [c.first_name, c.last_name].filter(Boolean).join(' ') || '—';
     const lastAct = c.last_message?.at || c.created_at;
     const active = c.id === activeId ? ' class="active"' : '';
-    return `<tr${active} onclick="selectClient('${c.id}')">
-      <td title="${name}">${name}</td>
-      <td title="${c.email || ''}">${fmt(c.email)}</td>
+    return `<tr${active} data-id="${esc(c.id)}">
+      <td title="${esc(name)}">${esc(name)}</td>
+      <td title="${esc(c.email || '')}">${cell(c.email)}</td>
       <td>${tierBadge(c.outcome_tier)}</td>
       <td>${flag(c.custom_fields?.crs_paid, 'CRS Paid')}</td>
       <td>${flag(c.custom_fields?.deposit_paid, 'Deposit Paid')}</td>
@@ -330,8 +342,12 @@ function render() {
     </tr>`;
   }).join('');
 
-  document.getElementById('table-pane').innerHTML =
+  const pane = document.getElementById('table-pane');
+  pane.innerHTML =
     `<table><thead><tr>${th}</tr></thead><tbody>${tbody || '<tr><td colspan="12" class="empty" style="padding:20px">No clients</td></tr>'}</tbody></table>`;
+  // Event delegation instead of inline onclick (no user data in HTML handlers).
+  pane.querySelectorAll('th[data-key]').forEach(th => th.addEventListener('click', () => sortBy(th.dataset.key)));
+  pane.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.addEventListener('click', () => selectClient(tr.dataset.id)));
 }
 
 function sortBy(col) {
@@ -345,12 +361,12 @@ async function selectClient(id) {
   render();
   document.getElementById('detail-pane').innerHTML = '<div class="loading">Loading…</div>';
   try {
-    const r = await fetch('/api/dashboard/client?id=' + encodeURIComponent(id));
+    const r = await fetch('/api/dashboard/client?id=' + encodeURIComponent(id), { headers: authHeaders() });
     const data = await r.json();
     if (!data.ok) throw new Error(data.error);
     renderDetail(data);
   } catch (e) {
-    document.getElementById('detail-pane').innerHTML = `<div class="loading" style="color:#ef4444">Error: ${e.message}</div>`;
+    document.getElementById('detail-pane').innerHTML = `<div class="loading" style="color:#ef4444">Error: ${esc(e.message)}</div>`;
   }
 }
 
@@ -360,7 +376,7 @@ function renderDetail(data) {
 
   const txRows = data.transactions.length
     ? data.transactions.map(t =>
-        `<tr><td>${fmt(t.product_name)}</td><td>${fmtMoney(t.amount_paid)}</td><td>${fmt(t.status)}</td><td>${fmtDate(t.created_at)}</td></tr>`
+        `<tr><td>${cell(t.product_name)}</td><td>${fmtMoney(t.amount_paid)}</td><td>${cell(t.status)}</td><td>${fmtDate(t.created_at)}</td></tr>`
       ).join('')
     : '<tr><td colspan="4" class="empty">None</td></tr>';
 
@@ -372,21 +388,21 @@ function renderDetail(data) {
 
   const msgRows = data.messages.slice(0, 20).length
     ? data.messages.slice(0, 20).map(m =>
-        `<tr><td>${fmt(m.channel)}</td><td>${fmt(m.direction)}</td><td>${fmt(m.status)}</td><td>${fmtDate(m.created_at)}</td></tr>`
+        `<tr><td>${cell(m.channel)}</td><td>${cell(m.direction)}</td><td>${cell(m.status)}</td><td>${fmtDate(m.created_at)}</td></tr>`
       ).join('')
     : '<tr><td colspan="4" class="empty">None</td></tr>';
 
   const taskRows = data.tasks.length
     ? data.tasks.map(t =>
-        `<tr><td>${t.done ? '✅' : '⬜'}</td><td title="${t.title}">${fmt(t.title)}</td><td>${fmtDate(t.due_at)}</td></tr>`
+        `<tr><td>${t.done ? '✅' : '⬜'}</td><td title="${esc(t.title)}">${cell(t.title)}</td><td>${fmtDate(t.due_at)}</td></tr>`
       ).join('')
     : '<tr><td colspan="3" class="empty">None</td></tr>';
 
   const cf = c.custom_fields || {};
 
   document.getElementById('detail-pane').innerHTML = `
-    <h2>${name}</h2>
-    <div class="sub">${fmt(c.email)} · ${fmt(c.phone)}</div>
+    <h2>${esc(name)}</h2>
+    <div class="sub">${cell(c.email)} · ${cell(c.phone)}</div>
 
     <div class="section-label">Journey State</div>
     <div class="kv-grid">
@@ -396,7 +412,7 @@ function renderDetail(data) {
       <div class="kv"><span class="k">Deposit Paid</span><span class="v">${flag(cf.deposit_paid, '')}</span></div>
       <div class="kv"><span class="k">Sale Closed</span><span class="v">${flag(cf.sale_closed, '')}</span></div>
       <div class="kv"><span class="k">Funding Est.</span><span class="v">${fmtMoney(cf.total_funding_estimate)}</span></div>
-      <div class="kv"><span class="k">Channel</span><span class="v">${fmt(c.channel_source)}</span></div>
+      <div class="kv"><span class="k">Channel</span><span class="v">${cell(c.channel_source)}</span></div>
       <div class="kv"><span class="k">Created</span><span class="v">${fmtDate(c.created_at)}</span></div>
     </div>
 
