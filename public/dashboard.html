@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FundHub — Closer Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d0f14;
+    --surface:   #161a22;
+    --surface2:  #1e2330;
+    --border:    #2a3040;
+    --accent:    #4f7ef8;
+    --accent2:   #34d399;
+    --warn:      #f59e0b;
+    --danger:    #ef4444;
+    --text:      #e2e8f0;
+    --muted:     #7a8599;
+    --font:      'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  header span {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  #refresh-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background .15s;
+  }
+  #refresh-btn:hover { background: var(--border); }
+
+  #status-bar {
+    padding: 8px 28px;
+    font-size: 11px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    min-height: 28px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    height: calc(100vh - 93px);
+  }
+
+  /* ── TABLE ── */
+  .table-pane {
+    overflow: auto;
+    border-right: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  thead th:hover { color: var(--text); }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .1s;
+  }
+  tbody tr:hover  { background: var(--surface2); }
+  tbody tr.active { background: #1a2440; }
+
+  td {
+    padding: 9px 14px;
+    white-space: nowrap;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .tier-FULL_FUNDING      { background: #14532d; color: #86efac; }
+  .tier-PREMIUM_STACK     { background: #1e3a5f; color: #93c5fd; }
+  .tier-FUNDING_PLUS_REPAIR { background: #1c4532; color: #6ee7b7; }
+  .tier-REPAIR_ONLY       { background: #3b2f0a; color: #fcd34d; }
+  .tier-MANUAL_REVIEW     { background: #3b1f0a; color: #fdba74; }
+  .tier-FRAUD_HOLD        { background: #3b0a0a; color: #fca5a5; }
+  .tier-null              { background: var(--surface2); color: var(--muted); }
+
+  .flag { font-size: 14px; }
+
+  /* ── DETAIL PANE ── */
+  .detail-pane {
+    overflow: auto;
+    background: var(--surface);
+    padding: 20px;
+  }
+
+  .detail-pane h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .detail-pane .sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 16px 0 6px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+  }
+
+  .kv-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+  }
+
+  .kv { display: flex; flex-direction: column; gap: 1px; }
+  .kv .k { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .kv .v { font-size: 12px; color: var(--text); }
+
+  .mini-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  .mini-table th {
+    font-size: 9px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 4px 6px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .mini-table td {
+    font-size: 11px;
+    padding: 5px 6px;
+    border-bottom: 1px solid var(--border);
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+  }
+  .mini-table tr:last-child td { border: none; }
+
+  .empty {
+    color: var(--muted);
+    font-size: 11px;
+    font-style: italic;
+    padding: 8px 0;
+  }
+
+  .placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .loading { color: var(--muted); padding: 16px 28px; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>FundHub &mdash; Closer Dashboard</h1>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span id="client-count"></span>
+    <button id="refresh-btn" onclick="load()">Refresh</button>
+  </div>
+</header>
+<div id="status-bar"></div>
+<div class="layout">
+  <div class="table-pane" id="table-pane">
+    <div class="loading">Loading clients…</div>
+  </div>
+  <div class="detail-pane" id="detail-pane">
+    <div class="placeholder">Select a client to view details</div>
+  </div>
+</div>
+
+<script>
+let allClients = [];
+let sortCol = 'created_at';
+let sortDir = -1;
+let activeId = null;
+
+const status = (msg) => { document.getElementById('status-bar').textContent = msg; };
+const fmt = (v) => v == null ? '—' : v;
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+const fmtMoney = (v) => v == null ? '—' : '$' + Number(v).toLocaleString('en-US', {minimumFractionDigits:0});
+
+function tierBadge(tier) {
+  const cls = 'badge tier-' + (tier || 'null');
+  return `<span class="${cls}">${tier || 'none'}</span>`;
+}
+function flag(val, label) {
+  return `<span class="flag" title="${label}">${val ? '✅' : '⬜'}</span>`;
+}
+
+async function load() {
+  status('Fetching clients…');
+  try {
+    const r = await fetch('/api/dashboard/clients?limit=200');
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error);
+    allClients = data.clients;
+    document.getElementById('client-count').textContent = `${data.count} clients`;
+    status(`Loaded ${data.count} clients — ${new Date().toLocaleTimeString()}`);
+    render();
+  } catch (e) {
+    status('Error: ' + e.message);
+  }
+}
+
+function render() {
+  const sorted = [...allClients].sort((a, b) => {
+    let av = a[sortCol], bv = b[sortCol];
+    if (sortCol === 'transactions') { av = a.transactions.count; bv = b.transactions.count; }
+    if (sortCol === 'crs_count') { av = a.crs_count; bv = b.crs_count; }
+    if (av == null) av = '';
+    if (bv == null) bv = '';
+    if (av < bv) return -sortDir;
+    if (av > bv) return  sortDir;
+    return 0;
+  });
+
+  const cols = [
+    { key: 'first_name',    label: 'Name' },
+    { key: 'email',         label: 'Email' },
+    { key: 'outcome_tier',  label: 'Tier' },
+    { key: 'crs_paid',      label: 'CRS' },
+    { key: 'deposit_paid',  label: 'Dep' },
+    { key: 'sale_closed',   label: 'Sale' },
+    { key: 'total_funding_estimate', label: 'Funding Est.' },
+    { key: 'transactions',  label: 'Txns' },
+    { key: 'crs_count',     label: 'CRS#' },
+    { key: 'task_count',    label: 'Tasks' },
+    { key: 'last_activity', label: 'Last Activity' },
+    { key: 'created_at',    label: 'Created' },
+  ];
+
+  let th = cols.map(c => {
+    const arrow = sortCol === c.key ? (sortDir === 1 ? ' ↑' : ' ↓') : '';
+    return `<th onclick="sortBy('${c.key}')">${c.label}${arrow}</th>`;
+  }).join('');
+
+  let tbody = sorted.map(c => {
+    const name = [c.first_name, c.last_name].filter(Boolean).join(' ') || '—';
+    const lastAct = c.last_message?.at || c.created_at;
+    const active = c.id === activeId ? ' class="active"' : '';
+    return `<tr${active} onclick="selectClient('${c.id}')">
+      <td title="${name}">${name}</td>
+      <td title="${c.email || ''}">${fmt(c.email)}</td>
+      <td>${tierBadge(c.outcome_tier)}</td>
+      <td>${flag(c.custom_fields?.crs_paid, 'CRS Paid')}</td>
+      <td>${flag(c.custom_fields?.deposit_paid, 'Deposit Paid')}</td>
+      <td>${flag(c.custom_fields?.sale_closed, 'Sale Closed')}</td>
+      <td>${fmtMoney(c.custom_fields?.total_funding_estimate)}</td>
+      <td>${c.transactions.count}</td>
+      <td>${c.crs_count}</td>
+      <td>${c.task_count}</td>
+      <td>${fmtDate(lastAct)}</td>
+      <td>${fmtDate(c.created_at)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('table-pane').innerHTML =
+    `<table><thead><tr>${th}</tr></thead><tbody>${tbody || '<tr><td colspan="12" class="empty" style="padding:20px">No clients</td></tr>'}</tbody></table>`;
+}
+
+function sortBy(col) {
+  if (sortCol === col) { sortDir *= -1; }
+  else { sortCol = col; sortDir = -1; }
+  render();
+}
+
+async function selectClient(id) {
+  activeId = id;
+  render();
+  document.getElementById('detail-pane').innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const r = await fetch('/api/dashboard/client?id=' + encodeURIComponent(id));
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error);
+    renderDetail(data);
+  } catch (e) {
+    document.getElementById('detail-pane').innerHTML = `<div class="loading" style="color:#ef4444">Error: ${e.message}</div>`;
+  }
+}
+
+function renderDetail(data) {
+  const c = data.client;
+  const name = [c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unknown';
+
+  const txRows = data.transactions.length
+    ? data.transactions.map(t =>
+        `<tr><td>${fmt(t.product_name)}</td><td>${fmtMoney(t.amount_paid)}</td><td>${fmt(t.status)}</td><td>${fmtDate(t.created_at)}</td></tr>`
+      ).join('')
+    : '<tr><td colspan="4" class="empty">None</td></tr>';
+
+  const crsRows = data.crs_results.length
+    ? data.crs_results.map(r =>
+        `<tr><td>${tierBadge(r.outcome_tier)}</td><td>${fmtDate(r.created_at)}</td></tr>`
+      ).join('')
+    : '<tr><td colspan="2" class="empty">None</td></tr>';
+
+  const msgRows = data.messages.slice(0, 20).length
+    ? data.messages.slice(0, 20).map(m =>
+        `<tr><td>${fmt(m.channel)}</td><td>${fmt(m.direction)}</td><td>${fmt(m.status)}</td><td>${fmtDate(m.created_at)}</td></tr>`
+      ).join('')
+    : '<tr><td colspan="4" class="empty">None</td></tr>';
+
+  const taskRows = data.tasks.length
+    ? data.tasks.map(t =>
+        `<tr><td>${t.done ? '✅' : '⬜'}</td><td title="${t.title}">${fmt(t.title)}</td><td>${fmtDate(t.due_at)}</td></tr>`
+      ).join('')
+    : '<tr><td colspan="3" class="empty">None</td></tr>';
+
+  const cf = c.custom_fields || {};
+
+  document.getElementById('detail-pane').innerHTML = `
+    <h2>${name}</h2>
+    <div class="sub">${fmt(c.email)} · ${fmt(c.phone)}</div>
+
+    <div class="section-label">Journey State</div>
+    <div class="kv-grid">
+      <div class="kv"><span class="k">Tier</span><span class="v">${tierBadge(c.outcome_tier)}</span></div>
+      <div class="kv"><span class="k">Funded</span><span class="v">${c.funded ? fmtMoney(c.funded_amount) : '—'}</span></div>
+      <div class="kv"><span class="k">CRS Paid</span><span class="v">${flag(cf.crs_paid, '')}</span></div>
+      <div class="kv"><span class="k">Deposit Paid</span><span class="v">${flag(cf.deposit_paid, '')}</span></div>
+      <div class="kv"><span class="k">Sale Closed</span><span class="v">${flag(cf.sale_closed, '')}</span></div>
+      <div class="kv"><span class="k">Funding Est.</span><span class="v">${fmtMoney(cf.total_funding_estimate)}</span></div>
+      <div class="kv"><span class="k">Channel</span><span class="v">${fmt(c.channel_source)}</span></div>
+      <div class="kv"><span class="k">Created</span><span class="v">${fmtDate(c.created_at)}</span></div>
+    </div>
+
+    <div class="section-label">Transactions</div>
+    <table class="mini-table">
+      <thead><tr><th>Product</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>${txRows}</tbody>
+    </table>
+
+    <div class="section-label">CRS Results</div>
+    <table class="mini-table">
+      <thead><tr><th>Tier</th><th>Date</th></tr></thead>
+      <tbody>${crsRows}</tbody>
+    </table>
+
+    <div class="section-label">Messages (last 20)</div>
+    <table class="mini-table">
+      <thead><tr><th>Channel</th><th>Dir</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>${msgRows}</tbody>
+    </table>
+
+    <div class="section-label">Tasks</div>
+    <table class="mini-table">
+      <thead><tr><th></th><th>Title</th><th>Due</th></tr></thead>
+      <tbody>${taskRows}</tbody>
+    </table>
+  `;
+}
+
+load();
+</script>
+</body>
+</html>
