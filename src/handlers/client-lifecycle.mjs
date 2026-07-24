@@ -81,25 +81,27 @@ export async function onSurveySubmitted(event, db) {
   }
 }
 
-// payment.received — record the money-in as a transaction row (deduped by ref).
-export async function onPaymentReceived(event, db) {
+// Record a transaction row (deduped by provider_ref). Shared by the paid + failed
+// handlers — same shape, different status.
+async function recordTransaction(event, db, status) {
   const clientId = await resolveClient(db, event);
   const p = event.payload || {};
   await db.query(
     `INSERT INTO transactions (org_id, client_id, product_name, amount_paid, status, provider, provider_ref, raw_payload)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
      ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING`,
-    [
-      event.orgId,
-      clientId,
-      p.productName || p.product || "unknown",
-      p.amount ?? null,
-      "succeeded",
-      p.source || "commas",
-      p.providerRef || null,
-      JSON.stringify(p)
-    ]
+    [event.orgId, clientId, p.productName || p.product || "unknown", p.amount ?? null, status, p.source || "commas", p.providerRef || null, JSON.stringify(p)]
   );
+}
+
+// payment.received — record the money-in as a succeeded transaction row.
+export async function onPaymentReceived(event, db) {
+  await recordTransaction(event, db, "succeeded");
+}
+
+// payment.failed — record the attempt as a failed transaction (don't lose it).
+export async function onPaymentFailed(event, db) {
+  await recordTransaction(event, db, "failed");
 }
 
 // diagnostic.paid ($32) / deposit.paid / sale.closed — stamp a flag on the client.
@@ -154,6 +156,7 @@ export function register() {
   on("entry.captured", onEntryCaptured);
   on("survey.submitted", onSurveySubmitted);
   on("payment.received", onPaymentReceived);
+  on("payment.failed", onPaymentFailed);
   on("diagnostic.paid", onDiagnosticPaid);
   on("deposit.paid", onDepositPaid);
   on("sale.closed", onSaleClosed);

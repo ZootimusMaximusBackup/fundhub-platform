@@ -6,6 +6,7 @@ import {
   onEntryCaptured,
   onSurveySubmitted,
   onPaymentReceived,
+  onPaymentFailed,
   onDiagnosticPaid,
   onDecisionRendered,
   onAnalysisCompleted
@@ -91,6 +92,12 @@ test("payment.received: inserts one transaction, replay dedupes by providerRef",
   assert.equal(db.transactions.length, 1);
   assert.equal(db.transactions[0].amount_paid, 3000);
   assert.equal(db.clients.length, 1, "auto-created the client from the payment email");
+});
+
+test("payment.failed: records a failed transaction (not lost)", async () => {
+  const db = pgFake();
+  await onPaymentFailed(ev("payment.failed", { email: "a@b.com", productName: "Consulting Services Deposit", amount: 3000, providerRef: "txn_f1", source: "commas" }), db);
+  assert.equal(db.transactions.length, 1);
 });
 
 test("survey.submitted merges answers; diagnostic.paid + decision.rendered stamp the client", async () => {
