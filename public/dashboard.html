@@ -231,6 +231,7 @@
   <h1>FundHub &mdash; Closer Dashboard</h1>
   <div style="display:flex;align-items:center;gap:12px">
     <span id="client-count"></span>
+    <button id="seed-btn" onclick="seedSample()">+ Sample data</button>
     <button id="refresh-btn" onclick="load()">Refresh</button>
   </div>
 </header>
@@ -348,6 +349,20 @@ function render() {
   // Event delegation instead of inline onclick (no user data in HTML handlers).
   pane.querySelectorAll('th[data-key]').forEach(th => th.addEventListener('click', () => sortBy(th.dataset.key)));
   pane.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.addEventListener('click', () => selectClient(tr.dataset.id)));
+}
+
+async function seedSample() {
+  const btn = document.getElementById('seed-btn');
+  btn.disabled = true; status('Seeding a sample client…');
+  try {
+    const r = await fetch('/api/dashboard/seed', { method: 'POST', headers: authHeaders() });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error);
+    status('Sample client added: ' + (data.seeded?.email || '') + ' (' + (data.seeded?.outcome_tier || '—') + ')');
+    await load();
+  } catch (e) {
+    status('Seed error: ' + e.message);
+  } finally { btn.disabled = false; }
 }
 
 function sortBy(col) {
