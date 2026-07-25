@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Fundhub custom platform — Postgres + event bus replacing GHL + Airtable. Master Rebuild Spec v1.",
+  "engines": { "node": "22.x" },
   "scripts": {
     "migrate": "node db/migrate.mjs",
     "test": "node --test src/**/*.test.mjs"
