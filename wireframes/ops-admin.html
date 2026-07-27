@@ -3,17 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <title>Fundhub — Ops &amp; Admin</title>
+<link rel="stylesheet" href="fundhub-brand.css">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
+  /* Palette re-pointed at the real fundhub-brand.css tokens. Every variable NAME
+     is kept so no downstream rule changes. Two tiers per hue, because the real
+     status colors are pastels: the pastel itself fills and outlines, and a dark
+     ink of the same hue carries text (pastel-on-white text fails contrast).
+     NOTE --card: brand.css uses --card for its DARK surface (#111113); these
+     wireframes use it for the white card. The local value below wins on purpose. */
   :root{
-    --ink:#0A0A0A;--paper:#F4F3F0;--paper-dim:#E9E7E2;--card:#FFFFFF;--line:#DDDAD3;
-    --text:#171614;--text-dim:#6B685F;--text-faint:#9A968A;
-    --dark-text:#F4F3F0;--dark-text-dim:#9C9990;--dark-line:#2A2A28;
-    --amber:#B8892B;--amber-bg:#FBF3E2;--red:#B8402F;--red-bg:#FCEAE6;
-    --green:#3E7A4C;--green-bg:#E8F3E9;--blue:#2F5FB8;--blue-bg:#E1EAFB;
-    --purple:#6A4FD0;--purple-bg:#F1EEFC;--purple-line:#C6BAF2;
-    --spectrum:linear-gradient(90deg,#7A5CF0 0%,#2F8FE0 22%,#1FB6A8 44%,#3FAE5C 60%,#E0B02F 78%,#E0602F 100%);
+    --ink:#0A0A0A;--paper:#FCFCFC;--paper-dim:#F4F4F5;--card:#FFFFFF;--line:#E4E4E7;
+    --text:#18181B;--text-dim:#52525B;--text-faint:#A1A1AA;
+    --dark-text:#FCFCFC;--dark-text-dim:#A1A1AA;--dark-line:#26262B;
+    --amber:#6B4A12;--amber-bg:rgba(245,206,143,.26);--amber-line:#F5CE8F;
+    --red:#6E2A22;--red-bg:rgba(242,166,155,.24);--red-line:#F2A69B;
+    --green:#2C5138;--green-bg:rgba(168,216,176,.26);--green-line:#A8D8B0;
+    --blue:#22415F;--blue-bg:rgba(169,198,232,.26);--blue-line:#A9C6E8;
+    --purple:#3F2F63;--purple-bg:rgba(196,179,229,.26);--purple-line:#C4B3E5;
+    --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
   }
   /* ---------- worker avatars: filled = a person, purple outline = an agent ---------- */
   .av{width:17px;height:17px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;
@@ -35,10 +44,10 @@
   .appnav{background:var(--ink);display:flex;align-items:center;gap:1px;padding:0 13px;height:31px;
     flex-shrink:0;border-bottom:2px solid transparent;border-image:var(--spectrum) 1;overflow-x:auto;}
   .appnav::-webkit-scrollbar{display:none;}
-  .nav-item{font-size:11.5px;font-weight:600;color:#7C7970;text-decoration:none;padding:4px 9px;
+  .nav-item{font-size:11.5px;font-weight:600;color:#71717A;text-decoration:none;padding:4px 9px;
     border-radius:5px;white-space:nowrap;}
-  .nav-item:hover{color:var(--dark-text);background:#161614;}
-  .nav-item.active{color:var(--dark-text);font-weight:700;background:#1C1C19;
+  .nav-item:hover{color:var(--dark-text);background:#161619;}
+  .nav-item.active{color:var(--dark-text);font-weight:700;background:#1C1C20;
     box-shadow:inset 0 -2px 0 var(--dark-text);}
   .nav-div{width:1px;height:13px;background:var(--dark-line);margin:0 7px;flex-shrink:0;}
   .brand{display:flex;align-items:center;gap:9px;}
@@ -48,12 +57,12 @@
   .brand .sub{font-weight:600;font-size:12.5px;color:var(--dark-text-dim);}
   .topbar-right{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--dark-text-dim);}
   .org-pill{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;}
-  .period-pill{font-size:10.5px;color:var(--dark-text);background:#151513;border:1px solid var(--dark-line);padding:3px 9px;border-radius:14px;}
+  .period-pill{font-size:10.5px;color:var(--dark-text);background:#151517;border:1px solid var(--dark-line);padding:3px 9px;border-radius:14px;}
   .clock{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dark-text);}
 
   main{flex:1;overflow-y:auto;padding:12px 18px 20px;background:var(--paper);}
   main::-webkit-scrollbar{width:8px;}
-  main::-webkit-scrollbar-thumb{background:#D3D0C8;border-radius:4px;}
+  main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px;}
 
   .section{margin-bottom:14px;}
   .section-title{font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;display:flex;justify-content:space-between;align-items:baseline;}
@@ -70,15 +79,15 @@
   table.admin th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);padding:7px 12px;border-bottom:1px solid var(--line);background:var(--paper);}
   table.admin td{padding:7px 12px;font-size:12px;border-bottom:1px solid var(--paper-dim);}
   table.admin tr:last-child td{border-bottom:none;}
-  table.admin tr.loud td{background:#FCEAE6;}
-  table.admin tr.warn td{background:#FBF3E2;}
+  table.admin tr.loud td{background:var(--red-bg);}
+  table.admin tr.warn td{background:var(--amber-bg);}
   .days-neutral{font-family:'JetBrains Mono',monospace;}
   .days-warn{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--amber);}
   .days-crit{font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--red);font-size:13.5px;}
   .status-pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:9px;}
   .status-pill.ok{background:var(--green-bg);color:var(--green);}
   .status-pill.warn{background:var(--amber-bg);color:var(--amber);}
-  .status-pill.crit{background:#F7DAD3;color:var(--red);}
+  .status-pill.crit{background:rgba(242,166,155,.34);color:var(--red);}
   .status-pill.neutral{background:var(--paper-dim);color:var(--text-dim);}
 
   .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:11px 13px 13px;margin-bottom:12px;}
@@ -91,6 +100,59 @@
   .empty-note{color:var(--text-faint);font-size:12px;padding:6px 2px;border-top:1px dashed var(--line);margin-top:4px;padding-top:8px;}
 
   footer.statusbar{flex-shrink:0;height:22px;background:var(--ink);display:flex;align-items:center;padding:0 14px;gap:16px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dark-text-dim);}
+
+  /* ---------- date range switcher ---------- */
+  .period-wrap{position:relative;}
+  button.period-pill{font:inherit;font-size:10.5px;cursor:pointer;display:inline-flex;
+    align-items:center;gap:7px;transition:border-color .12s;}
+  button.period-pill:hover{border-color:#3F3F46;}
+  button.period-pill .pchev{font-size:8px;color:var(--dark-text-dim);transition:transform .16s;}
+  button.period-pill[aria-expanded="true"] .pchev{transform:rotate(180deg);}
+  .period-menu{
+    position:absolute;top:calc(100% + 6px);right:0;z-index:60;min-width:196px;
+    background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px;
+    box-shadow:0 8px 24px rgba(10,10,10,.16);
+  }
+  .period-menu[hidden]{display:none;}
+  .period-opt{
+    display:flex;align-items:baseline;gap:8px;width:100%;font:inherit;font-size:12px;
+    text-align:left;background:none;border:0;border-radius:5px;padding:7px 9px;cursor:pointer;color:var(--text);
+  }
+  .period-opt:hover{background:var(--paper);}
+  .period-opt .po-range{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-faint);margin-left:auto;}
+  .period-opt[aria-current="true"]{background:var(--paper-dim);font-weight:700;}
+  .kpi-value{transition:opacity .16s;}
+  .kpi-grid.swapping .kpi-value{opacity:.25;}
+
+  /* ---------- sortable headers ---------- */
+  table.admin th.sortable{cursor:pointer;user-select:none;white-space:nowrap;}
+  table.admin th.sortable:hover{color:var(--text);}
+  table.admin th .sarrow{opacity:0;margin-left:4px;font-size:8px;}
+  table.admin th[aria-sort="ascending"] .sarrow,
+  table.admin th[aria-sort="descending"] .sarrow{opacity:1;}
+  table.admin th[aria-sort="descending"] .sarrow{transform:rotate(180deg);display:inline-block;}
+  table.admin th.sortable:focus-visible,tr[data-ar]:focus-visible{
+    outline:2px solid var(--blue-line);outline-offset:-2px;
+  }
+
+  /* ---------- expandable AR rows ---------- */
+  table.admin tr[data-ar]{cursor:pointer;}
+  table.admin tr[data-ar]:hover td{background:var(--paper);}
+  table.admin tr[data-ar].warn:hover td{background:rgba(245,206,143,.30);}
+  table.admin tr[data-ar].loud:hover td{background:rgba(242,166,155,.28);}
+  table.admin tr[data-ar][aria-expanded="true"] td{background:var(--paper-dim);}
+  .archev{display:inline-block;width:9px;color:var(--text-faint);font-size:9px;
+    transition:transform .16s ease;margin-right:5px;}
+  tr[data-ar][aria-expanded="true"] .archev{transform:rotate(90deg);}
+  tr.ar-detail > td{background:var(--paper-dim);padding:0 12px 11px !important;}
+  .ardetail{border-top:1px dashed var(--line);padding-top:9px;display:flex;gap:22px;flex-wrap:wrap;}
+  .ardetail .arcol{min-width:150px;}
+  .ardetail .ark{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:3px;}
+  .ardetail .arv{font-size:12px;font-weight:600;}
+  .ardetail .arv.mono{font-family:'JetBrains Mono',monospace;}
+  .artimeline{flex:1;min-width:230px;}
+  .artimeline .arstep{display:flex;gap:8px;font-size:11.5px;color:var(--text-dim);padding:2px 0;}
+  .artimeline .arstep .ard{font-family:'JetBrains Mono',monospace;color:var(--text-faint);flex:0 0 62px;}
 </style>
 </head>
 <body>
@@ -105,7 +167,12 @@
     </div>
     <div class="topbar-right">
       <div class="org-pill">Org: Fundhub</div>
-      <div class="period-pill">Last 7 Days — Jul 20–26</div>
+      <div class="period-wrap">
+        <button type="button" class="period-pill" id="period-btn" aria-expanded="false" aria-haspopup="true">
+          <span id="period-label">Last 7 Days — Jul 20–26</span><span class="pchev">▾</span>
+        </button>
+        <div class="period-menu" id="period-menu" role="menu" hidden></div>
+      </div>
       <div class="clock">Sun Jul 26 · 2:47:09 PM ET</div>
     </div>
   </header>
@@ -127,14 +194,14 @@
   <main>
 
     <div class="section">
-      <div class="section-title">Company KPIs<span class="section-meta">week to date</span></div>
-      <div class="kpi-grid">
-        <div class="kpi-tile"><div class="kpi-label">Cash Collected</div><div class="kpi-value">$198,400</div></div>
-        <div class="kpi-tile"><div class="kpi-label">Funded</div><div class="kpi-value">$312,000</div></div>
-        <div class="kpi-tile"><div class="kpi-label">Close Rate</div><div class="kpi-value">34%</div></div>
-        <div class="kpi-tile"><div class="kpi-label">Show Rate</div><div class="kpi-value">71%</div></div>
-        <div class="kpi-tile"><div class="kpi-label">Cost / Funded</div><div class="kpi-value">$612</div></div>
-        <div class="kpi-tile"><div class="kpi-label">New Clients</div><div class="kpi-value">28</div></div>
+      <div class="section-title">Company KPIs<span class="section-meta" id="kpi-meta">week to date</span></div>
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi-tile"><div class="kpi-label">Cash Collected</div><div class="kpi-value" data-kpi="cash">$198,400</div></div>
+        <div class="kpi-tile"><div class="kpi-label">Funded</div><div class="kpi-value" data-kpi="funded">$312,000</div></div>
+        <div class="kpi-tile"><div class="kpi-label">Close Rate</div><div class="kpi-value" data-kpi="close">34%</div></div>
+        <div class="kpi-tile"><div class="kpi-label">Show Rate</div><div class="kpi-value" data-kpi="show">71%</div></div>
+        <div class="kpi-tile"><div class="kpi-label">Cost / Funded</div><div class="kpi-value" data-kpi="cpf">$612</div></div>
+        <div class="kpi-tile"><div class="kpi-label">New Clients</div><div class="kpi-value" data-kpi="clients">28</div></div>
       </div>
     </div>
 
@@ -143,26 +210,38 @@
 
         <div class="section">
           <div class="section-title">AR + Collections — Oldest Unpaid First<span class="section-meta">$8,290 still unpaid</span></div>
-          <table class="admin">
+          <table class="admin" id="ar-table">
             <tr><th>Client</th><th>Invoice</th><th>Days Overdue</th><th>Status</th></tr>
-            <tr>
-              <td>Wendell Pryce</td><td class="mono">$1,000 DIY</td><td><span class="days-neutral">0</span></td>
+            <tr data-ar tabindex="0" aria-expanded="false"
+                data-terms="Paid in full at signup" data-method="Card on file · Commas"
+                data-owner="Sarah Whitfield" data-timeline="today|Invoice sent">
+              <td><span class="archev">▸</span>Wendell Pryce</td><td class="mono">$1,000 DIY</td><td><span class="days-neutral">0</span></td>
               <td><span class="status-pill neutral">Sent today</span></td>
             </tr>
-            <tr>
-              <td>Diego Marchetti</td><td class="mono">$2,000</td><td><span class="days-neutral">2</span></td>
+            <tr data-ar tabindex="0" aria-expanded="false"
+                data-terms="2 payments of $1,000" data-method="Card on file · Commas"
+                data-owner="Jordan Blake" data-timeline="Jul 24|Invoice sent;Jul 26|Payment 1 cleared">
+              <td><span class="archev">▸</span>Diego Marchetti</td><td class="mono">$2,000</td><td><span class="days-neutral">2</span></td>
               <td><span class="status-pill ok">On track</span></td>
             </tr>
-            <tr>
-              <td>Angela Byrne</td><td class="mono">$1,200</td><td><span class="days-neutral">5</span></td>
+            <tr data-ar tabindex="0" aria-expanded="false"
+                data-terms="3 payments of $400" data-method="ACH · Commas"
+                data-owner="Nina Castellano" data-timeline="Jul 21|Invoice sent;Jul 23|Payment 1 cleared">
+              <td><span class="archev">▸</span>Angela Byrne</td><td class="mono">$1,200</td><td><span class="days-neutral">5</span></td>
               <td><span class="status-pill ok">On track</span></td>
             </tr>
-            <tr class="warn">
-              <td>Courtney Vance</td><td class="mono">$890</td><td><span class="days-warn">12</span></td>
+            <tr class="warn" data-ar tabindex="0" aria-expanded="false"
+                data-terms="Paid in full, 30 days" data-method="Card declined · retry queued"
+                data-owner="Nina Castellano"
+                data-timeline="Jul 14|Invoice sent;Jul 21|Card declined;Jul 24|Reminder sent">
+              <td><span class="archev">▸</span>Courtney Vance</td><td class="mono">$890</td><td><span class="days-warn">12</span></td>
               <td><span class="status-pill warn">Reminder sent</span></td>
             </tr>
-            <tr class="loud">
-              <td>Rachel Simmons</td><td class="mono">$3,200</td><td><span class="days-crit">45</span></td>
+            <tr class="loud" data-ar tabindex="0" aria-expanded="false"
+                data-terms="Paid in full, 30 days" data-method="No payment method on file"
+                data-owner="Marcus Webb"
+                data-timeline="Jun 11|Invoice sent;Jun 26|Reminder sent;Jul 08|Reminder sent;Jul 19|Call, no answer">
+              <td><span class="archev">▸</span>Rachel Simmons</td><td class="mono">$3,200</td><td><span class="days-crit">45</span></td>
               <td><span class="status-pill crit">45 days late — call her today</span></td>
             </tr>
           </table>
@@ -251,9 +330,217 @@
     <span>FUNDHUB-ADMIN · v1</span>
     <span>ORG: fundhub</span>
     <span>you're signed in as the owner</span>
-    <span>last 7 days · Jul 20–26, 2026</span>
+    <span id="foot-period">last 7 days · Jul 20–26, 2026</span>
   </footer>
 
 </div>
+
+<script>
+/* ───────────────────────────────────────────────────────────────────────────
+   Ops & Admin — wireframe behaviour. No backend.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ══ DATE RANGE ═══════════════════════════════════════════════════════════
+   'Last 7 Days' is the file's own baseline and is reproduced here exactly.
+   The other three ranges are scaled from it so switching shows movement.    */
+(function(){
+  var RANGES = [
+    { id:'today', label:'Today',           range:'Jul 26',        foot:'today · Jul 26, 2026',
+      meta:'today',          kpi:{cash:'$28,300', funded:'$44,000',  close:'38%', show:'75%', cpf:'$598', clients:'4'} },
+    { id:'7d',    label:'Last 7 Days',     range:'Jul 20–26',     foot:'last 7 days · Jul 20–26, 2026',
+      meta:'week to date',   kpi:{cash:'$198,400',funded:'$312,000',close:'34%', show:'71%', cpf:'$612', clients:'28'} },
+    { id:'30d',   label:'Last 30 Days',    range:'Jun 27–Jul 26', foot:'last 30 days · Jun 27–Jul 26, 2026',
+      meta:'month to date',  kpi:{cash:'$842,100',funded:'$1.34M',  close:'31%', show:'68%', cpf:'$657', clients:'119'} },
+    { id:'qtd',   label:'Quarter to Date', range:'Jul 1–26',      foot:'quarter to date · Jul 1–26, 2026',
+      meta:'quarter to date',kpi:{cash:'$731,500',funded:'$1.16M',  close:'32%', show:'69%', cpf:'$641', clients:'103'} }
+  ];
+  var current = '7d';
+  var btn   = document.getElementById('period-btn'),
+      menu  = document.getElementById('period-menu'),
+      label = document.getElementById('period-label'),
+      meta  = document.getElementById('kpi-meta'),
+      foot  = document.getElementById('foot-period'),
+      grid  = document.getElementById('kpi-grid');
+
+  RANGES.forEach(function(r){
+    var o = document.createElement('button');
+    o.type='button'; o.className='period-opt'; o.setAttribute('role','menuitem');
+    o.dataset.id = r.id;
+    o.innerHTML = '<span>'+r.label+'</span><span class="po-range">'+r.range+'</span>';
+    o.addEventListener('click', function(){ pick(r.id); close(); });
+    menu.appendChild(o);
+  });
+
+  function mark(){
+    [].forEach.call(menu.children, function(o){
+      o.setAttribute('aria-current', String(o.dataset.id === current));
+    });
+  }
+  function open(){ menu.hidden=false; btn.setAttribute('aria-expanded','true'); mark(); }
+  function close(){ menu.hidden=true;  btn.setAttribute('aria-expanded','false'); }
+
+  function pick(id){
+    var r = RANGES.filter(function(x){ return x.id===id; })[0];
+    if(!r || id===current) return;
+    current = id;
+    grid.classList.add('swapping');
+    setTimeout(function(){
+      Object.keys(r.kpi).forEach(function(k){
+        var el = grid.querySelector('[data-kpi="'+k+'"]');
+        if(el) el.textContent = r.kpi[k];
+      });
+      grid.classList.remove('swapping');
+    }, 170);
+    label.textContent = r.label + ' — ' + r.range;
+    meta.textContent  = r.meta;
+    foot.textContent  = r.foot;
+  }
+
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    menu.hidden ? open() : close();
+  });
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('.period-wrap')) close();
+  });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') close(); });
+  mark();
+})();
+
+/* ══ SORTABLE TABLES ══════════════════════════════════════════════════════ */
+(function(){
+  /* Leading number out of a cell, or null. Handles '$1,000 DIY', '$1.34M', '45',
+     '2d 14h' -> 2. Cells like 'Wendell Pryce' give null. */
+  function num(td){
+    var t = (td ? td.textContent : '').trim().replace(/[$,]/g,'');
+    var m = t.match(/^-?\d+(?:\.\d+)?/);
+    if(!m) return null;
+    var v = parseFloat(m[0]);
+    if(/^-?\d+(?:\.\d+)?\s*M/i.test(t)) v *= 1e6;
+    if(/^-?\d+(?:\.\d+)?\s*K/i.test(t)) v *= 1e3;
+    return v;
+  }
+  function text(td){ return (td ? td.textContent : '').trim().toLowerCase(); }
+
+  /* A column is numeric when most of its cells parse as numbers. Deciding once
+     per column stops mixed number/string comparisons from ordering randomly. */
+  function isNumericCol(rows, col){
+    var vals = rows.map(function(r){ return num(r.cells[col]); });
+    var hits = vals.filter(function(v){ return v !== null; }).length;
+    return hits > vals.length / 2;
+  }
+
+  document.querySelectorAll('table.admin').forEach(function(table){
+    var header = table.rows[0];
+    if(!header || !header.cells.length || header.cells[0].tagName !== 'TH') return;
+
+    [].forEach.call(header.cells, function(th, col){
+      th.classList.add('sortable');
+      th.tabIndex = 0;
+      th.setAttribute('aria-sort','none');
+      th.insertAdjacentHTML('beforeend','<span class="sarrow">▲</span>');
+
+      function sort(){
+        var dir = th.getAttribute('aria-sort') === 'ascending' ? -1 : 1;
+        [].forEach.call(header.cells, function(o){ o.setAttribute('aria-sort','none'); });
+        th.setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
+
+        /* collect body rows, keeping any expanded detail with its parent */
+        var groups = [], cur = null;
+        [].slice.call(table.rows, 1).forEach(function(r){
+          if(r.classList.contains('ar-detail')){ if(cur) cur.extra.push(r); return; }
+          cur = { row:r, extra:[] }; groups.push(cur);
+        });
+
+        var numeric = isNumericCol(groups.map(function(g){ return g.row; }), col);
+        groups.sort(function(a,b){
+          var av, bv;
+          if(numeric){
+            av = num(a.row.cells[col]); bv = num(b.row.cells[col]);
+            /* unparseable cells in a numeric column always sort to the bottom */
+            if(av === null && bv === null) return 0;
+            if(av === null) return 1;
+            if(bv === null) return -1;
+          } else {
+            av = text(a.row.cells[col]); bv = text(b.row.cells[col]);
+          }
+          if(av < bv) return -dir;
+          if(av > bv) return  dir;
+          return 0;
+        });
+        groups.forEach(function(g){
+          table.appendChild(g.row);
+          g.extra.forEach(function(x){ table.appendChild(x); });
+        });
+      }
+
+      th.addEventListener('click', sort);
+      th.addEventListener('keydown', function(e){
+        if(e.key==='Enter'||e.key===' '){ e.preventDefault(); sort(); }
+      });
+    });
+  });
+})();
+
+/* ══ AR ROWS EXPAND ═══════════════════════════════════════════════════════ */
+(function(){
+  var table = document.getElementById('ar-table');
+  if(!table) return;
+
+  function collapse(r){
+    r.setAttribute('aria-expanded','false');
+    if(r._d){ r._d.remove(); r._d = null; }
+  }
+
+  function expand(r){
+    var tr = document.createElement('tr');
+    tr.className = 'ar-detail';
+    var td = document.createElement('td');
+    td.colSpan = r.cells.length;
+
+    var wrap = document.createElement('div');
+    wrap.className = 'ardetail';
+
+    function col(k, v, mono){
+      var c = document.createElement('div'); c.className = 'arcol';
+      var kk = document.createElement('div'); kk.className = 'ark'; kk.textContent = k;
+      var vv = document.createElement('div'); vv.className = 'arv' + (mono ? ' mono' : ''); vv.textContent = v;
+      c.appendChild(kk); c.appendChild(vv); wrap.appendChild(c);
+    }
+    col('Terms', r.dataset.terms || '—');
+    col('Payment method', r.dataset.method || '—');
+    col('Owner', r.dataset.owner || '—');
+    col('Outstanding', r.cells[1].textContent.trim(), true);
+
+    var tl = document.createElement('div');
+    tl.className = 'artimeline';
+    var tk = document.createElement('div'); tk.className='ark'; tk.textContent='Collection history';
+    tl.appendChild(tk);
+    (r.dataset.timeline || '').split(';').filter(Boolean).forEach(function(step){
+      var parts = step.split('|');
+      var s = document.createElement('div'); s.className='arstep';
+      var d = document.createElement('span'); d.className='ard'; d.textContent = parts[0] || '';
+      var w = document.createElement('span'); w.textContent = parts[1] || '';
+      s.appendChild(d); s.appendChild(w); tl.appendChild(s);
+    });
+    wrap.appendChild(tl);
+
+    td.appendChild(wrap); tr.appendChild(td);
+    r.parentNode.insertBefore(tr, r.nextSibling);
+    r._d = tr;
+    r.setAttribute('aria-expanded','true');
+  }
+
+  table.querySelectorAll('tr[data-ar]').forEach(function(r){
+    function toggle(){
+      if(r.getAttribute('aria-expanded')==='true') collapse(r); else expand(r);
+    }
+    r.addEventListener('click', toggle);
+    r.addEventListener('keydown', function(e){
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); }
+    });
+  });
+})();
+</script>
 </body>
 </html>
