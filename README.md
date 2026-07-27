@@ -41,5 +41,20 @@ Tooling (mandated): OpenCode + Antigravity + **Cognee** (shared memory — every
 - **124 unit tests pass without a live Postgres** (`npm test`) — bus + 7 adapters + 2 handler modules + router; the 2 real-DB integration tests self-skip.
 - **Validated live against real Postgres 16** (2026-07-24, throwaway Docker container): `npm run migrate` applies all tables + 7 pipelines / 42 stages + indexes + default org clean; a signed Commas webhook deduped at the DB `ON CONFLICT` level with a bad-sig 401; and the **full journey integration test** (`client-lifecycle.pg.test.mjs`, runs when `DATABASE_URL` is set) drove entry→survey→payment→diagnostic→decision→analysis into real `clients`/`transactions`/`crs_results` rows, then `replay()`'d every stored event and asserted **zero double-writes**. Schema, migrations, idempotency, JSONB storage, dispatch, and replay-safety are all proven — not mocked.
 
+## Diagrams
+`docs/diagrams/` — event flow, one state machine per rail (7), the adapter boundary map, and the
+agent trigger map. **Generated from the code**, never from a spec document: canonical events and
+workflow triggers are *imported* from `src/events/canonical.mjs` and `src/workflows/index.mjs`,
+rails are parsed from `db/seed/002_pipelines.sql`, and the boundary is read from `src/adapters/`.
+Mermaid renders natively on GitHub, so there is no build step and no exported images.
+
+```sh
+npm run diagrams        # rewrite docs/diagrams/ from the current code
+npm run diagrams:check  # fail if the committed diagrams are stale
+```
+
+`npm test` asserts the check, so renaming an event or adding a workflow fails the suite until the
+diagrams are regenerated — they cannot drift quietly.
+
 ## Next
 Provision a Postgres, run `npm install` + `npm run migrate` to validate the schema live, then register HANDLERS on the bus (the reactions: GHL field writes, Airtable sync, CRS pulls, letter gen). Each adapter's `⚠️ CONFIRM` block must be checked against a real payload before that source cuts over. Deferred behind the Monday launch — builds in parallel.

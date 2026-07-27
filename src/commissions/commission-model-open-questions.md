@@ -3,18 +3,22 @@
 For **Chris** and **Darwin**. Written alongside `db/migrations/010`–`015` and
 `src/commissions/`.
 
-Chris answered questions **1–9** (including **6a** and the rule-version date) on
-2026-07-26. Those answers are recorded below as **CHRIS PROVISIONAL** and are
-built into the model, but **Darwin confirms before anything goes live**. Nothing
-in this list is guessed at — where an answer is still missing, the model treats
-the number as configuration and the code refuses to invent one.
+Chris answered questions **1–9** (including **6a**) on 2026-07-26. Those answers
+are recorded below as **CHRIS PROVISIONAL** and are built into the model, but
+**Darwin confirms before anything goes live**. Nothing in this list is guessed at
+— where an answer is still missing, the model treats the number as configuration
+and the code refuses to invent one.
 
-**Two defaults changed on Chris's instruction and are worth Darwin's eye first,
-because both are quiet and both move money:**
+**Question 9 (rule version date) is the exception: it is settled, not
+provisional.** Sold-date keying follows from **LOCK 9** in the source of truth and
+is existing policy — it needs no confirmation from anyone. See
+[#9](#9-rule-version-date--sold-date-not-earned--settled).
+
+**One default changed on Chris's instruction is worth Darwin's eye first, because
+it is quiet and it moves money:**
 
 | | default | why |
 |---|---|---|
-| rule version date (#9) | **sold date** | a raise must not retroactively reprice closed deals |
 | `tier_mode` (#6a) | **marginal** | a whole-ladder cliff is expensive and gameable |
 
 **One consequence Chris should confirm he wants: [#4a](#4a-no-deposit-no-front-end-commission-chris-confirm-you-want-this)
@@ -65,6 +69,8 @@ least ordinary SQL in the set:
 ---
 
 ## Answered — CHRIS PROVISIONAL, pending Darwin
+
+*(Except **#9**, which is settled by LOCK 9 and carries no provisional flag.)*
 
 ### 1. `$500 flat per $3K deposit` — flat per sale ✅
 
@@ -215,19 +221,39 @@ Correct and confirmed. It is hourly wage off `shifts`, and nothing in this model
 touches it. The commission ledger holds commission only. If a timesheet screen
 wants to show "wage + commission" side by side it can read both.
 
-### 9. Rule version date — **SOLD date, not earned** ✅
+### 9. Rule version date — **SOLD date, not earned** ✅ SETTLED
 
 > A deal sold in July should pay July's rate even if it funds in October.
 > Otherwise a raise retroactively repriced deals people already closed, and reps
 > can't predict what they'll be paid when they close.
 
-Default changed. `asOf` now falls back to `sale.sold_at`, and only to the earning
-date when there is no sale to date from (a manual adjustment).
+**This is settled policy, not a provisional default.** It follows from **LOCK 9**
+in the source of truth:
+
+> Fee percent is set by Sales and must be locked once contract + CRS payment are
+> satisfied. After Fee Locked = true, no workflow may change Funding Fee Percent.
+
+LOCK 9 fixes the commercial terms of a deal at the moment the sale completes —
+contract signed and CRS payment satisfied — and forbids any later workflow from
+moving them. That moment *is* the sale. Keying the rule version to `sold_at` is
+the commission-side expression of the same rule: if the fee percent a deal is
+priced on cannot change after the sale, the rate the deal is *paid* on cannot
+change after the sale either. Dating commission off the funding date would
+reintroduce, on the payout side, exactly the drift LOCK 9 closes on the pricing
+side.
+
+Sold-date keying is therefore existing policy rather than a Chris default awaiting
+Darwin. No confirmation is outstanding on this question.
+
+`asOf` falls back to `sale.sold_at`, and only to the earning date when there is no
+sale to date from (a manual adjustment).
 
 So: a card stacking deal sold 1 July, funding 15 October, is paid at the rate in
 force **on 1 July**, even if the advisor rate doubled on 1 August. The
 `earned_at` stamped on the ledger row is still the real October funding date —
-only the *rate version* is picked by the sale date.
+only the *rate version* is picked by the sale date. This mirrors LOCK 9's own
+split: the fee percent is frozen at the sale, while the funding event that
+realises it happens whenever it happens.
 
 Earned-date behaviour remains available by passing `asOf = occurredAt`
 explicitly. Both readings are tested.
@@ -317,8 +343,8 @@ AR side should own that table rather than bolting it onto `sales`.
 
 **Not executable, deliberately.** `013_commission_rules.sql` seeds **zero** rates.
 Spec §14's numbers are a sentence in a spec, not a signed comp plan, and every
-answer above is provisional. This is here so the shape is obvious when Darwin
-signs off — enter them through the admin screen, or a follow-up seed.
+answer above bar #9 is provisional. This is here so the shape is obvious when
+Darwin signs off — enter them through the admin screen, or a follow-up seed.
 
 Reading of spec §14, under CHRIS PROVISIONAL 1–4:
 

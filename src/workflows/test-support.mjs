@@ -124,6 +124,16 @@ export function pgFake(seed = {}) {
         return { rows: events.filter((e) => e.client_id === clientId && names.includes(e.name)).map((e) => ({ name: e.name })) };
       }
 
+      // --- message_templates prefix lookup (BS-01 grid cell -> real template_key) ---
+      if (/SELECT template_key FROM message_templates/.test(sql)) {
+        const [orgId, like] = params;
+        const prefix = String(like).replace(/%$/, "");
+        const hits = templates
+          .filter((t) => t.org_id === orgId && t.compliance_passed && String(t.template_key).startsWith(prefix))
+          .sort((a, b) => String(a.template_key).localeCompare(String(b.template_key)));
+        return { rows: hits[0] ? [{ template_key: hits[0].template_key }] : [] };
+      }
+
       // --- message_templates + messages (sendTemplated) ---
       if (/SELECT body, subject FROM message_templates/.test(sql)) {
         const [orgId, key] = params;
