@@ -3,16 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <title>Fundhub — Client Portal</title>
+<link rel="stylesheet" href="fundhub-brand.css">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
+  /* Palette re-pointed at the real fundhub-brand.css tokens. Every variable NAME
+     is kept so no downstream rule changes. Two tiers per hue, because the real
+     status colors are pastels: the pastel itself fills and outlines, and a dark
+     ink of the same hue carries text (pastel-on-white text fails contrast).
+     NOTE --card: brand.css uses --card for its DARK surface (#111113); these
+     wireframes use it for the white card. The local value below wins on purpose. */
   :root{
-    --ink:#0A0A0A;--paper:#F7F6F3;--card:#FFFFFF;--line:#E4E1D9;
-    --text:#171614;--text-dim:#6B685F;--text-faint:#9A968A;
-    --dark-text:#F4F3F0;--dark-text-dim:#9C9990;--dark-line:#2A2A28;
-    --amber:#B8892B;--amber-bg:#FBF3E2;--red:#B8402F;--red-bg:#FCEAE6;
-    --green:#3E7A4C;--green-bg:#E8F3E9;--blue:#2F5FB8;--blue-bg:#E1EAFB;
-    --spectrum:linear-gradient(90deg,#7A5CF0 0%,#2F8FE0 22%,#1FB6A8 44%,#3FAE5C 60%,#E0B02F 78%,#E0602F 100%);
+    --ink:#0A0A0A;--paper:#FCFCFC;--paper-dim:#F4F4F5;--card:#FFFFFF;--line:#E4E4E7;
+    --text:#18181B;--text-dim:#52525B;--text-faint:#A1A1AA;
+    --dark-text:#FCFCFC;--dark-text-dim:#A1A1AA;--dark-line:#26262B;
+    --amber:#6B4A12;--amber-bg:rgba(245,206,143,.26);--amber-line:#F5CE8F;
+    --red:#6E2A22;--red-bg:rgba(242,166,155,.24);--red-line:#F2A69B;
+    --green:#2C5138;--green-bg:rgba(168,216,176,.26);--green-line:#A8D8B0;
+    --blue:#22415F;--blue-bg:rgba(169,198,232,.26);--blue-line:#A9C6E8;
+    --purple:#3F2F63;--purple-bg:rgba(196,179,229,.26);--purple-line:#C4B3E5;
+    --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;height:100%;background:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--text);overflow:hidden;}
@@ -25,11 +35,11 @@
   .brand .name{font-weight:800;font-size:15px;letter-spacing:.2px;}
   .brand .sub{font-weight:500;font-size:13px;color:var(--dark-text-dim);margin-left:4px;}
   .who-pill{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dark-text);}
-  .avatar{width:26px;height:26px;border-radius:50%;background:#2A2A28;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+  .avatar{width:26px;height:26px;border-radius:50%;background:#26262B;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
 
   main{flex:1;overflow-y:auto;background:var(--paper);padding:26px 0 40px;display:flex;justify-content:center;}
   main::-webkit-scrollbar{width:9px;}
-  main::-webkit-scrollbar-thumb{background:#DBD8CF;border-radius:5px;}
+  main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px;}
   .page{width:100%;max-width:760px;padding:0 24px;}
 
   .welcome{font-size:22px;font-weight:800;margin-bottom:4px;}
@@ -43,7 +53,7 @@
   .step{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;}
   .step .dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin-bottom:8px;z-index:1;}
   .step.done .dot{background:var(--ink);color:#fff;}
-  .step.current .dot{background:#fff;border:3px solid transparent;background-image:linear-gradient(#fff,#fff), var(--spectrum);background-origin:border-box;background-clip:padding-box, border-box;color:var(--text);box-shadow:0 0 0 4px #F0EEE0;}
+  .step.current .dot{background:#fff;border:3px solid transparent;background-image:linear-gradient(#fff,#fff), var(--spectrum);background-origin:border-box;background-clip:padding-box, border-box;color:var(--text);box-shadow:0 0 0 4px var(--soft);}
   .step.future .dot{background:#fff;border:2px solid var(--line);color:var(--text-faint);}
   .step .line{position:absolute;top:13px;left:-50%;width:100%;height:2px;background:var(--line);z-index:0;}
   .step:first-child .line{display:none;}
@@ -52,16 +62,16 @@
   .step.current .lbl{color:var(--text);font-weight:700;}
 
   .status-banner{
-    background:linear-gradient(135deg,#101010,#1A1A18);color:#fff;border-radius:12px;padding:16px 20px;margin-bottom:16px;
+    background:linear-gradient(135deg,#0A0A0A,#18181B);color:#fff;border-radius:12px;padding:16px 20px;margin-bottom:16px;
   }
-  .status-banner .sb-eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#B9B6AC;margin-bottom:6px;}
+  .status-banner .sb-eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#A1A1AA;margin-bottom:6px;}
   .status-banner .sb-main{font-size:16px;font-weight:700;line-height:1.4;}
   .status-banner .sb-main b{font-family:'JetBrains Mono',monospace;}
 
-  .action-card{background:var(--amber-bg);border:1px solid #EBD9AE;border-radius:14px;padding:18px 20px;margin-bottom:16px;}
-  .action-title{font-size:15px;font-weight:800;color:#8A611D;margin-bottom:4px;}
+  .action-card{background:var(--amber-bg);border:1px solid var(--amber-line);border-radius:14px;padding:18px 20px;margin-bottom:16px;}
+  .action-title{font-size:15px;font-weight:800;color:var(--amber);margin-bottom:4px;}
   .action-sub{font-size:12.5px;color:var(--text-dim);margin-bottom:12px;}
-  .doc-need{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #EBD9AE;border-radius:8px;padding:9px 13px;margin-bottom:8px;font-size:13px;}
+  .doc-need{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid var(--amber-line);border-radius:8px;padding:9px 13px;margin-bottom:8px;font-size:13px;}
   .doc-need:last-of-type{margin-bottom:14px;}
   .doc-need .dn-age{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--amber);}
   .upload-btn{background:var(--ink);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-weight:700;font-size:13px;cursor:default;}
@@ -93,6 +103,52 @@
   .contact-btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;}
 
   footer.statusbar{flex-shrink:0;height:24px;background:var(--ink);display:flex;align-items:center;justify-content:center;gap:16px;font-size:10.5px;color:var(--dark-text-dim);}
+
+  /* ---------- upload control ---------- */
+  .upload-btn{cursor:pointer;transition:background .12s,opacity .12s;}
+  .upload-btn:hover{background:#1C1C20;}
+  .upload-btn:disabled{opacity:.6;cursor:progress;}
+  .upload-btn:focus-visible,.file-x:focus-visible,.upload-more:focus-visible{
+    outline:2px solid var(--blue-line);outline-offset:2px;
+  }
+  .upload-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .upload-more{
+    background:none;border:0;padding:0;font:inherit;font-size:12.5px;font-weight:700;
+    color:var(--amber);cursor:pointer;text-decoration:underline;text-underline-offset:2px;
+  }
+  .upload-hint{font-size:11.5px;color:var(--text-faint);}
+
+  /* the file-selected state */
+  .filelist{display:none;flex-direction:column;gap:6px;margin:0 0 12px;}
+  .filelist.on{display:flex;}
+  .fileitem{
+    display:flex;align-items:center;gap:10px;background:#fff;
+    border:1px solid var(--amber-line);border-radius:8px;padding:8px 11px;font-size:13px;
+  }
+  .fileitem .fi-ico{font-size:13px;flex:0 0 auto;color:var(--amber);}
+  .fileitem .fi-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .fileitem .fi-size{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-faint);margin-left:auto;flex:0 0 auto;}
+  .file-x{
+    background:none;border:0;padding:0 0 0 4px;font-size:13px;line-height:1;color:var(--text-faint);
+    cursor:pointer;flex:0 0 auto;
+  }
+  .file-x:hover{color:var(--text);}
+  .fileitem.sent{border-color:var(--green-line);background:var(--green-bg);}
+  .fileitem.sent .fi-ico{color:var(--green);}
+  .fileitem.sent .fi-size{color:var(--green);}
+
+  /* progress while sending */
+  .upbar{height:3px;border-radius:2px;background:var(--line);overflow:hidden;margin-bottom:12px;display:none;}
+  .upbar.on{display:block;}
+  .upbar i{display:block;height:100%;width:0;background:var(--spectrum);transition:width .28s ease;}
+
+  .action-card.done{background:var(--green-bg);border-color:var(--green-line);}
+  .action-card.done .action-title{color:var(--green);}
+  /* the 'we asked 2 days ago' nudge is stale once the docs are in — retire it
+     rather than rewrite it */
+  .action-card.done .action-sub{display:none;}
+  .doc-need.covered{border-color:var(--green-line);}
+  .doc-need.covered .dn-age{color:var(--green);}
 </style>
 </head>
 <body>
@@ -135,12 +191,20 @@
         <div class="sb-main">You're approved for <b>$46,500</b>. Getting that money to you is the next step.</div>
       </div>
 
-      <div class="action-card">
-        <div class="action-title">We still need 2 things from you</div>
+      <div class="action-card" id="action-card">
+        <div class="action-title" id="action-title">We still need 2 things from you</div>
         <div class="action-sub">We asked 2 days ago — sending them today keeps things moving.</div>
         <div class="doc-need"><span>Bank statements (last 2 months)</span><span class="dn-age">asked 2 days ago</span></div>
         <div class="doc-need"><span>Voided check</span><span class="dn-age">asked 2 days ago</span></div>
-        <button class="upload-btn">Upload Documents</button>
+        <div class="filelist" id="filelist"></div>
+        <div class="upbar" id="upbar"><i></i></div>
+        <div class="upload-row">
+          <button class="upload-btn" id="upload-btn">Upload Documents</button>
+          <button class="upload-more" id="upload-more" hidden>Add more files</button>
+          <span class="upload-hint" id="upload-hint"></span>
+        </div>
+        <input type="file" id="file-input" multiple hidden
+               accept=".pdf,.png,.jpg,.jpeg,.heic,.doc,.docx,.csv,.xls,.xlsx">
       </div>
 
       <div class="card">
@@ -216,5 +280,142 @@
   </footer>
 
 </div>
+
+<script>
+/* ───────────────────────────────────────────────────────────────────────────
+   Client Portal — wireframe behaviour. No backend: nothing leaves the browser,
+   the send is simulated so the selected / sending / sent states are walkable.
+   ─────────────────────────────────────────────────────────────────────────── */
+(function(){
+  var input  = document.getElementById('file-input'),
+      btn    = document.getElementById('upload-btn'),
+      more   = document.getElementById('upload-more'),
+      hint   = document.getElementById('upload-hint'),
+      list   = document.getElementById('filelist'),
+      bar    = document.getElementById('upbar'),
+      card   = document.getElementById('action-card'),
+      title  = document.getElementById('action-title'),
+      needed = [].slice.call(document.querySelectorAll('.doc-need')),
+      picked = [],
+      sent   = false;
+
+  var BTN_REST = btn.textContent;          /* keep the file's own label */
+  var TITLE_REST = title.textContent;
+
+  function size(b){
+    if(b < 1024) return b + ' B';
+    if(b < 1024*1024) return (b/1024).toFixed(0) + ' KB';
+    return (b/1024/1024).toFixed(1) + ' MB';
+  }
+  function plural(n, one, many){ return n + ' ' + (n === 1 ? one : many); }
+
+  function paint(){
+    list.innerHTML = '';
+    list.classList.toggle('on', picked.length > 0);
+    picked.forEach(function(f, i){
+      var row = document.createElement('div');
+      row.className = 'fileitem' + (sent ? ' sent' : '');
+
+      var ico = document.createElement('span');
+      ico.className = 'fi-ico'; ico.textContent = sent ? '✓' : '📄';
+
+      var nm = document.createElement('span');
+      nm.className = 'fi-name'; nm.textContent = f.name;
+
+      var sz = document.createElement('span');
+      sz.className = 'fi-size'; sz.textContent = sent ? 'sent' : size(f.size);
+
+      row.appendChild(ico); row.appendChild(nm); row.appendChild(sz);
+
+      if(!sent){
+        var x = document.createElement('button');
+        x.type = 'button'; x.className = 'file-x';
+        x.setAttribute('aria-label', 'Remove ' + f.name);
+        x.textContent = '✕';
+        x.addEventListener('click', function(){ picked.splice(i,1); paint(); });
+        row.appendChild(x);
+      }
+      list.appendChild(row);
+    });
+
+    if(sent){
+      btn.hidden = true; more.hidden = true;
+      hint.textContent = plural(picked.length,'document','documents') + ' sent — nothing else needed right now';
+      return;
+    }
+    if(picked.length){
+      btn.textContent = 'Send ' + plural(picked.length,'document','documents');
+      more.hidden = false;
+      hint.textContent = 'nothing is sent until you press send';
+    } else {
+      btn.textContent = BTN_REST;
+      more.hidden = true;
+      hint.textContent = '';
+      title.textContent = TITLE_REST;
+      card.classList.remove('done');
+      needed.forEach(function(n){ n.classList.remove('covered'); });
+    }
+  }
+
+  function add(files){
+    [].slice.call(files).forEach(function(f){
+      /* same name+size twice is the same pick */
+      var dupe = picked.some(function(p){ return p.name===f.name && p.size===f.size; });
+      if(!dupe) picked.push(f);
+    });
+    paint();
+  }
+
+  btn.addEventListener('click', function(){
+    if(picked.length === 0){ input.click(); return; }
+    send();
+  });
+  more.addEventListener('click', function(){ input.click(); });
+  input.addEventListener('change', function(){ add(input.files); input.value = ''; });
+
+  /* drag and drop onto the card is the other half of an upload control */
+  ['dragenter','dragover'].forEach(function(ev){
+    card.addEventListener(ev, function(e){ e.preventDefault(); card.style.borderStyle='dashed'; });
+  });
+  ['dragleave','drop'].forEach(function(ev){
+    card.addEventListener(ev, function(e){ e.preventDefault(); card.style.borderStyle=''; });
+  });
+  card.addEventListener('drop', function(e){
+    if(e.dataTransfer && e.dataTransfer.files.length) add(e.dataTransfer.files);
+  });
+
+  function send(){
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    more.hidden = true;
+    hint.textContent = '';
+    bar.classList.add('on');
+    var fill = bar.querySelector('i'), pct = 0;
+
+    var tick = setInterval(function(){
+      pct = Math.min(100, pct + 20 + Math.random()*15);
+      fill.style.width = pct + '%';
+      if(pct >= 100){
+        clearInterval(tick);
+        setTimeout(function(){
+          bar.classList.remove('on'); fill.style.width = '0';
+          sent = true;
+          btn.disabled = false;
+          card.classList.add('done');
+          title.textContent = 'Thanks — we have got what we needed';
+          needed.forEach(function(n){ n.classList.add('covered'); });
+          needed.forEach(function(n){
+            var age = n.querySelector('.dn-age');
+            if(age) age.textContent = 'received just now';
+          });
+          paint();
+        }, 260);
+      }
+    }, 220);
+  }
+
+  paint();
+})();
+</script>
 </body>
 </html>
