@@ -160,8 +160,11 @@
     background:var(--surface);color:var(--text-dim);cursor:pointer;}
   .fchip.active{background:var(--ink);color:#fff;border-color:var(--ink);}
 
-  .legend{display:flex;align-items:center;gap:12px;background:var(--paper-dim);border-bottom:1px solid var(--line);
-    padding:4px 16px;flex-shrink:0;font-size:9.5px;color:var(--text-faint);}
+  /* The legend no longer sits over the thread. Sender is already stated three
+     ways on every message — avatar, bubble treatment, and tag — so the strip
+     was restating a convention the thread teaches on its own. It lives in the
+     reference drawer at the bottom of the page instead. */
+  .legend{display:flex;align-items:center;gap:12px;font-size:9.5px;color:var(--text-faint);flex-wrap:wrap;}
   .legend b{color:var(--text-dim);font-weight:700;}
   .legend .li{display:flex;align-items:center;gap:5px;}
   .sw{width:16px;height:11px;border-radius:3px;flex-shrink:0;}
@@ -276,6 +279,33 @@
   .link-btn .ar{color:var(--text-faint);}
   .empty-box{border:1px dashed var(--line);border-radius:7px;padding:12px;text-align:center;
     color:var(--text-faint);font-size:11.5px;background:var(--surface);}
+
+  /* ---- right rail: four facts stay up, everything else is one click away ---- */
+  .ctx-sec{border-top:1px solid var(--line);}
+  .ctx-sec > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+    padding:9px 2px 8px;font-size:9.5px;font-weight:700;letter-spacing:1px;
+    text-transform:uppercase;color:var(--text-dim);}
+  .ctx-sec > summary::-webkit-details-marker{display:none;}
+  .ctx-sec > summary::after{content:"▾";margin-left:auto;font-size:9px;color:var(--text-faint);
+    transition:transform .16s;}
+  .ctx-sec[open] > summary::after{transform:rotate(180deg);}
+  .ctx-sec > summary:hover{color:var(--text);}
+  .ctx-sec .sec-body{padding-bottom:11px;}
+
+  /* ---- reference drawer — collapsed, costs one divider row ---- */
+  .demozone{flex-shrink:0;background:var(--surface);border-top:1px solid var(--line);}
+  .demo-div{width:100%;display:flex;align-items:center;gap:10px;background:transparent;border:0;cursor:pointer;
+    padding:6px 14px;text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--text-faint);}
+  .demo-div:hover{color:var(--text-dim);background:var(--paper);}
+  .demo-div .dd-sub{letter-spacing:.06em;text-transform:none;font-size:10px;}
+  .demo-div .dd-chev{margin-left:auto;font-size:9px;transition:transform .16s;}
+  .demozone.open .demo-div .dd-chev{transform:rotate(180deg);}
+  .demo-body{border-top:1px dashed var(--line);background:var(--paper);padding:11px 14px 13px;
+    display:flex;flex-direction:column;gap:12px;max-height:34vh;overflow:auto;}
+  .demo-body[hidden]{display:none;}
+  .demo-cap{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-faint);margin-bottom:6px;}
 
   footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;align-items:center;
     padding:0 14px;gap:16px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;
@@ -522,13 +552,6 @@
         </div>
       </div>
 
-      <div class="legend">
-        <span class="eyebrow" style="font-size:9.5px">M-01 / Who sent it</span>
-        <span class="li"><span class="sw human"></span>a person on your team</span>
-        <span class="li"><span class="sw agent"></span>an agent, automatically</span>
-        <span class="li"><span class="sw client"></span><span id="lgClient">Priya</span></span>
-      </div>
-
       <div class="thread" id="thread">
 
         <div class="daydiv"><span class="lbl">Wed, Jul 22</span><span class="ln"></span></div>
@@ -696,59 +719,102 @@
     <!-- ============ RIGHT: CLIENT CONTEXT ============ -->
     <section class="ctx-col">
 
+      <!-- Four facts stay up: the ones that answer "do I need to step in?".
+           Everything else is one click away in the sections below. -->
       <div class="ctx-card">
         <div class="ctx-name">Priya Nair</div>
         <div class="ctx-role">Nair Catering Co. · Columbus, OH</div>
         <div style="margin-top:8px;">
-          <div class="ctx-row"><span class="k">Rail</span><span class="v">Sales</span></div>
           <div class="ctx-row"><span class="k">Stage</span><span class="v"><span class="pill blue">Diagnostic Paid</span></span></div>
-          <div class="ctx-row"><span class="k">In stage</span><span class="v">1h 10m</span></div>
-          <div class="ctx-row"><span class="k">Est. value</span><span class="v">$12,400</span></div>
           <div class="ctx-row"><span class="k">Owner</span><span class="v">Jordan Blake</span></div>
+          <div class="ctx-row"><span class="k">Est. value</span><span class="v">$12,400</span></div>
           <div class="ctx-row"><span class="k">Temperature</span><span class="v"><span class="pill green">Hot</span></span></div>
         </div>
       </div>
 
-      <div class="ctx-title">Reach Her</div>
-      <div class="ctx-card">
-        <div class="ctx-row"><span class="k">Mobile</span><span class="v">(614) 555-0132</span></div>
-        <div class="ctx-row"><span class="k">Landline</span><span class="v">(614) 555-0177</span></div>
-        <div class="ctx-row"><span class="k">Email</span><span class="v" style="font-size:10px;">priya@naircatering.com</span></div>
-        <div style="margin-top:8px;">
-          <div class="consent-row">
-            <span class="consent">Texts OK</span>
-            <span class="consent">Email OK</span>
-            <span class="consent">Calls OK</span>
+      <details class="ctx-sec">
+        <summary>Pipeline &amp; Timing</summary>
+        <div class="sec-body ctx-card">
+          <div class="ctx-row"><span class="k">Rail</span><span class="v">Sales</span></div>
+          <div class="ctx-row"><span class="k">In stage</span><span class="v">1h 10m</span></div>
+        </div>
+      </details>
+
+      <details class="ctx-sec">
+        <summary>Reach Her</summary>
+        <div class="sec-body ctx-card">
+          <div class="ctx-row"><span class="k">Mobile</span><span class="v">(614) 555-0132</span></div>
+          <div class="ctx-row"><span class="k">Landline</span><span class="v">(614) 555-0177</span></div>
+          <div class="ctx-row"><span class="k">Email</span><span class="v" style="font-size:10px;">priya@naircatering.com</span></div>
+          <div style="margin-top:8px;">
+            <div class="consent-row">
+              <span class="consent">Texts OK</span>
+              <span class="consent">Email OK</span>
+              <span class="consent">Calls OK</span>
+            </div>
           </div>
         </div>
-      </div>
+      </details>
 
-      <div class="ctx-title">Money</div>
-      <div class="ctx-card">
-        <div class="ctx-row"><span class="k">Diagnostic</span><span class="v" style="color:var(--ink2);font-weight:700;">$32 paid</span></div>
-        <div class="ctx-row"><span class="k">Deposit</span><span class="v">not yet</span></div>
-        <div class="ctx-row"><span class="k">Requested draw</span><span class="v">$35,000</span></div>
-        <div class="ctx-row"><span class="k">Available credit</span><span class="v">$47,100</span></div>
-      </div>
+      <details class="ctx-sec">
+        <summary>Money</summary>
+        <div class="sec-body ctx-card">
+          <div class="ctx-row"><span class="k">Diagnostic</span><span class="v" style="color:var(--ink2);font-weight:700;">$32 paid</span></div>
+          <div class="ctx-row"><span class="k">Deposit</span><span class="v">not yet</span></div>
+          <div class="ctx-row"><span class="k">Requested draw</span><span class="v">$35,000</span></div>
+          <div class="ctx-row"><span class="k">Available credit</span><span class="v">$47,100</span></div>
+        </div>
+      </details>
 
-      <div class="ctx-title">Sent to Her</div>
-      <div class="ctx-card">
-        <div class="ctx-row"><span class="k">Funding Snapshot</span><span class="v">Jul 24</span></div>
-        <div class="ctx-row"><span class="k">Bank &amp; Lender Match List</span><span class="v">Jul 24</span></div>
-        <div class="ctx-row"><span class="k">Credit Analysis Report</span><span class="v" style="color:var(--ink2);font-weight:700;">preparing</span></div>
-      </div>
+      <details class="ctx-sec">
+        <summary>Sent to Her</summary>
+        <div class="sec-body ctx-card">
+          <div class="ctx-row"><span class="k">Funding Snapshot</span><span class="v">Jul 24</span></div>
+          <div class="ctx-row"><span class="k">Bank &amp; Lender Match List</span><span class="v">Jul 24</span></div>
+          <div class="ctx-row"><span class="k">Credit Analysis Report</span><span class="v" style="color:var(--ink2);font-weight:700;">preparing</span></div>
+        </div>
+      </details>
 
-      <div class="ctx-title">Notes</div>
-      <div class="empty-box">No notes on Priya yet — add anything the next person should know.</div>
+      <details class="ctx-sec">
+        <summary>Notes</summary>
+        <div class="sec-body">
+          <div class="empty-box">No notes on Priya yet — add anything the next person should know.</div>
+        </div>
+      </details>
 
-      <div class="ctx-title">Open Elsewhere</div>
-      <button class="link-btn">Client Control Panel <span class="ar">↗</span></button>
-      <button class="link-btn">Deal Calculators <span class="ar">↗</span></button>
-      <button class="link-btn">Her card on the board <span class="ar">↗</span></button>
+      <details class="ctx-sec">
+        <summary>Open Elsewhere</summary>
+        <div class="sec-body">
+          <button class="link-btn">Client Control Panel <span class="ar">↗</span></button>
+          <button class="link-btn">Deal Calculators <span class="ar">↗</span></button>
+          <button class="link-btn">Her card on the board <span class="ar">↗</span></button>
+        </div>
+      </details>
 
     </section>
 
   </main>
+
+  <!-- ══ REFERENCE — collapsed by default, costs one divider row ══ -->
+  <section class="demozone" id="demozone">
+    <button class="demo-div" id="demoToggle" aria-expanded="false">
+      <span>Reference</span>
+      <span class="dd-sub">who-sent-it colour key</span>
+      <span class="dd-chev">▾</span>
+    </button>
+    <div class="demo-body" id="demoBody" hidden>
+
+      <div>
+        <div class="demo-cap">M-01 · Who sent it — every message already states this three ways at once</div>
+        <div class="legend">
+          <span class="li"><span class="sw human"></span>a person on your team — dark avatar, dark bubble, “You” tag</span>
+          <span class="li"><span class="sw agent"></span>an agent, automatically — outlined avatar, outlined bubble, “Agent” tag</span>
+          <span class="li"><span class="sw client"></span><span id="lgClient">Priya</span> — plain avatar, plain bubble, no tag</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
 
   <footer class="statusbar">
     <span class="ghost"></span>
@@ -911,6 +977,16 @@ tabs.forEach(function(t){
   });
 });
 q.addEventListener('input',applyList);
+
+/* ---------- reference drawer ---------- */
+var dz=document.getElementById('demozone'), dTog=document.getElementById('demoToggle'),
+    dBody=document.getElementById('demoBody');
+dTog.addEventListener('click',function(){
+  var open=dBody.hidden;
+  dBody.hidden=!open;
+  dz.classList.toggle('open',open);
+  dTog.setAttribute('aria-expanded',String(open));
+});
 
 /* ---------- compose channel buttons ---------- */
 var chBtns=[].slice.call(document.querySelectorAll('.ch-btn'));

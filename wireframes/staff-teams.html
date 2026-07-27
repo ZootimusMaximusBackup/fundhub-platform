@@ -125,6 +125,19 @@ table.grid tbody tr.sel{background:rgba(169,198,232,.14)}
 .swrow .swl .n{font-size:12.5px;font-weight:500}
 .swrow .swl .d{font-size:11px;color:var(--gray);line-height:1.4}
 
+/* role preset — the one-line answer to "what can this person reach?" */
+.acc{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.acc .acc-g{font-size:11.5px;color:var(--gray)}
+.acc .acc-n{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--gray2);
+  border:1px solid var(--line);border-radius:5px;padding:2px 6px;white-space:nowrap}
+.acc .acc-n.full{border-color:var(--accent);color:#3F2F63}
+
+/* effective permissions in the person editor, grouped and named */
+.ed-pg{width:100%;margin-bottom:9px;display:flex;flex-wrap:wrap;gap:5px}
+.ed-pgh{width:100%;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--gray2);margin-bottom:2px}
+.ed-pgh span{color:var(--gray)}
+
 /* permissions matrix */
 .mwrap{overflow-x:auto}
 table.perm{width:100%;border-collapse:collapse;min-width:820px}
@@ -218,7 +231,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
       <div class="card" style="margin-top:14px">
         <div class="tabs">
           <button class="tab on" data-tab="roster">Roster</button>
-          <button class="tab" data-tab="perms">Permissions matrix</button>
+          <button class="tab" data-tab="perms">Advanced permissions</button>
           <button class="tab" data-tab="clock">Clock &amp; consent</button>
         </div>
 
@@ -226,6 +239,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
           <div class="card-hd" style="border-bottom:1px solid var(--line)">
             <div class="eyebrow">ST-01 <span class="sep">/</span> ROSTER</div>
             <div class="spacer"></div>
+            <button class="btn sm mono" id="toAdvanced">Advanced permissions →</button>
             <select id="roleFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:12px;background:#fff">
               <option value="">All roles</option>
               <option>Owner</option><option>Sales Manager</option><option>Closer</option>
@@ -235,7 +249,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
           </div>
           <div style="overflow-x:auto">
             <table class="grid" id="rosterTbl">
-              <thead><tr><th>Person</th><th>Role</th><th>Employee code</th><th>Clock</th><th>Consent</th><th>Status</th><th>Started</th></tr></thead>
+              <thead><tr><th>Person</th><th>Access — role preset</th><th>Consent</th><th>Clock</th><th>Status</th></tr></thead>
               <tbody id="rosterBody"></tbody>
             </table>
           </div>
@@ -243,7 +257,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
 
         <div class="tabpane" id="tab-perms">
           <div class="card-hd" style="border-bottom:1px solid var(--line)">
-            <div class="eyebrow">ST-02 <span class="sep">/</span> PERMISSIONS MATRIX</div>
+            <div class="eyebrow">ST-02 <span class="sep">/</span> ADVANCED PERMISSIONS · FULL MATRIX</div>
             <div class="spacer"></div>
             <span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em">CLICK A CELL TO TOGGLE · OWNER IS LOCKED</span>
           </div>
@@ -353,28 +367,52 @@ var nextCode=124, nextId=8;
 
 var ROLES=['Owner','Sales Manager','Closer','Funding Advisor','Inquiry Remover','Affiliate'];
 var PERMS=[
-  {code:'PM-01',n:'View pipeline',            d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Remover':1,Affiliate:0}},
-  {code:'PM-02',n:'Edit client records',      d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Remover':0,Affiliate:0}},
-  {code:'PM-03',n:'View PII (SSN, DOB)',      d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':1,'Inquiry Remover':0,Affiliate:0}},
-  {code:'PM-04',n:'Run soft pull',            d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Remover':0,Affiliate:0}},
-  {code:'PM-05',n:'Override outcome tier',    d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
-  {code:'PM-06',n:'Send SMS / email',         d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Remover':1,Affiliate:0}},
-  {code:'PM-07',n:'Take payments',            d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Remover':0,Affiliate:0}},
-  {code:'PM-08',n:'Issue refunds',            d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
-  {code:'PM-09',n:'Edit products & pricing',  d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
-  {code:'PM-10',n:'Edit commission rules',    d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
-  {code:'PM-11',n:'View all payouts',         d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
-  {code:'PM-12',n:'View own payouts',         d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Remover':1,Affiliate:1}},
-  {code:'PM-13',n:'Manage staff',             d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
-  {code:'PM-14',n:'Configure agents',         d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
-  {code:'PM-15',n:'Promote agent to live',    d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
-  {code:'PM-16',n:'Replay events',            d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
-  {code:'PM-17',n:'Export data',              d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
-  {code:'PM-18',n:'View referred leads only', d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:1}}
+  {code:'PM-01',g:'Clients',n:'View pipeline',            d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Remover':1,Affiliate:0}},
+  {code:'PM-02',g:'Clients',n:'Edit client records',      d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Remover':0,Affiliate:0}},
+  {code:'PM-03',g:'Clients',n:'View PII (SSN, DOB)',      d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':1,'Inquiry Remover':0,Affiliate:0}},
+  {code:'PM-04',g:'Clients',n:'Run soft pull',            d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Remover':0,Affiliate:0}},
+  {code:'PM-05',g:'Money',n:'Override outcome tier',    d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
+  {code:'PM-06',g:'Messaging',n:'Send SMS / email',         d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Remover':1,Affiliate:0}},
+  {code:'PM-07',g:'Money',n:'Take payments',            d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Remover':0,Affiliate:0}},
+  {code:'PM-08',g:'Money',n:'Issue refunds',            d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
+  {code:'PM-09',g:'Setup',n:'Edit products & pricing',  d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
+  {code:'PM-10',g:'Setup',n:'Edit commission rules',    d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
+  {code:'PM-11',g:'Money',n:'View all payouts',         d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
+  {code:'PM-12',g:'Money',n:'View own payouts',         d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Remover':1,Affiliate:1}},
+  {code:'PM-13',g:'Admin',n:'Manage staff',             d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
+  {code:'PM-14',g:'Setup',n:'Configure agents',         d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
+  {code:'PM-15',g:'Setup',n:'Promote agent to live',    d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
+  {code:'PM-16',g:'Admin',n:'Replay events',            d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
+  {code:'PM-17',g:'Admin',n:'Export data',              d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:0}},
+  {code:'PM-18',g:'Clients',n:'View referred leads only', d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Remover':0,Affiliate:1}}
 ];
 
 var ROLE_CLS={Owner:'b-accent','Sales Manager':'b-info',Closer:'b-ok','Funding Advisor':'b-warn','Inquiry Remover':'b-gray',Affiliate:'b-gray'};
 function initials(p){return (p.first[0]+p.last[0]).toUpperCase()}
+
+/* ══ ROLE PRESETS ═════════════════════════════════════════════════════════
+   Six people do not need an 18×6 grid to answer "who has access to what".
+   The roster answers it with the role's preset — which areas it reaches and
+   how many of the 18 permissions it holds — read live off PERMS, so toggling
+   a cell in Advanced permissions changes what the roster says. The full grid
+   is one click away and stays the place you edit.                           */
+var PGROUPS=['Clients','Money','Messaging','Setup','Admin'];
+function preset(role){
+  var held=PERMS.filter(function(pm){return pm.d[role]===1});
+  return {
+    n:held.length, total:PERMS.length,
+    groups:PGROUPS.filter(function(g){
+      return held.some(function(pm){return pm.g===g});
+    }),
+    names:held.map(function(pm){return pm.n})
+  };
+}
+function presetCell(role){
+  var pr=preset(role), all=pr.n===pr.total;
+  return '<div class="acc"><span class="badge '+ROLE_CLS[role]+'">'+esc(role)+'</span>'+
+    '<span class="acc-g">'+(pr.groups.length?esc(pr.groups.join(' · ')):'no areas')+'</span>'+
+    '<span class="acc-n'+(all?' full':'')+'">'+pr.n+' of '+pr.total+'</span></div>';
+}
 
 /* ══ RENDER ══════════════════════════════════════════════════════════════ */
 var selId=null;
@@ -391,16 +429,17 @@ function visible(){
 
 function renderRoster(){
   var rows=visible().map(function(p){
-    return '<tr data-id="'+p.id+'" class="'+(p.id===selId?'sel':'')+'">'+
+    /* employee code and start date ride in the row's hover title and stay
+       editable in the person editor — they don't earn a column here */
+    var t=p.code+' · started '+p.start+' · '+preset(p.role).names.join(', ');
+    return '<tr data-id="'+p.id+'" class="'+(p.id===selId?'sel':'')+'" title="'+esc(t)+'">'+
       '<td><div class="who-cell"><span class="av">'+initials(p)+'</span><div><div class="nm">'+esc(p.first+' '+p.last)+'</div><div class="em">'+esc(p.email)+'</div></div></div></td>'+
-      '<td><span class="badge '+ROLE_CLS[p.role]+'">'+esc(p.role)+'</span></td>'+
-      '<td class="mono" style="font-size:11.5px;letter-spacing:.06em">'+p.code+'</td>'+
-      '<td>'+(p.clock?'<span class="badge b-ok">In · '+p.since+'</span>':'<span class="badge b-gray">Out</span>')+'</td>'+
+      '<td>'+presetCell(p.role)+'</td>'+
       '<td>'+(p.consent?'<span class="badge b-ok">On file</span>':'<span class="badge b-alert">Missing</span>')+'</td>'+
-      '<td>'+(p.active?'<span class="badge b-ok">Active</span>':'<span class="badge b-warn">Invited</span>')+'</td>'+
-      '<td class="mono" style="font-size:11.5px;color:var(--gray)">'+p.start+'</td></tr>';
+      '<td>'+(p.clock?'<span class="badge b-ok">In · '+p.since+'</span>':'<span class="badge b-gray">Out</span>')+'</td>'+
+      '<td>'+(p.active?'<span class="badge b-ok">Active</span>':'<span class="badge b-warn">Invited</span>')+'</td></tr>';
   }).join('');
-  document.getElementById('rosterBody').innerHTML=rows||'<tr><td colspan="7" class="empty">No one matches that filter.</td></tr>';
+  document.getElementById('rosterBody').innerHTML=rows||'<tr><td colspan="5" class="empty">No one matches that filter.</td></tr>';
   document.querySelectorAll('#rosterBody tr[data-id]').forEach(function(tr){
     tr.addEventListener('click',function(){openEditor(parseInt(tr.dataset.id,10))});
   });
@@ -443,7 +482,9 @@ function renderPerm(){
       if(c.classList.contains('locked'))return;
       var pm=PERMS[parseInt(c.dataset.p,10)];
       pm.d[c.dataset.r]=pm.d[c.dataset.r]===1?0:1;
-      renderPerm(); if(selId) fillPerms(PEOPLE.filter(function(x){return x.id===selId})[0]);
+      /* the roster's preset line is derived from PERMS — refresh it too */
+      renderPerm(); renderRoster();
+      if(selId) fillPerms(PEOPLE.filter(function(x){return x.id===selId})[0]);
     });
   });
   var granted=0; PERMS.forEach(function(pm){ROLES.forEach(function(r){if(pm.d[r]===1)granted++})});
@@ -465,11 +506,18 @@ function renderAll(){renderRoster();renderClock();renderPerm();renderStats();}
 
 /* ══ EDITOR ══════════════════════════════════════════════════════════════ */
 function fillPerms(p){
-  if(!p){document.getElementById('ed_perms').innerHTML='';return}
+  var box=document.getElementById('ed_perms');
+  if(!p){box.innerHTML='';return}
   var list=PERMS.filter(function(pm){return pm.d[p.role]===1});
-  document.getElementById('ed_perms').innerHTML=list.length
-    ? list.map(function(pm){return '<span class="badge b-info">'+pm.code+'</span>'}).join('')
-    : '<span class="badge b-gray">No permissions on this role</span>';
+  if(!list.length){box.innerHTML='<span class="badge b-gray">No permissions on this role</span>';return}
+  /* grouped by area and named, not eighteen bare codes */
+  box.innerHTML=PGROUPS.filter(function(g){
+    return list.some(function(pm){return pm.g===g});
+  }).map(function(g){
+    var inG=list.filter(function(pm){return pm.g===g});
+    return '<div class="ed-pg"><div class="ed-pgh">'+g+' <span>'+inG.length+'</span></div>'+
+      inG.map(function(pm){return '<span class="badge b-info" title="'+pm.code+'">'+esc(pm.n)+'</span>'}).join('')+'</div>';
+  }).join('');
 }
 function setSw(id,on){document.getElementById(id).classList.toggle('on',!!on)}
 function getSw(id){return document.getElementById(id).classList.contains('on')}
@@ -550,6 +598,9 @@ document.getElementById('edDeact').addEventListener('click',function(){
 });
 document.getElementById('roleFilter').addEventListener('change',renderRoster);
 document.getElementById('qFilter').addEventListener('input',renderRoster);
+document.getElementById('toAdvanced').addEventListener('click',function(){
+  document.querySelector('.tab[data-tab="perms"]').click();
+});
 
 renderAll();
 </script>

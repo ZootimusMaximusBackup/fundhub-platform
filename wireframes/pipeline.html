@@ -33,7 +33,9 @@
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;height:100%;background:var(--ink);font-family:var(--sans);color:var(--text);overflow:hidden;}
   .mono{font-family:var(--mono);}
-  .shell{height:100vh;display:flex;flex-direction:column;}
+  /* flex:1 + min-width:0 keeps the chrome inside the viewport; the board itself
+     is width:max-content and does the horizontal scrolling inside .board-wrap */
+  .shell{height:100vh;display:flex;flex-direction:column;flex:1;min-width:0;}
 
   /* ---------- chrome ---------- */
   header.topbar{background:var(--ink);color:var(--dark-text);display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:44px;flex-shrink:0;}
@@ -137,6 +139,25 @@
   .select .caret{color:var(--text-faint);font-size:9px;}
   .select.on{background:var(--alert-bg);border-color:var(--alert-line);color:var(--ink2);font-weight:700;}
   .filter-spacer{flex:1;}
+
+  /* ---------- one Filter control; the four selects live behind it ---------- */
+  .filter-btn{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);
+    border-radius:6px;padding:5px 10px;font-family:var(--sans);font-size:11.5px;color:var(--text-dim);cursor:pointer;}
+  .filter-btn:hover{border-color:var(--gray2);color:var(--text);}
+  .filter-btn.open{background:var(--paper);border-color:var(--gray2);color:var(--text);}
+  .filter-btn .fb-n{font-family:var(--mono);font-size:10px;font-weight:700;background:var(--ink);color:#fff;
+    border-radius:9px;padding:1px 6px;}
+  .filter-chips{display:flex;align-items:center;gap:6px;}
+  .fchip{display:flex;align-items:center;gap:6px;background:var(--info-bg);border:1px solid var(--info-line);
+    border-radius:6px;padding:4px 6px 4px 9px;font-size:11px;color:var(--ink2);font-weight:600;white-space:nowrap;}
+  .fchip .x{font-size:11px;color:var(--text-dim);cursor:pointer;line-height:1;padding:0 2px;}
+  .fchip .x:hover{color:var(--ink2);}
+  .filterpanel{background:var(--paper);border-bottom:1px solid var(--line);flex-shrink:0;
+    display:flex;align-items:center;gap:8px;padding:7px 14px;}
+  .filterpanel[hidden]{display:none;}
+  .fp-clear{margin-left:4px;background:transparent;border:0;font-family:var(--sans);font-size:11px;
+    color:var(--text-dim);text-decoration:underline;cursor:pointer;}
+  .fp-clear:hover{color:var(--ink2);}
   .board-summary{font-family:var(--mono);font-size:11px;color:var(--text-dim);display:flex;gap:12px;align-items:center;}
   .board-summary b{color:var(--text);}
   .board-summary .held-n{color:var(--ink2);font-weight:700;}
@@ -178,12 +199,15 @@
   .card.held{border-left:4px solid var(--warn);background:color-mix(in srgb,var(--warn) 8%,#fff);padding-left:8px;}
   .card.held.crit{border-left-color:var(--alert);background:color-mix(in srgb,var(--alert) 8%,#fff);}
 
-  .c-top{display:flex;align-items:flex-start;justify-content:space-between;gap:5px;}
-  .c-name{font-size:12.5px;font-weight:700;color:var(--text);line-height:1.25;}
-  .c-tools{display:flex;align-items:center;gap:3px;flex-shrink:0;}
+  .c-top{display:flex;align-items:center;gap:6px;}
+  .c-name{font-size:12.5px;font-weight:700;color:var(--text);line-height:1.25;flex:1;min-width:0;}
+  /* controls ride in on hover — a resting card carries fields, not buttons */
+  .c-tools{display:flex;align-items:center;gap:3px;flex-shrink:0;margin-left:auto;
+    opacity:0;transition:opacity .12s;}
+  .card:hover .c-tools,.card:focus-within .c-tools{opacity:1;}
   .c-btn{font-size:11px;color:var(--text-faint);line-height:1;padding:2px 3px;border-radius:4px;}
   .c-btn.route{border:1px solid var(--line);font-size:9px;font-weight:700;letter-spacing:.3px;
-    color:var(--text-dim);padding:2px 5px;background:var(--paper);}
+    color:var(--text-dim);padding:2px 5px;background:var(--paper);cursor:pointer;}
   .card:hover .c-btn{color:var(--text-dim);}
   .grip{color:var(--gray2);font-size:10px;letter-spacing:-1px;}
 
@@ -199,14 +223,21 @@
   .hold-badge.neutral{background:var(--info-bg);color:var(--ink2);border-color:var(--info-line);}
   .hold-badge .hb-age{margin-left:auto;font-family:var(--mono);font-weight:800;text-transform:none;}
 
-  .c-foot{display:flex;align-items:center;gap:6px;margin-top:6px;padding-top:5px;border-top:1px solid var(--paper-dim);}
+  /* Last activity is HOVER-ONLY. The markup stays inside the card so the owner
+     filter and the tooltip read from one source of truth; .card-tip renders it
+     fixed-position on hover so it can never be clipped by the column scroller. */
+  .c-foot{display:none;}
   .av{width:17px;height:17px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
     font-size:7.5px;font-weight:800;letter-spacing:-.2px;}
   .av.human{background:var(--ink);color:#fff;}
   .av.agent{background:#fff;color:var(--ink2);border:1.5px solid var(--accent);}
-  .c-act{font-size:10.5px;color:var(--text-dim);line-height:1.25;flex:1;min-width:0;}
-  .c-act b{color:var(--text);font-weight:600;}
-  .c-when{font-family:var(--mono);font-size:9.5px;color:var(--text-faint);white-space:nowrap;}
+  .card-tip{position:fixed;z-index:80;max-width:240px;background:var(--ink);color:var(--dark-text);
+    border-radius:6px;padding:6px 9px;box-shadow:0 10px 26px rgba(0,0,0,.30);
+    font-size:10.5px;line-height:1.4;pointer-events:none;display:none;}
+  .card-tip .tk{display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--gray);margin-bottom:3px;}
+  .card-tip b{color:#fff;font-weight:700;}
+  .card-tip .tw{display:block;font-family:var(--mono);font-size:9px;color:var(--gray2);margin-top:4px;}
 
   .col-more{text-align:center;font-size:10.5px;color:var(--text-dim);padding:6px;border:1px dashed var(--line);
     border-radius:6px;background:rgba(255,255,255,.5);}
@@ -240,6 +271,27 @@
   .rm-div{height:1px;background:var(--line);margin:4px 0;}
   .rm-foot{padding:6px 12px 8px;border-top:1px solid var(--line);background:var(--paper);
     font-size:10.5px;color:var(--text-dim);}
+
+  /* ---------- demonstration states — collapsed, zero cost on the default view ---------- */
+  .demozone{flex-shrink:0;background:var(--surface);border-top:1px solid var(--line);}
+  .demo-div{width:100%;display:flex;align-items:center;gap:10px;background:transparent;border:0;cursor:pointer;
+    padding:6px 14px;text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--text-faint);}
+  .demo-div:hover{color:var(--text-dim);background:var(--paper);}
+  .demo-div .dd-sub{letter-spacing:.06em;text-transform:none;font-size:10px;color:var(--text-faint);}
+  .demo-div .dd-chev{margin-left:auto;font-size:9px;transition:transform .16s;}
+  .demozone.open .demo-div .dd-chev{transform:rotate(180deg);}
+  .demo-body{border-top:1px dashed var(--line);background:var(--paper);padding:12px 14px 14px;
+    max-height:42vh;overflow:auto;display:flex;flex-direction:column;gap:14px;}
+  .demo-body[hidden]{display:none;}
+  .demo-cap{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-faint);margin-bottom:6px;}
+  .demo-item .errbar{border:1px solid var(--alert-line);border-radius:7px;}
+  .demo-stage{position:relative;height:164px;background:var(--board);border:1px solid var(--line);
+    border-radius:8px;overflow:hidden;}
+  .demo-stage .col{position:absolute;top:8px;height:116px;}
+  .demo-stage .drag-card{position:absolute;top:34px;left:268px;}
+  .demo-stage .drag-hint{position:absolute;top:118px;left:290px;}
 
   footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;align-items:center;
     padding:0 14px;gap:16px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;
@@ -333,9 +385,19 @@
     <div class="rail-tab empty" data-rail="R-07"><span class="rt-code">R-07</span>Affiliates + Hiring <span class="rt-count">0</span></div>
   </nav>
 
-  <!-- FILTERS -->
+  <!-- FILTERS — one control; active filters surface as chips -->
   <div class="filterbar">
     <div class="search"><span>⌕</span><input id="q" value="" placeholder="Search name, phone, or email"></div>
+    <button class="filter-btn" id="filterBtn" aria-expanded="false">⚟ Filter<span class="fb-n" id="filterN" hidden>0</span></button>
+    <div class="filter-chips" id="filterChips"></div>
+    <div class="filter-spacer"></div>
+    <div class="board-summary">
+      <span><b>82</b> cards</span>
+      <span><b>$544,200</b> est.</span>
+      <span class="held-n">4 held</span>
+    </div>
+  </div>
+  <div class="filterpanel" id="filterPanel" hidden>
     <div class="select"><span class="sl-k">Owner:</span><select id="fOwner"><option value="">Anyone</option></select></div>
     <div class="select"><span class="sl-k">Hold:</span><select id="fHold">
       <option value="">Any</option><option value="held">Held only</option><option value="clear">Not held</option></select></div>
@@ -345,19 +407,7 @@
     <div class="select"><span class="sl-k">Sort:</span><select id="fSort">
       <option value="">Manual</option><option value="name">Name A–Z</option>
       <option value="amt">Amount, high first</option><option value="age">Longest in stage</option></select></div>
-    <div class="filter-spacer"></div>
-    <div class="board-summary">
-      <span><b>82</b> cards</span>
-      <span><b>$544,200</b> est.</span>
-      <span class="held-n">4 held</span>
-    </div>
-  </div>
-
-  <!-- ERROR STATE -->
-  <div class="errbar">
-    <span class="ic">⚠</span>
-    <span><b>Gustavo Rincón didn't move to Card Stacking.</b> He hasn't paid the $3,000 deposit yet, so the funding rail sent him back. His card is where you left it.</span>
-    <span class="dismiss">Dismiss</span>
+    <button class="fp-clear" id="filterClear">Clear all</button>
   </div>
 
   <!-- BOARD -->
@@ -374,13 +424,13 @@
 
           <div class="card">
             <div class="c-top">
+              <div class="av agent">SJ</div>
               <div class="c-name">Kayla Whitmore</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$6,500 <span class="unit">est.</span></div>
             <div class="c-age">22m in stage</div>
             <div class="c-foot">
-              <div class="av agent">SJ</div>
               <div class="c-act"><b>Setter Josh</b> is on a call with her now</div>
               <div class="c-when">now</div>
             </div>
@@ -388,13 +438,13 @@
 
           <div class="card">
             <div class="c-top">
+              <div class="av agent">A1</div>
               <div class="c-name">Tomás Reyes</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$5,400 <span class="unit">est.</span></div>
             <div class="c-age">3h in stage</div>
             <div class="c-foot">
-              <div class="av agent">A1</div>
               <div class="c-act"><b>Agent 1</b> followed up by text</div>
               <div class="c-when">12m</div>
             </div>
@@ -402,6 +452,7 @@
 
           <div class="card held">
             <div class="c-top">
+              <div class="av human">SW</div>
               <div class="c-name">Yvonne Adeyemi</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
@@ -409,7 +460,6 @@
             <div class="c-age old">2d 1h in stage</div>
             <div class="hold-badge neutral">New Inquiry <span class="hb-age">2d 1h</span></div>
             <div class="c-foot">
-              <div class="av human">SW</div>
               <div class="c-act">Nobody has worked this yet</div>
               <div class="c-when">—</div>
             </div>
@@ -417,13 +467,13 @@
 
           <div class="card">
             <div class="c-top">
+              <div class="av agent">A3</div>
               <div class="c-name">Marcus Fielding</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$8,900 <span class="unit">est.</span></div>
             <div class="c-age">1d 4h in stage</div>
             <div class="c-foot">
-              <div class="av agent">A3</div>
               <div class="c-act"><b>Agent 3</b> sent a nurture email</div>
               <div class="c-when">5h</div>
             </div>
@@ -431,13 +481,13 @@
 
           <div class="card">
             <div class="c-top">
+              <div class="av agent">SJ</div>
               <div class="c-name">Rosa Iglesias</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$4,200 <span class="unit">est.</span></div>
             <div class="c-age">4h in stage</div>
             <div class="c-foot">
-              <div class="av agent">SJ</div>
               <div class="c-act"><b>Setter Josh</b> called — no answer</div>
               <div class="c-when">1h</div>
             </div>
@@ -458,13 +508,13 @@
 
           <div class="card">
             <div class="c-top">
+              <div class="av agent">SJ</div>
               <div class="c-name">Dana Whitlock</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$6,500 <span class="unit">est.</span></div>
             <div class="c-age">1d 2h in stage</div>
             <div class="c-foot">
-              <div class="av agent">SJ</div>
               <div class="c-act"><b>Setter Josh</b> left a voicemail</div>
               <div class="c-when">3h</div>
             </div>
@@ -472,13 +522,13 @@
 
           <div class="card">
             <div class="c-top">
+              <div class="av human">NC</div>
               <div class="c-name">Trevor Nakamura</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$11,200 <span class="unit">est.</span></div>
             <div class="c-age old">2d 6h in stage</div>
             <div class="c-foot">
-              <div class="av human">NC</div>
               <div class="c-act"><b>Nina Castellano</b> tried to book him</div>
               <div class="c-when">1d</div>
             </div>
@@ -486,13 +536,13 @@
 
           <div class="card">
             <div class="c-top">
+              <div class="av agent">A1</div>
               <div class="c-name">Simone Baptiste</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$5,400 <span class="unit">est.</span></div>
             <div class="c-age">5h in stage</div>
             <div class="c-foot">
-              <div class="av agent">A1</div>
               <div class="c-act"><b>Agent 1</b> sent booking link</div>
               <div class="c-when">40m</div>
             </div>
@@ -513,13 +563,13 @@
 
           <div class="card">
             <div class="c-top">
+              <div class="av human">JB</div>
               <div class="c-name">Devon Marsh</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$9,600 <span class="unit">est.</span></div>
             <div class="c-age">1d in stage</div>
             <div class="c-foot">
-              <div class="av human">JB</div>
               <div class="c-act"><b>Jordan Blake</b> finished the call</div>
               <div class="c-when">2h</div>
             </div>
@@ -527,6 +577,7 @@
 
           <div class="card held">
             <div class="c-top">
+              <div class="av human">JB</div>
               <div class="c-name">Amara Nwosu</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
@@ -534,7 +585,6 @@
             <div class="c-age old">2d 3h in stage</div>
             <div class="hold-badge">Missing Documents <span class="hb-age">1d 2h</span></div>
             <div class="c-foot">
-              <div class="av human">JB</div>
               <div class="c-act"><b>Jordan Blake</b> asked for pay stubs</div>
               <div class="c-when">1d</div>
             </div>
@@ -542,13 +592,13 @@
 
           <div class="card">
             <div class="c-top">
+              <div class="av human">NC</div>
               <div class="c-name">Hollis Grant</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$6,500 <span class="unit">est.</span></div>
             <div class="c-age">6h in stage</div>
             <div class="c-foot">
-              <div class="av human">NC</div>
               <div class="c-act"><b>Nina Castellano</b> confirmed 4pm call</div>
               <div class="c-when">2h</div>
             </div>
@@ -556,13 +606,13 @@
 
           <div class="card">
             <div class="c-top">
+              <div class="av agent">A5</div>
               <div class="c-name">Sean Kilbride</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$4,900 <span class="unit">est.</span></div>
             <div class="c-age">4h in stage</div>
             <div class="c-foot">
-              <div class="av agent">A5</div>
               <div class="c-act"><b>Agent 5</b> sent the intake form</div>
               <div class="c-when">3h</div>
             </div>
@@ -582,13 +632,13 @@
 
           <div class="card">
             <div class="c-top">
+              <div class="av human">JB</div>
               <div class="c-name">Priya Nair</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$12,400 <span class="unit">est.</span></div>
             <div class="c-age">1h 10m in stage</div>
             <div class="c-foot">
-              <div class="av human">JB</div>
               <div class="c-act"><b>Jordan Blake</b> is on the call now</div>
               <div class="c-when">now</div>
             </div>
@@ -596,13 +646,13 @@
 
           <div class="card">
             <div class="c-top">
+              <div class="av agent">A2</div>
               <div class="c-name">Jonathan Kessler</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$6,500 <span class="unit">est.</span></div>
             <div class="c-age">11m in stage</div>
             <div class="c-foot">
-              <div class="av agent">A2</div>
               <div class="c-act"><b>Agent 2</b> receipted the $32 diagnostic</div>
               <div class="c-when">11m</div>
             </div>
@@ -610,6 +660,7 @@
 
           <div class="card held">
             <div class="c-top">
+              <div class="av agent">CF</div>
               <div class="c-name">Lucia Ferrante</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
@@ -617,7 +668,6 @@
             <div class="c-age old">2d in stage</div>
             <div class="hold-badge">Awaiting CRS <span class="hb-age">1d 8h</span></div>
             <div class="c-foot">
-              <div class="av agent">CF</div>
               <div class="c-act"><b>Context Fetcher</b> is still waiting on the pull</div>
               <div class="c-when">4h</div>
             </div>
@@ -625,13 +675,13 @@
 
           <div class="card">
             <div class="c-top">
+              <div class="av human">NC</div>
               <div class="c-name">Wendell Pryce</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$5,400 <span class="unit">est.</span></div>
             <div class="c-age">1d 5h in stage</div>
             <div class="c-foot">
-              <div class="av human">NC</div>
               <div class="c-act"><b>Nina Castellano</b> rescheduled to Monday</div>
               <div class="c-when">6h</div>
             </div>
@@ -651,27 +701,28 @@
 
           <div class="card" style="border-color:var(--alert-line);background:color-mix(in srgb,var(--alert) 8%,#fff);">
             <div class="c-top">
+              <div class="av human">JB</div>
               <div class="c-name">Gustavo Rincón</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$8,900 <span class="unit">est.</span></div>
             <div class="c-age old">3d 4h in stage</div>
+            <div class="hold-badge crit">Move sent back <span class="hb-age">6m</span></div>
             <div class="c-foot">
-              <div class="av human">JB</div>
-              <div class="c-act" style="color:var(--ink2);font-weight:700;">Move to Card Stacking was sent back</div>
+              <div class="c-act" style="color:var(--ink2);font-weight:700;">Move to Card Stacking was sent back — the $3,000 deposit is unpaid</div>
               <div class="c-when">6m</div>
             </div>
           </div>
 
           <div class="card" style="box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent);border-color:var(--accent);">
             <div class="c-top">
+              <div class="av human">JB</div>
               <div class="c-name">Elena Vasquez</div>
               <div class="c-tools"><span class="c-btn route" style="background:var(--accent);color:var(--ink2);border-color:var(--accent);">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$11,200 <span class="unit">est.</span></div>
             <div class="c-age">1d 6h in stage</div>
             <div class="c-foot">
-              <div class="av human">JB</div>
               <div class="c-act"><b>Jordan Blake</b> — awaiting her decision</div>
               <div class="c-when">3h</div>
             </div>
@@ -679,6 +730,7 @@
 
           <div class="card held crit">
             <div class="c-top">
+              <div class="av agent">CG</div>
               <div class="c-name">Nate Farrow</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
@@ -686,7 +738,6 @@
             <div class="c-age">1d 2h in stage</div>
             <div class="hold-badge crit">Internal Review <span class="hb-age">9h</span></div>
             <div class="c-foot">
-              <div class="av agent">CG</div>
               <div class="c-act"><b>Compliance Gate</b> flagged the file</div>
               <div class="c-when">9h</div>
             </div>
@@ -694,13 +745,13 @@
 
           <div class="card">
             <div class="c-top">
+              <div class="av human">NC</div>
               <div class="c-name">Meredith Yao</div>
               <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
             </div>
             <div class="c-amt">$5,000 <span class="unit">est.</span></div>
             <div class="c-age">5h in stage</div>
             <div class="c-foot">
-              <div class="av human">NC</div>
               <div class="c-act"><b>Nina Castellano</b> sent the roadmap</div>
               <div class="c-when">1h</div>
             </div>
@@ -770,6 +821,63 @@
     </div>
   </div>
 
+  <!-- ══ DEMONSTRATION STATES — collapsed by default, costs one divider row ══ -->
+  <section class="demozone" id="demozone">
+    <button class="demo-div" id="demoToggle" aria-expanded="false">
+      <span>Demonstration states</span>
+      <span class="dd-sub">mid-drag preview · blocked move · empty rail</span>
+      <span class="dd-chev">▾</span>
+    </button>
+    <div class="demo-body" id="demoBody" hidden>
+
+      <div class="demo-item">
+        <div class="demo-cap">Mid-drag — card lifted, destination column armed</div>
+        <div class="demo-stage">
+          <section class="col" style="left:10px;width:210px;">
+            <div class="col-head">
+              <div class="col-head-top"><div class="col-name">Survey Completed</div><div class="col-count">18</div></div>
+            </div>
+            <div class="col-body">
+              <div class="drop-placeholder">moving Dana Whitlock</div>
+            </div>
+          </section>
+          <section class="col drop-target" style="left:238px;width:210px;">
+            <div class="col-head">
+              <div class="col-head-top"><div class="col-name">Booked</div><div class="col-count">11</div></div>
+            </div>
+            <div class="col-body"><div class="drop-line"></div></div>
+          </section>
+          <div class="drag-card">
+            <div class="card" style="cursor:grabbing;">
+              <div class="c-top">
+                <div class="av agent">SJ</div>
+                <div class="c-name">Dana Whitlock</div>
+              </div>
+              <div class="c-amt">$6,500 <span class="unit">est.</span></div>
+              <div class="c-age">1d 2h in stage</div>
+            </div>
+          </div>
+          <div class="drag-hint">Drop to move into <b>Booked</b></div>
+        </div>
+      </div>
+
+      <div class="demo-item">
+        <div class="demo-cap">Blocked move — the funding rail sent the card back</div>
+        <div class="errbar">
+          <span class="ic">⚠</span>
+          <span><b>Gustavo Rincón didn't move to Card Stacking.</b> He hasn't paid the $3,000 deposit yet, so the funding rail sent him back. His card is where you left it.</span>
+          <span class="dismiss">Dismiss</span>
+        </div>
+      </div>
+
+      <div class="demo-item">
+        <div class="demo-cap">Empty rail — no cards on the board</div>
+        <div class="empty-rail-note" style="margin:0;">R-07 · Affiliates + Hiring — this wireframe only carries the Sales board.</div>
+      </div>
+
+    </div>
+  </section>
+
   <footer class="statusbar">
     <span class="ghost"></span>
     <span>fundhub-pipeline · v1</span>
@@ -806,10 +914,12 @@
 (function(){
 "use strict";
 var board   = document.querySelector('.board');
-var cols    = [].slice.call(document.querySelectorAll('.col'));
+/* scoped to .board on purpose — the demonstration strip at the bottom of the
+   page reuses .col / .card markup and must stay out of the live board's model */
+var cols    = [].slice.call(board.querySelectorAll('.col'));
 var STORE   = 'fundhub.pipeline.sales';
 
-function cards(){ return [].slice.call(document.querySelectorAll('.col-body > .card')); }
+function cards(){ return [].slice.call(board.querySelectorAll('.col-body > .card')); }
 function nameOf(c){ var n=c.querySelector('.c-name'); return n?n.textContent.trim():''; }
 function colOf(c){ return c.closest('.col'); }
 function colName(col){ return col.querySelector('.col-name').textContent.trim(); }
@@ -1010,6 +1120,87 @@ function applySort(){
 });
 fSort.addEventListener('change',applySort);
 
+/* ---------- the four selects hide behind one Filter control ----------
+   An active filter is never hidden: it comes back out as a chip, so the bar
+   only ever shows state that is actually changing what you see. */
+var fBtn=document.getElementById('filterBtn'), fPanel=document.getElementById('filterPanel'),
+    fN=document.getElementById('filterN'), fChips=document.getElementById('filterChips'),
+    fClear=document.getElementById('filterClear');
+var CONTROLS=[{el:fOwner,k:'Owner'},{el:fHold,k:'Hold'},{el:fAge,k:'Age'},{el:fSort,k:'Sort'}];
+
+function labelOf(c){ return c.el.options[c.el.selectedIndex].textContent.trim(); }
+function syncChips(){
+  var on=CONTROLS.filter(function(c){ return c.el.value!==''; });
+  fChips.innerHTML='';
+  on.forEach(function(c){
+    var chip=document.createElement('span');
+    chip.className='fchip';
+    chip.innerHTML='<span>'+c.k+': '+labelOf(c)+'</span>';
+    var x=document.createElement('span');
+    x.className='x'; x.textContent='✕'; x.title='Clear '+c.k;
+    x.addEventListener('click',function(){
+      c.el.value=''; applyFilters(); if(c.el===fSort) applySort(); syncChips();
+    });
+    chip.appendChild(x); fChips.appendChild(chip);
+  });
+  fN.hidden = on.length===0;
+  fN.textContent = String(on.length);
+}
+fBtn.addEventListener('click',function(){
+  var open=fPanel.hidden;
+  fPanel.hidden=!open;
+  fBtn.classList.toggle('open',open);
+  fBtn.setAttribute('aria-expanded',String(open));
+});
+CONTROLS.forEach(function(c){ c.el.addEventListener('change',syncChips); });
+fClear.addEventListener('click',function(){
+  CONTROLS.forEach(function(c){ c.el.value=''; });
+  applyFilters(); syncChips();
+});
+syncChips();
+
+/* ---------- last activity: hover tooltip, built from the card's own .c-foot ---------- */
+var tip=document.createElement('div');
+tip.className='card-tip';
+document.body.appendChild(tip);
+function showTip(card,e){
+  var foot=card.querySelector('.c-foot'); if(!foot) return;
+  var act=foot.querySelector('.c-act'), when=foot.querySelector('.c-when');
+  if(!act) return;
+  tip.innerHTML='<span class="tk">Last activity</span>'+act.innerHTML+
+                (when?'<span class="tw">'+when.textContent.trim()+'</span>':'');
+  tip.style.display='block';
+  var r=card.getBoundingClientRect(), t=tip.getBoundingClientRect();
+  var left=Math.min(r.left, window.innerWidth-t.width-10);
+  var top =r.bottom+6;
+  if(top+t.height>window.innerHeight-10) top=r.top-t.height-6;
+  tip.style.left=left+'px'; tip.style.top=top+'px';
+}
+function hideTip(){ tip.style.display='none'; }
+board.addEventListener('mouseover',function(e){
+  var card=e.target.closest('.card');
+  if(card&&!card.closest('.drag-card')) showTip(card,e); else hideTip();
+});
+board.addEventListener('mouseleave',hideTip);
+window.addEventListener('pointerdown',hideTip);
+wrapScrollHide();
+function wrapScrollHide(){
+  document.querySelector('.board-wrap').addEventListener('scroll',hideTip,{passive:true});
+  document.querySelectorAll('.col-body').forEach(function(b){
+    b.addEventListener('scroll',hideTip,{passive:true});
+  });
+}
+
+/* ---------- demonstration states ---------- */
+var dz=document.getElementById('demozone'), dTog=document.getElementById('demoToggle'),
+    dBody=document.getElementById('demoBody');
+dTog.addEventListener('click',function(){
+  var open=dBody.hidden;
+  dBody.hidden=!open;
+  dz.classList.toggle('open',open);
+  dTog.setAttribute('aria-expanded',String(open));
+});
+
 /* ---------- rail tabs ---------- */
 var tabs=[].slice.call(document.querySelectorAll('.rail-tab'));
 var wrap=document.querySelector('.board-wrap');
@@ -1034,9 +1225,9 @@ tabs.forEach(function(t){
   });
 });
 
-/* ---------- error banner dismiss ---------- */
-var dz=document.querySelector('.errbar .dismiss');
-if(dz) dz.addEventListener('click',function(){ dz.closest('.errbar').remove(); });
+/* ---------- the demo error banner still dismisses like the real one ---------- */
+var edz=document.querySelector('.errbar .dismiss');
+if(edz) edz.addEventListener('click',function(){ edz.closest('.errbar').style.opacity='.25'; });
 
 restore();
 })();
