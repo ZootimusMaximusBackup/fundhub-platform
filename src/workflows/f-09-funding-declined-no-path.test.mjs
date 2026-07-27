@@ -5,7 +5,7 @@ import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 test("happy path: DENIED bank reply on a funding-path client flags ops + holds the round", async () => {
   const db = pgFake({
-    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_STACK_APPROVAL" }],
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING" }],
     fundingRounds: [{ id: "fr-1", client_id: "cl-1", round_number: 2, hold_reason: null }]
   });
   const res = await handle({ event: ev("mail.response", { classification: "DENIED" }, { clientId: "cl-1" }), db, step: fakeStep() });
@@ -17,22 +17,22 @@ test("happy path: DENIED bank reply on a funding-path client flags ops + holds t
 });
 
 test("branch: non-DENIED classification is ignored", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_STACK_APPROVAL" }] });
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING" }] });
   const res = await handle({ event: ev("mail.response", { classification: "APPROVED" }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.done, false);
   assert.equal(res.reason, "not_denied");
 });
 
 test("branch: repair-only client (not funding path) is ignored", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR" }] });
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY" }] });
   const res = await handle({ event: ev("mail.response", { classification: "DENIED" }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.done, false);
-  assert.equal(res.reason, "not_funding_path:REPAIR");
+  assert.equal(res.reason, "not_funding_path:REPAIR_ONLY");
 });
 
 test("branch: first of several bank denials does NOT flag no-path when other apps are still pending", async () => {
   const db = pgFake({
-    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_STACK_APPROVAL" }],
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING" }],
     fundingRounds: [{ id: "fr-1", client_id: "cl-1", round_number: 1, hold_reason: null }],
     applications: [
       { id: "app-1", funding_round_id: "fr-1", status: "DENIED" },
@@ -48,7 +48,7 @@ test("branch: first of several bank denials does NOT flag no-path when other app
 
 test("branch: all banks denied triggers hold and task", async () => {
   const db = pgFake({
-    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_STACK_APPROVAL" }],
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING" }],
     fundingRounds: [{ id: "fr-1", client_id: "cl-1", round_number: 1, hold_reason: null }],
     applications: [
       { id: "app-1", funding_round_id: "fr-1", status: "DENIED" },
@@ -63,7 +63,7 @@ test("branch: all banks denied triggers hold and task", async () => {
 
 test("duplicate delivery: replaying the same event does not double-create the task", async () => {
   const db = pgFake({
-    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_STACK_APPROVAL" }],
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING" }],
     fundingRounds: [{ id: "fr-1", client_id: "cl-1", round_number: 1, hold_reason: null }]
   });
   const event = ev("mail.response", { classification: "DENIED" }, { id: "evt-dup-f09", clientId: "cl-1" });

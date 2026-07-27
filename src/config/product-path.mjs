@@ -1,9 +1,10 @@
 // Rule 4 — route by outcome tier NAME, never by dollar amount.
-// Real CRS ladder: FRAUD_HOLD → MANUAL_REVIEW → REPAIR → CONDITIONAL_APPROVAL → FULL_STACK_APPROVAL → PREMIUM_STACK.
-// Funding path = the three approval tiers. Anything else (including unrecognized / null) is NOT a funding path.
-
-const FUNDING_TIERS = ["CONDITIONAL_APPROVAL", "FULL_STACK_APPROVAL", "PREMIUM_STACK"];
-const REPAIR_TIERS = ["REPAIR"];
+// REAL CRS ladder (verified against the live engine, underwrite-iq-lite route-outcome.js:15-20):
+//   FRAUD_HOLD → MANUAL_REVIEW → REPAIR_ONLY → FUNDING_PLUS_REPAIR → FULL_FUNDING → PREMIUM_STACK
+// Funding path = the three funding tiers. Anything else (including unrecognized / null) is NOT
+// a funding path — fail closed. (Chris-confirmed 2026-07-27: pull the real strings, don't guess.)
+const FUNDING_TIERS = ["FUNDING_PLUS_REPAIR", "FULL_FUNDING", "PREMIUM_STACK"];
+const REPAIR_TIERS = ["REPAIR_ONLY"];
 
 export function isFundingPath(tier) {
   if (!tier) return false;

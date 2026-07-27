@@ -4,7 +4,7 @@ import { handle } from "./c-06-crs-results-router.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 test("happy path: funding-path CRS results tag path:funding", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_STACK_APPROVAL" }] });
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING" }] });
   const res = await handle({ event: ev("analysis.completed", { source: "crs", scores: { ex: 650 } }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.branch, "funding");
   assert.deepEqual(db.clients[0].tags, ["path:funding"]);
