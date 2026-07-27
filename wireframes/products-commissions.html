@@ -113,7 +113,26 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
 .rule-bd{display:none;padding:0 16px 16px;background:var(--soft)}
 .rule.open .rule-bd{display:block}
 .rule.open .rule-hd{background:var(--soft)}
-.vtable{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:10px}
+/* who a rate change lands on, stated on the closed rule header */
+.rule-hd .rimpact{font-size:11.5px;color:var(--gray);margin-top:3px}
+.rule-hd .rimpact b{color:var(--ink);font-weight:600}
+.rule-hd .rimpact b.ri-open{color:#6B4A12}
+.rule-hd .rimpact .ri-none{color:var(--gray2)}
+
+/* rate history: a record, collapsed until asked for */
+.vhist{margin-top:10px}
+.vhist>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--gray2);
+  padding:7px 0}
+.vhist>summary::-webkit-details-marker{display:none}
+.vhist>summary::before{content:"▸";font-size:9px;transition:transform .15s}
+.vhist[open]>summary::before{transform:rotate(90deg)}
+.vhist>summary:hover{color:var(--ink)}
+
+/* the ledger takes the pane over; the tab row steps aside while it is open */
+.card.on-ledger .tabs{display:none}
+
+.vtable{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:0}
 .vtable th{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);font-weight:500}
 .vtable td{padding:9px 11px;border-bottom:1px solid var(--line);font-size:12px}
 .vtable tr:last-child td{border-bottom:0}
@@ -189,6 +208,9 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
       <span class="crumb">Setup</span><h1>Products &amp; Commissions</h1>
       <div class="spacer"></div>
       <span class="chip on"><span class="cd"></span>Effective 2026-07-27</span>
+      <!-- The ledger is a report, not part of editing a rule. It leaves the tab
+           row and becomes a link out of this screen. -->
+      <button class="btn mono" id="ledgerLink">View payout ledger →</button>
       <button class="btn dark mono" id="addProdBtn">+ Add product</button>
     </div>
 
@@ -204,7 +226,6 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
         <div class="tabs">
           <button class="tab on" data-tab="products">Products</button>
           <button class="tab" data-tab="rules">Commission rules</button>
-          <button class="tab" data-tab="ledger">Payout ledger</button>
         </div>
 
         <!-- PRODUCTS -->
@@ -240,7 +261,8 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
 
         <!-- LEDGER -->
         <div class="tabpane" id="tab-ledger">
-          <div class="card-hd"><div class="eyebrow">PC-04 <span class="sep">/</span> PAYOUT LEDGER</div>
+          <div class="card-hd"><button class="btn sm mono" id="ledgerBack">← Back to rules</button>
+            <div class="eyebrow">PC-04 <span class="sep">/</span> PAYOUT LEDGER</div>
             <div class="spacer"></div>
             <select id="perFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:12px;background:#fff"><option value="">Everyone</option></select>
             <select id="statFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:12px;background:#fff">
@@ -299,12 +321,32 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
 document.querySelectorAll('.tab').forEach(function(t){
   t.addEventListener('click',function(){
     var w=t.closest('.card');
+    w.classList.remove('on-ledger');
     w.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
     w.querySelectorAll('.tabpane').forEach(function(x){x.classList.remove('on')});
     t.classList.add('on');
     var p=document.getElementById('tab-'+t.dataset.tab); if(p)p.classList.add('on');
   });
 });
+
+/* ══ THE LEDGER IS A LINK, NOT A TAB ══════════════════════════════════════
+   This screen is for editing rules. The ledger keeps its full pane but is
+   reached by name, and hands you back to the rules it was computed from.   */
+function showLedger(on){
+  var card=document.querySelector('.tabs').closest('.card');
+  card.classList.toggle('on-ledger',on);
+  card.querySelectorAll('.tabpane').forEach(function(x){x.classList.remove('on')});
+  if(on){
+    document.getElementById('tab-ledger').classList.add('on');
+  }else{
+    card.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    var rt=card.querySelector('.tab[data-tab="rules"]');
+    rt.classList.add('on');
+    document.getElementById('tab-rules').classList.add('on');
+  }
+}
+document.getElementById('ledgerLink').addEventListener('click',function(){showLedger(true)});
+document.getElementById('ledgerBack').addEventListener('click',function(){showLedger(false)});
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
 function money(n){return '$'+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2})}
 var TODAY='2026-07-27';
@@ -347,6 +389,26 @@ var RULES=[
    versions:[{v:1,rate:null,from:'2025-03-24',to:null,by:'Chris Stanbridge',why:'Tier table set when Marcus joined'}]}
 ];
 function activeV(r){return r.versions.filter(function(v){return v.to===null})[0]||r.versions[r.versions.length-1]}
+
+/* ══ WHO A RULE AFFECTS ═══════════════════════════════════════════════════
+   Read straight off the ledger rows that name this rule, so the header
+   answers "if I change this, who does it affect?" without opening anything.  */
+function impactOf(r){
+  var rows=LEDGER.filter(function(l){return l.rule===r.id});
+  var people=[]; rows.forEach(function(l){ if(people.indexOf(l.who)<0) people.push(l.who); });
+  var unpaid=rows.filter(function(l){return l.st!=='Paid'});
+  return {rows:rows,people:people,
+          total:rows.reduce(function(a,l){return a+l.amt},0),
+          unpaid:unpaid.reduce(function(a,l){return a+l.amt},0),
+          nUnpaid:unpaid.length};
+}
+function impactStr(r){
+  var im=impactOf(r);
+  if(!im.rows.length) return '<span class="ri-none">Affects nobody yet — no payout has been computed from this rule</span>';
+  return 'Affects <b>'+esc(im.people.join(', '))+'</b> · '+im.rows.length+
+    ' payout'+(im.rows.length===1?'':'s')+' · '+money(im.total)+' to date'+
+    (im.nUnpaid?' · <b class="ri-open">'+money(im.unpaid)+' still unpaid</b>':'');
+}
 function rateStr(r,v){
   if(r.kind==='tiered') return 'tiered';
   if(r.kind==='per-unit') return '$'+v.rate+'/unit';
@@ -417,16 +479,22 @@ function renderRules(){
         '<span class="rc">'+r.id+'</span>'+
         '<span class="badge '+(r.side==='Front-end'?'b-info':'b-accent')+'">'+r.side+'</span>'+
         '<div style="flex:1;min-width:180px"><div class="rn">'+esc(r.name)+'</div>'+
-        '<div class="rs">'+esc(r.scope)+' · '+esc(r.who)+'</div></div>'+
+        '<div class="rs">'+esc(r.scope)+' · '+esc(r.who)+'</div>'+
+        '<div class="rimpact">'+impactStr(r)+'</div></div>'+
         '<span class="badge b-gray">'+r.kind+'</span>'+
         '<span class="rate">'+rateStr(r,av)+'</span>'+
         '<span class="badge b-ok">v'+av.v+' open</span>'+
       '</div>'+
       '<div class="rule-bd">'+
         tiers+
+        /* history is a record, not something you edit — collapsed per rule */
+        '<details class="vhist"><summary>Rate history — '+r.versions.length+
+          ' version'+(r.versions.length===1?'':'s')+', v'+av.v+' open since '+av.from+'</summary>'+
         '<table class="vtable"><thead><tr><th>Version</th><th>Rate</th><th>Effective from</th><th>Effective to</th><th>State</th><th>Reason</th></tr></thead><tbody>'+vrows+'</tbody></table>'+
-        '<div style="display:flex;gap:9px;margin-top:11px;flex-wrap:wrap">'+
+        '</details>'+
+        '<div style="display:flex;gap:9px;margin-top:11px;flex-wrap:wrap;align-items:center">'+
           '<button class="btn sm mono dark" data-chg="'+r.id+'">Change rate</button>'+
+          '<button class="btn sm mono" data-led="'+r.id+'">See these payouts →</button>'+
           '<span class="note" style="align-self:center">Closes v'+av.v+' and opens v'+(av.v+1)+'. The old version stays on the ledger.</span>'+
         '</div>'+
         '<div class="editline" id="el-'+r.id+'">'+
@@ -449,6 +517,22 @@ function renderRules(){
   });
   document.querySelectorAll('[data-chg]').forEach(function(b){
     b.addEventListener('click',function(e){e.stopPropagation();document.getElementById('el-'+b.dataset.chg).classList.add('on')});
+  });
+  /* a rule's payouts open the ledger already narrowed to the people it pays */
+  document.querySelectorAll('[data-led]').forEach(function(b){
+    b.addEventListener('click',function(e){
+      e.stopPropagation();
+      var im=impactOf(RULES.filter(function(x){return x.id===b.dataset.led})[0]);
+      var pf=document.getElementById('perFilter');
+      pf.value = im.people.length===1 && [].some.call(pf.options,function(o){return o.value===im.people[0];})
+        ? im.people[0] : '';
+      document.getElementById('statFilter').value='';
+      renderLedger(); showLedger(true);
+    });
+  });
+  /* a details element inside a clickable rule header must not toggle the rule */
+  document.querySelectorAll('.vhist summary').forEach(function(s){
+    s.addEventListener('click',function(e){e.stopPropagation()});
   });
   document.querySelectorAll('[data-cancel]').forEach(function(b){
     b.addEventListener('click',function(e){e.stopPropagation();document.getElementById('el-'+b.dataset.cancel).classList.remove('on')});
