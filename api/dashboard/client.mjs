@@ -4,9 +4,13 @@
 // No writes. SELECT only. ESM. Mirrors api/health.mjs style.
 import { db } from "../../src/db.mjs";
 import { checkDashboardAuth } from "../../src/http/dashboard-auth.mjs";
+import { attachStaff } from "../../src/http/middleware/requireAuth.mjs";
 
 export default async function handler(req, res) {
-  if (!checkDashboardAuth(req)) return res.status(401).json({ ok: false, error: "unauthorized" });
+  // Staff session first; the DASHBOARD_SECRET gate stays as the fallback until
+  // cutover, so existing links keep working while staff accounts roll out.
+  const staff = await attachStaff(req, { db });
+  if (!staff && !checkDashboardAuth(req)) return res.status(401).json({ ok: false, error: "unauthorized" });
   const { id } = req.query ?? {};
   if (!id) return res.status(400).json({ ok: false, error: "?id= required" });
 
