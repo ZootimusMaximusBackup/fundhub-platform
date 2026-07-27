@@ -36,6 +36,20 @@ vercel --prod
   - Or run the scripted single-client demo: `DATABASE_URL='…' node scripts/demo-journey.mjs`
 - Send Chris the dashboard URL **with `?key=…`** (the key is the auth).
 
+## Inngest (workflow automation)
+
+The 47 Inngest workflow functions are served at `/api/inngest`.
+
+```
+printf '%s' 'your-inngest-event-key'   | vercel env add INNGEST_EVENT_KEY production
+printf '%s' 'your-inngest-signing-key' | vercel env add INNGEST_SIGNING_KEY production
+```
+
+- Get both keys from the Inngest dashboard → your app → Manage → Keys.
+- `INNGEST_EVENT_KEY` — used by the event bus to forward canonical events to Inngest. Required in production; optional in dev/test (bridge is a no-op without it).
+- `INNGEST_SIGNING_KEY` — used by the serve handler to verify requests from Inngest. Required in production.
+- After deploy, sync the endpoint in the Inngest dashboard: `https://<deployment>/api/inngest`.
+
 ## Notes
 - No `DASHBOARD_SECRET` set + `NODE_ENV=production` → dashboard endpoints return 401 (fail-closed). Always set the secret.
 - Webhook endpoints live at `POST /api/webhooks/{commas|twilio|mailgun|calcom|bland|clickfunnels}`.

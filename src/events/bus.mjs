@@ -7,6 +7,7 @@
 
 import { isCanonical } from "./canonical.mjs";
 import { getHandlers } from "./registry.mjs";
+import { inngest } from "../workflows/client.mjs";
 
 const DEFAULT_ORG = process.env.DEFAULT_ORG_SLUG || "fundhub";
 
@@ -37,6 +38,9 @@ export async function emit(db, name, payload = {}, opts = {}) {
   }
   const id = insert.rows[0].id;
   await dispatch(db, { id, name, version, orgId, clientId: opts.clientId || null, payload });
+  if (process.env.INNGEST_EVENT_KEY) {
+    try { await inngest.send({ name, data: { ...payload, clientId: opts.clientId || null, orgId } }); } catch (_) { /* non-fatal */ }
+  }
   return { id, deduped: false };
 }
 
