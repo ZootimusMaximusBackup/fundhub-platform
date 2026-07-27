@@ -10,7 +10,7 @@ The repo is zero-config Vercel-ready: `api/*.mjs` → serverless functions, `pub
 ## 2. Run the migrations against that DB (one-time, from this folder)
 ```
 npm install
-DATABASE_URL='postgres://…' npm run migrate      # applies all tables + pipelines + indexes + default org
+DATABASE_URL='postgres://…' npm run migrate      # applies db/schema/, db/migrations/, db/seed/ in order
 ```
 
 ## 3. Link + set env vars
@@ -35,6 +35,20 @@ vercel --prod
   - Click **“+ Sample data”** a few times → sample clients populate the table.
   - Or run the scripted single-client demo: `DATABASE_URL='…' node scripts/demo-journey.mjs`
 - Send Chris the dashboard URL **with `?key=…`** (the key is the auth).
+
+## Inngest (workflow automation)
+
+The 47 Inngest workflow functions are served at `/api/inngest`.
+
+```
+printf '%s' 'your-inngest-event-key'   | vercel env add INNGEST_EVENT_KEY production
+printf '%s' 'your-inngest-signing-key' | vercel env add INNGEST_SIGNING_KEY production
+```
+
+- Get both keys from the Inngest dashboard → your app → Manage → Keys.
+- `INNGEST_EVENT_KEY` — used by the event bus to forward canonical events to Inngest. Required in production; optional in dev/test (bridge is a no-op without it).
+- `INNGEST_SIGNING_KEY` — used by the serve handler to verify requests from Inngest. Required in production.
+- After deploy, sync the endpoint in the Inngest dashboard: `https://<deployment>/api/inngest`.
 
 ## Notes
 - No `DASHBOARD_SECRET` set + `NODE_ENV=production` → dashboard endpoints return 401 (fail-closed). Always set the secret.

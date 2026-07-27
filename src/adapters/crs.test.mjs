@@ -44,6 +44,12 @@ const REPRESENTATIVE_ENGINE_RESULT = {
     contact: { email: "CLIENT@EXAMPLE.COM" },
     outcome: "FULL_FUNDING",
     scores: { ex: 740, eq: 730, tu: 750 }
+  },
+  normalized: {
+    inquiries: [
+      { creditorName: "CAPITAL ONE", source: "ex", date: "2024-01-15", businessType: "Finance" },
+      { creditorName: "CHASE BANK", source: "tu", date: "2024-02-20", businessType: "Finance" }
+    ]
   }
 };
 
@@ -57,6 +63,10 @@ test("normalizeCrsResult: reads representative engine result correctly", () => {
   assert.equal(norm.utilization, 18);
   assert.deepEqual(norm.reasonCodes, ["CLEAN_BUREAUS", "LOW_UTILIZATION"]);
   assert.equal(norm.email, "client@example.com"); // lowercased
+  assert.deepEqual(norm.newInquiries, [
+    { bureau: "ex", inquiry: "CAPITAL ONE" },
+    { bureau: "tu", inquiry: "CHASE BANK" }
+  ]);
 });
 
 test("normalizeCrsResult: falls back to crm_payload.customFields for funding estimate", () => {
@@ -91,6 +101,7 @@ test("normalizeCrsResult: null/empty input returns safe defaults", () => {
   assert.equal(norm.utilization, null);
   assert.deepEqual(norm.reasonCodes, []);
   assert.deepEqual(norm.scores, { ex: null, eq: null, tu: null });
+  assert.deepEqual(norm.newInquiries, []);
 });
 
 // --- mapToCanonical -----------------------------------------------------------
@@ -101,12 +112,16 @@ test("mapToCanonical: emits exactly [analysis.completed, decision.rendered]", ()
   assert.deepEqual(events.map((e) => e.name), ["analysis.completed", "decision.rendered"]);
 });
 
-test("mapToCanonical: analysis.completed payload carries scores, utilization, reasonCodes", () => {
+test("mapToCanonical: analysis.completed payload carries scores, utilization, reasonCodes, newInquiries", () => {
   const norm = normalizeCrsResult(REPRESENTATIVE_ENGINE_RESULT);
   const [analysis] = mapToCanonical(norm);
   assert.deepEqual(analysis.payload.scores, { ex: 740, eq: 730, tu: 750 });
   assert.equal(analysis.payload.utilization, 18);
   assert.deepEqual(analysis.payload.reasonCodes, ["CLEAN_BUREAUS", "LOW_UTILIZATION"]);
+  assert.deepEqual(analysis.payload.newInquiries, [
+    { bureau: "ex", inquiry: "CAPITAL ONE" },
+    { bureau: "tu", inquiry: "CHASE BANK" }
+  ]);
   assert.equal(analysis.payload.source, "crs");
 });
 

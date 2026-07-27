@@ -127,6 +127,16 @@ export function normalizeClickFunnelsEvent(body) {
     contact.custom_fields ||
     null;
 
+  // Referral attribution params (a1=tier1 affiliate, a2=tier2 affiliate).
+  // CF appends these as query params on the funnel URL; they appear either at top-
+  // level, under data, or in contact.custom_fields. af-02 gates on these.
+  const a1 = String(
+    b.a1 || d.a1 || contact.a1 || contact.custom_fields?.a1 || ""
+  ).trim() || null;
+  const a2 = String(
+    b.a2 || d.a2 || contact.a2 || contact.custom_fields?.a2 || ""
+  ).trim() || null;
+
   return {
     id: id ? String(id) : null,
     type,
@@ -134,7 +144,9 @@ export function normalizeClickFunnelsEvent(body) {
     name,
     phone,
     funnel,
-    answers
+    answers,
+    a1,
+    a2
   };
 }
 
@@ -185,8 +197,8 @@ export async function handleClickFunnelsWebhook({ db, rawBody, signatureHeader, 
   for (const c of canonical) {
     const payload =
       c.name === "survey.submitted"
-        ? { email: evt.email, name: evt.name, phone: evt.phone, funnel: evt.funnel, source: "clickfunnels", answers: evt.answers }
-        : { email: evt.email, name: evt.name, phone: evt.phone, funnel: evt.funnel, source: "clickfunnels" };
+        ? { email: evt.email, name: evt.name, phone: evt.phone, funnel: evt.funnel, source: "clickfunnels", answers: evt.answers, a1: evt.a1, a2: evt.a2 }
+        : { email: evt.email, name: evt.name, phone: evt.phone, funnel: evt.funnel, source: "clickfunnels", a1: evt.a1, a2: evt.a2 };
 
     const idKey = evt.id ? `clickfunnels:${evt.id}:${c.name}` : undefined;
     const res = await emit(db, c.name, payload, { idempotencyKey: idKey });

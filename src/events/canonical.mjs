@@ -23,7 +23,15 @@ export const CANONICAL_EVENTS = [
   "inquiry.removed",
   "letter.generated",
   "message.inbound",
-  "mail.response"
+  "mail.response",
+  // commission + billing (proposed in src/commissions/PROPOSED-EVENTS.md)
+  "commission.earned",
+  "commission.approved",
+  "commission.paid",
+  "invoice.created",
+  "invoice.sent",
+  "invoice.paid",
+  "invoice.voided"
 ];
 
 export const isCanonical = (name) => CANONICAL_EVENTS.includes(name);

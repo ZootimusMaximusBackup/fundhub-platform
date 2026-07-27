@@ -61,6 +61,19 @@ test("normalizeClickFunnelsEvent: reads CF 2.0 shape (data.contact)", () => {
   assert.equal(evt.funnel, "Free Credit Audit");
   assert.equal(evt.id, "sub_abc123");
   assert.equal(evt.answers, null);
+  assert.equal(evt.a1, null);
+  assert.equal(evt.a2, null);
+});
+
+test("normalizeClickFunnelsEvent: extracts a1/a2 referral params from top-level", () => {
+  const evt = normalizeClickFunnelsEvent({
+    id: "sub_ref1",
+    a1: "affiliate-abc",
+    a2: "sub-affiliate-xyz",
+    data: { contact: { email: "ref@example.com", first_name: "Ref" } }
+  });
+  assert.equal(evt.a1, "affiliate-abc");
+  assert.equal(evt.a2, "sub-affiliate-xyz");
 });
 
 test("normalizeClickFunnelsEvent: reads CF Classic top-level contact shape", () => {
@@ -165,6 +178,33 @@ test("handleClickFunnelsWebhook: lead + survey => entry.captured + survey.submit
   assert.deepEqual(seen.sort(), ["entry.captured", "survey.submitted"]);
   // survey payload includes answers
   assert.equal(res.emitted.find((e) => e.name === "survey.submitted") !== undefined, true);
+});
+
+test("handleClickFunnelsWebhook: a1/a2 referral params flow into entry.captured payload", async () => {
+  _resetOrgCache(); clearHandlers();
+  const store = [];
+  const db = {
+    query(sql, params) {
+      if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
+      if (/INSERT INTO events/.test(sql)) {
+        store.push({ name: params[1], payload: params[5] });
+        return { rows: [{ id: "evt-1" }] };
+      }
+      return { rows: [] };
+    }
+  };
+  const raw = JSON.stringify({
+    id: "cf_ref_42",
+    a1: "tier1-aff",
+    a2: "tier2-aff",
+    event: "contact_created",
+    data: { contact: { email: "reftest@example.com", first_name: "Ref" } }
+  });
+  const res = await handleClickFunnelsWebhook({ db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+  assert.equal(res.ok, true);
+  const entryPayload = store.find((r) => r.name === "entry.captured")?.payload;
+  assert.equal(entryPayload?.a1, "tier1-aff");
+  assert.equal(entryPayload?.a2, "tier2-aff");
 });
 
 test("handleClickFunnelsWebhook: no_email => 200, no emit", async () => {

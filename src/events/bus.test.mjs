@@ -57,6 +57,19 @@ test("emit: idempotency-key conflict is a safe no-op (no dispatch)", async () =>
   assert.equal(seen.length, 0, "handler must NOT fire on a deduped event");
 });
 
+test("bridge: bus.emit fires legacy handlers and does not throw when INNGEST_EVENT_KEY is unset", async () => {
+  _resetOrgCache(); clearHandlers();
+  const seen = [];
+  on("deposit.paid", (e) => seen.push(e.name));
+  const db = fakeDb();
+  // Ensure key is absent
+  delete process.env.INNGEST_EVENT_KEY;
+  const res = await emit(db, "deposit.paid", { amount: 500 }, { clientId: "c-bridge" });
+  assert.equal(res.deduped, false);
+  assert.equal(seen.length, 1, "legacy handler must still fire");
+  assert.equal(seen[0], "deposit.paid");
+});
+
 test("replay: re-dispatches stored events", async () => {
   _resetOrgCache(); clearHandlers();
   const store = [];
