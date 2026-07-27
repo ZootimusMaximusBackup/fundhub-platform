@@ -78,7 +78,7 @@
   .navitem.on::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;
     background:var(--spectrum);border-radius:0 2px 2px 0;}
   .navitem.on .ico{opacity:1;}
-  .navitem.soon{opacity:.38;}
+  .navitem.gated{opacity:.34;}
   .side.mini .navitem{justify-content:center;padding:9px 0;}
   .side.mini .navitem .lbl{display:none;}
   .side-foot{padding:10px 16px;border-top:1px solid var(--dark-line);font-family:var(--mono);
@@ -270,6 +270,8 @@
     aspect-ratio:2698/543;background:var(--logo) no-repeat center/contain;
     filter:invert(1);opacity:.05;pointer-events:none;z-index:0;}
   .nominal{display:flex;align-items:center;gap:7px;margin-left:auto;}
+  /* coded eyebrow separator — same rule as every other surface */
+  .eyebrow .sep{color:var(--line);margin:0 6px;}
 </style>
 </head>
 <body>
@@ -289,6 +291,7 @@
           <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
           <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
           <a class="navitem on" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+          <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
         </div>
       </div>
       <div class="navgroup" data-g="watch">
@@ -302,16 +305,16 @@
       <div class="navgroup" data-g="automation">
         <button class="navhead">Automation<span class="chev">▾</span></button>
         <div class="navlist">
-          <a class="navitem soon" href="agents.html"><span class="ico">◈</span><span class="lbl">Agents</span></a>
-          <a class="navitem soon" href="workflows.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+          <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+          <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Automations</span></a>
         </div>
       </div>
       <div class="navgroup" data-g="setup">
         <button class="navhead">Setup<span class="chev">▾</span></button>
         <div class="navlist">
-          <a class="navitem soon" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
-          <a class="navitem soon" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
-          <a class="navitem soon" href="agent-editor.html"><span class="ico">✎</span><span class="lbl">Agent Editor</span></a>
+          <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+          <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+          <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
           <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
         </div>
       </div>
@@ -320,7 +323,13 @@
         <div class="navlist">
           <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
           <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
-          <a class="navitem soon" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+          <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+        </div>
+      </div>
+      <div class="navgroup" data-g="client">
+        <button class="navhead">Client<span class="chev">▾</span></button>
+        <div class="navlist">
+          <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
         </div>
       </div>
     </nav>
@@ -375,7 +384,7 @@
 
       <!-- WEEK STRIP -->
       <div class="weekstrip">
-        <div class="ws-title eyebrow">C-02 / This Week · Jul 26 – Aug 1</div>
+        <div class="ws-title eyebrow">CL-02 <span class="sep">/</span> THIS WEEK · JUL 26 – AUG 1</div>
         <div class="ws-grid">
 
           <div class="ws-day today">
@@ -437,7 +446,7 @@
 
       <!-- DAY TIMELINE -->
       <div class="day-wrap">
-        <div class="day-title eyebrow">C-01 / Today — Sunday, July 26</div>
+        <div class="day-title eyebrow">CL-01 <span class="sep">/</span> TODAY — SUNDAY, JULY 26</div>
 
         <div class="hour">
           <div class="hour-label">9:00 AM</div>
@@ -691,7 +700,7 @@
         </div>
       </div>
 
-      <div class="rail-title eyebrow">C-03 / Who's On Today</div>
+      <div class="rail-title eyebrow">CL-03 <span class="sep">/</span> WHO'S ON TODAY</div>
       <div class="cov">
         <div class="cov-row">
           <span class="av human">JB</span>

@@ -11,7 +11,6 @@
 <style>
 /* ══ SHARED CHROME — identical across every internal surface ══════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--butter:#F2E39B}           /* spectrum stop @40% — the 6th status color */
 html,body{height:100%}
 body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
@@ -22,7 +21,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .eyebrow .sep{color:var(--line);margin:0 6px}
 .app{display:flex;min-height:100vh}
 
-.side{width:230px;flex:0 0 230px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
+.side{width:228px;flex:0 0 228px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
 .side::after{content:"";position:absolute;top:0;right:0;width:2px;height:100%;background:var(--spectrum);opacity:.9}
 .side.mini{width:60px;flex:0 0 60px}
 .side-top{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--cardline)}
@@ -166,35 +165,54 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
   <aside class="side" id="side">
     <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
     <nav class="side-scroll">
-      <div class="navgroup"><button class="navhead">Work<span class="chev">▾</span></button><div class="navlist">
-        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
-        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
-        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
-        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
-        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
-      </div></div>
-      <div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
-        <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
-        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
-        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
-      </div></div>
-      <div class="navgroup"><button class="navhead">Automation<span class="chev">▾</span></button><div class="navlist">
-        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
-        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
-      </div></div>
-      <div class="navgroup"><button class="navhead">Setup<span class="chev">▾</span></button><div class="navlist">
-        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
-        <a class="navitem on" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
-        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
-      </div></div>
-      <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
-        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
-        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
-        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
-      </div></div>
-      <div class="navgroup"><button class="navhead">Client<span class="chev">▾</span></button><div class="navlist">
-        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
-      </div></div>
+      <div class="navgroup" data-g="work">
+        <button class="navhead">Work<span class="chev">▾</span></button>
+        <div class="navlist">
+          <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+          <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+          <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+          <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+          <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+        </div>
+      </div>
+      <div class="navgroup" data-g="watch">
+        <button class="navhead">Watch<span class="chev">▾</span></button>
+        <div class="navlist">
+          <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
+          <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+          <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+        </div>
+      </div>
+      <div class="navgroup" data-g="automation">
+        <button class="navhead">Automation<span class="chev">▾</span></button>
+        <div class="navlist">
+          <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+          <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Automations</span></a>
+        </div>
+      </div>
+      <div class="navgroup" data-g="setup">
+        <button class="navhead">Setup<span class="chev">▾</span></button>
+        <div class="navlist">
+          <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+          <a class="navitem on" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+          <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
+          <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
+        </div>
+      </div>
+      <div class="navgroup" data-g="mywork">
+        <button class="navhead">My Work<span class="chev">▾</span></button>
+        <div class="navlist">
+          <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+          <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
+          <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+        </div>
+      </div>
+      <div class="navgroup" data-g="client">
+        <button class="navhead">Client<span class="chev">▾</span></button>
+        <div class="navlist">
+          <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+        </div>
+      </div>
     </nav>
     <div class="side-foot"><span class="pulse"></span><span class="who">CS · EMP-000001</span></div>
   </aside>
@@ -341,13 +359,13 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 
 /* ══ DATA ════════════════════════════════════════════════════════════════ */
 var PEOPLE=[
-  {id:1,first:'Chris',last:'Stanbridge',code:'EMP-000001',role:'Owner',email:'chris@fundhub.ai',phone:'+1 480 555 0100',start:'2023-02-06',active:true,consent:true,consentAt:'2026-06-02',clock:true,since:'06:41',today:'7h 22m'},
-  {id:2,first:'Sarah',last:'Whitfield',code:'EMP-000014',role:'Sales Manager',email:'sarah@fundhub.ai',phone:'+1 480 555 0114',start:'2023-09-18',active:true,consent:true,consentAt:'2026-06-03',clock:true,since:'08:02',today:'6h 01m'},
-  {id:3,first:'Jordan',last:'Blake',code:'EMP-000037',role:'Closer',email:'jordan@fundhub.ai',phone:'+1 480 555 0137',start:'2024-04-01',active:true,consent:true,consentAt:'2026-06-04',clock:true,since:'08:15',today:'5h 48m'},
-  {id:4,first:'Nina',last:'Castellano',code:'EMP-000052',role:'Closer',email:'nina@fundhub.ai',phone:'+1 480 555 0152',start:'2024-11-12',active:true,consent:true,consentAt:'2026-06-04',clock:false,since:'—',today:'0h 00m'},
-  {id:5,first:'Marcus',last:'Webb',code:'EMP-000068',role:'Funding Advisor',email:'marcus@fundhub.ai',phone:'+1 480 555 0168',start:'2025-03-24',active:true,consent:true,consentAt:'2026-06-11',clock:false,since:'—',today:'2h 10m'},
-  {id:6,first:'Alvin',last:'Torres',code:'EMP-000081',role:'Inquiry Remover',email:'alvin@fundhub.ai',phone:'+1 480 555 0181',start:'2025-08-05',active:true,consent:false,consentAt:null,clock:false,since:'—',today:'0h 00m'},
-  {id:7,first:'Dana',last:'Kowalczyk',code:'EMP-000123',role:'Affiliate',email:'dana@kowalczykpartners.com',phone:'+1 312 555 0223',start:'2026-07-14',active:false,consent:false,consentAt:null,clock:false,since:'—',today:'0h 00m'}
+  {id:1,first:'Chris',last:'Stanbridge',code:'EMP-000001',role:'Owner',email:'chris@fundhub.ai',phone:'+1 480 555 0100',start:'2023-02-06',active:true,consent:true,consentAt:'2026-06-02',clock:true,since:'07:10',today:'7h 37m'},
+  {id:2,first:'Sarah',last:'Whitfield',code:'EMP-000014',role:'Sales Manager',email:'sarah@fundhub.ai',phone:'+1 480 555 0114',start:'2023-09-18',active:true,consent:true,consentAt:'2026-06-03',clock:true,since:'07:45',today:'7h 02m'},
+  {id:3,first:'Jordan',last:'Blake',code:'EMP-000037',role:'Closer',email:'jordan@fundhub.ai',phone:'+1 480 555 0137',start:'2024-04-01',active:true,consent:true,consentAt:'2026-06-04',clock:true,since:'08:35',today:'6h 12m'},
+  {id:4,first:'Nina',last:'Castellano',code:'EMP-000052',role:'Closer',email:'nina@fundhub.ai',phone:'+1 480 555 0152',start:'2024-11-12',active:true,consent:true,consentAt:'2026-06-04',clock:true,since:'08:30',today:'6h 17m'},
+  {id:5,first:'Marcus',last:'Webb',code:'EMP-000068',role:'Funding Advisor',email:'marcus@fundhub.ai',phone:'+1 480 555 0168',start:'2025-03-24',active:true,consent:true,consentAt:'2026-06-11',clock:true,since:'08:00',today:'6h 47m'},
+  {id:6,first:'Alvin',last:'Torres',code:'EMP-000081',role:'Inquiry Remover',email:'alvin@fundhub.ai',phone:'+1 480 555 0181',start:'2025-08-05',active:true,consent:true,consentAt:'2026-06-12',clock:true,since:'08:02',today:'6h 45m'},
+  {id:7,first:'Dana',last:'Kowalczyk',code:'EMP-000123',role:'Affiliate',email:'dana@kowalczykpartners.com',phone:'+1 312 555 0223',start:'2026-07-14',active:true,consent:false,consentAt:null,clock:false,since:'—',today:'0h 00m'}
 ];
 var nextCode=124, nextId=8;
 

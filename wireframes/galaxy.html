@@ -19,8 +19,6 @@
     --text:var(--paper);
     --text-dim:var(--gray2);
     --text-faint:var(--gray);
-    /* the 40% spectrum stop — money landing. Not a new hue. */
-    --lemon:#F2E39B;
     /* light surface — only the read-closely panel */
     --surface:#FFFFFF;
     --ls-line:var(--line);
@@ -93,7 +91,7 @@
   .navitem.on::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;
     background:var(--spectrum);border-radius:0 2px 2px 0;}
   .navitem.on .ico{opacity:1;}
-  .navitem.soon{opacity:.38;}
+  .navitem.gated{opacity:.34;}
   .side.mini .navitem{justify-content:center;padding:9px 0;}
   .side.mini .navitem .lbl{display:none;}
   .side-foot{padding:10px 16px;border-top:1px solid var(--cardline);
@@ -252,9 +250,9 @@
           <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
           <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
           <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+          <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
         </div>
       </div>
-
       <div class="navgroup" data-g="watch">
         <button class="navhead">Watch<span class="chev">▾</span></button>
         <div class="navlist">
@@ -263,31 +261,34 @@
           <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
         </div>
       </div>
-
       <div class="navgroup" data-g="automation">
         <button class="navhead">Automation<span class="chev">▾</span></button>
         <div class="navlist">
-          <a class="navitem soon" href="agents.html"><span class="ico">◈</span><span class="lbl">Agents</span></a>
-          <a class="navitem soon" href="workflows.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+          <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+          <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Automations</span></a>
         </div>
       </div>
-
       <div class="navgroup" data-g="setup">
         <button class="navhead">Setup<span class="chev">▾</span></button>
         <div class="navlist">
-          <a class="navitem soon" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
-          <a class="navitem soon" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
-          <a class="navitem soon" href="agent-editor.html"><span class="ico">✎</span><span class="lbl">Agent Editor</span></a>
+          <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+          <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+          <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
           <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
         </div>
       </div>
-
       <div class="navgroup" data-g="mywork">
         <button class="navhead">My Work<span class="chev">▾</span></button>
         <div class="navlist">
           <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
           <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
-          <a class="navitem soon" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+          <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+        </div>
+      </div>
+      <div class="navgroup" data-g="client">
+        <button class="navhead">Client<span class="chev">▾</span></button>
+        <div class="navlist">
+          <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
         </div>
       </div>
     </nav>
@@ -376,7 +377,7 @@ var KPI_H = 132;
 /* ---------- palette ---------- */
 var C = {
   /* pace rings + flares are spectrum stops; the rest is the brand neutral ramp.
-     sage = ahead, peach = behind, coral = blocked, lemon = money landing. */
+     sage = ahead, peach = behind, coral = blocked, butter = money landing. */
   neutral:'#52525B', green:'#A8D8B0', amber:'#F5CE8F', red:'#F2A69B',
   gold:'#F2E39B', text:'#FCFCFC', dim:'#A1A1AA', faint:'#52525B',
   /* starlight: brand neutrals, depth carried by alpha not hue */
@@ -444,41 +445,41 @@ var NODES = [
  pool:['Reviewing team coverage — 2 gaps','Listening to {C}’s call recording','Reassigning {C} to Jordan','Escalating {C}’s stalled file','1:1 with Nina — pace check'],
  shift:'7:45 AM', on:'7h 02m',
  stats:[['Team pace','108%'],['Files escalated','5'],['Coverage gaps','2'],['Calls audited','7']],
- files:['Nina’s 3pm block','Andre Fontaine','Priya Nair'],
+ files:['Nina’s 4pm block','Andre Fontaine','Priya Nair'],
  tl:[['7:50','Set today’s targets — closers at 3 deposits each'],['9:30','Audited 4 call recordings'],
      ['12:05','Escalated Andre Fontaine — internal review hold'],['2:22 PM','Flagged 3–6pm coverage gap to Chris']]},
 
 {id:'jordan', c:'sales', name:'Jordan Blake', ini:'JB', role:'Closer', kind:'human',
- state:'active', tempo:.78, out:14, pace:1.00, unit:'deposits',
+ state:'active', tempo:.78, out:5, pace:0.60, unit:'deposits',
  act:'On a call with Priya Nair',
- pool:['On a call with {C}','Prepping for the 3:30 call','Logging call outcome — {C}','Collecting deposit — {C}','Reading {C}’s survey before dialing','Dialing {C}'],
- shift:'8:00 AM', on:'6h 47m',
- stats:[['Deposits collected','3 of 3'],['Calls made','14'],['Shows','9 of 12'],['Cash collected','$9,900']],
- files:['Priya Nair','Kayla Whitmore','Damon Cole'],
- tl:[['8:14','First dial block — 6 calls, 4 shows'],['10:02','Deposit collected — Damon Cole $3,000'],
-     ['11:40','Deposit collected — Lena Petrov $3,000'],['1:15 PM','Deposit collected — Kayla Whitmore $3,000'],
-     ['2:39 PM','On a call with Priya Nair']]},
+ pool:['On a call with {C}','Prepping for the 4:30 call','Logging call outcome — {C}','Collecting deposit — {C}','Reading {C}’s survey before dialing','Dialing {C}'],
+ shift:'8:35 AM', on:'6h 12m',
+ stats:[['Deposits collected','1 of 3'],['Calls made','5'],['Shows','3 of 5'],['Cash collected','$3,000']],
+ files:['Priya Nair','Devon Marsh','Amara Nwosu'],
+ tl:[['8:41','First dial block — 2 calls, 2 shows'],['10:00','Asked for pay stubs — Amara Nwosu, still waiting'],
+     ['11:47','Awaiting her decision — Elena Vasquez'],['12:40 PM','Deposit collected — Devon Marsh $3,000'],
+     ['2:33 PM','On a call with Priya Nair']]},
 
 {id:'nina', c:'sales', name:'Nina Castellano', ini:'NC', role:'Closer', kind:'human',
  state:'active', tempo:.45, out:6, pace:0.38, unit:'deposits', behindFor:'2h',
- act:'Prepping for 3pm call — no dials since 12:40',
- pool:['Prepping for 3pm call — no dials since 12:40','Reading {C}’s survey','Waiting on {C} to call back','Rescheduling {C}'],
+ act:'Prepping for the 4pm call — no dials since 12:40',
+ pool:['Prepping for the 4pm call — no dials since 12:40','Reading {C}’s survey','Waiting on {C} to call back','Rescheduling {C}'],
  shift:'8:30 AM', on:'6h 17m',
  stats:[['Deposits collected','1 of 3'],['Calls made','6'],['Shows','2 of 6'],['Last dial','2h 05m ago']],
  files:['Gustavo Rincón','Marcus Ibe'],
  tl:[['8:41','Dial block started — 4 calls, 1 show'],['10:20','Deposit collected — Marcus Ibe $3,000'],
-     ['11:55','No-show — Gustavo Rincón'],['12:40 PM','Last outbound dial'],['2:10 PM','Prepping for 3pm call']]},
+     ['11:55','No-show — Gustavo Rincón'],['12:40 PM','Last outbound dial'],['2:10 PM','Prepping for the 4pm call']]},
 
 {id:'marcus', c:'sales', name:'Marcus Webb', ini:'MW', role:'Funding Advisor', kind:'human',
  state:'active', tempo:.72, out:31, pace:1.25, unit:'rounds submitted',
- act:'Submitting Round 3 — Derek Owusu',
- pool:['Submitting Round 3 — {C}','Running pulls — {C}','Reviewing offers — {C}','Building the card stack — {C}','Chasing approval — {C}','Reading Document Check flags on {C}'],
+ act:'Round 2 waiting on docs — Derek Owusu',
+ pool:['Submitting the round — {C}','Running pulls — {C}','Reviewing offers — {C}','Building the card stack — {C}','Chasing approval — {C}','Reading Document Check flags on {C}'],
  shift:'8:00 AM', on:'6h 47m',
- stats:[['Rounds submitted','5 of 4'],['Pulls run','11'],['Approvals landed','3'],['Funded today','$46,000']],
+ stats:[['Rounds submitted','5 of 4'],['Pulls run','11'],['Approvals landed','3'],['Funded today','$80,000']],
  files:['Derek Owusu','Samuel Okafor','Maria Delgado','Rachel Simmons'],
- tl:[['8:08','Pulled 4 files from Document Check'],['9:52','Round 2 submitted — Rachel Simmons'],
-     ['11:10','Approval landed — Maria Delgado $18,500'],['1:35 PM','Round 3 built — Derek Owusu'],
-     ['2:44 PM','Submitting Round 3 — Derek Owusu']]},
+ tl:[['8:08','Pulled 4 files from Document Check'],['11:10','Approval landed — Maria Delgado $18,500'],
+     ['1:35 PM','Round 2 built — Derek Owusu'],['2:33 PM','Round 2 submitted — Rachel Simmons'],
+     ['2:44 PM','Round 2 waiting on docs — Derek Owusu']]},
 
 /* ---- INQUIRY REMOVAL ---- */
 {id:'alvin', c:'inq', name:'Alvin Torres', ini:'AT', role:'Inquiry Remover', kind:'human',
@@ -488,8 +489,8 @@ var NODES = [
  shift:'8:02 AM', on:'6h 45m',
  stats:[['Removals confirmed','14 of 15'],['Calls attempted','22'],['Queue remaining','11'],['Letters issued','8']],
  files:['Wei Chen','Grace Kowalski','Lena Petrov'],
- tl:[['8:05','Called TransUnion — no answer'],['9:40','Confirmed removal — Wei Chen'],
-     ['11:15','Escalated fraud flag — Grace Kowalski'],['1:30 PM','Took over AI queue after portal timeout'],
+ tl:[['8:05','Called TransUnion — no answer'],['11:15','Escalated fraud flag — Grace Kowalski'],
+     ['1:30 PM','Took over AI queue after portal timeout'],['2:38 PM','Confirmed removal — Wei Chen'],
      ['2:41 PM','Calling Equifax — inquiry 7 of 11']]},
 
 {id:'irai', c:'inq', name:'Inquiry Removal AI', ini:'IR', role:'Agent', kind:'agent',
@@ -533,7 +534,7 @@ var NODES = [
  stats:[['Invoices sent','14 of 15'],['Payments posted','9'],['Failed retries','2'],['AR touched','$21,400']],
  files:['Rachel Simmons','Andre Fontaine'],
  tl:[['12:00','Runtime start'],['8:00','Morning invoice run — 11 sent'],
-     ['1:02 PM','Posted payment — Rachel Simmons $1,200'],['2:37 PM','Idle — nothing in queue']]},
+     ['1:02 PM','Posted payment — Diego Marchetti $1,000'],['2:37 PM','Idle — nothing in queue']]},
 
 {id:'a3', c:'cfa', name:'Agent 3', ini:'A3', role:'Nurture', kind:'agent',
  state:'active', tempo:.62, out:89, pace:0.99, unit:'messages',
@@ -553,7 +554,7 @@ var NODES = [
  stats:[['Onboardings','9 of 8'],['Docs requested','37'],['Docs received','24'],['Stalled >24h','2']],
  files:['Brianna Holt','Samuel Okafor','Damon Cole'],
  tl:[['12:00','Runtime start'],['9:15','Welcome sequence — 4 new clients'],
-     ['11:50','Docs complete — Samuel Okafor, passed to Document Check'],['2:33 PM','Onboarding Brianna Holt']]},
+     ['2:26 PM','Docs complete — Samuel Okafor, passed to Document Check'],['2:33 PM','Onboarding Brianna Holt']]},
 
 {id:'dc', c:'cfa', name:'Document Check', ini:'DC', role:'Agent', kind:'agent',
  state:'active', tempo:.75, out:27, pace:1.22, unit:'files checked',
@@ -563,7 +564,7 @@ var NODES = [
  stats:[['Files checked','27 of 22'],['Flagged','4'],['Cleared to funding','19'],['Avg check time','2m 10s']],
  files:['Samuel Okafor','Derek Owusu','Brianna Holt'],
  tl:[['12:00','Runtime start'],['9:44','Flagged income mismatch — Andre Fontaine'],
-     ['11:52','Cleared Samuel Okafor → Marcus Webb'],['2:41 PM','Reviewing docs — Samuel Okafor']]},
+     ['11:52','Cleared Damon Cole → Marcus Webb'],['2:41 PM','Reviewing docs — Samuel Okafor']]},
 
 {id:'cf', c:'cfa', name:'Context Fetcher', ini:'CF', role:'Agent', kind:'agent',
  state:'active', tempo:.66, out:48, pace:0.96, unit:'context pulls',
@@ -578,13 +579,13 @@ var NODES = [
 /* ---- OPS AGENTS ---- */
 {id:'hb', c:'ops', name:'Heartbeat', ini:'HB', role:'Agent', kind:'agent',
  state:'active', tempo:.50, out:18, pace:null, unit:'health checks',
- act:'All systems nominal — 1 alert open',
- pool:['All systems nominal — 1 alert open','Checking Lendflow adapter','Checking Twilio send queue','Alert raised — Equifax portal'],
+ act:'2 alerts open — Equifax portal, text delivery',
+ pool:['2 alerts open — Equifax portal, text delivery','Checking Lendflow adapter','Checking Twilio send queue','Alert raised — text delivery'],
  shift:'12:00 AM', on:'14h 47m',
- stats:[['Interval','every 60s'],['Alerts open','1'],['Webhook failures','0'],['Queue depth','11 (inquiry)']],
- files:['Equifax portal alert'],
+ stats:[['Interval','every 60s'],['Alerts open','2'],['Webhook failures','0'],['Queue depth','11 (inquiry)']],
+ files:['Equifax portal alert','Text delivery alert'],
  tl:[['12:00','Runtime start'],['1:30 PM','Raised alert — Equifax portal timeout'],
-     ['1:47 PM','Escalated to Chris — 3 retries failed'],['2:46 PM','All other systems nominal']]},
+     ['1:47 PM','Escalated to Chris — 3 retries failed'],['2:45 PM','Raised alert — text delivery stopped responding']]},
 
 {id:'recon', c:'ops', name:'Recon', ini:'RC', role:'Agent', kind:'agent',
  state:'idle', tempo:.22, out:61, pace:1.02, unit:'files reconciled',
