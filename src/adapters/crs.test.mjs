@@ -125,6 +125,16 @@ test("mapToCanonical: analysis.completed payload carries scores, utilization, re
   assert.equal(analysis.payload.source, "crs");
 });
 
+// Regression: analysis.completed is emitted BEFORE decision.rendered and the bus
+// dispatches synchronously, so analysis.completed subscribers run before
+// clients.outcome_tier exists. The tier has to ride on this payload too.
+test("mapToCanonical: analysis.completed payload also carries outcomeTier", () => {
+  const norm = normalizeCrsResult(REPRESENTATIVE_ENGINE_RESULT);
+  const [analysis, decision] = mapToCanonical(norm);
+  assert.equal(analysis.payload.outcomeTier, "FULL_FUNDING");
+  assert.equal(analysis.payload.outcomeTier, decision.payload.outcomeTier);
+});
+
 test("mapToCanonical: decision.rendered payload carries outcomeTier, fundingEstimate", () => {
   const norm = normalizeCrsResult(REPRESENTATIVE_ENGINE_RESULT);
   const [, decision] = mapToCanonical(norm);

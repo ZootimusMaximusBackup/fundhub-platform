@@ -43,6 +43,143 @@ has a row below — none were skipped for being inconvenient.
 
 ---
 
+## Model drift — 04/08 vs 05/30
+
+**Status: needs Chris.** Every workflow in `src/workflows/` was ported from
+`fundhub-docs/sources/ghl-crm-source-of-truth.md`, dated **04/08/2026**, which says of
+itself "THESE RULES ARE OUTDATED." The current source of truth is **05/30/2026** and is
+**not in this repo** — it has not been uploaded. Everything below is derived from what
+is verifiable in code plus the one drift Chris stated directly; nothing here is inferred
+from the 05/30 document, because nobody has read it.
+
+### The drift
+
+Under 04/08, the CRS soft pull ran **before** the call: the client paid the $32
+diagnostic, the pull returned, a recommendation was stamped on the record, and the call
+was booked and taken against it. Under 05/30 the pull runs **live on the call**. The
+recommendation does not exist until Stage 4. Any workflow that reads it before a call
+has completed is reading a value that has not been produced yet.
+
+### Field mapping (why `cf_analyzer_recommendation` greps clean)
+
+The 04/08 doc's `cf_analyzer_recommendation` (24 occurrences) was **not ported under that
+name**. It has two successors in this codebase, and an audit that greps for the GHL field
+name finds nothing:
+
+| 04/08 GHL field | Ported to | Written by | On event |
+|---|---|---|---|
+| `cf_analyzer_recommendation` (the 6-tier decision) | `clients.outcome_tier`, read via `clientOutcomeTier()` in `src/config/product-path.mjs` | `client-lifecycle.mjs:onDecisionRendered` | `decision.rendered` — **and nothing else** |
+| `cf_analyzer_recommendation` (the dollar figure shown to the client) | `custom_fields.total_funding_estimate` | `client-lifecycle.mjs:onDecisionRendered` | `decision.rendered` |
+
+So the audit question "does the value exist when this workflow runs?" reduces to a
+mechanical one: **is this workflow's trigger strictly after `decision.rendered` on the
+canonical spine?** (`src/events/canonical.mjs`.)
+
+### Audit — all 8 readers of `clientOutcomeTier()`
+
+| Workflow | Trigger | Tier exists at trigger? | Verdict |
+|---|---|---|---|
+| `c-06-crs-results-router` | `analysis.completed` | No — see ordering bug below | **FIXED** |
+| `u-02-analyzer-complete-delivery` | `analysis.completed` | No — same | **FIXED** |
+| `bs-01-precall-launcher` | `booking.created` | **No** — booking precedes the call, the pull happens on it | **DEAD — proposal below, not shipped** |
+| `ds-02-diy-letters` | `payment.received` | Unknown — generic side event, fires for the $32 diagnostic too | **FLAG** |
+| `ds-01-repair-referral` | `call.completed` | Probably — the pull runs during the call it follows | **AT RISK** |
+| `s-06-post-call-funding-purchased` | `deposit.paid` | Yes — post-decision on the spine | OK |
+| `f-01-funding-intake` | `round.started` | Yes | OK |
+| `f-09-funding-declined-no-path` | `mail.response` | Yes — bank response, deep in funding rounds | OK |
+
+**Fixed — `c-06` and `u-02` (an ordering bug, provable from code alone, model-independent).**
+`emitCrsResult` (`src/adapters/crs.mjs`) emits `analysis.completed` **then**
+`decision.rendered`, and `bus.mjs:dispatch` runs handlers synchronously in order. So a
+workflow triggered by `analysis.completed` runs *before* `onDecisionRendered` writes
+`clients.outcome_tier` — the column is null on a first pull and stale on a re-pull. C-06
+routed every real pull to `not_funding`; U-02 fell through to `unknown_path` and **sent no
+delivery email at all**. Every test for both pre-seeded `outcome_tier` on the fake client
+row, so the suite never exercised the real sequencing and stayed green over a dead branch.
+
+Fix: the tier now rides on the `analysis.completed` payload as well
+(`crs.mjs:mapToCanonical`), and both workflows read it via a new `resolveOutcomeTier(db,
+clientId, payload)` that prefers the payload and falls back to the column. This is not a
+guess about 05/30 — two in-repo consumers already assumed that payload shape:
+`client-lifecycle.mjs:onAnalysisCompleted` reads `payload.outcomeTier` to fill
+`crs_results.outcome_tier` (previously always null in production — a second bug this
+closes), and `api/dashboard/seed.mjs` emits it. `crs.mjs` was the outlier. Regression
+tests added for the null-column and stale-column cases.
+
+Note that C-06 and U-02 are **correctly placed** under 05/30 — they fire on the CRS run
+itself, which is now the on-call run. They were never dead; they were mis-plumbed.
+
+**Flag — `ds-02-diy-letters`.** Trigger is `payment.received`, which is generic: the $32
+diagnostic is itself a payment. If DS-02 can fire on a pre-call payment, `outcome_tier` is
+null, `isFundingPath(null)` is false, and DIY letters go to someone who may turn out to be
+a funding client. Needs the 05/30 doc to say which payment(s) reach DS-02.
+
+**At risk — `ds-01-repair-referral`.** Trigger `call.completed` is after the on-call pull,
+so the tier normally exists. But if a call ends without a pull having run, the tier is
+null, `isFundingPath(null)` is false, and the repair referral proceeds for a client who
+was never assessed. Fail-closed on the tier means fail-open on the referral here. Worth a
+decision, not obviously wrong.
+
+### Also drifted (not `outcome_tier` readers)
+
+| Workflow / artifact | Trigger | Issue |
+|---|---|---|
+| `c-00-crs-soft-pull-request` | `diagnostic.paid` | **Structurally the heart of the drift.** This is the workflow that *requests* the pull at payment time, sets `crs_status: "Requested"` and `round_hold_reason: "Awaiting CRS"`. Under 05/30 the pull is initiated on the call. Whether `diagnostic.paid` still precedes the call at all is exactly what the 05/30 doc has to answer. **FLAG.** |
+| `ai-set-04-3way-handoff` | `booking.created` | Sends `SMS-AISET04-HANDOFF` 15 min before the call: *"I've briefed your Senior Advisor on your UnderwriteIQ results and they're ready to review your {{contact.analyzer_prequal_amount}} pre-approval."* Under 05/30 no pull has run — the results don't exist and the claim is false. Copy needs rewriting, not just a merge tag. **FLAG (copy).** |
+| `ai-set-03-no-answer-cadence` | `call.completed` (no-answer) | Same problem across all three messages: *"you've been pre-approved for {{contact.analyzer_prequal_amount}} in capital"*, *"we have your UnderwriteIQ results ready"*, *"Your pre-approval is still active"*. Fires precisely when the call did **not** connect, so under 05/30 no pull ran. **FLAG (copy).** |
+| `dpc-01-analyzer-lock`, `u-03`, `u-04`, `u-05`, `c-02` | `analysis.completed` | Timing-shifted (they now run on-call rather than pre-call) but they read the event payload, not `outcome_tier`, so they are not dead. No change. |
+
+**Adjacent bug, not fixed here (out of scope, needs its own pass).**
+`analyzer_prequal_amount` has **no writer anywhere in the codebase** — `onDecisionRendered`
+writes `total_funding_estimate` instead. Separately,
+`render-template.mjs`'s `TOKEN_RE = /\{\{\s*(\w+)\s*\}\}/g` cannot match dotted tags
+(`\w` excludes `.`), and every `sendTemplated` call site passes no `context`. So
+`{{contact.analyzer_prequal_amount}}` and every other dotted tag currently renders
+**literally, braces and all**, into outbound SMS and email. Both are model-independent and
+predate this audit.
+
+### Proposal — the BS series' correct trigger point
+
+**Not shipped. Flagged for review.** `bs-01-precall-launcher` currently fires on
+`booking.created` and routes by product path; under 05/30 the tier is null at that moment,
+so the router falls straight through to `no_matching_path:null` and neither the funding nor
+the repair drip ever sends. The whole BS series was built on the pre-call premise: a drip
+that runs between booking and call, personalized by a recommendation that — under 05/30 —
+does not exist until the call itself.
+
+That leaves a genuine product question, not a mechanical one: **is a pre-call backend drip
+still wanted at all, and if so, what is it allowed to say?** Three options, in the order I'd
+recommend them:
+
+1. **Split the workflow at the two moments (recommended).** Keep a `booking.created`
+   trigger for the *unpersonalized* part — show-up reminders, logistics, social proof, the
+   `bs:precall` tag and `bs_precall_start_ts` stamp, none of which need a tier. Move the
+   personalized funding-vs-repair drip to a second workflow triggered on
+   `decision.rendered`, where the tier is authoritative by construction. This preserves the
+   pre-call touch cadence, keeps every personalized claim truthful, and needs no new events.
+   Costs: the drip's copy has to be split into "before we know" and "after we know" halves,
+   and the 5–6 template sequences need re-sequencing against a post-call start.
+2. **Move BS-01 wholesale to `decision.rendered`.** Simplest change — one trigger line, no
+   copy split. But it stops being a *pre-call* launcher entirely; the "72HR" framing of
+   `BS-EMAIL-FUNDING-72HR` / `BS-EMAIL-REPAIR-72HR` becomes a post-call 72-hour window.
+   That may actually be what 05/30 intends, and if so this is the right answer — but it is a
+   business decision about when the backend sell happens, not a port fix.
+3. **Keep `booking.created` and drop the personalization.** One generic drip, no path
+   routing. Cheapest, and loses the reason the series existed.
+
+Blocking questions for Chris, in priority order:
+- Under 05/30, does anything at all send between `booking.created` and the call? (If no,
+  BS-01 is retired outright rather than re-triggered, and options 1–3 collapse.)
+- Is the 72-hour window in `BS-EMAIL-*-72HR` measured from booking or from the call?
+- Does `diagnostic.paid` ($32) still fire before the call, or has it moved onto the call
+  with the pull? This one also decides `c-00` and `ds-02` above.
+
+The same three questions govern `BS-CLICK-FUND-01..06` / `BS-CLICK-REPAIR-01..06` (12
+workflows, already BLOCKED below on a missing `content.engaged` event) — no point
+specifying their trigger before the series' shape is settled.
+
+---
+
 ## Open decisions for Darwin
 
 1. **Lead temperature (N-01/02/03).** The GHL source tagged leads `nurture:cold` /
@@ -336,7 +473,7 @@ Per the mode change above — logged here for Darwin to review, not gated on app
 
 | Key | Name | Disposition | Reasoning |
 |---|---|---|---|
-| BS-01 | Pre-Call Backend Launcher | MIGRATED | `src/workflows/bs-01-precall-launcher.mjs`. Merges in BS-EMAIL-FUNDING-72HR (live) and BS-EMAIL-REPAIR-72HR (live) — both are enrollment targets of BS-01, not independently-triggered, so one continuous flow. Trigger `booking.created`; drip choice by product path. |
+| BS-01 | Pre-Call Backend Launcher | **MIGRATED — DEAD under 05/30** | `src/workflows/bs-01-precall-launcher.mjs`. Merges in BS-EMAIL-FUNDING-72HR (live) and BS-EMAIL-REPAIR-72HR (live) — both are enrollment targets of BS-01, not independently-triggered, so one continuous flow. Trigger `booking.created`; drip choice by product path. **The tier does not exist at `booking.created` under the 05/30 model, so the router falls through to `no_matching_path:null` and neither drip sends.** Not repaired — the correct trigger point is a business decision; see "Model drift — 04/08 vs 05/30" above for the proposal and the blocking questions. |
 | BS-EMAIL-FUNDING-72HR (live) | MERGED INTO BS-01 | See above. |
 | BS-EMAIL-REPAIR-72HR (live) | MERGED INTO BS-01 | See above. |
 | BS-EMAIL-FUNDING-72HR ([AGENT DRAFT]) | RETIRED | Exact duplicate of the live version (same subjects) — Spec §6 explicit note: "Keep one." |
@@ -361,8 +498,8 @@ Per the mode change above — logged here for Darwin to review, not gated on app
 
 | Key | Name | Disposition | Reasoning |
 |---|---|---|---|
-| DS-01 | Repair Referral | MIGRATED | `src/workflows/ds-01-repair-referral.mjs`. Real SMS copy exists but needs the real partner link filled in (Spec §6) — send stays gated on the template existing. Blocked from ever firing on the funding route, same product-path gate as DS-02. |
-| DS-02 | DIY Letters | MIGRATED (partial — per Chris's explicit decision) | `src/workflows/ds-02-diy-letters.mjs`. **Hard Rule 1**: gated to the not-qualified downsell path only — tested proving BOTH directions. Letter-delivery webhook to underwrite-iq-lite built for real; the Commas invoice is a staff task instead (no outbound invoice-creation adapter exists — real money, designed deliberately later, not invented here). See decision #7 above. |
+| DS-01 | Repair Referral | MIGRATED | `src/workflows/ds-01-repair-referral.mjs`. Real SMS copy exists but needs the real partner link filled in (Spec §6) — send stays gated on the template existing. Blocked from ever firing on the funding route, same product-path gate as DS-02. **AT RISK (model drift):** trigger `call.completed` normally follows the on-call pull, but a call that ends without a pull leaves the tier null, which fails open into the referral. |
+| DS-02 | DIY Letters | MIGRATED (partial — per Chris's explicit decision) | `src/workflows/ds-02-diy-letters.mjs`. **Hard Rule 1**: gated to the not-qualified downsell path only — tested proving BOTH directions. Letter-delivery webhook to underwrite-iq-lite built for real; the Commas invoice is a staff task instead (no outbound invoice-creation adapter exists — real money, designed deliberately later, not invented here). See decision #7 above. **FLAG (model drift):** trigger `payment.received` is generic and the $32 diagnostic is itself a payment — if DS-02 can fire pre-call the tier is null and letters go to a possible funding client. Needs the 05/30 doc. |
 
 ## AGENTS
 
@@ -376,7 +513,7 @@ Per the mode change above — logged here for Darwin to review, not gated on app
 
 | Key | Name | Disposition | Reasoning |
 |---|---|---|---|
-| AI-SET-03 | No-Answer SMS Cadence | MIGRATED | `src/workflows/ai-set-03-no-answer-cadence.mjs`. Despite the "AI Setter" name, this is pre-scripted "Josh"-voiced SMS (no `ai_agent` step in the source), so it's a plain templated cadence, not part of the deferred AI Agent Layer. Audit fix applied: waits 1 min → 30 min / 2 hr (see decision #13 above for the third-wait ambiguity). Real compliance-scrubbed copy seeded. |
+| AI-SET-03 | No-Answer SMS Cadence | MIGRATED | `src/workflows/ai-set-03-no-answer-cadence.mjs`. Despite the "AI Setter" name, this is pre-scripted "Josh"-voiced SMS (no `ai_agent` step in the source), so it's a plain templated cadence, not part of the deferred AI Agent Layer. Audit fix applied: waits 1 min → 30 min / 2 hr (see decision #13 above for the third-wait ambiguity). Real compliance-scrubbed copy seeded. **FLAG (model drift, copy):** all three messages assert UnderwriteIQ results / a pre-approval amount, but this fires when the call did *not* connect — under 05/30 no pull has run. Copy needs rewriting. |
 | AI-SET-04 | 3-Way Text Handoff | MIGRATED | `src/workflows/ai-set-04-3way-handoff.mjs`. Audit fix applied (Spec §6: publish, real T-15-off-Cal.com trigger via `step.sleepUntil`, advisor follow-up task added — see decision #14 above). |
 | DPC-04 | Reschedule Rebooking | MERGED INTO DPC-03 | A third AS-Series entry, filed here despite the "DPC-04" key (unrelated to the Decision Finalizer also called DPC-04) — a 2-step SMS + `setter:reschedule` tag reacting to the exact "reschedule" reply DPC-03 already parses. Real copy seeded (Workflow-SMS-Stragglers.md). |
 
@@ -384,7 +521,7 @@ Per the mode change above — logged here for Darwin to review, not gated on app
 
 | Key | Name | Disposition | Reasoning |
 |---|---|---|---|
-| U-02 | Analyzer Complete → Map + Letters + Delivery | MIGRATED | `src/workflows/u-02-analyzer-complete-delivery.mjs`. Trigger `analysis.completed`. Real copy exists (EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md) but wasn't seeded in this batch — send stays gated on the template existing. |
+| U-02 | Analyzer Complete → Map + Letters + Delivery | MIGRATED | `src/workflows/u-02-analyzer-complete-delivery.mjs`. Trigger `analysis.completed`. Real copy exists (EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md) but wasn't seeded in this batch — send stays gated on the template existing. **Fixed (model drift audit):** read `clients.outcome_tier` before `decision.rendered` had written it, so every real pull fell to `unknown_path` and no delivery email sent; now resolves the tier from the event payload. |
 | U-03 | CRS Snapshot Sync | MIGRATED | `src/workflows/u-03-crs-snapshot-sync.mjs`. Trigger `analysis.completed`, gated `source === "crs"`. |
 | U-04 | Promote CRS as Primary Snapshot | MIGRATED | `src/workflows/u-04-promote-crs-primary.mjs`. Same gate as U-03 — "CRS always wins over the Analyzer estimate once it lands." |
 | U-05 | UnderwriteIQ Data Health Monitor | MIGRATED | `src/workflows/u-05-data-health-monitor.mjs`. Trigger `analysis.completed`; checks payload completeness. |
@@ -414,13 +551,13 @@ Per the mode change above — logged here for Darwin to review, not gated on app
 
 | Key | Name | Disposition | Reasoning |
 |---|---|---|---|
-| C-00 | CRS Soft Pull Request | MIGRATED | `src/workflows/c-00-crs-soft-pull-request.mjs`. Trigger `diagnostic.paid`. Airtable webhook calls dropped (AX dissolution, Spec §6) — everything else ported as custom_fields writes. |
+| C-00 | CRS Soft Pull Request | MIGRATED | `src/workflows/c-00-crs-soft-pull-request.mjs`. Trigger `diagnostic.paid`. Airtable webhook calls dropped (AX dissolution, Spec §6) — everything else ported as custom_fields writes. **FLAG (model drift):** this workflow encodes the pre-call premise itself — it requests the pull at payment time. Under 05/30 the pull is initiated on the call. Needs the 05/30 doc before it is re-pointed. |
 | C-02 | Inquiry Created → Assign Inquiry Specialist | MIGRATED | `src/workflows/c-02-inquiry-created.mjs`. Trigger `analysis.completed`, gated on `payload.newInquiries`. Logs to `inquiry_log`. |
 | C-02B | Inquiry Removal Requested | MIGRATED | `src/workflows/c-02b-inquiry-removal-requested.mjs`. Trigger `deposit.paid` — Spec §4.2's named auto-trigger, ported directly. |
 | C-03 | Inquiry Removed → Resume or Hold (Fraud Alert Gate) | MIGRATED | `src/workflows/c-03-inquiry-removed-resume-or-hold.mjs`. Trigger `inquiry.removed` (exact match). |
 | C-04 | Snapshot Valid Gatekeeping | BLOCKED | The "stale" threshold this gates on isn't specified anywhere read for this port — the crawl shows a literal hardcoded date (`2026-02-01`), which reads as crawl noise (a snapshot of one contact's field value) rather than the actual staleness rule. Not inventing a threshold. |
 | C-05 | Pre-Funding Review Logic | MIGRATED | `src/workflows/c-05-pre-funding-review.mjs`. Trigger `round.started`. |
-| C-06 | CRS Results Router | MIGRATED | `src/workflows/c-06-crs-results-router.mjs`. Trigger `analysis.completed`, gated `source === "crs"`. |
+| C-06 | CRS Results Router | MIGRATED | `src/workflows/c-06-crs-results-router.mjs`. Trigger `analysis.completed`, gated `source === "crs"`. **Fixed (model drift audit):** read `clients.outcome_tier` before `decision.rendered` had written it, routing every real pull to `not_funding`; now resolves the tier from the event payload. |
 
 ## HEALTH WORKFLOWS (HX-Series)
 

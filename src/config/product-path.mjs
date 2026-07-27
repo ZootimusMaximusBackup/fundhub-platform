@@ -21,3 +21,19 @@ export async function clientOutcomeTier(db, clientId) {
   const r = await db.query(`SELECT outcome_tier FROM clients WHERE id = $1`, [clientId]);
   return r.rows[0]?.outcome_tier ?? null;
 }
+
+// resolveOutcomeTier — tier for a workflow that runs DURING the CRS run rather than
+// after it. `clients.outcome_tier` is written by exactly one handler
+// (client-lifecycle.mjs:onDecisionRendered, on decision.rendered), so a workflow
+// triggered by the analysis.completed that immediately precedes it reads null on a
+// first pull and a stale tier on a re-pull. The tier it needs is already in hand —
+// on its own event payload — so prefer that and fall back to the column.
+//
+// Use this in any workflow whose trigger is not strictly after decision.rendered.
+// Workflows further down the spine (deposit.paid, round.*, mail.response) can keep
+// using clientOutcomeTier: by then the column is authoritative.
+export async function resolveOutcomeTier(db, clientId, payload) {
+  const fromEvent = payload?.outcomeTier;
+  if (fromEvent) return String(fromEvent);
+  return clientOutcomeTier(db, clientId);
+}

@@ -14,6 +14,24 @@ test("happy path: funding path sends the funding letter pack delivery", async ()
   assert.equal(db.clients[0].custom_fields.funding_delivery_sent, true);
 });
 
+// Regression (Model drift audit): the production shape. clients.outcome_tier is not
+// written until decision.rendered, which the CRS adapter emits AFTER this event — so
+// before the fix every real pull fell through to "unknown_path" and no delivery email
+// was ever sent.
+test("sends the funding delivery from the payload tier when the column is not written yet", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: null, custom_fields: {} }],
+    templates: [{ org_id: "org-1", template_key: FUNDING_EMAIL_TEMPLATE_KEY, channel: "email", body: "funding letters", compliance_passed: true }]
+  });
+  const res = await handle({
+    event: ev("analysis.completed", { source: "crs", outcomeTier: "FULL_FUNDING" }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+  assert.equal(res.branch, "funding");
+  assert.equal(db.messages.length, 1);
+  assert.equal(db.clients[0].custom_fields.funding_delivery_sent, true);
+});
+
 test("branch: repair path sends the repair letter pack delivery", async () => {
   const db = pgFake({
     clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }],

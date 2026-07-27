@@ -8,11 +8,17 @@
 // Trigger: analysis.completed. Gate: identity OK (payload.identityOk !== false) —
 // if missing, tags analyzer:data-incomplete + a task instead of sending. Routes to
 // the Funding or Repair letter-pack delivery template by product path.
+//
+// Tier comes from resolveOutcomeTier, not clientOutcomeTier: this fires on the
+// analysis.completed that the CRS adapter emits immediately BEFORE decision.rendered,
+// so `clients.outcome_tier` is not written yet — the column read sent every real pull
+// down the "unknown_path" branch and no delivery email went out (see
+// workflow-migration-table.md, "Model drift").
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
-import { clientOutcomeTier, isFundingPath, isRepairOnlyPath } from "../config/product-path.mjs";
+import { resolveOutcomeTier, isFundingPath, isRepairOnlyPath } from "../config/product-path.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
@@ -47,7 +53,7 @@ export async function handle({ event, db, step }) {
 
   await step.run("tag-analyzer-complete", () => addTags(db, clientId, ["analyzer:complete"]));
 
-  const outcomeTier = await step.run("check-product-path", () => clientOutcomeTier(db, clientId));
+  const outcomeTier = await step.run("check-product-path", () => resolveOutcomeTier(db, clientId, event.payload));
   const orgId = event.orgId;
   const eventId = event.id;
 
