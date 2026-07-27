@@ -57,7 +57,7 @@ CREATE TABLE clients (
   funded            boolean NOT NULL DEFAULT false,
   funded_amount     numeric(14,2),
   days_to_fund      integer,
-  outcome_tier      text,   -- FRAUD_HOLD|MANUAL_REVIEW|REPAIR_ONLY|FUNDING_PLUS_REPAIR|FULL_FUNDING|PREMIUM_STACK
+  outcome_tier      text,   -- FRAUD_HOLD|MANUAL_REVIEW|REPAIR|CONDITIONAL_APPROVAL|FULL_STACK_APPROVAL|PREMIUM_STACK (real CRS ladder; pending #142 confirm of exact strings)
   channel_source    text,
   -- pipeline membership + tags
   pipeline_ids      uuid[] NOT NULL DEFAULT '{}',
