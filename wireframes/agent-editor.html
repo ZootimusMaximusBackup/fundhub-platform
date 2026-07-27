@@ -102,6 +102,24 @@ button,input,select,textarea{font:inherit;color:inherit}
 .aitem .dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
 .aitem .an{flex:1;min-width:0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .aitem .ac{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.08em}
+.aitem .ast{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid var(--line);border-radius:5px;padding:1px 5px;white-space:nowrap}
+.aitem .ast.live{border-color:var(--ok);background:rgba(168,216,176,.22);color:#2C5138}
+.aitem .ast.shadow{border-color:var(--accent);background:rgba(196,179,229,.20);color:#3F2F63}
+.aitem .atr{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em;
+  white-space:nowrap;min-width:48px;text-align:right}
+.aitem .atr.none{color:#6E2A22}
+
+/* ---- config sections: what it may do stays open, the rest folds away ---- */
+details.card>summary{list-style:none;cursor:pointer}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary.card-hd::after{content:"▾";margin-left:auto;font-size:10px;color:var(--gray2);
+  transition:transform .16s}
+details.card[open]>summary.card-hd::after{transform:rotate(180deg)}
+details.card>summary.card-hd:hover{background:var(--soft)}
+details.card:not([open])>summary.card-hd{border-bottom:0}
+.card.keycard{border-color:var(--ink)}
+.card.keycard>.card-hd{background:var(--soft)}
 
 .evgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:7px}
 .ev{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:7px;padding:7px 9px;cursor:pointer;background:#fff;transition:border-color .12s,background .12s;text-align:left}
@@ -217,39 +235,8 @@ button,input,select,textarea{font:inherit;color:inherit}
             <div class="gate" id="gateBox"></div>
           </div>
 
-          <div class="card" style="margin-top:14px">
-            <div class="card-hd"><div class="eyebrow">AE-01 <span class="sep">/</span> IDENTITY</div></div>
-            <div class="card-bd">
-              <div class="grid2">
-                <div class="field" style="grid-column:1/-1"><label>Agent name</label><input id="a_name"></div>
-                <div class="field"><label>Channel</label><select id="a_chan"><option>SMS</option><option>Email</option><option>Voice</option><option>Internal</option></select></div>
-                <div class="field"><label>Class</label><select id="a_class"><option>Client-facing</option><option>Ops</option></select></div>
-                <div class="field"><label>Owner</label><select id="a_owner">
-                  <option>Chris Stanbridge</option><option>Sarah Whitfield</option><option>Jordan Blake</option>
-                  <option>Nina Castellano</option><option>Marcus Webb</option><option>Alvin Torres</option></select></div>
-                <div class="field"><label>Agent code</label><input id="a_code" class="num" readonly style="background:var(--soft);color:var(--gray)"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-hd"><div class="eyebrow">AE-02 <span class="sep">/</span> TRIGGER EVENTS</div>
-              <div class="spacer"></div><span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em" id="trigCount">0 SELECTED</span></div>
-            <div class="card-bd"><div class="evgrid" id="evGrid"></div>
-              <div style="font-size:11.5px;color:var(--gray);margin-top:11px;line-height:1.55">
-                Canonical bus events. An agent with no trigger never fires — it can be saved, but it stays inert.
-              </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-hd"><div class="eyebrow">AE-03 <span class="sep">/</span> PROMPT</div>
-              <div class="spacer"></div><span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em" id="promptLen">0 CHARS</span></div>
-            <div class="card-bd"><div class="field"><textarea id="a_prompt" rows="9"></textarea>
-              <span class="hint">CONTEXT FETCHER INJECTS CLIENT STATE BEFORE THIS RUNS</span></div></div>
-          </div>
-
-          <div class="card">
+            <!-- What it may do, and what stops it: these two stay open. -->
+          <div class="card keycard">
             <div class="card-hd"><div class="eyebrow">AE-04 <span class="sep">/</span> GUARDRAIL BLOCK</div>
               <div class="spacer"></div><span class="badge b-alert" id="guardState">REQUIRED</span></div>
             <div class="card-bd">
@@ -264,20 +251,7 @@ button,input,select,textarea{font:inherit;color:inherit}
             </div>
           </div>
 
-          <div class="card">
-            <div class="card-hd"><div class="eyebrow">AE-05 <span class="sep">/</span> ESCALATION PATH</div></div>
-            <div class="card-bd"><div class="grid2">
-              <div class="field"><label>Escalate to</label><select id="a_esc">
-                <option>Sarah Whitfield · Sales Manager</option><option>Jordan Blake · Closer</option>
-                <option>Nina Castellano · Closer</option><option>Marcus Webb · Funding Advisor</option>
-                <option>Alvin Torres · Inquiry Remover</option><option>Chris Stanbridge · Owner</option></select></div>
-              <div class="field"><label>After no reply</label><select id="a_escafter">
-                <option>15 minutes</option><option>1 hour</option><option>4 hours</option><option>24 hours</option><option>48 hours</option></select></div>
-              <div class="field" style="grid-column:1/-1"><label>Escalate immediately when</label><input id="a_escwhen" placeholder="e.g. client asks for a refund, or mentions bankruptcy"></div>
-            </div></div>
-          </div>
-
-          <div class="card">
+          <div class="card keycard">
             <div class="card-hd"><div class="eyebrow">AE-06 <span class="sep">/</span> AUTHORITY LIMITS</div>
               <div class="spacer"></div><span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em">WHAT IT MAY DO UNSUPERVISED</span></div>
             <div class="card-bd">
@@ -292,12 +266,57 @@ button,input,select,textarea{font:inherit;color:inherit}
             </div>
           </div>
 
-          <div class="card">
-            <div class="card-hd"><div class="eyebrow">AE-08 <span class="sep">/</span> SHADOW LOG</div>
-              <div class="spacer"></div><span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em">WHAT IT WOULD HAVE SENT</span></div>
-            <div id="shadowLog"></div>
-          </div>
+            <!-- Everything else about the agent is one click away. -->
+          <details class="card" style="margin-top:14px">
+            <summary class="card-hd"><div class="eyebrow">AE-01 <span class="sep">/</span> IDENTITY</div></summary>
+            <div class="card-bd">
+              <div class="grid2">
+                <div class="field" style="grid-column:1/-1"><label>Agent name</label><input id="a_name"></div>
+                <div class="field"><label>Channel</label><select id="a_chan"><option>SMS</option><option>Email</option><option>Voice</option><option>Internal</option></select></div>
+                <div class="field"><label>Class</label><select id="a_class"><option>Client-facing</option><option>Ops</option></select></div>
+                <div class="field"><label>Owner</label><select id="a_owner">
+                  <option>Chris Stanbridge</option><option>Sarah Whitfield</option><option>Jordan Blake</option>
+                  <option>Nina Castellano</option><option>Marcus Webb</option><option>Alvin Torres</option></select></div>
+                <div class="field"><label>Agent code</label><input id="a_code" class="num" readonly style="background:var(--soft);color:var(--gray)"></div>
+              </div>
+            </div>
+          </details>
 
+          <details class="card">
+            <summary class="card-hd"><div class="eyebrow">AE-02 <span class="sep">/</span> TRIGGER EVENTS</div>
+              <div class="spacer"></div><span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em" id="trigCount">0 SELECTED</span></summary>
+            <div class="card-bd"><div class="evgrid" id="evGrid"></div>
+              <div style="font-size:11.5px;color:var(--gray);margin-top:11px;line-height:1.55">
+                Canonical bus events. An agent with no trigger never fires — it can be saved, but it stays inert.
+              </div>
+            </div>
+          </details>
+
+          <details class="card">
+            <summary class="card-hd"><div class="eyebrow">AE-03 <span class="sep">/</span> PROMPT</div>
+              <div class="spacer"></div><span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em" id="promptLen">0 CHARS</span></summary>
+            <div class="card-bd"><div class="field"><textarea id="a_prompt" rows="9"></textarea>
+              <span class="hint">CONTEXT FETCHER INJECTS CLIENT STATE BEFORE THIS RUNS</span></div></div>
+          </details>
+
+          <details class="card">
+            <summary class="card-hd"><div class="eyebrow">AE-05 <span class="sep">/</span> ESCALATION PATH</div></summary>
+            <div class="card-bd"><div class="grid2">
+              <div class="field"><label>Escalate to</label><select id="a_esc">
+                <option>Sarah Whitfield · Sales Manager</option><option>Jordan Blake · Closer</option>
+                <option>Nina Castellano · Closer</option><option>Marcus Webb · Funding Advisor</option>
+                <option>Alvin Torres · Inquiry Remover</option><option>Chris Stanbridge · Owner</option></select></div>
+              <div class="field"><label>After no reply</label><select id="a_escafter">
+                <option>15 minutes</option><option>1 hour</option><option>4 hours</option><option>24 hours</option><option>48 hours</option></select></div>
+              <div class="field" style="grid-column:1/-1"><label>Escalate immediately when</label><input id="a_escwhen" placeholder="e.g. client asks for a refund, or mentions bankruptcy"></div>
+            </div></div>
+          </details>
+
+          <details class="card">
+            <summary class="card-hd"><div class="eyebrow">AE-08 <span class="sep">/</span> SHADOW LOG</div>
+              <div class="spacer"></div><span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em">WHAT IT WOULD HAVE SENT</span></summary>
+            <div id="shadowLog"></div>
+          </details>
           <div style="display:flex;gap:9px;margin-top:14px;flex-wrap:wrap">
             <button class="btn dark mono" id="saveBtn">Save agent</button>
             <button class="btn mono" id="revertBtn">Revert</button>
@@ -432,10 +451,15 @@ function renderList(){
   document.getElementById('alist').innerHTML=groups.map(function(g){
     var items=AGENTS.filter(function(a){return a.cls===g[0]});
     return '<div class="agrp">'+g[1]+'</div>'+items.map(function(a){
-      return '<div class="aitem '+(cur&&a.id===cur.id?'on':'')+'" data-a="'+a.id+'">'+
+      /* name, mode and trigger count — the three facts you scan the list for.
+         The agent code moves to the row's hover title; it is on the Identity
+         card inside the config. */
+      var n=a.triggers.length;
+      return '<div class="aitem '+(cur&&a.id===cur.id?'on':'')+'" data-a="'+a.id+'" title="'+a.id+'">'+
         '<span class="dot" style="background:'+modeDot(a.mode)+'"></span>'+
         '<span class="an">'+esc(a.name)+'</span>'+
-        '<span class="ac">'+a.id+'</span></div>';
+        '<span class="ast '+a.mode+'">'+a.mode+'</span>'+
+        '<span class="atr'+(n?'':' none')+'">'+(n?n+' trig':'no trig')+'</span></div>';
     }).join('');
   }).join('');
   document.querySelectorAll('.aitem').forEach(function(el){
@@ -516,8 +540,13 @@ function renderStats(){
   document.getElementById('liveTxt').textContent=lv+' live · '+(AGENTS.length-lv)+' shadow';
 }
 
+/* switching agents refolds the secondary sections — the config opens on what
+   this agent may do, not on wherever the last agent was left scrolled */
+function foldSections(){ document.querySelectorAll('details.card').forEach(function(d){d.open=false}); }
+
 function select(id){
   cur=AGENTS.filter(function(a){return a.id===id})[0];
+  foldSections();
   document.getElementById('a_name').value=cur.name;
   document.getElementById('a_chan').value=cur.chan;
   document.getElementById('a_class').value=cur.cls;
@@ -594,6 +623,8 @@ document.getElementById('newBtn').addEventListener('click',function(){
   var n=AGENTS.filter(function(a){return a.cls==='Client-facing'}).length+1;
   var a=A({id:'AG-'+String(n).padStart(2,'0')+'x',name:'New agent',mode:'shadow',runs:0,breaches:0,log:[]});
   AGENTS.push(a); select(a.id);
+  /* a blank agent has nothing to read yet — open every section so it can be built */
+  document.querySelectorAll('details.card').forEach(function(d){d.open=true});
   document.getElementById('a_name').focus();
 });
 
