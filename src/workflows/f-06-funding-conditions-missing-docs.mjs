@@ -56,9 +56,19 @@ async function handleDocsReceived({ event, db, step }) {
   if (!clientId) return { done: false, reason: "no_client" };
 
   await step.run("clear-docs-missing", () => removeTags(db, clientId, ["docs:missing"]));
-  const round = await step.run("clear-hold-reason", () => setLatestRoundHoldReason(db, clientId, null));
+  // Only clear hold_reason when this workflow set it — do not clobber F-09's "Internal Review".
+  const round = await step.run("clear-hold-reason", () => clearHoldIfMissingDocs(db, clientId));
 
   return { done: true, branch: "docs_received", round };
+}
+
+async function clearHoldIfMissingDocs(db, clientId) {
+  const r = await db.query(`SELECT id, hold_reason FROM funding_rounds WHERE client_id = $1 ORDER BY round_number DESC LIMIT 1`, [clientId]);
+  const round = r.rows[0];
+  if (!round) return { updated: false };
+  if (round.hold_reason !== "Missing Documents") return { updated: false, reason: "hold_reason_not_ours" };
+  await db.query(`UPDATE funding_rounds SET hold_reason = $2 WHERE id = $1`, [round.id, null]);
+  return { updated: true };
 }
 
 export async function handle({ event, db, step }) {

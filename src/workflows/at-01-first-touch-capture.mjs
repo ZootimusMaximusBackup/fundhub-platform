@@ -20,7 +20,7 @@ export async function handle({ event, db, step }) {
   const r = await step.run("check-first-touch", () => db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]));
   if (r.rows[0]?.custom_fields?.first_touch_date) return { done: false, reason: "already_locked" };
 
-  await step.run("set-first-touch", () => mergeCustomFields(db, clientId, { first_touch_date: "now", lead_magnet_type: "Survey" }));
+  await step.run("set-first-touch", () => mergeCustomFields(db, clientId, { first_touch_date: new Date().toISOString(), lead_magnet_type: "Survey" }));
   return { done: true };
 }
 

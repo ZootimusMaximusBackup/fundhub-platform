@@ -28,7 +28,24 @@ async function setLatestRoundHoldReason(db, clientId, reason) {
   const round = r.rows[0];
   if (!round) return { updated: false };
   await db.query(`UPDATE funding_rounds SET hold_reason = $2 WHERE id = $1`, [round.id, reason]);
-  return { updated: true };
+  return { updated: true, roundId: round.id };
+}
+
+// Returns true only when every application in the latest round is DENIED (or there
+// are no applications yet, which also means no remaining path).
+async function allApplicationsDenied(db, clientId) {
+  const roundRow = await db.query(
+    `SELECT id FROM funding_rounds WHERE client_id = $1 ORDER BY round_number DESC LIMIT 1`,
+    [clientId]
+  );
+  if (!roundRow.rows[0]) return true; // no round → nothing pending
+  const roundId = roundRow.rows[0].id;
+  const apps = await db.query(
+    `SELECT status FROM applications WHERE funding_round_id = $1`,
+    [roundId]
+  );
+  if (apps.rows.length === 0) return true; // no apps tracked → treat as final
+  return apps.rows.every((a) => a.status === "DENIED");
 }
 
 async function createTaskOnce(db, { orgId, clientId, eventId }) {
@@ -51,6 +68,9 @@ export async function handle({ event, db, step }) {
 
   const outcomeTier = await step.run("check-product-path", () => clientOutcomeTier(db, clientId));
   if (!isFundingPath(outcomeTier)) return { done: false, reason: `not_funding_path:${outcomeTier}` };
+
+  const allDenied = await step.run("check-all-denied", () => allApplicationsDenied(db, clientId));
+  if (!allDenied) return { done: false, reason: "pending_applications" };
 
   await step.run("tag-ops-action-required", () => addTags(db, clientId, ["ops:action-required"]));
   const round = await step.run("set-hold-reason", () => setLatestRoundHoldReason(db, clientId, "Internal Review"));

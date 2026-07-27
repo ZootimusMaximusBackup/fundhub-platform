@@ -25,9 +25,14 @@ export const SMS_TEMPLATE_KEY = "SMS-N06-RENEWAL";
 export const SOURCE_WORKFLOW = "n-06-renewal";
 const TASK_TITLE = "Second wave funding — outreach + prep next round";
 
+// clients.funded is a schema column but nothing writes it. Real "funded" signal is
+// a funding_rounds row with funded_amount > 0 (written when a round is closed/funded).
 async function isStillFundingClient(db, clientId) {
-  const r = await db.query(`SELECT funded FROM clients WHERE id = $1`, [clientId]);
-  return Boolean(r.rows[0]?.funded);
+  const r = await db.query(
+    `SELECT 1 FROM funding_rounds WHERE client_id = $1 AND funded_amount > 0 LIMIT 1`,
+    [clientId]
+  );
+  return Boolean(r.rows[0]);
 }
 
 async function createRenewalTask(db, { orgId, clientId, eventId }) {

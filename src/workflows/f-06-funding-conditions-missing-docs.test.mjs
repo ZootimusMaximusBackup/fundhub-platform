@@ -39,6 +39,16 @@ test("branch: other classifications on mail.response are ignored", async () => {
   assert.equal(res.reason, "not_missing_docs");
 });
 
+test("branch: docs.received does NOT wipe an F-09 Internal Review hold", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", tags: [] }],
+    fundingRounds: [{ id: "fr-1", client_id: "cl-1", round_number: 1, hold_reason: "Internal Review" }]
+  });
+  const res = await handle({ event: ev("docs.received", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(res.branch, "docs_received");
+  assert.equal(db.fundingRounds[0].hold_reason, "Internal Review");
+});
+
 test("duplicate delivery: replaying MISSING_DOCS does not double-send", async () => {
   const db = pgFake({
     clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }],

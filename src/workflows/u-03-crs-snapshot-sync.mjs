@@ -17,7 +17,7 @@ export async function handle({ event, db, step }) {
 
   await step.run("set-crs-fields", () => mergeCustomFields(db, clientId, {
     crs_status: "Complete",
-    crs_snapshot_date: "now",
+    crs_snapshot_date: event.payload?.occurredAt || new Date().toISOString(),
     crs_fico_score: event.payload?.scores?.ex ?? null
   }));
   await step.run("tag-crs-snapshot", () => addTags(db, clientId, ["crs:snapshot"]));

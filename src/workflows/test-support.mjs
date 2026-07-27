@@ -12,6 +12,7 @@ export function pgFake(seed = {}) {
   const events = seed.events || [];
   const templates = seed.templates || [];
   const fundingRounds = seed.fundingRounds || [];
+  const applications = seed.applications || [];
   const inquiryLog = seed.inquiryLog || [];
   // pipelines/stages: [{ pipeline_key, stage_key, pipeline_id, stage_id }]
   const pipelineStages = seed.pipelineStages || [];
@@ -25,7 +26,7 @@ export function pgFake(seed = {}) {
     clients.find((c) => c.org_id === org && String(c.email || "").toLowerCase() === String(email).toLowerCase());
 
   return {
-    clients, events, templates, messages, tasks, fundingRounds, inquiryLog, pipelineStages, cards, behaviorScores,
+    clients, events, templates, messages, tasks, fundingRounds, applications, inquiryLog, pipelineStages, cards, behaviorScores,
     async query(sql, params = []) {
       // --- behavior_scores (BC-01/BC-02) ---
       if (/INSERT INTO behavior_scores \(org_id, client_id, responsiveness\)/.test(sql)) {
@@ -147,10 +148,25 @@ export function pgFake(seed = {}) {
         return { rows: [] };
       }
 
-      // --- funding_rounds (latest round lookup + hold_reason set) ---
-      if (/SELECT id, hold_reason FROM funding_rounds/.test(sql)) {
+      // --- funding_rounds: N-06 still-eligible check (funded_amount > 0) ---
+      if (/SELECT 1 FROM funding_rounds WHERE client_id.*funded_amount/.test(sql)) {
+        const match = fundingRounds.find((r) => r.client_id === params[0] && parseFloat(r.funded_amount) > 0);
+        return { rows: match ? [{ x: 1 }] : [] };
+      }
+      // --- funding_rounds (latest round id-only lookup for allApplicationsDenied in F-09) ---
+      if (/SELECT id FROM funding_rounds WHERE client_id/.test(sql)) {
         const rounds = fundingRounds.filter((r) => r.client_id === params[0]).sort((a, b) => b.round_number - a.round_number);
-        return { rows: rounds[0] ? [{ id: rounds[0].id, hold_reason: rounds[0].hold_reason || null }] : [] };
+        return { rows: rounds[0] ? [{ id: rounds[0].id }] : [] };
+      }
+      // --- applications (per-bank status for F-09 allApplicationsDenied) ---
+      if (/SELECT status FROM applications WHERE funding_round_id/.test(sql)) {
+        const apps = applications.filter((a) => a.funding_round_id === params[0]);
+        return { rows: apps.map((a) => ({ status: a.status })) };
+      }
+      // --- funding_rounds (latest round lookup + hold_reason set) ---
+      if (/SELECT (?:id, )?hold_reason FROM funding_rounds/.test(sql)) {
+        const rounds = fundingRounds.filter((r) => r.client_id === params[0]).sort((a, b) => b.round_number - a.round_number);
+        return { rows: rounds[0] ? [{ id: rounds[0].id, hold_reason: rounds[0].hold_reason ?? null }] : [] };
       }
       if (/UPDATE funding_rounds SET hold_reason/.test(sql)) {
         const r = fundingRounds.find((r) => r.id === params[0]);

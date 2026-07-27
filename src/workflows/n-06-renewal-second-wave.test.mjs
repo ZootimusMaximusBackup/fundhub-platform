@@ -10,7 +10,8 @@ const withTemplates = () => [
 
 test("happy path: still a funding client after the wait — task + email + sms", async () => {
   const db = pgFake({
-    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", funded: true }],
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }],
+    fundingRounds: [{ id: "fr-1", client_id: "cl-1", round_number: 1, funded_amount: "50000.00" }],
     templates: withTemplates()
   });
   const res = await handle({ event: ev("round.funded", {}, { clientId: "cl-1" }), db, step: fakeStep() });
@@ -21,9 +22,10 @@ test("happy path: still a funding client after the wait — task + email + sms",
   assert.equal(db.messages.length, 2);
 });
 
-test("branch: no longer a funding client at wake time — no task, no send", async () => {
+test("branch: no funded round at wake time (round deleted or zeroed) — no task, no send", async () => {
   const db = pgFake({
-    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", funded: false }],
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }],
+    fundingRounds: [],
     templates: withTemplates()
   });
   const res = await handle({ event: ev("round.funded", {}, { clientId: "cl-1" }), db, step: fakeStep() });
@@ -35,7 +37,8 @@ test("branch: no longer a funding client at wake time — no task, no send", asy
 
 test("branch: template not yet seeded — task still created, send is a safe no-op", async () => {
   const db = pgFake({
-    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", funded: true }],
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }],
+    fundingRounds: [{ id: "fr-1", client_id: "cl-1", round_number: 1, funded_amount: "50000.00" }],
     templates: []
   });
   const res = await handle({ event: ev("round.funded", {}, { clientId: "cl-1" }), db, step: fakeStep() });
@@ -46,7 +49,8 @@ test("branch: template not yet seeded — task still created, send is a safe no-
 
 test("duplicate delivery: replaying the same event does not double-create the task or double-send", async () => {
   const db = pgFake({
-    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", funded: true }],
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }],
+    fundingRounds: [{ id: "fr-1", client_id: "cl-1", round_number: 1, funded_amount: "50000.00" }],
     templates: withTemplates()
   });
   const event = ev("round.funded", {}, { id: "evt-dup-6", clientId: "cl-1" });

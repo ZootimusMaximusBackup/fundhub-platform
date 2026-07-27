@@ -17,9 +17,18 @@ export const EMAIL_TEMPLATE_KEY = "EMAIL-DPC05-NO-PROGRESS-72H";
 export const SMS_TEMPLATE_KEY = "SMS-DPC05-NO-PROGRESS-72H";
 const SOURCE_WORKFLOW = "dpc-05-no-progress-escalation";
 
-async function decisionMade(db, clientId) {
+// Progress is genuine if last_progress_timestamp was updated after the booking was
+// created (i.e. something happened beyond the booking itself), OR if decision_status
+// is set. Checking last_progress_timestamp covers clients who advance through the
+// pipeline without ever sending the DPC-03 SMS keywords.
+async function progressMade(db, clientId, bookingTime) {
   const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
-  return Boolean(r.rows[0]?.custom_fields?.decision_status);
+  const cf = r.rows[0]?.custom_fields || {};
+  if (cf.decision_status) return true;
+  if (cf.last_progress_timestamp && cf.last_progress_timestamp !== "now") {
+    return new Date(cf.last_progress_timestamp) > new Date(bookingTime);
+  }
+  return false;
 }
 
 async function createEscalationTaskOnce(db, { orgId, clientId, eventId }) {
@@ -38,9 +47,10 @@ export async function handle({ event, db, step }) {
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
 
+  const bookingTime = event.payload?.occurredAt || event.ts || new Date().toISOString();
   await step.sleep("wait-72h", "72h");
 
-  const madeProgress = await step.run("check-decision-made", () => decisionMade(db, clientId));
+  const madeProgress = await step.run("check-progress-made", () => progressMade(db, clientId, bookingTime));
   if (madeProgress) return { done: false, reason: "progress_made" };
 
   const orgId = event.orgId;

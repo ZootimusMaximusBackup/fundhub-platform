@@ -14,10 +14,21 @@ import { resolveClient } from "../handlers/client-lifecycle.mjs";
 
 export const RESPONSIVENESS = { fast: 1.0, normal: 0.5, slow: 0.0 };
 
+// crs_paid — written by client-lifecycle.mjs:onCrsPaid (real writer exists).
+// hold_reason on latest round: when F-06 clears the hold on docs.received it sets
+// hold_reason = null. If hold_reason is still "Missing Documents" docs are not cleared.
+// docs_missing_cleared was invented and never written — replaced with real signals.
 async function docsCleared(db, clientId) {
-  const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
-  const cf = r.rows[0]?.custom_fields || {};
-  return cf.crs_paid === true || cf.docs_missing_cleared === true;
+  const cfRow = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
+  const cf = cfRow.rows[0]?.custom_fields || {};
+  if (cf.crs_paid === true) return true;
+  const roundRow = await db.query(
+    `SELECT hold_reason FROM funding_rounds WHERE client_id = $1 ORDER BY round_number DESC LIMIT 1`,
+    [clientId]
+  );
+  // If the most recent round has hold_reason = "Missing Documents", docs are still pending.
+  if (roundRow.rows[0]?.hold_reason === "Missing Documents") return false;
+  return true;
 }
 
 async function recordScore(db, { orgId, clientId, responsiveness }) {

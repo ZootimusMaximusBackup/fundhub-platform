@@ -39,7 +39,7 @@ export async function handle({ event, db, step }) {
   if (!eligible) return { done: false, reason: "ownership_already_locked" };
 
   const patch = {};
-  if (!owners.firstTouchDate) patch.first_touch_date = event.payload?.occurredAt || "now";
+  if (!owners.firstTouchDate) patch.first_touch_date = event.payload?.occurredAt || new Date().toISOString();
   if (!owners.tier1Owner && a1) patch.affiliate_tier1_owner = a1;
   if (!owners.tier2Owner && a2) patch.affiliate_tier2_owner = a2;
 

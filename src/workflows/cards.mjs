@@ -21,7 +21,8 @@ export async function moveCardToStage(db, { orgId, clientId, pipelineKey, stageK
     return { moved: true, created: false };
   }
   await db.query(
-    `INSERT INTO cards (org_id, client_id, pipeline_id, stage_id) VALUES ($1,$2,$3,$4)`,
+    `INSERT INTO cards (org_id, client_id, pipeline_id, stage_id) VALUES ($1,$2,$3,$4)
+     ON CONFLICT (client_id, pipeline_id) DO UPDATE SET stage_id = EXCLUDED.stage_id`,
     [orgId, clientId, row.pipeline_id, row.stage_id]
   );
   return { moved: true, created: true };

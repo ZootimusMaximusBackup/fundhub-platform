@@ -14,7 +14,7 @@ export async function handle({ event, db, step }) {
   // analyzer_path is written by c-00 on diagnostic.paid — don't overwrite it here.
   await step.run("lock-analyzer-path", () => mergeCustomFields(db, clientId, {
     last_progress_action: "analyzer_completed",
-    last_progress_timestamp: "now"
+    last_progress_timestamp: event.payload?.occurredAt || new Date().toISOString()
   }));
 
   return { done: true };

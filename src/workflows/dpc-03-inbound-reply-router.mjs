@@ -36,10 +36,18 @@ async function findClientByPhone(db, orgId, phone) {
 
 function parseDecision(body) {
   const b = String(body || "").trim().toLowerCase();
+  // "stop" is a telco opt-out keyword — must not be consumed here (handled at carrier
+  // layer). "yes" must only fire in DPC-03's own context (see dpc03_awaiting_decision
+  // gate below) to avoid colliding with AI-SET-03's "reply YES to rebook" path.
   if (/\byes\b/.test(b)) return "yes";
   if (/\breschedule\b/.test(b)) return "reschedule";
-  if (/\bclose\b|\bstop\b|\bno\b/.test(b)) return "close_file";
+  if (/\bclose\b|\bno\b/.test(b)) return "close_file";
   return null;
+}
+
+async function isDpc03Context(db, clientId) {
+  const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
+  return Boolean(r.rows[0]?.custom_fields?.dpc03_awaiting_decision);
 }
 
 async function createTaskOnce(db, { orgId, clientId, eventId, title, source }) {
@@ -61,9 +69,16 @@ export async function handle({ event, db, step }) {
   const clientId = event.clientId || await step.run("resolve-client", () => findClientByPhone(db, event.orgId, event.payload?.from));
   if (!clientId) return { done: false, reason: "no_client" };
 
+  // "yes" is ambiguous across workflows — only act when DPC-03 set the context flag,
+  // otherwise leave it for the workflow that owns this conversation state.
+  if (decision === "yes") {
+    const inContext = await step.run("check-dpc03-context", () => isDpc03Context(db, clientId));
+    if (!inContext) return { done: false, reason: "not_in_dpc03_context" };
+  }
+
   const orgId = event.orgId;
   const eventId = event.id;
-  await step.run("set-decision-status", () => mergeCustomFields(db, clientId, { decision_status: decision, last_progress_timestamp: "now" }));
+  await step.run("set-decision-status", () => mergeCustomFields(db, clientId, { decision_status: decision, last_progress_timestamp: new Date().toISOString() }));
 
   if (decision === "yes") {
     const task = await step.run("create-yes-task", () =>

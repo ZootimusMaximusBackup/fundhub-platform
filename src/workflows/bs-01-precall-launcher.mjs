@@ -31,7 +31,7 @@ async function runDrip({ db, step, orgId, clientId, eventId, templateKeys }) {
     const res = await step.run(`send-${i}`, () =>
       sendTemplated(db, { orgId, clientId, channel: "email", templateKey: templateKeys[i], eventId: `${eventId}:${i}` }));
     sent.push(res);
-    await step.run(`stamp-last-sent-${i}`, () => mergeCustomFields(db, clientId, { bs_email_last_sent_ts: "now" }));
+    await step.run(`stamp-last-sent-${i}`, () => mergeCustomFields(db, clientId, { bs_email_last_sent_ts: new Date().toISOString() }));
   }
   return sent;
 }
@@ -43,7 +43,7 @@ export async function handle({ event, db, step }) {
   const orgId = event.orgId;
   const eventId = event.id;
   await step.run("tag-precall", () => addTags(db, clientId, ["bs:precall"]));
-  await step.run("set-precall-start", () => mergeCustomFields(db, clientId, { bs_precall_start_ts: "now" }));
+  await step.run("set-precall-start", () => mergeCustomFields(db, clientId, { bs_precall_start_ts: new Date().toISOString() }));
 
   const outcomeTier = await step.run("check-product-path", () => clientOutcomeTier(db, clientId));
   let drip;
