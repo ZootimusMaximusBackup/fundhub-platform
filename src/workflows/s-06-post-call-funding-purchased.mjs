@@ -1,7 +1,8 @@
 // S-06 — Post-Call Outcome: Funding Purchased.
 // Source: GHL-System-Map.md SALES WORKFLOWS section.
-// Trigger: sale.closed, gated on the funding path (outcome_tier already set by
-// decision.rendered, which always precedes sale.closed in the canonical spine).
+// Trigger: deposit.paid — the real funding-deposit signal (Chris-confirmed 2026-07-27;
+// sale.closed is the DIY downsell, not funding). Gated on the funding path (outcome_tier
+// already set by decision.rendered, which precedes the deposit in the canonical spine).
 // Marks the sale-side commitment; F-01 (Funding Intake) handles the funding-ops-side
 // kickoff later, when round.started fires — these are sequential, not duplicated.
 
@@ -45,6 +46,6 @@ export async function handle({ event, db, step }) {
 
 export const s06PostCallFundingPurchased = inngest.createFunction(
   { id: "s-06-post-call-funding-purchased", name: "S-06 — Post-Call Outcome: Funding Purchased" },
-  { event: "sale.closed" },
+  { event: "deposit.paid" },
   ({ event, step }) => handle({ event: event.data, db, step })
 );
