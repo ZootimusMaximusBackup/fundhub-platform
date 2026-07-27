@@ -3,17 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <title>Fundhub — Automations</title>
+<link rel="stylesheet" href="fundhub-brand.css">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
+  /* Palette re-pointed at the real fundhub-brand.css tokens. Every variable NAME
+     is kept so no downstream rule changes. Two tiers per hue, because the real
+     status colors are pastels: the pastel itself fills and outlines, and a dark
+     ink of the same hue carries text (pastel-on-white text fails contrast).
+     NOTE --card: brand.css uses --card for its DARK surface (#111113); these
+     wireframes use it for the white card. The local value below wins on purpose. */
   :root{
-    --ink:#0A0A0A;--paper:#F4F3F0;--paper-dim:#E9E7E2;--card:#FFFFFF;--line:#DDDAD3;
-    --text:#171614;--text-dim:#6B685F;--text-faint:#9A968A;
-    --dark-text:#F4F3F0;--dark-text-dim:#9C9990;--dark-line:#2A2A28;
-    --amber:#B8892B;--amber-bg:#FBF3E2;--red:#B8402F;--red-bg:#FCEAE6;
-    --green:#3E7A4C;--green-bg:#E8F3E9;--blue:#2F5FB8;--blue-bg:#E1EAFB;
-    --purple:#6A4FD0;--purple-bg:#F1EEFC;--purple-line:#C6BAF2;
-    --spectrum:linear-gradient(90deg,#7A5CF0 0%,#2F8FE0 22%,#1FB6A8 44%,#3FAE5C 60%,#E0B02F 78%,#E0602F 100%);
+    --ink:#0A0A0A;--paper:#FCFCFC;--paper-dim:#F4F4F5;--card:#FFFFFF;--line:#E4E4E7;
+    --text:#18181B;--text-dim:#52525B;--text-faint:#A1A1AA;
+    --dark-text:#FCFCFC;--dark-text-dim:#A1A1AA;--dark-line:#26262B;
+    --amber:#6B4A12;--amber-bg:rgba(245,206,143,.26);--amber-line:#F5CE8F;
+    --red:#6E2A22;--red-bg:rgba(242,166,155,.24);--red-line:#F2A69B;
+    --green:#2C5138;--green-bg:rgba(168,216,176,.26);--green-line:#A8D8B0;
+    --blue:#22415F;--blue-bg:rgba(169,198,232,.26);--blue-line:#A9C6E8;
+    --purple:#3F2F63;--purple-bg:rgba(196,179,229,.26);--purple-line:#C4B3E5;
+    --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
   }
   /* ---------- worker avatars: filled = a person, purple outline = an agent ---------- */
   .av{width:17px;height:17px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;
@@ -35,10 +44,10 @@
   .appnav{background:var(--ink);display:flex;align-items:center;gap:1px;padding:0 13px;height:31px;
     flex-shrink:0;border-bottom:2px solid transparent;border-image:var(--spectrum) 1;overflow-x:auto;}
   .appnav::-webkit-scrollbar{display:none;}
-  .nav-item{font-size:11.5px;font-weight:600;color:#7C7970;text-decoration:none;padding:4px 9px;
+  .nav-item{font-size:11.5px;font-weight:600;color:#71717A;text-decoration:none;padding:4px 9px;
     border-radius:5px;white-space:nowrap;}
-  .nav-item:hover{color:var(--dark-text);background:#161614;}
-  .nav-item.active{color:var(--dark-text);font-weight:700;background:#1C1C19;
+  .nav-item:hover{color:var(--dark-text);background:#161619;}
+  .nav-item.active{color:var(--dark-text);font-weight:700;background:#1C1C20;
     box-shadow:inset 0 -2px 0 var(--dark-text);}
   .nav-div{width:1px;height:13px;background:var(--dark-line);margin:0 7px;flex-shrink:0;}
   .brand{display:flex;align-items:center;gap:9px;}
@@ -54,21 +63,21 @@
     font-family:'JetBrains Mono',monospace;
     font-size:10.5px;
     color:var(--dark-text);
-    background:#151513;
+    background:#151517;
     border:1px solid var(--dark-line);
     padding:4px 9px 4px 7px;
     border-radius:20px;
   }
   .live-dot{
     width:6px;height:6px;border-radius:50%;
-    background:#3FD16A;
-    box-shadow:0 0 0 0 rgba(63,209,106,.6);
+    background:#A8D8B0;
+    box-shadow:0 0 0 0 rgba(168,216,176,.6);
     animation:pulse 1.8s infinite;
   }
   @keyframes pulse{
-    0%{box-shadow:0 0 0 0 rgba(63,209,106,.55);}
-    70%{box-shadow:0 0 0 6px rgba(63,209,106,0);}
-    100%{box-shadow:0 0 0 0 rgba(63,209,106,0);}
+    0%{box-shadow:0 0 0 0 rgba(168,216,176,.55);}
+    70%{box-shadow:0 0 0 6px rgba(168,216,176,0);}
+    100%{box-shadow:0 0 0 0 rgba(168,216,176,0);}
   }
 
   .summary-bar{background:var(--card);border-bottom:1px solid var(--line);padding:9px 18px;flex-shrink:0;display:flex;gap:10px;}
@@ -78,7 +87,7 @@
 
   main{flex:1;overflow-y:auto;padding:12px 18px 20px;background:var(--paper);}
   main::-webkit-scrollbar{width:8px;}
-  main::-webkit-scrollbar-thumb{background:#D3D0C8;border-radius:4px;}
+  main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px;}
 
   .rail-group{background:var(--card);border:1px solid var(--line);border-radius:8px;margin-bottom:10px;overflow:hidden;}
   .rail-group-head{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;background:var(--paper);border-bottom:1px solid var(--line);}
@@ -89,7 +98,7 @@
   table.wf th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);padding:6px 14px;border-bottom:1px solid var(--line);}
   table.wf td{padding:8px 14px;font-size:12.5px;border-bottom:1px solid var(--paper-dim);vertical-align:middle;}
   table.wf tr:last-child td{border-bottom:none;}
-  table.wf tr.failed td{background:#FCEAE6;}
+  table.wf tr.failed td{background:var(--red-bg);}
   .wf-name{font-weight:700;}
   .wf-owner{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:500;
     color:var(--text-dim);margin-top:3px;}
@@ -108,6 +117,50 @@
   .toggle.paused .dot{background:var(--red);}
 
   .empty-row td{color:var(--text-faint);font-style:normal;padding:12px 14px;}
+
+
+  /* ---------- rail filter ---------- */
+  .rail-filter{display:flex;align-items:center;gap:8px;margin-left:auto;}
+  .rail-filter label{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);}
+  .rail-filter select{
+    font:inherit;font-size:12px;background:var(--card);color:var(--text);
+    border:1px solid var(--line);border-radius:6px;padding:5px 9px;cursor:pointer;
+  }
+  .rail-filter select:focus-visible,.toggle:focus-visible,tr[data-wf]:focus-visible{
+    outline:2px solid var(--blue-line);outline-offset:2px;
+  }
+  .rail-group[hidden]{display:none;}
+
+  /* ---------- toggles that actually toggle ---------- */
+  button.toggle{font:inherit;font-size:10.5px;font-weight:700;letter-spacing:.3px;
+    border:1px solid transparent;cursor:pointer;transition:background .12s,color .12s;}
+  button.toggle:hover{filter:brightness(.97);}
+  button.toggle.on{border-color:var(--green-line);}
+  button.toggle.off{border-color:var(--line);}
+  button.toggle.paused{border-color:var(--red-line);}
+
+  /* ---------- workflow rows expand to their steps ---------- */
+  table.wf tr[data-wf]{cursor:pointer;}
+  table.wf tr[data-wf]:hover td{background:var(--paper);}
+  table.wf tr[data-wf].failed:hover td{background:rgba(242,166,155,.28);}
+  table.wf tr[data-wf][aria-expanded="true"] td{background:var(--paper-dim);}
+  .wfchev{display:inline-block;width:9px;color:var(--text-faint);font-size:9px;
+    transition:transform .16s ease;margin-right:5px;}
+  tr[data-wf][aria-expanded="true"] .wfchev{transform:rotate(90deg);}
+  tr.wf-steps > td{background:var(--paper-dim);padding:0 14px 12px !important;}
+  .steps{border-top:1px dashed var(--line);padding-top:10px;}
+  .steps-h{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:7px;}
+  .step-line{display:flex;gap:10px;padding:3px 0;font-size:12px;align-items:flex-start;}
+  .step-line .sn{
+    font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-faint);
+    flex:0 0 16px;border:1px solid var(--line);border-radius:50%;width:16px;height:16px;
+    display:flex;align-items:center;justify-content:center;background:var(--card);margin-top:1px;
+  }
+  .step-line .sb{flex:1;min-width:0;color:var(--text-dim);}
+  .step-line .sb b{color:var(--text);font-weight:600;}
+  .step-line.halt .sn{border-color:var(--red-line);color:var(--red);}
+  .step-line.halt .sb{color:var(--red);}
+  .step-line.skipped{opacity:.5;}
 
   footer.statusbar{flex-shrink:0;height:22px;background:var(--ink);display:flex;align-items:center;padding:0 14px;gap:16px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dark-text-dim);}
 </style>
@@ -144,195 +197,199 @@
   </nav>
 
   <div class="summary-bar">
-    <div class="sum-tile"><div class="sum-label">Total</div><div class="sum-value">18</div></div>
-    <div class="sum-tile"><div class="sum-label">On</div><div class="sum-value">17</div></div>
-    <div class="sum-tile"><div class="sum-label">Paused</div><div class="sum-value">1</div></div>
-    <div class="sum-tile"><div class="sum-label">Ran Today</div><div class="sum-value">217</div></div>
+    <div class="sum-tile"><div class="sum-label">Total</div><div class="sum-value" data-sum="total">18</div></div>
+    <div class="sum-tile"><div class="sum-label">On</div><div class="sum-value" data-sum="on">17</div></div>
+    <div class="sum-tile"><div class="sum-label">Paused</div><div class="sum-value" data-sum="paused">1</div></div>
+    <div class="sum-tile"><div class="sum-label">Ran Today</div><div class="sum-value" data-sum="ran">217</div></div>
+    <div class="rail-filter">
+      <label for="rail-select">Rail</label>
+      <select id="rail-select"></select>
+    </div>
   </div>
 
   <main>
 
-    <div class="rail-group">
+    <div class="rail-group" data-rail="Sales">
       <div class="rail-group-head"><div class="rail-group-title">Sales</div><div class="rail-group-meta">4 on</div></div>
       <table class="wf">
         <tr><th style="width:26%;">Workflow</th><th style="width:36%;">Trigger</th><th style="width:20%;">Last Run</th><th style="width:18%;">Status</th></tr>
-        <tr>
-          <td class="wf-name">New Lead Welcome Text
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>New Lead Welcome Text
             <div class="wf-owner"><span class="av agent">A1</span> Agent 1</div></td>
           <td class="wf-trigger">When a new lead is captured</td>
           <td class="wf-run-ok">3m ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
-        <tr>
-          <td class="wf-name">Diagnostic Payment Confirmation
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Diagnostic Payment Confirmation
             <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
           <td class="wf-trigger">When a client pays the $32 diagnostic</td>
           <td class="wf-run-ok">11m ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
-        <tr>
-          <td class="wf-name">Survey Reminder
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Survey Reminder
             <div class="wf-owner"><span class="av agent">A1</span> Agent 1</div></td>
           <td class="wf-trigger">When Survey Completed sits idle over 24 hours</td>
           <td class="wf-run-ok">2h ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
-        <tr>
-          <td class="wf-name">Booked Call Reminder
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Booked Call Reminder
             <div class="wf-owner"><span class="av agent">A1</span> Agent 1</div></td>
           <td class="wf-trigger">30 minutes before a booked call</td>
           <td class="wf-run-ok">15m ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
       </table>
     </div>
 
-    <div class="rail-group">
+    <div class="rail-group" data-rail="Funding: Card Stacking">
       <div class="rail-group-head"><div class="rail-group-title">Funding: Card Stacking</div><div class="rail-group-meta">3 on · 1 paused</div></div>
       <table class="wf">
         <tr><th style="width:26%;">Workflow</th><th style="width:36%;">Trigger</th><th style="width:20%;">Last Run</th><th style="width:18%;">Status</th></tr>
-        <tr>
-          <td class="wf-name">Deposit Receipt Email
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Deposit Receipt Email
             <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
           <td class="wf-trigger">When a client pays the $3,000 deposit</td>
           <td class="wf-run-ok">4m ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
-        <tr>
-          <td class="wf-name">Round Submitted Notification
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Round Submitted Notification
             <div class="wf-owner"><span class="av agent">A5</span> Agent 5</div></td>
           <td class="wf-trigger">When Round Submitted stage is entered</td>
           <td class="wf-run-ok">1h 20m ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
-        <tr>
-          <td class="wf-name">Missing Documents Reminder
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Missing Documents Reminder
             <div class="wf-owner"><span class="av agent">A5</span> Agent 5</div></td>
           <td class="wf-trigger">When Missing Documents sits idle over 24 hours</td>
           <td class="wf-run-ok">6h ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
-        <tr class="failed">
-          <td class="wf-name">Round Funded Celebration Text
+        <tr class="failed" data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Round Funded Celebration Text
             <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
           <td class="wf-trigger">When Round Funded stage is entered</td>
           <td>
             <span class="wf-run-fail">12m ago · didn't go out</span>
             <span class="wf-run-fail-detail">the text service stopped responding</span>
           </td>
-          <td><span class="toggle paused"><span class="dot"></span>PAUSED</span></td>
+          <td><button type="button" class="toggle paused" aria-pressed="false"><span class="dot"></span>PAUSED</button></td>
         </tr>
       </table>
     </div>
 
-    <div class="rail-group">
+    <div class="rail-group" data-rail="Funding: Alt-Fin (Lendflow)">
       <div class="rail-group-head"><div class="rail-group-title">Funding: Alt-Fin (Lendflow)</div><div class="rail-group-meta">2 on</div></div>
       <table class="wf">
         <tr><th style="width:26%;">Workflow</th><th style="width:36%;">Trigger</th><th style="width:20%;">Last Run</th><th style="width:18%;">Status</th></tr>
-        <tr>
-          <td class="wf-name">Lendflow Submission Sync
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Lendflow Submission Sync
             <div class="wf-owner"><span class="av agent">RC</span> Recon</div></td>
           <td class="wf-trigger">When a round is submitted to Lendflow</td>
           <td class="wf-run-ok">22m ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
-        <tr>
-          <td class="wf-name">Round Approved Notification
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Round Approved Notification
             <div class="wf-owner"><span class="av agent">A5</span> Agent 5</div></td>
           <td class="wf-trigger">When Round Approved stage is entered</td>
           <td class="wf-run-ok">3h ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
       </table>
     </div>
 
-    <div class="rail-group">
+    <div class="rail-group" data-rail="Optimization (Repair) Rounds">
       <div class="rail-group-head"><div class="rail-group-title">Optimization (Repair) Rounds</div><div class="rail-group-meta">2 on</div></div>
       <table class="wf">
         <tr><th style="width:26%;">Workflow</th><th style="width:36%;">Trigger</th><th style="width:20%;">Last Run</th><th style="width:18%;">Status</th></tr>
-        <tr>
-          <td class="wf-name">Repair Bundle Payment Confirmation
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Repair Bundle Payment Confirmation
             <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
           <td class="wf-trigger">When a client pays the $2,000 repair bundle</td>
           <td class="wf-run-ok">5h ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
-        <tr>
-          <td class="wf-name">Credit Optimization Roadmap Delivery
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Credit Optimization Roadmap Delivery
             <div class="wf-owner"><span class="av agent">A5</span> Agent 5</div></td>
           <td class="wf-trigger">When File Finalized stage is entered</td>
           <td class="wf-run-ok">1d ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
       </table>
     </div>
 
-    <div class="rail-group">
+    <div class="rail-group" data-rail="Inquiry Removal">
       <div class="rail-group-head"><div class="rail-group-title">Inquiry Removal</div><div class="rail-group-meta">2 on</div></div>
       <table class="wf">
         <tr><th style="width:26%;">Workflow</th><th style="width:36%;">Trigger</th><th style="width:20%;">Last Run</th><th style="width:18%;">Status</th></tr>
-        <tr>
-          <td class="wf-name">Inquiry Removal Confirmation SMS
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Inquiry Removal Confirmation SMS
             <div class="wf-owner"><span class="av agent">IR</span> Inquiry Removal AI</div></td>
           <td class="wf-trigger">When an inquiry removal is confirmed</td>
           <td class="wf-run-ok">9m ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
-        <tr>
-          <td class="wf-name">Awaiting CRS Reminder
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Awaiting CRS Reminder
             <div class="wf-owner"><span class="av agent">CF</span> Context Fetcher</div></td>
           <td class="wf-trigger">When Awaiting CRS sits idle over 48 hours</td>
           <td class="wf-run-ok">20m ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
       </table>
     </div>
 
-    <div class="rail-group">
+    <div class="rail-group" data-rail="AR + Collections">
       <div class="rail-group-head"><div class="rail-group-title">AR + Collections</div><div class="rail-group-meta">2 on</div></div>
       <table class="wf">
         <tr><th style="width:26%;">Workflow</th><th style="width:36%;">Trigger</th><th style="width:20%;">Last Run</th><th style="width:18%;">Status</th></tr>
-        <tr>
-          <td class="wf-name">AR Invoice Reminder
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>AR Invoice Reminder
             <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
           <td class="wf-trigger">3 days after an invoice is sent unpaid</td>
           <td class="wf-run-ok">1h ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
-        <tr>
-          <td class="wf-name">Collections Escalation Notice
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Collections Escalation Notice
             <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
           <td class="wf-trigger">When an invoice passes 30 days overdue</td>
           <td class="wf-run-ok">2h ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
       </table>
     </div>
 
-    <div class="rail-group">
+    <div class="rail-group" data-rail="Affiliates + Hiring">
       <div class="rail-group-head"><div class="rail-group-title">Affiliates + Hiring</div><div class="rail-group-meta">0 configured</div></div>
       <table class="wf">
         <tr class="empty-row"><td colspan="4">Nothing set up for referrals or hiring yet — payout notices run out of the back office.</td></tr>
       </table>
     </div>
 
-    <div class="rail-group">
+    <div class="rail-group" data-rail="Back Office">
       <div class="rail-group-head"><div class="rail-group-title">Back Office</div><div class="rail-group-meta">2 on</div></div>
       <table class="wf">
         <tr><th style="width:26%;">Workflow</th><th style="width:36%;">Trigger</th><th style="width:20%;">Last Run</th><th style="width:18%;">Status</th></tr>
-        <tr>
-          <td class="wf-name">Daily Brief
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Daily Brief
             <div class="wf-owner"><span class="av agent">DB</span> Daily Brief</div></td>
           <td class="wf-trigger">Every day at 7:00 AM — goes to <span class="av human">CS</span> Chris Stanbridge</td>
           <td class="wf-run-ok">today 7:00 AM · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
-        <tr>
-          <td class="wf-name">Affiliate Payout Notice
+        <tr data-wf tabindex="0" aria-expanded="false">
+          <td class="wf-name"><span class="wfchev">▸</span>Affiliate Payout Notice
             <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
           <td class="wf-trigger">When an affiliate payout is processed</td>
           <td class="wf-run-ok">3d ago · went out fine</td>
-          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+          <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
       </table>
     </div>
@@ -346,5 +403,165 @@
   </footer>
 
 </div>
+
+<script>
+/* ───────────────────────────────────────────────────────────────────────────
+   Automations — wireframe behaviour. No backend.
+
+   Step detail is derived from each row's own trigger, owner and name rather
+   than authored per workflow: the real definitions live in src/workflows/*.mjs
+   under coded names (c-02, af-02, ai-set-03…) that don't map cleanly onto these
+   18 user-facing labels. Wire the two together when that mapping exists.
+   ─────────────────────────────────────────────────────────────────────────── */
+(function(){
+  var groups = [].slice.call(document.querySelectorAll('.rail-group[data-rail]')),
+      rows   = [].slice.call(document.querySelectorAll('tr[data-wf]')),
+      sel    = document.getElementById('rail-select');
+
+  function sum(k){ return document.querySelector('[data-sum="'+k+'"]'); }
+  function textOf(el){ return el ? el.textContent.trim().replace(/\s+/g,' ') : ''; }
+
+  /* the workflow's own label, without the chevron or the owner line */
+  function nameOf(row){
+    var td = row.cells[0].cloneNode(true);
+    [].forEach.call(td.querySelectorAll('.wfchev,.wf-owner'), function(n){ n.remove(); });
+    return textOf(td);
+  }
+
+  /* ── COUNTS ─────────────────────────────────────────────────────────────
+     Rail meta keeps the file's own shape: 'N on', with '· M paused' / '· M off'
+     appended only when non-zero. Groups with no toggles (0 configured) are left
+     exactly as they are.                                                      */
+  function recount(){
+    var on = 0, paused = 0;
+    groups.forEach(function(g){
+      var ts = [].slice.call(g.querySelectorAll('.toggle'));
+      if(!ts.length) return;
+      var gOn = ts.filter(function(t){ return t.classList.contains('on'); }).length,
+          gPa = ts.filter(function(t){ return t.classList.contains('paused'); }).length,
+          gOff= ts.filter(function(t){ return t.classList.contains('off'); }).length;
+      on += gOn; paused += gPa;
+      var parts = [gOn + ' on'];
+      if(gPa)  parts.push(gPa + ' paused');
+      if(gOff) parts.push(gOff + ' off');
+      g.querySelector('.rail-group-meta').textContent = parts.join(' · ');
+    });
+    sum('on').textContent = String(on);
+    sum('paused').textContent = String(paused);
+  }
+
+  /* ── TOGGLES ────────────────────────────────────────────────────────────
+     on -> off, off -> on, and a paused workflow resumes to on. Resuming does
+     not erase the failed last run — that history stays on the row.            */
+  document.querySelectorAll('.toggle').forEach(function(t){
+    t.addEventListener('click', function(e){
+      e.stopPropagation();                 /* don't also expand the row */
+      var next = t.classList.contains('on') ? 'off' : 'on';
+      t.classList.remove('on','off','paused');
+      t.classList.add(next);
+      t.childNodes[1].nodeValue = next === 'on' ? 'ON' : 'OFF';
+      t.setAttribute('aria-pressed', next === 'on' ? 'true' : 'false');
+      recount();
+    });
+  });
+
+  /* ── ROWS EXPAND TO THEIR STEPS ─────────────────────────────────────────── */
+  function channelStep(name){
+    var n = name.toLowerCase();
+    if(/\btext\b|sms/.test(n))            return 'Send it as an SMS';
+    if(/email/.test(n))                   return 'Send it as an email';
+    if(/notification|notice/.test(n))     return 'Notify the assigned staff member';
+    if(/sync/.test(n))                    return 'Push the update to the connected system';
+    if(/delivery|roadmap|brief/.test(n))  return 'Deliver the document';
+    if(/confirmation|receipt/.test(n))    return 'Send the confirmation';
+    return 'Send it';
+  }
+
+  function stepsFor(row){
+    var name    = nameOf(row),
+        trigger = textOf(row.querySelector('.wf-trigger')),
+        owner   = textOf(row.querySelector('.wf-owner')),
+        failure = textOf(row.querySelector('.wf-run-fail-detail'));
+
+    var steps = [
+      { t: 'Wait for the trigger — <b>' + trigger + '</b>' },
+      { t: '<b>' + owner + '</b> pulls the client’s record and builds the message' },
+      { t: channelStep(name) },
+      { t: 'Write the outcome back to the client’s timeline' }
+    ];
+    if(failure){
+      /* show where the last run actually stopped, using the row's own reason */
+      steps[2].halt = true;
+      steps[2].t = channelStep(name) + ' — <b>stopped here: ' + failure + '</b>';
+      steps[3].skipped = true;
+    }
+    return steps;
+  }
+
+  function collapse(row){
+    row.setAttribute('aria-expanded','false');
+    if(row._s){ row._s.remove(); row._s = null; }
+  }
+
+  function expand(row){
+    var tr = document.createElement('tr');
+    tr.className = 'wf-steps';
+    var td = document.createElement('td');
+    td.colSpan = row.cells.length;
+
+    var box = document.createElement('div');
+    box.className = 'steps';
+    var h = document.createElement('div');
+    h.className = 'steps-h';
+    h.textContent = 'What this workflow does';
+    box.appendChild(h);
+
+    stepsFor(row).forEach(function(s, i){
+      var line = document.createElement('div');
+      line.className = 'step-line' + (s.halt ? ' halt' : '') + (s.skipped ? ' skipped' : '');
+      var n = document.createElement('span');
+      n.className = 'sn'; n.textContent = String(i + 1);
+      var b = document.createElement('span');
+      b.className = 'sb'; b.innerHTML = s.t;      /* only our own template markup */
+      line.appendChild(n); line.appendChild(b);
+      box.appendChild(line);
+    });
+
+    td.appendChild(box); tr.appendChild(td);
+    row.parentNode.insertBefore(tr, row.nextSibling);
+    row._s = tr;
+    row.setAttribute('aria-expanded','true');
+  }
+
+  rows.forEach(function(row){
+    function toggle(){
+      if(row.getAttribute('aria-expanded') === 'true') collapse(row); else expand(row);
+    }
+    row.addEventListener('click', toggle);
+    row.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); }
+    });
+  });
+
+  /* ── FILTER BY RAIL ─────────────────────────────────────────────────────── */
+  var ALL = 'All rails';
+  [ALL].concat(groups.map(function(g){ return g.dataset.rail; })).forEach(function(r){
+    var o = document.createElement('option');
+    o.value = r; o.textContent = r;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', function(){
+    var pick = sel.value;
+    groups.forEach(function(g){
+      var hit = pick === ALL || g.dataset.rail === pick;
+      g.hidden = !hit;
+      /* a hidden group must not keep an open step row behind it */
+      if(!hit) [].forEach.call(g.querySelectorAll('tr[data-wf]'), collapse);
+    });
+  });
+
+  recount();
+})();
+</script>
 </body>
 </html>
