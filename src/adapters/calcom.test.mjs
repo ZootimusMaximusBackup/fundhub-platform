@@ -136,6 +136,7 @@ test("handleCalcomWebhook: BOOKING_CREATED → emits booking.created with correc
   assert.equal(seen[0].payload.bookingUid, "booking-uid-abc");
   assert.equal(seen[0].payload.email, "client@example.com");
   assert.equal(seen[0].payload.source, "calcom");
+  assert.equal(seen[0].payload.endTime, "2026-08-01T10:30:00Z", "booking.created must include endTime from Cal.com payload.endTime");
 });
 
 test("handleCalcomWebhook: BOOKING_CANCELLED → 200, ignored, no emit", async () => {
