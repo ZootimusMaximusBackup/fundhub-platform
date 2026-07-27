@@ -51,8 +51,9 @@
     box-shadow:inset 0 -2px 0 var(--dark-text);}
   .nav-div{width:1px;height:13px;background:var(--dark-line);margin:0 7px;flex-shrink:0;}
   .brand{display:flex;align-items:center;gap:9px;}
-  .brand .mark{width:18px;height:18px;border-radius:5px;background:var(--spectrum);flex-shrink:0;}
-  .brand .name{font-weight:800;font-size:14px;letter-spacing:.2px;}
+  /* the real fundhub wordmark, from fundhub-brand.css (--logo).
+     .inv flips it for the dark topbar. */
+  .brand .logo{height:15px;aspect-ratio:2698/543;flex-shrink:0;}
   .brand .sep{color:var(--dark-text-dim);font-weight:400;}
   .brand .sub{font-weight:600;font-size:12.5px;color:var(--dark-text-dim);}
   .topbar-right{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--dark-text-dim);}
@@ -160,8 +161,7 @@
 
   <header class="topbar">
     <div class="brand">
-      <div class="mark"></div>
-      <div class="name">Fundhub</div>
+      <div class="logo inv" role="img" aria-label="Fundhub"></div>
       <div class="sep">/</div>
       <div class="sub">Ops &amp; Admin</div>
     </div>
@@ -211,24 +211,13 @@
         <div class="section">
           <div class="section-title">AR + Collections — Oldest Unpaid First<span class="section-meta">$8,290 still unpaid</span></div>
           <table class="admin" id="ar-table">
-            <tr><th>Client</th><th>Invoice</th><th>Days Overdue</th><th>Status</th></tr>
-            <tr data-ar tabindex="0" aria-expanded="false"
-                data-terms="Paid in full at signup" data-method="Card on file · Commas"
-                data-owner="Sarah Whitfield" data-timeline="today|Invoice sent">
-              <td><span class="archev">▸</span>Wendell Pryce</td><td class="mono">$1,000 DIY</td><td><span class="days-neutral">0</span></td>
-              <td><span class="status-pill neutral">Sent today</span></td>
-            </tr>
-            <tr data-ar tabindex="0" aria-expanded="false"
-                data-terms="2 payments of $1,000" data-method="Card on file · Commas"
-                data-owner="Jordan Blake" data-timeline="Jul 24|Invoice sent;Jul 26|Payment 1 cleared">
-              <td><span class="archev">▸</span>Diego Marchetti</td><td class="mono">$2,000</td><td><span class="days-neutral">2</span></td>
-              <td><span class="status-pill ok">On track</span></td>
-            </tr>
-            <tr data-ar tabindex="0" aria-expanded="false"
-                data-terms="3 payments of $400" data-method="ACH · Commas"
-                data-owner="Nina Castellano" data-timeline="Jul 21|Invoice sent;Jul 23|Payment 1 cleared">
-              <td><span class="archev">▸</span>Angela Byrne</td><td class="mono">$1,200</td><td><span class="days-neutral">5</span></td>
-              <td><span class="status-pill ok">On track</span></td>
+            <tr><th>Client</th><th>Invoice</th><th aria-sort="descending">Days Overdue</th><th>Status</th></tr>
+            <tr class="loud" data-ar tabindex="0" aria-expanded="false"
+                data-terms="Paid in full, 30 days" data-method="No payment method on file"
+                data-owner="Marcus Webb"
+                data-timeline="Jun 11|Invoice sent;Jun 26|Reminder sent;Jul 08|Reminder sent;Jul 19|Call, no answer">
+              <td><span class="archev">▸</span>Rachel Simmons</td><td class="mono">$3,200</td><td><span class="days-crit">45</span></td>
+              <td><span class="status-pill crit">45 days late — call her today</span></td>
             </tr>
             <tr class="warn" data-ar tabindex="0" aria-expanded="false"
                 data-terms="Paid in full, 30 days" data-method="Card declined · retry queued"
@@ -237,12 +226,23 @@
               <td><span class="archev">▸</span>Courtney Vance</td><td class="mono">$890</td><td><span class="days-warn">12</span></td>
               <td><span class="status-pill warn">Reminder sent</span></td>
             </tr>
-            <tr class="loud" data-ar tabindex="0" aria-expanded="false"
-                data-terms="Paid in full, 30 days" data-method="No payment method on file"
-                data-owner="Marcus Webb"
-                data-timeline="Jun 11|Invoice sent;Jun 26|Reminder sent;Jul 08|Reminder sent;Jul 19|Call, no answer">
-              <td><span class="archev">▸</span>Rachel Simmons</td><td class="mono">$3,200</td><td><span class="days-crit">45</span></td>
-              <td><span class="status-pill crit">45 days late — call her today</span></td>
+            <tr data-ar tabindex="0" aria-expanded="false"
+                data-terms="3 payments of $400" data-method="ACH · Commas"
+                data-owner="Nina Castellano" data-timeline="Jul 21|Invoice sent;Jul 23|Payment 1 cleared">
+              <td><span class="archev">▸</span>Angela Byrne</td><td class="mono">$1,200</td><td><span class="days-neutral">5</span></td>
+              <td><span class="status-pill ok">On track</span></td>
+            </tr>
+            <tr data-ar tabindex="0" aria-expanded="false"
+                data-terms="2 payments of $1,000" data-method="Card on file · Commas"
+                data-owner="Jordan Blake" data-timeline="Jul 24|Invoice sent;Jul 26|Payment 1 cleared">
+              <td><span class="archev">▸</span>Diego Marchetti</td><td class="mono">$2,000</td><td><span class="days-neutral">2</span></td>
+              <td><span class="status-pill ok">On track</span></td>
+            </tr>
+            <tr data-ar tabindex="0" aria-expanded="false"
+                data-terms="Paid in full at signup" data-method="Card on file · Commas"
+                data-owner="Sarah Whitfield" data-timeline="today|Invoice sent">
+              <td><span class="archev">▸</span>Wendell Pryce</td><td class="mono">$1,000 DIY</td><td><span class="days-neutral">0</span></td>
+              <td><span class="status-pill neutral">Sent today</span></td>
             </tr>
           </table>
         </div>
@@ -437,7 +437,7 @@
     [].forEach.call(header.cells, function(th, col){
       th.classList.add('sortable');
       th.tabIndex = 0;
-      th.setAttribute('aria-sort','none');
+      if(!th.hasAttribute('aria-sort')) th.setAttribute('aria-sort','none');
       th.insertAdjacentHTML('beforeend','<span class="sarrow">▲</span>');
 
       function sort(){

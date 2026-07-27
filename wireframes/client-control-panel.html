@@ -72,8 +72,9 @@
     box-shadow:inset 0 -2px 0 var(--dark-text);}
   .nav-div{width:1px;height:13px;background:var(--dark-line);margin:0 7px;flex-shrink:0;}
   .brand{display:flex;align-items:center;gap:9px;}
-  .brand .mark{width:18px;height:18px;border-radius:5px;background:var(--spectrum);flex-shrink:0;}
-  .brand .name{font-weight:800;font-size:14px;letter-spacing:.2px;}
+  /* the real fundhub wordmark, from fundhub-brand.css (--logo).
+     .inv flips it for the dark topbar. */
+  .brand .logo{height:15px;aspect-ratio:2698/543;flex-shrink:0;}
   .brand .sep{color:var(--dark-text-dim);font-weight:400;}
   .brand .sub{font-weight:600;font-size:12.5px;color:var(--dark-text-dim);}
   .topbar-right{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--dark-text-dim);}
@@ -241,8 +242,7 @@
 
   <header class="topbar">
     <div class="brand">
-      <div class="mark"></div>
-      <div class="name">Fundhub</div>
+      <div class="logo inv" role="img" aria-label="Fundhub"></div>
       <div class="sep">/</div>
       <div class="sub">Client Control Panel</div>
     </div>
