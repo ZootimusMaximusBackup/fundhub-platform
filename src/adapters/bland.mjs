@@ -16,6 +16,7 @@
 
 import crypto from "node:crypto";
 import { emit } from "../events/bus.mjs";
+import { resolveClientByCallId } from "../lib/outbound-calls.mjs";
 
 // --- 1. Signature verification (fail-closed) --------------------------------
 // HMAC-SHA256 of raw body keyed by the shared secret. Returns false on any
@@ -144,6 +145,12 @@ export async function handleBlandWebhook({ db, rawBody, signatureHeader, secret,
     return { ok: true, status: 200, reason: "not_completed", emitted: [] };
   }
 
+  // Resolve clientId from the dispatch record when not supplied by the caller.
+  let resolvedClientId = clientId != null ? String(clientId) : null;
+  if (resolvedClientId == null && evt.callId) {
+    resolvedClientId = await resolveClientByCallId(evt.callId, db);
+  }
+
   const canonical = mapToCanonical(evt);
 
   const emitted = [];
@@ -151,7 +158,7 @@ export async function handleBlandWebhook({ db, rawBody, signatureHeader, secret,
     const idKey = evt.callId ? `bland:${evt.callId}:${c.name}` : undefined;
     const res = await emit(db, c.name, c.payload, {
       idempotencyKey: idKey,
-      clientId: clientId != null ? String(clientId) : undefined
+      clientId: resolvedClientId ?? undefined
     });
     emitted.push({ name: c.name, id: res.id, deduped: res.deduped });
   }

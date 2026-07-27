@@ -185,6 +185,31 @@ test("handleBlandWebhook: clientId passed through to bus emit", async () => {
   assert.equal(store[0]?.clientId, "cl-42");
 });
 
+test("handleBlandWebhook: resolves clientId from outbound_calls when none provided", async () => {
+  _resetOrgCache(); clearHandlers();
+  const store = [];
+  const db = {
+    query(sql, params) {
+      if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
+      if (/SELECT client_id FROM outbound_calls/.test(sql)) {
+        // Simulate a prior recordDispatch for this callId
+        if (params[0] === "call_lookup_test") return { rows: [{ client_id: "client-resolved-99" }] };
+        return { rows: [] };
+      }
+      if (/INSERT INTO events/.test(sql)) {
+        store.push({ clientId: params[4], name: params[1] });
+        return { rows: [{ id: "evt-1" }] };
+      }
+      return { rows: [] };
+    }
+  };
+  const raw = JSON.stringify({ call_id: "call_lookup_test", status: "completed", completed: true, disposition: "human" });
+  const res = await handleBlandWebhook({ db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+  // No clientId passed in — must be resolved from outbound_calls
+  assert.equal(res.ok, true);
+  assert.equal(store[0]?.clientId, "client-resolved-99");
+});
+
 test("handleBlandWebhook: idempotent re-delivery → deduped=true, handler does not fire", async () => {
   _resetOrgCache(); clearHandlers();
   let fired = 0;
