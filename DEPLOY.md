@@ -10,7 +10,7 @@ The repo is zero-config Vercel-ready: `api/*.mjs` → serverless functions, `pub
 ## 2. Run the migrations against that DB (one-time, from this folder)
 ```
 npm install
-DATABASE_URL='postgres://…' npm run migrate      # applies all tables + pipelines + indexes + default org
+DATABASE_URL='postgres://…' npm run migrate      # applies db/schema/, db/migrations/, db/seed/ in order
 ```
 
 ## 3. Link + set env vars

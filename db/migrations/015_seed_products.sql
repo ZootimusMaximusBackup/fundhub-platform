@@ -23,7 +23,7 @@ SELECT o.id, v.code, v.name, v.description, v.category,
       'diagnostic', '$32 Diagnostic',
       'Entry diagnostic. Triggers analysis.completed and the 6-tier decision.',
       'diagnostic',
-      32.00, NULL, NULL, false,
+      32.00, NULL::numeric(14,2), NULL::numeric(14,2), false,
       NULL::numeric, 10,
       'Effectively fixed price. price_is_variable=false so the sale form locks it.'
     ),

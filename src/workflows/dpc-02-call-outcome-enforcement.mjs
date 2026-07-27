@@ -32,7 +32,10 @@ export async function handle({ event, db, step }) {
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
 
-  await step.sleep("wait-5-min-after-end", "5m");
+  const endTime = event.payload?.endTime ?? event.payload?.startTime;
+  if (!endTime) return { done: false, reason: "no_appointment_time" };
+  const wakeAt = new Date(new Date(endTime).getTime() + 5 * 60 * 1000);
+  await step.sleepUntil("wait-until-5-min-after-end", wakeAt);
 
   const showed = await step.run("check-call-happened", () => callHappened(db, clientId));
   const orgId = event.orgId;

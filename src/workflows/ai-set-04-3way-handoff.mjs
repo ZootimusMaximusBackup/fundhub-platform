@@ -22,7 +22,8 @@ async function createAdvisorTaskOnce(db, { orgId, clientId, eventId }) {
   if (dup.rows[0]) return { created: false };
   await db.query(
     `INSERT INTO tasks (org_id, client_id, assignee, title, body, due_at, source_workflow)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7)
+     ON CONFLICT DO NOTHING`,
     [orgId, clientId, null, "3-way handoff — advisor follow-up on UnderwriteIQ results", eventId, null, SOURCE_WORKFLOW]
   );
   return { created: true };

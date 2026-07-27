@@ -9,7 +9,7 @@ const withTemplates = () => [
 ];
 
 test("happy path: declined + non-funding path sends the referral", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }], templates: withTemplates() });
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR", custom_fields: {} }], templates: withTemplates() });
   const res = await handle({ event: ev("call.completed", { outcome: "declined" }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.done, true);
   assert.equal(db.messages.length, 2);
@@ -17,20 +17,20 @@ test("happy path: declined + non-funding path sends the referral", async () => {
 });
 
 test("branch: never fires on the funding route", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING" }], templates: withTemplates() });
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_STACK_APPROVAL" }], templates: withTemplates() });
   const res = await handle({ event: ev("call.completed", { outcome: "declined" }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.done, false);
-  assert.equal(res.reason, "blocked_funding_route:FULL_FUNDING");
+  assert.equal(res.reason, "blocked_funding_route:FULL_STACK_APPROVAL");
 });
 
 test("branch: pending copy — template not seeded yet, safe no-op", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }], templates: [] });
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR", custom_fields: {} }], templates: [] });
   const res = await handle({ event: ev("call.completed", { outcome: "declined" }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.sms.reason, "template_pending");
 });
 
 test("duplicate delivery: replaying the same event does not double-send", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }], templates: withTemplates() });
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR", custom_fields: {} }], templates: withTemplates() });
   const event = ev("call.completed", { outcome: "declined" }, { id: "evt-dup-ds01", clientId: "cl-1" });
   await handle({ event, db, step: fakeStep() });
   await handle({ event, db, step: fakeStep() });

@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { pool, close } from "../src/db.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const DIRS = ["schema", "seed"];
+const DIRS = ["schema", "migrations", "seed"];
 
 function collect() {
   const files = [];

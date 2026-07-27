@@ -38,7 +38,8 @@ async function createInvoiceTaskOnce(db, { orgId, clientId, eventId }) {
   if (dup.rows[0]) return { created: false };
   await db.query(
     `INSERT INTO tasks (org_id, client_id, assignee, title, body, due_at, source_workflow)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7)
+     ON CONFLICT DO NOTHING`,
     [orgId, clientId, null, "Send DIY invoice (Commas checkout) — confirm payment captured", eventId, null, SOURCE_WORKFLOW]
   );
   return { created: true };
@@ -56,6 +57,19 @@ async function deliverLetters(fetchImpl, { clientId, orgId }) {
   } catch (err) {
     return { delivered: false, error: String(err?.message || err) };
   }
+}
+
+async function deliverLettersOnce(db, fetchImpl, { clientId, orgId, eventId }) {
+  const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
+  if (r.rows[0]?.custom_fields?.diy_delivered_event_id === eventId) {
+    return { delivered: true, skipped: true };
+  }
+  const result = await deliverLetters(fetchImpl, { clientId, orgId });
+  if (result.delivered) {
+    await db.query(`UPDATE clients SET custom_fields = custom_fields || $2::jsonb WHERE id = $1`,
+      [clientId, JSON.stringify({ diy_delivered_event_id: eventId })]);
+  }
+  return result;
 }
 
 // handle — pure business logic. `fetchImpl` is injected (defaults to global fetch)
@@ -77,7 +91,7 @@ export async function handle({ event, db, step, fetchImpl = globalThis.fetch }) 
 
   await step.run("set-diy-status-processing", () => mergeCustomFields(db, clientId, { diy_status: "Processing" }));
   const invoiceTask = await step.run("create-invoice-task", () => createInvoiceTaskOnce(db, { orgId, clientId, eventId }));
-  const delivery = await step.run("deliver-letters", () => deliverLetters(fetchImpl, { clientId, orgId }));
+  const delivery = await step.run("deliver-letters", () => deliverLettersOnce(db, fetchImpl, { clientId, orgId, eventId }));
   const email = await step.run("send-email", () =>
     sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
   await step.run("tag-diy-letters", () => addTags(db, clientId, ["client:diy-letters"]));
