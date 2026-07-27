@@ -16,6 +16,7 @@ export function isRepairOnlyPath(tier) {
 }
 
 export async function clientOutcomeTier(db, clientId) {
+  if (!clientId) return null;
   const r = await db.query(`SELECT outcome_tier FROM clients WHERE id = $1`, [clientId]);
   return r.rows[0]?.outcome_tier ?? null;
 }
