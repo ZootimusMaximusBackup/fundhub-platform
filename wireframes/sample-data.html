@@ -7,33 +7,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
 <style>
 /* ══════════════════════════════════════════════════════════════════════════
    FUNDHUB — SHARED CHROME  (identical block across every wireframe)
+   The spectrum, neutrals, type stacks and the real --logo data URI all come
+   from fundhub-brand.css above. Only the local status aliases live here.
    ══════════════════════════════════════════════════════════════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root{
-  --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
-  --paper:#FCFCFC; --ink:#0A0A0A; --gray:#52525B; --gray2:#A1A1AA;
-  --line:#E4E4E7; --soft:#F4F4F5; --card:#111113; --cardline:#26262B;
-
   /* status colors — drawn FROM the spectrum, none invented */
-  --sage:#A8D8B0;   /* active / success            */
-  --peach:#F5CE8F;  /* in progress / warning       */
-  --coral:#F2A69B;  /* blocked / failed            */
-  --blue:#A9C6E8;   /* info                        */
-  --lav:#C4B3E5;    /* secondary / shadow          */
-  --lemon:#F2E39B;  /* pending                     */
-
-  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
-  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-
-  /* LOGO — background-image data URI, no external file.
-     ⚠ PLACEHOLDER: fundhub.ai is blocked by this environment's egress policy
-     (403 at the proxy), so the live .logo rule could not be read. Swap this one
-     value for the real data URI and every file picks it up. */
-  --logo:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMTggMjIiIHdpZHRoPSIxMTgiIGhlaWdodD0iMjIiPjxnIGZpbGw9IiMwQTBBMEEiPjxyZWN0IHg9IjAiIHk9IjciIHdpZHRoPSIzLjIiIGhlaWdodD0iMTEiIHJ4PSIxLjYiLz48cmVjdCB4PSI1LjgiIHk9IjEwLjUiIHdpZHRoPSIzLjIiIGhlaWdodD0iNy41IiByeD0iMS42Ii8+PHJlY3QgeD0iMTEuNiIgeT0iMi41IiB3aWR0aD0iMy4yIiBoZWlnaHQ9IjE1LjUiIHJ4PSIxLjYiLz48L2c+PHRleHQgeD0iMjAuNSIgeT0iMTciIGZvbnQtZmFtaWx5PSJJbnRlciwnSGVsdmV0aWNhIE5ldWUnLEhlbHZldGljYSxBcmlhbCxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE1LjUiIGZvbnQtd2VpZ2h0PSI2MDAiIGxldHRlci1zcGFjaW5nPSItMC40NSIgZmlsbD0iIzBBMEEwQSI+ZnVuZGh1YjwvdGV4dD48L3N2Zz4=");
+  --sage:var(--ok);      /* active / success            */
+  --peach:var(--warn);   /* in progress / warning       */
+  --coral:var(--alert);  /* blocked / failed            */
+  --blue:var(--info);    /* info                        */
+  --lav:var(--accent);   /* secondary / shadow          */
+  --lemon:#F2E39B;       /* pending — the 40% spectrum stop */
 }
 
 html,body{height:100%}
@@ -48,7 +38,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 /* ── LOGO ────────────────────────────────────────────────────────────────── */
 .logo{
-  width:118px;height:22px;flex:0 0 118px;
+  /* the real wordmark is 2698x543 — 118px wide lands at ~24px tall */
+  width:118px;height:24px;flex:0 0 118px;
   background-image:var(--logo);
   background-repeat:no-repeat;background-position:left center;background-size:contain;
 }
