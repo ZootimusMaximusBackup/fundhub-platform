@@ -90,6 +90,16 @@ export function normalizeBlandEvent(body) {
   };
 }
 
+// Map disposition to a canonical outcome for ds-01 / s-08 workflows.
+function dispositionToOutcome(disposition) {
+  if (!disposition) return null;
+  const d = String(disposition).toLowerCase();
+  if (d === "declined") return "declined";
+  if (d === "no_answer" || d === "no-answer" || d === "voicemail") return "no_answer";
+  if (d === "transferred" || d === "human") return "transferred";
+  return d;
+}
+
 // --- 3. Map a normalized event to canonical events (pure) -------------------
 // Only emit call.completed when the call is actually finished.
 // Returns [] for in-progress / unknown state — bus sees nothing.
@@ -102,6 +112,7 @@ export function mapToCanonical(evt) {
         callId: evt.callId,
         status: evt.status,
         disposition: evt.disposition,
+        outcome: dispositionToOutcome(evt.disposition),
         durationSec: evt.durationSec,
         transferred: evt.transferred,
         source: "bland"
@@ -111,9 +122,11 @@ export function mapToCanonical(evt) {
 }
 
 // --- Adapter entrypoint -----------------------------------------------------
-// handleBlandWebhook({ db, rawBody, signatureHeader, secret })
+// handleBlandWebhook({ db, rawBody, signatureHeader, secret, clientId? })
 //   → { ok, status, emitted: [{name, id, deduped}], reason? }
-export async function handleBlandWebhook({ db, rawBody, signatureHeader, secret }) {
+// clientId: optional — pass when the call was initiated for a known client so that
+// downstream workflows (dpc-02, ai-set-03) can resolveClient without a DB lookup.
+export async function handleBlandWebhook({ db, rawBody, signatureHeader, secret, clientId }) {
   if (!verifyBlandSignature(rawBody, signatureHeader, secret)) {
     return { ok: false, status: 401, reason: "bad_signature", emitted: [] };
   }
@@ -136,7 +149,10 @@ export async function handleBlandWebhook({ db, rawBody, signatureHeader, secret 
   const emitted = [];
   for (const c of canonical) {
     const idKey = evt.callId ? `bland:${evt.callId}:${c.name}` : undefined;
-    const res = await emit(db, c.name, c.payload, { idempotencyKey: idKey });
+    const res = await emit(db, c.name, c.payload, {
+      idempotencyKey: idKey,
+      clientId: clientId != null ? String(clientId) : undefined
+    });
     emitted.push({ name: c.name, id: res.id, deduped: res.deduped });
   }
 

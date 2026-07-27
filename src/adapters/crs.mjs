@@ -90,6 +90,13 @@ export function normalizeCrsResult(engineResult) {
     (r.formData && r.formData.email) ||
     null;
 
+  // newInquiries: [{bureau, inquiry}] from normalized.inquiries (engine includes
+  // `normalized` in its return value; each item has source=bureau, creditorName=name).
+  const rawInquiries = Array.isArray(r.normalized?.inquiries) ? r.normalized.inquiries : [];
+  const newInquiries = rawInquiries
+    .filter((inq) => inq && inq.source && inq.creditorName)
+    .map((inq) => ({ bureau: inq.source, inquiry: inq.creditorName }));
+
   return {
     clientId: clientId ? String(clientId) : null,
     outcomeTier: outcomeTier ? String(outcomeTier) : null,
@@ -97,7 +104,8 @@ export function normalizeCrsResult(engineResult) {
     scores,
     utilization: utilization != null ? Number(utilization) : null,
     reasonCodes: Array.isArray(reasonCodes) ? reasonCodes : [],
-    email: email ? String(email).trim().toLowerCase() : null
+    email: email ? String(email).trim().toLowerCase() : null,
+    newInquiries
   };
 }
 
@@ -115,6 +123,7 @@ export function mapToCanonical(norm) {
         scores: norm.scores,
         utilization: norm.utilization,
         reasonCodes: norm.reasonCodes,
+        newInquiries: norm.newInquiries,
         source: "crs"
       }
     },

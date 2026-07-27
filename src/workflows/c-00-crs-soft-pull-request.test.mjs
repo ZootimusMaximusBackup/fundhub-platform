@@ -17,3 +17,10 @@ test("branch: business scope requested", async () => {
   const res = await handle({ event: ev("diagnostic.paid", { businessScope: true }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.scope, "consumer_plus_ex_business");
 });
+
+test("branch: businessScope absent → defaults to consumer_only (payment events carry no scope)", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }] });
+  const res = await handle({ event: ev("diagnostic.paid", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(res.scope, "consumer_only");
+  assert.equal(db.clients[0].custom_fields.crs_pull_scope, "consumer_only");
+});

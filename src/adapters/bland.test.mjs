@@ -106,9 +106,17 @@ test("mapToCanonical: completed call → [{name:'call.completed', payload}]", ()
   assert.equal(c.payload.callId, "call_500");
   assert.equal(c.payload.status, "completed");
   assert.equal(c.payload.disposition, "human");
+  assert.equal(c.payload.outcome, "transferred"); // human → transferred
   assert.equal(c.payload.durationSec, 120);
   assert.equal(c.payload.transferred, false);
   assert.equal(c.payload.source, "bland");
+});
+
+test("mapToCanonical: outcome mapping — declined/no_answer/voicemail", () => {
+  const mkEvt = (disposition) => normalizeBlandEvent({ call_id: "x", status: "completed", completed: true, disposition });
+  assert.equal(mapToCanonical(mkEvt("declined"))[0].payload.outcome, "declined");
+  assert.equal(mapToCanonical(mkEvt("no_answer"))[0].payload.outcome, "no_answer");
+  assert.equal(mapToCanonical(mkEvt("voicemail"))[0].payload.outcome, "no_answer");
 });
 
 test("mapToCanonical: in-progress → empty array", () => {
@@ -155,6 +163,26 @@ test("handleBlandWebhook: not_completed (in-progress) → 200, emitted=[], reaso
   assert.equal(res.status, 200);
   assert.equal(res.reason, "not_completed");
   assert.deepEqual(res.emitted, []);
+});
+
+test("handleBlandWebhook: clientId passed through to bus emit", async () => {
+  _resetOrgCache(); clearHandlers();
+  const store = [];
+  // Intercept the INSERT INTO events call to capture client_id param
+  const db = {
+    query(sql, params) {
+      if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
+      if (/INSERT INTO events/.test(sql)) {
+        store.push({ clientId: params[4], name: params[1] });
+        return { rows: [{ id: "evt-1" }] };
+      }
+      return { rows: [] };
+    }
+  };
+  const raw = JSON.stringify({ call_id: "call_900", status: "completed", completed: true, disposition: "declined" });
+  const res = await handleBlandWebhook({ db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET, clientId: "cl-42" });
+  assert.equal(res.ok, true);
+  assert.equal(store[0]?.clientId, "cl-42");
 });
 
 test("handleBlandWebhook: idempotent re-delivery → deduped=true, handler does not fire", async () => {

@@ -11,8 +11,8 @@ export async function handle({ event, db, step }) {
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
 
+  // analyzer_path is written by c-00 on diagnostic.paid — don't overwrite it here.
   await step.run("lock-analyzer-path", () => mergeCustomFields(db, clientId, {
-    analyzer_path: event.payload?.analyzerPath || null,
     last_progress_action: "analyzer_completed",
     last_progress_timestamp: "now"
   }));

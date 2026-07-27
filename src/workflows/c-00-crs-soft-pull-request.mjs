@@ -19,6 +19,8 @@ export async function handle({ event, db, step }) {
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
 
+  // Default consumer_only when businessScope absent — a real business-scope flag
+  // must be set on the client record upstream before the diagnostic payment fires.
   const scope = event.payload?.businessScope ? "consumer_plus_ex_business" : "consumer_only";
   await step.run("set-crs-request-fields", () => mergeCustomFields(db, clientId, {
     crs_status: "Requested",
