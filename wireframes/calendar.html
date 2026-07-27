@@ -126,9 +126,11 @@
   .stat .v.red{color:var(--ink2);background:var(--alert-bg);border-radius:4px;padding:0 5px;}
   .stat .v.green{color:var(--ink2);background:var(--ok-bg);border-radius:4px;padding:0 5px;}
 
-  /* ---------- conflict banner ---------- */
-  .errbar{display:flex;align-items:center;gap:9px;background:var(--alert-bg);border-bottom:1px solid var(--alert-line);
-    padding:6px 16px;flex-shrink:0;font-size:12px;color:var(--text);}
+  /* ---------- conflict banner — now only inside the demonstration drawer.
+     The live double-booking is flagged on the two 4:30 rows themselves, where
+     you can act on it, instead of as a full-bleed strip above the whole day. */
+  .errbar{display:flex;align-items:center;gap:9px;background:var(--alert-bg);border:1px solid var(--alert-line);
+    border-radius:7px;padding:6px 12px;font-size:12px;color:var(--text);}
   .errbar .ic{color:var(--ink2);font-weight:700;}
   .errbar b{color:var(--ink2);}
   .errbar .acts{margin-left:auto;display:flex;gap:6px;}
@@ -158,6 +160,18 @@
   .ws-chip.live{border-color:var(--ok-line);background:var(--ok-bg);}
   .ws-more{font-size:9px;color:var(--text-faint);}
   .ws-empty{font-size:9.5px;color:var(--text-faint);padding-top:12px;text-align:center;line-height:1.4;}
+
+  /* ---- Day view: the strip is orientation, not content. Names and times
+         collapse to a count per day; Week view brings them all back. ---- */
+  body:not(.week-view) .weekstrip{padding:6px 16px 8px;}
+  body:not(.week-view) .ws-title{margin-bottom:5px;color:var(--text-faint);}
+  body:not(.week-view) .ws-day{min-height:0;padding:4px 7px 5px;}
+  body:not(.week-view) .ws-dnum{font-size:11.5px;}
+  body:not(.week-view) .ws-chip,
+  body:not(.week-view) .ws-more,
+  body:not(.week-view) .ws-empty{display:none;}
+  body:not(.week-view) .ws-count{margin-bottom:0;}
+  body:not(.week-view) .ws-day.empty .ws-count{color:var(--text-faint);}
 
   /* ---------- day timeline ---------- */
   .day-wrap{flex:1;overflow-y:auto;padding:10px 16px 18px;min-height:0;}
@@ -197,6 +211,19 @@
   .evt.done{background:transparent;border-style:dashed;}
   .evt.done .evt-client{color:var(--text-dim);font-weight:600;}
   .evt.noshow{background:color-mix(in srgb,var(--alert) 8%,#fff);border-color:var(--alert-line);}
+
+  /* ---- a call that already happened is one line: client + outcome ----
+     Rail, stage and the owner's name move to the row's hover title; the owner
+     avatar stays so you can still see at a glance whose calls those were. */
+  .evt.past{padding:4px 10px;}
+  .evt.past .evt-time{width:52px;font-size:10.5px;color:var(--text-dim);}
+  .evt.past .evt-main{display:flex;align-items:baseline;gap:8px;min-width:0;}
+  .evt.past .evt-client{font-size:12px;flex-shrink:0;}
+  .evt.past .evt-meta{display:none;}
+  .evt.past .evt-outcome{margin-top:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .evt.past .who-name{display:none;}
+  .evt.past .av{width:17px;height:17px;font-size:7px;}
+  .evt.past .tag{font-size:8.5px;padding:1px 6px;}
   .evt.live{border-color:var(--ok-line);position:relative;overflow:hidden;padding-left:14px;}
   .evt.live:before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--spectrum);}
   .evt.next{border-color:var(--gray2);box-shadow:0 0 0 2px rgba(10,10,10,.10);}
@@ -209,8 +236,29 @@
     background:var(--ink);border-radius:9px;padding:1px 7px;}
   .nowline .ln{flex:1;height:2px;background:var(--spectrum);border-radius:1px;}
 
-  .open-slot{border:1px dashed var(--line);border-radius:7px;padding:9px 12px;text-align:center;
-    color:var(--text-faint);font-size:11.5px;background:rgba(255,255,255,.45);}
+  .open-slot{border:1px dashed var(--line);border-radius:7px;padding:6px 12px;text-align:center;
+    color:var(--text-faint);font-size:11px;background:rgba(255,255,255,.45);}
+
+  /* fix-it actions live on the clashing rows, not in a strip above the day */
+  .evt-fix{display:flex;gap:5px;margin-top:4px;}
+  .evt-fix span{font-size:9.5px;font-weight:700;background:var(--surface);border:1px solid var(--alert-line);
+    color:var(--ink2);border-radius:5px;padding:2px 8px;cursor:pointer;}
+  .evt-fix span:hover{background:var(--alert-bg);}
+
+  /* ---------- demonstration states — collapsed, one divider row ---------- */
+  .demozone{flex-shrink:0;background:var(--surface);border-top:1px solid var(--line);}
+  .demo-div{width:100%;display:flex;align-items:center;gap:10px;background:transparent;border:0;cursor:pointer;
+    padding:6px 16px;text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--text-faint);}
+  .demo-div:hover{color:var(--text-dim);background:var(--paper);}
+  .demo-div .dd-sub{letter-spacing:.06em;text-transform:none;font-size:10px;}
+  .demo-div .dd-chev{margin-left:auto;font-size:9px;transition:transform .16s;}
+  .demozone.open .demo-div .dd-chev{transform:rotate(180deg);}
+  .demo-body{border-top:1px dashed var(--line);background:var(--paper);padding:11px 16px 13px;
+    display:flex;flex-direction:column;gap:12px;max-height:34vh;overflow:auto;}
+  .demo-body[hidden]{display:none;}
+  .demo-cap{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-faint);margin-bottom:6px;}
 
   /* ---------- right rail ---------- */
   .rail{background:var(--paper);overflow-y:auto;padding:11px 13px 18px;}
@@ -361,13 +409,6 @@
     </div>
   </div>
 
-  <!-- ERROR STATE: double booking -->
-  <div class="errbar">
-    <span class="ic">⚠</span>
-    <span><b>Jordan Blake is double-booked at 4:30.</b> Setter Josh put Carlos Bettencourt into a slot Meredith Yao already had. One of them has to move.</span>
-    <span class="acts"><span>Give Carlos to Nina</span><span>Reschedule Meredith</span></span>
-  </div>
-
   <main>
 
     <!-- ============ LEFT ============ -->
@@ -442,7 +483,7 @@
         <div class="hour">
           <div class="hour-label">9:00 AM</div>
           <div class="hour-body">
-            <div class="evt noshow">
+            <div class="evt noshow past">
               <div class="evt-time">9:00</div>
               <div class="evt-main">
                 <div class="evt-client">Trevor Nakamura</div>
@@ -460,7 +501,7 @@
         <div class="hour">
           <div class="hour-label">10:00 AM</div>
           <div class="hour-body">
-            <div class="evt done">
+            <div class="evt done past">
               <div class="evt-time">10:00</div>
               <div class="evt-main">
                 <div class="evt-client">Amara Nwosu</div>
@@ -478,7 +519,7 @@
         <div class="hour">
           <div class="hour-label">11:00 AM</div>
           <div class="hour-body">
-            <div class="evt done">
+            <div class="evt done past">
               <div class="evt-time">11:00</div>
               <div class="evt-main">
                 <div class="evt-client">Maria Delgado</div>
@@ -496,7 +537,7 @@
         <div class="hour">
           <div class="hour-label">12:00 PM</div>
           <div class="hour-body">
-            <div class="evt done">
+            <div class="evt done past">
               <div class="evt-time">12:40</div>
               <div class="evt-main">
                 <div class="evt-client">Devon Marsh</div>
@@ -588,7 +629,8 @@
               <div class="evt-main">
                 <div class="evt-client">Carlos Bettencourt</div>
                 <div class="evt-meta">Sales · Booked <span class="rail-tag">SALES</span></div>
-                <div class="evt-outcome">Setter Josh booked this 2 minutes ago</div>
+                <div class="evt-outcome">Setter Josh booked this 2 minutes ago — <b>clashes with Meredith Yao on Jordan's calendar</b></div>
+                <div class="evt-fix"><span>Give Carlos to Nina</span><span>Reschedule Meredith</span></div>
               </div>
               <div class="evt-right">
                 <div class="who"><span class="av agent">SJ</span><span class="who-name">booked by Setter Josh</span></div>
@@ -724,6 +766,43 @@
 
   </main>
 
+  <!-- ══ DEMONSTRATION STATES — collapsed by default, costs one divider row ══ -->
+  <section class="demozone" id="demozone">
+    <button class="demo-div" id="demoToggle" aria-expanded="false">
+      <span>Demonstration states</span>
+      <span class="dd-sub">double-booking alert · empty day · open hour</span>
+      <span class="dd-chev">▾</span>
+    </button>
+    <div class="demo-body" id="demoBody" hidden>
+
+      <div>
+        <div class="demo-cap">Double-booking — the day-wide form of the alert now carried on the 4:30 rows</div>
+        <div class="errbar">
+          <span class="ic">⚠</span>
+          <span><b>Jordan Blake is double-booked at 4:30.</b> Setter Josh put Carlos Bettencourt into a slot Meredith Yao already had. One of them has to move.</span>
+          <span class="acts"><span>Give Carlos to Nina</span><span>Reschedule Meredith</span></span>
+        </div>
+      </div>
+
+      <div>
+        <div class="demo-cap">Empty day — nothing booked, nobody scheduled on</div>
+        <div class="ws-grid" style="grid-template-columns:repeat(7,1fr);max-width:760px;">
+          <div class="ws-day empty" style="min-height:96px;">
+            <div class="ws-dtop"><span class="ws-dname">Sat</span><span class="ws-dnum">1</span></div>
+            <div class="ws-count">—</div>
+            <div class="ws-empty" style="display:block;">Nothing booked.<br>Nobody scheduled on.</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="demo-cap">Open hour — a gap in the timeline</div>
+        <div class="open-slot" style="max-width:520px;">Nothing booked this hour</div>
+      </div>
+
+    </div>
+  </section>
+
   <footer class="statusbar">
     <span class="ghost"></span>
     <span>fundhub-calendar · v1</span>
@@ -780,12 +859,14 @@ segs.forEach(function(x){
   x.addEventListener('click',function(){ setView(x.getAttribute('data-v')); });
 });
 
-/* ---------- a week day selects into the day view ---------- */
-[].slice.call(document.querySelectorAll('.ws-day')).forEach(function(d){
+/* ---------- a week day selects into the day view ----------
+   scoped to .weekstrip: the demonstration drawer reuses .ws-day markup */
+var strip=document.querySelector('.weekstrip');
+[].slice.call(strip.querySelectorAll('.ws-day')).forEach(function(d){
   if(d.classList.contains('empty')) return;
   d.style.cursor='pointer';
   d.addEventListener('click',function(){
-    document.querySelectorAll('.ws-day').forEach(function(x){x.classList.remove('today')});
+    strip.querySelectorAll('.ws-day').forEach(function(x){x.classList.remove('today')});
     d.classList.add('today');
     var nm=d.querySelector('.ws-dname'), nu=d.querySelector('.ws-dnum');
     var FULL={Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',
@@ -799,7 +880,7 @@ segs.forEach(function(x){
 
 /* ---------- date nav + today ---------- */
 var navs=[].slice.call(document.querySelectorAll('.navbtn'));
-var days=[].slice.call(document.querySelectorAll('.ws-day:not(.empty)'));
+var days=[].slice.call(strip.querySelectorAll('.ws-day:not(.empty)'));
 function step(dir){
   var i=days.findIndex(function(d){return d.classList.contains('today')});
   var j=Math.min(days.length-1,Math.max(0,(i<0?0:i)+dir));
@@ -810,19 +891,41 @@ if(navs[1]) navs[1].addEventListener('click',function(){step(1)});
 var todayBtn=document.querySelector('.today-btn');
 if(todayBtn) todayBtn.addEventListener('click',function(){ if(days[0]) days[0].click(); });
 
-/* ---------- conflict banner actions resolve the double-booking ---------- */
-var err=document.querySelector('.errbar');
-if(err){
-  err.querySelectorAll('.acts span').forEach(function(b){
-    b.addEventListener('click',function(){
-      document.querySelectorAll('.evt.conflict').forEach(function(e){
-        e.classList.remove('conflict');
-        var t=e.querySelector('.tag.conflict'); if(t) t.remove();
-      });
-      err.remove();
+/* ---------- a finished call is one line; rail, stage and the owner's name
+     move to the row's hover title so nothing is actually lost ---------- */
+[].slice.call(document.querySelectorAll('.evt.past')).forEach(function(e){
+  var meta=e.querySelector('.evt-meta'), who=e.querySelector('.who-name'),
+      out=e.querySelector('.evt-outcome'), bits=[];
+  if(meta) bits.push(meta.textContent.replace(/\s+/g,' ').trim());
+  if(who)  bits.push(who.textContent.trim());
+  if(out)  bits.push(out.textContent.replace(/\s+/g,' ').trim());
+  e.title=bits.join(' · ');
+});
+
+/* ---------- the double-booking is resolved on the rows that clash ---------- */
+[].slice.call(document.querySelectorAll('.evt-fix span')).forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.day-wrap .evt.conflict').forEach(function(e){
+      e.classList.remove('conflict');
+      var t=e.querySelector('.tag.conflict'); if(t) t.remove();
+      var f=e.querySelector('.evt-fix'); if(f) f.remove();
+    });
+    document.querySelectorAll('.then-row.conflict').forEach(function(r){
+      r.classList.remove('conflict');
+      var s=r.querySelector('.then-sub'); if(s) s.removeAttribute('style');
     });
   });
-}
+});
+
+/* ---------- demonstration states ---------- */
+var dz=document.getElementById('demozone'), dTog=document.getElementById('demoToggle'),
+    dBody=document.getElementById('demoBody');
+dTog.addEventListener('click',function(){
+  var open=dBody.hidden;
+  dBody.hidden=!open;
+  dz.classList.toggle('open',open);
+  dTog.setAttribute('aria-expanded',String(open));
+});
 })();
 </script>
 </body>
