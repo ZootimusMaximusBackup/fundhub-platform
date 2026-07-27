@@ -115,13 +115,16 @@ export function computeRuleAmount(rule, baseCents) {
  * Deterministic idempotency key. A replayed round.funded regenerates the same
  * key, hits commission_ledger_idem_uniq, and nobody gets paid twice (Rule 9).
  *
- * Default granularity is ONE EARNING PER (event, basis, deal, person, rule) —
+ * Default granularity is ONE EARNING PER (basis, deal, person, rule) —
  * which is what "one deposit, one $500" needs. Pass `eventRef` (a payment id, a
  * transaction id) when a rule should be able to earn again on a later payment.
+ *
+ * NOTE: sourceEvent is intentionally excluded — deposit.paid and payment.received
+ * for the same commission must produce the same key so only one ledger row is
+ * written regardless of which event fires first.
  */
-export function idempotencyKey({ sourceEvent, basis, saleId, roundId, staffId, ruleId, eventRef }) {
+export function idempotencyKey({ basis, saleId, roundId, staffId, ruleId, eventRef }) {
   return [
-    sourceEvent || "manual",
     basis,
     saleId || "-",
     roundId || "-",

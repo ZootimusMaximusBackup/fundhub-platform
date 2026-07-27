@@ -606,7 +606,7 @@ test("idempotency key is deterministic across identical computations", () => {
 
 test("idempotency key separates people, rules, bases and rounds", () => {
   const k = (over) => idempotencyKey({
-    sourceEvent: "round.funded", basis: BACK_END, saleId: "sale-1",
+    basis: BACK_END, saleId: "sale-1",
     roundId: "round-1", staffId: ADVISOR, ruleId: "rule-1", ...over
   });
   const baseline = k({});
@@ -615,6 +615,18 @@ test("idempotency key separates people, rules, bases and rounds", () => {
   assert.notEqual(baseline, k({ roundId: "round-2" }));
   assert.notEqual(baseline, k({ basis: FRONT_END }));
   assert.equal(baseline, k({}), "and stable for the same inputs");
+});
+
+test("different sourceEvents for the same commission produce the same idempotency key (no double-pay)", () => {
+  // deposit.paid and payment.received for the same commission must dedup
+  const base = {
+    org_id: ORG, sale: sale(), product, client, payments: [deposit()],
+    attributions: [attribution()], rules: [rule({ role: "closer" })]
+  };
+  const fromDeposit  = computeFrontEnd({ ...base, occurredAt: SOLD_AT, sourceEvent: "deposit.paid"     }).drafts[0];
+  const fromPayment  = computeFrontEnd({ ...base, occurredAt: SOLD_AT, sourceEvent: "payment.received" }).drafts[0];
+  assert.equal(fromDeposit.idempotency_key, fromPayment.idempotency_key,
+    "same commission triggered by two different events must share the same key");
 });
 
 test("base and bonus on the same deal get distinct keys, so both can be written", () => {
