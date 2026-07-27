@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { handle, EMAIL_TEMPLATE_KEY, SMS_TEMPLATE_KEY } from "./ds-01-repair-referral.mjs";
+import { handle, isRepairReferral, EMAIL_TEMPLATE_KEY, SMS_TEMPLATE_KEY } from "./ds-01-repair-referral.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 const withTemplates = () => [
@@ -8,30 +8,79 @@ const withTemplates = () => [
   { org_id: "org-1", template_key: SMS_TEMPLATE_KEY, channel: "sms", body: "repair referral sms", compliance_passed: true }
 ];
 
-test("happy path: declined + non-funding path sends the referral", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }], templates: withTemplates() });
-  const res = await handle({ event: ev("call.completed", { outcome: "declined" }, { clientId: "cl-1" }), db, step: fakeStep() });
+const client = (over = {}) => [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+15550000",
+  outcome_tier: "REPAIR_ONLY", custom_fields: {}, ...over }];
+
+const referral = (extra = {}) => ({ outcome: "declined", repairReferral: true, ...extra });
+
+// --- trigger discrimination (05/30 doc 74-78, 84-86, 157) -------------------
+
+test("isRepairReferral: the explicit Stage 5 Sales Outcome wins when present", () => {
+  assert.equal(isRepairReferral({ salesOutcome: "Repair Referral Sent" }), true);
+  assert.equal(isRepairReferral({ salesOutcome: "Funding Didn't Buy" }), false);
+  assert.equal(isRepairReferral({ salesOutcome: "DIY Letters Purchased" }), false);
+});
+
+// THE REGRESSION: this used to fire on ANY declined disposition.
+test("REGRESSION: a plain declined call is no longer a repair referral", () => {
+  assert.equal(isRepairReferral({ outcome: "declined" }), false);
+});
+
+test("REGRESSION: hard declines (OFAC / fraud / severe record) never get a partner referral", () => {
+  for (const reason of ["OFAC", "fraud_flag", "hard_decline", "disqualified"]) {
+    assert.equal(isRepairReferral(referral({ declineReason: reason })), false, `reason ${reason}`);
+  }
+});
+
+test("isRepairReferral: a genuine repair referral passes", () => {
+  assert.equal(isRepairReferral(referral()), true);
+});
+
+// --- the workflow -----------------------------------------------------------
+
+test("happy path: repair referral on a non-funding path sends and routes to Referred", async () => {
+  const db = pgFake({ clients: client(), templates: withTemplates() });
+  const res = await handle({ event: ev("call.completed", referral(), { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.done, true);
   assert.equal(db.messages.length, 2);
   assert.equal(db.clients[0].custom_fields.product_path, "Referred");
+  assert.ok(db.clients[0].tags.includes("client:repair-referral"));
+});
+
+test("REGRESSION: a hard decline reaches the workflow and sends nothing", async () => {
+  const db = pgFake({ clients: client(), templates: withTemplates() });
+  const res = await handle({ event: ev("call.completed", referral({ declineReason: "fraud" }), { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(res.done, false);
+  assert.equal(res.reason, "not_repair_referral");
+  assert.equal(db.messages.length, 0, "a fraud decline must never receive a repair partner referral");
 });
 
 test("branch: never fires on the funding route", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING" }], templates: withTemplates() });
-  const res = await handle({ event: ev("call.completed", { outcome: "declined" }, { clientId: "cl-1" }), db, step: fakeStep() });
+  const db = pgFake({ clients: client({ outcome_tier: "FULL_FUNDING" }), templates: withTemplates() });
+  const res = await handle({ event: ev("call.completed", referral(), { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.done, false);
   assert.equal(res.reason, "blocked_funding_route:FULL_FUNDING");
+  assert.equal(db.messages.length, 0);
+});
+
+// Doc 1284-1285 / Part B 140-141 — this workflow sends an SMS, so both must be present.
+test("branch: missing phone fails the identity gate before anything is written", async () => {
+  const db = pgFake({ clients: client({ phone: null }), templates: withTemplates() });
+  const res = await handle({ event: ev("call.completed", referral(), { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(res.reason, "missing_identity");
+  assert.equal(db.messages.length, 0);
+  assert.equal(db.clients[0].custom_fields.product_path, undefined);
 });
 
 test("branch: pending copy — template not seeded yet, safe no-op", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }], templates: [] });
-  const res = await handle({ event: ev("call.completed", { outcome: "declined" }, { clientId: "cl-1" }), db, step: fakeStep() });
+  const db = pgFake({ clients: client(), templates: [] });
+  const res = await handle({ event: ev("call.completed", referral(), { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.sms.reason, "template_pending");
 });
 
 test("duplicate delivery: replaying the same event does not double-send", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }], templates: withTemplates() });
-  const event = ev("call.completed", { outcome: "declined" }, { id: "evt-dup-ds01", clientId: "cl-1" });
+  const db = pgFake({ clients: client(), templates: withTemplates() });
+  const event = ev("call.completed", referral(), { id: "evt-dup-ds01", clientId: "cl-1" });
   await handle({ event, db, step: fakeStep() });
   await handle({ event, db, step: fakeStep() });
   assert.equal(db.messages.length, 2);

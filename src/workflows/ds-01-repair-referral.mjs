@@ -20,14 +20,47 @@ import { sendTemplated } from "./messaging.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
 
+async function hasIdentity(db, clientId) {
+  const r = await db.query(`SELECT email, phone FROM clients WHERE id = $1`, [clientId]);
+  const c = r.rows[0];
+  return Boolean(c && c.email && c.phone);
+}
+
 export const SMS_TEMPLATE_KEY = "SMS-DS01-REPAIR-REFERRAL";
 export const EMAIL_TEMPLATE_KEY = "EMAIL-DS01-REPAIR-REFERRAL";
 
+// 05/30 doc lines 74-78: DS-01 fires on the rep's Stage 5 outcome "Repair Referral Sent",
+// not on a raw call disposition. Until a Sales Outcome signal exists (flagged in
+// workflow-migration-table.md), the closest honest read is a declined call that is
+// specifically a repair referral — NOT every declined call.
+//
+// Two things this must never fire on, both of which it used to:
+//   - a HARD DECLINE (OFAC / fraud / severe public record). Doc lines 84-86 route those
+//     to C-06's DECLINE branch: tag, decline email + SMS, close. Sending a repair partner
+//     referral to a fraud decline is the wrong outbound message entirely.
+//   - "Funding Didn't Buy" (doc line 157), which is a funding-lane outcome and gets S-08's
+//     follow-up, not a repair referral.
+const HARD_DECLINE_OUTCOMES = ["ofac", "fraud", "hard_decline", "disqualified"];
+
+export function isRepairReferral(payload) {
+  const p = payload || {};
+  if (p.salesOutcome) return String(p.salesOutcome) === "Repair Referral Sent";
+  if (p.outcome !== "declined") return false;
+  const reason = String(p.declineReason || p.reason || "").toLowerCase();
+  if (HARD_DECLINE_OUTCOMES.some((r) => reason.includes(r))) return false;
+  return p.repairReferral === true;
+}
+
 export async function handle({ event, db, step }) {
-  if (event.payload?.outcome !== "declined") return { done: false, reason: "not_declined" };
+  if (!isRepairReferral(event.payload)) return { done: false, reason: "not_repair_referral" };
 
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
+
+  // Doc 1281-1285 / Part B 140-141: identity gate. This fires an SMS, so a contact with
+  // no email still got texted and tagged before.
+  const identity = await step.run("check-identity", () => hasIdentity(db, clientId));
+  if (!identity) return { done: false, reason: "missing_identity" };
 
   const outcomeTier = await step.run("check-product-path", () => clientOutcomeTier(db, clientId));
   if (isFundingPath(outcomeTier)) return { done: false, reason: `blocked_funding_route:${outcomeTier}` };
