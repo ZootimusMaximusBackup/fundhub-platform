@@ -471,11 +471,18 @@
   }
   .ffilter:hover{border-color:var(--gray2);}
   .ffilter.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  /* six entries tall, scroll for the rest — a feed that grows without limit
+     pushes everything above it off the screen */
   .feed{
     display:flex;
     flex-direction:column;
     gap:0;
+    max-height:178px;          /* six rows, plus a sliver of the seventh so the
+                                  scroll is visible rather than implied */
+    overflow-y:auto;
   }
+  .feed::-webkit-scrollbar{width:8px;}
+  .feed::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
   .feed-item{
     display:flex;
     align-items:baseline;
@@ -508,7 +515,36 @@
     white-space:nowrap;
   }
 
-  /* ---------- AGENT PANE ---------- */
+  /* ---------- AGENT PANE — exceptions only ---------------------------------
+     This pane used to list all fourteen agents as equal cards, which is what
+     the Galaxy already does better. The question here is "what broke", so only
+     the broken ones get a card; everything healthy collapses to one line that
+     opens the full roster. */
+  .exc-panel{
+    background:color-mix(in srgb,var(--alert) 9%,#fff);
+    border:1px solid var(--alert-line);
+    border-radius:8px;
+    padding:9px 12px 10px 12px;
+    margin-bottom:10px;
+  }
+  .exc-title{font-size:13px;font-weight:800;color:var(--ink2);margin-bottom:8px;}
+  .exc-panel .agent-card:last-child{margin-bottom:0;}
+
+  .roster{border:1px solid var(--line);border-radius:8px;background:var(--surface);}
+  .roster>summary{
+    list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;
+    padding:9px 12px;font-size:12.5px;
+  }
+  .roster>summary::-webkit-details-marker{display:none;}
+  .roster>summary:hover{background:var(--paper);}
+  .roster>summary:focus-visible{outline:2px solid var(--gray2);outline-offset:-2px;}
+  .roster .rs-chev{font-family:var(--mono);font-size:11px;color:var(--text-faint);transition:transform .16s;}
+  .roster[open] .rs-chev{transform:rotate(90deg);}
+  .roster .rs-dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex-shrink:0;}
+  .roster .rs-main{font-weight:700;color:var(--text);}
+  .roster .rs-sub{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);margin-left:auto;}
+  .roster-body{border-top:1px solid var(--line);padding:10px 12px 12px;}
+
   .agent-group-label{
     margin:11px 0 6px 0;
   }
@@ -637,6 +673,19 @@
   .health-dot{width:7px;height:7px;border-radius:50%;}
   .health-dot.ok{background:var(--ok);}
   .health-dot.warn{background:var(--warn);}
+
+  /* the rest of the health list — everything that is fine and has been fine */
+  .allsys{margin-top:2px;}
+  .allsys>summary{
+    list-style:none;cursor:pointer;padding:7px 0 2px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-faint);display:flex;align-items:center;gap:7px;
+  }
+  .allsys>summary::-webkit-details-marker{display:none;}
+  .allsys>summary:hover{color:var(--text-dim);}
+  .allsys>summary:focus-visible{outline:2px solid var(--gray2);outline-offset:2px;}
+  .allsys .as-chev{font-size:11px;transition:transform .16s;}
+  .allsys[open] .as-chev{transform:rotate(90deg);}
 
   /* ---------- footer: mono lowercase + pulsing sage dot + ghost mark ---------- */
   footer.statusbar{
@@ -982,12 +1031,40 @@
       <!-- AGENT PANE -->
       <section class="pane">
         <div class="pane-head">
-          <div class="pane-title eyebrow">02 / Agents</div>
-          <div class="pane-meta">9 working · 1 blocked</div>
+          <div class="pane-title eyebrow">02 / Agents — Exceptions</div>
+          <div class="pane-meta">1 blocked · 13 nominal</div>
         </div>
         <div class="pane-body">
 
-          <div class="feed-title eyebrow" style="margin-bottom:9px">A / Roster<span class="feed-filters"><button class="ffilter on" data-a="all">All</button><button class="ffilter" data-a="active">Active</button><button class="ffilter" data-a="idle">Idle</button><button class="ffilter" data-a="blocked">Blocked</button><button class="ffilter" data-a="done">Done</button></span></div>
+          <!-- ══ EXCEPTIONS — the only agents that get a card ══════════════
+               Blocked, failed or degraded only. The healthy thirteen are one
+               line below; the full roster is one click inside it. -->
+          <div class="exc-panel">
+            <div class="eyebrow" style="margin-bottom:8px">A-00 / Needs A Human</div>
+            <div class="exc-title">⚠ 1 agent blocked</div>
+            <div class="agent-card blocked">
+              <div class="status-rail blocked"></div>
+              <div class="agent-body">
+                <div class="agent-top">
+                  <div><span class="av agent">IR</span> <span class="agent-code">A-09</span><span class="agent-name">Inquiry Removal AI</span></div>
+                  <div class="status-badge blocked">Blocked</div>
+                </div>
+                <div class="agent-task error-text">Equifax portal timeout — 3 retries failed</div>
+                <div class="agent-stats">Queue backed up: <b>11 waiting</b></div>
+              </div>
+            </div>
+          </div>
+
+          <details class="roster" id="roster">
+            <summary>
+              <span class="rs-chev">›</span>
+              <span class="rs-dot"></span>
+              <span class="rs-main">13 agents nominal</span>
+              <span class="rs-sub">8 active · 3 idle · 2 done</span>
+            </summary>
+            <div class="roster-body">
+
+          <div class="feed-title eyebrow" style="margin-bottom:9px">A / Roster<span class="feed-filters"><button class="ffilter on" data-a="all">All</button><button class="ffilter" data-a="active">Active</button><button class="ffilter" data-a="idle">Idle</button><button class="ffilter" data-a="done">Done</button></span></div>
           <div class="agent-group-label eyebrow">A / Client-Facing</div>
 
           <div class="agent-card">
@@ -1086,17 +1163,8 @@
             </div>
           </div>
 
-          <div class="agent-card blocked">
-            <div class="status-rail blocked"></div>
-            <div class="agent-body">
-              <div class="agent-top">
-                <div><span class="av agent">IR</span> <span class="agent-code">A-09</span><span class="agent-name">Inquiry Removal AI</span></div>
-                <div class="status-badge blocked">Blocked</div>
-              </div>
-              <div class="agent-task error-text">Equifax portal timeout — 3 retries failed</div>
-              <div class="agent-stats">Queue backed up: <b>11 waiting</b></div>
-            </div>
-          </div>
+          <!-- A-09 Inquiry Removal AI is blocked, so its card lives in the
+               exceptions panel above rather than being repeated here. -->
 
           <div class="agent-group-label eyebrow">A / Ops</div>
 
@@ -1155,6 +1223,9 @@
             </div>
           </div>
 
+            </div>
+          </details>
+
         </div>
       </section>
 
@@ -1199,8 +1270,15 @@
             </div>
           </div>
 
+          <!-- Top four only, anomaly first — the degraded line is the answer to
+               "what broke", so it leads instead of sitting fourth in a list of
+               six. The two that have been fine all day are behind All systems. -->
           <div class="feed-title eyebrow">F-02 / Platform Health</div>
           <div class="health-list">
+            <div class="health-row">
+              <div class="health-name">Bureau portal (Equifax)</div>
+              <div class="health-val"><span class="health-dot warn"></span>degraded</div>
+            </div>
             <div class="health-row">
               <div class="health-name">Live updates delay</div>
               <div class="health-val"><span class="health-dot ok"></span>1.2s</div>
@@ -1213,19 +1291,21 @@
               <div class="health-name">Error rate (24h)</div>
               <div class="health-val"><span class="health-dot ok"></span>0.4%</div>
             </div>
-            <div class="health-row">
-              <div class="health-name">Bureau portal (Equifax)</div>
-              <div class="health-val"><span class="health-dot warn"></span>degraded</div>
-            </div>
-            <div class="health-row">
-              <div class="health-name">Payment provider (Commas)</div>
-              <div class="health-val"><span class="health-dot ok"></span>all good</div>
-            </div>
-            <div class="health-row">
-              <div class="health-name">Message compliance checks</div>
-              <div class="health-val"><span class="health-dot ok"></span>214 / 216 passed</div>
-            </div>
           </div>
+
+          <details class="allsys" id="allsys">
+            <summary><span class="as-chev">›</span>All systems</summary>
+            <div class="health-list">
+              <div class="health-row">
+                <div class="health-name">Payment provider (Commas)</div>
+                <div class="health-val"><span class="health-dot ok"></span>all good</div>
+              </div>
+              <div class="health-row">
+                <div class="health-name">Message compliance checks</div>
+                <div class="health-val"><span class="health-dot ok"></span>214 / 216 passed</div>
+              </div>
+            </div>
+          </details>
 
         </div>
       </section>
@@ -1332,11 +1412,13 @@
   });
 })();
 
-/* ── agent roster: status filters ────────────────────────────────────────── */
+/* ── agent roster: status filters ──────────────────────────────────────────
+   Scoped to the roster drawer — the promoted exception card above it is not
+   part of the filterable set and must never be filtered away. */
 (function(){
   var btns=[].slice.call(document.querySelectorAll('.ffilter[data-a]'));
-  var cards=[].slice.call(document.querySelectorAll('.agent-card'));
-  var labels=[].slice.call(document.querySelectorAll('.agent-group-label'));
+  var cards=[].slice.call(document.querySelectorAll('.roster-body .agent-card'));
+  var labels=[].slice.call(document.querySelectorAll('.roster-body .agent-group-label'));
   btns.forEach(function(b){
     b.addEventListener('click',function(){
       btns.forEach(function(x){x.classList.remove('on')});

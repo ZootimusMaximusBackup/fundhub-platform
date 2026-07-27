@@ -115,6 +115,9 @@
   .stat-tile{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:5px 12px;text-align:center;min-width:88px;}
   .stat-label{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:2px;}
   .stat-value{font-family:var(--mono);font-weight:700;font-size:14px;}
+  /* the deposit count used to be its own tile beside the dollars — same fact,
+     two numbers. It rides under the money now instead of competing with it. */
+  .stat-sub{font-size:8.5px;color:var(--text-faint);margin-top:1px;letter-spacing:.2px;}
   .pace-neutral{color:var(--text);}
 
   main{flex:1;overflow-y:auto;padding:12px 18px 20px;background:var(--paper);}
@@ -173,6 +176,29 @@
   .drawrange{width:100%;margin:6px 0 10px;accent-color:#0A0A0A;display:block;}
   .util-line{font-family:var(--mono);font-size:10.5px;color:var(--text-dim);margin:-4px 0 9px;}
   .util-line b{color:var(--ink2);}
+
+  /* ---------- results row: two answers side by side, nothing between ---------- */
+  .res-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;}
+  .res-grid .big-tile{margin-bottom:0;flex-direction:column;align-items:flex-start;gap:2px;}
+  .res-note{font-size:10.5px;color:var(--text-faint);margin:6px 0 10px;}
+
+  /* ---------- demoted: pre-call planning tables ----------------------------
+     The per-lender waterfall, the 12/24/36 payback comparison and the per-card
+     minimums are what a closer reads BEFORE the call. Mid-call they are noise
+     between the inputs and the answer, so they sit one click down. Nothing is
+     removed — the calculators still write into every cell while it is closed. */
+  .breakdown{background:var(--surface);border:1px solid var(--line);border-radius:9px;margin-top:12px;}
+  .breakdown>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;
+    padding:10px 14px;font-size:12px;font-weight:800;color:var(--text);}
+  .breakdown>summary::-webkit-details-marker{display:none;}
+  .breakdown>summary:hover{background:var(--paper);}
+  .breakdown>summary:focus-visible{outline:2px solid var(--gray2);outline-offset:-2px;}
+  .breakdown .bd-chev{font-family:var(--mono);font-size:11px;color:var(--text-faint);transition:transform .16s;}
+  .breakdown[open] .bd-chev{transform:rotate(90deg);}
+  .breakdown .bd-note{margin-left:auto;font-size:10.5px;font-weight:400;color:var(--text-faint);}
+  .bd-body{border-top:1px solid var(--line);padding:12px 14px 14px;}
+  .bd-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:12px;}
+  .bd-sub{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px;}
 
   table.pm{width:100%;border-collapse:collapse;margin-top:4px;}
   table.pm th{font-size:9px;text-transform:uppercase;color:var(--text-dim);padding:5px 6px;text-align:right;border-bottom:1px solid var(--line);}
@@ -269,8 +295,8 @@
     <div class="stat-tiles">
       <div class="stat-tile"><div class="stat-label">Calls Today</div><div class="stat-value">5</div></div>
       <div class="stat-tile"><div class="stat-label">Kept</div><div class="stat-value">3</div></div>
-      <div class="stat-tile"><div class="stat-label">Deposits</div><div class="stat-value">1</div></div>
-      <div class="stat-tile"><div class="stat-label">Collected</div><div class="stat-value">$3,000</div></div>
+      <div class="stat-tile"><div class="stat-label">Collected</div><div class="stat-value">$3,000</div>
+        <div class="stat-sub">1 deposit</div></div>
       <div class="stat-tile"><div class="stat-label">Pace</div><div class="stat-value pace-neutral">60%</div></div>
     </div>
   </div>
@@ -295,7 +321,7 @@
       <div class="section-title eyebrow">D-02 / Deal Calculators — Priya Nair</div>
       <div class="calc-grid">
 
-        <!-- Deal Funding Calculator (1a) -->
+        <!-- Deal Funding Calculator (1a) — input, answer, alert. Nothing else. -->
         <div class="calc-panel">
           <div class="calc-head">
             <div class="calc-title">Deal Funding Calculator</div>
@@ -317,40 +343,17 @@
                  aria-label="Requested draw">
           <div class="util-line" id="oUtil"></div>
 
-          <table class="deal">
-            <tr><th>Lender</th><th>Limit</th><th>Balance</th><th>Headroom</th><th>Draw</th></tr>
-            <tr><td>Capital One Spark <span class="apr-tag">14.99% APR</span></td><td>15,000</td><td>4,000</td><td>11,000</td><td id="d0">11,000</td></tr>
-            <tr><td>Amex Blue Business <span class="apr-tag">16.99% APR</span></td><td>18,000</td><td>8,200</td><td>9,800</td><td id="d1">9,800</td></tr>
-            <tr><td>Citi Costco <span class="apr-tag">18.99% APR</span></td><td>12,000</td><td>4,700</td><td>7,300</td><td id="d2">7,300</td></tr>
-            <tr><td>Barclays View <span class="apr-tag">19.99% APR</span></td><td>9,000</td><td>3,600</td><td>5,400</td><td id="d3">5,400</td></tr>
-            <tr><td>Chase Sapphire <span class="apr-tag">22.99% APR</span></td><td>22,000</td><td>8,400</td><td>13,600</td><td id="d4">1,500</td></tr>
-            <tr class="total"><td id="oLeft">Total drawn · $12,100 headroom left</td><td></td><td></td><td></td><td id="oDrawn">35,000</td></tr>
-          </table>
-
-          <div class="section-title eyebrow" style="margin-top:8px;">D-03 / What Each Way Of Paying It Back Costs Her</div>
-          <table class="pm">
-            <tr><th>Method</th><th>12mo</th><th>24mo</th><th>36mo</th></tr>
-            <tr><td>Lump Sum</td><td>$0</td><td>$0</td><td>$0</td></tr>
-            <tr><td>Minimum Payments</td><td id="m12">$4,120</td><td id="m24">$7,860</td><td id="m36">$11,240</td></tr>
-            <tr><td>Interest-Only</td><td id="i12">$6,300</td><td id="i24">$12,600</td><td id="i36">$17,640 + balloon</td></tr>
-          </table>
-
           <div class="alert-box" id="guardBox">
             <div class="a-title" id="guardTitle">⛔ Pre-Approval Guardrail — Hard Stop</div>
             <div class="a-body" id="guardBody"></div>
           </div>
         </div>
 
-        <!-- Deal Math Calculator (1b) -->
+        <!-- Deal Math Calculator (1b) — input, two answers, alert. -->
         <div class="calc-panel">
           <div class="calc-head">
             <div class="calc-title">Deal Math Calculator</div>
             <div class="calc-client">can she afford it every month</div>
-          </div>
-
-          <div class="big-tile">
-            <div><div class="lbl">Net Cash to Client</div></div>
-            <div class="val" id="oNet">$28,500</div>
           </div>
 
           <div class="inrow">
@@ -364,34 +367,79 @@
               <input id="iMin" type="number" min="0.5" max="20" step="0.25" value="3"></div>
           </div>
 
-          <table class="pm" style="margin-bottom:10px;">
-            <tr><td>Funded Amount</td><td id="oFunded">$35,000</td></tr>
-            <tr><td id="oFeeLabel">Deposit + 10% Success Fee</td><td id="oFees">−$6,500</td></tr>
-            <tr><td>Debts she must clear first</td><td id="oDebts">−$0</td></tr>
-          </table>
-
-          <div class="big-tile">
-            <div><div class="lbl">Monthly Obligation</div></div>
-            <div class="val sm" id="oMonthly">$1,050 / mo</div>
+          <div class="res-grid">
+            <div class="big-tile">
+              <div class="lbl">Net Cash to Client</div>
+              <div class="val" id="oNet">$28,500</div>
+            </div>
+            <div class="big-tile">
+              <div class="lbl">Monthly Obligation</div>
+              <div class="val" id="oMonthly">$1,050 / mo</div>
+            </div>
           </div>
-          <div class="calc-client" style="margin-bottom:10px;">the minimum payments on all five cards, added together</div>
+          <div class="res-note">Net of deposit, success fee and debts · monthly is the minimum on all
+            five cards added together</div>
 
           <div class="alert-box" id="cliffBox">
             <div class="a-title" id="cliffTitle">⚠ Negative-Amortization Cliff</div>
             <div class="a-body" id="cliffBody"></div>
           </div>
-
-          <table class="pm">
-            <tr><th>Card</th><th>APR</th><th>Min. Payment</th></tr>
-            <tr><td>Capital One Spark</td><td>14.99%</td><td id="p0">$330</td></tr>
-            <tr><td>Amex Blue Business</td><td>16.99%</td><td id="p1">$294</td></tr>
-            <tr><td>Citi Costco</td><td>18.99%</td><td id="p2">$219</td></tr>
-            <tr><td>Barclays View</td><td>19.99%</td><td id="p3">$162</td></tr>
-            <tr><td>Chase Sapphire</td><td>22.99%</td><td id="p4">$45</td></tr>
-          </table>
         </div>
 
       </div>
+
+      <!-- ══ DEMOTED — the three planning tables, one click down ══════════ -->
+      <details class="breakdown" id="breakdown">
+        <summary>
+          <span class="bd-chev">›</span>
+          Show breakdown
+          <span class="bd-note">per-lender waterfall · payback comparison · per-card minimums</span>
+        </summary>
+        <div class="bd-body">
+
+          <div class="bd-sub">D-02a / Where the draw comes from — lowest APR first</div>
+          <table class="deal">
+            <tr><th>Lender</th><th>Limit</th><th>Balance</th><th>Headroom</th><th>Draw</th></tr>
+            <tr><td>Capital One Spark <span class="apr-tag">14.99% APR</span></td><td>15,000</td><td>4,000</td><td>11,000</td><td id="d0">11,000</td></tr>
+            <tr><td>Amex Blue Business <span class="apr-tag">16.99% APR</span></td><td>18,000</td><td>8,200</td><td>9,800</td><td id="d1">9,800</td></tr>
+            <tr><td>Citi Costco <span class="apr-tag">18.99% APR</span></td><td>12,000</td><td>4,700</td><td>7,300</td><td id="d2">7,300</td></tr>
+            <tr><td>Barclays View <span class="apr-tag">19.99% APR</span></td><td>9,000</td><td>3,600</td><td>5,400</td><td id="d3">5,400</td></tr>
+            <tr><td>Chase Sapphire <span class="apr-tag">22.99% APR</span></td><td>22,000</td><td>8,400</td><td>13,600</td><td id="d4">1,500</td></tr>
+            <tr class="total"><td id="oLeft">Total drawn · $12,100 headroom left</td><td></td><td></td><td></td><td id="oDrawn">35,000</td></tr>
+          </table>
+
+          <div class="bd-cols">
+            <div>
+              <div class="bd-sub">D-03 / What each way of paying it back costs her</div>
+              <table class="pm">
+                <tr><th>Method</th><th>12mo</th><th>24mo</th><th>36mo</th></tr>
+                <tr><td>Lump Sum</td><td>$0</td><td>$0</td><td>$0</td></tr>
+                <tr><td>Minimum Payments</td><td id="m12">$4,120</td><td id="m24">$7,860</td><td id="m36">$11,240</td></tr>
+                <tr><td>Interest-Only</td><td id="i12">$6,300</td><td id="i24">$12,600</td><td id="i36">$17,640 + balloon</td></tr>
+              </table>
+
+              <div class="bd-sub" style="margin-top:14px;">D-03b / How the net cash is arrived at</div>
+              <table class="pm">
+                <tr><td>Funded Amount</td><td id="oFunded">$35,000</td></tr>
+                <tr><td id="oFeeLabel">Deposit + 10% Success Fee</td><td id="oFees">−$6,500</td></tr>
+                <tr><td>Debts she must clear first</td><td id="oDebts">−$0</td></tr>
+              </table>
+            </div>
+            <div>
+              <div class="bd-sub">D-04 / Minimum payment, card by card</div>
+              <table class="pm">
+                <tr><th>Card</th><th>APR</th><th>Min. Payment</th></tr>
+                <tr><td>Capital One Spark</td><td>14.99%</td><td id="p0">$330</td></tr>
+                <tr><td>Amex Blue Business</td><td>16.99%</td><td id="p1">$294</td></tr>
+                <tr><td>Citi Costco</td><td>18.99%</td><td id="p2">$219</td></tr>
+                <tr><td>Barclays View</td><td>19.99%</td><td id="p3">$162</td></tr>
+                <tr><td>Chase Sapphire</td><td>22.99%</td><td id="p4">$45</td></tr>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </details>
     </div>
 
   </main>

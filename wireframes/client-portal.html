@@ -67,22 +67,26 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .sec-hd .card-title{margin-bottom:0}
 .sec-note{font-size:11.5px;color:var(--text-faint);margin-left:auto}
 
-/* ── 1 · welcome video ──────────────────────────────────────────────────── */
-.video-card{padding:0;overflow:hidden}
-.player{position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,#0A0A0A,#1C1C20);display:flex;align-items:center;justify-content:center;overflow:hidden}
+/* ── 1 · welcome video (compact) ─────────────────────────────────────────────
+   Was a full-bleed 16:9 player owning the top third of the page. The video is
+   not the client's question, so it keeps every control and loses the real
+   estate: thumbnail left, title and scrub right, one card tall. */
+.video-card{padding:14px 15px;display:flex;gap:15px;align-items:center;flex-wrap:wrap}
+.player{position:relative;flex:0 0 172px;width:172px;aspect-ratio:16/9;border-radius:9px;background:linear-gradient(135deg,#0A0A0A,#1C1C20);display:flex;align-items:center;justify-content:center;overflow:hidden}
 .player .ghost{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.player .ghost .logo{width:62%;aspect-ratio:2698/543;filter:invert(1);opacity:.06}
-.playbtn{position:relative;width:62px;height:62px;border-radius:50%;border:0;background:rgba(252,252,252,.94);color:var(--ink);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;padding-left:4px;transition:transform .14s,background .14s}
+.player .ghost .logo{width:72%;aspect-ratio:2698/543;filter:invert(1);opacity:.08}
+.playbtn{position:relative;width:40px;height:40px;border-radius:50%;border:0;background:rgba(252,252,252,.94);color:var(--ink);font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;padding-left:3px;transition:transform .14s,background .14s}
 .playbtn:hover{transform:scale(1.06);background:#fff}
-.playbtn.playing{padding-left:0;font-size:15px}
-.player.playing .ghost .logo{opacity:.10}
-.vbar{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:11px;padding:11px 14px;background:linear-gradient(transparent,rgba(10,10,10,.72))}
-.vtrack{flex:1;height:3px;border-radius:2px;background:rgba(252,252,252,.22);overflow:hidden;cursor:pointer}
+.playbtn.playing{padding-left:0;font-size:11px}
+.player.playing .ghost .logo{opacity:.13}
+/* scrub row lives beside the thumbnail now, not on top of it */
+.vrow{display:flex;align-items:center;gap:10px;margin-top:9px}
+.vtrack{flex:1;height:3px;border-radius:2px;background:var(--line);overflow:hidden;cursor:pointer}
 .vtrack i{display:block;height:100%;width:0;background:var(--spectrum);border-radius:2px}
-.vtime{font-family:var(--mono);font-size:10.5px;color:var(--paper);letter-spacing:.06em;flex:0 0 auto}
-.video-meta{padding:16px 20px 18px}
-.video-title{font-size:15.5px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
-.video-copy{font-size:13px;color:var(--text-dim)}
+.vtime{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);letter-spacing:.06em;flex:0 0 auto}
+.video-meta{flex:1;min-width:230px}
+.video-title{font-size:14px;font-weight:800;letter-spacing:-.01em;margin-bottom:3px}
+.video-copy{font-size:12.5px;color:var(--text-dim);line-height:1.45}
 .tier-tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:3px 9px;border-radius:5px;background:var(--purple-bg);border:1px solid var(--purple-line);color:var(--purple);white-space:nowrap}
 
 /* ── 2 · progress ───────────────────────────────────────────────────────── */
@@ -98,10 +102,14 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .step .lbl{font-size:10.5px;font-weight:600;color:var(--text-dim);line-height:1.25;max-width:80px}
 .step.current .lbl{color:var(--text);font-weight:700}
 
-.status-banner{background:linear-gradient(135deg,var(--ink),var(--ink2));color:#fff;border-radius:12px;padding:16px 20px;margin-bottom:16px}
-.status-banner .sb-eyebrow{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--dark-text-dim);margin-bottom:6px}
-.status-banner .sb-main{font-size:16px;font-weight:700;line-height:1.4}
-.status-banner .sb-main b{font-family:var(--mono)}
+/* status line and stepper were two stacked cards saying the same thing twice.
+   One card: the sentence on top, the dots underneath. */
+.prog-card{padding:0;overflow:hidden}
+.status-line{background:linear-gradient(135deg,var(--ink),var(--ink2));color:#fff;padding:15px 20px}
+.status-line .sb-eyebrow{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--dark-text-dim);margin-bottom:6px}
+.status-line .sb-main{font-size:16px;font-weight:700;line-height:1.4}
+.status-line .sb-main b{font-family:var(--mono)}
+.prog-card .stepper{padding:18px 22px 16px}
 
 /* ── 3 · what you own ───────────────────────────────────────────────────── */
 .own{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
@@ -201,7 +209,26 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .contact-btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;transition:background .12s}
 .contact-btn:hover{background:var(--soft)}
 
-/* ── retained account detail ────────────────────────────────────────────── */
+/* ── demoted: account & history ──────────────────────────────────────────────
+   Payments, documents, the activity timeline and messages were four cards the
+   client had to scroll past to find the one thing we need from them. Nothing
+   is gone — it is one click behind a closed drawer, tabbed so only one list
+   is on screen at a time. */
+.acct{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:16px;overflow:hidden}
+.acct>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:15px 20px}
+.acct>summary::-webkit-details-marker{display:none}
+.acct>summary:focus-visible{outline:2px solid var(--blue-line);outline-offset:-2px}
+.acct .ac-t{font-size:13.5px;font-weight:800;letter-spacing:-.01em}
+.acct .ac-s{font-size:12px;color:var(--text-faint);margin-left:auto;text-align:right}
+.acct .ac-chev{font-family:var(--mono);font-size:12px;color:var(--text-faint);transition:transform .16s;flex:0 0 auto}
+.acct[open] .ac-chev{transform:rotate(90deg)}
+.acct-bd{border-top:1px solid var(--line);padding:14px 20px 18px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tab{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:var(--text-dim);transition:background .12s,border-color .12s}
+.tab:hover{background:var(--soft)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.tabpane{display:none}
+.tabpane.on{display:block}
 .pay-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
 .pay-row:last-child{border-bottom:none}
 .pay-row .pn{font-weight:600}
@@ -211,6 +238,18 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .timeline-item{display:flex;gap:12px;padding:8px 0;font-size:13px}
 .timeline-item .td{font-family:var(--mono);font-size:11px;color:var(--text-faint);white-space:nowrap;padding-top:1px}
 .msgs-note{color:var(--text-faint);font-size:12.5px;padding:10px 0 2px}
+.doc-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.doc-row:last-child{border-bottom:none}
+.doc-row .dr-n{font-weight:600}
+.doc-row .dr-m{font-size:11.5px;color:var(--text-faint)}
+.doc-row .dr-s{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:9px;white-space:nowrap}
+.dr-s.have{color:var(--green);background:var(--green-bg)}
+.dr-s.want{color:var(--amber);background:var(--amber-bg)}
+
+/* ── bottom rail: advisor + sales, compact ───────────────────────────────── */
+.rail{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rail .card{margin-bottom:0;padding:15px 17px}
+.rail .card-title{margin-bottom:10px}
 
 footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;align-items:center;justify-content:center;gap:12px;font-family:var(--mono);font-size:10px;letter-spacing:.09em;color:var(--dark-text-dim)}
 
@@ -251,9 +290,11 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
 
 @media(max-width:760px){
   .tiles{grid-template-columns:1fr}
+  .rail{grid-template-columns:1fr}
   .promo-side{flex:1 1 100%}
   .statesw .lb{display:none}
   .step .lbl{font-size:9px}
+  .player{flex:1 1 100%;width:100%}
 }
 </style>
 </head>
@@ -283,7 +324,47 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <div class="welcome" id="greeting">Welcome back, Derek</div>
       <div class="welcome-sub" id="greeting-sub">Here's where things stand on your funding.</div>
 
-      <!-- ══ PROMOTED OFFER — funded state only, above the fold ══════════ -->
+      <!-- ══ 1 · WELCOME VIDEO (compact) ═════════════════════════════════ -->
+      <section class="card video-card" aria-labelledby="video-title">
+        <div class="player" id="player">
+          <div class="ghost"><div class="logo" role="presentation"></div></div>
+          <button class="playbtn" id="playbtn" type="button" aria-label="Play welcome video">▶</button>
+        </div>
+        <div class="video-meta">
+          <div class="sec-hd" style="margin-bottom:7px">
+            <div class="eyebrow">CP-01 <span class="sep">/</span> START HERE</div>
+            <span class="tier-tag" id="tier-tag">Card Stacking DFY</span>
+          </div>
+          <div class="video-title" id="video-title">Welcome to Card Stacking DFY — what happens next</div>
+          <div class="video-copy">Four minutes with Marcus on how your rounds are built, what we need from
+            you, and when the money actually lands.</div>
+          <div class="vrow">
+            <span class="vtime" id="vnow">0:00</span>
+            <div class="vtrack" id="vtrack"><i id="vfill"></i></div>
+            <span class="vtime">4:12</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 2 · WHERE YOUR FUNDING IS — status line + stepper, one card ══ -->
+      <section class="card prog-card" aria-labelledby="sb-main">
+        <div class="status-line">
+          <div class="sb-eyebrow" id="sb-eyebrow">Current Status</div>
+          <div class="sb-main" id="sb-main">You're approved for <b>$46,500</b>. Getting that money to you is the next step.</div>
+        </div>
+        <div class="stepper" id="stepper">
+          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Booked</div></div>
+          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Diagnostic Paid</div></div>
+          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Docs Received</div></div>
+          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Round Started</div></div>
+          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Round Submitted</div></div>
+          <div class="step current" data-step="approved"><span class="line"></span><div class="dot">●</div><div class="lbl">Round Approved</div></div>
+          <div class="step future" data-step="funded"><span class="line"></span><div class="dot">6</div><div class="lbl">Round Funded</div></div>
+          <div class="step future" data-step="final"><span class="line"></span><div class="dot">7</div><div class="lbl">File Finalized</div></div>
+        </div>
+      </section>
+
+      <!-- ══ PROMOTED OFFER — funded state only, under the status ════════ -->
       <section class="promo" id="promo" aria-labelledby="promo-title">
         <div class="ph"></div>
         <div class="promo-bd">
@@ -303,48 +384,24 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
         </div>
       </section>
 
-      <!-- ══ 1 · WELCOME VIDEO ═══════════════════════════════════════════ -->
-      <section class="card video-card" aria-labelledby="video-title">
-        <div class="player" id="player">
-          <div class="ghost"><div class="logo" role="presentation"></div></div>
-          <button class="playbtn" id="playbtn" type="button" aria-label="Play welcome video">▶</button>
-          <div class="vbar">
-            <span class="vtime" id="vnow">0:00</span>
-            <div class="vtrack" id="vtrack"><i id="vfill"></i></div>
-            <span class="vtime">4:12</span>
-          </div>
+      <!-- ══ 3 · WHAT WE STILL NEED — the one thing being asked of them ══ -->
+      <section class="action-card" id="action-card" aria-labelledby="action-title">
+        <div class="action-title" id="action-title">We still need 2 things from you</div>
+        <div class="action-sub">We asked 2 days ago — sending them today keeps things moving.</div>
+        <div class="doc-need"><span>Bank statements (last 2 months)</span><span class="dn-age">asked 2 days ago</span></div>
+        <div class="doc-need"><span>Voided check</span><span class="dn-age">asked 2 days ago</span></div>
+        <div class="filelist" id="filelist"></div>
+        <div class="upbar" id="upbar"><i></i></div>
+        <div class="upload-row">
+          <button class="upload-btn" id="upload-btn" type="button">Upload Documents</button>
+          <button class="upload-more" id="upload-more" type="button" hidden>Add more files</button>
+          <span class="upload-hint" id="upload-hint"></span>
         </div>
-        <div class="video-meta">
-          <div class="sec-hd" style="margin-bottom:9px">
-            <div class="eyebrow">CP-01 <span class="sep">/</span> START HERE</div>
-            <span class="tier-tag" id="tier-tag">Card Stacking DFY</span>
-          </div>
-          <div class="video-title" id="video-title">Welcome to Card Stacking DFY — what happens next</div>
-          <div class="video-copy">Four minutes with Marcus on how your rounds are built, what we need from you, and when the money actually lands.</div>
-        </div>
+        <input type="file" id="file-input" multiple hidden
+               accept=".pdf,.png,.jpg,.jpeg,.heic,.doc,.docx,.csv,.xls,.xlsx">
       </section>
 
-      <!-- ══ 2 · YOUR PROGRESS ═══════════════════════════════════════════ -->
-      <div class="status-banner">
-        <div class="sb-eyebrow" id="sb-eyebrow">Current Status</div>
-        <div class="sb-main" id="sb-main">You're approved for <b>$46,500</b>. Getting that money to you is the next step.</div>
-      </div>
-
-      <section class="card" aria-labelledby="prog-t">
-        <div class="card-title" id="prog-t">Your Progress</div>
-        <div class="stepper" id="stepper">
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Booked</div></div>
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Diagnostic Paid</div></div>
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Docs Received</div></div>
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Round Started</div></div>
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Round Submitted</div></div>
-          <div class="step current" data-step="approved"><span class="line"></span><div class="dot">●</div><div class="lbl">Round Approved</div></div>
-          <div class="step future" data-step="funded"><span class="line"></span><div class="dot">6</div><div class="lbl">Round Funded</div></div>
-          <div class="step future" data-step="final"><span class="line"></span><div class="dot">7</div><div class="lbl">File Finalized</div></div>
-        </div>
-      </section>
-
-      <!-- ══ 3 · WHAT YOU OWN ════════════════════════════════════════════ -->
+      <!-- ══ 4 · WHAT YOU OWN ════════════════════════════════════════════ -->
       <section class="card" aria-labelledby="own-t">
         <div class="sec-hd">
           <div class="card-title" id="own-t">What You Own</div>
@@ -363,23 +420,6 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           <div class="own-actions"><button class="dl-btn" type="button">Download ↓</button></div>
         </div>
         <div class="own-foot"><span class="pulse"></span> Part of your Card Stacking DFY package. Nothing here expires.</div>
-      </section>
-
-      <!-- ══ 4 · WHAT WE STILL NEED ══════════════════════════════════════ -->
-      <section class="action-card" id="action-card" aria-labelledby="action-title">
-        <div class="action-title" id="action-title">We still need 2 things from you</div>
-        <div class="action-sub">We asked 2 days ago — sending them today keeps things moving.</div>
-        <div class="doc-need"><span>Bank statements (last 2 months)</span><span class="dn-age">asked 2 days ago</span></div>
-        <div class="doc-need"><span>Voided check</span><span class="dn-age">asked 2 days ago</span></div>
-        <div class="filelist" id="filelist"></div>
-        <div class="upbar" id="upbar"><i></i></div>
-        <div class="upload-row">
-          <button class="upload-btn" id="upload-btn" type="button">Upload Documents</button>
-          <button class="upload-more" id="upload-more" type="button" hidden>Add more files</button>
-          <span class="upload-hint" id="upload-hint"></span>
-        </div>
-        <input type="file" id="file-input" multiple hidden
-               accept=".pdf,.png,.jpg,.jpeg,.heic,.doc,.docx,.csv,.xls,.xlsx">
       </section>
 
       <!-- ══ 5 · UNLOCK MORE ═════════════════════════════════════════════ -->
@@ -429,70 +469,112 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
         </div>
       </section>
 
-      <!-- ══ 6 · TALK TO AN ADVISOR (sales) ══════════════════════════════ -->
-      <section class="card book-card" aria-labelledby="book-t">
-        <div class="book-row">
+      <!-- ══ 6 · DEMOTED — payments, documents, activity, messages ═══════
+           All four lists are intact, tabbed, one click behind a closed drawer.
+           Nothing here answers "where's my funding" and nothing here is an
+           action, so nothing here earns space on the default view. -->
+      <details class="acct" id="acct">
+        <summary>
+          <span class="ac-chev">›</span>
+          <span class="ac-t">Account &amp; history</span>
+          <span class="ac-s">Payments · Documents · Activity · Messages</span>
+        </summary>
+        <div class="acct-bd">
+          <div class="tabs" id="acct-tabs" role="tablist" aria-label="Account and history">
+            <button class="tab on" type="button" role="tab" aria-selected="true"  aria-controls="tp-pay"  data-tab="pay">Payments</button>
+            <button class="tab"    type="button" role="tab" aria-selected="false" aria-controls="tp-docs" data-tab="docs">Documents</button>
+            <button class="tab"    type="button" role="tab" aria-selected="false" aria-controls="tp-act"  data-tab="act">Activity</button>
+            <button class="tab"    type="button" role="tab" aria-selected="false" aria-controls="tp-msg"  data-tab="msg">Messages</button>
+          </div>
+
+          <div class="tabpane on" id="tp-pay" role="tabpanel" data-pane="pay">
+            <div class="pay-row">
+              <div><div class="pn">Credit diagnostic</div><div class="pd">Jul 10, 2026</div></div>
+              <div class="pv">$32<span class="paid-pill">Paid</span></div>
+            </div>
+            <div class="pay-row">
+              <div><div class="pn">Deposit</div><div class="pd">Jul 15, 2026</div></div>
+              <div class="pv">$3,000<span class="paid-pill">Paid</span></div>
+            </div>
+            <div class="pay-row" id="fee-row">
+              <div><div class="pn">Success Fee</div><div class="pd" id="fee-note">10% of what funds — due when the money lands</div></div>
+              <div class="pv" id="fee-val">about $4,650</div>
+            </div>
+          </div>
+
+          <div class="tabpane" id="tp-docs" role="tabpanel" data-pane="docs">
+            <div class="doc-row">
+              <div><div class="dr-n">Funding Snapshot</div><div class="dr-m">Jul 24, 2026 · PDF · 1.4 MB</div></div>
+              <span class="dr-s have">On file</span>
+            </div>
+            <div class="doc-row">
+              <div><div class="dr-n">Credit Analysis Report</div><div class="dr-m">Jul 22, 2026 · PDF · 2.1 MB</div></div>
+              <span class="dr-s have">On file</span>
+            </div>
+            <div class="doc-row">
+              <div><div class="dr-n">Bank and Lender Match List</div><div class="dr-m">Jul 18, 2026 · PDF · 820 KB</div></div>
+              <span class="dr-s have">On file</span>
+            </div>
+            <div class="doc-row">
+              <div><div class="dr-n">Photo ID</div><div class="dr-m">Received Jul 22, 2026</div></div>
+              <span class="dr-s have">On file</span>
+            </div>
+            <div class="doc-row">
+              <div><div class="dr-n">Bank statements (last 2 months)</div><div class="dr-m">Asked Jul 24, 2026</div></div>
+              <span class="dr-s want">Still needed</span>
+            </div>
+            <div class="doc-row">
+              <div><div class="dr-n">Voided check</div><div class="dr-m">Asked Jul 24, 2026</div></div>
+              <span class="dr-s want">Still needed</span>
+            </div>
+          </div>
+
+          <div class="tabpane" id="tp-act" role="tabpanel" data-pane="act">
+            <div class="timeline-item funded-only" hidden><span class="td">Jul 27</span><span>Your round funded — $46,500 sent to your account</span></div>
+            <div class="timeline-item"><span class="td">Jul 24</span><span>Your round was approved for $46,500</span></div>
+            <div class="timeline-item"><span class="td">Jul 22</span><span>We got your documents and started reviewing them</span></div>
+            <div class="timeline-item"><span class="td">Jul 18</span><span>We sent your application to 3 lenders</span></div>
+            <div class="timeline-item"><span class="td">Jul 15</span><span>Deposit received — thank you!</span></div>
+            <div class="timeline-item"><span class="td">Jul 10</span><span>We finished your credit diagnostic</span></div>
+          </div>
+
+          <div class="tabpane" id="tp-msg" role="tabpanel" data-pane="msg">
+            <div class="timeline-item"><span class="td">2:32 PM</span><span>Reminder: your call with Marcus Webb is at 3:02 PM today</span></div>
+            <div class="timeline-item"><span class="td">Jul 24</span><span>We still need your bank statements and a voided check</span></div>
+            <div class="msgs-note">Nothing here needs a reply right now.</div>
+          </div>
+        </div>
+      </details>
+
+      <!-- ══ 7 · BOTTOM RAIL — advisor (support) + booking (sales) ═══════ -->
+      <div class="rail">
+        <section class="card" aria-labelledby="adv-t">
+          <div class="card-title" id="adv-t">Your Funding Advisor</div>
+          <div class="advisor-row">
+            <div class="advisor-avatar">MW</div>
+            <div>
+              <div class="advisor-name">Marcus Webb</div>
+              <div class="advisor-role">Looks after your file</div>
+            </div>
+            <div class="contact-btns">
+              <button class="contact-btn" type="button">Text</button>
+              <button class="contact-btn" type="button">Call</button>
+            </div>
+          </div>
+          <div class="support-note">Your round, your documents, a payment — Marcus is who you want.
+            No charge, no pitch.</div>
+        </section>
+
+        <section class="card book-card" aria-labelledby="book-t">
+          <div class="card-title" id="book-t">Want More Funding?</div>
           <div class="book-copy">
             <span class="sales-tag">Sales conversation</span>
-            <div class="bt" id="book-t">Talk to an advisor about getting more funding</div>
-            <div class="bd">A 20-minute call about growing your approval beyond $46,500 — what another
-              round would take, and what it would cost. This is a sales conversation, not support.</div>
+            <div class="bd">20 minutes on what a bigger approval would take, and what it would cost.</div>
           </div>
-          <button class="btn-book" type="button" data-book="More funding — strategy call">Book a call</button>
-        </div>
-      </section>
-
-      <!-- ══ 7 · YOUR FUNDING ADVISOR (support) ══════════════════════════ -->
-      <section class="card" aria-labelledby="adv-t">
-        <div class="card-title" id="adv-t">Your Funding Advisor</div>
-        <div class="advisor-row">
-          <div class="advisor-avatar">MW</div>
-          <div>
-            <div class="advisor-name">Marcus Webb</div>
-            <div class="advisor-role">Funding Advisor · looks after your file</div>
-          </div>
-          <div class="contact-btns">
-            <button class="contact-btn" type="button">Text Us</button>
-            <button class="contact-btn" type="button">Call</button>
-          </div>
-        </div>
-        <div class="support-note">Questions about your existing round, your documents or a payment —
-          Marcus is who you want. No charge, no pitch.</div>
-      </section>
-
-      <!-- ── retained account detail ─────────────────────────────────────── -->
-      <section class="card" aria-labelledby="pay-t">
-        <div class="card-title" id="pay-t">Payments</div>
-        <div class="pay-row">
-          <div><div class="pn">Credit diagnostic</div><div class="pd">Jul 10, 2026</div></div>
-          <div class="pv">$32<span class="paid-pill">Paid</span></div>
-        </div>
-        <div class="pay-row">
-          <div><div class="pn">Deposit</div><div class="pd">Jul 15, 2026</div></div>
-          <div class="pv">$3,000<span class="paid-pill">Paid</span></div>
-        </div>
-        <div class="pay-row" id="fee-row">
-          <div><div class="pn">Success Fee</div><div class="pd" id="fee-note">10% of what funds — due when the money lands</div></div>
-          <div class="pv" id="fee-val">about $4,650</div>
-        </div>
-      </section>
-
-      <section class="card" aria-labelledby="act-t">
-        <div class="card-title" id="act-t">Activity</div>
-        <div class="timeline-item funded-only" hidden><span class="td">Jul 27</span><span>Your round funded — $46,500 sent to your account</span></div>
-        <div class="timeline-item"><span class="td">Jul 24</span><span>Your round was approved for $46,500</span></div>
-        <div class="timeline-item"><span class="td">Jul 22</span><span>We got your documents and started reviewing them</span></div>
-        <div class="timeline-item"><span class="td">Jul 18</span><span>We sent your application to 3 lenders</span></div>
-        <div class="timeline-item"><span class="td">Jul 15</span><span>Deposit received — thank you!</span></div>
-        <div class="timeline-item"><span class="td">Jul 10</span><span>We finished your credit diagnostic</span></div>
-      </section>
-
-      <section class="card" aria-labelledby="msg-t">
-        <div class="card-title" id="msg-t">Messages</div>
-        <div class="timeline-item"><span class="td">2:32 PM</span><span>Reminder: your call with Marcus Webb is at 3:02 PM today</span></div>
-        <div class="timeline-item"><span class="td">Jul 24</span><span>We still need your bank statements and a voided check</span></div>
-        <div class="msgs-note">Nothing here needs a reply right now.</div>
-      </section>
+          <button class="btn-book" type="button" data-book="More funding — strategy call"
+                  style="margin-top:11px">Book a call</button>
+        </section>
+      </div>
 
     </div>
   </main>
@@ -883,6 +965,25 @@ var PRODUCTS = {
   }
 
   paint();
+})();
+
+/* ── account & history tabs ─────────────────────────────────────────────────
+   The drawer holds four lists. Only one is ever on screen — a drawer that
+   opens onto four stacked lists is the same wall of data, just delayed. */
+(function(){
+  var tabs = document.getElementById('acct-tabs');
+  if(!tabs) return;
+  tabs.addEventListener('click', function(e){
+    var b = e.target.closest('.tab'); if(!b) return;
+    tabs.querySelectorAll('.tab').forEach(function(t){
+      var on = t === b;
+      t.classList.toggle('on', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    document.querySelectorAll('#acct .tabpane').forEach(function(p){
+      p.classList.toggle('on', p.dataset.pane === b.dataset.tab);
+    });
+  });
 })();
 
 /* ── the two page states ────────────────────────────────────────────────────

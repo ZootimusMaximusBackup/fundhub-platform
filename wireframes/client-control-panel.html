@@ -116,8 +116,17 @@
   .kv-value{font-size:13px;font-weight:600;color:var(--text);}
   .kv-value.mono{font-family:'JetBrains Mono',monospace;}
 
-  /* ---------- Active Blockers (promoted, same treatment as Command Center holds) ---------- */
-  .blockers-panel{background:rgba(242,166,155,.09);border:1px solid var(--red-line);border-radius:8px;padding:11px 13px 12px;}
+  /* ---------- Next action + blockers — the loudest thing on the page --------
+     The page's question is "what happens next on this file and why hasn't it
+     happened". The answer used to be a 11.5px line at the bottom of a card.
+     It leads now; the blocker sits under it as the reason. */
+  .blockers-panel{background:rgba(242,166,155,.09);border:1px solid var(--red-line);border-radius:8px;padding:13px 14px 13px;}
+  .na-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:12px;}
+  .na-eyebrow{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--red);margin-bottom:5px;}
+  .na-main{font-size:17px;font-weight:800;line-height:1.3;color:var(--text);letter-spacing:-.01em;}
+  .na-why{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+    color:var(--text-dim);margin-bottom:6px;}
   .blockers-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
   .blockers-title{font-size:13px;font-weight:800;color:var(--red);}
   .blocker-card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--amber-line);border-radius:6px;padding:9px 12px;margin-bottom:8px;}
@@ -165,6 +174,21 @@
     padding:8px 11px;margin-bottom:6px;font-size:12px;font-weight:600;
   }
   .link-btn .arrow{color:var(--text-faint);font-size:12px;}
+
+  /* ---------- "More" — the old Quick Launch stack -------------------------
+     Two competing button stacks in one column meant neither read as primary.
+     The five launch links are one collapsed menu under the five actions now;
+     every destination is still one click away. */
+  .more{margin-top:2px;}
+  .more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;
+    background:var(--card);border:1px dashed var(--line);border-radius:6px;padding:8px 11px;
+    font-size:12px;font-weight:600;color:var(--text-dim);}
+  .more>summary::-webkit-details-marker{display:none;}
+  .more>summary:hover{color:var(--text);border-color:var(--text-faint);}
+  .more>summary:focus-visible{outline:2px solid var(--blue-line);outline-offset:2px;}
+  .more>summary .arrow{color:var(--text-faint);font-size:11px;transition:transform .16s;}
+  .more[open]>summary .arrow{transform:rotate(180deg);}
+  .more-body{padding-top:7px;}
 
   .facts-list{display:flex;flex-direction:column;}
   .fact-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--paper-dim);font-size:11.5px;}
@@ -289,21 +313,26 @@
 
       <div class="group">
         <div class="blockers-panel">
-          <div class="blockers-head">
-            <div class="blockers-title">⚠ Active Blockers — 1</div>
+          <div class="na-head">
+            <div>
+              <div class="na-eyebrow">Next Action</div>
+              <div class="na-main">Call Derek and ask him for the statements and the voided check</div>
+            </div>
+            <div class="blocker-age-wrap">
+              <span class="blocker-age">2d 6h</span>
+              <span class="blocker-age-label">blocked</span>
+            </div>
           </div>
+
+          <div class="na-why">Why it hasn't happened — 1 active blocker</div>
           <div class="blocker-card">
             <div class="blocker-top">
               <div>
                 <div class="blocker-reason">Missing Documents</div>
-                <div class="blocker-detail">Two months of bank statements and a voided check</div>
-              </div>
-              <div class="blocker-age-wrap">
-                <span class="blocker-age">2d 6h</span>
-                <span class="blocker-age-label">on hold</span>
+                <div class="blocker-detail">Two months of bank statements and a voided check. Asked
+                  2 days ago; he hasn't sent them.</div>
               </div>
             </div>
-            <div class="blocker-action">Next action: <b>Call Derek and ask him for the statements and the voided check</b></div>
           </div>
           <div class="status-chip-row">
             <div class="status-chip"><span class="dot"></span>No fraud alert</div>
@@ -313,13 +342,21 @@
         </div>
       </div>
 
+      <!-- Credit & Hold Status restates the blocker card in four key/value
+           pairs. Same four facts, said twice, was the noise — it collapses so
+           the blocker above is the only place they read loud. -->
       <div class="group">
-        <div class="group-title">Credit &amp; Hold Status</div>
-        <div class="kv-grid">
-          <div class="kv"><div class="kv-label">Credit Status</div><div class="kv-value">Pulled 3 days ago</div></div>
-          <div class="kv"><div class="kv-label">Missing Docs</div><div class="kv-value">Bank statements and a voided check</div></div>
-          <div class="kv"><div class="kv-label">On Hold Because</div><div class="kv-value">He hasn't sent his documents yet</div></div>
-          <div class="kv"><div class="kv-label">Next Action</div><div class="kv-value">Call him and ask for the documents</div></div>
+        <button class="group-title tog" type="button" aria-expanded="false" aria-controls="hold-body">
+          <span>Credit &amp; Hold Status</span>
+          <span class="chev">collapsed <span class="cg">⌄</span></span>
+        </button>
+        <div class="group-body" id="hold-body" hidden>
+          <div class="kv-grid">
+            <div class="kv"><div class="kv-label">Credit Status</div><div class="kv-value">Pulled 3 days ago</div></div>
+            <div class="kv"><div class="kv-label">Missing Docs</div><div class="kv-value">Bank statements and a voided check</div></div>
+            <div class="kv"><div class="kv-label">On Hold Because</div><div class="kv-value">He hasn't sent his documents yet</div></div>
+            <div class="kv"><div class="kv-label">Next Action</div><div class="kv-value">Call him and ask for the documents</div></div>
+          </div>
         </div>
       </div>
 
@@ -359,19 +396,30 @@
       <button class="action-btn" data-act data-done="queued 2:47 PM">Issue Inquiry Removal <span class="arrow">→</span></button>
       <button class="action-btn confirm-required" data-act data-confirm="confirm?" data-done="6 apps generated">Generate Apps <span class="arrow">confirm</span></button>
 
-      <div class="side-title" style="margin-top:16px;">Quick Launch</div>
-      <button class="link-btn">Open Funding Matrix <span class="arrow">↗</span></button>
-      <button class="link-btn">Open Credit Snapshot <span class="arrow">↗</span></button>
-      <button class="link-btn">Open Bank Inbox <span class="arrow">↗</span></button>
-      <button class="link-btn">GHL Contact <span class="arrow">↗</span></button>
-      <button class="link-btn">Raw Report <span class="arrow">↗</span></button>
+      <details class="more" id="more-menu">
+        <summary>More <span class="arrow">⌄</span></summary>
+        <div class="more-body">
+          <button class="link-btn">Open Funding Matrix <span class="arrow">↗</span></button>
+          <button class="link-btn">Open Credit Snapshot <span class="arrow">↗</span></button>
+          <button class="link-btn">Open Bank Inbox <span class="arrow">↗</span></button>
+          <button class="link-btn">GHL Contact <span class="arrow">↗</span></button>
+          <button class="link-btn">Raw Report <span class="arrow">↗</span></button>
+        </div>
+      </details>
 
-      <div class="side-title" style="margin-top:16px;">System Facts</div>
-      <div class="facts-list">
-        <div class="fact-row"><span class="k">Last Credit Pull</span><span class="v">Jul 23, 2026</span></div>
-        <div class="fact-row"><span class="k">Credit Source</span><span class="v">TransUnion</span></div>
-        <div class="fact-row"><span class="k">Funding Round</span><span class="v">#2</span></div>
-        <div class="fact-row"><span class="k">Finalized</span><span class="v">No</span></div>
+      <div class="group" style="margin-top:16px;">
+        <button class="group-title tog" type="button" aria-expanded="false" aria-controls="facts-body">
+          <span>System Facts</span>
+          <span class="chev">collapsed <span class="cg">⌄</span></span>
+        </button>
+        <div class="group-body" id="facts-body" hidden>
+          <div class="facts-list">
+            <div class="fact-row"><span class="k">Last Credit Pull</span><span class="v">Jul 23, 2026</span></div>
+            <div class="fact-row"><span class="k">Credit Source</span><span class="v">TransUnion</span></div>
+            <div class="fact-row"><span class="k">Funding Round</span><span class="v">#2</span></div>
+            <div class="fact-row"><span class="k">Finalized</span><span class="v">No</span></div>
+          </div>
+        </div>
       </div>
 
     </div>
