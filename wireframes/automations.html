@@ -119,6 +119,34 @@
 
   .empty-row td{color:var(--text-faint);font-style:normal;padding:12px 14px;}
 
+  /* ---------- what needs attention, stated once at the top ---------- */
+  /* opaque base: --red-bg is translucent and this strip sits over the dark body */
+  .attn-bar{display:flex;align-items:center;gap:9px;padding:8px 18px;flex-shrink:0;
+    background:var(--card);border-bottom:1px solid var(--line);font-size:12.5px;}
+  .attn-bar.bad{background-image:linear-gradient(var(--red-bg),var(--red-bg));
+    border-bottom-color:var(--red-line);}
+  .attn-bar.good{color:var(--text-dim);}
+  .attn-bar .ab-ic{font-weight:800;}
+  .attn-bar.bad .ab-ic{color:var(--red);}
+  .attn-bar.good .ab-ic{color:var(--green);}
+  .attn-bar b{color:var(--red);}
+  .attn-bar .ab-jump{margin-left:auto;font:inherit;font-size:11px;font-weight:700;cursor:pointer;
+    background:var(--card);border:1px solid var(--red-line);color:var(--red);border-radius:5px;padding:3px 10px;}
+  .attn-bar .ab-jump:hover{background:var(--paper);}
+
+  /* ---------- healthy rows compress ----------
+     A workflow that is on and ran clean needs one line. Its owner and the
+     "went out fine" wording move to the row's hover title; the row still
+     expands to its full step list on click, exactly like a failing one. */
+  tr[data-wf].ok td{padding-top:6px;padding-bottom:6px;}
+  tr[data-wf].ok .wf-owner{display:none;}
+  tr[data-wf].ok .ran-ok{display:none;}
+
+  .rail-group.attn{border-color:var(--red-line);}
+  .sum-tile.attn .sum-value{color:var(--red);}
+  .sum-tile.attn.clear .sum-value{color:var(--green);}
+  .sum-value .of{font-family:'Inter',sans-serif;font-size:10.5px;font-weight:500;color:var(--text-faint);}
+
 
   /* ---------- rail filter ---------- */
   .rail-filter{display:flex;align-items:center;gap:8px;margin-left:auto;}
@@ -196,16 +224,20 @@
     <a class="nav-item active" href="automations.html">Automations</a>
   </nav>
 
+  <!-- Three tiles, not four: Total is On + Needs Attention, so it rides inside
+       the On tile as "17 of 18" instead of holding a card of its own. -->
   <div class="summary-bar">
-    <div class="sum-tile"><div class="sum-label">Total</div><div class="sum-value" data-sum="total">18</div></div>
-    <div class="sum-tile"><div class="sum-label">On</div><div class="sum-value" data-sum="on">17</div></div>
-    <div class="sum-tile"><div class="sum-label">Paused</div><div class="sum-value" data-sum="paused">1</div></div>
+    <div class="sum-tile attn"><div class="sum-label">Needs Attention</div><div class="sum-value" data-sum="attn">1</div></div>
+    <div class="sum-tile"><div class="sum-label">On</div>
+      <div class="sum-value"><span data-sum="on">17</span> <span class="of">of <span data-sum="total">18</span></span></div></div>
     <div class="sum-tile"><div class="sum-label">Ran Today</div><div class="sum-value" data-sum="ran">217</div></div>
     <div class="rail-filter">
       <label for="rail-select">Rail</label>
       <select id="rail-select"></select>
     </div>
   </div>
+
+  <div class="attn-bar" id="attnBar" role="status" aria-live="polite"></div>
 
   <main>
 
@@ -217,28 +249,28 @@
           <td class="wf-name"><span class="wfchev">▸</span>New Lead Welcome Text
             <div class="wf-owner"><span class="av agent">A1</span> Agent 1</div></td>
           <td class="wf-trigger">When a new lead is captured</td>
-          <td class="wf-run-ok">3m ago · went out fine</td>
+          <td class="wf-run-ok">3m ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
         <tr data-wf tabindex="0" aria-expanded="false">
           <td class="wf-name"><span class="wfchev">▸</span>Diagnostic Payment Confirmation
             <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
           <td class="wf-trigger">When a client pays the $32 diagnostic</td>
-          <td class="wf-run-ok">11m ago · went out fine</td>
+          <td class="wf-run-ok">11m ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
         <tr data-wf tabindex="0" aria-expanded="false">
           <td class="wf-name"><span class="wfchev">▸</span>Survey Reminder
             <div class="wf-owner"><span class="av agent">A1</span> Agent 1</div></td>
           <td class="wf-trigger">When Survey Completed sits idle over 24 hours</td>
-          <td class="wf-run-ok">2h ago · went out fine</td>
+          <td class="wf-run-ok">2h ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
         <tr data-wf tabindex="0" aria-expanded="false">
           <td class="wf-name"><span class="wfchev">▸</span>Booked Call Reminder
             <div class="wf-owner"><span class="av agent">A1</span> Agent 1</div></td>
           <td class="wf-trigger">30 minutes before a booked call</td>
-          <td class="wf-run-ok">15m ago · went out fine</td>
+          <td class="wf-run-ok">15m ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
       </table>
@@ -252,21 +284,21 @@
           <td class="wf-name"><span class="wfchev">▸</span>Deposit Receipt Email
             <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
           <td class="wf-trigger">When a client pays the $3,000 deposit</td>
-          <td class="wf-run-ok">4m ago · went out fine</td>
+          <td class="wf-run-ok">4m ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
         <tr data-wf tabindex="0" aria-expanded="false">
           <td class="wf-name"><span class="wfchev">▸</span>Round Submitted Notification
             <div class="wf-owner"><span class="av agent">A5</span> Agent 5</div></td>
           <td class="wf-trigger">When Round Submitted stage is entered</td>
-          <td class="wf-run-ok">1h 20m ago · went out fine</td>
+          <td class="wf-run-ok">1h 20m ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
         <tr data-wf tabindex="0" aria-expanded="false">
           <td class="wf-name"><span class="wfchev">▸</span>Missing Documents Reminder
             <div class="wf-owner"><span class="av agent">A5</span> Agent 5</div></td>
           <td class="wf-trigger">When Missing Documents sits idle over 24 hours</td>
-          <td class="wf-run-ok">6h ago · went out fine</td>
+          <td class="wf-run-ok">6h ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
         <tr class="failed" data-wf tabindex="0" aria-expanded="false">
@@ -290,14 +322,14 @@
           <td class="wf-name"><span class="wfchev">▸</span>Lendflow Submission Sync
             <div class="wf-owner"><span class="av agent">RC</span> Recon</div></td>
           <td class="wf-trigger">When a round is submitted to Lendflow</td>
-          <td class="wf-run-ok">22m ago · went out fine</td>
+          <td class="wf-run-ok">22m ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
         <tr data-wf tabindex="0" aria-expanded="false">
           <td class="wf-name"><span class="wfchev">▸</span>Round Approved Notification
             <div class="wf-owner"><span class="av agent">A5</span> Agent 5</div></td>
           <td class="wf-trigger">When Round Approved stage is entered</td>
-          <td class="wf-run-ok">3h ago · went out fine</td>
+          <td class="wf-run-ok">3h ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
       </table>
@@ -311,14 +343,14 @@
           <td class="wf-name"><span class="wfchev">▸</span>Repair Bundle Payment Confirmation
             <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
           <td class="wf-trigger">When a client pays the $2,000 repair bundle</td>
-          <td class="wf-run-ok">5h ago · went out fine</td>
+          <td class="wf-run-ok">5h ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
         <tr data-wf tabindex="0" aria-expanded="false">
           <td class="wf-name"><span class="wfchev">▸</span>Credit Optimization Roadmap Delivery
             <div class="wf-owner"><span class="av agent">A5</span> Agent 5</div></td>
           <td class="wf-trigger">When File Finalized stage is entered</td>
-          <td class="wf-run-ok">1d ago · went out fine</td>
+          <td class="wf-run-ok">1d ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
       </table>
@@ -332,14 +364,14 @@
           <td class="wf-name"><span class="wfchev">▸</span>Inquiry Removal Confirmation SMS
             <div class="wf-owner"><span class="av agent">IR</span> Inquiry Removal AI</div></td>
           <td class="wf-trigger">When an inquiry removal is confirmed</td>
-          <td class="wf-run-ok">9m ago · went out fine</td>
+          <td class="wf-run-ok">9m ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
         <tr data-wf tabindex="0" aria-expanded="false">
           <td class="wf-name"><span class="wfchev">▸</span>Awaiting CRS Reminder
             <div class="wf-owner"><span class="av agent">CF</span> Context Fetcher</div></td>
           <td class="wf-trigger">When Awaiting CRS sits idle over 48 hours</td>
-          <td class="wf-run-ok">20m ago · went out fine</td>
+          <td class="wf-run-ok">20m ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
       </table>
@@ -353,14 +385,14 @@
           <td class="wf-name"><span class="wfchev">▸</span>AR Invoice Reminder
             <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
           <td class="wf-trigger">3 days after an invoice is sent unpaid</td>
-          <td class="wf-run-ok">1h ago · went out fine</td>
+          <td class="wf-run-ok">1h ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
         <tr data-wf tabindex="0" aria-expanded="false">
           <td class="wf-name"><span class="wfchev">▸</span>Collections Escalation Notice
             <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
           <td class="wf-trigger">When an invoice passes 30 days overdue</td>
-          <td class="wf-run-ok">2h ago · went out fine</td>
+          <td class="wf-run-ok">2h ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
       </table>
@@ -381,14 +413,14 @@
           <td class="wf-name"><span class="wfchev">▸</span>Daily Brief
             <div class="wf-owner"><span class="av agent">DB</span> Daily Brief</div></td>
           <td class="wf-trigger">Every day at 7:00 AM — goes to <span class="av human">CS</span> Chris Stanbridge</td>
-          <td class="wf-run-ok">today 7:00 AM · went out fine</td>
+          <td class="wf-run-ok">today 7:00 AM <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
         <tr data-wf tabindex="0" aria-expanded="false">
           <td class="wf-name"><span class="wfchev">▸</span>Affiliate Payout Notice
             <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
           <td class="wf-trigger">When an affiliate payout is processed</td>
-          <td class="wf-run-ok">3d ago · went out fine</td>
+          <td class="wf-run-ok">3d ago <span class="ran-ok">· went out fine</span></td>
           <td><button type="button" class="toggle on" aria-pressed="true"><span class="dot"></span>ON</button></td>
         </tr>
       </table>
@@ -433,21 +465,103 @@
      appended only when non-zero. Groups with no toggles (0 configured) are left
      exactly as they are.                                                      */
   function recount(){
-    var on = 0, paused = 0;
+    var on = 0, paused = 0, off = 0;
     groups.forEach(function(g){
       var ts = [].slice.call(g.querySelectorAll('.toggle'));
       if(!ts.length) return;
       var gOn = ts.filter(function(t){ return t.classList.contains('on'); }).length,
           gPa = ts.filter(function(t){ return t.classList.contains('paused'); }).length,
           gOff= ts.filter(function(t){ return t.classList.contains('off'); }).length;
-      on += gOn; paused += gPa;
+      on += gOn; paused += gPa; off += gOff;
       var parts = [gOn + ' on'];
       if(gPa)  parts.push(gPa + ' paused');
       if(gOff) parts.push(gOff + ' off');
       g.querySelector('.rail-group-meta').textContent = parts.join(' · ');
     });
     sum('on').textContent = String(on);
-    sum('paused').textContent = String(paused);
+    sum('total').textContent = String(on + paused + off);
+    sum('attn').textContent = String(rows.filter(function(r){ return rank(r) > 0; }).length);
+    document.querySelector('.sum-tile.attn')
+            .classList.toggle('clear', rows.every(function(r){ return rank(r) === 0; }));
+  }
+
+  /* ── WHAT NEEDS ATTENTION SORTS TO THE TOP, ALWAYS ──────────────────────
+     A failing workflow outranks a paused or switched-off one, and any group
+     holding one outranks a group that is entirely clean. Groups with nothing
+     configured fall to the bottom. Re-run after every toggle, so pausing a
+     workflow lifts it immediately instead of on the next reload.            */
+  function rank(row){
+    if(row.classList.contains('failed')) return 2;
+    var t = row.querySelector('.toggle');
+    return (t && !t.classList.contains('on')) ? 1 : 0;
+  }
+  rows.forEach(function(r, i){ r._i = i; });
+
+  function sortAttention(){
+    rows.forEach(collapse);
+    groups.forEach(function(g){
+      var rs = [].slice.call(g.querySelectorAll('tr[data-wf]'));
+      if(!rs.length){ g.dataset.rank = '-1'; return; }
+      var parent = rs[0].parentNode;
+      rs.sort(function(a, b){ return (rank(b) - rank(a)) || (a._i - b._i); });
+      rs.forEach(function(r){ parent.appendChild(r); });
+      var top = rank(rs[0]);
+      g.dataset.rank = String(top);
+      g.classList.toggle('attn', top > 0);
+    });
+    var main = document.querySelector('main');
+    groups.slice().sort(function(a, b){
+      return (b.dataset.rank - a.dataset.rank) || (groups.indexOf(a) - groups.indexOf(b));
+    }).forEach(function(g){ main.appendChild(g); });
+
+    /* a workflow that is on and ran clean gets one line; its owner and the
+       "went out fine" wording move to the row's hover title */
+    rows.forEach(function(r){
+      var ok = rank(r) === 0;
+      r.classList.toggle('ok', ok);
+      r.title = ok
+        ? [nameOf(r), textOf(r.querySelector('.wf-owner')),
+           textOf(r.querySelector('.wf-run-ok'))].filter(Boolean).join(' · ')
+        : '';
+    });
+    renderAttnBar();
+  }
+
+  /* ── THE ONE-LINE ANSWER ────────────────────────────────────────────────── */
+  var attnBar = document.getElementById('attnBar');
+  function renderAttnBar(){
+    var bad = rows.filter(function(r){ return rank(r) > 0; });
+    attnBar.innerHTML = '';
+    attnBar.className = 'attn-bar ' + (bad.length ? 'bad' : 'good');
+
+    var ic = document.createElement('span');
+    ic.className = 'ab-ic';
+    ic.textContent = bad.length ? '⚠' : '✓';
+    attnBar.appendChild(ic);
+
+    var msg = document.createElement('span');
+    if(!bad.length){
+      msg.textContent = 'Nothing broken. All ' + rows.length + ' workflows are on and ran clean.';
+      attnBar.appendChild(msg);
+      return;
+    }
+    var first = bad[0],
+        why   = textOf(first.querySelector('.wf-run-fail-detail')) ||
+                (first.querySelector('.toggle.paused') ? 'paused' : 'switched off'),
+        rail  = first.closest('.rail-group').dataset.rail;
+    msg.innerHTML = '<b>' + bad.length + (bad.length === 1 ? ' workflow needs' : ' workflows need') +
+      ' attention.</b> ' + nameOf(first) + ' (' + rail + ') — ' + why +
+      (bad.length > 1 ? ', and ' + (bad.length - 1) + ' more, all listed first below.' : '.');
+    attnBar.appendChild(msg);
+
+    var jump = document.createElement('button');
+    jump.type = 'button'; jump.className = 'ab-jump';
+    jump.textContent = 'Show me';
+    jump.addEventListener('click', function(){
+      first.scrollIntoView({ block: 'center' });
+      if(first.getAttribute('aria-expanded') !== 'true') expand(first);
+    });
+    attnBar.appendChild(jump);
   }
 
   /* ── TOGGLES ────────────────────────────────────────────────────────────
@@ -462,6 +576,7 @@
       t.childNodes[1].nodeValue = next === 'on' ? 'ON' : 'OFF';
       t.setAttribute('aria-pressed', next === 'on' ? 'true' : 'false');
       recount();
+      sortAttention();     /* pausing something lifts it to the top right away */
     });
   });
 
@@ -561,6 +676,7 @@
   });
 
   recount();
+  sortAttention();
 })();
 </script>
 </body>
