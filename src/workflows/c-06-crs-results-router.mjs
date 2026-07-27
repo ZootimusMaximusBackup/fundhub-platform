@@ -3,11 +3,16 @@
 // Trigger: analysis.completed, gated on source === "crs" (same gate as U-03/U-04 —
 // this reacts to the CRS pull specifically, not the analyzer estimate). Missing
 // results (no scores at all) holds on a missing-snapshot tag instead of routing.
+//
+// Tier comes from resolveOutcomeTier, not clientOutcomeTier: this fires on the
+// analysis.completed that the CRS adapter emits immediately BEFORE decision.rendered,
+// so `clients.outcome_tier` is not written yet and the column read routed every run
+// to "not_funding" (see workflow-migration-table.md, "Model drift").
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
-import { clientOutcomeTier, isFundingPath, isRepairOnlyPath } from "../config/product-path.mjs";
+import { resolveOutcomeTier, isFundingPath, isRepairOnlyPath } from "../config/product-path.mjs";
 import { addTags } from "./tags.mjs";
 
 function hasResults(payload) {
@@ -26,7 +31,7 @@ export async function handle({ event, db, step }) {
     return { done: true, branch: "missing_results" };
   }
 
-  const outcomeTier = await step.run("check-product-path", () => clientOutcomeTier(db, clientId));
+  const outcomeTier = await step.run("check-product-path", () => resolveOutcomeTier(db, clientId, event.payload));
   if (isFundingPath(outcomeTier)) {
     await step.run("tag-path-funding", () => addTags(db, clientId, ["path:funding"]));
     return { done: true, branch: "funding" };
