@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fundhub — Messaging</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  :root{
+    --ink:#0A0A0A;--paper:#F4F3F0;--paper-dim:#E9E7E2;--card:#FFFFFF;--line:#DDDAD3;
+    --text:#171614;--text-dim:#6B685F;--text-faint:#9A968A;
+    --dark-text:#F4F3F0;--dark-text-dim:#9C9990;--dark-line:#2A2A28;
+    --amber:#B8892B;--amber-bg:#FBF3E2;--red:#B8402F;--red-bg:#FCEAE6;
+    --green:#3E7A4C;--green-bg:#E8F3E9;--blue:#2F5FB8;--blue-bg:#E1EAFB;
+    --purple:#6A4FD0;--purple-bg:#F1EEFC;--purple-line:#C6BAF2;
+    --spectrum:linear-gradient(90deg,#7A5CF0 0%,#2F8FE0 22%,#1FB6A8 44%,#3FAE5C 60%,#E0B02F 78%,#E0602F 100%);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--text);overflow:hidden;}
+  .shell{height:100vh;display:flex;flex-direction:column;}
+
+  /* ---------- chrome ---------- */
+  header.topbar{background:var(--ink);color:var(--dark-text);display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:44px;flex-shrink:0;border-bottom:1px solid var(--dark-line);}
+  /* ---------- app nav (identical on every internal surface) ---------- */
+  .appnav{background:var(--ink);display:flex;align-items:center;gap:1px;padding:0 13px;height:31px;
+    flex-shrink:0;border-bottom:2px solid transparent;border-image:var(--spectrum) 1;overflow-x:auto;}
+  .appnav::-webkit-scrollbar{display:none;}
+  .nav-item{font-size:11.5px;font-weight:600;color:#7C7970;text-decoration:none;padding:4px 9px;
+    border-radius:5px;white-space:nowrap;}
+  .nav-item:hover{color:var(--dark-text);background:#161614;}
+  .nav-item.active{color:var(--dark-text);font-weight:700;background:#1C1C19;
+    box-shadow:inset 0 -2px 0 var(--dark-text);}
+  .nav-div{width:1px;height:13px;background:var(--dark-line);margin:0 7px;flex-shrink:0;}
+  .brand{display:flex;align-items:center;gap:9px;}
+  .brand .mark{width:18px;height:18px;border-radius:5px;background:var(--spectrum);flex-shrink:0;}
+  .brand .name{font-weight:800;font-size:14px;letter-spacing:.2px;}
+  .brand .sep{color:var(--dark-text-dim);font-weight:400;}
+  .brand .sub{font-weight:600;font-size:12.5px;color:var(--dark-text-dim);}
+  .topbar-right{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--dark-text-dim);}
+  .live-pill{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dark-text);background:#151513;border:1px solid var(--dark-line);padding:4px 9px 4px 7px;border-radius:20px;}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:#3FD16A;box-shadow:0 0 0 0 rgba(63,209,106,.6);animation:pulse 1.8s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(63,209,106,.55);}70%{box-shadow:0 0 0 6px rgba(63,209,106,0);}100%{box-shadow:0 0 0 0 rgba(63,209,106,0);}}
+  .clock{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dark-text);}
+  .org-pill{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;}
+
+  main{flex:1;display:grid;grid-template-columns:288px 1fr 300px;min-height:0;background:var(--line);gap:1px;}
+
+  /* ---------- LEFT: conversation list ---------- */
+  .convo-col{background:var(--paper);display:flex;flex-direction:column;min-height:0;}
+  .convo-head{padding:8px 12px;border-bottom:1px solid var(--line);flex-shrink:0;background:var(--card);}
+  .search{display:flex;align-items:center;gap:7px;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:5px 9px;color:var(--text-faint);font-size:12px;}
+  .search input{border:none;background:transparent;outline:none;font-family:'Inter',sans-serif;font-size:12px;width:100%;color:var(--text);}
+  .convo-tabs{display:flex;gap:4px;margin-top:7px;}
+  .ctab{font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:11px;color:var(--text-dim);background:var(--paper);border:1px solid var(--line);}
+  .ctab.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .ctab .n{font-family:'JetBrains Mono',monospace;opacity:.75;margin-left:3px;}
+
+  .convo-list{overflow-y:auto;flex:1;}
+  .convo-list::-webkit-scrollbar{width:8px;}
+  .convo-list::-webkit-scrollbar-thumb{background:#D3D0C8;border-radius:4px;}
+
+  .convo{display:flex;gap:9px;padding:8px 12px;border-bottom:1px solid var(--paper-dim);cursor:default;position:relative;}
+  .convo:hover{background:var(--paper-dim);}
+  .convo.active{background:var(--card);box-shadow:inset 3px 0 0 var(--ink);}
+  .convo.unread .cv-name{font-weight:800;}
+  .av{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;letter-spacing:-.2px;}
+  .av.human{background:var(--ink);color:#fff;}
+  .av.agent{background:#fff;color:var(--purple);border:1.5px solid var(--purple);}
+  .av.client{background:var(--paper-dim);color:var(--text-dim);border:1px solid var(--line);}
+  .av.sm{width:17px;height:17px;font-size:7.5px;}
+
+  .cv-body{flex:1;min-width:0;}
+  .cv-top{display:flex;align-items:baseline;justify-content:space-between;gap:6px;}
+  .cv-name{font-size:12.5px;font-weight:700;color:var(--text);}
+  .cv-time{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-faint);white-space:nowrap;}
+  .cv-prev{font-size:11px;color:var(--text-dim);margin-top:2px;line-height:1.3;overflow:hidden;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+  .cv-meta{display:flex;align-items:center;gap:5px;margin-top:4px;}
+  .who-tag{display:flex;align-items:center;gap:4px;font-size:9px;font-weight:700;letter-spacing:.2px;
+    padding:1px 6px 1px 4px;border-radius:8px;text-transform:uppercase;}
+  .who-tag.agent{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-line);}
+  .who-tag.human{background:var(--paper-dim);color:var(--text-dim);border:1px solid var(--line);}
+  .who-tag.client{background:var(--blue-bg);color:var(--blue);border:1px solid #C7D7F5;}
+  .ch-tag{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-faint);
+    border:1px solid var(--line);border-radius:4px;padding:0 4px;}
+  .unread-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);flex-shrink:0;margin-top:8px;}
+  .unread-dot.urgent{background:var(--red);}
+  .live-tag{display:flex;align-items:center;gap:4px;font-size:9px;font-weight:800;letter-spacing:.3px;
+    color:var(--green);background:var(--green-bg);border:1px solid #BFDCC6;padding:1px 6px 1px 4px;border-radius:8px;}
+  .live-tag .d{width:5px;height:5px;border-radius:50%;background:#3FB66A;animation:pulse 1.8s infinite;}
+
+  /* ---------- CENTER: thread ---------- */
+  .thread-col{background:var(--paper);display:flex;flex-direction:column;min-height:0;}
+  .thread-head{background:var(--card);border-bottom:1px solid var(--line);padding:8px 16px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .th-left{display:flex;align-items:center;gap:10px;}
+  .th-name{font-size:14.5px;font-weight:800;}
+  .th-sub{font-size:11px;color:var(--text-dim);margin-top:1px;}
+  .th-right{display:flex;align-items:center;gap:6px;}
+  .chip{font-size:10.5px;font-weight:600;padding:4px 9px;border-radius:6px;border:1px solid var(--line);
+    background:var(--card);color:var(--text-dim);}
+  .chip.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+  .legend{display:flex;align-items:center;gap:12px;background:var(--paper-dim);border-bottom:1px solid var(--line);
+    padding:4px 16px;flex-shrink:0;font-size:9.5px;color:var(--text-faint);}
+  .legend b{color:var(--text-dim);font-weight:700;}
+  .legend .li{display:flex;align-items:center;gap:5px;}
+  .sw{width:16px;height:11px;border-radius:3px;flex-shrink:0;}
+  .sw.human{background:var(--ink);}
+  .sw.agent{background:#fff;border:1.5px solid var(--purple);}
+  .sw.client{background:var(--card);border:1px solid var(--line);}
+
+  .thread{flex:1;overflow-y:auto;padding:14px 16px 16px;}
+  .thread::-webkit-scrollbar{width:9px;}
+  .thread::-webkit-scrollbar-thumb{background:#D3D0C8;border-radius:5px;}
+
+  .daydiv{display:flex;align-items:center;gap:10px;margin:12px 0 10px;}
+  .daydiv:first-child{margin-top:0;}
+  .daydiv .ln{flex:1;height:1px;background:var(--line);}
+  .daydiv .lbl{font-size:9.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--text-faint);}
+
+  .msg{display:flex;gap:9px;margin-bottom:11px;align-items:flex-start;}
+  .msg.out{flex-direction:row-reverse;}
+  .msg-col{max-width:74%;display:flex;flex-direction:column;}
+  .msg.out .msg-col{align-items:flex-end;}
+  .msg-sender{display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:10.5px;color:var(--text-dim);}
+  .msg-sender .nm{font-weight:700;color:var(--text);}
+  .agent-tag{font-size:8.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+    background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-line);border-radius:4px;padding:0 4px;}
+  .human-tag{font-size:8.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+    background:var(--paper-dim);color:var(--text-dim);border:1px solid var(--line);border-radius:4px;padding:0 4px;}
+  .ch-pill{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-faint);
+    border:1px solid var(--line);border-radius:4px;padding:0 4px;background:var(--card);}
+
+  .bubble{padding:8px 11px;border-radius:10px;font-size:12.5px;line-height:1.45;}
+  .bubble.in{background:var(--card);border:1px solid var(--line);border-top-left-radius:3px;color:var(--text);}
+  .bubble.out-human{background:var(--ink);color:#F2F0EA;border-top-right-radius:3px;}
+  .bubble.out-agent{background:#fff;border:1.5px solid var(--purple-line);border-top-right-radius:3px;color:var(--text);}
+  .bubble.email{border-radius:8px;}
+  .email-subj{font-weight:700;font-size:12px;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid rgba(0,0,0,.10);}
+  .bubble.out-human .email-subj{border-bottom-color:rgba(255,255,255,.18);}
+  .attach{display:inline-flex;align-items:center;gap:5px;margin-top:6px;font-size:10.5px;
+    border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:3px 7px;}
+  .bubble.in .attach{border-color:var(--line);color:var(--text-dim);}
+  .msg-time{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-faint);margin-top:3px;}
+
+  /* failed send */
+  .msg-error{display:flex;align-items:center;gap:7px;margin-top:4px;background:var(--red-bg);
+    border:1px solid #EDC4BB;border-radius:6px;padding:4px 8px;font-size:10.5px;color:var(--red);}
+  .msg-error b{font-weight:700;}
+  .retry-btn{font-size:10px;font-weight:700;background:var(--card);border:1px solid #EDC4BB;color:var(--red);
+    border-radius:4px;padding:2px 7px;}
+
+  /* call block */
+  .call-card{background:var(--card);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:11px;}
+  .call-head{display:flex;align-items:center;gap:8px;padding:7px 11px;background:var(--paper-dim);border-bottom:1px solid var(--line);}
+  .call-title{font-size:11.5px;font-weight:700;}
+  .call-meta{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-faint);}
+  .call-body{padding:9px 12px;}
+  .tr-line{font-size:11.5px;line-height:1.5;color:var(--text);margin-bottom:3px;}
+  .tr-line .spk{font-weight:700;color:var(--text-dim);}
+  .call-out{margin-top:7px;padding-top:6px;border-top:1px dashed var(--line);font-size:11px;color:var(--text-dim);}
+  .call-out b{color:var(--text);}
+
+  .call-card.live{border-color:#B9D8C4;}
+  .call-card.live .call-head{background:#F0F7F2;border-bottom-color:#CFE5D7;
+    border-top:2px solid transparent;border-image:var(--spectrum) 1;}
+
+  /* handoff event */
+  .handoff{display:flex;align-items:center;gap:9px;margin:13px 0;}
+  .handoff .ln{flex:1;height:1px;background:var(--purple-line);}
+  .handoff .box{display:flex;align-items:center;gap:7px;background:var(--purple-bg);border:1px solid var(--purple-line);
+    border-radius:14px;padding:4px 11px;font-size:10.5px;color:#4A3796;}
+  .handoff .box b{font-weight:800;}
+
+  /* compose */
+  .compose{background:var(--card);border-top:1px solid var(--line);padding:9px 16px 10px;flex-shrink:0;}
+  .compose-top{display:flex;align-items:center;gap:6px;margin-bottom:7px;}
+  .ch-btn{font-size:11px;font-weight:700;padding:4px 11px;border-radius:6px;border:1px solid var(--line);
+    background:var(--card);color:var(--text-dim);}
+  .ch-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .compose-note{margin-left:auto;font-size:10.5px;color:var(--text-faint);display:flex;align-items:center;gap:6px;}
+  .compose-note .pausetag{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-line);
+    border-radius:4px;padding:1px 6px;font-size:9.5px;font-weight:700;}
+  .compose-box{display:flex;gap:9px;align-items:flex-end;}
+  .compose-input{flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-height:54px;
+    font-size:12.5px;color:var(--text-faint);background:var(--paper);}
+  .compose-actions{display:flex;flex-direction:column;gap:6px;}
+  .send-btn{background:var(--ink);color:#fff;border:none;border-radius:7px;padding:9px 20px;font-weight:700;font-size:12.5px;}
+  .tmpl-btn{background:var(--card);color:var(--text-dim);border:1px solid var(--line);border-radius:7px;
+    padding:5px 12px;font-weight:600;font-size:11px;}
+  .sending-as{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim);margin-top:7px;}
+
+  /* ---------- RIGHT: client context ---------- */
+  .ctx-col{background:var(--paper);overflow-y:auto;padding:11px 13px 16px;}
+  .ctx-col::-webkit-scrollbar{width:8px;}
+  .ctx-col::-webkit-scrollbar-thumb{background:#D3D0C8;border-radius:4px;}
+  .ctx-title{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin:12px 0 6px;}
+  .ctx-title:first-child{margin-top:0;}
+  .ctx-card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;}
+  .ctx-name{font-size:14px;font-weight:800;}
+  .ctx-role{font-size:11px;color:var(--text-dim);margin-top:1px;}
+  .ctx-row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--paper-dim);font-size:11.5px;}
+  .ctx-row:last-child{border-bottom:none;}
+  .ctx-row .k{color:var(--text-dim);}
+  .ctx-row .v{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--text);text-align:right;}
+  .pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:9px;}
+  .pill.blue{background:var(--blue-bg);color:var(--blue);}
+  .pill.green{background:var(--green-bg);color:var(--green);}
+  .pill.amber{background:var(--amber-bg);color:var(--amber);}
+  .consent-row{display:flex;gap:5px;flex-wrap:wrap;}
+  .consent{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:9px;background:var(--green-bg);color:var(--green);border:1px solid #BFDCC6;}
+  .consent.off{background:var(--paper-dim);color:var(--text-faint);border-color:var(--line);}
+  .link-btn{display:flex;align-items:center;justify-content:space-between;width:100%;background:var(--card);
+    color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 10px;margin-bottom:5px;
+    font-size:11.5px;font-weight:600;}
+  .link-btn .ar{color:var(--text-faint);}
+  .empty-box{border:1px dashed var(--line);border-radius:7px;padding:12px;text-align:center;
+    color:var(--text-faint);font-size:11.5px;background:var(--card);}
+
+  footer.statusbar{flex-shrink:0;height:22px;background:var(--ink);display:flex;align-items:center;padding:0 14px;gap:16px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dark-text-dim);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark"></div>
+      <div class="name">Fundhub</div>
+      <div class="sep">/</div>
+      <div class="sub">Messaging</div>
+    </div>
+    <div class="topbar-right">
+      <div class="org-pill">Org: Fundhub</div>
+      <div class="clock">Sun Jul 26 · 2:47:09 PM ET</div>
+      <div class="live-pill"><span class="live-dot"></span>LIVE</div>
+    </div>
+  </header>
+
+  <nav class="appnav">
+    <a class="nav-item" href="command-center.html">Command Center</a>
+    <a class="nav-item" href="galaxy.html">Galaxy</a>
+    <a class="nav-item" href="pipeline.html">Pipeline</a>
+    <a class="nav-item active" href="messaging.html">Messaging</a>
+    <a class="nav-item" href="calendar.html">Calendar</a>
+    <span class="nav-div"></span>
+    <a class="nav-item" href="closer-dashboard.html">Closer Dashboard</a>
+    <a class="nav-item" href="inquiry-remover.html">Inquiry Removal</a>
+    <a class="nav-item" href="client-control-panel.html">Client Panel</a>
+    <a class="nav-item" href="ops-admin.html">Ops &amp; Admin</a>
+    <a class="nav-item" href="automations.html">Automations</a>
+  </nav>
+
+  <main>
+
+    <!-- ============ LEFT: CONVERSATIONS ============ -->
+    <section class="convo-col">
+      <div class="convo-head">
+        <div class="search"><span>⌕</span><input placeholder="Search people and messages"></div>
+        <div class="convo-tabs">
+          <div class="ctab active">All <span class="n">32</span></div>
+          <div class="ctab">Unread <span class="n">5</span></div>
+          <div class="ctab">Mine <span class="n">9</span></div>
+          <div class="ctab">Agents <span class="n">18</span></div>
+        </div>
+      </div>
+
+      <div class="convo-list">
+
+        <div class="convo active">
+          <div class="av client">PN</div>
+          <div class="cv-body">
+            <div class="cv-top"><span class="cv-name">Priya Nair</span><span class="cv-time">now</span></div>
+            <div class="cv-prev">“…so if I only draw part of it, does that change the payment?”</div>
+            <div class="cv-meta">
+              <span class="live-tag"><span class="d"></span>ON A CALL</span>
+              <span class="ch-tag">CALL</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="convo unread">
+          <div class="av client">KW</div>
+          <div class="cv-body">
+            <div class="cv-top"><span class="cv-name">Kayla Whitmore</span><span class="cv-time">now</span></div>
+            <div class="cv-prev">Setter Josh is walking her through the survey questions.</div>
+            <div class="cv-meta">
+              <span class="who-tag agent"><span class="av agent sm" style="width:11px;height:11px;font-size:0;"></span>Setter Josh</span>
+              <span class="ch-tag">CALL</span>
+            </div>
+          </div>
+          <span class="unread-dot"></span>
+        </div>
+
+        <div class="convo unread">
+          <div class="av client">RS</div>
+          <div class="cv-body">
+            <div class="cv-top"><span class="cv-name">Rachel Simmons</span><span class="cv-time">1h</span></div>
+            <div class="cv-prev">“I thought that invoice was already handled — can someone call me?”</div>
+            <div class="cv-meta">
+              <span class="who-tag client">Client replied</span>
+              <span class="ch-tag">SMS</span>
+            </div>
+          </div>
+          <span class="unread-dot urgent"></span>
+        </div>
+
+        <div class="convo">
+          <div class="av client">CB</div>
+          <div class="cv-body">
+            <div class="cv-top"><span class="cv-name">Carlos Bettencourt</span><span class="cv-time">2m</span></div>
+            <div class="cv-prev">“Today at 4:30 works great, see you then.”</div>
+            <div class="cv-meta">
+              <span class="who-tag agent">Setter Josh</span>
+              <span class="ch-tag">SMS</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="convo unread">
+          <div class="av client">DO</div>
+          <div class="cv-body">
+            <div class="cv-top"><span class="cv-name">Derek Owusu</span><span class="cv-time">2d</span></div>
+            <div class="cv-prev">Still waiting on bank statements and a voided check.</div>
+            <div class="cv-meta">
+              <span class="who-tag agent">Agent 5</span>
+              <span class="ch-tag">EMAIL</span>
+            </div>
+          </div>
+          <span class="unread-dot"></span>
+        </div>
+
+        <div class="convo">
+          <div class="av client">TR</div>
+          <div class="cv-body">
+            <div class="cv-top"><span class="cv-name">Tomás Reyes</span><span class="cv-time">12m</span></div>
+            <div class="cv-prev">“Not a good time, try me next week.”</div>
+            <div class="cv-meta">
+              <span class="who-tag agent">Agent 1</span>
+              <span class="ch-tag">SMS</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="convo">
+          <div class="av client">EV</div>
+          <div class="cv-body">
+            <div class="cv-top"><span class="cv-name">Elena Vasquez</span><span class="cv-time">3h</span></div>
+            <div class="cv-prev">“Talking it over with my husband tonight, I'll let you know tomorrow.”</div>
+            <div class="cv-meta">
+              <span class="who-tag human">Jordan Blake</span>
+              <span class="ch-tag">SMS</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="convo unread">
+          <div class="av client">FN</div>
+          <div class="cv-body">
+            <div class="cv-top"><span class="cv-name">Felix Ndiaye</span><span class="cv-time">2d 14h</span></div>
+            <div class="cv-prev">“Any update on the Capital One inquiry?”</div>
+            <div class="cv-meta">
+              <span class="who-tag human">Alvin Torres</span>
+              <span class="ch-tag">SMS</span>
+            </div>
+          </div>
+          <span class="unread-dot urgent"></span>
+        </div>
+
+        <div class="convo">
+          <div class="av client">GK</div>
+          <div class="cv-body">
+            <div class="cv-top"><span class="cv-name">Grace Kowalski</span><span class="cv-time">1d 3h</span></div>
+            <div class="cv-prev">Messages paused — her file is under fraud review.</div>
+            <div class="cv-meta">
+              <span class="who-tag agent">Compliance Gate</span>
+              <span class="ch-tag">HOLD</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="convo">
+          <div class="av client">MD</div>
+          <div class="cv-body">
+            <div class="cv-top"><span class="cv-name">Maria Delgado</span><span class="cv-time">2m</span></div>
+            <div class="cv-prev">“$18,500 just hit my account. Thank you so much!!”</div>
+            <div class="cv-meta">
+              <span class="who-tag client">Client replied</span>
+              <span class="ch-tag">SMS</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============ CENTER: THREAD ============ -->
+    <section class="thread-col">
+
+      <div class="thread-head">
+        <div class="th-left">
+          <div class="av client" style="width:32px;height:32px;font-size:11px;">PN</div>
+          <div>
+            <div class="th-name">Priya Nair</div>
+            <div class="th-sub">Sales · Diagnostic Paid · Jordan Blake owns this</div>
+          </div>
+        </div>
+        <div class="th-right">
+          <span class="chip active">Everything</span>
+          <span class="chip">Texts</span>
+          <span class="chip">Emails</span>
+          <span class="chip">Calls</span>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span><b>Who sent it:</b></span>
+        <span class="li"><span class="sw human"></span>a person on your team</span>
+        <span class="li"><span class="sw agent"></span>an agent, automatically</span>
+        <span class="li"><span class="sw client"></span>Priya</span>
+      </div>
+
+      <div class="thread">
+
+        <div class="daydiv"><span class="lbl">Wed, Jul 22</span><span class="ln"></span></div>
+
+        <div class="call-card">
+          <div class="call-head">
+            <div class="av agent sm">SJ</div>
+            <div class="call-title">Setter Josh called Priya</div>
+            <span class="agent-tag">Agent</span>
+            <div class="call-meta">9:14 AM · 4m 12s</div>
+          </div>
+          <div class="call-body">
+            <div class="tr-line"><span class="spk">Josh:</span> …you mentioned you're looking at expanding the catering side. Roughly how much are you trying to raise?</div>
+            <div class="tr-line"><span class="spk">Priya:</span> Somewhere around thirty-five thousand. Enough for a second van and a deposit on kitchen space.</div>
+            <div class="tr-line"><span class="spk">Josh:</span> That's very doable. Let me get you on with Jordan — he'll go through exactly what you can access.</div>
+            <div class="call-out">Outcome: <b>Booked her with Jordan Blake for Thursday 2:00 PM.</b></div>
+          </div>
+        </div>
+
+        <div class="msg out">
+          <div class="av agent">A1</div>
+          <div class="msg-col">
+            <div class="msg-sender"><span class="ch-pill">SMS</span><span class="nm">Agent 1</span><span class="agent-tag">Agent</span></div>
+            <div class="bubble out-agent">You're all set for Thursday at 2:00 PM with Jordan. Have your last 3 months of bank statements handy — it makes the call much faster. Reply STOP to opt out.</div>
+            <div class="msg-time">9:20 AM · delivered</div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="av client">PN</div>
+          <div class="msg-col">
+            <div class="msg-sender"><span class="ch-pill">SMS</span><span class="nm">Priya Nair</span></div>
+            <div class="bubble in">Business statements or personal? I have both but the business account is only 8 months old.</div>
+            <div class="msg-time">11:02 AM</div>
+          </div>
+        </div>
+
+        <div class="msg out">
+          <div class="av agent">A1</div>
+          <div class="msg-col">
+            <div class="msg-sender"><span class="ch-pill">SMS</span><span class="nm">Agent 1</span><span class="agent-tag">Agent</span></div>
+            <div class="bubble out-agent">Bring both — an 8-month-old business account is completely fine, and the personal ones give us more to work with.</div>
+            <div class="msg-time">11:03 AM · delivered</div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="av client">PN</div>
+          <div class="msg-col">
+            <div class="msg-sender"><span class="ch-pill">SMS</span><span class="nm">Priya Nair</span></div>
+            <div class="bubble in">One more — I saw the $32 up front. Is there more after that? I don't want a surprise.</div>
+            <div class="msg-time">11:09 AM</div>
+          </div>
+        </div>
+
+        <div class="handoff">
+          <span class="ln"></span>
+          <span class="box"><b>Agent 1 handed this to Jordan Blake</b> — pricing question, needs a person · 11:10 AM</span>
+          <span class="ln"></span>
+        </div>
+
+        <div class="msg out">
+          <div class="av human">JB</div>
+          <div class="msg-col">
+            <div class="msg-sender"><span class="ch-pill">SMS</span><span class="nm">Jordan Blake</span><span class="human-tag">You</span></div>
+            <div class="bubble out-human">Hi Priya — Jordan here, I'll be on your call Thursday. The $32 covers your diagnostic and full credit analysis, and that's the only thing you pay before we know what you qualify for. If we move ahead there's a $3,000 deposit plus 10% of what actually funds. Nothing hidden, and I'll walk you through all of it on the call.</div>
+            <div class="msg-time">11:24 AM · delivered</div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="av client">PN</div>
+          <div class="msg-col">
+            <div class="msg-sender"><span class="ch-pill">SMS</span><span class="nm">Priya Nair</span></div>
+            <div class="bubble in">That's straightforward, appreciate it. See you Thursday.</div>
+            <div class="msg-time">11:31 AM</div>
+          </div>
+        </div>
+
+        <div class="daydiv"><span class="lbl">Fri, Jul 24</span><span class="ln"></span></div>
+
+        <div class="msg out">
+          <div class="av human">JB</div>
+          <div class="msg-col">
+            <div class="msg-sender"><span class="ch-pill">EMAIL</span><span class="nm">Jordan Blake</span><span class="human-tag">You</span></div>
+            <div class="bubble out-human email">
+              <div class="email-subj">Your Funding Snapshot — Priya Nair</div>
+              Great talking Thursday. Attached is your Funding Snapshot with the five lenders we matched and what each one is likely to approve. Take a look before Sunday and write down any questions.
+              <div class="attach">📎 Funding Snapshot.pdf · 412 KB</div>
+            </div>
+            <div class="msg-time">2:04 PM · opened 3 times</div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="av client">PN</div>
+          <div class="msg-col">
+            <div class="msg-sender"><span class="ch-pill">EMAIL</span><span class="nm">Priya Nair</span></div>
+            <div class="bubble in email">
+              <div class="email-subj">Re: Your Funding Snapshot — Priya Nair</div>
+              This is really clear, thank you. The only one I'm unsure about is the Chase card — the rate looked higher than the others. Can we go through that Sunday?
+            </div>
+            <div class="msg-time">6:12 PM</div>
+          </div>
+        </div>
+
+        <div class="daydiv"><span class="lbl">Today</span><span class="ln"></span></div>
+
+        <div class="msg out">
+          <div class="av agent">A2</div>
+          <div class="msg-col">
+            <div class="msg-sender"><span class="ch-pill">SMS</span><span class="nm">Agent 2</span><span class="agent-tag">Agent</span></div>
+            <div class="bubble out-agent">Receipt for your $32 diagnostic — thanks Priya. Your credit analysis is being prepared now.</div>
+            <div class="msg-error">
+              <span>⚠</span>
+              <span><b>Didn't send.</b> Her carrier rejected it — the number on file is a landline.</span>
+              <span class="retry-btn">Send as email</span>
+            </div>
+            <div class="msg-time">1:39 PM · failed</div>
+          </div>
+        </div>
+
+        <div class="call-card live">
+          <div class="call-head">
+            <div class="av human sm">JB</div>
+            <div class="call-title">Jordan Blake is on a call with Priya</div>
+            <span class="live-tag"><span class="d"></span>LIVE</span>
+            <div class="call-meta">started 2:33 PM · 14m 09s</div>
+          </div>
+          <div class="call-body">
+            <div class="tr-line"><span class="spk">Jordan:</span> …the Chase line is the highest rate of the five, so the waterfall puts it last. You only touch it if you draw the full thirty-five.</div>
+            <div class="tr-line"><span class="spk">Priya:</span> And if I only draw part of it, does that change the payment?</div>
+            <div class="tr-line"><span class="spk">Jordan:</span> It does — let me pull the numbers up right now and show you both versions.</div>
+            <div class="call-out">Live transcript · <b>Context Fetcher</b> loaded her Funding Snapshot and Bank and Lender Match List for this call.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="compose">
+        <div class="compose-top">
+          <span class="ch-btn active">Text</span>
+          <span class="ch-btn">Email</span>
+          <span class="ch-btn">Call</span>
+          <span class="compose-note">
+            <span class="pausetag">Agent replies paused</span>
+            Agent 1 won't auto-reply while you're in this thread.
+          </span>
+        </div>
+        <div class="compose-box">
+          <div class="compose-input">Write a text to Priya…</div>
+          <div class="compose-actions">
+            <button class="tmpl-btn">Templates</button>
+            <button class="send-btn">Send</button>
+          </div>
+        </div>
+        <div class="sending-as">
+          <span class="av human sm">JB</span>
+          Sending as <b style="margin-left:-2px;">Jordan Blake</b> — Priya will see your name, not an agent's.
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============ RIGHT: CLIENT CONTEXT ============ -->
+    <section class="ctx-col">
+
+      <div class="ctx-card">
+        <div class="ctx-name">Priya Nair</div>
+        <div class="ctx-role">Nair Catering Co. · Columbus, OH</div>
+        <div style="margin-top:8px;">
+          <div class="ctx-row"><span class="k">Rail</span><span class="v">Sales</span></div>
+          <div class="ctx-row"><span class="k">Stage</span><span class="v"><span class="pill blue">Diagnostic Paid</span></span></div>
+          <div class="ctx-row"><span class="k">In stage</span><span class="v">1h 10m</span></div>
+          <div class="ctx-row"><span class="k">Est. value</span><span class="v">$12,400</span></div>
+          <div class="ctx-row"><span class="k">Owner</span><span class="v">Jordan Blake</span></div>
+          <div class="ctx-row"><span class="k">Temperature</span><span class="v"><span class="pill green">Hot</span></span></div>
+        </div>
+      </div>
+
+      <div class="ctx-title">Reach Her</div>
+      <div class="ctx-card">
+        <div class="ctx-row"><span class="k">Mobile</span><span class="v">(614) 555-0132</span></div>
+        <div class="ctx-row"><span class="k">Landline</span><span class="v">(614) 555-0177</span></div>
+        <div class="ctx-row"><span class="k">Email</span><span class="v" style="font-size:10px;">priya@naircatering.com</span></div>
+        <div style="margin-top:8px;">
+          <div class="consent-row">
+            <span class="consent">Texts OK</span>
+            <span class="consent">Email OK</span>
+            <span class="consent">Calls OK</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctx-title">Money</div>
+      <div class="ctx-card">
+        <div class="ctx-row"><span class="k">Diagnostic</span><span class="v" style="color:var(--green);">$32 paid</span></div>
+        <div class="ctx-row"><span class="k">Deposit</span><span class="v">not yet</span></div>
+        <div class="ctx-row"><span class="k">Requested draw</span><span class="v">$35,000</span></div>
+        <div class="ctx-row"><span class="k">Available credit</span><span class="v">$47,100</span></div>
+      </div>
+
+      <div class="ctx-title">Sent to Her</div>
+      <div class="ctx-card">
+        <div class="ctx-row"><span class="k">Funding Snapshot</span><span class="v">Jul 24</span></div>
+        <div class="ctx-row"><span class="k">Bank &amp; Lender Match List</span><span class="v">Jul 24</span></div>
+        <div class="ctx-row"><span class="k">Credit Analysis Report</span><span class="v" style="color:var(--amber);">preparing</span></div>
+      </div>
+
+      <div class="ctx-title">Notes</div>
+      <div class="empty-box">No notes on Priya yet — add anything the next person should know.</div>
+
+      <div class="ctx-title">Open Elsewhere</div>
+      <button class="link-btn">Client Control Panel <span class="ar">↗</span></button>
+      <button class="link-btn">Deal Calculators <span class="ar">↗</span></button>
+      <button class="link-btn">Her card on the board <span class="ar">↗</span></button>
+
+    </section>
+
+  </main>
+
+  <footer class="statusbar">
+    <span>FUNDHUB-MESSAGING · v1</span>
+    <span>ORG: fundhub</span>
+    <span>Priya Nair · one thread, every channel</span>
+    <span>every outbound passes Compliance Gate</span>
+  </footer>
+
+</div>
+</body>
+</html>

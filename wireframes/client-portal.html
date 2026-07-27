@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fundhub — Client Portal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  :root{
+    --ink:#0A0A0A;--paper:#F7F6F3;--card:#FFFFFF;--line:#E4E1D9;
+    --text:#171614;--text-dim:#6B685F;--text-faint:#9A968A;
+    --dark-text:#F4F3F0;--dark-text-dim:#9C9990;--dark-line:#2A2A28;
+    --amber:#B8892B;--amber-bg:#FBF3E2;--red:#B8402F;--red-bg:#FCEAE6;
+    --green:#3E7A4C;--green-bg:#E8F3E9;--blue:#2F5FB8;--blue-bg:#E1EAFB;
+    --spectrum:linear-gradient(90deg,#7A5CF0 0%,#2F8FE0 22%,#1FB6A8 44%,#3FAE5C 60%,#E0B02F 78%,#E0602F 100%);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--text);overflow:hidden;}
+  .mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;}
+  .shell{height:100vh;display:flex;flex-direction:column;}
+
+  header.topbar{background:var(--ink);color:var(--dark-text);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;flex-shrink:0;border-bottom:2px solid transparent;border-image:var(--spectrum) 1;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .mark{width:20px;height:20px;border-radius:6px;background:var(--spectrum);flex-shrink:0;}
+  .brand .name{font-weight:800;font-size:15px;letter-spacing:.2px;}
+  .brand .sub{font-weight:500;font-size:13px;color:var(--dark-text-dim);margin-left:4px;}
+  .who-pill{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dark-text);}
+  .avatar{width:26px;height:26px;border-radius:50%;background:#2A2A28;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+
+  main{flex:1;overflow-y:auto;background:var(--paper);padding:26px 0 40px;display:flex;justify-content:center;}
+  main::-webkit-scrollbar{width:9px;}
+  main::-webkit-scrollbar-thumb{background:#DBD8CF;border-radius:5px;}
+  .page{width:100%;max-width:760px;padding:0 24px;}
+
+  .welcome{font-size:22px;font-weight:800;margin-bottom:4px;}
+  .welcome-sub{font-size:14px;color:var(--text-dim);margin-bottom:22px;}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.02);}
+  .card-title{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px;}
+
+  /* stepper */
+  .stepper{display:flex;align-items:flex-start;}
+  .step{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;}
+  .step .dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin-bottom:8px;z-index:1;}
+  .step.done .dot{background:var(--ink);color:#fff;}
+  .step.current .dot{background:#fff;border:3px solid transparent;background-image:linear-gradient(#fff,#fff), var(--spectrum);background-origin:border-box;background-clip:padding-box, border-box;color:var(--text);box-shadow:0 0 0 4px #F0EEE0;}
+  .step.future .dot{background:#fff;border:2px solid var(--line);color:var(--text-faint);}
+  .step .line{position:absolute;top:13px;left:-50%;width:100%;height:2px;background:var(--line);z-index:0;}
+  .step:first-child .line{display:none;}
+  .step.done .line, .step.current .line{background:var(--ink);}
+  .step .lbl{font-size:10.5px;font-weight:600;color:var(--text-dim);line-height:1.25;max-width:80px;}
+  .step.current .lbl{color:var(--text);font-weight:700;}
+
+  .status-banner{
+    background:linear-gradient(135deg,#101010,#1A1A18);color:#fff;border-radius:12px;padding:16px 20px;margin-bottom:16px;
+  }
+  .status-banner .sb-eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#B9B6AC;margin-bottom:6px;}
+  .status-banner .sb-main{font-size:16px;font-weight:700;line-height:1.4;}
+  .status-banner .sb-main b{font-family:'JetBrains Mono',monospace;}
+
+  .action-card{background:var(--amber-bg);border:1px solid #EBD9AE;border-radius:14px;padding:18px 20px;margin-bottom:16px;}
+  .action-title{font-size:15px;font-weight:800;color:#8A611D;margin-bottom:4px;}
+  .action-sub{font-size:12.5px;color:var(--text-dim);margin-bottom:12px;}
+  .doc-need{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #EBD9AE;border-radius:8px;padding:9px 13px;margin-bottom:8px;font-size:13px;}
+  .doc-need:last-of-type{margin-bottom:14px;}
+  .doc-need .dn-age{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--amber);}
+  .upload-btn{background:var(--ink);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-weight:700;font-size:13px;cursor:default;}
+
+  .pay-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .pay-row:last-child{border-bottom:none;}
+  .pay-row .pn{font-weight:600;}
+  .pay-row .pd{font-size:11.5px;color:var(--text-faint);}
+  .pay-row .pv{font-family:'JetBrains Mono',monospace;font-weight:700;}
+  .paid-pill{font-size:10px;font-weight:700;color:var(--green);background:var(--green-bg);padding:2px 8px;border-radius:9px;margin-left:8px;}
+
+  .doc-ready{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);}
+  .doc-ready:last-child{border-bottom:none;}
+  .doc-ready .dn{font-weight:700;font-size:13.5px;}
+  .doc-ready .dd{font-size:11.5px;color:var(--text-faint);}
+  .dl-btn{font-size:12px;font-weight:700;color:var(--blue);}
+
+  .timeline-item{display:flex;gap:12px;padding:8px 0;font-size:13px;}
+  .timeline-item .td{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);white-space:nowrap;padding-top:1px;}
+
+  .empty-msgs{text-align:center;color:var(--text-faint);font-size:13px;padding:18px 0;}
+  .msgs-note{color:var(--text-faint);font-size:12.5px;padding:10px 0 2px;}
+
+  .advisor-row{display:flex;align-items:center;gap:14px;}
+  .advisor-avatar{width:46px;height:46px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0;}
+  .advisor-name{font-weight:800;font-size:14.5px;}
+  .advisor-role{font-size:12px;color:var(--text-dim);}
+  .contact-btns{display:flex;gap:8px;margin-left:auto;}
+  .contact-btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;}
+
+  footer.statusbar{flex-shrink:0;height:24px;background:var(--ink);display:flex;align-items:center;justify-content:center;gap:16px;font-size:10.5px;color:var(--dark-text-dim);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark"></div>
+      <div class="name">Fundhub</div>
+      <div class="sub">Client Portal</div>
+    </div>
+    <div class="who-pill">
+      <div class="avatar">DO</div>
+      Derek Owusu
+    </div>
+  </header>
+
+  <main>
+    <div class="page">
+
+      <div class="welcome">Welcome back, Derek</div>
+      <div class="welcome-sub">Here's where things stand on your funding.</div>
+
+      <div class="card">
+        <div class="card-title">Your Progress</div>
+        <div class="stepper">
+          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Booked</div></div>
+          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Diagnostic Paid</div></div>
+          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Docs Received</div></div>
+          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Round Started</div></div>
+          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Round Submitted</div></div>
+          <div class="step current"><span class="line"></span><div class="dot">●</div><div class="lbl">Round Approved</div></div>
+          <div class="step future"><span class="line"></span><div class="dot">6</div><div class="lbl">Round Funded</div></div>
+          <div class="step future"><span class="line"></span><div class="dot">7</div><div class="lbl">File Finalized</div></div>
+        </div>
+      </div>
+
+      <div class="status-banner">
+        <div class="sb-eyebrow">Current Status</div>
+        <div class="sb-main">You're approved for <b>$46,500</b>. Getting that money to you is the next step.</div>
+      </div>
+
+      <div class="action-card">
+        <div class="action-title">We still need 2 things from you</div>
+        <div class="action-sub">We asked 2 days ago — sending them today keeps things moving.</div>
+        <div class="doc-need"><span>Bank statements (last 2 months)</span><span class="dn-age">asked 2 days ago</span></div>
+        <div class="doc-need"><span>Voided check</span><span class="dn-age">asked 2 days ago</span></div>
+        <button class="upload-btn">Upload Documents</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Payments</div>
+        <div class="pay-row">
+          <div><div class="pn">Credit diagnostic</div><div class="pd">Jul 10, 2026</div></div>
+          <div class="pv">$32<span class="paid-pill">Paid</span></div>
+        </div>
+        <div class="pay-row">
+          <div><div class="pn">Deposit</div><div class="pd">Jul 15, 2026</div></div>
+          <div class="pv">$3,000<span class="paid-pill">Paid</span></div>
+        </div>
+        <div class="pay-row">
+          <div><div class="pn">Success Fee</div><div class="pd">10% of what funds — due when the money lands</div></div>
+          <div class="pv">about $4,650</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Your Documents</div>
+        <div class="doc-ready">
+          <div><div class="dn">Funding Snapshot</div><div class="dd">Updated Jul 24, 2026 · PDF</div></div>
+          <div class="dl-btn">Download ↓</div>
+        </div>
+        <div class="doc-ready">
+          <div><div class="dn">Bank and Lender Match List</div><div class="dd">Updated Jul 18, 2026 · PDF</div></div>
+          <div class="dl-btn">Download ↓</div>
+        </div>
+        <div class="doc-ready">
+          <div><div class="dn">Credit Analysis Report</div><div class="dd">Updated Jul 22, 2026 · PDF</div></div>
+          <div class="dl-btn">Download ↓</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Activity</div>
+        <div class="timeline-item"><span class="td">Jul 24</span><span>Your round was approved for $46,500</span></div>
+        <div class="timeline-item"><span class="td">Jul 22</span><span>We got your documents and started reviewing them</span></div>
+        <div class="timeline-item"><span class="td">Jul 18</span><span>We sent your application to 3 lenders</span></div>
+        <div class="timeline-item"><span class="td">Jul 15</span><span>Deposit received — thank you!</span></div>
+        <div class="timeline-item"><span class="td">Jul 10</span><span>We finished your credit diagnostic</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Messages</div>
+        <div class="timeline-item"><span class="td">2:32 PM</span><span>Reminder: your call with Marcus Webb is at 3:02 PM today</span></div>
+        <div class="timeline-item"><span class="td">Jul 24</span><span>We still need your bank statements and a voided check</span></div>
+        <div class="msgs-note">Nothing here needs a reply right now.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Your Funding Advisor</div>
+        <div class="advisor-row">
+          <div class="advisor-avatar">MW</div>
+          <div>
+            <div class="advisor-name">Marcus Webb</div>
+            <div class="advisor-role">Funding Advisor</div>
+          </div>
+          <div class="contact-btns">
+            <button class="contact-btn">Text Us</button>
+            <button class="contact-btn">Call</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="statusbar">
+    <span>Fundhub Client Portal</span>
+    <span>·</span>
+    <span>Questions? Text us anytime.</span>
+  </footer>
+
+</div>
+</body>
+</html>

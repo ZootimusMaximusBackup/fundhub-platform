@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fundhub — Closer Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  :root{
+    --ink:#0A0A0A;--paper:#F4F3F0;--paper-dim:#E9E7E2;--card:#FFFFFF;--line:#DDDAD3;
+    --text:#171614;--text-dim:#6B685F;--text-faint:#9A968A;
+    --dark-text:#F4F3F0;--dark-text-dim:#9C9990;--dark-line:#2A2A28;
+    --amber:#B8892B;--amber-bg:#FBF3E2;--red:#B8402F;--red-bg:#FCEAE6;
+    --green:#3E7A4C;--green-bg:#E8F3E9;--blue:#2F5FB8;--blue-bg:#E1EAFB;
+    --purple:#6A4FD0;--purple-bg:#F1EEFC;--purple-line:#C6BAF2;
+    --spectrum:linear-gradient(90deg,#7A5CF0 0%,#2F8FE0 22%,#1FB6A8 44%,#3FAE5C 60%,#E0B02F 78%,#E0602F 100%);
+  }
+  /* ---------- worker avatars: filled = a person, purple outline = an agent ---------- */
+  .av{width:17px;height:17px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;
+    justify-content:center;font-size:7.5px;font-weight:800;letter-spacing:-.2px;vertical-align:middle;}
+  .av.human{background:var(--ink);color:#fff;}
+  .av.agent{background:#fff;color:var(--purple);border:1.5px solid var(--purple);}
+  .av.lg{width:20px;height:20px;font-size:8px;}
+  .av.xl{width:26px;height:26px;font-size:9.5px;}
+  .agent-tag{font-size:8.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+    background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-line);
+    border-radius:4px;padding:0 4px;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--text);overflow:hidden;}
+  .mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;}
+  .shell{height:100vh;display:flex;flex-direction:column;}
+
+  header.topbar{background:var(--ink);color:var(--dark-text);display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:44px;flex-shrink:0;border-bottom:1px solid var(--dark-line);}
+  /* ---------- app nav (identical on every internal surface) ---------- */
+  .appnav{background:var(--ink);display:flex;align-items:center;gap:1px;padding:0 13px;height:31px;
+    flex-shrink:0;border-bottom:2px solid transparent;border-image:var(--spectrum) 1;overflow-x:auto;}
+  .appnav::-webkit-scrollbar{display:none;}
+  .nav-item{font-size:11.5px;font-weight:600;color:#7C7970;text-decoration:none;padding:4px 9px;
+    border-radius:5px;white-space:nowrap;}
+  .nav-item:hover{color:var(--dark-text);background:#161614;}
+  .nav-item.active{color:var(--dark-text);font-weight:700;background:#1C1C19;
+    box-shadow:inset 0 -2px 0 var(--dark-text);}
+  .nav-div{width:1px;height:13px;background:var(--dark-line);margin:0 7px;flex-shrink:0;}
+  .brand{display:flex;align-items:center;gap:9px;}
+  .brand .mark{width:18px;height:18px;border-radius:5px;background:var(--spectrum);flex-shrink:0;}
+  .brand .name{font-weight:800;font-size:14px;letter-spacing:.2px;}
+  .brand .sep{color:var(--dark-text-dim);font-weight:400;}
+  .brand .sub{font-weight:600;font-size:12.5px;color:var(--dark-text-dim);}
+  .topbar-right{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--dark-text-dim);}
+  .live-pill{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dark-text);background:#151513;border:1px solid var(--dark-line);padding:4px 9px 4px 7px;border-radius:20px;}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:#3FD16A;box-shadow:0 0 0 0 rgba(63,209,106,.6);animation:pulse 1.8s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(63,209,106,.55);}70%{box-shadow:0 0 0 6px rgba(63,209,106,0);}100%{box-shadow:0 0 0 0 rgba(63,209,106,0);}}
+  .clock{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dark-text);}
+  .org-pill{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;}
+
+  .stat-head{background:var(--card);border-bottom:1px solid var(--line);padding:9px 18px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .who{display:flex;align-items:baseline;gap:9px;}
+  .who-name{font-size:16px;font-weight:800;}
+  .who-role{font-size:11.5px;color:var(--text-dim);}
+  .stat-tiles{display:flex;gap:10px;}
+  .stat-tile{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:5px 12px;text-align:center;min-width:88px;}
+  .stat-label{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:2px;}
+  .stat-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;}
+  .pace-neutral{color:var(--text);}
+
+  main{flex:1;overflow-y:auto;padding:12px 18px 20px;background:var(--paper);}
+  main::-webkit-scrollbar{width:8px;}
+  main::-webkit-scrollbar-thumb{background:#D3D0C8;border-radius:4px;}
+
+  .section{margin-bottom:14px;}
+  .section-title{font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
+
+  table.pipe{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  table.pipe th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);padding:7px 12px;border-bottom:1px solid var(--line);background:var(--paper);}
+  table.pipe td{padding:7px 12px;font-size:12.5px;border-bottom:1px solid var(--paper-dim);}
+  table.pipe tr:last-child td{border-bottom:none;}
+  .stage-pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--blue-bg);color:var(--blue);}
+  .empty-slot{color:var(--text-faint);font-style:normal;}
+
+  .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
+  .calc-panel{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:13px 15px 15px;}
+  .calc-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+  .calc-title{font-size:13px;font-weight:800;}
+  .calc-client{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);}
+
+  .big-tile{background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:10px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+  .big-tile .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);}
+  .big-tile .val{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:22px;}
+  .big-tile .val.sm{font-size:16px;}
+
+  table.deal{width:100%;border-collapse:collapse;margin-bottom:10px;}
+  table.deal th{text-align:right;font-size:9px;text-transform:uppercase;color:var(--text-dim);padding:5px 6px;border-bottom:1px solid var(--line);}
+  table.deal th:first-child{text-align:left;}
+  table.deal td{text-align:right;font-size:11.5px;padding:5px 6px;border-bottom:1px solid var(--paper-dim);font-family:'JetBrains Mono',monospace;}
+  table.deal td:first-child{text-align:left;font-family:'Inter',sans-serif;font-weight:600;}
+  table.deal tr.unused td{color:var(--text-faint);}
+  table.deal tr.total td{font-weight:800;border-top:2px solid var(--line);border-bottom:none;color:var(--text);}
+  .apr-tag{font-size:9.5px;color:var(--text-faint);}
+
+  .alert-box{
+    background:var(--red-bg);border:1px solid #E3B3A8;border-radius:7px;padding:10px 12px;margin:6px 0 10px;
+  }
+  .alert-box .a-title{font-size:12px;font-weight:800;color:var(--red);margin-bottom:3px;}
+  .alert-box .a-body{font-size:11.5px;color:var(--text);line-height:1.4;}
+  .alert-box .a-body b{color:var(--red);}
+
+  table.pm{width:100%;border-collapse:collapse;margin-top:4px;}
+  table.pm th{font-size:9px;text-transform:uppercase;color:var(--text-dim);padding:5px 6px;text-align:right;border-bottom:1px solid var(--line);}
+  table.pm th:first-child{text-align:left;}
+  table.pm td{font-family:'JetBrains Mono',monospace;font-size:11.5px;padding:5px 6px;text-align:right;border-bottom:1px solid var(--paper-dim);}
+  table.pm td:first-child{text-align:left;font-family:'Inter',sans-serif;font-weight:600;}
+
+  footer.statusbar{flex-shrink:0;height:22px;background:var(--ink);display:flex;align-items:center;padding:0 14px;gap:16px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dark-text-dim);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark"></div>
+      <div class="name">Fundhub</div>
+      <div class="sep">/</div>
+      <div class="sub">Closer Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <div class="org-pill">Org: Fundhub</div>
+      <div class="clock">Sun Jul 26 · 2:47:09 PM ET</div>
+      <div class="live-pill"><span class="live-dot"></span>LIVE</div>
+    </div>
+  </header>
+
+  <nav class="appnav">
+    <a class="nav-item" href="command-center.html">Command Center</a>
+    <a class="nav-item" href="galaxy.html">Galaxy</a>
+    <a class="nav-item" href="pipeline.html">Pipeline</a>
+    <a class="nav-item" href="messaging.html">Messaging</a>
+    <a class="nav-item" href="calendar.html">Calendar</a>
+    <span class="nav-div"></span>
+    <a class="nav-item active" href="closer-dashboard.html">Closer Dashboard</a>
+    <a class="nav-item" href="inquiry-remover.html">Inquiry Removal</a>
+    <a class="nav-item" href="client-control-panel.html">Client Panel</a>
+    <a class="nav-item" href="ops-admin.html">Ops &amp; Admin</a>
+    <a class="nav-item" href="automations.html">Automations</a>
+  </nav>
+
+  <div class="stat-head">
+    <div class="who">
+      <div class="who-name"><span class="av human">JB</span> Jordan Blake</div>
+      <div class="who-role">Closer · on shift 6h 12m</div>
+    </div>
+    <div class="stat-tiles">
+      <div class="stat-tile"><div class="stat-label">Calls Today</div><div class="stat-value">5</div></div>
+      <div class="stat-tile"><div class="stat-label">Kept</div><div class="stat-value">3</div></div>
+      <div class="stat-tile"><div class="stat-label">Deposits</div><div class="stat-value">1</div></div>
+      <div class="stat-tile"><div class="stat-label">Collected</div><div class="stat-value">$3,000</div></div>
+      <div class="stat-tile"><div class="stat-label">Pace</div><div class="stat-value pace-neutral">60%</div></div>
+    </div>
+  </div>
+
+  <main>
+
+    <div class="section">
+      <div class="section-title">Today's Pipeline</div>
+      <table class="pipe">
+        <tr><th>Client</th><th>Stage</th><th>Next</th><th>When</th></tr>
+        <tr><td>Amara Nwosu</td><td><span class="stage-pill">Booked</span></td><td>Asked her for pay stubs — still waiting</td><td class="mono">10:00 AM</td></tr>
+        <tr><td>Devon Marsh</td><td><span class="stage-pill">Booked</span></td><td>Closed — $3,000 deposit collected</td><td class="mono">12:40 PM</td></tr>
+        <tr><td>Elena Vasquez</td><td><span class="stage-pill">Decision Rendered</span></td><td>Waiting on her decision</td><td class="mono">11:47 AM</td></tr>
+        <tr><td>Priya Nair</td><td><span class="stage-pill">Diagnostic Paid</span></td><td>On the call now — calculators below</td><td class="mono">now</td></tr>
+        <tr style="background:#FFF9F6;"><td>Meredith Yao</td><td><span class="stage-pill">Decision Rendered</span></td><td>Follow-up on her roadmap — clashes with Carlos</td><td class="mono">4:30 PM</td></tr>
+        <tr style="background:#FFF9F6;"><td>Carlos Bettencourt</td><td><span class="stage-pill">Booked</span></td><td><span class="av agent">SJ</span> Setter Josh just booked him</td><td class="mono">4:30 PM</td></tr>
+        <tr><td colspan="4"><span class="empty-slot">Two calls both sit at 4:30 — one has to move. Nothing after that.</span></td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Deal Calculators — Priya Nair</div>
+      <div class="calc-grid">
+
+        <!-- Deal Funding Calculator (1a) -->
+        <div class="calc-panel">
+          <div class="calc-head">
+            <div class="calc-title">Deal Funding Calculator</div>
+            <div class="calc-client">how much can she access</div>
+          </div>
+
+          <div class="big-tile">
+            <div><div class="lbl">Total Available Credit</div></div>
+            <div class="val">$47,100</div>
+          </div>
+          <div class="big-tile">
+            <div><div class="lbl">Requested Draw</div></div>
+            <div class="val sm">$35,000</div>
+          </div>
+
+          <table class="deal">
+            <tr><th>Lender</th><th>Limit</th><th>Balance</th><th>Headroom</th><th>Draw</th></tr>
+            <tr><td>Capital One Spark <span class="apr-tag">14.99% APR</span></td><td>15,000</td><td>4,000</td><td>11,000</td><td>11,000</td></tr>
+            <tr><td>Amex Blue Business <span class="apr-tag">16.99% APR</span></td><td>18,000</td><td>8,200</td><td>9,800</td><td>9,800</td></tr>
+            <tr><td>Citi Costco <span class="apr-tag">18.99% APR</span></td><td>12,000</td><td>4,700</td><td>7,300</td><td>7,300</td></tr>
+            <tr><td>Barclays View <span class="apr-tag">19.99% APR</span></td><td>9,000</td><td>3,600</td><td>5,400</td><td>5,400</td></tr>
+            <tr><td>Chase Sapphire <span class="apr-tag">22.99% APR</span></td><td>22,000</td><td>8,400</td><td>13,600</td><td>1,500</td></tr>
+            <tr class="total"><td>Total drawn · $12,100 headroom left</td><td></td><td></td><td></td><td>35,000</td></tr>
+          </table>
+
+          <div class="section-title" style="margin-top:8px;">What Each Way Of Paying It Back Costs Her</div>
+          <table class="pm">
+            <tr><th>Method</th><th>12mo</th><th>24mo</th><th>36mo</th></tr>
+            <tr><td>Lump Sum</td><td>$0</td><td>$0</td><td>$0</td></tr>
+            <tr><td>Minimum Payments</td><td>$4,120</td><td>$7,860</td><td>$11,240</td></tr>
+            <tr><td>Interest-Only</td><td>$6,300</td><td>$12,600</td><td>$17,640 + balloon</td></tr>
+          </table>
+
+          <div class="alert-box">
+            <div class="a-title">⛔ Pre-Approval Guardrail — Hard Stop</div>
+            <div class="a-body">This draw pushes <b>84%</b> of her total credit line, above the 30% threshold. That's enough to drop her score and jeopardize <b>Round 2</b>. Draw less, or tell Priya what this does to her score before she signs.</div>
+          </div>
+        </div>
+
+        <!-- Deal Math Calculator (1b) -->
+        <div class="calc-panel">
+          <div class="calc-head">
+            <div class="calc-title">Deal Math Calculator</div>
+            <div class="calc-client">can she afford it every month</div>
+          </div>
+
+          <div class="big-tile">
+            <div><div class="lbl">Net Cash to Client</div></div>
+            <div class="val">$28,500</div>
+          </div>
+          <table class="pm" style="margin-bottom:10px;">
+            <tr><td>Funded Amount</td><td>$35,000</td></tr>
+            <tr><td>Deposit + 10% Success Fee</td><td>−$6,500</td></tr>
+            <tr><td>Debts she must clear first</td><td>−$0</td></tr>
+          </table>
+
+          <div class="big-tile">
+            <div><div class="lbl">Monthly Obligation</div></div>
+            <div class="val sm">$1,050 / mo</div>
+          </div>
+          <div class="calc-client" style="margin-bottom:10px;">the minimum payments on all five cards, added together</div>
+
+          <div class="alert-box">
+            <div class="a-title">⚠ Negative-Amortization Cliff Flagged</div>
+            <div class="a-body">At minimum-only payments, Priya's outstanding balance exceeds the original draw by <b>Month 14</b> — inside the 18-month flag threshold. Change the plan, or tell her now — not after the money lands. This is the number that prevents a refund request six months from now.</div>
+          </div>
+
+          <table class="pm">
+            <tr><th>Card</th><th>APR</th><th>Min. Payment</th></tr>
+            <tr><td>Capital One Spark</td><td>14.99%</td><td>$330</td></tr>
+            <tr><td>Amex Blue Business</td><td>16.99%</td><td>$294</td></tr>
+            <tr><td>Citi Costco</td><td>18.99%</td><td>$219</td></tr>
+            <tr><td>Barclays View</td><td>19.99%</td><td>$162</td></tr>
+            <tr><td>Chase Sapphire</td><td>22.99%</td><td>$45</td></tr>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="statusbar">
+    <span>FUNDHUB-CLOSER · v1</span>
+    <span>ORG: fundhub</span>
+    <span><span class="av human">JB</span> Jordan Blake</span>
+    <span>these numbers are estimates — confirm the final terms with the lender</span>
+  </footer>
+
+</div>
+</body>
+</html>

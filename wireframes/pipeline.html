@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fundhub — Pipeline</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  :root{
+    --ink:#0A0A0A;--paper:#F4F3F0;--paper-dim:#E9E7E2;--board:#EDEBE5;--card:#FFFFFF;--line:#DDDAD3;
+    --text:#171614;--text-dim:#6B685F;--text-faint:#9A968A;
+    --dark-text:#F4F3F0;--dark-text-dim:#9C9990;--dark-line:#2A2A28;
+    --amber:#B8892B;--amber-bg:#FBF3E2;--red:#B8402F;--red-bg:#FCEAE6;
+    --green:#3E7A4C;--green-bg:#E8F3E9;--blue:#2F5FB8;--blue-bg:#E1EAFB;
+    --purple:#6A4FD0;
+    --spectrum:linear-gradient(90deg,#7A5CF0 0%,#2F8FE0 22%,#1FB6A8 44%,#3FAE5C 60%,#E0B02F 78%,#E0602F 100%);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--text);overflow:hidden;}
+  .mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;}
+  .shell{height:100vh;display:flex;flex-direction:column;}
+
+  /* ---------- chrome ---------- */
+  header.topbar{background:var(--ink);color:var(--dark-text);display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:44px;flex-shrink:0;}
+  .brand{display:flex;align-items:center;gap:9px;}
+  .brand .mark{width:18px;height:18px;border-radius:5px;background:var(--spectrum);flex-shrink:0;}
+  .brand .name{font-weight:800;font-size:14px;letter-spacing:.2px;}
+  .brand .sep{color:var(--dark-text-dim);font-weight:400;}
+  .brand .sub{font-weight:600;font-size:12.5px;color:var(--dark-text-dim);}
+  .topbar-right{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--dark-text-dim);}
+  .live-pill{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dark-text);background:#151513;border:1px solid var(--dark-line);padding:4px 9px 4px 7px;border-radius:20px;}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:#3FD16A;box-shadow:0 0 0 0 rgba(63,209,106,.6);animation:pulse 1.8s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(63,209,106,.55);}70%{box-shadow:0 0 0 6px rgba(63,209,106,0);}100%{box-shadow:0 0 0 0 rgba(63,209,106,0);}}
+  .clock{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dark-text);}
+  .org-pill{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;}
+
+  /* ---------- app nav (identical on every internal surface) ---------- */
+  .appnav{background:var(--ink);display:flex;align-items:center;gap:1px;padding:0 13px;height:31px;
+    flex-shrink:0;border-bottom:2px solid transparent;border-image:var(--spectrum) 1;overflow-x:auto;}
+  .appnav::-webkit-scrollbar{display:none;}
+  .nav-item{font-size:11.5px;font-weight:600;color:#7C7970;text-decoration:none;padding:4px 9px;
+    border-radius:5px;white-space:nowrap;}
+  .nav-item:hover{color:var(--dark-text);background:#161614;}
+  .nav-item.active{color:var(--dark-text);font-weight:700;background:#1C1C19;
+    box-shadow:inset 0 -2px 0 var(--dark-text);}
+  .nav-div{width:1px;height:13px;background:var(--dark-line);margin:0 7px;flex-shrink:0;}
+
+  /* ---------- rail switcher (nav = dark chrome) ---------- */
+  .railbar{background:var(--ink);display:flex;align-items:flex-end;gap:2px;padding:0 14px;flex-shrink:0;height:38px;
+    border-bottom:1px solid var(--dark-line);}
+  .rail-tab{display:flex;align-items:center;gap:7px;padding:7px 12px 8px;border-radius:6px 6px 0 0;cursor:default;
+    font-size:12px;font-weight:600;color:var(--dark-text-dim);white-space:nowrap;position:relative;}
+  .rail-tab .rt-count{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:#1E1E1B;color:var(--dark-text-dim);
+    padding:1px 6px;border-radius:9px;}
+  .rail-tab:hover{color:var(--dark-text);background:#151513;}
+  .rail-tab.active{background:var(--board);color:var(--text);font-weight:700;}
+  .rail-tab.active .rt-count{background:var(--ink);color:var(--dark-text);}
+  .rail-tab.empty{color:#5C5A53;}
+  .rail-tab.empty .rt-count{background:transparent;border:1px dashed #37352F;color:#5C5A53;}
+
+  /* ---------- filter bar ---------- */
+  .filterbar{background:var(--card);border-bottom:1px solid var(--line);flex-shrink:0;
+    display:flex;align-items:center;gap:8px;padding:7px 14px;}
+  .search{display:flex;align-items:center;gap:7px;background:var(--paper);border:1px solid var(--line);border-radius:6px;
+    padding:5px 10px;width:230px;color:var(--text-faint);font-size:12px;}
+  .search input{border:none;background:transparent;outline:none;font-family:'Inter',sans-serif;font-size:12px;width:100%;color:var(--text);}
+  .select{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:6px;
+    padding:5px 9px;font-size:11.5px;color:var(--text);cursor:default;}
+  .select .sl-k{color:var(--text-dim);}
+  .select .caret{color:var(--text-faint);font-size:9px;}
+  .select.on{background:var(--red-bg);border-color:#EDC4BB;color:var(--red);font-weight:700;}
+  .filter-spacer{flex:1;}
+  .board-summary{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);display:flex;gap:12px;align-items:center;}
+  .board-summary b{color:var(--text);}
+  .board-summary .held-n{color:var(--red);font-weight:700;}
+
+  /* ---------- error banner ---------- */
+  .errbar{display:flex;align-items:center;gap:9px;background:var(--red-bg);border-bottom:1px solid #EDC4BB;
+    padding:6px 14px;flex-shrink:0;font-size:12px;color:var(--text);}
+  .errbar .ic{color:var(--red);font-weight:700;}
+  .errbar b{color:var(--red);}
+  .errbar .dismiss{margin-left:auto;font-size:11px;color:var(--text-dim);border:1px solid var(--line);
+    background:var(--card);border-radius:5px;padding:2px 9px;}
+
+  /* ---------- board ---------- */
+  .board-wrap{flex:1;background:var(--board);overflow:auto;min-height:0;position:relative;}
+  .board-wrap::-webkit-scrollbar{height:10px;width:10px;}
+  .board-wrap::-webkit-scrollbar-thumb{background:#CFCBC1;border-radius:5px;}
+  .board{display:flex;gap:10px;padding:10px 14px 14px;align-items:flex-start;height:100%;position:relative;width:max-content;}
+
+  .col{width:238px;flex-shrink:0;background:var(--paper-dim);border:1px solid var(--line);border-radius:8px;
+    display:flex;flex-direction:column;max-height:100%;}
+  .col.drop-target{background:#E3E6DE;border-color:#9F9C91;box-shadow:0 0 0 2px rgba(122,92,240,.10);}
+
+  .col-head{padding:7px 10px 8px;border-bottom:1px solid var(--line);flex-shrink:0;}
+  .col-head-top{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+  .col-name{font-size:11.5px;font-weight:700;color:var(--text);letter-spacing:.1px;}
+  .col-count{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;background:var(--card);
+    border:1px solid var(--line);color:var(--text-dim);padding:1px 7px;border-radius:9px;}
+  .col-money{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-faint);margin-top:3px;}
+
+  .col-body{overflow-y:auto;padding:7px;display:flex;flex-direction:column;gap:6px;flex:1;min-height:60px;}
+  .col-body::-webkit-scrollbar{width:7px;}
+  .col-body::-webkit-scrollbar-thumb{background:#CFCBC1;border-radius:4px;}
+
+  /* ---------- card ---------- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:7px 8px 7px 9px;
+    position:relative;cursor:grab;}
+  .card:hover{border-color:#BEBAB0;box-shadow:0 1px 3px rgba(0,0,0,.07);}
+  .card.held{border-left:4px solid var(--amber);background:#FFFDF7;padding-left:8px;}
+  .card.held.crit{border-left-color:var(--red);background:#FFF9F6;}
+
+  .c-top{display:flex;align-items:flex-start;justify-content:space-between;gap:5px;}
+  .c-name{font-size:12.5px;font-weight:700;color:var(--text);line-height:1.25;}
+  .c-tools{display:flex;align-items:center;gap:3px;flex-shrink:0;}
+  .c-btn{font-size:11px;color:var(--text-faint);line-height:1;padding:2px 3px;border-radius:4px;}
+  .c-btn.route{border:1px solid var(--line);font-size:9px;font-weight:700;letter-spacing:.3px;
+    color:var(--text-dim);padding:2px 5px;background:var(--paper);}
+  .card:hover .c-btn{color:var(--text-dim);}
+  .grip{color:#CFCBC1;font-size:10px;letter-spacing:-1px;}
+
+  .c-amt{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700;color:var(--text);margin-top:3px;}
+  .c-amt .unit{font-size:9.5px;font-weight:400;color:var(--text-faint);}
+  .c-age{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-faint);margin-top:2px;}
+  .c-age.old{color:var(--amber);font-weight:700;}
+
+  .hold-badge{display:flex;align-items:center;gap:5px;margin-top:5px;padding:3px 7px;border-radius:5px;
+    font-size:9.5px;font-weight:700;letter-spacing:.2px;text-transform:uppercase;
+    background:var(--amber-bg);color:#8A611D;border:1px solid #EBD9AE;}
+  .hold-badge.crit{background:#F7DAD3;color:var(--red);border-color:#EDC4BB;}
+  .hold-badge.neutral{background:var(--blue-bg);color:var(--blue);border-color:#C7D7F5;}
+  .hold-badge .hb-age{margin-left:auto;font-family:'JetBrains Mono',monospace;font-weight:800;text-transform:none;}
+
+  .c-foot{display:flex;align-items:center;gap:6px;margin-top:6px;padding-top:5px;border-top:1px solid var(--paper-dim);}
+  .av{width:17px;height:17px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    font-size:7.5px;font-weight:800;letter-spacing:-.2px;}
+  .av.human{background:var(--ink);color:#fff;}
+  .av.agent{background:#fff;color:var(--purple);border:1.5px solid var(--purple);}
+  .c-act{font-size:10.5px;color:var(--text-dim);line-height:1.25;flex:1;min-width:0;}
+  .c-act b{color:var(--text);font-weight:600;}
+  .c-when{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-faint);white-space:nowrap;}
+
+  .col-more{text-align:center;font-size:10.5px;color:var(--text-dim);padding:6px;border:1px dashed var(--line);
+    border-radius:6px;background:rgba(255,255,255,.5);}
+
+  /* ---------- drag simulation ---------- */
+  .drop-placeholder{height:74px;border:2px dashed #B9B5AA;border-radius:7px;background:rgba(0,0,0,.025);
+    display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-faint);}
+  .drop-line{height:3px;border-radius:2px;background:var(--spectrum);margin:1px 0;}
+  .drag-card{position:absolute;width:222px;z-index:60;transform:rotate(-2.5deg);border-radius:7px;
+    box-shadow:0 0 0 4px rgba(237,235,229,.9), 0 14px 30px rgba(0,0,0,.30);cursor:grabbing;pointer-events:none;}
+  .drag-hint{position:absolute;z-index:61;background:var(--ink);color:#fff;font-size:10.5px;font-weight:600;
+    padding:4px 9px;border-radius:5px;white-space:nowrap;pointer-events:none;}
+  .drag-hint:after{content:"";position:absolute;top:-4px;left:16px;width:8px;height:8px;background:var(--ink);transform:rotate(45deg);}
+
+  /* ---------- cross-rail route menu ---------- */
+  .route-menu{position:absolute;z-index:70;width:274px;background:var(--card);border:1px solid #C9C5BB;
+    border-radius:9px;box-shadow:0 16px 40px rgba(0,0,0,.26);overflow:hidden;}
+  .rm-head{padding:8px 12px 7px;border-bottom:1px solid var(--line);background:var(--paper);}
+  .rm-title{font-size:12.5px;font-weight:800;}
+  .rm-sub{font-size:10.5px;color:var(--text-dim);margin-top:2px;}
+  .rm-group{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-faint);
+    padding:6px 12px 3px;}
+  .rm-item{display:flex;gap:8px;padding:4px 12px 5px;align-items:flex-start;cursor:default;}
+  .rm-item:hover,.rm-item.focus{background:var(--paper);}
+  .rm-item.focus{background:#EFEDE6;box-shadow:inset 3px 0 0 var(--purple);}
+  .rm-dot{width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0;background:var(--green);}
+  .rm-dot.warn{background:var(--amber);}
+  .rm-dot.crit{background:var(--red);}
+  .rm-label{font-size:12px;font-weight:700;color:var(--text);}
+  .rm-dest{font-size:10px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;margin-top:1px;line-height:1.35;}
+  .rm-div{height:1px;background:var(--line);margin:4px 0;}
+  .rm-foot{padding:6px 12px 8px;border-top:1px solid var(--line);background:var(--paper);
+    font-size:10.5px;color:var(--text-dim);}
+
+  footer.statusbar{flex-shrink:0;height:22px;background:var(--ink);display:flex;align-items:center;padding:0 14px;gap:16px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dark-text-dim);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark"></div>
+      <div class="name">Fundhub</div>
+      <div class="sep">/</div>
+      <div class="sub">Pipeline</div>
+    </div>
+    <div class="topbar-right">
+      <div class="org-pill">Org: Fundhub</div>
+      <div class="clock">Sun Jul 26 · 2:47:09 PM ET</div>
+      <div class="live-pill"><span class="live-dot"></span>LIVE</div>
+    </div>
+  </header>
+
+  <nav class="appnav">
+    <a class="nav-item" href="command-center.html">Command Center</a>
+    <a class="nav-item" href="galaxy.html">Galaxy</a>
+    <a class="nav-item active" href="pipeline.html">Pipeline</a>
+    <a class="nav-item" href="messaging.html">Messaging</a>
+    <a class="nav-item" href="calendar.html">Calendar</a>
+    <span class="nav-div"></span>
+    <a class="nav-item" href="closer-dashboard.html">Closer Dashboard</a>
+    <a class="nav-item" href="inquiry-remover.html">Inquiry Removal</a>
+    <a class="nav-item" href="client-control-panel.html">Client Panel</a>
+    <a class="nav-item" href="ops-admin.html">Ops &amp; Admin</a>
+    <a class="nav-item" href="automations.html">Automations</a>
+  </nav>
+
+  <!-- RAIL SWITCHER -->
+  <nav class="railbar">
+    <div class="rail-tab active">Sales <span class="rt-count">82</span></div>
+    <div class="rail-tab">Card Stacking <span class="rt-count">33</span></div>
+    <div class="rail-tab">Alt-Fin (Lendflow) <span class="rt-count">15</span></div>
+    <div class="rail-tab">Optimization Rounds <span class="rt-count">44</span></div>
+    <div class="rail-tab">Inquiry Removal <span class="rt-count">27</span></div>
+    <div class="rail-tab">AR + Collections <span class="rt-count">75</span></div>
+    <div class="rail-tab empty">Affiliates + Hiring <span class="rt-count">0</span></div>
+  </nav>
+
+  <!-- FILTERS -->
+  <div class="filterbar">
+    <div class="search"><span>⌕</span><input value="" placeholder="Search name, phone, or email"></div>
+    <div class="select"><span class="sl-k">Owner:</span> Anyone <span class="caret">▼</span></div>
+    <div class="select"><span class="sl-k">Hold:</span> Any <span class="caret">▼</span></div>
+    <div class="select"><span class="sl-k">Age:</span> Any <span class="caret">▼</span></div>
+    <div class="select"><span class="sl-k">Sort:</span> Manual <span class="caret">▼</span></div>
+    <div class="filter-spacer"></div>
+    <div class="board-summary">
+      <span><b>82</b> cards</span>
+      <span><b>$544,200</b> est.</span>
+      <span class="held-n">4 held</span>
+    </div>
+  </div>
+
+  <!-- ERROR STATE -->
+  <div class="errbar">
+    <span class="ic">⚠</span>
+    <span><b>Gustavo Rincón didn't move to Card Stacking.</b> He hasn't paid the $3,000 deposit yet, so the funding rail sent him back. His card is where you left it.</span>
+    <span class="dismiss">Dismiss</span>
+  </div>
+
+  <!-- BOARD -->
+  <div class="board-wrap">
+    <div class="board">
+
+      <!-- COLUMN 1 — NEW LEAD -->
+      <section class="col">
+        <div class="col-head">
+          <div class="col-head-top"><div class="col-name">New Lead</div><div class="col-count">42</div></div>
+          <div class="col-money">$268,400 est.</div>
+        </div>
+        <div class="col-body">
+
+          <div class="card">
+            <div class="c-top">
+              <div class="c-name">Kayla Whitmore</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$6,500 <span class="unit">est.</span></div>
+            <div class="c-age">22m in stage</div>
+            <div class="c-foot">
+              <div class="av agent">SJ</div>
+              <div class="c-act"><b>Setter Josh</b> is on a call with her now</div>
+              <div class="c-when">now</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="c-top">
+              <div class="c-name">Tomás Reyes</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$5,400 <span class="unit">est.</span></div>
+            <div class="c-age">3h in stage</div>
+            <div class="c-foot">
+              <div class="av agent">A1</div>
+              <div class="c-act"><b>Agent 1</b> followed up by text</div>
+              <div class="c-when">12m</div>
+            </div>
+          </div>
+
+          <div class="card held">
+            <div class="c-top">
+              <div class="c-name">Yvonne Adeyemi</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$6,500 <span class="unit">est.</span></div>
+            <div class="c-age old">2d 1h in stage</div>
+            <div class="hold-badge neutral">New Inquiry <span class="hb-age">2d 1h</span></div>
+            <div class="c-foot">
+              <div class="av human">SW</div>
+              <div class="c-act">Nobody has worked this yet</div>
+              <div class="c-when">—</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="c-top">
+              <div class="c-name">Marcus Fielding</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$8,900 <span class="unit">est.</span></div>
+            <div class="c-age">1d 4h in stage</div>
+            <div class="c-foot">
+              <div class="av agent">A3</div>
+              <div class="c-act"><b>Agent 3</b> sent a nurture email</div>
+              <div class="c-when">5h</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="c-top">
+              <div class="c-name">Rosa Iglesias</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$4,200 <span class="unit">est.</span></div>
+            <div class="c-age">4h in stage</div>
+            <div class="c-foot">
+              <div class="av agent">SJ</div>
+              <div class="c-act"><b>Setter Josh</b> called — no answer</div>
+              <div class="c-when">1h</div>
+            </div>
+          </div>
+
+          <div class="col-more">+37 more in this stage</div>
+        </div>
+      </section>
+
+      <!-- COLUMN 2 — SURVEY COMPLETED (card being dragged out of here) -->
+      <section class="col">
+        <div class="col-head">
+          <div class="col-head-top"><div class="col-name">Survey Completed</div><div class="col-count">18</div></div>
+          <div class="col-money">$121,300 est.</div>
+        </div>
+        <div class="col-body">
+
+          <div class="drop-placeholder">Carlos Bettencourt — moving…</div>
+
+          <div class="card">
+            <div class="c-top">
+              <div class="c-name">Dana Whitlock</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$6,500 <span class="unit">est.</span></div>
+            <div class="c-age">1d 2h in stage</div>
+            <div class="c-foot">
+              <div class="av agent">SJ</div>
+              <div class="c-act"><b>Setter Josh</b> left a voicemail</div>
+              <div class="c-when">3h</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="c-top">
+              <div class="c-name">Trevor Nakamura</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$11,200 <span class="unit">est.</span></div>
+            <div class="c-age old">2d 6h in stage</div>
+            <div class="c-foot">
+              <div class="av human">NC</div>
+              <div class="c-act"><b>Nina Castellano</b> tried to book him</div>
+              <div class="c-when">1d</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="c-top">
+              <div class="c-name">Simone Baptiste</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$5,400 <span class="unit">est.</span></div>
+            <div class="c-age">5h in stage</div>
+            <div class="c-foot">
+              <div class="av agent">A1</div>
+              <div class="c-act"><b>Agent 1</b> sent booking link</div>
+              <div class="c-when">40m</div>
+            </div>
+          </div>
+
+          <div class="col-more">+14 more in this stage</div>
+        </div>
+      </section>
+
+      <!-- COLUMN 3 — BOOKED (drop target) -->
+      <section class="col drop-target">
+        <div class="col-head">
+          <div class="col-head-top"><div class="col-name">Booked</div><div class="col-count">11</div></div>
+          <div class="col-money">$74,800 est.</div>
+        </div>
+        <div class="col-body">
+
+          <div class="drop-line"></div>
+
+          <div class="card">
+            <div class="c-top">
+              <div class="c-name">Devon Marsh</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$9,600 <span class="unit">est.</span></div>
+            <div class="c-age">1d in stage</div>
+            <div class="c-foot">
+              <div class="av human">JB</div>
+              <div class="c-act"><b>Jordan Blake</b> finished the call</div>
+              <div class="c-when">2h</div>
+            </div>
+          </div>
+
+          <div class="card held">
+            <div class="c-top">
+              <div class="c-name">Amara Nwosu</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$7,300 <span class="unit">est.</span></div>
+            <div class="c-age old">2d 3h in stage</div>
+            <div class="hold-badge">Missing Documents <span class="hb-age">1d 2h</span></div>
+            <div class="c-foot">
+              <div class="av human">JB</div>
+              <div class="c-act"><b>Jordan Blake</b> asked for pay stubs</div>
+              <div class="c-when">1d</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="c-top">
+              <div class="c-name">Hollis Grant</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$6,500 <span class="unit">est.</span></div>
+            <div class="c-age">6h in stage</div>
+            <div class="c-foot">
+              <div class="av human">NC</div>
+              <div class="c-act"><b>Nina Castellano</b> confirmed 4pm call</div>
+              <div class="c-when">2h</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="c-top">
+              <div class="c-name">Sean Kilbride</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$4,900 <span class="unit">est.</span></div>
+            <div class="c-age">4h in stage</div>
+            <div class="c-foot">
+              <div class="av agent">A5</div>
+              <div class="c-act"><b>Agent 5</b> sent the intake form</div>
+              <div class="c-when">3h</div>
+            </div>
+          </div>
+
+          <div class="col-more">+7 more in this stage</div>
+        </div>
+      </section>
+
+      <!-- COLUMN 4 — DIAGNOSTIC PAID -->
+      <section class="col">
+        <div class="col-head">
+          <div class="col-head-top"><div class="col-name">Diagnostic Paid</div><div class="col-count">7</div></div>
+          <div class="col-money">$48,100 est. · $224 collected</div>
+        </div>
+        <div class="col-body">
+
+          <div class="card">
+            <div class="c-top">
+              <div class="c-name">Priya Nair</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$12,400 <span class="unit">est.</span></div>
+            <div class="c-age">1h 10m in stage</div>
+            <div class="c-foot">
+              <div class="av human">JB</div>
+              <div class="c-act"><b>Jordan Blake</b> is on the call now</div>
+              <div class="c-when">now</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="c-top">
+              <div class="c-name">Jonathan Kessler</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$6,500 <span class="unit">est.</span></div>
+            <div class="c-age">11m in stage</div>
+            <div class="c-foot">
+              <div class="av agent">A2</div>
+              <div class="c-act"><b>Agent 2</b> receipted the $32 diagnostic</div>
+              <div class="c-when">11m</div>
+            </div>
+          </div>
+
+          <div class="card held">
+            <div class="c-top">
+              <div class="c-name">Lucia Ferrante</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$8,900 <span class="unit">est.</span></div>
+            <div class="c-age old">2d in stage</div>
+            <div class="hold-badge">Awaiting CRS <span class="hb-age">1d 8h</span></div>
+            <div class="c-foot">
+              <div class="av agent">CF</div>
+              <div class="c-act"><b>Context Fetcher</b> is still waiting on the pull</div>
+              <div class="c-when">4h</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="c-top">
+              <div class="c-name">Wendell Pryce</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$5,400 <span class="unit">est.</span></div>
+            <div class="c-age">1d 5h in stage</div>
+            <div class="c-foot">
+              <div class="av human">NC</div>
+              <div class="c-act"><b>Nina Castellano</b> rescheduled to Monday</div>
+              <div class="c-when">6h</div>
+            </div>
+          </div>
+
+          <div class="col-more">+3 more in this stage</div>
+        </div>
+      </section>
+
+      <!-- COLUMN 5 — DECISION RENDERED -->
+      <section class="col">
+        <div class="col-head">
+          <div class="col-head-top"><div class="col-name">Decision Rendered</div><div class="col-count">4</div></div>
+          <div class="col-money">$31,600 est.</div>
+        </div>
+        <div class="col-body">
+
+          <div class="card" style="border-color:#EDC4BB;background:#FFFBFA;">
+            <div class="c-top">
+              <div class="c-name">Gustavo Rincón</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$8,900 <span class="unit">est.</span></div>
+            <div class="c-age old">3d 4h in stage</div>
+            <div class="c-foot">
+              <div class="av human">JB</div>
+              <div class="c-act" style="color:var(--red);font-weight:600;">Move to Card Stacking was sent back</div>
+              <div class="c-when">6m</div>
+            </div>
+          </div>
+
+          <div class="card" style="box-shadow:0 0 0 2px rgba(106,79,208,.35);border-color:#B4A6EE;">
+            <div class="c-top">
+              <div class="c-name">Elena Vasquez</div>
+              <div class="c-tools"><span class="c-btn route" style="background:var(--purple);color:#fff;border-color:var(--purple);">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$11,200 <span class="unit">est.</span></div>
+            <div class="c-age">1d 6h in stage</div>
+            <div class="c-foot">
+              <div class="av human">JB</div>
+              <div class="c-act"><b>Jordan Blake</b> — awaiting her decision</div>
+              <div class="c-when">3h</div>
+            </div>
+          </div>
+
+          <div class="card held crit">
+            <div class="c-top">
+              <div class="c-name">Nate Farrow</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$6,500 <span class="unit">est.</span></div>
+            <div class="c-age">1d 2h in stage</div>
+            <div class="hold-badge crit">Internal Review <span class="hb-age">9h</span></div>
+            <div class="c-foot">
+              <div class="av agent">CG</div>
+              <div class="c-act"><b>Compliance Gate</b> flagged the file</div>
+              <div class="c-when">9h</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="c-top">
+              <div class="c-name">Meredith Yao</div>
+              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
+            </div>
+            <div class="c-amt">$5,000 <span class="unit">est.</span></div>
+            <div class="c-age">5h in stage</div>
+            <div class="c-foot">
+              <div class="av human">NC</div>
+              <div class="c-act"><b>Nina Castellano</b> sent the roadmap</div>
+              <div class="c-when">1h</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ===== FLOATING: CARD MID-DRAG ===== -->
+      <div class="drag-card" style="left:458px;top:116px;">
+        <div class="card" style="cursor:grabbing;">
+          <div class="c-top">
+            <div class="c-name">Carlos Bettencourt</div>
+            <div class="c-tools"><span class="grip">⠿</span></div>
+          </div>
+          <div class="c-amt">$7,800 <span class="unit">est.</span></div>
+          <div class="c-age">3h 40m in stage</div>
+          <div class="c-foot">
+            <div class="av agent">SJ</div>
+            <div class="c-act"><b>Setter Josh</b> just booked him for 4:30</div>
+            <div class="c-when">2m</div>
+          </div>
+        </div>
+      </div>
+      <div class="drag-hint" style="left:470px;top:220px;">Drop to move into <b>Booked</b></div>
+
+      <!-- ===== FLOATING: CROSS-RAIL ROUTE MENU ===== -->
+      <div class="route-menu" style="left:975px;top:250px;">
+        <div class="rm-head">
+          <div class="rm-title">Move Elena Vasquez</div>
+          <div class="rm-sub">Her decision came back — send her down the right track.</div>
+        </div>
+
+        <div class="rm-group">Funding routes</div>
+        <div class="rm-item">
+          <span class="rm-dot"></span>
+          <div>
+            <div class="rm-label">Full Funding</div>
+            <div class="rm-dest">Card Stacking · Docs Received · Marcus Webb</div>
+          </div>
+        </div>
+        <div class="rm-item">
+          <span class="rm-dot"></span>
+          <div>
+            <div class="rm-label">Premium Stack</div>
+            <div class="rm-dest">Card Stacking · Docs Received · Marcus Webb</div>
+          </div>
+        </div>
+        <div class="rm-item focus">
+          <span class="rm-dot"></span>
+          <div>
+            <div class="rm-label">Funding + Repair</div>
+            <div class="rm-dest">Card Stacking + Repair Rounds · both open</div>
+          </div>
+        </div>
+        <div class="rm-item">
+          <span class="rm-dot warn"></span>
+          <div>
+            <div class="rm-label">Repair Only</div>
+            <div class="rm-dest">Repair Rounds · Docs Received · $2,000 bundle</div>
+          </div>
+        </div>
+
+        <div class="rm-div"></div>
+        <div class="rm-group">Hold routes</div>
+        <div class="rm-item">
+          <span class="rm-dot warn"></span>
+          <div>
+            <div class="rm-label">Manual Review</div>
+            <div class="rm-dest">Stays in Sales · Internal Review hold</div>
+          </div>
+        </div>
+        <div class="rm-item">
+          <span class="rm-dot crit"></span>
+          <div>
+            <div class="rm-label">Fraud Hold</div>
+            <div class="rm-dest">Stays in Sales · Fraud Alert hold · Sarah notified</div>
+          </div>
+        </div>
+
+        <div class="rm-foot">Or drag her card to any stage in Sales.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="statusbar">
+    <span>FUNDHUB-PIPELINE · v1</span>
+    <span>ORG: fundhub</span>
+    <span>rail: Sales</span>
+    <span>drag a card to change stage · MOVE to change rail</span>
+  </footer>
+
+</div>
+</body>
+</html>

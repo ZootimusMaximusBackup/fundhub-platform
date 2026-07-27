@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fundhub — Command Center</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  :root{
+    --ink:#0A0A0A;
+    --paper:#F4F3F0;
+    --paper-dim:#E9E7E2;
+    --card:#FFFFFF;
+    --line:#DDDAD3;
+    --text:#171614;
+    --text-dim:#6B685F;
+    --text-faint:#9A968A;
+    --dark-text:#F4F3F0;
+    --dark-text-dim:#9C9990;
+    --dark-line:#2A2A28;
+    --amber:#B8892B;
+    --amber-bg:#FBF3E2;
+    --red:#B8402F;
+    --red-bg:#FCEAE6;
+    --green:#3E7A4C;
+    --green-bg:#E8F3E9;
+    --blue:#2F5FB8;
+    --blue-bg:#E1EAFB;
+    --purple:#6A4FD0;--purple-bg:#F1EEFC;--purple-line:#C6BAF2;
+    --spectrum:linear-gradient(90deg,#7A5CF0 0%,#2F8FE0 22%,#1FB6A8 44%,#3FAE5C 60%,#E0B02F 78%,#E0602F 100%);
+  }
+
+  /* ---------- worker avatars: filled = a person, purple outline = an agent ---------- */
+  .av{width:17px;height:17px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;
+    justify-content:center;font-size:7.5px;font-weight:800;letter-spacing:-.2px;vertical-align:middle;}
+  .av.human{background:var(--ink);color:#fff;}
+  .av.agent{background:#fff;color:var(--purple);border:1.5px solid var(--purple);}
+  .av.lg{width:20px;height:20px;font-size:8px;}
+  .av.xl{width:26px;height:26px;font-size:9.5px;}
+  .agent-tag{font-size:8.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+    background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-line);
+    border-radius:4px;padding:0 4px;}
+
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    background:var(--ink);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    color:var(--text);
+    overflow:hidden;
+  }
+  .mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;}
+
+  /* ---------- shell ---------- */
+  .shell{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  header.topbar{
+    background:var(--ink);
+    color:var(--dark-text);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 16px;
+    height:44px;
+    flex-shrink:0;
+    border-bottom:1px solid var(--dark-line);
+  }
+
+  /* ---------- app nav (identical on every internal surface) ---------- */
+  .appnav{background:var(--ink);display:flex;align-items:center;gap:1px;padding:0 13px;height:31px;
+    flex-shrink:0;border-bottom:2px solid transparent;border-image:var(--spectrum) 1;overflow-x:auto;}
+  .appnav::-webkit-scrollbar{display:none;}
+  .nav-item{font-size:11.5px;font-weight:600;color:#7C7970;text-decoration:none;padding:4px 9px;
+    border-radius:5px;white-space:nowrap;}
+  .nav-item:hover{color:var(--dark-text);background:#161614;}
+  .nav-item.active{color:var(--dark-text);font-weight:700;background:#1C1C19;
+    box-shadow:inset 0 -2px 0 var(--dark-text);}
+  .nav-div{width:1px;height:13px;background:var(--dark-line);margin:0 7px;flex-shrink:0;}
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:9px;
+  }
+  .brand .mark{
+    width:18px;height:18px;border-radius:5px;
+    background:var(--spectrum);
+    flex-shrink:0;
+  }
+  .brand .name{font-weight:800;font-size:14px;letter-spacing:.2px;}
+  .brand .sep{color:var(--dark-text-dim);font-weight:400;}
+  .brand .sub{font-weight:600;font-size:12.5px;color:var(--dark-text-dim);}
+
+  .topbar-right{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    font-size:11.5px;
+    color:var(--dark-text-dim);
+  }
+  .live-pill{
+    display:flex;align-items:center;gap:6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--dark-text);
+    background:#151513;
+    border:1px solid var(--dark-line);
+    padding:4px 9px 4px 7px;
+    border-radius:20px;
+  }
+  .live-dot{
+    width:6px;height:6px;border-radius:50%;
+    background:#3FD16A;
+    box-shadow:0 0 0 0 rgba(63,209,106,.6);
+    animation:pulse 1.8s infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(63,209,106,.55);}
+    70%{box-shadow:0 0 0 6px rgba(63,209,106,0);}
+    100%{box-shadow:0 0 0 0 rgba(63,209,106,0);}
+  }
+  .clock{font-family:'JetBrains Mono',monospace;color:var(--dark-text);font-size:12px;}
+  .org-pill{
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    color:var(--dark-text-dim);
+    border:1px solid var(--dark-line);
+    padding:3px 8px;
+    border-radius:4px;
+  }
+
+  /* ---------- main layout ---------- */
+  main{
+    flex:1;
+    display:grid;
+    grid-template-rows: 1.55fr 1fr;
+    gap:1px;
+    background:var(--ink);
+    overflow:hidden;
+  }
+  .row-bottom{
+    display:grid;
+    grid-template-columns: 1.45fr 1fr;
+    gap:1px;
+    overflow:hidden;
+  }
+
+  .pane{
+    background:var(--paper);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    min-height:0;
+  }
+  .pane-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    padding:8px 14px 7px 14px;
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+    background:var(--paper);
+  }
+  .pane-title{
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:1.2px;
+    text-transform:uppercase;
+    color:var(--text-dim);
+  }
+  .pane-title span.accent{
+    display:inline-block;
+    width:6px;height:6px;border-radius:50%;
+    background:var(--spectrum);
+    margin-right:7px;
+    vertical-align:middle;
+  }
+  .pane-meta{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--text-faint);
+  }
+  .pane-head-right{display:flex;align-items:baseline;}
+  .pane-open{font-size:10.5px;font-weight:700;color:var(--text);border:1px solid var(--line);
+    background:var(--card);border-radius:5px;padding:3px 9px;text-decoration:none;margin-left:12px;white-space:nowrap;}
+  .pane-open:hover{border-color:#BEBAB0;}
+  .pane-body{
+    flex:1;
+    overflow-y:auto;
+    padding:10px 14px 14px 14px;
+  }
+  .pane-body::-webkit-scrollbar{width:8px;}
+  .pane-body::-webkit-scrollbar-thumb{background:#D3D0C8;border-radius:4px;}
+  .pane-body::-webkit-scrollbar-track{background:transparent;}
+
+  /* ---------- HOLDS (promoted — highest-value signal on the screen) ---------- */
+  .holds-panel{
+    background:#FFF9F6;
+    border:1px solid #EDC7BA;
+    border-radius:8px;
+    padding:9px 12px 10px 12px;
+    margin-bottom:10px;
+  }
+  .holds-panel-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:8px;
+  }
+  .holds-panel-title{
+    font-size:13px;
+    font-weight:800;
+    color:var(--red);
+    letter-spacing:.1px;
+  }
+  .holds-panel-oldest{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-dim);
+  }
+  .holds-panel-oldest b{color:var(--red);font-weight:700;}
+  .holds-panel-subcount{
+    font-size:11px;
+    font-weight:600;
+    color:var(--text-dim);
+    letter-spacing:0;
+    margin-left:2px;
+  }
+
+  .holds-summary-row{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    margin-bottom:9px;
+  }
+  .hold-chip{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:4px 10px 4px 8px;
+    font-size:11px;
+  }
+  .hold-chip .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+  .hold-chip .count{font-family:'JetBrains Mono',monospace;font-weight:700;}
+  .hold-chip.warn .dot{background:var(--amber);}
+  .hold-chip.warn{background:var(--amber-bg);border-color:#EBD9AE;}
+  .hold-chip.crit .dot{background:var(--red);}
+  .hold-chip.crit{background:var(--red-bg);border-color:#EDC4BB;}
+  .hold-chip.neutral .dot{background:var(--text-faint);}
+
+  .holds-list{
+    display:flex;
+    gap:7px;
+    overflow-x:auto;
+    padding-bottom:2px;
+  }
+  .hold-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-left:4px solid var(--text-faint);
+    border-radius:6px;
+    padding:7px 10px;
+    min-width:148px;
+    flex-shrink:0;
+  }
+  .hold-card.crit{border-left-color:var(--red);}
+  .hold-card.warn{border-left-color:var(--amber);}
+  .hold-card.neutral{border-left-color:var(--blue);}
+  .hc-client{font-weight:700;font-size:12px;color:var(--text);}
+  .hc-rail{font-size:9.5px;color:var(--text-dim);margin-top:1px;margin-bottom:6px;}
+  .hc-reason-badge{
+    display:inline-block;
+    font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;
+    padding:2px 6px;border-radius:4px;margin-bottom:6px;
+  }
+  .hc-reason-badge.crit{color:var(--red);background:var(--red-bg);}
+  .hc-reason-badge.warn{color:var(--amber);background:var(--amber-bg);}
+  .hc-reason-badge.neutral{color:var(--blue);background:var(--blue-bg);}
+  .hc-age-wrap{display:flex;align-items:baseline;gap:6px;}
+  .hc-age{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:18px;color:var(--text);}
+  .hc-age.crit{color:var(--red);}
+  .hc-age.warn{color:var(--amber);}
+  .hc-age-label{font-size:8.5px;text-transform:uppercase;color:var(--text-faint);letter-spacing:.4px;}
+
+  .hold-card.more{
+    display:flex;align-items:center;justify-content:center;
+    border:1px dashed var(--line);border-left:1px dashed var(--line);
+    color:var(--text-faint);font-size:11px;font-weight:600;text-align:center;
+    min-width:104px;
+  }
+
+  /* ---------- PIPELINE PANE ---------- */
+  .rail{
+    margin-bottom:9px;
+    padding-bottom:7px;
+    border-bottom:1px solid var(--paper-dim);
+  }
+  .rail:last-of-type{border-bottom:none;}
+  .rail-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:5px;
+  }
+  .rail-name{
+    font-weight:700;
+    font-size:13px;
+    color:var(--text);
+  }
+  .rail-total{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-dim);
+  }
+  .rail-head-right{display:flex;align-items:center;}
+  .rail-open{font-size:9.5px;font-weight:600;color:var(--text-faint);border:1px solid var(--line);
+    background:var(--card);border-radius:4px;padding:1px 6px;text-decoration:none;margin-left:8px;white-space:nowrap;}
+  .rail-open:hover{color:var(--text);border-color:#BEBAB0;}
+  .stage-row{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+  .chip{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:6px 9px;
+    min-width:80px;
+    position:relative;
+  }
+  .chip .stage-label{
+    font-size:9.5px;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    letter-spacing:.4px;
+    margin-bottom:2px;
+    white-space:nowrap;
+  }
+  .chip .stage-count{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:15px;
+    color:var(--text);
+  }
+  .chip .stage-dollar{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--text-faint);
+    margin-top:1px;
+  }
+  .chip.live::before{
+    content:"";
+    position:absolute;
+    left:0;top:0;bottom:0;
+    width:3px;
+    border-radius:6px 0 0 6px;
+    background:var(--spectrum);
+  }
+  .empty-rail{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--card);
+    border:1px dashed var(--line);
+    border-radius:6px;
+    padding:9px 12px;
+    color:var(--text-faint);
+    font-size:12px;
+  }
+
+  .feed-title{
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin-bottom:6px;
+  }
+  .feed{
+    display:flex;
+    flex-direction:column;
+    gap:0;
+  }
+  .feed-item{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    padding:6px 0;
+    border-bottom:1px solid var(--paper-dim);
+    font-size:12px;
+  }
+  .feed-item:last-child{border-bottom:none;}
+  .feed-item .fi-dot{
+    width:6px;height:6px;border-radius:50%;
+    flex-shrink:0;
+    margin-top:2px;
+  }
+  .feed-item .fi-dot.money{background:var(--green);}
+  .feed-item .fi-dot.move{background:var(--blue);}
+  .feed-item .fi-dot.agent{background:#8B7CE8;}
+  .feed-item .fi-dot.hold{background:var(--amber);}
+  .feed-item .fi-text{flex:1;color:var(--text);}
+  .feed-item .fi-text b{font-weight:600;}
+  .feed-item .fi-tag{
+    color:var(--text-faint);
+    font-size:10.5px;
+  }
+  .feed-item .fi-time{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--text-faint);
+    white-space:nowrap;
+  }
+
+  /* ---------- AGENT PANE ---------- */
+  .agent-group-label{
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    margin:9px 0 5px 0;
+  }
+  .agent-group-label:first-child{margin-top:0;}
+  .agent-card{
+    display:flex;
+    gap:10px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:7px 9px;
+    margin-bottom:6px;
+    position:relative;
+  }
+  .agent-card.blocked{
+    background:var(--red-bg);
+    border-color:#E3B3A8;
+  }
+  .status-rail{
+    width:7px;
+    border-radius:5px;
+    flex-shrink:0;
+  }
+  .status-rail.active{background:#3FB66A;}
+  .status-rail.idle{background:#C9C5B9;}
+  .status-rail.blocked{background:var(--red);}
+  .status-rail.done{background:var(--blue);}
+
+  .agent-body{flex:1;min-width:0;}
+  .agent-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .agent-name{font-weight:700;font-size:12.5px;color:var(--text);}
+  .agent-role{font-size:10.5px;color:var(--text-dim);font-weight:500;}
+  .status-badge{
+    font-size:9.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    padding:2px 6px;
+    border-radius:10px;
+    white-space:nowrap;
+  }
+  .status-badge.active{color:#215C36;background:var(--green-bg);}
+  .status-badge.idle{color:var(--text-dim);background:var(--paper-dim);}
+  .status-badge.blocked{color:var(--red);background:#F7DAD3;}
+  .status-badge.done{color:var(--blue);background:var(--blue-bg);}
+
+  .agent-task{
+    font-size:12px;
+    color:var(--text);
+    margin-top:3px;
+  }
+  .agent-task.error-text{color:var(--red);font-weight:600;}
+  .agent-stats{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--text-dim);
+    margin-top:4px;
+  }
+  .agent-stats b{color:var(--text);}
+
+  /* ---------- SYSTEM PANE ---------- */
+  .kpi-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px;
+    margin-bottom:10px;
+  }
+  .kpi-tile{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:8px 10px;
+  }
+  .kpi-label{
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    color:var(--text-dim);
+    margin-bottom:4px;
+  }
+  .kpi-value{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:17px;
+    color:var(--text);
+  }
+  .kpi-sub{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--text-faint);
+    margin-top:1px;
+  }
+
+  .health-list{
+    display:flex;
+    flex-direction:column;
+    gap:0;
+  }
+  .health-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:6px 0;
+    border-bottom:1px solid var(--paper-dim);
+    font-size:12px;
+  }
+  .health-row:last-child{border-bottom:none;}
+  .health-name{color:var(--text);}
+  .health-val{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .health-dot{width:7px;height:7px;border-radius:50%;}
+  .health-dot.ok{background:#3FB66A;}
+  .health-dot.warn{background:var(--amber);}
+
+  footer.statusbar{
+    flex-shrink:0;
+    height:22px;
+    background:var(--ink);
+    display:flex;
+    align-items:center;
+    padding:0 14px;
+    gap:16px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--dark-text-dim);
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark"></div>
+      <div class="name">Fundhub</div>
+      <div class="sep">/</div>
+      <div class="sub">Command Center</div>
+    </div>
+    <div class="topbar-right">
+      <div class="org-pill">Org: Fundhub</div>
+      <div class="clock">Sun Jul 26 · 2:47:09 PM ET</div>
+      <div class="live-pill"><span class="live-dot"></span>LIVE</div>
+    </div>
+  </header>
+
+  <nav class="appnav">
+    <a class="nav-item active" href="command-center.html">Command Center</a>
+    <a class="nav-item" href="galaxy.html">Galaxy</a>
+    <a class="nav-item" href="pipeline.html">Pipeline</a>
+    <a class="nav-item" href="messaging.html">Messaging</a>
+    <a class="nav-item" href="calendar.html">Calendar</a>
+    <span class="nav-div"></span>
+    <a class="nav-item" href="closer-dashboard.html">Closer Dashboard</a>
+    <a class="nav-item" href="inquiry-remover.html">Inquiry Removal</a>
+    <a class="nav-item" href="client-control-panel.html">Client Panel</a>
+    <a class="nav-item" href="ops-admin.html">Ops &amp; Admin</a>
+    <a class="nav-item" href="automations.html">Automations</a>
+  </nav>
+
+  <main>
+
+    <!-- PIPELINE PANE -->
+    <section class="pane">
+      <div class="pane-head">
+        <div class="pane-title"><span class="accent"></span>Pipeline Summary</div>
+        <div class="pane-head-right">
+          <div class="pane-meta">184 active clients · 87 moved forward today · counts only</div>
+          <a class="pane-open" href="pipeline.html">Open the board ↗</a>
+        </div>
+      </div>
+      <div class="pane-body">
+
+        <div class="holds-panel">
+          <div class="holds-panel-head">
+            <div class="holds-panel-title">⚠ Holds — 16 files stuck <span class="holds-panel-subcount">+ 6 new inquiries unworked</span></div>
+            <div class="holds-panel-oldest">Oldest: <b>4d 6h</b> · Bianca Souza</div>
+          </div>
+          <div class="holds-summary-row">
+            <div class="hold-chip crit"><span class="dot"></span>Fraud Alert <span class="count">1</span></div>
+            <div class="hold-chip warn"><span class="dot"></span>Missing Documents <span class="count">9</span></div>
+            <div class="hold-chip warn"><span class="dot"></span>Awaiting CRS <span class="count">4</span></div>
+            <div class="hold-chip crit"><span class="dot"></span>Internal Review <span class="count">2</span></div>
+            <div class="hold-chip neutral"><span class="dot"></span>New Inquiries — nobody has worked these <span class="count">6</span></div>
+          </div>
+          <div class="holds-list">
+            <div class="hold-card warn">
+              <div class="hc-client">Bianca Souza</div>
+              <div class="hc-rail">Optimization Rounds</div>
+              <span class="hc-reason-badge warn">Missing Documents</span>
+              <div class="hc-age-wrap"><span class="hc-age crit">4d 6h</span><span class="hc-age-label">on hold</span></div>
+            </div>
+            <div class="hold-card warn">
+              <div class="hc-client">Felix Ndiaye</div>
+              <div class="hc-rail">Inquiry Removal</div>
+              <span class="hc-reason-badge warn">Awaiting CRS</span>
+              <div class="hc-age-wrap"><span class="hc-age crit">2d 14h</span><span class="hc-age-label">on hold</span></div>
+            </div>
+            <div class="hold-card crit">
+              <div class="hc-client">Grace Kowalski</div>
+              <div class="hc-rail">Card Stacking</div>
+              <span class="hc-reason-badge crit">Fraud Alert</span>
+              <div class="hc-age-wrap"><span class="hc-age warn">1d 3h</span><span class="hc-age-label">on hold</span></div>
+            </div>
+            <div class="hold-card warn">
+              <div class="hc-client">Theresa Lindqvist</div>
+              <div class="hc-rail">Optimization Rounds</div>
+              <span class="hc-reason-badge warn">Missing Documents</span>
+              <div class="hc-age-wrap"><span class="hc-age">16h</span><span class="hc-age-label">on hold</span></div>
+            </div>
+            <div class="hold-card crit">
+              <div class="hc-client">Nate Farrow</div>
+              <div class="hc-rail">Sales</div>
+              <span class="hc-reason-badge crit">Internal Review</span>
+              <div class="hc-age-wrap"><span class="hc-age">9h</span><span class="hc-age-label">on hold</span></div>
+            </div>
+            <div class="hold-card warn">
+              <div class="hc-client">Isabel Cortez</div>
+              <div class="hc-rail">Inquiry Removal</div>
+              <span class="hc-reason-badge warn">Missing Documents</span>
+              <div class="hc-age-wrap"><span class="hc-age">5h</span><span class="hc-age-label">on hold</span></div>
+            </div>
+            <div class="hold-card crit">
+              <div class="hc-client">Andre Fontaine</div>
+              <div class="hc-rail">Card Stacking</div>
+              <span class="hc-reason-badge crit">Internal Review</span>
+              <div class="hc-age-wrap"><span class="hc-age">20m</span><span class="hc-age-label">on hold</span></div>
+            </div>
+            <div class="hold-card more">+6 more<br>Missing Documents</div>
+            <div class="hold-card more">+3 more<br>Awaiting CRS</div>
+          </div>
+        </div>
+
+        <div class="rail">
+          <div class="rail-head">
+            <div class="rail-name">Sales</div>
+            <div class="rail-head-right">
+              <div class="rail-total">82 in motion</div>
+              <a class="rail-open" href="pipeline.html">Open board ↗</a>
+            </div>
+          </div>
+          <div class="stage-row">
+            <div class="chip live"><div class="stage-label">New Lead</div><div class="stage-count">42</div></div>
+            <div class="chip"><div class="stage-label">Survey Completed</div><div class="stage-count">18</div></div>
+            <div class="chip"><div class="stage-label">Booked</div><div class="stage-count">11</div></div>
+            <div class="chip live"><div class="stage-label">Diagnostic Paid</div><div class="stage-count">7</div><div class="stage-dollar">$32 ea</div></div>
+            <div class="chip"><div class="stage-label">Decision Rendered</div><div class="stage-count">4</div></div>
+          </div>
+        </div>
+
+        <div class="rail">
+          <div class="rail-head">
+            <div class="rail-name">Funding: Card Stacking</div>
+            <div class="rail-head-right">
+              <div class="rail-total">33 in motion · $612,400 in flight</div>
+              <a class="rail-open" href="pipeline.html">Open board ↗</a>
+            </div>
+          </div>
+          <div class="stage-row">
+            <div class="chip"><div class="stage-label">Docs Received</div><div class="stage-count">9</div></div>
+            <div class="chip"><div class="stage-label">Round Started</div><div class="stage-count">6</div></div>
+            <div class="chip"><div class="stage-label">Round Submitted</div><div class="stage-count">5</div></div>
+            <div class="chip live"><div class="stage-label">Round Approved</div><div class="stage-count">3</div><div class="stage-dollar">$142,000</div></div>
+            <div class="chip live"><div class="stage-label">Round Funded</div><div class="stage-count">2</div><div class="stage-dollar">$61,500 today</div></div>
+            <div class="chip"><div class="stage-label">File Finalized</div><div class="stage-count">8</div></div>
+          </div>
+        </div>
+
+        <div class="rail">
+          <div class="rail-head">
+            <div class="rail-name">Funding: Alt-Fin (Lendflow)</div>
+            <div class="rail-head-right">
+              <div class="rail-total">15 in motion · $198,000 in flight</div>
+              <a class="rail-open" href="pipeline.html">Open board ↗</a>
+            </div>
+          </div>
+          <div class="stage-row">
+            <div class="chip"><div class="stage-label">Docs Received</div><div class="stage-count">5</div></div>
+            <div class="chip"><div class="stage-label">Round Started</div><div class="stage-count">3</div></div>
+            <div class="chip"><div class="stage-label">Round Submitted</div><div class="stage-count">4</div></div>
+            <div class="chip"><div class="stage-label">Round Approved</div><div class="stage-count">2</div></div>
+            <div class="chip live"><div class="stage-label">Round Funded</div><div class="stage-count">1</div><div class="stage-dollar">$18,500 today</div></div>
+          </div>
+        </div>
+
+        <div class="rail">
+          <div class="rail-head">
+            <div class="rail-name">Optimization (Repair) Rounds</div>
+            <div class="rail-head-right">
+              <div class="rail-total">44 in motion</div>
+              <a class="rail-open" href="pipeline.html">Open board ↗</a>
+            </div>
+          </div>
+          <div class="stage-row">
+            <div class="chip"><div class="stage-label">Docs Received</div><div class="stage-count">12</div></div>
+            <div class="chip"><div class="stage-label">Round Started</div><div class="stage-count">7</div></div>
+            <div class="chip"><div class="stage-label">Round Submitted</div><div class="stage-count">6</div></div>
+            <div class="chip"><div class="stage-label">Round Approved</div><div class="stage-count">4</div></div>
+            <div class="chip"><div class="stage-label">File Finalized</div><div class="stage-count">15</div></div>
+          </div>
+        </div>
+
+        <div class="rail">
+          <div class="rail-head">
+            <div class="rail-name">Inquiry Removal</div>
+            <div class="rail-head-right">
+              <div class="rail-total">27 in motion</div>
+              <a class="rail-open" href="pipeline.html">Open board ↗</a>
+            </div>
+          </div>
+          <div class="stage-row">
+            <div class="chip"><div class="stage-label">New Lead</div><div class="stage-count">4</div></div>
+            <div class="chip live"><div class="stage-label">Bureau Processing</div><div class="stage-count">23</div></div>
+          </div>
+        </div>
+
+        <div class="rail">
+          <div class="rail-head">
+            <div class="rail-name">AR + Collections</div>
+            <div class="rail-head-right">
+              <div class="rail-total">75 this month</div>
+              <a class="rail-open" href="pipeline.html">Open board ↗</a>
+            </div>
+          </div>
+          <div class="stage-row">
+            <div class="chip"><div class="stage-label">Invoice Sent</div><div class="stage-count">14</div></div>
+            <div class="chip live"><div class="stage-label">Paid</div><div class="stage-count">61</div><div class="stage-dollar">$9,000 today</div></div>
+          </div>
+        </div>
+
+        <div class="rail">
+          <div class="rail-head">
+            <div class="rail-name">Affiliates + Hiring</div>
+            <div class="rail-head-right">
+              <div class="rail-total">0 in motion</div>
+              <a class="rail-open" href="pipeline.html">Open board ↗</a>
+            </div>
+          </div>
+          <div class="empty-rail">No affiliate referrals or applicant activity yet today — first ones typically land after 10am.</div>
+        </div>
+
+        <div class="feed-title">Live Feed</div>
+        <div class="feed">
+          <div class="feed-item">
+            <span class="fi-dot agent"></span>
+            <span class="fi-text"><span class="av agent">SJ</span> Setter Josh booked Carlos Bettencourt for 4:30 <span class="fi-tag">· Sales</span></span>
+            <span class="fi-time">2m ago</span>
+          </div>
+          <div class="feed-item">
+            <span class="fi-dot money"></span>
+            <span class="fi-text"><b>Maria Delgado</b> moved to Round Funded <span class="fi-tag">· Alt-Fin (Lendflow) · $18,500</span></span>
+            <span class="fi-time">2m ago</span>
+          </div>
+          <div class="feed-item">
+            <span class="fi-dot money"></span>
+            <span class="fi-text"><b>Brianna Holt</b> paid her deposit <span class="fi-tag">· $3,000 · Card Stacking</span></span>
+            <span class="fi-time">4m ago</span>
+          </div>
+          <div class="feed-item">
+            <span class="fi-dot move"></span>
+            <span class="fi-text"><span class="av human">AT</span> Alvin Torres confirmed inquiry removal — Equifax <span class="fi-tag">· Wei Chen</span></span>
+            <span class="fi-time">9m ago</span>
+          </div>
+          <div class="feed-item">
+            <span class="fi-dot money"></span>
+            <span class="fi-text"><b>Jonathan Kessler</b> paid diagnostic <span class="fi-tag">· $32 · Sales</span></span>
+            <span class="fi-time">11m ago</span>
+          </div>
+          <div class="feed-item">
+            <span class="fi-dot move"></span>
+            <span class="fi-text"><span class="av human">JB</span> Jordan Blake started his call with <b>Priya Nair</b> <span class="fi-tag">· Sales · Diagnostic Paid</span></span>
+            <span class="fi-time">14m ago</span>
+          </div>
+          <div class="feed-item">
+            <span class="fi-dot move"></span>
+            <span class="fi-text"><b>Rachel Simmons</b> moved to Round Submitted <span class="fi-tag">· Optimization Rounds</span></span>
+            <span class="fi-time">14m ago</span>
+          </div>
+          <div class="feed-item">
+            <span class="fi-dot hold"></span>
+            <span class="fi-text"><span class="av agent">CG</span> Compliance Gate flagged <b>Andre Fontaine</b>'s file <span class="fi-tag">· Internal Review hold</span></span>
+            <span class="fi-time">20m ago</span>
+          </div>
+          <div class="feed-item">
+            <span class="fi-dot move"></span>
+            <span class="fi-text"><b>Samuel Okafor</b> moved to Docs Received <span class="fi-tag">· Card Stacking</span></span>
+            <span class="fi-time">21m ago</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="row-bottom">
+
+      <!-- AGENT PANE -->
+      <section class="pane">
+        <div class="pane-head">
+          <div class="pane-title"><span class="accent"></span>Agents</div>
+          <div class="pane-meta">9 working · 1 blocked</div>
+        </div>
+        <div class="pane-body">
+
+          <div class="agent-group-label">Client-Facing</div>
+
+          <div class="agent-card">
+            <div class="status-rail active"></div>
+            <div class="agent-body">
+              <div class="agent-top">
+                <div><span class="av agent">SJ</span> <span class="agent-name">Setter Josh</span> <span class="agent-role">· Voice</span></div>
+                <div class="status-badge active">Active</div>
+              </div>
+              <div class="agent-task">On a call with Kayla Whitmore</div>
+              <div class="agent-stats">Calls today: <b>34</b> · Bookings: <b>6</b> · Queue waiting: <b>9</b></div>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <div class="status-rail active"></div>
+            <div class="agent-body">
+              <div class="agent-top">
+                <div><span class="av agent">A1</span> <span class="agent-name">Agent 1</span> <span class="agent-role">· Lead Follow-up &amp; Booking</span></div>
+                <div class="status-badge active">Active</div>
+              </div>
+              <div class="agent-task">Following up with Tomás Reyes by text</div>
+              <div class="agent-stats">112 done today · 3 working now · none failed</div>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <div class="status-rail idle"></div>
+            <div class="agent-body">
+              <div class="agent-top">
+                <div><span class="av agent">A2</span> <span class="agent-name">Agent 2</span> <span class="agent-role">· Billing</span></div>
+                <div class="status-badge idle">Idle</div>
+              </div>
+              <div class="agent-task">Last sent something 8m ago</div>
+              <div class="agent-stats">Invoices sent today: <b>14</b> · Failed charges: <b>1</b></div>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <div class="status-rail active"></div>
+            <div class="agent-body">
+              <div class="agent-top">
+                <div><span class="av agent">A3</span> <span class="agent-name">Agent 3</span> <span class="agent-role">· Nurture</span></div>
+                <div class="status-badge active">Active</div>
+              </div>
+              <div class="agent-task">Working through 212 quiet leads</div>
+              <div class="agent-stats">Messages sent today: <b>89</b></div>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <div class="status-rail active"></div>
+            <div class="agent-body">
+              <div class="agent-top">
+                <div><span class="av agent">A5</span> <span class="agent-name">Agent 5</span> <span class="agent-role">· Onboarding</span></div>
+                <div class="status-badge active">Active</div>
+              </div>
+              <div class="agent-task">Onboarding Brianna Holt</div>
+              <div class="agent-stats">Docs requested: <b>3</b></div>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <div class="status-rail active"></div>
+            <div class="agent-body">
+              <div class="agent-top">
+                <div><span class="av agent">DC</span> <span class="agent-name">Document Check</span></div>
+                <div class="status-badge active">Active</div>
+              </div>
+              <div class="agent-task">Reviewing documents for Samuel Okafor</div>
+              <div class="agent-stats">Checked today: <b>27</b> · Flagged: <b>4</b></div>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <div class="status-rail idle"></div>
+            <div class="agent-body">
+              <div class="agent-top">
+                <div><span class="av agent">RC</span> <span class="agent-name">Recon</span></div>
+                <div class="status-badge idle">Idle</div>
+              </div>
+              <div class="agent-task">Last checked the books 22m ago</div>
+              <div class="agent-stats">Files reconciled today: <b>61</b></div>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <div class="status-rail active"></div>
+            <div class="agent-body">
+              <div class="agent-top">
+                <div><span class="av agent">CF</span> <span class="agent-name">Context Fetcher</span></div>
+                <div class="status-badge active">Active</div>
+              </div>
+              <div class="agent-task">Assembling context ahead of Courtney Vance's call</div>
+              <div class="agent-stats">Pulls today: <b>48</b></div>
+            </div>
+          </div>
+
+          <div class="agent-card blocked">
+            <div class="status-rail blocked"></div>
+            <div class="agent-body">
+              <div class="agent-top">
+                <div><span class="av agent">IR</span> <span class="agent-name">Inquiry Removal AI</span></div>
+                <div class="status-badge blocked">Blocked</div>
+              </div>
+              <div class="agent-task error-text">Equifax portal timeout — 3 retries failed</div>
+              <div class="agent-stats">Queue backed up: <b>11 waiting</b></div>
+            </div>
+          </div>
+
+          <div class="agent-group-label">Ops</div>
+
+          <div class="agent-card">
+            <div class="status-rail active"></div>
+            <div class="agent-body">
+              <div class="agent-top">
+                <div><span class="av agent">HB</span> <span class="agent-name">Heartbeat</span></div>
+                <div class="status-badge active">Active</div>
+              </div>
+              <div class="agent-task">Everything looks healthy — checking every minute</div>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <div class="status-rail idle"></div>
+            <div class="agent-body">
+              <div class="agent-top">
+                <div><span class="av agent">FX</span> <span class="agent-name">Fixer</span></div>
+                <div class="status-badge idle">Idle</div>
+              </div>
+              <div class="agent-task">Nothing has needed fixing today</div>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <div class="status-rail done"></div>
+            <div class="agent-body">
+              <div class="agent-top">
+                <div><span class="av agent">DB</span> <span class="agent-name">Daily Brief</span></div>
+                <div class="status-badge done">Done</div>
+              </div>
+              <div class="agent-task">Sent <span class="av human">CS</span> Chris Stanbridge his 7:00 AM brief</div>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <div class="status-rail active"></div>
+            <div class="agent-body">
+              <div class="agent-top">
+                <div><span class="av agent">CG</span> <span class="agent-name">Compliance Gate</span></div>
+                <div class="status-badge active">Active</div>
+              </div>
+              <div class="agent-task">214 messages checked today · 2 blocked</div>
+            </div>
+          </div>
+
+          <div class="agent-card">
+            <div class="status-rail done"></div>
+            <div class="agent-body">
+              <div class="agent-top">
+                <div><span class="av agent">DM</span> <span class="agent-name">Data + Models</span></div>
+                <div class="status-badge done">Done</div>
+              </div>
+              <div class="agent-task">Finished last night's scoring at 3:12 AM</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SYSTEM PANE -->
+      <section class="pane">
+        <div class="pane-head">
+          <div class="pane-title"><span class="accent"></span>System</div>
+          <div class="pane-meta">as of 2:47 PM</div>
+        </div>
+        <div class="pane-body">
+
+          <div class="kpi-grid">
+            <div class="kpi-tile">
+              <div class="kpi-label">Cash Collected Today</div>
+              <div class="kpi-value">$29,224</div>
+              <div class="kpi-sub">3 deposits · 3 rounds funded · success fees · diagnostics · AR</div>
+            </div>
+            <div class="kpi-tile">
+              <div class="kpi-label">Pipeline Movement</div>
+              <div class="kpi-value">87</div>
+              <div class="kpi-sub">stage changes today</div>
+            </div>
+            <div class="kpi-tile">
+              <div class="kpi-label">Close Rate (30d)</div>
+              <div class="kpi-value">34%</div>
+              <div class="kpi-sub">booked → decision rendered</div>
+            </div>
+            <div class="kpi-tile">
+              <div class="kpi-label">Show Rate</div>
+              <div class="kpi-value">71%</div>
+              <div class="kpi-sub">booked calls kept, 7d avg</div>
+            </div>
+            <div class="kpi-tile">
+              <div class="kpi-label">Cost / Funded Client</div>
+              <div class="kpi-value">$612</div>
+              <div class="kpi-sub">blended acquisition, 30d</div>
+            </div>
+            <div class="kpi-tile">
+              <div class="kpi-label">Funded Today</div>
+              <div class="kpi-value">$80,000</div>
+              <div class="kpi-sub">Card Stacking + Alt-Fin combined</div>
+            </div>
+          </div>
+
+          <div class="feed-title">Platform Health</div>
+          <div class="health-list">
+            <div class="health-row">
+              <div class="health-name">Live updates delay</div>
+              <div class="health-val"><span class="health-dot ok"></span>1.2s</div>
+            </div>
+            <div class="health-row">
+              <div class="health-name">Jobs waiting to run</div>
+              <div class="health-val"><span class="health-dot ok"></span>3</div>
+            </div>
+            <div class="health-row">
+              <div class="health-name">Error rate (24h)</div>
+              <div class="health-val"><span class="health-dot ok"></span>0.4%</div>
+            </div>
+            <div class="health-row">
+              <div class="health-name">Bureau portal (Equifax)</div>
+              <div class="health-val"><span class="health-dot warn"></span>degraded</div>
+            </div>
+            <div class="health-row">
+              <div class="health-name">Payment provider (Commas)</div>
+              <div class="health-val"><span class="health-dot ok"></span>all good</div>
+            </div>
+            <div class="health-row">
+              <div class="health-name">Message compliance checks</div>
+              <div class="health-val"><span class="health-dot ok"></span>214 / 216 passed</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <footer class="statusbar">
+    <span>FUNDHUB-CC · v1</span>
+    <span>ORG: fundhub</span>
+    <span>184 active clients</span>
+    <span>a read-only summary — go to the board to change anything</span>
+  </footer>
+
+</div>
+</body>
+</html>

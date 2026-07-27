@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fundhub — Automations</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  :root{
+    --ink:#0A0A0A;--paper:#F4F3F0;--paper-dim:#E9E7E2;--card:#FFFFFF;--line:#DDDAD3;
+    --text:#171614;--text-dim:#6B685F;--text-faint:#9A968A;
+    --dark-text:#F4F3F0;--dark-text-dim:#9C9990;--dark-line:#2A2A28;
+    --amber:#B8892B;--amber-bg:#FBF3E2;--red:#B8402F;--red-bg:#FCEAE6;
+    --green:#3E7A4C;--green-bg:#E8F3E9;--blue:#2F5FB8;--blue-bg:#E1EAFB;
+    --purple:#6A4FD0;--purple-bg:#F1EEFC;--purple-line:#C6BAF2;
+    --spectrum:linear-gradient(90deg,#7A5CF0 0%,#2F8FE0 22%,#1FB6A8 44%,#3FAE5C 60%,#E0B02F 78%,#E0602F 100%);
+  }
+  /* ---------- worker avatars: filled = a person, purple outline = an agent ---------- */
+  .av{width:17px;height:17px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;
+    justify-content:center;font-size:7.5px;font-weight:800;letter-spacing:-.2px;vertical-align:middle;}
+  .av.human{background:var(--ink);color:#fff;}
+  .av.agent{background:#fff;color:var(--purple);border:1.5px solid var(--purple);}
+  .av.lg{width:20px;height:20px;font-size:8px;}
+  .av.xl{width:26px;height:26px;font-size:9.5px;}
+  .agent-tag{font-size:8.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+    background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-line);
+    border-radius:4px;padding:0 4px;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--text);overflow:hidden;}
+  .mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;}
+  .shell{height:100vh;display:flex;flex-direction:column;}
+
+  header.topbar{background:var(--ink);color:var(--dark-text);display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:44px;flex-shrink:0;border-bottom:1px solid var(--dark-line);}
+  /* ---------- app nav (identical on every internal surface) ---------- */
+  .appnav{background:var(--ink);display:flex;align-items:center;gap:1px;padding:0 13px;height:31px;
+    flex-shrink:0;border-bottom:2px solid transparent;border-image:var(--spectrum) 1;overflow-x:auto;}
+  .appnav::-webkit-scrollbar{display:none;}
+  .nav-item{font-size:11.5px;font-weight:600;color:#7C7970;text-decoration:none;padding:4px 9px;
+    border-radius:5px;white-space:nowrap;}
+  .nav-item:hover{color:var(--dark-text);background:#161614;}
+  .nav-item.active{color:var(--dark-text);font-weight:700;background:#1C1C19;
+    box-shadow:inset 0 -2px 0 var(--dark-text);}
+  .nav-div{width:1px;height:13px;background:var(--dark-line);margin:0 7px;flex-shrink:0;}
+  .brand{display:flex;align-items:center;gap:9px;}
+  .brand .mark{width:18px;height:18px;border-radius:5px;background:var(--spectrum);flex-shrink:0;}
+  .brand .name{font-weight:800;font-size:14px;letter-spacing:.2px;}
+  .brand .sep{color:var(--dark-text-dim);font-weight:400;}
+  .brand .sub{font-weight:600;font-size:12.5px;color:var(--dark-text-dim);}
+  .topbar-right{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--dark-text-dim);}
+  .org-pill{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;}
+  .clock{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dark-text);}
+  .live-pill{
+    display:flex;align-items:center;gap:6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--dark-text);
+    background:#151513;
+    border:1px solid var(--dark-line);
+    padding:4px 9px 4px 7px;
+    border-radius:20px;
+  }
+  .live-dot{
+    width:6px;height:6px;border-radius:50%;
+    background:#3FD16A;
+    box-shadow:0 0 0 0 rgba(63,209,106,.6);
+    animation:pulse 1.8s infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(63,209,106,.55);}
+    70%{box-shadow:0 0 0 6px rgba(63,209,106,0);}
+    100%{box-shadow:0 0 0 0 rgba(63,209,106,0);}
+  }
+
+  .summary-bar{background:var(--card);border-bottom:1px solid var(--line);padding:9px 18px;flex-shrink:0;display:flex;gap:10px;}
+  .sum-tile{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:5px 12px;text-align:center;min-width:100px;}
+  .sum-label{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:2px;}
+  .sum-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;}
+
+  main{flex:1;overflow-y:auto;padding:12px 18px 20px;background:var(--paper);}
+  main::-webkit-scrollbar{width:8px;}
+  main::-webkit-scrollbar-thumb{background:#D3D0C8;border-radius:4px;}
+
+  .rail-group{background:var(--card);border:1px solid var(--line);border-radius:8px;margin-bottom:10px;overflow:hidden;}
+  .rail-group-head{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;background:var(--paper);border-bottom:1px solid var(--line);}
+  .rail-group-title{font-size:11.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--text-dim);}
+  .rail-group-meta{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-faint);}
+
+  table.wf{width:100%;border-collapse:collapse;}
+  table.wf th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);padding:6px 14px;border-bottom:1px solid var(--line);}
+  table.wf td{padding:8px 14px;font-size:12.5px;border-bottom:1px solid var(--paper-dim);vertical-align:middle;}
+  table.wf tr:last-child td{border-bottom:none;}
+  table.wf tr.failed td{background:#FCEAE6;}
+  .wf-name{font-weight:700;}
+  .wf-owner{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:500;
+    color:var(--text-dim);margin-top:3px;}
+  .wf-trigger{color:var(--text-dim);font-size:11.5px;}
+  .wf-run-ok{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);}
+  .wf-run-fail{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--red);font-weight:700;}
+  .wf-run-fail-detail{display:block;font-family:'Inter',sans-serif;font-weight:400;font-size:11px;color:var(--red);margin-top:1px;}
+
+  .toggle{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:.3px;padding:4px 10px;border-radius:12px;}
+  .toggle .dot{width:7px;height:7px;border-radius:50%;}
+  .toggle.on{background:var(--green-bg);color:var(--green);}
+  .toggle.on .dot{background:var(--green);}
+  .toggle.off{background:var(--paper-dim);color:var(--text-dim);}
+  .toggle.off .dot{background:var(--text-faint);}
+  .toggle.paused{background:var(--red-bg);color:var(--red);}
+  .toggle.paused .dot{background:var(--red);}
+
+  .empty-row td{color:var(--text-faint);font-style:normal;padding:12px 14px;}
+
+  footer.statusbar{flex-shrink:0;height:22px;background:var(--ink);display:flex;align-items:center;padding:0 14px;gap:16px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dark-text-dim);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark"></div>
+      <div class="name">Fundhub</div>
+      <div class="sep">/</div>
+      <div class="sub">Automations</div>
+    </div>
+    <div class="topbar-right">
+      <div class="org-pill">Org: Fundhub</div>
+      <div class="clock">Sun Jul 26 · 2:47:09 PM ET</div>
+      <div class="live-pill"><span class="live-dot"></span>LIVE</div>
+    </div>
+  </header>
+
+  <nav class="appnav">
+    <a class="nav-item" href="command-center.html">Command Center</a>
+    <a class="nav-item" href="galaxy.html">Galaxy</a>
+    <a class="nav-item" href="pipeline.html">Pipeline</a>
+    <a class="nav-item" href="messaging.html">Messaging</a>
+    <a class="nav-item" href="calendar.html">Calendar</a>
+    <span class="nav-div"></span>
+    <a class="nav-item" href="closer-dashboard.html">Closer Dashboard</a>
+    <a class="nav-item" href="inquiry-remover.html">Inquiry Removal</a>
+    <a class="nav-item" href="client-control-panel.html">Client Panel</a>
+    <a class="nav-item" href="ops-admin.html">Ops &amp; Admin</a>
+    <a class="nav-item active" href="automations.html">Automations</a>
+  </nav>
+
+  <div class="summary-bar">
+    <div class="sum-tile"><div class="sum-label">Total</div><div class="sum-value">18</div></div>
+    <div class="sum-tile"><div class="sum-label">On</div><div class="sum-value">17</div></div>
+    <div class="sum-tile"><div class="sum-label">Paused</div><div class="sum-value">1</div></div>
+    <div class="sum-tile"><div class="sum-label">Ran Today</div><div class="sum-value">217</div></div>
+  </div>
+
+  <main>
+
+    <div class="rail-group">
+      <div class="rail-group-head"><div class="rail-group-title">Sales</div><div class="rail-group-meta">4 on</div></div>
+      <table class="wf">
+        <tr><th style="width:26%;">Workflow</th><th style="width:36%;">Trigger</th><th style="width:20%;">Last Run</th><th style="width:18%;">Status</th></tr>
+        <tr>
+          <td class="wf-name">New Lead Welcome Text
+            <div class="wf-owner"><span class="av agent">A1</span> Agent 1</div></td>
+          <td class="wf-trigger">When a new lead is captured</td>
+          <td class="wf-run-ok">3m ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+        <tr>
+          <td class="wf-name">Diagnostic Payment Confirmation
+            <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
+          <td class="wf-trigger">When a client pays the $32 diagnostic</td>
+          <td class="wf-run-ok">11m ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+        <tr>
+          <td class="wf-name">Survey Reminder
+            <div class="wf-owner"><span class="av agent">A1</span> Agent 1</div></td>
+          <td class="wf-trigger">When Survey Completed sits idle over 24 hours</td>
+          <td class="wf-run-ok">2h ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+        <tr>
+          <td class="wf-name">Booked Call Reminder
+            <div class="wf-owner"><span class="av agent">A1</span> Agent 1</div></td>
+          <td class="wf-trigger">30 minutes before a booked call</td>
+          <td class="wf-run-ok">15m ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="rail-group">
+      <div class="rail-group-head"><div class="rail-group-title">Funding: Card Stacking</div><div class="rail-group-meta">3 on · 1 paused</div></div>
+      <table class="wf">
+        <tr><th style="width:26%;">Workflow</th><th style="width:36%;">Trigger</th><th style="width:20%;">Last Run</th><th style="width:18%;">Status</th></tr>
+        <tr>
+          <td class="wf-name">Deposit Receipt Email
+            <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
+          <td class="wf-trigger">When a client pays the $3,000 deposit</td>
+          <td class="wf-run-ok">4m ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+        <tr>
+          <td class="wf-name">Round Submitted Notification
+            <div class="wf-owner"><span class="av agent">A5</span> Agent 5</div></td>
+          <td class="wf-trigger">When Round Submitted stage is entered</td>
+          <td class="wf-run-ok">1h 20m ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+        <tr>
+          <td class="wf-name">Missing Documents Reminder
+            <div class="wf-owner"><span class="av agent">A5</span> Agent 5</div></td>
+          <td class="wf-trigger">When Missing Documents sits idle over 24 hours</td>
+          <td class="wf-run-ok">6h ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+        <tr class="failed">
+          <td class="wf-name">Round Funded Celebration Text
+            <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
+          <td class="wf-trigger">When Round Funded stage is entered</td>
+          <td>
+            <span class="wf-run-fail">12m ago · didn't go out</span>
+            <span class="wf-run-fail-detail">the text service stopped responding</span>
+          </td>
+          <td><span class="toggle paused"><span class="dot"></span>PAUSED</span></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="rail-group">
+      <div class="rail-group-head"><div class="rail-group-title">Funding: Alt-Fin (Lendflow)</div><div class="rail-group-meta">2 on</div></div>
+      <table class="wf">
+        <tr><th style="width:26%;">Workflow</th><th style="width:36%;">Trigger</th><th style="width:20%;">Last Run</th><th style="width:18%;">Status</th></tr>
+        <tr>
+          <td class="wf-name">Lendflow Submission Sync
+            <div class="wf-owner"><span class="av agent">RC</span> Recon</div></td>
+          <td class="wf-trigger">When a round is submitted to Lendflow</td>
+          <td class="wf-run-ok">22m ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+        <tr>
+          <td class="wf-name">Round Approved Notification
+            <div class="wf-owner"><span class="av agent">A5</span> Agent 5</div></td>
+          <td class="wf-trigger">When Round Approved stage is entered</td>
+          <td class="wf-run-ok">3h ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="rail-group">
+      <div class="rail-group-head"><div class="rail-group-title">Optimization (Repair) Rounds</div><div class="rail-group-meta">2 on</div></div>
+      <table class="wf">
+        <tr><th style="width:26%;">Workflow</th><th style="width:36%;">Trigger</th><th style="width:20%;">Last Run</th><th style="width:18%;">Status</th></tr>
+        <tr>
+          <td class="wf-name">Repair Bundle Payment Confirmation
+            <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
+          <td class="wf-trigger">When a client pays the $2,000 repair bundle</td>
+          <td class="wf-run-ok">5h ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+        <tr>
+          <td class="wf-name">Credit Optimization Roadmap Delivery
+            <div class="wf-owner"><span class="av agent">A5</span> Agent 5</div></td>
+          <td class="wf-trigger">When File Finalized stage is entered</td>
+          <td class="wf-run-ok">1d ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="rail-group">
+      <div class="rail-group-head"><div class="rail-group-title">Inquiry Removal</div><div class="rail-group-meta">2 on</div></div>
+      <table class="wf">
+        <tr><th style="width:26%;">Workflow</th><th style="width:36%;">Trigger</th><th style="width:20%;">Last Run</th><th style="width:18%;">Status</th></tr>
+        <tr>
+          <td class="wf-name">Inquiry Removal Confirmation SMS
+            <div class="wf-owner"><span class="av agent">IR</span> Inquiry Removal AI</div></td>
+          <td class="wf-trigger">When an inquiry removal is confirmed</td>
+          <td class="wf-run-ok">9m ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+        <tr>
+          <td class="wf-name">Awaiting CRS Reminder
+            <div class="wf-owner"><span class="av agent">CF</span> Context Fetcher</div></td>
+          <td class="wf-trigger">When Awaiting CRS sits idle over 48 hours</td>
+          <td class="wf-run-ok">20m ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="rail-group">
+      <div class="rail-group-head"><div class="rail-group-title">AR + Collections</div><div class="rail-group-meta">2 on</div></div>
+      <table class="wf">
+        <tr><th style="width:26%;">Workflow</th><th style="width:36%;">Trigger</th><th style="width:20%;">Last Run</th><th style="width:18%;">Status</th></tr>
+        <tr>
+          <td class="wf-name">AR Invoice Reminder
+            <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
+          <td class="wf-trigger">3 days after an invoice is sent unpaid</td>
+          <td class="wf-run-ok">1h ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+        <tr>
+          <td class="wf-name">Collections Escalation Notice
+            <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
+          <td class="wf-trigger">When an invoice passes 30 days overdue</td>
+          <td class="wf-run-ok">2h ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="rail-group">
+      <div class="rail-group-head"><div class="rail-group-title">Affiliates + Hiring</div><div class="rail-group-meta">0 configured</div></div>
+      <table class="wf">
+        <tr class="empty-row"><td colspan="4">Nothing set up for referrals or hiring yet — payout notices run out of the back office.</td></tr>
+      </table>
+    </div>
+
+    <div class="rail-group">
+      <div class="rail-group-head"><div class="rail-group-title">Back Office</div><div class="rail-group-meta">2 on</div></div>
+      <table class="wf">
+        <tr><th style="width:26%;">Workflow</th><th style="width:36%;">Trigger</th><th style="width:20%;">Last Run</th><th style="width:18%;">Status</th></tr>
+        <tr>
+          <td class="wf-name">Daily Brief
+            <div class="wf-owner"><span class="av agent">DB</span> Daily Brief</div></td>
+          <td class="wf-trigger">Every day at 7:00 AM — goes to <span class="av human">CS</span> Chris Stanbridge</td>
+          <td class="wf-run-ok">today 7:00 AM · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+        <tr>
+          <td class="wf-name">Affiliate Payout Notice
+            <div class="wf-owner"><span class="av agent">A2</span> Agent 2</div></td>
+          <td class="wf-trigger">When an affiliate payout is processed</td>
+          <td class="wf-run-ok">3d ago · went out fine</td>
+          <td><span class="toggle on"><span class="dot"></span>ON</span></td>
+        </tr>
+      </table>
+    </div>
+
+  </main>
+
+  <footer class="statusbar">
+    <span>FUNDHUB-AUTOMATIONS · v1</span>
+    <span>ORG: fundhub</span>
+    <span>18 automations across 7 rails + back office</span>
+  </footer>
+
+</div>
+</body>
+</html>
