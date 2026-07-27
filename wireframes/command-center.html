@@ -673,6 +673,7 @@
   .health-dot{width:7px;height:7px;border-radius:50%;}
   .health-dot.ok{background:var(--ok);}
   .health-dot.warn{background:var(--warn);}
+  .health-dot.bad{background:var(--alert);}
 
   /* the rest of the health list — everything that is fine and has been fine */
   .allsys{margin-top:2px;}
@@ -720,57 +721,38 @@
 
   <!-- ══ SIDEBAR — identical across every wireframe ══ -->
   <aside class="side" id="side">
-    <div class="side-top">
-      <span class="logo inv"></span>
-      <button class="burger" id="burger" title="Collapse navigation">‹‹</button>
-    </div>
-
+    <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
     <nav class="side-scroll">
-      <div class="navgroup" data-g="work">
-        <button class="navhead">Work<span class="chev">▾</span></button>
-        <div class="navlist">
-          <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
-          <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
-          <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
-          <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
-        </div>
-      </div>
-
-      <div class="navgroup" data-g="watch">
-        <button class="navhead">Watch<span class="chev">▾</span></button>
-        <div class="navlist">
-          <a class="navitem on" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
-          <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
-          <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
-        </div>
-      </div>
-
-      <div class="navgroup" data-g="automation">
-        <button class="navhead">Automation<span class="chev">▾</span></button>
-        <div class="navlist">
-          <a class="navitem soon" href="agents.html"><span class="ico">◈</span><span class="lbl">Agents</span></a>
-          <a class="navitem soon" href="workflows.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
-        </div>
-      </div>
-
-      <div class="navgroup" data-g="setup">
-        <button class="navhead">Setup<span class="chev">▾</span></button>
-        <div class="navlist">
-          <a class="navitem soon" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
-          <a class="navitem soon" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
-          <a class="navitem soon" href="agent-editor.html"><span class="ico">✎</span><span class="lbl">Agent Editor</span></a>
-          <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
-        </div>
-      </div>
-
-      <div class="navgroup" data-g="mywork">
-        <button class="navhead">My Work<span class="chev">▾</span></button>
-        <div class="navlist">
-          <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
-          <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
-          <a class="navitem soon" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
-        </div>
-      </div>
+      <div class="navgroup"><button class="navhead">Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem on" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
+        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Automation<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Setup<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
+        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
+        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Client<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+      </div></div>
     </nav>
 
     <div class="side-foot"><span class="pulse"></span><span class="who">CS · EMP-000001</span></div>
@@ -796,7 +778,7 @@
     <!-- PIPELINE PANE -->
     <section class="pane">
       <div class="pane-head">
-        <div class="pane-title eyebrow">01 / Pipeline Summary</div>
+        <div class="pane-title eyebrow">CC-01 / Pipeline Summary</div>
         <div class="pane-head-right">
           <div class="pane-meta">184 active clients · 87 moved forward today · counts only</div>
           <a class="pane-open" href="pipeline.html">Open the board ↗</a>
@@ -805,7 +787,7 @@
       <div class="pane-body">
 
         <div class="holds-panel">
-          <div class="eyebrow" style="margin-bottom:8px">H-01 / Holds</div>
+          <div class="eyebrow" style="margin-bottom:8px">CC-02 / Holds</div>
           <div class="holds-panel-head">
             <div class="holds-panel-title">⚠ Holds — 16 files stuck <span class="holds-panel-subcount">+ 6 new inquiries unworked</span></div>
             <div class="holds-panel-oldest">Oldest: <b>4d 6h</b> · Bianca Souza</div>
@@ -974,7 +956,7 @@
           <div class="empty-rail">No affiliate referrals or applicant activity yet today — first ones typically land after 10am.</div>
         </div>
 
-        <div class="feed-title eyebrow">F-01 / Live Feed<span class="feed-filters"><button class="ffilter on" data-f="all">All</button><button class="ffilter" data-f="money">Money</button><button class="ffilter" data-f="move">Moves</button><button class="ffilter" data-f="agent">Agents</button><button class="ffilter" data-f="hold">Holds</button></span></div>
+        <div class="feed-title eyebrow">CC-03 / Live Feed<span class="feed-filters"><button class="ffilter on" data-f="all">All</button><button class="ffilter" data-f="money">Money</button><button class="ffilter" data-f="move">Moves</button><button class="ffilter" data-f="agent">Agents</button><button class="ffilter" data-f="hold">Holds</button></span></div>
         <div class="feed">
           <div class="feed-item">
             <span class="fi-dot agent"></span>
@@ -1031,7 +1013,7 @@
       <!-- AGENT PANE -->
       <section class="pane">
         <div class="pane-head">
-          <div class="pane-title eyebrow">02 / Agents — Exceptions</div>
+          <div class="pane-title eyebrow">CC-04 / Agents — Exceptions</div>
           <div class="pane-meta">1 blocked · 13 nominal</div>
         </div>
         <div class="pane-body">
@@ -1040,13 +1022,13 @@
                Blocked, failed or degraded only. The healthy thirteen are one
                line below; the full roster is one click inside it. -->
           <div class="exc-panel">
-            <div class="eyebrow" style="margin-bottom:8px">A-00 / Needs A Human</div>
+            <div class="eyebrow" style="margin-bottom:8px">CC-05 / Needs A Human</div>
             <div class="exc-title">⚠ 1 agent blocked</div>
             <div class="agent-card blocked">
               <div class="status-rail blocked"></div>
               <div class="agent-body">
                 <div class="agent-top">
-                  <div><span class="av agent">IR</span> <span class="agent-code">A-09</span><span class="agent-name">Inquiry Removal AI</span></div>
+                  <div><span class="av agent">IR</span> <span class="agent-code">AG-09</span><span class="agent-name">Inquiry Removal AI</span></div>
                   <div class="status-badge blocked">Blocked</div>
                 </div>
                 <div class="agent-task error-text">Equifax portal timeout — 3 retries failed</div>
@@ -1064,14 +1046,14 @@
             </summary>
             <div class="roster-body">
 
-          <div class="feed-title eyebrow" style="margin-bottom:9px">A / Roster<span class="feed-filters"><button class="ffilter on" data-a="all">All</button><button class="ffilter" data-a="active">Active</button><button class="ffilter" data-a="idle">Idle</button><button class="ffilter" data-a="done">Done</button></span></div>
-          <div class="agent-group-label eyebrow">A / Client-Facing</div>
+          <div class="feed-title eyebrow" style="margin-bottom:9px">CC-06 / Roster<span class="feed-filters"><button class="ffilter on" data-a="all">All</button><button class="ffilter" data-a="active">Active</button><button class="ffilter" data-a="idle">Idle</button><button class="ffilter" data-a="done">Done</button></span></div>
+          <div class="agent-group-label eyebrow">CC-07 / Client-Facing</div>
 
           <div class="agent-card">
             <div class="status-rail active"></div>
             <div class="agent-body">
               <div class="agent-top">
-                <div><span class="av agent">SJ</span> <span class="agent-code">A-04</span><span class="agent-name">Setter Josh</span> <span class="agent-role">· Voice</span></div>
+                <div><span class="av agent">SJ</span> <span class="agent-code">AG-04</span><span class="agent-name">Setter Josh</span> <span class="agent-role">· Voice</span></div>
                 <div class="status-badge active">Active</div>
               </div>
               <div class="agent-task">On a call with Kayla Whitmore</div>
@@ -1083,7 +1065,7 @@
             <div class="status-rail active"></div>
             <div class="agent-body">
               <div class="agent-top">
-                <div><span class="av agent">A1</span> <span class="agent-code">A-01</span><span class="agent-name">Agent 1</span> <span class="agent-role">· Lead Follow-up &amp; Booking</span></div>
+                <div><span class="av agent">A1</span> <span class="agent-code">AG-01</span><span class="agent-name">Agent 1</span> <span class="agent-role">· Lead Follow-up &amp; Booking</span></div>
                 <div class="status-badge active">Active</div>
               </div>
               <div class="agent-task">Following up with Tomás Reyes by text</div>
@@ -1095,7 +1077,7 @@
             <div class="status-rail idle"></div>
             <div class="agent-body">
               <div class="agent-top">
-                <div><span class="av agent">A2</span> <span class="agent-code">A-02</span><span class="agent-name">Agent 2</span> <span class="agent-role">· Billing</span></div>
+                <div><span class="av agent">A2</span> <span class="agent-code">AG-02</span><span class="agent-name">Agent 2</span> <span class="agent-role">· Billing</span></div>
                 <div class="status-badge idle">Idle</div>
               </div>
               <div class="agent-task">Last sent something 8m ago</div>
@@ -1107,7 +1089,7 @@
             <div class="status-rail active"></div>
             <div class="agent-body">
               <div class="agent-top">
-                <div><span class="av agent">A3</span> <span class="agent-code">A-03</span><span class="agent-name">Agent 3</span> <span class="agent-role">· Nurture</span></div>
+                <div><span class="av agent">A3</span> <span class="agent-code">AG-03</span><span class="agent-name">Agent 3</span> <span class="agent-role">· Nurture</span></div>
                 <div class="status-badge active">Active</div>
               </div>
               <div class="agent-task">Working through 212 quiet leads</div>
@@ -1119,7 +1101,7 @@
             <div class="status-rail active"></div>
             <div class="agent-body">
               <div class="agent-top">
-                <div><span class="av agent">A5</span> <span class="agent-code">A-05</span><span class="agent-name">Agent 5</span> <span class="agent-role">· Onboarding</span></div>
+                <div><span class="av agent">A5</span> <span class="agent-code">AG-05</span><span class="agent-name">Agent 5</span> <span class="agent-role">· Onboarding</span></div>
                 <div class="status-badge active">Active</div>
               </div>
               <div class="agent-task">Onboarding Brianna Holt</div>
@@ -1131,7 +1113,7 @@
             <div class="status-rail active"></div>
             <div class="agent-body">
               <div class="agent-top">
-                <div><span class="av agent">DC</span> <span class="agent-code">A-06</span><span class="agent-name">Document Check</span></div>
+                <div><span class="av agent">DC</span> <span class="agent-code">AG-06</span><span class="agent-name">Document Check</span></div>
                 <div class="status-badge active">Active</div>
               </div>
               <div class="agent-task">Reviewing documents for Samuel Okafor</div>
@@ -1143,7 +1125,7 @@
             <div class="status-rail idle"></div>
             <div class="agent-body">
               <div class="agent-top">
-                <div><span class="av agent">RC</span> <span class="agent-code">A-07</span><span class="agent-name">Recon</span></div>
+                <div><span class="av agent">RC</span> <span class="agent-code">AG-07</span><span class="agent-name">Recon</span></div>
                 <div class="status-badge idle">Idle</div>
               </div>
               <div class="agent-task">Last checked the books 22m ago</div>
@@ -1155,7 +1137,7 @@
             <div class="status-rail active"></div>
             <div class="agent-body">
               <div class="agent-top">
-                <div><span class="av agent">CF</span> <span class="agent-code">A-08</span><span class="agent-name">Context Fetcher</span></div>
+                <div><span class="av agent">CF</span> <span class="agent-code">AG-08</span><span class="agent-name">Context Fetcher</span></div>
                 <div class="status-badge active">Active</div>
               </div>
               <div class="agent-task">Assembling context ahead of Courtney Vance's call</div>
@@ -1166,13 +1148,13 @@
           <!-- A-09 Inquiry Removal AI is blocked, so its card lives in the
                exceptions panel above rather than being repeated here. -->
 
-          <div class="agent-group-label eyebrow">A / Ops</div>
+          <div class="agent-group-label eyebrow">CC-08 / Ops</div>
 
           <div class="agent-card">
             <div class="status-rail active"></div>
             <div class="agent-body">
               <div class="agent-top">
-                <div><span class="av agent">HB</span> <span class="agent-code">A-10</span><span class="agent-name">Heartbeat</span></div>
+                <div><span class="av agent">HB</span> <span class="agent-code">AG-10</span><span class="agent-name">Heartbeat</span></div>
                 <div class="status-badge active">Active</div>
               </div>
               <div class="agent-task">Everything looks healthy — checking every minute</div>
@@ -1183,7 +1165,7 @@
             <div class="status-rail idle"></div>
             <div class="agent-body">
               <div class="agent-top">
-                <div><span class="av agent">FX</span> <span class="agent-code">A-11</span><span class="agent-name">Fixer</span></div>
+                <div><span class="av agent">FX</span> <span class="agent-code">AG-11</span><span class="agent-name">Fixer</span></div>
                 <div class="status-badge idle">Idle</div>
               </div>
               <div class="agent-task">Nothing has needed fixing today</div>
@@ -1194,7 +1176,7 @@
             <div class="status-rail done"></div>
             <div class="agent-body">
               <div class="agent-top">
-                <div><span class="av agent">DB</span> <span class="agent-code">A-12</span><span class="agent-name">Daily Brief</span></div>
+                <div><span class="av agent">DB</span> <span class="agent-code">AG-12</span><span class="agent-name">Daily Brief</span></div>
                 <div class="status-badge done">Done</div>
               </div>
               <div class="agent-task">Sent <span class="av human">CS</span> Chris Stanbridge his 7:00 AM brief</div>
@@ -1205,7 +1187,7 @@
             <div class="status-rail active"></div>
             <div class="agent-body">
               <div class="agent-top">
-                <div><span class="av agent">CG</span> <span class="agent-code">A-13</span><span class="agent-name">Compliance Gate</span></div>
+                <div><span class="av agent">CG</span> <span class="agent-code">AG-13</span><span class="agent-name">Compliance Gate</span></div>
                 <div class="status-badge active">Active</div>
               </div>
               <div class="agent-task">214 messages checked today · 2 blocked</div>
@@ -1216,7 +1198,7 @@
             <div class="status-rail done"></div>
             <div class="agent-body">
               <div class="agent-top">
-                <div><span class="av agent">DM</span> <span class="agent-code">A-14</span><span class="agent-name">Data + Models</span></div>
+                <div><span class="av agent">DM</span> <span class="agent-code">AG-14</span><span class="agent-name">Data + Models</span></div>
                 <div class="status-badge done">Done</div>
               </div>
               <div class="agent-task">Finished last night's scoring at 3:12 AM</div>
@@ -1232,7 +1214,7 @@
       <!-- SYSTEM PANE -->
       <section class="pane">
         <div class="pane-head">
-          <div class="pane-title eyebrow">03 / System</div>
+          <div class="pane-title eyebrow">CC-09 / System</div>
           <div class="pane-meta">as of 2:47 PM</div>
         </div>
         <div class="pane-body">
@@ -1273,11 +1255,11 @@
           <!-- Top four only, anomaly first — the degraded line is the answer to
                "what broke", so it leads instead of sitting fourth in a list of
                six. The two that have been fine all day are behind All systems. -->
-          <div class="feed-title eyebrow">F-02 / Platform Health</div>
+          <div class="feed-title eyebrow">CC-10 / Platform Health</div>
           <div class="health-list">
             <div class="health-row">
               <div class="health-name">Bureau portal (Equifax)</div>
-              <div class="health-val"><span class="health-dot warn"></span>degraded</div>
+              <div class="health-val"><span class="health-dot bad"></span>down since 1:30 PM</div>
             </div>
             <div class="health-row">
               <div class="health-name">Live updates delay</div>
