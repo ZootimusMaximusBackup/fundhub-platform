@@ -8,13 +8,9 @@
 // block below are BOTH covered by tests proving each direction
 // (ds-02-diy-letters.test.mjs) — that test is the actual point of this file.
 //
-// Per Chris's explicit decision: the branch logic + letter-delivery webhook are
-// built for real; the invoice is NOT (`payments_create_invoice` would need a new
-// outbound Commas capability that doesn't exist — that's real money and gets
-// designed deliberately, not invented here). A staff task stands in for the invoice,
-// same pattern as F-07's commission task. Note for Darwin: a separate session is
-// currently designing the products/commission model — connect this to that rather
-// than building invoicing here as a one-off.
+// The invoice stub is now wired to src/invoices/ (017_invoices migration).
+// Commas outbound checkout is still a manual task — the invoice record here is
+// the platform's internal ledger entry (money owed), not a Commas API call.
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
@@ -23,6 +19,7 @@ import { clientOutcomeTier, isFundingPath } from "../config/product-path.mjs";
 import { addTags } from "./tags.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
+import { createInvoice, depositKey } from "../invoices/index.mjs";
 
 export const EMAIL_TEMPLATE_KEY = "EMAIL-DS02-DIY-LETTERS-READY";
 const SOURCE_WORKFLOW = "ds-02-diy-letters";
@@ -90,6 +87,17 @@ export async function handle({ event, db, step, fetchImpl = globalThis.fetch }) 
   const eventId = event.id;
 
   await step.run("set-diy-status-processing", () => mergeCustomFields(db, clientId, { diy_status: "Processing" }));
+  const { saleId, amount } = event.payload || {};
+  const invoice = await step.run("create-deposit-invoice", () =>
+    createInvoice(db, {
+      orgId,
+      clientId,
+      invoiceType: "deposit",
+      amount: Number(amount) || 0,
+      saleId: saleId ?? null,
+      idempotencyKey: saleId ? depositKey(saleId) : null,
+      notes: "DS-02 DIY Consulting Services Package",
+    }));
   const invoiceTask = await step.run("create-invoice-task", () => createInvoiceTaskOnce(db, { orgId, clientId, eventId }));
   const delivery = await step.run("deliver-letters", () => deliverLettersOnce(db, fetchImpl, { clientId, orgId, eventId }));
   const email = await step.run("send-email", () =>
@@ -98,7 +106,7 @@ export async function handle({ event, db, step, fetchImpl = globalThis.fetch }) 
   await step.run("set-diy-status-final", () =>
     mergeCustomFields(db, clientId, { diy_status: delivery.delivered ? "Delivered" : "Delivery Failed — Retry" }));
 
-  return { done: true, invoiceTask, delivery, email };
+  return { done: true, invoice, invoiceTask, delivery, email };
 }
 
 export const ds02DiyLetters = inngest.createFunction(

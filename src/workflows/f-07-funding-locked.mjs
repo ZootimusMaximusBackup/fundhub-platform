@@ -24,6 +24,7 @@ import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
+import { createInvoice, successFeeKey } from "../invoices/index.mjs";
 
 export const EMAIL_TEMPLATE_KEY = "EMAIL-F07-FUNDING-LOCKED";
 export const SMS_TEMPLATE_KEY = "SMS-F07-FUNDING-LOCKED";
@@ -63,11 +64,27 @@ export async function handle({ event, db, step }) {
     sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
   const sms = await step.run("send-sms", () =>
     sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+  // FLAG for Darwin/Chris: assumes approvedAmount is the FUNDED BASE (not already the fee).
+  // Formula: feeAmount = approvedAmount * feePercent / 100 — mirrors v_sale_balance.success_fee_due.
+  // If GHL's "Commission Owed" field already stores the fee amount, divide out the percent instead.
+  const { saleId, fundingRoundId } = event.payload || {};
+  const feeAmount = Math.round(Number(approvedAmount) * Number(feePercent)) / 100;
+  const invoice = await step.run("create-success-fee-invoice", () =>
+    createInvoice(db, {
+      orgId,
+      clientId,
+      invoiceType: "success_fee",
+      amount: feeAmount,
+      saleId: saleId ?? null,
+      fundingRoundId: fundingRoundId ?? null,
+      idempotencyKey: (saleId && fundingRoundId) ? successFeeKey(saleId, fundingRoundId) : null,
+      notes: `round.funded — approved ${approvedAmount} @ ${feePercent}%`,
+    }));
   const invoiceTask = await step.run("create-invoice-task", () =>
     createTaskOnce(db, { orgId, clientId, eventId, source: INVOICE_TASK_SOURCE, title: `Invoice client — approved ${approvedAmount} @ ${feePercent}% (calculate + send)` }));
   await step.run("set-next-action", () => mergeCustomFields(db, clientId, { last_progress_action: "invoice_sent" }));
 
-  return { done: true, feeReady: true, email, sms, invoiceTask };
+  return { done: true, feeReady: true, email, sms, invoice, invoiceTask };
 }
 
 export const f07FundingLocked = inngest.createFunction(
