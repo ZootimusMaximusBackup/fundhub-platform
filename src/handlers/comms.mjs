@@ -17,6 +17,11 @@
 
 import { on } from "../events/registry.mjs";
 import { resolveClient } from "./client-lifecycle.mjs";
+import { recordOptOut, recordOptIn } from "../lib/opt-out.mjs";
+
+// TCPA standard opt-out and opt-in keyword sets (case-insensitive, trimmed).
+const STOP_KEYWORDS  = new Set(["STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"]);
+const START_KEYWORDS = new Set(["START", "UNSTOP"]);
 
 // Non-creating lookup: match an existing client by email or phone. Returns id|null.
 async function findClient(db, orgId, { email, phone } = {}) {
@@ -35,9 +40,18 @@ async function findClient(db, orgId, { email, phone } = {}) {
 }
 
 // message.inbound — inbound SMS (Twilio). Link to client by phone if known.
+// Handles TCPA STOP/START keywords before logging the message row.
 export async function onMessageInbound(event, db) {
   const p = event.payload || {};
   const clientId = event.clientId || (await findClient(db, event.orgId, { phone: p.from }));
+  const word = String(p.body || "").trim().toUpperCase();
+  if (clientId && (p.channel || "sms") === "sms") {
+    if (STOP_KEYWORDS.has(word)) {
+      await recordOptOut(db, clientId, event.orgId, "sms", "inbound_keyword");
+    } else if (START_KEYWORDS.has(word)) {
+      await recordOptIn(db, clientId, "sms");
+    }
+  }
   await db.query(
     `INSERT INTO messages (org_id, client_id, direction, channel, rendered_body, provider, provider_ref, status)
      VALUES ($1,$2,'inbound',$3,$4,$5,$6,'received')

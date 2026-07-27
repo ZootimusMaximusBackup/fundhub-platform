@@ -6,11 +6,27 @@ import { onMessageInbound, onCallCompleted, onMailResponse, onBookingCreated } f
 // DB-level (ON CONFLICT) and proven in the pg integration test; the guard-based
 // dedup for bank_inbox + tasks lives in app code and IS exercised here.
 function pgFake() {
-  const clients = [], messages = [], bank = [], tasks = [];
+  const clients = [], messages = [], bank = [], tasks = [], optOuts = [];
   let n = 0;
   return {
-    clients, messages, bank, tasks,
+    clients, messages, bank, tasks, optOuts,
     async query(sql, params = []) {
+      // opt_outs support (TCPA STOP/START handling)
+      if (/INSERT INTO opt_outs/.test(sql)) {
+        const existing = optOuts.find((r) => r.client_id === params[0] && r.channel === params[2]);
+        if (existing) { existing.opted_in_at = null; existing.source = params[3]; }
+        else optOuts.push({ client_id: params[0], org_id: params[1], channel: params[2], source: params[3], opted_in_at: null });
+        return { rows: [] };
+      }
+      if (/UPDATE opt_outs SET opted_in_at/.test(sql)) {
+        const r = optOuts.find((r) => r.client_id === params[0] && r.channel === params[1]);
+        if (r) r.opted_in_at = new Date();
+        return { rows: [] };
+      }
+      if (/SELECT 1 FROM opt_outs/.test(sql)) {
+        const r = optOuts.find((r) => r.client_id === params[0] && r.channel === params[1] && !r.opted_in_at);
+        return { rows: r ? [{ 1: 1 }] : [] };
+      }
       if (/SELECT id FROM clients/.test(sql) && /lower\(email\)/.test(sql)) {
         const c = clients.find((c) => c.org_id === params[0] && String(c.email || "").toLowerCase() === params[1]);
         return { rows: c ? [{ id: c.id }] : [] };
@@ -79,4 +95,49 @@ test("booking.created: creates a task once (dedup by booking uid), creates clien
   assert.equal(db.tasks.length, 1);
   assert.equal(db.tasks[0].body, "bk_1");
   assert.equal(db.clients.length, 1, "resolved+created the client from the booking email");
+});
+
+// TCPA STOP/START keyword handling
+
+test("message.inbound STOP: records opt-out for known client", async () => {
+  const db = pgFake();
+  db.clients.push({ id: "cl-1", org_id: "org-1", phone: "+15551234567" });
+  await onMessageInbound(ev("message.inbound", { from: "+15551234567", body: "STOP", sid: "SM2", channel: "sms", source: "twilio" }), db);
+  assert.equal(db.optOuts.length, 1);
+  assert.equal(db.optOuts[0].client_id, "cl-1");
+  assert.equal(db.optOuts[0].channel, "sms");
+  assert.equal(db.optOuts[0].opted_in_at, null);
+});
+
+test("message.inbound STOPALL: also records opt-out (case-insensitive)", async () => {
+  const db = pgFake();
+  db.clients.push({ id: "cl-2", org_id: "org-1", phone: "+15550000001" });
+  await onMessageInbound(ev("message.inbound", { from: "+15550000001", body: "stopall", sid: "SM3", channel: "sms", source: "twilio" }), db);
+  assert.equal(db.optOuts.length, 1);
+});
+
+test("message.inbound START: sets opted_in_at (resumes after prior STOP)", async () => {
+  const db = pgFake();
+  db.clients.push({ id: "cl-1", org_id: "org-1", phone: "+15551234567" });
+  // First opt out
+  await onMessageInbound(ev("message.inbound", { from: "+15551234567", body: "STOP", sid: "SM4", channel: "sms", source: "twilio" }), db);
+  assert.equal(db.optOuts[0].opted_in_at, null, "opted out");
+  // Then opt back in
+  await onMessageInbound(ev("message.inbound", { from: "+15551234567", body: "START", sid: "SM5", channel: "sms", source: "twilio" }), db);
+  assert.notEqual(db.optOuts[0].opted_in_at, null, "opted back in");
+});
+
+test("message.inbound: non-STOP body does not create opt-out row", async () => {
+  const db = pgFake();
+  db.clients.push({ id: "cl-1", org_id: "org-1", phone: "+15551234567" });
+  await onMessageInbound(ev("message.inbound", { from: "+15551234567", body: "Hello there!", sid: "SM6", channel: "sms", source: "twilio" }), db);
+  assert.equal(db.optOuts.length, 0);
+  assert.equal(db.messages.length, 1, "normal message still logged");
+});
+
+test("message.inbound STOP: unknown sender (no client match) does not crash", async () => {
+  const db = pgFake();
+  // No clients seeded — should resolve clientId to null and skip opt-out silently
+  await onMessageInbound(ev("message.inbound", { from: "+19999999999", body: "STOP", sid: "SM7", channel: "sms", source: "twilio" }), db);
+  assert.equal(db.optOuts.length, 0);
 });
