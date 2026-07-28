@@ -112,6 +112,34 @@ test("survey.submitted merges answers; diagnostic.paid + decision.rendered stamp
   assert.equal(c.outcome_tier, "FULL_FUNDING");
 });
 
+// workflow-migration-table.md, "Adjacent bug": analyzer_prequal_amount had NO writer
+// anywhere in the codebase, so every template merging {{contact.analyzer_prequal_amount}}
+// (the AI-SET-03 and AI-SET-04 pre-approval SMS copy) rendered it empty. onDecisionRendered
+// wrote only total_funding_estimate. Both mirror the one figure decision.rendered carries.
+test("decision.rendered writes analyzer_prequal_amount, not just total_funding_estimate", async () => {
+  const db = pgFake();
+  await onDecisionRendered(ev("decision.rendered", { email: "a@b.com", outcomeTier: "FULL_FUNDING", fundingEstimate: 50000 }), db);
+  const cf = db.clients[0].custom_fields;
+  assert.equal(cf.analyzer_prequal_amount, 50000, "the field every pre-approval template merges must be written");
+  assert.equal(cf.total_funding_estimate, 50000, "and the existing writer must not regress");
+});
+
+// Guard on the `!= null` gate this fix deliberately keeps: a decision carrying no dollar
+// figure must not stamp a blank pre-approval onto the client, or the AI-SET copy claims a
+// $0 pre-approval. Unlike the test above this cannot fail against pre-fix code — the gate
+// is pre-existing — so it earns its place by discriminating instead: `fundingEstimate` is
+// explicitly null (not merely absent, which JSON.stringify would silently drop, making the
+// assertion vacuous), and it asserts key ABSENCE, since assert.equal treats null and
+// undefined as equal. Drop the gate and this fails.
+test("decision.rendered with a null fundingEstimate writes neither money field", async () => {
+  const db = pgFake();
+  await onDecisionRendered(ev("decision.rendered", { email: "a@b.com", outcomeTier: "REPAIR_ONLY", fundingEstimate: null }), db);
+  const cf = db.clients[0].custom_fields || {};
+  const has = (k) => Object.prototype.hasOwnProperty.call(cf, k);
+  assert.equal(has("analyzer_prequal_amount"), false, "a null estimate must not be written as a pre-approval");
+  assert.equal(has("total_funding_estimate"), false);
+});
+
 test("analysis.completed: stores crs_result once, idempotent by event id", async () => {
   const db = pgFake();
   const e = ev("analysis.completed", { email: "a@b.com", outcomeTier: "REPAIR_ONLY", scores: { ex: 610 } }, { id: "evt-crs-1" });

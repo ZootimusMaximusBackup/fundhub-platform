@@ -13,6 +13,37 @@
 import { isOptedOut } from "../lib/opt-out.mjs";
 import { renderTemplate } from "../lib/render-template.mjs";
 
+// Merge-tag context for the ported GHL copy, which merges `{{contact.*}}` — first name,
+// business name, the pre-approval amount. Every call site in src/workflows passes no
+// `context`, so without this those tags resolve to nothing (and before the renderer fix
+// they rendered literally, braces and all, into live SMS and email).
+//
+// Sourced from the client record: the identity columns off `clients`, plus the
+// custom_fields jsonb that holds the 252 ported GHL fields — which is where
+// analyzer_prequal_amount and the rest of `contact.*` actually live. Columns are spread
+// last so a stale same-named custom field can't shadow real identity data.
+async function clientContext(db, clientId) {
+  if (!clientId) return {};
+  const r = await db.query(
+    `SELECT first_name, last_name, email, phone, custom_fields FROM clients WHERE id = $1 LIMIT 1`,
+    [clientId]
+  );
+  const c = r.rows[0];
+  if (!c) return {};
+  const fullName = [c.first_name, c.last_name].filter(Boolean).join(" ") || null;
+  return {
+    contact: {
+      ...(c.custom_fields || {}),
+      first_name: c.first_name ?? null,
+      last_name: c.last_name ?? null,
+      name: fullName,
+      full_name: fullName,
+      email: c.email ?? null,
+      phone: c.phone ?? null
+    }
+  };
+}
+
 export async function sendTemplated(db, { orgId, clientId, channel, templateKey, eventId, context = {} }) {
   // TCPA / suppression guard: skip opted-out contacts before touching any template.
   if (clientId && channel === "sms") {
@@ -30,7 +61,14 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
   const row = tpl.rows[0];
   if (!row) return { sent: false, reason: "template_pending" };
 
-  const rendered = renderTemplate(row.body, context);
+  // Loaded only once a real template exists — a template_pending no-op costs no query.
+  // An explicitly-passed `context` wins over the record, so a caller can still override.
+  const base = await clientContext(db, clientId);
+  const rendered = renderTemplate(row.body, {
+    ...base,
+    ...context,
+    contact: { ...(base.contact || {}), ...(context.contact || {}) }
+  });
   const providerRef = `workflow:${templateKey}:${eventId}`;
   await db.query(
     `INSERT INTO messages (org_id, client_id, direction, channel, template_key, rendered_body, provider, provider_ref, status, compliance_check_passed)

@@ -146,7 +146,23 @@ export async function onDecisionRendered(event, db) {
     await db.query(`UPDATE clients SET outcome_tier = $2 WHERE id = $1`, [clientId, p.outcomeTier]);
   }
   if (p.fundingEstimate != null) {
-    await mergeCustomFields(db, clientId, { total_funding_estimate: p.fundingEstimate });
+    // `analyzer_prequal_amount` had no writer anywhere in the codebase (see the "Adjacent
+    // bug" note in workflow-migration-table.md), so the AI-SET-03 and AI-SET-04 SMS copy —
+    // "you've been pre-approved for {{contact.analyzer_prequal_amount}} in capital" — merged
+    // an always-empty field. Fixed here rather than by repointing the templates at
+    // total_funding_estimate: db/schema/005 and the GHL custom-field map both carry
+    // analyzer_prequal_amount as its own MONETORY field, and that ported copy is already
+    // flagged for a rewrite pass — changing its merge tag now would collide with that.
+    //
+    // Both mirror one figure: decision.rendered carries a single dollar amount
+    // (crs.mjs:mapToCanonical → payload.fundingEstimate), so both are written from it.
+    // Stored raw, like total_funding_estimate — consumers format (public/dashboard.html
+    // uses fmtMoney). Display formatting for the merge tag belongs with the AI-SET copy
+    // rewrite, not invented here.
+    await mergeCustomFields(db, clientId, {
+      total_funding_estimate: p.fundingEstimate,
+      analyzer_prequal_amount: p.fundingEstimate
+    });
   }
 }
 
