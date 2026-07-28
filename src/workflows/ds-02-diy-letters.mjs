@@ -23,7 +23,7 @@ import { createInvoice, depositKey } from "../invoices/index.mjs";
 
 export const EMAIL_TEMPLATE_KEY = "EMAIL-DS02-DIY-LETTERS-READY";
 const SOURCE_WORKFLOW = "ds-02-diy-letters";
-const DELIVER_LETTERS_URL = process.env.UIQ_DELIVER_LETTERS_URL || "https://underwrite-iq-lite.vercel.app/api/lite/deliver-letters";
+export const DELIVER_LETTERS_URL = process.env.UIQ_DELIVER_LETTERS_URL || "https://underwrite-iq-lite.vercel.app/api/lite/deliver-letters";
 
 function isDiyProduct(productName) {
   const n = String(productName || "").toLowerCase();

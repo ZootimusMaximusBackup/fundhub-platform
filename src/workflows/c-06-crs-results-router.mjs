@@ -16,6 +16,7 @@ import { resolveOutcomeTier, isFundingPath, isRepairOnlyPath } from "../config/p
 import { addTags } from "./tags.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { sendTemplated } from "./messaging.mjs";
+import { DELIVER_LETTERS_URL } from "./ds-02-diy-letters.mjs";
 
 export const DECLINE_EMAIL_TEMPLATE_KEY = "EMAIL-C06-DECLINE";
 export const DECLINE_SMS_TEMPLATE_KEY = "SMS-C06-DECLINE";
@@ -44,9 +45,18 @@ function hasResults(payload) {
 // action below is already in place and the branch starts working.
 export const HARD_DECLINE_SIGNALS_DEFERRED = true;
 
-export function isHardDecline(_payload) {
-  if (HARD_DECLINE_SIGNALS_DEFERRED) return false; // no-op until the signal map exists
+// Placeholder — CRS onboarding will replace this body with the real signal map (doc
+// 4232). `deferred`/`signalMap` are injectable purely so the flag-gating in
+// isHardDecline can be proven under test end to end (flip the flag, plug in a stand-in
+// map) without inventing a threshold in production code: HARD_DECLINE_SIGNALS_DEFERRED
+// is a `const`, so nothing outside this module can flip it directly.
+function defaultHardDeclineSignalMap(_payload) {
   return false;
+}
+
+export function isHardDecline(payload, { deferred = HARD_DECLINE_SIGNALS_DEFERRED, signalMap = defaultHardDeclineSignalMap } = {}) {
+  if (deferred) return false; // no-op until the signal map exists
+  return Boolean(signalMap(payload));
 }
 
 async function createDeclineTaskOnce(db, { orgId, clientId, eventId }) {
@@ -64,9 +74,41 @@ async function createDeclineTaskOnce(db, { orgId, clientId, eventId }) {
   return { created: true };
 }
 
+// Row 20 (workflow-migration-table.md): the FUNDING branch never fired the deliver-
+// letters webhook with the funding letter set. Reuses ds-02's DELIVER_LETTERS_URL —
+// same webhook, `letterSet` is what tells UnderwriteIQ-lite which pack to send.
+async function deliverFundingLetters(fetchImpl, { clientId, orgId }) {
+  if (typeof fetchImpl !== "function") return { delivered: false, reason: "no_fetch_available" };
+  try {
+    const res = await fetchImpl(DELIVER_LETTERS_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ clientId, orgId, letterSet: "funding" })
+    });
+    return { delivered: Boolean(res && res.ok), status: res?.status };
+  } catch (err) {
+    return { delivered: false, error: String(err?.message || err) };
+  }
+}
+
+async function deliverFundingLettersOnce(db, fetchImpl, { clientId, orgId, eventId }) {
+  const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
+  if (r.rows[0]?.custom_fields?.funding_letters_delivered_event_id === eventId) {
+    return { delivered: true, skipped: true };
+  }
+  const result = await deliverFundingLetters(fetchImpl, { clientId, orgId });
+  if (result.delivered) {
+    await db.query(`UPDATE clients SET custom_fields = custom_fields || $2::jsonb WHERE id = $1`,
+      [clientId, JSON.stringify({ funding_letters_delivered_event_id: eventId })]);
+  }
+  return result;
+}
+
 // `detectDecline` is injectable purely so the wiring below can be proven under test
 // without inventing a threshold in production code. Default is the deferred no-op.
-export async function handle({ event, db, step, detectDecline = isHardDecline }) {
+// `fetchImpl` defaults to global fetch (mirrors ds-02) so tests can supply a fake
+// instead of making a real network call.
+export async function handle({ event, db, step, detectDecline = isHardDecline, fetchImpl = globalThis.fetch }) {
   if (event.payload?.source !== "crs") return { done: false, reason: "not_crs_source" };
 
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
@@ -97,7 +139,9 @@ export async function handle({ event, db, step, detectDecline = isHardDecline })
   const outcomeTier = await step.run("check-product-path", () => resolveOutcomeTier(db, clientId, event.payload));
   if (isFundingPath(outcomeTier)) {
     await step.run("tag-path-funding", () => addTags(db, clientId, ["path:funding"]));
-    return { done: true, branch: "funding" };
+    const delivery = await step.run("deliver-funding-letters", () =>
+      deliverFundingLettersOnce(db, fetchImpl, { clientId, orgId: event.orgId, eventId: event.id }));
+    return { done: true, branch: "funding", delivery };
   }
   if (isRepairOnlyPath(outcomeTier)) {
     await step.run("tag-path-repair", () => addTags(db, clientId, ["path:repair"]));
