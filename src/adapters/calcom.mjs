@@ -91,6 +91,7 @@ export async function handleCalcomWebhook({ db, rawBody, signatureHeader, secret
     const payload = {
       bookingUid: evt.bookingUid,
       startTime: evt.startTime,
+      endTime: evt.endTime,
       email: evt.email,
       name: evt.name,
       source: "calcom"

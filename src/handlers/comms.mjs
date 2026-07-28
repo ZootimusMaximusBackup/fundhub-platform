@@ -103,7 +103,8 @@ export async function onBookingCreated(event, db) {
   if (uid && dup.rows[0]) return;
   await db.query(
     `INSERT INTO tasks (org_id, client_id, title, body, due_at, source_workflow)
-     VALUES ($1,$2,$3,$4,$5,'calcom')`,
+     VALUES ($1,$2,$3,$4,$5,'calcom')
+     ON CONFLICT DO NOTHING`,
     [event.orgId, clientId, "Strategy session booked", uid, p.startTime || null]
   );
 }

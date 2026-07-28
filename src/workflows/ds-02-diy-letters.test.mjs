@@ -28,10 +28,34 @@ test("HARD RULE 1 — NEVER fires on the funding route, even for the DIY product
     db, step: fakeStep(), fetchImpl: fakeFetch(true)
   });
   assert.equal(res.done, false);
-  assert.equal(res.reason, "blocked_funding_route:FULL_FUNDING");
+  assert.match(res.reason, /^blocked_not_repair_only:/);
   assert.equal(db.messages.length, 0);
   assert.equal(db.tasks.length, 0);
   assert.equal(db.clients[0].tags, undefined, "never tagged client:diy-letters on the funding route");
+});
+
+test("HARD RULE 1 — fail-closed: null tier (pre-CRS) must NOT send DIY letters", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: null, custom_fields: {} }], templates: withTemplate() });
+  const res = await handle({
+    event: ev("payment.received", { productName: "Consulting Services Package", amount: 1000 }, { clientId: "cl-1" }),
+    db, step: fakeStep(), fetchImpl: fakeFetch(true)
+  });
+  assert.equal(res.done, false);
+  assert.match(res.reason, /blocked_not_repair_only:null/);
+  assert.equal(db.messages.length, 0, "no email on null tier");
+  assert.equal(db.tasks.length, 0, "no task on null tier");
+});
+
+test("HARD RULE 1 — fail-closed: unrecognized tier must NOT send DIY letters", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FRAUD_HOLD", custom_fields: {} }], templates: withTemplate() });
+  const res = await handle({
+    event: ev("payment.received", { productName: "Consulting Services Package", amount: 1000 }, { clientId: "cl-1" }),
+    db, step: fakeStep(), fetchImpl: fakeFetch(true)
+  });
+  assert.equal(res.done, false);
+  assert.match(res.reason, /blocked_not_repair_only:FRAUD_HOLD/);
+  assert.equal(db.messages.length, 0, "no email on unrecognized tier");
+  assert.equal(db.tasks.length, 0, "no task on unrecognized tier");
 });
 
 test("branch: non-DIY product is ignored regardless of path", async () => {

@@ -15,7 +15,7 @@
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
-import { clientOutcomeTier, isFundingPath } from "../config/product-path.mjs";
+import { clientOutcomeTier, isRepairOnlyPath } from "../config/product-path.mjs";
 import { addTags } from "./tags.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
@@ -79,9 +79,9 @@ export async function handle({ event, db, step, fetchImpl = globalThis.fetch }) 
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
 
-  // HARD RULE 1 — the funding route must never reach here.
+  // HARD RULE 1 — only REPAIR_ONLY gets DIY letters. Fail closed: null/unknown tier = do NOT send.
   const outcomeTier = await step.run("check-product-path", () => clientOutcomeTier(db, clientId));
-  if (isFundingPath(outcomeTier)) return { done: false, reason: `blocked_funding_route:${outcomeTier}` };
+  if (!isRepairOnlyPath(outcomeTier)) return { done: false, reason: `blocked_not_repair_only:${outcomeTier ?? "null"}` };
 
   const orgId = event.orgId;
   const eventId = event.id;

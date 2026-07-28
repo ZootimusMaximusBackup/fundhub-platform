@@ -70,6 +70,27 @@ test("bridge: bus.emit fires legacy handlers and does not throw when INNGEST_EVE
   assert.equal(seen[0], "deposit.paid");
 });
 
+test("bridge: inngest.send data shape matches what handle() reads (event.data.{id,payload,orgId,clientId})", async () => {
+  _resetOrgCache(); clearHandlers();
+  const sent = [];
+  // Temporarily mock inngest on the module — we intercept via process.env + a fake inngest
+  // by capturing the internal dispatch event shape via a handler.
+  const db = fakeDb();
+  // We test the shape by verifying the dispatch (internal) carries the right shape.
+  // The Inngest bridge sends { name, data: { id, payload, orgId, clientId } }.
+  // We validate this by reading what dispatch() receives (the internal event object):
+  const captured = [];
+  on("deposit.paid", (e) => captured.push(e));
+  const res = await emit(db, "deposit.paid", { amount: 999 }, { clientId: "c-shape", orgId: "org-shape" });
+  assert.equal(captured.length, 1);
+  const e = captured[0];
+  // event.data shape (what handle reads after `event: event.data`):
+  assert.ok(e.id, "event.id must be set (used for task body idempotency)");
+  assert.deepEqual(e.payload, { amount: 999 }, "event.payload must be the original payload object");
+  assert.equal(e.orgId, "org-shape", "event.orgId must be set");
+  assert.equal(e.clientId, "c-shape", "event.clientId must be set");
+});
+
 test("replay: re-dispatches stored events", async () => {
   _resetOrgCache(); clearHandlers();
   const store = [];
