@@ -10,8 +10,13 @@ const withStages = () => ({
   ]
 });
 
+// NOT gated on dpc03_awaiting_decision — that field is the dead flag the fix removed
+// (nothing in the repo ever writes it). Setting it here would make this test pass
+// identically on the pre-fix `isDpc03Context` gate too, masking the regression it's
+// meant to prove is gone. Leaving custom_fields empty means this only passes because
+// the call-state disambiguation (doc 3576-3578) lets a plain YES through on its own.
 test("happy path: YES reply creates the contract task and moves to closed", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+15551234567", custom_fields: { dpc03_awaiting_decision: true } }], ...withStages() });
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+15551234567", custom_fields: {} }], ...withStages() });
   const res = await handle({ event: ev("message.inbound", { from: "+15551234567", body: "YES let's do it" }), db, step: fakeStep() });
   assert.equal(res.decision, "yes");
   assert.equal(res.task.created, true);

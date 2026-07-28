@@ -78,6 +78,23 @@ test("branch: pending copy — template not seeded yet, safe no-op", async () =>
   assert.equal(res.sms.reason, "template_pending");
 });
 
+// workflow-migration-table.md row 25: the "never fires on the funding route" guard reads
+// clients.outcome_tier, which is unwritten at call.completed (decision.rendered — the
+// only handler that writes it — hasn't fired yet at that point in the real event order).
+// NOT fixed here — that's the open Stage-5 Sales Outcome signal question, and the trigger
+// stays as-is per instruction. Every other test in this file pre-seeds a non-null tier,
+// which masks this: this locks in what handle() actually does today on the real,
+// genuinely-null-at-call-time shape, so the gap stays visible instead of hidden by fixture.
+test("DS-01 — outcome_tier is genuinely null at call.completed: locks in current (unfixed) behavior", async () => {
+  const db = pgFake({ clients: client({ outcome_tier: null }), templates: withTemplates() });
+  const res = await handle({ event: ev("call.completed", referral(), { clientId: "cl-1" }), db, step: fakeStep() });
+  // isFundingPath(null) is false, so the guard does not block — DS-01 proceeds and sends
+  // the repair referral even though the real tier is still unknown at this point.
+  assert.equal(res.done, true);
+  assert.equal(db.messages.length, 2);
+  assert.equal(db.clients[0].custom_fields.product_path, "Referred");
+});
+
 test("duplicate delivery: replaying the same event does not double-send", async () => {
   const db = pgFake({ clients: client(), templates: withTemplates() });
   const event = ev("call.completed", referral(), { id: "evt-dup-ds01", clientId: "cl-1" });
