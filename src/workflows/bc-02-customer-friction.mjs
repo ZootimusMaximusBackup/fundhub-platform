@@ -17,9 +17,13 @@ import { resolveClient } from "../handlers/client-lifecycle.mjs";
 
 export const FRICTION = { high: 1.0, medium: 0.5, low: 0.0 };
 
+// Priority order is the doc's (05/30 lines 787-825). call:no_show was missing from this
+// router entirely, so a no-show fell through to "low" — the opposite of doc line 794,
+// which sets Customer Friction Level = High and exits.
 function classifyFriction(tags) {
   const t = tags || [];
   if (t.includes("ar:collections")) return "high";
+  if (t.includes("call:no_show")) return "high";
   if (t.includes("docs:missing") || t.includes("ops:action-required")) return "medium";
   return "low";
 }

@@ -190,7 +190,17 @@ export function normalizeMailgunEvent(body) {
     b.message_id ||
     null;
 
-  return { timestamp, token, signature, subject, from, text, messageId };
+  // The recipient is what identifies WHICH client this bank email belongs to: F-10
+  // provisions a per-client forwarding address `monitor+<clientId>@fundhub.ai`
+  // (f-10-client-funding-inbox-provisioner.mjs:50). Without it, mail.response carries
+  // nothing that resolves a contact and every downstream workflow (F-06, F-09, F-11)
+  // exits `no_client` — they were dead on the real event.
+  const recipient =
+    b.recipient || b.to || b.To ||
+    (b["event-data"] && b["event-data"].recipient) ||
+    null;
+
+  return { timestamp, token, signature, subject, from, text, messageId, recipient };
 }
 
 // ---------------------------------------------------------------------------
@@ -199,6 +209,25 @@ export function normalizeMailgunEvent(body) {
 export function mapToCanonical(evt) {
   // An inbound bank email always maps to mail.response
   return [{ name: "mail.response" }];
+}
+
+// Resolve the client from the forwarding recipient. Prefers the deterministic
+// `monitor+<clientId>@` plus-address F-10 mints, then falls back to a lookup on the
+// stored funding_email_forwarding_address for any address minted another way.
+export function clientIdFromRecipient(recipient) {
+  const m = /\+([0-9a-zA-Z-]+)@/.exec(String(recipient || ""));
+  return m ? m[1] : null;
+}
+
+export async function resolveClientFromRecipient(db, recipient) {
+  if (!recipient) return null;
+  const fromPlus = clientIdFromRecipient(recipient);
+  if (fromPlus) return fromPlus;
+  const r = await db.query(
+    `SELECT id FROM clients WHERE custom_fields->>'funding_email_forwarding_address' = $1 LIMIT 1`,
+    [String(recipient).trim().toLowerCase()]
+  );
+  return r.rows[0]?.id || null;
 }
 
 // ---------------------------------------------------------------------------
@@ -224,16 +253,19 @@ export async function handleMailgunWebhook({ db, body, signingKey }) {
 
   const canonical = mapToCanonical(evt);
   const emitted = [];
+  const clientId = await resolveClientFromRecipient(db, evt.recipient);
 
   for (const c of canonical) {
     const payload = {
       classification,
       from: evt.from,
+      to: evt.recipient,
       subject: evt.subject,
+      clientId,
       source: "mailgun"
     };
     const idKey = evt.messageId ? `mailgun:${evt.messageId}:${c.name}` : undefined;
-    const res = await emit(db, c.name, payload, { idempotencyKey: idKey });
+    const res = await emit(db, c.name, payload, { idempotencyKey: idKey, clientId: clientId || undefined });
     emitted.push({ name: c.name, id: res.id, deduped: res.deduped });
   }
 

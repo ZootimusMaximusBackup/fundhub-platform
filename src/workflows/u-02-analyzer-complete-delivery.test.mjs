@@ -32,13 +32,22 @@ test("sends the funding delivery from the payload tier when the column is not wr
   assert.equal(db.clients[0].custom_fields.funding_delivery_sent, true);
 });
 
-test("branch: repair path sends the repair letter pack delivery", async () => {
+// REGRESSION (05/30 doc 79-84): the repair letter pack is the PAID DIY product ($1,000
+// default) and ships only from DS-02 behind the cf_diy_paid gate. This branch used to
+// email it the moment the CRS pull returned — giving the paid product away for free,
+// before any invoice existed. U-02 must tag and route only.
+test("REGRESSION: repair path tags but never ships the paid deliverable for free", async () => {
   const db = pgFake({
     clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }],
+    // template deliberately present and sendable — the guard must be the branch, not a missing template
     templates: [{ org_id: "org-1", template_key: REPAIR_EMAIL_TEMPLATE_KEY, channel: "email", body: "repair letters", compliance_passed: true }]
   });
   const res = await handle({ event: ev("analysis.completed", {}, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.branch, "repair");
+  assert.equal(res.delivered, false);
+  assert.equal(db.messages.length, 0, "no repair deliverable may send before DS-02's payment gate");
+  assert.equal(db.clients[0].custom_fields.repair_delivery_sent, undefined);
+  assert.ok(db.clients[0].tags.includes("path:repair"), "still routes the client to the repair lane");
 });
 
 test("branch: missing identity tags data-incomplete + creates a task, no send", async () => {

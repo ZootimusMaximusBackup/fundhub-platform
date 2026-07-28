@@ -37,17 +37,24 @@ async function findClientByPhone(db, orgId, phone) {
 function parseDecision(body) {
   const b = String(body || "").trim().toLowerCase();
   // "stop" is a telco opt-out keyword — must not be consumed here (handled at carrier
-  // layer). "yes" must only fire in DPC-03's own context (see dpc03_awaiting_decision
-  // gate below) to avoid colliding with AI-SET-03's "reply YES to rebook" path.
+  // layer). YES is disambiguated downstream by call state (doc 3576-3578), not here.
   if (/\byes\b/.test(b)) return "yes";
   if (/\breschedule\b/.test(b)) return "reschedule";
-  if (/\bclose\b|\bno\b/.test(b)) return "close_file";
+  // 05/30 doc line 3560 lists CLOSE as the only close-file keyword. The bare "no" was
+  // invented by this port and is far too broad — "no thanks", "no worries", "not today"
+  // all matched, closing the file and stripping nurture off an ordinary reply.
+  if (/\bclose\b/.test(b)) return "close_file";
   return null;
 }
 
-async function isDpc03Context(db, clientId) {
+// 05/30 doc 3576-3578 disambiguates YES by CALL STATE, not by a context flag: when
+// cf_call_outcome is still "booked" a YES is a call confirmation, otherwise it is the
+// purchase decision. The old gate read `dpc03_awaiting_decision`, a field NOTHING in the
+// repo ever writes — so the YES purchase branch was permanently unreachable.
+async function callState(db, clientId) {
   const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
-  return Boolean(r.rows[0]?.custom_fields?.dpc03_awaiting_decision);
+  const cf = r.rows[0]?.custom_fields || {};
+  return { callOutcome: cf.call_outcome || null, hardStopped: Boolean(cf.hard_stop_reason) };
 }
 
 async function createTaskOnce(db, { orgId, clientId, eventId, title, source }) {
@@ -69,11 +76,20 @@ export async function handle({ event, db, step }) {
   const clientId = event.clientId || await step.run("resolve-client", () => findClientByPhone(db, event.orgId, event.payload?.from));
   if (!clientId) return { done: false, reason: "no_client" };
 
-  // "yes" is ambiguous across workflows — only act when DPC-03 set the context flag,
-  // otherwise leave it for the workflow that owns this conversation state.
-  if (decision === "yes") {
-    const inContext = await step.run("check-dpc03-context", () => isDpc03Context(db, clientId));
-    if (!inContext) return { done: false, reason: "not_in_dpc03_context" };
+  const state = await step.run("check-call-state", () => callState(db, clientId));
+
+  // Doc 179 + Part B 154: a hard-stopped contact is out of the pipeline. DPC-04's
+  // contract+payment task was merged into this file without that gate, so a fraud or
+  // collections contact could still trigger it off an SMS.
+  if (state.hardStopped) return { done: false, reason: "hard_stopped" };
+
+  // YES while the call is still booked is a CALL CONFIRMATION (doc 3576-3578), not a
+  // purchase decision — confirm the appointment and stop, do not close the sale.
+  if (decision === "yes" && state.callOutcome === "booked") {
+    await step.run("set-call-confirmed", () => mergeCustomFields(db, clientId, {
+      call_confirmed: true, last_progress_timestamp: new Date().toISOString()
+    }));
+    return { done: true, decision: "call_confirmed" };
   }
 
   const orgId = event.orgId;

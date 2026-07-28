@@ -6,7 +6,9 @@ import {
   classifyBankEmail,
   normalizeMailgunEvent,
   mapToCanonical,
-  handleMailgunWebhook
+  handleMailgunWebhook,
+  clientIdFromRecipient,
+  resolveClientFromRecipient
 } from "./mailgun.mjs";
 import { _resetOrgCache } from "../events/bus.mjs";
 import { on, clearHandlers } from "../events/registry.mjs";
@@ -20,7 +22,7 @@ function fakeDb({ dedup = false, store = [] } = {}) {
       if (/INSERT INTO events/.test(sql)) {
         if (dedup) return { rows: [] };
         const row = { id: `evt-${++n}` };
-        store.push({ ...row, name: params[1], payload: params[5] });
+        store.push({ ...row, name: params[1], clientId: params[4], payload: params[5] });
         return { rows: [row] };
       }
       return { rows: [] };
@@ -252,4 +254,48 @@ test("handleMailgunWebhook: APPROVED email dispatches with APPROVED classificati
   const body = makeBody({ subject: "Congratulations — your line of credit is approved!" });
   await handleMailgunWebhook({ db: fakeDb(), body, signingKey: SIGNING_KEY });
   assert.deepEqual(seen, ["APPROVED"]);
+});
+
+// --- contact resolution (unblocks F-06 / F-09 / F-11) -----------------------
+// REGRESSION: mail.response used to carry nothing that identified a contact, so every
+// downstream workflow exited `no_client` and the whole bank-email lane was dead on the
+// real event. F-10 mints `monitor+<clientId>@fundhub.ai` per client — that plus-address
+// is the identifier.
+
+test("clientIdFromRecipient: extracts the client id from F-10's plus-address", () => {
+  assert.equal(clientIdFromRecipient("monitor+cl-123@fundhub.ai"), "cl-123");
+  assert.equal(clientIdFromRecipient("monitor+abc-DEF-9@fundhub.ai"), "abc-DEF-9");
+  assert.equal(clientIdFromRecipient("plain@fundhub.ai"), null);
+  assert.equal(clientIdFromRecipient(null), null);
+});
+
+test("resolveClientFromRecipient: falls back to the stored forwarding address", async () => {
+  const db = { async query(sql, params) {
+    assert.match(sql, /funding_email_forwarding_address/);
+    return { rows: params[0] === "bank@fundhub.ai" ? [{ id: "cl-9" }] : [] };
+  } };
+  assert.equal(await resolveClientFromRecipient(db, "bank@fundhub.ai"), "cl-9");
+  assert.equal(await resolveClientFromRecipient(db, "nobody@fundhub.ai"), null);
+  assert.equal(await resolveClientFromRecipient(db, null), null);
+});
+
+test("REGRESSION: mail.response now carries a clientId the downstream workflows can use", async () => {
+  const store = [];
+  const db = fakeDb({ store });
+  const res = await handleMailgunWebhook({
+    db,
+    body: {
+      recipient: "monitor+cl-777@fundhub.ai",
+      sender: "notifications@bank.com",
+      subject: "Additional documents required",
+      "body-plain": "Please upload your bank statements.",
+      "Message-Id": "<resolve-1@bank.com>"
+    }
+  });
+  assert.equal(res.ok, true);
+  const ev = store.find((e) => e.name === "mail.response");
+  assert.ok(ev, "mail.response emitted");
+  assert.equal(ev.payload.clientId, "cl-777", "payload carries the resolved contact");
+  assert.equal(ev.clientId, "cl-777", "event row is linked to the client");
+  assert.equal(ev.payload.to, "monitor+cl-777@fundhub.ai");
 });
