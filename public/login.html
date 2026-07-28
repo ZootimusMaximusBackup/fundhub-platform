@@ -9,14 +9,15 @@
 <div class="login-box">
   <div class="card">
     <h1>fundhub matrix</h1>
-    <p class="sub" style="margin:0">Staff sign in</p>
+    <p class="sub" style="margin:0">Sign in</p>
     <div class="err" id="err"></div>
     <form id="f">
       <input id="email" type="email" placeholder="email" autocomplete="username" required>
       <input id="pw" type="password" placeholder="password" autocomplete="current-password" required>
       <button class="btn primary" id="go" type="submit">Sign in</button>
     </form>
-    <p class="note">No account? An owner/admin creates logins — ask Chris.</p>
+    <p class="note">Accounts are created by the Fundhub team. Client, affiliate, and partner sign-in arrives with the portal rollout.</p>
+    <p class="note"><a href="/" style="text-decoration:underline">← Back to fundhub.ai</a></p>
   </div>
 </div>
 <script src="/fh.js"></script>
@@ -40,7 +41,7 @@ document.getElementById("f").addEventListener("submit", async (e) => {
   }
   localStorage.setItem("fh_token", data.token);
   const next = new URLSearchParams(location.search).get("next");
-  location.href = next && next.startsWith("/") ? next : "/index.html";
+  location.href = next && next.startsWith("/") ? next : "/app.html";
 });
 </script>
 </body></html>

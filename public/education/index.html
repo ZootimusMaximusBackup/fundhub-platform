@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0A0A0A">
+<title>Fundhub Education | Credit and Capital, Taught Properly</title>
+<meta name="description" content="Fundhub Education builds self-paced programs that teach how consumer credit, business credit, and lending actually work. Education only. You do the work yourself.">
+<link rel="canonical" href="https://tryfundhub.com/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+html,body{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;overflow-x:hidden!important;background:#FCFCFC!important}
+*{box-sizing:border-box;margin:0;padding:0}
+.fh-root{--paper:#FCFCFC;--ink:#0A0A0A;--gray:#52525B;--gray2:#A1A1AA;--line:#E4E4E7;--soft:#F4F4F5;--card:#111113;--cardline:#26262B;--cardtext:#E4E4E7;
+--coral:#F2A69B;--peach:#F5CE8F;--sage:#A8D8B0;--powder:#A9C6E8;--lav:#C4B3E5;
+--spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
+--mono:'JetBrains Mono',ui-monospace,monospace;--sans:'Inter',system-ui,sans-serif;
+font-family:var(--sans);color:var(--ink);background:var(--paper);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.fh-root ::selection{background:var(--lav);color:var(--ink)}
+.fh-root a{color:inherit;text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+.fh-logo{display:inline-block;background:url(data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjI2OTguMTQ4NDcxcHQiIGhlaWdodD0iNTQyLjk3ODc1OXB0IiB2aWV3Qm94PSIwIDAgMjY5OC4xNDg0NzEgNTQyLjk3ODc1OSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgbWVldCI+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTE0Mi4wMDAwMDAsNjkxLjkwMjU0NSkgc2NhbGUoMC4xMDAwMDAsLTAuMTAwMDAwKSIgZmlsbD0iIzBBMEEwQSIgc3Ryb2tlPSJub25lIj48cGF0aCBkPSJNMjc4MCA2OTA1IGMtMTAxIC0yMyAtMTg3IC01MyAtMjc1IC05NiAtMjY3IC0xMzMgLTQ1MyAtMzQyIC01NTYgLTYyNCAtNTQgLTE1MCAtNjEgLTIxMiAtNjYgLTU2NSAtMyAtMjMzIC03IC0zMTYgLTE2IC0zMjIgLTcgLTQgLTEwMiAtOCAtMjEzIC04IC0xODIgMCAtMjAyIC0yIC0yMTcgLTE4IC0xNSAtMTcgLTE3IC02NiAtMTcgLTQ5MyAwIC0zNTYgMyAtNDc4IDEyIC00ODcgOSAtOSA3MSAtMTIgMjE4IC0xMiAxNDcgMCAyMDkgLTMgMjE4IC0xMiA5IC05IDEyIC0zMTYgMTIgLTEzMTcgMSAtMTA3MCAzIC0xMzA5IDE0IC0xMzIzIDEyIC0xNyA1MCAtMTggNTMzIC0xOCAzOTAgMCA1MjIgMyA1MzEgMTIgOSA5IDEyIDMxNSAxMiAxMzE2IDAgODc5IDMgMTMxMCAxMCAxMzIzIDEwIDE4IDIzIDE5IDIyNSAxOSAyMTAgMCAyMTQgMCAyMjkgMjIgMTQgMjAgMTYgODIgMTYgNDg0IGwwIDQ2MyAtMjYgMjAgYy0yNSAyMCAtMzkgMjEgLTIzMCAyMSAtMTkxIDAgLTIwNCAxIC0yMTQgMTkgLTYgMTIgLTEwIDEwMCAtMTAgMjE2IDAgMzAxIC01IDI5NSAyNjEgMjk1IDE2NyAwIDE4OCAyIDIwMiAxOCAxNSAxNyAxNyA2OCAxNyA1MzMgLTEgNDEyIC0zIDUxNyAtMTQgNTMyIC0xMiAxNiAtMzggMTcgLTMwNyAxNiAtMTkxIC0xIC0zMTMgLTYgLTM0OSAtMTR6Ii8+PHBhdGggZD0iTTE0MDUxIDY0MDcgYy04IC0xMCAtMTIgLTE5NiAtMTMgLTYzMiAtMyAtNTY4IC00IC02MTkgLTIwIC02MjggLTEzIC05IC0yMSAtNyAtMzUgNSAtMTggMTYgLTE4NSAxMDIgLTI1MyAxMzEgLTIyOSA5NyAtNTQ2IDEzNiAtODI1IDEwMyAtMTk4IC0yNCAtMjY0IC0zOSAtNDE0IC05OCAtMjUwIC05OCAtNDI5IC0yMTUgLTYyNSAtNDExIC03OCAtNzggLTE2MyAtMTY5IC0xODggLTIwMiAtNjMgLTg0IC0xMTggLTE2NCAtMTE4IC0xNzEgMCAtMyAtOCAtMTggLTE5IC0zMiAtNjUgLTk0IC0xNzIgLTM0MyAtMjEwIC00ODkgLTMwIC0xMTcgLTMxIC0xMjIgLTYwIC0zMzMgLTE3IC0xMjAgLTQgLTQzNyAyNCAtNjAwIDUzIC0zMDkgMjI3IC02NzIgNDM2IC05MTEgMjQwIC0yNzUgNDM4IC00MjEgNzM0IC01NDIgMTMwIC01MyAyMTggLTc1IDM4MCAtOTYgOTAgLTEyIDQ0OCAtNyA1MDAgNyAyMiA2IDY1IDE2IDk1IDIzIDEzNiAzMCAzNTkgMTIyIDQ5MiAyMDIgMjAgMTIgNTcgMzUgODIgNTAgNzIgNDQgODAgMzcgODQgLTYzIDIgLTQ2IDggLTkwIDE0IC05NyAxNSAtMTggOTc4IC0xOSA5OTYgLTEgMTcgMTcgMTcgNDc2OSAwIDQ3ODYgLTE5IDE5IC0xMDQxIDE3IC0xMDU3IC0xeiBtLTYzMCAtMjAzNSBjMTMgLTYgNDQgLTE2IDY5IC0yMyA1MyAtMTYgMTYxIC03MSAyMTAgLTEwNyAxNzAgLTEyNyAzMTkgLTMzOSAzNjggLTUyNyAyMiAtODMgMjYgLTEyNCAyNiAtMjcwIDAgLTE1NCAtMTAgLTI2MSAtMjUgLTI3MSAtNSAtMyAtOSAtMTYgLTkgLTMwIDAgLTEzIC00IC0zMiAtOCAtNDIgLTU3IC0xMTkgLTEwNCAtMjA1IC0xMzYgLTI0NiAtNjggLTg4IC0xNTkgLTE3NiAtMjMxIC0yMjUgLTc2IC01MCAtOTIgLTU5IC0xOTcgLTEwMCAtMTI0IC00OCAtMzg2IC00NiAtNTMzIDQgLTEyNSA0MyAtMjM3IDExNyAtMzM0IDIyMyAtOTAgOTggLTExOSAxNDAgLTE2NiAyMzIgLTUwIDk5IC00NyA5MCAtODQgMjM1IC0yOCAxMTEgLTMyIDI0NiAtMTEgMzgwIDE4IDExOSAyMiAxMzUgMzEgMTQxIDUgMyA5IDEzIDkgMjMgMCAzMSA3MCAxNjMgMTI1IDIzNiA2NyA4OSAxNTUgMTgwIDIyNSAyMzIgNjYgNDkgMTY1IDEwMyAxOTAgMTAzIDExIDAgMjEgNCAyNCA5IDYgOSAyOSAxNSAxMjEgMzEgNjEgMTEgMzAzIDUgMzM2IC04eiIvPjxwYXRoIGQ9Ik0xNTU0NyA2NDAyIGMtMTYgLTE3IC0xNyAtMTk3IC0xNyAtMjM4NiAwIC0xNjEzIDMgLTIzNzMgMTAgLTIzODcgMTAgLTE4IDI3IC0xOSA1MzUgLTE5IDMyMSAwIDUyNiA0IDUzMCAxMCAzIDUgNSA0MjcgNSA5MzcgMCA4OTMgNSAxMDg1IDMyIDEyNTggNDMgMjc4IDE0NiA0NTQgMzEzIDUzNiBsNzAgMzQgMTUyIDAgYzEwOCAwIDE1NiAtNCAxNjUgLTEyIDYgLTcgMjAgLTEzIDI5IC0xMyAyNiAwIDkyIC0zOCAxMzcgLTc5IDU5IC01MiAxMDUgLTEyNyAxNDUgLTIzMyAzNCAtOTAgNDIgLTExOSA2OCAtMjU4IDkgLTQ4IDE0IC0zMzggMTYgLTExMTAgMyAtNzE1IDggLTEwNDggMTUgLTEwNTcgOCAtMTAgMTIwIC0xMyA1MjggLTEzIDQzOSAwIDUxOSAyIDUzMCAxNCAxNiAyMSA5IDIzNjAgLTggMjQ1NiAtNyAzNiAtMTcgOTIgLTIzIDEyNSAtMjggMTY1IC03MiAzMDQgLTEzNCA0MzAgLTEyMiAyNDYgLTM3NiA0ODEgLTY3MCA2MTkgLTE1MiA3MiAtMTY5IDc4IC0zMjUgMTE2IC03OSAyMCAtMjUxIDMyIC0zNDYgMjYgLTIzMiAtMTYgLTM3MCAtNTEgLTU0OCAtMTQxIC0xNjEgLTgxIC0xNDcgLTEzNyAtMTQ2IDU2MSAxIDQyNiAtMiA1NzkgLTExIDU5MCAtMTAgMTIgLTk1IDE0IC01MjQgMTQgLTQ4MyAwIC01MTMgLTEgLTUyOCAtMTh6Ii8+PHBhdGggZD0iTTIyOTYyIDY0MDggYy05IC05IC0xMiAtNTU0IC0xMiAtMjM4OSAwIC0xMzA4IDMgLTIzODQgNiAtMjM5MyA1IC0xNCA1OSAtMTYgNTA0IC0xNiAzOTYgMCA1MDAgMyA1MDggMTMgNiA3IDEyIDUxIDE0IDk3IDMgODEgNCA4NSAyNSA4MyAxMiAtMiA1NSAtMjUgOTUgLTUyIDE4NCAtMTIzIDM2MCAtMTk1IDU5OCAtMjQzIDg4IC0xOCA1MTMgLTE4IDU5NSAwIDMzIDcgODMgMTggMTEwIDIzIDIyOSA0OCA1MDMgMTg2IDcwNyAzNTYgMTQ3IDEyMiAzMzcgMzQyIDQxNCA0NzggNTIgOTMgMTE4IDIyNiAxNDAgMjgyIDE0IDM3IDI5IDc3IDM0IDg4IDQgMTEgMTMgNDAgMjAgNjUgNyAyNSAxNiA1NiAyMSA3MCAxMSAzMyAzNCAxMzggNTEgMjI1IDE3IDkyIDE4IDU4OCAxIDY2NSAtNiAzMCAtMTcgODIgLTIzIDExNSAtMTYgODIgLTY2IDI1NiAtOTAgMzEwIC01IDExIC0yNiA1OCAtNDcgMTA1IC01NSAxMjMgLTEyNyAyNDcgLTIwMSAzNDYgLTExOSAxNTkgLTMyMSAzNTkgLTQ0NiA0NDMgLTIwNSAxMzggLTQxMCAyMzAgLTU5NiAyNzEgLTMwIDYgLTY4IDE1IC04NSAyMCAtOTEgMjUgLTQzMSAzMiAtNTg1IDEyIC0xMjIgLTE3IC0yMjcgLTM5IC0zMDQgLTY3IC05NiAtMzMgLTI0OCAtMTA3IC0zMTIgLTE1MCAtNDAgLTI3IC01MCAtMzAgLTU5IC0xNSAtMyA1IC02IDI4MyAtNSA2MTcgMCA1MzggLTEgNjExIC0xNSA2MzEgbC0xNiAyMiAtNTE4IDAgYy0zODkgMCAtNTIwIC0zIC01MjkgLTEyeiBtMjEyMCAtMjA0MSBjMjYgLTcgNTAgLTE2IDU0IC0yMCA0IC00IDE2IC03IDI2IC03IDEwIDAgMjcgLTQgMzggLTEwIDExIC01IDI5IC0xNCA0MCAtMjAgMTc1IC04NyAzNDYgLTI4MCA0MjAgLTQ3MSA0NyAtMTIzIDUzIC0xNTggNTcgLTM2OSA2IC0yMzYgLTEwIC0zMzAgLTgyIC00ODUgLTEwMyAtMjIxIC0yOTUgLTM5OCAtNDk1IC00NTMgLTE5IC02IC01MiAtMTYgLTc0IC0yMiAtODUgLTI3IC0zOTMgLTEyIC00NTggMjEgLTEwIDUgLTI1IDkgLTMzIDkgLTggMCAtMjMgNCAtMzMgOSAtOSA1IC00NiAyMyAtODIgNDEgLTg0IDQyIC0xMzAgNzggLTIwOCAxNTkgLTE0OSAxNTYgLTIxNCAyODEgLTI2MiA1MTEgLTE0IDY2IC04IDM3NSA4IDQzNSA2IDIyIDE0IDU0IDE4IDcwIDExIDUyIDgwIDE5MCAxMjQgMjUxIDU0IDczIDE3MCAxODkgMjMwIDIzMCAxMDIgNjggMjM3IDEyMSAzNTUgMTM4IDU2IDggMzEwIC00IDM1NyAtMTd6Ii8+PHBhdGggZD0iTTkyMTAgNTM4OCBjLTQxIC01IC05MyAtMTQgLTExNSAtMTkgLTIyIC02IC01OCAtMTUgLTgwIC0yMSAtNzggLTIwIC0yMjEgLTgzIC0zMTAgLTEzNSAtNDkgLTMwIC05NiAtNTIgLTEwNSAtNTEgLTEwIDIgLTE2IDE3IC0xOCA0MyAtNyA3OSAyNCA3NSAtNTEyIDc1IC00NDkgMCAtNDc4IC0xIC00OTMgLTE4IC0xNiAtMTcgLTE3IC0xNTggLTE3IC0xODI0IDAgLTE0OTEgMiAtMTgwNyAxMyAtMTgxNyAxOSAtMTUgMTAzNCAtMTYgMTA1MyAwIDExIDkgMTQgMTg4IDE4IDEwMzcgNCA5ODAgOCAxMTMxIDM2IDEyNjYgNDAgMTk5IDE0OCAzMzcgMzMwIDQyMiAxOSA5IDQ2IDIxIDU5IDI4IDE0IDYgNzcgMTEgMTU1IDExIDEyNyAwIDEzMyAtMSAxOTcgLTMyIDExNCAtNTYgMTk4IC0xNTAgMjQ0IC0yNzMgOSAtMjUgMjAgLTU0IDI1IC02NSAxNiAtNDMgMjkgLTkzIDQwIC0xNjAgNiAtMzggMTYgLTk0IDIxIC0xMjQgNSAtMzEgOSAtNDkzIDkgLTEwNzAgMSAtODI5IDMgLTEwMTkgMTQgLTEwMzMgMTIgLTE3IDUwIC0xOCA1MzMgLTE4IDQ0MiAwIDUyMiAyIDUzMyAxNCAxNyAyMSA4IDIzMTcgLTkgMjQyNiAtNjEgMzgyIC0xMDEgNDk4IC0yNDQgNzE1IC03NCAxMTIgLTI2MiAzMDAgLTM3MiAzNzQgLTc5IDUyIC0yOTkgMTY0IC0zNTkgMTgzIC0yMTIgNjYgLTQ0NSA5MCAtNjQ2IDY2eiIvPjxwYXRoIGQ9Ik0zODU1IDUyNjQgYy0xNSAtMTUgLTE2IC0xMTYgLTEyIC0xMTk4IDIgLTg4OCA2IC0xMTk3IDE2IC0xMjQ2IDcgLTM2IDE3IC05MCAyMiAtMTIwIDI3IC0xNDggNzcgLTI5NiAxNTAgLTQ0NSAxNTEgLTMwNyA0NjggLTU3MSA4MzQgLTY5MyAxMzcgLTQ1IDI0MSAtNjIgNDM1IC03MCAzMjggLTE0IDUyMyAzMiA3MjYgMTcwIDM5IDI2IDc3IDQ4IDg1IDQ4IDkgMCAyNCAtMjIgMzYgLTUwIGwyMSAtNTAgNDgxIDAgYzQ2NSAwIDQ4MSAxIDQ5MSAxOSA3IDEzIDEwIDU5OCAxMCAxODE5IDAgMTczMCAtMSAxODAwIC0xOCAxODE1IC0xNyAxNSAtNjggMTcgLTUyMyAxNyAtNDIwIDAgLTUwOCAtMiAtNTI1IC0xNCAtMTkgLTE0IC0xOSAtNDAgLTI1IC0xMDkzIC01IC0xMDQ5IC02IC0xMDgwIC0yNiAtMTE2MyAtNDkgLTE5OSAtOTMgLTI5MSAtMTgzIC0zODAgLTEwNCAtMTA0IC0xODIgLTEzMyAtMzY2IC0xMzIgLTEzNSAwIC0yMTIgMTkgLTI5MSA3MyAtOTcgNjcgLTE4NiAyMTkgLTIyNSAzODQgLTI4IDEyMCAtMzEgMjAyIC0zNyAxMjI2IC01IDg4MiAtOCAxMDY5IC0yMCAxMDgyIC0xMiAxNSAtNjIgMTcgLTUyNyAxNyAtNDYwIDAgLTUxNCAtMiAtNTI5IC0xNnoiLz48cGF0aCBkPSJNMTkyNDcgNTI2MiBjLTE2IC0xNyAtMTcgLTEwOSAtMTcgLTExMTggMCAtMTA1MiA1IC0xMjQ5IDMxIC0xMzg0IDM1IC0xODIgNjEgLTI3NiAxMDIgLTM3NSA0NCAtMTA3IDc4IC0xNzYgMTA5IC0yMjIgMTUgLTIzIDI4IC00NSAyOCAtNDggMCAtMTQgMTIyIC0xNTQgMTkxIC0yMjAgMjAwIC0xODkgNDk1IC0zMzUgNzc0IC0zODQgMjA1IC0zNiA1NTcgLTI2IDY3MyAyMCAxMyA1IDMwIDkgMzkgOSAzNyAwIDI4OSAxMzggMzA4IDE2OSAxMSAxOCA0NSAtNyA0NSAtMzMgMCAtMTIgMTAgLTMyIDIzIC00NCAyMyAtMjIgMjQgLTIyIDQ5NSAtMjIgNDU2IDAgNDcyIDEgNDgyIDE5IDcgMTMgMTAgNTk4IDEwIDE4MTkgMCAxNzMwIC0xIDE4MDAgLTE4IDE4MTUgLTE3IDE1IC02OCAxNyAtNTIzIDE3IC00MjAgMCAtNTA4IC0yIC01MjUgLTE0IC0xOSAtMTQgLTE5IC00MCAtMjUgLTEwODggLTcgLTExMTkgLTYgLTExMDAgLTQ4IC0xMjQ4IC01IC0xOSAtMTMgLTQ2IC0xNiAtNjAgLTI5IC0xMTIgLTExMyAtMjM3IC0xOTYgLTI5MiAtOTUgLTYyIC0xNjYgLTgxIC0zMDkgLTgxIC0xNDcgMCAtMjIzIDIxIC0zMDYgODQgLTEyNiA5NiAtMTkzIDIzNSAtMjM5IDQ5NCAtMTIgNjYgLTE1IDI2NiAtMTUgMTEyMCAwIDkyNSAtMiAxMDQzIC0xNiAxMDYzIGwtMTUgMjIgLTUxMyAwIGMtNDg0IDAgLTUxNCAtMSAtNTI5IC0xOHoiLz48cGF0aCBkPSJNMjc1NDAgMzAxNSBjLTk4IC0yMyAtMTg3IC02MCAtMjYwIC0xMDkgLTk5IC02NiAtMjA4IC0xODkgLTI0OSAtMjgxIC03IC0xNiAtMTcgLTM4IC0yMiAtNDcgLTUgLTEwIC05IC0yNSAtOSAtMzMgMCAtOCAtNCAtMjMgLTkgLTMzIC0yOCAtNTUgLTQxIC0yNTggLTIwIC0zMzYgNiAtMjIgMTUgLTU5IDIxIC04MSAxNyAtNjYgODQgLTE5NyAxMzEgLTI1MyA1MiAtNjMgMTcwIC0xNTQgMjQyIC0xODggMTE3IC01NCAxODIgLTY4IDMyMCAtNjggMTA3IDAgMTQyIDQgMjAwIDIyIDE2NiA1MyAzMDAgMTUwIDM5MiAyODQgOTkgMTQzIDEyNCAyMjcgMTI0IDQxMyAxIDE4NCAtMjQgMjY5IC0xMjQgNDEzIC01MyA3NyAtMTQ0IDE2NyAtMTkzIDE5MiAtMTYgOCAtNDAgMjIgLTU0IDMxIC0xMTEgNzMgLTM0MiAxMDggLTQ5MCA3NHoiLz48L2c+PC9zdmc+) no-repeat center/contain}
+.fh-logo.inv{filter:invert(1)}
+.edtag{font-family:var(--mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--gray);margin-left:10px;vertical-align:middle}
+.hdr{position:sticky;top:0;z-index:100;background:rgba(252,252,252,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.hdr .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
+.hdr .fh-logo{width:112px;height:24px}
+.navlinks{display:flex;align-items:center;gap:24px;font-size:14px;color:var(--gray)}
+.navlinks a:hover{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;padding:11px 22px;border-radius:10px;font-size:14px;font-weight:600;border:1px solid var(--ink);transition:box-shadow .18s}
+.btn:hover{box-shadow:0 8px 26px rgba(10,10,10,.18)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--ink)}
+.navlinks .btn{color:#fff}
+@media(max-width:680px){.navlinks a:not(.btn){display:none}}
+.bar{height:2px;background:var(--spectrum)}
+.hero{position:relative;overflow:hidden;padding:84px 0 66px;background:radial-gradient(1000px 500px at 82% -10%,rgba(196,179,229,.15),transparent 60%),radial-gradient(800px 420px at 6% 8%,rgba(169,198,232,.13),transparent 55%),var(--paper)}
+.hero .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(10,10,10,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(10,10,10,.035) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(900px 520px at 50% 0%,#000 30%,transparent 75%)}
+.hero .wrap{position:relative;display:grid;grid-template-columns:1.05fr .95fr;gap:52px;align-items:center}
+@media(max-width:920px){.hero .wrap{grid-template-columns:1fr}}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--gray);display:inline-flex;align-items:center;gap:10px;margin-bottom:18px}
+.eyebrow::before{content:"";width:26px;height:2px;background:var(--spectrum);border-radius:2px}
+.hero h1{font-size:clamp(32px,4.4vw,52px);line-height:1.07;letter-spacing:-.03em;font-weight:700;margin-bottom:18px}
+.hero h1 .grad{background:var(--spectrum);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .lede{font-size:17px;color:var(--gray);max-width:520px;margin-bottom:28px}
+.hero .mini{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray2);margin-top:20px}
+.term{background:var(--card);border:1px solid var(--cardline);border-radius:16px;box-shadow:0 30px 80px rgba(10,10,10,.26);overflow:hidden}
+.term .tbar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--cardline)}
+.term .dot{width:10px;height:10px;border-radius:50%}
+.term .tttl{margin-left:8px;font-family:var(--mono);font-size:11px;color:#8B8B94;letter-spacing:.12em}
+.term .tbody{padding:20px 22px 24px;font-family:var(--mono);font-size:12.5px;line-height:2.05;color:var(--cardtext);min-height:220px}
+.term .p{color:var(--sage)}.term .cmd{color:#fff}
+.term .t{color:#6E6E76;float:right}
+.marq{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff;overflow:hidden;padding:13px 0}
+.marq .track{display:flex;gap:44px;white-space:nowrap;font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray);animation:scroll 32s linear infinite;width:max-content}
+@keyframes scroll{to{transform:translateX(-50%)}}
+.sec{padding:88px 0}
+.shead{max-width:660px;margin-bottom:48px}
+.shead h2{font-size:clamp(26px,3.2vw,38px);letter-spacing:-.02em;line-height:1.12;margin:14px 0 12px}
+.shead p{color:var(--gray);font-size:16.5px}
+.progs{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media(max-width:860px){.progs{grid-template-columns:1fr}}
+.prog{border:1px solid var(--line);border-radius:18px;background:#fff;overflow:hidden;position:relative}
+.prog::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
+.prog .top{padding:26px 26px 18px;border-bottom:1px solid var(--line)}
+.prog .n{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--gray2);margin-bottom:12px}
+.prog h3{font-size:21px;letter-spacing:-.01em;margin-bottom:6px}
+.prog .sub{color:var(--gray);font-size:14px}
+.prog .price{font-family:var(--mono);font-size:26px;font-weight:700;margin-top:14px}
+.prog .fin{font-size:12px;color:var(--gray2);margin-top:4px}
+.prog .mods{padding:18px 26px 24px}
+.mod{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--soft);font-size:14px;color:var(--gray)}
+.mod:last-child{border-bottom:0}
+.mod .mn{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--gray2);min-width:44px;padding-top:2px}
+.prog .cta{padding:0 26px 26px}
+.prog .btn{width:100%;justify-content:center}
+.dark{background:var(--card);color:var(--cardtext)}
+.dark .shead h2{color:#fff}.dark .shead p{color:#9B9BA4}.dark .eyebrow{color:#8B8B94}
+.std{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:860px){.std{grid-template-columns:1fr}}
+.stdc{border:1px solid var(--cardline);border-radius:14px;padding:20px;background:#141416}
+.stdc .n{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;color:#8B8B94;margin-bottom:10px}
+.stdc h3{color:#fff;font-size:15.5px;margin-bottom:6px}
+.stdc p{color:#9B9BA4;font-size:13px}
+.stdc.no .n{color:var(--coral)}
+.cmp{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff}
+.cmp .row{display:grid;grid-template-columns:1.1fr 1fr 1fr}
+.cmp .row.h{background:var(--soft);font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray)}
+.cmp .row.h .cell:last-child{background:var(--ink);color:#fff}
+.cmp .cell{padding:15px 20px;border-bottom:1px solid var(--line);font-size:14px}
+.cmp .row:last-child .cell{border-bottom:0}
+.cmp .cell:first-child{color:var(--gray);font-weight:600}
+.cmp .row:not(.h) .cell:last-child{background:#FAFAF7;font-weight:600}
+@media(max-width:720px){.cmp .row{grid-template-columns:1fr}.cmp .cell:first-child{background:var(--soft)}}
+.faq{max-width:760px}
+.q{border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:12px;overflow:hidden}
+.q summary{padding:16px 20px;font-weight:600;font-size:15px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.q summary::after{content:"+";font-family:var(--mono);color:var(--gray2)}
+.q[open] summary::after{content:"–"}
+.q .a{padding:0 20px 16px;color:var(--gray);font-size:14px}
+.note{font-size:12.5px;color:var(--gray2);margin-top:18px;max-width:760px}
+.note a{text-decoration:underline}
+.ftr{background:var(--card);color:#9B9BA4}
+.ftr .wrap{padding:44px 28px 34px}
+.ftr .base{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:12px;color:#6E6E76;align-items:center}
+.ftr a{color:#9B9BA4;margin-right:16px;font-size:12.5px}
+.ftr a:hover{color:#fff}
+.ftr .sys{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em}
+</style>
+</head>
+<body>
+<div class="fh-root">
+<header class="hdr"><div class="wrap">
+  <span><a href="/" aria-label="fundhub home"><span class="fh-logo"></span></a><span class="edtag">Education</span></span>
+  <nav class="navlinks">
+    <a href="#programs">Programs</a>
+    <a href="#standards">Standards</a>
+    <a href="#faq">FAQ</a>
+    <a href="/login.html">Log in</a>
+    <a href="#programs" class="btn">View programs</a>
+  </nav>
+</div></header>
+<div class="bar"></div>
+<section class="hero">
+  <div class="grid"></div>
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">Fundhub Education</span>
+      <h1>Credit and capital, <span class="grad">taught</span> properly.</h1>
+      <p class="lede">Self-paced programs that teach how consumer credit, business credit, and lending actually work — built from real documents and real lender criteria. Education only. You do the work yourself.</p>
+      <div style="display:flex;gap:14px;flex-wrap:wrap"><a href="#programs" class="btn">View programs</a><a href="#standards" class="btn ghost">Our standards →</a></div>
+      <p class="mini">Self-paced · Lifetime updates · Not a lender</p>
+    </div>
+    <div class="term">
+      <div class="tbar"><span class="dot" style="background:var(--coral)"></span><span class="dot" style="background:var(--peach)"></span><span class="dot" style="background:var(--sage)"></span><span class="tttl">student portal / enrollment</span></div>
+      <div class="tbody">
+        <div><span class="p">$</span> <span class="cmd">enroll --credit-mastery</span></div>
+        <div>&gt; enrollment received<span class="t">10:12:04</span></div>
+        <div>&gt; portal access issued<span class="t">10:12:06</span></div>
+        <div>&gt; module 01 unlocked<span class="t">10:12:07</span></div>
+        <div>&gt; templates library available<span class="t">10:12:09</span></div>
+        <div>&gt; progress tracking on<span class="t">10:12:10</span></div>
+        <div>&gt; learning at your pace</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="marq"><div class="track">
+  <span>Education only</span><span>·</span><span>Not a lender</span><span>·</span><span>No financing provided by us</span><span>·</span><span>You do the work yourself</span><span>·</span><span>Real documents, real criteria</span><span>·</span><span>Lifetime updates</span><span>·</span>
+  <span>Education only</span><span>·</span><span>Not a lender</span><span>·</span><span>No financing provided by us</span><span>·</span><span>You do the work yourself</span><span>·</span><span>Real documents, real criteria</span><span>·</span><span>Lifetime updates</span><span>·</span>
+</div></div>
+
+<section class="sec" id="programs">
+  <div class="wrap">
+    <div class="shead"><span class="eyebrow">Programs</span><h2>Two programs. One standard.</h2><p>Each program is a complete, self-paced curriculum with on-camera walkthroughs, real document templates, and lifetime updates as bureaus and lenders change their rules.</p></div>
+    <div class="progs">
+      <div class="prog">
+        <div class="top">
+          <div class="n">P-01 / CONSUMER</div>
+          <h3>Credit Mastery System</h3>
+          <p class="sub">How consumer credit files, scoring, and disputes actually work — and how to manage your own file properly.</p>
+          <div class="price">$2,500</div>
+          <div class="fin">12-month financing available at checkout</div>
+        </div>
+        <div class="mods">
+          <div class="mod"><span class="mn">M-01</span><span>How a credit file is built: bureaus, furnishers, and what a tradeline really is.</span></div>
+          <div class="mod"><span class="mn">M-02</span><span>Reading your own reports line by line across all three bureaus.</span></div>
+          <div class="mod"><span class="mn">M-03</span><span>Disputes by mail, done correctly: documentation, timelines, and follow-through.</span></div>
+          <div class="mod"><span class="mn">M-04</span><span>Utilization, aging, and mix: the levers that move scores and how to work them.</span></div>
+          <div class="mod"><span class="mn">M-05</span><span>Template library: dispute letters and trackers you fill out yourself.</span></div>
+        </div>
+        <div class="cta"><a href="#" class="btn">Enroll — Credit Mastery</a></div>
+      </div>
+      <div class="prog">
+        <div class="top">
+          <div class="n">P-02 / BUSINESS</div>
+          <h3>Capital Strategy Program</h3>
+          <p class="sub">How business credit and lending decisions actually work — entity setup through application strategy.</p>
+          <div class="price">$5,000</div>
+          <div class="fin">12-month financing available at checkout</div>
+        </div>
+        <div class="mods">
+          <div class="mod"><span class="mn">M-01</span><span>Entity structure and business identity: what lenders verify before anything else.</span></div>
+          <div class="mod"><span class="mn">M-02</span><span>Business credit profiles: bureaus, scores, and how files get built.</span></div>
+          <div class="mod"><span class="mn">M-03</span><span>How lenders read an application: criteria, red flags, and sequencing.</span></div>
+          <div class="mod"><span class="mn">M-04</span><span>Application strategy: order, timing, and protecting your personal file.</span></div>
+          <div class="mod"><span class="mn">M-05</span><span>Document pack: checklists and organizers you complete yourself.</span></div>
+        </div>
+        <div class="cta"><a href="#" class="btn">Enroll — Capital Strategy</a></div>
+      </div>
+    </div>
+    <p class="note">Tuition and any financing arranged at checkout are governed by the checkout provider's terms. See our <a href="/education/refund/">Refund Policy</a> for the program refund terms.</p>
+  </div>
+</section>
+
+<section class="sec dark" id="standards">
+  <div class="wrap">
+    <div class="shead"><span class="eyebrow">Standards</span><h2>What we do. What we don't.</h2><p>Stated plainly, because this category has earned the skepticism.</p></div>
+    <div class="std">
+      <div class="stdc"><div class="n">ED-01</div><h3>Self-paced curriculum</h3><p>Structured modules with on-camera walkthroughs. Learn on your schedule, keep access.</p></div>
+      <div class="stdc"><div class="n">ED-02</div><h3>Real documents</h3><p>Templates, trackers, and checklists built from documents used in the real world.</p></div>
+      <div class="stdc"><div class="n">ED-03</div><h3>Lifetime updates</h3><p>When bureaus and lenders change the rules, the curriculum updates. No re-buy.</p></div>
+      <div class="stdc no"><div class="n">X-01</div><h3>No done-for-you</h3><p>We do not perform services on your behalf in these programs. You do the work.</p></div>
+      <div class="stdc no"><div class="n">X-02</div><h3>No credit repair services</h3><p>These are educational programs, not credit repair services. We teach; you act.</p></div>
+      <div class="stdc no"><div class="n">X-03</div><h3>No lending</h3><p>We are not a lender and provide no financing ourselves. Nothing here is a promise of credit.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="shead"><span class="eyebrow">Compare</span><h2>Against the typical course.</h2><p>Where these programs sit versus what this category usually sells.</p></div>
+    <div class="cmp">
+      <div class="row h"><div class="cell"></div><div class="cell">Typical course</div><div class="cell">Fundhub Education</div></div>
+      <div class="row"><div class="cell">Source material</div><div class="cell">Recycled slide decks</div><div class="cell">Real documents and lender criteria</div></div>
+      <div class="row"><div class="cell">Updates</div><div class="cell">Frozen at launch</div><div class="cell">Lifetime updates included</div></div>
+      <div class="row"><div class="cell">Claims</div><div class="cell">Guaranteed outcomes</div><div class="cell">No outcome claims. Education only.</div></div>
+      <div class="row"><div class="cell">Format</div><div class="cell">Drip-fed content</div><div class="cell">Full access, self-paced</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="faq" style="padding-top:0">
+  <div class="wrap">
+    <div class="shead"><span class="eyebrow">FAQ</span><h2>Straight answers.</h2></div>
+    <div class="faq">
+      <details class="q"><summary>Is this credit repair?</summary><div class="a">No. These are educational programs. We teach how the system works and provide templates you complete yourself. We do not perform disputes or any services on your behalf in these programs.</div></details>
+      <details class="q"><summary>Do you guarantee results?</summary><div class="a">No. Outcomes depend on your situation and your work. We guarantee the curriculum, the templates, and lifetime updates — not scores, approvals, or funding.</div></details>
+      <details class="q"><summary>Is financing available for tuition?</summary><div class="a">Yes — 12-month financing is available at checkout through our checkout provider, subject to their approval and terms.</div></details>
+      <details class="q"><summary>What is the refund policy?</summary><div class="a">The full policy is posted at <a href="/education/refund/" style="text-decoration:underline">/education/refund</a>. Read it before enrolling.</div></details>
+      <details class="q"><summary>How long do I keep access?</summary><div class="a">Lifetime access to the program you purchase, including updates.</div></details>
+    </div>
+  </div>
+</section>
+
+<footer class="ftr"><div class="wrap"><div class="base">
+  <span>© 2026 FUNDHUB LLC · Fundhub Education · 218 Bostick Rd 64, Bowling Green, FL 33834</span>
+  <span><a href="/education/terms/">Terms</a><a href="/education/privacy/">Privacy</a><a href="/education/refund/">Refunds</a><a href="mailto:support@fundhubeducation.com">support@fundhubeducation.com</a></span>
+  <span class="sys">education only · fundhub</span>
+</div></div></footer>
+</div>
+</body>
+</html>
