@@ -1,0 +1,46 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Fundhub — Sign in</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/fh.css">
+</head><body>
+<div class="spectrum"></div>
+<div class="login-box">
+  <div class="card">
+    <h1>fundhub matrix</h1>
+    <p class="sub" style="margin:0">Staff sign in</p>
+    <div class="err" id="err"></div>
+    <form id="f">
+      <input id="email" type="email" placeholder="email" autocomplete="username" required>
+      <input id="pw" type="password" placeholder="password" autocomplete="current-password" required>
+      <button class="btn primary" id="go" type="submit">Sign in</button>
+    </form>
+    <p class="note">No account? An owner/admin creates logins — ask Chris.</p>
+  </div>
+</div>
+<script src="/fh.js"></script>
+<script>
+document.getElementById("f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = document.getElementById("err");
+  const btn = document.getElementById("go");
+  err.style.display = "none"; btn.disabled = true; btn.textContent = "Signing in…";
+  const { ok, status, data } = await FH.api("/api/auth/login", {
+    method: "POST",
+    body: { email: document.getElementById("email").value, password: document.getElementById("pw").value }
+  });
+  btn.disabled = false; btn.textContent = "Sign in";
+  if (!ok) {
+    err.style.display = "block";
+    err.textContent = status === 429 ? "Too many attempts — wait 15 minutes."
+      : status === 403 ? "Account not active — ask an admin."
+      : "Wrong email or password.";
+    return;
+  }
+  localStorage.setItem("fh_token", data.token);
+  const next = new URLSearchParams(location.search).get("next");
+  location.href = next && next.startsWith("/") ? next : "/index.html";
+});
+</script>
+</body></html>

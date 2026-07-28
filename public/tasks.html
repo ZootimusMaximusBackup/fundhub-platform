@@ -1,0 +1,80 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Fundhub — Task Inbox</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/fh.css">
+</head><body>
+<div class="spectrum"></div>
+<header class="top"><span class="brand">fundhub matrix</span><nav></nav><span class="who"></span><button id="logout">Sign out</button></header>
+<div class="wrap">
+  <h1>Task Inbox</h1>
+  <p class="sub">Everything the workflows queued. Role routing switches on after the Wave-2 merge — until then this is the whole board.</p>
+  <div class="kpis" id="kpis"></div>
+  <div class="card">
+    <div class="row" style="margin-bottom:10px">
+      <input id="q" placeholder="Search titles…" style="flex:1">
+      <select id="series">
+        <option value="">All series</option>
+        <option>c-</option><option>f-</option><option>dpc-</option><option>ds-</option>
+        <option>s-</option><option>n-</option><option>u-</option><option>ai-set-</option>
+      </select>
+      <label class="row" style="gap:6px"><input type="checkbox" id="showDone"> show done</label>
+    </div>
+    <table class="tbl"><thead><tr>
+      <th>Task</th><th>Client</th><th>Source</th><th>Age</th><th></th>
+    </tr></thead><tbody id="rows"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody></table>
+  </div>
+</div>
+<script src="/fh.js"></script>
+<script>
+let TASKS = [];
+
+function render() {
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const s = document.getElementById("series").value;
+  const rows = document.getElementById("rows");
+  const list = TASKS.filter(t =>
+    (!q || (t.title||"").toLowerCase().includes(q)) &&
+    (!s || (t.source_workflow||"").startsWith(s)));
+  rows.innerHTML = list.length ? "" : `<tr><td colspan="5" class="empty">Inbox zero.</td></tr>`;
+  for (const t of list) {
+    rows.insertAdjacentHTML("beforeend", `
+      <tr>
+        <td><b>${FH.esc(t.title)}</b>${t.body ? `<br><span class="muted mono">${FH.esc(String(t.body).slice(0,80))}</span>` : ""}</td>
+        <td>${FH.esc(t.client_name || "—")}</td>
+        <td><span class="chip">${FH.esc(t.source_workflow || "—")}</span></td>
+        <td class="muted">${FH.ago(t.created_at)}</td>
+        <td class="right">${t.done
+          ? `<span class="chip ok">done</span>`
+          : `<button class="btn" onclick="doneTask('${t.id}')">Done</button>`}</td>
+      </tr>`);
+  }
+  const open = TASKS.filter(t=>!t.done);
+  const day = open.filter(t => (Date.now() - new Date(t.created_at)) > 86400000).length;
+  document.getElementById("kpis").innerHTML = `
+    <div class="kpi warn"><div class="lbl">Open</div><div class="val">${open.length}</div></div>
+    <div class="kpi alert"><div class="lbl">Older than 24h</div><div class="val">${day}</div></div>
+    <div class="kpi info"><div class="lbl">Series</div><div class="val">${new Set(open.map(t=>(t.source_workflow||"").split("-")[0])).size}</div></div>`;
+}
+
+async function load() {
+  const showDone = document.getElementById("showDone").checked;
+  const { ok, data } = await FH.api("/api/tasks?limit=200&done=" + (showDone ? "all" : "false"));
+  if (!ok) return;
+  TASKS = data.tasks || [];
+  render();
+}
+
+window.doneTask = async (id) => {
+  const { ok } = await FH.api("/api/tasks", { method: "PATCH", body: { id, done: true } });
+  if (ok) { FH.toast("Done"); load(); }
+};
+
+(async () => {
+  if (!(await FH.guard())) return;
+  for (const id of ["q","series","showDone"]) document.getElementById(id).addEventListener(id==="q"?"input":"change", id==="showDone"?load:render);
+  FH.poll(load, 15000);
+})();
+</script>
+</body></html>

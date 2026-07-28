@@ -1,0 +1,14 @@
+# Netlify deploy for fundhub-platform — static screens from public/ plus the
+# existing Vercel-style api/ handlers running as one Netlify function.
+# The Vercel files are untouched; when that account clears, both targets work.
+
+[build]
+  publish = "public"
+  command = "echo 'no build step — static public/ + bundled functions'"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"

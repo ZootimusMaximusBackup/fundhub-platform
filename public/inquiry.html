@@ -1,0 +1,149 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Fundhub — Inquiry Console</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/fh.css">
+</head><body>
+<div class="spectrum"></div>
+<header class="top"><span class="brand">fundhub matrix</span><nav></nav><span class="who"></span><button id="logout">Sign out</button></header>
+<div class="wrap">
+  <h1>Inquiry Supervision Console</h1>
+  <p class="sub">The AI places the bureau calls. You supervise: take over transfers, retry failures, and only a human marks a case Completed.</p>
+  <div class="kpis" id="kpis"></div>
+  <div class="card">
+    <div class="row" style="margin-bottom:10px" id="chips"></div>
+    <table class="tbl"><thead><tr>
+      <th>Client / case</th><th>Status</th><th>AI call</th><th>Bureaus</th><th>Scheduled</th><th></th>
+    </tr></thead><tbody id="rows"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody></table>
+  </div>
+  <div id="detail"></div>
+</div>
+<script src="/fh.js"></script>
+<script>
+let CASES = [], FILTER = "active", SELECTED = null;
+const FILTERS = ["active","Queued","Scheduled","Calling","Awaiting Remover","Call Failed","Blocked","Completed"];
+
+// Airtable fields pass through verbatim; resolve common shapes without assuming schema.
+const F = (c, ...keys) => { for (const k of keys) { const v = c.fields?.[k]; if (v !== undefined && v !== null && v !== "") return v; } return null; };
+const nameOf = (c) => {
+  const v = F(c, "client_name", "Client Name", "Client", "name", "Name");
+  return Array.isArray(v) ? v.join(", ") : (v || c.id);
+};
+const bureausOf = (c) => {
+  const v = F(c, "selected_bureaus", "selected_bureaus_raw", "bureaus", "Bureaus");
+  if (Array.isArray(v)) return v;
+  if (typeof v === "string") return v.split(",").map(s=>s.trim()).filter(Boolean);
+  return [];
+};
+
+function renderChips() {
+  const box = document.getElementById("chips");
+  box.innerHTML = "";
+  for (const f of FILTERS) {
+    const b = document.createElement("button");
+    b.className = "btn"; b.textContent = f === "active" ? "All active" : f;
+    if (f === FILTER) b.classList.add("primary");
+    b.onclick = () => { FILTER = f; load(); };
+    box.appendChild(b);
+  }
+}
+
+function render() {
+  const rows = document.getElementById("rows");
+  rows.innerHTML = CASES.length ? "" : `<tr><td colspan="6" class="empty">No cases in this view.</td></tr>`;
+  for (const c of CASES) {
+    const st = F(c, "case_status") || "—";
+    rows.insertAdjacentHTML("beforeend", `
+      <tr class="click" onclick="pick('${c.id}')">
+        <td><b>${FH.esc(nameOf(c))}</b><br><span class="muted mono">${c.id}</span></td>
+        <td>${FH.caseChip(st)}</td>
+        <td>${FH.esc(F(c,"ai_call_status","AI Call Status") || "—")}</td>
+        <td>${bureausOf(c).map(b=>`<span class="chip info">${FH.esc(b)}</span>`).join(" ") || "—"}</td>
+        <td class="muted">${FH.esc(F(c,"ai_call_scheduled_for","Scheduled For") || "—")}</td>
+        <td class="muted">›</td>
+      </tr>`);
+  }
+  const n = (s) => CASES.filter(c => F(c,"case_status") === s).length;
+  document.getElementById("kpis").innerHTML = `
+    <div class="kpi info"><div class="lbl">In view</div><div class="val">${CASES.length}</div></div>
+    <div class="kpi accent"><div class="lbl">Calling</div><div class="val">${n("Calling")}</div></div>
+    <div class="kpi warn"><div class="lbl">Awaiting remover</div><div class="val">${n("Awaiting Remover")}</div></div>
+    <div class="kpi alert"><div class="lbl">Failed / blocked</div><div class="val">${n("Call Failed") + n("Blocked")}</div></div>`;
+}
+
+async function load() {
+  renderChips();
+  let qs = "action=cases&max=200";
+  if (FILTER === "Completed") qs += "&status=Completed&all=1";
+  else if (FILTER !== "active") qs += "&status=" + encodeURIComponent(FILTER);
+  const { ok, data } = await FH.api("/api/inquiry?" + qs);
+  const rows = document.getElementById("rows");
+  if (!ok) { rows.innerHTML = `<tr><td colspan="6" class="empty">Upstream unreachable — is INQUIRY_API_SECRET set?</td></tr>`; return; }
+  CASES = data.cases || [];
+  render();
+  if (SELECTED) { const c = CASES.find(x=>x.id===SELECTED); if (c) detail(c); }
+}
+
+window.pick = (id) => { SELECTED = id; const c = CASES.find(x=>x.id===id); if (c) detail(c); };
+
+function detail(c) {
+  const box = document.getElementById("detail");
+  const st = F(c,"case_status") || "—";
+  const known = new Set(["case_status","ai_call_status","remover_notes"]);
+  const rest = Object.entries(c.fields || {}).filter(([k]) => !known.has(k));
+  box.innerHTML = `
+    <div class="card">
+      <h2>Case — ${FH.esc(nameOf(c))} ${FH.caseChip(st)}</h2>
+      <div class="row" style="margin-bottom:12px">
+        <label class="row" style="gap:6px"><input type="checkbox" class="bx" value="EX" checked> EX</label>
+        <label class="row" style="gap:6px"><input type="checkbox" class="bx" value="TU"> TU</label>
+        <label class="row" style="gap:6px"><input type="checkbox" class="bx" value="EQ"> EQ</label>
+        <button class="btn primary" onclick="launch('${c.id}')">Launch / Retry call</button>
+        <button class="btn" onclick="setStatus('${c.id}','Completed')">Mark Completed</button>
+        <button class="btn" onclick="setStatus('${c.id}','Blocked')">Block</button>
+        ${st==="Blocked" ? `<button class="btn" onclick="setStatus('${c.id}','Queued')">Unblock → Queue</button>` : ""}
+      </div>
+      <h2>Remover notes</h2>
+      <textarea id="notes" style="width:100%;min-height:80px">${FH.esc(F(c,"remover_notes") || "")}</textarea>
+      <div class="row" style="margin-top:8px"><button class="btn" onclick="saveNotes('${c.id}')">Save notes</button></div>
+      <h2 style="margin-top:16px">All fields</h2>
+      <div class="kv">${rest.map(([k,v]) =>
+        `<span class="k mono">${FH.esc(k)}</span><span class="mono">${FH.esc(Array.isArray(v)?v.join(", "):(typeof v==="object"?JSON.stringify(v):String(v)))}</span>`).join("")}</div>
+      <p class="note">Fields render verbatim from INQUIRY_REMOVAL_CASES — nothing hidden, schema changes show up automatically.</p>
+    </div>`;
+}
+
+window.launch = async (id) => {
+  const bureaus = [...document.querySelectorAll(".bx:checked")].map(b=>b.value);
+  if (!bureaus.length) return FH.toast("Pick at least one bureau");
+  if (!confirm(`Launch AI call for ${bureaus.join(", ")}?`)) return;
+  const { ok, data } = await FH.api("/api/inquiry?action=schedule", {
+    method: "POST", body: { case_id: id, selected_bureaus_raw: bureaus.join(",") }
+  });
+  FH.toast(ok ? "Call scheduled/launched" : ("Failed: " + (data?.error || "upstream")));
+  load();
+};
+
+window.setStatus = async (id, status) => {
+  if (status === "Completed" && !confirm("Mark this case Completed? That's the human-only transition.")) return;
+  const { ok } = await FH.api("/api/inquiry?action=update", {
+    method: "POST", body: { case_id: id, fields: { case_status: status } }
+  });
+  FH.toast(ok ? status : "Failed");
+  load();
+};
+
+window.saveNotes = async (id) => {
+  const { ok } = await FH.api("/api/inquiry?action=update", {
+    method: "POST", body: { case_id: id, fields: { remover_notes: document.getElementById("notes").value } }
+  });
+  FH.toast(ok ? "Notes saved" : "Failed");
+};
+
+(async () => {
+  if (!(await FH.guard())) return;
+  FH.poll(load, 12000);
+})();
+</script>
+</body></html>

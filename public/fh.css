@@ -1,0 +1,60 @@
+/* Fundhub live screens v0 — tokens from wireframes/fundhub-brand.css */
+:root{
+  --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
+  --paper:#FCFCFC; --ink:#0A0A0A; --ink2:#18181B;
+  --gray:#52525B; --gray2:#A1A1AA; --line:#E4E4E7; --soft:#F4F4F5;
+  --card:#111113; --cardline:#26262B; --cardtext:#E4E4E7;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --ok:#A8D8B0; --warn:#F5CE8F; --alert:#F2A69B; --info:#A9C6E8; --accent:#C4B3E5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.5 var(--sans)}
+a{color:inherit}
+.spectrum{height:2px;background:var(--spectrum)}
+.top{background:var(--card);color:var(--cardtext);display:flex;align-items:center;gap:18px;padding:10px 20px;border-bottom:1px solid var(--cardline)}
+.top .brand{font:700 13px var(--mono);letter-spacing:.14em;text-transform:lowercase}
+.top nav{display:flex;gap:4px;flex:1}
+.top nav a{padding:6px 12px;border-radius:8px;text-decoration:none;color:var(--gray2);font-size:13px}
+.top nav a.on,.top nav a:hover{background:var(--cardline);color:var(--cardtext)}
+.top .who{font:11px var(--mono);color:var(--gray2)}
+.top button{background:none;border:1px solid var(--cardline);color:var(--gray2);border-radius:8px;padding:5px 12px;cursor:pointer;font:12px var(--sans)}
+.wrap{max-width:1240px;margin:0 auto;padding:22px 20px 60px}
+h1{font-size:21px;margin:6px 0 2px}
+.sub{color:var(--gray);margin:0 0 18px;font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:0 0 18px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff}
+.kpi .lbl{font:10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
+.kpi .val{font-size:24px;font-weight:700;margin-top:4px}
+.kpi.ok{border-color:var(--ok)} .kpi.warn{border-color:var(--warn)} .kpi.alert{border-color:var(--alert)} .kpi.info{border-color:var(--info)} .kpi.accent{border-color:var(--accent)}
+.card{border:1px solid var(--line);border-radius:14px;background:#fff;padding:16px 18px;margin-bottom:16px}
+.card h2{font:11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--gray);margin:0 0 12px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+input,select,textarea{font:13px var(--sans);padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--info)}
+.btn{font:600 12.5px var(--sans);padding:8px 14px;border:1px solid var(--line);border-radius:9px;background:#fff;cursor:pointer}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.primary:hover{background:var(--ink2)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.chip{display:inline-block;font:600 11px var(--sans);padding:3px 10px;border-radius:999px;background:var(--soft);color:var(--ink2);white-space:nowrap}
+.chip.ok{background:var(--ok)} .chip.warn{background:var(--warn)} .chip.alert{background:var(--alert)} .chip.info{background:var(--info)} .chip.accent{background:var(--accent)}
+table.tbl{width:100%;border-collapse:collapse}
+.tbl th{font:10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+.tbl td{padding:10px;border-bottom:1px solid var(--soft);vertical-align:top}
+.tbl tr.click{cursor:pointer} .tbl tr.click:hover{background:var(--soft)}
+.mono{font-family:var(--mono);font-size:12px}
+.muted{color:var(--gray2)} .right{text-align:right}
+.split{display:grid;grid-template-columns:minmax(340px,5fr) minmax(320px,4fr);gap:16px;align-items:start}
+@media(max-width:900px){.split{grid-template-columns:1fr}}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:6px 12px;font-size:13px}
+.kv .k{color:var(--gray)}
+.empty{color:var(--gray2);padding:26px;text-align:center}
+.note{font-size:12px;color:var(--gray);margin-top:8px}
+.err{background:var(--alert);border-radius:9px;padding:9px 12px;font-size:13px;margin:10px 0;display:none}
+.login-box{max-width:360px;margin:11vh auto;padding:0 20px}
+.login-box .card{padding:26px}
+.login-box h1{font:700 15px var(--mono);letter-spacing:.12em;margin:0 0 4px}
+.login-box form{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.toast{position:fixed;bottom:18px;right:18px;background:var(--card);color:var(--cardtext);padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
