@@ -1,0 +1,116 @@
+// src/documents/kinds.mjs — the document taxonomy.
+//
+// `kind` is the hard classification, mirrored by a CHECK constraint in
+// db/migrations/030_documents.sql. Four classes, no more without a migration.
+//
+// `subtype` is the soft one: the database does NOT constrain it, so a new
+// deliverable can ship without a schema change. The lists below are the
+// conventional vocabulary — validated only when a caller opts in via
+// assertKnownSubtype(). Registering an unlisted subtype is allowed on purpose.
+
+export const KINDS = Object.freeze({
+  AUTHORIZATION: "authorization",         // soft-pull consent
+  CONTRACT: "contract",                   // funding agreement, repair engagement, partner license
+  INVOICE_DOCUMENT: "invoice_document",   // the rendered artifact for an invoices row
+  DELIVERABLE: "deliverable"              // the five UnderwriteIQ deliverables
+});
+
+export const ALL_KINDS = Object.freeze(Object.values(KINDS));
+
+// Conventional subtypes per kind. Confirmed with Chris 2026-07-28.
+export const SUBTYPES = Object.freeze({
+  authorization: Object.freeze([
+    "soft_pull_consent"           // the C-00 consent gate — a real record, not a custom field
+  ]),
+  contract: Object.freeze([
+    "funding_agreement",
+    "repair_engagement_letter",
+    "partner_license"             // the affiliate portal gates payouts on this one
+  ]),
+  // mirrors invoices.invoice_type (017_invoices.sql): deposit | success_fee | platform_fee
+  invoice_document: Object.freeze([
+    "deposit_invoice",
+    "success_fee_invoice",
+    "platform_fee_invoice"
+  ]),
+  // the five UnderwriteIQ deliverables
+  deliverable: Object.freeze([
+    "credit_analysis_report",       // Credit Analysis Report
+    "metro2_dispute_letter_pack",   // Metro 2 Dispute Letter Pack
+    "credit_optimization_roadmap",  // Credit Optimization Roadmap
+    "funding_snapshot",             // Funding Snapshot
+    "bank_lender_match_list"        // Bank and Lender Match List
+  ])
+});
+
+// Human-readable titles for the conventional subtypes. Callers may pass their
+// own title; this is the fallback so a document is never registered untitled.
+export const SUBTYPE_TITLES = Object.freeze({
+  soft_pull_consent: "Soft Pull Authorization",
+  funding_agreement: "Funding Agreement",
+  repair_engagement_letter: "Repair Engagement Letter",
+  partner_license: "Partner License",
+  deposit_invoice: "Deposit Invoice",
+  success_fee_invoice: "Success Fee Invoice",
+  platform_fee_invoice: "Platform Fee Invoice",
+  credit_analysis_report: "Credit Analysis Report",
+  metro2_dispute_letter_pack: "Metro 2 Dispute Letter Pack",
+  credit_optimization_roadmap: "Credit Optimization Roadmap",
+  funding_snapshot: "Funding Snapshot",
+  bank_lender_match_list: "Bank and Lender Match List"
+});
+
+export const DELIVERY_CHANNELS = Object.freeze(
+  ["email", "sms", "portal", "api", "manual", "print"]);
+
+export const DELIVERY_STATUSES = Object.freeze(
+  ["not_delivered", "pending", "sent", "delivered", "failed", "bounced"]);
+
+export const isKind = (k) => ALL_KINDS.includes(k);
+export const isKnownSubtype = (kind, subtype) =>
+  Boolean(SUBTYPES[kind]?.includes(subtype));
+
+/** Throws on an unknown kind. Kind is CHECK-constrained in the DB — fail early. */
+export function assertKind(kind) {
+  if (!isKind(kind)) {
+    throw new Error(
+      `unknown document kind "${kind}" — expected one of ${ALL_KINDS.join(", ")}`);
+  }
+  return kind;
+}
+
+/** Opt-in strictness. Not called by register() — unlisted subtypes are legal. */
+export function assertKnownSubtype(kind, subtype) {
+  assertKind(kind);
+  if (!isKnownSubtype(kind, subtype)) {
+    throw new Error(
+      `unknown subtype "${subtype}" for kind "${kind}" — conventional values: ` +
+      `${(SUBTYPES[kind] || []).join(", ")}`);
+  }
+  return subtype;
+}
+
+export const titleFor = (subtype, fallback = "Document") =>
+  SUBTYPE_TITLES[subtype] || fallback;
+
+/**
+ * documentKey — the LOGICAL identity of a document.
+ *
+ * This is what makes versioning work. A regeneration resolves to the same key,
+ * so it appends a version to the existing document instead of minting a second
+ * one. Unique per (org_id, document_key) in the schema.
+ *
+ * Default shape: `<kind>|<subtype>|<client_id>` — i.e. one Credit Analysis
+ * Report per client, regenerated in place. Callers whose documents are NOT
+ * one-per-client (per funding round, per invoice, per dispute cycle) must pass
+ * a discriminator so the versions do not collapse into one another:
+ *
+ *   buildDocumentKey({ kind, subtype, clientId, discriminator: fundingRoundId })
+ */
+export function buildDocumentKey({ kind, subtype, clientId, discriminator = null }) {
+  assertKind(kind);
+  if (!clientId) throw new Error("buildDocumentKey requires clientId");
+  const parts = [kind, subtype || "default", String(clientId)];
+  if (discriminator) parts.push(String(discriminator));
+  return parts.join("|");
+}
