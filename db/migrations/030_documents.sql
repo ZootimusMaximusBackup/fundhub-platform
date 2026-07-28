@@ -26,11 +26,10 @@
 -- ── ASSUMPTION FLAG (Chris/Darwin: correct me) ──────────────────────────────
 -- The brief points at fundhub-docs /sources/fundhub-platform-vision.md §3 for
 -- the document taxonomy. That repo is not reachable from this session, so the
--- four `kind` classes below are taken verbatim from the brief and the SUBTYPES
--- are inferred from what exists in this repo (DS-02 letter packs, the U-series
--- UnderwriteIQ deliverables, 017_invoices, the C-00 soft-pull consent gate).
--- `kind` is a hard CHECK; `subtype` is deliberately free text so correcting the
--- inferred vocabulary needs no migration.
+-- four `kind` classes are taken verbatim from the brief; `kind` is a hard CHECK.
+-- The `subtype` vocabulary below was confirmed by Chris directly (the five
+-- UnderwriteIQ deliverable names and the three contract subtypes), but subtype
+-- stays deliberately free text so extending it never needs a migration.
 --
 -- ── RETENTION FLAG (not implemented, deliberately) ──────────────────────────
 -- The credit-adjacent documents in here — soft-pull authorizations above all,
@@ -70,13 +69,24 @@ CREATE TABLE documents (
   document_key        text NOT NULL,
   kind                text NOT NULL
     CHECK (kind IN ('authorization', 'contract', 'invoice_document', 'deliverable')),
-  -- subtype — conventional values, NOT constrained (see ASSUMPTION FLAG):
-  --   authorization      soft_pull_consent | hard_pull_consent | ach_authorization
-  --   contract           funding_agreement | repair_engagement | partner_license
+  -- subtype — conventional values, NOT constrained. The canonical list lives in
+  -- src/documents/kinds.mjs (SUBTYPES); this block is the human-readable copy.
+  --
+  --   authorization      soft_pull_consent    — the C-00 soft-pull consent gate
+  --
+  --   contract           funding_agreement
+  --                      repair_engagement_letter
+  --                      partner_license      — the affiliate portal gates payouts on this one
+  --
   --   invoice_document   deposit_invoice | success_fee_invoice | platform_fee_invoice
-  --   deliverable        the five UnderwriteIQ docs + letter packs:
-  --                      uiq_credit_summary | uiq_funding_roadmap | uiq_lender_match
-  --                      | uiq_action_plan | uiq_risk_report | letter_pack
+  --                      (mirrors invoices.invoice_type, 017_invoices.sql)
+  --
+  --   deliverable        the five UnderwriteIQ deliverables:
+  --                        credit_analysis_report        — Credit Analysis Report
+  --                        metro2_dispute_letter_pack    — Metro 2 Dispute Letter Pack
+  --                        credit_optimization_roadmap   — Credit Optimization Roadmap
+  --                        funding_snapshot              — Funding Snapshot
+  --                        bank_lender_match_list        — Bank and Lender Match List
   subtype             text,
   title               text NOT NULL,
 
@@ -124,8 +134,11 @@ CREATE TABLE documents (
   expires_at          timestamptz,
 
   -- idempotency (Rule 9) ----------------------------------------------------
-  -- The event that CREATED this document. Per-generation idempotency lives on
-  -- document_versions.source_event_id; this one is the creation audit anchor.
+  -- The event that CREATED this document. NOT unique, deliberately: one
+  -- `analysis.completed` generates all five UnderwriteIQ deliverables, so a
+  -- single event legitimately creates several documents. Uniqueness of the
+  -- document itself is document_key's job; per-generation idempotency is
+  -- document_versions' (see its index below).
   source_event_id     text,
 
   metadata            jsonb NOT NULL DEFAULT '{}'::jsonb,
@@ -137,8 +150,8 @@ CREATE TABLE documents (
 CREATE UNIQUE INDEX documents_org_key_uniq
   ON documents (org_id, document_key);
 
--- Same creating event twice = one document (Rule 9).
-CREATE UNIQUE INDEX documents_org_source_event_uniq
+-- Audit lookup: "what did this event produce?". Not unique — see the column note.
+CREATE INDEX idx_documents_source_event
   ON documents (org_id, source_event_id)
   WHERE source_event_id IS NOT NULL;
 
@@ -196,6 +209,8 @@ CREATE TABLE document_versions (
   signature_ref       text,
 
   -- idempotency (Rule 9): same generation event twice = one version ---------
+  -- Scoped to the document (see the index below), so one event may generate a
+  -- version for each of several documents, but never two for the same one.
   source_event_id     text,
 
   -- why this version exists: 'initial' | 'regenerated' | 'corrected' | 'imported'
@@ -207,8 +222,11 @@ CREATE TABLE document_versions (
   UNIQUE (document_id, version)
 );
 
-CREATE UNIQUE INDEX document_versions_org_source_event_uniq
-  ON document_versions (org_id, source_event_id)
+-- THE idempotency guarantee (Rule 9): a replayed generation event cannot append
+-- a second version to the same document. Scoped by document_id so one event can
+-- still produce the five UnderwriteIQ deliverables in a single pass.
+CREATE UNIQUE INDEX document_versions_doc_source_event_uniq
+  ON document_versions (org_id, document_id, source_event_id)
   WHERE source_event_id IS NOT NULL;
 
 CREATE INDEX idx_docvers_document ON document_versions (document_id, version DESC);
