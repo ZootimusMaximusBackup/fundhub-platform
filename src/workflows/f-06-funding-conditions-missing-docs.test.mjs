@@ -8,28 +8,42 @@ const withTemplates = () => [
   { org_id: "org-1", template_key: SMS_TEMPLATE_KEY, channel: "sms", body: "missing docs sms", compliance_passed: true }
 ];
 
-test("happy path: MISSING_DOCS classification tags + holds the round + sends", async () => {
+// Round Hold Reason is a CONTACT field under 05/30 (doc 184-190) — the same field C-02
+// and C-03 write. This used to go to funding_rounds.hold_reason, where nothing that reads
+// the contact field (C-02, C-03, BC-01's path selection) could ever see it.
+test("happy path: MISSING_DOCS tags, sets the contact hold reason + next action, and sends", async () => {
   const db = pgFake({
-    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }],
-    fundingRounds: [{ id: "fr-1", client_id: "cl-1", round_number: 1, hold_reason: null }],
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
     templates: withTemplates()
   });
   const res = await handle({ event: ev("mail.response", { classification: "MISSING_DOCS", conditionDescription: "Need bank statements" }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.branch, "missing_docs");
   assert.deepEqual(db.clients[0].tags, ["docs:missing"]);
-  assert.equal(db.fundingRounds[0].hold_reason, "Missing Documents");
+  assert.equal(db.clients[0].custom_fields.round_hold_reason, "Missing Documents");
+  assert.equal(db.clients[0].custom_fields.employee_next_action, "Collect Documents");
   assert.equal(db.messages.length, 2);
 });
 
-test("branch: docs.received clears the tag and hold reason", async () => {
+test("branch: docs.received clears the tag, the hold reason and the condition flag", async () => {
   const db = pgFake({
-    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", tags: ["docs:missing"] }],
-    fundingRounds: [{ id: "fr-1", client_id: "cl-1", round_number: 1, hold_reason: "Missing Documents" }]
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", tags: ["docs:missing"],
+      custom_fields: { round_hold_reason: "Missing Documents", funding_condition_required: true } }]
   });
   const res = await handle({ event: ev("docs.received", {}, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.branch, "docs_received");
   assert.equal(db.clients[0].tags.includes("docs:missing"), false);
-  assert.equal(db.fundingRounds[0].hold_reason, null);
+  assert.equal(db.clients[0].custom_fields.round_hold_reason, null);
+  // doc 1832 — the old version left this set forever.
+  assert.equal(db.clients[0].custom_fields.funding_condition_required, false);
+});
+
+test("docs.received does NOT clobber another workflow's hold reason", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", tags: ["docs:missing"],
+      custom_fields: { round_hold_reason: "Internal Review" } }]
+  });
+  await handle({ event: ev("docs.received", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(db.clients[0].custom_fields.round_hold_reason, "Internal Review");
 });
 
 test("branch: other classifications on mail.response are ignored", async () => {

@@ -60,12 +60,41 @@ test("branch: STOP SMS is ignored (telco opt-out, not a DPC-03 keyword)", async 
   assert.equal(res.reason, "no_decision_keyword");
 });
 
-test("branch: YES without dpc03_awaiting_decision context flag is ignored", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+15551234567", custom_fields: {} }], ...withStages() });
-  const res = await handle({ event: ev("message.inbound", { from: "+15551234567", body: "YES" }), db, step: fakeStep() });
+// REGRESSION: the YES purchase branch was gated on `dpc03_awaiting_decision`, a field
+// NOTHING in the repo ever writes — so it was permanently unreachable. 05/30 doc
+// 3576-3578 disambiguates by call state instead.
+test("REGRESSION: YES after the call reaches the purchase branch (no dead context flag)", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+1555", custom_fields: { call_outcome: "showed" } }] });
+  const res = await handle({ event: ev("message.inbound", { body: "YES", from: "+1555" }, { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(res.done, true);
+  assert.equal(res.decision, "yes");
+  assert.equal(res.task.created, true);
+});
+
+test("YES while the call is still booked is a CALL CONFIRMATION, not a sale", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+1555", custom_fields: { call_outcome: "booked" } }] });
+  const res = await handle({ event: ev("message.inbound", { body: "yes", from: "+1555" }, { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(res.decision, "call_confirmed");
+  assert.equal(db.clients[0].custom_fields.call_confirmed, true);
+  assert.equal(db.clients[0].custom_fields.decision_status, undefined, "must not close a sale off a confirmation");
+  assert.equal(db.tasks.length, 0);
+});
+
+test("REGRESSION: a hard-stopped contact cannot trigger the contract+payment task", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+1555", custom_fields: { call_outcome: "showed", hard_stop_reason: "fraud_flag" } }] });
+  const res = await handle({ event: ev("message.inbound", { body: "YES", from: "+1555" }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.done, false);
-  assert.equal(res.reason, "not_in_dpc03_context");
-  assert.equal(db.cards.length, 0);
+  assert.equal(res.reason, "hard_stopped");
+  assert.equal(db.tasks.length, 0);
+});
+
+// REGRESSION: the invented bare-"no" keyword closed files off ordinary replies.
+test("REGRESSION: 'no thanks' no longer closes the file", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+1555", custom_fields: {} }] });
+  for (const body of ["no thanks", "no worries", "not today"]) {
+    const res = await handle({ event: ev("message.inbound", { body, from: "+1555" }, { clientId: "cl-1" }), db, step: fakeStep() });
+    assert.equal(res.reason, "no_decision_keyword", `"${body}" must not be a decision`);
+  }
 });
 
 test("duplicate delivery: replaying does not double-create the task", async () => {

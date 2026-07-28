@@ -10,8 +10,10 @@
 // non-empty condition description in the payload. The "docs received, clear the
 // hold" half reacts to docs.received (already a canonical event) for the same client.
 //
-// Sets hold_reason on the most recent funding_round (same "no funding_round_id on
-// bank_inbox" limitation as F-09 — logged in workflow-migration-table.md).
+// Round Hold Reason is a CONTACT field (05/30 doc lines 184-190, Part B). C-02 and C-03
+// both write clients.custom_fields.round_hold_reason; this workflow wrote
+// funding_rounds.hold_reason instead, so nothing that reads the contact field ever saw
+// F-06's hold and BC-01's path selection could never see "Missing Documents".
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
@@ -23,11 +25,12 @@ import { addTags, removeTags } from "./tags.mjs";
 export const EMAIL_TEMPLATE_KEY = "EMAIL-F06-MISSING-DOCS";
 export const SMS_TEMPLATE_KEY = "SMS-F06-MISSING-DOCS";
 
+// Writes the contact field C-02/C-03 use, plus the paired Employee Next Action (doc 165).
 async function setLatestRoundHoldReason(db, clientId, reason) {
-  const r = await db.query(`SELECT id, hold_reason FROM funding_rounds WHERE client_id = $1 ORDER BY round_number DESC LIMIT 1`, [clientId]);
-  const round = r.rows[0];
-  if (!round) return { updated: false };
-  await db.query(`UPDATE funding_rounds SET hold_reason = $2 WHERE id = $1`, [round.id, reason]);
+  await mergeCustomFields(db, clientId, {
+    round_hold_reason: reason,
+    employee_next_action: "Collect Documents"
+  });
   return { updated: true };
 }
 
@@ -62,12 +65,18 @@ async function handleDocsReceived({ event, db, step }) {
   return { done: true, branch: "docs_received", round };
 }
 
+// Only clear when THIS workflow set it — never clobber F-09's "Internal Review" or
+// C-02's "New Inquiries". Also clears Funding Condition Required, which the old version
+// left set forever (doc 1832).
 async function clearHoldIfMissingDocs(db, clientId) {
-  const r = await db.query(`SELECT id, hold_reason FROM funding_rounds WHERE client_id = $1 ORDER BY round_number DESC LIMIT 1`, [clientId]);
-  const round = r.rows[0];
-  if (!round) return { updated: false };
-  if (round.hold_reason !== "Missing Documents") return { updated: false, reason: "hold_reason_not_ours" };
-  await db.query(`UPDATE funding_rounds SET hold_reason = $2 WHERE id = $1`, [round.id, null]);
+  const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
+  const cf = r.rows[0]?.custom_fields;
+  if (!cf) return { updated: false };
+  if (cf.round_hold_reason !== "Missing Documents") return { updated: false, reason: "hold_reason_not_ours" };
+  await mergeCustomFields(db, clientId, {
+    round_hold_reason: null,
+    funding_condition_required: false
+  });
   return { updated: true };
 }
 

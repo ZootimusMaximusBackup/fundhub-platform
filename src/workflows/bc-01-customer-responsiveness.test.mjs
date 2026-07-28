@@ -3,42 +3,78 @@ import assert from "node:assert";
 import { handle, RESPONSIVENESS } from "./bc-01-customer-responsiveness.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
-test("happy path: cleared within 24h scores Fast", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: { crs_paid: true } }] });
+// 05/30 doc 667-672 (GATE BC-01B) makes the two paths mutually exclusive, selected by
+// Round Hold Reason on the CONTACT:
+//   "Awaiting CRS" -> CRS-payment responsiveness (CRS Paid)
+//   otherwise      -> docs responsiveness (docs:missing tag alone)
+
+// --- CRS path ---------------------------------------------------------------
+
+test("CRS path: hold is Awaiting CRS and CRS is paid -> Fast", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com",
+    custom_fields: { round_hold_reason: "Awaiting CRS", crs_paid: true } }] });
   const res = await handle({ event: ev("round.started", {}, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.responsiveness, "fast");
   assert.equal(db.behaviorScores[0].responsiveness, RESPONSIVENESS.fast);
 });
 
-test("branch: docs:missing hold cleared between 24h and 48h scores Normal", async () => {
-  const clients = [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }];
-  const fundingRounds = [{ id: "fr-1", client_id: "cl-1", round_number: 1, hold_reason: "Missing Documents" }];
-  const db = pgFake({ clients, fundingRounds });
+test("CRS path: hold is Awaiting CRS and CRS unpaid after both waits -> Slow", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com",
+    custom_fields: { round_hold_reason: "Awaiting CRS" } }] });
+  const res = await handle({ event: ev("round.started", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(res.responsiveness, "slow");
+});
+
+test("CRS path: paying between the 24h and 48h checks -> Normal", async () => {
+  const clients = [{ id: "cl-1", org_id: "org-1", email: "a@b.com",
+    custom_fields: { round_hold_reason: "Awaiting CRS" } }];
+  const db = pgFake({ clients });
   let sleeps = 0;
-  // Simulate F-06 clearing the hold at the 48h checkpoint (after sleep #2).
-  const step = { run: (_id, fn) => fn(), sleep: async () => { sleeps += 1; if (sleeps === 2) fundingRounds[0].hold_reason = null; } };
+  const step = { run: (_id, fn) => fn(), sleep: async () => { sleeps += 1; if (sleeps === 2) clients[0].custom_fields.crs_paid = true; } };
   const res = await handle({ event: ev("round.started", {}, { clientId: "cl-1" }), db, step });
   assert.equal(res.responsiveness, "normal");
 });
 
-test("branch: docs:missing hold still present after 48h scores Slow", async () => {
-  const db = pgFake({
-    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
-    fundingRounds: [{ id: "fr-1", client_id: "cl-1", round_number: 1, hold_reason: "Missing Documents" }]
-  });
+// --- docs path --------------------------------------------------------------
+
+test("docs path: no docs:missing tag -> Fast", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", tags: [], custom_fields: {} }] });
+  const res = await handle({ event: ev("round.started", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(res.responsiveness, "fast");
+});
+
+test("docs path: docs:missing still set after both waits -> Slow", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com",
+    tags: ["docs:missing"], custom_fields: {} }] });
   const res = await handle({ event: ev("round.started", {}, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.responsiveness, "slow");
 });
 
-test("fix: docs_missing_cleared (invented field) no longer used — hold_reason on round is the real signal", async () => {
-  // A client with docs_missing_cleared=true in custom_fields (old dead field) but a round
-  // still holding "Missing Documents" should NOT score fast.
-  const db = pgFake({
-    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: { docs_missing_cleared: true } }],
-    fundingRounds: [{ id: "fr-1", client_id: "cl-1", round_number: 1, hold_reason: "Missing Documents" }]
-  });
+test("docs path: docs cleared between the 24h and 48h checks -> Normal", async () => {
+  const clients = [{ id: "cl-1", org_id: "org-1", email: "a@b.com", tags: ["docs:missing"], custom_fields: {} }];
+  const db = pgFake({ clients });
+  let sleeps = 0;
+  const step = { run: (_id, fn) => fn(), sleep: async () => { sleeps += 1; if (sleeps === 2) clients[0].tags = []; } };
+  const res = await handle({ event: ev("round.started", {}, { clientId: "cl-1" }), db, step });
+  assert.equal(res.responsiveness, "normal");
+});
+
+// THE REGRESSION: crs_paid used to be checked FIRST on both paths. Every funding client
+// pays the CRS diagnostic, so that short-circuit made the docs path unreachable and every
+// funding client scored Fast regardless of whether they ever sent a document.
+test("REGRESSION: a paid client still sitting on docs:missing scores Slow, not Fast", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com",
+    tags: ["docs:missing"], custom_fields: { crs_paid: true } }] });
   const res = await handle({ event: ev("round.started", {}, { clientId: "cl-1" }), db, step: fakeStep() });
-  assert.equal(res.responsiveness, "slow");
+  assert.equal(res.responsiveness, "slow", "crs_paid must not short-circuit the docs path");
+});
+
+test("REGRESSION: the docs path ignores crs_paid entirely", async () => {
+  const paid = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", tags: [], custom_fields: { crs_paid: true } }] });
+  const unpaid = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", tags: [], custom_fields: {} }] });
+  const a = await handle({ event: ev("round.started", {}, { clientId: "cl-1" }), db: paid, step: fakeStep() });
+  const b = await handle({ event: ev("round.started", {}, { clientId: "cl-1" }), db: unpaid, step: fakeStep() });
+  assert.equal(a.responsiveness, b.responsiveness, "CRS payment is irrelevant off the Awaiting CRS path");
 });
 
 // KNOWN GAP (logged in workflow-migration-table.md): behavior_scores has no
@@ -49,7 +85,8 @@ test("fix: docs_missing_cleared (invented field) no longer used — hold_reason 
 // change (out of scope for this session) to fix properly. This test documents the
 // gap rather than hiding it.
 test("duplicate delivery: KNOWN GAP — replaying writes a second row (no idempotency hook available on behavior_scores)", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: { crs_paid: true } }] });
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com",
+    custom_fields: { round_hold_reason: "Awaiting CRS", crs_paid: true } }] });
   const event = ev("round.started", {}, { id: "evt-dup-bc01", clientId: "cl-1" });
   await handle({ event, db, step: fakeStep() });
   await handle({ event, db, step: fakeStep() });

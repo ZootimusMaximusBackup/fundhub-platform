@@ -86,6 +86,18 @@ export function pgFake(seed = {}) {
         return { rows: c ? [{ tags: c.tags || [] }] : [] };
       }
 
+      // --- clients identity lookup (DS-01 email+phone gate) ---
+      if (/SELECT email, phone FROM clients WHERE id/.test(sql)) {
+        const c = clients.find((c) => c.id === params[0]);
+        return { rows: c ? [{ email: c.email || null, phone: c.phone || null }] : [] };
+      }
+
+      // --- clients.custom_fields + tags together (DPC-05 escalation gating) ---
+      if (/SELECT custom_fields, tags FROM clients WHERE id/.test(sql)) {
+        const c = clients.find((c) => c.id === params[0]);
+        return { rows: c ? [{ custom_fields: c.custom_fields || {}, tags: c.tags || [] }] : [] };
+      }
+
       // --- clients.custom_fields lookup (pod-assigned / docs-status checks) ---
       if (/SELECT custom_fields FROM clients WHERE id/.test(sql)) {
         const c = clients.find((c) => c.id === params[0]);

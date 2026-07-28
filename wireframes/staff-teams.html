@@ -198,6 +198,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
       <div class="navgroup"><button class="navhead">Setup<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
         <a class="navitem on" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
         <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
       </div></div>
       <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
@@ -355,12 +356,12 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 
 /* ══ DATA ════════════════════════════════════════════════════════════════ */
 var PEOPLE=[
-  {id:1,first:'Chris',last:'Stanbridge',code:'EMP-000001',role:'Owner',email:'chris@fundhub.ai',phone:'+1 480 555 0100',start:'2023-02-06',active:true,consent:true,consentAt:'2026-06-02',clock:true,since:'06:41',today:'7h 22m'},
-  {id:2,first:'Sarah',last:'Whitfield',code:'EMP-000014',role:'Sales Manager',email:'sarah@fundhub.ai',phone:'+1 480 555 0114',start:'2023-09-18',active:true,consent:true,consentAt:'2026-06-03',clock:true,since:'08:02',today:'6h 01m'},
-  {id:3,first:'Jordan',last:'Blake',code:'EMP-000037',role:'Closer',email:'jordan@fundhub.ai',phone:'+1 480 555 0137',start:'2024-04-01',active:true,consent:true,consentAt:'2026-06-04',clock:true,since:'08:15',today:'5h 48m'},
-  {id:4,first:'Nina',last:'Castellano',code:'EMP-000052',role:'Closer',email:'nina@fundhub.ai',phone:'+1 480 555 0152',start:'2024-11-12',active:true,consent:true,consentAt:'2026-06-04',clock:false,since:'—',today:'0h 00m'},
-  {id:5,first:'Marcus',last:'Webb',code:'EMP-000068',role:'Funding Advisor',email:'marcus@fundhub.ai',phone:'+1 480 555 0168',start:'2025-03-24',active:true,consent:true,consentAt:'2026-06-11',clock:false,since:'—',today:'2h 10m'},
-  {id:6,first:'Alvin',last:'Torres',code:'EMP-000081',role:'Inquiry Remover',email:'alvin@fundhub.ai',phone:'+1 480 555 0181',start:'2025-08-05',active:true,consent:false,consentAt:null,clock:false,since:'—',today:'0h 00m'},
+  {id:1,first:'Chris',last:'Stanbridge',code:'EMP-000001',role:'Owner',email:'chris@fundhub.ai',phone:'+1 480 555 0100',start:'2023-02-06',active:true,consent:true,consentAt:'2026-06-02',clock:true,since:'06:41',today:'8h 06m'},
+  {id:2,first:'Sarah',last:'Whitfield',code:'EMP-000014',role:'Sales Manager',email:'sarah@fundhub.ai',phone:'+1 480 555 0114',start:'2023-09-18',active:true,consent:true,consentAt:'2026-06-03',clock:true,since:'08:02',today:'6h 45m'},
+  {id:3,first:'Jordan',last:'Blake',code:'EMP-000037',role:'Closer',email:'jordan@fundhub.ai',phone:'+1 480 555 0137',start:'2024-04-01',active:true,consent:true,consentAt:'2026-06-04',clock:true,since:'08:15',today:'6h 32m'},
+  {id:4,first:'Nina',last:'Castellano',code:'EMP-000052',role:'Closer',email:'nina@fundhub.ai',phone:'+1 480 555 0152',start:'2024-11-12',active:true,consent:true,consentAt:'2026-06-04',clock:true,since:'08:30',today:'6h 17m'},
+  {id:5,first:'Marcus',last:'Webb',code:'EMP-000068',role:'Funding Advisor',email:'marcus@fundhub.ai',phone:'+1 480 555 0168',start:'2025-03-24',active:true,consent:true,consentAt:'2026-06-11',clock:true,since:'08:00',today:'6h 47m'},
+  {id:6,first:'Alvin',last:'Torres',code:'EMP-000081',role:'Inquiry Remover',email:'alvin@fundhub.ai',phone:'+1 480 555 0181',start:'2025-08-05',active:true,consent:true,consentAt:'2026-06-12',clock:true,since:'08:02',today:'6h 45m'},
   {id:7,first:'Dana',last:'Kowalczyk',code:'EMP-000123',role:'Affiliate',email:'dana@kowalczykpartners.com',phone:'+1 312 555 0223',start:'2026-07-14',active:false,consent:false,consentAt:null,clock:false,since:'—',today:'0h 00m'}
 ];
 var nextCode=124, nextId=8;

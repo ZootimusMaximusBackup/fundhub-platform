@@ -113,6 +113,16 @@ export function normalizeCrsResult(engineResult) {
 // A completed CRS run always emits two events:
 //   analysis.completed  — "what the bureaus said" (scores/util/reasonCodes)
 //   decision.rendered   — "what we decided" (tier + estimate)
+//
+// `outcomeTier` rides on BOTH payloads. It is decision.rendered's headline, but
+// analysis.completed needs it too: emitCrsResult emits these in order and the bus
+// dispatches synchronously, so every analysis.completed subscriber runs BEFORE
+// decision.rendered has written `clients.outcome_tier`. Without the tier on this
+// payload those subscribers read a column that is still null (first pull) or stale
+// (re-pull) — see the "Model drift" section of workflow-migration-table.md.
+// Two in-repo consumers already assumed this shape: client-lifecycle.mjs's
+// onAnalysisCompleted reads `payload.outcomeTier` to fill `crs_results.outcome_tier`
+// (previously always null in production), and api/dashboard/seed.mjs emits it.
 export function mapToCanonical(norm) {
   if (!norm || !norm.outcomeTier) return [];
 
@@ -120,6 +130,7 @@ export function mapToCanonical(norm) {
     {
       name: "analysis.completed",
       payload: {
+        outcomeTier: norm.outcomeTier,
         scores: norm.scores,
         utilization: norm.utilization,
         reasonCodes: norm.reasonCodes,

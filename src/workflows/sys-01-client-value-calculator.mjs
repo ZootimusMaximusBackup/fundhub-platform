@@ -20,15 +20,20 @@ export async function handle({ event, db, step }) {
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
 
+  // 05/30 doc lines 3704-3711 apply "Multiply by Funding Fee Percent" on BOTH branches —
+  // the result is a COMMISSION estimate (line 3714), not a capital figure. The fallback
+  // here returned the raw funding estimate, overstating client value by ~10x at a
+  // typical 10% fee. Both branches now multiply.
   const { approvedAmount, feePercent, fundingEstimate } = event.payload || {};
-  const potentialValue = approvedAmount != null && feePercent != null
-    ? approvedAmount * (feePercent / 100)
-    : fundingEstimate ?? null;
+  const basis = approvedAmount ?? fundingEstimate ?? null;
+  if (basis == null || feePercent == null) return { done: false, reason: "no_basis_for_estimate" };
+  const potentialCommission = basis * (feePercent / 100);
 
-  if (potentialValue == null) return { done: false, reason: "no_basis_for_estimate" };
-
-  await step.run("set-potential-value", () => mergeCustomFields(db, clientId, { potential_value: potentialValue }));
-  return { done: true, potentialValue };
+  // Field name is the doc's: cf_potential_commission (lines 3706, 3710, 5046). This wrote
+  // `potential_value`, which nothing else in the system reads.
+  await step.run("set-potential-commission", () =>
+    mergeCustomFields(db, clientId, { potential_commission: potentialCommission }));
+  return { done: true, potentialCommission };
 }
 
 export const sys01ClientValueCalculator = inngest.createFunction(

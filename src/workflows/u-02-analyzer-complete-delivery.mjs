@@ -8,11 +8,17 @@
 // Trigger: analysis.completed. Gate: identity OK (payload.identityOk !== false) —
 // if missing, tags analyzer:data-incomplete + a task instead of sending. Routes to
 // the Funding or Repair letter-pack delivery template by product path.
+//
+// Tier comes from resolveOutcomeTier, not clientOutcomeTier: this fires on the
+// analysis.completed that the CRS adapter emits immediately BEFORE decision.rendered,
+// so `clients.outcome_tier` is not written yet — the column read sent every real pull
+// down the "unknown_path" branch and no delivery email went out (see
+// workflow-migration-table.md, "Model drift").
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
-import { clientOutcomeTier, isFundingPath, isRepairOnlyPath } from "../config/product-path.mjs";
+import { resolveOutcomeTier, isFundingPath, isRepairOnlyPath } from "../config/product-path.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
@@ -47,7 +53,7 @@ export async function handle({ event, db, step }) {
 
   await step.run("tag-analyzer-complete", () => addTags(db, clientId, ["analyzer:complete"]));
 
-  const outcomeTier = await step.run("check-product-path", () => clientOutcomeTier(db, clientId));
+  const outcomeTier = await step.run("check-product-path", () => resolveOutcomeTier(db, clientId, event.payload));
   const orgId = event.orgId;
   const eventId = event.id;
 
@@ -59,12 +65,15 @@ export async function handle({ event, db, step }) {
     return { done: true, branch: "funding", email };
   }
 
+  // REPAIR IS NOT DELIVERED HERE. Under 05/30 the repair letter pack is the paid DIY
+  // product ($1,000 default) and ships only from DS-02, behind the cf_diy_paid gate
+  // (doc lines 79-84). This branch used to email the repair deliverable the moment the
+  // CRS pull returned — giving away the paid product for free to anyone who landed on a
+  // repair tier, before any invoice existed. Repair now only gets tagged and routed;
+  // C-06 handles the repair handoff and DS-02 handles fulfilment after payment.
   if (isRepairOnlyPath(outcomeTier)) {
     await step.run("tag-path-repair", () => addTags(db, clientId, ["path:repair"]));
-    const email = await step.run("send-repair-delivery", () =>
-      sendTemplated(db, { orgId, clientId, channel: "email", templateKey: REPAIR_EMAIL_TEMPLATE_KEY, eventId }));
-    await step.run("set-repair-delivery-sent", () => mergeCustomFields(db, clientId, { repair_delivery_sent: true }));
-    return { done: true, branch: "repair", email };
+    return { done: true, branch: "repair", delivered: false, reason: "repair_ships_from_ds-02_after_payment" };
   }
 
   await step.run("tag-data-incomplete-unknown-path", () => addTags(db, clientId, ["analyzer:data-incomplete"]));
