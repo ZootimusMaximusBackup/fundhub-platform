@@ -149,11 +149,14 @@ export function idempotencyKey({ basis, saleId, roundId, staffId, ruleId, eventR
  *   attributions  sale_attributions rows. Only the matching basis is used.
  *   rules         commission_rules rows, tiers attached as rule.tiers
  *   occurredAt    business time of the triggering event -> earned_at
- *   asOf          rule-version date. Defaults to the SALE date (CHRIS
- *                 PROVISIONAL #9): a deal sold in July pays July's rate even if
- *                 it funds in October. A raise must not retroactively reprice
- *                 deals people have already closed, and a rep has to be able to
- *                 predict their own commission at the moment they close.
+ *   asOf          rule-version date. Defaults to the SALE date: a deal sold in
+ *                 July pays July's rate even if it funds in October. A raise must
+ *                 not retroactively reprice deals people have already closed, and
+ *                 a rep has to be able to predict their own commission at the
+ *                 moment they close. Settled policy, per LOCK 9 in the source of
+ *                 truth — the fee percent is locked once contract + CRS payment
+ *                 are satisfied and no workflow may change it after, so the rate
+ *                 a deal is paid on is fixed at the sale for the same reason.
  *                 Pass asOf = occurredAt for earned-date behaviour instead.
  *   sourceEvent   'deposit.paid' | 'round.funded' | ...
  *   eventRef      optional idempotency discriminator
@@ -186,8 +189,10 @@ export function computeCommission(input) {
   }
   if (!occurredAt) throw new TypeError("computeCommission: occurredAt is required");
 
-  // Rate version is picked by the SALE date, not the earning date. Falls back to
-  // occurredAt only when there is no sale to date it from (a manual adjustment).
+  // Rate version is picked by the SALE date, not the earning date (LOCK 9: terms
+  // lock at contract + CRS payment and no workflow may move them afterwards).
+  // Falls back to occurredAt only when there is no sale to date it from (a manual
+  // adjustment).
   const asOf = input.asOf || sale?.sold_at || occurredAt;
   const amounts = input.amounts || resolveAmounts({ sale, payments, round });
 

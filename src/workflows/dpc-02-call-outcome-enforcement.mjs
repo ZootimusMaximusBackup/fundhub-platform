@@ -23,7 +23,10 @@ import { mergeCustomFields } from "./custom-fields.mjs";
 import { moveCardToStage } from "./cards.mjs";
 import { addTags } from "./tags.mjs";
 
-async function callHappened(db, clientId) {
+// Exported because BS-01's pre-call drip gates on the same question ("has the call
+// been held?") and this workflow owns the concept — better one definition than two
+// copies of the same SQL drifting apart.
+export async function callHappened(db, clientId) {
   const r = await db.query(`SELECT DISTINCT name FROM events WHERE client_id = $1 AND name = ANY($2)`, [clientId, ["call.completed"]]);
   return r.rows.some((row) => row.name === "call.completed");
 }

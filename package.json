@@ -9,7 +9,9 @@
   },
   "scripts": {
     "migrate": "node db/migrate.mjs",
-    "test": "node --test \"src/**/*.test.mjs\""
+    "diagrams": "node scripts/diagrams/generate.mjs",
+    "diagrams:check": "node scripts/diagrams/generate.mjs --check",
+    "test": "node --test \"src/**/*.test.mjs\" \"scripts/diagrams/*.test.mjs\""
   },
   "dependencies": {
     "pg": "^8.13.1",

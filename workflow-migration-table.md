@@ -634,9 +634,30 @@ Per the mode change above — logged here for Darwin to review, not gated on app
 11. **S-06 sets `custom_fields.product_path`** in addition to using `outcome_tier`
     for gating elsewhere — a display-parity mirror of GHL's literal "Product Path"
     field, not a new gating mechanism.
-12. **BS-01 drip wait durations.** No number was given anywhere read for this port
-    (just "Wait", no duration) — spaced at 4h between touches as a reasonable
-    midday-to-evening cadence. Mechanical timing choice, not a business rule.
+12. **BS-01 drip cadence — CORRECTED.** The first port read the source's bare
+    "Wait" steps as a flat 4h interval, which collapsed a three-day sequence into a
+    16-hour burst of five sends. The source is a **D1-D3 × E1-E6 grid** (Darwin,
+    from the docs repo): three day rows, six slot columns, 18 cells. E1 is the
+    kickoff column (only D1's is written), E2-E5 are the four named daily sends
+    (morning / midday / afternoon / evening), E6 is spare. **The docs carry copy for
+    11 of the 18 cells.** The other 7 are addressed by the code and resolved at send
+    time — a cell with no template is skipped and returned in `gaps`, never invented.
+    Keys are `BS-FUND-{day}-{slot}-{name}` / `BS-REPAIR-{day}-{slot}-{name}` and are
+    matched by `{prefix}-{day}-{slot}-%` prefix, because the trailing name word is
+    the docs' own and is not derivable from grid position. The previous port's
+    `EMAIL-BS-FUND-01-KICKOFF`-style keys were invented and never existed in source.
+    Remaining timing choice (not a business rule): booking.created carries no
+    local-time anchor, so slots are relative offsets summing to 24h per day row —
+    kickoff at t=0, last cell at +71h, inside the source's 72-hour window.
+12a. **BS-01 recheck is an Exit, gated on call-held.** The source's Gate 2 is an
+    exit, not a branch, and was missing from the first port entirely. BS-01 is
+    pre-call material, so once the call has happened the remaining touches are stale
+    and sending them is worse than sending nothing. The gate reuses DPC-02's
+    `callHappened` (a `call.completed` event for the client), now exported rather
+    than duplicated. It deliberately does **not** read `cf_analyzer_recommendation`:
+    that field is only written *during* the call, so gating on it would pass on
+    exactly the wrong side. Checked at every wake rather than once after the
+    kickoff — a single check at +12h would still let 14 stale touches through.
 13. **AI-SET-03's third wait / exit condition.** The audit fix says "30 min / 2 hr /
     24 hr" for three waits, but only two waits separate the three messages in the
     source crawl. Built as: msg1 → 30m → msg2 → 2h → msg3, checking for a rebooking
@@ -681,6 +702,7 @@ Per the mode change above — logged here for Darwin to review, not gated on app
 
 | Key | Name | Disposition | Reasoning |
 |---|---|---|---|
+| BS-01 | Pre-Call Backend Launcher | MIGRATED | `src/workflows/bs-01-precall-launcher.mjs`. Merges in BS-EMAIL-FUNDING-72HR (live) and BS-EMAIL-REPAIR-72HR (live) — both are enrollment targets of BS-01, not independently-triggered, so one continuous flow. Trigger `booking.created`; drip choice by product path. Cadence is the D1-D3 × E1-E6 grid (18 cells, 11 with copy today) with a call-held exit gate — see decisions 12 and 12a. |
 | BS-01 | Pre-Call Backend Launcher | **MIGRATED — DEAD under 05/30** | `src/workflows/bs-01-precall-launcher.mjs`. Merges in BS-EMAIL-FUNDING-72HR (live) and BS-EMAIL-REPAIR-72HR (live) — both are enrollment targets of BS-01, not independently-triggered, so one continuous flow. Trigger `booking.created`; drip choice by product path. **The tier does not exist at `booking.created` under the 05/30 model, so the router falls through to `no_matching_path:null` and neither drip sends.** Not repaired — the correct trigger point is a business decision; see "Model drift — 04/08 vs 05/30" above for the proposal and the blocking questions. |
 | BS-EMAIL-FUNDING-72HR (live) | MERGED INTO BS-01 | See above. |
 | BS-EMAIL-REPAIR-72HR (live) | MERGED INTO BS-01 | See above. |
