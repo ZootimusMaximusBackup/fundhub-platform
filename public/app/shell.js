@@ -80,6 +80,29 @@
     });
   }
 
+  /* backendState — what is actually answering, as opposed to what the screen
+     is drawing. Three distinct failures used to look identical from the
+     browser: no function deployed, function up but no DATABASE_URL, and a
+     database that is refusing connections. /api/health separates them, so the
+     chip can name the real one instead of saying DEMO for all three. */
+  function backendState() {
+    return fetch("/api/health", { headers: { accept: "application/json" } })
+      .then(function (r) {
+        if (r.status === 404) return { code: "offline", label: "NO API", hint: "/api/* is not deployed" };
+        return r.json().then(function (d) {
+          if (d && d.ok && d.db === "up") {
+            return { code: "live", label: "LIVE", hint: (d.migrations || 0) + " migrations applied" };
+          }
+          return { code: "nodb", label: "NO DB", hint: String((d && d.error) || "database unreachable") };
+        }).catch(function () {
+          return { code: "offline", label: "NO API", hint: "/api/health did not return JSON" };
+        });
+      })
+      .catch(function () {
+        return { code: "offline", label: "NO API", hint: "/api/health unreachable" };
+      });
+  }
+
   function signOut() {
     localStorage.removeItem("fh_token");
     localStorage.removeItem("fh_demo");
@@ -111,10 +134,31 @@
     el.style.cssText = "position:fixed;top:12px;right:14px;z-index:2147483000;display:flex;gap:10px;align-items:center;background:#0A0A0A;color:#fff;border:1px solid #26262B;border-radius:10px;padding:8px 12px;font:500 11px/1 'JetBrains Mono',monospace;letter-spacing:.06em;box-shadow:0 10px 30px rgba(0,0,0,.35)";
     el.innerHTML =
       '<span style="color:#A1A1AA">' + esc(staff.name || staff.email) + " · " + esc(String(staff.role || "").toLowerCase()) + "</span>" +
-      (demo ? '<span style="background:#F5CE8F;color:#0A0A0A;border-radius:6px;padding:3px 7px;font-weight:700">DEMO</span>' : "") +
+      '<span id="fh-shell-src" title="checking the backend…" style="background:#3F3F46;color:#E4E4E7;border-radius:6px;padding:3px 7px;font-weight:700">···</span>' +
       '<button id="fh-shell-out" style="background:none;border:1px solid #3F3F46;color:#E4E4E7;border-radius:6px;padding:4px 9px;font:inherit;cursor:pointer">Sign out</button>';
     document.body.appendChild(el);
     document.getElementById("fh-shell-out").addEventListener("click", signOut);
+
+    /* One badge, the truth about this screen's data. A screen drawing its
+       built-in sample rows must not look like one reading the database. */
+    var TONE = {
+      live:    { bg: "#A8D8B0", fg: "#0A0A0A" },   // mint  — real data
+      nodb:    { bg: "#F5CE8F", fg: "#0A0A0A" },   // peach — API up, no database
+      offline: { bg: "#F2A69B", fg: "#0A0A0A" }    // rose  — no API at all
+    };
+    backendState().then(function (st) {
+      var b = document.getElementById("fh-shell-src");
+      if (!b) return;
+      // Signed in from localStorage means these rows are sample data whatever
+      // the backend says, so demo wins the label.
+      var code = demo ? (st.code === "live" ? "nodb" : st.code) : st.code;
+      var label = demo ? "DEMO" : st.label;
+      var tone = TONE[code] || TONE.offline;
+      b.style.background = tone.bg;
+      b.style.color = tone.fg;
+      b.textContent = label;
+      b.title = (demo ? "demo session — screens show built-in sample data. " : "") + st.hint;
+    });
   }
 
   function boot() {
