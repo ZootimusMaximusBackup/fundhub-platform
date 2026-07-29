@@ -5,6 +5,23 @@
 (function () {
   var PAGE = location.pathname.split("/").pop() || "index.html";
 
+  /* The session lookup is async, so without this the full nav paints and is
+     clickable while we are still deciding what the role may see — click a tab
+     you are not allowed in that window and you land on it, then get bounced.
+     Hide the nav rows up front and reveal them once gateLinks has run.
+     REVEAL_MS is a floor, not a deadline: a stalled /api/auth/session must
+     degrade to an ungated nav, never to a permanently blank one. */
+  var REVEAL_MS = 4000;
+  var gateStyle = document.createElement("style");
+  gateStyle.id = "fh-gate-style";
+  gateStyle.textContent = ".navitem,.idx-item{visibility:hidden}";
+  (document.head || document.documentElement).appendChild(gateStyle);
+
+  function revealNav() {
+    if (gateStyle && gateStyle.parentNode) gateStyle.parentNode.removeChild(gateStyle);
+  }
+  setTimeout(revealNav, REVEAL_MS);
+
   var ALL = [
     "index.html",
     "closer-dashboard.html", "pipeline.html", "client-control-panel.html",
@@ -26,7 +43,12 @@
     inquiry_specialist: ["inquiry-remover.html", "client-control-panel.html",
                          "messaging.html", "calendar.html"],
     setter: ["pipeline.html", "messaging.html", "calendar.html"],
-    /* future principals (B4) land on a single screen */
+    /* Future principals (B4) land on a single screen. These are PRINCIPAL TYPES,
+       not staff roles — external accounts, not employees — but they are gated
+       here on staff.role because no principals table exists yet. 'partner' is
+       seeded into the staff_roles catalog by db/migrations/036_partner_role.sql
+       purely so the shipped screens are reachable; when principals get their own
+       table and auth, these three move out of ROLE_TABS and 036 is reverted. */
     client: ["client-portal.html"],
     affiliate: ["affiliate.html"],
     partner: ["partner-galaxy.html", "brand-studio.html"]
@@ -79,7 +101,9 @@
       var h = (a.getAttribute("href") || "").replace(/^\.\//, "");
       if (!/^[a-z0-9-]+\.html$/i.test(h)) continue;
       if (ok.indexOf(h) !== -1) continue;
-      var box = a.closest("li") || a.closest(".card") || a;
+      /* .idx-item is the index's row wrapper: hiding only the <a> there would
+         strand the row's icon and description with no link between them. */
+      var box = a.closest("li, .card, .idx-item") || a;
       box.style.display = "none";
     }
   }
@@ -106,6 +130,7 @@
         return;
       }
       gateLinks(ok);
+      revealNav();
       mountChip(sess.staff, sess.demo);
     });
   }
