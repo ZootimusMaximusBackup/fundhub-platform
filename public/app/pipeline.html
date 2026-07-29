@@ -859,7 +859,7 @@
 
       <div class="demo-item">
         <div class="demo-cap">Empty rail — no cards on the board</div>
-        <div class="empty-rail-note" style="margin:0;">R-07 · Affiliates + Hiring — this wireframe only carries the Sales board.</div>
+        <div class="empty-rail-note" style="margin:0;">R-07 · Affiliates + Hiring — no board yet. Sales is the only pipeline wired so far.</div>
       </div>
 
     </div>
@@ -1206,7 +1206,7 @@ tabs.forEach(function(t){
     board.style.display = isSales?'':'none';
     if(isSales){ if(note.parentNode) note.remove(); }
     else{
-      note.textContent=t.dataset.rail+' · '+name+' — this wireframe only carries the Sales board.';
+      note.textContent=t.dataset.rail+' · '+name+' — no board yet. Sales is the only pipeline wired so far.';
       wrap.appendChild(note);
     }
   });
