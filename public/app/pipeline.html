@@ -1219,6 +1219,153 @@ if(edz) edz.addEventListener('click',function(){ edz.closest('.errbar').style.op
 restore();
 })();
 </script>
+
+<!-- ══ LIVE BOARD ════════════════════════════════════════════════════════════
+     Replaces the sample cards with the real board from
+     /api/dashboard/pipeline?key=sales — the client's actual position, read
+     from cards.stage_id, not inferred from payment flags.
+
+     It runs after the interaction script above on purpose. Drag is delegated
+     on .board and the filters re-query the DOM each time, so cards swapped in
+     underneath them stay fully interactive.
+
+     If the backend cannot answer, the sample board is left untouched and the
+     banner says so. Half-real boards are worse than either — so when the API
+     does answer, every column is rebuilt from it, including the empty ones.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var board = document.querySelector(".board");
+  if (!board) return;
+  var cols = [].slice.call(board.querySelectorAll(".col"));
+
+  function colName(col) {
+    var n = col.querySelector(".col-name");
+    return n ? n.textContent.trim().toLowerCase() : "";
+  }
+
+  function usd(n) { return "$" + Math.round(n || 0).toLocaleString("en-US"); }
+
+  function initials(name) {
+    var parts = String(name).trim().split(/\s+/);
+    return ((parts[0] || "?")[0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+  }
+
+  function age(iso) {
+    var t = Date.parse(iso);
+    if (isNaN(t)) return "in stage";
+    var mins = Math.max(0, Math.round((Date.now() - t) / 60000));
+    if (mins < 60) return mins + "m in stage";
+    if (mins < 1440) return Math.round(mins / 60) + "h in stage";
+    return Math.round(mins / 1440) + "d in stage";
+  }
+
+  /* Built with createElement and textContent throughout: card names and owners
+     are client data and must never be interpreted as markup. */
+  function cardEl(c) {
+    function div(cls, text) {
+      var d = document.createElement("div");
+      d.className = cls;
+      if (text != null) d.textContent = text;
+      return d;
+    }
+    var card = div("card");
+
+    var top = div("c-top");
+    top.appendChild(div("av agent", initials(c.name)));
+    top.appendChild(div("c-name", c.name));
+    var tools = div("c-tools");
+    var move = document.createElement("span");
+    move.className = "c-btn route"; move.textContent = "MOVE";
+    var grip = document.createElement("span");
+    grip.className = "grip"; grip.textContent = "⠿";
+    tools.appendChild(move); tools.appendChild(grip);
+    top.appendChild(tools);
+    card.appendChild(top);
+
+    var amt = div("c-amt", c.amount == null ? "—" : usd(c.amount) + " ");
+    if (c.amount != null) {
+      var unit = document.createElement("span");
+      unit.className = "unit"; unit.textContent = "est.";
+      amt.appendChild(unit);
+    }
+    card.appendChild(amt);
+    card.appendChild(div("c-age", age(c.entered_at)));
+
+    var foot = div("c-foot");
+    var act = div("c-act");
+    if (c.owner) {
+      var b = document.createElement("b");
+      b.textContent = c.owner;
+      act.appendChild(b);
+      act.appendChild(document.createTextNode(" owns this card"));
+    } else {
+      act.textContent = "unassigned";
+    }
+    foot.appendChild(act);
+    foot.appendChild(div("c-when", c.funded ? "funded" : (c.outcome_tier || "")));
+    card.appendChild(foot);
+    return card;
+  }
+
+  function banner(tone, text) {
+    var TONE = { real: "#A8D8B0", sample: "#F5CE8F", error: "#F2A69B" };
+    var el = document.createElement("div");
+    el.setAttribute("role", "status");
+    el.style.cssText =
+      "position:fixed;left:0;right:0;bottom:0;z-index:2147482000;padding:7px 14px;" +
+      "background:" + (TONE[tone] || TONE.error) + ";color:#0A0A0A;" +
+      "font:600 11px/1.4 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.05em;text-align:center";
+    el.textContent = text;
+    document.body.appendChild(el);
+  }
+
+  function paint(stages) {
+    var byName = {};
+    stages.forEach(function (s) { byName[String(s.name).trim().toLowerCase()] = s; });
+
+    var shown = 0;
+    cols.forEach(function (col) {
+      var s = byName[colName(col)];
+      var body = col.querySelector(".col-body");
+      var count = col.querySelector(".col-count");
+      var money = col.querySelector(".col-money");
+      if (!body) return;
+
+      while (body.firstChild) body.removeChild(body.firstChild);
+
+      if (!s) {
+        // No such stage in the database — an empty column is honest, a column
+        // still holding sample cards next to real ones is not.
+        if (count) count.textContent = "0";
+        if (money) money.textContent = usd(0) + " est.";
+        return;
+      }
+      s.cards.forEach(function (c) { body.appendChild(cardEl(c)); shown++; });
+      if (count) count.textContent = String(s.count);
+      if (money) money.textContent = usd(s.amount) + " est.";
+    });
+    return shown;
+  }
+
+  FHData.pipeline("sales").then(function (res) {
+    if (res.ok && res.data && res.data.stages) {
+      var n = paint(res.data.stages);
+      banner("real", "live board · sales pipeline · " + n + " cards across " +
+                     res.data.stages.length + " stages");
+      return;
+    }
+    if (res.source === "demo") {
+      banner("sample", "sample board — demo session, the backend was not queried");
+    } else {
+      banner("error", "sample board — backend unavailable (" + res.source + ": " + res.error + ")");
+    }
+  });
+})();
+</script>
 <script src="shell.js"></script>
 </body>
 </html>

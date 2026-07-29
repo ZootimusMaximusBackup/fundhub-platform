@@ -16,6 +16,7 @@ import tasks from "../../api/tasks.mjs";
 import inquiry from "../../api/inquiry.mjs";
 import dashClients from "../../api/dashboard/clients.mjs";
 import dashClient from "../../api/dashboard/client.mjs";
+import dashPipeline from "../../api/dashboard/pipeline.mjs";
 import dashSeed from "../../api/dashboard/seed.mjs";
 import health from "../../api/health.mjs";
 import webhooks from "../../api/webhooks/[provider].mjs";
@@ -30,6 +31,7 @@ const ROUTES = {
   "inquiry": inquiry,
   "dashboard/clients": dashClients,
   "dashboard/client": dashClient,
+  "dashboard/pipeline": dashPipeline,
   "dashboard/seed": dashSeed,
   "health": health
 };

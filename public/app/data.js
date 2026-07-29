@@ -66,6 +66,12 @@ window.FHData = (function () {
       if (!id) return Promise.resolve(fail("nodata", "no client id in the URL"));
       return get("/api/dashboard/client?id=" + encodeURIComponent(id));
     },
+    /* GET /api/dashboard/pipeline → data.stages[] with .cards[], each stage
+       carrying its own count and money so a column can never disagree with
+       the cards under it. */
+    pipeline: function (key) {
+      return get("/api/dashboard/pipeline?key=" + encodeURIComponent(key || "sales"));
+    },
     /* GET /api/tasks → data.tasks[] */
     tasks: function (opts) {
       var o = opts || {};
