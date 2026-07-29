@@ -608,6 +608,90 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
   });
 })();
 </script>
+
+<!-- ══ LIVE DATA ═════════════════════════════════════════════════════════════
+     Reference wiring for the app screens. The markup above is sample data; if
+     the backend can answer for a real client (/app/client-control-panel.html
+     ?id=<uuid>) the fields below are overwritten with its rows, and a banner
+     says which of the two you are looking at. When the backend cannot answer
+     the sample markup is left exactly as it is — a degraded screen still shows
+     the shape of the thing, and the banner stops it being mistaken for real.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* Every write below goes through textContent. These values are client
+     records — names, notes, emails — and must never be parsed as markup. */
+  function setText(el, v) { if (el && v != null && v !== "") el.textContent = String(v); }
+
+  function byLabel(labelSel, valueSel, want) {
+    var labels = document.querySelectorAll(labelSel);
+    for (var i = 0; i < labels.length; i++) {
+      if (labels[i].textContent.trim().toLowerCase() === want.toLowerCase()) {
+        var row = labels[i].parentNode;
+        return row ? row.querySelector(valueSel) : null;
+      }
+    }
+    return null;
+  }
+  var kv = function (l) { return byLabel(".kv-label", ".kv-value", l); };
+  var tile = function (l) { return byLabel(".rf-label", ".rf-value", l); };
+
+  function banner(tone, text) {
+    var TONE = { real: "#A8D8B0", sample: "#F5CE8F", error: "#F2A69B" };
+    var el = document.createElement("div");
+    el.setAttribute("role", "status");
+    el.style.cssText =
+      "position:fixed;left:0;right:0;bottom:0;z-index:2147482000;padding:7px 14px;" +
+      "background:" + (TONE[tone] || TONE.error) + ";color:#0A0A0A;" +
+      "font:600 11px/1.4 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.05em;text-align:center";
+    el.textContent = text;
+    document.body.appendChild(el);
+  }
+
+  function money(n) {
+    var v = Number(n);
+    return isNaN(v) || n === null || n === "" ? null : "$" + Math.round(v).toLocaleString("en-US");
+  }
+
+  function render(d) {
+    var c = d.client || {};
+    var name = [c.first_name, c.last_name].filter(Boolean).join(" ");
+    setText(document.querySelector(".record-name"), name);
+    setText(kv("Email"), c.email);
+    setText(kv("Phone"), c.phone);
+
+    var cf = c.custom_fields || {};
+    setText(tile("Prequal"), cf.total_funding_estimate ? "Approved" : "Not yet");
+    setText(tile("Total Approved"), money(c.funded_amount) || money(cf.total_funding_estimate) || "—");
+    setText(tile("Open Inquiries"), String((d.tasks || []).filter(function (t) { return !t.done; }).length));
+
+    var badge = document.querySelector(".status-badge-lg");
+    if (badge) {
+      setText(badge, c.funded ? "Funded"
+        : cf.sale_closed ? "Sale closed"
+        : cf.deposit_paid ? "Deposit paid"
+        : cf.crs_paid ? "Diagnostic paid" : "New");
+    }
+    banner("real", "live record · " + (name || c.id) + " · " + (d.transactions || []).length +
+                   " transactions · " + (d.messages || []).length + " messages");
+  }
+
+  var id = FHData.param("id");
+  FHData.client(id).then(function (res) {
+    if (res.ok) { render(res.data); return; }
+    if (res.source === "nodata") {
+      banner("sample", "sample data — open with ?id=<client id> to load a real record");
+    } else if (res.source === "demo") {
+      banner("sample", "sample data — demo session, the backend was not queried");
+    } else {
+      banner("error", "sample data — backend unavailable (" + res.source + ": " + res.error + ")");
+    }
+  });
+})();
+</script>
 <script src="shell.js"></script>
 </body>
 </html>
