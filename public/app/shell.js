@@ -16,7 +16,7 @@
   var REVEAL_MS = 4000;
   var gateStyle = document.createElement("style");
   gateStyle.id = "fh-gate-style";
-  gateStyle.textContent = ".navitem,.idx-item{visibility:hidden}";
+  gateStyle.textContent = ".navitem{visibility:hidden}";
   (document.head || document.documentElement).appendChild(gateStyle);
 
   function revealNav() {
@@ -145,9 +145,9 @@
       var h = (a.getAttribute("href") || "").replace(/^\.\//, "");
       if (!/^[a-z0-9-]+\.html$/i.test(h)) continue;
       if (ok.indexOf(h) !== -1) continue;
-      /* .idx-item is the index's row wrapper: hiding only the <a> there would
-         strand the row's icon and description with no link between them. */
-      var box = a.closest("li, .card, .idx-item") || a;
+      /* Walk to the row wrapper where there is one, so gating a link never
+         strands the icon and label that belong to it. */
+      var box = a.closest("li, .card") || a;
       box.style.display = "none";
     }
   }
