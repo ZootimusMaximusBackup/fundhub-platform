@@ -12,3 +12,35 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+
+# ---------------------------------------------------------------------------
+# Routing
+#
+# The CRM lives in the directory public/app/, so its URL is /app/. There used
+# to be a public/app.html redirect stub alongside it, which meant two files
+# claimed the same URL: Netlify resolves /app to the *file* app.html, while the
+# stub's own script sent the browser to /app/ — and /app/ normalises back to
+# /app whenever a sibling .html exists. That is a redirect loop, and it is why
+# /app never finished loading. The stub is gone; these rules make what is left
+# explicit instead of leaving it to filename-resolution order.
+# ---------------------------------------------------------------------------
+
+[[redirects]]
+  from = "/app"
+  to = "/app/"
+  status = 301
+
+# Old bookmarks and any link written before the move.
+[[redirects]]
+  from = "/app.html"
+  to = "/app/"
+  status = 301
+
+# The api/ handlers run as one function. netlify/functions/api.mjs already
+# declares `config.path = "/api/*"`; this rewrite is the belt to that braces, so
+# /api/* still routes if the v2 path config is not honoured. The function
+# tolerates either URL shape — see the prefix stripping in its handler.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200

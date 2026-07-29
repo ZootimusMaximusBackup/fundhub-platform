@@ -39,7 +39,7 @@ document.getElementById("f").addEventListener("submit", async (e) => {
   }
   if (data.token) localStorage.setItem("fh_token", data.token);
   const next = new URLSearchParams(location.search).get("next");
-  location.href = next && next.startsWith("/") ? next : "/app.html";
+  location.href = next && next.startsWith("/") ? next : "/app/";
 });
 </script>
 </body></html>

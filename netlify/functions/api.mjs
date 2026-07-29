@@ -40,9 +40,21 @@ function toQueryObject(searchParams) {
   return q;
 }
 
+// routePath — the handler key for a request URL. The function can be reached
+// two ways: directly on /api/* via config.path above, or on
+// /.netlify/functions/api/* when netlify.toml's rewrite is what routed it.
+// Both must reduce to the same key ("auth/session"), or the rewrite path
+// 404s on every route.
+function routePath(pathname) {
+  return pathname
+    .replace(/^\/\.netlify\/functions\/api\/?/, "")
+    .replace(/^\/api\/?/, "")
+    .replace(/\/+$/, "");
+}
+
 export default async function handler(request, context) {
   const url = new URL(request.url);
-  const path = url.pathname.replace(/^\/api\/?/, "").replace(/\/+$/, "");
+  const path = routePath(url.pathname);
 
   let route = ROUTES[path];
   const query = toQueryObject(url.searchParams);
