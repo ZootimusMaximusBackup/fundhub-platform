@@ -243,6 +243,7 @@ const FH = (() => {
     if (out) out.onclick = async () => {
       await api("/api/auth/logout", { method: "POST" });
       localStorage.removeItem("fh_token"); localStorage.removeItem("fh_demo"); localStorage.removeItem("fh_demo_staff");
+      localStorage.removeItem("fh_role");  // the shell's pre-paint role hint
       location.href = "/login.html";
     };
     window.STAFF = staff;

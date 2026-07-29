@@ -38,6 +38,13 @@ document.getElementById("f").addEventListener("submit", async (e) => {
     return;
   }
   if (data.token) localStorage.setItem("fh_token", data.token);
+  // Hand the role to /app/shell.js so the first screen is gated before it
+  // paints, instead of drawing and then bouncing while the session resolves.
+  if (data.staff && data.staff.role) {
+    localStorage.setItem("fh_role", String(data.staff.role).toLowerCase());
+  } else {
+    localStorage.removeItem("fh_role");
+  }
   const next = new URLSearchParams(location.search).get("next");
   location.href = next && next.startsWith("/") ? next : "/app/";
 });

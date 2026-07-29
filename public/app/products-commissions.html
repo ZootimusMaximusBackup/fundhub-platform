@@ -164,6 +164,7 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
 .empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:12px}
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
 </style>
+<script src="shell.js"></script>
 </head>
 <body>
 <div class="app">
@@ -657,6 +658,5 @@ document.getElementById('perFilter').addEventListener('change',renderLedger);
 
 renderProducts(); renderRules(); renderLedger(); renderStats();
 </script>
-<script src="shell.js"></script>
 </body>
 </html>

@@ -1,7 +1,13 @@
 /* Fundhub CRM shell — auth + role gating over the wireframe suite.
    The screens are the product; this file only decides who sees which tabs.
    Session: real API first, demo session (set by /login.html) as fallback.
-   Change who sees what in ROLE_TABS — one map, nothing else to edit. */
+   Change who sees what in ROLE_TABS — one map, nothing else to edit.
+
+   This file runs from <head>, before the screen paints, and that placement is
+   load-bearing. It used to run as the last script in <body>: a screen the role
+   may not open was parsed, painted and only then bounced away, once the session
+   fetch came back. That is the "it opens the page and then throws me back"
+   behaviour. The gate now decides first and the screen paints second. */
 (function () {
   // "" when the URL is /app/ — the router page, which is not a screen and is
   // never in ALL. Anything not in the role's list gets sent to its home.
@@ -60,6 +66,93 @@
     return h && ok.indexOf(h) !== -1 ? h : ok[0];
   }
 
+  function isScreen(href) {
+    return /^[a-z0-9-]+\.html$/i.test(href);
+  }
+
+  /* ---------------------------------------------------------------------
+     Cached role — the hint that lets the gate answer before the network does.
+
+     The session is the server's to decide, but a role only changes when
+     somebody edits a staff record, so the last known one is a safe hint for
+     the length of one page load. With it the gate is synchronous: a forbidden
+     URL redirects before anything paints, and the nav is drawn already gated.
+     It is never the authority — the real session resolves underneath and
+     rewrites the cache, so a role changed server-side costs one stale load and
+     corrects itself on the next.
+     --------------------------------------------------------------------- */
+  var ROLE_KEY = "fh_role";
+
+  function readCachedRole() {
+    try { return String(localStorage.getItem(ROLE_KEY) || "").toLowerCase(); }
+    catch (e) { return ""; }
+  }
+
+  function writeCachedRole(role) {
+    try {
+      if (role) localStorage.setItem(ROLE_KEY, role);
+      else localStorage.removeItem(ROLE_KEY);
+    } catch (e) {}
+  }
+
+  // routeAway — the screen this role may not open, and where it belongs
+  // instead. null when the page is fine, or when the role has no screens at
+  // all (that is a config error; only the resolved session acts on it).
+  function routeAway(role) {
+    var ok = allowedFor(role);
+    if (!ok.length) return null;
+    if (ok.indexOf(PAGE) !== -1) return null;
+    return "/app/" + homeFor(role, ok);
+  }
+
+  /* allowedNow is null until we know the role. Every click on a screen link is
+     held until then and dropped if the target is forbidden, so a link the user
+     can still see during a cold load cannot start a navigation that would only
+     bounce back. */
+  var allowedNow = null;
+  var pendingHref = null;
+
+  document.addEventListener("click", function (e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var t = e.target;
+    var a = t && t.closest ? t.closest("a[href]") : null;
+    if (!a || a.target === "_blank") return;
+    var h = (a.getAttribute("href") || "").replace(/^\.\//, "");
+    if (!isScreen(h)) return;
+    if (allowedNow === null) {
+      // Session still in flight: remember where they wanted to go and take
+      // them there the moment we know they may.
+      e.preventDefault();
+      pendingHref = h;
+      return;
+    }
+    if (allowedNow.indexOf(h) === -1) e.preventDefault();
+  }, true);
+
+  function settleClicks(ok) {
+    allowedNow = ok;
+    var want = pendingHref;
+    pendingHref = null;
+    if (want && ok.indexOf(want) !== -1) location.href = want;
+  }
+
+  /* Without a hint the gate cannot answer before paint, so hold the screen
+     back rather than let a forbidden one flash. The timer is the safety net: a
+     backend that never answers must not leave a blank page. */
+  var HOLD_MS = 4000;
+  var held = false;
+  function hold() {
+    if (held || !document.documentElement) return;
+    held = true;
+    document.documentElement.style.visibility = "hidden";
+    setTimeout(reveal, HOLD_MS);
+  }
+  function reveal() {
+    if (!held) return;
+    held = false;
+    document.documentElement.style.visibility = "";
+  }
+
   function getSession() {
     var t = localStorage.getItem("fh_token") || "";
     var real = fetch("/api/auth/session", {
@@ -107,6 +200,7 @@
     localStorage.removeItem("fh_token");
     localStorage.removeItem("fh_demo");
     localStorage.removeItem("fh_demo_staff");
+    writeCachedRole("");
     location.href = "/login.html";
   }
 
@@ -116,15 +210,36 @@
     });
   }
 
-  function gateLinks(ok) {
-    var links = document.querySelectorAll('a[href]');
+  /* gateLinks runs twice — once on the cached hint, once on the real session —
+     so it has to be idempotent in both directions. A link the hint hid must
+     come back if the session turns out to allow it. The original href is kept
+     on the element the first time through, because the logo's is rewritten. */
+  function gateLinks(ok, role) {
+    var home = "/app/" + homeFor(role, ok);
+    var links = document.querySelectorAll("a[href]");
     for (var i = 0; i < links.length; i++) {
       var a = links[i];
-      var h = (a.getAttribute("href") || "").replace(/^\.\//, "");
-      if (!/^[a-z0-9-]+\.html$/i.test(h)) continue;
-      if (ok.indexOf(h) !== -1) continue;
+      if (!a.hasAttribute("data-fh-href")) {
+        a.setAttribute("data-fh-href", a.getAttribute("href") || "");
+      }
+      var h = a.getAttribute("data-fh-href").replace(/^\.\//, "");
+      if (!isScreen(h)) continue;
+      var allowed = ok.indexOf(h) !== -1;
+      // The sidebar logo is chrome, not a tab. Every screen points it at
+      // command-center.html, which five of the nine roles may not open, so
+      // hiding it took the logo off the page for them. Send it home instead.
+      if (a.classList.contains("logo")) {
+        a.setAttribute("href", allowed ? h : home);
+        continue;
+      }
       var box = a.closest("li") || a.closest(".card") || a;
-      box.style.display = "none";
+      if (!allowed) {
+        box.style.display = "none";
+        box.setAttribute("data-fh-gated", "1");
+      } else if (box.hasAttribute("data-fh-gated")) {
+        box.style.display = "";
+        box.removeAttribute("data-fh-gated");
+      }
     }
   }
 
@@ -161,25 +276,53 @@
     });
   }
 
-  function boot() {
-    getSession().then(function (sess) {
-      if (!sess) { location.href = "/login.html?next=/app/" + PAGE; return; }
-      var role = String(sess.staff.role || "").toLowerCase();
-      var ok = allowedFor(role);
-      // A role with no screens at all is a config error, not a blank page:
-      // sign out rather than loop the router forever.
-      if (!ok.length) { signOut(); return; }
-      if (ok.indexOf(PAGE) === -1) {
-        // replace(), not href: the router page must not sit in history, or
-        // Back from a screen bounces straight forward again.
-        location.replace("/app/" + homeFor(role, ok));
-        return;
-      }
-      gateLinks(ok);
-      mountChip(sess.staff, sess.demo);
-    });
+  function onReady(fn) {
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
+    else fn();
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
-  else boot();
+  /* ---- pass 1: the hint, synchronous, before the screen paints ---- */
+  var hinted = readCachedRole();
+  if (hinted) {
+    var away = routeAway(hinted);
+    if (away) { location.replace(away); return; }
+    var hintedOk = allowedFor(hinted);
+    if (hintedOk.length) {
+      settleClicks(hintedOk);
+      onReady(function () { gateLinks(hintedOk, hinted); });
+    }
+  } else {
+    hold();
+  }
+
+  /* ---- pass 2: the session, authoritative ---- */
+  getSession().then(function (sess) {
+    if (!sess) {
+      writeCachedRole("");
+      location.href = "/login.html?next=/app/" + PAGE;
+      return;
+    }
+    var role = String(sess.staff.role || "").toLowerCase();
+    var ok = allowedFor(role);
+    writeCachedRole(ok.length ? role : "");
+    // A role with no screens at all is a config error, not a blank page:
+    // sign out rather than loop the router forever.
+    if (!ok.length) { signOut(); return; }
+    if (ok.indexOf(PAGE) === -1) {
+      // replace(), not href: the router page must not sit in history, or
+      // Back from a screen bounces straight forward again.
+      location.replace("/app/" + homeFor(role, ok));
+      return;
+    }
+    settleClicks(ok);
+    onReady(function () {
+      gateLinks(ok, role);
+      mountChip(sess.staff, sess.demo);
+      reveal();
+    });
+  }).catch(function () {
+    // Never leave the screen held back on an unexpected failure.
+    settleClicks(allowedNow || ALL.slice());
+    reveal();
+  });
 })();
