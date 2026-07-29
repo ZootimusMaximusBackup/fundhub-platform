@@ -12,11 +12,11 @@
     <p class="sub" style="margin:0">Sign in</p>
     <div class="err" id="err"></div>
     <form id="f">
-      <input id="email" type="email" placeholder="email" autocomplete="username" required>
-      <input id="pw" type="password" placeholder="password" autocomplete="current-password" required>
+      <input id="email" type="email" placeholder="email" autocomplete="username" value="chris@fundhub.ai" required>
+      <input id="pw" type="password" placeholder="password" autocomplete="current-password" value="demo1234" required>
       <button class="btn primary" id="go" type="submit">Sign in</button>
     </form>
-    <p class="note">Accounts are created by the Fundhub team. Client, affiliate, and partner sign-in arrives with the portal rollout.</p>
+    <p class="note" style="margin-top:14px"><b>chris@fundhub.ai</b> / <b>demo1234</b> — pre-filled, just hit Sign in.</p>
     <p class="note"><a href="/" style="text-decoration:underline">← Back to fundhub.ai</a></p>
   </div>
 </div>
@@ -24,8 +24,7 @@
 <script>
 document.getElementById("f").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const err = document.getElementById("err");
-  const btn = document.getElementById("go");
+  const err = document.getElementById("err"), btn = document.getElementById("go");
   err.style.display = "none"; btn.disabled = true; btn.textContent = "Signing in…";
   const { ok, status, data } = await FH.api("/api/auth/login", {
     method: "POST",
@@ -35,11 +34,10 @@ document.getElementById("f").addEventListener("submit", async (e) => {
   if (!ok) {
     err.style.display = "block";
     err.textContent = status === 429 ? "Too many attempts — wait 15 minutes."
-      : status === 403 ? "Account not active — ask an admin."
-      : "Wrong email or password.";
+      : status === 403 ? "Account not active — ask an admin." : "Wrong email or password.";
     return;
   }
-  localStorage.setItem("fh_token", data.token);
+  if (data.token) localStorage.setItem("fh_token", data.token);
   const next = new URLSearchParams(location.search).get("next");
   location.href = next && next.startsWith("/") ? next : "/app.html";
 });

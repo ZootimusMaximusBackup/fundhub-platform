@@ -9,7 +9,7 @@
 <header class="top"><span class="brand">fundhub matrix</span><nav></nav><span class="who"></span><button id="logout">Sign out</button></header>
 <div class="wrap">
   <h1 id="hi">Welcome</h1>
-  <p class="sub">Live v0 — real data, real login. Mockups for everything else stay at the wireframes site.</p>
+  <p class="sub" id="mode">Loading…</p>
   <div class="kpis" id="cards"></div>
 </div>
 <script src="/fh.js"></script>
@@ -17,6 +17,9 @@
 (async () => {
   const staff = await FH.guard(); if (!staff) return;
   document.getElementById("hi").textContent = "Welcome, " + (staff.name || staff.email).split(" ")[0];
+  document.getElementById("mode").innerHTML = FH.isDemo()
+    ? "Running on <b>demo data</b> — every screen is live and clickable. Set DATABASE_URL on Netlify and it switches to your real database automatically."
+    : "Live on your database.";
   const role = String(staff.role || "").toLowerCase();
   const all = [
     { href: "/closer.html",  t: "Closer Dashboard", d: "Clients, deals, journey state", roles: ["closer","funding_advisor","admin","owner"], cls: "info" },
