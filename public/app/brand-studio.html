@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fundhub — Brand Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link id="fontLink" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="fundhub-brand.css">
+<style>
+:root{--p-ink:#0A0A0A;--p-paper:#FCFCFC;--p-ramp:var(--spectrum);--p-display:"Inter",system-ui,sans-serif;--p-body:"Inter",system-ui,sans-serif;--p-mono:"JetBrains Mono",monospace}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{--butter:#F2E39B}
+
+html,body{height:100%}
+
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+a{color:inherit;text-decoration:none}
+
+button,input,select,textarea{font:inherit;color:inherit}
+
+.logo{width:118px;height:24px;flex:0 0 118px}
+
+.eyebrow{display:block}
+
+.eyebrow .sep{color:var(--line);margin:0 6px}
+
+.app{display:flex;min-height:100vh}
+
+.side{width:230px;flex:0 0 230px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
+
+.side::after{content:"";position:absolute;top:0;right:0;width:2px;height:100%;background:var(--spectrum);opacity:.9}
+
+.side.mini{width:60px;flex:0 0 60px}
+
+.side-top{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--cardline)}
+
+.side.mini .side-top{padding:0 12px}
+.side.mini .logo{display:none}
+
+.burger{margin-left:auto;width:26px;height:26px;flex:0 0 26px;border:1px solid var(--cardline);background:transparent;color:var(--gray2);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+
+.burger:hover{border-color:#3F3F46;color:var(--paper)}
+.side.mini .burger{margin:0 auto}
+
+.side-scroll{flex:1;overflow-y:auto;padding:12px 0 8px}
+
+.side-scroll::-webkit-scrollbar{width:6px}
+.side-scroll::-webkit-scrollbar-thumb{background:#27272A;border-radius:3px}
+
+.navgroup{margin-bottom:3px}
+
+.navhead{width:100%;background:transparent;border:0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;padding:9px 18px 6px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#71717A}
+
+.navhead:hover{color:var(--gray2)}
+
+.navhead .chev{margin-left:auto;font-size:9px;transition:transform .16s;color:#52525B}
+
+.navgroup.closed .chev{transform:rotate(-90deg)}
+.navgroup.closed .navlist{display:none}
+
+.side.mini .navhead{justify-content:center;padding:10px 0 6px;font-size:0;letter-spacing:0}
+
+.side.mini .navhead::after{content:"";display:block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;opacity:.5}
+
+.side.mini .navhead .chev{display:none}
+
+.navlist{display:flex;flex-direction:column}
+
+.navitem{display:flex;align-items:center;gap:11px;padding:7px 18px;font-size:12.5px;color:var(--gray2);position:relative;transition:color .12s,background .12s}
+
+.navitem:hover{color:var(--paper);background:#161619}
+
+.navitem .ico{font-family:var(--mono);font-size:12px;width:16px;flex:0 0 16px;text-align:center;opacity:.75}
+
+.navitem.on{color:var(--paper);background:#161619;font-weight:500}
+
+.navitem.on::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--spectrum);border-radius:0 2px 2px 0}
+
+.navitem.on .ico{opacity:1}
+
+.side.mini .navitem{justify-content:center;padding:9px 0}
+.side.mini .navitem .lbl{display:none}
+
+.side-foot{padding:12px 16px;border-top:1px solid var(--cardline);font-family:var(--mono);font-size:10px;color:#52525B;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
+
+.side.mini .side-foot .who{display:none}
+.side.mini .side-foot{justify-content:center;padding:12px 0}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+
+.topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+
+.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+
+.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+
+.spacer{flex:1}
+
+.content{padding:22px 24px 40px;flex:1}
+
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+
+.card+.card{margin-top:14px}
+
+.card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+
+.card-bd{padding:16px}
+
+.hair{height:2px;background:var(--spectrum);border-radius:1px}
+
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
+
+.btn:hover{background:var(--soft);border-color:var(--gray2)}
+
+.btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+.btn.dark:hover{background:var(--ink2)}
+
+.btn.sm{padding:5px 10px;font-size:11.5px}
+
+.btn.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+
+.tabs{display:flex;border-bottom:1px solid var(--line);padding:0 16px;background:#fff;overflow-x:auto}
+
+.tab{background:transparent;border:0;border-bottom:2px solid transparent;cursor:pointer;padding:11px 13px;font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:-1px;white-space:nowrap}
+
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--ink);border-bottom-color:var(--ink)}
+
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
+
+.b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
+
+.b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
+
+.b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
+
+.b-info{background:rgba(169,198,232,.26);border-color:var(--info);color:#22415F}
+
+.b-accent{background:rgba(196,179,229,.26);border-color:var(--accent);color:#3F2F63}
+
+.b-butter{background:rgba(242,227,155,.32);border-color:var(--butter);color:#5E5310}
+
+.b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
+
+table.grid{width:100%;border-collapse:collapse}
+
+table.grid th{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft);cursor:pointer;user-select:none}
+
+table.grid th:hover{color:var(--ink)}
+
+table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+
+table.grid tr:last-child td{border-bottom:0}
+
+table.grid tbody tr:hover{background:var(--soft)}
+
+table.grid tr.stale td{background:rgba(242,166,155,.09)}
+
+table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+
+.stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
+
+.stat .sv{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
+
+.stat .sd{font-size:11px;color:var(--gray);margin-top:2px}
+
+.classcard{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .12s;position:relative;overflow:hidden}
+
+.classcard:hover{border-color:var(--ink)}
+
+.classcard::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum);opacity:0;transition:opacity .12s}
+
+.classcard:hover::before,.classcard.on::before{opacity:1}
+
+.classcard.on{border-color:var(--ink)}
+
+.classcard .cn{font-size:13px;font-weight:600;margin-top:7px;letter-spacing:-.01em}
+
+.classcard .cc{font-family:var(--mono);font-size:19px;font-weight:600;margin-top:6px}
+
+.classcard .cs{font-size:11px;color:var(--gray);margin-top:2px}
+
+.bar{height:5px;border-radius:3px;background:var(--soft);overflow:hidden;display:flex;margin-top:9px}
+
+.bar i{display:block;height:100%}
+
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+
+.empty{padding:26px 16px;text-align:center;color:var(--gray2);font-size:12px}
+
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--gray);padding:12px 16px;border-top:1px solid var(--line);background:var(--soft)}
+
+@media(max-width:1000px){.stats,.classbar{grid-template-columns:repeat(2,1fr)}}
+
+/* ---- brand studio ---- */
+.bs-grid{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:16px;align-items:start}
+@media(max-width:1180px){.bs-grid{grid-template-columns:1fr}}
+.fieldrow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.fieldrow:last-child{border-bottom:none}
+.fieldrow label{font-size:12px;color:var(--gray);font-weight:500}
+.fieldrow .hint{font-size:11px;color:var(--gray2);margin-top:3px}
+.inp{width:100%;border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:13px;background:#fff}
+.inp:focus{outline:none;border-color:var(--ink)}
+.swatchrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.swatch{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);cursor:pointer;padding:0;background:none}
+.stopgrid{display:flex;gap:6px;align-items:center}
+.stopgrid input[type=color]{width:38px;height:30px;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer;padding:2px}
+.ramp{height:8px;border-radius:4px;margin-top:8px}
+.locked{background:var(--soft);border:1px dashed var(--line);border-radius:9px;padding:12px 14px}
+.locked .lk{display:flex;gap:8px;align-items:flex-start;padding:6px 0;font-size:12px;color:var(--gray)}
+.locked .lk::before{content:"🔒";font-size:11px;filter:grayscale(1);opacity:.55}
+.prev{position:sticky;top:14px}
+.prevframe{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#fff}
+.prevtop{height:30px;background:var(--soft);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 10px}
+.prevtop i{width:8px;height:8px;border-radius:50%;background:var(--line);display:block}
+.prevurl{margin-left:6px;font-family:var(--mono);font-size:9.5px;color:var(--gray);letter-spacing:.04em;overflow:hidden;white-space:nowrap}
+.pv-hero{background:var(--p-ink);padding:26px 20px;position:relative;overflow:hidden}
+.pv-hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:26px 26px}
+.pv-wm{position:relative;font-family:var(--p-display);font-weight:800;letter-spacing:-.04em;font-size:19px;color:#fff;line-height:1}
+.pv-h1{position:relative;margin-top:16px;font-family:var(--p-display);font-size:24px;font-weight:700;letter-spacing:-.035em;line-height:1.02;color:#fff}
+.pv-h1 .g{background:var(--p-ramp);-webkit-background-clip:text;background-clip:text;color:transparent}
+.pv-sub{position:relative;margin-top:9px;font-size:11.5px;color:#A1A1AA;font-family:var(--p-body)}
+.pv-btn{position:relative;display:inline-block;margin-top:14px;background:#fff;color:var(--p-ink);font-size:11px;font-weight:600;padding:7px 13px;border-radius:5px;font-family:var(--p-body)}
+.pv-body{padding:16px 20px;background:var(--p-paper)}
+.pv-eye{font-family:var(--p-mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray)}
+.pv-eye::before{content:"";display:inline-block;width:13px;height:2px;background:var(--p-ramp);border-radius:1px;margin-right:7px;vertical-align:middle}
+.pv-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.pv-card{border:1px solid var(--line);border-radius:7px;padding:9px;background:#fff}
+.pv-card b{font-family:var(--p-display);font-size:11.5px;display:block}
+.pv-card span{font-size:10px;color:var(--gray);font-family:var(--p-body)}
+.pv-legal{margin-top:12px;padding-top:9px;border-top:1px solid var(--line);font-size:8.5px;color:var(--gray2);line-height:1.5;font-family:var(--p-body)}
+.dnsbox{border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:10px}
+.dnsbox table{width:100%;border-collapse:collapse}
+.dnsbox th{background:var(--soft);font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);text-align:left;padding:8px 10px;font-weight:500}
+.dnsbox td{padding:9px 10px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11.5px}
+.copyb{border:1px solid var(--line);background:#fff;border-radius:5px;padding:3px 7px;font-family:var(--mono);font-size:9.5px;cursor:pointer;color:var(--gray)}
+.copyb:hover{border-color:var(--ink);color:var(--ink)}
+.fun{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:1000px){.fun{grid-template-columns:1fr 1fr}}
+.funnel{border:1px solid var(--line);border-radius:9px;padding:13px;background:#fff;cursor:pointer;position:relative;transition:border-color .15s}
+.funnel:hover{border-color:var(--gray2)}
+.funnel.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink) inset}
+.funnel .fx{position:absolute;top:11px;right:11px;width:15px;height:15px;border-radius:4px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:9px;background:#fff}
+.funnel.on .fx{background:var(--ink);border-color:var(--ink);color:#fff}
+.funnel b{display:block;font-size:12.5px;margin-bottom:3px;padding-right:20px}
+.funnel span{font-size:11px;color:var(--gray);line-height:1.45}
+.soon{opacity:.5;pointer-events:none}
+.tag-soon{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray2);border:1px solid var(--line);border-radius:20px;padding:2px 7px;margin-left:7px}
+.savebar{position:sticky;bottom:0;background:rgba(252,252,252,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:11px 0;margin-top:16px;display:flex;gap:10px;align-items:center}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.statusline{font-family:var(--mono);font-size:10.5px;color:var(--gray);letter-spacing:.06em}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
+    <nav class="side-scroll">
+      <div class="navgroup"><button class="navhead">Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
+        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Automation<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Setup<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem on" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
+        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
+        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Client<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+      </div></div>
+    </nav>
+    <div class="side-foot"><span class="pulse"></span><span class="who">CS · EMP-000001</span></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="crumb">Setup</span><h1>Brand Studio</h1>
+      <div class="spacer"></div>
+      <span class="chip" id="approvalChip"><span class="cd"></span><span id="approvalTxt">Draft</span></span>
+      <button class="btn mono" id="resetBtn">Reset</button>
+    </div>
+
+    <div class="content">
+      <div class="stats">
+        <div class="stat"><div class="eyebrow">BS-00 <span class="sep">/</span> BRAND</div><div class="sv" id="kBrand">—</div><div class="sd">wordmark + tokens</div></div>
+        <div class="stat"><div class="eyebrow">BS-00 <span class="sep">/</span> DOMAIN</div><div class="sv" id="kDomain">—</div><div class="sd" id="kDomainSd">not connected</div></div>
+        <div class="stat"><div class="eyebrow">BS-00 <span class="sep">/</span> FUNNELS LIVE</div><div class="sv" id="kFun">0</div><div class="sd">of 6 available</div></div>
+        <div class="stat"><div class="eyebrow">BS-00 <span class="sep">/</span> COMPLIANCE</div><div class="sv" id="kComp">Locked</div><div class="sd">master template</div></div>
+      </div>
+      <div class="bs-grid">
+        <div>
+          <!-- IDENTITY -->
+          <div class="card">
+            <div class="card-hd"><div class="eyebrow">BS-01 <span class="sep">/</span> IDENTITY</div><div class="spacer"></div><span class="statusline">applies to CRM, site, and PDFs</span></div>
+            <div style="padding:4px 14px 14px">
+              <div class="fieldrow"><label for="bName">Brand name</label><div><input class="inp" id="bName" placeholder="Meridian Capital Partners"><div class="hint">Shown as your wordmark everywhere. Your clients never see fundhub.</div></div></div>
+              <div class="fieldrow"><label for="bEntity">Legal entity</label><div><input class="inp" id="bEntity" placeholder="Meridian Capital Partners LLC"><div class="hint">Injected into every disclosure, footer, and legal page. Cannot be blank.</div></div></div>
+              <div class="fieldrow"><label for="bAddr">Business address</label><div><input class="inp" id="bAddr" placeholder="1200 Main St Suite 400, Phoenix, AZ 85004"></div></div>
+              <div class="fieldrow"><label for="bEmail">Support email</label><div><input class="inp" id="bEmail" placeholder="support@meridiancapital.com"></div></div>
+              <div class="fieldrow"><label for="bLogo">Wordmark</label><div>
+                <div class="swatchrow">
+                  <input type="file" id="bLogo" accept="image/svg+xml,image/png" style="font-size:12px">
+                  <button class="btn mono" id="clearLogo">Use text</button>
+                </div>
+                <div class="hint">SVG or PNG, transparent background. No file? Your brand name renders as a typographic wordmark in your display face.</div>
+              </div></div>
+            </div>
+          </div>
+
+          <!-- TOKENS -->
+          <div class="card" style="margin-top:14px">
+            <div class="card-hd"><div class="eyebrow">BS-02 <span class="sep">/</span> COLOR &amp; TYPE</div><div class="spacer"></div><span class="statusline">8 values, everything renders from them</span></div>
+            <div style="padding:4px 14px 14px">
+              <div class="fieldrow"><label>Ink (dark)</label><div class="swatchrow"><input type="color" class="swatch" id="cInk" value="#0A0A0A"><input class="inp mono" id="cInkHex" style="max-width:120px" value="#0A0A0A"><span class="hint" style="margin:0">Hero, footer, chrome</span></div></div>
+              <div class="fieldrow"><label>Paper (light)</label><div class="swatchrow"><input type="color" class="swatch" id="cPaper" value="#FCFCFC"><input class="inp mono" id="cPaperHex" style="max-width:120px" value="#FCFCFC"><span class="hint" style="margin:0">Page background</span></div></div>
+              <div class="fieldrow"><label>Accent ramp</label><div>
+                <div class="stopgrid">
+                  <input type="color" id="r0" value="#F2A69B"><input type="color" id="r1" value="#F5CE8F"><input type="color" id="r2" value="#F2E39B">
+                  <input type="color" id="r3" value="#A8D8B0"><input type="color" id="r4" value="#A9C6E8"><input type="color" id="r5" value="#C4B3E5">
+                  <button class="btn mono" id="rampPreset">Presets</button>
+                </div>
+                <div class="ramp" id="rampPrev"></div>
+                <div class="hint">Six stops. Drives gradients, status colors, and every accent hairline.</div>
+              </div></div>
+              <div class="fieldrow"><label for="fDisplay">Display face</label><div>
+                <select class="inp" id="fDisplay">
+                  <option value="Inter">Inter — neutral, modern (current)</option>
+                  <option value="Manrope">Manrope — geometric, friendly</option>
+                  <option value="Sora">Sora — technical, confident</option>
+                  <option value="Outfit">Outfit — clean, wide</option>
+                  <option value="Fraunces">Fraunces — editorial serif</option>
+                  <option value="Instrument Serif">Instrument Serif — elegant serif</option>
+                </select>
+                <div class="hint">All Google Fonts — free, open-licensed, redistributable. No licensing to buy, ever.</div>
+              </div></div>
+              <div class="fieldrow"><label for="fMono">Mono face</label><div>
+                <select class="inp" id="fMono">
+                  <option value="JetBrains Mono">JetBrains Mono (current)</option>
+                  <option value="IBM Plex Mono">IBM Plex Mono</option>
+                  <option value="Space Mono">Space Mono</option>
+                  <option value="DM Mono">DM Mono</option>
+                </select>
+                <div class="hint">Used for codes, labels, and figures.</div>
+              </div></div>
+              <div class="fieldrow"><label for="bVoice">Copy voice</label><div>
+                <select class="inp" id="bVoice">
+                  <option value="plain">Plain — direct, no jargon</option>
+                  <option value="technical">Technical — precise, systems-forward</option>
+                  <option value="warm">Warm — personal, reassuring</option>
+                </select>
+                <div class="hint">Picks the approved copy variant set across your funnels.</div>
+              </div></div>
+            </div>
+          </div>
+
+          <!-- DOMAIN -->
+          <div class="card" style="margin-top:14px">
+            <div class="card-hd"><div class="eyebrow">BS-03 <span class="sep">/</span> DOMAIN</div><div class="spacer"></div><span class="chip" id="dnsChip"><span class="cd"></span><span id="dnsTxt">Not connected</span></span></div>
+            <div style="padding:4px 14px 14px">
+              <div class="fieldrow"><label for="bDomain">Your domain</label><div>
+                <div class="swatchrow"><input class="inp" id="bDomain" placeholder="meridiancapital.com" style="max-width:280px"><button class="btn primary mono" id="verifyBtn">Verify</button></div>
+                <div class="hint">You own it, you point it here. SSL is issued automatically once DNS resolves.</div>
+              </div></div>
+              <div class="dnsbox" id="dnsBox" style="display:none">
+                <table>
+                  <thead><tr><th>Type</th><th>Host</th><th>Value</th><th></th></tr></thead>
+                  <tbody>
+                    <tr><td>CNAME</td><td>www</td><td id="dnsA">partners.fundhub.ai</td><td><button class="copyb" data-c="partners.fundhub.ai">copy</button></td></tr>
+                    <tr><td>ALIAS / A</td><td>@</td><td id="dnsB">75.2.60.5</td><td><button class="copyb" data-c="75.2.60.5">copy</button></td></tr>
+                    <tr><td>TXT</td><td>_fundhub</td><td id="dnsC">verify=—</td><td><button class="copyb" id="copyTxt">copy</button></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="hint" style="margin-top:9px">No domain yet? You launch on <span class="mono" id="subPrev">yourbrand.fundhub-partners.com</span> today and swap to your own domain any time — links and tracking carry over.</div>
+            </div>
+          </div>
+
+          <!-- FUNNELS -->
+          <div class="card" style="margin-top:14px">
+            <div class="card-hd"><div class="eyebrow">BS-04 <span class="sep">/</span> FUNNELS</div><div class="spacer"></div><span class="statusline">proven structures, your brand, hosted here</span></div>
+            <div style="padding:12px 14px 14px">
+              <div class="fun" id="funGrid"></div>
+              <div class="hint" style="margin-top:11px">Hosted on your domain so tracking, attribution, and compliance updates keep working. HTML export is available but drops all three.</div>
+            </div>
+          </div>
+
+          <!-- LOCKED -->
+          <div class="card" style="margin-top:14px">
+            <div class="card-hd"><div class="eyebrow">BS-05 <span class="sep">/</span> COMPLIANCE</div><div class="spacer"></div><span class="chip on"><span class="cd"></span>Locked</span></div>
+            <div style="padding:12px 14px 14px">
+              <div class="locked">
+                <div class="lk">Funding disclosures and "not a direct lender" language</div>
+                <div class="lk">SMS consent, STOP/HELP handling, A2P registration</div>
+                <div class="lk">Privacy Policy, Terms of Service, SMS Terms, Refund Policy</div>
+                <div class="lk">Guarantee language and its conditions</div>
+                <div class="lk">FCRA, E-SIGN, and GLBA handling statements</div>
+              </div>
+              <div class="hint" style="margin-top:10px">These render from the master template with <b id="entEcho">your entity name</b> injected. You can't edit them, and you don't have to maintain them — when the master updates, your site updates.</div>
+            </div>
+          </div>
+
+          <!-- GENERATION -->
+          <div class="card" style="margin-top:14px">
+            <div class="card-hd"><div class="eyebrow">BS-06 <span class="sep">/</span> GENERATION</div><div class="spacer"></div><span class="tag-soon">Coming soon</span></div>
+            <div style="padding:12px 14px 14px">
+              <div class="fun soon">
+                <div class="funnel"><b>Generate VSL script</b><span>Built from your offer and the proven control, inside the compliance boundary.</span></div>
+                <div class="funnel"><b>Generate ad scripts</b><span>Hooks, angles, and creative variants from the winning swipe library.</span></div>
+                <div class="funnel"><b>Generate wordmark</b><span>Typographic lockups rendered in your display face.</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="savebar">
+            <button class="btn primary" id="saveBtn">Save &amp; apply</button>
+            <button class="btn mono" id="submitBtn">Submit for approval</button>
+            <div class="spacer"></div>
+            <span class="statusline" id="saveMsg"></span>
+          </div>
+        </div>
+
+        <!-- PREVIEW -->
+        <div class="prev">
+          <div class="card">
+            <div class="card-hd"><div class="eyebrow">BS-07 <span class="sep">/</span> LIVE PREVIEW</div><div class="spacer"></div><span class="statusline" id="pvMode">Your site</span></div>
+            <div style="padding:12px 14px 14px">
+              <div class="prevframe">
+                <div class="prevtop"><i></i><i></i><i></i><span class="prevurl" id="pvUrl">yourbrand.fundhub-partners.com</span></div>
+                <div class="pv-hero">
+                  <div class="pv-wm" id="pvWm">Your Brand</div>
+                  <div class="pv-h1">Financing for your business, <span class="g">matched</span> through review.</div>
+                  <div class="pv-sub">Submit an application, review your options with an advisor, and move forward on your terms.</div>
+                  <span class="pv-btn">Start application</span>
+                </div>
+                <div class="pv-body">
+                  <div class="pv-eye">Process</div>
+                  <div class="pv-cards">
+                    <div class="pv-card"><b>01 / Apply</b><span>Soft inquiry, no score impact</span></div>
+                    <div class="pv-card"><b>02 / Review</b><span>Guided by an advisor</span></div>
+                  </div>
+                  <div class="pv-legal" id="pvLegal">© 2026 Your Entity LLC. Not a direct lender. All financing decisions, amounts, and terms are determined by funding partners.</div>
+                </div>
+              </div>
+              <div class="hint" style="margin-top:10px">Same tokens drive your CRM chrome and client PDFs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var KEY = "fh_partner_brand";
+  var FONT_LINK = document.getElementById("fontLink");
+
+  var FUNNELS = [
+    {id:"apply",   n:"Application funnel",   d:"Hero, process, engine, options, guarantees, apply form. The fundhub.ai control."},
+    {id:"diag",    n:"Diagnostic funnel",    d:"Straight to the assessment offer. Lowest friction entry."},
+    {id:"edu",     n:"Education funnel",     d:"Two-program structure with curriculum and enrollment."},
+    {id:"aff",     n:"Affiliate recruit",    d:"Two-track partner page. Recruits under your brand."},
+    {id:"mail",    n:"Direct-mail landing",  d:"PURL/QR destination matched to the mail piece."},
+    {id:"book",    n:"Booking funnel",       d:"Straight to calendar. For warm and referral traffic."}
+  ];
+
+  var PRESETS = [
+    ["#F2A69B","#F5CE8F","#F2E39B","#A8D8B0","#A9C6E8","#C4B3E5"],
+    ["#2563EB","#3B82F6","#60A5FA","#93C5FD","#BFDBFE","#DBEAFE"],
+    ["#065F46","#047857","#059669","#10B981","#34D399","#6EE7B7"],
+    ["#7C2D12","#9A3412","#C2410C","#EA580C","#F97316","#FB923C"],
+    ["#4C1D95","#5B21B6","#6D28D9","#7C3AED","#8B5CF6","#A78BFA"],
+    ["#111827","#374151","#4B5563","#6B7280","#9CA3AF","#D1D5DB"]
+  ];
+  var presetIx = 0;
+
+  var D = {
+    name:"", entity:"", addr:"", email:"", logo:"",
+    ink:"#0A0A0A", paper:"#FCFCFC",
+    ramp:PRESETS[0].slice(),
+    display:"Inter", mono:"JetBrains Mono", voice:"plain",
+    domain:"", verified:false, funnels:["apply"], status:"draft"
+  };
+
+  function $(id){ return document.getElementById(id); }
+  function slug(s){ return (s||"yourbrand").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,32) || "yourbrand"; }
+  function rampCss(a){ return "linear-gradient(90deg,"+a.map(function(c,i){return c+" "+Math.round(i*100/(a.length-1))+"%";}).join(",")+")"; }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+
+  function load(){
+    try { var v = JSON.parse(localStorage.getItem(KEY)||"null"); if(v) Object.assign(D, v); } catch(e){}
+  }
+  function save(){ localStorage.setItem(KEY, JSON.stringify(D)); }
+
+  function loadFonts(){
+    var fams = [D.display, D.mono].map(function(f){ return f.replace(/ /g,"+")+":wght@400;500;600;700;800"; });
+    FONT_LINK.href = "https://fonts.googleapis.com/css2?family="+fams.join("&family=")+"&display=swap";
+  }
+
+  /* THE POINT: brand tokens overwrite the CSS custom properties at runtime.
+     Same mechanism shell.js will use to theme the whole CRM per partner. */
+  function applyTokens(){
+    var r = document.documentElement.style;
+    r.setProperty("--p-ink", D.ink);
+    r.setProperty("--p-paper", D.paper);
+    r.setProperty("--p-ramp", rampCss(D.ramp));
+    r.setProperty("--p-display", "'"+D.display+"', system-ui, sans-serif");
+    r.setProperty("--p-mono", "'"+D.mono+"', ui-monospace, monospace");
+    r.setProperty("--p-body", "'"+D.display+"', system-ui, sans-serif");
+  }
+
+  function renderFunnels(){
+    $("funGrid").innerHTML = FUNNELS.map(function(f){
+      var on = D.funnels.indexOf(f.id) !== -1;
+      return '<div class="funnel'+(on?' on':'')+'" data-f="'+f.id+'"><span class="fx">'+(on?'✓':'')+'</span><b>'+esc(f.n)+'</b><span>'+esc(f.d)+'</span></div>';
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll("[data-f]"), function(el){
+      el.addEventListener("click", function(){
+        var id = el.getAttribute("data-f");
+        var i = D.funnels.indexOf(id);
+        if (i === -1) D.funnels.push(id); else D.funnels.splice(i,1);
+        renderFunnels(); paint();
+      });
+    });
+  }
+
+  function paint(){
+    var name = D.name || "Your Brand";
+    var entity = D.entity || "Your Entity LLC";
+    var host = D.domain && D.verified ? D.domain : (D.domain || slug(D.name)+".fundhub-partners.com");
+
+    $("pvWm").innerHTML = D.logo
+      ? '<img src="'+D.logo+'" alt="" style="height:22px;display:block;filter:invert(1)">'
+      : esc(name);
+    $("pvUrl").textContent = host;
+    $("pvLegal").textContent = "© 2026 "+entity+". Not a direct lender. All financing decisions, amounts, and terms are determined by funding partners.";
+    $("entEcho").textContent = entity;
+    $("subPrev").textContent = slug(D.name)+".fundhub-partners.com";
+    $("rampPrev").style.background = rampCss(D.ramp);
+
+    $("kBrand").textContent = D.name ? (D.logo ? "Logo set" : "Text mark") : "—";
+    $("kDomain").textContent = D.domain ? (D.verified ? "Live" : "Pending") : "—";
+    $("kDomainSd").textContent = D.domain ? (D.verified ? D.domain : "awaiting DNS") : "not connected";
+    $("kFun").textContent = D.funnels.length;
+
+    var dc = $("dnsChip"), dt = $("dnsTxt");
+    dc.className = "chip " + (D.verified ? "on" : (D.domain ? "wip" : ""));
+    dt.textContent = D.verified ? "Verified · SSL issued" : (D.domain ? "Awaiting DNS" : "Not connected");
+    $("dnsBox").style.display = D.domain ? "block" : "none";
+    $("dnsC").textContent = "verify=" + slug(D.name || "brand") + "-" + String(Math.abs(hash(D.domain||"x"))).slice(0,8);
+
+    var ac = $("approvalChip");
+    ac.className = "chip " + (D.status==="approved" ? "on" : D.status==="submitted" ? "wip" : "");
+    $("approvalTxt").textContent = D.status==="approved" ? "Approved · live" : D.status==="submitted" ? "In review" : "Draft";
+  }
+
+  function hash(s){ var h=0; for (var i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0; } return h; }
+
+  function bindColor(hexId, colorId, key){
+    var c = $(colorId), h = $(hexId);
+    c.addEventListener("input", function(){ D[key]=c.value; h.value=c.value.toUpperCase(); applyTokens(); paint(); });
+    h.addEventListener("change", function(){
+      var v = h.value.trim(); if(!/^#[0-9a-f]{6}$/i.test(v)){ h.value = D[key]; return; }
+      D[key]=v; c.value=v; applyTokens(); paint();
+    });
+  }
+
+  function hydrate(){
+    $("bName").value=D.name; $("bEntity").value=D.entity; $("bAddr").value=D.addr; $("bEmail").value=D.email;
+    $("cInk").value=D.ink; $("cInkHex").value=D.ink.toUpperCase();
+    $("cPaper").value=D.paper; $("cPaperHex").value=D.paper.toUpperCase();
+    D.ramp.forEach(function(c,i){ $("r"+i).value=c; });
+    $("fDisplay").value=D.display; $("fMono").value=D.mono; $("bVoice").value=D.voice;
+    $("bDomain").value=D.domain;
+  }
+
+  load(); hydrate(); loadFonts(); applyTokens(); renderFunnels(); paint();
+
+  ["bName","bEntity","bAddr","bEmail"].forEach(function(id){
+    $(id).addEventListener("input", function(){
+      D[{bName:"name",bEntity:"entity",bAddr:"addr",bEmail:"email"}[id]] = $(id).value;
+      paint();
+    });
+  });
+  bindColor("cInkHex","cInk","ink");
+  bindColor("cPaperHex","cPaper","paper");
+  [0,1,2,3,4,5].forEach(function(i){
+    $("r"+i).addEventListener("input", function(){ D.ramp[i]=$("r"+i).value; applyTokens(); paint(); });
+  });
+  $("rampPreset").addEventListener("click", function(){
+    presetIx = (presetIx+1) % PRESETS.length;
+    D.ramp = PRESETS[presetIx].slice();
+    D.ramp.forEach(function(c,i){ $("r"+i).value=c; });
+    applyTokens(); paint();
+  });
+  $("fDisplay").addEventListener("change", function(){ D.display=$("fDisplay").value; loadFonts(); applyTokens(); paint(); });
+  $("fMono").addEventListener("change", function(){ D.mono=$("fMono").value; loadFonts(); applyTokens(); paint(); });
+  $("bVoice").addEventListener("change", function(){ D.voice=$("bVoice").value; });
+
+  $("bLogo").addEventListener("change", function(e){
+    var f = e.target.files && e.target.files[0]; if(!f) return;
+    if (f.size > 400*1024) { $("saveMsg").textContent = "Logo must be under 400KB."; return; }
+    var fr = new FileReader();
+    fr.onload = function(){ D.logo = fr.result; paint(); $("saveMsg").textContent="Wordmark loaded — Save & apply to keep it."; };
+    fr.readAsDataURL(f);
+  });
+  $("clearLogo").addEventListener("click", function(){ D.logo=""; $("bLogo").value=""; paint(); });
+
+  $("bDomain").addEventListener("input", function(){
+    D.domain = $("bDomain").value.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"");
+    D.verified = false; paint();
+  });
+  $("verifyBtn").addEventListener("click", function(){
+    if(!D.domain){ $("saveMsg").textContent="Enter a domain first."; return; }
+    $("verifyBtn").disabled = true; $("verifyBtn").textContent = "Checking…";
+    setTimeout(function(){
+      D.verified = true; save(); paint();
+      $("verifyBtn").disabled = false; $("verifyBtn").textContent = "Verify";
+      $("saveMsg").textContent = "DNS resolved. SSL issued for "+D.domain+".";
+    }, 900);
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll(".copyb"), function(b){
+    b.addEventListener("click", function(){
+      var v = b.id==="copyTxt" ? $("dnsC").textContent : b.getAttribute("data-c");
+      navigator.clipboard && navigator.clipboard.writeText(v);
+      var t=b.textContent; b.textContent="copied"; setTimeout(function(){b.textContent=t;},1100);
+    });
+  });
+
+  $("saveBtn").addEventListener("click", function(){
+    if(!D.entity){ $("saveMsg").textContent="Legal entity is required — it goes into every disclosure."; return; }
+    save(); applyTokens();
+    $("saveMsg").textContent = "Saved. Tokens applied to your CRM, site, and PDFs.";
+  });
+  $("submitBtn").addEventListener("click", function(){
+    if(!D.name || !D.entity){ $("saveMsg").textContent="Brand name and legal entity are required before review."; return; }
+    D.status = "submitted"; save(); paint();
+    $("saveMsg").textContent = "Submitted. Brands go live after an internal compliance review.";
+  });
+  $("resetBtn").addEventListener("click", function(){
+    if(!confirm("Reset brand to fundhub defaults?")) return;
+    localStorage.removeItem(KEY);
+    location.reload();
+  });
+})();
+</script>
+<script src="shell.js"></script>
+</body>
+</html>

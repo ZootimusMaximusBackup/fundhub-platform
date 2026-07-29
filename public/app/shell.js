@@ -12,7 +12,7 @@
     "ops-admin.html", "command-center.html", "galaxy.html",
     "agent-editor.html", "automations.html", "products-commissions.html",
     "staff-teams.html", "content-admin.html", "sample-data.html",
-    "inquiry-remover.html", "affiliate.html", "client-portal.html", "partner-galaxy.html"
+    "inquiry-remover.html", "affiliate.html", "client-portal.html", "partner-galaxy.html", "brand-studio.html"
   ];
 
   var ROLE_TABS = {
@@ -29,7 +29,7 @@
     /* future principals (B4) land on a single screen */
     client: ["client-portal.html"],
     affiliate: ["affiliate.html"],
-    partner: ["partner-galaxy.html"]
+    partner: ["partner-galaxy.html", "brand-studio.html"]
   };
 
   function allowedFor(role) {
