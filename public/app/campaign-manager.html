@@ -1,0 +1,2103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fundhub — Campaigns</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
+<style>
+/* ══ SHARED CHROME — identical across every internal surface ══════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--butter:#F2E39B}           /* spectrum stop @40% — the 6th status color */
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+.logo{width:118px;height:24px;flex:0 0 118px}
+.eyebrow{display:block}
+.eyebrow .sep{color:var(--line);margin:0 6px}
+.app{display:flex;min-height:100vh}
+
+.side{width:230px;flex:0 0 230px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
+.side::after{content:"";position:absolute;top:0;right:0;width:2px;height:100%;background:var(--spectrum);opacity:.9}
+.side.mini{width:60px;flex:0 0 60px}
+.side-top{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--cardline)}
+.side.mini .side-top{padding:0 12px}
+.side.mini .logo{display:none}
+.burger{margin-left:auto;width:26px;height:26px;flex:0 0 26px;border:1px solid var(--cardline);background:transparent;color:var(--gray2);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+.burger:hover{border-color:#3F3F46;color:var(--paper)}
+.side.mini .burger{margin:0 auto}
+.side-scroll{flex:1;overflow-y:auto;padding:12px 0 8px}
+.side-scroll::-webkit-scrollbar{width:6px}
+.side-scroll::-webkit-scrollbar-thumb{background:#27272A;border-radius:3px}
+.navgroup{margin-bottom:3px}
+.navhead{width:100%;background:transparent;border:0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;padding:9px 18px 6px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#71717A}
+.navhead:hover{color:var(--gray2)}
+.navhead .chev{margin-left:auto;font-size:9px;transition:transform .16s;color:#52525B}
+.navgroup.closed .chev{transform:rotate(-90deg)}
+.navgroup.closed .navlist{display:none}
+.side.mini .navhead{justify-content:center;padding:10px 0 6px;font-size:0;letter-spacing:0}
+.side.mini .navhead::after{content:"";display:block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;opacity:.5}
+.side.mini .navhead .chev{display:none}
+.navlist{display:flex;flex-direction:column}
+.navitem{display:flex;align-items:center;gap:11px;padding:7px 18px;font-size:12.5px;color:var(--gray2);position:relative;transition:color .12s,background .12s}
+.navitem:hover{color:var(--paper);background:#161619}
+.navitem .ico{font-family:var(--mono);font-size:12px;width:16px;flex:0 0 16px;text-align:center;opacity:.75}
+.navitem.on{color:var(--paper);background:#161619;font-weight:500}
+.navitem.on::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--spectrum);border-radius:0 2px 2px 0}
+.navitem.on .ico{opacity:1}
+.side.mini .navitem{justify-content:center;padding:9px 0}
+.side.mini .navitem .lbl{display:none}
+.side-foot{padding:12px 16px;border-top:1px solid var(--cardline);font-family:var(--mono);font-size:10px;color:#52525B;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
+.side.mini .side-foot .who{display:none}
+.side.mini .side-foot{justify-content:center;padding:12px 0}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.spacer{flex:1}
+.content{padding:22px 24px 40px;flex:1}
+
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.card+.card{margin-top:14px}
+.card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.card-hd .t{font-size:13.5px;font-weight:600;letter-spacing:-.01em}
+.card-bd{padding:16px}
+.hair{height:2px;background:var(--spectrum);border-radius:1px}
+
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
+.btn:hover{background:var(--soft);border-color:var(--gray2)}
+.btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn.dark:hover{background:var(--ink2)}
+.btn.sm{padding:5px 10px;font-size:11.5px}
+.btn.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.btn.danger{color:#6E2A22;border-color:var(--alert)}
+.btn.danger:hover{background:rgba(242,166,155,.16)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
+.b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
+.b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
+.b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
+.b-info{background:rgba(169,198,232,.26);border-color:var(--info);color:#22415F}
+.b-accent{background:rgba(196,179,229,.26);border-color:var(--accent);color:#3F2F63}
+.b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
+
+table.grid{width:100%;border-collapse:collapse}
+table.grid th{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft)}
+table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+table.grid tr:last-child td{border-bottom:0}
+
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
+.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:13px;width:100%;font-family:inherit}
+.field select:focus,.field input:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
+.field .hint{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+.stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
+.stat .sv{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
+.stat .sd{font-size:11px;color:var(--gray);margin-top:2px}
+
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+.empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:12px}
+
+/* ══ CAMPAIGNS — page specific ═══════════════════════════════════════════ */
+.stats{grid-template-columns:repeat(5,1fr)}
+.stat.pick{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
+.stat.pick:hover{border-color:var(--gray2)}
+.stat.pick.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.stat .sv.small{font-size:18px}
+
+/* derivation strip — every number on this screen can show its working */
+.deriv{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:12px 15px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:8px 22px}
+.deriv .dk{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);margin-bottom:3px}
+.deriv .formula{font-family:var(--mono);font-size:11.5px;color:var(--ink);line-height:1.6;word-break:break-word}
+.deriv .inputs{font-family:var(--mono);font-size:11px;color:var(--gray);line-height:1.7}
+.deriv .inputs b{color:var(--ink);font-weight:600}
+.deriv .src{grid-column:1/-1;font-family:var(--mono);font-size:10px;color:var(--gray2);letter-spacing:.05em;border-top:1px dashed var(--line);padding-top:8px}
+.deriv+.card{margin-top:14px}
+
+.note{font-size:11.5px;color:var(--gray);line-height:1.55}
+.note code,.mono.k,code{font-family:var(--mono);font-size:11px;background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.cap{padding:10px 16px;border-top:1px solid var(--line);background:var(--soft);font-size:11.5px;color:var(--gray);line-height:1.5}
+.cap b{color:var(--ink);font-weight:600}
+.cap+.cap{border-top:1px dashed var(--line)}
+
+/* filter rails */
+.rail{display:flex;flex-wrap:wrap;gap:4px}
+.rail button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .12s,border-color .12s;color:var(--gray)}
+.rail button:hover{background:var(--soft);color:var(--ink)}
+.rail button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.rail button .n{font-weight:700;margin-left:5px;opacity:.75}
+.selwrap{display:inline-flex;align-items:center;gap:6px}
+.selwrap label{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
+.selwrap select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 7px;font-size:11.5px;font-family:var(--mono)}
+.selwrap select:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
+
+/* attention tiles */
+.attn{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.attn button{text-align:left;border:1px solid var(--line);border-left-width:3px;border-radius:9px;background:#fff;padding:12px 14px;cursor:pointer;font:inherit;color:inherit;transition:background .12s}
+.attn button:hover{background:var(--soft)}
+.attn button .an{font-family:var(--mono);font-size:24px;font-weight:600;letter-spacing:-.02em;line-height:1.1}
+.attn button .at{font-size:12px;font-weight:600;margin-top:4px}
+.attn button .ad{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em;margin-top:4px;line-height:1.5}
+.attn button.sev-bad{border-left-color:var(--alert)}
+.attn button.sev-warn{border-left-color:var(--warn)}
+.attn button.sev-ok{border-left-color:var(--ok)}
+.attn button.sev-bad .an{color:#6E2A22}
+.attn button.sev-warn .an{color:#6B4A12}
+
+/* severity stripes on rows */
+tr.stripe-bad td:first-child{box-shadow:inset 3px 0 0 var(--alert)}
+tr.stripe-warn td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+tr.stripe-ok td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
+tr.dim td{opacity:.62}
+
+/* ceiling meter */
+.meter{width:132px;height:7px;border-radius:4px;background:var(--soft);border:1px solid var(--line);overflow:hidden;position:relative}
+.meter i{display:block;height:100%;background:var(--ok)}
+.meter.warn i{background:var(--warn)}
+.meter.bad i{background:var(--alert)}
+.meter .mark{position:absolute;top:-2px;bottom:-2px;width:1px;background:var(--gray2)}
+.mnum{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mnum.neg{color:#6E2A22}
+.sub{display:block;font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em;margin-top:3px;font-weight:400}
+.nul{color:var(--gray2)}
+
+/* expandable rows */
+tr.rowbtn{cursor:pointer}
+tr.rowbtn:hover td{background:var(--soft)}
+tr.rowbtn[aria-expanded="true"] td{background:var(--soft)}
+td .chev{display:inline-block;width:10px;color:var(--gray2);font-size:9px;transition:transform .16s;margin-right:6px}
+tr.rowbtn[aria-expanded="true"] .chev{transform:rotate(90deg)}
+tr.det>td{background:var(--soft);padding:0 14px 13px!important}
+.detwrap{border-top:1px dashed var(--line);padding-top:11px;display:flex;gap:26px;flex-wrap:wrap}
+.detcol{min-width:150px}
+.detcol .dk{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:3px}
+.detcol .dv{font-size:12px;font-weight:600}
+
+.errbox{font-family:var(--mono);font-size:11px;line-height:1.6;color:#6E2A22;background:rgba(242,166,155,.16);border:1px solid var(--alert);border-radius:7px;padding:8px 10px;word-break:break-word}
+.jsonbox{font-family:var(--mono);font-size:10.5px;line-height:1.6;color:var(--gray);background:var(--soft);border:1px solid var(--line);border-radius:7px;padding:8px 10px;white-space:pre-wrap;word-break:break-word;max-height:190px;overflow:auto}
+
+.pager{display:flex;align-items:center;gap:10px;padding:11px 16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.06em}
+
+/* source ledger */
+table.grid td.srccell{white-space:nowrap}
+table.grid td.srccell .sub{white-space:normal}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;vertical-align:middle}
+.dot.real{background:var(--ok)}.dot.sample{background:var(--warn)}.dot.error{background:var(--alert)}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,10,10,.42);opacity:0;pointer-events:none;transition:opacity .18s;z-index:60}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(760px,94vw);background:var(--paper);border-left:1px solid var(--line);z-index:61;transform:translateX(102%);transition:transform .2s ease;display:flex;flex-direction:column;box-shadow:-14px 0 34px rgba(10,10,10,.10)}
+.drawer.on{transform:none}
+.dw-hd{padding:14px 18px 12px;border-bottom:1px solid var(--line);background:#fff;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.dw-hd h2{font-size:15px;font-weight:600;letter-spacing:-.01em;line-height:1.3}
+.dw-x{margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:7px;width:28px;height:28px;flex:0 0 28px;cursor:pointer;font-family:var(--mono);font-size:13px;line-height:1;color:var(--gray)}
+.dw-x:hover{background:var(--soft);color:var(--ink)}
+.dw-bd{flex:1;overflow-y:auto;padding:16px 18px 30px}
+.dw-bd::-webkit-scrollbar{width:7px}
+.dw-bd::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px}
+.dw-sec{margin-top:16px}
+.dw-sec:first-child{margin-top:0}
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px 16px;border:1px solid var(--line);border-radius:9px;background:#fff;padding:13px 15px}
+.kv .k{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
+.kv .v{font-size:12.5px;font-weight:600;margin-top:2px;word-break:break-word}
+.dw-tbl{border:1px solid var(--line);border-radius:9px;background:#fff;overflow:hidden}
+.dw-tbl table.grid td,.dw-tbl table.grid th{padding:8px 11px;font-size:11.5px}
+
+/* chart */
+.chartwrap{position:relative;border:1px solid var(--line);border-radius:9px;background:#fff;padding:12px 12px 6px}
+.chartwrap svg{width:100%;height:auto;display:block}
+.chartwrap .gl{stroke:var(--line);stroke-width:1}
+.chartwrap .ax{fill:var(--gray2);font-family:'JetBrains Mono',monospace;font-size:9px}
+.chartwrap .lbl{fill:var(--gray);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--paper);border-radius:7px;padding:7px 9px;font-family:var(--mono);font-size:10px;line-height:1.5;letter-spacing:.04em;opacity:0;transition:opacity .1s;white-space:nowrap;z-index:3}
+.tip.on{opacity:1}
+.cursorline{stroke:var(--gray2);stroke-width:1;stroke-dasharray:2 3}
+.metricrail{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
+
+.tblscroll{overflow-x:auto}
+.tblscroll::-webkit-scrollbar{height:7px}
+.tblscroll::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px}
+
+@media(max-width:1280px){.stats{grid-template-columns:repeat(3,1fr)}.attn{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.deriv{grid-template-columns:1fr}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script src="shell.js"></script>
+</head>
+<body>
+<!-- Campaigns (CM) — paid acquisition across Meta and TikTok, for ONE partner's book.
+
+     BUILT FROM
+       db/migrations/046_ad_platforms.sql   ad_platform_connections, ad_platform_category_map,
+                                            campaigns, ad_sets, ads, ad_metrics_daily, action_log,
+                                            spend_ceilings, partner_module_settings,
+                                            partner_onboarding_tasks, v_partner_spend_vs_ceiling,
+                                            trg_campaign_launch_gate, trg_campaigns_platform
+       db/migrations/047_compliance_rules.sql:169,182  campaigns.disclosure_asset_id + the CROA gate
+       db/migrations/048_campaign_config.sql  campaign_strategies, optimization_rules
+       db/migrations/052_config_defaults.sql  Meta special_ad_category = CREDIT; seeded rule params
+       api/campaigns/list.mjs  detail.mjs  spend.mjs  fatigue.mjs  connections.mjs  action-log.mjs
+       src/http/partner-read-api.mjs        requirePrincipal + withPartnerScope + redact; 405 on non-GET
+       src/adplatforms/index.mjs meta.mjs tiktok.mjs tokens.mjs _api.mjs
+       src/optimize/rules.mjs run.mjs ceilings.mjs   the rule keys, reasons and before/after shapes
+       src/partners/onboarding.mjs          connection_not_active | verify_business | link_croa_disclosure
+       public/app/data.js                   the { ok, source, data, error } reader contract
+
+     READ-ONLY BY CONSTRUCTION. Everything under api/campaigns/ is partnerReadHandler,
+     which answers any non-GET with 405 method_not_allowed. There is no launch, pause,
+     approve, budget-edit, connect-OAuth, sync-now or revert route anywhere in api/ — so
+     this screen carries no control that claims to write. `revertible` is rendered as a
+     flag, never as a button. undo() exists only as a library function in
+     src/adplatforms/index.mjs with no HTTP route.
+
+     Sample rows below. The wiring at the foot of the file swaps in real rows when
+     /api/campaigns/* answers and reports, per panel, which of the two you are reading. -->
+<div class="app">
+  <aside class="side" id="side">
+    <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
+    <nav class="side-scroll">
+      <div class="navgroup"><button class="navhead">Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
+        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Automation<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Marketing<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem on" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
+        <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
+        <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Setup<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
+        <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
+        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
+        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Client<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+      </div></div>
+    </nav>
+    <div class="side-foot"><span class="pulse"></span><span class="who">CS · EMP-000001</span></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="crumb">Marketing</span><h1>Campaigns</h1>
+      <div class="spacer"></div>
+      <span class="chip" id="ceilChip"><span class="cd"></span><span id="ceilTxt">ceilings</span></span>
+      <span class="chip" title="Every api/campaigns/* route is partnerReadHandler — a non-GET is answered 405 method_not_allowed">read-only · GET</span>
+      <span class="chip" title="ad_metrics_daily and spend_ceilings store integer cents. There is no currency column anywhere in the module, so no symbol is shown — amounts are in the ad account's own currency.">amounts · account ccy</span>
+      <button class="btn mono" id="reloadBtn">Reload</button>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ CM-00 · SUMMARY ══════════════════════════════════════════════ -->
+      <div class="stats" id="statRow"></div>
+      <div class="deriv" id="deriv"></div>
+
+      <!-- ══ CM-01 · SCOPE + DATA SOURCES ═════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">CM-01 <span class="sep">/</span> SCOPE &amp; SOURCES</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray mono" id="scopeBadge">one partner</span>
+        </div>
+        <div class="card-bd" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px">
+          <div>
+            <div class="mono" style="font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)">Book being shown</div>
+            <div style="font-size:15px;font-weight:600;margin-top:5px" id="scopeName">—</div>
+            <div class="mono" style="font-size:10.5px;color:var(--gray2);letter-spacing:.06em;margin-top:3px" id="scopePid">—</div>
+            <p class="note" style="margin-top:11px" id="scopeHow"></p>
+            <p class="note" style="margin-top:9px">
+              There is <b>no cross-partner roll-up</b>. A staff session names exactly one
+              <code>partner_id</code> and gets exactly that partner's view, so nothing on this
+              screen sums several partners together.
+            </p>
+          </div>
+          <div>
+            <div class="mono" style="font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:7px">Per-panel source</div>
+            <div class="dw-tbl">
+              <table class="grid">
+                <thead><tr><th>Panel</th><th>Endpoint</th><th>Source</th><th>Rows</th></tr></thead>
+                <tbody id="srcRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <b>Source names come from <code>public/app/data.js</code></b>, not from this screen:
+          <code>api</code> (real rows) · <code>demo</code> (demo session, nothing queried) ·
+          <code>unauthorized</code> · <code>nodb</code> · <code>offline</code> ·
+          <code>notfound</code> · <code>badrequest</code> · <code>nodata</code>.
+          A panel that cannot be read keeps its sample markup and says so — it never blanks.
+        </div>
+        <div class="cap">
+          <b>A bad filter is a 500, not a 400.</b> <code>stateFilter</code> throws on an unknown
+          <code>?state=</code> and <code>partnerReadHandler</code>'s catch returns
+          <code>500 { ok:false, error:"query_failed" }</code>. <code>/detail</code> with no
+          <code>id</code> does the same. The only 400 these endpoints produce is
+          <code>partner_id_required</code> — a staff session that has not named a partner. So a
+          500 here may be this screen's own bad query string rather than a backend outage.
+        </div>
+      </div>
+
+      <!-- ══ CM-02 · NEEDS ATTENTION ══════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">CM-02 <span class="sep">/</span> NEEDS ATTENTION</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray mono">each tile is a real filter</span>
+        </div>
+        <div class="card-bd">
+          <div class="attn" id="attnRow"></div>
+        </div>
+        <div class="cap">
+          Every count below is a query you can run, not a score. Clicking a tile sets that
+          panel's filter and jumps to it.
+        </div>
+      </div>
+
+      <!-- ══ CM-03 · SPEND vs CEILINGS ════════════════════════════════════ -->
+      <div class="card" id="secSpend">
+        <div class="card-hd">
+          <div class="eyebrow">CM-03 <span class="sep">/</span> TODAY'S SPEND VS CEILINGS</div>
+          <div class="spacer"></div>
+          <div class="rail" id="spendRail"></div>
+        </div>
+        <div class="tblscroll">
+          <table class="grid">
+            <thead><tr>
+              <th>Scope</th><th>Campaign</th><th>Platform</th><th>Daily limit</th>
+              <th>Spend today</th><th>Headroom</th><th>% of ceiling</th>
+              <th>Max daily increase</th><th>Flags</th>
+            </tr></thead>
+            <tbody id="spendRows"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="spendFoot"></div>
+        <div class="cap">
+          <b>This is our mirror, not platform truth.</b> <code>spend_today_cents</code> comes from
+          <code>ad_metrics_daily</code> where <code>date = CURRENT_DATE</code> — the same number the
+          pre-flight budget check uses. The kill switch deliberately reads the platform instead, so a
+          sync failure that made this look healthy cannot also disable the last line of defence.
+          Green here is not proof spend is under control; <code>breached_at</code>, stamped by
+          <code>runKillSwitch</code> from platform truth, is the column that is.
+        </div>
+        <div class="cap">
+          <b>Do not add these rows up.</b> The scopes overlap by design — a partner ceiling, a
+          platform ceiling and a campaign ceiling can all count the same spend, and
+          <code>checkBudgetWrite</code> evaluates every matching scope rather than only the
+          tightest. <code>approaching_ceiling</code> is <code>pct_of_ceiling &gt;= 80</code> and
+          <code>exhausted</code> is <code>headroom_cents = 0</code>; both are named in the endpoint
+          SQL, so this screen is not choosing a threshold. <code>headroom_cents</code> is
+          <code>GREATEST(limit − spend, 0)</code> and never goes negative — the overspend shows up
+          in <code>pct_of_ceiling</code> instead.
+        </div>
+        <div class="cap" id="spendGapCap"></div>
+      </div>
+
+      <!-- ══ CM-04 · CAMPAIGN LIST ════════════════════════════════════════ -->
+      <div class="card" id="secCampaigns">
+        <div class="card-hd">
+          <div class="eyebrow">CM-04 <span class="sep">/</span> CAMPAIGNS</div>
+          <div class="spacer"></div>
+          <div class="selwrap"><label for="fPlatform">Platform</label>
+            <select id="fPlatform"><option value="all">all</option><option value="meta">meta</option><option value="tiktok">tiktok</option><option value="google">google</option></select>
+          </div>
+          <div class="selwrap"><label for="fOffer">Offer</label>
+            <select id="fOffer"><option value="all">all</option><option value="funding">funding</option><option value="credit_cards">credit_cards</option><option value="credit_repair">credit_repair</option></select>
+          </div>
+          <div class="selwrap"><label for="fLimit">Limit</label>
+            <select id="fLimit"><option>10</option><option>25</option><option selected>50</option><option>200</option></select>
+          </div>
+        </div>
+        <div class="card-bd" style="padding:11px 16px;border-bottom:1px solid var(--line)">
+          <div class="rail" id="campRail"></div>
+        </div>
+        <div class="tblscroll">
+          <table class="grid">
+            <thead><tr>
+              <th>Campaign</th><th>Platform</th><th>Offer</th><th>Approval state</th>
+              <th>Strategy</th><th>Budget / day</th><th>Spend yesterday</th><th>ROAS 7d</th>
+              <th>Ad sets</th><th>Ads</th><th>Disclosure</th><th>Status</th><th>Synced</th>
+            </tr></thead>
+            <tbody id="campRows"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="campPager"></div>
+        <div class="cap">
+          <b><code>approval_state</code> is the state this screen means</b> — draft ·
+          awaiting_approval · approved · live · paused · archived, the six values of
+          <code>campaigns_approval_ck</code>, and the only thing <code>?state=</code> filters.
+          The <code>status</code> column beside it is a nullable free-text mirror of the platform's
+          own status string with <b>no writer anywhere in the repo</b>, which is why it reads
+          <span class="nul">—</span> on every row. <code>synced_at</code> is the same story: a real
+          column with no sync job behind it, so there is no "last synced" badge and no "Sync now".
+        </div>
+        <div class="cap">
+          <b><code>spend_yesterday_cents</code> is <code>CURRENT_DATE − 1</code>, on purpose</b> —
+          today's is partial, and a list judged on it makes a campaign that started at 11pm look
+          dead. There is no today's-spend-per-campaign number anywhere in the API: today's spend
+          exists only in CM-03 and only per ceiling. <code>roas_7d</code> is
+          <code>avg(ad_metrics_daily.roas)</code> over <code>date &gt; CURRENT_DATE − 8</code> and is
+          null until a campaign has metrics. <code>strategy_key</code> arrives as the raw key —
+          <code>campaign_strategies</code> (display names, skeleton) is exposed by no endpoint.
+        </div>
+        <div class="cap">
+          <b>No deep links.</b> Neither list nor detail selects <code>campaigns.external_id</code>,
+          so a "view in Ads Manager" link cannot be built. Only connections carry an outward id
+          (<code>external_ad_account_id</code>, <code>external_business_id</code>) — see CM-07.
+        </div>
+      </div>
+
+      <!-- ══ CM-06 · CREATIVE FATIGUE ═════════════════════════════════════ -->
+      <div class="card" id="secFatigue">
+        <div class="card-hd">
+          <div class="eyebrow">CM-06 <span class="sep">/</span> CREATIVE FATIGUE BY AD</div>
+          <div class="spacer"></div>
+          <div class="selwrap"><label for="fDays">Window</label>
+            <select id="fDays"><option value="7" selected>7 days</option><option value="14">14 days</option><option value="30">30 days</option></select>
+          </div>
+        </div>
+        <div class="card-bd" style="padding:11px 16px;border-bottom:1px solid var(--line)">
+          <div class="rail" id="fatRail"></div>
+        </div>
+        <div class="tblscroll">
+          <table class="grid">
+            <thead><tr>
+              <th>Ad</th><th>Campaign</th><th>Platform</th><th>Spend</th><th>Impressions</th>
+              <th>Frequency</th><th>CTR</th><th>ROAS</th><th>Last date</th><th>Rotated</th>
+              <th>Next rotation</th><th>Recommendation</th>
+            </tr></thead>
+            <tbody id="fatRows"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="fatFoot"></div>
+        <div class="cap">
+          <b>The recommendation is the optimiser's, not this screen's.</b>
+          <code>api/campaigns/fatigue.mjs</code> reads <code>optimization_rules</code> from the
+          <i>partner's</i> org — the same rows <code>src/optimize/rules.mjs</code> reads — and returns
+          only the derived word: <code>refresh</code> · <code>queue</code> · <code>ok</code> ·
+          <code>unconfigured</code>. The thresholds are deliberately not in the response, so nothing
+          here prints a number the API did not send. An inactive rule yields no recommendation
+          rather than a default one, and <code>unconfigured</code> means both the frequency and CTR
+          rules are off — which makes it all-or-nothing across every row, never a per-ad verdict.
+        </div>
+        <div class="cap">
+          <b>Absence is not health.</b> These rows <code>INNER JOIN ad_metrics_daily</code>, so an ad
+          with no rows in the window simply is not here. <code>frequency</code>, <code>ctr</code> and
+          <code>roas</code> are unweighted averages of daily values, not impression-weighted.
+          <code>ctr</code> is stored in the platform's own units and compared as a bare percent — it
+          is not a 0–1 ratio. <code>hours_until_next_rotation</code> is null when
+          <code>ads.rotated_at</code> is null or the CTR rule is inactive. There is no fatigue score,
+          no health index and no creative preview: <code>creative_assets.storage_key</code> never
+          leaves the process and no campaigns endpoint returns <code>ads.asset_id</code>.
+        </div>
+      </div>
+
+      <!-- ══ CM-07 · CONNECTIONS ══════════════════════════════════════════ -->
+      <div class="card" id="secConn">
+        <div class="card-hd">
+          <div class="eyebrow">CM-07 <span class="sep">/</span> PLATFORM CONNECTIONS &amp; LAUNCH BLOCKERS</div>
+          <div class="spacer"></div>
+          <div class="rail" id="connRail"></div>
+        </div>
+        <div class="tblscroll">
+          <table class="grid">
+            <thead><tr>
+              <th>Platform</th><th>Ad account</th><th>Connection state</th><th>Verification</th>
+              <th>Token</th><th>Campaigns</th><th>Can launch</th><th>Credit offer</th><th>Blockers</th>
+            </tr></thead>
+            <tbody id="connRows"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="connFoot"></div>
+        <div class="cap">
+          <b>The launch gate is in the database, not in this screen.</b>
+          <code>trg_campaign_launch_gate</code> refuses <code>approval_state = 'live'</code> unless
+          the connection is <code>active</code> and — for all three offer types, funding included —
+          <code>platform_verification_state = 'approved'</code>. That is exactly what
+          <code>can_launch</code> and <code>can_launch_credit_offer</code> encode. Business
+          verification is done in the platform's own Business Manager; there is nothing to click here.
+        </div>
+        <div class="cap">
+          <b>No token exists client-side in any form.</b> Only the encrypted columns exist,
+          <code>connections.mjs</code> does not select them, <code>redactConnection</code> strips them
+          again, and <code>safeMessage()</code> rewrites any ciphertext that reaches an error string.
+          What you get is presence — <code>has_access_token</code> / <code>has_refresh_token</code> —
+          and expiry. A null <code>token_expires_at</code> makes <code>token_expired</code> false;
+          that means <b>unknown</b>, not "valid forever". There is no OAuth URL, no required-scopes
+          list and no reconnect link in the response, so this screen offers none.
+        </div>
+        <div class="cap">
+          <b>Blockers are per connection only.</b> They are unresolved
+          <code>partner_onboarding_tasks</code> rows whose <code>connection_id</code> matches, written
+          by <code>checkLaunchReadiness</code>: <code>connection_not_active</code> ·
+          <code>verify_business</code> · <code>link_croa_disclosure</code>, severity
+          <code>blocker</code> or <code>warning</code>. Tasks scoped to a campaign are returned by no
+          endpoint, so there is no campaign-blocker panel to build.
+          <code>google</code> is a legal platform value everywhere, but
+          <code>adapterFor('google')</code> throws — it has no write adapter, so a Google row here is
+          a connection, not a controllable channel.
+        </div>
+      </div>
+
+      <!-- ══ CM-08 · ACTION LOG ═══════════════════════════════════════════ -->
+      <div class="card" id="secLog">
+        <div class="card-hd">
+          <div class="eyebrow">CM-08 <span class="sep">/</span> ACTION LOG</div>
+          <div class="spacer"></div>
+          <div class="selwrap"><label for="fTarget">Target</label>
+            <select id="fTarget">
+              <option value="all">all</option><option value="campaign">campaign</option>
+              <option value="ad_set">ad_set</option><option value="ad">ad</option>
+              <option value="creative_asset">creative_asset</option><option value="connection">connection</option>
+              <option value="social_post">social_post</option><option value="autopilot">autopilot</option>
+            </select>
+          </div>
+          <div class="selwrap"><label for="fRule">Rule key</label>
+            <select id="fRule">
+              <option value="all">any</option>
+              <option value="scale_winner">scale_winner</option>
+              <option value="cpa_over_target">cpa_over_target</option>
+              <option value="cpa_recovering">cpa_recovering</option>
+              <option value="frequency_bands">frequency_bands</option>
+              <option value="ctr_below_floor">ctr_below_floor</option>
+              <option value="kill_no_conversions">kill_no_conversions</option>
+              <option value="kill_switch_ceiling">kill_switch_ceiling</option>
+              <option value="learning_phase">learning_phase</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-bd" style="padding:11px 16px;border-bottom:1px solid var(--line)">
+          <div class="rail" id="logRail"></div>
+        </div>
+        <div class="tblscroll">
+          <table class="grid">
+            <thead><tr>
+              <th>When</th><th>Actor</th><th>Target</th><th>Rule</th><th>Reason</th>
+              <th>Change</th><th>Outcome</th><th>Revert</th>
+            </tr></thead>
+            <tbody id="logRows"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="logFoot"></div>
+        <div class="cap">
+          <b><code>action_log</code> has no status column</b>, so the outcome on each row is derived
+          from four columns and nothing else: <code>undone_at</code> → <b>reverted</b> ·
+          <code>execute_error</code> → <b>failed</b> · <code>executed_at IS NULL</code> →
+          <b>logged, never executed</b> · otherwise <b>executed</b>. "Pending", "queued", "in
+          progress" and "attempt 2 of 3" would all be invented — errors are classified as
+          <code>retryable</code> in <code>_api.mjs</code> but nothing in this repo retries or records
+          an attempt.
+        </div>
+        <div class="cap">
+          <b>The log row is written BEFORE the platform call</b> and stamped afterwards
+          (guardrail → money → action log → platform, with no way to skip a step). That is what makes
+          "logged but never executed" a queryable state rather than a lost change. Platform errors are
+          stored verbatim, truncated at 2000 chars, into <code>execute_error</code> and — for
+          <code>target_type = 'campaign'</code> — into <code>campaigns.last_error</code>. The table is
+          append-only: DELETE raises, and UPDATE may only touch
+          <code>executed_at / execute_error / undone_at / undone_by</code>.
+        </div>
+        <div class="cap">
+          <b><code>revertible</code> is a flag, not a button.</b> <code>undo_payload</code> is withheld
+          from every endpoint on purpose, so this screen cannot preview a revert or render its diff —
+          and there is no revert route to call: <code>undo()</code> is a library function in
+          <code>src/adplatforms/index.mjs</code>. Agent rows usually carry no <code>agent_name</code>
+          because <code>runDailyOptimization</code> and <code>runKillSwitch</code> both default
+          <code>agentId</code> to null — the <code>rule_key</code> is the attribution. Human names come
+          from <code>accounts.name</code>, the partner's own users.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="foot">
+      <span class="pulse"></span><span>systems nominal · fundhub.ai</span>
+      <span class="spacer"></span>
+      <span id="footNote">cm · api/campaigns/* · read-only</span>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dwTitle" aria-hidden="true">
+  <div class="dw-hd">
+    <div style="min-width:0">
+      <div class="eyebrow">CM-05 <span class="sep">/</span> CAMPAIGN DETAIL</div>
+      <h2 id="dwTitle">—</h2>
+      <div id="dwSub" class="mono" style="font-size:10.5px;color:var(--gray2);letter-spacing:.07em;margin-top:5px"></div>
+    </div>
+    <button class="dw-x" id="dwClose" aria-label="Close campaign detail">✕</button>
+  </div>
+  <div class="dw-bd" id="dwBody"></div>
+</aside>
+
+<script src="data.js"></script>
+<script>
+/* ══ SHARED CHROME BEHAVIOUR ═════════════════════════════════════════════ */
+(function(){
+  var side=document.getElementById('side'),b=document.getElementById('burger');
+  b.addEventListener('click',function(){side.classList.toggle('mini');b.textContent=side.classList.contains('mini')?'››':'‹‹';});
+  document.querySelectorAll('.navhead').forEach(function(h){
+    h.addEventListener('click',function(){if(side.classList.contains('mini'))return;h.parentElement.classList.toggle('closed');});
+  });
+})();
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
+
+/* ══ FORMATTERS ══════════════════════════════════════════════════════════
+   MONEY CARRIES NO SYMBOL. There is no currency column in any of the module
+   tables — Meta decimal strings and TikTok whole units are both stored as
+   integer cents in the ad account's own currency — so a '$' would be a claim
+   the schema cannot back. Cents are shown divided by 100, two decimals.
+   ════════════════════════════════════════════════════════════════════════ */
+var NBSP = '—';
+function cents(v){
+  if(v===null||v===undefined) return '<span class="nul">'+NBSP+'</span>';
+  return (Number(v)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function int(v){ return v===null||v===undefined ? '<span class="nul">'+NBSP+'</span>' : Number(v).toLocaleString('en-US'); }
+function dec(v,p){ return v===null||v===undefined ? '<span class="nul">'+NBSP+'</span>' : Number(v).toFixed(p===undefined?2:p); }
+/* ctr is stored in the platform's own units and compared against floor_pct as a
+   bare number — percent. Never multiplied by 100 here. */
+function pctv(v){ return v===null||v===undefined ? '<span class="nul">'+NBSP+'</span>' : Number(v).toFixed(2)+'%'; }
+function nul(){ return '<span class="nul">'+NBSP+'</span>'; }
+var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function dt(iso,withTime){
+  if(!iso) return nul();
+  var d = new Date(iso);
+  if(isNaN(d)) return nul();
+  var s = MON[d.getUTCMonth()]+' '+String(d.getUTCDate()).padStart(2,'0')+', '+d.getUTCFullYear();
+  if(withTime) s += ' ' + String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0');
+  return s;
+}
+function day(iso){ if(!iso) return nul(); var d=new Date(iso+'T00:00:00Z'); return MON[d.getUTCMonth()]+' '+String(d.getUTCDate()).padStart(2,'0'); }
+function jsonline(o){ try{ return JSON.stringify(o); }catch(e){ return '{}'; } }
+
+/* uid — stable pseudo-uuids so the sample ids look and behave like the real
+   ones (target_id joins, ?id= in the drawer) without forty hand-typed uuids. */
+function uid(key){
+  var h = 2166136261, out = '';
+  for(var i=0;i<32;i++){
+    h ^= key.charCodeAt(i % key.length) + i*7;
+    h = Math.imul(h, 16777619) >>> 0;
+    out += ((h >>> ((i%4)*8)) & 15).toString(16);
+  }
+  return out.slice(0,8)+'-'+out.slice(8,12)+'-4'+out.slice(13,16)+'-a'+out.slice(17,20)+'-'+out.slice(20,32);
+}
+
+/* TODAY — 'today' on these endpoints is the DATABASE's CURRENT_DATE. There is
+   no timezone column in the module, so the screen does not pretend to localise. */
+var TODAY = '2026-07-30';
+
+/* ══ SAMPLE DATA ═════════════════════════════════════════════════════════
+   One partner's book. Every field below is a column or a derived flag that
+   api/campaigns/* actually returns — nothing is here that the backend could
+   not produce.
+   ════════════════════════════════════════════════════════════════════════ */
+var PARTNER = { id: uid('partner:meridian'), name: 'Meridian Capital Partners' };
+
+/* GET /api/campaigns/connections → items[] (redactConnection applied).
+   ORDER BY c.platform, c.created_at — so google, then the two meta accounts
+   oldest-first, then tiktok. The array is written in that order because nothing
+   re-sorts it on the way to the table. */
+var CONNECTIONS = [
+  { id: uid('conn:goog1'), platform:'google',
+    external_business_id:null, external_ad_account_id:'411-702-8856',
+    connection_state:'pending', platform_verification_state:'unverified',
+    scopes:[], token_expires_at:null, last_error:null, last_synced_at:null,
+    created_at:'2026-07-29T14:58:02Z',
+    has_access_token:false, has_refresh_token:false, token_expired:false,
+    can_launch:false, can_launch_credit_offer:false,
+    blockers:[{ task_key:'connection_not_active', severity:'blocker',
+      title:'Reconnect your google account',
+      detail:'The connection is pending. A campaign cannot launch until it is active.' }],
+    campaign_count:1 },
+
+  { id: uid('conn:meta1'), platform:'meta',
+    external_business_id:'6142980377114', external_ad_account_id:'act_1184402997366',
+    connection_state:'active', platform_verification_state:'approved',
+    scopes:['ads_management','ads_read','business_management'],
+    token_expires_at:'2026-09-14T22:10:00Z', last_error:null, last_synced_at:null,
+    created_at:'2026-05-02T16:41:09Z',
+    has_access_token:true, has_refresh_token:true, token_expired:false,
+    can_launch:true, can_launch_credit_offer:true, blockers:[], campaign_count:7 },
+
+  { id: uid('conn:meta2'), platform:'meta',
+    external_business_id:'6142980377114', external_ad_account_id:'act_9930277451082',
+    connection_state:'expired', platform_verification_state:'approved',
+    scopes:['ads_management','ads_read'],
+    token_expires_at:'2026-07-25T21:03:11Z', last_synced_at:null,
+    last_error:'Error validating access token: Session has expired on Saturday, 25-Jul-26 14:03:11 PDT. The current time is Thursday, 30-Jul-26 07:22:14 PDT.',
+    created_at:'2026-06-30T13:22:41Z',
+    has_access_token:true, has_refresh_token:true, token_expired:true,
+    can_launch:false, can_launch_credit_offer:false,
+    blockers:[{ task_key:'connection_not_active', severity:'blocker',
+      title:'Reconnect your meta account',
+      detail:'The connection is expired. A campaign cannot launch until it is active.' }],
+    campaign_count:1 },
+
+  { id: uid('conn:tt1'), platform:'tiktok',
+    external_business_id:'7392044118820331521', external_ad_account_id:'7392041887330058241',
+    connection_state:'active', platform_verification_state:'submitted',
+    scopes:['ad_account.info','campaign.operate','report.read'],
+    token_expires_at:'2026-08-19T09:30:00Z', last_error:null, last_synced_at:null,
+    created_at:'2026-06-18T11:05:52Z',
+    has_access_token:true, has_refresh_token:true, token_expired:false,
+    can_launch:true, can_launch_credit_offer:false,
+    blockers:[{ task_key:'verify_business', severity:'blocker',
+      title:'Complete business verification on tiktok',
+      detail:'Verification is submitted. tiktok requires an approved business before a funding campaign can run. This is done in the platform’s own Business Manager, not here.' }],
+    campaign_count:2 }
+];
+
+/* GET /api/campaigns/list → items[]. status and synced_at are null on every row
+   because nothing in the repo writes either column. ORDER BY created_at DESC. */
+function C(o){ o.id = uid('camp:'+o.key); o.status = null; o.synced_at = null; return o; }
+var CAMPAIGNS = [
+  C({ key:'goog-cc-test', name:'Credit Cards — Google search test', platform:'google',
+      offer_type:'credit_cards', approval_state:'draft', strategy_key:null,
+      special_ad_category:null, objective:null, budget_cents:25000,
+      spend_yesterday_cents:0, roas_7d:null, ad_set_count:0, ad_count:0,
+      has_disclosure_asset:false, approved_at:null, last_error:null,
+      created_at:'2026-07-29T16:11:38Z', connection_id: uid('conn:goog1') }),
+
+  C({ key:'cr-forester-cold', name:'Credit Repair — Forester cold', platform:'meta',
+      offer_type:'credit_repair', approval_state:'draft', strategy_key:'forester',
+      special_ad_category:'CREDIT', objective:null, budget_cents:15000,
+      spend_yesterday_cents:0, roas_7d:null, ad_set_count:1, ad_count:0,
+      has_disclosure_asset:false, approved_at:null, last_error:null,
+      created_at:'2026-07-28T21:04:47Z', connection_id: uid('conn:meta1'),
+      targeting:{ geo:['US'], age_min:25, age_max:60, placements:['facebook_feed','instagram_feed'] } }),
+
+  C({ key:'fund-vft2', name:'Funding — Venus Fly Trap 2 lookalike', platform:'meta',
+      offer_type:'funding', approval_state:'awaiting_approval', strategy_key:'venus_fly_trap_2',
+      special_ad_category:'CREDIT', objective:'OUTCOME_LEADS', budget_cents:26000,
+      spend_yesterday_cents:0, roas_7d:null, ad_set_count:1, ad_count:3,
+      has_disclosure_asset:false, approved_at:null, last_error:null,
+      created_at:'2026-07-26T19:38:12Z', connection_id: uid('conn:meta1'),
+      targeting:{ geo:['US'], lookalike:{ source:'leads_180d', ratio:0.02 }, placements:['facebook_feed'] } }),
+
+  C({ key:'cc-tornado-pros', name:'Credit Cards — Tornado prospecting', platform:'meta',
+      offer_type:'credit_cards', approval_state:'approved', strategy_key:'tornado',
+      special_ad_category:'CREDIT', objective:'OUTCOME_LEADS', budget_cents:30000,
+      spend_yesterday_cents:0, roas_7d:null, ad_set_count:2, ad_count:4,
+      has_disclosure_asset:false, approved_at:'2026-07-27T18:05:42Z', last_error:null,
+      created_at:'2026-07-24T12:18:03Z', connection_id: uid('conn:meta1'),
+      targeting:{ geo:['US'], age_min:25, age_max:54, interests:['small_business_owners','business_credit'], placements:['facebook_feed','instagram_reels'] } }),
+
+  C({ key:'fund-forester-a2', name:'Funding — Forester Q3 broad (acct 2)', platform:'meta',
+      offer_type:'funding', approval_state:'paused', strategy_key:'forester',
+      special_ad_category:'CREDIT', objective:'OUTCOME_LEADS', budget_cents:24000,
+      spend_yesterday_cents:9840, roas_7d:1.04, ad_set_count:2, ad_count:5,
+      has_disclosure_asset:false, approved_at:'2026-07-15T11:26:44Z',
+      last_error:'Error validating access token: Session has expired on Saturday, 25-Jul-26 14:03:11 PDT. The current time is Thursday, 30-Jul-26 07:22:14 PDT.',
+      created_at:'2026-07-14T18:09:20Z', connection_id: uid('conn:meta2'),
+      targeting:{ geo:['US'], age_min:25, age_max:60, placements:['facebook_feed','instagram_feed'] },
+      m:{ from:'2026-07-14', to:'2026-07-29', roas:1.04, ctr:2.3, freq:1.2, cpa:7400 } }),
+
+  C({ key:'cr-harvester', name:'Credit Repair — Harvester warm list', platform:'meta',
+      offer_type:'credit_repair', approval_state:'live', strategy_key:'harvester',
+      special_ad_category:'CREDIT', objective:'OUTCOME_LEADS', budget_cents:18000,
+      spend_yesterday_cents:4120, roas_7d:1.12, ad_set_count:2, ad_count:5,
+      has_disclosure_asset:true, approved_at:'2026-07-12T16:22:40Z', last_error:null,
+      created_at:'2026-07-11T20:31:09Z', connection_id: uid('conn:meta1'),
+      targeting:{ geo:['US'], custom_audiences:['crm_warm_90d'], age_min:25, age_max:65, placements:['facebook_feed','instagram_feed','audience_network'] },
+      m:{ from:'2026-07-11', to:TODAY, roas:1.12, ctr:2.5, freq:1.8, cpa:9100 } }),
+
+  C({ key:'fund-tornado-tt', name:'Funding — Tornado TikTok cold', platform:'tiktok',
+      offer_type:'funding', approval_state:'live', strategy_key:'tornado',
+      special_ad_category:null, objective:'LEAD_GENERATION', budget_cents:32000,
+      spend_yesterday_cents:25640, roas_7d:0.94, ad_set_count:2, ad_count:7,
+      has_disclosure_asset:false, approved_at:'2026-07-09T13:55:18Z', last_error:null,
+      created_at:'2026-07-08T17:44:02Z', connection_id: uid('conn:tt1'),
+      targeting:{ geo:['US'], age:['AGE_25_34','AGE_35_44','AGE_45_54'], placements:['PLACEMENT_TIKTOK'] },
+      m:{ from:'2026-07-08', to:TODAY, roas:0.94, ctr:1.6, freq:2.2, cpa:8600 } }),
+
+  C({ key:'fund-forester', name:'Funding — Forester Q3 broad', platform:'meta',
+      offer_type:'funding', approval_state:'live', strategy_key:'forester',
+      special_ad_category:'CREDIT', objective:'OUTCOME_LEADS', budget_cents:45000,
+      spend_yesterday_cents:43812, roas_7d:1.86, ad_set_count:3, ad_count:9,
+      has_disclosure_asset:false, approved_at:'2026-07-06T15:41:22Z', last_error:null,
+      created_at:'2026-07-05T18:02:11Z', connection_id: uid('conn:meta1'),
+      targeting:{ geo:['US'], age_min:25, age_max:54, interests:['entrepreneurship','small_business_owners'], placements:['facebook_feed','instagram_feed','instagram_reels'] },
+      m:{ from:'2026-07-05', to:TODAY, roas:1.86, ctr:2.2, freq:2.6, cpa:6200 } }),
+
+  C({ key:'cc-hammer-tt', name:'Credit Cards — Hammer Them TikTok', platform:'tiktok',
+      offer_type:'credit_cards', approval_state:'paused', strategy_key:'hammer_them',
+      special_ad_category:null, objective:'LEAD_GENERATION', budget_cents:18000,
+      spend_yesterday_cents:0, roas_7d:0.61, ad_set_count:1, ad_count:4,
+      has_disclosure_asset:false, approved_at:'2026-07-02T10:12:55Z',
+      last_error:'Budget must be greater than or equal to 50.00 USD.',
+      created_at:'2026-07-01T14:20:31Z', connection_id: uid('conn:tt1'),
+      targeting:{ geo:['US'], retargeting:{ window_days:14 }, placements:['PLACEMENT_TIKTOK'] },
+      m:{ from:'2026-07-01', to:'2026-07-29', roas:0.61, ctr:1.4, freq:1.3, cpa:11800 } }),
+
+  C({ key:'cc-vft1', name:'Credit Cards — Venus Fly Trap 1 retarget', platform:'meta',
+      offer_type:'credit_cards', approval_state:'live', strategy_key:'venus_fly_trap_1',
+      special_ad_category:'CREDIT', objective:'OUTCOME_LEADS', budget_cents:28000,
+      spend_yesterday_cents:27960, roas_7d:2.41, ad_set_count:2, ad_count:6,
+      has_disclosure_asset:false, approved_at:'2026-06-28T11:07:03Z', last_error:null,
+      created_at:'2026-06-27T09:15:44Z', connection_id: uid('conn:meta1'),
+      targeting:{ geo:['US'], custom_audiences:['site_visitors_30d','video_viewers_75'], placements:['facebook_feed','instagram_feed','instagram_stories'] },
+      m:{ from:'2026-06-27', to:TODAY, roas:2.41, ctr:2.4, freq:3.1, cpa:5100 } }),
+
+  C({ key:'fund-harvester-q2', name:'Funding — Harvester Q2 evergreen', platform:'meta',
+      offer_type:'funding', approval_state:'archived', strategy_key:'harvester',
+      special_ad_category:'CREDIT', objective:'OUTCOME_LEADS', budget_cents:20000,
+      spend_yesterday_cents:0, roas_7d:null, ad_set_count:3, ad_count:8,
+      has_disclosure_asset:false, approved_at:'2026-04-11T14:33:07Z', last_error:null,
+      created_at:'2026-04-09T15:26:55Z', connection_id: uid('conn:meta1'),
+      targeting:{ geo:['US'], age_min:28, age_max:60, placements:['facebook_feed'] },
+      m:{ from:'2026-04-09', to:'2026-05-30', roas:1.41, ctr:2.0, freq:1.9, cpa:7800 } })
+];
+
+/* ad_sets[] as /detail returns them: id, name, status, budget_cents,
+   approval_state, learning_until, in_learning_phase, ad_count. */
+var AD_SETS = {};
+(function(){
+  function set(campKey, rows){
+    AD_SETS[uid('camp:'+campKey)] = rows.map(function(r){
+      return { id: uid('adset:'+campKey+':'+r[0]), name:r[0], status:null, budget_cents:r[1],
+               approval_state:r[2], learning_until:r[3] || null,
+               in_learning_phase: !!(r[3] && new Date(r[3]) > new Date(TODAY+'T23:59:59Z')),
+               ad_count:r[4] };
+    });
+  }
+  set('fund-forester', [
+    ['Forester · broad 25-54 · US', 19200, 'live', null, 4],
+    ['Forester · lookalike 1% purchasers', 15000, 'live', '2026-07-31T06:00:00Z', 3],
+    ['Forester · interest stack · biz owners', 10800, 'paused', null, 2]]);
+  set('cc-vft1', [
+    ['VFT1 · site visitors 30d', 13400, 'live', null, 3],
+    ['VFT1 · video viewers 75%', 12000, 'live', null, 3]]);
+  set('cr-harvester', [
+    ['Harvester · warm list CRM', 10000, 'live', null, 3],
+    ['Harvester · warm list lookalike', 8000, 'live', '2026-08-01T09:00:00Z', 2]]);
+  set('fund-tornado-tt', [
+    ['Tornado · TT broad US 25-54', 20000, 'live', null, 4],
+    ['Tornado · TT creator lookalike', 12000, 'live', null, 3]]);
+  set('cc-hammer-tt', [['Hammer Them · TT retarget 14d', 18000, 'paused', null, 4]]);
+  set('fund-vft2', [['VFT2 · lookalike 2% leads', 26000, 'awaiting_approval', null, 3]]);
+  set('cr-forester-cold', [['Forester · cold broad', 15000, 'draft', null, 0]]);
+  set('cc-tornado-pros', [
+    ['Tornado · prospect A · broad', 15000, 'approved', null, 2],
+    ['Tornado · prospect B · lookalike', 15000, 'approved', null, 2]]);
+  set('fund-forester-a2', [
+    ['Forester · broad acct2', 14000, 'paused', null, 3],
+    ['Forester · retarget acct2', 10000, 'paused', null, 2]]);
+  set('fund-harvester-q2', [
+    ['Harvester Q2 · broad', 8000, 'archived', null, 3],
+    ['Harvester Q2 · warm list', 7000, 'archived', null, 3],
+    ['Harvester Q2 · lookalike', 5000, 'archived', null, 2]]);
+  AD_SETS[uid('camp:goog-cc-test')] = [];
+})();
+
+/* GET /api/campaigns/spend → items[] over v_partner_spend_vs_ceiling.
+   ACTIVE ceilings only — the view filters on sc.active, so an inactive ceiling
+   is absent from this list entirely rather than shown as "off". */
+function ceil_(o){
+  o.headroom_cents = Math.max(Number(o.daily_limit_cents) - Number(o.spend_today_cents), 0);
+  o.pct_of_ceiling = Number(o.daily_limit_cents) === 0 ? null
+    : Math.round(100 * o.spend_today_cents / o.daily_limit_cents * 100) / 100;
+  o.breached = o.breached_at !== null;
+  o.exhausted = o.headroom_cents === 0;
+  o.approaching_ceiling = o.pct_of_ceiling !== null && o.pct_of_ceiling >= 80;
+  return o;
+}
+var CEILINGS = [
+  ceil_({ ceiling_id: uid('ceil:c-vft1'), scope:'campaign', campaign_id: uid('camp:cc-vft1'),
+          campaign_name:'Credit Cards — Venus Fly Trap 1 retarget', platform:null,
+          daily_limit_cents:28000, max_daily_increase_pct:20, spend_today_cents:28450,
+          breached_at:'2026-07-30T14:22:07Z' }),
+  ceil_({ ceiling_id: uid('ceil:c-tornado'), scope:'campaign', campaign_id: uid('camp:fund-tornado-tt'),
+          campaign_name:'Funding — Tornado TikTok cold', platform:null,
+          daily_limit_cents:26000, max_daily_increase_pct:20, spend_today_cents:25190, breached_at:null }),
+  ceil_({ ceiling_id: uid('ceil:c-forester'), scope:'campaign', campaign_id: uid('camp:fund-forester'),
+          campaign_name:'Funding — Forester Q3 broad', platform:null,
+          daily_limit_cents:45000, max_daily_increase_pct:20, spend_today_cents:38900, breached_at:null }),
+  ceil_({ ceiling_id: uid('ceil:partner'), scope:'partner', campaign_id:null, campaign_name:null, platform:null,
+          daily_limit_cents:150000, max_daily_increase_pct:20, spend_today_cents:96430, breached_at:null }),
+  ceil_({ ceiling_id: uid('ceil:p-meta'), scope:'platform', campaign_id:null, campaign_name:null, platform:'meta',
+          daily_limit_cents:100000, max_daily_increase_pct:20, spend_today_cents:71240, breached_at:null }),
+  ceil_({ ceiling_id: uid('ceil:p-tiktok'), scope:'platform', campaign_id:null, campaign_name:null, platform:'tiktok',
+          daily_limit_cents:40000, max_daily_increase_pct:20, spend_today_cents:25190, breached_at:null }),
+  ceil_({ ceiling_id: uid('ceil:p-google'), scope:'platform', campaign_id:null, campaign_name:null, platform:'google',
+          daily_limit_cents:0, max_daily_increase_pct:20, spend_today_cents:0, breached_at:null })
+];
+
+/* GET /api/campaigns/fatigue → items[]. ORDER BY frequency DESC NULLS LAST,
+   ctr ASC NULLS LAST. hours_until_next_rotation is what the endpoint computed —
+   the 72-hour cadence behind it is never in the response, so it is not restated. */
+function F(o){ o.ad_id = uid('ad:'+o.key); o.campaign_id = uid('camp:'+o.ck); o.ad_set_id = uid('adset:'+o.ck+':'+o.asn); o.last_date = o.last_date || TODAY; return o; }
+var FATIGUE = [
+  F({ key:'vft1-hookA', ck:'cc-vft1', asn:'VFT1 · site visitors 30d',
+      ad_name:'VFT1 · hook A · static 1x1', campaign_name:'Credit Cards — Venus Fly Trap 1 retarget',
+      platform:'meta', spend_cents:21400, impressions:184220, frequency:4.1200, ctr:2.870000, roas:2.550000,
+      rotated_at:'2026-07-28T09:00:00Z', hours_until_next_rotation:18.0, recommendation:'refresh' }),
+  F({ key:'for-hookC', ck:'fund-forester', asn:'Forester · broad 25-54 · US',
+      ad_name:'Forester · hook C · 9x16 UGC', campaign_name:'Funding — Forester Q3 broad',
+      platform:'meta', spend_cents:28900, impressions:241300, frequency:3.4100, ctr:1.620000, roas:1.440000,
+      rotated_at:null, hours_until_next_rotation:null, recommendation:'refresh' }),
+  F({ key:'tt-hookB', ck:'fund-tornado-tt', asn:'Tornado · TT broad US 25-54',
+      ad_name:'Tornado · TT hook B · 9x16', campaign_name:'Funding — Tornado TikTok cold',
+      platform:'tiktok', spend_cents:19800, impressions:402100, frequency:2.8800, ctr:1.210000, roas:0.880000,
+      rotated_at:'2026-07-29T18:00:00Z', hours_until_next_rotation:51.3, recommendation:'queue' }),
+  F({ key:'for-hookA', ck:'fund-forester', asn:'Forester · broad 25-54 · US',
+      ad_name:'Forester · hook A · 9x16 UGC', campaign_name:'Funding — Forester Q3 broad',
+      platform:'meta', spend_cents:24100, impressions:198400, frequency:2.6400, ctr:2.410000, roas:1.920000,
+      rotated_at:'2026-07-24T07:00:00Z', hours_until_next_rotation:0.0, recommendation:'queue' }),
+  F({ key:'harv-disc', ck:'cr-harvester', asn:'Harvester · warm list CRM',
+      ad_name:'Harvester · disclosure card · 1x1', campaign_name:'Credit Repair — Harvester warm list',
+      platform:'meta', spend_cents:6200, impressions:51800, frequency:2.1800, ctr:2.020000, roas:1.210000,
+      rotated_at:null, hours_until_next_rotation:null, recommendation:'queue' }),
+  F({ key:'vft1-hookB', ck:'cc-vft1', asn:'VFT1 · video viewers 75%',
+      ad_name:'VFT1 · hook B · carousel', campaign_name:'Credit Cards — Venus Fly Trap 1 retarget',
+      platform:'meta', spend_cents:15600, impressions:132900, frequency:1.9400, ctr:1.710000, roas:2.110000,
+      rotated_at:'2026-07-27T12:00:00Z', hours_until_next_rotation:0.0, recommendation:'refresh' }),
+  F({ key:'tt-hookA', ck:'fund-tornado-tt', asn:'Tornado · TT creator lookalike',
+      ad_name:'Tornado · TT hook A · 9x16', campaign_name:'Funding — Tornado TikTok cold',
+      platform:'tiktok', spend_cents:22600, impressions:448700, frequency:1.7700, ctr:1.880000, roas:1.020000,
+      rotated_at:'2026-07-30T02:00:00Z', hours_until_next_rotation:58.7, recommendation:'refresh' }),
+  F({ key:'for-hookB', ck:'fund-forester', asn:'Forester · lookalike 1% purchasers',
+      ad_name:'Forester · hook B · 4x5 static', campaign_name:'Funding — Forester Q3 broad',
+      platform:'meta', spend_cents:17300, impressions:141200, frequency:1.6200, ctr:2.940000, roas:2.180000,
+      rotated_at:'2026-07-22T10:00:00Z', hours_until_next_rotation:0.0, recommendation:'ok' }),
+  F({ key:'harv-testi', ck:'cr-harvester', asn:'Harvester · warm list lookalike',
+      ad_name:'Harvester · testimonial · 9x16', campaign_name:'Credit Repair — Harvester warm list',
+      platform:'meta', spend_cents:5400, impressions:42100, frequency:1.4400, ctr:3.110000, roas:1.360000,
+      rotated_at:null, hours_until_next_rotation:null, recommendation:'ok' }),
+  F({ key:'ham-retar', ck:'cc-hammer-tt', asn:'Hammer Them · TT retarget 14d',
+      ad_name:'Hammer Them · TT retarget · 9x16', campaign_name:'Credit Cards — Hammer Them TikTok',
+      platform:'tiktok', spend_cents:3100, impressions:61200, frequency:1.2800, ctr:1.440000, roas:0.580000,
+      rotated_at:'2026-07-26T08:00:00Z', hours_until_next_rotation:0.0, recommendation:'refresh',
+      last_date:'2026-07-29' }),
+  F({ key:'a2-hookA', ck:'fund-forester-a2', asn:'Forester · broad acct2',
+      ad_name:'Forester acct2 · hook A · 9x16', campaign_name:'Funding — Forester Q3 broad (acct 2)',
+      platform:'meta', spend_cents:8900, impressions:74300, frequency:1.1900, ctr:2.550000, roas:1.080000,
+      rotated_at:null, hours_until_next_rotation:null, recommendation:'ok', last_date:'2026-07-29' })
+];
+
+/* GET /api/campaigns/action-log → items[], newest first. before/after shapes are
+   exactly what guardedWrite and runKillSwitch write. undo_payload is never
+   returned — only `revertible`. */
+function A(o){
+  o.id = uid('act:'+o.key);
+  o.agent_id = o.agent_id || null; o.agent_name = o.agent_name || null;
+  o.user_id = o.user_name ? uid('acct:'+o.user_name) : null;
+  o.rule_key = o.rule_key || null;
+  o.executed_at = o.executed_at === undefined ? null : o.executed_at;
+  o.execute_error = o.execute_error || null;
+  o.undone_at = o.undone_at || null;
+  o.metrics_snapshot = o.metrics_snapshot || {};
+  return o;
+}
+var ACTIONS = [
+  A({ key:'kill-vft1', created_at:'2026-07-30T14:22:07Z', actor:'agent',
+      target_type:'campaign', target_id: uid('camp:cc-vft1'), rule_key:'kill_switch_ceiling',
+      reason:'actual platform spend 31980 exceeded the campaign ceiling 28000',
+      metrics_snapshot:{ actual_spend_cents:31980, limit_cents:28000 },
+      before:{ ceiling_breached:false }, after:{ ceiling_breached:true },
+      executed_at:'2026-07-30T14:22:09Z', revertible:true }),
+  A({ key:'scale-for-broad', created_at:'2026-07-30T09:15:04Z', actor:'agent',
+      target_type:'ad_set', target_id: uid('adset:fund-forester:Forester · broad 25-54 · US'),
+      rule_key:'scale_winner', reason:'ROAS at or above 1 for 3 consecutive days',
+      metrics_snapshot:{ roas_window:[1.62,1.88,2.04], series_days:7 },
+      before:{ budget_cents:16000, approval_state:'live' }, after:{ budget_cents:19200 },
+      executed_at:'2026-07-30T09:15:06Z', revertible:true }),
+  A({ key:'freq-tt-broad', created_at:'2026-07-30T09:15:02Z', actor:'agent',
+      target_type:'ad_set', target_id: uid('adset:fund-tornado-tt:Tornado · TT broad US 25-54'),
+      rule_key:'frequency_bands', reason:'frequency 2.88 is in the 2-3 band — queue fresh creative',
+      metrics_snapshot:{ frequency:2.88, series_days:7 },
+      before:{ budget_cents:20000, approval_state:'live' }, after:{ queued:'queue_creative' },
+      executed_at:'2026-07-30T09:15:03Z', revertible:true }),
+  A({ key:'ctr-vft1-vv', created_at:'2026-07-30T09:15:00Z', actor:'agent',
+      target_type:'ad_set', target_id: uid('adset:cc-vft1:VFT1 · video viewers 75%'),
+      rule_key:'ctr_below_floor', reason:'CTR 1.71% is below the 2% floor and the last rotation was over 72h ago',
+      metrics_snapshot:{ ctr:1.71, floor_pct:2, series_days:7 },
+      before:{ budget_cents:12000, approval_state:'live' }, after:{ queued:'rotate_creative' },
+      executed_at:'2026-07-30T09:15:02Z', revertible:true }),
+  A({ key:'pause-hammer', created_at:'2026-07-29T21:03:44Z', actor:'human', user_name:'Dana Reyes',
+      target_type:'campaign', target_id: uid('camp:cc-hammer-tt'),
+      reason:'Paused: TikTok rejected the ad group budget and we are re-costing the offer.',
+      before:{ approval_state:'live' }, after:{ approval_state:'paused' },
+      executed_at:'2026-07-29T21:03:46Z', revertible:false }),
+  A({ key:'budget-hammer', created_at:'2026-07-29T20:58:12Z', actor:'human', user_name:'Dana Reyes',
+      target_type:'campaign', target_id: uid('camp:cc-hammer-tt'),
+      reason:'Raise the TikTok daily budget for the weekend push.',
+      before:{ budget_cents:18000 }, after:{ budget_cents:22000 },
+      executed_at:'2026-07-29T20:58:14Z',
+      execute_error:'Budget must be greater than or equal to 50.00 USD.', revertible:false }),
+  A({ key:'freq-harv', created_at:'2026-07-29T14:12:31Z', actor:'agent',
+      target_type:'ad_set', target_id: uid('adset:cr-harvester:Harvester · warm list CRM'),
+      rule_key:'frequency_bands', reason:'frequency 2.18 is in the 2-3 band — queue fresh creative',
+      metrics_snapshot:{ frequency:2.18, series_days:7 },
+      before:{ budget_cents:10000, approval_state:'live' }, after:{ queued:'queue_creative' },
+      executed_at:'2026-07-29T14:12:33Z', revertible:true }),
+  A({ key:'kill-noconv', created_at:'2026-07-29T09:14:58Z', actor:'agent',
+      target_type:'ad_set', target_id: uid('adset:fund-forester:Forester · interest stack · biz owners'),
+      rule_key:'kill_no_conversions', reason:'spent 52400 with zero conversions, past the 50000 floor',
+      metrics_snapshot:{ spend_cents:52400, conversions:0, floor_cents:50000, series_days:7 },
+      before:{ budget_cents:10800, approval_state:'live' }, after:{ approval_state:'paused' },
+      executed_at:'2026-07-29T09:15:01Z', revertible:true }),
+  A({ key:'scale-a2', created_at:'2026-07-28T16:40:09Z', actor:'agent',
+      target_type:'ad_set', target_id: uid('adset:fund-forester-a2:Forester · broad acct2'),
+      rule_key:'scale_winner', reason:'ROAS at or above 1 for 3 consecutive days',
+      metrics_snapshot:{ roas_window:[1.04,1.11,1.22], series_days:7 },
+      before:{ budget_cents:14000, approval_state:'live' }, after:{ budget_cents:16800 },
+      executed_at:null, revertible:true }),
+  A({ key:'reconnect-meta2', created_at:'2026-07-28T11:22:55Z', actor:'human', user_name:'Curtis Ellery',
+      target_type:'connection', target_id: uid('conn:meta2'),
+      reason:'Reconnect the second Meta ad account after the token expired.',
+      before:{ connection_state:'expired' }, after:{ connection_state:'active' },
+      executed_at:'2026-07-28T11:22:57Z',
+      execute_error:'Error validating access token: Session has expired on Saturday, 25-Jul-26 14:03:11 PDT. The current time is Tuesday, 28-Jul-26 04:22:57 PDT.',
+      revertible:false }),
+  A({ key:'approve-tornado', created_at:'2026-07-27T18:05:41Z', actor:'human', user_name:'Dana Reyes',
+      target_type:'campaign', target_id: uid('camp:cc-tornado-pros'),
+      reason:'Approved for launch — creative and disclosure reviewed.',
+      before:{ approval_state:'awaiting_approval' }, after:{ approval_state:'approved' },
+      executed_at:'2026-07-27T18:05:42Z', revertible:false }),
+  A({ key:'revert-vft1', created_at:'2026-07-27T15:48:22Z', actor:'human', user_name:'Dana Reyes',
+      target_type:'ad_set', target_id: uid('adset:cc-vft1:VFT1 · site visitors 30d'),
+      reason:'revert of action ' + uid('act:scale-vft1') + ' (scale_winner)',
+      before:{ budget_cents:16080 }, after:{ budget_cents:13400, approval_state:'live' },
+      executed_at:'2026-07-27T15:48:24Z', revertible:false }),
+  A({ key:'scale-vft1', created_at:'2026-07-27T09:16:03Z', actor:'agent',
+      target_type:'ad_set', target_id: uid('adset:cc-vft1:VFT1 · site visitors 30d'),
+      rule_key:'scale_winner', reason:'ROAS at or above 1 for 3 consecutive days',
+      metrics_snapshot:{ roas_window:[2.10,2.33,2.41], series_days:7 },
+      before:{ budget_cents:13400, approval_state:'live' }, after:{ budget_cents:16080 },
+      executed_at:'2026-07-27T09:16:05Z', undone_at:'2026-07-27T15:48:22Z', revertible:false }),
+  A({ key:'ctr-tt-look', created_at:'2026-07-26T09:15:12Z', actor:'agent',
+      target_type:'ad_set', target_id: uid('adset:fund-tornado-tt:Tornado · TT creator lookalike'),
+      rule_key:'ctr_below_floor', reason:'CTR 1.88% is below the 2% floor and the last rotation was over 72h ago',
+      metrics_snapshot:{ ctr:1.88, floor_pct:2, series_days:7 },
+      before:{ budget_cents:12000, approval_state:'live' }, after:{ queued:'rotate_creative' },
+      executed_at:'2026-07-26T09:15:14Z', revertible:true }),
+  A({ key:'freq-harv-look', created_at:'2026-07-24T09:15:07Z', actor:'agent',
+      target_type:'ad_set', target_id: uid('adset:cr-harvester:Harvester · warm list lookalike'),
+      rule_key:'frequency_bands', reason:'frequency has been at or above 3 for 2 consecutive days',
+      metrics_snapshot:{ frequency_window:[3.12,3.31], series_days:7 },
+      before:{ budget_cents:8000, approval_state:'live' }, after:{ queued:'refresh_creative' },
+      executed_at:'2026-07-24T09:15:09Z', revertible:true }),
+  A({ key:'autopilot-on', created_at:'2026-07-22T10:47:38Z', actor:'human', user_name:'Dana Reyes',
+      target_type:'autopilot', target_id:null,
+      reason:'Turned autopilot back on after the weekend freeze.',
+      before:{ autopilot_enabled:false }, after:{ autopilot_enabled:true },
+      executed_at:'2026-07-22T10:47:39Z', revertible:false })
+];
+/* ══ METRICS SERIES ══════════════════════════════════════════════════════
+   metrics_daily[] as /detail aggregates it: spend, impressions, clicks and
+   conversions are SUMMED across the campaign's ads; frequency, ctr, cpa_cents
+   and roas are AVERAGED. The columns are exactly ad_metrics_daily's — there is
+   no CPM, no CPC, no period-to-date spend, no pacing and no days-remaining, and
+   `reach` is not returned by list, detail or fatigue, so it is not charted.
+   Deterministic per campaign so the drawer is stable across re-renders.
+   ════════════════════════════════════════════════════════════════════════ */
+function rnd(seed){ var s = seed >>> 0; return function(){ s = (Math.imul(s,1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+function dnum(iso){ return Math.floor(Date.parse(iso+'T00:00:00Z') / 86400000); }
+function diso(n){ return new Date(n*86400000).toISOString().slice(0,10); }
+var SERIES_CACHE = {};
+function seriesFor(camp, days){
+  var m = camp.m;
+  if(!m) return [];
+  var key = camp.id + ':' + days;
+  if(SERIES_CACHE[key]) return SERIES_CACHE[key];
+  var lo = Math.max(dnum(m.from), dnum(TODAY) - days + 1),
+      hi = Math.min(dnum(m.to), dnum(TODAY));
+  var out = [], r = rnd(camp.id.charCodeAt(0)*7919 + camp.id.charCodeAt(9)*104729 + m.from.length);
+  for(var d = lo; d <= hi; d++){
+    var w = 0.80 + r()*0.34;                               /* day-to-day weight */
+    var spend = Math.round(camp.budget_cents * w);
+    var ctr   = Math.max(0.2, m.ctr * (0.82 + r()*0.38));
+    var freq  = Math.max(0.4, m.freq * (0.86 + r()*0.30));
+    /* impressions are generated from spend so the sample hangs together. The
+       divisor is a generator knob, not a metric — ad_metrics_daily has no CPM
+       and no CPC column, and neither is ever rendered. */
+    var imps  = Math.round(spend / (900 + r()*700) * 1000);
+    var clicks = Math.round(imps * ctr / 100);
+    var cpa   = Math.round(m.cpa * (0.80 + r()*0.44));
+    var conv  = Math.floor(spend / cpa);
+    out.push({
+      date: diso(d),
+      spend_cents: spend,
+      impressions: imps,
+      clicks: clicks,
+      conversions: conv,
+      frequency: Math.round(freq*10000)/10000,
+      ctr: Math.round(ctr*1000000)/1000000,
+      cpa_cents: conv ? Math.round(spend/conv) : null,
+      roas: Math.round(m.roas * (0.78 + r()*0.46) * 1000000)/1000000
+    });
+  }
+  SERIES_CACHE[key] = out;
+  return out;
+}
+
+/* ══ DERIVED LOOKUPS ═════════════════════════════════════════════════════ */
+var CAMP_BY_ID = {}, ADSET_BY_ID = {}, CONN_BY_ID = {};
+function reindex(){
+  CAMP_BY_ID = {}; ADSET_BY_ID = {}; CONN_BY_ID = {};
+  CAMPAIGNS.forEach(function(c){ CAMP_BY_ID[c.id] = c; });
+  CONNECTIONS.forEach(function(c){ CONN_BY_ID[c.id] = c; });
+  Object.keys(AD_SETS).forEach(function(cid){
+    AD_SETS[cid].forEach(function(s){ ADSET_BY_ID[s.id] = { set:s, campaign_id:cid }; });
+  });
+}
+reindex();
+
+function outcomeOf(a){
+  if(a.undone_at)        return { k:'reverted',  cls:'b-accent', t:'reverted' };
+  if(a.execute_error)    return { k:'failed',    cls:'b-alert',  t:'failed' };
+  if(!a.executed_at)     return { k:'unexecuted',cls:'b-warn',   t:'logged · never executed' };
+  return { k:'executed', cls:'b-ok', t:'executed' };
+}
+var APPROVAL_TONE = { draft:'b-gray', awaiting_approval:'b-warn', approved:'b-info', live:'b-ok', paused:'b-warn', archived:'b-gray' };
+var CONNSTATE_TONE = { pending:'b-warn', active:'b-ok', expired:'b-alert', revoked:'b-alert', needs_verification:'b-warn' };
+var VERIF_TONE = { unverified:'b-gray', submitted:'b-warn', approved:'b-ok', rejected:'b-alert' };
+var REC_TONE = { refresh:'b-alert', queue:'b-warn', ok:'b-ok', unconfigured:'b-gray' };
+
+/* ══ FILTER STATE ════════════════════════════════════════════════════════ */
+var UI = {
+  spendState:'all',
+  campState:'all', campPlatform:'all', campOffer:'all', campLimit:50, campOffset:0,
+  fatState:'all', fatDays:7,
+  connState:'all',
+  logState:'all', logTarget:'all', logRule:'all',
+  tile:'spend_today'
+};
+
+/* the five ?state= allowlists, verbatim from the endpoints */
+var CAMP_STATES = ['all','draft','awaiting_approval','approved','live','paused','archived'];
+var SPEND_STATES = ['all','breached','ok'];
+var FAT_STATES = ['all','refresh','queue','ok','unconfigured'];
+var CONN_STATES = ['all','pending','active','expired','revoked','needs_verification'];
+var LOG_STATES = ['all','agent','human','revertible','failed'];
+
+function rail(host, values, current, counts, onPick){
+  host.innerHTML = values.map(function(v){
+    var n = counts && counts[v] !== undefined ? '<span class="n">'+counts[v]+'</span>' : '';
+    return '<button type="button" data-v="'+esc(v)+'"'+(v===current?' class="on"':'')+
+           ' aria-pressed="'+(v===current)+'">'+esc(v)+n+'</button>';
+  }).join('');
+  host.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click', function(){ onPick(b.dataset.v); });
+  });
+}
+
+/* ══ CM-03 · SPEND vs CEILINGS ═══════════════════════════════════════════ */
+function spendFiltered(){
+  return CEILINGS.filter(function(c){
+    if(UI.spendState==='breached') return c.breached;
+    if(UI.spendState==='ok') return !c.breached;
+    return true;
+  }).slice().sort(function(a,b){
+    if(a.scope !== b.scope) return a.scope < b.scope ? -1 : 1;
+    var ap = a.pct_of_ceiling, bp = b.pct_of_ceiling;
+    if(ap === null && bp === null) return 0;
+    if(ap === null) return 1; if(bp === null) return -1;
+    return bp - ap;
+  });
+}
+function renderSpend(){
+  var counts = { all:CEILINGS.length,
+    breached:CEILINGS.filter(function(c){return c.breached;}).length,
+    ok:CEILINGS.filter(function(c){return !c.breached;}).length };
+  rail(document.getElementById('spendRail'), SPEND_STATES, UI.spendState, counts,
+       function(v){ UI.spendState=v; renderSpend(); });
+
+  var rows = spendFiltered();
+  document.getElementById('spendRows').innerHTML = rows.length ? rows.map(function(c){
+    var pct = c.pct_of_ceiling;
+    var tone = c.breached ? 'bad' : (c.approaching_ceiling || c.exhausted) ? 'warn' : '';
+    var stripe = c.breached ? 'stripe-bad' : (c.approaching_ceiling || c.exhausted) ? 'stripe-warn' : 'stripe-ok';
+    var flags = [];
+    /* breach_reason is a real spend_ceilings column, but v_partner_spend_vs_ceiling
+       does not project it and /api/campaigns/spend does not select it — so there is
+       no reason string to show here. The same sentence is on the kill_switch_ceiling
+       row in CM-08, where action_log.reason does carry it. */
+    if(c.breached) flags.push('<span class="badge b-alert mono" title="breached_at is stamped by runKillSwitch from PLATFORM spend, not from this mirror. The reason text is not in this response — read it on the kill_switch_ceiling row in CM-08.">breached</span>');
+    if(c.exhausted) flags.push('<span class="badge b-warn mono">exhausted</span>');
+    if(c.approaching_ceiling) flags.push('<span class="badge b-warn mono">approaching</span>');
+    if(!flags.length) flags.push('<span class="badge b-ok mono">ok</span>');
+    var bar = pct === null ? '<span class="nul mono" style="font-size:10px">no meter · limit is 0</span>'
+      : '<div class="meter '+tone+'"><i style="width:'+Math.min(100, pct)+'%"></i><span class="mark" style="left:80%"></span></div>';
+    return '<tr class="'+stripe+'">'+
+      '<td><b>'+esc(c.scope)+'</b>'+(c.breached_at?'<span class="sub">breached '+dt(c.breached_at,true)+'</span>':'')+'</td>'+
+      '<td>'+(c.campaign_name ? esc(c.campaign_name) : nul())+'</td>'+
+      '<td class="mono">'+(c.platform ? esc(c.platform) : nul())+'</td>'+
+      '<td class="mnum">'+cents(c.daily_limit_cents)+'</td>'+
+      '<td class="mnum"><b>'+cents(c.spend_today_cents)+'</b></td>'+
+      '<td class="mnum">'+cents(c.headroom_cents)+'</td>'+
+      '<td>'+bar+'<span class="mnum" style="font-size:11px">'+(pct===null?nul():dec(pct,2)+'%')+'</span></td>'+
+      '<td class="mnum">'+c.max_daily_increase_pct+'%</td>'+
+      '<td><div style="display:flex;gap:5px;flex-wrap:wrap">'+flags.join('')+'</div></td>'+
+    '</tr>';
+  }).join('') : '<tr><td colspan="9"><div class="empty">No ACTIVE ceiling matches this filter. That is not "no limits" — a partner with no ceiling row at all is denied every budget write with code <span class="mono k">no_ceiling_configured</span>.</div></td></tr>';
+
+  document.getElementById('spendFoot').textContent =
+    rows.length + ' of ' + CEILINGS.length + ' active ceilings · ordered by scope, then % of ceiling desc, nulls last';
+
+  /* which campaigns have no campaign-scope ceiling of their own */
+  var covered = {};
+  CEILINGS.forEach(function(c){ if(c.scope==='campaign' && c.campaign_id) covered[c.campaign_id] = 1; });
+  var without = CAMPAIGNS.filter(function(c){ return !covered[c.id]; }).length;
+  document.getElementById('spendGapCap').innerHTML =
+    '<b>' + without + ' of ' + CAMPAIGNS.length + ' campaigns have no campaign-scope ceiling</b> and so appear ' +
+    'nowhere above. They are still covered by the partner and platform rows — <code>checkBudgetWrite</code> ' +
+    'judges a write on the day’s <i>projected total</i> for every matching scope, not on the delta. ' +
+    'A ceiling with <code>breached_at</code> set blocks every further budget write until a human clears it ' +
+    '(<code>ceiling_breached</code>), and <code>max_daily_increase_pct</code> is capped at 30 by ' +
+    '<code>spend_ceilings_increase_ck</code> — <code>capIncrease()</code> clamps to 30 whatever the config says.';
+
+  /* topbar chip */
+  var breached = CEILINGS.filter(function(c){return c.breached;}).length;
+  var near = CEILINGS.filter(function(c){return !c.breached && (c.approaching_ceiling || c.exhausted);}).length;
+  var chip = document.getElementById('ceilChip');
+  chip.className = 'chip ' + (breached ? 'bad' : near ? 'wip' : 'on');
+  document.getElementById('ceilTxt').textContent =
+    breached ? breached + ' ceiling breached' : near ? near + ' ceiling near limit' : 'ceilings clear';
+}
+
+/* ══ CM-00 · STAT TILES + DERIVATION ═════════════════════════════════════
+   Every tile can show its working. Nothing here is a metric the backend
+   cannot produce, and nothing sums two overlapping ceiling scopes.
+   ════════════════════════════════════════════════════════════════════════ */
+function partnerCeiling(){ return CEILINGS.filter(function(c){ return c.scope==='partner'; })[0] || null; }
+function tiles(){
+  var pc = partnerCeiling();
+  var yest = CAMPAIGNS.reduce(function(n,c){ return n + Number(c.spend_yesterday_cents||0); }, 0);
+  var live = CAMPAIGNS.filter(function(c){ return c.approval_state==='live'; }).length;
+  var withRoas = CAMPAIGNS.filter(function(c){ return c.roas_7d !== null && c.roas_7d !== undefined; });
+  var roasMean = withRoas.length ? withRoas.reduce(function(n,c){ return n + Number(c.roas_7d); },0) / withRoas.length : null;
+  return [
+    { key:'spend_today', eyebrow:'SPEND TODAY',
+      value: pc ? cents(pc.spend_today_cents) : nul(),
+      sd: pc ? dec(pc.pct_of_ceiling,2)+'% of the partner ceiling' : 'no partner-scope ceiling',
+      formula: 'v_partner_spend_vs_ceiling.spend_today_cents\n  WHERE scope = \'partner\'\n\n= sum(ad_metrics_daily.spend_cents)\n  WHERE partner_id = $partner AND date = CURRENT_DATE',
+      inputs: pc ? [['partner ceiling row', 1], ['spend_today_cents', pc.spend_today_cents], ['daily_limit_cents', pc.daily_limit_cents], ['pct_of_ceiling', pc.pct_of_ceiling]] : [['partner-scope ceiling rows', 0]],
+      src: 'GET /api/campaigns/spend — the PARTNER-scope row only. The three scopes overlap, so summing every row would count the same spend up to three times. This is our mirror, not platform truth.' },
+    { key:'headroom', eyebrow:'HEADROOM TODAY',
+      value: pc ? cents(pc.headroom_cents) : nul(),
+      sd: 'partner scope · never negative',
+      formula: 'headroom_cents = GREATEST(daily_limit_cents − spend_today_cents, 0)',
+      inputs: pc ? [['daily_limit_cents', pc.daily_limit_cents], ['− spend_today_cents', pc.spend_today_cents], ['= headroom_cents', pc.headroom_cents]] : [],
+      src: 'GET /api/campaigns/spend · v_partner_spend_vs_ceiling (046 section K). The GREATEST() floor is why an overspend shows in pct_of_ceiling rather than as a negative headroom.' },
+    { key:'spend_yesterday', eyebrow:'SPEND YESTERDAY',
+      value: cents(yest), sd: CAMPAIGNS.length + ' campaigns · CURRENT_DATE − 1',
+      formula: 'Σ items[].spend_yesterday_cents\n\nspend_yesterday_cents = sum(ad_metrics_daily.spend_cents)\n  JOIN ads ON ads.id = ad_id\n  WHERE ads.campaign_id = c.id AND date = CURRENT_DATE − 1',
+      inputs: CAMPAIGNS.filter(function(c){return c.spend_yesterday_cents;}).map(function(c){ return [c.name, c.spend_yesterday_cents]; }).concat([['= total', yest]]),
+      src: 'GET /api/campaigns/list. Yesterday rather than today because today’s is partial — a list judged on it makes a campaign that started at 11pm look dead. Per campaign, so these do not overlap and can be added.' },
+    { key:'live', eyebrow:'LIVE CAMPAIGNS',
+      value: live + ' / ' + CAMPAIGNS.length, sd: 'approval_state = live',
+      formula: 'count(items WHERE approval_state = \'live\') / count(items)',
+      inputs: CAMP_STATES.slice(1).map(function(s){ return [s, CAMPAIGNS.filter(function(c){return c.approval_state===s;}).length]; }),
+      src: 'GET /api/campaigns/list?state=live. live is gated in the database by trg_campaign_launch_gate: an active connection AND approved business verification, for all three offer types.' },
+    { key:'roas', eyebrow:'ROAS 7D',
+      value: roasMean===null ? nul() : dec(roasMean,2),
+      sd: 'unweighted mean of ' + withRoas.length + ' campaign averages',
+      formula: 'mean( items[].roas_7d WHERE roas_7d IS NOT NULL )\n\nroas_7d = avg(ad_metrics_daily.roas)\n  WHERE date > CURRENT_DATE − 8',
+      inputs: withRoas.map(function(c){ return [c.name, c.roas_7d]; })
+                .concat([['campaigns with no roas_7d', CAMPAIGNS.length - withRoas.length], ['= mean', roasMean===null?null:Math.round(roasMean*100)/100]]),
+      src: 'GET /api/campaigns/list. An average of averages, unweighted by spend — the API returns no spend-weighted ROAS and there is no per-campaign ROAS target to compare it against (roas_primary.target_roas = 1.0 is org-wide).' }
+  ];
+}
+function renderTiles(){
+  var ts = tiles();
+  document.getElementById('statRow').innerHTML = ts.map(function(t){
+    return '<button type="button" class="stat pick'+(UI.tile===t.key?' on':'')+'" data-t="'+esc(t.key)+'" aria-pressed="'+(UI.tile===t.key)+'">'+
+      '<span class="eyebrow">CM-00 <span class="sep">/</span> '+esc(t.eyebrow)+'</span>'+
+      '<div class="sv'+(t.value.length>9?' small':'')+'">'+t.value+'</div>'+
+      '<div class="sd">'+esc(t.sd)+'</div></button>';
+  }).join('');
+  document.getElementById('statRow').querySelectorAll('.stat.pick').forEach(function(b){
+    b.addEventListener('click', function(){ UI.tile = b.dataset.t; renderTiles(); });
+  });
+  var t = ts.filter(function(x){ return x.key === UI.tile; })[0] || ts[0];
+  document.getElementById('deriv').innerHTML =
+    '<div><div class="dk">How ' + esc(t.eyebrow.toLowerCase()) + ' is derived</div>' +
+      '<div class="formula">' + esc(t.formula).replace(/\n/g,'<br>') + '</div></div>' +
+    '<div><div class="dk">Inputs on screen right now</div><div class="inputs">' +
+      (t.inputs.length ? t.inputs.map(function(p){
+        var v = p[1];
+        var shown = v === null || v === undefined ? NBSP
+          : (typeof v === 'number' && Math.abs(v) >= 1000 && String(p[0]).indexOf('cents') === -1 && String(p[0]).indexOf('=') !== 0 && v % 1 === 0)
+            ? Number(v).toLocaleString('en-US') : String(v);
+        return esc(p[0]) + ' &nbsp;<b>' + esc(shown) + '</b>';
+      }).join('<br>') : '<span class="nul">nothing to show</span>') + '</div></div>' +
+    '<div class="src">' + esc(t.src) + '</div>';
+}
+
+/* ══ CM-02 · NEEDS ATTENTION ═════════════════════════════════════════════ */
+function attention(){
+  var breached = CEILINGS.filter(function(c){ return c.breached; });
+  var failed = ACTIONS.filter(function(a){ return a.execute_error !== null || a.executed_at === null; });
+  var stuck = CONNECTIONS.filter(function(c){ return !c.can_launch || (c.blockers && c.blockers.length); });
+  var errs = CAMPAIGNS.filter(function(c){ return !!c.last_error; });
+  return [
+    { n:breached.length, t:'Breached ceilings', d:'spend?state=breached · breached_at IS NOT NULL',
+      sev: breached.length ? 'bad' : 'ok', go:function(){ UI.spendState='breached'; renderSpend(); jump('secSpend'); } },
+    { n:failed.length, t:'Actions failed or never executed', d:'action-log?state=failed · execute_error IS NOT NULL OR executed_at IS NULL',
+      sev: failed.length ? 'bad' : 'ok', go:function(){ UI.logState='failed'; renderLog(); jump('secLog'); } },
+    { n:stuck.length, t:'Connections that cannot launch', d:'connections · can_launch = false OR blockers ≠ []',
+      sev: stuck.length ? 'warn' : 'ok', go:function(){ UI.connState='all'; renderConn(true); jump('secConn'); } },
+    { n:errs.length, t:'Campaigns carrying a last_error', d:'list · campaigns.last_error, the platform’s own words',
+      sev: errs.length ? 'warn' : 'ok', go:function(){ UI.campState='all'; UI.campOffset=0; renderCampaigns(true); jump('secCampaigns'); } }
+  ];
+}
+function jump(id){ var el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
+function renderAttention(){
+  var a = attention();
+  var host = document.getElementById('attnRow');
+  host.innerHTML = a.map(function(x,i){
+    return '<button type="button" class="sev-'+x.sev+'" data-i="'+i+'">'+
+      '<div class="an">'+x.n+'</div><div class="at">'+esc(x.t)+'</div><div class="ad">'+esc(x.d)+'</div></button>';
+  }).join('');
+  host.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click', function(){ a[Number(b.dataset.i)].go(); });
+  });
+}
+/* ══ CM-04 · CAMPAIGN LIST ═══════════════════════════════════════════════ */
+function campMatch(c){
+  if(UI.campState !== 'all' && c.approval_state !== UI.campState) return false;
+  if(UI.campPlatform !== 'all' && c.platform !== UI.campPlatform) return false;
+  if(UI.campOffer !== 'all' && c.offer_type !== UI.campOffer) return false;
+  return true;
+}
+function renderCampaigns(reset){
+  if(reset) UI.campOffset = 0;
+  var counts = {}; CAMP_STATES.forEach(function(s){
+    counts[s] = s==='all' ? CAMPAIGNS.length : CAMPAIGNS.filter(function(c){ return c.approval_state===s; }).length;
+  });
+  rail(document.getElementById('campRail'), CAMP_STATES, UI.campState, counts,
+       function(v){ UI.campState=v; renderCampaigns(true); });
+
+  var all = CAMPAIGNS.filter(campMatch);   /* ORDER BY created_at DESC — the array is already in that order */
+  var page = all.slice(UI.campOffset, UI.campOffset + UI.campLimit);
+  var hasMore = UI.campOffset + UI.campLimit < all.length;
+
+  document.getElementById('campRows').innerHTML = page.length ? page.map(function(c){
+    var stripe = c.last_error ? 'stripe-bad' : c.approval_state === 'live' ? 'stripe-ok' : '';
+    var dimmed = (c.approval_state === 'archived') ? ' dim' : '';
+    var disc = c.offer_type === 'credit_repair'
+      ? (c.has_disclosure_asset
+          ? '<span class="badge b-ok mono">linked</span>'
+          : '<span class="badge b-alert mono" title="trg_campaign_disclosure_gate: a credit_repair campaign cannot go live without disclosure_asset_id set">not linked</span>')
+      : (c.has_disclosure_asset ? '<span class="badge b-ok mono">linked</span>' : '<span class="badge b-gray mono">n/a</span>');
+    return '<tr class="rowbtn '+stripe+dimmed+'" data-c="'+esc(c.id)+'" tabindex="0" aria-expanded="false">'+
+      '<td><span class="chev">▸</span><b>'+esc(c.name)+'</b>'+
+        (c.last_error ? '<span class="sub" style="color:#6E2A22">last_error · '+esc(c.last_error.slice(0,72))+(c.last_error.length>72?'…':'')+'</span>' : '')+
+        '<span class="sub">created '+dt(c.created_at)+(c.approved_at?' · approved '+dt(c.approved_at):' · not approved')+'</span></td>'+
+      '<td class="mono">'+esc(c.platform)+
+        (c.platform==='google'?'<span class="sub" title="adapterFor(\'google\') throws — google is a valid connection platform but has no write adapter">no write adapter</span>':'')+
+        (c.special_ad_category?'<span class="sub">cat '+esc(c.special_ad_category)+'</span>':'')+'</td>'+
+      '<td class="mono">'+esc(c.offer_type)+'</td>'+
+      '<td><span class="badge '+(APPROVAL_TONE[c.approval_state]||'b-gray')+' mono">'+esc(c.approval_state)+'</span></td>'+
+      '<td class="mono">'+(c.strategy_key ? esc(c.strategy_key) : nul())+'</td>'+
+      '<td class="mnum">'+cents(c.budget_cents)+'</td>'+
+      '<td class="mnum">'+cents(c.spend_yesterday_cents)+'</td>'+
+      '<td class="mnum">'+(c.roas_7d===null?nul():dec(c.roas_7d,2))+'</td>'+
+      '<td class="mnum">'+c.ad_set_count+'</td>'+
+      '<td class="mnum">'+c.ad_count+'</td>'+
+      '<td>'+disc+'</td>'+
+      '<td class="mono">'+(c.status ? esc(c.status) : nul())+'</td>'+
+      '<td class="mono">'+(c.synced_at ? dt(c.synced_at,true) : nul())+'</td>'+
+    '</tr>';
+  }).join('') : '<tr><td colspan="13"><div class="empty">No campaign matches this filter.</div></td></tr>';
+
+  document.getElementById('campRows').querySelectorAll('tr.rowbtn').forEach(function(tr){
+    function open(){ openDrawer(tr.dataset.c); }
+    tr.addEventListener('click', open);
+    tr.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(); } });
+  });
+
+  var from = all.length ? UI.campOffset + 1 : 0;
+  document.getElementById('campPager').innerHTML =
+    '<span>' + from + '–' + (UI.campOffset + page.length) + ' of ' + all.length +
+    ' · limit ' + UI.campLimit + ' · offset ' + UI.campOffset +
+    ' · hasMore ' + (hasMore ? 'true' : 'false') + '</span>' +
+    '<span class="spacer" style="flex:1"></span>' +
+    '<button class="btn sm mono" id="cPrev"'+(UI.campOffset<=0?' disabled':'')+'>‹ prev</button>' +
+    '<button class="btn sm mono" id="cNext"'+(hasMore?'':' disabled')+'>next ›</button>';
+  var p = document.getElementById('cPrev'), n = document.getElementById('cNext');
+  if(p) p.addEventListener('click', function(){ UI.campOffset = Math.max(0, UI.campOffset - UI.campLimit); renderCampaigns(); });
+  if(n) n.addEventListener('click', function(){ UI.campOffset += UI.campLimit; renderCampaigns(); });
+}
+
+/* ══ CM-06 · CREATIVE FATIGUE ════════════════════════════════════════════ */
+function renderFatigue(){
+  var counts = {}; FAT_STATES.forEach(function(s){
+    counts[s] = s==='all' ? FATIGUE.length : FATIGUE.filter(function(f){ return f.recommendation===s; }).length;
+  });
+  rail(document.getElementById('fatRail'), FAT_STATES, UI.fatState, counts,
+       function(v){ UI.fatState=v; renderFatigue(); });
+
+  var rows = FATIGUE.filter(function(f){ return UI.fatState==='all' || f.recommendation===UI.fatState; });
+  document.getElementById('fatRows').innerHTML = rows.length ? rows.map(function(f){
+    var stripe = f.recommendation==='refresh' ? 'stripe-bad' : f.recommendation==='queue' ? 'stripe-warn' : f.recommendation==='ok' ? 'stripe-ok' : '';
+    return '<tr class="'+stripe+'">'+
+      '<td><b>'+esc(f.ad_name)+'</b><span class="sub">ad '+esc(f.ad_id.slice(0,8))+'…</span></td>'+
+      '<td>'+esc(f.campaign_name)+'</td>'+
+      '<td class="mono">'+esc(f.platform)+'</td>'+
+      '<td class="mnum">'+cents(f.spend_cents)+'</td>'+
+      '<td class="mnum">'+int(f.impressions)+'</td>'+
+      '<td class="mnum"><b>'+dec(f.frequency,2)+'</b></td>'+
+      '<td class="mnum">'+pctv(f.ctr)+'</td>'+
+      '<td class="mnum">'+dec(f.roas,2)+'</td>'+
+      '<td class="mono">'+day(f.last_date)+'</td>'+
+      '<td class="mono">'+(f.rotated_at?dt(f.rotated_at,true):nul())+'</td>'+
+      '<td class="mnum">'+(f.hours_until_next_rotation===null?nul():dec(f.hours_until_next_rotation,1)+'h')+'</td>'+
+      '<td><span class="badge '+(REC_TONE[f.recommendation]||'b-gray')+' mono">'+esc(f.recommendation)+'</span></td>'+
+    '</tr>';
+  }).join('') : '<tr><td colspan="12"><div class="empty">' +
+      (UI.fatState==='unconfigured'
+        ? 'No row can be <span class="mono k">unconfigured</span> here. That value is produced only when <i>both</i> <span class="mono k">frequency_bands</span> and <span class="mono k">ctr_below_floor</span> are inactive for this partner’s org, so it is all-or-nothing across the whole table rather than a per-ad verdict.'
+        : 'No ad matches this filter within the window.') +
+    '</div></td></tr>';
+
+  document.getElementById('fatFoot').textContent =
+    rows.length + ' of ' + FATIGUE.length + ' ads with metrics in the last ' + UI.fatDays +
+    ' days · ordered by frequency desc (nulls last), then ctr asc (nulls last)';
+}
+
+/* ══ CM-07 · CONNECTIONS ═════════════════════════════════════════════════ */
+function renderConn(){
+  var counts = {}; CONN_STATES.forEach(function(s){
+    counts[s] = s==='all' ? CONNECTIONS.length : CONNECTIONS.filter(function(c){ return c.connection_state===s; }).length;
+  });
+  rail(document.getElementById('connRail'), CONN_STATES, UI.connState, counts,
+       function(v){ UI.connState=v; renderConn(); });
+
+  var rows = CONNECTIONS.filter(function(c){ return UI.connState==='all' || c.connection_state===UI.connState; });
+  document.getElementById('connRows').innerHTML = rows.length ? rows.map(function(c){
+    var stripe = (!c.can_launch) ? 'stripe-bad' : (c.blockers && c.blockers.length) ? 'stripe-warn' : 'stripe-ok';
+    var tok = c.has_access_token
+      ? (c.token_expired
+          ? '<span class="badge b-alert mono">expired</span>'
+          : (c.token_expires_at ? '<span class="badge b-ok mono">valid</span>' : '<span class="badge b-gray mono">expiry unknown</span>'))
+      : '<span class="badge b-gray mono">none stored</span>';
+    var blk = (c.blockers && c.blockers.length)
+      ? c.blockers.map(function(b){
+          return '<div style="margin-bottom:5px"><span class="badge '+(b.severity==='blocker'?'b-alert':'b-warn')+' mono">'+esc(b.task_key)+'</span>'+
+                 '<div class="sub" style="margin-top:3px;letter-spacing:0;font-family:var(--sans);font-size:11px;color:var(--gray)">'+esc(b.title)+' — '+esc(b.detail)+'</div></div>';
+        }).join('')
+      : '<span class="badge b-ok mono">none</span>';
+    return '<tr class="'+stripe+'">'+
+      '<td><b class="mono">'+esc(c.platform)+'</b>'+
+        (c.platform==='google'?'<span class="sub">no write adapter</span>':'')+
+        (c.last_error?'<span class="sub" style="color:#6E2A22">last_error set</span>':'')+'</td>'+
+      '<td class="mono">'+esc(c.external_ad_account_id)+
+        '<span class="sub">'+(c.external_business_id?'biz '+esc(c.external_business_id):'no business id')+'</span>'+
+        '<span class="sub">scopes '+(c.scopes && c.scopes.length ? esc(c.scopes.join(' · ')) : '[]')+'</span></td>'+
+      '<td><span class="badge '+(CONNSTATE_TONE[c.connection_state]||'b-gray')+' mono">'+esc(c.connection_state)+'</span></td>'+
+      '<td><span class="badge '+(VERIF_TONE[c.platform_verification_state]||'b-gray')+' mono">'+esc(c.platform_verification_state)+'</span></td>'+
+      '<td>'+tok+'<span class="sub">expires '+(c.token_expires_at?dt(c.token_expires_at,true):'—  (unknown, not “forever”)')+'</span>'+
+        '<span class="sub">refresh token '+(c.has_refresh_token?'present':'absent')+'</span>'+
+        '<span class="sub">last_synced_at '+(c.last_synced_at?dt(c.last_synced_at,true):'never — no writer')+'</span></td>'+
+      '<td class="mnum">'+c.campaign_count+'</td>'+
+      '<td>'+(c.can_launch?'<span class="badge b-ok mono">yes</span>':'<span class="badge b-alert mono">no</span>')+'</td>'+
+      '<td>'+(c.can_launch_credit_offer?'<span class="badge b-ok mono">yes</span>':'<span class="badge b-warn mono">no</span>')+'</td>'+
+      '<td style="min-width:250px">'+blk+
+        (c.last_error?'<div class="errbox" style="margin-top:6px">'+esc(c.last_error)+'</div>':'')+'</td>'+
+    '</tr>';
+  }).join('') : '<tr><td colspan="9"><div class="empty">No connection in this state.</div></td></tr>';
+
+  document.getElementById('connFoot').textContent =
+    rows.length + ' of ' + CONNECTIONS.length + ' connections · ordered by platform, then created_at';
+}
+
+/* ══ CM-08 · ACTION LOG ══════════════════════════════════════════════════ */
+function targetLabel(a){
+  /* The endpoint returns target_id and target_type — no name. Resolved here
+     against rows this screen already holds; anything it has not loaded stays
+     an id rather than being invented. */
+  if(a.target_type === 'campaign' && CAMP_BY_ID[a.target_id]) return CAMP_BY_ID[a.target_id].name;
+  if(a.target_type === 'ad_set' && ADSET_BY_ID[a.target_id]){
+    var e = ADSET_BY_ID[a.target_id];
+    return e.set.name + ' · ' + (CAMP_BY_ID[e.campaign_id] ? CAMP_BY_ID[e.campaign_id].name : '');
+  }
+  if(a.target_type === 'connection' && CONN_BY_ID[a.target_id]){
+    var c = CONN_BY_ID[a.target_id];
+    return c.platform + ' · ' + c.external_ad_account_id;
+  }
+  return a.target_id ? a.target_id : null;
+}
+function diffCell(a){
+  var b = a.before || {}, af = a.after || {};
+  var keys = Object.keys(af).length ? Object.keys(af) : Object.keys(b);
+  if(!keys.length) return nul();
+  return keys.map(function(k){
+    var was = b[k], now = af[k];
+    var fmt = function(v){
+      if(v === undefined) return NBSP;
+      if(v === null) return 'null';
+      if(typeof v === 'boolean') return String(v);
+      if(k.indexOf('cents') !== -1 && typeof v === 'number') return (v/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+      return String(v);
+    };
+    return '<span class="mono" style="font-size:10.5px">'+esc(k)+'</span><br>'+
+           '<span class="mono" style="font-size:11px;color:var(--gray2)">'+esc(fmt(was))+'</span>'+
+           '<span class="mono" style="font-size:11px;color:var(--gray2)"> → </span>'+
+           '<span class="mono" style="font-size:11px;font-weight:600">'+esc(fmt(now))+'</span>';
+  }).join('<div style="height:4px"></div>');
+}
+function logMatch(a){
+  if(UI.logState==='agent' && a.actor!=='agent') return false;
+  if(UI.logState==='human' && a.actor!=='human') return false;
+  if(UI.logState==='revertible' && !a.revertible) return false;
+  if(UI.logState==='failed' && !(a.execute_error !== null || a.executed_at === null)) return false;
+  if(UI.logTarget!=='all' && a.target_type!==UI.logTarget) return false;
+  if(UI.logRule!=='all' && a.rule_key!==UI.logRule) return false;
+  return true;
+}
+function renderLog(){
+  var counts = {
+    all: ACTIONS.length,
+    agent: ACTIONS.filter(function(a){return a.actor==='agent';}).length,
+    human: ACTIONS.filter(function(a){return a.actor==='human';}).length,
+    revertible: ACTIONS.filter(function(a){return a.revertible;}).length,
+    failed: ACTIONS.filter(function(a){return a.execute_error!==null || a.executed_at===null;}).length
+  };
+  rail(document.getElementById('logRail'), LOG_STATES, UI.logState, counts,
+       function(v){ UI.logState=v; renderLog(); });
+
+  var rows = ACTIONS.filter(logMatch);
+  document.getElementById('logRows').innerHTML = rows.length ? rows.map(function(a,i){
+    var o = outcomeOf(a);
+    var stripe = o.k==='failed' ? 'stripe-bad' : o.k==='unexecuted' ? 'stripe-warn' : o.k==='reverted' ? '' : 'stripe-ok';
+    var who = a.actor==='agent'
+      ? '<span class="badge b-accent mono">agent</span><span class="sub">'+(a.agent_name?esc(a.agent_name):'agent_id null · unattributed')+'</span>'
+      : '<span class="badge b-info mono">human</span><span class="sub">'+(a.user_name?esc(a.user_name):'user_id null')+'</span>';
+    var lbl = targetLabel(a);
+    return '<tr class="rowbtn '+stripe+'" data-a="'+i+'" tabindex="0" aria-expanded="false">'+
+      '<td class="mono"><span class="chev">▸</span>'+dt(a.created_at,true)+'</td>'+
+      '<td>'+who+'</td>'+
+      '<td><span class="mono" style="font-size:10.5px">'+esc(a.target_type)+'</span>'+
+        '<span class="sub" style="letter-spacing:0;font-family:var(--sans);font-size:11px;color:var(--ink)">'+(lbl?esc(lbl):'<span class="nul">target_id null</span>')+'</span></td>'+
+      '<td class="mono">'+(a.rule_key?esc(a.rule_key):nul())+'</td>'+
+      '<td style="max-width:280px">'+esc(a.reason)+'</td>'+
+      '<td>'+diffCell(a)+'</td>'+
+      '<td><span class="badge '+o.cls+' mono">'+esc(o.t)+'</span></td>'+
+      '<td>'+(a.revertible
+        ? '<span class="badge b-accent mono" title="undo_payload IS NOT NULL AND undone_at IS NULL. A flag only — there is no revert route in api/, and undo_payload is withheld from every endpoint.">revertible</span>'
+        : '<span class="badge b-gray mono">no</span>')+'</td>'+
+    '</tr>';
+  }).join('') : '<tr><td colspan="8"><div class="empty">' +
+      ((UI.logRule==='cpa_over_target' || UI.logRule==='cpa_recovering')
+        ? 'Nothing under <span class="mono k">'+esc(UI.logRule)+'</span>. <span class="mono k">cpa_over_target.target_cpa_cents</span> is not seeded by any migration, so the rule returns null and never fires — and <span class="mono k">optimization_rules</span> forbids an active rule that still needs config.'
+        : (UI.logRule==='learning_phase'
+            ? 'Nothing under <span class="mono k">learning_phase</span>. It is a proposal with <span class="mono k">action = \'none\'</span>, and the runner skips those before anything is logged — the phase is visible on the ad set instead (CM-05).'
+            : 'No action matches this filter.')) +
+    '</div></td></tr>';
+
+  document.getElementById('logRows').querySelectorAll('tr.rowbtn').forEach(function(tr){
+    function toggle(){
+      var open = tr.getAttribute('aria-expanded') === 'true';
+      if(open){ tr.setAttribute('aria-expanded','false'); if(tr._d){ tr._d.remove(); tr._d = null; } return; }
+      var a = rows[Number(tr.dataset.a)];
+      var det = document.createElement('tr');
+      det.className = 'det';
+      var td = document.createElement('td');
+      td.colSpan = 8;
+      td.innerHTML = '<div class="detwrap">' +
+        '<div class="detcol"><div class="dk">action id</div><div class="dv mono" style="font-size:11px">'+esc(a.id)+'</div></div>' +
+        '<div class="detcol"><div class="dk">executed_at</div><div class="dv mono">'+(a.executed_at?dt(a.executed_at,true):'<span class="nul">null</span>')+'</div></div>' +
+        '<div class="detcol"><div class="dk">undone_at</div><div class="dv mono">'+(a.undone_at?dt(a.undone_at,true):'<span class="nul">null</span>')+'</div></div>' +
+        '<div class="detcol"><div class="dk">target_id</div><div class="dv mono" style="font-size:11px">'+(a.target_id?esc(a.target_id):'<span class="nul">null</span>')+'</div></div>' +
+        '<div class="detcol" style="flex:1;min-width:240px"><div class="dk">metrics_snapshot</div>' +
+          '<div class="jsonbox">'+esc(JSON.stringify(a.metrics_snapshot, null, 1))+'</div></div>' +
+        '<div class="detcol" style="flex:1;min-width:200px"><div class="dk">before → after</div>' +
+          '<div class="jsonbox">'+esc(jsonline(a.before))+'\n→\n'+esc(jsonline(a.after))+'</div></div>' +
+        (a.execute_error ? '<div class="detcol" style="flex:1;min-width:260px"><div class="dk">execute_error — the platform’s own words, verbatim</div>' +
+          '<div class="errbox">'+esc(a.execute_error)+'</div></div>' : '') +
+      '</div>';
+      det.appendChild(td);
+      tr.parentNode.insertBefore(det, tr.nextSibling);
+      tr._d = det;
+      tr.setAttribute('aria-expanded','true');
+    }
+    tr.addEventListener('click', toggle);
+    tr.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } });
+  });
+
+  document.getElementById('logFoot').textContent =
+    rows.length + ' of ' + ACTIONS.length + ' actions · newest first · append-only (DELETE raises; UPDATE may touch only executed_at, execute_error, undone_at, undone_by)';
+}
+/* ══ CM-05 · CAMPAIGN DETAIL DRAWER ══════════════════════════════════════ */
+var DW = { id:null, days:30, metric:'spend_cents' };
+var METRICS = [
+  { k:'spend_cents',  label:'spend',       agg:'SUM', fmt:function(v){return cents(v);},  kind:'bar' },
+  { k:'impressions',  label:'impressions', agg:'SUM', fmt:function(v){return int(v);},    kind:'bar' },
+  { k:'clicks',       label:'clicks',      agg:'SUM', fmt:function(v){return int(v);},    kind:'bar' },
+  { k:'conversions',  label:'conversions', agg:'SUM', fmt:function(v){return int(v);},    kind:'bar' },
+  { k:'frequency',    label:'frequency',   agg:'AVG', fmt:function(v){return dec(v,2);},  kind:'line' },
+  { k:'ctr',          label:'ctr',         agg:'AVG', fmt:function(v){return pctv(v);},   kind:'line' },
+  { k:'cpa_cents',    label:'cpa',         agg:'AVG', fmt:function(v){return cents(v);},  kind:'line' },
+  { k:'roas',         label:'roas',        agg:'AVG', fmt:function(v){return dec(v,2);},  kind:'line' }
+];
+function metricDef(k){ return METRICS.filter(function(m){ return m.k===k; })[0] || METRICS[0]; }
+
+/* One series, one hue. Counts get bars anchored at zero with 4px rounded ends
+   and a 2px gap; rates get a 2px line. Both axes start at zero — a truncated
+   baseline on a ratio is the oldest lie in charting. No second y-axis, ever. */
+function chartSVG(series, mk){
+  var m = metricDef(mk);
+  var vals = series.map(function(d){ var v = d[mk]; return v===null||v===undefined ? null : Number(v); });
+  var known = vals.filter(function(v){ return v !== null; });
+  if(!known.length) return '<div class="empty">No <span class="mono k">'+esc(mk)+'</span> values in this window.</div>';
+  var max = Math.max.apply(null, known);
+  if(max <= 0) max = 1;
+  var top = max * 1.10;
+  var W = 720, H = 190, L = 52, R = 14, T = 14, B = 28;
+  var pw = W - L - R, ph = H - T - B;
+  var n = series.length;
+  var x = function(i){ return L + (n === 1 ? pw/2 : (pw * i / (n - 1))); };
+  var xb = function(i){ return L + pw * i / n; };
+  var y = function(v){ return T + ph - (v / top) * ph; };
+  var s = ['<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(m.label)+' by day, '+n+' days, maximum '+esc(String(max))+'">'];
+  /* recessive gridlines + axis labels */
+  for(var g=0; g<=3; g++){
+    var gv = top * g / 3, gy = y(gv);
+    s.push('<line class="gl" x1="'+L+'" y1="'+gy.toFixed(1)+'" x2="'+(W-R)+'" y2="'+gy.toFixed(1)+'"/>');
+    s.push('<text class="ax" x="'+(L-7)+'" y="'+(gy+3).toFixed(1)+'" text-anchor="end">'+
+           esc(String(m.k.indexOf('cents')!==-1 ? (gv/100).toFixed(0) : (top<12 ? gv.toFixed(1) : Math.round(gv).toLocaleString('en-US'))))+'</text>');
+  }
+  var useBars = m.kind === 'bar' && n <= 60;
+  if(useBars){
+    var bw = Math.max(1, pw/n - (n > 40 ? 1 : 2));
+    series.forEach(function(d,i){
+      var v = vals[i]; if(v === null) return;
+      var h = Math.max(1, T + ph - y(v));
+      s.push('<rect x="'+xb(i).toFixed(1)+'" y="'+y(v).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+
+             '" rx="2" fill="#A9C6E8"/>');
+    });
+  } else {
+    var pts = [], area = [];
+    series.forEach(function(d,i){ var v = vals[i]; if(v===null) return; pts.push(x(i).toFixed(1)+','+y(v).toFixed(1)); });
+    if(pts.length){
+      s.push('<polyline points="'+pts.join(' ')+'" fill="none" stroke="#A9C6E8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>');
+      if(n <= 45) series.forEach(function(d,i){
+        var v = vals[i]; if(v===null) return;
+        s.push('<circle cx="'+x(i).toFixed(1)+'" cy="'+y(v).toFixed(1)+'" r="2.6" fill="#A9C6E8" stroke="#fff" stroke-width="2"/>');
+      });
+    }
+  }
+  /* one direct label — the peak. Never a number on every point. */
+  var mi = vals.indexOf(max);
+  if(mi >= 0){
+    var lx = useBars ? xb(mi) + (pw/n)/2 : x(mi);
+    s.push('<text class="lbl" x="'+Math.min(W-R-4, Math.max(L+4, lx)).toFixed(1)+'" y="'+Math.max(T+9, y(max)-6).toFixed(1)+
+           '" text-anchor="middle">'+esc(String(m.k.indexOf('cents')!==-1 ? (max/100).toFixed(0) : (max<12? max.toFixed(2) : Math.round(max).toLocaleString('en-US'))))+'</text>');
+  }
+  /* x axis — first, middle, last only */
+  [0, Math.floor((n-1)/2), n-1].filter(function(v,i,a){ return a.indexOf(v)===i && v>=0; }).forEach(function(i){
+    var px = useBars ? xb(i) + (pw/n)/2 : x(i);
+    s.push('<text class="ax" x="'+px.toFixed(1)+'" y="'+(H-9)+'" text-anchor="'+(i===0?'start':i===n-1?'end':'middle')+'">'+
+           esc(series[i].date.slice(5))+'</text>');
+  });
+  s.push('<line class="cursorline" id="dwCursor" x1="0" y1="'+T+'" x2="0" y2="'+(T+ph)+'" style="opacity:0"/>');
+  s.push('</svg>');
+  return s.join('');
+}
+
+function renderDrawerBody(){
+  var c = CAMP_BY_ID[DW.id];
+  var host = document.getElementById('dwBody');
+  var sub = document.getElementById('dwSub');
+  if(sub) sub.textContent = 'GET /api/campaigns/detail?id=' + DW.id + '&days=' + DW.days;
+  if(!c){
+    host.innerHTML = '<div class="empty">HTTP 404 <span class="mono k">not_found</span>. ' +
+      'A missing campaign and one belonging to another partner are deliberately indistinguishable — ' +
+      'telling a partner that a campaign exists but is not theirs is itself a disclosure.</div>';
+    return;
+  }
+  var sets = AD_SETS[c.id] || [];
+  var series = seriesFor(c, DW.days);
+  var m = metricDef(DW.metric);
+
+  var sum = function(k){ return series.reduce(function(n,d){ return n + Number(d[k]||0); }, 0); };
+  var avg = function(k){
+    var v = series.map(function(d){ return d[k]; }).filter(function(x){ return x!==null && x!==undefined; });
+    return v.length ? v.reduce(function(n,x){ return n + Number(x); },0)/v.length : null;
+  };
+
+  var kv = [
+    ['approval_state', '<span class="badge '+(APPROVAL_TONE[c.approval_state]||'b-gray')+' mono">'+esc(c.approval_state)+'</span>'],
+    ['platform', '<span class="mono">'+esc(c.platform)+'</span>'],
+    ['offer_type', '<span class="mono">'+esc(c.offer_type)+'</span>'],
+    ['special_ad_category', c.special_ad_category
+        ? '<span class="mono">'+esc(c.special_ad_category)+'</span>'
+        : '<span class="nul mono">null</span><span class="sub">written by trigger for meta only — null on '+esc(c.platform)+' is correct, not missing</span>'],
+    ['objective', c.objective ? '<span class="mono">'+esc(c.objective)+'</span><span class="sub">free text, no CHECK</span>' : '<span class="nul mono">null</span>'],
+    ['budget_cents · daily', '<span class="mono">'+cents(c.budget_cents)+'</span><span class="sub">daily only — no lifetime budget, no flight dates</span>'],
+    ['approved_at', c.approved_at ? '<span class="mono">'+dt(c.approved_at,true)+'</span><span class="sub">approved_by is a column; no endpoint returns it</span>' : '<span class="nul mono">null</span>'],
+    ['has_disclosure_asset', c.has_disclosure_asset
+        ? '<span class="badge b-ok mono">true</span>'
+        : '<span class="badge '+(c.offer_type==='credit_repair'?'b-alert':'b-gray')+' mono">false</span>' +
+          (c.offer_type==='credit_repair' ? '<span class="sub">credit_repair cannot go live without it</span>' : '')],
+    ['strategy_key', c.strategy_key ? '<span class="mono">'+esc(c.strategy_key)+'</span><span class="sub">raw key — campaign_strategies is not exposed</span>' : '<span class="nul mono">null</span>'],
+    ['status', '<span class="nul mono">null</span><span class="sub">platform’s own string · no writer</span>'],
+    ['synced_at', '<span class="nul mono">null</span><span class="sub">no sync job writes it</span>'],
+    ['created_at', '<span class="mono">'+dt(c.created_at,true)+'</span>']
+  ];
+
+  var setRows = sets.length ? sets.map(function(s){
+    return '<tr class="'+(s.in_learning_phase?'stripe-warn':'')+'">'+
+      '<td><b>'+esc(s.name)+'</b></td>'+
+      '<td><span class="badge '+(APPROVAL_TONE[s.approval_state]||'b-gray')+' mono">'+esc(s.approval_state)+'</span></td>'+
+      '<td class="mono">'+(s.status?esc(s.status):nul())+'</td>'+
+      '<td class="mnum">'+cents(s.budget_cents)+'</td>'+
+      '<td class="mnum">'+s.ad_count+'</td>'+
+      '<td class="mono">'+(s.learning_until?dt(s.learning_until,true):nul())+'</td>'+
+      '<td>'+(s.in_learning_phase
+        ? '<span class="badge b-warn mono" title="learning_until > now(). No rule touches an ad set in the learning phase — checked once at the top of evaluate().">in learning</span>'
+        : '<span class="badge b-gray mono">no</span>')+'</td>'+
+    '</tr>';
+  }).join('') : '<tr><td colspan="7"><div class="empty">This campaign has no ad sets.</div></td></tr>';
+
+  var acts = ACTIONS.filter(function(a){
+    if(a.target_id === c.id) return true;
+    var e = ADSET_BY_ID[a.target_id];
+    return !!(e && e.campaign_id === c.id);
+  }).slice(0, 50);
+
+  var actRows = acts.length ? acts.map(function(a){
+    var o = outcomeOf(a);
+    return '<tr class="'+(o.k==='failed'?'stripe-bad':o.k==='unexecuted'?'stripe-warn':'')+'">'+
+      '<td class="mono">'+dt(a.created_at,true)+'</td>'+
+      '<td><span class="badge '+(a.actor==='agent'?'b-accent':'b-info')+' mono">'+esc(a.actor)+'</span></td>'+
+      '<td class="mono">'+(a.rule_key?esc(a.rule_key):nul())+'</td>'+
+      '<td>'+esc(a.reason)+(a.execute_error?'<div class="errbox" style="margin-top:5px">'+esc(a.execute_error)+'</div>':'')+'</td>'+
+      '<td>'+diffCell(a)+'</td>'+
+      '<td><span class="badge '+o.cls+' mono">'+esc(o.t)+'</span></td>'+
+      '<td>'+(a.revertible?'<span class="badge b-accent mono">revertible</span>':'<span class="badge b-gray mono">no</span>')+'</td>'+
+    '</tr>';
+  }).join('') : '<tr><td colspan="7"><div class="empty">No action has ever touched this campaign or its ad sets.</div></td></tr>';
+
+  var tail = series.slice(-14).reverse();
+
+  host.innerHTML =
+    '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">CM-05.1 <span class="sep">/</span> HEADER</div>' +
+      '<div class="kv">' + kv.map(function(p){ return '<div><div class="k">'+esc(p[0])+'</div><div class="v">'+p[1]+'</div></div>'; }).join('') + '</div>' +
+      (c.last_error
+        ? '<div style="margin-top:10px"><div class="k mono" style="font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:4px">last_error — verbatim, truncated at 2000 chars, overwritten by the most recent failure</div>' +
+          '<div class="errbox">'+esc(c.last_error)+'</div>' +
+          '<p class="note" style="margin-top:6px">One column, no history and no error code. The history lives in <code>action_log.execute_error</code> below.</p></div>'
+        : '') +
+      '<div style="margin-top:10px"><div class="k mono" style="font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:4px">targeting · jsonb, stored as sent</div>' +
+        '<div class="jsonbox">'+esc(JSON.stringify(c.targeting || {}, null, 1))+'</div></div>' +
+    '</div>' +
+
+    '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">CM-05.2 <span class="sep">/</span> AD SETS</div>' +
+      '<div class="dw-tbl"><table class="grid"><thead><tr><th>Ad set</th><th>Approval</th><th>Status</th><th>Budget / day</th><th>Ads</th><th>learning_until</th><th>In learning</th></tr></thead>' +
+      '<tbody>'+setRows+'</tbody></table></div>' +
+      '<p class="note" style="margin-top:7px"><code>in_learning_phase</code> is <code>learning_until &gt; now()</code> — exactly the condition the optimiser refuses to touch. It returns <code>rule_key = \'learning_phase\'</code>, <code>action = \'none\'</code>, and the runner drops "none" before anything is written, so a learning-phase skip never appears in the action log.</p>' +
+    '</div>' +
+
+    '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">CM-05.3 <span class="sep">/</span> DAILY SERIES</div>' +
+      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px">' +
+        '<div class="selwrap"><label for="dwDays">Days</label><select id="dwDays">' +
+          [7,14,30,90,180].map(function(d){ return '<option value="'+d+'"'+(DW.days===d?' selected':'')+'>'+d+'</option>'; }).join('') +
+        '</select></div>' +
+        '<span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.06em">default 30 · min 1 · cap 180 · includes today, which is partial</span>' +
+      '</div>' +
+      '<div class="metricrail rail" id="dwMetrics">' + METRICS.map(function(x){
+          return '<button type="button" data-m="'+x.k+'"'+(DW.metric===x.k?' class="on"':'')+'>'+esc(x.label)+'<span class="n">'+x.agg+'</span></button>';
+        }).join('') + '</div>' +
+      (series.length
+        ? '<div class="chartwrap" id="dwChart">'+chartSVG(series, DW.metric)+'<div class="tip" id="dwTip"></div></div>'
+        : '<div class="empty">No rows in <span class="mono k">ad_metrics_daily</span> for this campaign in this window. That is an honest empty, not a zero.</div>') +
+      (series.length
+        ? '<div class="kv" style="margin-top:11px;grid-template-columns:repeat(4,minmax(0,1fr))">' +
+            '<div><div class="k">spend · SUM</div><div class="v mono">'+cents(sum('spend_cents'))+'</div></div>' +
+            '<div><div class="k">impressions · SUM</div><div class="v mono">'+int(sum('impressions'))+'</div></div>' +
+            '<div><div class="k">clicks · SUM</div><div class="v mono">'+int(sum('clicks'))+'</div></div>' +
+            '<div><div class="k">conversions · SUM</div><div class="v mono">'+int(sum('conversions'))+'</div></div>' +
+            '<div><div class="k">frequency · AVG</div><div class="v mono">'+dec(avg('frequency'),2)+'</div></div>' +
+            '<div><div class="k">ctr · AVG</div><div class="v mono">'+pctv(avg('ctr'))+'</div></div>' +
+            '<div><div class="k">cpa · AVG</div><div class="v mono">'+cents(avg('cpa_cents'))+'</div></div>' +
+            '<div><div class="k">roas · AVG</div><div class="v mono">'+dec(avg('roas'),2)+'</div></div>' +
+          '</div>' +
+          '<p class="note" style="margin-top:7px">Derivation: <code>spend_cents</code>, <code>impressions</code>, <code>clicks</code> and <code>conversions</code> are <b>summed</b> across the campaign’s ads per day; <code>frequency</code>, <code>ctr</code>, <code>cpa_cents</code> and <code>roas</code> are <b>averaged</b>. Those eight are every column <code>ad_metrics_daily</code> has that this endpoint returns — <code>reach</code> exists in the table but is not returned by list, detail or fatigue, so it is not charted, and there is no CPM, CPC, pacing or days-remaining anywhere behind this screen.</p>' +
+          '<div class="dw-tbl" style="margin-top:10px"><div class="tblscroll"><table class="grid"><thead><tr><th>Date</th><th>Spend</th><th>Impr.</th><th>Clicks</th><th>Conv.</th><th>Freq</th><th>CTR</th><th>CPA</th><th>ROAS</th></tr></thead><tbody>' +
+            tail.map(function(d){
+              return '<tr><td class="mono">'+esc(d.date)+(d.date===TODAY?'<span class="sub">partial</span>':'')+'</td>'+
+                '<td class="mnum">'+cents(d.spend_cents)+'</td><td class="mnum">'+int(d.impressions)+'</td>'+
+                '<td class="mnum">'+int(d.clicks)+'</td><td class="mnum">'+int(d.conversions)+'</td>'+
+                '<td class="mnum">'+dec(d.frequency,2)+'</td><td class="mnum">'+pctv(d.ctr)+'</td>'+
+                '<td class="mnum">'+cents(d.cpa_cents)+'</td><td class="mnum">'+dec(d.roas,2)+'</td></tr>';
+            }).join('') +
+          '</tbody></table></div></div>' +
+          '<p class="note" style="margin-top:6px">Table view of the last '+tail.length+' days of the same series — the chart is never the only way to read a number.</p>'
+        : '') +
+    '</div>' +
+
+    '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">CM-05.4 <span class="sep">/</span> RECENT ACTIONS</div>' +
+      '<div class="dw-tbl"><div class="tblscroll"><table class="grid"><thead><tr><th>When</th><th>Actor</th><th>Rule</th><th>Reason</th><th>Change</th><th>Outcome</th><th>Revert</th></tr></thead>' +
+      '<tbody>'+actRows+'</tbody></table></div></div>' +
+      '<p class="note" style="margin-top:7px">This is <b>not</b> all activity for the campaign. <code>/detail</code> covers <code>target_id</code> = this campaign <i>or</i> its ad sets only — actions on ads, creative assets, the connection, social posts or autopilot never appear here. Capped at 50 with no pagination, and with no <code>agent_name</code>/<code>user_name</code>: those joins exist only on <code>/api/campaigns/action-log</code> (CM-08).</p>' +
+    '</div>';
+
+  var ds = document.getElementById('dwDays');
+  if(ds) ds.addEventListener('change', function(){ DW.days = Number(ds.value); renderDrawerBody(); });
+  document.querySelectorAll('#dwMetrics button').forEach(function(b){
+    b.addEventListener('click', function(){ DW.metric = b.dataset.m; renderDrawerBody(); });
+  });
+  hookChart(series, DW.metric);
+}
+
+/* hover layer — crosshair + tooltip, the default for any plotted chart here */
+function hookChart(series, mk){
+  var wrap = document.getElementById('dwChart');
+  if(!wrap || !series.length) return;
+  var svg = wrap.querySelector('svg'), tip = document.getElementById('dwTip'),
+      cur = wrap.querySelector('#dwCursor'), m = metricDef(mk);
+  /* chartSVG returns a plain empty-state div when every value for this metric is
+     null — cpa_cents on days with no conversions, for instance — so there is
+     nothing to hover. */
+  if(!svg || !tip) return;
+  var L = 52, R = 14, W = 720;
+  function move(e){
+    var r = svg.getBoundingClientRect();
+    var vx = (e.clientX - r.left) / r.width * W;
+    var t = (vx - L) / (W - L - R);
+    var i = Math.round(t * (series.length - 1));
+    if(i < 0) i = 0; if(i > series.length - 1) i = series.length - 1;
+    var d = series[i];
+    var px = L + (W - L - R) * (series.length === 1 ? 0.5 : i/(series.length-1));
+    if(cur){ cur.setAttribute('x1', px); cur.setAttribute('x2', px); cur.style.opacity = 1; }
+    tip.innerHTML = esc(d.date) + '<br>' + esc(m.label) + ' &nbsp;<b>' + m.fmt(d[mk]) + '</b>';
+    tip.classList.add('on');
+    var left = (px / W) * r.width;
+    tip.style.left = Math.max(4, Math.min(r.width - tip.offsetWidth - 4, left - tip.offsetWidth/2)) + 'px';
+    tip.style.top = '6px';
+  }
+  svg.addEventListener('mousemove', move);
+  svg.addEventListener('mouseleave', function(){ tip.classList.remove('on'); if(cur) cur.style.opacity = 0; });
+}
+
+function openDrawer(id){
+  DW.id = id; DW.days = 30; DW.metric = 'spend_cents';
+  var c = CAMP_BY_ID[id];
+  document.getElementById('dwTitle').textContent = c ? c.name : 'not_found';
+  document.getElementById('dwSub').textContent = c
+    ? 'GET /api/campaigns/detail?id=' + id + '&days=' + DW.days
+    : 'GET /api/campaigns/detail?id=' + id;
+  renderDrawerBody();
+  document.getElementById('drawer').classList.add('on');
+  document.getElementById('drawer').setAttribute('aria-hidden','false');
+  document.getElementById('scrim').classList.add('on');
+  document.getElementById('dwClose').focus();
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('on');
+  document.getElementById('drawer').setAttribute('aria-hidden','true');
+  document.getElementById('scrim').classList.remove('on');
+}
+document.getElementById('dwClose').addEventListener('click', closeDrawer);
+document.getElementById('scrim').addEventListener('click', closeDrawer);
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDrawer(); });
+
+/* ══ CM-01 · SCOPE + PER-PANEL SOURCE ════════════════════════════════════ */
+var PANELS = [
+  { key:'spend',    label:'CM-03 spend vs ceilings', ep:'/api/campaigns/spend' },
+  { key:'list',     label:'CM-04 campaigns',         ep:'/api/campaigns/list' },
+  { key:'detail',   label:'CM-05 campaign detail',   ep:'/api/campaigns/detail?id=' },
+  { key:'fatigue',  label:'CM-06 creative fatigue',  ep:'/api/campaigns/fatigue' },
+  { key:'conn',     label:'CM-07 connections',       ep:'/api/campaigns/connections' },
+  { key:'log',      label:'CM-08 action log',        ep:'/api/campaigns/action-log' }
+];
+var SRC = {};
+PANELS.forEach(function(p){ SRC[p.key] = { source:'sample', note:'built-in sample markup', rows:null }; });
+function tone(src){ return src==='api' ? 'real' : (src==='demo'||src==='notfound'||src==='badrequest'||src==='nodata'||src==='sample') ? 'sample' : 'error'; }
+function renderSources(){
+  document.getElementById('srcRows').innerHTML = PANELS.map(function(p){
+    var s = SRC[p.key];
+    return '<tr><td>'+esc(p.label)+'</td>'+
+      '<td class="mono" style="font-size:10.5px">'+esc(p.ep)+'</td>'+
+      '<td class="srccell"><span class="dot '+tone(s.source)+'"></span><span class="mono" style="font-size:10.5px">'+esc(s.source)+'</span>'+
+        '<span class="sub">'+esc(s.note)+'</span></td>'+
+      '<td class="mnum">'+(s.rows===null?nul():s.rows)+'</td></tr>';
+  }).join('');
+}
+function renderScope(){
+  var qp = (window.FHData && FHData.param) ? FHData.param('partner_id') : null;
+  document.getElementById('scopeName').textContent = PARTNER.name;
+  document.getElementById('scopePid').textContent = 'partner_id ' + (qp || PARTNER.id);
+  document.getElementById('scopeBadge').textContent = qp ? 'staff · named partner' : 'one partner';
+  document.getElementById('scopeHow').innerHTML = qp
+    ? 'Read with <code>?partner_id=' + esc(qp) + '</code>. A <b>staff</b> principal must name exactly one partner; ' +
+      'without it every endpoint here answers <code>400 partner_id_required</code>.'
+    : 'A <b>partner</b> principal is pinned to its own id by <code>resolvePartnerId</code>, and a ' +
+      '<code>?partner_id=</code> in the query string is <i>ignored</i> — not honoured, and not rejected either, ' +
+      'because an error would tell a prober whether the id they guessed exists. A <b>staff</b> principal must ' +
+      'pass <code>?partner_id=</code> or get <code>400 partner_id_required</code>. ' +
+      'Three locks run on every read: <code>requirePrincipal([\'partner\',\'staff\'])</code>, ' +
+      '<code>withPartnerScope</code> so RLS filters every row, and <code>redact()</code> over the body.';
+  renderSources();
+}
+/* ══ FILTER CONTROLS ═════════════════════════════════════════════════════ */
+document.getElementById('fPlatform').addEventListener('change', function(){ UI.campPlatform = this.value; renderCampaigns(true); });
+document.getElementById('fOffer').addEventListener('change',    function(){ UI.campOffer    = this.value; renderCampaigns(true); });
+document.getElementById('fLimit').addEventListener('change',    function(){ UI.campLimit = Number(this.value); renderCampaigns(true); });
+document.getElementById('fDays').addEventListener('change',     function(){ UI.fatDays = Number(this.value); renderFatigue(); });
+document.getElementById('fTarget').addEventListener('change',   function(){ UI.logTarget = this.value; renderLog(); });
+document.getElementById('fRule').addEventListener('change',     function(){ UI.logRule = this.value; renderLog(); });
+
+/* ══ API WIRING ══════════════════════════════════════════════════════════
+   The reader contract is public/app/data.js's: every call resolves, never
+   rejects, and returns { ok, source, data, error }. FHData exposes readers for
+   /api/read/* and /api/dashboard/*, not for /api/campaigns/*, so the same
+   envelope is reproduced here rather than reaching into its private get().
+
+   A panel that cannot be read KEEPS ITS SAMPLE MARKUP and says so, per panel,
+   in CM-01. It never blanks and it never reports a bad filter as an outage.
+   ════════════════════════════════════════════════════════════════════════ */
+function apiGet(path){
+  var demo = false, tok = '';
+  try { demo = localStorage.getItem('fh_demo') === '1'; tok = localStorage.getItem('fh_token') || ''; } catch(e){}
+  if(demo) return Promise.resolve({ ok:false, source:'demo', data:null, error:'demo session — no backend read attempted' });
+  var started;
+  try {
+    started = fetch(path, { headers: tok ? { accept:'application/json', authorization:'Bearer '+tok } : { accept:'application/json' } });
+  } catch(e){
+    return Promise.resolve({ ok:false, source:'offline', data:null, error:(e && e.message) || 'fetch unavailable' });
+  }
+  return Promise.resolve(started).then(function(r){
+    if(r.status === 401 || r.status === 403) return { ok:false, source:'unauthorized', data:null, error:'not signed in' };
+    if(r.status === 404){
+      return r.json().then(function(d){
+        return (d && d.error === 'not_found' && typeof d.path === 'string')
+          ? { ok:false, source:'offline', data:null, error:'/api/* not deployed' }
+          : { ok:false, source:'notfound', data:null, error:'no such record' };
+      }).catch(function(){ return { ok:false, source:'offline', data:null, error:'/api/* not deployed' }; });
+    }
+    if(r.status === 400){
+      return r.json().then(function(d){
+        return { ok:false, source:'badrequest', data:null, error:(d && d.error) || 'bad request' };
+      }).catch(function(){ return { ok:false, source:'badrequest', data:null, error:'bad request' }; });
+    }
+    return r.json().then(function(d){
+      if(r.status === 503 || (d && d.db === 'down')) return { ok:false, source:'nodb', data:null, error:(d && d.error) || 'database unreachable' };
+      /* 500 query_failed here is very often this screen's own bad ?state=, not a
+         backend outage — stateFilter throws and the catch turns it into a 500. */
+      if(!d || d.ok !== true) return { ok:false, source:'nodb', data:null, error:(d && d.error) || 'request failed' };
+      return { ok:true, source:'api', data:d, error:null };
+    }).catch(function(){ return { ok:false, source:'offline', data:null, error:'response was not JSON' }; });
+  }).catch(function(e){
+    return { ok:false, source:'offline', data:null, error:(e && e.message) || 'network error' };
+  });
+}
+
+function scoped(path){
+  var qp = (window.FHData && FHData.param) ? FHData.param('partner_id') : null;
+  return qp ? path + (path.indexOf('?') === -1 ? '?' : '&') + 'partner_id=' + encodeURIComponent(qp) : path;
+}
+
+function wirePanel(key, path, apply){
+  return apiGet(scoped(path)).then(function(res){
+    var s = SRC[key];
+    if(res.ok){
+      var items = (res.data && res.data.items) || [];
+      if(items.length){
+        try { apply(items); s.source = 'api'; s.note = 'live rows'; s.rows = items.length; }
+        catch(e){ s.source = 'error'; s.note = 'render failed: ' + e.message; s.rows = null; }
+      } else {
+        s.source = 'api'; s.note = 'read fine — nothing in the database yet; sample markup kept'; s.rows = 0;
+      }
+    } else {
+      s.source = res.source;
+      s.note = (res.source === 'demo') ? 'demo session — backend not queried'
+             : (res.source === 'unauthorized') ? 'not signed in for real data'
+             : (res.source === 'badrequest') ? 'request rejected (' + res.error + ')'
+             : (res.source === 'notfound') ? 'no matching record'
+             : 'sample kept — ' + res.error;
+      s.rows = null;
+    }
+    renderSources();
+    return res;
+  });
+}
+
+function wireAll(){
+  PANELS.forEach(function(p){ SRC[p.key] = { source:'…', note:'reading', rows:null }; });
+  SRC.detail = { source:'sample', note:'read on demand, when a row is opened', rows:null };
+  renderSources();
+
+  Promise.all([
+    wirePanel('spend', '/api/campaigns/spend?state=all', function(items){
+      CEILINGS = items.map(ceil_); renderSpend(); renderTiles(); renderAttention();
+    }),
+    wirePanel('list', '/api/campaigns/list?state=all&limit=200', function(items){
+      CAMPAIGNS = items; reindex(); renderCampaigns(true); renderTiles(); renderAttention();
+    }),
+    wirePanel('fatigue', '/api/campaigns/fatigue?state=all&days=' + UI.fatDays, function(items){
+      FATIGUE = items; renderFatigue();
+    }),
+    wirePanel('conn', '/api/campaigns/connections?state=all', function(items){
+      CONNECTIONS = items; reindex(); renderConn(); renderAttention();
+    }),
+    wirePanel('log', '/api/campaigns/action-log?state=all&limit=200', function(items){
+      ACTIONS = items; renderLog(); renderAttention();
+    })
+  ]).then(function(res){
+    var worst = 'real', parts = [];
+    PANELS.forEach(function(p){
+      var s = SRC[p.key];
+      if(s.source === '…' || s.source === 'sample') return;
+      var t = tone(s.source);
+      if(t === 'error') worst = 'error';
+      else if(t === 'sample' && worst !== 'error') worst = 'sample';
+      parts.push(p.key + ':' + s.source);
+    });
+    var msg = parts.length ? 'campaigns · ' + parts.join(' · ') : 'campaigns · sample markup';
+    document.getElementById('footNote').textContent =
+      'cm · api/campaigns/* · read-only · ' + (parts.length ? parts.join(' · ') : 'sample');
+    if(window.FHData && FHData.banner) FHData.banner(worst === 'real' ? 'real' : worst, msg, 'campaigns');
+  });
+}
+document.getElementById('reloadBtn').addEventListener('click', wireAll);
+
+/* ══ BOOT ════════════════════════════════════════════════════════════════ */
+renderScope();
+renderSpend();
+renderTiles();
+renderAttention();
+renderCampaigns(true);
+renderFatigue();
+renderConn();
+renderLog();
+wireAll();
+</script>
+</body>
+</html>

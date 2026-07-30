@@ -49,6 +49,15 @@ const GROUPS = [
     ],
   },
   {
+    name: "Marketing",
+    note: "Paid, organic and the creative that feeds both.",
+    pages: [
+      ["app/campaign-manager.html", "Campaigns"],
+      ["app/social-studio.html", "Social studio"],
+      ["app/creative-factory.html", "Creative factory"],
+    ],
+  },
+  {
     name: "Operations",
     note: "Oversight, configuration and the money surfaces.",
     pages: [
@@ -57,6 +66,7 @@ const GROUPS = [
       ["app/galaxy.html", "Galaxy"],
       ["app/automations.html", "Automations"],
       ["app/agent-editor.html", "Agent editor"],
+      ["app/hiring.html", "Hiring"],
       ["app/products-commissions.html", "Products & commissions"],
       ["app/staff-teams.html", "Staff & teams"],
       ["app/content-admin.html", "Content admin"],
