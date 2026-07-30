@@ -3,6 +3,8 @@
 // Returns the client row + related transactions[], crs_results[], messages[], tasks[].
 // No writes. SELECT only. ESM. Mirrors api/health.mjs style.
 import { db } from "../../src/db.mjs";
+import { clientDetailExtras } from "../../src/http/client-detail.mjs";
+import { redact } from "../../src/http/read-api.mjs";
 import { checkDashboardAuth } from "../../src/http/dashboard-auth.mjs";
 import { attachStaff } from "../../src/http/middleware/requireAuth.mjs";
 
@@ -15,7 +17,7 @@ export default async function handler(req, res) {
   if (!id) return res.status(400).json({ ok: false, error: "?id= required" });
 
   try {
-    const [clientRes, txRes, crsRes, msgRes, taskRes] = await Promise.all([
+    const [clientRes, txRes, crsRes, msgRes, taskRes, roundRes, invRes] = await Promise.all([
       db.query(
         `SELECT id, first_name, last_name, email, phone,
                 outcome_tier, funded, funded_amount, days_to_fund,
@@ -42,8 +44,24 @@ export default async function handler(req, res) {
         [id]
       ),
       db.query(
-        `SELECT id, assignee, title, body, due_at, done, source_workflow, created_at
+        `SELECT id, assignee_role, assignee_staff_id, title, body, due_at, done,
+                source_workflow, created_at
          FROM tasks WHERE client_id = $1 ORDER BY created_at DESC`,
+        [id]
+      ),
+      // Two more reads, for the derived fields the Closer Dashboard needs:
+      // a funding hold and an outstanding balance are blockers, and neither was
+      // reachable from this endpoint before.
+      db.query(
+        `SELECT id, round_number, status, product, submitted_amount, approved_amount,
+                funded_amount, hold_reason, conditions, created_at
+         FROM funding_rounds WHERE client_id = $1 ORDER BY round_number DESC`,
+        [id]
+      ),
+      db.query(
+        `SELECT invoice_id AS id, status, currency, amount_due, amount_paid,
+                balance_due, due_at, paid_at, created_at
+         FROM v_invoice_balance WHERE client_id = $1 ORDER BY created_at DESC`,
         [id]
       ),
     ]);
@@ -52,14 +70,28 @@ export default async function handler(req, res) {
       return res.status(404).json({ ok: false, error: "client not found" });
     }
 
-    res.status(200).json({
-      ok: true,
-      client:      clientRes.rows[0],
-      transactions: txRes.rows,
-      crs_results:  crsRes.rows,
-      messages:     msgRes.rows,
-      tasks:        taskRes.rows,
+    const client = clientRes.rows[0];
+    const extras = clientDetailExtras({
+      client,
+      crsResults: crsRes.rows,
+      tasks: taskRes.rows,
+      fundingRounds: roundRes.rows,
+      invoices: invRes.rows
     });
+
+    res.status(200).json(redact({
+      ok: true,
+      client,
+      transactions:  txRes.rows,
+      crs_results:   crsRes.rows,
+      messages:      msgRes.rows,
+      tasks:         taskRes.rows,
+      funding_rounds: roundRes.rows,
+      invoices:      invRes.rows,
+      // Derived, never stored — see src/http/client-detail.mjs for why each of
+      // these explains rather than recomputes.
+      ...extras
+    }));
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }

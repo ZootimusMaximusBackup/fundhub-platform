@@ -1,0 +1,129 @@
+// Shared plumbing for the read APIs — pagination, role gating, and redaction.
+//
+// Every GET endpoint added in Unit 9 goes through these, so the three rules that
+// matter are enforced in one place instead of being remembered eleven times:
+//
+//   PAGINATE       — no endpoint may return an unbounded result set
+//   ROLE GATE      — sensitive reads name the roles allowed, and the default is
+//                    deny; an endpoint that forgets to say gets nobody
+//   NEVER RETURN   — storage keys and SSNs do not leave the process, whatever the
+//                    caller asks for
+//
+// Framework-agnostic like the rest of src/http: plain values in, plain values
+// out, so this is testable without an HTTP layer.
+
+// Columns that must never reach a client, whatever the query selected. Matched
+// case-insensitively against the key name, so a future `ssn_last4` or
+// `storage_key_v2` is caught by the same rule rather than needing a new one.
+const FORBIDDEN_KEY = /(^|_)(ssn|social_security)(_|$)|storage_key|storage_path|s3_key|object_key|password|password_hash|token_hash/i;
+
+// Keys that are allowed through despite matching above, because they are the
+// safe derived form the screens actually need.
+const ALLOWED_EXACT = new Set(["ssn_present", "has_ssn"]);
+
+/* redact — strip forbidden keys from a row or array of rows. Recurses into nested
+   objects, because a joined document row arrives as a nested object and would
+   otherwise carry its storage key straight through. */
+export function redact(value) {
+  if (Array.isArray(value)) return value.map(redact);
+  if (!value || typeof value !== "object" || value instanceof Date) return value;
+  const out = {};
+  for (const [k, v] of Object.entries(value)) {
+    if (!ALLOWED_EXACT.has(k) && FORBIDDEN_KEY.test(k)) continue;
+    out[k] = (v && typeof v === "object" && !(v instanceof Date)) ? redact(v) : v;
+  }
+  return out;
+}
+
+export const MAX_LIMIT = 200;
+export const DEFAULT_LIMIT = 50;
+
+/* pageParams — limit/offset from a query string, bounded. The unit's rule is
+   "paginated above 200 rows", so 200 is the ceiling and a caller asking for more
+   silently gets 200 rather than an error: a screen requesting 1000 should still
+   render, just not drag the whole table across the wire. */
+export function pageParams(query = {}) {
+  const rawLimit = parseInt(query.limit ?? String(DEFAULT_LIMIT), 10);
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0
+    ? Math.min(rawLimit, MAX_LIMIT)
+    : DEFAULT_LIMIT;
+  const rawOffset = parseInt(query.offset ?? "0", 10);
+  const offset = Number.isFinite(rawOffset) && rawOffset > 0 ? rawOffset : 0;
+  return { limit, offset };
+}
+
+/* page — the response envelope every list endpoint returns. `hasMore` is derived
+   by asking for one row more than requested, so a screen knows whether to show a
+   "next" control without a second count query. */
+export function page(rows, { limit, offset }) {
+  const hasMore = rows.length > limit;
+  const items = hasMore ? rows.slice(0, limit) : rows;
+  return { count: items.length, limit, offset, hasMore, items: redact(items) };
+}
+
+/* ROLE GATING. Deny by default: an endpoint that does not list roles admits
+   nobody, so forgetting to configure one fails closed rather than open. */
+export const ROLE_SETS = {
+  // Money and people. Commission rates, invoices, staff records, payouts.
+  FINANCE: new Set(["owner", "admin"]),
+  // Operational reads any employee needs to do their job.
+  STAFF: new Set(["owner", "admin", "funding_advisor", "closer", "inquiry_specialist", "setter"]),
+  // Platform health. Failed events name handlers and payload shapes.
+  OPS: new Set(["owner", "admin"])
+};
+
+export function allowsRole(roleSet, role) {
+  if (!roleSet || typeof roleSet.has !== "function") return false;
+  return roleSet.has(String(role || "").trim().toLowerCase());
+}
+
+/* requireRole — returns true if the request may proceed, else writes the 403 and
+   returns false. Mirrors requireAuth's shape so call sites read the same way.
+
+   403, not 404: the caller is authenticated, so hiding the endpoint's existence
+   buys nothing and makes a permissions bug undiagnosable. */
+export function requireRole(res, staff, roleSet) {
+  if (allowsRole(roleSet, staff && staff.role)) return true;
+  res.status(403).json({
+    ok: false,
+    error: "forbidden",
+    message: "this endpoint is limited to " + [...(roleSet || [])].join(", ")
+  });
+  return false;
+}
+
+/* readHandler — the wrapper every Unit 9 endpoint uses. Handles method checking,
+   auth, role gating, pagination and error shaping so each endpoint file is just
+   its SQL and its mapping.
+
+   `fetch(db, { limit, offset, query, staff })` must return an array of rows; it
+   should SELECT limit+1 so `hasMore` is accurate. */
+export function readHandler({ roles, fetch, single = false }) {
+  return async function handler(req, res, deps) {
+    const { db, requireAuth } = deps;
+    if (req.method && req.method !== "GET") {
+      return res.status(405).json({ ok: false, error: "method_not_allowed" });
+    }
+    const staff = await requireAuth(req, res, { db });
+    if (!staff) return;
+    if (!requireRole(res, staff, roles)) return;
+
+    try {
+      const query = req.query || {};
+      const { limit, offset } = pageParams(query);
+      const rows = await fetch(db, { limit, offset, query, staff });
+      if (single) {
+        const row = Array.isArray(rows) ? rows[0] : rows;
+        if (!row) return res.status(404).json({ ok: false, error: "not_found" });
+        return res.status(200).json({ ok: true, ...redact(row) });
+      }
+      return res.status(200).json({ ok: true, ...page(rows, { limit, offset }) });
+    } catch (err) {
+      // The message can quote a DSN on a connection failure, same as health.
+      const safe = String(err && err.message || "query failed")
+        .replace(/postgres(ql)?:\/\/[^\s"']+/gi, "postgres://[redacted]")
+        .slice(0, 200);
+      return res.status(500).json({ ok: false, error: "query_failed", message: safe });
+    }
+  };
+}

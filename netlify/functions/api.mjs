@@ -20,6 +20,16 @@ import dashPipeline from "../../api/dashboard/pipeline.mjs";
 import dashSeed from "../../api/dashboard/seed.mjs";
 import health from "../../api/health.mjs";
 import webhooks from "../../api/webhooks/[provider].mjs";
+import readCommissions from "../../api/read/commissions.mjs";
+import readInvoices from "../../api/read/invoices.mjs";
+import readDocuments from "../../api/read/documents.mjs";
+import readFundingRounds from "../../api/read/funding-rounds.mjs";
+import readAffiliates from "../../api/read/affiliates.mjs";
+import readPartners from "../../api/read/partners.mjs";
+import readMessageTemplates from "../../api/read/message-templates.mjs";
+import readStaff from "../../api/read/staff.mjs";
+import readEntitlements from "../../api/read/entitlements.mjs";
+import readFailedEvents from "../../api/read/failed-events.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -33,7 +43,17 @@ const ROUTES = {
   "dashboard/client": dashClient,
   "dashboard/pipeline": dashPipeline,
   "dashboard/seed": dashSeed,
-  "health": health
+  "health": health,
+  "read/commissions": readCommissions,
+  "read/invoices": readInvoices,
+  "read/documents": readDocuments,
+  "read/funding-rounds": readFundingRounds,
+  "read/affiliates": readAffiliates,
+  "read/partners": readPartners,
+  "read/message-templates": readMessageTemplates,
+  "read/staff": readStaff,
+  "read/entitlements": readEntitlements,
+  "read/failed-events": readFailedEvents
 };
 
 function toQueryObject(searchParams) {
