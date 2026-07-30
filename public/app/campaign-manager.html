@@ -838,7 +838,7 @@ var CONNECTIONS = [
      nothing in the repo writes platform_verification_state afterwards, so it
      cannot have been approved at launch and something else now. An 'unapproved'
      tiktok row here would make the live campaign in CM-04, the paused-from-live
-     row in CM-08, four fatigue ads and two ceilings all unreachable at once. */
+     row in CM-08, three fatigue ads and two ceilings all unreachable at once. */
   { id: uid('conn:tt1'), platform:'tiktok',
     external_business_id:'7392044118820331521', external_ad_account_id:'7392041887330058241',
     connection_state:'active', platform_verification_state:'approved',
@@ -853,7 +853,7 @@ var CONNECTIONS = [
 /* GET /api/campaigns/list → items[]. status and synced_at are null on every row
    because nothing in the repo writes either column. ORDER BY created_at DESC.
 
-   THREE FIELDS BELOW ARE NOT ON THE list RESPONSE. `targeting` comes back from
+   FOUR FIELDS BELOW ARE NOT ON THE list RESPONSE. `targeting` comes back from
    /detail (used by the drawer, never by the table); `connection_id` is a real
    campaigns column that neither list nor detail selects, carried here only so the
    sample's own campaign_count and launch-gate story stay checkable; `key` and `m`
