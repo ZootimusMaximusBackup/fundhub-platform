@@ -66,8 +66,21 @@ const ROUTES = {
   "read/products": readProducts
 };
 
+/* A NUL byte anywhere in a query value makes Postgres raise
+   "invalid byte sequence for encoding UTF8: 0x00" from inside whatever query
+   the value reached, which surfaced as a 500 quoting the driver. Postgres text
+   cannot hold a NUL at all, so no handler downstream could ever have done
+   anything useful with one — reject it here, once, as the bad request it is. */
+function hasNul(s) {
+  if (typeof s !== "string") return false;
+  for (let i = 0; i < s.length; i++) if (s.charCodeAt(i) === 0) return true;
+  return false;
+}
+
 function toQueryObject(searchParams) {
-  const q = {};
+  // null-prototype: a key like "constructor" or "toString" must be absent, not
+  // inherited. See the ROUTES lookup below for why that matters.
+  const q = Object.create(null);
   for (const [k, v] of searchParams.entries()) q[k] = v;
   return q;
 }
@@ -95,7 +108,11 @@ export default async function handler(request, context) {
      POST and PUT even once it was routed. */
   if (path === "inngest") return inngestWeb(request);
 
-  let route = ROUTES[path];
+  /* OWN properties only. `ROUTES[path]` walked the prototype chain, so
+     /api/constructor, /api/toString, /api/valueOf, /api/hasOwnProperty and
+     /api/__proto__ all resolved to a "route" — Object.prototype members — and
+     answered 500 to an UNAUTHENTICATED caller instead of 404. */
+  let route = Object.prototype.hasOwnProperty.call(ROUTES, path) ? ROUTES[path] : undefined;
   const query = toQueryObject(url.searchParams);
 
   // /api/webhooks/:provider → the existing [provider].mjs with req.query.provider
@@ -109,6 +126,17 @@ export default async function handler(request, context) {
       status: 404,
       headers: { "content-type": "application/json" }
     });
+  }
+
+  // Reject NUL bytes once, here, rather than letting each handler discover them
+  // as a Postgres encoding error mid-query.
+  for (const k of Object.keys(query)) {
+    if (hasNul(query[k]) || hasNul(k)) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "invalid_parameter", param: hasNul(k) ? undefined : k }),
+        { status: 400, headers: { "content-type": "application/json" } }
+      );
+    }
   }
 
   // ---- build req ----------------------------------------------------------

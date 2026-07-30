@@ -23,7 +23,7 @@
 import { db } from "../src/db.mjs";
 import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
 import { TASK_ROLES } from "../src/lib/create-task.mjs";
-import { isUuid, CLIENT_DATA_ERRORS } from "../src/http/read-api.mjs";
+import { isUuid, CLIENT_DATA_ERRORS, boundedLimit } from "../src/http/read-api.mjs";
 import { safeError } from "../src/http/health.mjs";
 
 export default async function handler(req, res) {
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
 
   if (req.method === "GET") {
     const q = req.query || {};
-    const limit = Math.min(parseInt(q.limit ?? "100", 10) || 100, 200);
+    const limit = boundedLimit(q.limit, { fallback: 100, cap: 200 });
     const where = [];
     const params = [];
     const add = (sql, val) => { params.push(val); where.push(sql.replace("?", `$${params.length}`)); };

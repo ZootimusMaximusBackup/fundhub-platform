@@ -2,7 +2,7 @@ import { test, describe } from "node:test";
 import assert from "node:assert";
 import {
   redact, pageParams, page, allowsRole, requireRole, readHandler,
-  ROLE_SETS, MAX_LIMIT, DEFAULT_LIMIT, isUuid, CLIENT_DATA_ERRORS
+  ROLE_SETS, MAX_LIMIT, DEFAULT_LIMIT, isUuid, CLIENT_DATA_ERRORS, boundedLimit
 } from "./read-api.mjs";
 
 const res = () => {
@@ -259,5 +259,42 @@ describe("read-api", () => {
     const r2 = res();
     await missing({ method: "GET", query: {} }, r2, deps({ role: "owner" }));
     assert.equal(r2.code, 404);
+  });
+});
+
+/* boundedLimit — for the three handlers that roll their own pagination.
+   Each did `Math.min(parseInt(v) || fallback, cap)`, which has no LOWER bound,
+   so ?limit=-1 reached Postgres and raised "LIMIT must not be negative" as a
+   500. A caller's bad number is not a server fault. */
+describe("boundedLimit", () => {
+  const OPTS = { fallback: 100, cap: 200 };
+
+  test("a negative limit clamps to 1 instead of reaching Postgres", () => {
+    assert.equal(boundedLimit("-1", OPTS), 1);
+    assert.equal(boundedLimit("-999999", OPTS), 1);
+    assert.equal(boundedLimit("0", OPTS), 1);
+  });
+
+  test("the cap holds", () => {
+    assert.equal(boundedLimit("999999", OPTS), 200);
+    assert.equal(boundedLimit("201", OPTS), 200);
+  });
+
+  test("absent or unparseable falls back", () => {
+    for (const v of [undefined, null, "", "abc", "NaN", {}, []]) {
+      assert.equal(boundedLimit(v, OPTS), 100, JSON.stringify(v));
+    }
+  });
+
+  test("a normal value passes through, and a float truncates", () => {
+    assert.equal(boundedLimit("50", OPTS), 50);
+    assert.equal(boundedLimit("1.9", OPTS), 1);
+  });
+
+  test("the result is always an integer in [1, cap]", () => {
+    for (const v of ["-5", "0", "1", "7", "200", "201", "1e9", "abc", ""]) {
+      const n = boundedLimit(v, OPTS);
+      assert.ok(Number.isInteger(n) && n >= 1 && n <= 200, `${v} -> ${n}`);
+    }
   });
 });

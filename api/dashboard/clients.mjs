@@ -4,6 +4,7 @@
 // No writes. SELECT only. ESM. Mirrors api/health.mjs style.
 import { db } from "../../src/db.mjs";
 import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
+import { boundedLimit } from "../../src/http/read-api.mjs";
 
 const SQL = `
   SELECT
@@ -46,10 +47,15 @@ const SQL = `
 export default async function handler(req, res) {
   // Staff session first; the DASHBOARD_SECRET gate stays as the fallback until
   // cutover, so existing links keep working while staff accounts roll out.
+  // GET only. These answered POST/PUT/DELETE/PATCH with 200 and the full
+  // client book, so any method reached read data that only GET should serve.
+  if (req.method && req.method !== "GET") {
+    return res.status(405).json({ ok: false, error: "method_not_allowed" });
+  }
   const staff = await requireDashboardAccess(req, res, { db });
   if (!staff) return;
   try {
-    const limit = Math.min(parseInt(req.query?.limit ?? "50", 10) || 50, 500);
+    const limit = boundedLimit(req.query?.limit, { fallback: 50, cap: 500 });
     const { rows } = await db.query(SQL, [limit]);
     const clients = rows.map((r) => ({
       id:           r.id,

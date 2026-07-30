@@ -49,6 +49,19 @@ export const CLIENT_DATA_ERRORS = new Set([
   "22008"  // datetime_field_overflow
 ]);
 
+/* boundedLimit — for the handlers that roll their own pagination rather than
+   going through readHandler (dashboard/clients, dashboard/pipeline, tasks).
+
+   Each of them did `Math.min(parseInt(v) || fallback, cap)`, which has no LOWER
+   bound: ?limit=-1 parses to -1, survives Math.min, reaches Postgres and raises
+   "LIMIT must not be negative" as a 500. A caller's bad number is not a server
+   fault. NaN and empty fall back; anything below 1 clamps to 1. */
+export function boundedLimit(raw, { fallback, cap }) {
+  const n = parseInt(raw ?? "", 10);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(1, Math.min(n, cap));
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /* isUuid — cheap guard for handlers that take an `?id=`. Catching a malformed

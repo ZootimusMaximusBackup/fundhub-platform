@@ -60,6 +60,26 @@ function validate(body) {
   if (body.selected_funnels != null && !Array.isArray(body.selected_funnels)) {
     bad.push("selected_funnels must be an array");
   }
+
+  /* The free-text columns had NO validation: an object, a number or a 100kB
+     string all went straight to the INSERT. A non-string became Postgres' idea
+     of its text form ("[object Object]"), and an unbounded string is a cheap way
+     to fill a table. Type and length only — the CONTENT of a trading name or an
+     address is the partner's business, not something to second-guess. */
+  const TEXT_MAX = {
+    wordmark_url: 2048, voice: 2000, entity_name: 200,
+    entity_address: 500, support_email: 320, domain: 253
+  };
+  for (const [field, max] of Object.entries(TEXT_MAX)) {
+    const v = body[field];
+    if (v == null) continue;
+    if (typeof v !== "string") { bad.push(`${field} must be a string`); continue; }
+    if (v.length > max) bad.push(`${field} must be ${max} characters or fewer`);
+  }
+  if (typeof body.support_email === "string" && body.support_email.trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.support_email.trim())) {
+    bad.push("support_email must be an email address");
+  }
   return bad;
 }
 
