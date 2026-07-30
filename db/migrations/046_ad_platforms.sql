@@ -184,10 +184,27 @@ CREATE TABLE IF NOT EXISTS campaigns (
     CHECK (approval_state IN ('draft', 'awaiting_approval', 'approved', 'live', 'paused', 'archived')),
   CONSTRAINT campaigns_budget_ck CHECK (budget_cents >= 0),
   CONSTRAINT campaigns_name_ck   CHECK (btrim(name) <> ''),
-  -- An approval must record who and when, or "was this ever approved by a human"
-  -- is unanswerable at audit time.
-  CONSTRAINT campaigns_approved_ck
-    CHECK (approval_state NOT IN ('approved', 'live') OR (approved_by IS NOT NULL AND approved_at IS NOT NULL))
+
+  -- An approval must record WHEN, always. Without it, "was this ever approved"
+  -- has no answer at audit time.
+  CONSTRAINT campaigns_approved_at_ck
+    CHECK (approval_state NOT IN ('approved', 'live') OR approved_at IS NOT NULL),
+
+  -- WHO is required only for credit_repair, and that asymmetry is deliberate.
+  -- approve_before_launch is a per-partner setting, so a funding or credit_cards
+  -- campaign may legitimately reach live with no human in the loop when the
+  -- partner has it switched off — approved_by is NULL there, meaning "auto".
+  -- Requiring a human on every campaign would block that supported path.
+  --
+  -- credit_repair is the exception the spec makes unconditional: human approval is
+  -- ALWAYS required and the setting cannot turn it off. src/compliance/screen.mjs
+  -- enforces that in code; this is the same rule at the engine, so a credit-repair
+  -- campaign cannot be marked live by any path without naming the person who
+  -- approved it.
+  CONSTRAINT campaigns_credit_repair_approver_ck
+    CHECK (offer_type <> 'credit_repair'
+           OR approval_state NOT IN ('approved', 'live')
+           OR approved_by IS NOT NULL)
 );
 
 -- THE TIKTOK CREDIT-REPAIR BLOCK, at the engine.
