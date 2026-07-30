@@ -986,5 +986,36 @@ chBtns.forEach(function(b){
 });
 })();
 </script>
+<script src="data.js"></script>
+<script>
+
+/* Messaging — the template library is the part with a real source
+   (/api/read/message-templates). Conversation threads have NO endpoint: the
+   messages table exists but nothing exposes it as threads, so the thread list
+   keeps its sample markup and is reported as unwired rather than faked. */
+(function () {
+  "use strict";
+  var esc = function (v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
+  };
+  FHData.wire(FHData.messageTemplates({ limit: 200 }), "message templates",
+    function (data) {
+      var rows = data.items || [];
+      if (!rows.length) return null;
+      var body = document.getElementById("demoBody");
+      if (!body) return null;
+      body.innerHTML = rows.map(function (t) {
+        return "<tr><td>" + esc(t.template_key) + "</td>" +
+               "<td>" + esc(t.channel) + "</td>" +
+               "<td>" + esc(t.subject || "—") + "</td>" +
+               "<td>" + esc(t.compliance_passed ? "passed" : "NOT AUDITED") + "</td></tr>";
+      }).join("");
+      var failing = rows.filter(function (t) { return !t.compliance_passed; }).length;
+      return "live templates · " + rows.length + " · " +
+             (failing ? failing + " not compliance-audited" : "all compliance-audited");
+    });
+})();
+</script>
 </body>
 </html>

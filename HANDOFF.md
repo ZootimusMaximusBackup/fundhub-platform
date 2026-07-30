@@ -6,9 +6,9 @@ what is finished and what only looks finished.
 ## The one-line summary
 
 The **backend is built and tested** — all 14 units of the build queue are done.
-What is NOT done is the **front end**: 15 of 21 CRM screens still render
-hardcoded sample data, and no production database is configured. Do not open the
-deployed site expecting a working CRM.
+The **front end is now mostly wired too**: 12 of 21 screens read real data. What
+remains is 9 screens with no data source yet, and no production database. Do not
+open the deployed site expecting live data until `DATABASE_URL` is set.
 
 ---
 
@@ -75,10 +75,25 @@ Each of these is verified against a real Postgres, not by reading code.
 
 ### 1. The screens are not wired (biggest gap)
 
-**6 of 21** read real data: `client-control-panel`, `pipeline`, `documents`,
-`staff-teams`, `affiliate`, `ops-admin`.
-The other 15 render invented sample rows — Command Center, Closer Dashboard,
-Messaging, Galaxy, and the rest. The read APIs most of them need now exist
+**12 of 21** read real data: `client-control-panel`, `pipeline`, `documents`,
+`staff-teams`, `affiliate`, `ops-admin`, `command-center`, `products-commissions`,
+`client-portal`, `partner-galaxy`, `messaging`, `calendar`.
+
+The remaining **9** each lack a data source, not wiring:
+
+| Screen | What it needs first |
+|---|---|
+| `closer-dashboard` | per-card APR/limit/balance — the calculators compute from table markup and no endpoint supplies cards |
+| `automations` | a workflow-run history table; none exists |
+| `galaxy` | node/edge layout has no source (`/api/read/staff` exists, the graph does not) |
+| `agent-editor` | `/api/read/agents` now exists — needs the editor bound to it |
+| `content-admin` | the tier/tile content model has no table |
+| `inquiry-remover` | `/api/inquiry` returns the external Airtable shape, not these columns |
+| `brand-studio` | endpoint exists (Unit 11); the form still writes localStorage |
+| `sample-data` | a sample-data screen by design — leave it |
+| `index` | router, renders nothing |
+
+The read APIs most screens need now exist
 (`/api/read/*` and the widened `/api/dashboard/client`), so this is wiring, not
 design.
 

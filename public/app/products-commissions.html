@@ -658,5 +658,76 @@ document.getElementById('perFilter').addEventListener('change',renderLedger);
 
 renderProducts(); renderRules(); renderLedger(); renderStats();
 </script>
+<script src="data.js"></script>
+<script>
+
+/* Products & Commissions — the product ladder from /api/read/products and the
+   earnings ledger from /api/read/commissions.
+
+   NOTE: no commission PERCENTAGE is rendered from a constant. Rates live in
+   commission_rules rows; the tiles show the count of active rules and the
+   amounts actually accrued, never an invented rate. */
+(function () {
+  "use strict";
+  var esc = function (v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
+  };
+  var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+  var usd = function (n) {
+    return "$" + Number(n || 0).toLocaleString("en-US",
+      { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+  var money = function (n) {
+    return n == null || n === "" ? "—" : "$" + Number(n).toLocaleString("en-US");
+  };
+
+  FHData.wire(FHData.read("products", { limit: 200 }), "product ladder", function (data) {
+    var rows = data.items || [];
+    if (!rows.length) return null;
+    set("kProd", rows.length);
+    set("kRules", rows.reduce(function (a, p) { return a + (p.active_rules || 0); }, 0));
+
+    var body = document.getElementById("prodBody");
+    if (body) {
+      body.innerHTML = rows.map(function (p) {
+        var price = p.price_is_variable
+          ? money(p.min_price) + "–" + money(p.max_price)
+          : money(p.default_price);
+        return "<tr><td>" + esc(p.name) + "</td>" +
+               "<td>" + esc(p.category || "—") + "</td>" +
+               "<td>" + esc(price) + "</td>" +
+               "<td>" + esc(p.default_success_fee_percent == null
+                             ? "—" : p.default_success_fee_percent + "%") + "</td>" +
+               "<td>" + esc(p.active_rules) + "</td></tr>";
+      }).join("");
+    }
+    return "live product ladder · " + rows.length + " products";
+  });
+
+  FHData.wire(FHData.commissions({ limit: 200 }), "commission ledger", function (data) {
+    var rows = data.items || [];
+    if (!rows.length) return null;
+    var accrued = rows.filter(function (r) { return r.status !== "paid" && r.status !== "void"; })
+                      .reduce(function (a, r) { return a + Number(r.amount || 0); }, 0);
+    var paid = rows.filter(function (r) { return r.status === "paid"; })
+                   .reduce(function (a, r) { return a + Number(r.amount || 0); }, 0);
+    set("kAccrued", usd(accrued));
+    set("kPaid", usd(paid));
+
+    var body = document.getElementById("ledgerBody");
+    if (body) {
+      body.innerHTML = rows.map(function (r) {
+        return "<tr><td>" + esc(r.staff_name || r.employee_code || "—") + "</td>" +
+               "<td>" + esc(r.role || "—") + "</td>" +
+               "<td>" + esc(r.product_name_at_earning || "—") + "</td>" +
+               "<td>" + esc(usd(r.amount)) + "</td>" +
+               "<td>" + esc(r.status) + "</td></tr>";
+      }).join("");
+    }
+    return "live ledger · " + rows.length + " entries · " + usd(accrued) + " accrued";
+  });
+})();
+</script>
 </body>
 </html>

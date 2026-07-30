@@ -31,6 +31,8 @@ import readMessageTemplates from "../../api/read/message-templates.mjs";
 import readStaff from "../../api/read/staff.mjs";
 import readEntitlements from "../../api/read/entitlements.mjs";
 import readFailedEvents from "../../api/read/failed-events.mjs";
+import readAgents from "../../api/read/agents.mjs";
+import readProducts from "../../api/read/products.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -55,7 +57,9 @@ const ROUTES = {
   "read/message-templates": readMessageTemplates,
   "read/staff": readStaff,
   "read/entitlements": readEntitlements,
-  "read/failed-events": readFailedEvents
+  "read/failed-events": readFailedEvents,
+  "read/agents": readAgents,
+  "read/products": readProducts
 };
 
 function toQueryObject(searchParams) {

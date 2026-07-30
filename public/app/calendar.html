@@ -929,5 +929,39 @@ dTog.addEventListener('click',function(){
 });
 })();
 </script>
+<script src="data.js"></script>
+<script>
+
+/* Calendar — dated work from /api/tasks. Bookings themselves have no endpoint
+   (Cal.com writes a task via comms.mjs, but there is no bookings table), so the
+   month grid keeps its sample markup and only the dated-task list is real. */
+(function () {
+  "use strict";
+  var esc = function (v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
+  };
+  var day = function (d) {
+    return d ? new Date(d).toLocaleDateString("en-US",
+      { weekday: "short", month: "short", day: "numeric" }) : "—";
+  };
+
+  FHData.wire(FHData.taskQueue({ done: false, limit: 200 }), "scheduled work",
+    function (data) {
+      var rows = (data.tasks || []).filter(function (t) { return t.due_at; });
+      if (!rows.length) return null;
+      var body = document.getElementById("demoBody");
+      if (!body) return null;
+      rows.sort(function (a, b) { return new Date(a.due_at) - new Date(b.due_at); });
+      body.innerHTML = rows.map(function (t) {
+        return "<tr><td>" + esc(day(t.due_at)) + "</td>" +
+               "<td>" + esc(t.title) + "</td>" +
+               "<td>" + esc(t.client_name || "—") + "</td>" +
+               "<td>" + esc(t.assignee_role || "unassigned") + "</td></tr>";
+      }).join("");
+      return "live schedule · " + rows.length + " dated task(s)";
+    });
+})();
+</script>
 </body>
 </html>

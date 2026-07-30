@@ -1057,5 +1057,62 @@ var PRODUCTS = {
   setState(false);
 })();
 </script>
+<script src="data.js"></script>
+<script>
+
+/* Client Portal — the tiles lock and unlock from real entitlements (032).
+   This is the screen the whole entitlements unit exists for: a locked tile IS
+   the upsell surface, so a tile with no grant stays locked rather than hidden.
+
+   Requires a CLIENT principal session (Unit 12) to resolve a client id; a staff
+   member opening this screen without ?id= sees the sample markup, correctly. */
+(function () {
+  "use strict";
+  // Screen tile keys → entitlement codes from 032's catalog.
+  var MAP = {
+    metro2:     "metro2-letter-pack",
+    roadmap:    "credit-optimization-roadmap",
+    consulting: "funding-snapshot"
+  };
+
+  var clientId = FHData.param("id");
+  try {
+    var acct = JSON.parse(localStorage.getItem("fh_account") || "null");
+    if (!clientId && acct && acct.clientId) clientId = acct.clientId;
+  } catch (e) {}
+
+  if (!clientId) {
+    FHData.banner("sample", "sample portal — sign in as a client, or open with ?id=<client id>");
+    return;
+  }
+
+  FHData.wire(FHData.entitlements({ client_id: clientId, limit: 200 }),
+    "entitlements", function (data) {
+      var rows = data.items || [];
+      if (!rows.length) return null;
+      var active = {};
+      rows.forEach(function (e) { if (e.active) active[e.entitlement_code] = e; });
+
+      var unlocked = 0, locked = 0;
+      var tiles = document.querySelectorAll("[data-tile]");
+      for (var i = 0; i < tiles.length; i++) {
+        var code = MAP[tiles[i].getAttribute("data-tile")];
+        if (!code) continue;                       // a tile with no mapping is left alone
+        var lockrow = tiles[i].querySelector(".lockrow");
+        if (active[code]) {
+          tiles[i].classList.remove("locked");
+          if (lockrow) lockrow.textContent = "Included";
+          unlocked++;
+        } else {
+          tiles[i].classList.add("locked");
+          if (lockrow) lockrow.innerHTML = '<span class="lk">🔒</span> Locked';
+          locked++;
+        }
+      }
+      if (!unlocked && !locked) return null;
+      return "live entitlements · " + unlocked + " unlocked · " + locked + " locked";
+    });
+})();
+</script>
 </body>
 </html>

@@ -131,7 +131,8 @@ window.FHData = (function () {
 
        RULE: a screen NEVER blanks. It keeps its sample markup and says so.
        --------------------------------------------------------------------- */
-    banner: function (tone, text) {
+    _parts: {},
+    banner: function (tone, text, key) {
       var TONE = { real: "#A8D8B0", sample: "#F5CE8F", error: "#F2A69B" };
       var el = document.getElementById("fh-data-banner");
       if (!el) {
@@ -140,6 +141,21 @@ window.FHData = (function () {
         el.setAttribute("role", "status");
         document.body.appendChild(el);
       }
+
+      /* A screen can have MORE THAN ONE data source, and the first version of
+         this let them overwrite each other — products-commissions reported its
+         ledger and silently dropped the product ladder, because whichever
+         wire() resolved last won. Each source now keys its own part and the
+         banner shows all of them, with the worst tone winning: one failed read
+         must not be hidden behind another that succeeded. */
+      this._parts[key || text] = { tone: tone, text: text };
+      var parts = Object.keys(this._parts).map(function (k) { return this._parts[k]; }, this);
+      var RANK = { error: 0, sample: 1, real: 2 };
+      var worst = parts.reduce(function (a, p) {
+        return RANK[p.tone] < RANK[a] ? p.tone : a; }, "real");
+      tone = worst;
+      text = parts.map(function (p) { return p.text; }).join("  ·  ");
+
       el.style.cssText =
         "position:fixed;left:0;right:0;bottom:0;z-index:2147482000;padding:7px 14px;" +
         "background:" + (TONE[tone] || TONE.error) + ";color:#0A0A0A;" +
@@ -152,12 +168,12 @@ window.FHData = (function () {
        screens do not each invent their own wording for "no backend". */
     explain: function (res, what) {
       if (res && res.source === "demo") {
-        this.banner("sample", "sample " + what + " — demo session, the backend was not queried");
+        this.banner("sample", "sample " + what + " — demo session, the backend was not queried", what);
       } else if (res && res.source === "unauthorized") {
-        this.banner("error", "sample " + what + " — not signed in for real data");
+        this.banner("error", "sample " + what + " — not signed in for real data", what);
       } else {
         this.banner("error", "sample " + what + " — backend unavailable (" +
-          ((res && res.source) || "unknown") + ": " + ((res && res.error) || "no detail") + ")");
+          ((res && res.source) || "unknown") + ": " + ((res && res.error) || "no detail") + ")", what);
       }
     },
 
@@ -179,16 +195,16 @@ window.FHData = (function () {
         if (res && res.ok) {
           var note = null;
           try { note = paint(res.data); }
-          catch (e) { self.banner("error", "sample " + what + " — render failed: " + e.message); return; }
-          if (note) { self.banner("real", note); return; }
+          catch (e) { self.banner("error", "sample " + what + " — render failed: " + e.message, what); return; }
+          if (note) { self.banner("real", note, what); return; }
           // Connected, queried, nothing there. Sample markup stays on screen so
           // the layout still reads, and the banner says exactly that.
-          self.banner("sample", "no " + what + " in the database yet — showing sample markup");
+          self.banner("sample", "no " + what + " in the database yet — showing sample markup", what);
           return;
         }
         self.explain(res, what);
       }).catch(function (e) {
-        self.banner("error", "sample " + what + " — " + (e && e.message ? e.message : "read failed"));
+        self.banner("error", "sample " + what + " — " + (e && e.message ? e.message : "read failed"), what);
       });
     }
   };

@@ -1431,5 +1431,59 @@ document.querySelectorAll('.rail-toggle').forEach(function(t){
   t.addEventListener('click',function(){t.closest('.rail').classList.toggle('closed')});
 });
 </script>
+<script src="data.js"></script>
+<script>
+
+/* Command Center — the agent cards carry real registry status from 037.
+   Layout untouched: each card keeps its markup and only its status badge and
+   rail class change, matched by the AG-/OP- code already in the DOM.
+
+   The KPI tiles are NOT wired: "cost per funded client" needs ad spend, which
+   is migration 038 (CAPI/Deluxe) and explicitly deferred. Left as sample. */
+(function () {
+  "use strict";
+  var esc = function (v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
+  };
+  var STATE = {
+    live:    { label: "Active",  cls: "active"  },
+    shadow:  { label: "Shadow",  cls: "shadow"  },
+    draft:   { label: "Draft",   cls: "idle"    },
+    retired: { label: "Retired", cls: "idle"    }
+  };
+
+  FHData.wire(FHData.read("agents", { limit: 200 }), "agent status", function (data) {
+    var rows = data.items || [];
+    if (!rows.length) return null;
+    var byCode = {};
+    rows.forEach(function (a) { byCode[a.code] = a; });
+
+    var touched = 0;
+    var codes = document.querySelectorAll(".agent-code");
+    for (var i = 0; i < codes.length; i++) {
+      var code = codes[i].textContent.trim();
+      var a = byCode[code];
+      if (!a) continue;
+      var card = codes[i].closest(".agent-card");
+      if (!card) continue;
+      var st = STATE[a.status] || STATE.draft;
+
+      var badge = card.querySelector(".status-badge");
+      if (badge) {
+        badge.textContent = st.label;
+        badge.className = "status-badge " + st.cls;
+      }
+      var rail = card.querySelector(".status-rail");
+      if (rail) rail.className = "status-rail " + st.cls;
+      touched++;
+    }
+    if (!touched) return null;
+    var live = rows.filter(function (a) { return a.status === "live"; });
+    return "live agent registry · " + touched + " cards updated · " +
+           live.length + " agent(s) actually live";
+  });
+})();
+</script>
 </body>
 </html>
