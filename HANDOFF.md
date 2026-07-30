@@ -45,9 +45,9 @@ this account. They are the message-template seeders. They skip cleanly and
 un-skip automatically the moment `../fundhub-docs/sources` exists with the three
 copy source docs.
 
-**Gotcha that will cost you 20 minutes:** `src/auth/seed-staff.pg.test.mjs`
-deletes the six staff accounts in its teardown, so a full `npm test` run leaves
-you unable to log in. Re-run step 3 afterwards.
+(That suite used to delete these six accounts in its teardown, so a full
+`npm test` left you unable to log in. Fixed in Unit 14 — it uses throwaway
+`+seedtest` addresses now, and the real six survive a full run.)
 
 ---
 
@@ -65,6 +65,8 @@ Each of these is verified against a real Postgres, not by reading code.
 | Partner isolation | `src/partners/scope.mjs` | Tenancy boundary, mutation-tested three ways |
 | Affiliate economics | `src/affiliates/economics.mjs` | Attribution, accrual, tier 2 |
 | Read APIs | `api/read/*` | 10 endpoints, role-gated, paginated, redacted |
+| Principals | `src/auth/account-session.mjs` | client/affiliate/partner sign-in; partner is invite-only |
+| Brand Studio | `api/partner-brand.mjs` | GET/PUT, Google-fonts-only, applied by shell.js |
 | Health | `api/health.mjs` | Always 200, names its state, leaks no host |
 
 ---
@@ -73,7 +75,8 @@ Each of these is verified against a real Postgres, not by reading code.
 
 ### 1. The screens are not wired (biggest gap)
 
-**2 of 21** read real data: `client-control-panel.html`, `pipeline.html`.
+**6 of 21** read real data: `client-control-panel`, `pipeline`, `documents`,
+`staff-teams`, `affiliate`, `ops-admin`.
 The other 19 render invented sample rows — Command Center, Closer Dashboard,
 Messaging, Galaxy, everything. The read APIs those screens need now exist
 (`/api/read/*` and the widened `/api/dashboard/client`), so this is wiring, not
@@ -88,14 +91,20 @@ Rules that apply when you do it:
 - **Never invent a field.** Anything with no source in the schema keeps its
   sample value and gets reported.
 
-### 2. Only staff can log in
+### 2. Principals can log in, but their screens are not wired
 
-There is no `accounts` table. `client`, `affiliate` and `partner` are referenced
-in `public/app/shell.js` ROLE_TABS but nothing issues them a session, so
-**Client Portal, Affiliate and Partner Galaxy have no one who can sign into
-them**. `partner` is temporarily seeded as a staff role by
-`036_partner_role.sql` purely to make Brand Studio reachable — see the DESIGN
-NOTE in that file; it should be reverted when the accounts table lands.
+`accounts` + `account_sessions` landed in Unit 12 (044). Client, affiliate and
+partner all sign in through `/api/auth/login`, which returns a `principal` field
+so the frontend can route. Partner is invite-only, enforced in code AND by a
+trigger.
+
+What is still missing is the SCREENS: `client-portal.html` and
+`partner-galaxy.html` are still hardcoded sample data, so a principal can now
+authenticate but lands on a wireframe. Wiring those is the remaining work.
+
+`036_partner_role.sql` seeded `partner` into the STAFF catalog as a stopgap. Now
+that real partner accounts exist it should be reverted — see the DESIGN NOTE in
+that file.
 
 ### 3. No production database
 
@@ -113,10 +122,11 @@ no remote Postgres is reachable even with a connection string in hand.
 It is not. All 47 functions are inert. Set `INNGEST_EVENT_KEY` and
 `INNGEST_SIGNING_KEY` **after** a verification pass, not before.
 
-### 5. Brand Studio saves nowhere
+### 5. Brand Studio: backend done, screen not wired
 
-localStorage only — no table, no endpoint, and `shell.js` does not read the
-tokens, so nothing it saves themes anything.
+`043` + `api/partner-brand.mjs` + `shell.js applyBrand()` all landed in Unit 11,
+so tokens persist and are applied at boot. `brand-studio.html` itself still
+writes to localStorage — the screen needs pointing at the endpoint.
 
 ---
 
