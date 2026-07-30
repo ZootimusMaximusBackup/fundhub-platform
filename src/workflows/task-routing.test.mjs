@@ -8,12 +8,15 @@
 //     proof that the value reaches the database rather than merely appearing in
 //     the source.
 //
-//  2. COMPLETENESS — assert the remaining fifteen pass a role from the spec map
-//     and that no workflow still writes a raw INSERT. This is a source check and
-//     is honest about being one; what makes it more than a grep is that
-//     createTask() THROWS on a missing or non-employee role, so the nineteen
-//     existing workflow test files are themselves runtime proof that whatever
-//     each site passes is present and valid.
+//  2. COMPLETENESS — assert the remaining sites pass a role from the spec map and
+//     that nothing still writes a raw INSERT. This is a source check and is honest
+//     about being one; what makes it more than a grep is that createTask() THROWS
+//     on a missing or non-employee role, so the existing workflow test files are
+//     themselves runtime proof that whatever each site passes is present and valid.
+//
+// TWENTY sites, not nineteen: src/handlers/comms.mjs creates the Cal.com
+// "Strategy session booked" task and is not a workflow, so the first routing pass
+// missed it. It is routed to closer — a booked strategy session is a sales call.
 
 import { test, describe } from "node:test";
 import assert from "node:assert";
@@ -33,6 +36,11 @@ const SPEC = {
   "s-06": "closer", "s-08": "closer",
   "ds-02": "admin"
 };
+
+// Task writers outside src/workflows. Same requirement, different directory.
+const NON_WORKFLOW_SITES = [
+  { file: "src/handlers/comms.mjs", role: "closer" }
+];
 
 /* Templates are defined per-test-file in this suite rather than exported from
    test-support, so this is the local one. It is permissive on purpose: these
@@ -120,9 +128,35 @@ describe("task role routing", () => {
     assert.equal(db.tasks[0].assignee_role, "admin");
   });
 
-  // ── layer 2: completeness across all nineteen ──
+  test("comms.mjs routes the Cal.com booking task to closer", async () => {
+    const { onBookingCreated } = await import("../handlers/comms.mjs");
+    // Fixture from comms.test.mjs's booking case: resolveClient matches on email.
+    const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }] });
+    await onBookingCreated({
+      id: "evt-booking-1", orgId: "org-1", clientId: "cl-1", name: "booking.created",
+      payload: { email: "a@b.com", bookingUid: "bk-1", startTime: "2026-09-01T15:00:00Z" }
+    }, db);
+    assert.equal(db.tasks.length, 1, "comms.mjs created no task");
+    assert.equal(db.tasks[0].assignee_role, "closer");
+    assert.equal(db.tasks[0].source_workflow, "calcom");
+    assert.equal(db.tasks[0].assignee_staff_id, null);
+  });
 
-  test("all nineteen routed workflows exist and pass a role from the spec", () => {
+  test("comms.mjs booking task still dedupes on the booking uid", async () => {
+    const { onBookingCreated } = await import("../handlers/comms.mjs");
+    const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }] });
+    const evt = {
+      id: "evt-booking-2", orgId: "org-1", clientId: "cl-1", name: "booking.created",
+      payload: { email: "a@b.com", bookingUid: "bk-2", startTime: null }
+    };
+    await onBookingCreated(evt, db);
+    await onBookingCreated(evt, db);
+    assert.equal(db.tasks.length, 1, "replay double-created the booking task");
+  });
+
+  // ── layer 2: completeness across all twenty ──
+
+  test("all twenty routed sites exist and pass a role from the spec", () => {
     const missing = [];
     const wrong = [];
     for (const [key, role] of Object.entries(SPEC)) {
@@ -133,8 +167,15 @@ describe("task role routing", () => {
       if (!found.length) missing.push(`${key} (no assigneeRole)`);
       else if (!found.every((r) => r === role)) wrong.push(`${key}: ${found} ≠ ${role}`);
     }
-    assert.deepEqual(missing, [], `workflows with no role: ${missing}`);
-    assert.deepEqual(wrong, [], `workflows routed to the wrong role: ${wrong}`);
+    for (const { file, role } of NON_WORKFLOW_SITES) {
+      const src = fs.readFileSync(path.join(process.cwd(), file), "utf8");
+      const found = [...src.matchAll(/assigneeRole:\s*"([a-z_]+)"/g)].map((m) => m[1]);
+      if (!found.length) missing.push(`${file} (no assigneeRole)`);
+      else if (!found.every((r) => r === role)) wrong.push(`${file}: ${found} ≠ ${role}`);
+    }
+    assert.deepEqual(missing, [], `sites with no role: ${missing}`);
+    assert.deepEqual(wrong, [], `sites routed to the wrong role: ${wrong}`);
+    assert.equal(Object.keys(SPEC).length + NON_WORKFLOW_SITES.length, 20);
   });
 
   test("every role in the spec is one createTask accepts", () => {
@@ -143,10 +184,24 @@ describe("task role routing", () => {
     }
   });
 
-  test("no workflow writes a raw INSERT INTO tasks any more", () => {
-    const offenders = files.filter((f) =>
-      f !== "test-support.mjs" &&
-      /INSERT INTO tasks/.test(fs.readFileSync(path.join(DIR, f), "utf8")));
+  test("nothing writes a raw INSERT INTO tasks any more", () => {
+    // Whole tree, not just src/workflows — comms.mjs is exactly the case a
+    // workflows-only sweep missed the first time.
+    const offenders = [];
+    const walk = (dir) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) { walk(full); continue; }
+        if (!e.name.endsWith(".mjs")) continue;
+        const rel = path.relative(process.cwd(), full);
+        // The helper itself is the one legitimate writer; the pgFake and the
+        // tests only pattern-match on the SQL.
+        if (rel.endsWith("src/lib/create-task.mjs")) continue;
+        if (e.name.includes(".test.") || e.name === "test-support.mjs") continue;
+        if (/INSERT INTO tasks/.test(fs.readFileSync(full, "utf8"))) offenders.push(rel);
+      }
+    };
+    walk(path.join(process.cwd(), "src"));
     assert.deepEqual(offenders, [],
       `these bypass createTask and so can create work with no owner: ${offenders}`);
   });

@@ -18,6 +18,7 @@
 import { on } from "../events/registry.mjs";
 import { resolveClient } from "./client-lifecycle.mjs";
 import { recordOptOut, recordOptIn } from "../lib/opt-out.mjs";
+import { createTask } from "../lib/create-task.mjs";
 
 // TCPA standard opt-out and opt-in keyword sets (case-insensitive, trimmed).
 const STOP_KEYWORDS  = new Set(["STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"]);
@@ -101,12 +102,18 @@ export async function onBookingCreated(event, db) {
     [clientId, uid]
   );
   if (uid && dup.rows[0]) return;
-  await db.query(
-    `INSERT INTO tasks (org_id, client_id, title, body, due_at, source_workflow)
-     VALUES ($1,$2,$3,$4,$5,'calcom')
-     ON CONFLICT DO NOTHING`,
-    [event.orgId, clientId, "Strategy session booked", uid, p.startTime || null]
-  );
+  // Routed to closer: a booked strategy session is a sales call, and the closer
+  // takes it. This was the last task writer still creating work with no owner —
+  // it is not a workflow, so it was outside the 19 the routing pass covered.
+  await createTask(db, {
+    orgId: event.orgId,
+    clientId,
+    title: "Strategy session booked",
+    sourceWorkflow: "calcom",
+    assigneeRole: "closer",
+    dueAt: p.startTime || null,
+    eventId: uid
+  });
 }
 
 export function register() {
