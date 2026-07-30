@@ -187,7 +187,21 @@ export async function handleCommasWebhook({ db, rawBody, signatureHeader, secret
       providerRef: evt.id, // Commas txn id — lets the payment handler dedup on replay
       source: "commas"
     };
-    const idKey = evt.id ? `commas:${evt.id}:${c.name}` : undefined;
+    /* An event with no provider id used to get NO idempotency key at all, so a
+       redelivered webhook emitted a second payment.received and the money was
+       counted twice in transactions. evt.id already has four fallbacks and can
+       still come back null, and "the provider always sends one" is not a
+       property this code can rely on for money.
+
+       Falling back to a hash of the exact bytes: a webhook RETRY is by
+       definition byte-identical, so it dedupes, and no semantic guess is made
+       about which fields identify a payment. Two genuinely distinct payments
+       would have to be byte-identical to collide — same amount, same email,
+       same product, and no id or timestamp anywhere in the body — which is a
+       payload that could not be deduplicated by any means. */
+    const idKey = evt.id
+      ? `commas:${evt.id}:${c.name}`
+      : `commas:body:${crypto.createHash("sha256").update(rawBody || "").digest("hex")}:${c.name}`;
     const res = await emit(db, c.name, payload, { idempotencyKey: idKey });
     emitted.push({ name: c.name, id: res.id, deduped: res.deduped });
   }
