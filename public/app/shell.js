@@ -376,6 +376,50 @@
     });
   }
 
+  /* applyBrand — a white-label partner's tokens over the CSS custom properties,
+     at boot.
+
+     Brand Studio used to save to localStorage and nothing read it, so nothing it
+     saved themed anything. This is the read half.
+
+     FALLS BACK TO FUNDHUB. No principal, no partner, no row, or a failed
+     request all leave the stylesheet untouched — the default brand is what the
+     page already has, so doing nothing IS the fallback. A partner surface must
+     never render unstyled because a brand lookup failed.
+
+     Only ink, paper and the six-stop ramp are applied. Font faces are NOT
+     injected here: that would need a stylesheet link to fonts.googleapis.com
+     built from a partner-supplied string, and the value is validated but the
+     link is still a request this file should not be constructing. Left for the
+     funnel renderer, which already owns its <head>. */
+  function applyBrand(staff) {
+    var partnerId = staff && (staff.partner_id || staff.partnerId);
+    if (!partnerId) return;                       // fundhub staff — nothing to do
+
+    fetch("/api/partner-brand?partner_id=" + encodeURIComponent(partnerId), {
+      headers: { accept: "application/json" }
+    }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !d.ok || !d.brand) return;
+        var b = d.brand;
+        var root = document.documentElement;
+        var HEX = /^#[0-9a-fA-F]{6}$/;
+        // Re-validated here even though 043 has a CHECK: a custom property
+        // accepts url() and expressions, so this is the last gate before the
+        // value reaches the stylesheet.
+        if (HEX.test(String(b.ink || ""))) root.style.setProperty("--ink", b.ink);
+        if (HEX.test(String(b.paper || ""))) root.style.setProperty("--paper", b.paper);
+        if (Array.isArray(b.ramp) && b.ramp.length === 6) {
+          b.ramp.forEach(function (stop, i) {
+            if (HEX.test(String(stop))) root.style.setProperty("--brand-" + (i + 1), stop);
+          });
+        }
+        var chip = document.getElementById("fh-shell-chip");
+        if (chip && b.entity_name) chip.setAttribute("data-brand", b.entity_name);
+      })
+      .catch(function () { /* fundhub default stays — see the comment above */ });
+  }
+
   function onReady(fn) {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
     else fn();
@@ -418,6 +462,7 @@
     onReady(function () {
       gateLinks(ok, role);
       mountChip(sess.staff, sess.demo);
+      applyBrand(sess.staff);
       reveal();
     });
   }).catch(function () {
