@@ -8,6 +8,7 @@
 import { isCanonical } from "./canonical.mjs";
 import { getHandlers } from "./registry.mjs";
 import { inngest } from "../workflows/client.mjs";
+import { record as recordFailure, handlerName } from "./dead-letter.mjs";
 
 const DEFAULT_ORG = process.env.DEFAULT_ORG_SLUG || "fundhub";
 
@@ -37,11 +38,15 @@ export async function emit(db, name, payload = {}, opts = {}) {
     return { id: null, deduped: true };
   }
   const id = insert.rows[0].id;
-  await dispatch(db, { id, name, version, orgId, clientId: opts.clientId || null, payload });
+  const dispatched = await dispatch(
+    db,
+    { id, name, version, orgId, clientId: opts.clientId || null, payload },
+    { throwOnHandlerError: opts.throwOnHandlerError === true }
+  );
   if (process.env.INNGEST_EVENT_KEY) {
     try { await inngest.send({ name, data: { id, payload, orgId, clientId: opts.clientId || null } }); } catch (_) { /* non-fatal */ }
   }
-  return { id, deduped: false };
+  return { id, deduped: false, dispatched };
 }
 
 // replay — re-dispatch stored events (by name and/or since a timestamp).
@@ -58,17 +63,87 @@ export async function replay(db, filter = {}) {
   )).rows;
   let dispatched = 0;
   for (const r of rows) {
-    await dispatch(db, { id: r.id, name: r.name, version: r.version, orgId: r.org_id, clientId: r.client_id, payload: r.payload });
+    // The replay validator wants a failing handler to be loud, not absorbed
+    // into the queue, so replay keeps the original throw-through behaviour
+    // unless the caller asks otherwise.
+    await dispatch(
+      db,
+      { id: r.id, name: r.name, version: r.version, orgId: r.org_id, clientId: r.client_id, payload: r.payload },
+      { throwOnHandlerError: filter.throwOnHandlerError !== false }
+    );
     await db.query(`UPDATE events SET replayed_at = now() WHERE id = $1`, [r.id]);
     dispatched += 1;
   }
   return { dispatched };
 }
 
-async function dispatch(db, event) {
-  for (const handler of getHandlers(event.name)) {
-    await handler(event, db); // handlers are idempotent per the spec
+/* dispatch — run every handler for an event, in isolation.
+
+   This used to be a bare `await handler(event, db)` in a loop, which coupled
+   handlers to each other and to the caller: the first one to throw skipped every
+   handler after it and rejected out of emit() into whichever adapter called it.
+   A webhook then returned 5xx, and nothing durable said which handler failed or
+   why. That is the silent-2am-failure the dead-letter queue exists for.
+
+   Now each handler is caught individually and its failure recorded, so:
+     - a bad handler cannot suppress its siblings
+     - the event stays committed (it always was — `events` is written first)
+     - the work that was owed is recorded and retryable
+
+   emit() still rejects if EVERY handler failed and none could be recorded,
+   because at that point the queue is not working either and the caller must
+   hear about it. Otherwise dispatch resolves and reports what happened.
+
+   `throwOnHandlerError` restores the old behaviour for tests and for the replay
+   validator, which wants a failing handler to be loud rather than absorbed. */
+async function dispatch(db, event, { throwOnHandlerError = false } = {}) {
+  const handlers = getHandlers(event.name);
+  const failures = [];
+  let recorded = 0;
+
+  for (let i = 0; i < handlers.length; i++) {
+    const handler = handlers[i];
+    try {
+      await handler(event, db); // handlers are idempotent per the spec
+    } catch (err) {
+      if (throwOnHandlerError) throw err;
+      const name = handlerName(handler, `handler[${i}]:${event.name}`);
+      failures.push({ handler: name, error: err });
+      const res = await recordFailure(db, {
+        orgId: event.orgId,
+        eventId: event.id,
+        eventName: event.name,
+        eventVersion: event.version,
+        clientId: event.clientId || null,
+        payload: event.payload || {},
+        handler: name,
+        error: err
+      });
+      if (res.ok) recorded += 1;
+      else {
+        // The queue itself is down. Say so on the way past — this is the one
+        // failure mode that genuinely loses work.
+        console.error(
+          `[bus] handler ${name} failed for ${event.name} AND the dead-letter ` +
+          `write failed: ${res.error}. Original: ${err && err.message}`
+        );
+      }
+    }
   }
+
+  // Every handler failed and not one could be queued: the caller must not be
+  // told this succeeded.
+  if (handlers.length > 0 && failures.length === handlers.length && recorded === 0) {
+    const first = failures[0];
+    const e = new Error(
+      `all ${failures.length} handler(s) for "${event.name}" failed and none could be ` +
+      `dead-lettered: ${first.error && first.error.message}`
+    );
+    e.cause = first.error;
+    throw e;
+  }
+
+  return { handlers: handlers.length, failed: failures.length, recorded };
 }
 
 let _orgCache = null;
