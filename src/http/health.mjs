@@ -20,13 +20,34 @@
 // ok:false still means "do not trust this deployment"; it does not mean "this
 // request failed".
 
-// Connection errors quote the DSN often enough to matter, and the DSN carries
-// the password. Nothing from a driver error reaches the client unscrubbed.
+// Nothing from a driver error reaches the client unscrubbed.
+//
+// This endpoint is UNAUTHENTICATED — public/app/shell.js reads it before there is
+// a session — so anything in the body is world-readable. Three things leak
+// through a raw pg error and all three are scrubbed:
+//
+//   the DSN          "could not connect to postgres://user:pw@host/db"  → password
+//   the hostname     "getaddrinfo ENOTFOUND ep-xyz.us-east-2.aws.neon.tech"
+//   the address      "connect ECONNREFUSED 10.0.3.14:5432"
+//
+// The hostname and address are the ones easy to miss: they arrive from
+// getaddrinfo/connect rather than from a quoted URL, so a DSN-only scrub lets the
+// database endpoint out. An operator needs the FAILURE CLASS, which `state` and
+// the driver code already give; the host adds nothing they cannot get from their
+// own configuration.
 export function safeError(err) {
   var msg = String((err && err.message) || "database error");
   return msg
+    // Full DSN first, so its host is gone before the host rules run.
     .replace(/postgres(ql)?:\/\/[^\s"']+/gi, "postgres://[redacted]")
     .replace(/password=\S+/gi, "password=[redacted]")
+    // getaddrinfo <CODE> <host>
+    .replace(/(getaddrinfo\s+[A-Z_]+)\s+\S+/g, "$1 [redacted]")
+    // connect <CODE> <host-or-ip>[:port]
+    .replace(/(connect\s+[A-Z_]+)\s+\S+/g, "$1 [redacted]")
+    // Any bare host:port that survived the above.
+    .replace(/\b(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?\b/g, "[redacted]")
+    .replace(/\b[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+){2,}(?::\d+)?\b/gi, "[redacted]")
     .slice(0, 200);
 }
 

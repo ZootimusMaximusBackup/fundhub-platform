@@ -270,11 +270,11 @@ test("formatReport: an empty body is listed, never summarised away", () => {
 // ------------------------------------------------- the real docs, if present
 
 test("the real source docs parse to the counts the docs themselves claim", async (t) => {
-  const { resolveDocsDir, collect } = await import("./collect.mjs");
-  let docsDir;
-  try {
-    docsDir = resolveDocsDir();
-  } catch {
+  const { findDocsDir, collect } = await import("./collect.mjs");
+  // A value, not an exception: catching everything here would have turned a real
+  // resolver bug into a silent skip.
+  const docsDir = findDocsDir();
+  if (!docsDir) {
     t.skip("fundhub-docs not checked out next to this repo");
     return;
   }

@@ -38,6 +38,45 @@ test("a connected-but-failing query is 'error' — schema missing, bad perms", a
   assert.match(b.error, /schema_migrations/);
 });
 
+test("the reported error never carries the database host or address", async () => {
+  // /api/health is UNAUTHENTICATED, so this body is world-readable. A DSN-only
+  // scrub is not enough: getaddrinfo and connect report the endpoint directly,
+  // without a URL around it.
+  const cases = [
+    ["getaddrinfo ENOTFOUND ep-cool-db-123.us-east-2.aws.neon.tech",
+     /aws\.neon\.tech|ep-cool-db-123/],
+    ["connect ECONNREFUSED 10.0.3.14:5432", /10\.0\.3\.14/],
+    ["connect ETIMEDOUT 172.16.9.2:5432", /172\.16\.9\.2/],
+    ["could not connect to db.internal.example.com:5432", /db\.internal\.example\.com/]
+  ];
+  for (const [raw, mustNotAppear] of cases) {
+    const out = safeError(err(raw, "ECONNREFUSED"));
+    assert.doesNotMatch(out, mustNotAppear, `leaked from: ${raw}`);
+    assert.match(out, /\[redacted\]/, `nothing redacted in: ${raw}`);
+  }
+
+  // …while the failure CLASS still survives, which is the whole point of a body.
+  assert.match(safeError(err("getaddrinfo ENOTFOUND some.host.example")), /ENOTFOUND/);
+  assert.match(safeError(err("connect ECONNREFUSED 10.0.0.1:5432")), /ECONNREFUSED/);
+
+  // And a schema/permission error stays fully readable — no host in it to scrub.
+  assert.equal(
+    safeError(err('relation "schema_migrations" does not exist')),
+    'relation "schema_migrations" does not exist'
+  );
+  assert.equal(
+    safeError(err("permission denied for table schema_migrations")),
+    "permission denied for table schema_migrations"
+  );
+});
+
+test("an unreachable host produces no host in the body, end to end", async () => {
+  const leaky = err("getaddrinfo ENOTFOUND ep-secret.us-east-2.aws.neon.tech", "ENOTFOUND");
+  const b = await healthState(throwing(leaky), AT);
+  assert.equal(b.state, "unreachable");
+  assert.doesNotMatch(JSON.stringify(b), /neon\.tech|ep-secret/);
+});
+
 test("the reported error never carries the DSN or a password", async () => {
   const leaky = err(
     'could not connect to postgres://fundhub:sup3rs3cret@db.example.com:5432/fundhub',

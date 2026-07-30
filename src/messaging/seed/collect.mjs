@@ -44,16 +44,58 @@ export const SOURCES = [
   },
 ];
 
-export function resolveDocsDir(override) {
+// hasSources — does this directory actually hold the docs we need? Existence of
+// the directory is not enough, and that distinction is load-bearing: this repo
+// contains its own fundhub-docs/sources/ holding only AIRTABLE-BASE-EXTRACT.md,
+// which used to win the candidate search on existence alone. resolveDocsDir()
+// then returned a directory that could not satisfy a single source, and
+// readSources() failed with "source doc missing" — burying the real problem
+// (the sibling repo is not cloned) under a confusing error, in eight tests at
+// once. A candidate only counts if the docs are in it.
+export function hasSources(dir, sources = SOURCES) {
+  return sources.every((s) => fs.existsSync(path.join(dir, s.file)));
+}
+
+export function missingSources(dir, sources = SOURCES) {
+  return sources.filter((s) => !fs.existsSync(path.join(dir, s.file))).map((s) => s.file);
+}
+
+// findDocsDir — the usable docs directory, or null. Never throws, so a caller
+// that can legitimately carry on without the docs (a test, a screen falling back
+// to sample markup) can ask without a try/catch.
+export function findDocsDir(override, sources = SOURCES) {
+  const explicit = override || process.env.FUNDHUB_DOCS;
+  if (explicit) {
+    return fs.existsSync(explicit) && hasSources(explicit, sources) ? explicit : null;
+  }
+  for (const c of DOCS_CANDIDATES) {
+    if (fs.existsSync(c) && hasSources(c, sources)) return c;
+  }
+  return null;
+}
+
+export function resolveDocsDir(override, sources = SOURCES) {
+  const found = findDocsDir(override, sources);
+  if (found) return found;
+
   const explicit = override || process.env.FUNDHUB_DOCS;
   if (explicit) {
     if (!fs.existsSync(explicit)) throw new Error(`docs dir not found: ${explicit}`);
-    return explicit;
+    throw new Error(
+      `docs dir ${explicit} is missing: ${missingSources(explicit, sources).join(", ")}`
+    );
   }
-  for (const c of DOCS_CANDIDATES) if (fs.existsSync(c)) return c;
+
+  // Say which candidates exist but are incomplete, separately from the ones that
+  // are simply absent. "It's right there but empty" and "it isn't cloned" need
+  // different fixes.
+  const lines = DOCS_CANDIDATES.map((c) => {
+    if (!fs.existsSync(c)) return `  ${c} — not present`;
+    return `  ${c} — present but missing: ${missingSources(c, sources).join(", ")}`;
+  });
   throw new Error(
-    `Could not find fundhub-docs/sources. Tried:\n  ${DOCS_CANDIDATES.join("\n  ")}\n` +
-      `Clone it next to this repo or pass --docs=<dir> / FUNDHUB_DOCS=<dir>.`
+    `Could not find a fundhub-docs/sources containing the copy source docs.\n${lines.join("\n")}\n` +
+      `Clone fundhub-docs next to this repo or pass --docs=<dir> / FUNDHUB_DOCS=<dir>.`
   );
 }
 

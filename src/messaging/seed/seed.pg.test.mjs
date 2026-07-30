@@ -12,16 +12,15 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { db, close } from "../../db.mjs";
-import { collect, resolveDocsDir } from "./collect.mjs";
+import { collect, findDocsDir } from "./collect.mjs";
 import { seedTemplates } from "./seed.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
-let docsDir = null;
-try {
-  docsDir = resolveDocsDir();
-} catch {
-  docsDir = null;
-}
+// findDocsDir() returns null rather than throwing, so "the sibling repo is not
+// cloned" is expressed as a value. The previous try/catch around resolveDocsDir()
+// swallowed EVERY error into a skip, which would have hidden a real bug in the
+// resolver as "nothing to test".
+const docsDir = findDocsDir();
 const RUN = HAS_DB && !!docsDir;
 
 let seedable = [];
