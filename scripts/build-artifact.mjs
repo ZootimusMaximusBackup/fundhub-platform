@@ -91,6 +91,58 @@ const GROUPS = [
    CRM, and the shell's own keys still work while focus is inside the frame.
    Runs at the end of the document so it sees the finished DOM. */
 const BRIDGE = (rel) => `
+<style>
+/* Role-based nav visibility. Affiliates see affiliate+client. Clients see client only.
+   Partners see partner+client. Public pages have no sidebar. Staff sees all. */
+[data-role="affiliate"] .navitem[href*="campaign"],
+[data-role="affiliate"] .navitem[href*="social"],
+[data-role="affiliate"] .navitem[href*="creative"],
+[data-role="affiliate"] .navitem[href*="command"],
+[data-role="affiliate"] .navitem[href*="ops-admin"],
+[data-role="affiliate"] .navitem[href*="galaxy"],
+[data-role="affiliate"] .navitem[href*="automations"],
+[data-role="affiliate"] .navitem[href*="agent"],
+[data-role="affiliate"] .navitem[href*="hiring"],
+[data-role="affiliate"] .navitem[href*="products"],
+[data-role="affiliate"] .navitem[href*="staff"],
+[data-role="affiliate"] .navitem[href*="content"],
+[data-role="affiliate"] .navitem[href*="brand"],
+[data-role="affiliate"] .navitem[href*="inquiry"],
+[data-role="affiliate"] .navitem[href*="sample"],
+[data-role="affiliate"] .navitem[href*="closer"],
+[data-role="affiliate"] .navitem[href*="pipeline"],
+[data-role="affiliate"] .navitem[href*="client-control"],
+[data-role="affiliate"] .navitem[href*="messaging"],
+[data-role="affiliate"] .navitem[href*="calendar"],
+[data-role="affiliate"] .navitem[href*="documents"],
+[data-role="affiliate"] .navgroup{display:none}
+
+[data-role="client"] .navitem[href!="client-portal.html"],
+[data-role="client"] .navgroup{display:none}
+
+[data-role="partner"] .navitem[href*="campaign"],
+[data-role="partner"] .navitem[href*="social"],
+[data-role="partner"] .navitem[href*="creative"],
+[data-role="partner"] .navitem[href*="command"],
+[data-role="partner"] .navitem[href*="ops-admin"],
+[data-role="partner"] .navitem[href*="galaxy:not([href*='partner'])"],
+[data-role="partner"] .navitem[href*="automations"],
+[data-role="partner"] .navitem[href*="agent"],
+[data-role="partner"] .navitem[href*="hiring"],
+[data-role="partner"] .navitem[href*="products"],
+[data-role="partner"] .navitem[href*="staff"],
+[data-role="partner"] .navitem[href*="content"],
+[data-role="partner"] .navitem[href*="brand"],
+[data-role="partner"] .navitem[href*="inquiry"],
+[data-role="partner"] .navitem[href*="sample"],
+[data-role="partner"] .navitem[href*="closer"],
+[data-role="partner"] .navitem[href*="pipeline"],
+[data-role="partner"] .navitem[href*="client-control"],
+[data-role="partner"] .navitem[href*="messaging"],
+[data-role="partner"] .navitem[href*="calendar"],
+[data-role="partner"] .navitem[href*="documents"],
+[data-role="partner"] .navgroup{display:none}
+</style>
 <script>
 (function(){
   var ROUTE = ${JSON.stringify(rel)};
@@ -155,6 +207,28 @@ function resolveRel(pageRel, href) {
    are written into the pages themselves, so dropping it shows all of them. */
 const SKIP_SCRIPTS = new Set(["app/shell.js"]);
 
+/* Role-based sidebar visibility. Maps page routes to the role that sees them.
+   Staff sees all pages; clients/affiliates/partners see only their allowed screens. */
+const ROLE_MAP = {
+  // External principals
+  "app/affiliate.html": "affiliate",
+  "app/client-portal.html": ["affiliate", "client", "partner", "staff"],
+  "app/partner-galaxy.html": "partner",
+  // Public
+  "index.html": "public",
+  "dashboard.html": "public",
+  "login.html": "public",
+  "affiliates/index.html": "public",
+  "education/index.html": "public",
+  "education/terms/index.html": "public",
+  "education/privacy/index.html": "public",
+  "education/refund/index.html": "public",
+  "terms/index.html": "public",
+  "privacy/index.html": "public",
+  "404.html": "public",
+  // Everything else is staff
+};
+
 const inlined = new Map(); // rel -> text, so shared assets are read once
 
 function assetText(rel) {
@@ -195,7 +269,9 @@ function bundlePage(rel) {
     }
   );
 
-  html = html.replace(/<html/i, `<html data-fh-route="${rel}"`);
+  const role = ROLE_MAP[rel] || "staff";
+  const roleAttr = typeof role === "string" ? role : role[0];
+  html = html.replace(/<html/i, `<html data-fh-route="${rel}" data-role="${roleAttr}"`);
 
   const bridge = BRIDGE(rel);
   if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, () => `${bridge}</body>`);
