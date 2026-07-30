@@ -238,11 +238,20 @@ export async function resolveClientFromRecipient(db, recipient) {
 export async function handleMailgunWebhook({ db, body, signingKey }) {
   const evt = normalizeMailgunEvent(body);
 
-  // Verify — fail-closed only when signingKey is set
-  if (signingKey) {
-    if (!verifyMailgunSignature(evt.timestamp, evt.token, evt.signature, signingKey)) {
-      return { ok: false, status: 401, reason: "bad_signature", emitted: [] };
-    }
+  /* FAIL CLOSED, unconditionally — matching every other adapter.
+
+     This used to be wrapped in `if (signingKey)`, so an absent MAILGUN_SIGNING_KEY
+     skipped verification altogether and ANY caller could POST a forged payload
+     and have it emitted onto the canonical event bus as a real mail.response.
+     .env.example ships the key blank and APPLY-NOTES never mentions it, so that
+     was the shipped configuration, not a hypothetical.
+
+     verifyMailgunSignature already returns false for a missing key; the bug was
+     never calling it. commas/twilio/calcom/bland/clickfunnels all fail closed —
+     mailgun was the sole exception, and the file's own header comment claimed
+     otherwise. */
+  if (!verifyMailgunSignature(evt.timestamp, evt.token, evt.signature, signingKey)) {
+    return { ok: false, status: 401, reason: "bad_signature", emitted: [] };
   }
 
   const { event_type: classification } = classifyFull({

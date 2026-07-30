@@ -13,10 +13,28 @@ import { db } from "../../src/db.mjs";
 
 export const config = { api: { bodyParser: false } };
 
+/* readRawBody — the exact bytes the provider signed.
+
+   TWO RUNTIMES, TWO SHAPES. On Vercel `req` is a Node stream and the body parser
+   is disabled above, so it has to be drained. On Netlify — the only deployed
+   target — netlify/functions/api.mjs has ALREADY read the body and hands the
+   handler a plain object carrying `rawBody`. Iterating that object threw
+   "req is not async iterable", which the adapter turned into a 500, so every
+   inbound webhook from all six providers died before signature verification ever
+   ran. Prefer the string the adapter already computed; drain only if it is
+   genuinely a stream. */
 async function readRawBody(req) {
-  const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
-  return Buffer.concat(chunks).toString("utf8");
+  if (typeof req?.rawBody === "string") return req.rawBody;
+  if (Buffer.isBuffer(req?.rawBody)) return req.rawBody.toString("utf8");
+  // A body-parsed object is NOT usable: re-serialising it would not reproduce
+  // the bytes the provider signed, so a signature check over it would fail in a
+  // way that looks like an attack rather than a bug. Say so instead.
+  if (req && typeof req[Symbol.asyncIterator] === "function") {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    return Buffer.concat(chunks).toString("utf8");
+  }
+  throw new Error("no raw body available — signature cannot be verified over re-serialised JSON");
 }
 
 export default async function handler(req, res) {
@@ -25,9 +43,11 @@ export default async function handler(req, res) {
     return;
   }
   const provider = req.query?.provider;
-  const rawBody = await readRawBody(req);
   const url = `https://${req.headers.host}${req.url}`;
   try {
+    // Inside the try. This used to sit outside it, so a body-reading failure
+    // escaped to the platform's generic catch as an opaque 500.
+    const rawBody = await readRawBody(req);
     const out = await handleWebhook({ db, provider, rawBody, headers: req.headers, url });
     res.status(out.status).json(out.body);
   } catch (err) {
