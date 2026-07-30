@@ -131,20 +131,55 @@ export function requireRole(res, staff, roleSet) {
 
    `fetch(db, { limit, offset, query, staff })` must return an array of rows; it
    should SELECT limit+1 so `hasMore` is accurate. */
-export function readHandler({ roles, fetch, single = false }) {
+/* PRINCIPALS. `principals` names the NON-STAFF kinds an endpoint serves —
+   {"client"}, {"partner"} — and is absent by default, so every endpoint keeps
+   admitting staff only unless it opts in.
+
+   This is what src/partners/scope.mjs was written for and was never wired to.
+   Nothing called it, no api/read/* query filtered partner_id, and the
+   consequence was quiet rather than dangerous: a client or partner could sign in
+   and then read NOTHING, because every endpoint 401'd them. client-portal and
+   partner-galaxy showed a signed-in principal a wireframe.
+
+   When an endpoint opts in, `fetch` receives the resolved `principal` and MUST
+   scope its own SQL with it. There is no automatic scoping here on purpose: a
+   wrapper that silently appended a WHERE clause would be one refactor away from
+   silently not appending it. The endpoint's SQL says who it is for, in the open,
+   where a reviewer reads it. */
+export function readHandler({ roles, fetch, single = false, principals = null }) {
   return async function handler(req, res, deps) {
-    const { db, requireAuth } = deps;
+    const { db, requireAuth, requirePrincipal } = deps;
     if (req.method && req.method !== "GET") {
       return res.status(405).json({ ok: false, error: "method_not_allowed" });
     }
-    const staff = await requireAuth(req, res, { db });
-    if (!staff) return;
-    if (!requireRole(res, staff, roles)) return;
+
+    let staff = null;
+    let principal = null;
+
+    if (principals && principals.size) {
+      if (typeof requirePrincipal !== "function") {
+        // Fail closed: an endpoint that declares principals but was not given
+        // the resolver must not fall back to the staff-only path and quietly
+        // serve staff data to nobody's satisfaction.
+        return res.status(500).json({ ok: false, error: "misconfigured_endpoint" });
+      }
+      principal = await requirePrincipal(req, res, ["staff", ...principals], { db });
+      if (!principal) return;
+      if (principal.kind === "staff") {
+        staff = principal.staff || { role: principal.role };
+        if (!requireRole(res, staff, roles)) return;
+      }
+      // A non-staff principal is admitted by KIND; roles do not apply to it.
+    } else {
+      staff = await requireAuth(req, res, { db });
+      if (!staff) return;
+      if (!requireRole(res, staff, roles)) return;
+    }
 
     try {
       const query = req.query || {};
       const { limit, offset } = pageParams(query);
-      const rows = await fetch(db, { limit, offset, query, staff });
+      const rows = await fetch(db, { limit, offset, query, staff, principal });
       if (single) {
         const row = Array.isArray(rows) ? rows[0] : rows;
         if (!row) return res.status(404).json({ ok: false, error: "not_found" });

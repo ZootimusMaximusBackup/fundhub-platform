@@ -73,7 +73,7 @@ node db/migrate.mjs
 STAFF_INITIAL_PASSWORD='<pick one, 12+ chars>' node scripts/seed-staff.mjs
 
 # 4. tests
-npm test                    # 1338 tests, 0 failures, 8 skipped
+npm test                    # 1348 tests, 0 failures, 8 skipped
 
 # 5. the app — screens AND a working /api/*
 node scripts/dev-server.mjs
@@ -109,7 +109,7 @@ Each of these is verified against a real Postgres, not by reading code.
 | Task routing | `src/lib/create-task.mjs` | All 20 task-writing sites route to an owning role |
 | Entitlements | `src/entitlements/` | Grants, catalog, locked tiles |
 | Agent registry | `src/agents/registry.mjs` | 14 agents; only Setter Josh + Inquiry Removal AI are live |
-| Partner isolation | `src/partners/scope.mjs` | **WRITTEN BUT NOT WIRED — zero production importers.** The module and its tests are sound; nothing calls it. No `api/read/*` query filters `partner_id`. Currently moot because no endpoint admits a non-staff principal at all (they all 401), but it must be wired before one does. `042_partners.sql:89`'s column comment claiming otherwise is wrong. |
+| Partner isolation | `src/partners/scope.mjs` | **NOW WIRED.** `api/read/partners` is its first production caller. A partner principal sees exactly their own row; staff still see the whole book. Adversarially tested in `src/http/principal-reads.pg.test.mjs`. Other endpoints do not admit partners at all, so there is nothing else to scope yet. |
 | Affiliate economics | `src/affiliates/economics.mjs` | Attribution, accrual, tier 2 |
 | Read APIs | `api/read/*` | 13 endpoints, role-gated, paginated, redacted |
 | Principals | `src/auth/account-session.mjs` | client/affiliate/partner sign-in; partner is invite-only |
