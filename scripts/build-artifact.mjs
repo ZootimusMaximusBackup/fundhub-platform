@@ -91,62 +91,50 @@ const GROUPS = [
    CRM, and the shell's own keys still work while focus is inside the frame.
    Runs at the end of the document so it sees the finished DOM. */
 const BRIDGE = (rel) => `
-<style>
-/* Role-based nav visibility. Affiliates see affiliate+client. Clients see client only.
-   Partners see partner+client. Public pages have no sidebar. Staff sees all. */
-[data-role="affiliate"] .navitem[href*="campaign"],
-[data-role="affiliate"] .navitem[href*="social"],
-[data-role="affiliate"] .navitem[href*="creative"],
-[data-role="affiliate"] .navitem[href*="command"],
-[data-role="affiliate"] .navitem[href*="ops-admin"],
-[data-role="affiliate"] .navitem[href*="galaxy"],
-[data-role="affiliate"] .navitem[href*="automations"],
-[data-role="affiliate"] .navitem[href*="agent"],
-[data-role="affiliate"] .navitem[href*="hiring"],
-[data-role="affiliate"] .navitem[href*="products"],
-[data-role="affiliate"] .navitem[href*="staff"],
-[data-role="affiliate"] .navitem[href*="content"],
-[data-role="affiliate"] .navitem[href*="brand"],
-[data-role="affiliate"] .navitem[href*="inquiry"],
-[data-role="affiliate"] .navitem[href*="sample"],
-[data-role="affiliate"] .navitem[href*="closer"],
-[data-role="affiliate"] .navitem[href*="pipeline"],
-[data-role="affiliate"] .navitem[href*="client-control"],
-[data-role="affiliate"] .navitem[href*="messaging"],
-[data-role="affiliate"] .navitem[href*="calendar"],
-[data-role="affiliate"] .navitem[href*="documents"],
-[data-role="affiliate"] .navgroup{display:none}
-
-[data-role="client"] .navitem[href!="client-portal.html"],
-[data-role="client"] .navgroup{display:none}
-
-[data-role="partner"] .navitem[href*="campaign"],
-[data-role="partner"] .navitem[href*="social"],
-[data-role="partner"] .navitem[href*="creative"],
-[data-role="partner"] .navitem[href*="command"],
-[data-role="partner"] .navitem[href*="ops-admin"],
-[data-role="partner"] .navitem[href*="galaxy:not([href*='partner'])"],
-[data-role="partner"] .navitem[href*="automations"],
-[data-role="partner"] .navitem[href*="agent"],
-[data-role="partner"] .navitem[href*="hiring"],
-[data-role="partner"] .navitem[href*="products"],
-[data-role="partner"] .navitem[href*="staff"],
-[data-role="partner"] .navitem[href*="content"],
-[data-role="partner"] .navitem[href*="brand"],
-[data-role="partner"] .navitem[href*="inquiry"],
-[data-role="partner"] .navitem[href*="sample"],
-[data-role="partner"] .navitem[href*="closer"],
-[data-role="partner"] .navitem[href*="pipeline"],
-[data-role="partner"] .navitem[href*="client-control"],
-[data-role="partner"] .navitem[href*="messaging"],
-[data-role="partner"] .navitem[href*="calendar"],
-[data-role="partner"] .navitem[href*="documents"],
-[data-role="partner"] .navgroup{display:none}
-</style>
 <script>
 (function(){
   var ROUTE = ${JSON.stringify(rel)};
   function send(msg){ msg.from = ROUTE; parent.postMessage(msg, "*"); }
+
+  /* RBAC: single source of truth mirrored from src/lib/rbac.ts. The shell
+     stamps the CURRENT viewer's role onto <html data-role> right before it
+     hands this document to the iframe (see render() in artifact-shell.html) —
+     this is never the page's own "owner" role, it's whoever is looking.
+     Items a role can't reach are removed from the DOM outright, not hidden:
+     view-source shows the same thing the eye does. */
+  var ROLE_ROUTES = {
+    admin: ["app/closer-dashboard.html","app/pipeline.html","app/client-control-panel.html","app/messaging.html","app/calendar.html","app/documents.html","app/campaign-manager.html","app/social-studio.html","app/creative-factory.html","app/command-center.html","app/ops-admin.html","app/galaxy.html","app/automations.html","app/agent-editor.html","app/hiring.html","app/products-commissions.html","app/staff-teams.html","app/content-admin.html","app/brand-studio.html","app/inquiry-remover.html","app/sample-data.html","app/client-portal.html","app/partner-galaxy.html","app/affiliate.html"],
+    staff: ["app/closer-dashboard.html","app/pipeline.html","app/client-control-panel.html","app/messaging.html","app/calendar.html","app/documents.html","app/campaign-manager.html","app/social-studio.html","app/creative-factory.html","app/command-center.html","app/galaxy.html","app/automations.html","app/agent-editor.html","app/hiring.html","app/staff-teams.html","app/content-admin.html","app/brand-studio.html","app/inquiry-remover.html","app/sample-data.html","app/client-portal.html"],
+    partner: ["app/partner-galaxy.html","app/affiliate.html","app/client-portal.html","app/brand-studio.html","app/campaign-manager.html"],
+    affiliate: ["app/affiliate.html","app/client-portal.html"],
+    client: ["app/client-portal.html"]
+  };
+
+  function resolveHref(pageRel, href){
+    href = href.split("#")[0].split("?")[0];
+    if(!href) return pageRel;
+    var dir = pageRel.indexOf("/") === -1 ? [] : pageRel.split("/").slice(0, -1);
+    var parts = href.charAt(0) === "/" ? href.replace(/^\\/+/, "").split("/") : dir.concat(href.split("/"));
+    var out = [];
+    parts.forEach(function(p){ if(p === "" || p === ".") return; if(p === "..") out.pop(); else out.push(p); });
+    return out.join("/");
+  }
+
+  function applyRoleFilter(){
+    var role = document.documentElement.getAttribute("data-role") || "staff";
+    if(role === "admin") return;
+    var allowed = ROLE_ROUTES[role] || [];
+    var items = document.querySelectorAll(".navitem[href]");
+    for(var i=0;i<items.length;i++){
+      var full = resolveHref(ROUTE, items[i].getAttribute("href"));
+      if(allowed.indexOf(full) === -1) items[i].parentNode.removeChild(items[i]);
+    }
+    var groups = document.querySelectorAll(".navgroup");
+    for(var j=0;j<groups.length;j++){
+      if(!groups[j].querySelector(".navitem")) groups[j].parentNode.removeChild(groups[j]);
+    }
+  }
+  applyRoleFilter();
 
   document.addEventListener("click", function(e){
     var a = e.target && e.target.closest && e.target.closest("a[href]");
@@ -207,47 +195,6 @@ function resolveRel(pageRel, href) {
    are written into the pages themselves, so dropping it shows all of them. */
 const SKIP_SCRIPTS = new Set(["app/shell.js"]);
 
-/* RBAC: Single source of truth (mirrors src/lib/rbac.ts). Routes each role can access. */
-const ROLE_ROUTES = {
-  admin: [
-    'app/closer-dashboard.html', 'app/pipeline.html', 'app/client-control-panel.html',
-    'app/messaging.html', 'app/calendar.html', 'app/documents.html',
-    'app/campaign-manager.html', 'app/social-studio.html', 'app/creative-factory.html',
-    'app/command-center.html', 'app/ops-admin.html', 'app/galaxy.html',
-    'app/automations.html', 'app/agent-editor.html', 'app/hiring.html',
-    'app/products-commissions.html', 'app/staff-teams.html', 'app/content-admin.html',
-    'app/brand-studio.html', 'app/inquiry-remover.html', 'app/sample-data.html',
-    'app/client-portal.html', 'app/partner-galaxy.html', 'app/affiliate.html',
-  ],
-  staff: [
-    'app/closer-dashboard.html', 'app/pipeline.html', 'app/client-control-panel.html',
-    'app/messaging.html', 'app/calendar.html', 'app/documents.html',
-    'app/campaign-manager.html', 'app/social-studio.html', 'app/creative-factory.html',
-    'app/command-center.html', 'app/ops-admin.html', 'app/galaxy.html',
-    'app/automations.html', 'app/agent-editor.html', 'app/hiring.html',
-    'app/products-commissions.html', 'app/staff-teams.html', 'app/content-admin.html',
-    'app/brand-studio.html', 'app/inquiry-remover.html', 'app/sample-data.html',
-    'app/client-portal.html',
-  ],
-  partner: [
-    'app/brand-studio.html', 'app/campaign-manager.html', 'app/social-studio.html',
-    'app/partner-galaxy.html', 'app/affiliate.html', 'app/client-portal.html',
-  ],
-  affiliate: [
-    'app/affiliate.html', 'app/client-portal.html',
-  ],
-  client: [
-    'app/client-portal.html',
-  ],
-};
-
-function getRoleForRoute(rel) {
-  for (const [role, routes] of Object.entries(ROLE_ROUTES)) {
-    if (routes.includes(rel)) return role;
-  }
-  return 'public'; // public pages visible to all
-}
-
 const inlined = new Map(); // rel -> text, so shared assets are read once
 
 function assetText(rel) {
@@ -288,8 +235,11 @@ function bundlePage(rel) {
     }
   );
 
-  const role = getRoleForRoute(rel);
-  html = html.replace(/<html/i, `<html data-fh-route="${rel}" data-role="${role}"`);
+  // data-role is a placeholder: the shell overwrites it with the CURRENT
+  // viewer's role right before every render() call, never a fixed value baked
+  // at build time (see artifact-shell.html). "staff" here is dead as soon as
+  // the page is ever framed.
+  html = html.replace(/<html/i, `<html data-fh-route="${rel}" data-role="staff"`);
 
   const bridge = BRIDGE(rel);
   if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, () => `${bridge}</body>`);

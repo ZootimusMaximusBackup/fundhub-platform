@@ -29,6 +29,7 @@ export const ROLE_ROUTES: Record<Role, string[]> = {
     'app/partner-galaxy.html',
     'app/affiliate.html',
   ],
+  // All internal ops screens, minus billing/admin settings (ops-admin, products-commissions).
   staff: [
     'app/closer-dashboard.html',
     'app/pipeline.html',
@@ -40,12 +41,10 @@ export const ROLE_ROUTES: Record<Role, string[]> = {
     'app/social-studio.html',
     'app/creative-factory.html',
     'app/command-center.html',
-    'app/ops-admin.html',
     'app/galaxy.html',
     'app/automations.html',
     'app/agent-editor.html',
     'app/hiring.html',
-    'app/products-commissions.html',
     'app/staff-teams.html',
     'app/content-admin.html',
     'app/brand-studio.html',
@@ -53,13 +52,13 @@ export const ROLE_ROUTES: Record<Role, string[]> = {
     'app/sample-data.html',
     'app/client-portal.html',
   ],
+  // Partner Galaxy + Affiliate Portal + Client Portal + brand design + Facebook ads (campaign-manager).
   partner: [
-    'app/brand-studio.html',
-    'app/campaign-manager.html',
-    'app/social-studio.html',
     'app/partner-galaxy.html',
     'app/affiliate.html',
     'app/client-portal.html',
+    'app/brand-studio.html',
+    'app/campaign-manager.html',
   ],
   affiliate: [
     'app/affiliate.html',
