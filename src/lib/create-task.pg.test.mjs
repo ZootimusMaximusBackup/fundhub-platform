@@ -180,34 +180,56 @@ describe("createTask", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
 
   // ── the queue read the index exists for ──
 
+  /* These two assert on v_task_queue_depth, which aggregates across the WHOLE
+     org. They used to assert absolute counts, so any other open task for these
+     roles — a fixture from another suite, or the real work in a developer's
+     database — failed them with no hint that the view itself was fine. They now
+     measure the DELTA their own writes cause, which tests exactly the same
+     behaviour and cannot be broken by unrelated rows. */
+  async function depthFor(roles) {
+    const { rows } = await db.query(
+      `SELECT assignee_role, open_tasks, unclaimed, claimed
+         FROM v_task_queue_depth WHERE org_id = $1 AND assignee_role = ANY($2)`,
+      [org, roles]
+    );
+    const out = {};
+    for (const r of roles) {
+      const hit = rows.find((d) => d.assignee_role === r);
+      out[r] = hit
+        ? { open: Number(hit.open_tasks), unclaimed: Number(hit.unclaimed), claimed: Number(hit.claimed) }
+        : { open: 0, unclaimed: 0, claimed: 0 };
+    }
+    return out;
+  }
+
   test("v_task_queue_depth counts open work per role, claimed and not", async () => {
+    const ROLES = ["funding_advisor", "closer"];
+    const before = await depthFor(ROLES);
+
     await createTask(db, spec({ eventId: "88888888-1111-1111-1111-111111111111" }));
     await createTask(db, spec({ eventId: "99999999-1111-1111-1111-111111111111",
       assigneeStaffId: staffId }));
     await createTask(db, spec({ eventId: "aaaaaaaa-1111-1111-1111-111111111111",
       assigneeRole: "closer" }));
 
-    const { rows: depth } = await db.query(
-      `SELECT assignee_role, open_tasks, unclaimed, claimed
-         FROM v_task_queue_depth WHERE org_id = $1 AND assignee_role = ANY($2)
-        ORDER BY assignee_role`,
-      [org, ["funding_advisor", "closer"]]
-    );
-    const fa = depth.find((d) => d.assignee_role === "funding_advisor");
-    assert.equal(fa.open_tasks, 2);
-    assert.equal(fa.unclaimed, 1);
-    assert.equal(fa.claimed, 1);
-    assert.equal(depth.find((d) => d.assignee_role === "closer").open_tasks, 1);
+    const after = await depthFor(ROLES);
+    assert.equal(after.funding_advisor.open - before.funding_advisor.open, 2);
+    assert.equal(after.funding_advisor.unclaimed - before.funding_advisor.unclaimed, 1);
+    assert.equal(after.funding_advisor.claimed - before.funding_advisor.claimed, 1);
+    assert.equal(after.closer.open - before.closer.open, 1);
   });
 
   test("a completed task leaves the queue depth", async () => {
+    const before = await depthFor(["funding_advisor"]);
     const r = await createTask(db, spec());
+    const withTask = await depthFor(["funding_advisor"]);
+    assert.equal(withTask.funding_advisor.open - before.funding_advisor.open, 1,
+      "the new task never entered the queue");
+
     await db.query(`UPDATE tasks SET done = true WHERE id = $1`, [r.id]);
-    const { rows: depth } = await db.query(
-      `SELECT open_tasks FROM v_task_queue_depth
-        WHERE org_id = $1 AND assignee_role = 'funding_advisor'`, [org]);
-    const total = depth.reduce((a, d) => a + d.open_tasks, 0);
-    assert.equal(total, 0);
+    const after = await depthFor(["funding_advisor"]);
+    assert.equal(after.funding_advisor.open, before.funding_advisor.open,
+      "a completed task did not leave the queue depth");
   });
 
   test("the database rejects a principal role even if the helper is bypassed", async () => {
