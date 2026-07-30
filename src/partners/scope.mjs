@@ -142,8 +142,11 @@ export const PARTNER_SCOPED_TABLES = new Set([
   "ad_platform_connections", "campaigns", "ad_sets", "ads",
   "ad_metrics_daily", "action_log", "spend_ceilings",
   "partner_onboarding_tasks", "partner_module_settings",
+  // 047_compliance_rules.sql
+  "compliance_screenings",
+  // 049_social.sql
   "social_channels", "social_posts",
-  // 047_creative_metering.sql
+  // 050_creative_metering.sql
   "creative_usage_events"
 ]);
 
