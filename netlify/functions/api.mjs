@@ -36,6 +36,7 @@ import readAgents from "../../api/read/agents.mjs";
 import readInquiries from "../../api/read/inquiries.mjs";
 import readProducts from "../../api/read/products.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
+import documentById from "../../api/documents/[id].mjs";
 
 export const config = { path: "/api/*" };
 
@@ -119,6 +120,12 @@ export default async function handler(request, context) {
   if (!route && path.startsWith("webhooks/")) {
     route = webhooks;
     query.provider = path.slice("webhooks/".length);
+  }
+
+  // /api/documents/:id → the signed-link download route.
+  if (!route && path.startsWith("documents/")) {
+    route = documentById;
+    query.id = path.slice("documents/".length);
   }
 
   if (!route) {

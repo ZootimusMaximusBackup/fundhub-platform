@@ -32,6 +32,10 @@ what is finished and what only looks finished.
 >   rendered real data and reverted to sample on the first filter keystroke, or painted it
 >   into a hidden element, all under a green "live" badge.
 >
+> **`scripts/marketing/lib/*.test.mjs` — 78 tests — never ran**, because the `npm test`
+> glob covered `src/**` and `scripts/diagrams/*` only. The glob is `scripts/**` now and all
+> 78 pass.
+>
 > Still open and deliberately not built: **nothing transmits.** `sendTemplated` writes
 > `messages` rows with `status='queued'` and no code ever sends them — there is no outbound
 > fetch anywhere in `src/adapters/` or `src/lib/`. Turning on the Inngest keys will run 47
@@ -69,7 +73,7 @@ node db/migrate.mjs
 STAFF_INITIAL_PASSWORD='<pick one, 12+ chars>' node scripts/seed-staff.mjs
 
 # 4. tests
-npm test                    # 1248 tests, 0 failures, 8 skipped
+npm test                    # 1338 tests, 0 failures, 8 skipped
 
 # 5. the app — screens AND a working /api/*
 node scripts/dev-server.mjs
