@@ -41,7 +41,7 @@ document.getElementById("f").addEventListener("submit", async (e) => {
   // Hand the role to /app/shell.js so the first screen is gated before it
   // paints, instead of drawing and then bouncing while the session resolves.
   if (data.staff && data.staff.role) {
-    localStorage.setItem("fh_role", String(data.staff.role).toLowerCase());
+    localStorage.setItem("fh_role", String(data.staff.role).trim().toLowerCase());
   } else {
     localStorage.removeItem("fh_role");
   }

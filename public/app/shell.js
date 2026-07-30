@@ -54,10 +54,31 @@
     partner: "partner-galaxy.html"
   };
 
+  /* A role this map has never heard of still has to be able to work.
+     staff.role is free text (db/schema/001_init.sql:386) with no constraint,
+     and 020_auth.sql backfills its own catalog from whatever staff.role
+     already holds — so a role created by hand, spelled differently, or added
+     to the catalog later reaches this file as an unknown string. It used to
+     resolve to no screens at all, which meant signOut(), which meant the
+     login page, which signs straight back in and signs straight back out. A
+     lockout loop, on a typo.
+
+     The screens are not the security boundary in any case: /api/dashboard/*
+     gates on a valid session, not on a role, so withholding a tab withholds
+     no data. An unknown role therefore gets the shared work surface — the
+     sidebar's "Work" group — and the chip says the role is unrecognised. */
+  var UNKNOWN_ROLE_TABS = ["pipeline.html", "client-control-panel.html",
+                           "messaging.html", "calendar.html", "documents.html"];
+
+  function isKnownRole(role) {
+    return Object.prototype.hasOwnProperty.call(ROLE_TABS, role);
+  }
+
   function allowedFor(role) {
+    if (!role) return [];
     var m = ROLE_TABS[role];
     if (m === "*") return ALL.slice();
-    if (!m) return [];
+    if (!m) return UNKNOWN_ROLE_TABS.slice();
     return m.slice();
   }
 
@@ -68,6 +89,16 @@
 
   function isScreen(href) {
     return /^[a-z0-9-]+\.html$/i.test(href);
+  }
+
+  /* normRole — the one place a role string is folded to a map key. Matching
+     020_auth.sql, which keys its catalog on lower(btrim(staff.role)): the
+     column is free text filled by hand (scripts/create-staff.mjs passes argv
+     straight through), so "Owner" and "owner " are the same role and only
+     trimming makes them resolve as one. Lowercasing alone demoted a trailing
+     space to an unrecognised role. */
+  function normRole(v) {
+    return String(v == null ? "" : v).trim().toLowerCase();
   }
 
   /* ---------------------------------------------------------------------
@@ -84,7 +115,7 @@
   var ROLE_KEY = "fh_role";
 
   function readCachedRole() {
-    try { return String(localStorage.getItem(ROLE_KEY) || "").toLowerCase(); }
+    try { return normRole(localStorage.getItem(ROLE_KEY)); }
     catch (e) { return ""; }
   }
 
@@ -247,8 +278,21 @@
     var el = document.createElement("div");
     el.id = "fh-shell-chip";
     el.style.cssText = "position:fixed;top:12px;right:14px;z-index:2147483000;display:flex;gap:10px;align-items:center;background:#0A0A0A;color:#fff;border:1px solid #26262B;border-radius:10px;padding:8px 12px;font:500 11px/1 'JetBrains Mono',monospace;letter-spacing:.06em;box-shadow:0 10px 30px rgba(0,0,0,.35)";
+    /* Name the tab count next to the role. The bounce this shell used to cause
+       was invisible in the chip: it said "closer" while the sidebar advertised
+       19 tabs, six of which that role cannot open. Saying "closer · 6 tabs"
+       makes a narrow role legible instead of something you discover by
+       clicking. An unrecognised role says so outright. */
+    var role = normRole(staff.role);
+    var ok = allowedFor(role);
+    var known = isKnownRole(role);
+    var roleText = role + " · " + ok.length + (ok.length === 1 ? " tab" : " tabs");
+    var roleTitle = known
+      ? "role " + role + " — " + ok.length + " of " + ALL.length + " screens. Change the map in shell.js ROLE_TABS."
+      : "role \"" + role + "\" is not in shell.js ROLE_TABS — falling back to the shared Work tabs. Add it to the map.";
     el.innerHTML =
-      '<span style="color:#A1A1AA">' + esc(staff.name || staff.email) + " · " + esc(String(staff.role || "").toLowerCase()) + "</span>" +
+      '<span title="' + esc(roleTitle) + '" style="color:' + (known ? "#A1A1AA" : "#F5CE8F") + '">' +
+        esc(staff.name || staff.email) + " · " + esc(roleText) + (known ? "" : " ?") + "</span>" +
       '<span id="fh-shell-src" title="checking the backend…" style="background:#3F3F46;color:#E4E4E7;border-radius:6px;padding:3px 7px;font-weight:700">···</span>' +
       '<button id="fh-shell-out" style="background:none;border:1px solid #3F3F46;color:#E4E4E7;border-radius:6px;padding:4px 9px;font:inherit;cursor:pointer">Sign out</button>';
     document.body.appendChild(el);
@@ -302,7 +346,7 @@
       location.href = "/login.html?next=/app/" + PAGE;
       return;
     }
-    var role = String(sess.staff.role || "").toLowerCase();
+    var role = normRole(sess.staff.role);
     var ok = allowedFor(role);
     writeCachedRole(ok.length ? role : "");
     // A role with no screens at all is a config error, not a blank page:
