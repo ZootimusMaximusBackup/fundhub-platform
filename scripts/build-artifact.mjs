@@ -76,27 +76,47 @@ const GROUPS = [
   },
 ];
 
-/* Injected into every page. Two jobs: keep in-suite navigation inside the
-   shell, and stop links that would leave the frame from doing nothing
-   visible. Runs at the end of the document so it sees the finished DOM. */
-const BRIDGE = `
+/* Injected into every page. It makes a framed page behave like a served one:
+   links navigate the suite instead of dead-ending, sign-in forwards to the
+   CRM, and the shell's own keys still work while focus is inside the frame.
+   Runs at the end of the document so it sees the finished DOM. */
+const BRIDGE = (rel) => `
 <script>
 (function(){
-  function routeFor(a){
-    var raw = a.getAttribute("href");
-    if(!raw || raw[0] === "#") return null;
-    if(/^(https?:|mailto:|tel:|javascript:)/i.test(raw)) return null;
-    return raw;
-  }
+  var ROUTE = ${JSON.stringify(rel)};
+  function send(msg){ msg.from = ROUTE; parent.postMessage(msg, "*"); }
+
   document.addEventListener("click", function(e){
     var a = e.target && e.target.closest && e.target.closest("a[href]");
     if(!a) return;
-    var raw = routeFor(a);
-    if(raw === null) return;
+    var href = a.getAttribute("href");
+    // In-page anchors scroll natively; off-site links are left to the browser.
+    if(!href || href.charAt(0) === "#") return;
+    if(/^(https?:|mailto:|tel:|javascript:)/i.test(href)) return;
     e.preventDefault();
-    parent.postMessage({ fh: "navigate", href: raw, from: document.documentElement.dataset.fhRoute || "" }, "*");
+    send({ fh: "navigate", href: href });
   }, true);
-  document.addEventListener("submit", function(e){ e.preventDefault(); }, true);
+
+  document.addEventListener("submit", function(e){
+    // The sign-in form is the one submit that means something: the served page
+    // posts to /api/auth/login and forwards to /app/. Stop propagation so that
+    // handler never runs and never shows a failure the viewer can't act on.
+    if(ROUTE === "login.html"){
+      e.preventDefault(); e.stopPropagation();
+      send({ fh: "signin" });
+      return;
+    }
+    e.preventDefault();
+  }, true);
+
+  // "/" opens the screen list and Esc closes it, wherever focus happens to be.
+  document.addEventListener("keydown", function(e){
+    var t = e.target;
+    if(t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+    if(t && t.isContentEditable) return;
+    if(e.key !== "/" && e.key !== "Escape" && !(e.altKey && e.key === "ArrowLeft")) return;
+    send({ fh: "keydown", event: { key: e.key, altKey: e.altKey } });
+  });
 })();
 <\/script>
 `;
@@ -167,8 +187,9 @@ function bundlePage(rel) {
 
   html = html.replace(/<html/i, `<html data-fh-route="${rel}"`);
 
-  if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, `${BRIDGE}</body>`);
-  else html += BRIDGE;
+  const bridge = BRIDGE(rel);
+  if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, () => `${bridge}</body>`);
+  else html += bridge;
 
   return html;
 }

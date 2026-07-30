@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Fundhub custom platform \u2014 Postgres + event bus replacing GHL + Airtable. Master Rebuild Spec v1.",
+  "description": "Fundhub custom platform — Postgres + event bus replacing GHL + Airtable. Master Rebuild Spec v1.",
   "engines": {
     "node": "22.x"
   },
@@ -15,7 +15,7 @@
     "test": "node --test \"src/**/*.test.mjs\" \"scripts/**/*.test.mjs\""
   },
   "dependencies": {
-    "pg": "^8.13.1",
-    "inngest": "^3.21.2"
+    "inngest": "^3.21.2",
+    "pg": "^8.13.1"
   }
 }
