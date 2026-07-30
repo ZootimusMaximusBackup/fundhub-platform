@@ -41,6 +41,63 @@ Tooling (mandated): OpenCode + Antigravity + **Cognee** (shared memory — every
 - **124 unit tests pass without a live Postgres** (`npm test`) — bus + 7 adapters + 2 handler modules + router; the 2 real-DB integration tests self-skip.
 - **Validated live against real Postgres 16** (2026-07-24, throwaway Docker container): `npm run migrate` applies all tables + 7 pipelines / 42 stages + indexes + default org clean; a signed Commas webhook deduped at the DB `ON CONFLICT` level with a bad-sig 401; and the **full journey integration test** (`client-lifecycle.pg.test.mjs`, runs when `DATABASE_URL` is set) drove entry→survey→payment→diagnostic→decision→analysis into real `clients`/`transactions`/`crs_results` rows, then `replay()`'d every stored event and asserted **zero double-writes**. Schema, migrations, idempotency, JSONB storage, dispatch, and replay-safety are all proven — not mocked.
 
+## Creative Factory + Campaign Manager (migrations 045–050)
+
+Partner orgs connect **their own** Meta / TikTok / social accounts by OAuth; the platform
+generates creative, screens it, launches campaigns and runs the daily optimisation loop on their
+behalf. Nothing runs through a Fundhub-owned ad account.
+
+**This module introduces row level security to the codebase.** No table had it before — isolation
+was application-level via `src/partners/scope.mjs`, which stays. Every new table also carries a
+policy reading a transaction-scoped GUC, so a query that forgets its `partner_id` predicate returns
+**nothing** rather than everything. `FORCE ROW LEVEL SECURITY`, because the app role owns these
+tables and would otherwise be exempt from its own policies. Open a scope with
+`withPartnerScope()` / `asPartner()` / `asStaff()` in `src/partners/rls.mjs` — outside one, these
+tables read as empty.
+
+| migration | what |
+|---|---|
+| `045_creative_factory` | brand kits + sources, creative assets, generation jobs; the RLS helpers the rest of the module reuses |
+| `046_ad_platforms` | connections, campaign/ad-set/ad mirror, daily metrics, `action_log`, spend ceilings, partner-visible onboarding tasks |
+| `047_compliance_rules` | the guardrail rule sets as config, seeded from the spec; CROA disclosure gate |
+| `048_campaign_config` | provider selection, the six strategy templates, optimiser rules |
+| `049_social` | organic channels and posts, screened on the same rails as paid |
+| `050_creative_metering` | usage accrual, mirroring the `partner_revenue` pattern from 042 |
+
+- `src/compliance/` — the guardrail engine every asset and payload passes before reaching a
+  platform. **Deterministic**: patterns and literals, never an LLM. Fails closed on any error — a
+  database outage, a bad regex and a malformed subject all return `blocked`. Three blocks are
+  structural and not configurable: TikTok + credit repair, the Meta special-ad-category force, and
+  the credit-repair human-approval gate. There is no override flag; do not add one.
+- `src/creative/` — five providers behind one `generate(spec, ctx)`, selected by config row. A
+  provider outage degrades a job to `queued`, never to a silent empty result.
+- `src/adplatforms/` — every write goes **guardrail → action log → platform**, in that order. The
+  log row is written *before* the call, so a crash mid-flight leaves a findable record. Tokens are
+  AES-256-GCM with the partner id as additional authenticated data, so a ciphertext copied into
+  another partner's row fails to decrypt.
+- `src/optimize/` — the daily loop, idempotent per partner per day. Spend ceilings are enforced at
+  two independent points: a pre-flight check against our mirror, and a kill-switch job reading
+  **actual platform spend**, so a sync failure cannot disable both.
+- `api/creative/`, `api/campaigns/` — ten partner-scoped read endpoints.
+
+### Values deliberately left unset — these need a decision
+
+`SELECT * FROM v_creative_config_gaps;` renders them; the features that read them refuse to run
+rather than use a guessed number.
+
+- **`ad_platform_category_map`** — the spec named `FINANCIAL_PRODUCTS_AND_SERVICES`, which is not a
+  Meta enum member, and `CREDIT` is likely correct for these offers. **Meta launches are blocked
+  until this is populated.**
+- **`creative_billing_rates`** — generation-cost markup % and managed-ad-spend %. `accrue_creative_usage()`
+  raises while either is null.
+- **`optimization_rules.kill_no_conversions`** — the spend floor. Ships inactive.
+- **`optimization_rules.spend_tier_refresh`** — the tier → cadence table. Ships inactive and empty.
+
+`max_daily_increase_pct` seeds at 20 with a hard cap of 30, enforced by a CHECK.
+
+Provider modules and the platform adapters carry `⚠️ CONFIRM` markers — their payload shapes are
+unproven against real accounts, exactly like the `src/adapters/` files with the same marker.
+
 ## Diagrams
 `docs/diagrams/` — event flow, one state machine per rail (7), the adapter boundary map, and the
 agent trigger map. **Generated from the code**, never from a spec document: canonical events and
