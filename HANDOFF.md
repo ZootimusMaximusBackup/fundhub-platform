@@ -3,6 +3,34 @@
 Written for the next engineer picking this up. It is deliberately blunt about
 what is finished and what only looks finished.
 
+> ## READ `AUDIT-FINDINGS.md` FIRST
+>
+> An independent seven-lens audit was run against this branch after the build queue was
+> declared finished. It found **53 defects, four of them blocking**, concentrated exactly
+> where the unit tests fake out the real seams. The document below was written BEFORE that
+> audit and several of its claims are wrong; the corrections are recorded in
+> `AUDIT-FINDINGS.md` and inline below. In particular:
+>
+> - **Invoice writes are dead.** `031_invoices.sql` renamed three columns and
+>   `src/invoices/index.mjs` — the only writer — was never updated. Every `createInvoice()`
+>   raises SQLSTATE 42703, killing the F-07 and DS-02 workflows *after* the client has been
+>   emailed. Their tests pass against in-memory fakes that still model the old columns.
+> - **Every inbound webhook 500s on Netlify.** `api/webhooks/[provider].mjs` iterates `req`
+>   as a stream; the Netlify adapter passes a plain object. All six integrations are dead on
+>   the deploy target.
+> - **`src/partners/scope.mjs` is imported by zero production modules.** The tenancy boundary
+>   is written and tested but wired into nothing. The claim below that it is "verified against
+>   a real Postgres" is false — the mutation test proved the tests test the module, not that
+>   anything calls it.
+> - **`/api/webhooks/lendflow` 404s**, so the entire `round.*` event family has no producer and
+>   eight workflows have no trigger.
+> - **Nothing transmits.** Messages are written `status='queued'` and no code ever sends them.
+>
+> One blocking defect was FIXED before this was written: `/api/dashboard/*` served the full
+> client book to anonymous callers because the gate returned "open" whenever `DASHBOARD_SECRET`
+> was unset and `NODE_ENV` was not `"production"` — which is exactly the deployed configuration.
+> It now fails closed. **Do not set `DATABASE_URL` on a deploy built before commit `HEAD`.**
+
 ## The one-line summary
 
 The **backend is built and tested** — all 14 units of the build queue are done.

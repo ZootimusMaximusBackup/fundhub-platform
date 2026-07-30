@@ -4,9 +4,30 @@ import { checkDashboardAuth } from "./dashboard-auth.mjs";
 
 const req = (opts = {}) => ({ headers: opts.headers || {}, query: opts.query || {} });
 
-test("no secret: allowed in dev, denied in production", () => {
-  assert.equal(checkDashboardAuth(req(), { NODE_ENV: "development" }), true);
-  assert.equal(checkDashboardAuth(req(), { NODE_ENV: "production" }), false);
+/* This test used to assert the OPPOSITE — that an unset secret opens the gate
+   outside production. That is the behaviour an audit found serving the entire
+   client book to anonymous callers, so the test was encoding the defect. The
+   deployed case is the one that matters: netlify.toml sets neither variable, so
+   NODE_ENV is undefined in the function and "not production" was true there. */
+test("no secret: denied, whatever NODE_ENV says", () => {
+  for (const env of [
+    {},                              // the deployed Netlify config — the real case
+    { NODE_ENV: undefined },
+    { NODE_ENV: "" },
+    { NODE_ENV: "development" },
+    { NODE_ENV: "test" },
+    { NODE_ENV: "production" }
+  ]) {
+    assert.equal(checkDashboardAuth(req(), env), false,
+      `unset DASHBOARD_SECRET opened the gate with NODE_ENV=${JSON.stringify(env.NODE_ENV)}`);
+  }
+});
+
+test("no secret: a supplied key cannot talk its way in either", () => {
+  // With no secret configured there is nothing to compare against; presenting a
+  // key must not be mistaken for presenting the right one.
+  assert.equal(checkDashboardAuth(req({ headers: { "x-dashboard-key": "anything" } }), {}), false);
+  assert.equal(checkDashboardAuth(req({ query: { key: "anything" } }), {}), false);
 });
 
 test("secret set: denies missing/wrong key", () => {

@@ -1,3 +1,18 @@
+> **SUPERSEDED IN PART — see `AUDIT-FINDINGS.md`.** A later independent audit found 53 defects
+> that this pass missed, four blocking. Two claims in this document are specifically wrong:
+>
+> 1. **"Partner isolation — mutation-tested three ways."** The mutation test gutted
+>    `src/partners/scope.mjs` and re-ran that module's own tests. That proves the tests test the
+>    module; it says nothing about whether anything imports it. Nothing does. The boundary is
+>    not in the request path of any endpoint.
+> 2. **The Chromium screen checks asserted banner tone and the absence of console errors.** That
+>    is necessary and not sufficient: it never asserted the real data was visible in the right
+>    DOM node, or that it survived the screen's own interactions. Seven screens fail one of
+>    those while showing a green "live" banner.
+>
+> The general lesson is the one this document already stated and then fell for anyway: a
+> structural check that passes over a half-dead feature is worse than no check.
+
 # Unit 13 — verification pass
 
 Read-only. Nothing was fixed in this pass; findings are ranked by severity below.
