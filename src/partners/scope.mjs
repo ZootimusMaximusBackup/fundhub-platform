@@ -126,6 +126,64 @@ export async function assertCanReadClient(db, principal, clientId) {
   return rows[0];
 }
 
+/* CREATIVE FACTORY TABLES. assertCanReadRow below writes a table name into SQL,
+   which is the one thing that cannot be a parameter — so it is an allowlist
+   rather than a validated string. A regex would accept `partners` or `accounts`
+   and turn a point-read guard into an arbitrary-table read.
+
+   Every table in the creative module carries partner_id and is listed here. If a
+   new one is added to 045/046/047 and not added here, its point reads fail loudly
+   instead of going unscoped. */
+export const PARTNER_SCOPED_TABLES = new Set([
+  // 045_creative_factory.sql
+  "brand_kits", "brand_kit_sources", "creative_assets",
+  "generation_jobs", "generation_job_assets",
+  // 046_ad_platforms.sql
+  "ad_platform_connections", "campaigns", "ad_sets", "ads",
+  "ad_metrics_daily", "action_log", "spend_ceilings",
+  "partner_onboarding_tasks", "partner_module_settings",
+  // 047_compliance_rules.sql
+  "compliance_screenings",
+  // 049_social.sql
+  "social_channels", "social_posts",
+  // 050_creative_metering.sql
+  "creative_usage_events"
+]);
+
+/* assertCanReadRow — the generic form of assertCanReadClient, for the creative
+   module's tables. Same contract, and the same reasons behind it:
+
+   THROWS, never returns null, because a caller that forgets to branch on null
+   renders someone else's row.
+
+   "not found" is INDISTINGUISHABLE from "not yours". Telling a partner that a
+   campaign exists but belongs to someone else is itself a disclosure — they
+   learn a competitor is running one.
+
+   This is the second lock, not the only one: inside withPartnerScope() the RLS
+   policy has already filtered the row out. Both run, so a point read is safe
+   whether or not the caller remembered to open a scope. */
+export async function assertCanReadRow(db, principal, table, id) {
+  if (!id) throw new Error("assertCanReadRow: id is required");
+  if (!PARTNER_SCOPED_TABLES.has(table)) {
+    throw new Error(
+      `assertCanReadRow: "${table}" is not a known partner-scoped table. ` +
+      `Add it to PARTNER_SCOPED_TABLES rather than widening this check.`
+    );
+  }
+  const scope = scopeFor(principal, { alias: "t", startIndex: 1 });
+  const { rows } = await db.query(
+    `SELECT t.* FROM ${table} t WHERE t.id = $1 AND (${scope.sql}) LIMIT 1`,
+    [id, ...scope.params]
+  );
+  if (!rows[0]) {
+    const e = new Error(`${table.replace(/s$/, "")} not found`);
+    e.code = "NOT_FOUND";
+    throw e;
+  }
+  return rows[0];
+}
+
 /* clientIdsFor — the id set a principal may see. For callers that must filter a
    table which has client_id but is not joined to clients. */
 export async function clientIdsFor(db, principal, { orgId } = {}) {

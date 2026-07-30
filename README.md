@@ -41,6 +41,63 @@ Tooling (mandated): OpenCode + Antigravity + **Cognee** (shared memory — every
 - **124 unit tests pass without a live Postgres** (`npm test`) — bus + 7 adapters + 2 handler modules + router; the 2 real-DB integration tests self-skip.
 - **Validated live against real Postgres 16** (2026-07-24, throwaway Docker container): `npm run migrate` applies all tables + 7 pipelines / 42 stages + indexes + default org clean; a signed Commas webhook deduped at the DB `ON CONFLICT` level with a bad-sig 401; and the **full journey integration test** (`client-lifecycle.pg.test.mjs`, runs when `DATABASE_URL` is set) drove entry→survey→payment→diagnostic→decision→analysis into real `clients`/`transactions`/`crs_results` rows, then `replay()`'d every stored event and asserted **zero double-writes**. Schema, migrations, idempotency, JSONB storage, dispatch, and replay-safety are all proven — not mocked.
 
+## Creative Factory + Campaign Manager (migrations 045–050)
+
+Partner orgs connect **their own** Meta / TikTok / social accounts by OAuth; the platform
+generates creative, screens it, launches campaigns and runs the daily optimisation loop on their
+behalf. Nothing runs through a Fundhub-owned ad account.
+
+**This module introduces row level security to the codebase.** No table had it before — isolation
+was application-level via `src/partners/scope.mjs`, which stays. Every new table also carries a
+policy reading a transaction-scoped GUC, so a query that forgets its `partner_id` predicate returns
+**nothing** rather than everything. `FORCE ROW LEVEL SECURITY`, because the app role owns these
+tables and would otherwise be exempt from its own policies. Open a scope with
+`withPartnerScope()` / `asPartner()` / `asStaff()` in `src/partners/rls.mjs` — outside one, these
+tables read as empty.
+
+| migration | what |
+|---|---|
+| `045_creative_factory` | brand kits + sources, creative assets, generation jobs; the RLS helpers the rest of the module reuses |
+| `046_ad_platforms` | connections, campaign/ad-set/ad mirror, daily metrics, `action_log`, spend ceilings, partner-visible onboarding tasks |
+| `047_compliance_rules` | the guardrail rule sets as config, seeded from the spec; CROA disclosure gate |
+| `048_campaign_config` | provider selection, the six strategy templates, optimiser rules |
+| `049_social` | organic channels and posts, screened on the same rails as paid |
+| `050_creative_metering` | usage accrual, mirroring the `partner_revenue` pattern from 042 |
+
+- `src/compliance/` — the guardrail engine every asset and payload passes before reaching a
+  platform. **Deterministic**: patterns and literals, never an LLM. Fails closed on any error — a
+  database outage, a bad regex and a malformed subject all return `blocked`. Three blocks are
+  structural and not configurable: TikTok + credit repair, the Meta special-ad-category force, and
+  the credit-repair human-approval gate. There is no override flag; do not add one.
+- `src/creative/` — five providers behind one `generate(spec, ctx)`, selected by config row. A
+  provider outage degrades a job to `queued`, never to a silent empty result.
+- `src/adplatforms/` — every write goes **guardrail → action log → platform**, in that order. The
+  log row is written *before* the call, so a crash mid-flight leaves a findable record. Tokens are
+  AES-256-GCM with the partner id as additional authenticated data, so a ciphertext copied into
+  another partner's row fails to decrypt.
+- `src/optimize/` — the daily loop, idempotent per partner per day. Spend ceilings are enforced at
+  two independent points: a pre-flight check against our mirror, and a kill-switch job reading
+  **actual platform spend**, so a sync failure cannot disable both.
+- `api/creative/`, `api/campaigns/` — ten partner-scoped read endpoints.
+
+### Values deliberately left unset — these need a decision
+
+`SELECT * FROM v_creative_config_gaps;` renders them; the features that read them refuse to run
+rather than use a guessed number.
+
+- **`ad_platform_category_map`** — the spec named `FINANCIAL_PRODUCTS_AND_SERVICES`, which is not a
+  Meta enum member, and `CREDIT` is likely correct for these offers. **Meta launches are blocked
+  until this is populated.**
+- **`creative_billing_rates`** — generation-cost markup % and managed-ad-spend %. `accrue_creative_usage()`
+  raises while either is null.
+- **`optimization_rules.kill_no_conversions`** — the spend floor. Ships inactive.
+- **`optimization_rules.spend_tier_refresh`** — the tier → cadence table. Ships inactive and empty.
+
+`max_daily_increase_pct` seeds at 20 with a hard cap of 30, enforced by a CHECK.
+
+Provider modules and the platform adapters carry `⚠️ CONFIRM` markers — their payload shapes are
+unproven against real accounts, exactly like the `src/adapters/` files with the same marker.
+
 ## Diagrams
 `docs/diagrams/` — event flow, one state machine per rail (7), the adapter boundary map, and the
 agent trigger map. **Generated from the code**, never from a spec document: canonical events and
@@ -58,3 +115,87 @@ diagrams are regenerated — they cannot drift quietly.
 
 ## Next
 Provision a Postgres, run `npm install` + `npm run migrate` to validate the schema live, then register HANDLERS on the bus (the reactions: GHL field writes, Airtable sync, CRS pulls, letter gen). Each adapter's `⚠️ CONFIRM` block must be checked against a real payload before that source cuts over. Deferred behind the Monday launch — builds in parallel.
+
+## Hiring — always-on inbound recruiting (migration 051)
+
+Built from the sixteen Recruiting & Hiring source docs (Drive), not invented. The
+funnel, stages, rubric categories and scorecard model all trace to a document; where the
+docs contradict each other the newer one wins and the conflict is recorded in the migration.
+
+**Funnel** (doc 10 + doc 11): Applied → Screening → Group Interview → 1:1 → Offer →
+Hired → Onboarding → Ramp (60-day trial) → Performing.
+
+- **Split from affiliates.** 002 seeded one rail for both (R-07). A referral and a candidate
+  share nothing but a screen, so `hiring` is now its own pipeline; R-07 keeps its three stages.
+- **Not `cards`.** `cards.client_id` is `NOT NULL` — making a client to satisfy a foreign key
+  would put candidates in the closer queue and every client count. Applications carry their own
+  `stage_id` into the shared `pipeline_stages`.
+- **Mock calls are deliberately absent.** Doc 9 carries an explicit "we no longer recommend
+  Mock Calls — MANY false positives and false negatives", and doc 11 lists them under
+  misconceptions. The stage key is still accepted so a team can add the row without a migration.
+- **`src/hiring/bench.mjs`** is what makes it always-on: `bench_target` defaults to 4 per role
+  (doc 10's "full bench"), and a shortfall opens a task. Bench counts only candidates past the
+  group interview — counting all applicants would report a healthy bench built from unscreened ones.
+
+### This is an automated employment decision tool
+
+Scoring applicants is regulated in a way scoring ad creative is not — Title VII adverse impact
+attaches regardless of intent, and NYC Local Law 144 requires an annual bias audit and candidate
+notice. So:
+
+- **No candidate is ever rejected by software.** `grading.mjs` produces a score and an advisory
+  recommendation; it has no database handle and no staff id to offer. Rejection lives in
+  `pipeline.mjs` and requires a named human plus a written reason, enforced in three places:
+  the function's argument check, the `hiring_decisions` CHECK, and a terminal-status trigger on
+  `candidate_applications`. Each is attacked separately in the tests.
+- **Protected characteristics are never stored**, not merely not scored — the intake path strips
+  them before the insert, and a rubric naming one throws.
+- **The audit trail is retained and undeletable**: rubric version as applied, per-category scores,
+  and what the grader recommended next to what the human decided. `/api/hiring/decisions` derives
+  the override rate, the central number in an AEDT review.
+- A group-interview `no` does **not** auto-reject — it queues a human, because that is an adverse
+  action. `yes` and `maybe` both advance, per doc 11's "move people forward even if you're 50/50".
+
+**Adverse-impact analysis needs one more thing.** Because no protected data is collected, an
+analysis by race or sex cannot be run from this data — it needs a separate, voluntary
+self-identification survey held apart from the hiring record. That is the legally correct
+arrangement, and it is flagged rather than implied to be already covered.
+
+### LinkedIn Talent Solutions
+
+`src/hiring/linkedin.mjs` posts jobs and ingests applications people chose to send. There is no
+profile read, no search, and nowhere in the schema to put a harvested profile — sourcing data is
+dense with proxies for protected characteristics, and the cheapest way to not score something is
+never to hold it. ⚠️ CONFIRM: payload shapes are unverified against a real account.
+
+### Left unset — `SELECT * FROM v_hiring_config_gaps;`
+
+- **Role scorecards and comp/OTE.** Doc 7 links to external Closer and Setter Scorecard docs that
+  are not in the library folder; doc 6 defines the OTE method, not the numbers. Seeding invented
+  outcomes would put made-up performance agreements in front of real candidates.
+- **Hiring manager per role** — bench alerts have nobody to route to until set.
+
+## Config defaults (052) and EEO self-ID (053)
+
+`052_config_defaults.sql` sets the five values earlier migrations left null. It is one
+file so reverting to "unconfigured" is a single `git revert`. Values fall in three
+categories, labelled in the migration:
+
+| | value | basis |
+|---|---|---|
+| **PLATFORM FACT** | Meta `special_ad_category` = `CREDIT` | Meta's category covering credit cards, loans, financing. ⚠️ Confirm against your API version — a wrong enum is rejected at create time, loudly. |
+| **DERIVED** | kill-switch floor $500, spend-tier refresh cadence, ROAS target 1.0 | Derived from the spec's own anchors (72h rotation, frequency 3+, break-even), with the reasoning written out. Tunable. |
+| **PLACEHOLDER** | generation markup 100%, managed spend 10% | **Nobody's confirmed commercial terms.** `signed_off_at` is NULL and `v_creative_config_gaps` reports them until a human stamps it. Billing works either way — the flag is a visibility control, not a gate, because a default that stops being visible is one nobody re-examines. |
+
+Hiring scorecards got **structure without targets**: doc 7 links to external Closer and
+Setter Scorecard documents that were not in the folder. A template a manager fills in is
+useful; invented targets become a performance agreement a real person is held to.
+
+`053_eeo_selfid.sql` closes the adverse-impact gap. Voluntary self-ID stored **apart from
+the hiring record**: there is no foreign key to an application, the invite token's link is
+destroyed in the same transaction as the response insert (enforced by CHECK), and
+`v_eeo_aggregate` suppresses any group under 5 because a cell of one is an identification.
+The cost is deliberate — aggregate analysis works, per-candidate lookup cannot.
+
+Deploy variables are in `.env.example`. `AD_TOKEN_ENC_KEY` is required; token storage
+refuses to run without it rather than storing plaintext.
