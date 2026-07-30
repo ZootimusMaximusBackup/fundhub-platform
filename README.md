@@ -115,3 +115,62 @@ diagrams are regenerated — they cannot drift quietly.
 
 ## Next
 Provision a Postgres, run `npm install` + `npm run migrate` to validate the schema live, then register HANDLERS on the bus (the reactions: GHL field writes, Airtable sync, CRS pulls, letter gen). Each adapter's `⚠️ CONFIRM` block must be checked against a real payload before that source cuts over. Deferred behind the Monday launch — builds in parallel.
+
+## Hiring — always-on inbound recruiting (migration 051)
+
+Built from the sixteen Recruiting & Hiring source docs (Drive), not invented. The
+funnel, stages, rubric categories and scorecard model all trace to a document; where the
+docs contradict each other the newer one wins and the conflict is recorded in the migration.
+
+**Funnel** (doc 10 + doc 11): Applied → Screening → Group Interview → 1:1 → Offer →
+Hired → Onboarding → Ramp (60-day trial) → Performing.
+
+- **Split from affiliates.** 002 seeded one rail for both (R-07). A referral and a candidate
+  share nothing but a screen, so `hiring` is now its own pipeline; R-07 keeps its three stages.
+- **Not `cards`.** `cards.client_id` is `NOT NULL` — making a client to satisfy a foreign key
+  would put candidates in the closer queue and every client count. Applications carry their own
+  `stage_id` into the shared `pipeline_stages`.
+- **Mock calls are deliberately absent.** Doc 9 carries an explicit "we no longer recommend
+  Mock Calls — MANY false positives and false negatives", and doc 11 lists them under
+  misconceptions. The stage key is still accepted so a team can add the row without a migration.
+- **`src/hiring/bench.mjs`** is what makes it always-on: `bench_target` defaults to 4 per role
+  (doc 10's "full bench"), and a shortfall opens a task. Bench counts only candidates past the
+  group interview — counting all applicants would report a healthy bench built from unscreened ones.
+
+### This is an automated employment decision tool
+
+Scoring applicants is regulated in a way scoring ad creative is not — Title VII adverse impact
+attaches regardless of intent, and NYC Local Law 144 requires an annual bias audit and candidate
+notice. So:
+
+- **No candidate is ever rejected by software.** `grading.mjs` produces a score and an advisory
+  recommendation; it has no database handle and no staff id to offer. Rejection lives in
+  `pipeline.mjs` and requires a named human plus a written reason, enforced in three places:
+  the function's argument check, the `hiring_decisions` CHECK, and a terminal-status trigger on
+  `candidate_applications`. Each is attacked separately in the tests.
+- **Protected characteristics are never stored**, not merely not scored — the intake path strips
+  them before the insert, and a rubric naming one throws.
+- **The audit trail is retained and undeletable**: rubric version as applied, per-category scores,
+  and what the grader recommended next to what the human decided. `/api/hiring/decisions` derives
+  the override rate, the central number in an AEDT review.
+- A group-interview `no` does **not** auto-reject — it queues a human, because that is an adverse
+  action. `yes` and `maybe` both advance, per doc 11's "move people forward even if you're 50/50".
+
+**Adverse-impact analysis needs one more thing.** Because no protected data is collected, an
+analysis by race or sex cannot be run from this data — it needs a separate, voluntary
+self-identification survey held apart from the hiring record. That is the legally correct
+arrangement, and it is flagged rather than implied to be already covered.
+
+### LinkedIn Talent Solutions
+
+`src/hiring/linkedin.mjs` posts jobs and ingests applications people chose to send. There is no
+profile read, no search, and nowhere in the schema to put a harvested profile — sourcing data is
+dense with proxies for protected characteristics, and the cheapest way to not score something is
+never to hold it. ⚠️ CONFIRM: payload shapes are unverified against a real account.
+
+### Left unset — `SELECT * FROM v_hiring_config_gaps;`
+
+- **Role scorecards and comp/OTE.** Doc 7 links to external Closer and Setter Scorecard docs that
+  are not in the library folder; doc 6 defines the OTE method, not the numbers. Seeding invented
+  outcomes would put made-up performance agreements in front of real candidates.
+- **Hiring manager per role** — bench alerts have nobody to route to until set.

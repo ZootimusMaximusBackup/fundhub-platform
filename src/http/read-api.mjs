@@ -69,7 +69,12 @@ export const ROLE_SETS = {
   // Operational reads any employee needs to do their job.
   STAFF: new Set(["owner", "admin", "funding_advisor", "closer", "inquiry_specialist", "setter"]),
   // Platform health. Failed events name handlers and payload shapes.
-  OPS: new Set(["owner", "admin"])
+  OPS: new Set(["owner", "admin"]),
+  // Recruiting. Deliberately NOT the STAFF set: these reads carry job-applicant
+  // PII and the scoring trail of an automated employment decision tool, which is
+  // material a closer has no reason to see and real exposure if it circulates.
+  // Widen this only by naming a recruiting role, never by reusing STAFF.
+  HIRING: new Set(["owner", "admin"])
 };
 
 export function allowsRole(roleSet, role) {
