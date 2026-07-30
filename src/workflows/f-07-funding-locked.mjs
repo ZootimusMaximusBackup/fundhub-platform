@@ -76,11 +76,14 @@ export async function handle({ event, db, step }) {
     createInvoice(db, {
       orgId,
       clientId,
-      invoiceType: "success_fee",
+      source: "funding_success_fee",
       amount: feeAmount,
       saleId: saleId ?? null,
       fundingRoundId: fundingRoundId ?? null,
       idempotencyKey: (saleId && fundingRoundId) ? successFeeKey(saleId, fundingRoundId) : null,
+      // Guards a replay that arrives without sale/round ids, which would
+      // otherwise write a NULL key and bill the success fee twice.
+      sourceEventId: eventId ?? null,
       notes: `round.funded — approved ${approvedAmount} @ ${feePercent}%`,
     }));
   const invoiceTask = await step.run("create-invoice-task", () =>
