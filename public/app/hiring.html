@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fundhub — Hiring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
+<style>
+/* ══ SHARED CHROME — identical across every internal surface ══════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--butter:#F2E39B}           /* spectrum stop @40% — the 6th status color */
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+.logo{width:118px;height:24px;flex:0 0 118px}
+.eyebrow{display:block}
+.eyebrow .sep{color:var(--line);margin:0 6px}
+.app{display:flex;min-height:100vh}
+
+.side{width:230px;flex:0 0 230px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
+.side::after{content:"";position:absolute;top:0;right:0;width:2px;height:100%;background:var(--spectrum);opacity:.9}
+.side.mini{width:60px;flex:0 0 60px}
+.side-top{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--cardline)}
+.side.mini .side-top{padding:0 12px}
+.side.mini .logo{display:none}
+.burger{margin-left:auto;width:26px;height:26px;flex:0 0 26px;border:1px solid var(--cardline);background:transparent;color:var(--gray2);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+.burger:hover{border-color:#3F3F46;color:var(--paper)}
+.side.mini .burger{margin:0 auto}
+.side-scroll{flex:1;overflow-y:auto;padding:12px 0 8px}
+.side-scroll::-webkit-scrollbar{width:6px}
+.side-scroll::-webkit-scrollbar-thumb{background:#27272A;border-radius:3px}
+.navgroup{margin-bottom:3px}
+.navhead{width:100%;background:transparent;border:0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;padding:9px 18px 6px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#71717A}
+.navhead:hover{color:var(--gray2)}
+.navhead .chev{margin-left:auto;font-size:9px;transition:transform .16s;color:#52525B}
+.navgroup.closed .chev{transform:rotate(-90deg)}
+.navgroup.closed .navlist{display:none}
+.side.mini .navhead{justify-content:center;padding:10px 0 6px;font-size:0;letter-spacing:0}
+.side.mini .navhead::after{content:"";display:block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;opacity:.5}
+.side.mini .navhead .chev{display:none}
+.navlist{display:flex;flex-direction:column}
+.navitem{display:flex;align-items:center;gap:11px;padding:7px 18px;font-size:12.5px;color:var(--gray2);position:relative;transition:color .12s,background .12s}
+.navitem:hover{color:var(--paper);background:#161619}
+.navitem .ico{font-family:var(--mono);font-size:12px;width:16px;flex:0 0 16px;text-align:center;opacity:.75}
+.navitem.on{color:var(--paper);background:#161619;font-weight:500}
+.navitem.on::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--spectrum);border-radius:0 2px 2px 0}
+.navitem.on .ico{opacity:1}
+.side.mini .navitem{justify-content:center;padding:9px 0}
+.side.mini .navitem .lbl{display:none}
+.side-foot{padding:12px 16px;border-top:1px solid var(--cardline);font-family:var(--mono);font-size:10px;color:#52525B;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
+.side.mini .side-foot .who{display:none}
+.side.mini .side-foot{justify-content:center;padding:12px 0}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.spacer{flex:1}
+.content{padding:22px 24px 40px;flex:1}
+
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.card+.card{margin-top:14px}
+.card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.card-hd .t{font-size:13.5px;font-weight:600;letter-spacing:-.01em}
+.card-bd{padding:16px}
+.hair{height:2px;background:var(--spectrum);border-radius:1px}
+
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
+.btn:hover{background:var(--soft);border-color:var(--gray2)}
+.btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn.dark:hover{background:var(--ink2)}
+.btn.sm{padding:5px 10px;font-size:11.5px}
+.btn.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
+.b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
+.b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
+.b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
+.b-info{background:rgba(169,198,232,.26);border-color:var(--info);color:#22415F}
+.b-accent{background:rgba(196,179,229,.26);border-color:var(--accent);color:#3F2F63}
+.b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
+
+table.grid{width:100%;border-collapse:collapse}
+table.grid th{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft)}
+table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+table.grid tr:last-child td{border-bottom:0}
+
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+.stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
+.stat .sv{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
+.stat .sv.small{font-size:18px}
+.stat .sd{font-size:11px;color:var(--gray);margin-top:2px}
+
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+.empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:12px}
+
+/* ══ HIRING — page specific ══════════════════════════════════════════════ */
+
+/* derivation strip — every derived number on this screen shows its working */
+.deriv{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:13px 15px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 22px}
+.deriv .dcell{min-width:0}
+.deriv .dk{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);margin-bottom:4px}
+.deriv .formula{font-family:var(--mono);font-size:11.5px;color:var(--ink);line-height:1.6;word-break:break-word}
+.deriv .inputs{font-family:var(--mono);font-size:10.5px;color:var(--gray);line-height:1.7;margin-top:3px}
+.deriv .inputs b{color:var(--ink);font-weight:600}
+.deriv .src{grid-column:1/-1;font-family:var(--mono);font-size:10px;color:var(--gray2);letter-spacing:.05em;border-top:1px dashed var(--line);padding-top:9px}
+
+.note{font-size:11.5px;color:var(--gray);line-height:1.55}
+/* one inline schema token, one look — .k and code are the same chip, so
+   HR-01's list reads like every other panel on the screen. */
+.k,code{font-family:var(--mono);font-size:11px;background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:1px 5px;white-space:nowrap}
+.cap{padding:10px 16px;border-top:1px solid var(--line);background:var(--soft);font-size:11.5px;color:var(--gray);line-height:1.55}
+.cap b{color:var(--ink);font-weight:600}
+.cap+.cap{border-top:1px dashed var(--line)}
+.sub{display:block;font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em;margin-top:3px;font-weight:400}
+.nul{color:var(--gray2)}
+.mnum{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* the human gate — persistent, non-dismissable */
+.gate{border-color:var(--accent)}
+.gate .gbar{height:3px;background:var(--spectrum)}
+.gate .gbd{padding:14px 16px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:14px 24px}
+.gate h3{font-size:13px;font-weight:600;letter-spacing:-.01em;margin-bottom:6px}
+.gate .quote{font-size:12.5px;line-height:1.6;border-left:2px solid var(--accent);padding-left:11px;color:var(--ink)}
+.gate ol{margin:7px 0 0 16px;font-size:11.5px;color:var(--gray);line-height:1.7}
+.gate ol code{color:var(--ink)}
+
+/* filter rails */
+.rail{display:flex;flex-wrap:wrap;gap:4px}
+.rail button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .12s,border-color .12s;color:var(--gray)}
+.rail button:hover{background:var(--soft);color:var(--ink)}
+.rail button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.rail button .n{font-weight:700;margin-left:5px;opacity:.75}
+.rail button.zero{opacity:.5}
+.selwrap{display:inline-flex;align-items:center;gap:6px}
+.selwrap label{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
+.selwrap select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 7px;font-size:11.5px;font-family:var(--mono)}
+.selwrap select:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
+.tog{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;color:var(--gray)}
+.tog.on{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
+
+/* the board */
+.board{display:flex;gap:10px;overflow-x:auto;padding:14px 16px;align-items:flex-start}
+.board::-webkit-scrollbar{height:8px}
+.board::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px}
+.col{flex:0 0 238px;background:var(--soft);border:1px solid var(--line);border-radius:9px;display:flex;flex-direction:column;max-height:620px}
+.col-hd{padding:9px 11px 8px;border-bottom:1px solid var(--line);border-radius:9px 9px 0 0}
+.col-hd .cn{font-size:12px;font-weight:600;display:flex;align-items:baseline;gap:6px}
+.col-hd .cn .cc{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--gray)}
+.col-hd .ck{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--gray2);margin-top:3px}
+.col-bd{padding:8px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.col-bd::-webkit-scrollbar{width:6px}
+.col-bd::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:3px}
+.col-empty{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.05em;padding:10px 4px;text-align:center;line-height:1.6}
+
+.ccard{width:100%;text-align:left;font:inherit;color:inherit;background:#fff;border:1px solid var(--line);border-left:3px solid var(--line);border-radius:8px;padding:9px 10px;cursor:pointer;transition:border-color .12s,background .12s}
+.ccard:hover{background:var(--soft);border-color:var(--gray2)}
+.ccard:focus-visible{outline:2px solid var(--info);outline-offset:2px}
+.ccard.needs{border-left-color:var(--warn)}
+.ccard.closed{opacity:.66}
+.ccard .nm{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;letter-spacing:-.01em}
+.avi{width:20px;height:20px;flex:0 0 20px;border-radius:50%;background:var(--ink);color:var(--paper);display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:-.02em}
+.ccard .meta{font-family:var(--mono);font-size:9px;color:var(--gray2);letter-spacing:.05em;margin-top:5px;line-height:1.65}
+.ccard .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.tag{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;padding:2px 5px;border-radius:4px;border:1px solid var(--line);background:var(--soft);color:var(--gray)}
+.tag.has{border-color:var(--info);background:rgba(169,198,232,.20);color:#22415F}
+.tag.off{opacity:.5;text-decoration:line-through}
+.sblk{margin-top:7px;border-top:1px dashed var(--line);padding-top:7px}
+.sblk .row1{display:flex;align-items:baseline;gap:8px}
+.sblk .avg{font-family:var(--mono);font-size:16px;font-weight:600;letter-spacing:-.02em}
+.sblk .avg.nul{font-size:11px;font-weight:500}
+.sblk .of{font-family:var(--mono);font-size:9px;color:var(--gray2)}
+.sblk .rv{margin-left:auto;font-family:var(--mono);font-size:8.5px;color:var(--gray2);letter-spacing:.06em}
+.rec{display:inline-block;margin-top:5px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:2px 6px;border-radius:4px;border:1px solid var(--line);background:var(--soft);color:var(--gray)}
+.sblk .adv{font-family:var(--mono);font-size:8.5px;color:var(--gray2);letter-spacing:.05em;margin-top:5px;line-height:1.5}
+.sblk .fl{margin-top:5px;font-size:10px;color:#6B4A12;line-height:1.5}
+.sblk .fl .fk{font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;color:var(--gray)}
+
+/* severity stripes + status colouring on rows */
+tr.stripe-bad td:first-child{box-shadow:inset 3px 0 0 var(--alert)}
+tr.stripe-warn td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+tr.stripe-ok td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
+tr.dim td{opacity:.62}
+
+/* bench meter */
+.meter{width:120px;height:7px;border-radius:4px;background:var(--soft);border:1px solid var(--line);overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px}
+.meter i{display:block;height:100%;background:var(--ok)}
+.meter.warn i{background:var(--warn)}
+.meter.bad i{background:var(--alert)}
+
+/* expandable rows */
+tr.rowbtn{cursor:pointer}
+tr.rowbtn:hover td{background:var(--soft)}
+tr.rowbtn[aria-expanded="true"] td{background:var(--soft)}
+.chev{display:inline-block;width:10px;color:var(--gray2);font-size:9px;transition:transform .16s;margin-right:6px}
+tr.rowbtn[aria-expanded="true"] .chev{transform:rotate(90deg)}
+tr.det>td{background:var(--soft);padding:0 14px 13px!important}
+.detwrap{border-top:1px dashed var(--line);padding-top:11px;display:flex;gap:26px;flex-wrap:wrap}
+.detcol{min-width:150px;max-width:100%}
+.detcol .dk{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:3px}
+.detcol .dv{font-size:12px;font-weight:600;word-break:break-word}
+.detcol.wide{flex:1;min-width:260px}
+
+.errbox{font-family:var(--mono);font-size:11px;line-height:1.6;color:#6E2A22;background:rgba(242,166,155,.16);border:1px solid var(--alert);border-radius:7px;padding:8px 10px;white-space:pre-wrap;word-break:break-word}
+.jsonbox{font-family:var(--mono);font-size:10.5px;line-height:1.6;color:var(--gray);background:var(--soft);border:1px solid var(--line);border-radius:7px;padding:9px 11px;white-space:pre-wrap;word-break:break-word;max-height:230px;overflow:auto}
+.tblscroll{overflow-x:auto}
+.tblscroll::-webkit-scrollbar{height:7px}
+.tblscroll::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px}
+.pager{display:flex;align-items:center;gap:10px;padding:11px 16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.06em;flex-wrap:wrap}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,10,10,.42);opacity:0;pointer-events:none;transition:opacity .18s;z-index:60}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(820px,96vw);background:var(--paper);border-left:1px solid var(--line);z-index:61;transform:translateX(102%);transition:transform .2s ease;display:flex;flex-direction:column;box-shadow:-14px 0 34px rgba(10,10,10,.10)}
+.drawer.on{transform:none}
+.dw-hd{padding:14px 18px 12px;border-bottom:1px solid var(--line);background:#fff;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.dw-hd h2{font-size:15px;font-weight:600;letter-spacing:-.01em;line-height:1.3}
+.dw-x{margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:7px;width:28px;height:28px;flex:0 0 28px;cursor:pointer;font-family:var(--mono);font-size:13px;line-height:1;color:var(--gray)}
+.dw-x:hover{background:var(--soft);color:var(--ink)}
+.dw-bd{flex:1;overflow-y:auto;padding:16px 18px 34px}
+.dw-bd::-webkit-scrollbar{width:7px}
+.dw-bd::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px}
+.dw-sec{margin-top:17px}
+.dw-sec:first-child{margin-top:0}
+.dw-sec>.eyebrow{margin-bottom:8px}
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px 16px;border:1px solid var(--line);border-radius:9px;background:#fff;padding:13px 15px}
+.kv .k2{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
+.kv .v{font-size:12.5px;font-weight:600;margin-top:2px;word-break:break-word}
+.panel{border:1px solid var(--line);border-radius:9px;background:#fff;overflow:hidden}
+.panel+.panel{margin-top:9px}
+.panel-hd{padding:9px 12px;border-bottom:1px solid var(--line);background:var(--soft);font-size:12px;font-weight:600;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.panel-bd{padding:12px}
+.notice{border:1px solid var(--accent);background:rgba(196,179,229,.16);border-radius:9px;padding:10px 12px;font-size:11.5px;color:#3F2F63;line-height:1.6}
+.warnbox{border:1px solid var(--warn);background:rgba(245,206,143,.20);border-radius:9px;padding:10px 12px;font-size:11.5px;color:#6B4A12;line-height:1.6}
+.catgrid{display:grid;grid-template-columns:minmax(0,1fr) 46px;gap:5px 10px;align-items:center}
+.catgrid .cl{font-size:11.5px;line-height:1.4}
+.catgrid .cl small{display:block;font-family:var(--mono);font-size:9px;color:var(--gray2);letter-spacing:.05em}
+.catgrid .cvv{font-family:var(--mono);font-size:12px;font-weight:600;text-align:center;border:1px solid var(--line);border-radius:5px;padding:2px 0;background:var(--soft)}
+.catgrid .cvv.un{color:var(--gray2);font-weight:400}
+.tl{border-left:2px solid var(--line);margin-left:5px;padding-left:13px}
+.tl .ti{position:relative;padding-bottom:12px}
+.tl .ti:last-child{padding-bottom:0}
+.tl .ti::before{content:"";position:absolute;left:-18px;top:5px;width:7px;height:7px;border-radius:50%;background:var(--gray2);border:2px solid var(--paper)}
+.tl .ti.human::before{background:var(--ink)}
+.tl .tt{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em}
+.tl .td{font-size:12px;margin-top:2px;line-height:1.55}
+
+@media(max-width:1320px){.stats{grid-template-columns:repeat(3,1fr)}.deriv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.deriv{grid-template-columns:1fr}.gate .gbd{grid-template-columns:1fr}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script src="shell.js"></script>
+</head>
+<body>
+<!-- Hiring (HR) — the always-on recruiting funnel: postings, candidates, graded
+     applications, the bench and the decisions.
+
+     BUILT FROM
+       db/migrations/051_hiring.sql        pipelines/'hiring' + the 11 seeded stages (A),
+                                           hiring_roles (B), candidates (C),
+                                           candidate_applications (D), hiring_rubrics (E),
+                                           application_scores (F), hiring_interviews +
+                                           hiring_interview_attendees (G), hiring_decisions (H),
+                                           hiring_job_postings + hiring_channel_connections (I),
+                                           v_hiring_bench + v_hiring_funnel (J),
+                                           trg_candidate_applications_stage, trg_application_terminal,
+                                           trg_*_no_delete, hiring_decisions_human_ck / _offer_ck
+       db/migrations/052_config_defaults.sql (E)  the seeded scorecard + comp shapes — every
+                                           target and every figure deliberately null
+       src/hiring/grading.mjs              RECOMMENDATIONS, the 1-4 scale, weighted average,
+                                           bandFor(), flagsFor(), the protected-key deny-list
+       src/hiring/pipeline.mjs             advance() / reject() / recordGroupInterview()
+       src/hiring/bench.mjs                the bench monitor and the 60-day ramp review
+       src/hiring/linkedin.mjs             postJob() last_error, ⚠ CONFIRM BEFORE THIS RUNS LIVE
+       api/hiring/bench.mjs  candidates.mjs  application.mjs  postings.mjs  funnel.mjs  decisions.mjs
+       src/http/read-api.mjs               ROLE_SETS.HIRING = {owner, admin}; 405 on any non-GET
+
+     READ-ONLY BY CONSTRUCTION. Every file under api/hiring/ is a readHandler, which
+     answers any non-GET with 405 method_not_allowed. There is no route to advance,
+     reject, score, override a score, schedule an interview, post a job or ingest an
+     application — so this screen carries no control that claims to write, and the
+     board is not draggable.
+
+     053_eeo_selfid.sql is deliberately NOT on this screen. That data is gated to
+     compliance, has no endpoint, and is never projected per candidate.
+
+     Sample rows below. Scores are graded in-page by a port of grade() so the
+     arithmetic can be shown; in production average / recommendation / flags arrive
+     already computed on the row. -->
+<div class="app">
+  <aside class="side" id="side">
+    <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
+    <nav class="side-scroll">
+      <div class="navgroup"><button class="navhead">Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
+        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Automation<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Marketing<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
+        <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
+        <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Setup<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem on" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
+        <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
+        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
+        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Client<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+      </div></div>
+    </nav>
+    <div class="side-foot"><span class="pulse"></span><span class="who">CS · EMP-000001</span></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="crumb">Setup</span><h1>Hiring</h1>
+      <div class="spacer"></div>
+      <span class="chip" id="benchChip"><span class="cd"></span><span id="benchChipTxt">bench</span></span>
+      <span class="chip" title="Every api/hiring/* route is a readHandler — a non-GET is answered 405 method_not_allowed (src/http/read-api.mjs:157). Nothing on this screen writes.">read-only · GET</span>
+      <span class="chip" title="ROLE_SETS.HIRING = {owner, admin} exactly. closer, setter, funding_advisor and inquiry_specialist cannot open these endpoints at all.">owner + admin only</span>
+      <button class="btn mono" id="resetBtn">Reset filters</button>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ HR-00 · SUMMARY ═════════════════════════════════════════════ -->
+      <div class="stats" id="statRow"></div>
+      <div class="deriv" id="deriv"></div>
+
+      <!-- ══ HR-01 · THE HUMAN GATE ══════════════════════════════════════ -->
+      <div class="card gate">
+        <div class="gbar"></div>
+        <div class="card-hd">
+          <div class="eyebrow">HR-01 <span class="sep">/</span> THE HUMAN GATE</div>
+          <div class="spacer"></div>
+          <span class="badge b-accent">advisory only</span>
+          <span class="badge b-gray">read-only · GET</span>
+        </div>
+        <div class="gbd">
+          <div>
+            <h3>Scores are advice. People decide.</h3>
+            <div class="quote">Scores are advisory. No candidate may be rejected without a named human and a written reason; the database enforces this.</div>
+            <div class="note" style="margin-top:8px">
+              That sentence is the <span class="k">scoring_notice</span> string
+              <span class="k">api/hiring/application.mjs</span> returns on every application, and it is
+              printed again beside the score history in the review drawer. Every row on the board
+              carries its own <span class="k">recommendation_status</span> — the literal
+              <b>“advisory — a human decides”</b> — for the same reason.
+            </div>
+          </div>
+          <div>
+            <h3>Enforced in three places, not one</h3>
+            <ol>
+              <li><code>reject()</code> refuses without <code>decidedByStaffId</code> and a non-blank reason — <span class="k">src/hiring/pipeline.mjs:212-227</span></li>
+              <li><code>hiring_decisions_human_ck</code> requires both on <code>reject</code> and <code>offer_declined</code>; <code>hiring_decisions_offer_ck</code> requires a named human on <code>offer</code> — <span class="k">051 §H</span></li>
+              <li><code>trg_application_terminal</code> refuses <code>status='rejected'</code> unless a reject decision naming a human already exists — <span class="k">051 §H</span></li>
+            </ol>
+            <div class="note" style="margin-top:8px">
+              There is no auto-reject, no score threshold that closes an application and no
+              rejection-reason picklist: <span class="k">reason</span> is free text. Recommendation
+              pills on this screen are deliberately all one colour — a traffic light turns advice
+              into a verdict, which is exactly what the grader refuses to be.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ HR-02 · THE BENCH ═══════════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">HR-02 <span class="sep">/</span> THE BENCH</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray">always-on recruiting</span>
+          <span class="badge b-gray mono">worst shortfall first</span>
+        </div>
+        <div class="tblscroll">
+          <table class="grid" id="benchTbl">
+            <thead><tr>
+              <th>Role</th><th>Bench <span style="text-transform:none;letter-spacing:0">(1:1 + offer, open)</span></th>
+              <th>Shortfall</th><th>Open applications</th><th>Awaiting screen</th>
+              <th>Awaiting group interview</th><th>Hiring manager</th><th>Flags</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="cap">
+          <b>bench = open applications at 1:1 Interview or Offer.</b> Nothing earlier counts —
+          <span class="k">v_hiring_bench</span> (051 §J) filters
+          <span class="k">status = 'open' AND s.key IN ('one_on_one','offer')</span>, so a column of
+          unscreened applications can never read as a healthy bench.
+          <span class="k">bench_shortfall = greatest(bench_target − bench_count, 0)</span>;
+          <span class="k">bench_target</span> defaults to <b>4</b> per role.
+        </div>
+        <div class="cap">
+          <b>unrouted</b> means <span class="k">hiring_manager_staff_id IS NULL</span> — the req has no owner.
+          The bench monitor in <span class="k">src/hiring/bench.mjs</span> opens one task per role per day
+          (dedupe body <span class="k">hiring:bench:&lt;role_key&gt;:&lt;YYYY-MM-DD&gt;</span>), but nothing in the
+          repo schedules it, so no “last checked” time is shown here — there is nothing that would populate one.
+        </div>
+      </div>
+
+      <!-- ══ HR-03 · PIPELINE BOARD ══════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">HR-03 <span class="sep">/</span> PIPELINE BOARD</div>
+          <div class="spacer"></div>
+          <div class="selwrap"><label for="fRole">role</label><select id="fRole"></select></div>
+          <div class="selwrap"><label for="fSource">source</label><select id="fSource"></select></div>
+          <button class="tog" id="fFlagged" aria-pressed="false">flagged = 1</button>
+          <span class="badge b-gray mono" id="boardCount">—</span>
+        </div>
+        <div class="card-hd" style="border-bottom:1px solid var(--line);padding-top:10px">
+          <div class="rail" id="stageRail"></div>
+        </div>
+        <div class="board" id="board"></div>
+        <div class="cap">
+          Columns are the eleven seeded rows of <span class="k">pipeline_stages</span> where
+          <span class="k">pipelines.key = 'hiring'</span>, in <span class="k">sort_order</span> (051 §A).
+          <b>mock_call is not among them</b> — doc 9 retired it and the migration deliberately does not seed it,
+          though it survives as a legal <span class="k">hiring_rubrics.stage_key</span>.
+          The board is not draggable: the API has no route that moves a card.
+        </div>
+        <div class="cap">
+          <b>Stage and status are different columns and they legitimately disagree.</b> The
+          <span class="k">?state=</span> filter matches the stage key, never
+          <span class="k">candidate_applications.status</span>; there is no way to filter on status at all.
+          <span class="k">advance(toStageKey:'hired')</span> flips status to <span class="k">hired</span>,
+          so everyone in Onboarding, Ramp and Performing still reads status <b>hired</b>. Do not count
+          “active employees” from that.
+        </div>
+        <div class="cap">
+          <b>The score block always travels together</b> — average, recommendation, rubric version and flag
+          count in one place, captioned with the row’s own <span class="k">recommendation_status</span>.
+          The board carries the <b>latest</b> score only (a <span class="k">LATERAL … LIMIT 1</span>);
+          the full history is on the application, so there is no trend line here to draw.
+          <span class="k">has_video</span> / <span class="k">has_resume</span> are booleans — there is no
+          preview, no transcript and no download, and <span class="k">resume_document_id</span> is never returned.
+        </div>
+        <div class="pager" id="boardPager"></div>
+      </div>
+
+      <!-- ══ HR-04 · NEEDS A HUMAN ═══════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">HR-04 <span class="sep">/</span> NEEDS A HUMAN</div>
+          <div class="spacer"></div>
+          <span class="badge b-warn" id="rqCount">—</span>
+          <span class="badge b-gray mono">?flagged=1</span>
+        </div>
+        <div class="tblscroll">
+          <table class="grid" id="rqTbl">
+            <thead><tr>
+              <th>Candidate</th><th>Role</th><th>Stage</th><th>Status</th>
+              <th>Average</th><th>Recommendation</th><th>Rubric</th><th>Why it is here</th><th>In stage</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="cap">
+          The endpoint predicate is exactly
+          <span class="k">jsonb_array_length(flags) &gt; 0 OR average IS NULL</span> — flagged, <b>or</b> unscorable.
+          A null average is rendered as <b>not scored</b>, never as a low score:
+          <span class="k">grade()</span> returns <span class="k">average: null</span> and
+          <span class="k">recommendation: 'incomplete'</span> the moment any category is unrated, because
+          banding the three categories somebody happened to fill in is how a candidate gets “below bar”
+          from one answered question.
+        </div>
+        <div class="cap">
+          <b>?flagged has no status filter</b>, so closed applications keep appearing here until someone
+          re-scores or the window moves. They are dimmed rather than hidden — the endpoint returns them and
+          pretending otherwise would misreport the queue.
+        </div>
+        <div class="cap" id="rqInsight"></div>
+      </div>
+
+      <!-- ══ HR-05 · JOB POSTINGS ════════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">HR-05 <span class="sep">/</span> JOB POSTINGS &amp; SYNDICATION</div>
+          <div class="spacer"></div>
+          <div class="rail" id="postStateRail"></div>
+          <div class="rail" id="postChannelRail"></div>
+        </div>
+        <div class="tblscroll">
+          <table class="grid" id="postTbl">
+            <thead><tr>
+              <th>Posting</th><th>Role</th><th>Channel</th><th>Location</th><th>Status</th>
+              <th>Published</th><th>Posted</th><th>Applications</th><th>Last 7d</th><th>Last synced</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="cap">
+          <b>⚠ CONFIRM BEFORE THIS RUNS LIVE.</b> Both <span class="k">src/hiring/linkedin.mjs</span> and
+          051 §I carry that marker: Talent Solutions is partner-gated and the payload shapes are
+          <b>unverified against a real account</b>. Treat every LinkedIn row as an unconfirmed integration,
+          not a working one. There are no impressions, views, clicks or apply-rate numbers anywhere —
+          LinkedIn analytics are not modelled.
+        </div>
+        <div class="cap">
+          <span class="k">last_error</span> is the platform’s own message, token-scrubbed and sliced to
+          1000 characters, and it is shown <b>verbatim</b> — paraphrasing it into “posting failed” removes the
+          one detail that makes it fixable. Retry is only meaningful on HTTP 429 or ≥ 500
+          (<span class="k">src/hiring/linkedin.mjs:87</span>); everything else needs a change first.
+        </div>
+        <div class="cap">
+          <b>No connection panel.</b> <span class="k">hiring_channel_connections</span> is joined by no endpoint —
+          <span class="k">connection_state</span>, <span class="k">token_expires_at</span> and
+          <span class="k">scopes</span> are unavailable here, and the connection’s own
+          <span class="k">last_error</span> is a different column from the posting’s. Postings also return no
+          description and no <span class="k">external_id</span>, only <span class="k">is_published</span>, so
+          there is no job body to render and no deep link to the live post. Nothing schedules
+          <span class="k">postJob</span> / <span class="k">closeJob</span> / <span class="k">ingestApplications</span>,
+          so there is no “auto-posting” or “next sync” to report.
+        </div>
+      </div>
+
+      <!-- ══ HR-06 · FUNNEL BY SOURCE ════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">HR-06 <span class="sep">/</span> FUNNEL BY SOURCE</div>
+          <div class="spacer"></div>
+          <div class="selwrap"><label for="fnRole">role</label><select id="fnRole"></select></div>
+          <div class="selwrap"><label for="fnDays">days</label><select id="fnDays">
+            <option value="30">30</option><option value="90" selected>90</option>
+            <option value="180">180</option><option value="365">365</option><option value="730">730</option>
+          </select></div>
+          <span class="badge b-gray mono" id="fnWindow">—</span>
+        </div>
+        <div class="tblscroll">
+          <table class="grid" id="fnTbl">
+            <thead><tr>
+              <th>Source</th><th>Role</th><th>Applications</th>
+              <th>Currently at or past group interview</th>
+              <th>Currently at or past 1:1</th>
+              <th>Currently at or past offer</th>
+              <th>Hired</th><th>Rejected</th><th>Hire rate %</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="cap">
+          <b>These are current-stage counts, not historical progression.</b> The endpoint filters on the
+          application’s <b>present</b> <span class="k">sort_order</span> —
+          <span class="k">&gt;= 2</span>, <span class="k">&gt;= 3</span>, and
+          <span class="k">&gt;= 4 AND stage_key &lt;&gt; 'rejected'</span> — so someone sitting in Not Moving
+          Forward (sort_order 9) is counted in both “at or past group interview” and “at or past 1:1”.
+          Calling these stage conversion rates would be a lie, so the headers say what the SQL says.
+        </div>
+        <div class="cap">
+          <span class="k">hired</span> and <span class="k">rejected</span> come from
+          <span class="k">candidate_applications.status</span>, not from a stage.
+          <span class="k">hire_rate_pct</span> is <span class="k">round(100 · hired / applications, 1)</span>
+          and is NULL when applications = 0. <span class="k">?days</span> defaults to 90 and is clamped to 1–730.
+          No stage-by-stage drop-off chart exists: <span class="k">v_hiring_funnel</span> has no endpoint and
+          nothing records stage-entry history, so time-in-stage across the funnel cannot be computed.
+        </div>
+        <div class="cap" id="fnInsight"></div>
+      </div>
+
+      <!-- ══ HR-07 · DECISION LOG ════════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">HR-07 <span class="sep">/</span> DECISION LOG · AEDT AUDIT TRAIL</div>
+          <div class="spacer"></div>
+          <div class="selwrap"><label for="dcRole">role</label><select id="dcRole"></select></div>
+          <div class="selwrap"><label for="dcDays">days</label><select id="dcDays">
+            <option value="30">30</option><option value="90" selected>90</option>
+            <option value="180">180</option><option value="365">365</option><option value="730">730</option>
+          </select></div>
+        </div>
+        <div class="card-hd" style="padding-top:10px"><div class="rail" id="dcRail"></div></div>
+        <div class="card-bd" style="padding-bottom:0"><div id="dcSummary"></div></div>
+        <div class="tblscroll">
+          <table class="grid" id="dcTbl">
+            <thead><tr>
+              <th>When</th><th>Decision</th><th>Move</th><th>Role</th><th>Source</th>
+              <th>Decided by</th><th>Recommendation at decision</th><th>Score</th><th>Followed?</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="cap">
+          <b>Advances are logged too, not just rejections.</b> An audit that only records rejections cannot
+          answer how differently similar candidates were treated, so
+          <span class="k">advance()</span> writes a <span class="k">hiring_decisions</span> row as well
+          (<span class="k">src/hiring/pipeline.mjs:186-193</span>). Neither
+          <span class="k">application_scores</span> nor <span class="k">hiring_decisions</span> can be deleted —
+          <span class="k">hiring_no_delete</span> raises on any DELETE.
+        </div>
+        <div class="cap">
+          <span class="k">followed_recommendation</span> is defined only for
+          <b>reject</b>, <b>advance</b> and <b>offer</b>, and is NULL whenever
+          <span class="k">recommendation_at_decision</span> is NULL. It is NULL by design for
+          <span class="k">offer_accepted</span>, <span class="k">offer_declined</span>,
+          <span class="k">withdraw</span> and <span class="k">hold</span> — and those four, plus the
+          <b>Withdrawn</b> stage and status, have no producing code path in
+          <span class="k">pipeline.mjs</span> at all, so expect them to stay empty.
+        </div>
+        <div class="cap">
+          <span class="k">score_at_decision</span> and <span class="k">rubric_version</span> resolve through
+          <span class="k">d.score_id</span>, which <span class="k">pipeline.mjs</span> leaves NULL unless the
+          caller passes one — blanks here are normal, not missing data.
+          <span class="k">candidate_notified_at</span> exists but nothing ever sets it; the feedback
+          obligation becomes a task (<span class="k">hiring:feedback:&lt;applicationId&gt;</span>,
+          source_workflow <span class="k">hiring-candidate-feedback</span>) that no hiring endpoint exposes.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="foot">
+      <span class="pulse"></span><span>systems nominal · fundhub.ai</span>
+      <span class="spacer"></span>
+      <span id="footNote">hr · api/hiring/* · read-only · org: fundhub</span>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dwTitle" aria-hidden="true">
+  <div class="dw-hd">
+    <div style="min-width:0">
+      <div class="eyebrow">HR-08 <span class="sep">/</span> APPLICATION REVIEW</div>
+      <h2 id="dwTitle">—</h2>
+      <div id="dwSub" class="mono" style="font-size:10.5px;color:var(--gray2);letter-spacing:.07em;margin-top:5px"></div>
+    </div>
+    <button class="dw-x" id="dwClose" aria-label="Close application review">✕</button>
+  </div>
+  <div class="dw-bd" id="dwBody"></div>
+</aside>
+
+<script>
+/* ══ SHARED CHROME BEHAVIOUR ═════════════════════════════════════════════ */
+(function(){
+  var side=document.getElementById('side'),b=document.getElementById('burger');
+  b.addEventListener('click',function(){side.classList.toggle('mini');b.textContent=side.classList.contains('mini')?'››':'‹‹';});
+  document.querySelectorAll('.navhead').forEach(function(h){
+    h.addEventListener('click',function(){if(side.classList.contains('mini'))return;h.parentElement.classList.toggle('closed');});
+  });
+})();
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
+
+/* Fixed clock. Every "days in stage" number on this screen is derived from it,
+   because the schema has no aging column, no due date and no SLA anywhere. */
+var NOW = new Date(2026,6,30,15,20);
+function pd(s){ /* 'YYYY-MM-DD HH:MM' or 'YYYY-MM-DD' → Date, TZ-independent */
+  if(!s) return null;
+  var m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+  if(!m) return null;
+  return new Date(+m[1], +m[2]-1, +m[3], m[4]?+m[4]:0, m[5]?+m[5]:0);
+}
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fdate(s){ var d=pd(s); return d? MON[d.getMonth()]+' '+String(d.getDate()).padStart(2,'0') : '—'; }
+function fdatey(s){ var d=pd(s); return d? MON[d.getMonth()]+' '+String(d.getDate()).padStart(2,'0')+', '+d.getFullYear() : '—'; }
+function ftime(s){ var d=pd(s); if(!d) return '—';
+  var h=d.getHours(), ap=h>=12?'pm':'am', hh=h%12||12;
+  return fdatey(s)+' · '+hh+':'+String(d.getMinutes()).padStart(2,'0')+' '+ap; }
+function daysSince(s){ var d=pd(s); if(!d) return null; return Math.floor((NOW-d)/86400000); }
+function initials(n){ return String(n||'').trim().split(/\s+/).slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase(); }
+function num(n,dp){ return n===null||n===undefined ? '—' : Number(n).toFixed(dp===undefined?2:dp); }
+
+/* ══ RUBRICS ═════════════════════════════════════════════════════════════
+   No endpoint serves hiring_rubrics. category_scores arrives as raw {key: n},
+   so the labels and the 1-4 guidance below are HARD-CODED from the seeded rows
+   in db/migrations/051_hiring.sql §E rather than joined — showing them as if
+   they came back with the score would be inventing the join.
+
+   Only 'applied' v1 and 'group_interview' v1 are seeded. 'applied' v2 here is
+   sample data, included because it is the only way to show what the grader does
+   with a rubric flag it has no condition for. screening / one_on_one / mock_call
+   have no rubric at all — scoring at those stages throws.
+   ═══════════════════════════════════════════════════════════════════════════ */
+var APPLIED_CATS = [
+  {key:'effort',              label:'Effort / thoroughness',
+   guidance:{1:'Vague, one-line answers',2:'Some detail',3:'Detailed and clear',4:'Very detailed, clearly took it seriously'}},
+  {key:'honesty',             label:'Honesty, no exaggeration',
+   guidance:{1:'Obvious incongruence',2:'Some overstatement',3:'Consistent',4:'Candid, including about gaps'}},
+  {key:'income_goal_fit',     label:'Income goals align with the position',
+   guidance:{1:'Far below or above the role',2:'Loosely aligned',3:'Aligned',4:'Aligned and specific'}},
+  {key:'relevant_experience', label:'Experience with our market/offer OR prior selling',
+   guidance:{1:'Neither',2:'Some selling, no market fit',3:'One of the two, clearly',4:'Both'}},
+  {key:'sales_inputs',        label:'Positive sales inputs (training, reading, practice)',
+   guidance:{1:'None',2:'Passive interest',3:'Active and current',4:'Deliberate and sustained'}},
+  {key:'work_history',        label:'Positive relationship with past work experience',
+   guidance:{1:'Blames every past employer',2:'Mixed',3:'Constructive',4:'Constructive and self-aware'}}
+];
+var APPLIED_BANDS = [
+  {min:1.0,max:1.99,recommendation:'review_likely_no', label:'Below bar on the rubric — human review required'},
+  {min:2.0,max:2.99,recommendation:'review_maybe',     label:'Mixed — consider for the other lane or a later cycle'},
+  {min:3.0,max:3.49,recommendation:'advance',          label:'Meets the bar — advance to group interview'},
+  {min:3.5,max:4.0, recommendation:'advance_priority', label:'Strong — prioritise scheduling'}
+];
+var APPLIED_FLAGS_V1 = [
+  {key:'incongruent_answers',  label:'Answers appear internally inconsistent — verify before proceeding'},
+  {key:'income_goal_mismatch', label:'Stated income goal is far outside the role\u2019s OTE — confirm expectations'}
+];
+
+var RUBRICS = {
+  'applied@1': {stage_key:'applied', version:1, seeded:true,
+    categories:APPLIED_CATS, review_flags:APPLIED_FLAGS_V1, rating_bands:APPLIED_BANDS},
+  /* sample: v1 plus a third flag the grader has no `when` for */
+  'applied@2': {stage_key:'applied', version:2, seeded:false,
+    categories:APPLIED_CATS, rating_bands:APPLIED_BANDS,
+    review_flags:APPLIED_FLAGS_V1.concat([
+      {key:'experience_verification',
+       label:'Prior selling claims not yet verified against a reference — check before the group interview'}
+    ])},
+  'group_interview@1': {stage_key:'group_interview', version:1, seeded:true,
+    categories:[
+      {key:'culture_fit',    label:'Company / division culture fit',
+       guidance:{1:'Clear mismatch',2:'Unclear',3:'Fits',4:'Adds to it'}},
+      {key:'self_awareness', label:'Self-aware, has EQ',
+       guidance:{1:'None evident',2:'Some',3:'Clear',4:'Notably strong'}},
+      {key:'purpose_goals',  label:'Has purpose and goals',
+       guidance:{1:'Drifting',2:'Vague',3:'Clear',4:'Clear and specific'}},
+      {key:'presence',       label:'Energy, confidence, original answers',
+       guidance:{1:'Flat or rehearsed',2:'Uneven',3:'Good energy',4:'Led the room'}}
+    ],
+    review_flags:[],
+    rating_bands:[
+      {min:1.0, max:1.74,recommendation:'review_likely_no',label:'Human review required'},
+      {min:1.75,max:4.0, recommendation:'advance',         label:'Yes or maybe — move to 1:1 per the group-interview SOP'}
+    ]}
+};
+/* The six values grading.mjs will ever produce. Nothing else is a recommendation. */
+var RECOMMENDATIONS = ['incomplete','review','review_likely_no','review_maybe','advance','advance_priority'];
+
+/* ══ grade() — a port of src/hiring/grading.mjs ═══════════════════════════
+   Here only so the arithmetic on this screen can show its working. In
+   production average / recommendation / flags arrive already computed on the
+   row; the server is authoritative. Weighted mean, 2dp; a partial rubric never
+   gets banded; flags route to a person and decide nothing.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function round2(n){ return Math.round(n*100)/100; }
+function bandFor(bands, average){
+  if(average===null||average===undefined) return null;
+  for(var i=0;i<bands.length;i++){ if(average>=bands[i].min && average<=bands[i].max) return bands[i]; }
+  return null;
+}
+function flagsFor(rubric, categoryScores){
+  var out=[], defined=rubric.review_flags||[];
+  defined.forEach(function(flag){
+    if(flag.key==='incongruent_answers'){ if(Number(categoryScores.honesty)===1) out.push(flag); return; }
+    if(flag.key==='income_goal_mismatch'){ if(Number(categoryScores.income_goal_fit)===1) out.push(flag); return; }
+    /* A flag whose condition this module does not implement is SURFACED, not
+       silently skipped — an unevaluated rule in a compliance tool is one
+       everybody believes is running and nothing is checking. */
+    if(flag.when===undefined) out.push({key:flag.key,label:flag.label,unevaluated:true});
+  });
+  var values=[]; for(var k in categoryScores){ var v=Number(categoryScores[k]); if(isFinite(v)) values.push(v); }
+  if(values.length>=2 && Math.max.apply(null,values)-Math.min.apply(null,values)>=3){
+    out.push({key:'wide_spread',
+      label:'Scores range from 1 to 4 — the average is not describing this candidate; read the detail.'});
+  }
+  return out;
+}
+function grade(rubric, categoryScores){
+  var cats=rubric.categories, scores=[], missing=[];
+  cats.forEach(function(c){
+    var raw=categoryScores[c.key];
+    if(raw===undefined||raw===null||raw===''){ missing.push(c.key); return; }
+    var w=(c.weight===undefined||c.weight===null)?1:Number(c.weight);
+    scores.push({key:c.key,value:Number(raw),weight:w});
+  });
+  if(missing.length){
+    return {average:null, recommendation:'incomplete',
+      label:'Not scored: '+missing.length+' of '+cats.length+' categories are unrated',
+      flags:[], missing:missing, totalWeight:null, weighted:null};
+  }
+  var tw=0, sum=0;
+  scores.forEach(function(s){ tw+=s.weight; sum+=s.value*s.weight; });
+  var avg = tw===0 ? null : round2(sum/tw);
+  var band = bandFor(rubric.rating_bands, avg);
+  return {average:avg,
+    recommendation: band ? band.recommendation : 'review',
+    label: band ? band.label : 'No band matched — human review required',
+    flags: flagsFor(rubric, categoryScores), missing:[], totalWeight:tw, weighted:sum};
+}
+
+/* ══ REFERENCE DATA ══════════════════════════════════════════════════════ */
+var STAGES = [
+  {key:'applied',         name:'Applied',              sort:0},
+  {key:'screening',       name:'Screening',            sort:1},
+  {key:'group_interview', name:'Group Interview',      sort:2},
+  {key:'one_on_one',      name:'1:1 Interview',        sort:3},
+  {key:'offer',           name:'Offer',                sort:4},
+  {key:'hired',           name:'Hired',                sort:5},
+  {key:'onboarding',      name:'Onboarding',           sort:6},
+  {key:'ramp',            name:'Ramp (60-day trial)',  sort:7},
+  {key:'performing',      name:'Performing',           sort:8},
+  {key:'rejected',        name:'Not Moving Forward',   sort:9},
+  {key:'withdrawn',       name:'Withdrawn',            sort:10}
+];
+var STAGE_BY_KEY={}; STAGES.forEach(function(s){STAGE_BY_KEY[s.key]=s;});
+
+/* candidates_source_ck, in the order doc 10 prescribes. `rank` is that order,
+   shown as context on the funnel — it is not a metric. */
+var SOURCES = [
+  {key:'referral',    label:'Referral',            rank:1},
+  {key:'client_base', label:'Client base',         rank:2},
+  {key:'audience',    label:'Audience',            rank:3},
+  {key:'social',      label:'Broad social',        rank:4},
+  {key:'job_board',   label:'Job board',           rank:5},
+  {key:'ads',         label:'Ads',                 rank:5},
+  {key:'linkedin',    label:'LinkedIn',            rank:null},
+  {key:'recruiter',   label:'Recruiter',           rank:null},
+  {key:'inbound',     label:'Inbound (default)',   rank:null}
+];
+var SOURCE_LABEL={}; SOURCES.forEach(function(s){SOURCE_LABEL[s.key]=s.label;});
+
+var DECISION_VALUES = ['advance','reject','offer','offer_accepted','offer_declined','withdraw','hold'];
+/* Four of the seven have no producing code path anywhere in pipeline.mjs. */
+var DECISION_UNREACHABLE = ['offer_accepted','offer_declined','withdraw','hold'];
+
+/* hiring_roles — three seeded rows. scorecard/comp shapes are 052 §E verbatim:
+   every target and every figure is null by design. */
+var ROLES = [
+  {key:'closer', name:'Closer', bench_target:4, hiring_manager:'Sarah Whitfield',
+   scorecard:{
+     model:'outcomes (lagging) + leading indicators, per doc 7 / the book Who',
+     source_note:'Structure from doc 7; metric names from the tracker set in the same folder. TARGETS ARE NULL — doc 7 links to an external Closer Scorecard doc that was not in the folder. Fill targets before using this in an offer.',
+     outcomes:[
+       {key:'closed_revenue', label:'Closed revenue per month', target:null, unit:'usd'},
+       {key:'close_rate',     label:'Close rate on taken calls', target:null, unit:'pct'},
+       {key:'cash_collected', label:'Cash collected per month', target:null, unit:'usd'}],
+     leading_indicators:[
+       {key:'calls_taken',       label:'Calls taken per week', target:null, unit:'count'},
+       {key:'show_rate',         label:'Show rate on booked calls', target:null, unit:'pct'},
+       {key:'followup_touches',  label:'Follow-up touches on open pipeline', target:null, unit:'count'},
+       {key:'crm_hygiene',       label:'Dispositions logged same day', target:null, unit:'pct'}]},
+   comp:{
+     source_note:'Doc 6 (Determining OTE & Comp Structure) describes the METHOD, not the numbers, and could not be read. All figures null — set before extending an offer.',
+     structure:'base + commission', base_monthly_usd:null,
+     commission_pct_of_cash_collected:null, ote_annual_usd:null,
+     ramp:{trial_days:60, notes:'60-day trial per doc 10s funnel and doc 14'}}},
+
+  {key:'setter', name:'Setter', bench_target:4, hiring_manager:'Chris Stanbridge',
+   scorecard:{
+     model:'outcomes (lagging) + leading indicators, per doc 7 / the book Who',
+     source_note:'Structure from doc 7; metric names from the tracker set in the same folder. TARGETS ARE NULL — doc 7 links to an external Setter Scorecard doc that was not in the folder. Fill targets before using this in an offer.',
+     outcomes:[
+       {key:'qualified_calls_booked',  label:'Qualified calls booked per month', target:null, unit:'count'},
+       {key:'booked_to_held_rate',     label:'Booked-to-held rate', target:null, unit:'pct'},
+       {key:'sourced_closed_revenue',  label:'Closed revenue from sourced calls', target:null, unit:'usd'}],
+     leading_indicators:[
+       {key:'outbound_touches',   label:'Outbound touches per day', target:null, unit:'count'},
+       {key:'conversations',      label:'Live conversations per day', target:null, unit:'count'},
+       {key:'speed_to_lead_min',  label:'Speed to lead', target:null, unit:'minutes'},
+       {key:'confirmation_rate',  label:'Booked calls confirmed before the slot', target:null, unit:'pct'}]},
+   comp:{
+     source_note:'Doc 6 describes the METHOD, not the numbers, and could not be read. Doc 15 (Setter Ramp) holds ramp targets and was also unreadable. All figures null.',
+     structure:'base + per-qualified-booking + override on closed revenue',
+     base_monthly_usd:null, per_qualified_booking_usd:null,
+     override_pct_of_closed_revenue:null, ote_annual_usd:null,
+     ramp:{trial_days:60, notes:'60-day trial per doc 10s funnel and doc 14'}}},
+
+  {key:'sales_coordinator', name:'Sales Coordinator', bench_target:4, hiring_manager:null,
+   scorecard:{
+     model:'outcomes (lagging) + leading indicators, per doc 7 / the book Who',
+     source_note:'Doc 31 (Sales Coordinator Scorecard) exists in the folder but was unreadable. Structure only; targets null.',
+     outcomes:[
+       {key:'pipeline_hygiene',        label:'Pipeline accuracy', target:null, unit:'pct'},
+       {key:'application_throughput',  label:'Applications graded per day', target:null, unit:'count'}],
+     leading_indicators:[
+       {key:'response_time_hours',   label:'Time to first response on an inbound application', target:null, unit:'hours'},
+       {key:'scheduling_fill_rate',  label:'Group interview seats filled', target:null, unit:'pct'}]},
+   comp:{source_note:'Unsourced — doc 6 unreadable.', structure:'base',
+     base_monthly_usd:null, ote_annual_usd:null}}
+];
+var ROLE_BY_KEY={}; ROLES.forEach(function(r){ROLE_BY_KEY[r.key]=r;});
+
+/* ══ SAMPLE ROWS ═════════════════════════════════════════════════════════
+   Shaped exactly as GET /api/hiring/candidates returns them, plus the
+   per-application record GET /api/hiring/application adds (answers, notes,
+   the full score list, interviews, decisions).
+
+   No protected characteristic appears anywhere in `answers` because none is
+   ever stored: grading.mjs strips 25 whole-word terms and 16 prefix stems at
+   intake, camelCase split first. There is nothing here to redact.
+   ═══════════════════════════════════════════════════════════════════════════ */
+function sc(o){ return o; }
+var APPS = [
+  /* ── CLOSER ──────────────────────────────────────────────────────────── */
+  {id:'A-1041', role_key:'closer', stage_key:'one_on_one', status:'open',
+   full_name:'Priya Raghunathan', email:'priya.raghunathan@gmail.com', phone:'+1 602 555 0148',
+   source:'referral', source_detail:'Jordan Blake — worked together at Sandpoint Capital',
+   disc_profile:'DI', linkedin_profile_url:'https://www.linkedin.com/in/priya-raghunathan',
+   applied_at:'2026-07-06 09:14', entered_stage_at:'2026-07-24 13:02',
+   has_video:true, has_resume:true, posting_title:'Closer — Fundhub (Remote, US)', posting_channel:'linkedin',
+   notes:'Asked for the comp structure in writing before the 1:1. Nothing to send yet — the role\u2019s comp figures are all null.',
+   answers:{years_selling:'6', best_month_cash_collected:'$74,000',
+     current_situation:'Closing for a B2B lending broker, remote, want a bigger offer to sell',
+     income_goal_12mo:'$180,000', why_this_role:'I have sold funding before and I know the objection set cold. I want an offer where the client actually gets the capital.',
+     sales_training:'Sandler in 2023, weekly role-play group since. Currently re-reading Gap Selling.',
+     availability:'Two weeks notice', remote_setup:'Home office, wired, dual monitor'},
+   scores:[{id:'S-3311', stage_key:'applied', rubric:'applied@1', created_at:'2026-07-07 06:02',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:4,honesty:4,income_goal_fit:4,relevant_experience:3,sales_inputs:4,work_history:3})}],
+   interviews:[
+     {id:'I-221', kind:'group', scheduled_for:'2026-07-22 10:00', status:'held',
+      meeting_url:'https://us02web.zoom.us/j/8841720394', host_name:'Sarah Whitfield',
+      attended:true, outcome:'yes', notes:'Led the room on the objection role-play. Asked the only question about how we get paid.'},
+     {id:'I-238', kind:'one_on_one', scheduled_for:'2026-08-04 14:00', status:'scheduled',
+      meeting_url:'https://us02web.zoom.us/j/9920117744', host_name:'Sarah Whitfield',
+      attended:null, outcome:null, notes:null}],
+   decision_ids:['D-1003','D-1005','D-1012']},
+
+  {id:'A-1038', role_key:'closer', stage_key:'one_on_one', status:'open',
+   full_name:'Marcus Ellery Boone', email:'m.boone@boonecapitalgroup.com', phone:'+1 480 555 0192',
+   source:'client_base', source_detail:'Card Stacking DFY client, 2025 cohort',
+   disc_profile:'D', linkedin_profile_url:null,
+   applied_at:'2026-07-02 17:40', entered_stage_at:'2026-07-22 14:47',
+   has_video:true, has_resume:true, posting_title:null, posting_channel:null,
+   notes:'Was a client first. Knows the offer from the buyer side, which is unusual and useful.',
+   answers:{years_selling:'9', best_month_cash_collected:'$52,000',
+     current_situation:'Ran my own brokerage, winding it down',
+     income_goal_12mo:'$150,000', why_this_role:'I went through the program myself. I can say what it actually does without overselling it.',
+     sales_training:'Mostly self-taught, heavy on recorded call review', availability:'Immediate'},
+   scores:[{id:'S-3298', stage_key:'applied', rubric:'applied@1', created_at:'2026-07-03 06:01',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:4,honesty:3,income_goal_fit:3,relevant_experience:3,sales_inputs:3,work_history:3})}],
+   interviews:[
+     {id:'I-214', kind:'group', scheduled_for:'2026-07-15 10:00', status:'held',
+      meeting_url:'https://us02web.zoom.us/j/8841720394', host_name:'Sarah Whitfield',
+      attended:true, outcome:'yes', notes:'Steady. Slightly flat energy, strong on substance.'}],
+   decision_ids:['D-1010']},
+
+  {id:'A-1035', role_key:'closer', stage_key:'offer', status:'open',
+   full_name:'Tanya Okonkwo', email:'tanya.okonkwo@outlook.com', phone:'+1 312 555 0177',
+   source:'audience', source_detail:'Newsletter — funding playbook issue',
+   disc_profile:'DI', linkedin_profile_url:'https://www.linkedin.com/in/tanyaokonkwo',
+   applied_at:'2026-06-28 11:22', entered_stage_at:'2026-07-27 16:40',
+   has_video:true, has_resume:true, posting_title:'Closer — Fundhub (Remote, US)', posting_channel:'linkedin',
+   notes:'Strongest applied score this cycle. Offer terms cannot be quoted — every comp figure on the closer role is null.',
+   answers:{years_selling:'7', best_month_cash_collected:'$88,500',
+     current_situation:'Senior closer at a credit-repair firm, ready to move',
+     income_goal_12mo:'$200,000', why_this_role:'Same buyer, better offer. I already know why people say no to credit repair.',
+     sales_training:'Weekly role-play, two closer masterminds, reads transcripts of her own calls',
+     availability:'Three weeks', remote_setup:'Dedicated office'},
+   scores:[
+     {id:'S-3271', stage_key:'applied', rubric:'applied@1', created_at:'2026-06-29 06:03',
+      is_automated:true, scored_by_name:null,
+      category_scores:sc({effort:4,honesty:4,income_goal_fit:4,relevant_experience:4,sales_inputs:3,work_history:4})},
+     {id:'S-3340', stage_key:'group_interview', rubric:'group_interview@1', created_at:'2026-07-16 12:20',
+      is_automated:false, scored_by_name:'Sarah Whitfield',
+      category_scores:sc({culture_fit:4,self_awareness:3,purpose_goals:4,presence:4})}],
+   interviews:[
+     {id:'I-214', kind:'group', scheduled_for:'2026-07-15 10:00', status:'held',
+      meeting_url:'https://us02web.zoom.us/j/8841720394', host_name:'Sarah Whitfield',
+      attended:true, outcome:'yes', notes:'Best answer of the session on why she left her last seat.'},
+     {id:'I-230', kind:'one_on_one', scheduled_for:'2026-07-24 15:00', status:'held',
+      meeting_url:'https://us02web.zoom.us/j/9920117744', host_name:'Sarah Whitfield',
+      attended:true, outcome:'yes', notes:'Wants the offer in writing with the commission percentage stated.'}],
+   decision_ids:['D-1016']},
+
+  {id:'A-1052', role_key:'closer', stage_key:'group_interview', status:'open',
+   full_name:'Devon Marsh', email:'devonmarsh88@gmail.com', phone:'+1 702 555 0130',
+   source:'linkedin', source_detail:'LinkedIn posting — Closer (Remote, US)',
+   disc_profile:'I', linkedin_profile_url:'https://www.linkedin.com/in/devon-marsh-sales',
+   applied_at:'2026-07-18 08:31', entered_stage_at:'2026-07-25 15:20',
+   has_video:true, has_resume:true, posting_title:'Closer — Fundhub (Remote, US)', posting_channel:'linkedin',
+   notes:null,
+   answers:{years_selling:'4', best_month_cash_collected:'$31,000',
+     current_situation:'Inside sales, SaaS, wants commission upside',
+     income_goal_12mo:'$120,000', why_this_role:'Bigger ticket, real outcome for the buyer.',
+     sales_training:'Company enablement plus a podcast habit', availability:'Two weeks'},
+   scores:[{id:'S-3352', stage_key:'applied', rubric:'applied@1', created_at:'2026-07-19 06:02',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:3,honesty:3,income_goal_fit:3,relevant_experience:3,sales_inputs:3,work_history:3})}],
+   interviews:[
+     {id:'I-244', kind:'group', scheduled_for:'2026-08-05 10:00', status:'scheduled',
+      meeting_url:'https://us02web.zoom.us/j/8841720394', host_name:'Sarah Whitfield',
+      attended:null, outcome:null, notes:null}],
+   decision_ids:['D-1013']},
+
+  {id:'A-1054', role_key:'closer', stage_key:'group_interview', status:'open',
+   full_name:'Alicia Ferrante', email:'alicia.ferrante@proton.me', phone:'+1 646 555 0119',
+   source:'social', source_detail:'Instagram reel — hiring closers',
+   disc_profile:'IS', linkedin_profile_url:null,
+   applied_at:'2026-07-20 21:03', entered_stage_at:'2026-07-26 11:05',
+   has_video:true, has_resume:false, posting_title:null, posting_channel:null,
+   notes:'Submitted the video before finishing the written form. Sarah moved her on anyway and will re-score at the group interview.',
+   answers:{years_selling:'3', current_situation:'Freelance appointment setting, wants to close',
+     why_this_role:'I have set for two funding offers and never got to run the close. I want the seat.'},
+   scores:[{id:'S-3361', stage_key:'applied', rubric:'applied@1', created_at:'2026-07-21 06:02',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:3,honesty:3,relevant_experience:2})}],
+   interviews:[
+     {id:'I-244', kind:'group', scheduled_for:'2026-08-05 10:00', status:'scheduled',
+      meeting_url:'https://us02web.zoom.us/j/8841720394', host_name:'Sarah Whitfield',
+      attended:null, outcome:null, notes:null}],
+   decision_ids:['D-1015']},
+
+  {id:'A-1061', role_key:'closer', stage_key:'applied', status:'open',
+   full_name:'Ruben Ortiz-Klein', email:'rortizklein@gmail.com', phone:'+1 305 555 0166',
+   source:'job_board', source_detail:'Indeed — sales',
+   disc_profile:null, linkedin_profile_url:null,
+   applied_at:'2026-07-27 07:48', entered_stage_at:'2026-07-27 07:48',
+   has_video:false, has_resume:true, posting_title:null, posting_channel:null, notes:null,
+   answers:{years_selling:'5', best_month_cash_collected:'$18,000',
+     current_situation:'Car sales, floor', income_goal_12mo:'$400,000',
+     why_this_role:'Remote and uncapped.', sales_training:'None currently', availability:'Immediate'},
+   scores:[{id:'S-3388', stage_key:'applied', rubric:'applied@1', created_at:'2026-07-27 08:01',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:3,honesty:3,income_goal_fit:1,relevant_experience:2,sales_inputs:2,work_history:3})}],
+   interviews:[], decision_ids:[]},
+
+  {id:'A-1063', role_key:'closer', stage_key:'applied', status:'open',
+   full_name:'Hannah Whitmore', email:'hannah.whitmore@yahoo.com', phone:'+1 214 555 0154',
+   source:'ads', source_detail:'Meta ad — closer hiring, Jul set',
+   disc_profile:null, linkedin_profile_url:null,
+   applied_at:'2026-07-28 19:12', entered_stage_at:'2026-07-28 19:12',
+   has_video:false, has_resume:true, posting_title:null, posting_channel:null, notes:null,
+   answers:{years_selling:'12', best_month_cash_collected:'$260,000',
+     current_situation:'Between roles', income_goal_12mo:'$95,000',
+     why_this_role:'Looking for something stable.',
+     sales_training:'Everything, honestly', availability:'Immediate'},
+   scores:[{id:'S-3394', stage_key:'applied', rubric:'applied@2', created_at:'2026-07-28 19:30',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:2,honesty:1,income_goal_fit:2,relevant_experience:2,sales_inputs:2,work_history:2})}],
+   interviews:[], decision_ids:[]},
+
+  {id:'A-1064', role_key:'closer', stage_key:'applied', status:'open',
+   full_name:'Sean Delacroix', email:'sean.delacroix@gmail.com', phone:'+1 503 555 0188',
+   source:'inbound', source_detail:null,
+   disc_profile:'DC', linkedin_profile_url:'https://www.linkedin.com/in/seandelacroix',
+   applied_at:'2026-07-29 10:26', entered_stage_at:'2026-07-29 10:26',
+   has_video:true, has_resume:true, posting_title:null, posting_channel:null,
+   notes:'Careers page direct. Answers are unusually uneven — strong on inputs, thin on anything he has actually sold.',
+   answers:{years_selling:'2', best_month_cash_collected:'$9,400',
+     current_situation:'Retail management, moving into sales deliberately',
+     income_goal_12mo:'$110,000',
+     why_this_role:'I have spent a year preparing for a closing seat and I want the first one to be a real offer.',
+     sales_training:'Daily role-play partner, three courses finished, records and reviews his own practice calls',
+     availability:'Two weeks'},
+   scores:[{id:'S-3401', stage_key:'applied', rubric:'applied@2', created_at:'2026-07-29 10:44',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:4,honesty:4,income_goal_fit:2,relevant_experience:1,sales_inputs:4,work_history:3})}],
+   interviews:[], decision_ids:[]},
+
+  {id:'A-1029', role_key:'closer', stage_key:'hired', status:'hired',
+   full_name:'Bethany Cole', email:'bethany.cole@gmail.com', phone:'+1 480 555 0121',
+   source:'referral', source_detail:'Nina Castellano',
+   disc_profile:'D', linkedin_profile_url:null,
+   applied_at:'2026-06-10 12:00', entered_stage_at:'2026-07-14 15:00',
+   has_video:true, has_resume:true, posting_title:null, posting_channel:null,
+   notes:'Start date agreed verbally on the call. Nothing in this schema records a start date or an offer amount.',
+   answers:{years_selling:'8', best_month_cash_collected:'$61,000',
+     current_situation:'Closer at a coaching company', income_goal_12mo:'$165,000',
+     why_this_role:'Nina told me what the offer actually delivers. That is the part I have been missing.',
+     sales_training:'Weekly with Nina for the last year', availability:'Two weeks'},
+   scores:[{id:'S-3240', stage_key:'applied', rubric:'applied@1', created_at:'2026-06-11 06:02',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:4,honesty:4,income_goal_fit:3,relevant_experience:4,sales_inputs:3,work_history:3})}],
+   interviews:[], decision_ids:['D-1004']},
+
+  {id:'A-1012', role_key:'closer', stage_key:'onboarding', status:'hired',
+   full_name:'Andre Whitlock', email:'andre.whitlock@gmail.com', phone:'+1 623 555 0109',
+   source:'client_base', source_detail:'Consulting Services client 2024',
+   disc_profile:'DI', linkedin_profile_url:null,
+   applied_at:'2026-05-12 09:00', entered_stage_at:'2026-06-22 16:05',
+   has_video:true, has_resume:true, posting_title:null, posting_channel:null,
+   notes:'Status reads hired because advance(toStageKey:\u2019hired\u2019) sets it, and it stays hired through onboarding.',
+   answers:{years_selling:'5', best_month_cash_collected:'$44,000',
+     current_situation:'Ran his own rounds with us, then asked for a seat',
+     income_goal_12mo:'$140,000', why_this_role:'I have been the client. I know the questions before they ask them.',
+     sales_training:'Consistent, self-directed', availability:'Immediate'},
+   scores:[{id:'S-3120', stage_key:'applied', rubric:'applied@1', created_at:'2026-05-13 06:01',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:3,honesty:4,income_goal_fit:3,relevant_experience:4,sales_inputs:3,work_history:3})}],
+   interviews:[], decision_ids:['D-1001']},
+
+  {id:'A-1003', role_key:'closer', stage_key:'performing', status:'hired',
+   full_name:'Corinne Vasquez', email:'corinne.vasquez@gmail.com', phone:'+1 480 555 0103',
+   source:'referral', source_detail:'Sarah Whitfield',
+   disc_profile:'D', linkedin_profile_url:null,
+   applied_at:'2026-04-02 10:15', entered_stage_at:'2026-07-01 09:00',
+   has_video:true, has_resume:true, posting_title:null, posting_channel:null,
+   notes:'Cleared the 60-day trial on Jul 1. rampReview queues a task and changes nothing else — the stage move was a person.',
+   answers:{years_selling:'10', best_month_cash_collected:'$97,000',
+     current_situation:'Was closing for a competitor', income_goal_12mo:'$220,000',
+     why_this_role:'Sarah has been trying to hire me for two years.',
+     sales_training:'Runs the role-play group she is in', availability:'Served notice'},
+   scores:[{id:'S-2980', stage_key:'applied', rubric:'applied@1', created_at:'2026-04-03 06:02',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:4,honesty:4,income_goal_fit:3,relevant_experience:4,sales_inputs:4,work_history:3})}],
+   interviews:[], decision_ids:[]},
+
+  {id:'A-1044', role_key:'closer', stage_key:'rejected', status:'rejected',
+   full_name:'Gregory Pham', email:'g.pham.sales@gmail.com', phone:'+1 408 555 0172',
+   source:'recruiter', source_detail:'Halvorsen Search, contingency',
+   disc_profile:'C', linkedin_profile_url:'https://www.linkedin.com/in/gregorypham',
+   applied_at:'2026-07-08 14:02', entered_stage_at:'2026-07-21 17:33',
+   has_video:false, has_resume:true, posting_title:null, posting_channel:null,
+   notes:'Recruiter-sourced. Advanced past a review_likely_no on Sarah\u2019s judgement, then rejected at the group interview.',
+   answers:{years_selling:'11', best_month_cash_collected:'$140,000',
+     current_situation:'Consulting', income_goal_12mo:'$300,000',
+     why_this_role:'Recruiter sent it over.', sales_training:'Not currently', availability:'Immediate'},
+   scores:[{id:'S-3320', stage_key:'applied', rubric:'applied@1', created_at:'2026-07-08 14:20',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:2,honesty:1,income_goal_fit:2,relevant_experience:1,sales_inputs:1,work_history:2})}],
+   interviews:[
+     {id:'I-226', kind:'group', scheduled_for:'2026-07-21 10:00', status:'held',
+      meeting_url:'https://us02web.zoom.us/j/8841720394', host_name:'Sarah Whitfield',
+      attended:true, outcome:'no', notes:'Three answers contradicted the written application. Outcome “no” queued a task for a person — it did not reject him.'}],
+   decision_ids:['D-1002','D-1008']},
+
+  {id:'A-1039', role_key:'closer', stage_key:'rejected', status:'rejected',
+   full_name:'Colin Rutherford', email:'colin.rutherford@gmail.com', phone:'+1 720 555 0143',
+   source:'ads', source_detail:'Meta ad — closer hiring, Jun set',
+   disc_profile:'ID', linkedin_profile_url:null,
+   applied_at:'2026-06-24 16:40', entered_stage_at:'2026-07-17 08:55',
+   has_video:true, has_resume:true, posting_title:'Closer — Fundhub (Phoenix, AZ hybrid)', posting_channel:'linkedin',
+   notes:'The grader said advance. A person rejected him anyway, for a reason the rubric does not measure.',
+   answers:{years_selling:'6', best_month_cash_collected:'$40,000',
+     current_situation:'Closing part-time for two offers', income_goal_12mo:'$150,000',
+     why_this_role:'Want one seat instead of two.', sales_training:'Podcast and a book club', availability:'Two weeks'},
+   scores:[{id:'S-3255', stage_key:'applied', rubric:'applied@1', created_at:'2026-06-25 06:02',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:3,honesty:3,income_goal_fit:3,relevant_experience:3,sales_inputs:3,work_history:3})}],
+   interviews:[
+     {id:'I-219', kind:'one_on_one', scheduled_for:'2026-07-14 11:00', status:'no_show',
+      meeting_url:'https://us02web.zoom.us/j/9920117744', host_name:'Sarah Whitfield',
+      attended:false, outcome:null, notes:'No message.'},
+     {id:'I-225', kind:'one_on_one', scheduled_for:'2026-07-16 11:00', status:'no_show',
+      meeting_url:'https://us02web.zoom.us/j/9920117744', host_name:'Sarah Whitfield',
+      attended:false, outcome:null, notes:'Rescheduled at his request, missed it again.'}],
+   decision_ids:['D-1006']},
+
+  /* ── SETTER ──────────────────────────────────────────────────────────── */
+  {id:'A-1057', role_key:'setter', stage_key:'one_on_one', status:'open',
+   full_name:'Josefina Marrero', email:'josefina.marrero@gmail.com', phone:'+1 787 555 0164',
+   source:'audience', source_detail:'Podcast guest spot — Feb',
+   disc_profile:'IS', linkedin_profile_url:'https://www.linkedin.com/in/josefinamarrero',
+   applied_at:'2026-07-14 07:55', entered_stage_at:'2026-07-26 09:30',
+   has_video:true, has_resume:true, posting_title:null, posting_channel:null, notes:null,
+   answers:{years_selling:'3', current_situation:'Setter for a coaching offer, 60 dials a day',
+     income_goal_12mo:'$85,000', why_this_role:'I want to set for something people actually need.',
+     sales_training:'Daily huddle plus recorded call review', availability:'One week'},
+   scores:[{id:'S-3345', stage_key:'applied', rubric:'applied@1', created_at:'2026-07-14 08:10',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:4,honesty:3,income_goal_fit:3,relevant_experience:3,sales_inputs:3,work_history:3})}],
+   interviews:[
+     {id:'I-233', kind:'group', scheduled_for:'2026-07-25 13:00', status:'held',
+      meeting_url:'https://us02web.zoom.us/j/7712043391', host_name:'Chris Stanbridge',
+      attended:true, outcome:'yes', notes:'Clear on why she is leaving. Good energy on the second half.'}],
+   decision_ids:['D-1014']},
+
+  {id:'A-1059', role_key:'setter', stage_key:'group_interview', status:'open',
+   full_name:'Trevor Nakashima', email:'trevor.nakashima@gmail.com', phone:'+1 808 555 0157',
+   source:'social', source_detail:'TikTok — day in the life of a setter',
+   disc_profile:'I', linkedin_profile_url:null,
+   applied_at:'2026-07-16 22:41', entered_stage_at:'2026-07-24 09:15',
+   has_video:true, has_resume:false, posting_title:null, posting_channel:null,
+   notes:'Group interview held but not yet graded to an outcome — attended is recorded, outcome is still null.',
+   answers:{years_selling:'1', current_situation:'Server, moving into remote sales',
+     income_goal_12mo:'$70,000', why_this_role:'I want to learn the front of the funnel properly.',
+     sales_training:'Free YouTube courses, one paid setter course', availability:'Immediate'},
+   scores:[
+     {id:'S-3358', stage_key:'applied', rubric:'applied@1', created_at:'2026-07-17 06:02',
+      is_automated:true, scored_by_name:null,
+      category_scores:sc({effort:3,honesty:3,income_goal_fit:2,relevant_experience:2,sales_inputs:3,work_history:3})},
+     {id:'S-3379', stage_key:'group_interview', rubric:'group_interview@1', created_at:'2026-07-28 16:05',
+      is_automated:false, scored_by_name:'Chris Stanbridge',
+      category_scores:sc({culture_fit:2,self_awareness:2,purpose_goals:1,presence:2})}],
+   interviews:[
+     {id:'I-241', kind:'group', scheduled_for:'2026-07-28 13:00', status:'held',
+      meeting_url:'https://us02web.zoom.us/j/7712043391', host_name:'Chris Stanbridge',
+      attended:true, outcome:null, notes:'Held. Outcome not recorded yet.'}],
+   decision_ids:['D-1011']},
+
+  {id:'A-1049', role_key:'setter', stage_key:'screening', status:'open',
+   full_name:'Simone Achterberg', email:'simone.achterberg@gmail.com', phone:'+1 971 555 0138',
+   source:'inbound', source_detail:null,
+   disc_profile:'SC', linkedin_profile_url:null,
+   applied_at:'2026-07-11 13:19', entered_stage_at:'2026-07-23 10:04',
+   has_video:false, has_resume:true, posting_title:null, posting_channel:null,
+   notes:'Screening has no seeded rubric, so the score shown is still the applied-stage one.',
+   answers:{years_selling:'4', current_situation:'Outbound SDR, B2B software',
+     income_goal_12mo:'$78,000', why_this_role:'Shorter cycle, clearer outcome for the person on the phone.',
+     sales_training:'Company enablement, weekly', availability:'Two weeks'},
+   scores:[{id:'S-3336', stage_key:'applied', rubric:'applied@1', created_at:'2026-07-11 13:35',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:3,honesty:3,income_goal_fit:3,relevant_experience:3,sales_inputs:3,work_history:3})}],
+   interviews:[], decision_ids:['D-1009']},
+
+  {id:'A-1065', role_key:'setter', stage_key:'applied', status:'open',
+   full_name:'Odalys Ferreira', email:'odalys.ferreira@gmail.com', phone:'+1 786 555 0191',
+   source:'referral', source_detail:'Alvin Torres',
+   disc_profile:'ID', linkedin_profile_url:null,
+   applied_at:'2026-07-29 08:02', entered_stage_at:'2026-07-29 08:02',
+   has_video:true, has_resume:true, posting_title:null, posting_channel:null, notes:null,
+   answers:{years_selling:'2', current_situation:'Setting for a fitness offer',
+     income_goal_12mo:'$80,000', why_this_role:'Alvin said the team actually trains you.',
+     sales_training:'Role-play three times a week', availability:'One week'},
+   scores:[{id:'S-3406', stage_key:'applied', rubric:'applied@2', created_at:'2026-07-29 08:18',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:4,honesty:4,income_goal_fit:3,relevant_experience:3,sales_inputs:4,work_history:3})}],
+   interviews:[], decision_ids:[]},
+
+  {id:'A-1066', role_key:'setter', stage_key:'applied', status:'open',
+   full_name:'Kwame Adjei', email:'kwame.adjei@gmail.com', phone:'+1 469 555 0126',
+   source:'job_board', source_detail:'ZipRecruiter — setter',
+   disc_profile:null, linkedin_profile_url:null,
+   applied_at:'2026-07-29 16:47', entered_stage_at:'2026-07-29 16:47',
+   has_video:false, has_resume:true, posting_title:null, posting_channel:null,
+   notes:'Form submitted half-finished. Four of six categories unrated, so the grader produced no number at all.',
+   answers:{years_selling:'3', current_situation:'Call centre, outbound'},
+   scores:[{id:'S-3409', stage_key:'applied', rubric:'applied@2', created_at:'2026-07-29 17:00',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:3,honesty:3})}],
+   interviews:[], decision_ids:[]},
+
+  {id:'A-1067', role_key:'setter', stage_key:'applied', status:'open',
+   full_name:'Lindsay Brubaker', email:'lindsay.brubaker@gmail.com', phone:'+1 615 555 0182',
+   source:'ads', source_detail:'Meta ad — setter hiring, Jul set',
+   disc_profile:'IS', linkedin_profile_url:null,
+   applied_at:'2026-07-29 20:14', entered_stage_at:'2026-07-29 20:14',
+   has_video:true, has_resume:false, posting_title:null, posting_channel:null, notes:null,
+   answers:{years_selling:'0', current_situation:'Hospitality, wants remote work',
+     income_goal_12mo:'$65,000', why_this_role:'I am good with people on the phone and I want to get paid for it.',
+     sales_training:'None yet', availability:'Immediate'},
+   scores:[{id:'S-3411', stage_key:'applied', rubric:'applied@2', created_at:'2026-07-29 20:31',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:4,honesty:3,income_goal_fit:3,relevant_experience:1,sales_inputs:2,work_history:4})}],
+   interviews:[], decision_ids:[]},
+
+  {id:'A-1068', role_key:'setter', stage_key:'applied', status:'open',
+   full_name:'Mateo Ibarra', email:'mateo.ibarra@gmail.com', phone:'+1 915 555 0175',
+   source:'linkedin', source_detail:'LinkedIn — found the careers page, applied direct',
+   disc_profile:null, linkedin_profile_url:'https://www.linkedin.com/in/mateo-ibarra-sales',
+   applied_at:'2026-07-30 06:52', entered_stage_at:'2026-07-30 06:52',
+   has_video:false, has_resume:true, posting_title:null, posting_channel:null,
+   notes:'Source is linkedin but there is no posting attached — the setter posting never published.',
+   answers:{years_selling:'2', current_situation:'Insurance, inbound',
+     income_goal_12mo:'$72,000', why_this_role:'Better product to talk about.',
+     sales_training:'Some', availability:'Two weeks'},
+   scores:[{id:'S-3414', stage_key:'applied', rubric:'applied@2', created_at:'2026-07-30 07:05',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:2,honesty:3,income_goal_fit:2,relevant_experience:2,sales_inputs:2,work_history:2})}],
+   interviews:[], decision_ids:[]},
+
+  {id:'A-1046', role_key:'setter', stage_key:'rejected', status:'rejected',
+   full_name:'Priscilla Haugen', email:'priscilla.haugen@gmail.com', phone:'+1 208 555 0117',
+   source:'social', source_detail:'Instagram reel — hiring setters',
+   disc_profile:'I', linkedin_profile_url:null,
+   applied_at:'2026-07-05 18:22', entered_stage_at:'2026-07-20 12:10',
+   has_video:true, has_resume:false, posting_title:null, posting_channel:null, notes:null,
+   answers:{years_selling:'6', current_situation:'Between roles',
+     income_goal_12mo:'$240,000', why_this_role:'Remote.', sales_training:'Various', availability:'Immediate'},
+   scores:[{id:'S-3308', stage_key:'applied', rubric:'applied@1', created_at:'2026-07-05 18:40',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:2,honesty:1,income_goal_fit:3,relevant_experience:2,sales_inputs:2,work_history:1})}],
+   interviews:[], decision_ids:['D-1007']},
+
+  {id:'A-1008', role_key:'setter', stage_key:'ramp', status:'hired',
+   full_name:'Delia Marchetti', email:'delia.marchetti@gmail.com', phone:'+1 312 555 0193',
+   source:'referral', source_detail:'Chris Stanbridge',
+   disc_profile:'DI', linkedin_profile_url:null,
+   applied_at:'2026-05-20 11:30', entered_stage_at:'2026-07-06 09:00',
+   has_video:true, has_resume:true, posting_title:null, posting_channel:null,
+   notes:'Day 24 of the 60-day trial. rampReview queues hiring:ramp-review:<application_id> and changes nothing — the application stays open to review, the status stays hired.',
+   answers:{years_selling:'4', current_situation:'Was setting for a mortgage broker',
+     income_goal_12mo:'$90,000', why_this_role:'Chris walked me through the numbers honestly.',
+     sales_training:'Weekly', availability:'Started'},
+   scores:[{id:'S-3180', stage_key:'applied', rubric:'applied@1', created_at:'2026-05-21 06:01',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:4,honesty:3,income_goal_fit:4,relevant_experience:3,sales_inputs:3,work_history:4})}],
+   interviews:[], decision_ids:[]},
+
+  /* ── SALES COORDINATOR ───────────────────────────────────────────────── */
+  {id:'A-1060', role_key:'sales_coordinator', stage_key:'applied', status:'open',
+   full_name:'Nadia S\u00f8rensen', email:'nadia.sorensen@gmail.com', phone:'+1 206 555 0134',
+   source:'inbound', source_detail:null,
+   disc_profile:'SC', linkedin_profile_url:null,
+   applied_at:'2026-07-24 09:38', entered_stage_at:'2026-07-24 09:38',
+   has_video:false, has_resume:true, posting_title:null, posting_channel:null,
+   notes:'This role has no hiring manager. Nobody is routed to read this.',
+   answers:{years_selling:'2', current_situation:'Sales ops coordinator at an agency',
+     income_goal_12mo:'$62,000', why_this_role:'I like running the board more than working it.',
+     sales_training:'CRM administration, not selling', availability:'Two weeks'},
+   scores:[{id:'S-3372', stage_key:'applied', rubric:'applied@1', created_at:'2026-07-24 09:55',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:3,honesty:3,income_goal_fit:3,relevant_experience:3,sales_inputs:3,work_history:3})}],
+   interviews:[], decision_ids:[]},
+
+  {id:'A-1051', role_key:'sales_coordinator', stage_key:'screening', status:'open',
+   full_name:'Owen Brackett', email:'owen.brackett@gmail.com', phone:'+1 917 555 0159',
+   source:'job_board', source_detail:'Fundhub careers page via job board',
+   disc_profile:'C', linkedin_profile_url:null,
+   applied_at:'2026-07-13 15:07', entered_stage_at:'2026-07-22 09:15',
+   has_video:false, has_resume:true, posting_title:'Sales Coordinator — Fundhub', posting_channel:'job_board',
+   notes:null,
+   answers:{years_selling:'1', current_situation:'Scheduling coordinator, dental group',
+     income_goal_12mo:'$58,000', why_this_role:'Same job, better industry.',
+     sales_training:'None', availability:'Two weeks'},
+   scores:[{id:'S-3330', stage_key:'applied', rubric:'applied@1', created_at:'2026-07-13 15:22',
+            is_automated:true, scored_by_name:null,
+            category_scores:sc({effort:3,honesty:3,income_goal_fit:2,relevant_experience:3,sales_inputs:2,work_history:3})}],
+   interviews:[], decision_ids:[]}
+];
+
+/* GET /api/hiring/postings. No description, no external_id — only is_published. */
+var POSTINGS = [
+  {id:'P-006', channel:'linkedin', role_key:'setter', title:'Setter — Fundhub (Remote, US)',
+   location:'Remote — United States', apply_url:'/careers/setter', status:'failed', is_published:false,
+   posted_at:null, closed_at:null, last_synced_at:'2026-07-28 04:12', created_at:'2026-07-28 04:10',
+   applications:0, applications_7d:0,
+   last_error:'LinkedIn 422: {"status":422,"code":"ILLEGAL_ARGUMENT","message":"companyApplyUrl must be an absolute URL on a verified company domain; received \\"/careers/setter\\"","requestId":"9F1C42A7-3B0E-4D51-A0D2-77E1C9B4E118"}'},
+  {id:'P-005', channel:'internal', role_key:'closer', title:'Setter → Closer internal move',
+   location:'Internal', apply_url:null, status:'draft', is_published:false,
+   posted_at:null, closed_at:null, last_synced_at:null, created_at:'2026-07-21 11:40',
+   applications:0, applications_7d:0, last_error:null},
+  {id:'P-004', channel:'job_board', role_key:'sales_coordinator', title:'Sales Coordinator — Fundhub',
+   location:'Scottsdale, AZ — hybrid', apply_url:'https://fundhub.ai/careers/sales-coordinator',
+   status:'posted', is_published:true, posted_at:'2026-07-12 08:00', closed_at:null,
+   last_synced_at:'2026-07-27 04:05', created_at:'2026-07-12 07:44',
+   applications:2, applications_7d:1, last_error:null},
+  {id:'P-003', channel:'facebook', role_key:'setter', title:'Setter — Fundhub',
+   location:'Remote — United States', apply_url:'https://fundhub.ai/careers/setter',
+   status:'paused', is_published:true, posted_at:'2026-06-18 09:00', closed_at:null,
+   last_synced_at:'2026-07-20 04:06', created_at:'2026-06-18 08:51',
+   applications:4, applications_7d:0, last_error:null},
+  {id:'P-002', channel:'linkedin', role_key:'closer', title:'Closer — Fundhub (Remote, US)',
+   location:'Remote — United States', apply_url:'https://fundhub.ai/careers/closer',
+   status:'posted', is_published:true, posted_at:'2026-07-06 08:00', closed_at:null,
+   last_synced_at:'2026-07-29 04:03', created_at:'2026-07-06 07:52',
+   applications:9, applications_7d:3, last_error:null},
+  {id:'P-001', channel:'linkedin', role_key:'closer', title:'Closer — Fundhub (Phoenix, AZ hybrid)',
+   location:'Phoenix, AZ — hybrid', apply_url:'https://fundhub.ai/careers/closer-phx',
+   status:'closed', is_published:true, posted_at:'2026-04-02 08:00', closed_at:'2026-06-30 17:00',
+   last_synced_at:'2026-06-30 17:00', created_at:'2026-04-02 07:48',
+   applications:14, applications_7d:0, last_error:null}
+];
+
+/* GET /api/hiring/decisions. recommendation_at_decision sits beside decision on
+   purpose; followed_recommendation is the endpoint's own CASE expression, not a
+   judgement made here. candidate_notified_at is null on every row because no
+   code path ever sets it. */
+var DECISIONS = [
+  {id:'D-1016', application_id:'A-1035', created_at:'2026-07-27 16:40', decision:'offer',
+   from_stage_key:'one_on_one', to_stage_key:'offer', role_key:'closer', source:'audience',
+   decided_by_name:'Sarah Whitfield', human_decided:true,
+   reason:'Bench is one short and she is the strongest applied score this cycle. Comp figures on the closer role are still null — Chris sets the terms before anything goes out in writing.',
+   recommendation_at_decision:'advance', score_at_decision:3.75, rubric_version:1,
+   candidate_notified_at:null},
+  {id:'D-1015', application_id:'A-1054', created_at:'2026-07-26 11:05', decision:'advance',
+   from_stage_key:'screening', to_stage_key:'group_interview', role_key:'closer', source:'social',
+   decided_by_name:'Sarah Whitfield', human_decided:true,
+   reason:'Video answers were strong; the written form was half-finished so the grader could not band it. Moving to the group interview and re-scoring there.',
+   recommendation_at_decision:'incomplete', score_at_decision:null, rubric_version:null,
+   candidate_notified_at:null},
+  {id:'D-1014', application_id:'A-1057', created_at:'2026-07-26 09:30', decision:'advance',
+   from_stage_key:'group_interview', to_stage_key:'one_on_one', role_key:'setter', source:'audience',
+   decided_by_name:null, human_decided:false,
+   reason:'Group interview outcome “yes” — advanced per the group-interview SOP.',
+   recommendation_at_decision:'advance', score_at_decision:3.17, rubric_version:1,
+   candidate_notified_at:null},
+  {id:'D-1013', application_id:'A-1052', created_at:'2026-07-25 15:20', decision:'advance',
+   from_stage_key:'screening', to_stage_key:'group_interview', role_key:'closer', source:'linkedin',
+   decided_by_name:null, human_decided:false, reason:null,
+   recommendation_at_decision:'advance', score_at_decision:3.00, rubric_version:1,
+   candidate_notified_at:null},
+  {id:'D-1012', application_id:'A-1041', created_at:'2026-07-24 13:02', decision:'advance',
+   from_stage_key:'group_interview', to_stage_key:'one_on_one', role_key:'closer', source:'referral',
+   decided_by_name:'Sarah Whitfield', human_decided:true,
+   reason:'Group interview outcome “yes”.',
+   recommendation_at_decision:'advance_priority', score_at_decision:3.67, rubric_version:1,
+   candidate_notified_at:null},
+  {id:'D-1011', application_id:'A-1059', created_at:'2026-07-24 09:15', decision:'advance',
+   from_stage_key:'screening', to_stage_key:'group_interview', role_key:'setter', source:'social',
+   decided_by_name:null, human_decided:false, reason:null,
+   recommendation_at_decision:'review_maybe', score_at_decision:2.67, rubric_version:1,
+   candidate_notified_at:null},
+  {id:'D-1010', application_id:'A-1038', created_at:'2026-07-22 14:47', decision:'advance',
+   from_stage_key:'group_interview', to_stage_key:'one_on_one', role_key:'closer', source:'client_base',
+   decided_by_name:'Sarah Whitfield', human_decided:true,
+   reason:'Group interview outcome “yes”. Knows the offer from the buyer side.',
+   recommendation_at_decision:'advance', score_at_decision:3.17, rubric_version:1,
+   candidate_notified_at:null},
+  {id:'D-1009', application_id:'A-1049', created_at:'2026-07-23 10:04', decision:'advance',
+   from_stage_key:'applied', to_stage_key:'screening', role_key:'setter', source:'inbound',
+   decided_by_name:null, human_decided:false, reason:null,
+   recommendation_at_decision:null, score_at_decision:null, rubric_version:null,
+   candidate_notified_at:null},
+  {id:'D-1008', application_id:'A-1044', created_at:'2026-07-21 17:33', decision:'reject',
+   from_stage_key:'group_interview', to_stage_key:'rejected', role_key:'closer', source:'recruiter',
+   decided_by_name:'Sarah Whitfield', human_decided:true,
+   reason:'Three answers in the group interview contradicted the written application on tenure and on quota attainment. Asked directly and got a third version. Not moving forward, on honesty.',
+   recommendation_at_decision:'review_likely_no', score_at_decision:1.50, rubric_version:1,
+   candidate_notified_at:null},
+  {id:'D-1007', application_id:'A-1046', created_at:'2026-07-20 12:10', decision:'reject',
+   from_stage_key:'screening', to_stage_key:'rejected', role_key:'setter', source:'social',
+   decided_by_name:'Chris Stanbridge', human_decided:true,
+   reason:'Income expectation is roughly triple what this seat pays and she was clear she would not move on it. No point taking her through a group interview.',
+   recommendation_at_decision:'review_likely_no', score_at_decision:1.83, rubric_version:1,
+   candidate_notified_at:null},
+  {id:'D-1006', application_id:'A-1039', created_at:'2026-07-17 08:55', decision:'reject',
+   from_stage_key:'one_on_one', to_stage_key:'rejected', role_key:'closer', source:'ads',
+   decided_by_name:'Sarah Whitfield', human_decided:true,
+   reason:'Two no-shows to the 1:1 after rescheduling once at his request, no message either time. Nothing to do with the score — this is reliability.',
+   recommendation_at_decision:'advance', score_at_decision:3.00, rubric_version:1,
+   candidate_notified_at:null},
+  {id:'D-1005', application_id:'A-1041', created_at:'2026-07-16 10:20', decision:'advance',
+   from_stage_key:'screening', to_stage_key:'group_interview', role_key:'closer', source:'referral',
+   decided_by_name:'Sarah Whitfield', human_decided:true, reason:null,
+   recommendation_at_decision:'advance_priority', score_at_decision:3.67, rubric_version:1,
+   candidate_notified_at:null},
+  {id:'D-1004', application_id:'A-1029', created_at:'2026-07-14 15:00', decision:'advance',
+   from_stage_key:'offer', to_stage_key:'hired', role_key:'closer', source:'referral',
+   decided_by_name:'Chris Stanbridge', human_decided:true,
+   reason:'Accepted verbally on the call. Advancing to Hired also flips the application status to hired.',
+   recommendation_at_decision:'advance_priority', score_at_decision:3.50, rubric_version:1,
+   candidate_notified_at:null},
+  {id:'D-1003', application_id:'A-1041', created_at:'2026-07-10 09:41', decision:'advance',
+   from_stage_key:'applied', to_stage_key:'screening', role_key:'closer', source:'referral',
+   decided_by_name:null, human_decided:false, reason:null,
+   recommendation_at_decision:'advance_priority', score_at_decision:3.67, rubric_version:1,
+   candidate_notified_at:null},
+  {id:'D-1002', application_id:'A-1044', created_at:'2026-07-08 15:12', decision:'advance',
+   from_stage_key:'applied', to_stage_key:'screening', role_key:'closer', source:'recruiter',
+   decided_by_name:'Sarah Whitfield', human_decided:true,
+   reason:'Score is low and it is driven by the honesty category. Taking one screening call to test that before we close it — the recruiter fee is not the reason.',
+   recommendation_at_decision:'review_likely_no', score_at_decision:1.50, rubric_version:1,
+   candidate_notified_at:null},
+  {id:'D-1001', application_id:'A-1012', created_at:'2026-06-22 16:05', decision:'advance',
+   from_stage_key:'hired', to_stage_key:'onboarding', role_key:'closer', source:'client_base',
+   decided_by_name:'Chris Stanbridge', human_decided:true, reason:null,
+   recommendation_at_decision:'advance', score_at_decision:3.33, rubric_version:1,
+   candidate_notified_at:null}
+];
+
+/* ══ BOOT: grade every sample score, exactly as the server would ═════════ */
+var APP_BY_ID={}, DECISION_BY_ID={};
+APPS.forEach(function(a){
+  a.scores.forEach(function(s){
+    var r = RUBRICS[s.rubric];
+    var g = grade(r, s.category_scores);
+    s.rubric_version = r.version;
+    s.rubric_stage   = r.stage_key;
+    s.average        = g.average;
+    s.recommendation = g.recommendation;
+    s.label          = g.label;
+    s.flags          = g.flags;
+    s.missing        = g.missing;
+    s.totalWeight    = g.totalWeight;
+    s.weighted       = g.weighted;
+  });
+  /* The board's LATERAL … ORDER BY created_at DESC LIMIT 1 — latest only. */
+  var latest = a.scores.length ? a.scores[a.scores.length-1] : null;
+  a.latest          = latest;
+  a.average         = latest ? latest.average : null;
+  a.recommendation  = latest ? latest.recommendation : null;
+  a.flags           = latest ? latest.flags : [];
+  a.rubric_version  = latest ? latest.rubric_version : null;
+  a.is_automated    = latest ? latest.is_automated : null;
+  a.sort_order      = STAGE_BY_KEY[a.stage_key].sort;
+  a.stage_name      = STAGE_BY_KEY[a.stage_key].name;
+  a.role_name       = ROLE_BY_KEY[a.role_key].name;
+  a.recommendation_status = 'advisory — a human decides';
+  a.needs_human     = (a.flags.length > 0) || (a.average === null);
+  APP_BY_ID[a.id]=a;
+});
+DECISIONS.forEach(function(d){
+  /* The endpoint's CASE expression, reproduced rather than reinterpreted. */
+  if(d.recommendation_at_decision===null) d.followed_recommendation=null;
+  else if(d.decision==='reject')
+    d.followed_recommendation = ['review_likely_no','incomplete'].indexOf(d.recommendation_at_decision)>=0;
+  else if(d.decision==='advance'||d.decision==='offer')
+    d.followed_recommendation = ['advance','advance_priority','review_maybe'].indexOf(d.recommendation_at_decision)>=0;
+  else d.followed_recommendation=null;
+  DECISION_BY_ID[d.id]=d;
+});
+
+/* ══ SHARED RENDER HELPERS ═══════════════════════════════════════════════ */
+var STATUS_CLS={open:'b-info', hired:'b-ok', rejected:'b-alert', withdrawn:'b-gray'};
+var POST_CLS  ={draft:'b-gray', posted:'b-ok', paused:'b-warn', closed:'b-gray', failed:'b-alert'};
+var IV_CLS    ={scheduled:'b-info', held:'b-ok', cancelled:'b-gray', no_show:'b-alert'};
+var OUT_CLS   ={yes:'b-ok', maybe:'b-warn', no:'b-alert'};
+var DEC_CLS   ={advance:'b-info', offer:'b-accent', reject:'b-alert',
+                offer_accepted:'b-gray', offer_declined:'b-gray', withdraw:'b-gray', hold:'b-gray'};
+
+function badge(cls,txt,title){
+  return '<span class="badge '+cls+'"'+(title?' title="'+esc(title)+'"':'')+'>'+esc(txt)+'</span>';
+}
+/* Recommendation is rendered in ONE neutral style for every value. Colouring it
+   would turn advice into a verdict, which is the thing grading.mjs refuses to be. */
+function recPill(rec){
+  if(!rec) return '<span class="nul mono">no score</span>';
+  return '<span class="rec" title="advisory — a human decides">'+esc(rec)+'</span>';
+}
+function avgCell(avg){
+  return avg===null||avg===undefined
+    ? '<span class="nul mono" title="grade() returned average: null — a partial rubric is never banded">not scored</span>'
+    : '<span class="mnum" style="font-weight:600">'+num(avg)+'</span><span class="nul mono" style="font-size:10px"> / 4</span>';
+}
+function flagList(flags){
+  if(!flags||!flags.length) return '<span class="nul mono">—</span>';
+  return flags.map(function(f){
+    return '<div style="margin-bottom:4px"><span class="k">'+esc(f.key)+'</span>'+
+      (f.unevaluated?' <span class="badge b-warn" style="font-size:8.5px;padding:1px 5px">unevaluated</span>':'')+
+      '<div style="font-size:11.5px;color:var(--gray);line-height:1.45;margin-top:2px">'+esc(f.label)+'</div></div>';
+  }).join('');
+}
+function inStageCell(a){
+  var d=daysSince(a.entered_stage_at);
+  var cls = d>=14 ? 'stripe-bad' : (d>=7 ? 'stripe-warn' : '');
+  return {days:d, cls:cls,
+    html:'<span class="mnum">'+d+'d</span><span class="sub">since '+esc(fdate(a.entered_stage_at))+'</span>'};
+}
+
+/* ══ HR-02 · THE BENCH ═══════════════════════════════════════════════════
+   Derived here with exactly the predicates in v_hiring_bench (051 §J) and the
+   two correlated subqueries in api/hiring/bench.mjs, so the working can be
+   shown. The server computes this in the view; nothing is re-defined. */
+function benchRows(){
+  var rows = ROLES.map(function(r){
+    var mine = APPS.filter(function(a){ return a.role_key===r.key; });
+    var open = mine.filter(function(a){ return a.status==='open'; });
+    var bench = open.filter(function(a){ return a.stage_key==='one_on_one'||a.stage_key==='offer'; }).length;
+    return {
+      role_key:r.key, role_name:r.name, bench_target:r.bench_target,
+      bench_count:bench,
+      bench_shortfall:Math.max(r.bench_target-bench,0),
+      open_applications:open.length,
+      awaiting_screen: open.filter(function(a){return a.stage_key==='applied';}).length,
+      awaiting_group_interview: open.filter(function(a){return a.stage_key==='group_interview';}).length,
+      hiring_manager:r.hiring_manager,
+      short:(r.bench_target-bench)>0,
+      unrouted:!r.hiring_manager
+    };
+  });
+  rows.sort(function(a,b){ return (b.bench_shortfall-a.bench_shortfall) || (a.role_key<b.role_key?-1:1); });
+  return rows;
+}
+
+function renderBench(rows){
+  var tb=document.querySelector('#benchTbl tbody');
+  tb.innerHTML = rows.map(function(b){
+    var pct = b.bench_target ? Math.min(100, Math.round(100*b.bench_count/b.bench_target)) : 0;
+    var mcls = b.bench_shortfall===0 ? '' : (b.bench_shortfall>=3 ? ' bad' : ' warn');
+    var scls = b.bench_shortfall===0 ? 'stripe-ok' : (b.bench_shortfall>=3 ? 'stripe-bad' : 'stripe-warn');
+    var flags=[];
+    if(b.short) flags.push(badge('b-warn','short','bench_shortfall > 0'));
+    if(b.unrouted) flags.push(badge('b-alert','unrouted','hiring_manager_staff_id IS NULL'));
+    if(!flags.length) flags.push('<span class="nul mono">—</span>');
+    return '<tr class="'+scls+'">'+
+      '<td><b>'+esc(b.role_name)+'</b><span class="sub">'+esc(b.role_key)+'</span></td>'+
+      '<td><span class="meter'+mcls+'"><i style="width:'+pct+'%"></i></span>'+
+        '<span class="mnum" style="font-weight:600">'+b.bench_count+'</span>'+
+        '<span class="nul mono"> / '+b.bench_target+'</span>'+
+        '<span class="sub">target from hiring_roles.bench_target</span></td>'+
+      '<td><span class="mnum" style="font-weight:600'+(b.bench_shortfall?';color:#6E2A22':'')+'">'+b.bench_shortfall+'</span></td>'+
+      '<td class="mnum">'+b.open_applications+'</td>'+
+      '<td class="mnum">'+b.awaiting_screen+'<span class="sub">stage applied</span></td>'+
+      '<td class="mnum">'+b.awaiting_group_interview+'<span class="sub">stage group_interview</span></td>'+
+      '<td>'+(b.hiring_manager?esc(b.hiring_manager):'<span class="nul mono">unassigned</span>')+'</td>'+
+      '<td>'+flags.join(' ')+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+/* ══ HR-00 · SUMMARY + DERIVATION ════════════════════════════════════════ */
+function renderStats(){
+  var bench = benchRows();
+  var benchCount = bench.reduce(function(n,b){return n+b.bench_count;},0);
+  var benchTarget= bench.reduce(function(n,b){return n+b.bench_target;},0);
+  var shortfall  = bench.reduce(function(n,b){return n+b.bench_shortfall;},0);
+  var openApps   = bench.reduce(function(n,b){return n+b.open_applications;},0);
+
+  var queue = APPS.filter(function(a){ return a.needs_human; });
+  var queueOpen = queue.filter(function(a){ return a.status==='open'; }).length;
+
+  var posted = POSTINGS.filter(function(p){return p.status==='posted';}).length;
+  var failed = POSTINGS.filter(function(p){return p.status==='failed';}).length;
+
+  var judged = DECISIONS.filter(function(d){ return d.followed_recommendation!==null; });
+  var overrides = judged.filter(function(d){ return d.followed_recommendation===false; });
+  var orate = judged.length ? (100*overrides.length/judged.length) : null;
+
+  document.getElementById('statRow').innerHTML =
+    '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> BENCH</div>'+
+      '<div class="sv">'+benchCount+' <span class="nul" style="font-size:15px">/ '+benchTarget+'</span></div>'+
+      '<div class="sd">shortfall '+shortfall+' across '+bench.length+' active roles</div></div>'+
+    '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> OPEN APPLICATIONS</div>'+
+      '<div class="sv">'+openApps+'</div>'+
+      '<div class="sd">status = open · from v_hiring_bench</div></div>'+
+    '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> NEEDS A HUMAN</div>'+
+      '<div class="sv">'+queue.length+'</div>'+
+      '<div class="sd">flagged or unscored · '+queueOpen+' still open</div></div>'+
+    '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> POSTINGS POSTED</div>'+
+      '<div class="sv">'+posted+' <span class="nul" style="font-size:15px">/ '+POSTINGS.length+'</span></div>'+
+      '<div class="sd">'+failed+' failed · LinkedIn unverified</div></div>'+
+    '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> HUMAN OVERRIDE RATE</div>'+
+      '<div class="sv small">'+(orate===null?'—':orate.toFixed(1)+'%')+'</div>'+
+      '<div class="sd">'+overrides.length+' of '+judged.length+' decisions differed</div></div>';
+
+  var benchInputs = bench.map(function(b){
+    return '<b>'+b.role_key+'</b> '+b.bench_count+'/'+b.bench_target+' (short '+b.bench_shortfall+')';
+  }).join(' · ');
+
+  document.getElementById('deriv').innerHTML =
+    '<div class="dcell"><div class="dk">bench count</div>'+
+      '<div class="formula">count(applications) WHERE status = \'open\' AND stage_key IN (\'one_on_one\',\'offer\')</div>'+
+      '<div class="inputs">'+benchInputs+'<br>total <b>'+benchCount+'</b> against target <b>'+benchTarget+'</b>, shortfall <b>'+shortfall+'</b></div></div>'+
+    '<div class="dcell"><div class="dk">shortfall</div>'+
+      '<div class="formula">greatest(bench_target − bench_count, 0)</div>'+
+      '<div class="inputs">bench_target defaults to <b>4</b> per role (hiring_roles.bench_target, CHECK &gt;= 0).<br>'+
+      'Applications at applied / screening / group_interview count <b>zero</b> toward it.</div></div>'+
+    '<div class="dcell"><div class="dk">human override rate</div>'+
+      '<div class="formula">count(followed_recommendation = false) ÷ count(followed_recommendation IS NOT NULL)</div>'+
+      '<div class="inputs"><b>'+overrides.length+'</b> ÷ <b>'+judged.length+'</b> = <b>'+(orate===null?'—':orate.toFixed(1)+'%')+'</b><br>'+
+      DECISIONS.length+' decisions in the window; <b>'+(DECISIONS.length-judged.length)+'</b> excluded because recommendation_at_decision is NULL.</div></div>'+
+    '<div class="src">v_hiring_bench + api/hiring/bench.mjs · api/hiring/decisions.mjs (the followed_recommendation CASE) · '+
+      'averages and recommendations re-derived in page by a port of src/hiring/grading.mjs grade(), 1-4 scale, weighted mean to 2dp</div>';
+
+  var chip=document.getElementById('benchChip');
+  chip.className = 'chip ' + (shortfall===0?'on':(shortfall>=5?'bad':'wip'));
+  document.getElementById('benchChipTxt').textContent = 'bench '+benchCount+' / '+benchTarget;
+  return bench;
+}
+
+/* ══ HR-03 · PIPELINE BOARD ══════════════════════════════════════════════ */
+var boardState = {stage:'all', role:'', source:'', flagged:false};
+
+function boardFiltered(ignoreStage){
+  return APPS.filter(function(a){
+    if(!ignoreStage && boardState.stage!=='all' && a.stage_key!==boardState.stage) return false;
+    if(boardState.role && a.role_key!==boardState.role) return false;
+    if(boardState.source && a.source!==boardState.source) return false;
+    if(boardState.flagged && !a.needs_human) return false;
+    return true;
+  });
+}
+
+function renderStageRail(){
+  var pool = boardFiltered(true);
+  var counts={}; pool.forEach(function(a){ counts[a.stage_key]=(counts[a.stage_key]||0)+1; });
+  var host=document.getElementById('stageRail');
+  var html = '<button type="button" data-stage="all"'+(boardState.stage==='all'?' class="on"':'')+
+             '>all stages<span class="n">'+pool.length+'</span></button>';
+  html += STAGES.map(function(s){
+    var n=counts[s.key]||0;
+    var cls=[]; if(boardState.stage===s.key) cls.push('on'); if(!n) cls.push('zero');
+    return '<button type="button" data-stage="'+s.key+'"'+(cls.length?' class="'+cls.join(' ')+'"':'')+
+      ' title="stage key '+s.key+' · sort_order '+s.sort+'">'+esc(s.name)+'<span class="n">'+n+'</span></button>';
+  }).join('');
+  host.innerHTML=html;
+  host.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click',function(){ boardState.stage=b.dataset.stage; renderBoard(); });
+  });
+}
+
+function cardHTML(a){
+  var d = daysSince(a.entered_stage_at);
+  var cls='ccard'+(a.needs_human?' needs':'')+(a.status!=='open'?' closed':'');
+  var chips=[];
+  chips.push('<span class="tag'+(a.has_video?' has':' off')+'" title="has_video — a boolean. No transcript, thumbnail or duration exists.">video</span>');
+  chips.push('<span class="tag'+(a.has_resume?' has':' off')+'" title="has_resume — a boolean. resume_document_id is never returned and storage keys are stripped by redact().">resume</span>');
+  if(a.disc_profile) chips.push('<span class="tag" title="disc_profile is free text — a bonus, never a filter and never an auto-disqualifier (051 §C).">DISC '+esc(a.disc_profile)+'</span>');
+  if(a.linkedin_profile_url) chips.push('<span class="tag has" title="linkedin_profile_url only. No photo, headline, employer, school or connections are stored or fetched.">li url</span>');
+
+  var s='<div class="sblk">';
+  if(a.average===null){
+    s+='<div class="row1"><span class="avg nul">not scored</span>'+
+       '<span class="rv">rubric v'+esc(a.rubric_version)+'</span></div>';
+  } else {
+    s+='<div class="row1"><span class="avg">'+num(a.average)+'</span><span class="of">/ 4</span>'+
+       '<span class="rv">rubric v'+esc(a.rubric_version)+'</span></div>';
+  }
+  s+=recPill(a.recommendation);
+  s+='<div class="adv">'+esc(a.recommendation_status)+' · '+(a.is_automated?'automated grader':'scored by a person')+'</div>';
+  if(a.flags.length) s+='<div class="fl">⚑ '+a.flags.length+' flag'+(a.flags.length===1?'':'s')+
+     ' <span class="fk">'+esc(a.flags.map(function(f){return f.key;}).join(', '))+'</span></div>';
+  s+='</div>';
+
+  return '<button type="button" class="'+cls+'" data-app="'+esc(a.id)+'">'+
+    '<div class="nm"><span class="avi">'+esc(initials(a.full_name))+'</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a.full_name)+'</span></div>'+
+    '<div class="meta">'+esc(a.role_name)+' · '+esc(a.source)+(a.source_detail?' · '+esc(a.source_detail):'')+'<br>'+
+      'applied '+esc(fdate(a.applied_at))+' · in stage '+d+'d · status '+esc(a.status)+'</div>'+
+    '<div class="chips">'+chips.join('')+'</div>'+ s +
+  '</button>';
+}
+
+function renderBoard(){
+  renderStageRail();
+  var rows = boardFiltered(false);
+  /* ORDER BY s.sort_order, a.entered_stage_at DESC — fixed, there is no sort control. */
+  rows.sort(function(x,y){
+    if(x.sort_order!==y.sort_order) return x.sort_order-y.sort_order;
+    return pd(y.entered_stage_at)-pd(x.entered_stage_at);
+  });
+  var shown = boardState.stage==='all' ? STAGES : STAGES.filter(function(s){return s.key===boardState.stage;});
+  document.getElementById('board').innerHTML = shown.map(function(s){
+    var mine = rows.filter(function(a){ return a.stage_key===s.key; });
+    var body = mine.length ? mine.map(cardHTML).join('')
+      : '<div class="col-empty">'+(s.key==='withdrawn'
+          ? 'no code path in pipeline.mjs<br>produces this stage'
+          : 'nothing here')+'</div>';
+    return '<div class="col"><div class="col-hd">'+
+      '<div class="cn"><span>'+esc(s.name)+'</span><span class="cc">'+mine.length+'</span></div>'+
+      '<div class="ck">'+esc(s.key)+' · sort_order '+s.sort+'</div></div>'+
+      '<div class="col-bd">'+body+'</div></div>';
+  }).join('');
+
+  document.getElementById('board').querySelectorAll('.ccard').forEach(function(b){
+    b.addEventListener('click',function(){ openDrawer(b.dataset.app); });
+  });
+
+  document.getElementById('boardCount').textContent =
+    rows.length+' application'+(rows.length===1?'':'s')+' shown';
+  document.getElementById('boardPager').innerHTML =
+    'showing '+rows.length+' of '+APPS.length+' sample rows · limit defaults to 50, caps at 200 · '+
+    'the envelope’s <span class="k">count</span> is the page size, not a table count — '+
+    '<span class="k">hasMore</span> is the only signal, so no screen-wide total is shown';
+  var t=document.getElementById('fFlagged');
+  t.classList.toggle('on', boardState.flagged);
+  t.setAttribute('aria-pressed', boardState.flagged?'true':'false');
+}
+
+/* ══ HR-04 · NEEDS A HUMAN ═══════════════════════════════════════════════ */
+function renderReviewQueue(){
+  var rows = APPS.filter(function(a){ return a.needs_human; });
+  rows.sort(function(x,y){
+    if(x.sort_order!==y.sort_order) return x.sort_order-y.sort_order;
+    return pd(y.entered_stage_at)-pd(x.entered_stage_at);
+  });
+  var tb=document.querySelector('#rqTbl tbody');
+  tb.innerHTML = rows.length ? rows.map(function(a){
+    var st=inStageCell(a);
+    var why = a.average===null
+      ? '<div><span class="k">average IS NULL</span><div style="font-size:11.5px;color:var(--gray);line-height:1.45;margin-top:2px">'+
+        esc(a.latest.label)+'</div></div>'
+      : flagList(a.flags);
+    return '<tr class="'+st.cls+(a.status!=='open'?' dim':'')+'" data-app="'+esc(a.id)+'" tabindex="0" style="cursor:pointer">'+
+      '<td><b>'+esc(a.full_name)+'</b><span class="sub">'+esc(a.id)+' · '+esc(a.source)+'</span></td>'+
+      '<td>'+esc(a.role_name)+'</td>'+
+      '<td>'+esc(a.stage_name)+'<span class="sub">'+esc(a.stage_key)+'</span></td>'+
+      '<td>'+badge(STATUS_CLS[a.status],a.status)+'</td>'+
+      '<td>'+avgCell(a.average)+'</td>'+
+      '<td>'+recPill(a.recommendation)+'<span class="sub">'+esc(a.recommendation_status)+'</span></td>'+
+      '<td class="mono">v'+esc(a.rubric_version)+'<span class="sub">'+esc(a.latest.rubric_stage)+'</span></td>'+
+      '<td style="max-width:340px">'+why+'</td>'+
+      '<td>'+st.html+'</td>'+
+    '</tr>';
+  }).join('') : '<tr><td colspan="9"><div class="empty">Nothing is waiting on a person.</div></td></tr>';
+
+  tb.querySelectorAll('tr[data-app]').forEach(function(tr){
+    tr.addEventListener('click',function(){ openDrawer(tr.dataset.app); });
+    tr.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openDrawer(tr.dataset.app); }
+    });
+  });
+  document.getElementById('rqCount').textContent =
+    rows.length+' waiting · '+rows.filter(function(a){return a.status==='open';}).length+' open';
+
+  /* Why the queue is the size it is — the honest reading of the flag mix.
+     `only` = rows that would not be in the queue at all if the unevaluated flag
+     were not emitted: they have a number, and every flag on them is unevaluated. */
+  var carrying = rows.filter(function(a){
+    return a.flags.some(function(f){ return f.unevaluated; });
+  });
+  var only = carrying.filter(function(a){
+    return a.average !== null && a.flags.every(function(f){ return f.unevaluated===true; });
+  });
+  var unKeys={}; carrying.forEach(function(a){ a.flags.forEach(function(f){ if(f.unevaluated) unKeys[f.key]=1; }); });
+  var keys=Object.keys(unKeys);
+  document.getElementById('rqInsight').innerHTML = keys.length
+    ? '<b>Read the mix before you read the count.</b> '+carrying.length+' of these '+rows.length+
+      ' carry <span class="k">'+esc(keys.join(', '))+'</span>, and '+only.length+
+      ' of those are here for no other reason — a rubric flag with no '+
+      '<span class="k">when</span> condition implemented in <span class="k">flagsFor()</span>. The grader emits it '+
+      'with <span class="k">unevaluated:true</span> on <b>every</b> score taken under that rubric version rather than '+
+      'skipping it silently, because a rule everyone believes is running and nothing is checking is worse than a noisy queue. '+
+      'That is one rubric to fix, not '+only.length+' extra candidate'+(only.length===1?'':'s')+' to read.'
+    : '<b>Every row here was flagged by a condition the grader actually evaluated.</b>';
+}
+
+/* ══ HR-05 · JOB POSTINGS ════════════════════════════════════════════════ */
+var postState={state:'all', channel:'all'};
+var POST_STATES=['draft','posted','paused','closed','failed'];
+var POST_CHANNELS=['linkedin','facebook','job_board','internal'];
+
+function renderPostRails(){
+  /* `key` is the postState slot; `field` is the column on the row it filters —
+     they differ for state, which reads postings.status. */
+  function rail(host, key, field, values, label){
+    var counts={};
+    POSTINGS.forEach(function(p){ counts[p[field]]=(counts[p[field]]||0)+1; });
+    var html='<button type="button" data-v="all"'+(postState[key]==='all'?' class="on"':'')+'>'+
+      label+'<span class="n">'+POSTINGS.length+'</span></button>';
+    html+=values.map(function(v){
+      var n=counts[v]||0, cls=[]; if(postState[key]===v) cls.push('on'); if(!n) cls.push('zero');
+      return '<button type="button" data-v="'+v+'"'+(cls.length?' class="'+cls.join(' ')+'"':'')+
+        '>'+esc(v)+'<span class="n">'+n+'</span></button>';
+    }).join('');
+    host.innerHTML=html;
+    host.querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click',function(){ postState[key]=b.dataset.v; renderPostings(); });
+    });
+  }
+  rail(document.getElementById('postStateRail'),'state','status',POST_STATES,'all states');
+  rail(document.getElementById('postChannelRail'),'channel','channel',POST_CHANNELS,'all channels');
+}
+
+function renderPostings(){
+  renderPostRails();
+  var rows=POSTINGS.filter(function(p){
+    if(postState.state!=='all' && p.status!==postState.state) return false;
+    if(postState.channel!=='all' && p.channel!==postState.channel) return false;
+    return true;
+  });
+  rows.sort(function(a,b){ return pd(b.created_at)-pd(a.created_at); });
+
+  var tb=document.querySelector('#postTbl tbody');
+  tb.innerHTML = rows.length ? rows.map(function(p,i){
+    var role=ROLE_BY_KEY[p.role_key];
+    var scls = p.status==='failed' ? 'stripe-bad' : (p.status==='paused' ? 'stripe-warn' : (p.status==='posted' ? 'stripe-ok' : ''));
+    var main='<tr class="rowbtn '+scls+'" data-p="'+i+'" tabindex="0" aria-expanded="false">'+
+      '<td><span class="chev">▸</span><b>'+esc(p.title)+'</b><span class="sub">'+esc(p.id)+'</span></td>'+
+      '<td>'+esc(role.name)+'<span class="sub">'+esc(p.role_key)+'</span></td>'+
+      '<td>'+badge('b-gray',p.channel)+'</td>'+
+      '<td>'+(p.location?esc(p.location):'<span class="nul mono">—</span>')+'</td>'+
+      '<td>'+badge(POST_CLS[p.status],p.status)+'</td>'+
+      '<td>'+(p.is_published?badge('b-info','published','external_id IS NOT NULL')
+                            :'<span class="nul mono">no external id</span>')+'</td>'+
+      '<td class="mono">'+(p.posted_at?esc(fdate(p.posted_at)):'<span class="nul">—</span>')+
+        (p.closed_at?'<span class="sub">closed '+esc(fdate(p.closed_at))+'</span>':'')+'</td>'+
+      '<td class="mnum">'+p.applications+'<span class="sub">lifetime</span></td>'+
+      '<td class="mnum">'+p.applications_7d+'</td>'+
+      '<td class="mono">'+(p.last_synced_at?esc(fdate(p.last_synced_at)):'<span class="nul">never</span>')+'</td>'+
+    '</tr>';
+    var det='<tr class="det" data-det="'+i+'" hidden><td colspan="10"><div class="detwrap">'+
+      '<div class="detcol"><div class="dk">apply url</div><div class="dv mono" style="font-size:11px">'+
+        (p.apply_url?esc(p.apply_url):'<span class="nul">—</span>')+'</div></div>'+
+      '<div class="detcol"><div class="dk">created</div><div class="dv mono">'+esc(fdatey(p.created_at))+'</div></div>'+
+      '<div class="detcol"><div class="dk">last synced</div><div class="dv mono">'+
+        (p.last_synced_at?esc(ftime(p.last_synced_at)):'<span class="nul">never</span>')+'</div></div>'+
+      '<div class="detcol"><div class="dk">description</div><div class="dv nul mono" style="font-size:11px">not returned by the endpoint</div></div>'+
+      (p.last_error
+        ? '<div class="detcol wide"><div class="dk">last_error — verbatim, token-scrubbed, 1000 chars</div>'+
+          '<div class="errbox">'+esc(p.last_error)+'</div>'+
+          '<div class="note" style="margin-top:7px">HTTP 422 is <b>not</b> retryable — <span class="k">linkedin.mjs:87</span> '+
+          'marks a failure <span class="k">retryable</span> only on 429 or ≥ 500, and nothing in the repo acts on that flag. '+
+          'The posting stays <span class="k">status=\'failed\'</span> until the apply URL is '+
+          'changed, and nothing in the repo re-runs <span class="k">postJob</span> on a schedule.</div></div>'
+        : '<div class="detcol wide"><div class="dk">last_error</div><div class="dv nul mono">none</div></div>')+
+    '</div></td></tr>';
+    return main+det;
+  }).join('') : '<tr><td colspan="10"><div class="empty">No postings match this filter.</div></td></tr>';
+
+  tb.querySelectorAll('tr.rowbtn').forEach(function(tr){
+    function toggle(){
+      var open = tr.getAttribute('aria-expanded')==='true';
+      tr.setAttribute('aria-expanded', open?'false':'true');
+      var d=tb.querySelector('tr.det[data-det="'+tr.dataset.p+'"]');
+      if(d) d.hidden=open;
+    }
+    tr.addEventListener('click',toggle);
+    tr.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();} });
+  });
+}
+
+/* ══ HR-06 · FUNNEL BY SOURCE ════════════════════════════════════════════
+   Grouped by source × role_key over the window, with the endpoint's own
+   count(*) FILTER predicates on the CURRENT stage's sort_order. */
+function funnelRows(days, roleKey){
+  var cutoff = new Date(NOW.getTime() - days*86400000);
+  var scoped = APPS.filter(function(a){
+    if(pd(a.applied_at) <= cutoff) return false;
+    if(roleKey && a.role_key!==roleKey) return false;
+    return true;
+  });
+  var map={};
+  scoped.forEach(function(a){
+    var k=a.source+'|'+a.role_key;
+    if(!map[k]) map[k]={source:a.source, role_key:a.role_key, applications:0,
+      reached_group_interview:0, reached_one_on_one:0, reached_offer:0, hired:0, rejected:0};
+    var g=map[k];
+    g.applications++;
+    if(a.sort_order>=2) g.reached_group_interview++;
+    if(a.sort_order>=3) g.reached_one_on_one++;
+    if(a.sort_order>=4 && a.stage_key!=='rejected') g.reached_offer++;
+    if(a.status==='hired') g.hired++;
+    if(a.status==='rejected') g.rejected++;
+  });
+  var rows=Object.keys(map).map(function(k){
+    var g=map[k];
+    g.hire_rate_pct = g.applications===0 ? null : Math.round(1000*g.hired/g.applications)/10;
+    return g;
+  });
+  rows.sort(function(a,b){ return b.applications-a.applications; });
+  return {rows:rows, scoped:scoped.length, cutoff:cutoff};
+}
+
+function renderFunnel(){
+  var days=parseInt(document.getElementById('fnDays').value,10);
+  var roleKey=document.getElementById('fnRole').value;
+  var out=funnelRows(days, roleKey);
+  var tb=document.querySelector('#fnTbl tbody');
+
+  tb.innerHTML = out.rows.length ? out.rows.map(function(g){
+    var src=SOURCES.filter(function(s){return s.key===g.source;})[0];
+    return '<tr>'+
+      '<td><b>'+esc(src?src.label:g.source)+'</b><span class="sub">'+esc(g.source)+
+        (src&&src.rank?' · doc 10 order #'+src.rank:'')+'</span></td>'+
+      '<td>'+esc(ROLE_BY_KEY[g.role_key].name)+'</td>'+
+      '<td class="mnum" style="font-weight:600">'+g.applications+'</td>'+
+      '<td class="mnum">'+g.reached_group_interview+'</td>'+
+      '<td class="mnum">'+g.reached_one_on_one+'</td>'+
+      '<td class="mnum">'+g.reached_offer+'</td>'+
+      '<td class="mnum">'+g.hired+'</td>'+
+      '<td class="mnum">'+g.rejected+'</td>'+
+      '<td class="mnum">'+(g.hire_rate_pct===null?'<span class="nul">—</span>':g.hire_rate_pct.toFixed(1)+'%')+'</td>'+
+    '</tr>';
+  }).join('') : '<tr><td colspan="9"><div class="empty">No applications in this window.</div></td></tr>';
+
+  document.getElementById('fnWindow').textContent =
+    days+'d window · '+out.rows.length+' groups · '+out.scoped+' applications';
+
+  var totalApps=out.rows.reduce(function(n,g){return n+g.applications;},0);
+  var totalHired=out.rows.reduce(function(n,g){return n+g.hired;},0);
+  var rejCount=APPS.filter(function(a){
+    return a.stage_key==='rejected' && pd(a.applied_at)>out.cutoff && (!roleKey||a.role_key===roleKey);
+  }).length;
+  document.getElementById('fnInsight').innerHTML =
+    '<b>Worked example, so the column headers are believable:</b> '+rejCount+
+    ' application'+(rejCount===1?' is':'s are')+' currently in <b>Not Moving Forward</b> (sort_order 9) in this window, and '+
+    'each one is counted in <i>currently at or past group interview</i> <b>and</b> in <i>currently at or past 1:1</i> — '+
+    'because 9 ≥ 2 and 9 ≥ 3. They are excluded from <i>at or past offer</i> only because that filter adds '+
+    '<span class="k">stage_key &lt;&gt; \'rejected\'</span>. '+
+    'Across the window: <span class="mono">'+totalHired+' hired ÷ '+totalApps+' applications = '+
+    (totalApps? (Math.round(1000*totalHired/totalApps)/10).toFixed(1) : '0.0')+'%</span> — computed over the rows shown, '+
+    'not over the table, because no endpoint here returns a table count.';
+}
+
+/* ══ HR-07 · DECISION LOG ════════════════════════════════════════════════ */
+var dcState={state:'all'};
+
+function dcFiltered(ignoreState){
+  var days=parseInt(document.getElementById('dcDays').value,10);
+  var roleKey=document.getElementById('dcRole').value;
+  var cutoff=new Date(NOW.getTime()-days*86400000);
+  return DECISIONS.filter(function(d){
+    if(pd(d.created_at)<=cutoff) return false;
+    if(roleKey && d.role_key!==roleKey) return false;
+    if(!ignoreState && dcState.state!=='all' && d.decision!==dcState.state) return false;
+    return true;
+  });
+}
+
+function renderDcRail(){
+  var pool=dcFiltered(true), counts={};
+  pool.forEach(function(d){ counts[d.decision]=(counts[d.decision]||0)+1; });
+  var host=document.getElementById('dcRail');
+  var html='<button type="button" data-v="all"'+(dcState.state==='all'?' class="on"':'')+
+    '>all<span class="n">'+pool.length+'</span></button>';
+  html+=DECISION_VALUES.map(function(v){
+    var n=counts[v]||0, cls=[]; if(dcState.state===v) cls.push('on'); if(!n) cls.push('zero');
+    var unreachable = DECISION_UNREACHABLE.indexOf(v)>=0;
+    return '<button type="button" data-v="'+v+'"'+(cls.length?' class="'+cls.join(' ')+'"':'')+
+      (unreachable?' title="Valid in hiring_decisions_decision_ck, but no code path in pipeline.mjs produces it."':'')+
+      '>'+esc(v)+(unreachable?' ∅':'')+'<span class="n">'+n+'</span></button>';
+  }).join('');
+  host.innerHTML=html;
+  host.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click',function(){ dcState.state=b.dataset.v; renderDecisions(); });
+  });
+}
+
+function renderDecisions(){
+  renderDcRail();
+  var rows=dcFiltered(false);
+  rows.sort(function(a,b){ return pd(b.created_at)-pd(a.created_at); });
+
+  var judged=rows.filter(function(d){ return d.followed_recommendation!==null; });
+  var overrides=judged.filter(function(d){ return d.followed_recommendation===false; });
+  var rate = judged.length ? (100*overrides.length/judged.length) : null;
+  var byHuman = rows.filter(function(d){ return d.human_decided; }).length;
+
+  document.getElementById('dcSummary').innerHTML =
+    '<div class="deriv" style="margin-top:0;margin-bottom:14px">'+
+      '<div class="dcell"><div class="dk">override rate</div>'+
+        '<div class="formula">followed_recommendation = false ÷ followed_recommendation IS NOT NULL</div>'+
+        '<div class="inputs"><b>'+overrides.length+'</b> ÷ <b>'+judged.length+'</b> = <b>'+
+          (rate===null?'—':rate.toFixed(1)+'%')+'</b> · '+(rows.length-judged.length)+
+          ' row'+((rows.length-judged.length)===1?'':'s')+' excluded (no recommendation at decision)</div></div>'+
+      '<div class="dcell"><div class="dk">named human on the row</div>'+
+        '<div class="formula">decided_by IS NOT NULL</div>'+
+        '<div class="inputs"><b>'+byHuman+'</b> of <b>'+rows.length+'</b>. Adverse outcomes cannot be otherwise: '+
+          'the CHECK refuses a reject or an offer_declined without a name and a reason.</div></div>'+
+      '<div class="dcell"><div class="dk">what the override rate is for</div>'+
+        '<div class="formula">a reviewer who always agrees is not a safeguard</div>'+
+        '<div class="inputs">Derived in <b>api/hiring/decisions.mjs</b>, not in a spreadsheet, because it is the single '+
+          'most useful number in an AEDT review — and it is only meaningful next to the reasons.</div></div>'+
+      '<div class="src">no protected characteristic is available here or anywhere else on this screen — none is collected, '+
+        'so an adverse-impact analysis by race or sex cannot be run from this data and needs a separate voluntary survey held apart from the hiring record</div>'+
+    '</div>';
+
+  var tb=document.querySelector('#dcTbl tbody');
+  tb.innerHTML = rows.length ? rows.map(function(d,i){
+    var app=APP_BY_ID[d.application_id];
+    var fr = d.followed_recommendation===null
+      ? '<span class="nul mono" title="NULL — recommendation_at_decision is NULL, or the decision is not reject/advance/offer">not defined</span>'
+      : (d.followed_recommendation ? badge('b-gray','followed') : badge('b-warn','override'));
+    var scls = d.followed_recommendation===false ? 'stripe-warn' : (d.decision==='reject' ? 'stripe-bad' : '');
+    var main='<tr class="rowbtn '+scls+'" data-d="'+i+'" tabindex="0" aria-expanded="false">'+
+      '<td><span class="chev">▸</span><span class="mono">'+esc(fdate(d.created_at))+'</span>'+
+        '<span class="sub">'+esc(d.id)+'</span></td>'+
+      '<td>'+badge(DEC_CLS[d.decision],d.decision)+'</td>'+
+      '<td class="mono" style="font-size:11px">'+esc(d.from_stage_key||'—')+' → '+esc(d.to_stage_key||'—')+'</td>'+
+      '<td>'+esc(ROLE_BY_KEY[d.role_key].name)+'</td>'+
+      '<td>'+esc(d.source)+'</td>'+
+      '<td>'+(d.decided_by_name
+        ? '<b>'+esc(d.decided_by_name)+'</b>'
+        : '<span class="nul mono">not a human</span>')+
+        '<span class="sub">human_decided '+(d.human_decided?'true':'false')+'</span></td>'+
+      '<td>'+(d.recommendation_at_decision?recPill(d.recommendation_at_decision):'<span class="nul mono">—</span>')+'</td>'+
+      '<td class="mnum">'+(d.score_at_decision===null?'<span class="nul">—</span>':num(d.score_at_decision))+
+        (d.rubric_version?'<span class="sub">rubric v'+d.rubric_version+'</span>':'<span class="sub">score_id null</span>')+'</td>'+
+      '<td>'+fr+'</td>'+
+    '</tr>';
+    var det='<tr class="det" data-detd="'+i+'" hidden><td colspan="9"><div class="detwrap">'+
+      '<div class="detcol wide"><div class="dk">reason — free text, no picklist exists</div>'+
+        '<div class="dv" style="font-weight:400;line-height:1.6">'+
+        (d.reason?esc(d.reason):'<span class="nul mono">none recorded — permitted on advance, refused by CHECK on reject and offer_declined</span>')+
+        '</div></div>'+
+      '<div class="detcol"><div class="dk">decided at</div><div class="dv mono">'+esc(ftime(d.created_at))+'</div></div>'+
+      '<div class="detcol"><div class="dk">candidate notified</div><div class="dv nul mono">'+
+        (d.candidate_notified_at?esc(ftime(d.candidate_notified_at)):'never — no code path sets this')+'</div></div>'+
+      '<div class="detcol"><div class="dk">application</div><div class="dv">'+
+        (app?'<button class="btn sm mono" type="button" data-open="'+esc(app.id)+'">'+esc(app.full_name)+'</button>'
+            :'<span class="nul mono">'+esc(d.application_id)+'</span>')+'</div></div>'+
+      (d.decision==='reject'
+        ? '<div class="detcol wide"><div class="dk">what this row had to satisfy</div>'+
+          '<div class="note">A reject needs <span class="k">decided_by</span> and a non-blank '+
+          '<span class="k">reason</span> at three separate layers, and it queues the candidate-feedback obligation as a '+
+          'task (<span class="k">hiring:feedback:'+esc(d.application_id)+'</span>). Task failure never blocks the rejection.</div></div>'
+        : '')+
+    '</div></td></tr>';
+    return main+det;
+  }).join('') : '<tr><td colspan="9"><div class="empty">No decisions in this window.</div></td></tr>';
+
+  tb.querySelectorAll('tr.rowbtn').forEach(function(tr){
+    function toggle(){
+      var open=tr.getAttribute('aria-expanded')==='true';
+      tr.setAttribute('aria-expanded', open?'false':'true');
+      var d=tb.querySelector('tr.det[data-detd="'+tr.dataset.d+'"]');
+      if(d) d.hidden=open;
+    }
+    tr.addEventListener('click',toggle);
+    tr.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();} });
+  });
+  tb.querySelectorAll('button[data-open]').forEach(function(b){
+    b.addEventListener('click',function(e){ e.stopPropagation(); openDrawer(b.dataset.open); });
+  });
+}
+
+/* ══ HR-08 · APPLICATION REVIEW DRAWER ═══════════════════════════════════ */
+var scrim=document.getElementById('scrim'), drawer=document.getElementById('drawer');
+
+function jsonBlock(obj){
+  return '<div class="jsonbox">'+esc(JSON.stringify(obj,null,2))+'</div>';
+}
+function scorePanel(a){
+  return a.scores.map(function(s,i){
+    var r=RUBRICS[s.rubric];
+    var cats=r.categories.map(function(c){
+      var v=s.category_scores[c.key];
+      var has=(v!==undefined&&v!==null&&v!=='');
+      return '<div class="cl">'+esc(c.label)+'<small>'+esc(c.key)+
+        ' · 1 = '+esc(c.guidance[1])+' … 4 = '+esc(c.guidance[4])+'</small></div>'+
+        '<div class="cvv'+(has?'':' un')+'">'+(has?esc(v):'—')+'</div>';
+    }).join('');
+    var band = s.average===null ? null : bandFor(r.rating_bands, s.average);
+    var deriv = s.average===null
+      ? '<div class="warnbox">'+esc(s.label)+'. A partial rubric is never banded — averaging the categories '+
+        'somebody happened to fill in is how a candidate gets “below bar” from one answered question.</div>'
+      : '<div class="deriv" style="margin-top:0;grid-template-columns:1fr">'+
+          '<div class="dcell"><div class="dk">average</div>'+
+          '<div class="formula">round(Σ(value × weight) ÷ Σweight, 2) = '+s.weighted+' ÷ '+s.totalWeight+' = '+num(s.average)+'</div>'+
+          '<div class="inputs">'+
+            (band ? 'band <b>'+num(band.min)+'–'+num(band.max)+'</b> → <b>'+esc(s.recommendation)+'</b> · “'+esc(s.label)+'”'
+                  : '<b>no band matched</b> → <b>review</b> · “'+esc(s.label)+'” — an unmatched average means a misconfigured rubric, and the safe reading of that is “a person should look at this”')+
+            '<br>every category weight is 1 (unset); a weight of 0 would be honoured and excluded from the number</div></div></div>';
+    return '<div class="panel">'+
+      '<div class="panel-hd"><span>Score '+(i+1)+' of '+a.scores.length+'</span>'+
+        badge('b-gray',s.rubric_stage+' rubric v'+s.rubric_version)+
+        (s.is_automated?badge('b-gray','automated','is_automated = true; scored_by_staff_id must be NULL')
+                       :badge('b-info','scored by '+s.scored_by_name,'is_automated = false; a staff id is required'))+
+        '<span class="spacer"></span><span class="mono" style="font-size:10px;color:var(--gray2)">'+esc(ftime(s.created_at))+'</span>'+
+      '</div>'+
+      '<div class="panel-bd">'+
+        '<div class="catgrid">'+cats+'</div>'+
+        '<div style="display:flex;align-items:baseline;gap:10px;margin:11px 0 9px">'+
+          avgCell(s.average)+recPill(s.recommendation)+
+          '<span class="mono" style="font-size:9.5px;color:var(--gray2);letter-spacing:.06em">'+esc(a.recommendation_status)+'</span>'+
+        '</div>'+
+        deriv+
+        (s.flags.length?'<div style="margin-top:11px"><div class="dk" style="font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:5px">review flags</div>'+flagList(s.flags)+'</div>':'')+
+      '</div></div>';
+  }).join('');
+}
+
+function scorecardPanel(role){
+  function metrics(list){
+    return list.map(function(m){
+      return '<div class="cl">'+esc(m.label)+'<small>'+esc(m.key)+' · '+esc(m.unit)+'</small></div>'+
+             '<div class="cvv un" title="target is null in 052 §E by design">—</div>';
+    }).join('');
+  }
+  return '<div class="panel"><div class="panel-hd"><span>Scorecard — '+esc(role.name)+'</span>'+
+      badge('b-warn','targets not set')+'</div>'+
+    '<div class="panel-bd">'+
+      '<div class="warnbox" style="margin-bottom:11px"><b>STRUCTURE ONLY.</b> Every outcome and leading-indicator target '+
+        'is null. Inferred here from the scorecard jsonb on this application — <span class="k">v_hiring_config_gaps</span> '+
+        'says the same thing but has no endpoint, so this is the only place it can be read. '+
+        '<b>Do not extend an offer against a scorecard with no targets.</b></div>'+
+      '<div class="dk" style="font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:5px">outcomes — lagging</div>'+
+      '<div class="catgrid">'+metrics(role.scorecard.outcomes)+'</div>'+
+      '<div class="dk" style="font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin:11px 0 5px">leading indicators</div>'+
+      '<div class="catgrid">'+metrics(role.scorecard.leading_indicators)+'</div>'+
+      '<div class="note" style="margin-top:10px"><b>source_note:</b> '+esc(role.scorecard.source_note)+'</div>'+
+    '</div></div>'+
+    '<div class="panel"><div class="panel-hd"><span>Comp — '+esc(role.name)+'</span>'+
+      badge('b-warn','figures null')+'</div>'+
+    '<div class="panel-bd">'+
+      '<div class="warnbox" style="margin-bottom:11px">Every figure on this role is null, so <b>no OTE can be quoted to a '+
+        'candidate</b>. <span class="k">hiring_decisions</span> has no amount column either — there is no salary, base, '+
+        'commission, equity, start date, expiry or offer letter anywhere in this schema.</div>'+
+      jsonBlock(role.comp)+
+    '</div></div>';
+}
+
+function interviewPanel(a){
+  if(!a.interviews.length)
+    return '<div class="panel"><div class="panel-bd"><div class="empty" style="padding:14px 8px">'+
+      'No interviews on this application. There is no upcoming-interviews list anywhere — '+
+      '<span class="k">hiring_interviews</span> is reachable only per application, and '+
+      '<span class="k">duration_min</span> is returned by nothing.</div></div></div>';
+  return '<div class="panel"><div class="panel-bd"><div class="tl">'+a.interviews.map(function(iv){
+    var att = iv.attended===null ? badge('b-gray','attended: unknown','attended is a NULLABLE boolean — three states')
+            : (iv.attended ? badge('b-ok','attended') : badge('b-alert','did not attend'));
+    var out = iv.outcome===null ? badge('b-gray','not graded','outcome stays NULL until the interview is graded')
+            : badge(OUT_CLS[iv.outcome], 'outcome: '+iv.outcome);
+    return '<div class="ti'+(iv.status==='held'?' human':'')+'">'+
+      '<div class="tt">'+esc(ftime(iv.scheduled_for))+' · '+esc(iv.kind)+' · host '+esc(iv.host_name||'—')+'</div>'+
+      '<div class="td">'+badge(IV_CLS[iv.status],iv.status)+' '+att+' '+out+
+        (iv.notes?'<div style="margin-top:5px;color:var(--gray)">'+esc(iv.notes)+'</div>':'')+
+        (iv.meeting_url?'<div class="mono" style="font-size:10px;color:var(--gray2);margin-top:4px">'+esc(iv.meeting_url)+'</div>':'')+
+      '</div></div>';
+  }).join('')+'</div>'+
+  '<div class="note" style="margin-top:10px">A group-interview outcome of <b>yes</b> or <b>maybe</b> both auto-advance to '+
+  '1:1 per doc 11. A <b>no</b> does <b>not</b> auto-reject: it queues '+
+  '<span class="k">hiring:gi-no:&lt;interviewId&gt;:&lt;applicationId&gt;</span> for a person and leaves the application open '+
+  'at Group Interview.</div></div></div>';
+}
+
+function decisionPanel(a){
+  var ds=a.decision_ids.map(function(id){return DECISION_BY_ID[id];}).filter(Boolean);
+  ds.sort(function(x,y){ return pd(x.created_at)-pd(y.created_at); });
+  if(!ds.length)
+    return '<div class="panel"><div class="panel-bd"><div class="empty" style="padding:14px 8px">No decisions recorded yet.</div></div></div>';
+  return '<div class="panel"><div class="panel-bd"><div class="tl">'+ds.map(function(d){
+    var fr = d.followed_recommendation===null ? badge('b-gray','followed: not defined')
+           : (d.followed_recommendation?badge('b-gray','followed the recommendation'):badge('b-warn','override'));
+    return '<div class="ti'+(d.human_decided?' human':'')+'">'+
+      '<div class="tt">'+esc(ftime(d.created_at))+' · '+esc(d.from_stage_key||'—')+' → '+esc(d.to_stage_key||'—')+'</div>'+
+      '<div class="td">'+badge(DEC_CLS[d.decision],d.decision)+' '+
+        (d.decided_by_name?badge('b-info',d.decided_by_name):badge('b-gray','not a human'))+' '+
+        (d.recommendation_at_decision?recPill(d.recommendation_at_decision):'')+' '+fr+
+        (d.reason?'<div style="margin-top:5px;color:var(--gray);line-height:1.55">'+esc(d.reason)+'</div>':'')+
+        '<div class="mono" style="font-size:9.5px;color:var(--gray2);margin-top:4px">notified: '+
+          (d.candidate_notified_at?esc(ftime(d.candidate_notified_at)):'never')+'</div>'+
+      '</div></div>';
+  }).join('')+'</div></div></div>';
+}
+
+function openDrawer(appId){
+  var a=APP_BY_ID[appId]; if(!a) return;
+  var role=ROLE_BY_KEY[a.role_key];
+  document.getElementById('dwTitle').textContent=a.full_name;
+  document.getElementById('dwSub').textContent =
+    a.id+' · '+a.role_name+' · '+a.stage_name+' · status '+a.status+' · applied '+fdatey(a.applied_at);
+
+  var answerKeys=Object.keys(a.answers);
+  document.getElementById('dwBody').innerHTML =
+    '<div class="dw-sec"><div class="notice"><b>Scores are advisory. No candidate may be rejected without a named human '+
+      'and a written reason; the database enforces this.</b><br>'+
+      'That is the <span class="k">scoring_notice</span> string this endpoint returns. This drawer is read-only — '+
+      '<span class="k">api/hiring/application.mjs</span> is a GET and answers anything else with 405.</div></div>'+
+
+    '<div class="dw-sec"><div class="eyebrow">HR-08.1 <span class="sep">/</span> CANDIDATE</div>'+
+      '<div class="kv">'+
+        '<div><div class="k2">email</div><div class="v">'+esc(a.email)+'</div></div>'+
+        '<div><div class="k2">phone</div><div class="v">'+esc(a.phone||'—')+'</div></div>'+
+        '<div><div class="k2">source</div><div class="v">'+esc(a.source)+
+          '<span class="sub">'+esc(a.source_detail||'no detail')+'</span></div></div>'+
+        '<div><div class="k2">DISC profile</div><div class="v">'+(a.disc_profile?esc(a.disc_profile):'<span class="nul mono">not set</span>')+
+          '<span class="sub">free text · never a filter</span></div></div>'+
+        '<div><div class="k2">LinkedIn</div><div class="v" style="font-size:11px">'+
+          (a.linkedin_profile_url?esc(a.linkedin_profile_url):'<span class="nul mono">none</span>')+
+          '<span class="sub">url only · linkedin_urn is never projected</span></div></div>'+
+        '<div><div class="k2">video / resume</div><div class="v">'+
+          (a.has_video?'video ✓':'video ✗')+' · '+(a.has_resume?'resume ✓':'resume ✗')+
+          '<span class="sub">booleans · no preview, no download</span></div></div>'+
+        '<div><div class="k2">entered stage</div><div class="v">'+esc(fdatey(a.entered_stage_at))+
+          '<span class="sub">'+daysSince(a.entered_stage_at)+' days ago · derived here, no aging column exists</span></div></div>'+
+        '<div><div class="k2">posting</div><div class="v" style="font-size:11.5px">'+
+          (a.posting_title?esc(a.posting_title)+'<span class="sub">channel '+esc(a.posting_channel)+'</span>'
+                          :'<span class="nul mono">not from a posting</span>')+'</div></div>'+
+        '<div><div class="k2">status</div><div class="v">'+badge(STATUS_CLS[a.status],a.status)+
+          '<span class="sub">stage and status are separate columns</span></div></div>'+
+      '</div>'+
+      (a.notes?'<div class="note" style="margin-top:9px"><b>notes:</b> '+esc(a.notes)+'</div>':'')+
+    '</div>'+
+
+    '<div class="dw-sec"><div class="eyebrow">HR-08.2 <span class="sep">/</span> ANSWERS AS SUBMITTED</div>'+
+      '<div class="panel"><div class="panel-hd"><span>'+answerKeys.length+' field'+(answerKeys.length===1?'':'s')+'</span>'+
+        badge('b-gray','verbatim jsonb')+'</div><div class="panel-bd">'+
+        (answerKeys.length?'<div class="catgrid" style="grid-template-columns:180px minmax(0,1fr)">'+
+          answerKeys.map(function(k){
+            return '<div class="cl mono" style="font-size:10.5px;color:var(--gray)">'+esc(k)+'</div>'+
+                   '<div class="cl">'+esc(a.answers[k])+'</div>';
+          }).join('')+'</div>':'<div class="empty">No answers stored.</div>')+
+        '<div class="note" style="margin-top:11px"><b>Nothing was redacted here — there was nothing to redact.</b> '+
+        'Protected characteristics are stripped at <i>intake</i>, not merely left unscored: 25 whole-word terms and 16 prefix '+
+        'stems, camelCase split first (<span class="k">src/hiring/grading.mjs:41-83</span>). Scoring a protected category key '+
+        'throws rather than being quietly dropped. Answers are retained verbatim so a bias audit can re-derive the score from '+
+        'the same inputs the grader saw.</div>'+
+      '</div></div></div>'+
+
+    '<div class="dw-sec"><div class="eyebrow">HR-08.3 <span class="sep">/</span> SCORE HISTORY — '+a.scores.length+' ENTR'+(a.scores.length===1?'Y':'IES')+'</div>'+
+      scorePanel(a)+
+      '<div class="note" style="margin-top:9px">The list is the <b>full</b> history, oldest first. A re-score appends a row; '+
+      'it never replaces one, and <span class="k">application_scores</span> cannot be deleted (<span class="k">trg_application_scores_no_delete</span>; '+
+      'nothing blocks an UPDATE — the append-only discipline is the code path, not a constraint) — an override that '+
+      'hid the original would defeat the audit this endpoint exists for. The board shows only the latest entry.</div>'+
+    '</div>'+
+
+    '<div class="dw-sec"><div class="eyebrow">HR-08.4 <span class="sep">/</span> ROLE SCORECARD &amp; COMP</div>'+
+      scorecardPanel(role)+'</div>'+
+
+    '<div class="dw-sec"><div class="eyebrow">HR-08.5 <span class="sep">/</span> INTERVIEWS</div>'+
+      interviewPanel(a)+'</div>'+
+
+    '<div class="dw-sec"><div class="eyebrow">HR-08.6 <span class="sep">/</span> DECISIONS</div>'+
+      decisionPanel(a)+'</div>';
+
+  drawer.classList.add('on'); scrim.classList.add('on');
+  drawer.setAttribute('aria-hidden','false');
+  document.getElementById('dwClose').focus();
+}
+function closeDrawer(){
+  drawer.classList.remove('on'); scrim.classList.remove('on');
+  drawer.setAttribute('aria-hidden','true');
+}
+document.getElementById('dwClose').addEventListener('click',closeDrawer);
+scrim.addEventListener('click',closeDrawer);
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeDrawer(); });
+
+/* ══ CONTROLS ════════════════════════════════════════════════════════════ */
+function fillRoleSelect(el, allLabel){
+  el.innerHTML='<option value="">'+allLabel+'</option>'+ROLES.map(function(r){
+    return '<option value="'+r.key+'">'+esc(r.name)+'</option>';
+  }).join('');
+}
+/* ?role= is validated to these three keys on /candidates but is unvalidated free
+   text on /funnel and /decisions — a typo there returns zero rows rather than an
+   error, so all three controls are driven from the same list. */
+fillRoleSelect(document.getElementById('fRole'),  'all roles');
+fillRoleSelect(document.getElementById('fnRole'), 'all roles');
+fillRoleSelect(document.getElementById('dcRole'), 'all roles');
+
+document.getElementById('fSource').innerHTML='<option value="">all sources</option>'+
+  SOURCES.map(function(s){ return '<option value="'+s.key+'">'+esc(s.key)+'</option>'; }).join('');
+
+document.getElementById('fRole').addEventListener('change',function(){ boardState.role=this.value; renderBoard(); });
+document.getElementById('fSource').addEventListener('change',function(){ boardState.source=this.value; renderBoard(); });
+document.getElementById('fFlagged').addEventListener('click',function(){ boardState.flagged=!boardState.flagged; renderBoard(); });
+document.getElementById('fnRole').addEventListener('change',renderFunnel);
+document.getElementById('fnDays').addEventListener('change',renderFunnel);
+document.getElementById('dcRole').addEventListener('change',renderDecisions);
+document.getElementById('dcDays').addEventListener('change',renderDecisions);
+document.getElementById('resetBtn').addEventListener('click',function(){
+  boardState={stage:'all', role:'', source:'', flagged:false};
+  postState={state:'all', channel:'all'};
+  dcState={state:'all'};
+  document.getElementById('fRole').value='';
+  document.getElementById('fSource').value='';
+  document.getElementById('fnRole').value='';
+  document.getElementById('fnDays').value='90';
+  document.getElementById('dcRole').value='';
+  document.getElementById('dcDays').value='90';
+  boot();
+});
+
+/* ══ BOOT ════════════════════════════════════════════════════════════════ */
+function boot(){
+  renderBench(renderStats());
+  renderBoard();
+  renderReviewQueue();
+  renderPostings();
+  renderFunnel();
+  renderDecisions();
+}
+boot();
+</script>
+</body>
+</html>

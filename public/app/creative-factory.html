@@ -1,0 +1,2532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fundhub — Creative Factory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
+<style>
+/* ══ SHARED CHROME — identical across every internal surface ══════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--butter:#F2E39B}           /* spectrum stop @40% — the 6th status color */
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+.logo{width:118px;height:24px;flex:0 0 118px}
+.eyebrow{display:block}
+.eyebrow .sep{color:var(--line);margin:0 6px}
+.app{display:flex;min-height:100vh}
+
+.side{width:230px;flex:0 0 230px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
+.side::after{content:"";position:absolute;top:0;right:0;width:2px;height:100%;background:var(--spectrum);opacity:.9}
+.side.mini{width:60px;flex:0 0 60px}
+.side-top{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--cardline)}
+.side.mini .side-top{padding:0 12px}
+.side.mini .logo{display:none}
+.burger{margin-left:auto;width:26px;height:26px;flex:0 0 26px;border:1px solid var(--cardline);background:transparent;color:var(--gray2);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+.burger:hover{border-color:#3F3F46;color:var(--paper)}
+.side.mini .burger{margin:0 auto}
+.side-scroll{flex:1;overflow-y:auto;padding:12px 0 8px}
+.side-scroll::-webkit-scrollbar{width:6px}
+.side-scroll::-webkit-scrollbar-thumb{background:#27272A;border-radius:3px}
+.navgroup{margin-bottom:3px}
+.navhead{width:100%;background:transparent;border:0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;padding:9px 18px 6px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#71717A}
+.navhead:hover{color:var(--gray2)}
+.navhead .chev{margin-left:auto;font-size:9px;transition:transform .16s;color:#52525B}
+.navgroup.closed .chev{transform:rotate(-90deg)}
+.navgroup.closed .navlist{display:none}
+.side.mini .navhead{justify-content:center;padding:10px 0 6px;font-size:0;letter-spacing:0}
+.side.mini .navhead::after{content:"";display:block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;opacity:.5}
+.side.mini .navhead .chev{display:none}
+.navlist{display:flex;flex-direction:column}
+.navitem{display:flex;align-items:center;gap:11px;padding:7px 18px;font-size:12.5px;color:var(--gray2);position:relative;transition:color .12s,background .12s}
+.navitem:hover{color:var(--paper);background:#161619}
+.navitem .ico{font-family:var(--mono);font-size:12px;width:16px;flex:0 0 16px;text-align:center;opacity:.75}
+.navitem.on{color:var(--paper);background:#161619;font-weight:500}
+.navitem.on::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--spectrum);border-radius:0 2px 2px 0}
+.navitem.on .ico{opacity:1}
+.side.mini .navitem{justify-content:center;padding:9px 0}
+.side.mini .navitem .lbl{display:none}
+.side-foot{padding:12px 16px;border-top:1px solid var(--cardline);font-family:var(--mono);font-size:10px;color:#52525B;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
+.side.mini .side-foot .who{display:none}
+.side.mini .side-foot{justify-content:center;padding:12px 0}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.spacer{flex:1}
+.content{padding:22px 24px 40px;flex:1}
+
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.card+.card{margin-top:14px}
+.card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.card-hd .t{font-size:13.5px;font-weight:600;letter-spacing:-.01em}
+.card-bd{padding:16px}
+.hair{height:2px;background:var(--spectrum);border-radius:1px}
+
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
+.btn:hover{background:var(--soft);border-color:var(--gray2)}
+.btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn.dark:hover{background:var(--ink2)}
+.btn.sm{padding:5px 10px;font-size:11.5px}
+.btn.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.btn.danger{color:#6E2A22;border-color:var(--alert)}
+.btn.danger:hover{background:rgba(242,166,155,.16)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
+.b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
+.b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
+.b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
+.b-info{background:rgba(169,198,232,.26);border-color:var(--info);color:#22415F}
+.b-accent{background:rgba(196,179,229,.26);border-color:var(--accent);color:#3F2F63}
+.b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
+
+table.grid{width:100%;border-collapse:collapse}
+table.grid th{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft)}
+table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+table.grid tr:last-child td{border-bottom:0}
+
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
+.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:13px;width:100%;font-family:inherit}
+.field select:focus,.field input:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
+.field .hint{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em}
+
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+.stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
+.stat .sv{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
+.stat .sd{font-size:11px;color:var(--gray);margin-top:2px}
+
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+.empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:12px}
+
+/* ══ CREATIVE FACTORY — page specific ════════════════════════════════════ */
+.stat.pick{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
+.stat.pick:hover{border-color:var(--gray2)}
+.stat.pick.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.stat .sv.bad{color:#6E2A22}
+.stat .sv.warn{color:#6B4A12}
+
+/* derivation strip — every number on this screen can show its working */
+.deriv{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:12px 15px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:8px 22px}
+.deriv .dk{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);margin-bottom:3px}
+.deriv .formula{font-family:var(--mono);font-size:11.5px;color:var(--ink);line-height:1.6;word-break:break-word}
+.deriv .inputs{font-family:var(--mono);font-size:11px;color:var(--gray);line-height:1.7}
+.deriv .inputs b{color:var(--ink);font-weight:600}
+.deriv .src{grid-column:1/-1;font-family:var(--mono);font-size:10px;color:var(--gray2);letter-spacing:.05em;border-top:1px dashed var(--line);padding-top:8px;line-height:1.6}
+
+.note{font-size:11.5px;color:var(--gray);line-height:1.55}
+.note code,.mono.k,code{font-family:var(--mono);font-size:11px;background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.cap{padding:10px 16px;border-top:1px solid var(--line);background:var(--soft);font-size:11.5px;color:var(--gray);line-height:1.5}
+.cap b{color:var(--ink);font-weight:600}
+.cap+.cap{border-top:1px dashed var(--line)}
+.cap.q{background:#fff}
+
+/* filter rails */
+.rail{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.rail button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .12s,border-color .12s;color:var(--gray)}
+.rail button:hover{background:var(--soft);color:var(--ink)}
+.rail button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.rail button .n{font-weight:700;margin-left:5px;opacity:.75}
+.rail .rl{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-right:2px}
+.selwrap{display:inline-flex;align-items:center;gap:6px}
+.selwrap label{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
+.selwrap select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 7px;font-size:11.5px;font-family:var(--mono);max-width:220px}
+.selwrap select:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
+
+/* the request line each surface would issue */
+.req{font-family:var(--mono);font-size:10px;color:var(--gray2);letter-spacing:.04em;padding:8px 16px;border-top:1px dashed var(--line);background:var(--soft);word-break:break-all;display:none}
+.req.on{display:block}
+.req b{color:var(--ink);font-weight:600}
+
+/* attention tiles */
+.attn{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.attn button{text-align:left;border:1px solid var(--line);border-left-width:3px;border-radius:9px;background:#fff;padding:12px 14px;cursor:pointer;font:inherit;color:inherit;transition:background .12s}
+.attn button:hover{background:var(--soft)}
+.attn button .an{font-family:var(--mono);font-size:24px;font-weight:600;letter-spacing:-.02em;line-height:1.1}
+.attn button .at{font-size:12px;font-weight:600;margin-top:4px}
+.attn button .ad{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em;margin-top:4px;line-height:1.5}
+.attn button.sev-bad{border-left-color:var(--alert)}
+.attn button.sev-warn{border-left-color:var(--warn)}
+.attn button.sev-ok{border-left-color:var(--ok)}
+.attn button.sev-info{border-left-color:var(--info)}
+.attn button.sev-bad .an{color:#6E2A22}
+.attn button.sev-warn .an{color:#6B4A12}
+
+/* severity stripes on rows */
+tr.stripe-bad td:first-child{box-shadow:inset 3px 0 0 var(--alert)}
+tr.stripe-warn td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+tr.stripe-ok td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
+tr.stripe-info td:first-child{box-shadow:inset 3px 0 0 var(--info)}
+tr.dim td{opacity:.62}
+.sub{display:block;font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em;margin-top:3px;font-weight:400}
+.nul{color:var(--gray2)}
+.mnum{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* expandable rows */
+tr.rowbtn{cursor:pointer}
+tr.rowbtn:hover td{background:var(--soft)}
+tr.rowbtn[aria-expanded="true"] td{background:var(--soft)}
+td .chev{display:inline-block;width:10px;color:var(--gray2);font-size:9px;transition:transform .16s;margin-right:6px}
+tr.rowbtn[aria-expanded="true"] .chev{transform:rotate(90deg)}
+tr.det>td{background:var(--soft);padding:0 14px 13px!important}
+.detwrap{border-top:1px dashed var(--line);padding-top:11px;display:flex;gap:26px;flex-wrap:wrap}
+.detcol{min-width:140px}
+.detcol .dk{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:3px}
+.detcol .dv{font-size:12px;font-weight:600;word-break:break-word}
+.detcol .dv.mono{font-family:var(--mono);font-size:11px;font-weight:500}
+.detfull{flex:1 1 100%;min-width:0}
+
+.errbox{font-family:var(--mono);font-size:11px;line-height:1.6;color:#6E2A22;background:rgba(242,166,155,.16);border:1px solid var(--alert);border-radius:7px;padding:8px 10px;word-break:break-word}
+.jsonbox{font-family:var(--mono);font-size:10.5px;line-height:1.6;color:var(--gray);background:var(--soft);border:1px solid var(--line);border-radius:7px;padding:8px 10px;white-space:pre-wrap;word-break:break-word;max-height:210px;overflow:auto}
+.pager{display:flex;align-items:center;gap:10px;padding:11px 16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.06em;flex-wrap:wrap}
+
+/* reason cards — a blocked_reasons element */
+.reasons{display:flex;flex-direction:column;gap:8px}
+.rz{border:1px solid var(--alert);border-left-width:3px;background:rgba(242,166,155,.10);border-radius:8px;padding:9px 11px}
+.rz.set-approval{border-color:var(--info);background:rgba(169,198,232,.12)}
+.rz.set-engine{border-color:var(--warn);background:rgba(245,206,143,.14)}
+.rz .rzh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rz .rzc{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink)}
+.rz .rzm{font-size:12px;color:var(--ink);margin-top:5px;line-height:1.5}
+.rz .rzq{font-family:var(--mono);font-size:10px;color:var(--gray);letter-spacing:.05em;margin-top:5px}
+.rz .rzd{font-family:var(--mono);font-size:10px;color:var(--gray2);margin-top:5px;word-break:break-word}
+
+/* library grid */
+.lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:12px;padding:16px}
+.acard{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff;cursor:pointer;text-align:left;font:inherit;color:inherit;padding:0;transition:border-color .12s,box-shadow .12s}
+.acard:hover{border-color:var(--gray2);box-shadow:0 2px 10px rgba(10,10,10,.06)}
+.acard.st-blocked{border-left:3px solid var(--alert)}
+.acard.st-pending{border-left:3px solid var(--warn)}
+.acard.st-passed{border-left:3px solid var(--ok)}
+.tile{position:relative;background:linear-gradient(135deg,#0A0A0A,#26262B);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.tile .logo{width:62%;aspect-ratio:2698/543;filter:invert(1);opacity:.16;flex:none;height:auto}
+.tile .fmt{position:absolute;left:5px;top:5px;font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;color:var(--paper);background:rgba(10,10,10,.72);border-radius:3px;padding:1px 5px}
+.tile .dur{position:absolute;right:5px;bottom:5px;font-family:var(--mono);font-size:8.5px;color:var(--paper);background:rgba(10,10,10,.82);border-radius:3px;padding:1px 5px}
+.tile.none{background:repeating-linear-gradient(135deg,var(--soft),var(--soft) 7px,var(--line) 7px,var(--line) 14px);border-bottom:1px solid var(--line)}
+.tile.none .np{font-family:var(--mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--gray2);text-align:center;padding:0 8px;line-height:1.5}
+.ameta{padding:9px 10px 10px}
+.ameta .an{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.ameta .ak{font-size:11px;color:var(--gray);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ameta .aflags{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+.flag{font-family:var(--mono);font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;border-radius:4px;padding:2px 5px;border:1px solid var(--line);background:var(--soft);color:var(--gray)}
+.flag.ai{background:rgba(196,179,229,.26);border-color:var(--accent);color:#3F2F63}
+.flag.synth{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
+.flag.derived{background:rgba(169,198,232,.26);border-color:var(--info);color:#22415F}
+
+/* brand kit cards */
+.kits{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding:16px}
+.kit{border:1px solid var(--line);border-radius:9px;background:#fff;padding:13px 14px;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:border-color .12s}
+.kit:hover{border-color:var(--gray2)}
+.kit .kh{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.kit .kn{font-size:13px;font-weight:600;letter-spacing:-.01em}
+.sw{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap}
+.sw i{width:22px;height:22px;border-radius:5px;border:1px solid var(--line);display:block}
+.kit .kk{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.07em;margin-top:9px;line-height:1.6}
+.kit .kk b{color:var(--gray);font-weight:600}
+
+/* not-wired panels */
+.unwired{border:1px dashed var(--line);border-radius:9px;background:var(--soft);padding:14px 15px}
+.unwired .uh{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#6B4A12;display:flex;align-items:center;gap:8px}
+.unwired .ub{font-size:11.5px;color:var(--gray);line-height:1.55;margin-top:7px}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,10,10,.42);opacity:0;pointer-events:none;transition:opacity .18s;z-index:60}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(720px,94vw);background:var(--paper);border-left:1px solid var(--line);z-index:61;transform:translateX(102%);transition:transform .2s ease;display:flex;flex-direction:column;box-shadow:-14px 0 34px rgba(10,10,10,.10)}
+.drawer.on{transform:none}
+.dw-hd{padding:14px 18px 12px;border-bottom:1px solid var(--line);background:#fff;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.dw-hd h2{font-size:15px;font-weight:600;letter-spacing:-.01em;line-height:1.3}
+.dw-x{margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:7px;width:28px;height:28px;flex:0 0 28px;cursor:pointer;font-family:var(--mono);font-size:13px;line-height:1;color:var(--gray)}
+.dw-x:hover{background:var(--soft);color:var(--ink)}
+.dw-bd{flex:1;overflow-y:auto;padding:16px 18px 30px}
+.dw-bd::-webkit-scrollbar{width:7px}
+.dw-bd::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px}
+.dw-sec{margin-top:16px}
+.dw-sec:first-child{margin-top:0}
+.dw-sec>h3{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);margin-bottom:8px}
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px 16px;border:1px solid var(--line);border-radius:9px;background:#fff;padding:13px 15px}
+.kv .k{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
+.kv .v{font-size:12.5px;font-weight:600;margin-top:2px;word-break:break-word}
+.kv .v.mono{font-family:var(--mono);font-size:11px;font-weight:500}
+
+.tblscroll{overflow-x:auto}
+.tblscroll::-webkit-scrollbar{height:7px}
+.tblscroll::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px}
+
+#stateLegend{grid-template-columns:repeat(5,1fr)}
+.card-hd .rail{flex:0 1 auto}
+
+@media(max-width:1280px){.stats{grid-template-columns:repeat(3,1fr)}.attn,#stateLegend{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.deriv{grid-template-columns:1fr}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script src="shell.js"></script>
+</head>
+<body>
+<!-- CREATIVE FACTORY (CF) — generation jobs, the asset library, the review queue and
+     brand kits, for ONE partner's book.
+
+     BUILT FROM
+       db/migrations/045_creative_factory.sql  brand_kits, brand_kit_sources, creative_assets,
+                                               generation_jobs, generation_job_assets, the RLS
+                                               policies, trg_creative_asset_lineage,
+                                               fundhub_no_delete()
+       db/migrations/046_ad_platforms.sql      campaigns (approval_state, strategy_key,
+                                               budget_cents), partner_module_settings
+       db/migrations/047_compliance_rules.sql  compliance_rules + the 12 seeded rows,
+                                               compliance_screenings, the CROA disclosure gate
+       db/migrations/048_campaign_config.sql   creative_providers (asset_kind, provider_key,
+                                               priority), v_creative_config_gaps
+       db/migrations/050_creative_metering.sql creative_usage_events, creative_billing_rates,
+                                               v_partner_creative_usage
+       db/migrations/052_config_defaults.sql   the two PLACEHOLDER billing rates, gaps view rewrite
+       api/creative/jobs.mjs  library.mjs  approvals.mjs  brand-kits.mjs   the four read shapes
+       src/creative/generate.mjs               enqueue/claim/run/fail — the job state machine
+       src/creative/providers/*.mjs            the five provider keys and their disclosure rules
+       src/compliance/screen.mjs               the verdict states and every engine reason code
+       src/http/partner-read-api.mjs           requirePrincipal + resolvePartnerId + withPartnerScope
+       src/http/read-api.mjs                   pageParams / page() / redact()
+
+     READ-ONLY BY CONSTRUCTION. All four api/creative/* files are partnerReadHandler, which
+     answers any non-GET with 405. There is no route to enqueue, retry, cancel, approve,
+     reject, archive, re-screen, edit a brand kit or trigger a scrape — so this screen
+     carries no control that claims to write. Nothing calls enqueue(), claim() or run()
+     anywhere in the repo either; see CF-12.
+
+     NO PREVIEWS. storage_key is never selected and redact() would strip it anyway, and the
+     provider's CDN url is thrown away by storeAsset(). Every tile below is a placeholder.
+
+     Sample rows below — there is no live API call on this page. -->
+<div class="app">
+  <aside class="side" id="side">
+    <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
+    <nav class="side-scroll">
+      <div class="navgroup"><button class="navhead">Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
+        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Automation<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Marketing<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
+        <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
+        <a class="navitem on" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Setup<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
+        <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
+        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
+        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Client<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+      </div></div>
+    </nav>
+    <div class="side-foot"><span class="pulse"></span><span class="who">CS · EMP-000001</span></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="crumb">Marketing</span><h1>Creative Factory</h1>
+      <div class="spacer"></div>
+      <span class="chip" id="scopeChip"><span class="cd" style="background:var(--info)"></span><span id="scopeChipTxt">one partner</span></span>
+      <span class="chip"><span class="cd" style="background:var(--gray2)"></span>read-only · GET</span>
+      <button class="btn mono" id="reqToggle" aria-pressed="false">Show request URLs</button>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ CF-00 · SUMMARY ═══════════════════════════════════════════════ -->
+      <div class="stats" id="stats"></div>
+      <div class="deriv" id="deriv"></div>
+
+      <!-- ══ CF-01 · PARTNER SCOPE ═════════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">CF-01 <span class="sep">/</span> PARTNER SCOPE</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray mono" id="scopeBadge">staff · named partner</span>
+        </div>
+        <div class="card-bd" style="display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:20px;align-items:start">
+          <div>
+            <div class="field">
+              <label for="partnerSel">Partner</label>
+              <select id="partnerSel"></select>
+              <span class="hint">sets <code>?partner_id=</code> on all four reads</span>
+            </div>
+            <div class="mono" style="font-size:10.5px;color:var(--gray2);letter-spacing:.05em;margin-top:10px" id="scopePid">—</div>
+            <div style="margin-top:9px" id="scopeOffers"></div>
+          </div>
+          <div>
+            <p class="note" id="scopeHow"></p>
+            <p class="note" style="margin-top:9px">
+              Every query runs inside <code>withPartnerScope</code>, so the RLS policies from 045
+              supply the <code>partner_id</code> predicate — the SQL in <code>api/creative/*</code>
+              carries none. Outside that scope the same SQL returns <b>zero rows</b> rather than
+              every partner's, which is why there is no roll-up, no leaderboard and no
+              partner-vs-partner view anywhere on this screen.
+            </p>
+          </div>
+        </div>
+        <div class="cap">
+          <b>A partner session cannot name another partner.</b> <code>resolvePartnerId</code> pins a
+          partner principal to its own id and <b>ignores</b> a query-string <code>partner_id</code>
+          rather than rejecting it — rejecting would confirm a guessed id to a prober. A staff
+          session with no <code>?partner_id=</code> gets HTTP 400 <code>partner_id_required</code>.
+        </div>
+      </div>
+
+      <!-- ══ CF-02 · GENERATION JOBS ═══════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">CF-02 <span class="sep">/</span> GENERATION JOBS</div>
+          <div class="spacer"></div>
+          <div class="rail" id="jobRail"></div>
+          <span class="selwrap"><label for="jobLimit">limit</label>
+            <select id="jobLimit"><option>5</option><option selected>10</option><option>25</option><option>50</option><option>200</option></select></span>
+        </div>
+        <div class="tblscroll">
+          <table class="grid" id="jobTable">
+            <thead><tr>
+              <th>Job</th><th>Status</th><th>Asset kind</th><th>Formats</th><th>Variants</th>
+              <th>Attempt</th><th>Assets</th><th>Provider</th><th>Created</th><th>Finished</th>
+            </tr></thead>
+            <tbody id="jobBody"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="jobPager"></div>
+        <div class="req" id="jobReq"></div>
+        <div class="cap">
+          <b>Ordering is fixed at <code>created_at DESC</code>.</b> The endpoint accepts no
+          <code>sort</code>, <code>order</code>, <code>q</code>, <code>from</code> or <code>to</code>
+          — the column headers here are labels, not sort controls.
+        </div>
+        <div class="cap">
+          <b>No cost, ever.</b> <code>generation_jobs.cost_cents</code> exists and is written on every
+          job, success or failure, but <code>api/creative/jobs.mjs</code> deliberately omits it —
+          "showing the raw cost would publish the markup" — and
+          <code>creative-endpoints.pg.test.mjs:148</code> asserts it is <code>undefined</code> on every
+          row. Any per-job dollar figure on this screen would be fabricated.
+        </div>
+      </div>
+
+      <!-- ══ CF-03 · JOB STATES & RETRY ════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">CF-03 <span class="sep">/</span> JOB STATES &amp; RETRY</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray mono">four statuses, exhaustive</span>
+        </div>
+        <div class="card-bd">
+          <div class="attn" id="stateLegend"></div>
+          <div class="deriv" style="margin-top:12px">
+            <div>
+              <div class="dk">Retry, as the engine actually models it</div>
+              <div class="formula">
+                claim() → attempt = attempt + 1, status = 'running'<br>
+                fail(retryable) → status = (retryable AND attempt &lt; 3) ? 'queued' : 'failed'<br>
+                finished_at := now() ONLY when status becomes 'failed'<br>
+                run() success → error := NULL, status := 'succeeded'
+              </div>
+            </div>
+            <div>
+              <div class="dk">Constants</div>
+              <div class="inputs">
+                DEFAULT_MAX_ATTEMPTS = <b>3</b> · provider calls per claimed job<br>
+                BASE_BACKOFF_MS = <b>500</b> · doubling → 500ms, then 1000ms<br>
+                job-level ceiling = <b>3 claims</b> before 'failed'<br>
+                concurrency fallback = <b>3</b> when no settings row exists
+              </div>
+            </div>
+            <div class="src">
+              src/creative/generate.mjs:31-32 (constants) · :102 (claim increments attempt) ·
+              :136-149 (in-process backoff) · :151-157 (degrade to queued) · :172 (error cleared) ·
+              :253-267 (fail / finished_at) — db/migrations/045_creative_factory.sql:319
+              (generation_jobs_error_ck)
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <b>A queued job may carry <code>started_at</code> and an <code>error</code>.</b> That is a
+          retry, not a run in flight — <code>fail()</code> only stamps <code>finished_at</code> when
+          the status becomes <code>failed</code>. Treating a non-null <code>started_at</code> as
+          "currently running" mislabels every requeued job, so this screen keys the pill off
+          <code>status</code> alone.
+        </div>
+        <div class="cap">
+          <b><code>attempt</code> is not "retries remaining".</b> It counts claims, and the in-process
+          provider retry loop (3 calls, 500ms then 1000ms) is a separate count that is never
+          persisted. There is no progress, ETA, percentage or queue position column —
+          <code>spec-&gt;'variants'</code> is frequently NULL, so there is nothing to compute progress
+          against.
+        </div>
+        <div class="cap">
+          <b>The per-partner concurrency cap is not readable here.</b>
+          <code>claim()</code> reads <code>partner_module_settings.max_concurrent_jobs</code>
+          (column default 3, CHECK 1–20) and falls back to 3 when the row is missing, but none of the
+          four creative endpoints returns that table — so the cap is shown above as the <i>engine
+          fallback</i>, not as this partner's configured value. Same for
+          <code>weekly_asset_target</code> (default 15, CHECK ≥ 15), which no code in the repo reads
+          at all.
+        </div>
+      </div>
+
+      <!-- ══ CF-04 · CREATIVE LIBRARY ══════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">CF-04 <span class="sep">/</span> CREATIVE LIBRARY</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray mono" id="libCount">—</span>
+        </div>
+        <div class="card-bd" style="padding-bottom:12px;display:flex;flex-direction:column;gap:8px">
+          <div class="rail" id="libStateRail"></div>
+          <div class="rail" id="libKindRail"></div>
+          <div class="rail" id="libFormatRail"></div>
+          <div class="rail" style="gap:14px">
+            <span class="selwrap"><label for="libKit">brand_kit_id</label><select id="libKit"></select></span>
+            <span class="selwrap"><label for="libArch">include_archived</label>
+              <select id="libArch"><option value="">omitted</option><option value="1">1</option></select></span>
+            <span class="selwrap"><label for="libLimit">limit</label>
+              <select id="libLimit"><option>6</option><option selected>12</option><option>50</option><option>200</option></select></span>
+          </div>
+        </div>
+        <div class="lib" id="libGrid"></div>
+        <div class="pager" id="libPager"></div>
+        <div class="req" id="libReq"></div>
+        <div class="cap">
+          <b>There is no preview and there never will be from this endpoint.</b>
+          <code>storage_key</code> is not selected, <code>redact()</code> strips anything matching
+          <code>/storage_key/</code>, there is no signed-URL route in <code>api/</code>, and
+          <code>storeAsset()</code> throws away the provider's <code>source_url</code> —
+          <code>creative_assets</code> has no url, thumbnail or meta column. The screen gets the
+          boolean <code>has_storage_key</code> and nothing else, so every tile is a placeholder.
+        </div>
+        <div class="cap">
+          <b>Copy rows always read "no object stored".</b> <code>storageKeyFor()</code> returns NULL
+          for <code>kind = 'copy'</code> because copy lives in the row, not object storage — so
+          <code>has_storage_key</code> is false for every copy asset by design. And there is no text
+          column on <code>creative_assets</code>: the generated words exist only in
+          <code>compliance_screenings.screened_text</code>, which no endpoint returns. <b>A copy card
+          cannot show its copy.</b>
+        </div>
+        <div class="cap">
+          <b><code>?kind=</code> and <code>?format=</code> fail silently by design</b>
+          (<code>library.mjs:29-32</code> — "a stray value should not blank the screen"). An
+          unrecognised value is dropped and the unfiltered result comes back with HTTP 200, so an
+          unchanged result set is not proof the filter applied. <code>?state=</code> is different: an
+          invalid value throws <code>BAD_STATE</code>, which
+          <code>partnerReadHandler</code>'s generic catch turns into HTTP <b>500</b>
+          <code>{ok:false, error:'query_failed'}</code> — not a 400.
+        </div>
+      </div>
+
+      <!-- ══ CF-05 · AI DISCLOSURE FLAGS ═══════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">CF-05 <span class="sep">/</span> AI DISCLOSURE FLAGS</div>
+          <div class="spacer"></div>
+          <span class="badge b-accent mono">ai_generated</span>
+          <span class="badge b-warn mono">synthetic_performer</span>
+        </div>
+        <div class="card-bd">
+          <div class="tblscroll">
+            <table class="grid">
+              <thead><tr><th>Provider key</th><th>ai_generated</th><th>synthetic_performer</th><th>How the flag is decided</th></tr></thead>
+              <tbody id="flagBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="cap">
+          <b>A synthetic performer always implies AI-generated.</b> CHECK
+          <code>creative_assets_synthetic_ck</code> (045:218) is
+          <code>NOT synthetic_performer OR ai_generated</code>, and the engine independently blocks
+          the pair with reason <code>synthetic_without_ai_flag</code> — "an asset with a synthetic
+          performer must also be marked ai_generated". The badge pair below a tile is therefore never
+          "synthetic, not AI".
+        </div>
+      </div>
+
+      <!-- ══ CF-06 · REVIEW &amp; APPROVAL QUEUE ═══════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">CF-06 <span class="sep">/</span> REVIEW &amp; APPROVAL QUEUE</div>
+          <div class="spacer"></div>
+          <div class="rail" id="apprRail"></div>
+          <span class="selwrap"><label for="apprLimit">limit</label>
+            <select id="apprLimit"><option>5</option><option selected>10</option><option>50</option></select></span>
+        </div>
+        <div class="tblscroll">
+          <table class="grid" id="apprTable">
+            <thead><tr>
+              <th>Item</th><th>State</th><th>Subtype</th><th>Detail</th><th>Reasons</th>
+              <th>Budget</th><th>Offer</th><th>Platform</th><th>Flags</th><th>Updated</th>
+            </tr></thead>
+            <tbody id="apprBody"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="apprPager"></div>
+        <div class="req" id="apprReq"></div>
+        <div class="cap">
+          <b>Two shapes in one list, and the row is asymmetric.</b> For an
+          <code>creative_asset</code> row, <code>subtype</code> is the kind and <code>detail</code>
+          is the format; <code>budget_cents</code>, <code>offer_type</code> and
+          <code>platform</code> are NULL. For a <code>campaign</code> row, <code>subtype</code> is
+          the (nullable) <code>strategy_key</code> and <code>detail</code> is the campaign
+          <i>name</i>; <code>ai_generated</code> and <code>synthetic_performer</code> are NULL. Nulls
+          are rendered blank here, never as <code>false</code> or <code>$0</code>.
+        </div>
+        <div class="cap">
+          <b>A campaign's <code>reasons</code> is not a reason list.</b> It is a synthesised
+          <code>jsonb_agg</code> of <code>{code: &lt;screening state&gt;, message: &lt;the whole
+          reasons ARRAY&gt;}</code> — one element per <code>compliance_screenings</code> row, with a
+          <i>nested array</i> where a string would be. A naive renderer prints
+          <code>[object Object]</code>; this one unwraps it. Asset rows carry the real
+          <code>blocked_reasons</code> array instead.
+        </div>
+        <div class="cap">
+          <b>This filter fails silently.</b> <code>approvals.mjs</code> does not use
+          <code>stateFilter</code> — an unrecognised <code>?state=</code> makes both branch
+          predicates false and returns an empty list with HTTP 200. There is no 400 to react to, so
+          "empty" and "wrong filter" look identical.
+        </div>
+        <div class="cap">
+          <b>Approval is tracked on the campaign, not the asset</b> (generate.mjs:233-235). There is
+          no per-asset approve or reject — and no route to perform either; the queue is a worklist,
+          and the decision is recorded against <code>campaigns.approval_state</code> elsewhere.
+        </div>
+      </div>
+
+      <!-- ══ CF-07 · BLOCK REASON CATALOGUE ════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">CF-07 <span class="sep">/</span> BLOCK REASON CATALOGUE</div>
+          <div class="spacer"></div>
+          <div class="rail" id="ruleRail"></div>
+        </div>
+        <div class="tblscroll">
+          <table class="grid" id="ruleTable">
+            <thead><tr><th>Code</th><th>Rule set</th><th>Match</th><th>Severity</th><th>Applies to</th><th>Citation</th></tr></thead>
+            <tbody id="ruleBody"></tbody>
+          </table>
+        </div>
+        <div class="cap">
+          <b>These are the only codes a <code>blocked_reasons</code> element can carry.</b> The first
+          twelve are <code>compliance_rules</code> rows seeded by 047; the rest are generated by
+          <code>src/compliance/screen.mjs</code> and exist in no table. A reason object is
+          <code>{code, rule_set, message, citation?, severity?, detail?}</code> — <b>no timestamp, no
+          reviewer, no id, no resolved flag</b>. There is nothing to build a review-history timeline
+          from.
+        </div>
+        <div class="cap">
+          <b>Two gates are structural and have no override.</b> TikTok + credit_repair is rejected
+          before any rule row is read (screen.mjs:132), by CHECK
+          <code>campaigns_tiktok_credit_repair_ck</code>, and by a rule row that exists only to
+          produce a readable message — deactivating the rule does not open the door. Credit-repair
+          creative always requires a human whatever <code>approve_before_launch</code> says; that
+          branch does not consult the setting at all.
+        </div>
+        <div class="cap">
+          <b><code>screen_error</code> is a platform fault, not a copy fault.</b> Screening fails
+          closed on any error — no database, bad regex, malformed subject — and returns
+          <code>blocked</code> with the partner-safe message
+          "Compliance screening could not complete, so this is blocked. Try again; if it persists this
+          is a platform fault, not your copy." Treat it as an incident, not a rewrite.
+        </div>
+        <div class="cap">
+          <b>Two codes will never appear on an asset.</b>
+          <code>human_approval_required_credit_repair</code> and
+          <code>human_approval_required_setting</code> come back with state
+          <code>needs_approval</code>, and generate.mjs writes <code>blocked_reasons</code> only when
+          the verdict is <code>blocked</code> — otherwise <code>[]</code>. They live in
+          <code>compliance_screenings.reasons</code>, which has no endpoint. Likewise no
+          <code>warn</code> bucket: all twelve seeded rules are <code>block</code>.
+        </div>
+      </div>
+
+      <!-- ══ CF-08 · BRAND KITS ════════════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">CF-08 <span class="sep">/</span> BRAND KITS</div>
+          <div class="spacer"></div>
+          <div class="rail" id="kitRail"></div>
+        </div>
+        <div class="kits" id="kitGrid"></div>
+        <div class="pager" id="kitPager"></div>
+        <div class="req" id="kitReq"></div>
+        <div class="cap">
+          <b><code>palette</code>, <code>fonts</code>, <code>voice_profile</code> and
+          <code>products</code> have no schema.</b> They default to <code>{}</code> / <code>[]</code>
+          and no migration or code defines their inner keys, so the cards below render whatever keys
+          each row happens to hold rather than assuming primary/secondary/accent or heading/body. The
+          only jsonb key any code in this module reads is <code>voice_profile.tone</code>
+          (copy.mjs:83, static.mjs:77).
+        </div>
+        <div class="cap">
+          <b><code>source_url</code> and <code>scraped_at</code> are NULL in practice.</b> Nothing
+          outside tests writes <code>brand_kits</code> or <code>brand_kit_sources</code> — there is
+          no scraper, no re-scrape route, and <code>brand_kit_sources</code> has no endpoint (and a
+          delete-guard trigger). So there is no crawl history, no freshness indicator, no version
+          history, no diff and no restore.
+        </div>
+        <div class="cap">
+          <b><code>logo_asset_id</code> is a reference, not an image.</b> It points at a
+          <code>creative_assets</code> row whose <code>storage_key</code> never leaves the process.
+          And <code>asset_count</code> counts <b>non-archived</b> assets only, so it will not match a
+          library count taken with <code>?include_archived=1</code>.
+        </div>
+      </div>
+
+      <!-- ══ CF-09 · READING CONTRACT ══════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">CF-09 <span class="sep">/</span> READING CONTRACT</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray mono">limit · offset · hasMore</span>
+        </div>
+        <div class="card-bd">
+          <div class="deriv" style="margin-top:0">
+            <div>
+              <div class="dk">How a page is built</div>
+              <div class="formula">
+                rows := SELECT … LIMIT (limit + 1) OFFSET offset<br>
+                hasMore := rows.length &gt; limit<br>
+                items := rows.slice(0, limit)<br>
+                count := items.length &nbsp;<span style="color:var(--gray2)">/* this page, not the table */</span>
+              </div>
+            </div>
+            <div>
+              <div class="dk">Bounds</div>
+              <div class="inputs">
+                DEFAULT_LIMIT = <b>50</b> · MAX_LIMIT = <b>200</b><br>
+                offset &lt; 0 clamps to <b>0</b><br>
+                total row count = <b>never returned</b><br>
+                order = created_at DESC (jobs / library / kits),<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;updated_at DESC (approvals)
+              </div>
+            </div>
+            <div class="src">
+              src/http/read-api.mjs:38-39 (bounds) · :78-95 — hasMore is derived by selecting
+              limit+1 rows <b>deliberately instead of a count query</b>, so "Showing 1–50 of 312" and
+              a numbered pager cannot be built on any of these four endpoints.
+            </div>
+          </div>
+          <div class="tblscroll" style="margin-top:12px">
+            <table class="grid">
+              <thead><tr><th>Endpoint</th><th>?state=</th><th>Other params</th><th>Bad value behaviour</th></tr></thead>
+              <tbody id="contractBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ CF-10 · READINESS &amp; CONFIG GAPS ═══════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">CF-10 <span class="sep">/</span> READINESS &amp; CONFIG GAPS</div>
+          <div class="spacer"></div>
+          <span class="badge b-warn mono">needs a new endpoint</span>
+          <span class="badge b-gray mono">org-level · not partner-scoped</span>
+        </div>
+        <div class="card-bd">
+          <div class="unwired" style="margin-bottom:13px">
+            <div class="uh"><span>⚠</span><span>not wired — no HTTP handler exists</span></div>
+            <div class="ub">
+              <code>v_creative_config_gaps</code> (048:262, redefined in 052) carries exactly the
+              columns below, but <code>api/</code> contains only the four creative GET files and none
+              of them selects from it. The rows here reproduce the view's shipped
+              <code>status</code> strings verbatim so the shape is reviewable; they are not a live
+              read. This panel is staff-only by nature — the view is org-level, and RLS does not
+              scope it to a partner.
+            </div>
+          </div>
+          <div class="tblscroll">
+            <table class="grid">
+              <thead><tr><th>config</th><th>detail</th><th>rows_set</th><th>status</th><th>consequence</th></tr></thead>
+              <tbody id="gapsBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="cap">
+          <b>Generation cannot run at zero providers.</b> <code>resolve()</code> takes the active
+          <code>creative_providers</code> row for <code>(org_id, asset_kind)</code> with the
+          <i>lowest</i> priority and <b>throws</b> when there is none, rather than falling back to an
+          arbitrary vendor — "falling back would spend the partner's money at a vendor nobody chose".
+          048 ships with no active row, so that is the state of a fresh database, and a job that hits
+          it fails <b>permanently</b> (retryable false): retrying would not conjure a config row.
+        </div>
+        <div class="cap">
+          <b>No vendor names, endpoints, models or keys.</b> The only provider identifiers that exist
+          anywhere are <code>static</code>, <code>ugc-video</code>, <code>product-video</code>,
+          <code>copy</code> and <code>resize</code>. <code>creative_providers.config</code> is
+          CHECK-blocked from holding <code>api_key</code>/<code>apiKey</code>/<code>secret</code>/
+          <code>token</code>/<code>password</code>/<code>access_token</code>, keys live in env, and no
+          endpoint returns the table at all.
+        </div>
+      </div>
+
+      <!-- ══ CF-11 · USAGE &amp; METERING ════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">CF-11 <span class="sep">/</span> USAGE &amp; METERING</div>
+          <div class="spacer"></div>
+          <span class="badge b-warn mono">schema only</span>
+          <span class="badge b-alert mono">rates unsigned</span>
+        </div>
+        <div class="card-bd">
+          <div class="unwired">
+            <div class="uh"><span>⚠</span><span>empty on any real database — and that is correct</span></div>
+            <div class="ub">
+              <code>creative_usage_events</code> and <code>v_partner_creative_usage</code> exist, but
+              no endpoint serves either, and <code>accrue_creative_usage()</code> is called only from
+              <code>src/social/social.pg.test.mjs</code> — <b>no application code path writes a usage
+              row</b>. So there is nothing to show, and a populated usage panel here would be
+              invented. The grain, if it is ever exposed, is <b>monthly</b>
+              (<code>date_trunc</code>): there is no daily or weekly rollup.
+            </div>
+          </div>
+          <div class="tblscroll" style="margin-top:13px">
+            <table class="grid">
+              <thead><tr><th>event_type</th><th>period</th><th>events</th><th>quantity</th><th>billable_cents</th><th>voided_cents</th></tr></thead>
+              <tbody>
+                <tr><td colspan="6"><div class="empty">
+                  No rows. <span class="mono">v_partner_creative_usage</span> has no HTTP endpoint and
+                  nothing accrues against it.
+                </div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="tblscroll" style="margin-top:13px">
+            <table class="grid">
+              <thead><tr><th>rate_key</th><th>rate</th><th>signed_off_at</th><th>status per v_creative_config_gaps</th></tr></thead>
+              <tbody id="ratesBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="cap">
+          <b>The rates are not a partner-facing number.</b> <code>creative_billing_rates</code> is
+          org-level and unscoped by RLS, and the whole reason <code>cost_cents</code> is withheld from
+          the jobs endpoint is to avoid publishing the markup. Rendering a markup percentage, a vendor
+          cost or a derived "you were charged" figure on a partner surface would publish a commercial
+          term that <b>no human has signed</b> — both rates ship with <code>signed_off_at</code> NULL
+          and notes marked PLACEHOLDER.
+        </div>
+        <div class="cap">
+          <b>Billing raises rather than guessing.</b> <code>accrue_creative_usage()</code> raises
+          "<code>creative_billing_rates.&lt;key&gt; is not set — refusing to accrue usage against an
+          unchosen rate</code>" when the rate is NULL. On accrual the rate and unit cost are copied
+          onto the row (<code>rate_pct_applied</code>, <code>unit_cost_cents</code>) so a later rate
+          change cannot restate history; accrual is idempotent on
+          <code>(org_id, partner_id, source_event_id)</code>; and a record is <b>voided with a
+          reason</b>, never deleted.
+        </div>
+      </div>
+
+      <!-- ══ CF-12 · ENDPOINT LEDGER ═══════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">CF-12 <span class="sep">/</span> ENDPOINT LEDGER</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray mono">what this screen can and cannot read</span>
+        </div>
+        <div class="tblscroll">
+          <table class="grid">
+            <thead><tr><th>Surface</th><th>Source</th><th>State</th><th>Note</th></tr></thead>
+            <tbody id="ledgerBody"></tbody>
+          </table>
+        </div>
+        <div class="cap">
+          <b>No write path exists at all.</b> All four <code>api/creative/*</code> files are built on
+          <code>partnerReadHandler</code>, which answers any non-GET with HTTP 405. There is no POST
+          to enqueue a job, retry or cancel one, approve or reject an asset, archive an asset, create
+          or edit a brand kit, or trigger a scrape. And nothing in the repo calls
+          <code>enqueue()</code>, <code>claim()</code> or <code>run()</code> — no worker, no cron, no
+          Inngest function, no handler. A "Generate assets" form would have nothing behind it, so
+          this screen does not have one.
+        </div>
+        <div class="cap">
+          <b>Nothing hard-deletes and nothing archives.</b> <code>fundhub_no_delete()</code> guards
+          <code>creative_assets</code>, <code>brand_kit_sources</code>,
+          <code>compliance_screenings</code> and <code>creative_usage_events</code> — "rows are not
+          deletable — archive instead" — but no code path sets <code>archived_at</code> either. The
+          <code>?include_archived=1</code> filter is real; on a real database it changes nothing.
+        </div>
+        <div class="cap">
+          <b>No human names.</b> <code>requested_by</code>, <code>approved_by</code> and
+          <code>created_by_agent_id</code> are uuids, and none of the four endpoints joins
+          <code>accounts</code> or <code>agents</code> — <code>jobs.mjs</code> does not even return
+          <code>requested_by</code>, and <code>library.mjs</code> does not return
+          <code>created_by_agent_id</code>. "Requested by Jane" cannot be rendered, so it is not.
+        </div>
+        <div class="cap">
+          <b>No performance data on a creative.</b> <code>creative_assets</code> has no impressions,
+          clicks, CTR, spend, ROAS, frequency or conversions — ad performance lives in
+          <code>ad_metrics_daily</code> keyed by <code>ad_id</code> (046) and no creative endpoint
+          joins it. A "top performing creative" panel cannot be built from these APIs; the fatigue
+          and spend surfaces on <a href="campaign-manager.html" style="text-decoration:underline">Campaigns</a>
+          are where that data lives.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="foot">
+      <span class="pulse"></span><span>systems nominal · fundhub.ai</span>
+      <span class="spacer"></span>
+      <span id="footNote">cf · api/creative/* · read-only · one partner</span>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dwTitle" aria-hidden="true">
+  <div class="dw-hd">
+    <div style="min-width:0">
+      <div class="eyebrow" id="dwEyebrow">CF-— <span class="sep">/</span> DETAIL</div>
+      <h2 id="dwTitle" style="margin-top:6px">—</h2>
+    </div>
+    <button class="dw-x" id="dwClose" aria-label="Close detail">✕</button>
+  </div>
+  <div class="dw-bd" id="dwBody"></div>
+</aside>
+
+<script>
+/* ══ SHARED CHROME BEHAVIOUR ═════════════════════════════════════════════ */
+(function(){
+  var side=document.getElementById('side'),b=document.getElementById('burger');
+  b.addEventListener('click',function(){side.classList.toggle('mini');b.textContent=side.classList.contains('mini')?'››':'‹‹';});
+  document.querySelectorAll('.navhead').forEach(function(h){
+    h.addEventListener('click',function(){if(side.classList.contains('mini'))return;h.parentElement.classList.toggle('closed');});
+  });
+})();
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
+
+/* ══ ENUMS — copied from the CHECK constraints, not invented ══════════════
+   generation_jobs_status_ck (045:—)        queued | running | succeeded | failed
+   creative_assets_kind_ck   (045:198)      static | video | copy
+   creative_assets_format_ck (045:199)      1x1 | 4x5 | 9x16 | 16x9
+   creative_assets_state_ck  (045:200)      pending | passed | blocked | approved
+   brand_kits_status_ck      (045:111)      draft | active | archived
+   creative_providers_key_ck (048)          static | ugc-video | product-video | copy | resize
+   ════════════════════════════════════════════════════════════════════════ */
+var JOB_STATES  = ['queued','running','succeeded','failed'];
+var ASSET_KINDS = ['static','video','copy'];
+var FORMATS     = ['1x1','4x5','9x16','16x9'];
+var LIB_STATES  = ['pending','passed','blocked','approved'];
+var KIT_STATES  = ['draft','active','archived'];
+/* 'resize' is a creative_providers.asset_kind and provider_key ONLY. It is never a
+   creative_assets.kind — a resized asset carries its parent's kind plus parent_asset_id.
+   So it appears in the jobs table and never as a library filter chip. */
+var JOB_ASSET_KINDS = ['static','video','copy','resize'];
+var PROVIDER_KEYS   = ['static','ugc-video','product-video','copy','resize'];
+
+/* ══ PARTNERS ════════════════════════════════════════════════════════════
+   Every read resolves to exactly one partner. The three below are the same book
+   Social Studio and Campaigns are scoped to.
+   ════════════════════════════════════════════════════════════════════════ */
+var PARTNERS = [
+  {id:'8f3c2a91-4d17-4b0e-9c62-1a7e5d3b8042', name:'Ironwood Capital Group',   offers:['funding','credit_cards']},
+  {id:'b47d5e60-90aa-4f31-8e55-6c204f9a1bd3', name:'Meridian Card Collective', offers:['credit_cards']},
+  {id:'c9a10f34-2be7-4a88-b0d9-7f61e2c4a915', name:'Halcyon Credit Works',     offers:['credit_repair']}
+];
+
+/* ══ BRAND KITS — GET /api/creative/brand-kits ════════════════════════════
+   Exactly the columns brand-kits.mjs selects, plus asset_count (non-archived).
+   palette / fonts / voice_profile / products are FREE-SHAPE jsonb: the rows below
+   deliberately use different inner keys from each other, because nothing in the
+   schema or the code defines any. voice_profile.tone is the one key any code reads.
+   source_url and scraped_at are NULL because nothing outside tests writes them.
+   ════════════════════════════════════════════════════════════════════════ */
+var KITS = [
+  {id:'0b6f21d4-5c83-4f70-9e11-3a72c05be418', partner:0, name:'Ironwood Capital — Core',
+   status:'active', asset_count:23, source_url:null, scraped_at:null,
+   logo_asset_id:'3f9c14b7-6a02-4d55-8e31-b7205cc41d09',
+   palette:{ink:'#12211C', moss:'#4F6F52', bone:'#F3EFE7'},
+   fonts:{display:'Söhne', body:'Inter'},
+   voice_profile:{tone:'plain, unhurried, no hype', reading_level:'grade 8'},
+   products:['Working capital line','Equipment financing','Revenue-based advance'],
+   created_at:'2026-05-14T15:20:11Z', updated_at:'2026-07-28T11:04:52Z'},
+
+  {id:'7d40a9c2-11ef-4b36-a5c8-90e6f2417b3d', partner:0, name:'Ironwood — Q3 Funding Push',
+   status:'draft', asset_count:0, source_url:null, scraped_at:null, logo_asset_id:null,
+   palette:{}, fonts:{}, voice_profile:{}, products:[],
+   created_at:'2026-07-27T09:02:40Z', updated_at:'2026-07-27T09:02:40Z'},
+
+  {id:'c1e58b06-3d97-4a12-88f4-2b60d5793ea1', partner:0, name:'Ironwood Legacy 2025',
+   status:'archived', asset_count:3, source_url:null, scraped_at:null, logo_asset_id:null,
+   palette:{swatches:['#12211C','#8FA98F','#D9D2C5']},
+   fonts:{stack:'Inter, system-ui'},
+   voice_profile:{tone:'formal'},
+   products:[{name:'SBA bridge', offer_type:'funding'}],
+   created_at:'2025-11-03T18:41:07Z', updated_at:'2026-02-09T13:15:00Z'},
+
+  {id:'a2704f19-8c6b-4e0d-b933-51ca7e260f84', partner:1, name:'Meridian Cards — House',
+   status:'active', asset_count:9, source_url:null, scraped_at:null,
+   logo_asset_id:'d5b3907a-42c1-4f68-9a07-6e2148cb35f2',
+   palette:{primary:'#1F3A5F', accent:'#C9A227', surface:'#FBFAF7'},
+   fonts:{heading:'GT America', body:'Inter'},
+   voice_profile:{tone:'confident, benefit-first', banned_words:['guaranteed','instant']},
+   products:['0% intro APR card stack','Business card stacking'],
+   created_at:'2026-06-02T10:11:33Z', updated_at:'2026-07-29T16:48:20Z'},
+
+  {id:'e938c520-7a4d-4c91-82be-04f7361ad9b6', partner:2, name:'Halcyon Credit Works',
+   status:'active', asset_count:6, source_url:null, scraped_at:null, logo_asset_id:null,
+   palette:{base:'#2B2440'}, fonts:{},
+   voice_profile:{tone:'careful, statutory — never promissory'},
+   products:['Credit analysis report','Dispute rounds'],
+   created_at:'2026-06-19T08:55:02Z', updated_at:'2026-07-30T07:12:44Z'}
+];
+
+/* ══ GENERATION JOBS — GET /api/creative/jobs ═════════════════════════════
+   Exactly the columns jobs.mjs selects. cost_cents, spec (whole), requested_by,
+   org_id, partner_id and updated_at are NOT here because the endpoint does not
+   return them. asset_kind / formats / variants come out of the spec jsonb, and
+   formats or variants may legitimately be null when the caller did not pass them.
+   ════════════════════════════════════════════════════════════════════════ */
+var JOBS = [
+  /* running: claimed, provider call in flight. asset_count 0 until the run commits. */
+  {id:'5c1a90e7-3f42-4b8d-9c06-71e2a4d5f830', partner:0, brand_kit_id:KITS[0].id,
+   provider:'ugc-video', status:'running', attempt:1, error:null,
+   idempotency_key:'ironwood-funding-w31-ugc-a', asset_kind:'video', formats:['9x16'], variants:3,
+   asset_count:0, created_at:'2026-07-30T09:02:18Z', started_at:'2026-07-30T09:04:11Z', finished_at:null},
+
+  /* queued WITH attempt 2, started_at and an error: a retry, not a run in flight. */
+  {id:'b70f4d51-2a86-4e39-90c7-15b3e8a04f26', partner:0, brand_kit_id:KITS[0].id,
+   provider:'copy', status:'queued', attempt:2,
+   error:'provider returned 429: {"error":"rate_limited","retry_after_s":30}',
+   idempotency_key:'ironwood-cc-w31-copy-a', asset_kind:'copy', formats:null, variants:4,
+   asset_count:0, created_at:'2026-07-30T08:38:55Z', started_at:'2026-07-30T08:41:02Z', finished_at:null},
+
+  /* succeeded: 3 formats x 2 variants = 6 provider calls = 6 assets. error cleared. */
+  {id:'1e29c3a8-64b0-4d17-a5f2-0937bd6e21c4', partner:0, brand_kit_id:KITS[0].id,
+   provider:'static', status:'succeeded', attempt:1, error:null,
+   idempotency_key:'ironwood-funding-w31-static-a', asset_kind:'static',
+   formats:['1x1','4x5','9x16'], variants:2, asset_count:6,
+   created_at:'2026-07-30T08:12:03Z', started_at:'2026-07-30T08:12:04Z', finished_at:'2026-07-30T08:13:51Z'},
+
+  /* queued with attempt 0 and no provider: never claimed. provider stays NULL until
+     run() resolves one. */
+  {id:'9a3d7f60-8e15-4c22-b04a-6d18e5920fb3', partner:0, brand_kit_id:KITS[0].id,
+   provider:null, status:'queued', attempt:0, error:null,
+   idempotency_key:'ironwood-cc-w31-static-b', asset_kind:'static', formats:['1x1'], variants:3,
+   asset_count:0, created_at:'2026-07-30T07:59:41Z', started_at:null, finished_at:null},
+
+  /* failed, permanent: no active creative_providers row for this asset kind.
+     provider is NULL because resolve() threw before the UPDATE that sets it. */
+  {id:'42b8e015-9d63-4a77-8f10-c3e26074ba59', partner:0, brand_kit_id:KITS[0].id,
+   provider:null, status:'failed', attempt:1,
+   error:'no active provider configured for asset kind "resize" — insert a creative_providers row rather than hardcoding one',
+   idempotency_key:'ironwood-resize-hook7', asset_kind:'resize', formats:['4x5','9x16'], variants:null,
+   asset_count:0, created_at:'2026-07-30T06:57:12Z', started_at:'2026-07-30T06:58:00Z', finished_at:'2026-07-30T06:58:00Z'},
+
+  /* failed at the 3-claim ceiling, after a retryable 5xx each time. */
+  {id:'d6027e94-1b58-4f03-9276-8a4c1de5307f', partner:0, brand_kit_id:KITS[0].id,
+   provider:'product-video', status:'failed', attempt:3,
+   error:'provider returned 503: upstream render queue unavailable',
+   idempotency_key:'ironwood-funding-w30-prod-b', asset_kind:'video', formats:['16x9','1x1'], variants:1,
+   asset_count:0, created_at:'2026-07-29T19:14:30Z', started_at:'2026-07-29T19:20:09Z', finished_at:'2026-07-29T19:26:44Z'},
+
+  /* succeeded resize: 3 target formats, one derived asset each. variants not passed. */
+  {id:'8f51b2c7-70a9-4d64-b1e8-25360af7912d', partner:0, brand_kit_id:KITS[0].id,
+   provider:'resize', status:'succeeded', attempt:1, error:null,
+   idempotency_key:'ironwood-resize-hook3', asset_kind:'resize', formats:['1x1','4x5','16x9'], variants:null,
+   asset_count:3, created_at:'2026-07-29T15:06:22Z', started_at:'2026-07-29T15:06:23Z', finished_at:'2026-07-29T15:07:40Z'},
+
+  /* failed on a 200 with an empty asset list — a failure whatever the provider says. */
+  {id:'3b94a608-52df-4e11-87c3-9016d4e7215a', partner:0, brand_kit_id:KITS[0].id,
+   provider:'copy', status:'failed', attempt:3, error:'provider returned zero assets',
+   idempotency_key:'ironwood-funding-w30-copy-c', asset_kind:'copy', formats:null, variants:2,
+   asset_count:0, created_at:'2026-07-29T11:42:08Z', started_at:'2026-07-29T12:01:19Z', finished_at:'2026-07-29T12:03:02Z'},
+
+  {id:'c0e7461b-9a23-4f85-b672-d1408e35927c', partner:0, brand_kit_id:KITS[0].id,
+   provider:'ugc-video', status:'succeeded', attempt:1, error:null,
+   idempotency_key:'ironwood-funding-w30-ugc-a', asset_kind:'video', formats:['9x16'], variants:2,
+   asset_count:2, created_at:'2026-07-28T14:31:55Z', started_at:'2026-07-28T14:32:01Z', finished_at:'2026-07-28T14:38:12Z'},
+
+  {id:'f14d8036-6b70-4c29-95ae-2703b8e5164d', partner:0, brand_kit_id:KITS[0].id,
+   provider:'static', status:'succeeded', attempt:2, error:null,
+   idempotency_key:'ironwood-cc-w30-static-a', asset_kind:'static', formats:['1x1','4x5'], variants:2,
+   asset_count:4, created_at:'2026-07-28T09:18:44Z', started_at:'2026-07-28T09:26:10Z', finished_at:'2026-07-28T09:27:33Z'},
+
+  {id:'6a2c5931-4e80-4b17-a3d6-58f019cb7420', partner:0, brand_kit_id:KITS[2].id,
+   provider:'static', status:'succeeded', attempt:1, error:null,
+   idempotency_key:'ironwood-legacy-refresh-1', asset_kind:'static', formats:['16x9'], variants:3,
+   asset_count:3, created_at:'2026-07-27T16:02:09Z', started_at:'2026-07-27T16:02:11Z', finished_at:'2026-07-27T16:03:20Z'},
+
+  /* Meridian */
+  {id:'e5390a71-8c46-4d02-bf19-7a2650e4318b', partner:1, brand_kit_id:KITS[3].id,
+   provider:'static', status:'succeeded', attempt:1, error:null,
+   idempotency_key:'meridian-cc-w31-static-a', asset_kind:'static', formats:['1x1','4x5'], variants:2,
+   asset_count:4, created_at:'2026-07-29T13:44:51Z', started_at:'2026-07-29T13:44:53Z', finished_at:'2026-07-29T13:46:02Z'},
+  {id:'27b6f4e0-1d59-4a83-9c07-3e15820ad6f9', partner:1, brand_kit_id:KITS[3].id,
+   provider:null, status:'queued', attempt:0, error:null,
+   idempotency_key:'meridian-cc-w31-copy-a', asset_kind:'copy', formats:null, variants:5,
+   asset_count:0, created_at:'2026-07-30T08:05:16Z', started_at:null, finished_at:null},
+
+  /* Halcyon — credit_repair */
+  {id:'b8d1067f-3a92-4e56-81c4-70f26e9d5138', partner:2, brand_kit_id:KITS[4].id,
+   provider:'copy', status:'succeeded', attempt:1, error:null,
+   idempotency_key:'halcyon-cr-w31-copy-a', asset_kind:'copy', formats:null, variants:3,
+   asset_count:3, created_at:'2026-07-30T07:10:02Z', started_at:'2026-07-30T07:10:04Z', finished_at:'2026-07-30T07:11:19Z'},
+  {id:'0d47a52e-6f81-4b30-a97c-4b2e6018df53', partner:2, brand_kit_id:KITS[4].id,
+   provider:'copy', status:'failed', attempt:3, error:'provider unreachable: fetch failed',
+   idempotency_key:'halcyon-cr-w30-copy-b', asset_kind:'copy', formats:null, variants:2,
+   asset_count:0, created_at:'2026-07-28T20:15:37Z', started_at:'2026-07-28T20:44:02Z', finished_at:'2026-07-28T20:44:05Z'}
+];
+
+/* ══ BLOCKED REASON OBJECTS ══════════════════════════════════════════════
+   The exact shape src/compliance/screen.mjs builds and generate.mjs writes into
+   creative_assets.blocked_reasons: { code, rule_set, message, citation?, severity?,
+   detail? }. Messages and citations for rule-derived reasons are verbatim from
+   db/migrations/047_compliance_rules.sql:205-300. No timestamp, no reviewer, no id,
+   no resolved flag — because the column has none.
+   ════════════════════════════════════════════════════════════════════════ */
+var RZ = {
+  guaranteedApproval: {code:'guaranteed-approval', rule_set:'claims', severity:'block',
+    message:'Guaranteed approval cannot be advertised. Approval depends on underwriting.',
+    citation:'FTC Act 15 U.S.C. 45'},
+  incomeCue: {code:'income-wealth-targeting-cue', rule_set:'claims', severity:'block',
+    message:"Copy that targets or implies the viewer's income or financial distress is prohibited in this vertical.",
+    citation:'Meta special ad category / ECOA'},
+  guaranteedFunding: {code:'guaranteed-funding-amount', rule_set:'claims', severity:'block',
+    message:'Guaranteeing a specific funding amount is prohibited. Use "up to" with qualifying conditions stated.',
+    citation:'FTC Act 15 U.S.C. 45'},
+  scoreIncrease: {code:'guaranteed-score-increase', rule_set:'croa', severity:'block',
+    message:'Promising a specific or guaranteed credit-score increase is prohibited. State what the service does, not what the score will do.',
+    citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+  disclosure: {code:'croa-consumer-rights', rule_set:'disclosure', severity:'block',
+    message:'Credit-repair funnels must carry the "Consumer Credit File Rights Under State and Federal Law" disclosure, linked to the campaign before launch.',
+    citation:'CROA 15 U.S.C. 1679c(a)'},
+  categoryUnset: {code:'special_ad_category_unset', rule_set:'platform',
+    message:'No special_ad_category is configured for meta/credit_cards. Populate ad_platform_category_map before any Meta launch.'},
+  screenError: {code:'screen_error', rule_set:'engine',
+    message:'Compliance screening could not complete, so this is blocked. Try again; if it persists this is a platform fault, not your copy.',
+    detail:'connection terminated unexpectedly'},
+  approvalSetting: {code:'human_approval_required_setting', rule_set:'approval',
+    message:'This partner has approve_before_launch enabled, so a human must approve before launch.'},
+  approvalCreditRepair: {code:'human_approval_required_credit_repair', rule_set:'approval',
+    message:'Credit-repair creative always requires human approval before launch. This gate cannot be turned off.'}
+};
+
+/* ══ CREATIVE LIBRARY — GET /api/creative/library ═════════════════════════
+   Exactly the columns library.mjs selects. storage_key is NOT here — has_storage_key
+   is. duration_sec is numeric(10,3), which node-pg hands back as a STRING, so it is a
+   string here too, and it is null on every non-video row (CHECK 045:210).
+   archived_at is null on every row because no code path in the repo ever sets it.
+   ════════════════════════════════════════════════════════════════════════ */
+var ASSETS = [
+  /* the six from job 1e29c3a8 — 3 formats x 2 variants */
+  {id:'3f9c14b7-6a02-4d55-8e31-b7205cc41d09', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'1x1',
+   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-30T08:12:31Z', has_storage_key:true},
+  {id:'a71e6d29-4b53-4c08-9f27-0e6318da54b1', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'1x1',
+   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'blocked', blocked_reasons:[RZ.guaranteedFunding], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-30T08:12:47Z', has_storage_key:true},
+  {id:'5d80b3f6-27c1-4e94-8a05-6b1349fe207c', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'4x5',
+   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-30T08:13:02Z', has_storage_key:true},
+  {id:'e2461c95-0a78-4d3b-b6f1-8c5027ae9b34', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'4x5',
+   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-30T08:13:18Z', has_storage_key:true},
+  {id:'c85302ad-7f16-4b60-91e4-2a70d6c8153f', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'9x16',
+   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'blocked', blocked_reasons:[RZ.incomeCue], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-30T08:13:35Z', has_storage_key:true},
+  {id:'70b9e438-5c02-4a17-8d63-91f47025ce6a', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'9x16',
+   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-30T08:13:50Z', has_storage_key:true},
+
+  /* ugc-video: synthetic_performer is hardcoded true by the provider, so ai_generated
+     must be true as well — the CHECK forbids the other combination. */
+  {id:'19c7d580-6e34-4f21-a08b-53627fd914e0', partner:0, brand_kit_id:KITS[0].id, kind:'video', format:'9x16',
+   provider:'ugc-video', duration_sec:'18.400', ai_generated:true, synthetic_performer:true,
+   compliance_state:'pending', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-28T14:35:12Z', has_storage_key:true},
+  {id:'86f403b1-2d59-4c76-b3e0-1a7852069df4', partner:0, brand_kit_id:KITS[0].id, kind:'video', format:'9x16',
+   provider:'ugc-video', duration_sec:'21.750', ai_generated:true, synthetic_performer:true,
+   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-28T14:38:04Z', has_storage_key:true},
+
+  /* resize children: kind and both disclosure flags INHERITED from the parent, plus
+     parent_asset_id. A resize is not a kind — the parent was static, so these are static. */
+  {id:'2ba85e07-9314-4d6f-80c9-64e13a7f5b28', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'4x5',
+   provider:'resize', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'passed', blocked_reasons:[], parent_asset_id:'3f9c14b7-6a02-4d55-8e31-b7205cc41d09',
+   archived_at:null, created_at:'2026-07-29T15:06:51Z', has_storage_key:true},
+  {id:'d3719fc4-8065-4b2a-97e1-05c2f4b8360d', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'9x16',
+   provider:'resize', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'passed', blocked_reasons:[], parent_asset_id:'3f9c14b7-6a02-4d55-8e31-b7205cc41d09',
+   archived_at:null, created_at:'2026-07-29T15:07:14Z', has_storage_key:true},
+  {id:'4e0d68a3-51b7-492c-8f06-732be1d05947', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'16x9',
+   provider:'resize', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'passed', blocked_reasons:[], parent_asset_id:'3f9c14b7-6a02-4d55-8e31-b7205cc41d09',
+   archived_at:null, created_at:'2026-07-29T15:07:39Z', has_storage_key:true},
+
+  /* copy: format 1x1 is the neutral value (format is NOT NULL and the library filters on
+     it), and has_storage_key is false on every copy row because copy lives in the row. */
+  {id:'ba5c2716-4038-4e1d-95a7-6c0f8324ed19', partner:0, brand_kit_id:KITS[0].id, kind:'copy', format:'1x1',
+   provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-28T09:27:05Z', has_storage_key:false},
+  {id:'f608b1d5-72a9-4c34-8016-9e5b4023af7c', partner:0, brand_kit_id:KITS[0].id, kind:'copy', format:'1x1',
+   provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'blocked', blocked_reasons:[RZ.guaranteedApproval], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-28T09:27:21Z', has_storage_key:false},
+  {id:'8c1740e6-b529-4a0f-93d8-2607f1b54e83', partner:0, brand_kit_id:KITS[0].id, kind:'copy', format:'1x1',
+   provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'pending', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-28T09:27:38Z', has_storage_key:false},
+
+  /* the fail-closed case: screening itself fell over, so the asset is blocked with an
+     engine reason rather than a copy reason. */
+  {id:'71ea3958-0c47-4b62-a8d1-53f9207e6cb4', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'16x9',
+   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'blocked', blocked_reasons:[RZ.screenError], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-27T16:03:11Z', has_storage_key:true},
+  {id:'0f2c86b4-9d13-4507-be9a-4182c0e73da5', partner:0, brand_kit_id:KITS[2].id, kind:'static', format:'16x9',
+   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-27T16:02:58Z', has_storage_key:true},
+
+  /* ai_generated is TRUE here, as it is on every row: static.mjs:58 hardcodes it, and
+     storeAsset() stores `a.ai_generated !== false`. No provider in this module emits a
+     false flag, and generate.mjs is the only writer of creative_assets in the repo — so
+     there is no ai_generated = false asset to show. */
+  {id:'56d90b28-3f74-4e15-8c02-b937a154e60f', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'1x1',
+   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-26T12:40:03Z', has_storage_key:true},
+
+  /* Meridian */
+  {id:'d5b3907a-42c1-4f68-9a07-6e2148cb35f2', partner:1, brand_kit_id:KITS[3].id, kind:'static', format:'1x1',
+   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-29T13:45:10Z', has_storage_key:true},
+  {id:'93a6f102-8b47-4d59-a0e3-7c1258f4b60d', partner:1, brand_kit_id:KITS[3].id, kind:'static', format:'4x5',
+   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'blocked', blocked_reasons:[RZ.categoryUnset], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-29T13:45:44Z', has_storage_key:true},
+  {id:'417ce805-6a92-4b31-97f0-2d5b8340e169', partner:1, brand_kit_id:KITS[3].id, kind:'video', format:'16x9',
+   provider:'product-video', duration_sec:'12.000', ai_generated:true, synthetic_performer:false,
+   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-26T10:22:37Z', has_storage_key:true},
+  {id:'a0b74c31-5e28-4f96-83d1-609ecb2f4571', partner:1, brand_kit_id:KITS[3].id, kind:'copy', format:'1x1',
+   provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'pending', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-25T17:03:12Z', has_storage_key:false},
+
+  /* Halcyon — credit_repair, so the CROA rule set applies */
+  {id:'6b28f503-c941-4a70-85de-1f0327b46c82', partner:2, brand_kit_id:KITS[4].id, kind:'copy', format:'1x1',
+   provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'blocked', blocked_reasons:[RZ.scoreIncrease], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-30T07:10:41Z', has_storage_key:false},
+  {id:'ce4082b7-1f36-4d95-a07c-583b2916e0d4', partner:2, brand_kit_id:KITS[4].id, kind:'copy', format:'1x1',
+   provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'blocked', blocked_reasons:[RZ.disclosure], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-30T07:10:58Z', has_storage_key:false},
+  {id:'32f5a70c-8d61-4b28-9e04-71c3068ad5f9', partner:2, brand_kit_id:KITS[4].id, kind:'copy', format:'1x1',
+   provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'pending', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-30T07:11:15Z', has_storage_key:false},
+  {id:'7de1b640-4a95-4c03-b28f-16057e3924ac', partner:2, brand_kit_id:KITS[4].id, kind:'static', format:'4x5',
+   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
+   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
+   created_at:'2026-07-24T11:38:20Z', has_storage_key:true}
+];
+
+/* ══ CAMPAIGNS AWAITING APPROVAL — the second branch of the UNION ALL ═════
+   `reasons` here is NOT a reason list. approvals.mjs synthesises it with
+   jsonb_agg(jsonb_build_object('code', s.state, 'message', s.reasons)) over
+   compliance_screenings — so `code` is a SCREENING STATE (passed | blocked |
+   needs_approval) and `message` is the whole reasons ARRAY, nested. Rendered
+   naively it prints [object Object]; the renderer below unwraps it.
+   ════════════════════════════════════════════════════════════════════════ */
+var CAMPAIGNS = [
+  {id:'c47b0295-8e13-4a6f-90d2-56138ba7e04c', partner:0, name:'Funding — Forester evergreen',
+   strategy_key:'forester', offer_type:'funding', platform:'meta', budget_cents:450000,
+   updated_at:'2026-07-30T08:55:02Z',
+   screenings:[{code:'needs_approval', message:[RZ.approvalSetting]}]},
+
+  {id:'9e5107ba-4d68-4c02-8f31-b7205ac96e1d', partner:0, name:'Card stacking — Venus Fly Trap 1',
+   strategy_key:'venus_fly_trap_1', offer_type:'credit_cards', platform:'meta', budget_cents:280000,
+   updated_at:'2026-07-30T07:41:19Z',
+   screenings:[{code:'blocked', message:[RZ.categoryUnset]},
+               {code:'needs_approval', message:[RZ.approvalSetting]}]},
+
+  {id:'2f80d651-3b97-4e14-a5c0-916428de70b3', partner:0, name:'Tornado — 72h funding push',
+   strategy_key:'tornado', offer_type:'funding', platform:'tiktok', budget_cents:120000,
+   updated_at:'2026-07-29T18:22:47Z',
+   screenings:[{code:'passed', message:[]}]},
+
+  {id:'8a61e304-7f52-4b9d-86c1-40b7f2596ea8', partner:1, name:'Meridian — Harvester retarget',
+   strategy_key:'harvester', offer_type:'credit_cards', platform:'meta', budget_cents:65000,
+   updated_at:'2026-07-29T12:09:33Z',
+   screenings:[{code:'needs_approval', message:[RZ.approvalSetting]}]},
+
+  /* strategy_key is NULLABLE on this row shape — a campaign that has not been given one
+     still appears in the queue, and the cell is rendered blank, not "—unknown—". */
+  {id:'b3d925fc-0a48-4671-92e7-5c8016b3a4d0', partner:2, name:'Halcyon — CROA-safe intro',
+   strategy_key:null, offer_type:'credit_repair', platform:'meta', budget_cents:90000,
+   updated_at:'2026-07-30T07:33:58Z',
+   screenings:[{code:'blocked', message:[RZ.disclosure]},
+               {code:'needs_approval', message:[RZ.approvalCreditRepair]}]}
+];
+
+/* ══ COMPLIANCE RULE CATALOGUE ═══════════════════════════════════════════
+   The twelve seeded compliance_rules rows (047:205-300) plus the eight engine codes
+   src/compliance/screen.mjs can emit that exist in no table. Every message and
+   citation below is verbatim. All twelve seeded rules are severity 'block' — no
+   'warn' rule ships, so there is no warnings bucket anywhere on this screen.
+   ════════════════════════════════════════════════════════════════════════ */
+var RULES = [
+  {code:'guaranteed-score-increase', rule_set:'croa', match_type:'regex', severity:'block',
+   offers:['credit_repair'], platforms:[], src:'seeded',
+   message:'Promising a specific or guaranteed credit-score increase is prohibited. State what the service does, not what the score will do.',
+   citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+  {code:'promise-to-remove-accurate-info', rule_set:'croa', match_type:'regex', severity:'block',
+   offers:['credit_repair'], platforms:[], src:'seeded',
+   message:'Claiming to remove accurate or verifiable negative information is prohibited. Only inaccurate or unverifiable items may be disputed.',
+   citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+  {code:'remove-late-payments-collections', rule_set:'croa', match_type:'regex', severity:'block',
+   offers:['credit_repair'], platforms:[], src:'seeded',
+   message:'Claiming to remove late payments, collections or similar accurate tradelines is prohibited.',
+   citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+  {code:'advance-fee', rule_set:'croa', match_type:'regex', severity:'block',
+   offers:['credit_repair'], platforms:[], src:'seeded',
+   message:'Charging or advertising a fee before credit-repair services are fully performed is prohibited.',
+   citation:'CROA 15 U.S.C. 1679b(b)'},
+  {code:'file-segregation-cpn', rule_set:'croa', match_type:'regex', severity:'block',
+   offers:['credit_repair'], platforms:[], src:'seeded',
+   message:'File segregation, CPNs and new-credit-identity offers are federal fraud. This copy cannot run.',
+   citation:'CROA 15 U.S.C. 1679b(a)(1)-(2)'},
+  {code:'guaranteed-timeline', rule_set:'croa', match_type:'regex', severity:'block',
+   offers:['credit_repair'], platforms:[], src:'seeded',
+   message:'Guaranteeing a timeframe for credit-repair results is prohibited. Outcomes and timing vary by file.',
+   citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+  {code:'guaranteed-approval', rule_set:'claims', match_type:'regex', severity:'block',
+   offers:[], platforms:[], src:'seeded',
+   message:'Guaranteed approval cannot be advertised. Approval depends on underwriting.',
+   citation:'FTC Act 15 U.S.C. 45'},
+  {code:'guaranteed-funding-amount', rule_set:'claims', match_type:'regex', severity:'block',
+   offers:[], platforms:[], src:'seeded',
+   message:'Guaranteeing a specific funding amount is prohibited. Use "up to" with qualifying conditions stated.',
+   citation:'FTC Act 15 U.S.C. 45'},
+  {code:'fabricated-testimonial', rule_set:'claims', match_type:'regex', severity:'block',
+   offers:[], platforms:[], src:'seeded',
+   message:'Testimonials must be genuine and results disclaimed as atypical. "Results are typical" cannot be claimed.',
+   citation:'FTC Endorsement Guides 16 CFR 255'},
+  {code:'income-wealth-targeting-cue', rule_set:'claims', match_type:'regex', severity:'block',
+   offers:[], platforms:[], src:'seeded',
+   message:"Copy that targets or implies the viewer's income or financial distress is prohibited in this vertical.",
+   citation:'Meta special ad category / ECOA'},
+  {code:'croa-consumer-rights', rule_set:'disclosure', match_type:'required', severity:'block',
+   offers:['credit_repair'], platforms:[], src:'seeded',
+   message:'Credit-repair funnels must carry the "Consumer Credit File Rights Under State and Federal Law" disclosure, linked to the campaign before launch.',
+   citation:'CROA 15 U.S.C. 1679c(a)'},
+  {code:'tiktok-credit-repair-prohibited', rule_set:'platform', match_type:'regex', severity:'block',
+   offers:['credit_repair'], platforms:['tiktok'], src:'seeded',
+   message:'TikTok prohibits credit repair and debt relief advertising outright. This offer cannot run on TikTok on any account, with any creative.',
+   citation:'TikTok Advertising Policies — Prohibited Industries'},
+
+  {code:'screen_error', rule_set:'engine', match_type:'—', severity:'block',
+   offers:[], platforms:[], src:'engine',
+   message:'Compliance screening could not complete, so this is blocked. Try again; if it persists this is a platform fault, not your copy.',
+   citation:null},
+  {code:'offer_type_missing', rule_set:'engine', match_type:'—', severity:'block',
+   offers:[], platforms:[], src:'engine',
+   message:'offer_type must be one of funding, credit_cards, credit_repair; got <the value>.',
+   citation:null},
+  {code:'platform_unknown', rule_set:'engine', match_type:'—', severity:'block',
+   offers:[], platforms:[], src:'engine',
+   message:'platform must be one of meta, tiktok, google or null; got <the value>.',
+   citation:null},
+  {code:'tiktok_credit_repair_prohibited', rule_set:'platform', match_type:'—', severity:'block',
+   offers:['credit_repair'], platforms:['tiktok'], src:'engine',
+   message:'TikTok prohibits credit repair and debt relief advertising outright. This offer cannot run on TikTok on any account, with any creative. There is no override.',
+   citation:null},
+  {code:'special_ad_category_unset', rule_set:'platform', match_type:'—', severity:'block',
+   offers:[], platforms:['meta'], src:'engine',
+   message:'No special_ad_category is configured for meta/<offer_type>. Populate ad_platform_category_map before any Meta launch.',
+   citation:null},
+  {code:'synthetic_without_ai_flag', rule_set:'disclosure', match_type:'—', severity:'block',
+   offers:[], platforms:[], src:'engine',
+   message:'An asset with a synthetic performer must also be marked ai_generated.',
+   citation:null},
+  {code:'human_approval_required_credit_repair', rule_set:'approval', match_type:'—', severity:'gate',
+   offers:['credit_repair'], platforms:[], src:'engine',
+   message:'Credit-repair creative always requires human approval before launch. This gate cannot be turned off.',
+   citation:null},
+  {code:'human_approval_required_setting', rule_set:'approval', match_type:'—', severity:'gate',
+   offers:[], platforms:[], src:'engine',
+   message:'This partner has approve_before_launch enabled, so a human must approve before launch.',
+   citation:null}
+];
+
+/* ══ PROVIDER DISCLOSURE BEHAVIOUR (CF-05) ═══════════════════════════════ */
+var PROVIDER_FLAGS = [
+  {key:'static', ai:'always true', synth:'from the spec',
+   how:'static.mjs:58 hardcodes aiGenerated: true — everything this provider emits is machine-made. Only syntheticPerformer comes from the caller (static.mjs:62), because a prompt may or may not ask for a person, and it is never inferred.'},
+  {key:'ugc-video', ai:'always true', synth:'always true',
+   how:'ugc-video.mjs:55 hardcodes syntheticPerformer: true and ignores a caller-supplied false — there is no configuration of this provider that produces a video without one.'},
+  {key:'product-video', ai:'always true', synth:'defaults false',
+   how:'product-video.mjs:55 hardcodes aiGenerated: true — the footage is machine-made either way. :56 defaults syntheticPerformer to false and lets the caller set it.'},
+  {key:'copy', ai:'always true', synth:'always false',
+   how:'copy.mjs sets aiGenerated: true, syntheticPerformer: false — copy has no performer and no canvas (format is the neutral 1x1).'},
+  {key:'resize', ai:'inherited', synth:'inherited',
+   how:'resize.mjs:64-65 inherits both from the parent — a crop of an AI image is still AI, and a crop of a synthetic presenter still shows one. Recomputing them would drop both flags on every derived asset.'}
+];
+
+/* ══ v_creative_config_gaps — status strings verbatim (048 / 052) ═════════ */
+var GAPS = [
+  {config:'ad_platform_category_map', detail:'meta special ad category per offer type', rows_set:3,
+   status:'DEFAULTED in 052 to CREDIT — confirm against your Marketing API version', tone:'warn',
+   consequence:'Meta rejects the campaign at create time if the enum is wrong'},
+  {config:'creative_providers', detail:'which vendor serves each asset kind', rows_set:0,
+   status:'UNSET — generation cannot run', tone:'bad',
+   consequence:'generation cannot run until at least one provider is active'},
+  {config:'creative_billing_rates.generation_markup_pct', detail:'rate = 100', rows_set:0,
+   status:'PLACEHOLDER set in 052 — AWAITING SIGN-OFF', tone:'warn',
+   consequence:'this rate bills a partner; an unsigned placeholder must not reach an invoice'},
+  {config:'creative_billing_rates.managed_spend_pct', detail:'rate = 10', rows_set:0,
+   status:'PLACEHOLDER set in 052 — AWAITING SIGN-OFF', tone:'warn',
+   consequence:'this rate bills a partner; an unsigned placeholder must not reach an invoice'},
+  /* All three optimization_rules rows come back DEFAULTED, not UNSET: 052 sets
+     needs_config = false and fills params for kill_no_conversions (052:82) and
+     spend_tier_refresh (052:117), and roas_primary shipped with needs_config false in
+     048. `detail` is optimization_rules.description verbatim, and `rows_set` is a
+     literal 0 for every optimization_rules row in the view (052:317). */
+  {config:'optimization_rules.kill_no_conversions',
+   detail:'Pause and log when an ad reaches $500 spend with zero conversions. Set in 052 — derived, not sourced; tune against your actual CPA.',
+   rows_set:0, status:'DEFAULTED in 052 — derived, tunable', tone:'ok',
+   consequence:'active on a derived default rather than an observed one'},
+  {config:'optimization_rules.spend_tier_refresh',
+   detail:"Creative refresh cadence by daily spend tier. Set in 052 — derived from the spec's 72h/frequency-3 anchors, scaled by how fast spend accumulates frequency.",
+   rows_set:0, status:'DEFAULTED in 052 — derived, tunable', tone:'ok',
+   consequence:'active on a derived default rather than an observed one'},
+  {config:'optimization_rules.roas_primary',
+   detail:'While ROAS is at or above target, CPM/CTR rules may queue creative but must not pause or cut budget. Target set to break-even (1.0) in 052 — raise it to your actual target.',
+   rows_set:0, status:'DEFAULTED in 052 — derived, tunable', tone:'ok',
+   consequence:'active on a derived default rather than an observed one'}
+];
+
+var RATES = [
+  {rate_key:'generation_markup_pct', rate:'100', signed_off_at:null,
+   status:'PLACEHOLDER set in 052 — AWAITING SIGN-OFF'},
+  {rate_key:'managed_spend_pct', rate:'10', signed_off_at:null,
+   status:'PLACEHOLDER set in 052 — AWAITING SIGN-OFF'}
+];
+
+/* ══ CF-09 reading contract / CF-12 ledger ═══════════════════════════════ */
+var CONTRACT = [
+  {ep:'GET /api/creative/jobs', state:"queued | running | succeeded | failed | all — comma-separated multi-value supported ('succeeded,failed')",
+   other:'limit, offset', bad:'stateFilter throws BAD_STATE → HTTP 500 {ok:false, error:"query_failed"}, not 400'},
+  {ep:'GET /api/creative/library', state:'pending | passed | blocked | approved | all',
+   other:'kind, format, brand_kit_id, include_archived=1, limit, offset',
+   bad:'bad ?state= → HTTP 500. Bad ?kind= / ?format= are silently IGNORED by design.'},
+  {ep:'GET /api/creative/approvals', state:'blocked | pending | awaiting_approval | all',
+   other:'limit, offset',
+   bad:'NOT run through stateFilter — an unknown value returns an EMPTY list with HTTP 200'},
+  {ep:'GET /api/creative/brand-kits', state:'draft | active | archived | all',
+   other:'limit, offset', bad:'stateFilter throws BAD_STATE → HTTP 500, not 400'}
+];
+
+var LEDGER = [
+  {s:'CF-02 Generation jobs', src:'api/creative/jobs.mjs', st:'readable', tone:'ok',
+   note:'error is returned on purpose — scrub() strips anything key-shaped before it is stored. cost_cents is not.'},
+  {s:'CF-04 Creative library', src:'api/creative/library.mjs', st:'readable', tone:'ok',
+   note:'has_storage_key only. No storage_key, no url, no text, no width/height/file_size — none of those columns exist.'},
+  {s:'CF-06 Review queue', src:'api/creative/approvals.mjs', st:'readable', tone:'ok',
+   note:'creative_asset (pending|blocked) + campaign (awaiting_approval). No ads, ad sets or social posts.'},
+  {s:'CF-08 Brand kits', src:'api/creative/brand-kits.mjs', st:'readable', tone:'ok',
+   note:'asset_count counts non-archived assets. Nothing outside tests writes this table.'},
+  {s:'CF-10 Config gaps', src:'v_creative_config_gaps', st:'no endpoint', tone:'warn',
+   note:'org-level view, no HTTP handler. Rows here are the shipped status strings, not a live read.'},
+  {s:'CF-11 Usage & metering', src:'v_partner_creative_usage · creative_usage_events', st:'no endpoint', tone:'warn',
+   note:'monthly grain, no endpoint, and accrue_creative_usage() is called only from tests.'},
+  {s:'Screening audit trail', src:'compliance_screenings', st:'not readable', tone:'bad',
+   note:'state, reasons, screened_text (8000 chars) and created_at all exist. No endpoint, so no per-asset screening history and no re-screen.'},
+  {s:'Partner module settings', src:'partner_module_settings', st:'not readable', tone:'bad',
+   note:'approve_before_launch, weekly_asset_target, max_concurrent_jobs, autopilot_enabled, launch_enabled — none of the four endpoints selects them.'},
+  {s:'Provider config', src:'creative_providers', st:'not readable', tone:'bad',
+   note:'org-level, no partner_id, no endpoint. Ships with no active row, and config is CHECK-blocked from holding credentials.'},
+  {s:'Brand kit sources', src:'brand_kit_sources', st:'not readable', tone:'bad',
+   note:'delete-guarded, no endpoint, and nothing outside tests ever inserts into it.'},
+  {s:'Creative performance', src:'ad_metrics_daily (046)', st:'not joined', tone:'bad',
+   note:'keyed by ad_id. No creative endpoint joins it, so there is no CTR, spend, ROAS or frequency per asset.'}
+];
+
+/* ══ HELPERS ═════════════════════════════════════════════════════════════ */
+function fmt(ts){
+  if(!ts) return null;
+  var M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var m=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(ts);
+  if(!m) return ts;
+  return M[+m[2]-1]+' '+(+m[3])+' '+m[4]+':'+m[5];
+}
+function nul(txt){ return '<span class="nul">'+esc(txt==null?'—':txt)+'</span>'; }
+function money(cents){
+  if(cents==null) return null;
+  return '$'+(cents/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+/* page() — the limit+1 trick read-api.mjs uses. There is no total, on purpose. */
+function page(rows, limit, offset){
+  var slice = rows.slice(offset, offset + limit + 1);
+  var hasMore = slice.length > limit;
+  var items = slice.slice(0, limit);
+  return {items:items, count:items.length, limit:limit, offset:offset, hasMore:hasMore};
+}
+function byPartner(rows){ return rows.filter(function(r){ return r.partner === S.partner; }); }
+function kitName(id){
+  for(var i=0;i<KITS.length;i++){ if(KITS[i].id===id) return KITS[i].name; }
+  return null;
+}
+function assetById(id){
+  for(var i=0;i<ASSETS.length;i++){ if(ASSETS[i].id===id) return ASSETS[i]; }
+  return null;
+}
+function shortId(id){ return String(id||'').slice(0,8); }
+
+var JOB_TONE  = {queued:'info', running:'warn', succeeded:'ok', failed:'bad'};
+var JOB_BADGE = {queued:'b-info', running:'b-warn', succeeded:'b-ok', failed:'b-alert'};
+var LIB_BADGE = {pending:'b-warn', passed:'b-ok', blocked:'b-alert', approved:'b-accent'};
+var KIT_BADGE = {draft:'b-gray', active:'b-ok', archived:'b-info'};
+
+/* ══ SCREEN STATE ════════════════════════════════════════════════════════ */
+var S = {
+  partner: 0,
+  jobStates: [],          /* [] = ?state=all; multiple values are comma-joined */
+  jobLimit: 10, jobOffset: 0,
+  libState: 'all', libKind: '', libFormat: '', libKit: '', libArchived: '',
+  libLimit: 12, libOffset: 0,
+  apprState: 'all', apprLimit: 10, apprOffset: 0,
+  kitState: 'all', kitOffset: 0, kitLimit: 6,
+  ruleSet: 'all',
+  statPick: 'flight',
+  showReq: false
+};
+
+/* ══ CF-01 · PARTNER SCOPE ═══════════════════════════════════════════════ */
+function renderScope(){
+  var sel = document.getElementById('partnerSel');
+  if(!sel.options.length){
+    sel.innerHTML = PARTNERS.map(function(p,i){
+      return '<option value="'+i+'">'+esc(p.name)+'</option>';
+    }).join('');
+    sel.addEventListener('change', function(){
+      S.partner = parseInt(sel.value,10)||0;
+      S.jobOffset = 0; S.libOffset = 0; S.apprOffset = 0; S.kitOffset = 0;
+      S.libKit = '';
+      renderAll();
+    });
+  }
+  sel.value = String(S.partner);
+  var p = PARTNERS[S.partner];
+  document.getElementById('scopePid').textContent = 'partner_id = ' + p.id;
+  document.getElementById('scopeChipTxt').textContent = p.name;
+  document.getElementById('scopeOffers').innerHTML = p.offers.map(function(o){
+    return '<span class="badge b-gray mono" style="margin-right:4px">'+esc(o)+'</span>';
+  }).join('');
+  document.getElementById('scopeHow').innerHTML =
+    'Reading as <b>staff</b>, so every request carries <code>?partner_id=' + esc(p.id) + '</code>. ' +
+    'This picker is the whole of the cross-partner capability on this screen: it changes <i>which one</i> ' +
+    'partner is on screen, never how many. A partner principal reading the same four endpoints sees this ' +
+    'as a static label instead, because <code>resolvePartnerId</code> pins them to their own id and ' +
+    'discards the query string.';
+}
+
+/* ══ CF-00 · STAT TILES + DERIVATION ═════════════════════════════════════ */
+function statModel(){
+  var jobs = byPartner(JOBS), assets = byPartner(ASSETS), kits = byPartner(KITS);
+  var camps = CAMPAIGNS.filter(function(c){ return c.partner === S.partner; });
+  var queued = jobs.filter(function(j){ return j.status==='queued'; });
+  var running = jobs.filter(function(j){ return j.status==='running'; });
+  var failed = jobs.filter(function(j){ return j.status==='failed'; });
+  var retrying = queued.filter(function(j){ return j.attempt > 0; });
+  var live = assets.filter(function(a){ return !a.archived_at; });
+  var blocked = live.filter(function(a){ return a.compliance_state==='blocked'; });
+  var pending = live.filter(function(a){ return a.compliance_state==='pending'; });
+  var active = kits.filter(function(k){ return k.status==='active'; });
+  return {jobs:jobs, assets:assets, kits:kits, camps:camps, queued:queued, running:running,
+          failed:failed, retrying:retrying, live:live, blocked:blocked, pending:pending, active:active};
+}
+
+var DERIVS = {
+  flight: function(m){ return {
+    title:'Jobs in flight',
+    formula:'count(status = \'queued\') + count(status = \'running\')<br>= ' + m.queued.length + ' + ' + m.running.length + ' = <b>' + (m.queued.length + m.running.length) + '</b>',
+    inputs:'queued = <b>' + m.queued.length + '</b> · of which retrying (attempt &gt; 0) = <b>' + m.retrying.length + '</b><br>' +
+           'running = <b>' + m.running.length + '</b><br>' +
+           'never claimed (queued, attempt 0) = <b>' + (m.queued.length - m.retrying.length) + '</b>',
+    src:'GET /api/creative/jobs?partner_id=…&amp;state=queued,running — counted from the rows the page returned. ' +
+        'The endpoint returns no total, so this is a PAGE count, not a table count.'};},
+  failed: function(m){
+    var withErr = m.failed.filter(function(j){ return j.error; }).length;
+    var perm = m.failed.filter(function(j){ return /no active provider configured/.test(j.error||''); }).length;
+    return {
+    title:'Failed jobs',
+    formula:'count(status = \'failed\') = <b>' + m.failed.length + '</b><br>' +
+            'every one of them carries an error: ' + withErr + ' / ' + m.failed.length,
+    inputs:'permanent — no provider configured = <b>' + perm + '</b><br>' +
+           'reached the 3-claim ceiling = <b>' + m.failed.filter(function(j){return j.attempt>=3;}).length + '</b><br>' +
+           'zero-asset responses = <b>' + m.failed.filter(function(j){return j.error==='provider returned zero assets';}).length + '</b>',
+    src:'GET /api/creative/jobs?state=failed. CHECK generation_jobs_error_ck (045:319) guarantees the ' +
+        'error is non-null on a failed row — a failed job that does not say why cannot exist.'};},
+  review: function(m){
+    var camp = m.camps.length;
+    return {
+    title:'Awaiting review',
+    formula:'asset rows (compliance_state IN (\'pending\',\'blocked\') AND archived_at IS NULL)<br>' +
+            '&nbsp;&nbsp;+ campaign rows (approval_state = \'awaiting_approval\')<br>' +
+            '= (' + m.pending.length + ' + ' + m.blocked.length + ') + ' + camp + ' = <b>' + (m.pending.length + m.blocked.length + camp) + '</b>',
+    inputs:'pending assets = <b>' + m.pending.length + '</b><br>' +
+           'blocked assets = <b>' + m.blocked.length + '</b><br>' +
+           'campaigns awaiting approval = <b>' + camp + '</b>',
+    src:'GET /api/creative/approvals?state=all — a UNION ALL of two shapes ordered updated_at DESC. ' +
+        'The asset branch is fixed to pending|blocked; \'passed\' and \'approved\' are excluded by the WHERE clause.'};},
+  library: function(m){ return {
+    title:'Library assets',
+    formula:'count(rows) WHERE archived_at IS NULL = <b>' + m.live.length + '</b><br>' +
+            'passed ' + m.live.filter(function(a){return a.compliance_state==='passed';}).length +
+            ' · pending ' + m.pending.length + ' · blocked ' + m.blocked.length + ' · approved 0',
+    inputs:'static = <b>' + m.live.filter(function(a){return a.kind==='static';}).length + '</b><br>' +
+           'video = <b>' + m.live.filter(function(a){return a.kind==='video';}).length + '</b><br>' +
+           'copy = <b>' + m.live.filter(function(a){return a.kind==='copy';}).length + '</b><br>' +
+           'derived (parent_asset_id set) = <b>' + m.live.filter(function(a){return a.parent_asset_id;}).length + '</b>',
+    src:'GET /api/creative/library?state=all — archived rows are hidden unless include_archived=1. ' +
+        '\'approved\' is 0 and always will be: it is in the CHECK constraint and in the ?state= allowlist, ' +
+        'but no code in the repo ever writes it.'};},
+  kits: function(m){
+    var counted = m.active.reduce(function(n,k){ return n + k.asset_count; }, 0);
+    return {
+    title:'Active brand kits',
+    formula:'count(status = \'active\') = <b>' + m.active.length + '</b><br>' +
+            'sum(asset_count) across them = <b>' + counted + '</b>',
+    inputs:'draft = <b>' + m.kits.filter(function(k){return k.status==='draft';}).length + '</b><br>' +
+           'active = <b>' + m.active.length + '</b><br>' +
+           'archived = <b>' + m.kits.filter(function(k){return k.status==='archived';}).length + '</b>',
+    src:'GET /api/creative/brand-kits?state=active. asset_count is a correlated subquery over ALL ' +
+        'non-archived assets for the kit — it is a full count, unlike the library grid below it, which ' +
+        'is page-local. The two are allowed to disagree.'};}
+};
+
+function renderStats(){
+  var m = statModel();
+  var tiles = [
+    {k:'flight',  label:'JOBS IN FLIGHT', v:(m.queued.length + m.running.length),
+     d:m.running.length + ' running · ' + m.queued.length + ' queued', cls:''},
+    {k:'failed',  label:'FAILED JOBS', v:m.failed.length,
+     d:'all carry a reason', cls:m.failed.length ? 'bad' : ''},
+    {k:'review',  label:'AWAITING REVIEW', v:(m.pending.length + m.blocked.length + m.camps.length),
+     d:m.blocked.length + ' blocked · ' + m.camps.length + ' campaigns', cls:m.blocked.length ? 'warn' : ''},
+    {k:'library', label:'LIBRARY ASSETS', v:m.live.length, d:'non-archived, this page', cls:''},
+    {k:'kits',    label:'ACTIVE BRAND KITS', v:m.active.length, d:'of ' + m.kits.length + ' total', cls:''}
+  ];
+  document.getElementById('stats').innerHTML = tiles.map(function(t){
+    return '<button type="button" class="stat pick' + (S.statPick===t.k?' on':'') + '" data-stat="' + t.k + '" aria-pressed="' + (S.statPick===t.k) + '">' +
+      '<div class="eyebrow">CF-00 <span class="sep">/</span> ' + t.label + '</div>' +
+      '<div class="sv ' + t.cls + '">' + t.v + '</div>' +
+      '<div class="sd">' + esc(t.d) + '</div>' +
+    '</button>';
+  }).join('');
+  document.getElementById('stats').querySelectorAll('[data-stat]').forEach(function(b){
+    b.addEventListener('click', function(){ S.statPick = b.dataset.stat; renderStats(); });
+  });
+  var d = DERIVS[S.statPick](m);
+  document.getElementById('deriv').innerHTML =
+    '<div><div class="dk">' + esc(d.title) + ' — how it is counted</div><div class="formula">' + d.formula + '</div></div>' +
+    '<div><div class="dk">Inputs</div><div class="inputs">' + d.inputs + '</div></div>' +
+    '<div class="src">' + d.src + '</div>';
+}
+
+/* ══ PAGER — prev/next off limit, offset and hasMore. No page numbers. ════ */
+function renderPager(el, pg, onMove){
+  var host = document.getElementById(el);
+  host.innerHTML =
+    '<button class="btn sm mono" data-mv="-1"' + (pg.offset<=0?' disabled':'') + '>‹ prev</button>' +
+    '<button class="btn sm mono" data-mv="1"' + (pg.hasMore?'':' disabled') + '>next ›</button>' +
+    '<span>count ' + pg.count + ' · limit ' + pg.limit + ' · offset ' + pg.offset +
+    ' · hasMore ' + (pg.hasMore?'true':'false') + '</span>' +
+    '<span class="spacer"></span>' +
+    '<span>no total — hasMore comes from selecting limit+1 rows</span>';
+  host.querySelectorAll('[data-mv]').forEach(function(b){
+    b.addEventListener('click', function(){ onMove(parseInt(b.dataset.mv,10)); });
+  });
+}
+function setReq(el, path, params){
+  var qs = Object.keys(params).filter(function(k){ return params[k] !== '' && params[k] != null; })
+    .map(function(k){ return k + '=' + params[k]; }).join('&');
+  var host = document.getElementById(el);
+  host.className = 'req' + (S.showReq ? ' on' : '');
+  host.innerHTML = '<b>GET</b> ' + esc(path) + (qs ? '?' + esc(qs) : '');
+}
+
+/* ══ CF-02 · GENERATION JOBS ═════════════════════════════════════════════ */
+function jobStateParam(){ return S.jobStates.length ? S.jobStates.join(',') : 'all'; }
+
+function renderJobRail(){
+  var jobs = byPartner(JOBS);
+  var host = document.getElementById('jobRail');
+  var html = '<span class="rl">?state=</span>' +
+    '<button data-js="" class="' + (S.jobStates.length?'':'on') + '">all<span class="n">' + jobs.length + '</span></button>';
+  html += JOB_STATES.map(function(st){
+    var n = jobs.filter(function(j){ return j.status===st; }).length;
+    return '<button data-js="' + st + '" class="' + (S.jobStates.indexOf(st)>=0?'on':'') + '">' +
+      st + '<span class="n">' + n + '</span></button>';
+  }).join('');
+  host.innerHTML = html;
+  host.querySelectorAll('[data-js]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var st = b.dataset.js;
+      if(!st){ S.jobStates = []; }
+      else {
+        var i = S.jobStates.indexOf(st);
+        if(i>=0) S.jobStates.splice(i,1); else S.jobStates.push(st);
+      }
+      S.jobOffset = 0; renderJobs();
+    });
+  });
+}
+
+function renderJobs(){
+  renderJobRail();
+  var rows = byPartner(JOBS).filter(function(j){
+    return !S.jobStates.length || S.jobStates.indexOf(j.status) >= 0;
+  });
+  var pg = page(rows, S.jobLimit, S.jobOffset);
+  var body = document.getElementById('jobBody');
+
+  if(!pg.items.length){
+    body.innerHTML = '<tr><td colspan="10"><div class="empty">No jobs match <span class="mono">?state=' +
+      esc(jobStateParam()) + '</span> for this partner.</div></td></tr>';
+  } else {
+    body.innerHTML = pg.items.map(function(j){
+      var retry = j.status==='queued' && j.attempt > 0;
+      var stripe = 'stripe-' + JOB_TONE[j.status];
+      return '<tr class="rowbtn ' + stripe + '" data-job="' + esc(j.id) + '" tabindex="0" aria-expanded="false">' +
+        '<td><span class="chev">▸</span><span class="mono">' + esc(shortId(j.id)) + '</span>' +
+          '<span class="sub">' + esc(j.idempotency_key) + '</span></td>' +
+        '<td><span class="badge ' + JOB_BADGE[j.status] + '">' + esc(j.status) + '</span>' +
+          (retry ? '<span class="sub">retrying · attempt ' + j.attempt + '</span>' : '') + '</td>' +
+        '<td><span class="mono">' + esc(j.asset_kind) + '</span>' +
+          (j.asset_kind==='resize' ? '<span class="sub">derives, not a kind</span>' : '') + '</td>' +
+        '<td class="mono">' + (j.formats ? esc(j.formats.join(' ')) : nul('null')) + '</td>' +
+        '<td class="mnum">' + (j.variants==null ? nul('null') : j.variants) + '</td>' +
+        '<td class="mnum">' + j.attempt + '</td>' +
+        '<td class="mnum">' + j.asset_count + '</td>' +
+        '<td class="mono">' + (j.provider ? esc(j.provider) : nul('null')) + '</td>' +
+        '<td class="mono">' + esc(fmt(j.created_at)) + '</td>' +
+        '<td class="mono">' + (j.finished_at ? esc(fmt(j.finished_at)) : nul('—')) + '</td>' +
+      '</tr>';
+    }).join('');
+    wireExpand(body, '[data-job]', jobDetail, function(tr){ return jobById(tr.dataset.job); });
+  }
+
+  renderPager('jobPager', pg, function(d){
+    S.jobOffset = Math.max(0, S.jobOffset + d * S.jobLimit); renderJobs();
+  });
+  setReq('jobReq', '/api/creative/jobs', {
+    partner_id: PARTNERS[S.partner].id, state: jobStateParam(),
+    limit: S.jobLimit, offset: S.jobOffset
+  });
+}
+function jobById(id){ for(var i=0;i<JOBS.length;i++){ if(JOBS[i].id===id) return JOBS[i]; } return null; }
+
+function jobDetail(j){
+  var cols = [
+    ['id', j.id, 1], ['idempotency_key', j.idempotency_key, 1],
+    ['brand_kit_id', j.brand_kit_id, 1],
+    ['started_at', j.started_at || '—', 1], ['finished_at', j.finished_at || '—', 1],
+    ['asset_count', j.asset_count + ' · via generation_job_assets', 0]
+  ];
+  var out = '<div class="detwrap">' + cols.map(function(c){
+    return '<div class="detcol"><div class="dk">' + esc(c[0]) + '</div><div class="dv' + (c[2]?' mono':'') + '">' + esc(c[1]) + '</div></div>';
+  }).join('');
+
+  if(j.error){
+    out += '<div class="detfull" style="margin-top:4px"><div class="dk" style="font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:5px">error</div>' +
+      '<div class="errbox">' + esc(j.error) + '</div></div>';
+  }
+  out += '<div class="detfull"><p class="note" style="margin-top:6px">' + jobExplain(j) + '</p></div>';
+  out += '<div class="detfull"><p class="note" style="color:var(--gray2)"><b>Not returned by this endpoint:</b> ' +
+    '<code>cost_cents</code>, the whole <code>spec</code>, <code>requested_by</code>, <code>org_id</code>, ' +
+    '<code>partner_id</code>, <code>updated_at</code>.</p></div>';
+  return out + '</div>';
+}
+
+function jobExplain(j){
+  if(j.status==='succeeded')
+    return '<b>Succeeded.</b> <code>error</code> was cleared to NULL and ' + j.asset_count +
+      ' asset' + (j.asset_count===1?'':'s') + ' were stored. A succeeded job never has zero assets — a provider ' +
+      'returning 200 with an empty list is converted into a failure.';
+  if(j.status==='running')
+    return '<b>Claimed, provider call in flight.</b> <code>attempt</code> went to ' + j.attempt +
+      ' on the claim. There is no progress, ETA or queue position anywhere in the schema, and no ' +
+      'expected-asset-count column to compute one against.';
+  if(j.status==='queued' && j.attempt > 0)
+    return '<b>Requeued after a retryable failure.</b> <code>started_at</code> is set and ' +
+      '<code>finished_at</code> is not — <code>fail()</code> only stamps <code>finished_at</code> when the ' +
+      'status becomes <code>failed</code>. It has been claimed ' + j.attempt + ' time' + (j.attempt===1?'':'s') +
+      ' and will be marked failed on a retryable failure at attempt 3.';
+  if(j.status==='queued')
+    return '<b>Never claimed.</b> <code>attempt</code> is 0, <code>started_at</code> is NULL and ' +
+      '<code>provider</code> is NULL — the provider column is only written after <code>run()</code> ' +
+      'resolves one.';
+  if(/no active provider configured/.test(j.error||''))
+    return '<b>Permanent failure, not an outage.</b> <code>resolve()</code> threw before the UPDATE that ' +
+      'sets <code>provider</code>, which is why that column is NULL. Marked failed with retryable false: ' +
+      'retrying would not conjure a config row.';
+  if(j.error==='provider returned zero assets')
+    return '<b>Failed on an empty result.</b> A 200 with no assets is a failure whatever the provider says — ' +
+      'this is the silent-empty-success case the spec forbids. Retryable, so it took the full three claims.';
+  return '<b>Failed at the ceiling.</b> A retryable failure at attempt 3 stops requeueing: three claims, ' +
+    'each with up to three provider calls at 500ms then 1000ms backoff. <code>finished_at</code> is stamped ' +
+    'because the status became <code>failed</code>.';
+}
+
+/* generic expand/collapse for a table body */
+function wireExpand(body, sel, detailFn, lookup){
+  body.querySelectorAll(sel).forEach(function(tr){
+    function toggle(){
+      if(tr.getAttribute('aria-expanded')==='true'){
+        tr.setAttribute('aria-expanded','false');
+        if(tr._d){ tr._d.remove(); tr._d = null; }
+        return;
+      }
+      var rec = lookup(tr);
+      if(!rec) return;
+      var d = document.createElement('tr');
+      d.className = 'det';
+      var td = document.createElement('td');
+      td.colSpan = tr.cells.length;
+      td.innerHTML = detailFn(rec);
+      d.appendChild(td);
+      tr.parentNode.insertBefore(d, tr.nextSibling);
+      tr._d = d;
+      tr.setAttribute('aria-expanded','true');
+    }
+    tr.addEventListener('click', function(e){
+      if(e.target.closest('button,a')) return;
+      toggle();
+    });
+    tr.addEventListener('keydown', function(e){
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); }
+    });
+  });
+}
+
+/* ══ CF-03 · JOB STATE LEGEND ════════════════════════════════════════════ */
+function renderLegend(){
+  var jobs = byPartner(JOBS);
+  var n = function(f){ return jobs.filter(f).length; };
+  var cards = [
+    {sev:'info', n:n(function(j){return j.status==='queued'&&j.attempt===0;}), t:'queued · attempt 0',
+     d:'never started. provider NULL, started_at NULL. waiting for a claim.'},
+    {sev:'warn', n:n(function(j){return j.status==='queued'&&j.attempt>0;}), t:'queued · attempt > 0',
+     d:'retrying after a retryable failure. error preserved, started_at set, finished_at NULL. up to 3 claims.'},
+    {sev:'warn', n:n(function(j){return j.status==='running';}), t:'running',
+     d:'claimed, provider call in flight. attempt was incremented on the claim.'},
+    {sev:'ok', n:n(function(j){return j.status==='succeeded';}), t:'succeeded',
+     d:'at least one asset stored, error cleared to NULL. never zero assets.'},
+    {sev:'bad', n:n(function(j){return j.status==='failed';}), t:'failed',
+     d:'permanent, finished_at stamped, and always with a reason — the CHECK requires it.'}
+  ];
+  document.getElementById('stateLegend').innerHTML = cards.map(function(c){
+    return '<button type="button" class="sev-' + c.sev + '">' +
+      '<div class="an">' + c.n + '</div>' +
+      '<div class="at">' + esc(c.t) + '</div>' +
+      '<div class="ad">' + esc(c.d) + '</div>' +
+    '</button>';
+  }).join('');
+}
+
+/* ══ CF-04 · CREATIVE LIBRARY ════════════════════════════════════════════ */
+function libRows(){
+  return byPartner(ASSETS).filter(function(a){
+    if(S.libArchived !== '1' && a.archived_at) return false;
+    if(S.libState !== 'all' && a.compliance_state !== S.libState) return false;
+    if(S.libKind && a.kind !== S.libKind) return false;
+    if(S.libFormat && a.format !== S.libFormat) return false;
+    if(S.libKit && a.brand_kit_id !== S.libKit) return false;
+    return true;
+  });
+}
+
+function railHtml(label, param, values, current, counts){
+  return '<span class="rl">' + label + '</span>' + values.map(function(v){
+    var c = counts ? counts(v.k) : null;
+    return '<button data-' + param + '="' + esc(v.k) + '" class="' + (current===v.k?'on':'') + '">' +
+      esc(v.t) + (c==null?'':'<span class="n">'+c+'</span>') + '</button>';
+  }).join('');
+}
+
+function renderLibFilters(){
+  var all = byPartner(ASSETS).filter(function(a){ return S.libArchived==='1' || !a.archived_at; });
+
+  document.getElementById('libStateRail').innerHTML = railHtml('?state=', 'ls',
+    [{k:'all',t:'all'}].concat(LIB_STATES.map(function(s){ return {k:s,t:s}; })),
+    S.libState,
+    function(k){ return k==='all' ? all.length : all.filter(function(a){ return a.compliance_state===k; }).length; });
+
+  document.getElementById('libKindRail').innerHTML = railHtml('?kind=', 'lk',
+    [{k:'',t:'any'}].concat(ASSET_KINDS.map(function(s){ return {k:s,t:s}; })),
+    S.libKind,
+    function(k){ return k==='' ? all.length : all.filter(function(a){ return a.kind===k; }).length; });
+
+  document.getElementById('libFormatRail').innerHTML = railHtml('?format=', 'lf',
+    [{k:'',t:'any'}].concat(FORMATS.map(function(s){ return {k:s,t:s}; })),
+    S.libFormat,
+    function(k){ return k==='' ? all.length : all.filter(function(a){ return a.format===k; }).length; });
+
+  document.getElementById('libStateRail').querySelectorAll('[data-ls]').forEach(function(b){
+    b.addEventListener('click', function(){ S.libState = b.dataset.ls; S.libOffset=0; renderLibrary(); });
+  });
+  document.getElementById('libKindRail').querySelectorAll('[data-lk]').forEach(function(b){
+    b.addEventListener('click', function(){ S.libKind = b.dataset.lk; S.libOffset=0; renderLibrary(); });
+  });
+  document.getElementById('libFormatRail').querySelectorAll('[data-lf]').forEach(function(b){
+    b.addEventListener('click', function(){ S.libFormat = b.dataset.lf; S.libOffset=0; renderLibrary(); });
+  });
+
+  var kitSel = document.getElementById('libKit');
+  kitSel.innerHTML = '<option value="">any</option>' + byPartner(KITS).map(function(k){
+    return '<option value="' + esc(k.id) + '"' + (S.libKit===k.id?' selected':'') + '>' + esc(k.name) + '</option>';
+  }).join('');
+}
+
+var RATIO = {'1x1':'1 / 1', '4x5':'4 / 5', '9x16':'9 / 16', '16x9':'16 / 9'};
+
+function assetCard(a){
+  var tile;
+  if(a.has_storage_key){
+    tile = '<div class="tile" style="aspect-ratio:' + RATIO[a.format] + '">' +
+      '<span class="logo" role="presentation"></span>' +
+      '<span class="fmt">' + esc(a.format) + '</span>' +
+      (a.duration_sec ? '<span class="dur">' + esc(a.duration_sec) + 's</span>' : '') +
+    '</div>';
+  } else {
+    tile = '<div class="tile none" style="aspect-ratio:' + RATIO[a.format] + '">' +
+      '<span class="np">no preview available<br>' +
+      (a.kind==='copy' ? 'copy has no stored object' : 'has_storage_key = false') + '</span>' +
+      '<span class="fmt" style="background:var(--soft);color:var(--gray);border:1px solid var(--line)">' + esc(a.format) + '</span>' +
+    '</div>';
+  }
+  var flags = '';
+  if(a.ai_generated) flags += '<span class="flag ai">AI-generated</span>';
+  else flags += '<span class="flag">not AI</span>';
+  if(a.synthetic_performer) flags += '<span class="flag synth">Synthetic performer</span>';
+  if(a.parent_asset_id) flags += '<span class="flag derived">derived</span>';
+
+  return '<button type="button" class="acard st-' + a.compliance_state + '" data-asset="' + esc(a.id) + '">' +
+    tile +
+    '<div class="ameta">' +
+      '<div class="an">' + esc(a.kind) + ' · ' + esc(a.provider) + '</div>' +
+      '<div class="ak">' + esc(kitName(a.brand_kit_id) || 'no brand kit') + '</div>' +
+      '<div class="aflags">' +
+        '<span class="badge ' + LIB_BADGE[a.compliance_state] + '" style="font-size:8.5px;padding:2px 5px">' + esc(a.compliance_state) + '</span>' +
+        flags +
+      '</div>' +
+      '<div class="ak mono" style="font-size:9.5px;color:var(--gray2);margin-top:6px">' + esc(fmt(a.created_at)) + ' · ' + esc(shortId(a.id)) + '</div>' +
+    '</div>' +
+  '</button>';
+}
+
+function renderLibrary(){
+  renderLibFilters();
+  var rows = libRows();
+  var pg = page(rows, S.libLimit, S.libOffset);
+  var grid = document.getElementById('libGrid');
+
+  if(!pg.items.length){
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">' + libEmptyMsg() + '</div>';
+  } else {
+    grid.innerHTML = pg.items.map(assetCard).join('');
+    grid.querySelectorAll('[data-asset]').forEach(function(b){
+      b.addEventListener('click', function(){ openAsset(assetById(b.dataset.asset)); });
+    });
+  }
+  document.getElementById('libCount').textContent = pg.count + ' on this page';
+  renderPager('libPager', pg, function(d){
+    S.libOffset = Math.max(0, S.libOffset + d * S.libLimit); renderLibrary();
+  });
+  setReq('libReq', '/api/creative/library', {
+    partner_id: PARTNERS[S.partner].id, state: S.libState,
+    kind: S.libKind, format: S.libFormat, brand_kit_id: S.libKit,
+    include_archived: S.libArchived, limit: S.libLimit, offset: S.libOffset
+  });
+}
+
+function libEmptyMsg(){
+  if(S.libState === 'approved')
+    return 'Nothing. <span class="mono">compliance_state = \'approved\'</span> is in the CHECK constraint and in ' +
+      'this endpoint\'s allowlist, but <b>no code in the repo ever writes it</b> — generate.mjs maps both ' +
+      '\'passed\' and \'needs_approval\' to \'passed\'. This tab is empty on a real database too.';
+  if(S.libArchived === '1')
+    return 'Same rows as before. <span class="mono">archived_at</span> exists and the library hides those rows by ' +
+      'default, but <b>no code path ever sets it</b> — and hard delete is impossible ' +
+      '(<span class="mono">trg_creative_assets_no_delete</span>). So this filter changes nothing on a real database.';
+  return 'No assets match this filter for ' + esc(PARTNERS[S.partner].name) + '.';
+}
+
+/* ══ CF-06 · REVIEW &amp; APPROVAL QUEUE ══════════════════════════════════ */
+function apprRows(){
+  var want = S.apprState;
+  var out = [];
+  if(want==='all' || want==='blocked' || want==='pending'){
+    byPartner(ASSETS).forEach(function(a){
+      if(a.archived_at) return;
+      if(a.compliance_state!=='pending' && a.compliance_state!=='blocked') return;
+      if(want!=='all' && a.compliance_state!==want) return;
+      out.push({item_type:'creative_asset', id:a.id, state:a.compliance_state,
+        subtype:a.kind, detail:a.format, reasons:a.blocked_reasons,
+        budget_cents:null, offer_type:null, platform:null,
+        ai_generated:a.ai_generated, synthetic_performer:a.synthetic_performer,
+        updated_at:a.created_at, _asset:a});
+    });
+  }
+  if(want==='all' || want==='awaiting_approval'){
+    CAMPAIGNS.filter(function(c){ return c.partner===S.partner; }).forEach(function(c){
+      out.push({item_type:'campaign', id:c.id, state:'awaiting_approval',
+        subtype:c.strategy_key, detail:c.name, reasons:c.screenings,
+        budget_cents:c.budget_cents, offer_type:c.offer_type, platform:c.platform,
+        ai_generated:null, synthetic_performer:null, updated_at:c.updated_at, _camp:c});
+    });
+  }
+  out.sort(function(a,b){ return a.updated_at < b.updated_at ? 1 : a.updated_at > b.updated_at ? -1 : 0; });
+  return out;
+}
+
+function renderApprRail(){
+  var host = document.getElementById('apprRail');
+  var opts = [{k:'all',t:'all'},{k:'blocked',t:'blocked'},{k:'pending',t:'pending'},{k:'awaiting_approval',t:'awaiting_approval'}];
+  host.innerHTML = '<span class="rl">?state=</span>' + opts.map(function(o){
+    var saved = S.apprState; S.apprState = o.k;
+    var n = apprRows().length; S.apprState = saved;
+    return '<button data-as="' + o.k + '" class="' + (S.apprState===o.k?'on':'') + '">' + o.t + '<span class="n">' + n + '</span></button>';
+  }).join('');
+  host.querySelectorAll('[data-as]').forEach(function(b){
+    b.addEventListener('click', function(){ S.apprState = b.dataset.as; S.apprOffset=0; renderApprovals(); });
+  });
+}
+
+function renderApprovals(){
+  renderApprRail();
+  var rows = apprRows();
+  var pg = page(rows, S.apprLimit, S.apprOffset);
+  var body = document.getElementById('apprBody');
+
+  if(!pg.items.length){
+    body.innerHTML = '<tr><td colspan="10"><div class="empty">Nothing in the queue for this filter.</div></td></tr>';
+  } else {
+    body.innerHTML = pg.items.map(function(r){
+      var isAsset = r.item_type==='creative_asset';
+      var stripe = r.state==='blocked' ? 'stripe-bad' : (r.state==='pending' ? 'stripe-warn' : 'stripe-info');
+      var badge = r.state==='blocked' ? 'b-alert' : (r.state==='pending' ? 'b-warn' : 'b-info');
+      var flags = isAsset
+        ? (r.ai_generated ? '<span class="flag ai">AI</span>' : '<span class="flag">not AI</span>') +
+          (r.synthetic_performer ? '<span class="flag synth">synthetic</span>' : '')
+        : '';
+      var nReasons = (r.reasons||[]).length;
+      return '<tr class="rowbtn ' + stripe + '" data-appr="' + esc(r.id) + '" tabindex="0" aria-expanded="false">' +
+        '<td><span class="chev">▸</span><span class="mono">' + esc(r.item_type) + '</span>' +
+          '<span class="sub">' + esc(shortId(r.id)) + '</span></td>' +
+        '<td><span class="badge ' + badge + '">' + esc(r.state) + '</span></td>' +
+        '<td class="mono">' + (r.subtype ? esc(r.subtype) : '') + '</td>' +
+        '<td>' + esc(r.detail) + '</td>' +
+        '<td class="mnum">' + (nReasons ? nReasons + (isAsset ? ' reason' : ' screening') + (nReasons===1?'':'s') : '<span class="nul">none</span>') + '</td>' +
+        '<td class="mnum">' + (r.budget_cents==null ? '' : esc(money(r.budget_cents))) + '</td>' +
+        '<td class="mono">' + (r.offer_type ? esc(r.offer_type) : '') + '</td>' +
+        '<td class="mono">' + (r.platform ? esc(r.platform) : '') + '</td>' +
+        '<td><div class="aflags" style="display:flex;gap:4px;flex-wrap:wrap">' + flags + '</div></td>' +
+        '<td class="mono">' + esc(fmt(r.updated_at)) + '</td>' +
+      '</tr>';
+    }).join('');
+    wireExpand(body, '[data-appr]', apprDetail, function(tr){
+      var id = tr.dataset.appr;
+      for(var i=0;i<rows.length;i++){ if(rows[i].id===id) return rows[i]; }
+      return null;
+    });
+  }
+
+  renderPager('apprPager', pg, function(d){
+    S.apprOffset = Math.max(0, S.apprOffset + d * S.apprLimit); renderApprovals();
+  });
+  setReq('apprReq', '/api/creative/approvals', {
+    partner_id: PARTNERS[S.partner].id, state: S.apprState,
+    limit: S.apprLimit, offset: S.apprOffset
+  });
+}
+
+/* a blocked_reasons element, rendered as itself */
+function reasonCard(rz){
+  var cls = 'rz' + (rz.rule_set==='approval' ? ' set-approval' : (rz.rule_set==='engine' ? ' set-engine' : ''));
+  return '<div class="' + cls + '">' +
+    '<div class="rzh">' +
+      '<span class="rzc">' + esc(rz.code) + '</span>' +
+      '<span class="badge b-gray">' + esc(rz.rule_set) + '</span>' +
+      (rz.severity ? '<span class="badge b-gray">' + esc(rz.severity) + '</span>' : '') +
+    '</div>' +
+    '<div class="rzm">' + esc(rz.message) + '</div>' +
+    (rz.citation ? '<div class="rzq">' + esc(rz.citation) + '</div>' : '') +
+    (rz.detail ? '<div class="rzd">detail: ' + esc(rz.detail) + '</div>' : '') +
+  '</div>';
+}
+
+function apprDetail(r){
+  var out = '<div class="detwrap">';
+  out += '<div class="detcol"><div class="dk">item_type</div><div class="dv mono">' + esc(r.item_type) + '</div></div>';
+  out += '<div class="detcol"><div class="dk">id</div><div class="dv mono">' + esc(r.id) + '</div></div>';
+  out += '<div class="detcol"><div class="dk">subtype</div><div class="dv mono">' +
+    (r.subtype ? esc(r.subtype) : '<span class="nul">null</span>') +
+    '</div><div class="ad" style="font-family:var(--mono);font-size:9px;color:var(--gray2);margin-top:3px">' +
+    (r.item_type==='campaign' ? 'strategy_key (nullable)' : 'creative_assets.kind') + '</div></div>';
+  out += '<div class="detcol"><div class="dk">detail</div><div class="dv">' + esc(r.detail) +
+    '</div><div class="ad" style="font-family:var(--mono);font-size:9px;color:var(--gray2);margin-top:3px">' +
+    (r.item_type==='campaign' ? 'campaigns.name' : 'creative_assets.format') + '</div></div>';
+
+  if(r.item_type==='campaign'){
+    out += '<div class="detcol"><div class="dk">budget_cents</div><div class="dv mono">' + r.budget_cents + ' · ' + esc(money(r.budget_cents)) + '</div></div>';
+    out += '<div class="detcol"><div class="dk">offer_type / platform</div><div class="dv mono">' + esc(r.offer_type) + ' · ' + esc(r.platform || 'null') + '</div></div>';
+    out += '<div class="detfull"><p class="note" style="margin:8px 0 4px"><b>Screening history</b>, unwrapped. ' +
+      'Each element is <code>{code: &lt;screening state&gt;, message: &lt;reasons ARRAY&gt;}</code> — <code>message</code> ' +
+      'is a nested array, not a string.</p>';
+    out += (r.reasons||[]).map(function(s){
+      var inner = (s.message||[]);
+      return '<div style="margin-bottom:9px">' +
+        '<div class="badge ' + (s.code==='blocked'?'b-alert':(s.code==='needs_approval'?'b-info':'b-ok')) + '" style="margin-bottom:6px">state: ' + esc(s.code) + '</div>' +
+        (inner.length ? '<div class="reasons">' + inner.map(reasonCard).join('') + '</div>'
+                      : '<div class="note">reasons: <code>[]</code> — a passed screening carries none.</div>') +
+      '</div>';
+    }).join('') || '<div class="note">No screening rows for this campaign.</div>';
+    out += '</div>';
+    if(r.platform==='tiktok' && r.offer_type==='credit_repair'){
+      out += '<div class="detfull"><div class="errbox">Impossible row: TikTok + credit_repair is blocked by CHECK campaigns_tiktok_credit_repair_ck.</div></div>';
+    }
+    if(r.offer_type==='credit_repair'){
+      out += '<div class="detfull"><p class="note"><b>Structural, no override.</b> A credit-repair campaign needs ' +
+        '<code>approved_by</code> before it can reach approved or live (CHECK campaigns_credit_repair_approver_ck), ' +
+        'and it cannot go live at all without <code>disclosure_asset_id</code> ' +
+        '(trg_campaign_disclosure_gate).</p></div>';
+    }
+  } else {
+    out += '<div class="detcol"><div class="dk">ai_generated</div><div class="dv mono">' + (r.ai_generated ? 'true' : 'false') + '</div></div>';
+    out += '<div class="detcol"><div class="dk">synthetic_performer</div><div class="dv mono">' + (r.synthetic_performer ? 'true' : 'false') + '</div></div>';
+    out += '<div class="detfull" style="margin-top:6px">';
+    out += (r.reasons||[]).length
+      ? '<div class="reasons">' + r.reasons.map(reasonCard).join('') + '</div>'
+      : '<p class="note">A pending asset carries <code>blocked_reasons = []</code>. It is not blocked and not ' +
+        'publishable — pending is the safe resting state an asset is inserted at, before screening, so a crash ' +
+        'leaves a visible row rather than an unscreened one.</p>';
+    out += '</div>';
+    out += '<div class="detfull"><button class="btn sm mono" data-open-asset="' + esc(r.id) + '">Open in library detail</button></div>';
+  }
+  out += '<div class="detfull"><p class="note" style="color:var(--gray2)"><b>Blank, not false:</b> ' +
+    (r.item_type==='campaign'
+      ? '<code>ai_generated</code> and <code>synthetic_performer</code> are NULL on every campaign row.'
+      : '<code>budget_cents</code>, <code>offer_type</code> and <code>platform</code> are NULL on every asset row.') +
+    '</p></div>';
+  return out + '</div>';
+}
+
+/* ══ CF-07 · RULE CATALOGUE ══════════════════════════════════════════════ */
+function renderRules(){
+  var sets = ['all','croa','claims','disclosure','platform','approval','engine'];
+  var host = document.getElementById('ruleRail');
+  host.innerHTML = '<span class="rl">rule_set</span>' + sets.map(function(s){
+    var n = s==='all' ? RULES.length : RULES.filter(function(r){ return r.rule_set===s; }).length;
+    return '<button data-rs="' + s + '" class="' + (S.ruleSet===s?'on':'') + '">' + s + '<span class="n">' + n + '</span></button>';
+  }).join('');
+  host.querySelectorAll('[data-rs]').forEach(function(b){
+    b.addEventListener('click', function(){ S.ruleSet = b.dataset.rs; renderRules(); });
+  });
+
+  var rows = RULES.filter(function(r){ return S.ruleSet==='all' || r.rule_set===S.ruleSet; });
+  document.getElementById('ruleBody').innerHTML = rows.map(function(r){
+    var stripe = r.severity==='gate' ? 'stripe-info' : 'stripe-bad';
+    return '<tr class="rowbtn ' + stripe + '" data-rule="' + esc(r.code) + '" tabindex="0" aria-expanded="false">' +
+      '<td><span class="chev">▸</span><span class="mono">' + esc(r.code) + '</span>' +
+        '<span class="sub">' + (r.src==='seeded' ? 'compliance_rules row' : 'engine-generated · in no table') + '</span></td>' +
+      '<td><span class="badge b-gray">' + esc(r.rule_set) + '</span></td>' +
+      '<td class="mono">' + esc(r.match_type) + '</td>' +
+      '<td><span class="badge ' + (r.severity==='gate'?'b-info':'b-alert') + '">' + esc(r.severity) + '</span></td>' +
+      '<td class="mono">' + esc((r.offers.length ? r.offers.join(' ') : 'all offers') +
+        (r.platforms.length ? ' · ' + r.platforms.join(' ') : '')) + '</td>' +
+      '<td class="mono" style="font-size:10.5px">' + (r.citation ? esc(r.citation) : nul('—')) + '</td>' +
+    '</tr>';
+  }).join('');
+  wireExpand(document.getElementById('ruleBody'), '[data-rule]', function(r){
+    return '<div class="detwrap"><div class="detfull">' + reasonCard(r) +
+      '<p class="note" style="margin-top:8px">' +
+      (r.src==='seeded'
+        ? 'A <code>compliance_rules</code> row. Rule edits take effect within <b>60 seconds</b> ' +
+          '(<code>RULE_TTL_MS = 60_000</code>) without a cache flush. Patterns are compiled by both Postgres ' +
+          'and JavaScript, so boundaries are written as explicit character classes rather than <code>\\y</code> ' +
+          'or <code>\\b</code> — a rule that reports clean because it cannot match is worse than no rule.'
+        : 'Generated by <code>src/compliance/screen.mjs</code>. It exists in no table, so it cannot be edited, ' +
+          'deactivated or re-worded by an operator.') +
+      (r.severity==='gate'
+        ? ' <b>This is an approval gate, not a block</b> — it comes back with state <code>needs_approval</code>, ' +
+          'which generate.mjs maps to asset state <code>passed</code>. It will never appear in an asset\'s ' +
+          '<code>blocked_reasons</code>.'
+        : '') +
+      '</p></div></div>';
+  }, function(tr){
+    for(var i=0;i<RULES.length;i++){ if(RULES[i].code===tr.dataset.rule) return RULES[i]; }
+    return null;
+  });
+}
+
+/* ══ CF-08 · BRAND KITS ══════════════════════════════════════════════════ */
+function isColor(v){ return typeof v === 'string' && /^#[0-9a-f]{3,8}$/i.test(v); }
+function swatches(palette){
+  var out = [];
+  Object.keys(palette||{}).forEach(function(k){
+    var v = palette[k];
+    if(isColor(v)) out.push({k:k, v:v});
+    else if(Array.isArray(v)) v.forEach(function(x,i){ if(isColor(x)) out.push({k:k+'['+i+']', v:x}); });
+  });
+  return out;
+}
+function renderKits(){
+  var host = document.getElementById('kitRail');
+  var mine = byPartner(KITS);
+  host.innerHTML = '<span class="rl">?state=</span>' + ['all'].concat(KIT_STATES).map(function(s){
+    var n = s==='all' ? mine.length : mine.filter(function(k){ return k.status===s; }).length;
+    return '<button data-ks="' + s + '" class="' + (S.kitState===s?'on':'') + '">' + s + '<span class="n">' + n + '</span></button>';
+  }).join('');
+  host.querySelectorAll('[data-ks]').forEach(function(b){
+    b.addEventListener('click', function(){ S.kitState = b.dataset.ks; S.kitOffset=0; renderKits(); });
+  });
+
+  var rows = mine.filter(function(k){ return S.kitState==='all' || k.status===S.kitState; });
+  var pg = page(rows, S.kitLimit, S.kitOffset);
+  var grid = document.getElementById('kitGrid');
+
+  if(!pg.items.length){
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">No brand kits with status ' +
+      '<span class="mono">' + esc(S.kitState) + '</span> for this partner. There is no fundhub-owned or ' +
+      'global kit — <span class="mono">brand_kits.partner_id</span> is NOT NULL.</div>';
+  } else {
+    grid.innerHTML = pg.items.map(function(k){
+      var sw = swatches(k.palette);
+      var fontKeys = Object.keys(k.fonts||{});
+      return '<button type="button" class="kit" data-kit="' + esc(k.id) + '">' +
+        '<div class="kh">' +
+          '<span class="kn">' + esc(k.name) + '</span>' +
+          '<span class="badge ' + KIT_BADGE[k.status] + '">' + esc(k.status) + '</span>' +
+          '<span class="spacer"></span>' +
+          '<span class="badge b-gray">' + k.asset_count + ' assets</span>' +
+        '</div>' +
+        (sw.length
+          ? '<div class="sw">' + sw.map(function(s){ return '<i style="background:' + esc(s.v) + '" title="' + esc(s.k + ' ' + s.v) + '"></i>'; }).join('') + '</div>'
+          : '<div class="kk" style="margin-top:8px"><b>palette</b> {} — empty, and the schema defines no keys</div>') +
+        '<div class="kk">' +
+          '<b>voice_profile.tone</b> ' + (k.voice_profile && k.voice_profile.tone ? esc(k.voice_profile.tone) : '<span class="nul">not set</span>') + '<br>' +
+          '<b>fonts</b> ' + (fontKeys.length ? esc(fontKeys.map(function(f){ return f + ': ' + k.fonts[f]; }).join(' · ')) : '<span class="nul">{}</span>') + '<br>' +
+          '<b>products</b> ' + ((k.products||[]).length ? (k.products.length + ' item' + (k.products.length===1?'':'s')) : '<span class="nul">[]</span>') + '<br>' +
+          '<b>source_url</b> <span class="nul">null</span> · <b>scraped_at</b> <span class="nul">null</span><br>' +
+          '<b>logo_asset_id</b> ' + (k.logo_asset_id ? esc(shortId(k.logo_asset_id)) + ' <span class="nul">(reference, not an image)</span>' : '<span class="nul">null</span>') +
+        '</div>' +
+      '</button>';
+    }).join('');
+    grid.querySelectorAll('[data-kit]').forEach(function(b){
+      b.addEventListener('click', function(){
+        for(var i=0;i<KITS.length;i++){ if(KITS[i].id===b.dataset.kit) return openKit(KITS[i]); }
+      });
+    });
+  }
+  renderPager('kitPager', pg, function(d){
+    S.kitOffset = Math.max(0, S.kitOffset + d * S.kitLimit); renderKits();
+  });
+  setReq('kitReq', '/api/creative/brand-kits', {
+    partner_id: PARTNERS[S.partner].id, state: S.kitState, limit: S.kitLimit, offset: S.kitOffset
+  });
+}
+
+/* ══ STATIC REFERENCE TABLES ═════════════════════════════════════════════ */
+function renderStaticTables(){
+  document.getElementById('flagBody').innerHTML = PROVIDER_FLAGS.map(function(p){
+    var badge = function(v){
+      var cls = v==='always true' ? 'b-ok' : (v==='inherited' ? 'b-info' : (v==='always false' || v==='defaults false' ? 'b-gray' : 'b-accent'));
+      return '<span class="badge ' + cls + '">' + esc(v) + '</span>';
+    };
+    return '<tr><td class="mono">' + esc(p.key) + '</td><td>' + badge(p.ai) + '</td><td>' + badge(p.synth) + '</td>' +
+      '<td class="note">' + esc(p.how) + '</td></tr>';
+  }).join('');
+
+  document.getElementById('contractBody').innerHTML = CONTRACT.map(function(c){
+    return '<tr><td class="mono">' + esc(c.ep) + '</td><td class="mono" style="font-size:10.5px">' + esc(c.state) + '</td>' +
+      '<td class="mono" style="font-size:10.5px">' + esc(c.other) + '</td><td class="note">' + esc(c.bad) + '</td></tr>';
+  }).join('');
+
+  document.getElementById('gapsBody').innerHTML = GAPS.map(function(g){
+    var badge = g.tone==='bad' ? 'b-alert' : (g.tone==='warn' ? 'b-warn' : 'b-ok');
+    return '<tr class="stripe-' + g.tone + '"><td class="mono">' + esc(g.config) + '</td>' +
+      '<td class="mono" style="font-size:11px">' + esc(g.detail) + '</td>' +
+      '<td class="mnum">' + g.rows_set + '</td>' +
+      '<td><span class="badge ' + badge + '" style="white-space:normal">' + esc(g.status) + '</span></td>' +
+      '<td class="note">' + esc(g.consequence) + '</td></tr>';
+  }).join('');
+
+  document.getElementById('ratesBody').innerHTML = RATES.map(function(r){
+    return '<tr class="stripe-warn"><td class="mono">' + esc(r.rate_key) + '</td>' +
+      '<td class="mnum">' + esc(r.rate) + '</td>' +
+      '<td class="mono">' + nul('null') + '</td>' +
+      '<td><span class="badge b-warn" style="white-space:normal">' + esc(r.status) + '</span></td></tr>';
+  }).join('');
+
+  document.getElementById('ledgerBody').innerHTML = LEDGER.map(function(l){
+    var badge = l.tone==='ok' ? 'b-ok' : (l.tone==='warn' ? 'b-warn' : 'b-alert');
+    return '<tr class="stripe-' + l.tone + '"><td><b>' + esc(l.s) + '</b></td>' +
+      '<td class="mono" style="font-size:11px">' + esc(l.src) + '</td>' +
+      '<td><span class="badge ' + badge + '">' + esc(l.st) + '</span></td>' +
+      '<td class="note">' + esc(l.note) + '</td></tr>';
+  }).join('');
+}
+
+/* ══ DETAIL DRAWER ═══════════════════════════════════════════════════════ */
+var DW = {
+  el: null, scrim: null,
+  open: function(eyebrow, title, html){
+    this.el = this.el || document.getElementById('drawer');
+    this.scrim = this.scrim || document.getElementById('scrim');
+    document.getElementById('dwEyebrow').innerHTML = eyebrow;
+    document.getElementById('dwTitle').textContent = title;
+    document.getElementById('dwBody').innerHTML = html;
+    this.el.classList.add('on'); this.el.setAttribute('aria-hidden','false');
+    this.scrim.classList.add('on');
+    document.getElementById('dwClose').focus();
+  },
+  close: function(){
+    if(!this.el) return;
+    this.el.classList.remove('on'); this.el.setAttribute('aria-hidden','true');
+    this.scrim.classList.remove('on');
+  }
+};
+function kv(pairs){
+  return '<div class="kv">' + pairs.map(function(p){
+    return '<div><div class="k">' + esc(p[0]) + '</div><div class="v' + (p[2]?' mono':'') + '">' +
+      (p[1]==null || p[1]==='' ? '<span class="nul">null</span>' : esc(p[1])) + '</div></div>';
+  }).join('') + '</div>';
+}
+
+function openAsset(a){
+  if(!a) return;
+  var html = '<div class="dw-sec"><h3>Row, as the endpoint returns it</h3>' + kv([
+    ['id', a.id, 1], ['kind', a.kind, 1], ['format', a.format, 1],
+    ['provider', a.provider, 1], ['compliance_state', a.compliance_state, 1],
+    ['duration_sec', a.duration_sec, 1],
+    ['ai_generated', String(a.ai_generated), 1], ['synthetic_performer', String(a.synthetic_performer), 1],
+    ['has_storage_key', String(a.has_storage_key), 1],
+    ['brand_kit_id', a.brand_kit_id, 1], ['brand_kit_name', kitName(a.brand_kit_id), 0],
+    ['parent_asset_id', a.parent_asset_id, 1],
+    ['archived_at', a.archived_at, 1], ['created_at', a.created_at, 1]
+  ]) + '</div>';
+
+  html += '<div class="dw-sec"><h3>Preview</h3>' +
+    '<div style="max-width:230px">' +
+    (a.has_storage_key
+      ? '<div class="tile" style="aspect-ratio:' + RATIO[a.format] + ';border-radius:9px"><span class="logo" role="presentation"></span><span class="fmt">' + esc(a.format) + '</span></div>'
+      : '<div class="tile none" style="aspect-ratio:' + RATIO[a.format] + ';border-radius:9px;border:1px solid var(--line)"><span class="np">no preview available</span></div>') +
+    '</div>' +
+    '<p class="note" style="margin-top:9px">' +
+      (a.has_storage_key
+        ? 'The object exists — <code>storage_key</code> is non-null — but it never leaves the process. It is not ' +
+          'selected by <code>library.mjs</code>, <code>redact()</code> strips anything matching ' +
+          '<code>/storage_key/</code>, and there is no signed-URL endpoint. The provider\'s own CDN url was ' +
+          'discarded by <code>storeAsset()</code>: <code>creative_assets</code> has no url column.'
+        : (a.kind==='copy'
+          ? 'Copy has no stored object by design — <code>storageKeyFor()</code> returns NULL for ' +
+            '<code>kind = \'copy\'</code>. The words themselves are not on this row either: there is no text, body, ' +
+            'headline or caption column. They exist only in <code>compliance_screenings.screened_text</code>, ' +
+            'truncated to 8000 characters, and no endpoint returns that table.'
+          : 'No object is stored for this row.')) +
+    '</p>' +
+    '<p class="note" style="margin-top:7px;color:var(--gray2)">Aspect ratio <b>' + esc(a.format) +
+      '</b> is the stored <code>format</code> enum. Pixel dimensions are not stored anywhere — the size map is a ' +
+      'private constant inside <code>static.mjs</code> and is never persisted.</p>' +
+  '</div>';
+
+  html += '<div class="dw-sec"><h3>Disclosure flags</h3>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+      (a.ai_generated ? '<span class="flag ai">AI-generated</span>' : '<span class="flag">not AI-generated</span>') +
+      (a.synthetic_performer ? '<span class="flag synth">Synthetic performer</span>' : '<span class="flag">no synthetic performer</span>') +
+      (a.parent_asset_id ? '<span class="flag derived">derived from ' + esc(shortId(a.parent_asset_id)) + '</span>' : '') +
+    '</div>' +
+    '<p class="note" style="margin-top:9px">' + flagExplain(a) + '</p></div>';
+
+  html += '<div class="dw-sec"><h3>blocked_reasons</h3>' +
+    (a.blocked_reasons.length
+      ? '<div class="reasons">' + a.blocked_reasons.map(reasonCard).join('') + '</div>' +
+        '<p class="note" style="margin-top:9px">CHECK <code>creative_assets_blocked_reason_ck</code> requires a ' +
+        'blocked asset to carry at least one reason — a blocked asset without its reasons is the same as dropping ' +
+        'it. There is no score, confidence or risk level: the engine returns a discrete state and a list.</p>'
+      : '<div class="jsonbox">[]</div><p class="note" style="margin-top:9px">Written as <code>[]</code> whenever ' +
+        'the verdict is not <code>blocked</code>. Approval-gate reasons never land here.</p>') +
+  '</div>';
+
+  html += '<div class="dw-sec"><h3>What is not on this row</h3>' +
+    '<p class="note"><code>storage_key</code>, <code>org_id</code>, <code>partner_id</code>, ' +
+    '<code>provider_asset_id</code>, <code>created_by_agent_id</code> and <code>updated_at</code> are not ' +
+    'returned. There is no impressions, clicks, CTR, spend or ROAS column on <code>creative_assets</code> at ' +
+    'all, and no screening history — <code>blocked_reasons</code> carries no timestamp, reviewer or resolution ' +
+    'field, and <code>compliance_screenings</code> has no endpoint. There is also no approve, reject, re-screen ' +
+    'or archive route: every <code>api/creative/*</code> file answers non-GET with 405.</p></div>';
+
+  DW.open('CF-04 <span class="sep">/</span> ASSET DETAIL', a.kind + ' · ' + a.format + ' · ' + shortId(a.id), html);
+}
+
+function flagExplain(a){
+  if(a.provider==='ugc-video')
+    return '<code>ugc-video</code> hardcodes <code>synthetic_performer = true</code> and ignores a caller-supplied ' +
+      'false — there is no configuration of it that produces a video without one. A synthetic performer always ' +
+      'implies AI-generated: CHECK <code>creative_assets_synthetic_ck</code> forbids the other combination and the ' +
+      'engine blocks it as <code>synthetic_without_ai_flag</code>.';
+  if(a.provider==='resize')
+    return 'Both flags are <b>inherited from the parent</b>, not re-derived — a crop of an AI image is still AI, and ' +
+      'a crop of a synthetic presenter still shows one. This row also carries the parent\'s <code>kind</code>: ' +
+      '<code>resize</code> is a provider key, never a kind. Lineage cannot cross partners ' +
+      '(<code>trg_creative_asset_lineage</code>), even in a staff context.';
+  if(a.provider==='copy')
+    return '<code>copy</code> sets <code>ai_generated: true</code> and <code>synthetic_performer: false</code> — ' +
+      'there is no performer in a line of text. <code>format</code> is <code>1x1</code> as the neutral value ' +
+      'because the column is NOT NULL and the library filters on it.';
+  if(!a.ai_generated)
+    return 'Not AI-generated — a state <b>no provider in this module can produce</b>. Every adapter sets ' +
+      '<code>aiGenerated: true</code> (or inherits a true parent), and <code>storeAsset()</code> stores ' +
+      '<code>a.ai_generated !== false</code>. <code>generate.mjs</code> is the only writer of ' +
+      '<code>creative_assets</code> in the repo, so a false row could only arrive from outside it.';
+  return '<code>ai_generated</code> is <b>hardcoded true</b> by every provider — <code>static.mjs:58</code>, ' +
+    '<code>product-video.mjs:55</code>, <code>ugc-video.mjs:53</code>, <code>copy.mjs:53</code> — and ' +
+    '<code>resize.mjs:64</code> inherits it. Only <code>synthetic_performer</code> is ever caller-supplied.';
+}
+
+function openKit(k){
+  var sw = swatches(k.palette);
+  var html = '<div class="dw-sec"><h3>Row, as the endpoint returns it</h3>' + kv([
+    ['id', k.id, 1], ['name', k.name, 0], ['status', k.status, 1],
+    ['asset_count', String(k.asset_count), 1],
+    ['source_url', k.source_url, 1], ['scraped_at', k.scraped_at, 1],
+    ['logo_asset_id', k.logo_asset_id, 1],
+    ['created_at', k.created_at, 1], ['updated_at', k.updated_at, 1]
+  ]) + '</div>';
+
+  html += '<div class="dw-sec"><h3>palette <span class="nul">— free-shape jsonb</span></h3>' +
+    (sw.length ? '<div class="sw" style="margin-top:0">' + sw.map(function(s){
+        return '<i style="background:' + esc(s.v) + '" title="' + esc(s.k) + '"></i>';
+      }).join('') + '</div>' : '') +
+    '<div class="jsonbox" style="margin-top:9px">' + esc(JSON.stringify(k.palette, null, 2)) + '</div>' +
+    '<p class="note" style="margin-top:8px">Rendered by walking whatever keys this row happens to hold. No ' +
+    'migration or code defines any inner key, so nothing here assumes primary / secondary / accent.</p></div>';
+
+  html += '<div class="dw-sec"><h3>fonts</h3><div class="jsonbox">' + esc(JSON.stringify(k.fonts, null, 2)) + '</div></div>';
+
+  html += '<div class="dw-sec"><h3>voice_profile</h3><div class="jsonbox">' + esc(JSON.stringify(k.voice_profile, null, 2)) + '</div>' +
+    '<p class="note" style="margin-top:8px"><code>voice_profile.tone</code> is the <b>only</b> jsonb key any code in ' +
+    'this module reads (<code>copy.mjs:83</code>, <code>static.mjs:77</code>). Everything else on this object is ' +
+    'stored and never consulted.</p></div>';
+
+  html += '<div class="dw-sec"><h3>products</h3><div class="jsonbox">' + esc(JSON.stringify(k.products, null, 2)) + '</div>' +
+    '<p class="note" style="margin-top:8px">A free-shape jsonb array with no schema — one kit stores strings, ' +
+    'another stores objects, and both are valid.</p></div>';
+
+  html += '<div class="dw-sec"><h3>Sources</h3>' +
+    '<div class="unwired"><div class="uh"><span>⚠</span><span>no crawl history</span></div>' +
+    '<div class="ub"><code>brand_kit_sources</code> holds source_url, content_type, http_status, payload, ' +
+    'payload_sha256 and fetched_at, is delete-guarded, and has <b>no endpoint</b> — nothing outside tests ever ' +
+    'inserts into it. There is no scraper, no re-scrape action, no freshness indicator, no version history and no ' +
+    'restore. <code>source_url</code> and <code>scraped_at</code> on this row are NULL for the same reason.</div></div></div>';
+
+  html += '<div class="dw-sec"><h3>Counting</h3><p class="note"><code>asset_count = ' + k.asset_count +
+    '</code> is a correlated subquery over every <b>non-archived</b> asset with this <code>brand_kit_id</code>. ' +
+    'It is a full count; the library grid is a page. Filtering the library by this kit will show at most ' +
+    '<code>limit</code> of them, and a count taken with <code>?include_archived=1</code> would not match either. ' +
+    'The name is unique per partner (<code>brand_kits_partner_name_uniq</code>) and there is no global or ' +
+    'fundhub-owned kit.</p></div>';
+
+  DW.open('CF-08 <span class="sep">/</span> BRAND KIT', k.name, html);
+}
+
+/* ══ WIRING ══════════════════════════════════════════════════════════════ */
+(function(){
+  document.getElementById('dwClose').addEventListener('click', function(){ DW.close(); });
+  document.getElementById('scrim').addEventListener('click', function(){ DW.close(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') DW.close(); });
+
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('[data-open-asset]');
+    if(b){ e.stopPropagation(); openAsset(assetById(b.dataset.openAsset)); }
+  });
+
+  document.getElementById('jobLimit').addEventListener('change', function(){
+    S.jobLimit = parseInt(this.value,10); S.jobOffset = 0; renderJobs();
+  });
+  document.getElementById('libLimit').addEventListener('change', function(){
+    S.libLimit = parseInt(this.value,10); S.libOffset = 0; renderLibrary();
+  });
+  document.getElementById('apprLimit').addEventListener('change', function(){
+    S.apprLimit = parseInt(this.value,10); S.apprOffset = 0; renderApprovals();
+  });
+  document.getElementById('libKit').addEventListener('change', function(){
+    S.libKit = this.value; S.libOffset = 0; renderLibrary();
+  });
+  document.getElementById('libArch').addEventListener('change', function(){
+    S.libArchived = this.value; S.libOffset = 0; renderLibrary();
+  });
+
+  var rt = document.getElementById('reqToggle');
+  rt.addEventListener('click', function(){
+    S.showReq = !S.showReq;
+    rt.setAttribute('aria-pressed', String(S.showReq));
+    rt.textContent = S.showReq ? 'Hide request URLs' : 'Show request URLs';
+    renderJobs(); renderLibrary(); renderApprovals(); renderKits();
+  });
+})();
+
+function renderAll(){
+  renderScope();
+  renderStats();
+  renderJobs();
+  renderLegend();
+  renderLibrary();
+  renderApprovals();
+  renderKits();
+  document.getElementById('footNote').textContent =
+    'cf · api/creative/* · read-only · ' + PARTNERS[S.partner].name.toLowerCase();
+}
+
+/* ══ BOOT ════════════════════════════════════════════════════════════════ */
+renderStaticTables();
+renderRules();
+renderAll();
+</script>
+</body>
+</html>

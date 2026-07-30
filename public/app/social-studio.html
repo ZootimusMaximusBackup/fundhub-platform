@@ -1,0 +1,2000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fundhub — Social Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
+<style>
+/* ══ SHARED CHROME — identical across every internal surface ══════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--butter:#F2E39B}           /* spectrum stop @40% — the 6th status color */
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+.logo{width:118px;height:24px;flex:0 0 118px}
+.eyebrow{display:block}
+.eyebrow .sep{color:var(--line);margin:0 6px}
+.app{display:flex;min-height:100vh}
+
+.side{width:230px;flex:0 0 230px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
+.side::after{content:"";position:absolute;top:0;right:0;width:2px;height:100%;background:var(--spectrum);opacity:.9}
+.side.mini{width:60px;flex:0 0 60px}
+.side-top{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--cardline)}
+.side.mini .side-top{padding:0 12px}
+.side.mini .logo{display:none}
+.burger{margin-left:auto;width:26px;height:26px;flex:0 0 26px;border:1px solid var(--cardline);background:transparent;color:var(--gray2);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+.burger:hover{border-color:#3F3F46;color:var(--paper)}
+.side.mini .burger{margin:0 auto}
+.side-scroll{flex:1;overflow-y:auto;padding:12px 0 8px}
+.side-scroll::-webkit-scrollbar{width:6px}
+.side-scroll::-webkit-scrollbar-thumb{background:#27272A;border-radius:3px}
+.navgroup{margin-bottom:3px}
+.navhead{width:100%;background:transparent;border:0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;padding:9px 18px 6px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#71717A}
+.navhead:hover{color:var(--gray2)}
+.navhead .chev{margin-left:auto;font-size:9px;transition:transform .16s;color:#52525B}
+.navgroup.closed .chev{transform:rotate(-90deg)}
+.navgroup.closed .navlist{display:none}
+.side.mini .navhead{justify-content:center;padding:10px 0 6px;font-size:0;letter-spacing:0}
+.side.mini .navhead::after{content:"";display:block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;opacity:.5}
+.side.mini .navhead .chev{display:none}
+.navlist{display:flex;flex-direction:column}
+.navitem{display:flex;align-items:center;gap:11px;padding:7px 18px;font-size:12.5px;color:var(--gray2);position:relative;transition:color .12s,background .12s}
+.navitem:hover{color:var(--paper);background:#161619}
+.navitem .ico{font-family:var(--mono);font-size:12px;width:16px;flex:0 0 16px;text-align:center;opacity:.75}
+.navitem.on{color:var(--paper);background:#161619;font-weight:500}
+.navitem.on::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--spectrum);border-radius:0 2px 2px 0}
+.navitem.on .ico{opacity:1}
+.side.mini .navitem{justify-content:center;padding:9px 0}
+.side.mini .navitem .lbl{display:none}
+.side-foot{padding:12px 16px;border-top:1px solid var(--cardline);font-family:var(--mono);font-size:10px;color:#52525B;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
+.side.mini .side-foot .who{display:none}
+.side.mini .side-foot{justify-content:center;padding:12px 0}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.spacer{flex:1}
+.content{padding:22px 24px 40px;flex:1}
+
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.card+.card{margin-top:14px}
+.card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.card-hd .t{font-size:13.5px;font-weight:600;letter-spacing:-.01em}
+.card-bd{padding:16px}
+.hair{height:2px;background:var(--spectrum);border-radius:1px}
+
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
+.btn:hover{background:var(--soft);border-color:var(--gray2)}
+.btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn.dark:hover{background:var(--ink2)}
+.btn.sm{padding:5px 10px;font-size:11.5px}
+.btn.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.btn.danger{color:#6E2A22;border-color:var(--alert)}
+.btn.danger:hover{background:rgba(242,166,155,.16)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
+.b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
+.b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
+.b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
+.b-info{background:rgba(169,198,232,.26);border-color:var(--info);color:#22415F}
+.b-accent{background:rgba(196,179,229,.26);border-color:var(--accent);color:#3F2F63}
+.b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
+/* the 6th status colour — the butter stop. 'posting' is the one state that has no
+   other stop left, and it is genuinely a sixth thing. */
+.b-butter{background:rgba(242,227,155,.40);border-color:var(--butter);color:#6B4A12}
+
+table.grid{width:100%;border-collapse:collapse}
+table.grid th{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft)}
+table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+table.grid tr:last-child td{border-bottom:0}
+
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
+.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:13px;width:100%;font-family:inherit}
+.field textarea{resize:vertical;min-height:52px;line-height:1.45}
+.field input.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
+.field .hint{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+.sw{position:relative;width:38px;height:21px;flex:0 0 38px;border-radius:11px;background:var(--line);border:1px solid var(--line);cursor:pointer;transition:background .15s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.sw.on{background:var(--ok);border-color:var(--ok)}
+.sw.on::after{transform:translateX(17px)}
+
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+.stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
+.stat .sv{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
+.stat .sd{font-size:11px;color:var(--gray);margin-top:2px}
+
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+.empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:12px}
+
+/* ══ SOCIAL STUDIO — page specific ═══════════════════════════════════════ */
+
+/* ── stat tiles double as calculator buttons: the derivation strip under the
+      row shows the exact predicate the number came from ───────────────────── */
+button.stat{text-align:left;cursor:pointer;font:inherit;color:inherit;width:100%}
+button.stat:hover{border-color:var(--gray2)}
+button.stat[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 3px rgba(169,198,232,.22)}
+button.stat:focus-visible{outline:2px solid var(--info);outline-offset:2px}
+.deriv{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--soft);
+  padding:12px 15px;display:flex;gap:12px;align-items:flex-start}
+.deriv .dk{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--gray);flex:0 0 96px;padding-top:2px}
+.deriv .dv{flex:1;min-width:0;font-family:var(--mono);font-size:11px;line-height:1.65;color:var(--ink);
+  word-break:break-word}
+.deriv .dv b{font-weight:600}
+.deriv .dv .src{color:var(--gray2)}
+
+.notice{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--info);
+  background:rgba(169,198,232,.13);border-radius:9px;padding:11px 14px;margin-top:14px;font-size:12px;color:#22415F}
+.notice .ni{flex:0 0 auto;font-size:13px;line-height:1.3}
+.notice.warn{border-color:var(--warn);background:rgba(245,206,143,.20);color:#6B4A12}
+.notice.bad{border-color:var(--alert);background:rgba(242,166,155,.18);color:#6E2A22}
+/* inline schema tokens read as chips, exactly as on Campaigns / Creative
+   Factory / Hiring — same family, size, fill and border. */
+.notice code,code{font-family:var(--mono);font-size:11px;background:var(--soft);
+  border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+
+/* the caption strip under a card — the shared footnote treatment across the
+   four Marketing + Setup surfaces. */
+.cap{padding:10px 16px;border-top:1px solid var(--line);background:var(--soft);
+  font-size:11.5px;color:var(--gray);line-height:1.55}
+.cap b{color:var(--ink);font-weight:600}
+.cap+.cap{border-top:1px dashed var(--line)}
+
+/* ── channel cards ───────────────────────────────────────────────────────── */
+.chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:12px;padding:16px}
+.chcard{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff;position:relative}
+.chcard::before{content:"";position:absolute;top:0;left:0;bottom:0;width:3px}
+.chcard.s-active::before{background:var(--ok)}
+.chcard.s-pending::before{background:var(--info)}
+.chcard.s-expired::before{background:var(--warn)}
+.chcard.s-revoked::before{background:var(--alert)}
+.chcard-hd{display:flex;align-items:center;gap:9px;padding:11px 13px 10px 15px;border-bottom:1px solid var(--line)}
+.chcard-hd .cn{font-size:12.5px;font-weight:600;letter-spacing:-.01em}
+.chcard-hd .ch{font-family:var(--mono);font-size:10px;color:var(--gray2);letter-spacing:.05em;display:block;margin-top:2px;font-weight:400}
+.chcard-bd{padding:10px 13px 12px 15px;display:flex;flex-direction:column;gap:6px}
+.kv{display:flex;gap:10px;font-size:11.5px;align-items:baseline}
+.kv .k{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);flex:0 0 96px}
+.kv .v{flex:1;min-width:0;word-break:break-word}
+.kv .v.mono{font-family:var(--mono);font-size:11px}
+.tick{font-family:var(--mono);font-size:11px}
+.tick.y{color:#2C5138}
+.tick.n{color:var(--gray2)}
+.scopes{display:flex;flex-wrap:wrap;gap:4px}
+.scope{font-family:var(--mono);font-size:9px;letter-spacing:.05em;background:var(--soft);
+  border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--gray)}
+.consq{margin-top:4px;border-top:1px dashed var(--line);padding-top:8px;font-size:11px;color:var(--gray);line-height:1.5}
+.consq b{color:var(--ink);font-weight:600}
+
+.ghost{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px;padding:16px}
+.ghosttile{border:1.5px dashed var(--line);border-radius:9px;padding:11px 13px;background:var(--soft)}
+.ghosttile .gn{font-size:12.5px;font-weight:600;color:var(--gray)}
+.ghosttile .gs{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray2);margin-top:5px}
+
+/* ── composer / verdict ──────────────────────────────────────────────────── */
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:14px;align-items:start;margin-top:14px}
+.vpane{position:sticky;top:71px}
+.capwrap{position:relative}
+.capwrap textarea{min-height:104px;font-size:12.5px}
+.capmeta{display:flex;gap:10px;align-items:baseline;margin-top:5px}
+.capmeta .cc{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em;margin-left:auto}
+
+.rsn{border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:9px 11px;background:#fff}
+.rsn+.rsn{margin-top:8px}
+.rsn.sev-block{border-left-color:var(--alert)}
+.rsn.sev-warn{border-left-color:var(--warn)}
+.rsn.sev-none{border-left-color:var(--alert);border-left-style:dashed}
+.rsn.sev-approval{border-left-color:var(--accent)}
+.rsn .rh{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rsn .rc{font-family:var(--mono);font-size:11px;font-weight:600}
+.rsn .rm{font-size:11.5px;color:var(--gray);line-height:1.5;margin-top:5px}
+.rsn .rcite{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--gray2);margin-top:5px}
+.rsn .rsevnote{font-family:var(--mono);font-size:9.5px;color:#6E2A22;margin-top:5px;letter-spacing:.04em}
+
+.verdict{padding:13px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.verdict .vwhat{font-size:11.5px;color:var(--gray);width:100%;line-height:1.5}
+.verdict .vwhat b{color:var(--ink);font-weight:600}
+
+/* ── workbench: tab rail over the four post states + the audit trail ─────── */
+/* the state tab strip. Named .tabrail, not .rail: on Campaigns, Creative
+   Factory and Hiring .rail is the flush filter-chip row, and one name must
+   not mean two components across the set. */
+.tabrail{display:flex;gap:6px;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--soft);flex-wrap:wrap}
+.rtab{font:inherit;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:var(--gray);
+  border:1px solid var(--line);border-radius:7px;padding:6px 12px;display:inline-flex;align-items:center;gap:8px;
+  transition:background .12s,color .12s,border-color .12s}
+.rtab:hover{border-color:var(--gray2);color:var(--ink)}
+.rtab.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.rtab:focus-visible{outline:2px solid var(--info);outline-offset:2px}
+.rtab .rn{font-family:var(--mono);font-size:10.5px;font-weight:600;border-radius:9px;padding:0 6px;
+  background:var(--soft);color:var(--gray)}
+.rtab.on .rn{background:#26262B;color:var(--paper)}
+.filters{display:flex;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap}
+/* the shared label+select pair, byte-identical to Campaigns / Creative Factory
+   / Hiring so the same control does not change shape between screens. */
+.selwrap{display:inline-flex;align-items:center;gap:6px}
+.selwrap label{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
+.selwrap select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 7px;font-size:11.5px;font-family:var(--mono);max-width:230px}
+.selwrap select:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
+
+/* label + select, to the same metrics as .selwrap on the other three screens */
+.filters select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 7px;font-size:11.5px;font-family:var(--mono)}
+.filters select:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
+.filters .fl{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
+.pane{display:none}
+.pane.on{display:block}
+/* the full status CHECK set — including the two that never appear in a list,
+   because leaving them out would imply social_posts has four states. */
+.legend{display:flex;gap:14px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:#fff}
+.lgi{display:flex;gap:7px;align-items:baseline;font-size:10.5px;color:var(--gray);max-width:250px}
+.lgi .lgt{line-height:1.45}
+.lgi.transient{opacity:.72}
+
+table.grid tr[data-row]{cursor:pointer}
+table.grid tr[data-row]:hover td{background:var(--soft)}
+table.grid tr[data-row][aria-expanded="true"] td{background:var(--soft)}
+.rchev{display:inline-block;width:10px;color:var(--gray2);font-size:9px;transition:transform .16s ease;margin-right:6px}
+tr[data-row][aria-expanded="true"] .rchev{transform:rotate(90deg)}
+tr.det>td{background:var(--soft);padding:0 14px 13px !important}
+.detbox{border-top:1px dashed var(--line);padding-top:11px;display:flex;gap:20px;flex-wrap:wrap}
+.detcol{min-width:190px;flex:1}
+.detcol .dt{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:6px}
+/* post caption text — a different thing from .cap, which is the card footnote */
+.pcap{font-size:12px;line-height:1.5;max-width:52ch}
+.pcap.trunc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.substate{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--gray);display:block;margin-top:4px}
+.err{font-family:var(--mono);font-size:10.5px;color:#6E2A22;word-break:break-word}
+.attn{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;
+  border-radius:5px;font-family:var(--mono);font-size:10.5px;font-weight:600;background:var(--soft);
+  border:1px solid var(--line);color:var(--gray)}
+.attn.hot{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
+
+/* ── task strip ──────────────────────────────────────────────────────────── */
+.task{border:1px solid var(--warn);background:rgba(245,206,143,.16);border-radius:9px;padding:12px 14px;margin:14px}
+.task .tt{font-size:12.5px;font-weight:600;color:#6B4A12}
+.task .tk{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#6B4A12;opacity:.8}
+.task .td{font-family:var(--mono);font-size:11px;color:#6B4A12;margin-top:7px;word-break:break-word}
+
+/* ── best times ──────────────────────────────────────────────────────────── */
+.btgrid{display:flex;flex-direction:column;gap:6px}
+.btrow{display:flex;align-items:center;gap:9px}
+.btrow .bd{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);flex:0 0 34px}
+.btrow .bs{display:flex;gap:5px;flex-wrap:wrap;flex:1}
+.slot{font-family:var(--mono);font-size:10.5px;background:rgba(169,198,232,.22);border:1px solid var(--info);
+  color:#22415F;border-radius:5px;padding:1px 6px}
+.slot.next{background:rgba(168,216,176,.30);border-color:var(--ok);color:#2C5138;font-weight:600}
+.btrow .none{font-family:var(--mono);font-size:10px;color:var(--gray2)}
+
+/* ── the "cannot do yet" panel — structural, not decorative ─────────────── */
+.gapgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:12px;padding:16px}
+.gap{border:1px solid var(--line);border-radius:9px;padding:12px 14px;background:var(--soft)}
+.gap .gt{font-size:12.5px;font-weight:600;display:flex;gap:8px;align-items:center}
+.gap .gb{font-size:11.5px;color:var(--gray);line-height:1.55;margin-top:6px}
+.gap .gs{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.04em;margin-top:7px;word-break:break-word}
+
+/* ── drawer ──────────────────────────────────────────────────────────────── */
+.scrim{position:fixed;inset:0;background:rgba(10,10,10,.34);z-index:40;opacity:0;pointer-events:none;transition:opacity .16s}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:452px;max-width:94vw;background:#fff;z-index:41;
+  border-left:1px solid var(--line);display:flex;flex-direction:column;transform:translateX(100%);
+  transition:transform .18s ease;box-shadow:-10px 0 34px rgba(10,10,10,.10)}
+.drawer.on{transform:none}
+.drawer-hd{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.drawer-bd{flex:1;overflow-y:auto;padding:16px}
+.drawer-bd::-webkit-scrollbar{width:6px}
+.drawer-bd::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:3px}
+.drawer-ft{border-top:1px solid var(--line);padding:11px 16px;font-family:var(--mono);font-size:9.5px;
+  color:var(--gray2);letter-spacing:.06em}
+.dsec{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);
+  margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
+.dsec:first-child{margin-top:0;padding-top:0;border-top:0}
+.dx{background:none;border:0;color:var(--gray2);font-size:15px;line-height:1;cursor:pointer;margin-left:auto}
+.dx:hover{color:var(--ink)}
+.jsonline{font-family:var(--mono);font-size:10.5px;background:var(--soft);border:1px solid var(--line);
+  border-radius:6px;padding:7px 9px;word-break:break-word;line-height:1.55}
+.jsonline+.jsonline{margin-top:6px}
+
+@media(max-width:1240px){.cols{grid-template-columns:1fr}.vpane{position:static}}
+@media(max-width:1100px){.stats{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:820px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}
+  .deriv{flex-direction:column;gap:6px}.deriv .dk{flex:none}}
+</style>
+<script src="shell.js"></script>
+</head>
+<body>
+<!--
+  SOCIAL STUDIO — organic posting across the partner's connected social channels.
+
+  Built from:
+    db/migrations/049_social.sql            social_channels, social_posts, the
+                                            same-partner trigger and the screen gate
+    src/social/scheduler.mjs                schedule(), publishDue(), nextBestTime(),
+                                            CHANNELS, MAX_ATTEMPTS = 3
+    src/compliance/screen.mjs               the guardrail engine; organic screens
+                                            with platform = null
+    db/migrations/047_compliance_rules.sql  compliance_rules + the seeded rule rows
+                                            reproduced verbatim for the composer preview
+    db/migrations/046_ad_platforms.sql      action_log, partner_onboarding_tasks,
+                                            partner_module_settings
+    db/migrations/045_creative_factory.sql  creative_assets (the asset picker)
+    src/partners/onboarding.mjs             openOnboardingTask() dedupe semantics
+    src/adplatforms/tokens.mjs              redactConnection() — has_access_token only
+    api/campaigns/action-log.mjs            the audit read shape, incl. `revertible`
+
+  NO API IS WIRED. There is no api/social/* handler in the repo and netlify's ROUTES
+  map has no social entry, so every row below is in-file sample data. See SS-12.
+-->
+<div class="app">
+  <aside class="side" id="side">
+    <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
+    <nav class="side-scroll">
+      <div class="navgroup"><button class="navhead">Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
+        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Automation<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Marketing<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
+        <a class="navitem on" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
+        <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Setup<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
+        <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
+        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
+        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Client<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+      </div></div>
+    </nav>
+    <div class="side-foot"><span class="pulse"></span><span class="who">CS · EMP-000001</span></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="crumb">Marketing</span><h1>Social Studio</h1>
+      <div class="spacer"></div>
+      <span class="selwrap"><label for="partnerSel">partner_id</label>
+        <select id="partnerSel"></select></span>
+      <span class="chip" id="nowChip"><span class="cd" style="background:var(--info)"></span><span id="nowTxt">now</span></span>
+      <button class="btn dark mono" id="composeTop">+ Compose</button>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ SS-00 · SUMMARY ══════════════════════════════════════════════ -->
+      <div class="stats" id="stats">
+        <button type="button" class="stat" data-k="channels" aria-pressed="true">
+          <span class="eyebrow">SS-00 <span class="sep">/</span> CHANNELS</span>
+          <div class="sv" id="kChannels">—</div><div class="sd" id="kChannelsD">—</div></button>
+        <button type="button" class="stat" data-k="queued" aria-pressed="false">
+          <span class="eyebrow">SS-00 <span class="sep">/</span> QUEUED</span>
+          <div class="sv" id="kQueued">—</div><div class="sd" id="kQueuedD">—</div></button>
+        <button type="button" class="stat" data-k="blocked" aria-pressed="false">
+          <span class="eyebrow">SS-00 <span class="sep">/</span> BLOCKED</span>
+          <div class="sv" id="kBlocked">—</div><div class="sd" id="kBlockedD">—</div></button>
+        <button type="button" class="stat" data-k="failed" aria-pressed="false">
+          <span class="eyebrow">SS-00 <span class="sep">/</span> FAILED</span>
+          <div class="sv" id="kFailed">—</div><div class="sd" id="kFailedD">—</div></button>
+        <button type="button" class="stat" data-k="posted" aria-pressed="false">
+          <span class="eyebrow">SS-00 <span class="sep">/</span> POSTED</span>
+          <div class="sv" id="kPosted">—</div><div class="sd" id="kPostedD">—</div></button>
+      </div>
+      <div class="deriv"><div class="dk">Derivation</div><div class="dv" id="derivBody">—</div></div>
+
+      <div class="notice" id="sampleNotice">
+        <span class="ni">◉</span>
+        <span>
+          <b>Sample rows.</b> There is no <code>api/social/*</code> endpoint in the repo and
+          <code>netlify/functions/api.mjs</code> routes nothing under <code>social</code>, so this screen
+          has nothing live to read. Every column, enum and consequence below is the real schema
+          from <code>049_social.sql</code>; the values are illustrative. Section <b>SS-12</b> lists exactly
+          what is missing.
+        </span>
+      </div>
+
+      <!-- ══ SS-01 · CONNECTED CHANNELS ═══════════════════════════════════ -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-hd">
+          <div class="eyebrow">SS-01 <span class="sep">/</span> CONNECTED CHANNELS</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray mono" id="chCount">—</span>
+          <span class="badge b-gray mono">social_channels</span>
+        </div>
+        <div id="chGrid"></div>
+      </div>
+
+      <!-- ══ SS-02 · NOT CONNECTED ════════════════════════════════════════ -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">SS-02 <span class="sep">/</span> NOT CONNECTED</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray mono" id="ghCount">—</span>
+        </div>
+        <div id="ghGrid"></div>
+        <div class="cap">
+          These are the remaining values allowed by <code class="mono">social_channels_channel_ck</code> and by the frozen
+          <code class="mono">CHANNELS</code> export in <code class="mono">scheduler.mjs:193</code>. There is deliberately no
+          “Connect” button: no social OAuth handler exists in the repo — <code class="mono">tokens.mjs</code> only encrypts and
+          decrypts, and the only writers of <code class="mono">social_channels</code> today are test fixtures.
+        </div>
+      </div>
+
+      <div class="cols">
+        <div>
+          <!-- ══ SS-03 · COMPOSE ════════════════════════════════════════ -->
+          <div class="card" id="composer">
+            <div class="card-hd">
+              <div class="eyebrow">SS-03 <span class="sep">/</span> COMPOSE A POST</div>
+              <div class="spacer"></div>
+              <span class="badge b-gray mono">5 fields · schedule()</span>
+            </div>
+            <div class="card-bd">
+              <div class="grid2" style="margin-bottom:12px">
+                <div class="field">
+                  <label for="cChannel">Channel — channel_id</label>
+                  <select id="cChannel"></select>
+                  <span class="hint">one post targets exactly one channel; there is no cross-post</span>
+                </div>
+                <div class="field">
+                  <label for="cOffer">Offer type — required</label>
+                  <select id="cOffer">
+                    <option value="">— not set —</option>
+                    <option value="funding">funding</option>
+                    <option value="credit_cards">credit_cards</option>
+                    <option value="credit_repair">credit_repair</option>
+                  </select>
+                  <span class="hint">NOT NULL; screen() blocks with offer_type_missing when absent</span>
+                </div>
+              </div>
+
+              <div class="field capwrap">
+                <label for="cCaption">Caption</label>
+                <textarea id="cCaption" placeholder="Write the caption. It is screened before anything is queued."></textarea>
+                <div class="capmeta">
+                  <span class="hint">the only text field on social_posts — no title, hashtags, link_url or alt_text columns exist</span>
+                  <span class="cc" id="capCount">0 chars</span>
+                </div>
+              </div>
+
+              <div class="grid2" style="margin-top:12px">
+                <div class="field">
+                  <label for="cAsset">Asset — optional, one only</label>
+                  <select id="cAsset"></select>
+                  <span class="hint">asset_id is a single nullable FK — no carousels, no join table</span>
+                </div>
+                <div class="field">
+                  <label for="cWhen">scheduled_for — override (UTC)</label>
+                  <input id="cWhen" type="datetime-local">
+                  <span class="hint" id="cWhenHint">leave empty to use nextBestTime(channel)</span>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:9px;margin-top:14px;align-items:center;flex-wrap:wrap">
+                <button class="btn dark mono" id="runScreen">Run guardrail preview</button>
+                <button class="btn mono" id="queueBtn" disabled
+                  title="No endpoint exists. schedule() is only reachable from src/social/scheduler.mjs.">Queue post</button>
+                <button class="btn mono" id="clearComposer">Clear</button>
+                <span class="hint mono" style="font-size:10.5px;color:var(--gray2)">nothing is written — there is no social API</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SS-04 · GUARDRAIL VERDICT ═══════════════════════════════ -->
+        <div class="card vpane">
+          <div class="card-hd">
+            <div class="eyebrow">SS-04 <span class="sep">/</span> GUARDRAIL VERDICT</div>
+          </div>
+          <div class="verdict">
+            <span class="badge b-gray mono" id="vState">—</span>
+            <span class="badge b-gray mono" id="vCount">0 reasons</span>
+            <div class="vwhat" id="vWhat">Type a caption to screen it.</div>
+          </div>
+          <div class="card-bd" id="vReasons" style="padding-top:13px"></div>
+          <div class="cap">
+            <b>Organic screens with <code class="mono">platform = null</code></b>
+            (<code class="mono">scheduler.mjs:56–59</code>). That means the TikTok credit-repair structural block and the
+            Meta special-ad-category force are skipped by construction, and no targeting is screened. The CROA, claims
+            and disclosure copy rules apply in full — a caption is judged exactly as an ad would be.
+            <br><br>
+            This panel compiles the same seeded <code class="mono">compliance_rules</code> patterns the engine uses, so it
+            is a faithful preview — but the authoritative verdict is the one
+            <code class="mono">src/compliance/screen.mjs</code> writes to <code class="mono">compliance_screenings</code>, and
+            that engine <b>fails closed</b>: any error at all returns <code class="mono">blocked</code> /
+            <code class="mono">screen_error</code>. Rules are also cached per org for 60s, so a rule edit can take a minute
+            to bite.
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SS-05..SS-09 · POST WORKBENCH ══════════════════════════════ -->
+      <div class="card" id="workbench" style="margin-top:14px">
+        <div class="card-hd">
+          <div class="eyebrow" id="wbEyebrow">SS-05 <span class="sep">/</span> SCHEDULED QUEUE</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray mono">social_posts</span>
+        </div>
+        <div class="tabrail" role="tablist" aria-label="Post states">
+          <button class="rtab on" type="button" role="tab" aria-selected="true"  data-pane="queued">Queue<span class="rn" id="nQueued">0</span></button>
+          <button class="rtab"    type="button" role="tab" aria-selected="false" data-pane="blocked">Review queue<span class="rn" id="nBlocked">0</span></button>
+          <button class="rtab"    type="button" role="tab" aria-selected="false" data-pane="failed">Failed<span class="rn" id="nFailed">0</span></button>
+          <button class="rtab"    type="button" role="tab" aria-selected="false" data-pane="posted">Published<span class="rn" id="nPosted">0</span></button>
+          <button class="rtab"    type="button" role="tab" aria-selected="false" data-pane="audit">Audit trail<span class="rn" id="nAudit">0</span></button>
+        </div>
+        <div class="filters">
+          <label class="fl" for="fChannel">channel</label>
+          <select id="fChannel"></select>
+          <label class="fl" for="fOffer">offer_type</label>
+          <select id="fOffer">
+            <option value="">all</option>
+            <option value="funding">funding</option>
+            <option value="credit_cards">credit_cards</option>
+            <option value="credit_repair">credit_repair</option>
+          </select>
+          <div class="spacer"></div>
+          <span class="fl" id="fCount">—</span>
+        </div>
+
+        <!-- social_posts_status_ck — all six values, and what each one actually is -->
+        <div class="legend">
+          <span class="lgi transient"><span class="badge b-gray">draft</span><span class="lgt">set by the INSERT and moved on inside the same call — never a resting state</span></span>
+          <span class="lgi"><span class="badge b-info">queued</span><span class="lgt">screened and waiting for publishDue</span></span>
+          <span class="lgi transient"><span class="badge b-butter">posting</span><span class="lgt">set and cleared in one transaction; a row stuck here means a crash, not work in progress</span></span>
+          <span class="lgi"><span class="badge b-ok">posted</span><span class="lgt">external_post_id returned</span></span>
+          <span class="lgi"><span class="badge b-warn">failed</span><span class="lgt">3 attempts burned; opens a task</span></span>
+          <span class="lgi"><span class="badge b-alert">blocked</span><span class="lgt">the guardrail refused it; terminal</span></span>
+        </div>
+
+        <div class="pane on" id="pane-queued" role="tabpanel"><div id="tblQueued"></div>
+          <div class="cap">
+            <code class="mono">publishDue</code> reads <code class="mono">status = 'queued' AND scheduled_for &lt;= now()</code>,
+            ordered by <code class="mono">scheduled_for</code>, <b>LIMIT 50</b> per invocation. A row whose channel is not
+            <code class="mono">active</code> is skipped with <code class="mono">{ skipped: 'channel_not_active' }</code> — the post
+            stays queued and <code class="mono">attempt</code> is <b>not</b> incremented. A row with
+            <code class="mono">scheduled_for IS NULL</code> is never due and will sit here forever.
+          </div>
+        </div>
+        <div class="pane" id="pane-blocked" role="tabpanel"><div id="tblBlocked"></div>
+          <div class="cap">
+            A blocked post is <b>stored with its reasons</b>, not rejected and forgotten —
+            <code class="mono">social_posts_blocked_reason_ck</code> forbids an empty reason list. It is also
+            <b>terminal</b>: nothing in the repo re-screens an existing post, and <code class="mono">schedule()</code> only
+            ever INSERTs a new row. Fixing the copy means composing a new post in SS-03. There is no unblock, no
+            override and no exception request — <code class="mono">screen.mjs</code> has no force argument and none may be added.
+          </div>
+        </div>
+        <div class="pane" id="pane-failed" role="tabpanel"><div id="tblFailed"></div><div id="taskStrip"></div></div>
+        <div class="pane" id="pane-posted" role="tabpanel"><div id="tblPosted"></div>
+          <div class="cap">
+            No engagement figures appear here because none exist. <code class="mono">ad_metrics_daily.ad_id</code> is
+            <code class="mono">NOT NULL</code> and references <code class="mono">ads</code>, so it cannot hold a row for a
+            <code class="mono">social_post</code>, and there is no organic metrics table anywhere in the schema. Organic
+            posting is also never metered: <code class="mono">creative_usage_events.event_type</code> is CHECKed to
+            <code class="mono">generation | managed_spend</code> and has no <code class="mono">social_post_id</code>.
+          </div>
+        </div>
+        <div class="pane" id="pane-audit" role="tabpanel"><div id="tblAudit"></div>
+          <div class="cap">
+            One row is written <b>before</b> every platform call, so a crash mid-post leaves a findable record:
+            <code class="mono">actor 'agent'</code>, <code class="mono">target_type 'social_post'</code>,
+            <code class="mono">rule_key 'social_publish'</code>. <code class="mono">agent_id</code> comes from
+            <code class="mono">publishDue</code>'s <code class="mono">agentId</code> parameter, which defaults to
+            <code class="mono">null</code> — nothing in the repo passes one, so it reads null here.
+            <code class="mono">revertible</code> is the API's computed
+            <code class="mono">undo_payload IS NOT NULL AND undone_at IS NULL</code>; the payload itself is never returned.
+            It says a revert is <i>recorded as possible</i>, not that one would work: the payload is
+            <code class="mono">{action:'delete_post'}</code> and no social delete implementation exists.
+          </div>
+        </div>
+      </div>
+
+      <div class="cols" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+        <!-- ══ SS-10 · POSTING WINDOW ═══════════════════════════════════ -->
+        <div class="card" style="margin-top:0">
+          <div class="card-hd">
+            <div class="eyebrow">SS-10 <span class="sep">/</span> POSTING WINDOW</div>
+            <div class="spacer"></div>
+            <span class="selwrap"><label for="btChannel">channel</label>
+              <select id="btChannel"></select></span>
+          </div>
+          <div class="card-bd" id="btBody"></div>
+          <div class="cap">
+            <b>Slots are evaluated in UTC.</b> <code class="mono">nextBestTime</code> uses
+            <code class="mono">getUTCDay()</code> and <code class="mono">Date.UTC()</code> and never reads
+            <code class="mono">social_channels.timezone</code>, even though the column comment in
+            <code class="mono">049:34–36</code> describes <code class="mono">best_times</code> as being in the partner's
+            timezone. The stored timezone is shown above as data; rendering these slots in it would show a time the
+            scheduler will not use. The scan runs 8 days forward and returns the first slot strictly after
+            <i>now</i>; an empty <code class="mono">best_times</code> returns <code class="mono">null</code> rather than
+            inventing a time.
+          </div>
+        </div>
+
+        <!-- ══ SS-11 · APPROVAL SETTING ═════════════════════════════════ -->
+        <div class="card" style="margin-top:0">
+          <div class="card-hd">
+            <div class="eyebrow">SS-11 <span class="sep">/</span> APPROVAL SETTING</div>
+            <div class="spacer"></div>
+            <span class="badge b-gray mono">partner_module_settings</span>
+          </div>
+          <div class="card-bd" id="approvalBody"></div>
+        </div>
+      </div>
+
+      <!-- ══ SS-12 · WHAT THIS SCREEN CANNOT DO YET ══════════════════════ -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-hd">
+          <div class="eyebrow">SS-12 <span class="sep">/</span> NOT BUILT YET</div>
+          <div class="spacer"></div>
+          <span class="badge b-alert mono">6 gaps</span>
+        </div>
+        <div class="gapgrid">
+          <div class="gap">
+            <div class="gt"><span class="badge b-alert mono">blocking</span>No social API</div>
+            <div class="gb">Nothing on this screen can read or write real rows. There is no
+              <code class="mono">api/social/*</code> handler, and <code class="mono">netlify/functions/api.mjs</code>
+              routes neither <code class="mono">social</code>, <code class="mono">campaigns</code> nor
+              <code class="mono">creative</code> — so even
+              <code class="mono">/api/campaigns/action-log?target_type=social_post</code>, which the code already
+              accepts as a filter, is unreachable on the deployed target.</div>
+            <div class="gs">netlify/functions/api.mjs ROUTES 43–68 · api/campaigns/action-log.mjs:16</div>
+          </div>
+          <div class="gap">
+            <div class="gt"><span class="badge b-alert mono">blocking</span>No channel adapter</div>
+            <div class="gb"><code class="mono">ADAPTERS = {}</code> and <code class="mono">registerAdapter</code> is
+              called only from the test file. Without an adapter <code class="mono">publishOne</code> throws
+              <code class="mono">no adapter registered for channel &lt;x&gt;</code> and burns all three attempts. No post
+              has ever actually reached a platform from production code.</div>
+            <div class="gs">src/social/scheduler.mjs:18–20, 134 · src/social/social.pg.test.mjs:104, 124</div>
+          </div>
+          <div class="gap">
+            <div class="gt"><span class="badge b-alert mono">blocking</span>Nothing calls publishDue</div>
+            <div class="gb"><code class="mono">publishDue</code> has zero callers outside its test file. No cron, no
+              scheduled function, no queue worker invokes it — so a queued post stays queued whatever its
+              <code class="mono">scheduled_for</code> says.</div>
+            <div class="gs">src/social/scheduler.mjs:91</div>
+          </div>
+          <div class="gap">
+            <div class="gt"><span class="badge b-warn mono">missing</span>No OAuth connect flow</div>
+            <div class="gb">A channel can only exist if something INSERTs it. There is no social OAuth handler;
+              <code class="mono">src/adplatforms/tokens.mjs</code> encrypts and decrypts but never acquires a token.
+              Note the unique index <code class="mono">(partner_id, channel, external_account_id)</code> that any future
+              connect flow has to respect.</div>
+            <div class="gs">db/migrations/049_social.sql:51–52</div>
+          </div>
+          <div class="gap">
+            <div class="gt"><span class="badge b-warn mono">missing</span>No organic engagement data</div>
+            <div class="gb">Likes, comments, shares, saves, reach, follower growth and best-performing-post cannot be
+              shown because there is nowhere to put them. The only metrics table is keyed on
+              <code class="mono">ad_id</code>. Adding an engagement panel would mean inventing numbers.</div>
+            <div class="gs">db/migrations/046_ad_platforms.sql:432–467</div>
+          </div>
+          <div class="gap">
+            <div class="gt"><span class="badge b-warn mono">missing</span>No approval workflow</div>
+            <div class="gb"><code class="mono">social_posts</code> has no
+              <code class="mono">approval_state</code>, <code class="mono">approved_at</code>,
+              <code class="mono">approved_by</code> or reviewer column. <code class="mono">needs_approval</code> lives
+              only on the <code class="mono">compliance_screenings</code> row, and the post is queued regardless — so
+              there is nothing here to approve or reject <i>yet</i>.</div>
+            <div class="gs">db/migrations/049_social.sql:56–96 · src/social/scheduler.mjs:82–84</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="foot">
+      <span class="pulse"></span><span>systems nominal · fundhub.ai</span>
+      <span class="spacer"></span>
+      <span id="footNote">ss · no api/social/* · sample rows</span>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-label="Post detail">
+  <div class="drawer-hd">
+    <div class="eyebrow">SS-13 <span class="sep">/</span> POST RECORD</div>
+    <button class="dx" id="drawerClose" aria-label="Close">✕</button>
+  </div>
+  <div class="drawer-bd" id="drawerBody"></div>
+  <div class="drawer-ft">social_posts · compliance_screenings · action_log · partner_onboarding_tasks</div>
+</aside>
+
+<script>
+/* ══ SHARED CHROME BEHAVIOUR ═════════════════════════════════════════════ */
+(function(){
+  var side=document.getElementById('side'),b=document.getElementById('burger');
+  b.addEventListener('click',function(){side.classList.toggle('mini');b.textContent=side.classList.contains('mini')?'››':'‹‹';});
+  document.querySelectorAll('.navhead').forEach(function(h){
+    h.addEventListener('click',function(){if(side.classList.contains('mini'))return;h.parentElement.classList.toggle('closed');});
+  });
+})();
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
+
+/* ════════════════════════════════════════════════════════════════════════
+   FIXED CLOCK. Every "due / not due" call on this screen is made against this
+   instant, so the sample data reads the same way every time it is opened. The
+   scheduler's own predicate is `scheduled_for <= COALESCE($now, now())`, and it
+   accepts an explicit now for exactly this reason.
+   ════════════════════════════════════════════════════════════════════════ */
+var NOW_ISO = '2026-07-30T14:20:00.000Z';
+var NOW = new Date(NOW_ISO);
+
+/* The 8 permitted channels — social_channels_channel_ck (049:43-44), identical to
+   the frozen CHANNELS export at scheduler.mjs:193-195. */
+var CHANNELS = ['instagram','tiktok','facebook','linkedin','x','youtube_shorts','threads','pinterest'];
+var CHANNEL_LABEL = {
+  instagram:'Instagram', tiktok:'TikTok', facebook:'Facebook', linkedin:'LinkedIn',
+  x:'X', youtube_shorts:'YouTube Shorts', threads:'Threads', pinterest:'Pinterest'
+};
+var OFFER_TYPES = ['funding','credit_cards','credit_repair'];
+var MAX_ATTEMPTS = 3;                 /* scheduler.mjs:16 — a const, not a column */
+var PUBLISH_LIMIT = 50;               /* scheduler.mjs:99 */
+
+/* ══ COMPLIANCE RULES ════════════════════════════════════════════════════
+   The seeded rows from db/migrations/047_compliance_rules.sql:204-301, verbatim.
+   compliance_rules is org-scoped — no partner_id, no RLS — deliberately, because a
+   per-partner rule table would be a per-partner way to be less compliant. So this
+   list is the same for every partner in the selector, and this screen offers no
+   editor for it.
+   ════════════════════════════════════════════════════════════════════════ */
+var RULES = [
+  {rule_set:'croa', rule_key:'guaranteed-score-increase', offer_types:['credit_repair'], platforms:[],
+   match_type:'regex', severity:'block',
+   pattern:'(guarantee\\w*|promis\\w*|assur\\w*)[^.!?]{0,40}(\\d{2,3}\\s*(\\+|point|pt)|score\\s*(increase|boost|jump|rise))|(\\d{2,3}\\s*point[s]?\\s*(increase|boost|guarantee))',
+   message:'Promising a specific or guaranteed credit-score increase is prohibited. State what the service does, not what the score will do.',
+   citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+  {rule_set:'croa', rule_key:'promise-to-remove-accurate-info', offer_types:['credit_repair'], platforms:[],
+   match_type:'regex', severity:'block',
+   pattern:'(remove|delete|erase|wipe|eliminate|clear)[^.!?]{0,40}(negative|derogatory|accurate|truthful|legitimate)[^.!?]{0,20}(item|informa|mark|entr|record)',
+   message:'Claiming to remove accurate or verifiable negative information is prohibited. Only inaccurate or unverifiable items may be disputed.',
+   citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+  {rule_set:'croa', rule_key:'remove-late-payments-collections', offer_types:['credit_repair'], platforms:[],
+   match_type:'regex', severity:'block',
+   pattern:'(remove|delete|erase|wipe|eliminate|get\\s+rid\\s+of)[^.!?]{0,30}(late\\s*payment|collection|charge[\\s-]?off|bankruptc|repossess|foreclos|judgment|tax\\s*lien)',
+   message:'Claiming to remove late payments, collections or similar accurate tradelines is prohibited.',
+   citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+  {rule_set:'croa', rule_key:'advance-fee', offer_types:['credit_repair'], platforms:[],
+   match_type:'regex', severity:'block',
+   pattern:'(pay|fee|deposit|charge|\\$\\s*\\d)[^.!?]{0,30}(upfront|up\\s*front|in\\s*advance|before\\s+we\\s+(start|begin)|to\\s+get\\s+started)|(upfront|up\\s*front|advance)\\s+(fee|payment|deposit)',
+   message:'Charging or advertising a fee before credit-repair services are fully performed is prohibited.',
+   citation:'CROA 15 U.S.C. 1679b(b)'},
+  {rule_set:'croa', rule_key:'file-segregation-cpn', offer_types:['credit_repair'], platforms:[],
+   match_type:'regex', severity:'block',
+   pattern:'(^|[^a-z0-9])(cpn|credit\\s*privacy\\s*number|file\\s*segregation|new\\s*credit\\s*(file|identity)|second\\s*social|ein\\s+instead\\s+of\\s+ssn)([^a-z0-9]|$)',
+   message:'File segregation, CPNs and new-credit-identity offers are federal fraud. This copy cannot run.',
+   citation:'CROA 15 U.S.C. 1679b(a)(1)-(2)'},
+  {rule_set:'croa', rule_key:'guaranteed-timeline', offer_types:['credit_repair'], platforms:[],
+   match_type:'regex', severity:'block',
+   pattern:'(guarantee\\w*|promis\\w*)[^.!?]{0,40}(\\d+\\s*(day|week|month))|(\\d+\\s*(day|week|month)[^.!?]{0,20}guarantee\\w*)|results?\\s+in\\s+\\d+\\s*(day|week)s?\\s+(guaranteed|or\\s+your\\s+money)',
+   message:'Guaranteeing a timeframe for credit-repair results is prohibited. Outcomes and timing vary by file.',
+   citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+  {rule_set:'claims', rule_key:'guaranteed-approval', offer_types:[], platforms:[],
+   match_type:'regex', severity:'block',
+   pattern:'(guarantee\\w*|100%|assured|no\\s+way\\s+to\\s+be\\s+denied)[^.!?]{0,30}(approv|accept|qualif)|approval\\s+guaranteed|everyone\\s+(is\\s+)?approved',
+   message:'Guaranteed approval cannot be advertised. Approval depends on underwriting.',
+   citation:'FTC Act 15 U.S.C. 45'},
+  {rule_set:'claims', rule_key:'guaranteed-funding-amount', offer_types:[], platforms:[],
+   match_type:'regex', severity:'block',
+   pattern:'(guarantee\\w*|assured|promis\\w*|get)[^.!?]{0,25}\\$\\s*\\d[\\d,]*\\s*(k|,000|000)?[^.!?]{0,15}(funding|capital|credit\\s*line|approved)|\\$\\s*\\d[\\d,]*(k)?\\s+guaranteed',
+   message:'Guaranteeing a specific funding amount is prohibited. Use "up to" with qualifying conditions stated.',
+   citation:'FTC Act 15 U.S.C. 45'},
+  {rule_set:'claims', rule_key:'fabricated-testimonial', offer_types:[], platforms:[],
+   match_type:'regex', severity:'block',
+   pattern:'(actor\\s*portrayal\\s*of\\s*(a\\s*)?real|paid\\s+to\\s+say|not\\s+a\\s+real\\s+(client|customer)\\s+but)|results\\s+are\\s+typical',
+   message:'Testimonials must be genuine and results disclaimed as atypical. "Results are typical" cannot be claimed.',
+   citation:'FTC Endorsement Guides 16 CFR 255'},
+  {rule_set:'claims', rule_key:'income-wealth-targeting-cue', offer_types:[], platforms:[],
+   match_type:'regex', severity:'block',
+   pattern:'(are\\s+you\\s+(broke|poor|struggling\\s+financially))|(bad\\s+credit\\?\\s*no\\s+problem)|(low[\\s-]income\\s+(families|people|households)\\s+(only|welcome))|(if\\s+you\\s+(make|earn)\\s+(less|under)\\s+\\$)',
+   message:"Copy that targets or implies the viewer's income or financial distress is prohibited in this vertical.",
+   citation:'Meta special ad category / ECOA'},
+  {rule_set:'disclosure', rule_key:'croa-consumer-rights', offer_types:['credit_repair'], platforms:[],
+   match_type:'required', severity:'block',
+   pattern:'consumer\\s+credit\\s+file\\s+rights\\s+under\\s+state\\s+and\\s+federal\\s+law',
+   message:'Credit-repair funnels must carry the "Consumer Credit File Rights Under State and Federal Law" disclosure, linked to the campaign before launch.',
+   citation:'CROA 15 U.S.C. 1679c(a)'},
+  {rule_set:'platform', rule_key:'tiktok-credit-repair-prohibited', offer_types:['credit_repair'], platforms:['tiktok'],
+   match_type:'regex', severity:'block', pattern:'.*',
+   message:'TikTok prohibits credit repair and debt relief advertising outright. This offer cannot run on TikTok on any account, with any creative.',
+   citation:'TikTok Advertising Policies — Prohibited Industries'}
+];
+
+/* ══ PARTNERS ════════════════════════════════════════════════════════════
+   social_channels and social_posts are partner-RLS'd. A staff session reading them
+   through the partner read APIs must name a partner or gets 400 partner_id_required
+   — so this screen is scoped to one partner at a time and there is no merged feed.
+   ════════════════════════════════════════════════════════════════════════ */
+var PARTNERS = [
+  {id:'8f3c2a91-4d17-4b0e-9c62-1a7e5d3b8042', name:'Ironwood Capital Group', brand_name:'Ironwood Capital',
+   slug:'ironwood-capital', status:'active',
+   settings:{approve_before_launch:true, autopilot_enabled:false, launch_enabled:true,
+             weekly_asset_target:18, max_concurrent_jobs:3}},
+  {id:'b47d5e60-90aa-4f31-8e55-6c204f9a1bd3', name:'Meridian Card Collective', brand_name:'Meridian Cards',
+   slug:'meridian-cards', status:'active',
+   settings:{approve_before_launch:false, autopilot_enabled:true, launch_enabled:true,
+             weekly_asset_target:15, max_concurrent_jobs:5}},
+  {id:'c9a10f34-2be7-4a88-b0d9-7f61e2c4a915', name:'Halcyon Credit Works', brand_name:'Halcyon',
+   slug:'halcyon-credit', status:'invited',
+   settings:null}   /* no partner_module_settings row — scheduler falls back to true */
+];
+
+/* ══ SOCIAL CHANNELS ═════════════════════════════════════════════════════ */
+var SOCIAL_CHANNELS = [
+  {id:'2d91f4a7', partner:0, channel:'linkedin', handle:'@ironwood-capital',
+   external_account_id:'urn:li:organization:82214417', connection_state:'active',
+   has_access_token:true, has_refresh_token:true, token_expires_at:'2026-09-12T00:00:00.000Z',
+   scopes:['r_organization_social','w_organization_social','rw_organization_admin'],
+   last_error:null, timezone:'America/Phoenix',
+   best_times:{mon:['08:30','12:15'], tue:['08:30'], wed:['08:30','16:45'], thu:['08:30'], fri:['07:45']},
+   created_at:'2026-05-14T17:02:41.000Z'},
+
+  {id:'7b04c8e2', partner:0, channel:'instagram', handle:'@ironwoodcapital',
+   external_account_id:'17841409255310118', connection_state:'active',
+   has_access_token:true, has_refresh_token:true, token_expires_at:'2026-08-14T00:00:00.000Z',
+   scopes:['instagram_basic','instagram_content_publish','pages_read_engagement'],
+   last_error:null, timezone:'America/Phoenix',
+   best_times:{mon:['11:00','18:30'], wed:['11:00'], fri:['11:00','19:00'], sat:['10:00']},
+   created_at:'2026-05-14T17:09:03.000Z'},
+
+  {id:'e51a3d90', partner:0, channel:'facebook', handle:'Ironwood Capital Group',
+   external_account_id:'102884417553201', connection_state:'expired',
+   has_access_token:true, has_refresh_token:false, token_expires_at:'2026-07-02T00:00:00.000Z',
+   scopes:['pages_manage_posts','pages_read_engagement'],
+   last_error:'Error validating access token: Session has expired on Thursday, 02-Jul-26 00:00:00 PDT (code 190, subcode 463)',
+   timezone:'America/Phoenix',
+   best_times:{tue:['09:00'], thu:['09:00']},
+   created_at:'2026-05-14T17:11:55.000Z'},
+
+  {id:'a6c72f18', partner:0, channel:'x', handle:'@ironwoodcap',
+   external_account_id:'1748220913776488448', connection_state:'pending',
+   has_access_token:false, has_refresh_token:false, token_expires_at:null,
+   scopes:[], last_error:null, timezone:'America/Phoenix',
+   best_times:{},
+   created_at:'2026-07-21T20:44:12.000Z'},
+
+  {id:'40be9c53', partner:0, channel:'tiktok', handle:'@ironwoodcapital',
+   external_account_id:'7284119035522170882', connection_state:'revoked',
+   has_access_token:true, has_refresh_token:true, token_expires_at:'2026-07-19T00:00:00.000Z',
+   scopes:['video.publish','user.info.basic'],
+   last_error:'The user revoked access to this application (code 10009)',
+   timezone:'America/Phoenix',
+   best_times:{tue:['19:00'], thu:['19:00'], sun:['13:00']},
+   created_at:'2026-05-16T15:30:08.000Z'},
+
+  {id:'c3f8017d', partner:1, channel:'linkedin', handle:'@meridian-cards',
+   external_account_id:'urn:li:organization:90447122', connection_state:'pending',
+   has_access_token:false, has_refresh_token:false, token_expires_at:null,
+   scopes:[], last_error:null, timezone:'America/New_York',
+   best_times:{mon:['09:00'], wed:['09:00'], fri:['09:00']},
+   created_at:'2026-07-24T13:18:29.000Z'}
+];
+
+/* ══ CREATIVE ASSETS — the composer's asset picker ═══════════════════════
+   Same-partner is enforced by trigger social_post_same_partner, so only this
+   partner's library is offered. */
+var ASSETS = [
+  {id:'4e19b7c2', partner:0, kind:'static', format:'4x5', compliance_state:'approved',
+   ai_generated:true,  synthetic_performer:false, created_at:'2026-07-18T16:04:00.000Z'},
+  {id:'91a4d07f', partner:0, kind:'video',  format:'9x16', compliance_state:'approved',
+   ai_generated:true,  synthetic_performer:true,  duration_sec:21.5, created_at:'2026-07-20T14:22:00.000Z'},
+  {id:'ba370e15', partner:0, kind:'static', format:'16x9', compliance_state:'passed',
+   ai_generated:false, synthetic_performer:false, created_at:'2026-07-22T11:47:00.000Z'},
+  {id:'6cd2f884', partner:0, kind:'static', format:'1x1', compliance_state:'pending',
+   ai_generated:true,  synthetic_performer:false, created_at:'2026-07-29T09:31:00.000Z'},
+  {id:'0f5b91ac', partner:1, kind:'static', format:'1x1', compliance_state:'approved',
+   ai_generated:true,  synthetic_performer:false, created_at:'2026-07-25T18:00:00.000Z'}
+];
+
+/* ══ SOCIAL POSTS ════════════════════════════════════════════════════════
+   Columns are exactly social_posts. There is no title, hashtags, link_url, utm,
+   first_comment, alt_text, location, thumbnail or post_type column, and no
+   archived_at / deleted_at — so there is nothing here to edit or delete.
+   ════════════════════════════════════════════════════════════════════════ */
+var POSTS = [
+  /* ---- queued -------------------------------------------------------- */
+  {id:'9f2b41c8', partner:0, channel_id:'2d91f4a7', asset_id:'ba370e15', offer_type:'funding',
+   status:'queued', attempt:0, last_error:null, scheduled_for:'2026-07-30T13:30:00.000Z',
+   posted_at:null, external_post_id:null, blocked_reasons:[],
+   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
+   caption:'Working capital for contractors who need materials before the draw clears. Applications are underwritten individually — see what you prequalify for.',
+   created_at:'2026-07-29T16:41:22.000Z'},
+
+  {id:'3c7de095', partner:0, channel_id:'7b04c8e2', asset_id:'4e19b7c2', offer_type:'credit_cards',
+   status:'queued', attempt:1, last_error:'channel rate limited', scheduled_for:'2026-07-30T11:00:00.000Z',
+   posted_at:null, external_post_id:null, blocked_reasons:[],
+   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
+   caption:'Three cards, one strategy. We build the stack around the business you already run, not around a score you do not have yet.',
+   created_at:'2026-07-29T18:02:10.000Z'},
+
+  {id:'ae60b3f4', partner:0, channel_id:'e51a3d90', asset_id:null, offer_type:'funding',
+   status:'queued', attempt:0, last_error:null, scheduled_for:'2026-07-31T16:00:00.000Z',
+   posted_at:null, external_post_id:null, blocked_reasons:[],
+   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
+   caption:'Thursday reminder: the paperwork you have already gathered for your bank is most of what we need too.',
+   created_at:'2026-07-29T19:14:47.000Z'},
+
+  {id:'15c98a2e', partner:0, channel_id:'a6c72f18', asset_id:null, offer_type:'funding',
+   status:'queued', attempt:0, last_error:null, scheduled_for:null,
+   posted_at:null, external_post_id:null, blocked_reasons:[],
+   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
+   caption:'Most owners find out what they can access only after they need it. Run the assessment before the quarter turns.',
+   created_at:'2026-07-28T15:52:31.000Z'},
+
+  {id:'d2417f6b', partner:0, channel_id:'2d91f4a7', asset_id:null, offer_type:'credit_repair',
+   status:'queued', attempt:0, last_error:null, scheduled_for:'2026-08-01T15:30:00.000Z',
+   posted_at:null, external_post_id:null, blocked_reasons:[],
+   screening:{state:'needs_approval', codes:['human_approval_required_credit_repair']},
+   caption:'Consumer Credit File Rights Under State and Federal Law — you have the right to dispute inaccurate information in your credit report yourself, free of charge. We dispute items that are inaccurate or unverifiable, and we do not promise outcomes.',
+   created_at:'2026-07-29T21:07:56.000Z'},
+
+  {id:'7e0c5d13', partner:0, channel_id:'40be9c53', asset_id:'91a4d07f', offer_type:'credit_cards',
+   status:'queued', attempt:0, last_error:null, scheduled_for:'2026-07-30T13:00:00.000Z',
+   posted_at:null, external_post_id:null, blocked_reasons:[],
+   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
+   caption:'What a 0% intro window is actually for — and the three mistakes that turn it into interest.',
+   created_at:'2026-07-29T22:18:04.000Z'},
+
+  {id:'b8a3ce70', partner:0, channel_id:'7b04c8e2', asset_id:'6cd2f884', offer_type:'funding',
+   status:'queued', attempt:0, last_error:null, scheduled_for:'2026-08-01T18:00:00.000Z',
+   posted_at:null, external_post_id:null, blocked_reasons:[],
+   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
+   caption:'Friday numbers: what a clean profit and loss statement is worth when the file gets read by a human.',
+   created_at:'2026-07-30T09:33:19.000Z'},
+
+  /* ---- blocked ------------------------------------------------------- */
+  {id:'5a1e6402', partner:0, channel_id:'7b04c8e2', asset_id:null, offer_type:'credit_repair',
+   status:'blocked', attempt:0, last_error:null, scheduled_for:'2026-07-27T18:30:00.000Z',
+   posted_at:null, external_post_id:null,
+   caption:'We delete late payments and collections off your report. Get a CPN today and start fresh.',
+   blocked_reasons:[
+     {code:'remove-late-payments-collections', rule_set:'croa', severity:'block',
+      message:'Claiming to remove late payments, collections or similar accurate tradelines is prohibited.',
+      citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+     {code:'file-segregation-cpn', rule_set:'croa', severity:'block',
+      message:'File segregation, CPNs and new-credit-identity offers are federal fraud. This copy cannot run.',
+      citation:'CROA 15 U.S.C. 1679b(a)(1)-(2)'},
+     {code:'croa-consumer-rights', rule_set:'disclosure', severity:'block',
+      message:'Credit-repair funnels must carry the "Consumer Credit File Rights Under State and Federal Law" disclosure, linked to the campaign before launch.',
+      citation:'CROA 15 U.S.C. 1679c(a)'}],
+   screening:{state:'blocked', codes:['remove-late-payments-collections','file-segregation-cpn','croa-consumer-rights']},
+   created_at:'2026-07-26T14:12:08.000Z'},
+
+  {id:'c04f8b39', partner:0, channel_id:'2d91f4a7', asset_id:null, offer_type:'funding',
+   status:'blocked', attempt:0, last_error:null, scheduled_for:'2026-07-28T08:30:00.000Z',
+   posted_at:null, external_post_id:null,
+   caption:'Guaranteed approval — get $50,000 in funding, no matter what your file looks like.',
+   blocked_reasons:[
+     {code:'guaranteed-approval', rule_set:'claims', severity:'block',
+      message:'Guaranteed approval cannot be advertised. Approval depends on underwriting.',
+      citation:'FTC Act 15 U.S.C. 45'},
+     {code:'guaranteed-funding-amount', rule_set:'claims', severity:'block',
+      message:'Guaranteeing a specific funding amount is prohibited. Use "up to" with qualifying conditions stated.',
+      citation:'FTC Act 15 U.S.C. 45'}],
+   screening:{state:'blocked', codes:['guaranteed-approval','guaranteed-funding-amount']},
+   created_at:'2026-07-27T10:05:44.000Z'},
+
+  {id:'2f95d7a6', partner:0, channel_id:'e51a3d90', asset_id:null, offer_type:'credit_repair',
+   status:'blocked', attempt:0, last_error:null, scheduled_for:'2026-07-28T09:00:00.000Z',
+   posted_at:null, external_post_id:null,
+   caption:'Guaranteed 100 point increase in 30 days or your money back.',
+   blocked_reasons:[
+     {code:'guaranteed-score-increase', rule_set:'croa', severity:'block',
+      message:'Promising a specific or guaranteed credit-score increase is prohibited. State what the service does, not what the score will do.',
+      citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+     {code:'guaranteed-timeline', rule_set:'croa', severity:'block',
+      message:'Guaranteeing a timeframe for credit-repair results is prohibited. Outcomes and timing vary by file.',
+      citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+     {code:'croa-consumer-rights', rule_set:'disclosure', severity:'block',
+      message:'Credit-repair funnels must carry the "Consumer Credit File Rights Under State and Federal Law" disclosure, linked to the campaign before launch.',
+      citation:'CROA 15 U.S.C. 1679c(a)'}],
+   screening:{state:'blocked', codes:['guaranteed-score-increase','guaranteed-timeline','croa-consumer-rights']},
+   created_at:'2026-07-27T13:41:19.000Z'},
+
+  {id:'8d3706ef', partner:0, channel_id:'7b04c8e2', asset_id:null, offer_type:'funding',
+   status:'blocked', attempt:0, last_error:null, scheduled_for:'2026-07-29T11:00:00.000Z',
+   posted_at:null, external_post_id:null,
+   caption:'Bad credit? No problem. If you make less than $75,000 we can still get you funded this week.',
+   blocked_reasons:[
+     {code:'income-wealth-targeting-cue', rule_set:'claims', severity:'block',
+      message:"Copy that targets or implies the viewer's income or financial distress is prohibited in this vertical.",
+      citation:'Meta special ad category / ECOA'}],
+   screening:{state:'blocked', codes:['income-wealth-targeting-cue']},
+   created_at:'2026-07-28T17:26:52.000Z'},
+
+  {id:'46b1c8d5', partner:0, channel_id:'2d91f4a7', asset_id:null, offer_type:'credit_cards',
+   status:'blocked', attempt:0, last_error:null, scheduled_for:'2026-07-29T12:15:00.000Z',
+   posted_at:null, external_post_id:null,
+   caption:'The 0% window explained in ninety seconds — what it is for and what it is not.',
+   blocked_reasons:[
+     {code:'screen_error', rule_set:'engine',
+      message:'Compliance screening could not complete, so this is blocked. Try again; if it persists this is a platform fault, not your copy.',
+      detail:'Connection terminated unexpectedly'}],
+   screening:{state:'blocked', codes:['screen_error']},
+   created_at:'2026-07-29T07:58:36.000Z'},
+
+  /* ---- failed -------------------------------------------------------- */
+  {id:'e97240ba', partner:0, channel_id:'7b04c8e2', asset_id:'4e19b7c2', offer_type:'funding',
+   status:'failed', attempt:3, last_error:'channel rate limited',
+   scheduled_for:'2026-07-28T11:00:00.000Z', posted_at:null, external_post_id:null, blocked_reasons:[],
+   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
+   caption:'The four documents that decide how fast an application moves. None of them are a surprise.',
+   created_at:'2026-07-27T20:11:03.000Z'},
+
+  {id:'71fc0e48', partner:0, channel_id:'2d91f4a7', asset_id:null, offer_type:'credit_cards',
+   status:'failed', attempt:3, last_error:'no adapter registered for channel linkedin',
+   scheduled_for:'2026-07-29T08:30:00.000Z', posted_at:null, external_post_id:null, blocked_reasons:[],
+   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
+   caption:'A stack built on utilization, not on optimism. Here is the order we open in and why it matters.',
+   created_at:'2026-07-28T19:47:41.000Z'},
+
+  /* ---- posted -------------------------------------------------------- */
+  {id:'0b5ae913', partner:0, channel_id:'2d91f4a7', asset_id:'ba370e15', offer_type:'funding',
+   status:'posted', attempt:1, last_error:null, scheduled_for:'2026-07-29T08:30:00.000Z',
+   posted_at:'2026-07-29T08:30:12.000Z', external_post_id:'urn:li:share:7226104418337992704',
+   blocked_reasons:[], screening:{state:'needs_approval', codes:['human_approval_required_setting']},
+   caption:'Most owners come to us after the bank says no. The file that got declined is usually the same file that gets approved somewhere else — read differently.',
+   created_at:'2026-07-28T14:03:55.000Z'},
+
+  {id:'a3d8241f', partner:0, channel_id:'7b04c8e2', asset_id:'4e19b7c2', offer_type:'credit_cards',
+   status:'posted', attempt:1, last_error:null, scheduled_for:'2026-07-28T18:30:00.000Z',
+   posted_at:'2026-07-28T18:30:07.000Z', external_post_id:'18042117739284461',
+   blocked_reasons:[], screening:{state:'needs_approval', codes:['human_approval_required_setting']},
+   caption:'Utilization is the lever nobody wants to hear about. It is also the fastest one.',
+   created_at:'2026-07-27T16:22:31.000Z'},
+
+  {id:'6ec91b07', partner:0, channel_id:'2d91f4a7', asset_id:null, offer_type:'funding',
+   status:'posted', attempt:1, last_error:null, scheduled_for:'2026-07-27T08:30:00.000Z',
+   posted_at:'2026-07-27T08:30:09.000Z', external_post_id:'urn:li:share:7225379914712023040',
+   blocked_reasons:[], screening:{state:'needs_approval', codes:['human_approval_required_setting']},
+   caption:'What underwriters actually read first. It is not the revenue line.',
+   created_at:'2026-07-26T13:50:12.000Z'},
+
+  {id:'f4207ac6', partner:0, channel_id:'e51a3d90', asset_id:null, offer_type:'funding',
+   status:'posted', attempt:1, last_error:null, scheduled_for:'2026-07-25T16:00:00.000Z',
+   posted_at:'2026-07-25T16:00:04.000Z', external_post_id:'102884417553201_841903117524466',
+   blocked_reasons:[], screening:{state:'needs_approval', codes:['human_approval_required_setting']},
+   caption:'Friday: three things to have ready before the next quarter closes.',
+   created_at:'2026-07-24T18:39:27.000Z'},
+
+  /* ---- Meridian Card Collective -------------------------------------- */
+  {id:'cc1f60d8', partner:1, channel_id:'c3f8017d', asset_id:'0f5b91ac', offer_type:'credit_cards',
+   status:'queued', attempt:0, last_error:null, scheduled_for:'2026-07-29T13:00:00.000Z',
+   posted_at:null, external_post_id:null, blocked_reasons:[],
+   screening:{state:'passed', codes:[]},
+   caption:'A card stack is a sequence, not a shopping list. Start with the one that reports to all three.',
+   created_at:'2026-07-28T20:15:00.000Z'},
+
+  {id:'92ea7b31', partner:1, channel_id:'c3f8017d', asset_id:null, offer_type:'credit_repair',
+   status:'blocked', attempt:0, last_error:null, scheduled_for:null,
+   posted_at:null, external_post_id:null,
+   caption:'Pay the fee upfront to get started and we will clear the negative items off your report.',
+   blocked_reasons:[
+     {code:'advance-fee', rule_set:'croa', severity:'block',
+      message:'Charging or advertising a fee before credit-repair services are fully performed is prohibited.',
+      citation:'CROA 15 U.S.C. 1679b(b)'},
+     {code:'promise-to-remove-accurate-info', rule_set:'croa', severity:'block',
+      message:'Claiming to remove accurate or verifiable negative information is prohibited. Only inaccurate or unverifiable items may be disputed.',
+      citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+     {code:'croa-consumer-rights', rule_set:'disclosure', severity:'block',
+      message:'Credit-repair funnels must carry the "Consumer Credit File Rights Under State and Federal Law" disclosure, linked to the campaign before launch.',
+      citation:'CROA 15 U.S.C. 1679c(a)'}],
+   screening:{state:'blocked', codes:['advance-fee','promise-to-remove-accurate-info','croa-consumer-rights']},
+   created_at:'2026-07-28T20:41:33.000Z'}
+];
+
+/* ══ ACTION LOG — target_type = 'social_post' ════════════════════════════
+   Written BEFORE the platform call, every time. actor is always 'agent';
+   agent_id is null because publishDue's agentId parameter defaults to null and
+   nothing in the repo passes one. */
+var ACTION_LOG = [
+  {id:'5104ab2f', partner:0, post_id:'71fc0e48', channel:'linkedin', created_at:'2026-07-29T09:12:00.000Z',
+   executed_at:'2026-07-29T09:12:00.000Z', execute_error:'no adapter registered for channel linkedin', undone_at:null},
+  {id:'93cd7e60', partner:0, post_id:'71fc0e48', channel:'linkedin', created_at:'2026-07-29T09:07:00.000Z',
+   executed_at:'2026-07-29T09:07:00.000Z', execute_error:'no adapter registered for channel linkedin', undone_at:null},
+  {id:'0a2f83b1', partner:0, post_id:'71fc0e48', channel:'linkedin', created_at:'2026-07-29T09:02:00.000Z',
+   executed_at:'2026-07-29T09:02:00.000Z', execute_error:'no adapter registered for channel linkedin', undone_at:null},
+  {id:'6b48c105', partner:0, post_id:'0b5ae913', channel:'linkedin', created_at:'2026-07-29T08:30:11.000Z',
+   executed_at:'2026-07-29T08:30:12.000Z', execute_error:null, undone_at:null},
+  {id:'ff307d92', partner:0, post_id:'e97240ba', channel:'instagram', created_at:'2026-07-28T18:41:00.000Z',
+   executed_at:'2026-07-28T18:41:00.000Z', execute_error:'channel rate limited', undone_at:null},
+  {id:'21e6b0c4', partner:0, post_id:'e97240ba', channel:'instagram', created_at:'2026-07-28T18:36:00.000Z',
+   executed_at:'2026-07-28T18:36:00.000Z', execute_error:'channel rate limited', undone_at:null},
+  {id:'8c50f7de', partner:0, post_id:'e97240ba', channel:'instagram', created_at:'2026-07-28T18:31:00.000Z',
+   executed_at:'2026-07-28T18:31:00.000Z', execute_error:'channel rate limited', undone_at:null},
+  {id:'74a1de38', partner:0, post_id:'a3d8241f', channel:'instagram', created_at:'2026-07-28T18:30:06.000Z',
+   executed_at:'2026-07-28T18:30:07.000Z', execute_error:null, undone_at:null},
+  {id:'b0937fc5', partner:0, post_id:'3c7de095', channel:'instagram', created_at:'2026-07-30T11:00:03.000Z',
+   executed_at:'2026-07-30T11:00:03.000Z', execute_error:'channel rate limited', undone_at:null},
+  {id:'e2841ba9', partner:0, post_id:'6ec91b07', channel:'linkedin', created_at:'2026-07-27T08:30:08.000Z',
+   executed_at:'2026-07-27T08:30:09.000Z', execute_error:null, undone_at:null},
+  {id:'3d70c418', partner:0, post_id:'f4207ac6', channel:'facebook', created_at:'2026-07-25T16:00:03.000Z',
+   executed_at:'2026-07-25T16:00:04.000Z', execute_error:null, undone_at:null}
+];
+
+/* ══ PARTNER ONBOARDING TASKS ════════════════════════════════════════════
+   The unique index is (partner_id, task_key, connection_id, campaign_id) NULLS NOT
+   DISTINCT WHERE resolved_at IS NULL. A social_post_failed task carries neither a
+   connection_id nor a campaign_id, so a partner has AT MOST ONE open row for it —
+   no matter how many posts failed. A repeat open refreshes `detail` only; the
+   `title` keeps the channel named by the first failure. */
+var TASKS = [
+  {id:'ad4e0c76', partner:0, task_key:'social_post_failed', severity:'warning',
+   title:'A scheduled instagram post failed after 3 attempts',
+   detail:'no adapter registered for channel linkedin',
+   connection_id:null, campaign_id:null, resolved_at:null,
+   created_at:'2026-07-28T18:41:00.000Z', updated_at:'2026-07-29T09:12:00.000Z'}
+];
+
+/* ══ HELPERS ═════════════════════════════════════════════════════════════ */
+var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function pad(n){return (n<10?'0':'')+n;}
+function fmt(iso){
+  if(!iso) return '—';
+  var d=new Date(iso);
+  return MONTHS[d.getUTCMonth()]+' '+pad(d.getUTCDate())+' '+pad(d.getUTCHours())+':'+pad(d.getUTCMinutes())+'Z';
+}
+function fmtLong(iso){
+  if(!iso) return 'null';
+  var d=new Date(iso);
+  return MONTHS[d.getUTCMonth()]+' '+pad(d.getUTCDate())+', '+d.getUTCFullYear()+' '+
+         pad(d.getUTCHours())+':'+pad(d.getUTCMinutes())+':'+pad(d.getUTCSeconds())+' UTC';
+}
+function rel(iso){
+  if(!iso) return '';
+  var ms=new Date(iso)-NOW, a=Math.abs(ms), m=Math.round(a/60000);
+  var s = m<60 ? m+'m' : (m<1440 ? Math.round(m/60)+'h' : Math.round(m/1440)+'d');
+  return ms<0 ? s+' ago' : 'in '+s;
+}
+var STATUS_BADGE={draft:'b-gray',queued:'b-info',posting:'b-butter',posted:'b-ok',failed:'b-warn',blocked:'b-alert'};
+var STATE_BADGE={active:'b-ok',pending:'b-info',expired:'b-warn',revoked:'b-alert'};
+var SCREEN_BADGE={passed:'b-ok',needs_approval:'b-accent',blocked:'b-alert'};
+var RULESET_BADGE={croa:'b-alert',claims:'b-warn',disclosure:'b-info',platform:'b-gray',engine:'b-butter',approval:'b-accent'};
+function statusBadge(s){return '<span class="badge '+(STATUS_BADGE[s]||'b-gray')+'">'+esc(s)+'</span>';}
+
+/* ══ nextBestTime — ported verbatim from scheduler.mjs:174-191 ═══════════
+   Including the fact that it never reads channel.timezone. */
+function nextBestTime(channel, from){
+  from = from || NOW;
+  var times = channel && channel.best_times;
+  if(!times || typeof times !== 'object' || !Object.keys(times).length) return null;
+  var DAYS=['sun','mon','tue','wed','thu','fri','sat'];
+  for(var offset=0; offset<8; offset++){
+    var d=new Date(from.getTime()+offset*864e5);
+    var slots=times[DAYS[d.getUTCDay()]];
+    if(!Array.isArray(slots) || !slots.length) continue;
+    var sorted=slots.slice().sort();
+    for(var i=0;i<sorted.length;i++){
+      var parts=String(sorted[i]).split(':');
+      var h=Number(parts[0]), m=Number(parts[1]);
+      if(!isFinite(h)) continue;
+      var when=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),h,m||0));
+      if(when>from) return when.toISOString();
+    }
+  }
+  return null;
+}
+
+/* ══ previewScreen — the same decision tree as src/compliance/screen.mjs ══
+   A PREVIEW ONLY. The authoritative verdict is written server-side; this exists so
+   the composer does not send copy it can already tell will be refused. It applies
+   the same seeded patterns, the same platform-null scoping, the same
+   severity !== 'warn' hard-block rule and the same approval gates.
+   hasDisclosureAsset is false because schedule() never passes one. */
+var _rx={};
+function toRegex(p){ if(!_rx[p]) _rx[p]=new RegExp(p,'i'); return _rx[p]; }
+function appliesTo(scope, value){
+  var list = scope || [];
+  if(!list.length) return true;
+  return value !== null && list.indexOf(value) !== -1;
+}
+function previewScreen(caption, offerType, approveBeforeLaunch){
+  if(OFFER_TYPES.indexOf(offerType) === -1){
+    return {state:'blocked', reasons:[{code:'offer_type_missing', rule_set:'engine',
+      message:'offer_type must be one of funding, credit_cards, credit_repair; got '+JSON.stringify(offerType||null)+'.'}]};
+  }
+  var reasons=[], hay=String(caption||''), platform=null, hasDisclosureAsset=false;
+  RULES.forEach(function(rule){
+    if(!appliesTo(rule.offer_types, offerType)) return;
+    if(!appliesTo(rule.platforms, platform)) return;
+    if(rule.match_type === 'required'){
+      var inText = toRegex(rule.pattern).test(hay);
+      if(!inText && !hasDisclosureAsset) reasons.push(fromRule(rule));
+      return;
+    }
+    if(rule.rule_key === 'tiktok-credit-repair-prohibited') return;
+    var matched = rule.match_type === 'phrase'
+      ? hay.toLowerCase().indexOf(String(rule.pattern).toLowerCase()) !== -1
+      : toRegex(rule.pattern).test(hay);
+    if(matched) reasons.push(fromRule(rule));
+  });
+  var hard = reasons.filter(function(x){ return x.severity !== 'warn'; });
+  if(hard.length) return {state:'blocked', reasons:reasons};
+  if(offerType === 'credit_repair'){
+    return {state:'needs_approval', reasons:reasons.concat([{
+      code:'human_approval_required_credit_repair', rule_set:'approval',
+      message:'Credit-repair creative always requires human approval before launch. This gate cannot be turned off.'}])};
+  }
+  if(approveBeforeLaunch){
+    return {state:'needs_approval', reasons:reasons.concat([{
+      code:'human_approval_required_setting', rule_set:'approval',
+      message:'This partner has approve_before_launch enabled, so a human must approve before launch.'}])};
+  }
+  return {state:'passed', reasons:reasons};
+}
+function fromRule(rule){
+  return {code:rule.rule_key, rule_set:rule.rule_set, message:rule.message,
+          citation:rule.citation, severity:rule.severity};
+}
+
+/* ══ SCOPE ═══════════════════════════════════════════════════════════════ */
+var P = 0;                                   /* index into PARTNERS */
+var pane = 'queued';
+var fltChannel = '', fltOffer = '';
+var derivKey = 'channels';
+
+function partner(){ return PARTNERS[P]; }
+function channels(){ return SOCIAL_CHANNELS.filter(function(c){ return c.partner === P; }); }
+function chById(id){ return SOCIAL_CHANNELS.filter(function(c){ return c.id === id; })[0] || null; }
+function assets(){ return ASSETS.filter(function(a){ return a.partner === P; }); }
+function posts(){ return POSTS.filter(function(p){ return p.partner === P; }); }
+function byStatus(s){ return posts().filter(function(p){ return p.status === s; }); }
+function postById(id){ return POSTS.filter(function(p){ return p.id === id; })[0] || null; }
+function approveBeforeLaunch(){
+  var s = partner().settings;
+  return s ? s.approve_before_launch : true;   /* scheduler.mjs:61 — ?? true */
+}
+function logs(){ return ACTION_LOG.filter(function(l){ return l.partner === P; }); }
+function tasks(){ return TASKS.filter(function(t){ return t.partner === P; }); }
+
+/* queue sub-state, from real columns only */
+function queueState(p){
+  var c = chById(p.channel_id);
+  if(!p.scheduled_for) return {k:'no_time', label:'scheduled_for is NULL — never due', cls:'b-warn'};
+  if(c && c.connection_state !== 'active')
+    return {k:'skip', label:"skipped: channel_not_active ("+c.connection_state+")", cls:'b-alert'};
+  if(new Date(p.scheduled_for) <= NOW) return {k:'due', label:'due — publishDue would take it', cls:'b-ok'};
+  return {k:'wait', label:'not due yet', cls:'b-gray'};
+}
+
+/* ══ SS-00 · STATS + DERIVATION ══════════════════════════════════════════ */
+var DERIV = {};
+function renderStats(){
+  var chs = channels(), act = chs.filter(function(c){ return c.connection_state === 'active'; });
+  var q = byStatus('queued'), b = byStatus('blocked'), f = byStatus('failed'), po = byStatus('posted');
+  var due = q.filter(function(p){ return queueState(p).k === 'due'; });
+  var noTime = q.filter(function(p){ return queueState(p).k === 'no_time'; });
+  /* What the due query actually SELECTs: scheduled_for <= now(), nothing else.
+     A future-dated post on a dead channel is not selected and therefore not
+     skipped — it is simply not returned. */
+  var selected = q.filter(function(p){ return p.scheduled_for && new Date(p.scheduled_for) <= NOW; });
+  var skipDue = selected.filter(function(p){
+    var c = chById(p.channel_id); return !c || c.connection_state !== 'active'; });
+  var reasonCount = b.reduce(function(a,p){ return a + p.blocked_reasons.length; }, 0);
+  var openTasks = tasks().filter(function(t){ return !t.resolved_at; });
+
+  document.getElementById('kChannels').textContent = chs.length + ' / 8';
+  document.getElementById('kChannelsD').textContent = act.length + ' active · ' + (chs.length-act.length) + ' cannot publish';
+  document.getElementById('kQueued').textContent = q.length;
+  document.getElementById('kQueuedD').textContent = selected.length + ' due now · ' + skipDue.length + ' would be skipped';
+  document.getElementById('kBlocked').textContent = b.length;
+  document.getElementById('kBlockedD').textContent = reasonCount + ' reason' + (reasonCount===1?'':'s') + ' stored · terminal';
+  document.getElementById('kFailed').textContent = f.length;
+  document.getElementById('kFailedD').textContent = openTasks.length + ' open task' + (openTasks.length===1?'':'s') + ' · attempt = ' + MAX_ATTEMPTS;
+  document.getElementById('kPosted').textContent = po.length;
+  document.getElementById('kPostedD').textContent = 'no engagement data exists';
+
+  DERIV = {
+    channels:
+      '<b>count(social_channels WHERE partner_id = $1) = '+chs.length+'</b>; of those '+
+      'connection_state = \'active\' → '+act.length+'.<br>'+
+      'The 8 is not a count — it is the size of the CHECK set, so the tile reads "'+chs.length+' of the 8 permitted values".<br>'+
+      '<span class="src">social_channels_channel_ck · 049_social.sql:43-44</span>',
+    queued:
+      '<b>count(social_posts WHERE status = \'queued\') = '+q.length+'</b>.<br>'+
+      'publishDue\'s predicate is <b>scheduled_for &lt;= now()</b> with now = '+fmtLong(NOW_ISO)+
+      ' → <b>'+selected.length+'</b> row'+(selected.length===1?'':'s')+
+      ' selected, of which '+skipDue.length+(skipDue.length===1?' sits':' sit')+
+      ' on a channel whose connection_state ≠ active and '+(skipDue.length===1?'is':'are')+
+      ' skipped, leaving <b>'+due.length+'</b> it would actually take.<br>'+
+      noTime.length+' row'+(noTime.length===1?' has':'s have')+' scheduled_for = NULL, so <code>NULL &lt;= now()</code> is NULL and '+
+      (noTime.length===1?'it is':'they are')+' never due.<br>'+
+      'ORDER BY scheduled_for, LIMIT '+PUBLISH_LIMIT+' per invocation.<br>'+
+      '<span class="src">src/social/scheduler.mjs:92-107</span>',
+    blocked:
+      '<b>count(social_posts WHERE status = \'blocked\') = '+b.length+'</b>, carrying '+reasonCount+
+      ' entries across their blocked_reasons arrays (mean '+(b.length?(reasonCount/b.length).toFixed(1):'0')+' per post).<br>'+
+      'The CHECK forbids an empty array on a blocked row, so every one of these is actionable.<br>'+
+      'No re-screen path exists — this count only ever goes up.<br>'+
+      '<span class="src">social_posts_blocked_reason_ck · 049_social.sql:91-92 · scheduler.mjs:72-78</span>',
+    failed:
+      '<b>count(social_posts WHERE status = \'failed\') = '+f.length+'</b>. Every one has attempt = '+MAX_ATTEMPTS+
+      ', because giveUp is <code>attempt &gt;= MAX_ATTEMPTS</code> and MAX_ATTEMPTS is a hardcoded const.<br>'+
+      'Open partner_onboarding_tasks WHERE task_key = \'social_post_failed\' AND resolved_at IS NULL = <b>'+openTasks.length+'</b>'+
+      (openTasks.length === f.length ? '.' : ' — not '+f.length+', because the partial unique index dedupes on (partner_id, task_key, NULL, NULL).')+'<br>'+
+      '<span class="src">scheduler.mjs:16, 145, 156-164 · 046_ad_platforms.sql:716-719</span>',
+    posted:
+      '<b>count(social_posts WHERE status = \'posted\') = '+po.length+'</b>; social_posts_posted_ck guarantees every one has a posted_at.<br>'+
+      'Nothing further is derivable. There is no organic metrics table: ad_metrics_daily.ad_id is NOT NULL and FKs <code>ads</code>, '+
+      'and creative_usage_events has no social_post_id and only the event types generation | managed_spend.<br>'+
+      '<span class="src">049:93-94 · 046:432-467 · 050:79-119</span>'
+  };
+  document.getElementById('derivBody').innerHTML = DERIV[derivKey] || '—';
+}
+
+/* ══ SS-01 · CONNECTED CHANNELS ══════════════════════════════════════════ */
+function renderChannels(){
+  var chs = channels(), host = document.getElementById('chGrid');
+  document.getElementById('chCount').textContent = chs.length + ' connected';
+  if(!chs.length){
+    host.className='';
+    host.innerHTML = '<div class="empty">No <span class="mono">social_channels</span> rows for this partner. '+
+      'Nothing can be composed or queued until one exists — and there is no connect flow to create one.</div>';
+    return;
+  }
+  host.className='chgrid';
+  host.innerHTML = chs.map(function(c){
+    var next = nextBestTime(c);
+    var days = Object.keys(c.best_times || {});
+    var slotCount = days.reduce(function(a,d){ return a + (c.best_times[d]||[]).length; }, 0);
+    var consequence = c.connection_state === 'active'
+      ? 'Publishable. publishDue will pick up its due posts.'
+      : 'publishDue skips every post on this channel with <b>skipped: \'channel_not_active\'</b>. The posts stay <b>queued</b> and attempt is not incremented — they do not fail, they wait.';
+    var tokenNote = c.connection_state === 'active'
+      ? ''
+      : (c.has_access_token
+         ? 'Ciphertext is still stored, but the state is ' + c.connection_state + '.'
+         : 'No access token stored. social_channels_active_token_ck means this row can never be set active while that is true.');
+    return '<div class="chcard s-'+esc(c.connection_state)+'">'+
+      '<div class="chcard-hd">'+
+        '<span class="cn">'+esc(CHANNEL_LABEL[c.channel])+
+          '<span class="ch">'+esc(c.handle||'no handle')+'</span></span>'+
+        '<span class="spacer"></span>'+
+        '<span class="badge '+STATE_BADGE[c.connection_state]+'">'+esc(c.connection_state)+'</span>'+
+      '</div>'+
+      '<div class="chcard-bd">'+
+        '<div class="kv"><span class="k">channel</span><span class="v mono">'+esc(c.channel)+'</span></div>'+
+        '<div class="kv"><span class="k">account id</span><span class="v mono">'+esc(c.external_account_id)+'</span></div>'+
+        '<div class="kv"><span class="k">access token</span><span class="v">'+
+          '<span class="tick '+(c.has_access_token?'y':'n')+'">'+(c.has_access_token?'✓ present':'✗ absent')+'</span></span></div>'+
+        '<div class="kv"><span class="k">refresh token</span><span class="v">'+
+          '<span class="tick '+(c.has_refresh_token?'y':'n')+'">'+(c.has_refresh_token?'✓ present':'✗ absent')+'</span></span></div>'+
+        '<div class="kv"><span class="k">expires</span><span class="v mono">'+
+          (c.token_expires_at ? esc(fmt(c.token_expires_at))+' <span style="color:var(--gray2)">('+esc(rel(c.token_expires_at))+')</span>' : 'null')+'</span></div>'+
+        '<div class="kv"><span class="k">timezone</span><span class="v mono">'+esc(c.timezone)+'</span></div>'+
+        '<div class="kv"><span class="k">best_times</span><span class="v mono">'+
+          (slotCount ? slotCount+' slot'+(slotCount===1?'':'s')+' over '+days.length+' day'+(days.length===1?'':'s') : '{} — empty')+'</span></div>'+
+        '<div class="kv"><span class="k">next slot</span><span class="v mono">'+(next?esc(fmt(next)):'null')+'</span></div>'+
+        '<div class="kv"><span class="k">scopes</span><span class="v"><span class="scopes">'+
+          (c.scopes.length ? c.scopes.map(function(s){return '<span class="scope">'+esc(s)+'</span>';}).join('') : '<span class="scope">[]</span>')+
+          '</span></span></div>'+
+        (c.last_error ? '<div class="kv"><span class="k">last_error</span><span class="v err">'+esc(c.last_error)+'</span></div>' : '')+
+        '<div class="consq">'+consequence+(tokenNote?' '+esc(tokenNote):'')+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ══ SS-02 · NOT CONNECTED ═══════════════════════════════════════════════ */
+function renderGhosts(){
+  var have = channels().map(function(c){ return c.channel; });
+  var missing = CHANNELS.filter(function(c){ return have.indexOf(c) === -1; });
+  document.getElementById('ghCount').textContent = missing.length + ' of 8 unused';
+  var host = document.getElementById('ghGrid');
+  if(!missing.length){ host.className=''; host.innerHTML='<div class="empty">All eight permitted channels have a row.</div>'; return; }
+  host.className='ghost';
+  host.innerHTML = missing.map(function(c){
+    return '<div class="ghosttile"><div class="gn">'+esc(CHANNEL_LABEL[c])+'</div>'+
+           '<div class="gs">'+esc(c)+' · not connected</div></div>';
+  }).join('');
+}
+
+/* ══ SS-03 · COMPOSER ════════════════════════════════════════════════════ */
+function renderComposerOptions(){
+  var chs = channels();
+  var sel = document.getElementById('cChannel');
+  sel.innerHTML = chs.length
+    ? chs.map(function(c){
+        return '<option value="'+esc(c.id)+'">'+esc(c.channel)+' · '+esc(c.handle||c.external_account_id)+
+               ' ('+esc(c.connection_state)+')</option>'; }).join('')
+    : '<option value="">— no channels —</option>';
+
+  var a = document.getElementById('cAsset');
+  a.innerHTML = '<option value="">— none —</option>' + assets().map(function(x){
+    return '<option value="'+esc(x.id)+'">'+esc(x.id)+' · '+esc(x.kind)+' '+esc(x.format)+
+           ' · '+esc(x.compliance_state)+'</option>'; }).join('');
+}
+function composerState(){
+  return {
+    channelId: document.getElementById('cChannel').value,
+    offerType: document.getElementById('cOffer').value,
+    caption:   document.getElementById('cCaption').value,
+    assetId:   document.getElementById('cAsset').value,
+    when:      document.getElementById('cWhen').value
+  };
+}
+function renderVerdict(){
+  var s = composerState();
+  document.getElementById('capCount').textContent = s.caption.length.toLocaleString('en-US') + ' chars' +
+    (s.caption.length > 8000 ? ' · screened_text stores the first 8,000' : '');
+
+  var ch = chById(s.channelId);
+  var next = ch ? nextBestTime(ch) : null;
+  var hint = document.getElementById('cWhenHint');
+  if(!ch){ hint.textContent = 'no channel selected'; }
+  else if(s.when){ hint.textContent = 'override wins — schedule() writes scheduledFor as given'; }
+  else if(next){ hint.textContent = 'nextBestTime → ' + fmt(next) + ' (UTC, from best_times)'; }
+  else { hint.textContent = 'best_times is empty → scheduled_for would be NULL, and the post would never publish'; }
+
+  var v = previewScreen(s.caption, s.offerType, approveBeforeLaunch());
+  var badge = document.getElementById('vState');
+  badge.textContent = v.state;
+  badge.className = 'badge ' + (SCREEN_BADGE[v.state] || 'b-gray');
+  document.getElementById('vCount').textContent = v.reasons.length + ' reason' + (v.reasons.length===1?'':'s');
+
+  var what;
+  if(!s.caption.trim() && !s.offerType){
+    what = 'Type a caption and pick an offer type. Nothing is screened until both exist — an empty offer_type is itself a block.';
+  } else if(v.state === 'blocked'){
+    what = 'The row would be INSERTed and then set to <b>status = \'blocked\'</b> with these reasons stored on it. '+
+           'It stays in the review queue permanently — there is no re-screen, no override, no edit-and-resubmit.';
+  } else {
+    var w = s.when ? new Date(s.when + ':00Z').toISOString() : next;
+    what = 'The row would be set to <b>status = \'queued\'</b>' +
+           (w ? ' with scheduled_for = <b>'+esc(fmt(w))+'</b>.' : ' with scheduled_for = <b>NULL</b> — it would sit here forever.') +
+           (v.state === 'needs_approval'
+             ? ' <b>needs_approval does not hold it.</b> social_posts has no approval column; the screening row records that a human should look, and publishDue still picks the post up.'
+             : '');
+  }
+  document.getElementById('vWhat').innerHTML = what;
+
+  var host = document.getElementById('vReasons');
+  host.innerHTML = v.reasons.length ? v.reasons.map(reasonHtml).join('') :
+    '<div class="empty" style="padding:14px 0">No rule matched. '+
+    (v.state==='passed' ? 'This would queue as <span class="mono">passed</span>.' : '')+'</div>';
+}
+function reasonHtml(r){
+  var sev = r.severity === 'warn' ? 'warn'
+          : (r.rule_set === 'approval' ? 'approval'
+          : (r.severity === 'block' ? 'block' : 'none'));
+  return '<div class="rsn sev-'+sev+'">'+
+    '<div class="rh">'+
+      '<span class="rc">'+esc(r.code)+'</span>'+
+      '<span class="badge '+(RULESET_BADGE[r.rule_set]||'b-gray')+'">'+esc(r.rule_set)+'</span>'+
+      (r.severity ? '<span class="badge b-gray">'+esc(r.severity)+'</span>' : '') +
+    '</div>'+
+    '<div class="rm">'+esc(r.message)+'</div>'+
+    (r.detail ? '<div class="rcite">detail: '+esc(r.detail)+'</div>' : '')+
+    (r.citation ? '<div class="rcite">'+esc(r.citation)+'</div>' : '')+
+    (!r.severity && r.rule_set !== 'approval'
+      ? '<div class="rsevnote">no severity field → screen.mjs:200 counts it as a hard block</div>' : '')+
+  '</div>';
+}
+
+/* ══ SS-05..SS-09 · WORKBENCH ════════════════════════════════════════════ */
+var EYEBROWS = {
+  queued:'SS-05 <span class="sep">/</span> SCHEDULED QUEUE',
+  blocked:'SS-06 <span class="sep">/</span> REVIEW QUEUE — BLOCKED',
+  failed:'SS-07 <span class="sep">/</span> FAILED POSTS &amp; TASKS',
+  posted:'SS-08 <span class="sep">/</span> PUBLISHED',
+  audit:'SS-09 <span class="sep">/</span> PUBLISH AUDIT TRAIL'
+};
+function applyFilters(list){
+  return list.filter(function(p){
+    if(fltChannel && p.channel_id !== fltChannel) return false;
+    if(fltOffer && p.offer_type !== fltOffer) return false;
+    return true;
+  });
+}
+function renderFilterOptions(){
+  var sel = document.getElementById('fChannel');
+  sel.innerHTML = '<option value="">all</option>' + channels().map(function(c){
+    return '<option value="'+esc(c.id)+'"'+(fltChannel===c.id?' selected':'')+'>'+esc(c.channel)+'</option>'; }).join('');
+  document.getElementById('fOffer').value = fltOffer;
+}
+function capCell(p){
+  return '<div class="pcap trunc">'+esc(p.caption)+'</div>';
+}
+function chLabel(id){ var c = chById(id); return c ? c.channel : '—'; }
+
+function renderQueue(){
+  var rows = applyFilters(byStatus('queued')).sort(function(a,b){
+    if(!a.scheduled_for) return 1; if(!b.scheduled_for) return -1;
+    return new Date(a.scheduled_for) - new Date(b.scheduled_for);
+  });
+  var host = document.getElementById('tblQueued');
+  if(!rows.length){ host.innerHTML = '<div class="empty">Nothing queued for this partner and filter.</div>'; return; }
+  host.innerHTML = '<table class="grid"><thead><tr>'+
+    '<th>Channel</th><th>Caption</th><th>Offer type</th><th>scheduled_for</th>'+
+    '<th>Attempt</th><th>State</th></tr></thead><tbody>'+
+    rows.map(function(p){
+      var qs = queueState(p);
+      return '<tr data-row="'+esc(p.id)+'" tabindex="0" aria-expanded="false">'+
+        '<td><span class="rchev">▸</span><span class="mono">'+esc(chLabel(p.channel_id))+'</span></td>'+
+        '<td>'+capCell(p)+
+          (p.last_error?'<span class="substate">last_error: '+esc(p.last_error)+' — retried, not failed</span>':'')+'</td>'+
+        '<td class="mono">'+esc(p.offer_type)+'</td>'+
+        '<td class="mono">'+(p.scheduled_for?esc(fmt(p.scheduled_for))+'<span class="substate">'+esc(rel(p.scheduled_for))+'</span>':'<span style="color:#6E2A22">NULL</span>')+'</td>'+
+        '<td><span class="attn'+(p.attempt>0?' hot':'')+'">'+p.attempt+'</span><span class="substate">of '+MAX_ATTEMPTS+'</span></td>'+
+        '<td><span class="badge '+qs.cls+'">'+esc(qs.k.replace('_',' '))+'</span><span class="substate">'+esc(qs.label)+'</span></td>'+
+      '</tr>' + detailRow(p, 6);
+    }).join('') + '</tbody></table>';
+  wireRows(host);
+}
+
+function renderBlocked(){
+  var rows = applyFilters(byStatus('blocked')).sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
+  var host = document.getElementById('tblBlocked');
+  if(!rows.length){ host.innerHTML = '<div class="empty">Nothing blocked for this partner and filter.</div>'; return; }
+  host.innerHTML = '<table class="grid"><thead><tr>'+
+    '<th>Channel</th><th>Caption</th><th>Offer type</th><th>Rule sets</th><th>Reasons</th><th>Created</th>'+
+    '</tr></thead><tbody>'+
+    rows.map(function(p){
+      var sets = {};
+      p.blocked_reasons.forEach(function(r){ sets[r.rule_set]=1; });
+      return '<tr data-row="'+esc(p.id)+'" tabindex="0" aria-expanded="false">'+
+        '<td><span class="rchev">▸</span><span class="mono">'+esc(chLabel(p.channel_id))+'</span></td>'+
+        '<td>'+capCell(p)+'</td>'+
+        '<td class="mono">'+esc(p.offer_type)+'</td>'+
+        '<td>'+Object.keys(sets).map(function(s){
+          return '<span class="badge '+(RULESET_BADGE[s]||'b-gray')+'" style="margin-right:4px">'+esc(s)+'</span>'; }).join('')+'</td>'+
+        '<td><span class="attn hot">'+p.blocked_reasons.length+'</span></td>'+
+        '<td class="mono">'+esc(fmt(p.created_at))+'</td>'+
+      '</tr>' + reasonDetailRow(p, 6);
+    }).join('') + '</tbody></table>';
+  wireRows(host);
+}
+
+function renderFailed(){
+  var rows = applyFilters(byStatus('failed')).sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
+  var host = document.getElementById('tblFailed');
+  if(!rows.length){
+    host.innerHTML = '<div class="empty">Nothing failed for this partner and filter.</div>';
+  } else {
+    host.innerHTML = '<table class="grid"><thead><tr>'+
+      '<th>Channel</th><th>Caption</th><th>Attempt</th><th>last_error</th><th>scheduled_for</th>'+
+      '</tr></thead><tbody>'+
+      rows.map(function(p){
+        return '<tr data-row="'+esc(p.id)+'" tabindex="0" aria-expanded="false">'+
+          '<td><span class="rchev">▸</span><span class="mono">'+esc(chLabel(p.channel_id))+'</span></td>'+
+          '<td>'+capCell(p)+'</td>'+
+          '<td><span class="attn hot">'+p.attempt+'</span><span class="substate">gave up at '+MAX_ATTEMPTS+'</span></td>'+
+          '<td><span class="err">'+esc(p.last_error)+'</span><span class="substate">truncated to 1,000 chars on write</span></td>'+
+          '<td class="mono">'+(p.scheduled_for?esc(fmt(p.scheduled_for)):'NULL')+'</td>'+
+        '</tr>' + detailRow(p, 5);
+      }).join('') + '</tbody></table>';
+    wireRows(host);
+  }
+
+  var open = tasks().filter(function(t){ return !t.resolved_at && t.task_key === 'social_post_failed'; });
+  var strip = document.getElementById('taskStrip');
+  if(!open.length){
+    strip.innerHTML = rows.length
+      ? '<div class="cap">'+
+        'No open <span class="mono">social_post_failed</span> task.</div>'
+      : '';
+    return;
+  }
+  strip.innerHTML = open.map(function(t){
+    var mismatch = rows.length > 1;
+    return '<div class="task">'+
+      '<div class="tk">partner_onboarding_tasks · task_key '+esc(t.task_key)+' · severity '+esc(t.severity)+'</div>'+
+      '<div class="tt" style="margin-top:5px">'+esc(t.title)+'</div>'+
+      '<div class="td">detail: '+esc(t.detail)+'</div>'+
+      '<div class="td" style="opacity:.85">opened '+esc(fmtLong(t.created_at))+' · refreshed '+esc(fmtLong(t.updated_at))+
+        ' · resolved_at '+(t.resolved_at?esc(fmtLong(t.resolved_at)):'null')+'</div>'+
+      '<div class="td" style="opacity:.85;border-top:1px dashed var(--warn);padding-top:8px;margin-top:9px">'+
+        rows.length+' failed post'+(rows.length===1?'':'s')+', <b>one</b> task row. The partial unique index is '+
+        '(partner_id, task_key, connection_id, campaign_id) NULLS NOT DISTINCT WHERE resolved_at IS NULL, and a '+
+        'social_post_failed task carries neither id — so every failure after the first is an ON CONFLICT DO UPDATE '+
+        'that refreshes <b>detail</b> only.'+
+        (mismatch ? ' That is why the title still names <b>instagram</b> while the detail is the <b>linkedin</b> error: the title is never updated.' : '')+
+        ' There is also no social_channel_id column on the table, so this task cannot be linked back to either post.'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function renderPosted(){
+  var rows = applyFilters(byStatus('posted')).sort(function(a,b){ return new Date(b.posted_at)-new Date(a.posted_at); });
+  var host = document.getElementById('tblPosted');
+  if(!rows.length){ host.innerHTML = '<div class="empty">Nothing published for this partner and filter.</div>'; return; }
+  host.innerHTML = '<table class="grid"><thead><tr>'+
+    '<th>Channel</th><th>Caption</th><th>Offer type</th><th>posted_at</th><th>external_post_id</th>'+
+    '</tr></thead><tbody>'+
+    rows.map(function(p){
+      return '<tr data-row="'+esc(p.id)+'" tabindex="0" aria-expanded="false">'+
+        '<td><span class="rchev">▸</span><span class="mono">'+esc(chLabel(p.channel_id))+'</span></td>'+
+        '<td>'+capCell(p)+'</td>'+
+        '<td class="mono">'+esc(p.offer_type)+'</td>'+
+        '<td class="mono">'+esc(fmt(p.posted_at))+'<span class="substate">'+esc(rel(p.posted_at))+'</span></td>'+
+        '<td class="mono" style="word-break:break-all;font-size:11px">'+esc(p.external_post_id)+'</td>'+
+      '</tr>' + detailRow(p, 5);
+    }).join('') + '</tbody></table>';
+  wireRows(host);
+}
+
+/* The same filter the audit table uses, so the tab badge cannot disagree with the
+   rows underneath it. */
+function auditRows(){
+  return logs().filter(function(l){
+    if(fltChannel){ var c = chById(fltChannel); if(!c || c.channel !== l.channel) return false; }
+    if(fltOffer){ var p = postById(l.post_id); if(!p || p.offer_type !== fltOffer) return false; }
+    return true;
+  });
+}
+function renderAudit(){
+  var rows = auditRows().sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
+  var host = document.getElementById('tblAudit');
+  if(!rows.length){ host.innerHTML = '<div class="empty">No action_log rows with target_type = \'social_post\' for this filter.</div>'; return; }
+  host.innerHTML = '<table class="grid"><thead><tr>'+
+    '<th>created_at</th><th>rule_key</th><th>actor</th><th>reason</th><th>before → after</th>'+
+    '<th>executed_at</th><th>execute_error</th><th>revertible</th></tr></thead><tbody>'+
+    rows.map(function(l){
+      var revertible = !l.undone_at;   /* undo_payload is always written for social_publish */
+      return '<tr>'+
+        '<td class="mono">'+esc(fmt(l.created_at))+'</td>'+
+        '<td class="mono">social_publish</td>'+
+        '<td><span class="badge b-accent">agent</span><span class="substate">agent_id null</span></td>'+
+        '<td>scheduled post to <span class="mono">'+esc(l.channel)+'</span>'+
+          '<span class="substate">target_id '+esc(l.post_id)+'</span></td>'+
+        '<td class="mono" style="font-size:11px">{status:queued}<br>→ {status:posted}</td>'+
+        '<td class="mono">'+(l.executed_at?esc(fmt(l.executed_at)):'<span style="color:#6E2A22">null</span>')+'</td>'+
+        '<td>'+(l.execute_error?'<span class="err">'+esc(l.execute_error)+'</span>':'<span style="color:var(--gray2)">—</span>')+'</td>'+
+        '<td><span class="badge '+(revertible?'b-info':'b-gray')+'">'+(revertible?'true':'false')+'</span></td>'+
+      '</tr>';
+    }).join('') + '</tbody></table>';
+}
+
+/* expanding row bodies ---------------------------------------------------- */
+function detailRow(p, span){
+  var c = chById(p.channel_id), a = p.asset_id ? ASSETS.filter(function(x){return x.id===p.asset_id;})[0] : null;
+  return '<tr class="det" hidden data-det="'+esc(p.id)+'"><td colspan="'+span+'"><div class="detbox">'+
+    '<div class="detcol"><div class="dt">post</div>'+
+      kvline('id', p.id)+kvline('status', p.status)+kvline('offer_type', p.offer_type)+
+      kvline('attempt', p.attempt)+kvline('created_at', fmtLong(p.created_at))+'</div>'+
+    '<div class="detcol"><div class="dt">channel</div>'+
+      kvline('channel_id', p.channel_id)+kvline('channel', c?c.channel:'—')+
+      kvline('connection_state', c?c.connection_state:'—')+kvline('timezone', c?c.timezone:'—')+'</div>'+
+    '<div class="detcol"><div class="dt">asset</div>'+
+      (a ? kvline('asset_id', a.id)+kvline('kind / format', a.kind+' '+a.format)+
+           kvline('compliance_state', a.compliance_state)+kvline('ai_generated', String(a.ai_generated))+
+           kvline('synthetic_performer', String(a.synthetic_performer))
+         : '<div class="jsonline">asset_id: null — a caption-only post</div>')+'</div>'+
+    '<div class="detcol" style="flex:2;min-width:240px"><div class="dt">caption</div>'+
+      '<div class="pcap">'+esc(p.caption)+'</div>'+
+      '<div style="margin-top:9px"><button class="btn sm mono" data-open="'+esc(p.id)+'">Open full record</button></div></div>'+
+  '</div></td></tr>';
+}
+function reasonDetailRow(p, span){
+  return '<tr class="det" hidden data-det="'+esc(p.id)+'"><td colspan="'+span+'"><div class="detbox" style="flex-direction:column">'+
+    '<div style="width:100%"><div class="dt" style="font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:8px">blocked_reasons — stored on the row</div>'+
+    p.blocked_reasons.map(reasonHtml).join('')+
+    '<div style="margin-top:10px"><button class="btn sm mono" data-open="'+esc(p.id)+'">Open full record</button></div></div>'+
+  '</div></td></tr>';
+}
+function kvline(k,v){ return '<div class="jsonline"><b>'+esc(k)+':</b> '+esc(v)+'</div>'; }
+
+function wireRows(host){
+  host.querySelectorAll('tr[data-row]').forEach(function(tr){
+    function toggle(){
+      var open = tr.getAttribute('aria-expanded') === 'true';
+      tr.setAttribute('aria-expanded', open ? 'false' : 'true');
+      var det = host.querySelector('tr.det[data-det="'+tr.dataset.row+'"]');
+      if(det) det.hidden = open;
+    }
+    tr.addEventListener('click', toggle);
+    tr.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); }
+    });
+  });
+  host.querySelectorAll('[data-open]').forEach(function(b){
+    b.addEventListener('click', function(e){ e.stopPropagation(); openDrawer(b.dataset.open); });
+  });
+}
+
+/* ══ DRAWER ══════════════════════════════════════════════════════════════ */
+function openDrawer(id){
+  var p = postById(id); if(!p) return;
+  var c = chById(p.channel_id);
+  var a = p.asset_id ? ASSETS.filter(function(x){return x.id===p.asset_id;})[0] : null;
+  var rows = logs().filter(function(l){ return l.post_id === p.id; })
+                   .sort(function(x,y){ return new Date(y.created_at)-new Date(x.created_at); });
+  var qs = p.status === 'queued' ? queueState(p) : null;
+
+  var html = '<div class="dsec">social_posts</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:11px">'+statusBadge(p.status)+
+      '<span class="badge b-gray">'+esc(p.offer_type)+'</span>'+
+      '<span class="badge b-gray">'+esc(c?c.channel:'—')+'</span>'+
+      (qs?'<span class="badge '+qs.cls+'">'+esc(qs.k.replace('_',' '))+'</span>':'')+'</div>'+
+    kvline('id', p.id)+
+    kvline('channel_id', p.channel_id)+
+    kvline('asset_id', p.asset_id || 'null')+
+    kvline('scheduled_for', p.scheduled_for ? fmtLong(p.scheduled_for) : 'null')+
+    kvline('posted_at', p.posted_at ? fmtLong(p.posted_at) : 'null')+
+    kvline('external_post_id', p.external_post_id || 'null')+
+    kvline('attempt', p.attempt + ' of ' + MAX_ATTEMPTS + ' (MAX_ATTEMPTS, a const)')+
+    kvline('last_error', p.last_error || 'null')+
+    kvline('created_at', fmtLong(p.created_at))+
+
+    '<div class="dsec">caption</div>'+
+    '<div class="pcap">'+esc(p.caption)+'</div>'+
+    '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:9.5px;color:var(--gray2)">'+
+      p.caption.length.toLocaleString('en-US')+' chars · compliance_screenings.screened_text keeps the first 8,000</div>'+
+
+    '<div class="dsec">compliance_screenings</div>'+
+    '<div style="margin-bottom:9px"><span class="badge '+(SCREEN_BADGE[p.screening.state]||'b-gray')+'">'+esc(p.screening.state)+'</span></div>'+
+    kvline('subject_type', 'social_post')+
+    kvline('subject_id', p.id)+
+    kvline('platform', 'null — organic is not an ad placement (scheduler.mjs:59)')+
+    kvline('rules_version', 'null — the column exists (047:130) but schedule() never sets it')+
+    (p.screening.codes.length
+      ? '<div class="jsonline"><b>reasons[].code:</b> '+esc(p.screening.codes.join(', '))+'</div>'
+      : '<div class="jsonline"><b>reasons:</b> [] — state is \'passed\', which is the only state allowed an empty array</div>')+
+    '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:9.5px;color:var(--gray2)">append-only · trg_compliance_screenings_no_delete</div>'+
+
+    (p.status === 'blocked'
+      ? '<div class="dsec">blocked_reasons</div>' + p.blocked_reasons.map(reasonHtml).join('')
+      : '')+
+
+    (a ? '<div class="dsec">creative_assets</div>'+
+         kvline('asset_id', a.id)+kvline('kind', a.kind)+kvline('format', a.format)+
+         kvline('compliance_state', a.compliance_state)+
+         kvline('ai_generated', String(a.ai_generated))+
+         kvline('synthetic_performer', String(a.synthetic_performer))+
+         (a.duration_sec ? kvline('duration_sec', a.duration_sec) : '')+
+         '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:9.5px;color:var(--gray2)">storage_key is redacted out of every API response</div>'
+       : '')+
+
+    '<div class="dsec">action_log — target_type social_post</div>'+
+    (rows.length ? rows.map(function(l){
+      return '<div class="jsonline">'+
+        '<b>'+esc(fmtLong(l.created_at))+'</b><br>'+
+        'rule_key: social_publish · actor: agent · agent_id: null<br>'+
+        'reason: scheduled post to '+esc(l.channel)+'<br>'+
+        'before {status:queued} → after {status:posted}<br>'+
+        'executed_at: '+(l.executed_at?esc(fmtLong(l.executed_at)):'null')+'<br>'+
+        'execute_error: '+(l.execute_error?'<span style="color:#6E2A22">'+esc(l.execute_error)+'</span>':'null')+'<br>'+
+        'revertible: '+(!l.undone_at)+
+      '</div>';
+    }).join('') : '<div class="jsonline">No action_log row. Nothing tried to publish this post yet.</div>')+
+
+    (p.status === 'failed'
+      ? '<div class="dsec">partner_onboarding_tasks</div>'+
+        tasks().filter(function(t){ return !t.resolved_at && t.task_key==='social_post_failed'; }).map(function(t){
+          return '<div class="jsonline"><b>'+esc(t.task_key)+'</b> · severity '+esc(t.severity)+'<br>'+
+            esc(t.title)+'<br>detail: '+esc(t.detail)+'<br>'+
+            'This is the partner\'s single open row for the key — it is not this post\'s task, because the table has '+
+            'no social_post_id and no social_channel_id.</div>';
+        }).join('')
+      : '');
+
+  document.getElementById('drawerBody').innerHTML = html;
+  document.getElementById('drawer').classList.add('on');
+  document.getElementById('drawer').setAttribute('aria-hidden','false');
+  document.getElementById('scrim').classList.add('on');
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('on');
+  document.getElementById('drawer').setAttribute('aria-hidden','true');
+  document.getElementById('scrim').classList.remove('on');
+}
+
+/* ══ SS-10 · POSTING WINDOW ══════════════════════════════════════════════ */
+var DAY_ORDER = ['sun','mon','tue','wed','thu','fri','sat'];
+function renderBestTimes(){
+  var sel = document.getElementById('btChannel'), chs = channels();
+  if(sel.innerHTML === '' || !chs.filter(function(c){return c.id===sel.value;}).length){
+    sel.innerHTML = chs.length ? chs.map(function(c){
+      return '<option value="'+esc(c.id)+'">'+esc(c.channel)+'</option>'; }).join('')
+      : '<option value="">— none —</option>';
+  }
+  var c = chById(sel.value) || chs[0];
+  var host = document.getElementById('btBody');
+  if(!c){ host.innerHTML = '<div class="empty">No channels for this partner.</div>'; return; }
+  var next = nextBestTime(c);
+  var nextSlot = next ? pad(new Date(next).getUTCHours())+':'+pad(new Date(next).getUTCMinutes()) : null;
+  var nextDay  = next ? DAY_ORDER[new Date(next).getUTCDay()] : null;
+
+  var body = '<div class="kv" style="margin-bottom:4px"><span class="k">timezone</span>'+
+             '<span class="v mono">'+esc(c.timezone)+' <span style="color:var(--gray2)">(stored, not used by the scheduler)</span></span></div>'+
+             '<div class="kv" style="margin-bottom:11px"><span class="k">next slot</span><span class="v mono">'+
+             (next ? esc(fmtLong(next))+' <span style="color:var(--gray2)">('+esc(rel(next))+')</span>' : '<span style="color:#6E2A22">null — nothing will ever be scheduled</span>')+
+             '</span></div>';
+
+  var days = Object.keys(c.best_times || {});
+  if(!days.length){
+    body += '<div class="notice warn" style="margin-top:0"><span class="ni">⚠</span><span>'+
+      '<b>best_times is <code>{}</code>.</b> nextBestTime returns null, so every post composed for this channel gets '+
+      '<code>scheduled_for = NULL</code> and is never picked up by publishDue. It is queued and invisible to the '+
+      'due query at the same time. Somebody has to set a time.</span></div>';
+  } else {
+    body += '<div class="btgrid">' + DAY_ORDER.map(function(d){
+      var slots = (c.best_times[d] || []).slice().sort();
+      return '<div class="btrow"><span class="bd">'+esc(d)+'</span><span class="bs">'+
+        (slots.length ? slots.map(function(s){
+          var isNext = (d === nextDay && s === nextSlot);
+          return '<span class="slot'+(isNext?' next':'')+'">'+esc(s)+(isNext?' ◂ next':'')+'</span>'; }).join('')
+          : '<span class="none">no slots</span>')+
+      '</span></div>';
+    }).join('') + '</div>';
+  }
+  host.innerHTML = body;
+}
+
+/* ══ SS-11 · APPROVAL SETTING ════════════════════════════════════════════ */
+function renderApproval(){
+  var s = partner().settings, on = approveBeforeLaunch();
+  var crRows = posts().filter(function(p){ return p.offer_type === 'credit_repair'; });
+  var host = document.getElementById('approvalBody');
+  host.innerHTML =
+    '<div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<span class="sw'+(on?' on':'')+'" role="img" aria-label="approve_before_launch is '+(on?'on':'off')+'"></span>'+
+      '<span style="font-size:12.5px;font-weight:600">approve_before_launch = <span class="mono">'+(on?'true':'false')+'</span></span>'+
+      '<span class="badge '+(s?'b-gray':'b-warn')+'">'+(s?'stored row':'no row — falls back to true')+'</span>'+
+    '</div>'+
+    (s ? '<div class="kv"><span class="k">weekly target</span><span class="v mono">'+s.weekly_asset_target+' assets (CHECK &gt;= 15)</span></div>'+
+         '<div class="kv"><span class="k">max jobs</span><span class="v mono">'+s.max_concurrent_jobs+' concurrent (CHECK 1–20)</span></div>'+
+         '<div class="kv" style="margin-bottom:10px"><span class="k">autopilot</span><span class="v mono">'+
+           (s.autopilot_enabled?'enabled':'disabled')+' · launch '+(s.launch_enabled?'enabled':'disabled')+
+           ' <span style="color:var(--gray2)">(paid side — no effect on organic)</span></span></div>'
+       : '<div class="kv" style="margin-bottom:10px"><span class="k">row</span><span class="v mono">none — scheduler.mjs:61 reads '+
+         '<code>settings?.approve_before_launch ?? true</code></span></div>')+
+    '<div class="notice'+(on?'':' warn')+'" style="margin-top:4px"><span class="ni">'+(on?'◉':'⚠')+'</span><span>'+
+      (on
+        ? '<b>Every organic post for this partner screens as <code>needs_approval</code></b> — and is <b>still queued and still published</b>. '+
+          '<code>social_posts</code> has no approval column, and <code>schedule()</code> sets anything that is not blocked to '+
+          '<code>queued</code>. The screening row records that a human should look; nothing waits for one. Saying "held until approved" '+
+          'here would be false.'
+        : '<b>Organic posts screen as <code>passed</code></b> when no rule matches, so they queue with an empty reason list. '+
+          'The switch changes the screening state only — it never changes whether the post publishes, because nothing gates on it.')+
+    '</span></div>'+
+    '<div class="notice bad" style="margin-top:10px"><span class="ni">◆</span><span>'+
+      '<b>credit_repair ignores this switch entirely.</b> screen.mjs returns <code>needs_approval</code> for every '+
+      'credit_repair subject before the setting is consulted, and that gate cannot be turned off. '+
+      'This partner has <b>'+crRows.length+'</b> credit_repair post'+(crRows.length===1?'':'s')+'.'+
+      '<br><br>Separately: the seeded <code>croa-consumer-rights</code> rule is <code>match_type = \'required\'</code>, and '+
+      '<code>schedule()</code> never passes <code>hasDisclosureAsset</code> — so a credit_repair caption that does not itself '+
+      'contain the literal "Consumer Credit File Rights Under State and Federal Law" is <b>blocked</b>, not merely held.'+
+    '</span></div>';
+}
+
+/* ══ RENDER + WIRE ═══════════════════════════════════════════════════════ */
+function renderCounts(){
+  document.getElementById('nQueued').textContent  = applyFilters(byStatus('queued')).length;
+  document.getElementById('nBlocked').textContent = applyFilters(byStatus('blocked')).length;
+  document.getElementById('nFailed').textContent  = applyFilters(byStatus('failed')).length;
+  document.getElementById('nPosted').textContent  = applyFilters(byStatus('posted')).length;
+  document.getElementById('nAudit').textContent   = auditRows().length;
+  var all = applyFilters(posts()).length;
+  document.getElementById('fCount').textContent = all + ' of ' + posts().length + ' posts match';
+}
+function renderPanes(){
+  renderQueue(); renderBlocked(); renderFailed(); renderPosted(); renderAudit(); renderCounts();
+  document.getElementById('wbEyebrow').innerHTML = EYEBROWS[pane];
+}
+function renderAll(){
+  renderStats(); renderChannels(); renderGhosts();
+  renderComposerOptions(); renderVerdict();
+  renderFilterOptions(); renderPanes();
+  renderBestTimes(); renderApproval();
+}
+
+/* stat tiles → derivation strip */
+document.querySelectorAll('button.stat').forEach(function(b){
+  b.addEventListener('click', function(){
+    derivKey = b.dataset.k;
+    document.querySelectorAll('button.stat').forEach(function(x){
+      x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+    document.getElementById('derivBody').innerHTML = DERIV[derivKey] || '—';
+  });
+});
+
+/* tab rail */
+document.querySelectorAll('.rtab').forEach(function(t){
+  t.addEventListener('click', function(){
+    pane = t.dataset.pane;
+    document.querySelectorAll('.rtab').forEach(function(x){
+      var on = x === t;
+      x.classList.toggle('on', on);
+      x.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    document.querySelectorAll('.pane').forEach(function(p){
+      p.classList.toggle('on', p.id === 'pane-' + pane); });
+    document.getElementById('wbEyebrow').innerHTML = EYEBROWS[pane];
+  });
+});
+
+/* filters */
+document.getElementById('fChannel').addEventListener('change', function(){
+  fltChannel = this.value; renderPanes(); });
+document.getElementById('fOffer').addEventListener('change', function(){
+  fltOffer = this.value; renderPanes(); });
+
+/* partner scope */
+(function(){
+  var sel = document.getElementById('partnerSel');
+  sel.innerHTML = PARTNERS.map(function(p,i){
+    return '<option value="'+i+'">'+esc(p.name)+' · '+esc(p.status)+'</option>'; }).join('') +
+    '<option value="-1" disabled>— all partners: 400 partner_id_required —</option>';
+  sel.addEventListener('change', function(){
+    var v = parseInt(sel.value,10);
+    if(v < 0){ sel.value = String(P); return; }
+    P = v; fltChannel = ''; fltOffer = '';
+    document.getElementById('btChannel').innerHTML = '';
+    closeDrawer();
+    renderAll();
+  });
+})();
+
+/* composer */
+['cChannel','cOffer','cCaption','cAsset','cWhen'].forEach(function(id){
+  var el = document.getElementById(id);
+  el.addEventListener('input', renderVerdict);
+  el.addEventListener('change', renderVerdict);
+});
+document.getElementById('runScreen').addEventListener('click', function(){
+  renderVerdict();
+  document.getElementById('vState').animate(
+    [{opacity:.25},{opacity:1}], {duration:260, easing:'ease-out'});
+});
+document.getElementById('clearComposer').addEventListener('click', function(){
+  document.getElementById('cCaption').value = '';
+  document.getElementById('cOffer').value = '';
+  document.getElementById('cAsset').value = '';
+  document.getElementById('cWhen').value = '';
+  renderVerdict();
+});
+document.getElementById('composeTop').addEventListener('click', function(){
+  document.getElementById('composer').scrollIntoView({behavior:'smooth', block:'center'});
+  document.getElementById('cCaption').focus();
+});
+document.getElementById('btChannel').addEventListener('change', renderBestTimes);
+
+/* drawer */
+document.getElementById('scrim').addEventListener('click', closeDrawer);
+document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDrawer(); });
+
+/* ══ BOOT ════════════════════════════════════════════════════════════════ */
+document.getElementById('nowTxt').textContent = 'now = ' + fmt(NOW_ISO);
+document.getElementById('cCaption').value =
+  'Working capital for owners who need materials before the draw clears. Every application is underwritten individually.';
+document.getElementById('cOffer').value = 'funding';
+renderAll();
+</script>
+</body>
+</html>
