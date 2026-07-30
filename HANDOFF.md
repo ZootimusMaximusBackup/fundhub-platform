@@ -7,29 +7,36 @@ what is finished and what only looks finished.
 >
 > An independent seven-lens audit was run against this branch after the build queue was
 > declared finished. It found **53 defects, four of them blocking**, concentrated exactly
-> where the unit tests fake out the real seams. The document below was written BEFORE that
-> audit and several of its claims are wrong; the corrections are recorded in
-> `AUDIT-FINDINGS.md` and inline below. In particular:
+> where the unit tests fake out the real seams — the Netlify adapter, the schema/code
+> boundary, and the screen/DOM boundary.
 >
-> - **Invoice writes are dead.** `031_invoices.sql` renamed three columns and
->   `src/invoices/index.mjs` — the only writer — was never updated. Every `createInvoice()`
->   raises SQLSTATE 42703, killing the F-07 and DS-02 workflows *after* the client has been
->   emailed. Their tests pass against in-memory fakes that still model the old columns.
-> - **Every inbound webhook 500s on Netlify.** `api/webhooks/[provider].mjs` iterates `req`
->   as a stream; the Netlify adapter passes a plain object. All six integrations are dead on
->   the deploy target.
-> - **`src/partners/scope.mjs` is imported by zero production modules.** The tenancy boundary
->   is written and tested but wired into nothing. The claim below that it is "verified against
->   a real Postgres" is false — the mutation test proved the tests test the module, not that
->   anything calls it.
-> - **`/api/webhooks/lendflow` 404s**, so the entire `round.*` event family has no producer and
->   eight workflows have no trigger.
-> - **Nothing transmits.** Messages are written `status='queued'` and no code ever sends them.
+> **All four blocking defects and every high finding are now fixed** (see the git log from
+> `Independent audit: 53 findings` onward). What is worth carrying forward is not the list
+> but the shape:
 >
-> One blocking defect was FIXED before this was written: `/api/dashboard/*` served the full
-> client book to anonymous callers because the gate returned "open" whenever `DASHBOARD_SECRET`
-> was unset and `NODE_ENV` was not `"production"` — which is exactly the deployed configuration.
-> It now fails closed. **Do not set `DATABASE_URL` on a deploy built before commit `HEAD`.**
+> - **A fake that models the schema you wish you had cannot fail when the schema moves.**
+>   `031_invoices.sql` renamed three columns and the only writer of the table was never
+>   updated. Every `createInvoice()` raised SQLSTATE 42703 against Postgres while the unit
+>   tests stayed green, because they ran against an in-memory stub still modelling the old
+>   names. `*.pg.test.mjs` files now cover every money path against a real database.
+> - **A structural check can pass over a half-dead feature.** `src/adapters/lendflow.mjs`
+>   was 440 lines, fully tested, documented as live in `docs/diagrams`, and never registered
+>   in the router — so `/api/webhooks/lendflow` 404'd and the whole `round.*` event family
+>   had no producer. `npm run diagrams:check` reported "up to date" throughout, because it
+>   reads the adapters directory rather than the router.
+> - **"Absent config" must never mean "no gate".** `/api/dashboard/*` served the entire
+>   client book to anonymous callers because the gate returned open whenever
+>   `DASHBOARD_SECRET` was unset and `NODE_ENV` was not `"production"` — the exact deployed
+>   configuration. It was masked only by there being no production database.
+> - **Banner tone and "no console errors" do not mean a screen works.** Seven screens
+>   rendered real data and reverted to sample on the first filter keystroke, or painted it
+>   into a hidden element, all under a green "live" badge.
+>
+> Still open and deliberately not built: **nothing transmits.** `sendTemplated` writes
+> `messages` rows with `status='queued'` and no code ever sends them — there is no outbound
+> fetch anywhere in `src/adapters/` or `src/lib/`. Turning on the Inngest keys will run 47
+> workflows and produce zero SMS or email. That needs a sender, and a decision about which
+> provider.
 
 ## The one-line summary
 
@@ -56,17 +63,25 @@ export DATABASE_URL="postgres://fundhub:localdev@127.0.0.1:5432/fundhub"
 node db/migrate.mjs
 
 # 3. staff logins. Reads the password from the ENV, never argv.
-#    Re-running does NOT reset a password someone has changed;
-#    --reset-passwords is the opt-in that does.
+#    Re-running does NOT reset a password someone has changed.
+#    If the accounts already exist you will see "6 already correct" and your
+#    NEW password will NOT be in effect — add --reset-passwords to force it.
 STAFF_INITIAL_PASSWORD='<pick one, 12+ chars>' node scripts/seed-staff.mjs
 
 # 4. tests
-npm test                    # 1210 tests, 0 failures, 8 skipped
+npm test                    # 1248 tests, 0 failures, 8 skipped
 
-# 5. the screens
-npx http-server public -p 8899 -c-1
+# 5. the app — screens AND a working /api/*
+node scripts/dev-server.mjs
 # → http://127.0.0.1:8899/login.html
 ```
+
+**Step 5 used to say `npx http-server public`.** That serves the HTML and
+nothing else, so every `/api/*` request 404s, the seeded logins are rejected at
+the login screen, and no screen can reach real data — following the documented
+steps exactly produced an app that looked broken. `scripts/dev-server.mjs`
+routes `/api/*` through the REAL Netlify function handler, so local behaviour is
+the deployed behaviour rather than a second implementation that can drift.
 
 **The 8 skipped tests** need the `fundhub-docs` sibling repo, which is not on
 this account. They are the message-template seeders. They skip cleanly and
@@ -85,12 +100,12 @@ Each of these is verified against a real Postgres, not by reading code.
 
 | Area | Where | State |
 |---|---|---|
-| Schema | `db/migrations/` | 33 files, clean from scratch, idempotent |
+| Schema | `db/schema/` + `db/migrations/` + `db/seed/` | 33 files total (10 + 21 + 2), clean from scratch, idempotent |
 | Dead-letter queue | `src/events/dead-letter.mjs` | Handler failures isolated + recorded, retry with backoff |
 | Task routing | `src/lib/create-task.mjs` | All 20 task-writing sites route to an owning role |
 | Entitlements | `src/entitlements/` | Grants, catalog, locked tiles |
 | Agent registry | `src/agents/registry.mjs` | 14 agents; only Setter Josh + Inquiry Removal AI are live |
-| Partner isolation | `src/partners/scope.mjs` | Tenancy boundary, mutation-tested three ways |
+| Partner isolation | `src/partners/scope.mjs` | **WRITTEN BUT NOT WIRED — zero production importers.** The module and its tests are sound; nothing calls it. No `api/read/*` query filters `partner_id`. Currently moot because no endpoint admits a non-staff principal at all (they all 401), but it must be wired before one does. `042_partners.sql:89`'s column comment claiming otherwise is wrong. |
 | Affiliate economics | `src/affiliates/economics.mjs` | Attribution, accrual, tier 2 |
 | Read APIs | `api/read/*` | 13 endpoints, role-gated, paginated, redacted |
 | Principals | `src/auth/account-session.mjs` | client/affiliate/partner sign-in; partner is invite-only |
@@ -116,7 +131,7 @@ you can just do — each needs a modelling decision first:
 | `closer-dashboard` | credit-card tradelines with APR / limit / balance. **The `cards` table is NOT this** — see the warning below |
 | `automations` | a workflow-run history table; none exists |
 | `galaxy` | node/edge layout has no source (`/api/read/staff` exists, the graph does not) |
-| `content-admin` | the tier/tile content model has no table |
+| `content-admin` | a video library table and a tier->video mapping. **Partial source exists**: `entitlement_catalog` holds the five locked-tile identities the portal already renders, but it has no price and no marketing copy, and there is no write endpoint — so the editor would display real names and be unable to save. Needs the write path first. |
 | `sample-data` | a sample-data screen by design — leave it |
 | `index` | router, renders nothing |
 

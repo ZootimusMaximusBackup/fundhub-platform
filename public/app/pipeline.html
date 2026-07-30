@@ -1053,17 +1053,29 @@ var q=document.getElementById('q'), fOwner=document.getElementById('fOwner'),
     fHold=document.getElementById('fHold'), fAge=document.getElementById('fAge'),
     fSort=document.getElementById('fSort');
 
-/* owner list is built from who actually appears on the cards */
-(function(){
+/* owner list is built from who actually appears on the cards.
+
+   NAMED and re-runnable, not a one-shot IIFE. It used to run once at load
+   against the SAMPLE cards, so after the board was repainted with real data the
+   dropdown still held sample owners — every one of which matched nothing, so
+   choosing an owner hid every real card and the board looked empty. The wiring
+   calls this again after it paints. */
+function rebuildOwnerOptions(){
   var seen={};
   cards().forEach(function(c){
     var b=c.querySelector('.c-act b'); if(!b) return;
     var n=b.textContent.trim(); if(n&&!seen[n]){seen[n]=1;}
   });
+  var keep=fOwner.value;
+  while(fOwner.options.length>1) fOwner.remove(1);   // keep "Anyone"
   Object.keys(seen).sort().forEach(function(n){
     var o=document.createElement('option'); o.value=n; o.textContent=n; fOwner.appendChild(o);
   });
-})();
+  // Preserve the current choice if that owner still exists on the board.
+  fOwner.value = seen[keep] ? keep : "";
+}
+window.rebuildOwnerOptions = rebuildOwnerOptions;
+rebuildOwnerOptions();
 
 /* "3h 40m in stage" / "22m in stage" / "2d 4h in stage" -> minutes */
 function ageMins(card){
@@ -1370,6 +1382,10 @@ restore();
   FHData.pipeline("sales").then(function (res) {
     if (res.ok && res.data && res.data.stages) {
       var r = paint(res.data.stages);
+      // The dropdown was built from the sample cards this call just replaced.
+      if (typeof window.rebuildOwnerOptions === "function") {
+        try { window.rebuildOwnerOptions(); } catch (e) { /* filter stays as-is */ }
+      }
       var total = res.data.stages.length;
       var onBoard = total - r.offBoard.length;
       banner("real", "live board · sales pipeline · " + r.shown + " cards across " +
