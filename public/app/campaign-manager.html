@@ -345,12 +345,12 @@ table.grid td.srccell .sub{white-space:normal}
           </div>
           <div>
             <div class="mono" style="font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:7px">Per-panel source</div>
-            <div class="dw-tbl">
+            <div class="dw-tbl"><div class="tblscroll">
               <table class="grid">
                 <thead><tr><th>Panel</th><th>Endpoint</th><th>Source</th><th>Rows</th></tr></thead>
                 <tbody id="srcRows"></tbody>
               </table>
-            </div>
+            </div></div>
           </div>
         </div>
         <div class="cap">
@@ -1948,8 +1948,8 @@ function renderDrawerBody(){
     '</div>' +
 
     '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">CM-05.2 <span class="sep">/</span> AD SETS</div>' +
-      '<div class="dw-tbl"><table class="grid"><thead><tr><th>Ad set</th><th>Approval</th><th>Status</th><th>Budget / day</th><th>Ads</th><th>learning_until</th><th>In learning</th></tr></thead>' +
-      '<tbody>'+setRows+'</tbody></table></div>' +
+      '<div class="dw-tbl"><div class="tblscroll"><table class="grid"><thead><tr><th>Ad set</th><th>Approval</th><th>Status</th><th>Budget / day</th><th>Ads</th><th>learning_until</th><th>In learning</th></tr></thead>' +
+      '<tbody>'+setRows+'</tbody></table></div></div>' +
       '<p class="note" style="margin-top:7px"><code>in_learning_phase</code> is <code>learning_until &gt; now()</code> — exactly the condition the optimiser refuses to touch. It returns <code>rule_key = \'learning_phase\'</code>, <code>action = \'none\'</code>, and the runner drops "none" before anything is written, so a learning-phase skip never appears in the action log.</p>' +
     '</div>' +
 

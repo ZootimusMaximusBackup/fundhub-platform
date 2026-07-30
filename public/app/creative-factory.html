@@ -1014,7 +1014,10 @@ var PROVIDER_KEYS   = ['static','ugc-video','product-video','copy','resize'];
 var PARTNERS = [
   /* funding + credit_cards from the campaigns below; credit_repair because the
      same partner_id carries credit_repair posts in Social Studio and a
-     credit_repair book in Campaigns. All of it on meta — never TikTok. */
+     credit_repair book in Campaigns. That credit_repair work is meta-only — never
+     TikTok, which CHECK campaigns_tiktok_credit_repair_ck forbids outright. The
+     funding book is not: campaign 2f80d651 below runs funding on TikTok, which is
+     permitted, and Campaigns shows the same partner doing it. */
   {id:'8f3c2a91-4d17-4b0e-9c62-1a7e5d3b8042', name:'Ironwood Capital Group',   offers:['funding','credit_cards','credit_repair']},
   /* credit_repair because Social Studio has a blocked credit_repair post on this
      partner's LinkedIn channel. Blocked by the CROA rules is still a row. */
@@ -1389,7 +1392,7 @@ var CAMPAIGNS = [
    screenings:[{code:'needs_approval', message:[RZ.approvalSetting]}]},
 
   /* The one clean 'passed' on this screen, and it has to be this partner: Larkspur is
-     the partner whose approve_before_launch is OFF (social-studio.html:859-862), so a
+     the partner whose approve_before_launch is OFF (social-studio.html:862-865), so a
      credit_cards subject with clean copy falls through to `return {state:'passed'}`.
      A passed screening carries reasons: [] — the renderer says so rather than hiding
      the row. approval_state is still awaiting_approval, because that is a workflow
@@ -1823,7 +1826,9 @@ var DERIVS = {
     inputs:'draft = <b>' + m.kits.filter(function(k){return k.status==='draft';}).length + '</b><br>' +
            'active = <b>' + m.active.length + '</b><br>' +
            'archived = <b>' + m.kits.filter(function(k){return k.status==='archived';}).length + '</b>',
-    src:'GET /api/creative/brand-kits?state=active&amp;limit=200, counted from that response. asset_count itself ' +
+    src:'GET /api/creative/brand-kits?state=all&amp;limit=200 — state=all, not state=active, because the ' +
+        'draft/active/archived split beside this and the "of N total" on the tile are counted client-side from ' +
+        'that one response; a ?state=active read carries no draft or archived row to count. asset_count itself ' +
         'is different: a correlated subquery over ALL non-archived assets for the kit, so it is a full count ' +
         'rather than a page count — unlike every other number on this strip. The two are allowed to disagree.'};}
 };
