@@ -412,9 +412,16 @@ function preset(role){
 }
 function presetCell(role){
   var pr=preset(role), all=pr.n===pr.total;
-  return '<div class="acc"><span class="badge '+ROLE_CLS[role]+'">'+esc(role)+'</span>'+
-    '<span class="acc-g">'+(pr.groups.length?esc(pr.groups.join(' · ')):'no areas')+'</span>'+
-    '<span class="acc-n'+(all?' full':'')+'">'+pr.n+' of '+pr.total+'</span></div>';
+  /* A role the sample permission matrix has no column for (admin, setter) is
+     not a role with zero permissions. Saying "0 of 21" about a real admin
+     would assert something false, so say the matrix does not cover them. */
+  var known=ROLES.indexOf(role)>=0;
+  return '<div class="acc"><span class="badge '+(ROLE_CLS[role]||'b-gray')+'">'+esc(role)+'</span>'+
+    (known
+      ? '<span class="acc-g">'+(pr.groups.length?esc(pr.groups.join(' · ')):'no areas')+'</span>'+
+        '<span class="acc-n'+(all?' full':'')+'">'+pr.n+' of '+pr.total+'</span>'
+      : '<span class="acc-g" title="This role has no row in the ST-02 permission matrix">not in the matrix</span>')+
+    '</div>';
 }
 
 /* ══ RENDER ══════════════════════════════════════════════════════════════ */
@@ -438,8 +445,16 @@ function renderRoster(){
     return '<tr data-id="'+p.id+'" class="'+(p.id===selId?'sel':'')+'" title="'+esc(t)+'">'+
       '<td><div class="who-cell"><span class="av">'+initials(p)+'</span><div><div class="nm">'+esc(p.first+' '+p.last)+'</div><div class="em">'+esc(p.email)+'</div></div></div></td>'+
       '<td>'+presetCell(p.role)+'</td>'+
-      '<td>'+(p.consent?'<span class="badge b-ok">On file</span>':'<span class="badge b-alert">Missing</span>')+'</td>'+
-      '<td>'+(p.clock?'<span class="badge b-ok">In · '+p.since+'</span>':'<span class="badge b-gray">Out</span>')+'</td>'+
+      /* consent === null means a REAL staff row: monitoring consent and clock
+         state have no column anywhere in the schema. Rendering the sample
+         "On file" badge against a real employee would be fabricating a
+         compliance record about a named person, which is the one kind of
+         invented data that could actually hurt someone. Show that it is
+         unknown. */
+      '<td>'+(p.consent===null?'<span class="badge b-gray" title="No consent record in the database">—</span>'
+             :p.consent?'<span class="badge b-ok">On file</span>':'<span class="badge b-alert">Missing</span>')+'</td>'+
+      '<td>'+(p.clock===null?'<span class="badge b-gray" title="No clock data in the database">—</span>'
+             :p.clock?'<span class="badge b-ok">In · '+p.since+'</span>':'<span class="badge b-gray">Out</span>')+'</td>'+
       '<td>'+(p.active?'<span class="badge b-ok">Active</span>':'<span class="badge b-warn">Invited</span>')+'</td></tr>';
   }).join('');
   document.getElementById('rosterBody').innerHTML=rows||'<tr><td colspan="5" class="empty">No one matches that filter.</td></tr>';
@@ -623,19 +638,67 @@ renderAll();
     return String(r || "").replace(/_/g, " ").replace(/\b\w/g, function (m) { return m.toUpperCase(); });
   };
 
+  /* Feed the screen's OWN model and let it render.
+
+     This used to overwrite #rosterBody directly with five <td>s in the order
+     name/email/role/status/tasks. The table's header is
+     Person | Access | Consent | Clock | Status — so every value landed one
+     column left of where it belonged: the role appeared under "Consent" and the
+     account status under "Clock". And because renderRoster() rebuilds the body
+     from PEOPLE on every filter change, the first keystroke in the search box
+     replaced the six real staff with the seven-person sample roster while the
+     banner still said "live".
+
+     Replacing PEOPLE and calling the screen's own renderAll() fixes both: the
+     columns are right by construction, and filtering, the row editor and the
+     clock tab all keep working against real people. */
+
+  // DB role -> the label this screen shows. Only exact correspondences are
+  // mapped; anything else keeps its real name rather than being forced into a
+  // preset it does not have.
+  var ROLE_LABEL = {
+    owner: "Owner",
+    closer: "Closer",
+    funding_advisor: "Funding Advisor",
+    inquiry_specialist: "Inquiry Specialist"
+  };
+
   FHData.wire(FHData.staff({ limit: 200 }), "roster", function (data) {
     var rows = data.items || [];
     if (!rows.length) return null;
-    var body = document.getElementById("rosterBody");
-    if (!body) return null;
-    body.innerHTML = rows.map(function (s) {
-      return "<tr><td>" + esc(s.name || s.email) + "</td>" +
-             "<td>" + esc(s.email) + "</td>" +
-             "<td>" + esc(label(s.role)) + "</td>" +
-             "<td>" + esc(s.status) + "</td>" +
-             "<td>" + esc(s.open_tasks == null ? "—" : s.open_tasks) + "</td></tr>";
-    }).join("");
-    return "live roster · " + rows.length + " staff";
+    if (typeof PEOPLE === "undefined" || typeof renderAll !== "function") return null;
+
+    var unmapped = [];
+    var mapped = rows.map(function (s, i) {
+      var name = String(s.name || s.email || "").trim();
+      var sp = name.indexOf(" ");
+      var role = ROLE_LABEL[s.role];
+      if (!role) { role = label(s.role); unmapped.push(role); }
+      return {
+        id: i + 1,
+        first: sp > 0 ? name.slice(0, sp) : name,
+        last:  sp > 0 ? name.slice(sp + 1) : "",
+        code: "—",                       // no employee code column in the schema
+        role: role,
+        email: s.email || "",
+        phone: "—",                      // no phone column on staff
+        start: "—",                      // no start date column
+        active: s.status === "active",
+        consent: null,                   // NO SOURCE — rendered as "—", never faked
+        consentAt: null,
+        clock: null,                     // NO SOURCE
+        since: "—",
+        today: "—"
+      };
+    });
+
+    PEOPLE.length = 0;
+    Array.prototype.push.apply(PEOPLE, mapped);
+    try { renderAll(); } catch (e) { return null; }
+
+    return "live roster · " + rows.length + " staff" +
+           (unmapped.length ? " · " + unmapped.length + " role(s) outside the permission matrix" : "") +
+           " · consent, clock, phone and start date have no source";
   });
 })();
 </script>

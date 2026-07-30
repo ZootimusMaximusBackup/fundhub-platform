@@ -537,10 +537,19 @@ function renderGate(){
 function renderStats(){
   document.getElementById('kAll').textContent=AGENTS.length;
   var lv=AGENTS.filter(function(a){return a.mode==='live'}).length;
+  /* Count shadow as shadow. This was AGENTS.length - lv, i.e. "everything not
+     live", which is only correct while nothing is in draft — true of the sample
+     roster (11 live, 5 shadow, 0 draft) and false the moment the real 037
+     registry loads, where most agents are drafts. The tile reads "logging, not
+     sending", so counting a draft there claims an agent is running when it is
+     not, and contradicted both the banner and the list on the same screen. */
+  var sh=AGENTS.filter(function(a){return a.mode==='shadow'}).length;
+  var dr=AGENTS.length-lv-sh;
   document.getElementById('kLive').textContent=lv;
-  document.getElementById('kShadow').textContent=AGENTS.length-lv;
+  document.getElementById('kShadow').textContent=sh;
   document.getElementById('kBreach').textContent=AGENTS.reduce(function(a,x){return a+x.breaches},0);
-  document.getElementById('liveTxt').textContent=lv+' live · '+(AGENTS.length-lv)+' shadow';
+  document.getElementById('liveTxt').textContent=
+    lv+' live · '+sh+' shadow'+(dr?' · '+dr+' draft':'');
 }
 
 /* switching agents refolds the secondary sections — the config opens on what

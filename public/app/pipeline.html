@@ -1329,6 +1329,7 @@ restore();
     stages.forEach(function (s) { byName[String(s.name).trim().toLowerCase()] = s; });
 
     var shown = 0;
+    var matched = {};
     cols.forEach(function (col) {
       var s = byName[colName(col)];
       var body = col.querySelector(".col-body");
@@ -1348,15 +1349,35 @@ restore();
       s.cards.forEach(function (c) { body.appendChild(cardEl(c)); shown++; });
       if (count) count.textContent = String(s.count);
       if (money) money.textContent = usd(s.amount) + " est.";
+      matched[colName(col)] = true;
     });
-    return shown;
+
+    /* The board has five columns; the sales pipeline has ten stages. Cards in
+       the five stages with no column are not rendered anywhere. That is a
+       property of the approved layout, not something to fix by inventing
+       columns — but the banner used to say "N cards across 10 stages", which
+       claimed the board showed all ten. Count what is actually off-board so the
+       number is not a quiet lie. */
+    var offBoard = [], offCards = 0;
+    stages.forEach(function (s) {
+      if (matched[String(s.name).trim().toLowerCase()]) return;
+      offBoard.push(s.name);
+      offCards += Number(s.count) || 0;
+    });
+    return { shown: shown, offBoard: offBoard, offCards: offCards };
   }
 
   FHData.pipeline("sales").then(function (res) {
     if (res.ok && res.data && res.data.stages) {
-      var n = paint(res.data.stages);
-      banner("real", "live board · sales pipeline · " + n + " cards across " +
-                     res.data.stages.length + " stages");
+      var r = paint(res.data.stages);
+      var total = res.data.stages.length;
+      var onBoard = total - r.offBoard.length;
+      banner("real", "live board · sales pipeline · " + r.shown + " cards across " +
+                     onBoard + " of " + total + " stages" +
+                     (r.offBoard.length
+                       ? " · " + r.offCards + " card(s) in " + r.offBoard.join(", ") +
+                         " have no column on this board"
+                       : ""));
       return;
     }
     if (res.source === "demo") {
