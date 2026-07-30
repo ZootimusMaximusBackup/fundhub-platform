@@ -451,17 +451,33 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           <b>Stage and status are different columns and they legitimately disagree.</b> The
           <span class="k">?state=</span> filter matches the stage key, never
           <span class="k">candidate_applications.status</span>; there is no way to filter on status at all.
-          <span class="k">advance(toStageKey:'hired')</span> flips status to <span class="k">hired</span>,
-          so everyone in Onboarding, Ramp and Performing still reads status <b>hired</b>. Do not count
-          “active employees” from that.
+        </div>
+        <div class="cap">
+          <b>The Hired stage is a trap, and the board shows it.</b>
+          <span class="k">advance(toStageKey:'hired')</span> flips status to <span class="k">hired</span>
+          (<span class="k">pipeline.mjs:196-199</span>) and <span class="k">advance()</span> then refuses any
+          application whose status is not <span class="k">'open'</span>
+          (<span class="k">pipeline.mjs:179-181</span>) — so a row that enters <b>Hired</b> is frozen there
+          permanently. Nothing else in the repo writes <span class="k">status</span> or
+          <span class="k">stage_id</span>; the only two writers are
+          <span class="k">pipeline.mjs:196</span> and <span class="k">:249</span>.
+          Onboarding, Ramp and Performing are therefore reachable <i>only</i> by advancing straight past the
+          Hired stage, which leaves status <b>open</b> — which is exactly what the three rows there show, and
+          why <span class="k">rampReview</span>’s <span class="k">status = 'open'</span> gate can ever match.
+          Bethany Cole is the other case: she went through Hired and cannot be moved again.
+          <b>Do not count “active employees” from either column.</b>
         </div>
         <div class="cap">
           <b>The score block always travels together</b> — average, recommendation, rubric version and flag
           count in one place, captioned with the row’s own <span class="k">recommendation_status</span>.
           The board carries the <b>latest</b> score only (a <span class="k">LATERAL … LIMIT 1</span>);
           the full history is on the application, so there is no trend line here to draw.
-          <span class="k">has_video</span> / <span class="k">has_resume</span> are booleans — there is no
-          preview, no transcript and no download, and <span class="k">resume_document_id</span> is never returned.
+          <span class="k">has_video</span> and <span class="k">has_resume</span> are booleans <b>on this
+          endpoint</b> — <span class="k">candidates.mjs:47-49</span> reduces both to
+          <span class="k">IS NOT NULL</span>, so the board has no thumbnail, no transcript and no duration.
+          The review drawer is built from <span class="k">api/hiring/application.mjs</span>, which returns
+          <span class="k">a.video_url</span> in full and links it; the resume stays a boolean everywhere
+          because <span class="k">resume_document_id</span> is never returned by either endpoint.
         </div>
         <div class="pager" id="boardPager"></div>
       </div>
@@ -485,7 +501,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         </div>
         <div class="cap">
           The endpoint predicate is exactly
-          <span class="k">jsonb_array_length(flags) &gt; 0 OR average IS NULL</span> — flagged, <b>or</b> unscorable.
+          <span class="k">jsonb_array_length(COALESCE(sc.flags,'[]'::jsonb)) &gt; 0 OR sc.average IS NULL</span>
+          — flagged, <b>or</b> unscorable. The <span class="k">COALESCE</span> is load-bearing: the score
+          arrives through a <span class="k">LEFT JOIN LATERAL</span>, so without it an application with no
+          score at all would make the first arm NULL rather than false.
           A null average is rendered as <b>not scored</b>, never as a low score:
           <span class="k">grade()</span> returns <span class="k">average: null</span> and
           <span class="k">recommendation: 'incomplete'</span> the moment any category is unrated, because
@@ -525,10 +544,33 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           LinkedIn analytics are not modelled.
         </div>
         <div class="cap">
+          <b>Applications and Last 7d count job_posting_id, not source.</b> Both are correlated subqueries on
+          <span class="k">candidate_applications.job_posting_id</span>
+          (<span class="k">api/hiring/postings.mjs:36-40</span>), the second one narrowed to
+          <span class="k">applied_at &gt; now() - interval '7 days'</span>. They reconcile row-for-row with
+          HR-03 — and they are small, because only <b>5</b> of the <b>24</b> applications on the board came
+          through a posting at all. Referrals, ads and the client base arrive with
+          <span class="k">job_posting_id</span> NULL and are counted here nowhere.
+          The two columns are independent: A-1064 applied through
+          <span class="k">fundhub.ai/careers/closer</span>, which is P-002’s
+          <span class="k">apply_url</span>, so he counts against a LinkedIn-channel posting while his
+          <span class="k">candidates.source</span> reads <span class="k">inbound</span>. A posting with a
+          zero here is not broken — nobody has applied to that req.
+        </div>
+        <div class="cap">
           <span class="k">last_error</span> is the platform’s own message, token-scrubbed and sliced to
           1000 characters, and it is shown <b>verbatim</b> — paraphrasing it into “posting failed” removes the
-          one detail that makes it fixable. Retry is only meaningful on HTTP 429 or ≥ 500
-          (<span class="k">src/hiring/linkedin.mjs:87</span>); everything else needs a change first.
+          one detail that makes it fixable. It is the <b>response body alone</b>:
+          <span class="k">postJob</span> stores <span class="k">err.platformMessage</span>
+          (<span class="k">linkedin.mjs:140</span>), which is set from the raw body
+          (<span class="k">:85</span>) and wins over the prefixed
+          <span class="k">err.message</span> whenever there was one — so no
+          <span class="k">LinkedIn &lt;status&gt;:</span> prefix is ever stored, and the HTTP status only
+          appears if the platform put it in its own JSON, or as the literal
+          <span class="k">HTTP &lt;status&gt;</span> fallback when the body was empty.
+          That also means <span class="k">retryable</span> is not persisted anywhere: it is computed as
+          HTTP 429 or ≥ 500 (<span class="k">linkedin.mjs:87</span>) and returned to the caller, so a
+          <b>failed</b> row here cannot tell you on its own whether a retry is worth it.
         </div>
         <div class="cap">
           <b>No connection panel.</b> <span class="k">hiring_channel_connections</span> is joined by no endpoint —
@@ -576,7 +618,12 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         </div>
         <div class="cap">
           <span class="k">hired</span> and <span class="k">rejected</span> come from
-          <span class="k">candidate_applications.status</span>, not from a stage.
+          <span class="k">candidate_applications.status</span>, not from a stage — and
+          <span class="k">status = 'hired'</span> is set by exactly one thing,
+          <span class="k">advance(toStageKey:'hired')</span>. Anyone advanced past the offer without passing
+          through the Hired stage keeps status <span class="k">open</span> (see HR-03), so
+          <b>this column undercounts hires</b> and is a count of applications parked in the Hired stage rather
+          than of people working here.
           <span class="k">hire_rate_pct</span> is <span class="k">round(100 · hired / applications, 1)</span>
           and is NULL when applications = 0. <span class="k">?days</span> defaults to 90 and is clamped to 1–730.
           No stage-by-stage drop-off chart exists: <span class="k">v_hiring_funnel</span> has no endpoint and
@@ -632,6 +679,17 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           obligation becomes a task (<span class="k">hiring:feedback:&lt;applicationId&gt;</span>,
           source_workflow <span class="k">hiring-candidate-feedback</span>) that no hiring endpoint exposes.
         </div>
+        <div class="cap">
+          <b>No row here can be traced to a candidate.</b> The projection
+          (<span class="k">api/hiring/decisions.mjs:41-58</span>) carries no
+          <span class="k">d.application_id</span> and no name from
+          <span class="k">candidates</span> — only <span class="k">c.source</span> and
+          <span class="k">r.key</span>, which are the columns an adverse-impact comparison needs and the
+          smallest set that identifies nobody. So there is no “open this application” control in the expanded
+          row: the join runs the other way, from
+          <span class="k">api/hiring/application.mjs</span> (<span class="k">WHERE d.application_id = $1</span>),
+          and HR-08.6 in the drawer is where the two meet.
+        </div>
       </div>
 
     </div>
@@ -645,7 +703,9 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 </div>
 
 <div class="scrim" id="scrim"></div>
-<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dwTitle" aria-hidden="true">
+<!-- inert as well as aria-hidden: the closed drawer is only moved off-screen with
+     a transform, so without it every control inside stays in the tab order. -->
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dwTitle" aria-hidden="true" inert>
   <div class="dw-hd">
     <div style="min-width:0">
       <div class="eyebrow">HR-08 <span class="sep">/</span> APPLICATION REVIEW</div>
@@ -905,6 +965,12 @@ var ROLE_BY_KEY={}; ROLES.forEach(function(r){ROLE_BY_KEY[r.key]=r;});
    No protected characteristic appears anywhere in `answers` because none is
    ever stored: grading.mjs strips 25 whole-word terms and 16 prefix stems at
    intake, camelCase split first. There is nothing here to redact.
+
+   `video_url` is held here as the URL because that is what
+   api/hiring/application.mjs:21 returns. The board's own endpoint reduces it —
+   candidates.mjs:48 projects `(a.video_url IS NOT NULL) AS has_video` — so the
+   boolean is derived below rather than stored twice. The resume is the other way
+   round in BOTH endpoints: only `has_resume`, never `resume_document_id`.
    ═══════════════════════════════════════════════════════════════════════════ */
 function sc(o){ return o; }
 var APPS = [
@@ -914,7 +980,7 @@ var APPS = [
    source:'referral', source_detail:'Jordan Blake — worked together at Sandpoint Capital',
    disc_profile:'DI', linkedin_profile_url:'https://www.linkedin.com/in/priya-raghunathan',
    applied_at:'2026-07-06 09:14', entered_stage_at:'2026-07-24 13:02',
-   has_video:true, has_resume:true, posting_title:'Closer — Fundhub (Remote, US)', posting_channel:'linkedin',
+   video_url:'https://www.loom.com/share/0d7a41c9b8e24f5a9c31be7f2a4d1e60', has_resume:true, posting_title:'Closer — Fundhub (Remote, US)', posting_channel:'linkedin',
    notes:'Asked for the comp structure in writing before the 1:1. Nothing to send yet — the role\u2019s comp figures are all null.',
    answers:{years_selling:'6', best_month_cash_collected:'$74,000',
      current_situation:'Closing for a B2B lending broker, remote, want a bigger offer to sell',
@@ -938,7 +1004,7 @@ var APPS = [
    source:'client_base', source_detail:'Card Stacking DFY client, 2025 cohort',
    disc_profile:'D', linkedin_profile_url:null,
    applied_at:'2026-07-02 17:40', entered_stage_at:'2026-07-22 14:47',
-   has_video:true, has_resume:true, posting_title:null, posting_channel:null,
+   video_url:'https://www.loom.com/share/5c81f27ad9b34e0e8a6c2f19d0b7c344', has_resume:true, posting_title:null, posting_channel:null,
    notes:'Was a client first. Knows the offer from the buyer side, which is unusual and useful.',
    answers:{years_selling:'9', best_month_cash_collected:'$52,000',
      current_situation:'Ran my own brokerage, winding it down',
@@ -958,7 +1024,7 @@ var APPS = [
    source:'audience', source_detail:'Newsletter — funding playbook issue',
    disc_profile:'DI', linkedin_profile_url:'https://www.linkedin.com/in/tanyaokonkwo',
    applied_at:'2026-06-28 11:22', entered_stage_at:'2026-07-27 16:40',
-   has_video:true, has_resume:true, posting_title:'Closer — Fundhub (Remote, US)', posting_channel:'linkedin',
+   video_url:'https://www.loom.com/share/a1f4c6b0e73d4a2f9b18d5c7e0243af9', has_resume:true, posting_title:'Closer — Fundhub (Remote, US)', posting_channel:'linkedin',
    notes:'Strongest applied score this cycle. Offer terms cannot be quoted — every comp figure on the closer role is null.',
    answers:{years_selling:'7', best_month_cash_collected:'$88,500',
      current_situation:'Senior closer at a credit-repair firm, ready to move',
@@ -986,7 +1052,7 @@ var APPS = [
    source:'linkedin', source_detail:'LinkedIn posting — Closer (Remote, US)',
    disc_profile:'I', linkedin_profile_url:'https://www.linkedin.com/in/devon-marsh-sales',
    applied_at:'2026-07-18 08:31', entered_stage_at:'2026-07-25 15:20',
-   has_video:true, has_resume:true, posting_title:'Closer — Fundhub (Remote, US)', posting_channel:'linkedin',
+   video_url:'https://www.loom.com/share/7b3e90d5c1a64f88ae02f6b4d9c17e35', has_resume:true, posting_title:'Closer — Fundhub (Remote, US)', posting_channel:'linkedin',
    notes:null,
    answers:{years_selling:'4', best_month_cash_collected:'$31,000',
      current_situation:'Inside sales, SaaS, wants commission upside',
@@ -1006,7 +1072,7 @@ var APPS = [
    source:'social', source_detail:'Instagram reel — hiring closers',
    disc_profile:'IS', linkedin_profile_url:null,
    applied_at:'2026-07-20 21:03', entered_stage_at:'2026-07-26 11:05',
-   has_video:true, has_resume:false, posting_title:null, posting_channel:null,
+   video_url:'https://www.loom.com/share/2e6d18f7b0c34a91bd57e2c8f4a09b16', has_resume:false, posting_title:null, posting_channel:null,
    notes:'Submitted the video before finishing the written form. Sarah moved her on anyway and will re-score at the group interview.',
    answers:{years_selling:'3', current_situation:'Freelance appointment setting, wants to close',
      why_this_role:'I have set for two funding offers and never got to run the close. I want the seat.'},
@@ -1024,7 +1090,7 @@ var APPS = [
    source:'job_board', source_detail:'Indeed — sales',
    disc_profile:null, linkedin_profile_url:null,
    applied_at:'2026-07-27 07:48', entered_stage_at:'2026-07-27 07:48',
-   has_video:false, has_resume:true, posting_title:null, posting_channel:null, notes:null,
+   video_url:null, has_resume:true, posting_title:null, posting_channel:null, notes:null,
    answers:{years_selling:'5', best_month_cash_collected:'$18,000',
      current_situation:'Car sales, floor', income_goal_12mo:'$400,000',
      why_this_role:'Remote and uncapped.', sales_training:'None currently', availability:'Immediate'},
@@ -1038,7 +1104,7 @@ var APPS = [
    source:'ads', source_detail:'Meta ad — closer hiring, Jul set',
    disc_profile:null, linkedin_profile_url:null,
    applied_at:'2026-07-28 19:12', entered_stage_at:'2026-07-28 19:12',
-   has_video:false, has_resume:true, posting_title:null, posting_channel:null, notes:null,
+   video_url:null, has_resume:true, posting_title:null, posting_channel:null, notes:null,
    answers:{years_selling:'12', best_month_cash_collected:'$260,000',
      current_situation:'Between roles', income_goal_12mo:'$95,000',
      why_this_role:'Looking for something stable.',
@@ -1053,8 +1119,9 @@ var APPS = [
    source:'inbound', source_detail:null,
    disc_profile:'DC', linkedin_profile_url:'https://www.linkedin.com/in/seandelacroix',
    applied_at:'2026-07-29 10:26', entered_stage_at:'2026-07-29 10:26',
-   has_video:true, has_resume:true, posting_title:null, posting_channel:null,
-   notes:'Careers page direct. Answers are unusually uneven — strong on inputs, thin on anything he has actually sold.',
+   video_url:'https://www.loom.com/share/9c02b7e4d5f14a6398ad1c0e7b52f483', has_resume:true,
+   posting_title:'Closer — Fundhub (Remote, US)', posting_channel:'linkedin',
+   notes:'Careers page direct — fundhub.ai/careers/closer is P-002’s apply_url, so the application carries that job_posting_id even though the source is inbound. He is the only row inside the postings’ 7-day window. Answers are unusually uneven — strong on inputs, thin on anything he has actually sold.',
    answers:{years_selling:'2', best_month_cash_collected:'$9,400',
      current_situation:'Retail management, moving into sales deliberately',
      income_goal_12mo:'$110,000',
@@ -1071,7 +1138,7 @@ var APPS = [
    source:'referral', source_detail:'Nina Castellano',
    disc_profile:'D', linkedin_profile_url:null,
    applied_at:'2026-06-10 12:00', entered_stage_at:'2026-07-14 15:00',
-   has_video:true, has_resume:true, posting_title:null, posting_channel:null,
+   video_url:'https://www.loom.com/share/4d19a8c3e7b24f05b96c3e1d8f207a5c', has_resume:true, posting_title:null, posting_channel:null,
    notes:'Start date agreed verbally on the call. Nothing in this schema records a start date or an offer amount.',
    answers:{years_selling:'8', best_month_cash_collected:'$61,000',
      current_situation:'Closer at a coaching company', income_goal_12mo:'$165,000',
@@ -1082,13 +1149,13 @@ var APPS = [
             category_scores:sc({effort:4,honesty:4,income_goal_fit:3,relevant_experience:4,sales_inputs:3,work_history:3})}],
    interviews:[], decision_ids:['D-1004']},
 
-  {id:'A-1012', role_key:'closer', stage_key:'onboarding', status:'hired',
+  {id:'A-1012', role_key:'closer', stage_key:'onboarding', status:'open',
    full_name:'Andre Whitlock', email:'andre.whitlock@gmail.com', phone:'+1 623 555 0109',
-   source:'client_base', source_detail:'Consulting Services client 2024',
+   source:'client_base', source_detail:'Consulting Services Package client, 2024 cohort',
    disc_profile:'DI', linkedin_profile_url:null,
    applied_at:'2026-05-12 09:00', entered_stage_at:'2026-06-22 16:05',
-   has_video:true, has_resume:true, posting_title:null, posting_channel:null,
-   notes:'Status reads hired because advance(toStageKey:\u2019hired\u2019) sets it, and it stays hired through onboarding.',
+   video_url:'https://www.loom.com/share/6a75e0b2c94d43f18e27b5a0d3c619fe', has_resume:true, posting_title:null, posting_channel:null,
+   notes:'Advanced offer \u2192 onboarding, skipping the Hired stage on purpose. Status stays open, which is the only way this row can be moved again: advance() refuses anything that is not status open, and toStageKey \u2018hired\u2019 would have set status hired and frozen it there.',
    answers:{years_selling:'5', best_month_cash_collected:'$44,000',
      current_situation:'Ran his own rounds with us, then asked for a seat',
      income_goal_12mo:'$140,000', why_this_role:'I have been the client. I know the questions before they ask them.',
@@ -1098,13 +1165,13 @@ var APPS = [
             category_scores:sc({effort:3,honesty:4,income_goal_fit:3,relevant_experience:4,sales_inputs:3,work_history:3})}],
    interviews:[], decision_ids:['D-1001']},
 
-  {id:'A-1003', role_key:'closer', stage_key:'performing', status:'hired',
+  {id:'A-1003', role_key:'closer', stage_key:'performing', status:'open',
    full_name:'Corinne Vasquez', email:'corinne.vasquez@gmail.com', phone:'+1 480 555 0103',
    source:'referral', source_detail:'Sarah Whitfield',
    disc_profile:'D', linkedin_profile_url:null,
    applied_at:'2026-04-02 10:15', entered_stage_at:'2026-07-01 09:00',
-   has_video:true, has_resume:true, posting_title:null, posting_channel:null,
-   notes:'Cleared the 60-day trial on Jul 1. rampReview queues a task and changes nothing else — the stage move was a person.',
+   video_url:'https://www.loom.com/share/3f28c6d1a0b74e95bc84f7e2d105a6b7', has_resume:true, posting_title:null, posting_channel:null,
+   notes:'Cleared the 60-day trial on Jul 1. rampReview only queued the review task; the stage move out of ramp was a person calling advance(). Status is still open — this row never went through the Hired stage, which is why it could be advanced twice after the offer.',
    answers:{years_selling:'10', best_month_cash_collected:'$97,000',
      current_situation:'Was closing for a competitor', income_goal_12mo:'$220,000',
      why_this_role:'Sarah has been trying to hire me for two years.',
@@ -1119,7 +1186,7 @@ var APPS = [
    source:'recruiter', source_detail:'Halvorsen Search, contingency',
    disc_profile:'C', linkedin_profile_url:'https://www.linkedin.com/in/gregorypham',
    applied_at:'2026-07-08 14:02', entered_stage_at:'2026-07-21 17:33',
-   has_video:false, has_resume:true, posting_title:null, posting_channel:null,
+   video_url:null, has_resume:true, posting_title:null, posting_channel:null,
    notes:'Recruiter-sourced. Advanced past a review_likely_no on Sarah\u2019s judgement, then rejected at the group interview.',
    answers:{years_selling:'11', best_month_cash_collected:'$140,000',
      current_situation:'Consulting', income_goal_12mo:'$300,000',
@@ -1138,7 +1205,7 @@ var APPS = [
    source:'ads', source_detail:'Meta ad — closer hiring, Jun set',
    disc_profile:'ID', linkedin_profile_url:null,
    applied_at:'2026-06-24 16:40', entered_stage_at:'2026-07-17 08:55',
-   has_video:true, has_resume:true, posting_title:'Closer — Fundhub (Phoenix, AZ hybrid)', posting_channel:'linkedin',
+   video_url:'https://www.loom.com/share/8b40e2f9c5d341a7b0e63c1f9d825a04', has_resume:true, posting_title:'Closer — Fundhub (Phoenix, AZ hybrid)', posting_channel:'linkedin',
    notes:'The grader said advance. A person rejected him anyway, for a reason the rubric does not measure.',
    answers:{years_selling:'6', best_month_cash_collected:'$40,000',
      current_situation:'Closing part-time for two offers', income_goal_12mo:'$150,000',
@@ -1161,7 +1228,7 @@ var APPS = [
    source:'audience', source_detail:'Podcast guest spot — Feb',
    disc_profile:'IS', linkedin_profile_url:'https://www.linkedin.com/in/josefinamarrero',
    applied_at:'2026-07-14 07:55', entered_stage_at:'2026-07-26 09:30',
-   has_video:true, has_resume:true, posting_title:null, posting_channel:null, notes:null,
+   video_url:'https://www.loom.com/share/1c93d5a7f28e4b60a4d1e9c37b085f26', has_resume:true, posting_title:null, posting_channel:null, notes:null,
    answers:{years_selling:'3', current_situation:'Setter for a coaching offer, 60 dials a day',
      income_goal_12mo:'$85,000', why_this_role:'I want to set for something people actually need.',
      sales_training:'Daily huddle plus recorded call review', availability:'One week'},
@@ -1179,7 +1246,7 @@ var APPS = [
    source:'social', source_detail:'TikTok — day in the life of a setter',
    disc_profile:'I', linkedin_profile_url:null,
    applied_at:'2026-07-16 22:41', entered_stage_at:'2026-07-24 09:15',
-   has_video:true, has_resume:false, posting_title:null, posting_channel:null,
+   video_url:'https://www.loom.com/share/e07b3c48d9a24165bf29c0d7a6e51834', has_resume:false, posting_title:null, posting_channel:null,
    notes:'Group interview held but not yet graded to an outcome — attended is recorded, outcome is still null.',
    answers:{years_selling:'1', current_situation:'Server, moving into remote sales',
      income_goal_12mo:'$70,000', why_this_role:'I want to learn the front of the funnel properly.',
@@ -1202,7 +1269,7 @@ var APPS = [
    source:'inbound', source_detail:null,
    disc_profile:'SC', linkedin_profile_url:null,
    applied_at:'2026-07-11 13:19', entered_stage_at:'2026-07-23 10:04',
-   has_video:false, has_resume:true, posting_title:null, posting_channel:null,
+   video_url:null, has_resume:true, posting_title:null, posting_channel:null,
    notes:'Screening has no seeded rubric, so the score shown is still the applied-stage one.',
    answers:{years_selling:'4', current_situation:'Outbound SDR, B2B software',
      income_goal_12mo:'$78,000', why_this_role:'Shorter cycle, clearer outcome for the person on the phone.',
@@ -1217,7 +1284,7 @@ var APPS = [
    source:'referral', source_detail:'Alvin Torres',
    disc_profile:'ID', linkedin_profile_url:null,
    applied_at:'2026-07-29 08:02', entered_stage_at:'2026-07-29 08:02',
-   has_video:true, has_resume:true, posting_title:null, posting_channel:null, notes:null,
+   video_url:'https://www.loom.com/share/b52f8d016c7e49a3ae04f1b9c8d372e5', has_resume:true, posting_title:null, posting_channel:null, notes:null,
    answers:{years_selling:'2', current_situation:'Setting for a fitness offer',
      income_goal_12mo:'$80,000', why_this_role:'Alvin said the team actually trains you.',
      sales_training:'Role-play three times a week', availability:'One week'},
@@ -1231,7 +1298,7 @@ var APPS = [
    source:'job_board', source_detail:'ZipRecruiter — setter',
    disc_profile:null, linkedin_profile_url:null,
    applied_at:'2026-07-29 16:47', entered_stage_at:'2026-07-29 16:47',
-   has_video:false, has_resume:true, posting_title:null, posting_channel:null,
+   video_url:null, has_resume:true, posting_title:null, posting_channel:null,
    notes:'Form submitted half-finished. Four of six categories unrated, so the grader produced no number at all.',
    answers:{years_selling:'3', current_situation:'Call centre, outbound'},
    scores:[{id:'S-3409', stage_key:'applied', rubric:'applied@2', created_at:'2026-07-29 17:00',
@@ -1244,7 +1311,7 @@ var APPS = [
    source:'ads', source_detail:'Meta ad — setter hiring, Jul set',
    disc_profile:'IS', linkedin_profile_url:null,
    applied_at:'2026-07-29 20:14', entered_stage_at:'2026-07-29 20:14',
-   has_video:true, has_resume:false, posting_title:null, posting_channel:null, notes:null,
+   video_url:'https://www.loom.com/share/d84a1e60b3c247f9852bd7a0e6c19f43', has_resume:false, posting_title:null, posting_channel:null, notes:null,
    answers:{years_selling:'0', current_situation:'Hospitality, wants remote work',
      income_goal_12mo:'$65,000', why_this_role:'I am good with people on the phone and I want to get paid for it.',
      sales_training:'None yet', availability:'Immediate'},
@@ -1258,7 +1325,7 @@ var APPS = [
    source:'linkedin', source_detail:'LinkedIn — found the careers page, applied direct',
    disc_profile:null, linkedin_profile_url:'https://www.linkedin.com/in/mateo-ibarra-sales',
    applied_at:'2026-07-30 06:52', entered_stage_at:'2026-07-30 06:52',
-   has_video:false, has_resume:true, posting_title:null, posting_channel:null,
+   video_url:null, has_resume:true, posting_title:null, posting_channel:null,
    notes:'Source is linkedin but there is no posting attached — the setter posting never published.',
    answers:{years_selling:'2', current_situation:'Insurance, inbound',
      income_goal_12mo:'$72,000', why_this_role:'Better product to talk about.',
@@ -1273,7 +1340,7 @@ var APPS = [
    source:'social', source_detail:'Instagram reel — hiring setters',
    disc_profile:'I', linkedin_profile_url:null,
    applied_at:'2026-07-05 18:22', entered_stage_at:'2026-07-20 12:10',
-   has_video:true, has_resume:false, posting_title:null, posting_channel:null, notes:null,
+   video_url:'https://www.loom.com/share/7e14b0c9d3a2465f8b02e6c1a97d3540', has_resume:false, posting_title:null, posting_channel:null, notes:null,
    answers:{years_selling:'6', current_situation:'Between roles',
      income_goal_12mo:'$240,000', why_this_role:'Remote.', sales_training:'Various', availability:'Immediate'},
    scores:[{id:'S-3308', stage_key:'applied', rubric:'applied@1', created_at:'2026-07-05 18:40',
@@ -1281,17 +1348,17 @@ var APPS = [
             category_scores:sc({effort:2,honesty:1,income_goal_fit:3,relevant_experience:2,sales_inputs:2,work_history:1})}],
    interviews:[], decision_ids:['D-1007']},
 
-  {id:'A-1008', role_key:'setter', stage_key:'ramp', status:'hired',
+  {id:'A-1008', role_key:'setter', stage_key:'ramp', status:'open',
    full_name:'Delia Marchetti', email:'delia.marchetti@gmail.com', phone:'+1 312 555 0193',
    source:'referral', source_detail:'Chris Stanbridge',
    disc_profile:'DI', linkedin_profile_url:null,
-   applied_at:'2026-05-20 11:30', entered_stage_at:'2026-07-06 09:00',
-   has_video:true, has_resume:true, posting_title:null, posting_channel:null,
-   notes:'Day 24 of the 60-day trial. rampReview queues hiring:ramp-review:<application_id> and changes nothing — the application stays open to review, the status stays hired.',
+   applied_at:'2026-05-04 11:30', entered_stage_at:'2026-05-28 09:00',
+   video_url:'https://www.loom.com/share/c37e9b04a1d5462fb8e02c6d5a9174f8', has_resume:true, posting_title:null, posting_channel:null,
+   notes:'Day 63 in ramp, past the 60-day trial, and status is open — the two conditions src/hiring/bench.mjs:94-95 requires. rampReview therefore opens one task (body hiring:ramp-review:<application_id>) assigned to the setter hiring manager, and changes nothing else. Whether to keep her is a human judgement about somebody already on the payroll; no code makes it.',
    answers:{years_selling:'4', current_situation:'Was setting for a mortgage broker',
      income_goal_12mo:'$90,000', why_this_role:'Chris walked me through the numbers honestly.',
      sales_training:'Weekly', availability:'Started'},
-   scores:[{id:'S-3180', stage_key:'applied', rubric:'applied@1', created_at:'2026-05-21 06:01',
+   scores:[{id:'S-3180', stage_key:'applied', rubric:'applied@1', created_at:'2026-05-04 12:02',
             is_automated:true, scored_by_name:null,
             category_scores:sc({effort:4,honesty:3,income_goal_fit:4,relevant_experience:3,sales_inputs:3,work_history:4})}],
    interviews:[], decision_ids:[]},
@@ -1302,7 +1369,7 @@ var APPS = [
    source:'inbound', source_detail:null,
    disc_profile:'SC', linkedin_profile_url:null,
    applied_at:'2026-07-24 09:38', entered_stage_at:'2026-07-24 09:38',
-   has_video:false, has_resume:true, posting_title:null, posting_channel:null,
+   video_url:null, has_resume:true, posting_title:null, posting_channel:null,
    notes:'This role has no hiring manager. Nobody is routed to read this.',
    answers:{years_selling:'2', current_situation:'Sales ops coordinator at an agency',
      income_goal_12mo:'$62,000', why_this_role:'I like running the board more than working it.',
@@ -1317,7 +1384,7 @@ var APPS = [
    source:'job_board', source_detail:'Fundhub careers page via job board',
    disc_profile:'C', linkedin_profile_url:null,
    applied_at:'2026-07-13 15:07', entered_stage_at:'2026-07-22 09:15',
-   has_video:false, has_resume:true, posting_title:'Sales Coordinator — Fundhub', posting_channel:'job_board',
+   video_url:null, has_resume:true, posting_title:'Sales Coordinator — Fundhub', posting_channel:'job_board',
    notes:null,
    answers:{years_selling:'1', current_situation:'Scheduling coordinator, dental group',
      income_goal_12mo:'$58,000', why_this_role:'Same job, better industry.',
@@ -1328,13 +1395,23 @@ var APPS = [
    interviews:[], decision_ids:[]}
 ];
 
-/* GET /api/hiring/postings. No description, no external_id — only is_published. */
+/* GET /api/hiring/postings. No description, no external_id — only is_published.
+
+   `applications` and `applications_7d` are the two correlated subqueries at
+   postings.mjs:36-40 — count(candidate_applications WHERE job_posting_id = p.id),
+   the second one restricted to applied_at > now() - 7 days. They count the same
+   rows the board shows, so every number below reconciles against HR-03: only five
+   of the twenty-four applications carry a job_posting_id at all. */
 var POSTINGS = [
   {id:'P-006', channel:'linkedin', role_key:'setter', title:'Setter — Fundhub (Remote, US)',
    location:'Remote — United States', apply_url:'/careers/setter', status:'failed', is_published:false,
    posted_at:null, closed_at:null, last_synced_at:'2026-07-28 04:12', created_at:'2026-07-28 04:10',
    applications:0, applications_7d:0,
-   last_error:'LinkedIn 422: {"status":422,"code":"ILLEGAL_ARGUMENT","message":"companyApplyUrl must be an absolute URL on a verified company domain; received \\"/careers/setter\\"","requestId":"9F1C42A7-3B0E-4D51-A0D2-77E1C9B4E118"}'},
+   /* Stored exactly as postJob writes it: linkedin.mjs:140 persists
+      err.platformMessage, which is the response BODY alone (linkedin.mjs:85) —
+      scrubbed and sliced to 1000. The "LinkedIn 422: " prefix lives only on
+      err.message, which platformMessage beats whenever there was a body. */
+   last_error:'{"status":422,"code":"ILLEGAL_ARGUMENT","message":"companyApplyUrl must be an absolute URL on a verified company domain; received \\"/careers/setter\\"","requestId":"9F1C42A7-3B0E-4D51-A0D2-77E1C9B4E118"}'},
   {id:'P-005', channel:'internal', role_key:'closer', title:'Setter → Closer internal move',
    location:'Internal', apply_url:null, status:'draft', is_published:false,
    posted_at:null, closed_at:null, last_synced_at:null, created_at:'2026-07-21 11:40',
@@ -1343,116 +1420,123 @@ var POSTINGS = [
    location:'Scottsdale, AZ — hybrid', apply_url:'https://fundhub.ai/careers/sales-coordinator',
    status:'posted', is_published:true, posted_at:'2026-07-12 08:00', closed_at:null,
    last_synced_at:'2026-07-27 04:05', created_at:'2026-07-12 07:44',
-   applications:2, applications_7d:1, last_error:null},
+   applications:1, applications_7d:0, last_error:null},
   {id:'P-003', channel:'facebook', role_key:'setter', title:'Setter — Fundhub',
    location:'Remote — United States', apply_url:'https://fundhub.ai/careers/setter',
    status:'paused', is_published:true, posted_at:'2026-06-18 09:00', closed_at:null,
    last_synced_at:'2026-07-20 04:06', created_at:'2026-06-18 08:51',
-   applications:4, applications_7d:0, last_error:null},
+   applications:0, applications_7d:0, last_error:null},
   {id:'P-002', channel:'linkedin', role_key:'closer', title:'Closer — Fundhub (Remote, US)',
    location:'Remote — United States', apply_url:'https://fundhub.ai/careers/closer',
    status:'posted', is_published:true, posted_at:'2026-07-06 08:00', closed_at:null,
    last_synced_at:'2026-07-29 04:03', created_at:'2026-07-06 07:52',
-   applications:9, applications_7d:3, last_error:null},
+   applications:4, applications_7d:1, last_error:null},
   {id:'P-001', channel:'linkedin', role_key:'closer', title:'Closer — Fundhub (Phoenix, AZ hybrid)',
    location:'Phoenix, AZ — hybrid', apply_url:'https://fundhub.ai/careers/closer-phx',
    status:'closed', is_published:true, posted_at:'2026-04-02 08:00', closed_at:'2026-06-30 17:00',
    last_synced_at:'2026-06-30 17:00', created_at:'2026-04-02 07:48',
-   applications:14, applications_7d:0, last_error:null}
+   applications:1, applications_7d:0, last_error:null}
 ];
 
 /* GET /api/hiring/decisions. recommendation_at_decision sits beside decision on
    purpose; followed_recommendation is the endpoint's own CASE expression, not a
    judgement made here. candidate_notified_at is null on every row because no
-   code path ever sets it. */
+   code path ever sets it.
+
+   THESE ARE THE PROJECTED COLUMNS AND NOTHING ELSE. decisions.mjs:41-58 selects
+   d.id, decision, from_stage_key, to_stage_key, reason, recommendation_at_decision,
+   candidate_notified_at, created_at, r.key, c.source, st.name, human_decided,
+   score_at_decision, rubric_version, followed_recommendation. There is no
+   application_id and no candidate name — the log is deliberately about the
+   decision, not the person — so no row here carries one either. */
 var DECISIONS = [
-  {id:'D-1016', application_id:'A-1035', created_at:'2026-07-27 16:40', decision:'offer',
+  {id:'D-1016', created_at:'2026-07-27 16:40', decision:'offer',
    from_stage_key:'one_on_one', to_stage_key:'offer', role_key:'closer', source:'audience',
    decided_by_name:'Sarah Whitfield', human_decided:true,
    reason:'Bench is one short and she is the strongest applied score this cycle. Comp figures on the closer role are still null — Chris sets the terms before anything goes out in writing.',
    recommendation_at_decision:'advance', score_at_decision:3.75, rubric_version:1,
    candidate_notified_at:null},
-  {id:'D-1015', application_id:'A-1054', created_at:'2026-07-26 11:05', decision:'advance',
+  {id:'D-1015', created_at:'2026-07-26 11:05', decision:'advance',
    from_stage_key:'screening', to_stage_key:'group_interview', role_key:'closer', source:'social',
    decided_by_name:'Sarah Whitfield', human_decided:true,
    reason:'Video answers were strong; the written form was half-finished so the grader could not band it. Moving to the group interview and re-scoring there.',
    recommendation_at_decision:'incomplete', score_at_decision:null, rubric_version:null,
    candidate_notified_at:null},
-  {id:'D-1014', application_id:'A-1057', created_at:'2026-07-26 09:30', decision:'advance',
+  {id:'D-1014', created_at:'2026-07-26 09:30', decision:'advance',
    from_stage_key:'group_interview', to_stage_key:'one_on_one', role_key:'setter', source:'audience',
    decided_by_name:null, human_decided:false,
    reason:'Group interview outcome “yes” — advanced per the group-interview SOP.',
    recommendation_at_decision:'advance', score_at_decision:3.17, rubric_version:1,
    candidate_notified_at:null},
-  {id:'D-1013', application_id:'A-1052', created_at:'2026-07-25 15:20', decision:'advance',
+  {id:'D-1013', created_at:'2026-07-25 15:20', decision:'advance',
    from_stage_key:'screening', to_stage_key:'group_interview', role_key:'closer', source:'linkedin',
    decided_by_name:null, human_decided:false, reason:null,
    recommendation_at_decision:'advance', score_at_decision:3.00, rubric_version:1,
    candidate_notified_at:null},
-  {id:'D-1012', application_id:'A-1041', created_at:'2026-07-24 13:02', decision:'advance',
+  {id:'D-1012', created_at:'2026-07-24 13:02', decision:'advance',
    from_stage_key:'group_interview', to_stage_key:'one_on_one', role_key:'closer', source:'referral',
    decided_by_name:'Sarah Whitfield', human_decided:true,
    reason:'Group interview outcome “yes”.',
    recommendation_at_decision:'advance_priority', score_at_decision:3.67, rubric_version:1,
    candidate_notified_at:null},
-  {id:'D-1011', application_id:'A-1059', created_at:'2026-07-24 09:15', decision:'advance',
+  {id:'D-1011', created_at:'2026-07-24 09:15', decision:'advance',
    from_stage_key:'screening', to_stage_key:'group_interview', role_key:'setter', source:'social',
    decided_by_name:null, human_decided:false, reason:null,
    recommendation_at_decision:'review_maybe', score_at_decision:2.67, rubric_version:1,
    candidate_notified_at:null},
-  {id:'D-1010', application_id:'A-1038', created_at:'2026-07-22 14:47', decision:'advance',
+  {id:'D-1010', created_at:'2026-07-22 14:47', decision:'advance',
    from_stage_key:'group_interview', to_stage_key:'one_on_one', role_key:'closer', source:'client_base',
    decided_by_name:'Sarah Whitfield', human_decided:true,
    reason:'Group interview outcome “yes”. Knows the offer from the buyer side.',
    recommendation_at_decision:'advance', score_at_decision:3.17, rubric_version:1,
    candidate_notified_at:null},
-  {id:'D-1009', application_id:'A-1049', created_at:'2026-07-23 10:04', decision:'advance',
+  {id:'D-1009', created_at:'2026-07-23 10:04', decision:'advance',
    from_stage_key:'applied', to_stage_key:'screening', role_key:'setter', source:'inbound',
    decided_by_name:null, human_decided:false, reason:null,
    recommendation_at_decision:null, score_at_decision:null, rubric_version:null,
    candidate_notified_at:null},
-  {id:'D-1008', application_id:'A-1044', created_at:'2026-07-21 17:33', decision:'reject',
+  {id:'D-1008', created_at:'2026-07-21 17:33', decision:'reject',
    from_stage_key:'group_interview', to_stage_key:'rejected', role_key:'closer', source:'recruiter',
    decided_by_name:'Sarah Whitfield', human_decided:true,
    reason:'Three answers in the group interview contradicted the written application on tenure and on quota attainment. Asked directly and got a third version. Not moving forward, on honesty.',
    recommendation_at_decision:'review_likely_no', score_at_decision:1.50, rubric_version:1,
    candidate_notified_at:null},
-  {id:'D-1007', application_id:'A-1046', created_at:'2026-07-20 12:10', decision:'reject',
+  {id:'D-1007', created_at:'2026-07-20 12:10', decision:'reject',
    from_stage_key:'screening', to_stage_key:'rejected', role_key:'setter', source:'social',
    decided_by_name:'Chris Stanbridge', human_decided:true,
    reason:'Income expectation is roughly triple what this seat pays and she was clear she would not move on it. No point taking her through a group interview.',
    recommendation_at_decision:'review_likely_no', score_at_decision:1.83, rubric_version:1,
    candidate_notified_at:null},
-  {id:'D-1006', application_id:'A-1039', created_at:'2026-07-17 08:55', decision:'reject',
+  {id:'D-1006', created_at:'2026-07-17 08:55', decision:'reject',
    from_stage_key:'one_on_one', to_stage_key:'rejected', role_key:'closer', source:'ads',
    decided_by_name:'Sarah Whitfield', human_decided:true,
    reason:'Two no-shows to the 1:1 after rescheduling once at his request, no message either time. Nothing to do with the score — this is reliability.',
    recommendation_at_decision:'advance', score_at_decision:3.00, rubric_version:1,
    candidate_notified_at:null},
-  {id:'D-1005', application_id:'A-1041', created_at:'2026-07-16 10:20', decision:'advance',
+  {id:'D-1005', created_at:'2026-07-16 10:20', decision:'advance',
    from_stage_key:'screening', to_stage_key:'group_interview', role_key:'closer', source:'referral',
    decided_by_name:'Sarah Whitfield', human_decided:true, reason:null,
    recommendation_at_decision:'advance_priority', score_at_decision:3.67, rubric_version:1,
    candidate_notified_at:null},
-  {id:'D-1004', application_id:'A-1029', created_at:'2026-07-14 15:00', decision:'advance',
+  {id:'D-1004', created_at:'2026-07-14 15:00', decision:'advance',
    from_stage_key:'offer', to_stage_key:'hired', role_key:'closer', source:'referral',
    decided_by_name:'Chris Stanbridge', human_decided:true,
    reason:'Accepted verbally on the call. Advancing to Hired also flips the application status to hired.',
    recommendation_at_decision:'advance_priority', score_at_decision:3.50, rubric_version:1,
    candidate_notified_at:null},
-  {id:'D-1003', application_id:'A-1041', created_at:'2026-07-10 09:41', decision:'advance',
+  {id:'D-1003', created_at:'2026-07-10 09:41', decision:'advance',
    from_stage_key:'applied', to_stage_key:'screening', role_key:'closer', source:'referral',
    decided_by_name:null, human_decided:false, reason:null,
    recommendation_at_decision:'advance_priority', score_at_decision:3.67, rubric_version:1,
    candidate_notified_at:null},
-  {id:'D-1002', application_id:'A-1044', created_at:'2026-07-08 15:12', decision:'advance',
+  {id:'D-1002', created_at:'2026-07-08 15:12', decision:'advance',
    from_stage_key:'applied', to_stage_key:'screening', role_key:'closer', source:'recruiter',
    decided_by_name:'Sarah Whitfield', human_decided:true,
    reason:'Score is low and it is driven by the honesty category. Taking one screening call to test that before we close it — the recruiter fee is not the reason.',
    recommendation_at_decision:'review_likely_no', score_at_decision:1.50, rubric_version:1,
    candidate_notified_at:null},
-  {id:'D-1001', application_id:'A-1012', created_at:'2026-06-22 16:05', decision:'advance',
-   from_stage_key:'hired', to_stage_key:'onboarding', role_key:'closer', source:'client_base',
+  {id:'D-1001', created_at:'2026-06-22 16:05', decision:'advance',
+   from_stage_key:'offer', to_stage_key:'onboarding', role_key:'closer', source:'client_base',
    decided_by_name:'Chris Stanbridge', human_decided:true, reason:null,
    recommendation_at_decision:'advance', score_at_decision:3.33, rubric_version:1,
    candidate_notified_at:null}
@@ -1487,6 +1571,9 @@ APPS.forEach(function(a){
   a.role_name       = ROLE_BY_KEY[a.role_key].name;
   a.recommendation_status = 'advisory — a human decides';
   a.needs_human     = (a.flags.length > 0) || (a.average === null);
+  /* candidates.mjs:48 — (a.video_url IS NOT NULL) AS has_video. The board never
+     sees the URL; the drawer's endpoint (application.mjs:21) returns it whole. */
+  a.has_video       = a.video_url !== null;
   APP_BY_ID[a.id]=a;
 });
 DECISIONS.forEach(function(d){
@@ -1638,7 +1725,8 @@ function renderStats(){
     '<div class="dcell"><div class="dk">human override rate</div>'+
       '<div class="formula">count(followed_recommendation = false) ÷ count(followed_recommendation IS NOT NULL)</div>'+
       '<div class="inputs"><b>'+overrides.length+'</b> ÷ <b>'+judged.length+'</b> = <b>'+(orate===null?'—':orate.toFixed(1)+'%')+'</b><br>'+
-      DECISIONS.length+' decisions in the window; <b>'+(DECISIONS.length-judged.length)+'</b> excluded because recommendation_at_decision is NULL.</div></div>'+
+      DECISIONS.length+' decisions on this page, unwindowed — only HR-07 applies <b>?days</b>; <b>'+
+      (DECISIONS.length-judged.length)+'</b> excluded because recommendation_at_decision is NULL.</div></div>'+
     '<div class="src">v_hiring_bench + api/hiring/bench.mjs · api/hiring/decisions.mjs (the followed_recommendation CASE) · '+
       'averages and recommendations re-derived in page by a port of src/hiring/grading.mjs grade(), 1-4 scale, weighted mean to 2dp</div>';
 
@@ -2019,15 +2107,16 @@ function renderDecisions(){
           'the CHECK refuses a reject or an offer_declined without a name and a reason.</div></div>'+
       '<div class="dcell"><div class="dk">what the override rate is for</div>'+
         '<div class="formula">a reviewer who always agrees is not a safeguard</div>'+
-        '<div class="inputs">Derived in <b>api/hiring/decisions.mjs</b>, not in a spreadsheet, because it is the single '+
-          'most useful number in an AEDT review — and it is only meaningful next to the reasons.</div></div>'+
+        '<div class="inputs">The per-row <b>followed_recommendation</b> CASE is derived in '+
+          '<b>api/hiring/decisions.mjs:51-58</b> rather than left to a spreadsheet. The <i>ratio</i> is not '+
+          'returned by any endpoint — it is summed here over the rows on this page (DEFAULT_LIMIT 50, '+
+          'MAX_LIMIT 200 in src/http/read-api.mjs), because no decisions endpoint returns a table count.</div></div>'+
       '<div class="src">no protected characteristic is available here or anywhere else on this screen — none is collected, '+
         'so an adverse-impact analysis by race or sex cannot be run from this data and needs a separate voluntary survey held apart from the hiring record</div>'+
     '</div>';
 
   var tb=document.querySelector('#dcTbl tbody');
   tb.innerHTML = rows.length ? rows.map(function(d,i){
-    var app=APP_BY_ID[d.application_id];
     var fr = d.followed_recommendation===null
       ? '<span class="nul mono" title="NULL — recommendation_at_decision is NULL, or the decision is not reject/advance/offer">not defined</span>'
       : (d.followed_recommendation ? badge('b-gray','followed') : badge('b-warn','override'));
@@ -2056,14 +2145,14 @@ function renderDecisions(){
       '<div class="detcol"><div class="dk">decided at</div><div class="dv mono">'+esc(ftime(d.created_at))+'</div></div>'+
       '<div class="detcol"><div class="dk">candidate notified</div><div class="dv nul mono">'+
         (d.candidate_notified_at?esc(ftime(d.candidate_notified_at)):'never — no code path sets this')+'</div></div>'+
-      '<div class="detcol"><div class="dk">application</div><div class="dv">'+
-        (app?'<button class="btn sm mono" type="button" data-open="'+esc(app.id)+'">'+esc(app.full_name)+'</button>'
-            :'<span class="nul mono">'+esc(d.application_id)+'</span>')+'</div></div>'+
+      '<div class="detcol"><div class="dk">which application / who</div>'+
+        '<div class="dv nul mono" style="font-size:10.5px;line-height:1.55">not returned — the projection carries no '+
+        'application_id and no candidate name</div></div>'+
       (d.decision==='reject'
         ? '<div class="detcol wide"><div class="dk">what this row had to satisfy</div>'+
           '<div class="note">A reject needs <span class="k">decided_by</span> and a non-blank '+
           '<span class="k">reason</span> at three separate layers, and it queues the candidate-feedback obligation as a '+
-          'task (<span class="k">hiring:feedback:'+esc(d.application_id)+'</span>). Task failure never blocks the rejection.</div></div>'
+          'task (<span class="k">hiring:feedback:&lt;applicationId&gt;</span>). Task failure never blocks the rejection.</div></div>'
         : '')+
     '</div></td></tr>';
     return main+det;
@@ -2079,9 +2168,8 @@ function renderDecisions(){
     tr.addEventListener('click',toggle);
     tr.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();} });
   });
-  tb.querySelectorAll('button[data-open]').forEach(function(b){
-    b.addEventListener('click',function(e){ e.stopPropagation(); openDrawer(b.dataset.open); });
-  });
+  /* No "open the application" control here on purpose: /api/hiring/decisions
+     returns no application_id, so there is nothing to open the drawer with. */
 }
 
 /* ══ HR-08 · APPLICATION REVIEW DRAWER ═══════════════════════════════════ */
@@ -2229,9 +2317,14 @@ function openDrawer(appId){
         '<div><div class="k2">LinkedIn</div><div class="v" style="font-size:11px">'+
           (a.linkedin_profile_url?esc(a.linkedin_profile_url):'<span class="nul mono">none</span>')+
           '<span class="sub">url only · linkedin_urn is never projected</span></div></div>'+
-        '<div><div class="k2">video / resume</div><div class="v">'+
-          (a.has_video?'video ✓':'video ✗')+' · '+(a.has_resume?'resume ✓':'resume ✗')+
-          '<span class="sub">booleans · no preview, no download</span></div></div>'+
+        '<div><div class="k2">video</div><div class="v" style="font-size:11px">'+
+          (a.video_url?'<a class="mono" style="text-decoration:underline;word-break:break-all" '+
+                        'href="'+esc(a.video_url)+'" target="_blank" rel="noopener noreferrer">'+esc(a.video_url)+'</a>'
+                      :'<span class="nul mono">none submitted</span>')+
+          '<span class="sub">video_url · returned in full here · the board gets only has_video</span></div></div>'+
+        '<div><div class="k2">resume</div><div class="v">'+
+          (a.has_resume?'resume ✓':'resume ✗')+
+          '<span class="sub">has_resume is a boolean · resume_document_id is never returned, so there is no download</span></div></div>'+
         '<div><div class="k2">entered stage</div><div class="v">'+esc(fdatey(a.entered_stage_at))+
           '<span class="sub">'+daysSince(a.entered_stage_at)+' days ago · derived here, no aging column exists</span></div></div>'+
         '<div><div class="k2">posting</div><div class="v" style="font-size:11.5px">'+
@@ -2277,11 +2370,13 @@ function openDrawer(appId){
 
   drawer.classList.add('on'); scrim.classList.add('on');
   drawer.setAttribute('aria-hidden','false');
+  drawer.removeAttribute('inert');
   document.getElementById('dwClose').focus();
 }
 function closeDrawer(){
   drawer.classList.remove('on'); scrim.classList.remove('on');
   drawer.setAttribute('aria-hidden','true');
+  drawer.setAttribute('inert','');
 }
 document.getElementById('dwClose').addEventListener('click',closeDrawer);
 scrim.addEventListener('click',closeDrawer);
