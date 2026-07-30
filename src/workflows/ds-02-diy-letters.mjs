@@ -95,10 +95,16 @@ export async function handle({ event, db, step, fetchImpl = globalThis.fetch }) 
     createInvoice(db, {
       orgId,
       clientId,
-      invoiceType: "deposit",
+      // Canonical vocabulary. Deriving source from invoiceType:'deposit' is
+      // lossy — it lands on 'other' and the row can no longer say it was DIY.
+      source: "diy_letters",
       amount: Number(amount) || 0,
       saleId: saleId ?? null,
       idempotencyKey: saleId ? depositKey(saleId) : null,
+      // Second idempotency dimension. Without it a replay carrying no saleId
+      // wrote a NULL key, the ON CONFLICT guard never fired, and the client was
+      // invoiced twice for the same payment.
+      sourceEventId: eventId ?? null,
       notes: "DS-02 DIY Consulting Services Package",
     }));
   const invoiceTask = await step.run("create-invoice-task", () => createInvoiceTaskOnce(db, { orgId, clientId, eventId }));

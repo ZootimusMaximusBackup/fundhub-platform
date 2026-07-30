@@ -7,8 +7,7 @@
 import { db } from "../../src/db.mjs";
 import { emit } from "../../src/events/bus.mjs";
 import { ensureRegistered } from "../../src/register-all.mjs";
-import { checkDashboardAuth } from "../../src/http/dashboard-auth.mjs";
-import { attachStaff } from "../../src/http/middleware/requireAuth.mjs";
+import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
 import { hasRole } from "../../src/http/middleware/requireRole.mjs";
 
 const TIERS = ["FULL_FUNDING", "PREMIUM_STACK", "FUNDING_PLUS_REPAIR", "REPAIR_ONLY"];
@@ -21,11 +20,12 @@ export default async function handler(req, res) {
   // carries a role gate. Staff session first; the DASHBOARD_SECRET gate stays as
   // the fallback until cutover. A session that is NOT admin/owner is rejected
   // rather than quietly falling through to the shared secret.
-  const staff = await attachStaff(req, { db });
-  if (staff) {
-    if (!hasRole(staff, ["admin"])) return res.status(403).json({ ok: false, error: "forbidden", required: ["admin"] });
-  } else if (!checkDashboardAuth(req)) {
-    return res.status(401).json({ ok: false, error: "unauthorized" });
+  const who = await requireDashboardAccess(req, res, { db });
+  if (!who) return;
+  // A real session must ALSO be admin. `true` means the shared-secret caller,
+  // which is already an operator credential.
+  if (who !== true && !hasRole(who, ["admin"])) {
+    return res.status(403).json({ ok: false, error: "forbidden", required: ["admin"] });
   }
   ensureRegistered();
 

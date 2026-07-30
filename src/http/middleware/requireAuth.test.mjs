@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { requireAuth, authenticate, attachStaff, bearerToken } from "./requireAuth.mjs";
+import { requireAuth, authenticate, attachStaff, bearerToken, AUTH_UNAVAILABLE } from "./requireAuth.mjs";
 import { hashToken, newToken } from "../../auth/session.mjs";
 
 const STAFF = { id: "staff-1", org_id: "org-1", role: "closer", email: "a@b.com", name: "A", status: "active" };
@@ -89,10 +89,32 @@ test("authenticate returns null for an expired/revoked/unknown session", async (
   assert.equal(await authenticate(req({ authorization: "Bearer nope" }), { db: fakeDb({ live: false }) }), null);
 });
 
-test("a database failure is an unauthenticated request, not a 500", async () => {
-  // The dashboard's shared-secret fallback must still get its chance to answer.
+/* This asserted that a database failure resolves to null — i.e. is reported to
+   the caller as "not signed in". It was justified by leaving room for the
+   dashboard shared-secret fallback, which now fails closed, and it is misleading
+   on its own terms: during an outage every user is told their credentials are
+   bad and the frontend signs them out. "I could not check" is a distinct answer
+   from "you are not authenticated". */
+test("a database failure is AUTH_UNAVAILABLE, not null and not a throw", async () => {
   const out = await authenticate(req({ authorization: "Bearer x" }), { db: fakeDb({ throws: true }) });
-  assert.equal(out, null);
+  assert.equal(out, AUTH_UNAVAILABLE);
+  assert.notEqual(out, null, "an outage must not look like a missing session");
+});
+
+test("a genuinely absent or unknown session is still plain null", async () => {
+  assert.equal(await authenticate(req({}), { db: fakeDb() }), null, "no token");
+  assert.equal(
+    await authenticate(req({ authorization: "Bearer nope" }), { db: fakeDb({ live: false }) }),
+    null, "unknown session");
+});
+
+test("a malformed session cookie is not a crash", async () => {
+  // decodeURIComponent throws URIError on "%zz"; that used to escape
+  // authenticate() and 500 every authenticated route, including logout, so the
+  // bad cookie could not be cleared from inside the app.
+  const r = req({ cookie: "fundhub_session=%zz" });
+  const out = await authenticate(r, { db: fakeDb({ live: false }) });
+  assert.equal(out, null, "a malformed cookie should be no session, not an exception");
 });
 
 // ------------------------------------------------------------ attach + gate
@@ -120,10 +142,12 @@ test("requireAuth returns the staff on success and writes nothing", async () => 
 });
 
 test("requireAuth returns a clean 401 that leaks no reason", async () => {
+  // Expired, revoked, suspended and never-existed stay indistinguishable — the
+  // difference is only useful to someone probing. "db down" is NOT in this list
+  // any more: it is our failure, not the caller's, and is asserted below.
   for (const [label, opts, headers] of [
     ["no token", {}, {}],
-    ["unknown session", { live: false }, { authorization: "Bearer nope" }],
-    ["db down", { throws: true }, { authorization: "Bearer x" }]
+    ["unknown session", { live: false }, { authorization: "Bearer nope" }]
   ]) {
     const res = fakeRes();
     const staff = await requireAuth(req(headers), res, { db: fakeDb(opts) });
@@ -132,6 +156,16 @@ test("requireAuth returns a clean 401 that leaks no reason", async () => {
     assert.deepEqual(res.body, { ok: false, error: "unauthorized" }, label);
     assert.equal(Object.keys(res.body).length, 2, `${label}: no extra detail`);
   }
+});
+
+test("requireAuth answers 503 db:down on an outage, so nobody is told to sign in again", async () => {
+  const res = fakeRes();
+  const staff = await requireAuth(req({ authorization: "Bearer x" }), res,
+    { db: fakeDb({ throws: true }) });
+  assert.equal(staff, null);
+  assert.equal(res.statusCode, 503, "an outage was reported as 401 unauthorized");
+  assert.equal(res.body.db, "down",
+    "public/app/data.js keys its 'backend unavailable' banner off db:'down'");
 });
 
 test("the 401 body never contains a token, an email or a staff id", async () => {

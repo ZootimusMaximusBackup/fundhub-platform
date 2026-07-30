@@ -33,6 +33,8 @@
 // Which products count as which kind of completed outcome. Product CODES, matched
 // against products.code, because routing on a dollar amount is how a price change
 // silently re-routes an outcome.
+import { toCents, fromCents, percentOf } from "../commissions/money.mjs";
+
 export const FUNDING_PRODUCT_CODES = ["card-stacking-dfy"];
 export const REPAIR_PRODUCT_CODES = ["repair-bundle"];
 
@@ -159,16 +161,39 @@ export function commissionFor(rule, basisAmount) {
   if (!rule) return null;
   const basis = Number(basisAmount || 0);
   if (rule.calc_method === "flat") {
-    return { amount: round2(Number(rule.flat_amount || 0)), basis };
+    return { amount: fromCentsNumber(toCents(Number(rule.flat_amount || 0))), basis };
   }
   if (rule.calc_method === "percent") {
-    return { amount: round2(basis * (Number(rule.percent || 0) / 100)), basis };
+    /* INTEGER CENTS, not floats.
+
+       This was `round2(basis * (percent / 100))`, where round2 was
+       `Math.round((n + Number.EPSILON) * 100) / 100`. The EPSILON nudge is a
+       no-op for any magnitude above 1 — EPSILON is relative to 1.0 — so
+       near-tie products rounded DOWN and commission_due was persisted a cent
+       short of what Postgres computes for the same expression. 15% of $1,010.10
+       came out as 151.51 against an exact 151.52; the float path disagreed with
+       exact half-up on 12 of 2730 realistic (price, percent) pairs.
+
+       That matters more here than it looks: affiliate_commission_rules freezes
+       rule_snapshot at conversion and nothing recalculates the accrual, so the
+       wrong cent is permanent and the statement disagrees with any spreadsheet.
+
+       src/commissions/money.mjs already does this exactly, and is what the
+       commission ledger uses. Using it here removes the second, worse
+       implementation rather than adding a third. */
+    return {
+      amount: fromCentsNumber(percentOf(toCents(basis), Number(rule.percent || 0))),
+      basis
+    };
   }
   return null;
 }
 
-function round2(n) {
-  return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+/* money.mjs returns cents; this module's callers and the numeric(14,2) columns
+   want a dollar Number. fromCents gives a fixed 2dp STRING, which is the right
+   shape for display but not for arithmetic, so parse it back exactly once here. */
+function fromCentsNumber(cents) {
+  return Number(fromCents(cents));
 }
 
 /* basisFor — what the rate applies to. The enum is a formula per value and is

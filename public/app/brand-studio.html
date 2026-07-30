@@ -680,5 +680,80 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
   });
 })();
 </script>
+<script src="data.js"></script>
+<script>
+
+/* Brand Studio — persistence moves from localStorage to /api/partner-brand.
+
+   The screen's own save() still writes localStorage; that is left alone as the
+   local draft cache so nothing in the editing flow changes. This ADDS the
+   server round-trip: load the stored brand on open, and push on save.
+
+   Only a PARTNER principal has a brand. A staff member opening this screen sees
+   the sample palette and a banner saying so — the endpoint would 400 without a
+   partner_id, and inventing one would write another partner's row. */
+(function () {
+  "use strict";
+  var partnerId = FHData.param("partner_id");
+  try {
+    var acct = JSON.parse(localStorage.getItem("fh_account") || "null");
+    if (!partnerId && acct && acct.partnerId) partnerId = acct.partnerId;
+  } catch (e) {}
+
+  if (!partnerId) {
+    FHData.banner("sample",
+      "sample palette — sign in as a partner, or open with ?partner_id=<id>", "brand");
+    return;
+  }
+
+  var HEX = /^#[0-9a-fA-F]{6}$/;
+
+  FHData.wire(
+    FHData.brand(partnerId),
+    "brand", function (data) {
+      var b = data.brand;
+      if (!b) return null;
+      // Apply what the server has to the live preview, without touching layout.
+      var root = document.documentElement;
+      if (HEX.test(String(b.ink || ""))) root.style.setProperty("--ink", b.ink);
+      if (HEX.test(String(b.paper || ""))) root.style.setProperty("--paper", b.paper);
+      if (Array.isArray(b.ramp) && b.ramp.length === 6) {
+        b.ramp.forEach(function (stop, i) {
+          if (HEX.test(String(stop))) root.style.setProperty("--brand-" + (i + 1), stop);
+        });
+      }
+      return "live brand · " + (b.entity_name || "unnamed") + " · " + b.approval_status;
+    });
+
+  /* Push on save. Wraps the screen's own save() rather than replacing it, so a
+     failed write leaves the local draft intact and says so. */
+  if (typeof window.save === "function") {
+    var localSave = window.save;
+    window.save = function () {
+      localSave.apply(this, arguments);
+      var D = window.D || {};
+      var body = { partner_id: partnerId };
+      ["ink", "paper", "ramp", "display_face", "mono_face", "voice",
+       "entity_name", "support_email", "domain"].forEach(function (k) {
+        if (D[k] !== undefined) body[k] = D[k];
+      });
+      fetch("/api/partner-brand", {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          authorization: "Bearer " + (localStorage.getItem("fh_token") || "")
+        },
+        body: JSON.stringify(body)
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d && d.ok) FHData.banner("real", "saved to the server", "brand");
+        else FHData.banner("error", "saved LOCALLY only — " +
+          ((d && d.problems ? d.problems.join("; ") : d && d.error) || "write failed"), "brand");
+      }).catch(function () {
+        FHData.banner("error", "saved LOCALLY only — server unreachable", "brand");
+      });
+    };
+  }
+})();
+</script>
 </body>
 </html>

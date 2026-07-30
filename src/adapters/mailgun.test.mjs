@@ -213,12 +213,18 @@ test("handleMailgunWebhook: bad signature => 401, no emit", async () => {
   assert.equal(res.emitted.length, 0);
 });
 
-test("handleMailgunWebhook: no signingKey => skips check, emits normally", async () => {
+/* This asserted the opposite — that an absent signing key SKIPS verification and
+   emits normally. That is a hole, not a feature: MAILGUN_SIGNING_KEY ships blank
+   in .env.example, so in the deployed configuration anyone could POST a forged
+   payload and have it emitted onto the canonical bus as a real mail.response.
+   Every other adapter fails closed. */
+test("handleMailgunWebhook: no signingKey => REFUSE, emit nothing", async () => {
   _resetOrgCache(); clearHandlers();
   const body = makeBody({ subject: "Application received" });
   const res = await handleMailgunWebhook({ db: fakeDb(), body, signingKey: null });
-  assert.equal(res.ok, true);
-  assert.equal(res.emitted.length, 1);
+  assert.equal(res.ok, false);
+  assert.equal(res.status, 401);
+  assert.deepEqual(res.emitted, [], "a forged webhook reached the event bus");
 });
 
 // ---------------------------------------------------------------------------
@@ -284,13 +290,18 @@ test("REGRESSION: mail.response now carries a clientId the downstream workflows 
   const db = fakeDb({ store });
   const res = await handleMailgunWebhook({
     db,
+    // Signed, because the adapter now fails closed. This test is about clientId
+    // resolution; it was only passing unsigned because verification used to be
+    // skipped when no key was configured.
     body: {
+      signature: sign(String(Date.now()), crypto.randomBytes(22).toString("hex")),
       recipient: "monitor+cl-777@fundhub.ai",
       sender: "notifications@bank.com",
       subject: "Additional documents required",
       "body-plain": "Please upload your bank statements.",
       "Message-Id": "<resolve-1@bank.com>"
-    }
+    },
+    signingKey: SIGNING_KEY
   });
   assert.equal(res.ok, true);
   const ev = store.find((e) => e.name === "mail.response");

@@ -19,7 +19,8 @@
 
 import { db } from "../src/db.mjs";
 import { requireAuth } from "../src/http/middleware/requireAuth.mjs";
-import { redact } from "../src/http/read-api.mjs";
+import { redact, isUuid, CLIENT_DATA_ERRORS } from "../src/http/read-api.mjs";
+import { safeError } from "../src/http/health.mjs";
 
 // Fields a partner may set. Anything else in the body is ignored rather than
 // rejected, so a screen sending extra state does not 400 — but it also cannot
@@ -59,6 +60,26 @@ function validate(body) {
   if (body.selected_funnels != null && !Array.isArray(body.selected_funnels)) {
     bad.push("selected_funnels must be an array");
   }
+
+  /* The free-text columns had NO validation: an object, a number or a 100kB
+     string all went straight to the INSERT. A non-string became Postgres' idea
+     of its text form ("[object Object]"), and an unbounded string is a cheap way
+     to fill a table. Type and length only — the CONTENT of a trading name or an
+     address is the partner's business, not something to second-guess. */
+  const TEXT_MAX = {
+    wordmark_url: 2048, voice: 2000, entity_name: 200,
+    entity_address: 500, support_email: 320, domain: 253
+  };
+  for (const [field, max] of Object.entries(TEXT_MAX)) {
+    const v = body[field];
+    if (v == null) continue;
+    if (typeof v !== "string") { bad.push(`${field} must be a string`); continue; }
+    if (v.length > max) bad.push(`${field} must be ${max} characters or fewer`);
+  }
+  if (typeof body.support_email === "string" && body.support_email.trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.support_email.trim())) {
+    bad.push("support_email must be an email address");
+  }
   return bad;
 }
 
@@ -78,13 +99,19 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     const partnerId = (req.query || {}).partner_id;
     if (!partnerId) return res.status(400).json({ ok: false, error: "partner_id_required" });
+    // A malformed id is a 400. Letting it reach Postgres produced a 500 quoting
+    // the raw type error, which reads to a screen as "the backend is down".
+    if (!isUuid(partnerId)) return res.status(400).json({ ok: false, error: "invalid_partner_id" });
     try {
       const { rows } = await db.query(
         `SELECT * FROM v_partner_brand_effective WHERE partner_id = $1`, [partnerId]);
       if (!rows[0]) return res.status(404).json({ ok: false, error: "not_found" });
       return res.status(200).json({ ok: true, brand: redact(rows[0]) });
     } catch (err) {
-      return res.status(500).json({ ok: false, error: "query_failed", message: err.message });
+      if (CLIENT_DATA_ERRORS.has(err && err.code)) {
+        return res.status(400).json({ ok: false, error: "invalid_parameter" });
+      }
+      return res.status(500).json({ ok: false, error: "query_failed", message: safeError(err) });
     }
   }
 
@@ -92,6 +119,7 @@ export default async function handler(req, res) {
     const body = req.body || {};
     const partnerId = body.partner_id;
     if (!partnerId) return res.status(400).json({ ok: false, error: "partner_id_required" });
+    if (!isUuid(partnerId)) return res.status(400).json({ ok: false, error: "invalid_partner_id" });
     if (!canWrite(staff, partnerId)) {
       return res.status(403).json({ ok: false, error: "forbidden",
         message: "only the owning partner or an admin may edit this brand" });
@@ -130,7 +158,10 @@ export default async function handler(req, res) {
       if (/partner_brand_(ink|paper|ramp|display|mono)_ck/.test(m)) {
         return res.status(400).json({ ok: false, error: "invalid", problems: [m] });
       }
-      return res.status(500).json({ ok: false, error: "write_failed", message: m });
+      if (CLIENT_DATA_ERRORS.has(err && err.code)) {
+        return res.status(400).json({ ok: false, error: "invalid_parameter" });
+      }
+      return res.status(500).json({ ok: false, error: "write_failed", message: safeError(err) });
     }
   }
 

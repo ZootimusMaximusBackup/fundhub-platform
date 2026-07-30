@@ -63,7 +63,9 @@ export async function has(db, { orgId, clientId, code } = {}) {
 export async function grant(db, {
   orgId, clientId, code,
   sourceTransactionId = null, sourceEventId = null,
-  grantedBy = null, reason = null, durationDays = null, now = new Date()
+  grantedBy = null, reason = null, durationDays = null, now = new Date(),
+  // Opt-in: resurrect a grant that was deliberately revoked. Never on a replay.
+  reinstate = false
 } = {}) {
   if (!orgId || !clientId || !code) {
     throw new Error("grant: orgId, clientId and code are required");
@@ -86,8 +88,22 @@ export async function grant(db, {
 
   if (rows[0]) return { granted: true, id: rows[0].id, reason: null };
 
-  // The index absorbed it. Distinguish "already held" from "previously revoked",
-  // because a re-purchase after a revocation SHOULD reinstate.
+  /* The index absorbed it. Distinguish "already held" from "previously
+     revoked".
+
+     This used to reinstate a revoked grant unconditionally, justified as
+     "a re-purchase after a revocation SHOULD reinstate". That rationale does
+     not hold: a genuine re-purchase is a DIFFERENT transaction, so it carries a
+     different source_transaction_id, does not conflict, and gets a fresh row —
+     it never reaches this branch. The only way here is a conflict on the SAME
+     transaction, i.e. a REPLAY. So the branch could not do the thing it was
+     written for, and did do something harmful: a redelivered webhook silently
+     resurrected access that had been deliberately revoked after a refund or a
+     chargeback. It was worse still when sourceTransactionId is null, where
+     IS NOT DISTINCT FROM matches every prior null-sourced grant.
+
+     Replaying is now inert. Reinstating is a deliberate act and needs
+     `reinstate: true` from a caller that means it. */
   const existing = await db.query(
     `SELECT id, revoked_at FROM entitlements
       WHERE org_id = $1 AND client_id = $2 AND entitlement_code = $3
@@ -96,6 +112,9 @@ export async function grant(db, {
   );
   const row = existing.rows[0];
   if (row && row.revoked_at) {
+    if (!reinstate) {
+      return { granted: false, id: row.id, reason: "revoked" };
+    }
     await db.query(
       `UPDATE entitlements
           SET revoked_at = NULL, revoked_by = NULL, revoke_reason = NULL,

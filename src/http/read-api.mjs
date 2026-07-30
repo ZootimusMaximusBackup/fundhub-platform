@@ -38,6 +38,39 @@ export function redact(value) {
 export const MAX_LIMIT = 200;
 export const DEFAULT_LIMIT = 50;
 
+/* Postgres SQLSTATE codes that mean "the value you sent does not fit the
+   column", i.e. a 400 rather than a 500. Class 22 is "data exception".
+   22P02 is the one that actually bites — `?id=zzz` against a uuid column —
+   but a bad date or an over-large number arrives the same way. */
+export const CLIENT_DATA_ERRORS = new Set([
+  "22P02", // invalid_text_representation — bad uuid, bad numeric
+  "22003", // numeric_value_out_of_range
+  "22007", // invalid_datetime_format
+  "22008"  // datetime_field_overflow
+]);
+
+/* boundedLimit — for the handlers that roll their own pagination rather than
+   going through readHandler (dashboard/clients, dashboard/pipeline, tasks).
+
+   Each of them did `Math.min(parseInt(v) || fallback, cap)`, which has no LOWER
+   bound: ?limit=-1 parses to -1, survives Math.min, reaches Postgres and raises
+   "LIMIT must not be negative" as a 500. A caller's bad number is not a server
+   fault. NaN and empty fall back; anything below 1 clamps to 1. */
+export function boundedLimit(raw, { fallback, cap }) {
+  const n = parseInt(raw ?? "", 10);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(1, Math.min(n, cap));
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/* isUuid — cheap guard for handlers that take an `?id=`. Catching a malformed
+   id here avoids firing a fan-out of parallel queries that cannot match, and
+   turns what used to be a 500 into an honest 400. */
+export function isUuid(v) {
+  return typeof v === "string" && UUID_RE.test(v.trim());
+}
+
 /* pageParams — limit/offset from a query string, bounded. The unit's rule is
    "paginated above 200 rows", so 200 is the ceiling and a caller asking for more
    silently gets 200 rather than an error: a screen requesting 1000 should still
@@ -103,20 +136,55 @@ export function requireRole(res, staff, roleSet) {
 
    `fetch(db, { limit, offset, query, staff })` must return an array of rows; it
    should SELECT limit+1 so `hasMore` is accurate. */
-export function readHandler({ roles, fetch, single = false }) {
+/* PRINCIPALS. `principals` names the NON-STAFF kinds an endpoint serves —
+   {"client"}, {"partner"} — and is absent by default, so every endpoint keeps
+   admitting staff only unless it opts in.
+
+   This is what src/partners/scope.mjs was written for and was never wired to.
+   Nothing called it, no api/read/* query filtered partner_id, and the
+   consequence was quiet rather than dangerous: a client or partner could sign in
+   and then read NOTHING, because every endpoint 401'd them. client-portal and
+   partner-galaxy showed a signed-in principal a wireframe.
+
+   When an endpoint opts in, `fetch` receives the resolved `principal` and MUST
+   scope its own SQL with it. There is no automatic scoping here on purpose: a
+   wrapper that silently appended a WHERE clause would be one refactor away from
+   silently not appending it. The endpoint's SQL says who it is for, in the open,
+   where a reviewer reads it. */
+export function readHandler({ roles, fetch, single = false, principals = null }) {
   return async function handler(req, res, deps) {
-    const { db, requireAuth } = deps;
+    const { db, requireAuth, requirePrincipal } = deps;
     if (req.method && req.method !== "GET") {
       return res.status(405).json({ ok: false, error: "method_not_allowed" });
     }
-    const staff = await requireAuth(req, res, { db });
-    if (!staff) return;
-    if (!requireRole(res, staff, roles)) return;
+
+    let staff = null;
+    let principal = null;
+
+    if (principals && principals.size) {
+      if (typeof requirePrincipal !== "function") {
+        // Fail closed: an endpoint that declares principals but was not given
+        // the resolver must not fall back to the staff-only path and quietly
+        // serve staff data to nobody's satisfaction.
+        return res.status(500).json({ ok: false, error: "misconfigured_endpoint" });
+      }
+      principal = await requirePrincipal(req, res, ["staff", ...principals], { db });
+      if (!principal) return;
+      if (principal.kind === "staff") {
+        staff = principal.staff || { role: principal.role };
+        if (!requireRole(res, staff, roles)) return;
+      }
+      // A non-staff principal is admitted by KIND; roles do not apply to it.
+    } else {
+      staff = await requireAuth(req, res, { db });
+      if (!staff) return;
+      if (!requireRole(res, staff, roles)) return;
+    }
 
     try {
       const query = req.query || {};
       const { limit, offset } = pageParams(query);
-      const rows = await fetch(db, { limit, offset, query, staff });
+      const rows = await fetch(db, { limit, offset, query, staff, principal });
       if (single) {
         const row = Array.isArray(rows) ? rows[0] : rows;
         if (!row) return res.status(404).json({ ok: false, error: "not_found" });
@@ -124,6 +192,14 @@ export function readHandler({ roles, fetch, single = false }) {
       }
       return res.status(200).json({ ok: true, ...page(rows, { limit, offset }) });
     } catch (err) {
+      // A malformed parameter is the CALLER's error, not ours. Postgres raises
+      // SQLSTATE class 22 (data exception) for `?id=zzz` against a uuid column,
+      // and reporting that as a 500 told every screen "the backend is down" when
+      // only the query string was wrong. Classify on the code, not the message —
+      // the message is localised and version-dependent.
+      if (CLIENT_DATA_ERRORS.has(err && err.code)) {
+        return res.status(400).json({ ok: false, error: "invalid_parameter" });
+      }
       // The message can quote a DSN on a connection failure, same as health.
       const safe = String(err && err.message || "query failed")
         .replace(/postgres(ql)?:\/\/[^\s"']+/gi, "postgres://[redacted]")

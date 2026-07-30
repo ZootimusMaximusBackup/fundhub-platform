@@ -11,16 +11,29 @@ import {
 import { _resetOrgCache } from "../events/bus.mjs";
 import { on, clearHandlers } from "../events/registry.mjs";
 
-// Fake db (same shape as bus.test.mjs) — routes by SQL keyword.
+/* Fake db (same shape as bus.test.mjs) — routes by SQL keyword.
+
+   It now MODELS THE UNIQUE INDEX. It used to ignore idempotency_key entirely
+   and insert unconditionally, so no test using it could observe whether emit()
+   was given a key — a replay test written against it was really testing the
+   fake. events has `ON CONFLICT (org_id, idempotency_key) DO NOTHING`, so the
+   fake honours the same rule: a repeated non-null key returns no row. */
 function fakeDb({ dedup = false, store = [] } = {}) {
   let n = 0;
+  const keys = new Set();
   return {
     query(sql, params) {
       if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
       if (/INSERT INTO events/.test(sql)) {
         if (dedup) return { rows: [] };
+        const idem = params[3];                       // idempotency_key
+        if (idem != null) {
+          const k = `${params[0]}|${idem}`;           // (org_id, idempotency_key)
+          if (keys.has(k)) return { rows: [] };       // DO NOTHING
+          keys.add(k);
+        }
         const row = { id: `evt-${++n}` };
-        store.push({ ...row, name: params[1], payload: params[5] });
+        store.push({ ...row, name: params[1], payload: params[5], idempotency_key: idem });
         return { rows: [row] };
       }
       return { rows: [] };
@@ -146,4 +159,55 @@ test("handleCommasWebhook: non-terminal event => 200, ignored, no emit", async (
   assert.equal(res.ok, true);
   assert.equal(res.emitted.length, 0);
   assert.match(res.reason, /^ignored:/);
+});
+
+/* ── replay safety when the provider sends no event id ──────────────────────
+   evt.id has four fallbacks and can still be null. It used to mean NO
+   idempotency key, so a redelivered webhook emitted a second payment.received
+   and the money was counted twice. */
+
+test("a webhook with NO event id still dedupes on replay", async () => {
+  _resetOrgCache(); clearHandlers();
+  const store = [];
+  const db = fakeDb({ store });
+  // No id / transaction_id / checkout_session_id / fan.id anywhere.
+  const raw = JSON.stringify({
+    type: "payment.succeeded",
+    data: { name: "Business Financial Assessment", amount: 32, email: "noid@example.com" }
+  });
+  const sig = crypto.createHmac("sha256", SECRET).update(raw).digest("hex");
+
+  const first = await handleCommasWebhook({ db, rawBody: raw, signatureHeader: sig, secret: SECRET });
+  const second = await handleCommasWebhook({ db, rawBody: raw, signatureHeader: sig, secret: SECRET });
+
+  assert.equal(first.ok, true);
+  assert.equal(second.ok, true);
+  assert.ok(first.emitted.length >= 1, "the first delivery emitted nothing");
+  assert.equal(store.length, first.emitted.length,
+    `a replayed id-less webhook emitted again: ${store.length} rows`);
+  assert.ok(store.every((e) => e.idempotency_key),
+    "an event was written with no idempotency key at all");
+});
+
+test("an id-less webhook with DIFFERENT bytes is not collapsed", async () => {
+  _resetOrgCache(); clearHandlers();
+  const store = [];
+  const db = fakeDb({ store });
+  const mk = (email) => JSON.stringify({
+    type: "payment.succeeded",
+    data: { name: "Business Financial Assessment", amount: 32, email }
+  });
+  let expected = 0;
+  for (const email of ["a@example.com", "b@example.com"]) {
+    const raw = mk(email);
+    const r = await handleCommasWebhook({
+      db, rawBody: raw, secret: SECRET,
+      signatureHeader: crypto.createHmac("sha256", SECRET).update(raw).digest("hex")
+    });
+    expected += r.emitted.length;   // this product maps to TWO canonical events
+  }
+  assert.equal(store.length, expected,
+    "two different payments were collapsed into one");
+  const keys = store.map((e) => e.idempotency_key);
+  assert.equal(new Set(keys).size, keys.length, "distinct payments shared an idempotency key");
 });

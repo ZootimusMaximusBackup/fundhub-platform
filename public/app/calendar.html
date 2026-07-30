@@ -946,20 +946,115 @@ dTog.addEventListener('click',function(){
       { weekday: "short", month: "short", day: "numeric" }) : "—";
   };
 
+  /* Paint the VISIBLE day timeline.
+
+     This used to write <tr> rows into #demoBody — the collapsed, hidden
+     "Demonstration states" drawer, and a <div> at that. The real schedule went
+     somewhere nobody could see it while the banner turned mint and announced
+     "live schedule", so the visible calendar was 100% fabricated under a badge
+     saying it was real. That is worse than showing nothing.
+
+     It now rebuilds .day-wrap using the screen's OWN classes and nesting
+     (.hour > .hour-label + .hour-body > .evt > .evt-time/.evt-main/.evt-right),
+     so the layout and styling are untouched and only the content is real. */
+
+  var hourLabel = function (d) {
+    var h = d.getHours();
+    var ampm = h < 12 ? "AM" : "PM";
+    var h12 = h % 12 === 0 ? 12 : h % 12;
+    return h12 + ":00 " + ampm;
+  };
+  var clockTime = function (d) {
+    var h = d.getHours(), m = d.getMinutes();
+    var h12 = h % 12 === 0 ? 12 : h % 12;
+    return h12 + ":" + (m < 10 ? "0" + m : m);
+  };
+  var initials = function (name) {
+    var parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return "??";
+    return (parts[0][0] + (parts[1] ? parts[1][0] : "")).toUpperCase();
+  };
+
   FHData.wire(FHData.taskQueue({ done: false, limit: 200 }), "scheduled work",
     function (data) {
       var rows = (data.tasks || []).filter(function (t) { return t.due_at; });
       if (!rows.length) return null;
-      var body = document.getElementById("demoBody");
-      if (!body) return null;
+      var wrap = document.querySelector(".day-wrap");
+      if (!wrap) return null;
+
       rows.sort(function (a, b) { return new Date(a.due_at) - new Date(b.due_at); });
-      body.innerHTML = rows.map(function (t) {
-        return "<tr><td>" + esc(day(t.due_at)) + "</td>" +
-               "<td>" + esc(t.title) + "</td>" +
-               "<td>" + esc(t.client_name || "—") + "</td>" +
-               "<td>" + esc(t.assignee_role || "unassigned") + "</td></tr>";
-      }).join("");
-      return "live schedule · " + rows.length + " dated task(s)";
+
+      // Only today's work belongs on the day timeline; the rest is still real
+      // and is reported in the banner rather than silently dropped.
+      var now = new Date();
+      var sameDay = function (d) {
+        return d.getFullYear() === now.getFullYear() &&
+               d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+      };
+      var today = rows.filter(function (t) { return sameDay(new Date(t.due_at)); });
+      var later = rows.length - today.length;
+
+      var html = '<div class="day-title eyebrow">CA-01 / Today — ' +
+        esc(now.toLocaleDateString("en-US",
+          { weekday: "long", month: "long", day: "numeric" })) + "</div>";
+
+      if (!today.length) {
+        html += '<div class="hour"><div class="hour-label">—</div><div class="hour-body">' +
+                '<div class="ws-empty">Nothing scheduled for today.</div></div></div>';
+      } else {
+        // Group into the hour blocks the layout expects.
+        var byHour = [];
+        today.forEach(function (t) {
+          var d = new Date(t.due_at);
+          var key = hourLabel(d);
+          var slot = byHour.filter(function (s) { return s.key === key; })[0];
+          if (!slot) { slot = { key: key, items: [] }; byHour.push(slot); }
+          slot.items.push({ t: t, d: d });
+        });
+
+        byHour.forEach(function (slot) {
+          html += '<div class="hour"><div class="hour-label">' + esc(slot.key) + "</div>" +
+                  '<div class="hour-body">';
+          slot.items.forEach(function (it) {
+            /* Deliberately NOT tagging overdue rows `.past`. That class is the
+               screen's collapsed presentation for an appointment that already
+               happened — it shrinks the row and sets `.evt-meta{display:none}`,
+               which hid the task title. Everything here is an OPEN task
+               (done:false), so one whose due time has passed needs more
+               attention than the rest, not a greyed-out row with no title. */
+            var who = it.t.assignee_name || "";
+            html += '<div class="evt">' +
+              '<div class="evt-time">' + esc(clockTime(it.d)) + "</div>" +
+              '<div class="evt-main">' +
+                '<div class="evt-client">' + esc(it.t.client_name || "(no client)") + "</div>" +
+                '<div class="evt-meta">' + esc(it.t.title) +
+                  (it.t.assignee_role
+                    ? ' <span class="rail-tag">' + esc(String(it.t.assignee_role).toUpperCase()) + "</span>"
+                    : "") +
+                "</div>" +
+                (it.t.body ? '<div class="evt-outcome">' + esc(it.t.body) + "</div>" : "") +
+              "</div>" +
+              '<div class="evt-right">' +
+                (who
+                  ? '<div class="who"><span class="av human">' + esc(initials(who)) +
+                    '</span><span class="who-name">' + esc(who) + "</span></div>"
+                  : '<div class="who"><span class="who-name">unclaimed</span></div>') +
+              "</div>" +
+            "</div>";
+          });
+          html += "</div></div>";
+        });
+      }
+      wrap.innerHTML = html;
+
+      /* Name EVERY part that is still sample. A banner that says "live" while
+         two thirds of the screen is fabricated is the failure this whole fix is
+         about, and being vague about which parts is the same failure in
+         miniature. The header date, week strip, KPI tiles and the right rail all
+         have no source in tasks. */
+      return "live schedule · " + today.length + " today" +
+             (later ? " · " + later + " dated later" : "") +
+             ' · header date, week strip, tiles and right rail are still sample';
     });
 })();
 </script>

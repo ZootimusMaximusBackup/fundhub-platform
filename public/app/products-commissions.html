@@ -688,21 +688,37 @@ renderProducts(); renderRules(); renderLedger(); renderStats();
     set("kProd", rows.length);
     set("kRules", rows.reduce(function (a, p) { return a + (p.active_rules || 0); }, 0));
 
-    var body = document.getElementById("prodBody");
-    if (body) {
-      body.innerHTML = rows.map(function (p) {
-        var price = p.price_is_variable
-          ? money(p.min_price) + "–" + money(p.max_price)
-          : money(p.default_price);
-        return "<tr><td>" + esc(p.name) + "</td>" +
-               "<td>" + esc(p.category || "—") + "</td>" +
-               "<td>" + esc(price) + "</td>" +
-               "<td>" + esc(p.default_success_fee_percent == null
-                             ? "—" : p.default_success_fee_percent + "%") + "</td>" +
-               "<td>" + esc(p.active_rules) + "</td></tr>";
-      }).join("");
-    }
-    return "live product ladder · " + rows.length + " products";
+    /* Feed the screen's OWN model and renderer.
+
+       This wrote five <td>s into a SEVEN-column table
+       (Product | Category | Default price | Variable | Min | Max | Rails), so
+       the success-fee percent landed under "Variable", the rule count under
+       "Min", and "Max"/"Rails" were empty. It also dropped the data-p attribute
+       the row-click handler keys on, so "CLICK A ROW TO EDIT" silently stopped
+       working on every real row. */
+    if (typeof PRODUCTS === "undefined" || typeof renderProducts !== "function") return null;
+
+    var noRails = 0;
+    var mapped = rows.map(function (p) {
+      // `rails` describes which funnels a product sits on. Nothing in the
+      // products table records that, so it stays empty rather than invented.
+      noRails++;
+      return {
+        id: p.code || p.id,
+        name: p.name,
+        cat: p.category || "—",
+        price: Number(p.default_price) || 0,
+        variable: !!p.price_is_variable,
+        min: Number(p.min_price != null ? p.min_price : p.default_price) || 0,
+        max: Number(p.max_price != null ? p.max_price : p.default_price) || 0,
+        rails: []
+      };
+    });
+    PRODUCTS.length = 0;
+    Array.prototype.push.apply(PRODUCTS, mapped);
+    try { renderProducts(); } catch (e) { return null; }
+
+    return "live product ladder · " + rows.length + " products · rails have no source";
   });
 
   FHData.wire(FHData.commissions({ limit: 200 }), "commission ledger", function (data) {

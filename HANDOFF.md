@@ -3,11 +3,50 @@
 Written for the next engineer picking this up. It is deliberately blunt about
 what is finished and what only looks finished.
 
+> ## READ `AUDIT-FINDINGS.md` FIRST
+>
+> An independent seven-lens audit was run against this branch after the build queue was
+> declared finished. It found **53 defects, four of them blocking**, concentrated exactly
+> where the unit tests fake out the real seams — the Netlify adapter, the schema/code
+> boundary, and the screen/DOM boundary.
+>
+> **All four blocking defects and every high finding are now fixed** (see the git log from
+> `Independent audit: 53 findings` onward). What is worth carrying forward is not the list
+> but the shape:
+>
+> - **A fake that models the schema you wish you had cannot fail when the schema moves.**
+>   `031_invoices.sql` renamed three columns and the only writer of the table was never
+>   updated. Every `createInvoice()` raised SQLSTATE 42703 against Postgres while the unit
+>   tests stayed green, because they ran against an in-memory stub still modelling the old
+>   names. `*.pg.test.mjs` files now cover every money path against a real database.
+> - **A structural check can pass over a half-dead feature.** `src/adapters/lendflow.mjs`
+>   was 440 lines, fully tested, documented as live in `docs/diagrams`, and never registered
+>   in the router — so `/api/webhooks/lendflow` 404'd and the whole `round.*` event family
+>   had no producer. `npm run diagrams:check` reported "up to date" throughout, because it
+>   reads the adapters directory rather than the router.
+> - **"Absent config" must never mean "no gate".** `/api/dashboard/*` served the entire
+>   client book to anonymous callers because the gate returned open whenever
+>   `DASHBOARD_SECRET` was unset and `NODE_ENV` was not `"production"` — the exact deployed
+>   configuration. It was masked only by there being no production database.
+> - **Banner tone and "no console errors" do not mean a screen works.** Seven screens
+>   rendered real data and reverted to sample on the first filter keystroke, or painted it
+>   into a hidden element, all under a green "live" badge.
+>
+> **`scripts/marketing/lib/*.test.mjs` — 78 tests — never ran**, because the `npm test`
+> glob covered `src/**` and `scripts/diagrams/*` only. The glob is `scripts/**` now and all
+> 78 pass.
+>
+> Still open and deliberately not built: **nothing transmits.** `sendTemplated` writes
+> `messages` rows with `status='queued'` and no code ever sends them — there is no outbound
+> fetch anywhere in `src/adapters/` or `src/lib/`. Turning on the Inngest keys will run 47
+> workflows and produce zero SMS or email. That needs a sender, and a decision about which
+> provider.
+
 ## The one-line summary
 
 The **backend is built and tested** — all 14 units of the build queue are done.
-The **front end is now mostly wired too**: 12 of 21 screens read real data. What
-remains is 9 screens with no data source yet, and no production database. Do not
+The **front end is now mostly wired too**: 14 of 21 screens read real data. What
+remains is 7 screens with no data source yet, and no production database. Do not
 open the deployed site expecting live data until `DATABASE_URL` is set.
 
 ---
@@ -28,17 +67,25 @@ export DATABASE_URL="postgres://fundhub:localdev@127.0.0.1:5432/fundhub"
 node db/migrate.mjs
 
 # 3. staff logins. Reads the password from the ENV, never argv.
-#    Re-running does NOT reset a password someone has changed;
-#    --reset-passwords is the opt-in that does.
+#    Re-running does NOT reset a password someone has changed.
+#    If the accounts already exist you will see "6 already correct" and your
+#    NEW password will NOT be in effect — add --reset-passwords to force it.
 STAFF_INITIAL_PASSWORD='<pick one, 12+ chars>' node scripts/seed-staff.mjs
 
 # 4. tests
-npm test                    # 1178 tests, 0 failures, 8 skipped
+npm test                    # 1348 tests, 0 failures, 8 skipped
 
-# 5. the screens
-npx http-server public -p 8899 -c-1
+# 5. the app — screens AND a working /api/*
+node scripts/dev-server.mjs
 # → http://127.0.0.1:8899/login.html
 ```
+
+**Step 5 used to say `npx http-server public`.** That serves the HTML and
+nothing else, so every `/api/*` request 404s, the seeded logins are rejected at
+the login screen, and no screen can reach real data — following the documented
+steps exactly produced an app that looked broken. `scripts/dev-server.mjs`
+routes `/api/*` through the REAL Netlify function handler, so local behaviour is
+the deployed behaviour rather than a second implementation that can drift.
 
 **The 8 skipped tests** need the `fundhub-docs` sibling repo, which is not on
 this account. They are the message-template seeders. They skip cleanly and
@@ -57,14 +104,14 @@ Each of these is verified against a real Postgres, not by reading code.
 
 | Area | Where | State |
 |---|---|---|
-| Schema | `db/migrations/` | 33 files, clean from scratch, idempotent |
+| Schema | `db/schema/` + `db/migrations/` + `db/seed/` | 33 files total (10 + 21 + 2), clean from scratch, idempotent |
 | Dead-letter queue | `src/events/dead-letter.mjs` | Handler failures isolated + recorded, retry with backoff |
 | Task routing | `src/lib/create-task.mjs` | All 20 task-writing sites route to an owning role |
 | Entitlements | `src/entitlements/` | Grants, catalog, locked tiles |
 | Agent registry | `src/agents/registry.mjs` | 14 agents; only Setter Josh + Inquiry Removal AI are live |
-| Partner isolation | `src/partners/scope.mjs` | Tenancy boundary, mutation-tested three ways |
+| Partner isolation | `src/partners/scope.mjs` | **NOW WIRED.** `api/read/partners` is its first production caller. A partner principal sees exactly their own row; staff still see the whole book. Adversarially tested in `src/http/principal-reads.pg.test.mjs`. Other endpoints do not admit partners at all, so there is nothing else to scope yet. |
 | Affiliate economics | `src/affiliates/economics.mjs` | Attribution, accrual, tier 2 |
-| Read APIs | `api/read/*` | 10 endpoints, role-gated, paginated, redacted |
+| Read APIs | `api/read/*` | 13 endpoints, role-gated, paginated, redacted |
 | Principals | `src/auth/account-session.mjs` | client/affiliate/partner sign-in; partner is invite-only |
 | Brand Studio | `api/partner-brand.mjs` | GET/PUT, Google-fonts-only, applied by shell.js |
 | Health | `api/health.mjs` | Always 200, names its state, leaks no host |
@@ -73,25 +120,46 @@ Each of these is verified against a real Postgres, not by reading code.
 
 ## What is NOT done — in the order it will bite you
 
-### 1. The screens are not wired (biggest gap)
+### 1. Six screens are still on sample data
 
-**12 of 21** read real data: `client-control-panel`, `pipeline`, `documents`,
+**15 of 21** read real data: `client-control-panel`, `pipeline`, `documents`,
 `staff-teams`, `affiliate`, `ops-admin`, `command-center`, `products-commissions`,
-`client-portal`, `partner-galaxy`, `messaging`, `calendar`.
+`client-portal`, `partner-galaxy`, `messaging`, `calendar`, `agent-editor`,
+`brand-studio`, `inquiry-remover`.
 
-The remaining **9** each lack a data source, not wiring:
+The remaining **6** each lack a data source, not wiring. None is a wiring job
+you can just do — each needs a modelling decision first:
 
 | Screen | What it needs first |
 |---|---|
-| `closer-dashboard` | per-card APR/limit/balance — the calculators compute from table markup and no endpoint supplies cards |
+| `closer-dashboard` | credit-card tradelines with APR / limit / balance. **The `cards` table is NOT this** — see the warning below |
 | `automations` | a workflow-run history table; none exists |
 | `galaxy` | node/edge layout has no source (`/api/read/staff` exists, the graph does not) |
-| `agent-editor` | `/api/read/agents` now exists — needs the editor bound to it |
-| `content-admin` | the tier/tile content model has no table |
-| `inquiry-remover` | `/api/inquiry` returns the external Airtable shape, not these columns |
-| `brand-studio` | endpoint exists (Unit 11); the form still writes localStorage |
+| `content-admin` | a video library table and a tier->video mapping. **Partial source exists**: `entitlement_catalog` holds the five locked-tile identities the portal already renders, but it has no price and no marketing copy, and there is no write endpoint — so the editor would display real names and be unable to save. Needs the write path first. |
 | `sample-data` | a sample-data screen by design — leave it |
 | `index` | router, renders nothing |
+
+> **`cards` is a name collision.** `public.cards` is a PIPELINE KANBAN card —
+> `(client_id, pipeline_id, stage_id, owner)`. It has no APR, limit or balance
+> and has nothing to do with credit cards. `closer-dashboard`'s waterfall and
+> cliff calculators need real tradelines, and no table in the schema holds them.
+> Do not wire the dashboard to `cards`.
+
+**`inquiry-remover` reads, but does not write.** It now renders the real
+`inquiry_log` queue via `/api/read/inquiries`, and every interaction — expand,
+log an attempt, mark confirmed, filter by bureau — works on the real rows. But
+those actions are still LOCAL ONLY: there is no write endpoint for
+`inquiry_log`, so a click updates the screen and is lost on reload. That is the
+next job on this screen.
+
+Two things on it are reported rather than guessed:
+- **Status pills** are mapped only where the wording is unambiguous. Anything
+  else keeps its real text on a neutral pill and is counted in the banner
+  ("2 with an unmapped status"). `inquiry_log.status` is free text, so a
+  complete mapping would be an invention.
+- **The "Worked" stat** keeps its sample value. Nothing in `inquiry_log` records
+  who worked a row or when, and deriving it from `call_attempts > 0` would be a
+  guess. Queue Left, Calls and Confirmed ARE derived from the real rows.
 
 The read APIs most screens need now exist
 (`/api/read/*` and the widened `/api/dashboard/client`), so this is wiring, not
@@ -115,9 +183,11 @@ partner all sign in through `/api/auth/login`, which returns a `principal` field
 so the frontend can route. Partner is invite-only, enforced in code AND by a
 trigger.
 
-What is still missing is the SCREENS: `client-portal.html` and
-`partner-galaxy.html` are still hardcoded sample data, so a principal can now
-authenticate but lands on a wireframe. Wiring those is the remaining work.
+`client-portal.html` and `partner-galaxy.html` are both wired now, so a
+principal who signs in lands on real rows rather than a wireframe. What has NOT
+been exercised end-to-end is a real client/affiliate/partner session driving
+those two screens — they were verified with a staff session. Log in as each kind
+before trusting it.
 
 `036_partner_role.sql` seeded `partner` into the STAFF catalog as a stopgap. Now
 that real partner accounts exist it should be reverted — see the DESIGN NOTE in
@@ -143,11 +213,17 @@ live against whatever `DATABASE_URL` points at. Unit 13's verification pass is
 clean (see `VERIFICATION.md`), so the gate is now just "do it when someone is
 watching" — an operator action, not a commit.
 
-### 5. Brand Studio: backend done, screen not wired
+### 5. Brand Studio writes through, but only for a partner principal
 
-`043` + `api/partner-brand.mjs` + `shell.js applyBrand()` all landed in Unit 11,
-so tokens persist and are applied at boot. `brand-studio.html` itself still
-writes to localStorage — the screen needs pointing at the endpoint.
+`043` + `api/partner-brand.mjs` + `shell.js applyBrand()` landed in Unit 11, and
+`brand-studio.html` now PUTs to the endpoint as well as caching a local draft.
+The localStorage write was kept deliberately: a failed PUT leaves the draft
+intact and the banner says "saved LOCALLY only" rather than pretending it
+persisted.
+
+It only loads a real palette for a partner principal, or with an explicit
+`?partner_id=<id>`. A staff session with neither sees the sample palette — that
+is correct, not a bug.
 
 ---
 

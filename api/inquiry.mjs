@@ -29,7 +29,17 @@ export default async function handler(req, res) {
   if (!staff) return;
 
   const secret = process.env.INQUIRY_API_SECRET;
-  if (!secret) return res.status(500).json({ ok: false, error: "INQUIRY_API_SECRET not set" });
+  if (!secret) {
+    /* 503, not 500. Unconfigured is a deployment state, not a crash: the code
+       is fine and there is nothing to retry until an operator sets the variable.
+       A 500 here reads as a bug and sends someone reading logs down the wrong
+       path — this is the single most common local response from this endpoint,
+       because the secret is unset in every developer environment. */
+    return res.status(503).json({
+      ok: false, error: "not_configured",
+      message: "INQUIRY_API_SECRET is not set — the inquiry runtime is unreachable from this deploy"
+    });
+  }
   const base = (process.env.INQUIRY_API_BASE || DEFAULT_BASE).replace(/\/$/, "");
 
   const action = ACTIONS[req.query?.action];

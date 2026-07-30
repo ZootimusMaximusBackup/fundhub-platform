@@ -12,13 +12,21 @@ import { handleBlandWebhook } from "../adapters/bland.mjs";
 import { handleCalcomWebhook } from "../adapters/calcom.mjs";
 import { handleTwilioWebhook } from "../adapters/twilio.mjs";
 import { handleMailgunWebhook } from "../adapters/mailgun.mjs";
+import { handleLendflowWebhook, SIGNATURE_HEADER as LENDFLOW_SIG } from "../adapters/lendflow.mjs";
 
 // Standard HMAC-body adapters: same {db, rawBody, signatureHeader, secret} shape.
 const STD = {
   commas: { fn: handleCommasWebhook, sig: "x-commas-signature", env: "COMMAS_WEBHOOK_SECRET" },
   clickfunnels: { fn: handleClickFunnelsWebhook, sig: "x-clickfunnels-signature", env: "CLICKFUNNELS_WEBHOOK_SECRET" },
   bland: { fn: handleBlandWebhook, sig: "x-bland-signature", env: "BLAND_WEBHOOK_SECRET" },
-  calcom: { fn: handleCalcomWebhook, sig: "x-cal-signature-256", env: "CALCOM_WEBHOOK_SECRET" }
+  calcom: { fn: handleCalcomWebhook, sig: "x-cal-signature-256", env: "CALCOM_WEBHOOK_SECRET" },
+  /* lendflow was written, tested and documented as live — and never registered
+     here, so /api/webhooks/lendflow answered 404. It is the SOLE emitter of
+     round.started / round.submitted / round.approved / round.funded, so eight
+     workflows (f-02, f-03, f-04, f-07, f-08, f-10, sys-01, bc-02) and back-end
+     commission accrual had no trigger at all. The adapter's own header comment
+     points at this table as the place the wiring belongs. */
+  lendflow: { fn: handleLendflowWebhook, sig: LENDFLOW_SIG, env: "LENDFLOW_WEBHOOK_SECRET" }
 };
 
 const norm = (res) => ({ status: res.status || (res.ok ? 200 : 400), body: res });

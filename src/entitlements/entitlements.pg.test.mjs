@@ -170,12 +170,40 @@ describe("entitlements", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
     assert.equal(rows[0].revoke_reason, "chargeback");
   });
 
-  test("re-purchasing after a revocation reinstates", async () => {
+  /* This test was called "re-purchasing after a revocation reinstates" but used
+     txA for BOTH grants — the same transaction, i.e. a REPLAY, not a
+     re-purchase. It encoded the same confusion the code had, and asserted the
+     harmful behaviour: a redelivered webhook resurrecting access that had been
+     revoked after a chargeback. Split into the three cases that actually
+     differ. */
+
+  test("REPLAYING the same transaction does NOT resurrect a revoked grant", async () => {
     await grant(db, { orgId: org, clientId, code: CODE, sourceTransactionId: txA });
     await revoke(db, { orgId: org, clientId, code: CODE, by: staffId, reason: "chargeback" });
-    const again = await grant(db, { orgId: org, clientId, code: CODE, sourceTransactionId: txA });
-    assert.equal(again.granted, true);
-    assert.equal(again.reason, "reinstated");
+    const replay = await grant(db, { orgId: org, clientId, code: CODE, sourceTransactionId: txA });
+    assert.equal(replay.granted, false, "a replayed webhook un-revoked a chargeback");
+    assert.equal(replay.reason, "revoked");
+    assert.equal(await has(db, { orgId: org, clientId, code: CODE }), false);
+  });
+
+  test("a genuine RE-PURCHASE grants again — a different transaction is a new row", async () => {
+    // This is the case the old comment claimed to protect, and it never needed
+    // the reinstate branch: a different source_transaction_id does not conflict.
+    await grant(db, { orgId: org, clientId, code: CODE, sourceTransactionId: txA });
+    await revoke(db, { orgId: org, clientId, code: CODE, by: staffId, reason: "chargeback" });
+    const repurchase = await grant(db, { orgId: org, clientId, code: CODE, sourceTransactionId: txB });
+    assert.equal(repurchase.granted, true);
+    assert.equal(await has(db, { orgId: org, clientId, code: CODE }), true);
+  });
+
+  test("reinstating is possible, but only when a caller explicitly asks", async () => {
+    await grant(db, { orgId: org, clientId, code: CODE, sourceTransactionId: txA });
+    await revoke(db, { orgId: org, clientId, code: CODE, by: staffId, reason: "mistake" });
+    const back = await grant(db, {
+      orgId: org, clientId, code: CODE, sourceTransactionId: txA, reinstate: true
+    });
+    assert.equal(back.granted, true);
+    assert.equal(back.reason, "reinstated");
     assert.equal(await has(db, { orgId: org, clientId, code: CODE }), true);
   });
 

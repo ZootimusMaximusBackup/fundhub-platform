@@ -1934,21 +1934,31 @@ requestAnimationFrame(draw);
     return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
       return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
   };
+  /* Report the partner census in the BANNER, and leave #census alone.
+
+     Two things were wrong with writing into #census. First, chrome() runs on a
+     1000ms setInterval and rewrites that element from the sample NODES array,
+     so the real figures survived for under a second and the screen then showed
+     sample text under a mint "live partner census" badge indefinitely. Second
+     — and this would have been wrong even without the ticker — #census does not
+     describe partners at all. It is the swarm read-out: "N workers · N working
+     · N idle". Partner counts and accrued dollars written into it were a
+     category error dressed as live data.
+
+     This screen has no element that describes partners, and inventing one would
+     be changing the approved layout. The banner is the honest place for it. */
   FHData.wire(FHData.partners({ limit: 200 }), "partner census", function (data) {
     var rows = data.items || [];
     if (!rows.length) return null;
-    var el = document.getElementById("census");
-    if (!el) return null;
 
     var owed = rows.reduce(function (a, p) { return a + Number(p.balance_accrued || 0); }, 0);
     var signed = rows.filter(function (p) { return p.agreement_signed; }).length;
-    el.innerHTML =
-      "<b>" + esc(rows.length) + "</b> partner(s) · " +
-      "<b>$" + esc(Math.round(owed).toLocaleString("en-US")) + "</b> accrued · " +
-      (signed === rows.length
-        ? "<b>all agreements signed</b>"
-        : '<span class="warn">' + esc(rows.length - signed) + " unsigned</span>");
-    return "live partner census · " + rows.length + " partner(s)";
+    var unsigned = rows.length - signed;
+
+    return "live partner census · " + rows.length + " partner(s) · $" +
+           Math.round(owed).toLocaleString("en-US") + " accrued · " +
+           (unsigned ? unsigned + " agreement(s) unsigned" : "all agreements signed") +
+           " · the galaxy itself is still sample";
   });
 })();
 </script>

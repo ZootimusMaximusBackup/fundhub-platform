@@ -391,12 +391,123 @@
 })();
 </script>
 
+<script src="data.js"></script>
 <script>
 /* ───────────────────────────────────────────────────────────────────────────
-   Inquiry Remover — wireframe behaviour. No backend; the queue is worked
-   locally so the states are walkable.
+   WIRING — replaces the sample queue with inquiry_log, then hands the rebuilt
+   table to the screen's own init so every interaction binds to real rows.
+
+   Runs BEFORE the behaviour block and publishes __fhQueueReady, which that
+   block waits on. On any failure it resolves anyway, leaving the sample rows in
+   place with a banner — rule: fall back, don't blank.
    ─────────────────────────────────────────────────────────────────────────── */
-(function(){
+window.__fhQueueReady = (function () {
+  var table = document.querySelector('table.queue');
+  if (!table || !window.FHData) return Promise.resolve();
+
+  /* Status → pill class. Mapped ONLY where the wording is unambiguous; an
+     unrecognised status keeps its real text on a neutral pill and is counted
+     into the banner rather than being guessed into a colour that would assert
+     something the database did not say. */
+  function pill(status, outcome) {
+    var s = String(status || outcome || '').trim();
+    var k = s.toLowerCase();
+    if (!s) return { cls: 'new', text: 'No status recorded', known: false, done: false };
+    if (/removed|confirmed/.test(k))        return { cls: 'confirmed', text: s, known: true, done: true };
+    if (/no answer|unreachable/.test(k))    return { cls: 'noanswer', text: s, known: true, done: false };
+    if (/filed|sent|progress|pending/.test(k)) return { cls: 'progress', text: s, known: true, done: false };
+    if (/new|queued/.test(k))               return { cls: 'new', text: s, known: true, done: false };
+    return { cls: '', text: s, known: false, done: false };
+  }
+
+  function cell(html) { var td = document.createElement('td'); td.innerHTML = html; return td; }
+  function esc(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  return FHData.inquiries({ limit: 200 }).then(function (res) {
+    if (!res.ok) { FHData.explain(res, 'inquiry queue'); return; }
+    var items = (res.data && res.data.items) || [];
+    if (!items.length) {
+      FHData.banner('sample', 'no inquiries in the database yet — showing sample markup', 'inquiries');
+      return;
+    }
+
+    // Header row is the table's first <tr>; keep it and drop only the samples.
+    [].slice.call(table.querySelectorAll('tr[data-row]')).forEach(function (r) { r.remove(); });
+
+    var unknown = 0, calls = 0, left = 0, confirmed = 0, byBureau = {};
+    items.forEach(function (it) {
+      var p = pill(it.status, it.outcome);
+      if (!p.known) unknown++;
+      calls += Number(it.call_attempts) || 0;
+      if (p.done) confirmed++; else {
+        left++;
+        byBureau[it.bureau] = (byBureau[it.bureau] || 0) + 1;
+      }
+
+      var tr = document.createElement('tr');
+      tr.setAttribute('data-row', '');
+      if (it.bureau) tr.dataset.bureau = it.bureau;
+      if (p.done) tr.dataset.done = '1';
+      tr.tabIndex = 0;
+      tr.setAttribute('aria-expanded', 'false');
+      tr.appendChild(cell('<span class="rowchev">&#9656;</span>' +
+        esc(it.client_name || '(unnamed client)')));
+      tr.appendChild(cell(esc(it.bureau || '—')));
+      tr.appendChild(cell(esc(it.inquiry || '—')));
+      var att = cell(esc(it.call_attempts == null ? 0 : it.call_attempts));
+      att.className = 'mono';
+      tr.appendChild(att);
+      tr.appendChild(cell('<span class="status-pill ' + p.cls + '">' + esc(p.text) + '</span>'));
+      table.appendChild(tr);
+    });
+
+    /* Stats that the rows actually support. "Worked" is deliberately left on
+       its sample value: nothing in inquiry_log records who worked a row or
+       when, and deriving it from call_attempts > 0 would be a guess. */
+    function setStat(name, n) {
+      var el = document.querySelector('[data-stat="' + name + '"]');
+      if (el) el.textContent = String(n);
+    }
+    setStat('left', left);
+    setStat('calls', calls);
+    setStat('confirmed', confirmed);
+
+    // Bureau chip counts, so a chip can never disagree with its own rows.
+    [].slice.call(document.querySelectorAll('.bureau-chip[data-bureau]')).forEach(function (c) {
+      var bc = c.querySelector('.bc');
+      if (!bc) return;
+      var n = byBureau[c.dataset.bureau] || 0;
+      bc.textContent = String(n);
+      bc.classList.toggle('zero', n === 0);
+    });
+
+    FHData.banner('real', 'live queue · ' + items.length + ' inquiries · ' +
+      left + ' open' +
+      (unknown ? ' · ' + unknown + ' with an unmapped status' : '') +
+      ' · "Worked" is still sample', 'inquiries');
+  }).catch(function () {
+    FHData.banner('error', 'sample queue — the inquiry read failed', 'inquiries');
+  });
+})();
+</script>
+
+<script>
+/* ───────────────────────────────────────────────────────────────────────────
+   Inquiry Remover — queue behaviour. The body below is UNCHANGED from the
+   wireframe: it reads the table out of the DOM at init and binds every
+   interaction to whatever rows it finds. That is why the wiring block above
+   rewrites the rows FIRST and then calls this, rather than re-implementing the
+   binding — real rows get the same behaviour the sample rows had.
+
+   Marking confirmed / logging an attempt are still LOCAL ONLY. There is no
+   write endpoint for inquiry_log, so a click updates the screen and is lost on
+   reload. Wiring the writes is a separate job; see HANDOFF.md.
+   ─────────────────────────────────────────────────────────────────────────── */
+window.__fhInitQueue = function(){
   var table  = document.querySelector('table.queue'),
       rows   = [].slice.call(table.querySelectorAll('tr[data-row]')),
       chips  = [].slice.call(document.querySelectorAll('.bureau-chip[data-bureau]')),
@@ -542,7 +653,15 @@
       if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); }
     });
   });
-})();
+};
+
+/* Hand off to the wiring block if it is still fetching; otherwise start now, so
+   the screen still works with the script above removed. */
+if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
+  window.__fhQueueReady.then(window.__fhInitQueue, window.__fhInitQueue);
+} else {
+  window.__fhInitQueue();
+}
 </script>
 </body>
 </html>

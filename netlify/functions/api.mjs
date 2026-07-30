@@ -9,6 +9,7 @@
 // Zero changes to the handlers themselves — this file is the only
 // Netlify-specific code in the repo.
 
+import { safeError } from "../../src/http/health.mjs";
 import authLogin from "../../api/auth/login.mjs";
 import authLogout from "../../api/auth/logout.mjs";
 import authSession from "../../api/auth/session.mjs";
@@ -32,7 +33,10 @@ import readStaff from "../../api/read/staff.mjs";
 import readEntitlements from "../../api/read/entitlements.mjs";
 import readFailedEvents from "../../api/read/failed-events.mjs";
 import readAgents from "../../api/read/agents.mjs";
+import readInquiries from "../../api/read/inquiries.mjs";
 import readProducts from "../../api/read/products.mjs";
+import { webHandler as inngestWeb } from "../../api/inngest.mjs";
+import documentById from "../../api/documents/[id].mjs";
 
 export const config = { path: "/api/*" };
 
@@ -59,11 +63,25 @@ const ROUTES = {
   "read/entitlements": readEntitlements,
   "read/failed-events": readFailedEvents,
   "read/agents": readAgents,
+  "read/inquiries": readInquiries,
   "read/products": readProducts
 };
 
+/* A NUL byte anywhere in a query value makes Postgres raise
+   "invalid byte sequence for encoding UTF8: 0x00" from inside whatever query
+   the value reached, which surfaced as a 500 quoting the driver. Postgres text
+   cannot hold a NUL at all, so no handler downstream could ever have done
+   anything useful with one — reject it here, once, as the bad request it is. */
+function hasNul(s) {
+  if (typeof s !== "string") return false;
+  for (let i = 0; i < s.length; i++) if (s.charCodeAt(i) === 0) return true;
+  return false;
+}
+
 function toQueryObject(searchParams) {
-  const q = {};
+  // null-prototype: a key like "constructor" or "toString" must be absent, not
+  // inherited. See the ROUTES lookup below for why that matters.
+  const q = Object.create(null);
   for (const [k, v] of searchParams.entries()) q[k] = v;
   return q;
 }
@@ -84,7 +102,18 @@ export default async function handler(request, context) {
   const url = new URL(request.url);
   const path = routePath(url.pathname);
 
-  let route = ROUTES[path];
+  /* /api/inngest is served by Inngest's own Web-standard handler, which takes a
+     Request and returns a Response. It must NOT go through the (req, res) shim
+     below: inngest/node's serve() reads the body as a stream and throws on the
+     plain object the shim provides, which is why this endpoint 500'd on every
+     POST and PUT even once it was routed. */
+  if (path === "inngest") return inngestWeb(request);
+
+  /* OWN properties only. `ROUTES[path]` walked the prototype chain, so
+     /api/constructor, /api/toString, /api/valueOf, /api/hasOwnProperty and
+     /api/__proto__ all resolved to a "route" — Object.prototype members — and
+     answered 500 to an UNAUTHENTICATED caller instead of 404. */
+  let route = Object.prototype.hasOwnProperty.call(ROUTES, path) ? ROUTES[path] : undefined;
   const query = toQueryObject(url.searchParams);
 
   // /api/webhooks/:provider → the existing [provider].mjs with req.query.provider
@@ -93,11 +122,28 @@ export default async function handler(request, context) {
     query.provider = path.slice("webhooks/".length);
   }
 
+  // /api/documents/:id → the signed-link download route.
+  if (!route && path.startsWith("documents/")) {
+    route = documentById;
+    query.id = path.slice("documents/".length);
+  }
+
   if (!route) {
     return new Response(JSON.stringify({ ok: false, error: "not_found", path }), {
       status: 404,
       headers: { "content-type": "application/json" }
     });
+  }
+
+  // Reject NUL bytes once, here, rather than letting each handler discover them
+  // as a Postgres encoding error mid-query.
+  for (const k of Object.keys(query)) {
+    if (hasNul(query[k]) || hasNul(k)) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "invalid_parameter", param: hasNul(k) ? undefined : k }),
+        { status: 400, headers: { "content-type": "application/json" } }
+      );
+    }
   }
 
   // ---- build req ----------------------------------------------------------
@@ -153,7 +199,11 @@ export default async function handler(request, context) {
     if (!res._finished) res.status(500).json({ ok: false, error: "handler_no_response" });
   } catch (err) {
     if (!res._finished) {
-      res.status(500).json({ ok: false, error: "internal_error", message: err?.message });
+      // err.message quotes the DSN on a connection failure, so an
+      // UNAUTHENTICATED caller could read the database host, port and username
+      // straight out of a 500 body — POST /api/auth/login with the database
+      // down was enough. Scrub it the same way health.mjs does.
+      res.status(500).json({ ok: false, error: "internal_error", message: safeError(err) });
     }
   }
   return done;

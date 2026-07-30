@@ -7,7 +7,19 @@ import {
 
 // ---------------------------------------------------------------------------
 // Minimal in-memory db stub — mirrors the pg pool.query interface.
+//
+// THIS STUB IS WHY THE 031 BREAKAGE WENT UNNOTICED. It used to model the
+// pre-031 column names (amount / provider_ref / issued_at) and the pre-031
+// status list, so it kept answering happily long after the real table had moved
+// underneath it. Every function in this file was green while every one of them
+// raised SQLSTATE 42703 against Postgres.
+//
+// It now models the columns that actually exist. That is still a fake and still
+// cannot prove the SQL is valid — src/invoices/invoices.pg.test.mjs does that
+// against a real database, and it is the file to trust when the two disagree.
 // ---------------------------------------------------------------------------
+const OPEN_STATUSES = ["draft", "sent", "reminded", "escalated", "partially_paid"];
+
 function makeDb(rows = []) {
   const store = [...rows];
   return {
@@ -16,28 +28,47 @@ function makeDb(rows = []) {
       const s = sql.trim().toUpperCase();
 
       if (s.startsWith("INSERT INTO INVOICES")) {
-        // Simulate ON CONFLICT DO NOTHING on idempotency_key
-        const idempotencyKey = params[10] ?? null;
-        if (idempotencyKey) {
-          const dup = store.find(r => r.org_id === params[0] && r.idempotency_key === idempotencyKey);
-          if (dup) return { rows: [] };
-        }
+        // Bare ON CONFLICT DO NOTHING: absorbs a collision on EITHER
+        // idempotency_key or source_event_id, matching 031's two dimensions.
+        const idempotencyKey = params[12] ?? null;
+        const sourceEventId = params[4] ?? null;
+        const clash = store.find((r) =>
+          r.org_id === params[0] &&
+          ((idempotencyKey && r.idempotency_key === idempotencyKey) ||
+           (sourceEventId && r.source_event_id === sourceEventId)));
+        if (clash) return { rows: [] };
+
+        // 031's trg_invoices_sync_legacy_type keeps source and invoice_type in
+        // step in both directions; the fake has to do it too or the fake is
+        // lying again.
+        const toSource = (t) => (t === "success_fee" ? "funding_success_fee" : "other");
+        const toType = (src) => ({
+          funding_success_fee: "success_fee", diy_letters: "deposit",
+          repair_bundle: "deposit", backend_selling: "platform_fee"
+        }[src] || "platform_fee");
+        let invoiceType = params[2] ?? null;
+        let source = params[3] ?? null;
+        if (!source && invoiceType) source = toSource(invoiceType);
+        if (source) invoiceType = toType(source);
+
         const row = {
           id: `inv-${store.length + 1}`,
           org_id: params[0],
           client_id: params[1],
-          invoice_type: params[2],
-          amount: params[3],
-          currency: params[4],
-          sale_id: params[5],
-          funding_round_id: params[6],
-          due_at: params[7],
-          provider: params[8],
-          provider_ref: params[9],
-          idempotency_key: params[10],
-          notes: params[11],
+          invoice_type: invoiceType,
+          source,
+          source_event_id: params[4],
+          amount_due: params[5],
+          currency: params[6],
+          sale_id: params[7],
+          funding_round_id: params[8],
+          due_at: params[9],
+          provider: params[10],
+          external_ref: params[11],
+          idempotency_key: params[12],
+          notes: params[13],
           status: "draft",
-          issued_at: null, paid_at: null, voided_at: null,
+          sent_at: null, paid_at: null, voided_at: null,
         };
         store.push(row);
         return { rows: [row] };
@@ -47,13 +78,15 @@ function makeDb(rows = []) {
         const id = params[0];
         const row = store.find(r => r.id === id && r.status === "draft");
         if (!row) return { rows: [] };
-        row.status = "sent"; row.issued_at = params[1];
+        row.status = "sent"; row.sent_at = params[1];
         return { rows: [row] };
       }
 
       if (s.startsWith("UPDATE INVOICES") && s.includes("STATUS = 'PAID'")) {
         const id = params[0];
-        const row = store.find(r => r.id === id && ["draft","sent","overdue"].includes(r.status));
+        // 031 retired 'overdue' and added 'reminded'/'escalated'.
+        const allowed = Array.isArray(params[2]) ? params[2] : OPEN_STATUSES;
+        const row = store.find(r => r.id === id && allowed.includes(r.status));
         if (!row) return { rows: [] };
         row.status = "paid"; row.paid_at = params[1];
         return { rows: [row] };
@@ -94,7 +127,7 @@ test("createInvoice returns the new row", async () => {
     saleId: SALE, fundingRoundId: ROUND,
   });
   assert.strictEqual(row.invoice_type, "success_fee");
-  assert.strictEqual(row.amount, 5000);
+  assert.strictEqual(row.amount_due, 5000);   // 031 renamed amount -> amount_due
   assert.strictEqual(row.status, "draft");
 });
 
@@ -220,7 +253,7 @@ test("round.funded scenario: success_fee invoice created with correct amount", a
     notes: `round.funded — approved ${approvedAmount} @ ${feePercent}%`,
   });
 
-  assert.strictEqual(invoice.amount, 5000);
+  assert.strictEqual(invoice.amount_due, 5000);   // 031 renamed amount -> amount_due
   assert.strictEqual(invoice.invoice_type, "success_fee");
   assert.strictEqual(invoice.idempotency_key, `invoice|success_fee|${SALE}|${ROUND}`);
 });

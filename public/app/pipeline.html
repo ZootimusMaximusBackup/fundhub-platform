@@ -1053,17 +1053,29 @@ var q=document.getElementById('q'), fOwner=document.getElementById('fOwner'),
     fHold=document.getElementById('fHold'), fAge=document.getElementById('fAge'),
     fSort=document.getElementById('fSort');
 
-/* owner list is built from who actually appears on the cards */
-(function(){
+/* owner list is built from who actually appears on the cards.
+
+   NAMED and re-runnable, not a one-shot IIFE. It used to run once at load
+   against the SAMPLE cards, so after the board was repainted with real data the
+   dropdown still held sample owners — every one of which matched nothing, so
+   choosing an owner hid every real card and the board looked empty. The wiring
+   calls this again after it paints. */
+function rebuildOwnerOptions(){
   var seen={};
   cards().forEach(function(c){
     var b=c.querySelector('.c-act b'); if(!b) return;
     var n=b.textContent.trim(); if(n&&!seen[n]){seen[n]=1;}
   });
+  var keep=fOwner.value;
+  while(fOwner.options.length>1) fOwner.remove(1);   // keep "Anyone"
   Object.keys(seen).sort().forEach(function(n){
     var o=document.createElement('option'); o.value=n; o.textContent=n; fOwner.appendChild(o);
   });
-})();
+  // Preserve the current choice if that owner still exists on the board.
+  fOwner.value = seen[keep] ? keep : "";
+}
+window.rebuildOwnerOptions = rebuildOwnerOptions;
+rebuildOwnerOptions();
 
 /* "3h 40m in stage" / "22m in stage" / "2d 4h in stage" -> minutes */
 function ageMins(card){
@@ -1329,6 +1341,7 @@ restore();
     stages.forEach(function (s) { byName[String(s.name).trim().toLowerCase()] = s; });
 
     var shown = 0;
+    var matched = {};
     cols.forEach(function (col) {
       var s = byName[colName(col)];
       var body = col.querySelector(".col-body");
@@ -1348,15 +1361,39 @@ restore();
       s.cards.forEach(function (c) { body.appendChild(cardEl(c)); shown++; });
       if (count) count.textContent = String(s.count);
       if (money) money.textContent = usd(s.amount) + " est.";
+      matched[colName(col)] = true;
     });
-    return shown;
+
+    /* The board has five columns; the sales pipeline has ten stages. Cards in
+       the five stages with no column are not rendered anywhere. That is a
+       property of the approved layout, not something to fix by inventing
+       columns — but the banner used to say "N cards across 10 stages", which
+       claimed the board showed all ten. Count what is actually off-board so the
+       number is not a quiet lie. */
+    var offBoard = [], offCards = 0;
+    stages.forEach(function (s) {
+      if (matched[String(s.name).trim().toLowerCase()]) return;
+      offBoard.push(s.name);
+      offCards += Number(s.count) || 0;
+    });
+    return { shown: shown, offBoard: offBoard, offCards: offCards };
   }
 
   FHData.pipeline("sales").then(function (res) {
     if (res.ok && res.data && res.data.stages) {
-      var n = paint(res.data.stages);
-      banner("real", "live board · sales pipeline · " + n + " cards across " +
-                     res.data.stages.length + " stages");
+      var r = paint(res.data.stages);
+      // The dropdown was built from the sample cards this call just replaced.
+      if (typeof window.rebuildOwnerOptions === "function") {
+        try { window.rebuildOwnerOptions(); } catch (e) { /* filter stays as-is */ }
+      }
+      var total = res.data.stages.length;
+      var onBoard = total - r.offBoard.length;
+      banner("real", "live board · sales pipeline · " + r.shown + " cards across " +
+                     onBoard + " of " + total + " stages" +
+                     (r.offBoard.length
+                       ? " · " + r.offCards + " card(s) in " + r.offBoard.join(", ") +
+                         " have no column on this board"
+                       : ""));
       return;
     }
     if (res.source === "demo") {

@@ -282,11 +282,38 @@
   }
 
   function signOut() {
-    localStorage.removeItem("fh_token");
-    localStorage.removeItem("fh_demo");
-    localStorage.removeItem("fh_demo_staff");
-    writeCachedRole("");
-    location.href = "/login.html";
+    /* Tell the SERVER first. This used to clear localStorage and redirect,
+       which logs the browser out and leaves the session row live until it
+       expires — so "Sign out" did not revoke anything, and a token captured
+       from that machine kept working afterwards. /api/auth/logout has existed
+       the whole time; nothing called it.
+
+       The local clear happens either way: a network failure must never strand
+       someone signed in on a shared machine. */
+    var token = "";
+    try { token = localStorage.getItem("fh_token") || ""; } catch (e) { token = ""; }
+
+    function finish() {
+      try {
+        localStorage.removeItem("fh_token");
+        localStorage.removeItem("fh_demo");
+        localStorage.removeItem("fh_demo_staff");
+      } catch (e) { /* private mode — the redirect still happens */ }
+      writeCachedRole("");
+      location.href = "/login.html";
+    }
+
+    if (!token) { finish(); return; }
+    var done = false;
+    var once = function () { if (!done) { done = true; finish(); } };
+    // Never hang on the redirect if the API is slow or gone.
+    setTimeout(once, 1500);
+    try {
+      fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { authorization: "Bearer " + token, accept: "application/json" }
+      }).then(once, once);
+    } catch (e) { once(); }
   }
 
   function esc(s) {

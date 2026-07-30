@@ -2,7 +2,7 @@ import { test, describe } from "node:test";
 import assert from "node:assert";
 import {
   redact, pageParams, page, allowsRole, requireRole, readHandler,
-  ROLE_SETS, MAX_LIMIT, DEFAULT_LIMIT
+  ROLE_SETS, MAX_LIMIT, DEFAULT_LIMIT, isUuid, CLIENT_DATA_ERRORS, boundedLimit
 } from "./read-api.mjs";
 
 const res = () => {
@@ -191,6 +191,61 @@ describe("read-api", () => {
     assert.match(r.body.message, /\[redacted\]/);
   });
 
+  /* A malformed `?id=` used to surface as a 500 carrying the raw Postgres
+     message, which made every wired screen announce "backend unavailable" for
+     what was only a stale URL. These pin the classification. */
+  test("a bad uuid is a 400, not a 500, and echoes nothing back", async () => {
+    const pgErr = Object.assign(
+      new Error('invalid input syntax for type uuid: "zzz"'), { code: "22P02" });
+    const h = readHandler({ roles: ROLE_SETS.STAFF, fetch: async () => { throw pgErr; } });
+    const r = res();
+    await h({ method: "GET", query: { client_id: "zzz" } }, r, deps({ role: "owner" }));
+    assert.equal(r.code, 400);
+    assert.equal(r.body.error, "invalid_parameter");
+    // The caller's bad value must not be reflected, and the column type is an
+    // internal detail.
+    assert.doesNotMatch(JSON.stringify(r.body), /zzz|uuid|invalid input syntax/i);
+  });
+
+  test("every class-22 data error is a 400", async () => {
+    for (const code of CLIENT_DATA_ERRORS) {
+      const h = readHandler({
+        roles: ROLE_SETS.STAFF,
+        fetch: async () => { throw Object.assign(new Error("bad value"), { code }); }
+      });
+      const r = res();
+      await h({ method: "GET", query: {} }, r, deps({ role: "owner" }));
+      assert.equal(r.code, 400, `SQLSTATE ${code} should be a 400`);
+    }
+  });
+
+  test("a genuine failure is still a 500 — the 400 path must not swallow outages", async () => {
+    // 08006 is connection_failure. That IS our problem and must stay a 500,
+    // otherwise a real outage renders as a polite "bad request".
+    const h = readHandler({
+      roles: ROLE_SETS.STAFF,
+      fetch: async () => { throw Object.assign(new Error("connection refused"), { code: "08006" }); }
+    });
+    const r = res();
+    await h({ method: "GET", query: {} }, r, deps({ role: "owner" }));
+    assert.equal(r.code, 500);
+    assert.equal(r.body.error, "query_failed");
+  });
+
+  test("isUuid accepts a real uuid and rejects the shapes that reached Postgres", () => {
+    assert.equal(isUuid("f3263bdb-45da-4056-8d6c-7c999d944fee"), true);
+    assert.equal(isUuid("F3263BDB-45DA-4056-8D6C-7C999D944FEE"), true);
+    assert.equal(isUuid(" f3263bdb-45da-4056-8d6c-7c999d944fee "), true);
+    for (const bad of ["zzz", "", null, undefined, 12, {},
+                       "f3263bdb-45da-4056-8d6c-7c999d944fe",     // one short
+                       "f3263bdb-45da-4056-8d6c-7c999d944feez",   // one long
+                       "f3263bdb45da40568d6c7c999d944fee",        // no dashes
+                       "g3263bdb-45da-4056-8d6c-7c999d944fee",    // non-hex
+                       "f3263bdb-45da-4056-8d6c-7c999d944fee' OR 1=1"]) {
+      assert.equal(isUuid(bad), false, `isUuid(${JSON.stringify(bad)}) should be false`);
+    }
+  });
+
   test("single:true returns one object, or 404", async () => {
     const found = readHandler({ roles: ROLE_SETS.STAFF, single: true,
       fetch: async () => [{ id: 1, ssn: "x" }] });
@@ -204,5 +259,42 @@ describe("read-api", () => {
     const r2 = res();
     await missing({ method: "GET", query: {} }, r2, deps({ role: "owner" }));
     assert.equal(r2.code, 404);
+  });
+});
+
+/* boundedLimit — for the three handlers that roll their own pagination.
+   Each did `Math.min(parseInt(v) || fallback, cap)`, which has no LOWER bound,
+   so ?limit=-1 reached Postgres and raised "LIMIT must not be negative" as a
+   500. A caller's bad number is not a server fault. */
+describe("boundedLimit", () => {
+  const OPTS = { fallback: 100, cap: 200 };
+
+  test("a negative limit clamps to 1 instead of reaching Postgres", () => {
+    assert.equal(boundedLimit("-1", OPTS), 1);
+    assert.equal(boundedLimit("-999999", OPTS), 1);
+    assert.equal(boundedLimit("0", OPTS), 1);
+  });
+
+  test("the cap holds", () => {
+    assert.equal(boundedLimit("999999", OPTS), 200);
+    assert.equal(boundedLimit("201", OPTS), 200);
+  });
+
+  test("absent or unparseable falls back", () => {
+    for (const v of [undefined, null, "", "abc", "NaN", {}, []]) {
+      assert.equal(boundedLimit(v, OPTS), 100, JSON.stringify(v));
+    }
+  });
+
+  test("a normal value passes through, and a float truncates", () => {
+    assert.equal(boundedLimit("50", OPTS), 50);
+    assert.equal(boundedLimit("1.9", OPTS), 1);
+  });
+
+  test("the result is always an integer in [1, cap]", () => {
+    for (const v of ["-5", "0", "1", "7", "200", "201", "1e9", "abc", ""]) {
+      const n = boundedLimit(v, OPTS);
+      assert.ok(Number.isInteger(n) && n >= 1 && n <= 200, `${v} -> ${n}`);
+    }
   });
 });

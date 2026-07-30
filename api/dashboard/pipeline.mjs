@@ -11,8 +11,9 @@
 //
 // Read-only. SELECT only. Mirrors api/dashboard/clients.mjs style.
 import { db } from "../../src/db.mjs";
-import { checkDashboardAuth } from "../../src/http/dashboard-auth.mjs";
-import { attachStaff } from "../../src/http/middleware/requireAuth.mjs";
+import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
+import { boundedLimit, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
+import { safeError } from "../../src/http/health.mjs";
 
 // Stages first, so a stage with no cards still renders as an empty column
 // rather than vanishing from the board.
@@ -48,13 +49,16 @@ const CARDS_SQL = `
 export default async function handler(req, res) {
   // Staff session first; DASHBOARD_SECRET stays as the fallback until cutover,
   // matching the other dashboard routes.
-  const staff = await attachStaff(req, { db });
-  if (!staff && !checkDashboardAuth(req)) {
-    return res.status(401).json({ ok: false, error: "unauthorized" });
+  // GET only. These answered POST/PUT/DELETE/PATCH with 200 and the full
+  // client book, so any method reached read data that only GET should serve.
+  if (req.method && req.method !== "GET") {
+    return res.status(405).json({ ok: false, error: "method_not_allowed" });
   }
+  const staff = await requireDashboardAccess(req, res, { db });
+  if (!staff) return;
 
   const key = String(req.query?.key || "sales");
-  const limit = Math.min(parseInt(req.query?.limit ?? "500", 10) || 500, 2000);
+  const limit = boundedLimit(req.query?.limit, { fallback: 500, cap: 2000 });
 
   try {
     const stagesRes = await db.query(STAGES_SQL, [key]);
@@ -103,6 +107,13 @@ export default async function handler(req, res) {
       total: cardsRes.rows.length
     });
   } catch (err) {
-    return res.status(503).json({ ok: false, db: "down", error: err.message });
+    /* Not everything is an outage. This reported EVERY failure as
+       503 db:"down", including a caller's bad parameter, so a malformed query
+       string told every screen the database was unreachable — and echoed the
+       raw driver message while doing it. Classify first, scrub the rest. */
+    if (CLIENT_DATA_ERRORS.has(err && err.code)) {
+      return res.status(400).json({ ok: false, error: "invalid_parameter" });
+    }
+    return res.status(503).json({ ok: false, db: "down", error: safeError(err) });
   }
 }
