@@ -90,7 +90,7 @@
 
 <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-label="Jump to screen">
   <div class="panel" id="panel">
-    <div class="panel-head"><b>fundhub</b><span class="bar"></span><span id="here">index.html</span></div>
+    <div class="panel-head"><b>fundhub</b><span class="bar"></span><select id="roleSwitch" style="margin-left:auto;padding:4px 8px;border-radius:4px;border:1px solid var(--cardline);background:var(--card);color:var(--cardtext);font-size:11px;cursor:pointer"><option value="admin">Admin</option><option value="staff" selected>Staff</option><option value="partner">Partner</option><option value="affiliate">Affiliate</option><option value="client">Client</option></select><span id="here" style="margin-left:12px">index.html</span></div>
     <div id="groups"></div>
     <p class="panel-foot">
       Sign in is pre-filled — hit Sign in on the login screen and you land in the CRM,
@@ -110,12 +110,25 @@
   var sheet = document.getElementById("sheet");
   var pill  = document.getElementById("pill");
   var here  = document.getElementById("here");
-  var current = null, history = [], buttons = {};
+  var current = null, history = [], buttons = {}, currentRole = 'staff';
 
-  /* Where the served site sends you after a successful sign-in. shell.js would
-     pick this from the role; there is no session here, so the closer desk is
-     the door — it is the screen the most people actually land on. */
-  var HOME = "app/closer-dashboard.html";
+  /* RBAC: Single source of truth (mirrors src/lib/rbac.ts) */
+  var ROLE_ROUTES = {
+    admin: ['app/closer-dashboard.html','app/pipeline.html','app/client-control-panel.html','app/messaging.html','app/calendar.html','app/documents.html','app/campaign-manager.html','app/social-studio.html','app/creative-factory.html','app/command-center.html','app/ops-admin.html','app/galaxy.html','app/automations.html','app/agent-editor.html','app/hiring.html','app/products-commissions.html','app/staff-teams.html','app/content-admin.html','app/brand-studio.html','app/inquiry-remover.html','app/sample-data.html','app/client-portal.html','app/partner-galaxy.html','app/affiliate.html'],
+    staff: ['app/closer-dashboard.html','app/pipeline.html','app/client-control-panel.html','app/messaging.html','app/calendar.html','app/documents.html','app/campaign-manager.html','app/social-studio.html','app/creative-factory.html','app/command-center.html','app/ops-admin.html','app/galaxy.html','app/automations.html','app/agent-editor.html','app/hiring.html','app/products-commissions.html','app/staff-teams.html','app/content-admin.html','app/brand-studio.html','app/inquiry-remover.html','app/sample-data.html','app/client-portal.html'],
+    partner: ['app/brand-studio.html','app/campaign-manager.html','app/social-studio.html','app/partner-galaxy.html','app/affiliate.html','app/client-portal.html'],
+    affiliate: ['app/affiliate.html','app/client-portal.html'],
+    client: ['app/client-portal.html'],
+  };
+  var ROLE_DEFAULTS = {admin:'app/command-center.html', staff:'app/closer-dashboard.html', partner:'app/partner-galaxy.html', affiliate:'app/affiliate.html', client:'app/client-portal.html'};
+
+  function canAccess(role, path){
+    if(role === 'admin') return true;
+    var allowed = ROLE_ROUTES[role] || [];
+    return allowed.indexOf(path) !== -1;
+  }
+
+  var HOME = ROLE_DEFAULTS[currentRole];
 
   var groups = document.getElementById("groups");
   NAV.forEach(function(g){
@@ -142,6 +155,10 @@
 
   function go(rel){
     if (!PAGES[rel] || rel === current) return;
+    if (!canAccess(currentRole, rel)) {
+      go(ROLE_DEFAULTS[currentRole]);
+      return;
+    }
     if (current) history.push(current);
     render(rel);
   }
@@ -160,6 +177,15 @@
 
   pill.addEventListener("click", openSheet);
   sheet.addEventListener("click", function(e){ if (e.target === sheet) closeSheet(); });
+
+  /* Dev mode: role switcher */
+  var roleSwitch = document.getElementById("roleSwitch");
+  roleSwitch.addEventListener("change", function(e){
+    currentRole = e.target.value;
+    HOME = ROLE_DEFAULTS[currentRole];
+    history = [];
+    go(HOME);
+  });
 
   /* Also called with a plain object forwarded from a framed screen, which has
      no preventDefault and no target — hence the guards. */

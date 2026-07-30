@@ -207,27 +207,46 @@ function resolveRel(pageRel, href) {
    are written into the pages themselves, so dropping it shows all of them. */
 const SKIP_SCRIPTS = new Set(["app/shell.js"]);
 
-/* Role-based sidebar visibility. Maps page routes to the role that sees them.
-   Staff sees all pages; clients/affiliates/partners see only their allowed screens. */
-const ROLE_MAP = {
-  // External principals
-  "app/affiliate.html": "affiliate",
-  "app/client-portal.html": ["affiliate", "client", "partner", "staff"],
-  "app/partner-galaxy.html": "partner",
-  // Public
-  "index.html": "public",
-  "dashboard.html": "public",
-  "login.html": "public",
-  "affiliates/index.html": "public",
-  "education/index.html": "public",
-  "education/terms/index.html": "public",
-  "education/privacy/index.html": "public",
-  "education/refund/index.html": "public",
-  "terms/index.html": "public",
-  "privacy/index.html": "public",
-  "404.html": "public",
-  // Everything else is staff
+/* RBAC: Single source of truth (mirrors src/lib/rbac.ts). Routes each role can access. */
+const ROLE_ROUTES = {
+  admin: [
+    'app/closer-dashboard.html', 'app/pipeline.html', 'app/client-control-panel.html',
+    'app/messaging.html', 'app/calendar.html', 'app/documents.html',
+    'app/campaign-manager.html', 'app/social-studio.html', 'app/creative-factory.html',
+    'app/command-center.html', 'app/ops-admin.html', 'app/galaxy.html',
+    'app/automations.html', 'app/agent-editor.html', 'app/hiring.html',
+    'app/products-commissions.html', 'app/staff-teams.html', 'app/content-admin.html',
+    'app/brand-studio.html', 'app/inquiry-remover.html', 'app/sample-data.html',
+    'app/client-portal.html', 'app/partner-galaxy.html', 'app/affiliate.html',
+  ],
+  staff: [
+    'app/closer-dashboard.html', 'app/pipeline.html', 'app/client-control-panel.html',
+    'app/messaging.html', 'app/calendar.html', 'app/documents.html',
+    'app/campaign-manager.html', 'app/social-studio.html', 'app/creative-factory.html',
+    'app/command-center.html', 'app/ops-admin.html', 'app/galaxy.html',
+    'app/automations.html', 'app/agent-editor.html', 'app/hiring.html',
+    'app/products-commissions.html', 'app/staff-teams.html', 'app/content-admin.html',
+    'app/brand-studio.html', 'app/inquiry-remover.html', 'app/sample-data.html',
+    'app/client-portal.html',
+  ],
+  partner: [
+    'app/brand-studio.html', 'app/campaign-manager.html', 'app/social-studio.html',
+    'app/partner-galaxy.html', 'app/affiliate.html', 'app/client-portal.html',
+  ],
+  affiliate: [
+    'app/affiliate.html', 'app/client-portal.html',
+  ],
+  client: [
+    'app/client-portal.html',
+  ],
 };
+
+function getRoleForRoute(rel) {
+  for (const [role, routes] of Object.entries(ROLE_ROUTES)) {
+    if (routes.includes(rel)) return role;
+  }
+  return 'public'; // public pages visible to all
+}
 
 const inlined = new Map(); // rel -> text, so shared assets are read once
 
@@ -269,9 +288,8 @@ function bundlePage(rel) {
     }
   );
 
-  const role = ROLE_MAP[rel] || "staff";
-  const roleAttr = typeof role === "string" ? role : role[0];
-  html = html.replace(/<html/i, `<html data-fh-route="${rel}" data-role="${roleAttr}"`);
+  const role = getRoleForRoute(rel);
+  html = html.replace(/<html/i, `<html data-fh-route="${rel}" data-role="${role}"`);
 
   const bridge = BRIDGE(rel);
   if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, () => `${bridge}</body>`);
