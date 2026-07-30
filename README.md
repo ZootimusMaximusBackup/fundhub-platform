@@ -174,3 +174,28 @@ never to hold it. ⚠️ CONFIRM: payload shapes are unverified against a real a
   are not in the library folder; doc 6 defines the OTE method, not the numbers. Seeding invented
   outcomes would put made-up performance agreements in front of real candidates.
 - **Hiring manager per role** — bench alerts have nobody to route to until set.
+
+## Config defaults (052) and EEO self-ID (053)
+
+`052_config_defaults.sql` sets the five values earlier migrations left null. It is one
+file so reverting to "unconfigured" is a single `git revert`. Values fall in three
+categories, labelled in the migration:
+
+| | value | basis |
+|---|---|---|
+| **PLATFORM FACT** | Meta `special_ad_category` = `CREDIT` | Meta's category covering credit cards, loans, financing. ⚠️ Confirm against your API version — a wrong enum is rejected at create time, loudly. |
+| **DERIVED** | kill-switch floor $500, spend-tier refresh cadence, ROAS target 1.0 | Derived from the spec's own anchors (72h rotation, frequency 3+, break-even), with the reasoning written out. Tunable. |
+| **PLACEHOLDER** | generation markup 100%, managed spend 10% | **Nobody's confirmed commercial terms.** `signed_off_at` is NULL and `v_creative_config_gaps` reports them until a human stamps it. Billing works either way — the flag is a visibility control, not a gate, because a default that stops being visible is one nobody re-examines. |
+
+Hiring scorecards got **structure without targets**: doc 7 links to external Closer and
+Setter Scorecard documents that were not in the folder. A template a manager fills in is
+useful; invented targets become a performance agreement a real person is held to.
+
+`053_eeo_selfid.sql` closes the adverse-impact gap. Voluntary self-ID stored **apart from
+the hiring record**: there is no foreign key to an application, the invite token's link is
+destroyed in the same transaction as the response insert (enforced by CHECK), and
+`v_eeo_aggregate` suppresses any group under 5 because a cell of one is an identification.
+The cost is deliberate — aggregate analysis works, per-candidate lookup cannot.
+
+Deploy variables are in `.env.example`. `AD_TOKEN_ENC_KEY` is required; token storage
+refuses to run without it rather than storing plaintext.

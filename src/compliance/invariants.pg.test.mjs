@@ -252,11 +252,11 @@ describe("module invariants", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, ()
         [org, p, `inv-acct-${p}`])).rows[0].id;
 
       // A Meta campaign needs a configured category; seed one for the fixture.
-      await tx.query(
-        `INSERT INTO ad_platform_category_map (org_id, platform, offer_type, special_ad_category, notes)
-         VALUES ($1,'meta','funding','TEST_CATEGORY','fixture only')
-         ON CONFLICT (org_id, platform, offer_type) DO NOTHING`, [org]);
-
+      // The category map is seeded with real values by 052_config_defaults.sql, so no
+      // fixture row is needed. It used to insert TEST_CATEGORY here with ON CONFLICT
+      // DO NOTHING, which meant whichever ran first won — and on a database where the
+      // tests had run, the fixture value shadowed the migration's. A test fixture must
+      // not compete with a migration for the same config row.
       const camp = (await tx.query(
         `INSERT INTO campaigns (org_id, partner_id, connection_id, name, offer_type)
          VALUES ($1,$2,$3,'C','funding') RETURNING id`, [org, p, conn])).rows[0].id;

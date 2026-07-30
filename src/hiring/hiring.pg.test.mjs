@@ -76,14 +76,34 @@ describe("hiring pipeline", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =
       /must belong to the hiring pipeline/);
   });
 
-  test("the three roles seed with empty scorecards, flagged in the gaps view", async () => {
+  test("scorecards have STRUCTURE but no targets, and stay flagged in the gaps view", async () => {
+    // 052 filled in the scorecard shape from doc 7's model and left every target
+    // null, because doc 7 links to external scorecard documents that were not in
+    // the folder. This test guards that split: a template a manager fills in is
+    // useful, whereas invented targets become a performance agreement a real person
+    // is held to.
     const roles = (await db.query(
       `SELECT key, scorecard, comp FROM hiring_roles WHERE org_id = $1 ORDER BY key`, [org])).rows;
     assert.deepStrictEqual(roles.map((r) => r.key), ["closer", "sales_coordinator", "setter"]);
-    for (const r of roles) assert.deepStrictEqual(r.scorecard, {});
 
-    const gaps = (await db.query(`SELECT config FROM v_hiring_config_gaps WHERE org_id = $1`, [org])).rows;
-    assert.ok(gaps.length >= 3, "empty scorecards must be surfaced, not buried");
+    for (const r of roles) {
+      assert.ok(r.scorecard.outcomes?.length > 0, `${r.key} should have outcomes`);
+      assert.ok(r.scorecard.leading_indicators?.length > 0, `${r.key} should have leading indicators`);
+      // Every target null — no invented numbers.
+      for (const m of [...r.scorecard.outcomes, ...r.scorecard.leading_indicators]) {
+        assert.strictEqual(m.target, null, `${r.key}.${m.key} must not carry an invented target`);
+      }
+      assert.ok(r.scorecard.source_note, "the scorecard must say where it came from");
+    }
+
+    // And it is STILL reported, because a default that stops being visible is a
+    // default nobody re-examines.
+    const gaps = (await db.query(
+      `SELECT config, status FROM v_hiring_config_gaps WHERE org_id = $1`, [org])).rows;
+    assert.ok(gaps.some((g) => /STRUCTURE ONLY/.test(g.status)),
+      "null scorecard targets must still be surfaced after 052");
+    assert.ok(gaps.some((g) => /UNSOURCED/.test(g.status)),
+      "null comp figures must still be surfaced after 052");
   });
 
   // ------------------------------------------------------------------ intake

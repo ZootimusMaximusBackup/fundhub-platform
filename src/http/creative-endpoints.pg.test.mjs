@@ -49,10 +49,11 @@ describe("creative read endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false
   before(async () => {
     org = (await db.query(`SELECT id FROM orgs WHERE is_default LIMIT 1`)).rows[0].id;
     await cleanup();
-    await db.query(
-      `INSERT INTO ad_platform_category_map (org_id, platform, offer_type, special_ad_category, notes)
-       VALUES ($1,'meta','funding','TEST_CATEGORY','fixture only')
-       ON CONFLICT (org_id, platform, offer_type) DO NOTHING`, [org]);
+      // The category map is seeded with real values by 052_config_defaults.sql, so no
+      // fixture row is needed. It used to insert TEST_CATEGORY here with ON CONFLICT
+      // DO NOTHING, which meant whichever ran first won — and on a database where the
+      // tests had run, the fixture value shadowed the migration's. A test fixture must
+      // not compete with a migration for the same config row.
     ({ partnerId: owner, campaignId } = await seed("owner"));
     // The stranger is a real, active partner that owns NOTHING. Seeding it with
     // its own content would make every isolation assertion below vacuous — the

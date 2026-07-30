@@ -20,12 +20,23 @@ const HAVE_DB = !!process.env.DATABASE_URL;
 const SLUG = "soc-test-";
 
 describe("social, onboarding and metering", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
-  let org;
+  let org, shippedRates = {};
 
   before(async () => {
     org = (await db.query(`SELECT id FROM orgs WHERE is_default LIMIT 1`)).rows[0].id;
     await cleanup();
     clearRuleCache();
+
+    // Capture the SHIPPED rates so each test restores what it found.
+    //
+    // These blocks used to reset to NULL, which was correct when 050 shipped both
+    // rates null. 052 sets placeholders, so resetting to NULL made these tests
+    // corrupt the config for every test that ran after them — including the one
+    // asserting the placeholders exist. A fixture must restore the prior state, not
+    // a state it assumes.
+    shippedRates = Object.fromEntries((await db.query(
+      `SELECT rate_key, rate FROM creative_billing_rates WHERE org_id = $1`, [org]
+    )).rows.map((r) => [r.rate_key, r.rate]));
   });
   after(async () => { await cleanup(); await close(); });
 
@@ -200,23 +211,79 @@ describe("social, onboarding and metering", { skip: !HAVE_DB ? "no DATABASE_URL"
 
   // ------------------------------------------------------------------ metering
 
-  test("accruing usage RAISES while the rate is unset, rather than billing zero", async () => {
-    // The spec said not to pick these numbers. This is what makes that safe.
+  test("accruing usage RAISES when a rate is unset, rather than billing zero", async () => {
+    // 052 gives both rates a placeholder, so this test now clears one for its own
+    // duration rather than relying on the shipped state.
+    //
+    // The guard is still worth proving. A null rate must stop billing loudly: the
+    // alternative — coalescing null to zero and accruing a 0-cent row — produces a
+    // record indistinguishable from a real one, and nobody notices until an invoice
+    // is short. It also matters for a future rate that is added and not yet set.
     const { partnerId } = await fixture("norate");
-    await assert.rejects(
-      () => asStaff((tx) => tx.query(
-        `SELECT accrue_creative_usage($1,$2,'generation',1,1000,'evt-1')`, [org, partnerId])),
-      /generation_markup_pct is not set/);
+    await db.query(
+      `UPDATE creative_billing_rates SET rate = NULL
+        WHERE org_id = $1 AND rate_key = 'generation_markup_pct'`, [org]);
+    try {
+      await assert.rejects(
+        () => asStaff((tx) => tx.query(
+          `SELECT accrue_creative_usage($1,$2,'generation',1,1000,'evt-1')`, [org, partnerId])),
+        /generation_markup_pct is not set/);
+
+      // And nothing was written — a raise that still left a row would be worse than
+      // no guard at all.
+      const n = await asPartner(partnerId, (tx) => tx.query(
+        `SELECT count(*)::int AS n FROM creative_usage_events WHERE partner_id = $1`, [partnerId])
+        .then((r) => r.rows[0].n));
+      assert.strictEqual(n, 0);
+    } finally {
+      await db.query(
+        `UPDATE creative_billing_rates SET rate = $2
+          WHERE org_id = $1 AND rate_key = 'generation_markup_pct'`,
+        [org, shippedRates.generation_markup_pct ?? null]);
+    }
   });
 
-  test("both rates ship unset and flagged", async () => {
+  test("both rates carry a PLACEHOLDER value and remain unsigned and flagged", async () => {
+    // 050 shipped these null; 052 set placeholders so billing functions end to end.
+    // The invariant that matters now is not "unset" but "not silently authoritative":
+    // a value exists, signed_off_at is NULL, and the gaps view keeps reporting it.
+    // These are the only two numbers in the system that move money between fundhub
+    // and a partner.
     const rows = (await db.query(
-      `SELECT rate_key, rate, notes FROM creative_billing_rates WHERE org_id = $1 ORDER BY rate_key`,
-      [org])).rows;
+      `SELECT rate_key, rate, notes, signed_off_at FROM creative_billing_rates
+        WHERE org_id = $1 ORDER BY rate_key`, [org])).rows;
     assert.strictEqual(rows.length, 2);
     for (const r of rows) {
-      assert.strictEqual(r.rate, null, `${r.rate_key} must ship unset`);
-      assert.match(r.notes, /FLAGGED/);
+      assert.ok(Number(r.rate) > 0, `${r.rate_key} should have a working placeholder`);
+      assert.strictEqual(r.signed_off_at, null,
+        `${r.rate_key} must not be marked signed off by a migration — only a human signs off`);
+      assert.match(r.notes, /PLACEHOLDER/);
+    }
+
+    const gaps = (await db.query(
+      `SELECT config, status FROM v_creative_config_gaps WHERE org_id = $1`, [org])).rows;
+    for (const key of ["generation_markup_pct", "managed_spend_pct"]) {
+      const g = gaps.find((x) => x.config.endsWith(key));
+      assert.ok(g, `${key} must still be reported in the gaps view`);
+      assert.match(g.status, /AWAITING SIGN-OFF/);
+    }
+  });
+
+  test("signing a rate off removes it from the gaps view, and only a human can", async () => {
+    // The other half: the flag must be clearable, or it becomes noise people learn
+    // to ignore.
+    await db.query(
+      `UPDATE creative_billing_rates SET signed_off_at = now(), signed_off_by = 'test'
+        WHERE org_id = $1 AND rate_key = 'managed_spend_pct'`, [org]);
+    try {
+      const gaps = (await db.query(
+        `SELECT config FROM v_creative_config_gaps WHERE org_id = $1`, [org])).rows;
+      assert.ok(!gaps.some((g) => g.config.endsWith("managed_spend_pct")),
+        "a signed-off rate should stop being reported");
+    } finally {
+      await db.query(
+        `UPDATE creative_billing_rates SET signed_off_at = NULL, signed_off_by = NULL
+          WHERE org_id = $1 AND rate_key = 'managed_spend_pct'`, [org]);
     }
   });
 
@@ -241,8 +308,8 @@ describe("social, onboarding and metering", { skip: !HAVE_DB ? "no DATABASE_URL"
       assert.strictEqual(Number(n.total), 250, "25% of 1000 cents");
     } finally {
       await db.query(
-        `UPDATE creative_billing_rates SET rate = NULL WHERE org_id = $1 AND rate_key = 'generation_markup_pct'`,
-        [org]);
+        `UPDATE creative_billing_rates SET rate = $2 WHERE org_id = $1 AND rate_key = 'generation_markup_pct'`,
+        [org, shippedRates['generation_markup_pct'] ?? null]);
     }
   });
 
@@ -265,8 +332,8 @@ describe("social, onboarding and metering", { skip: !HAVE_DB ? "no DATABASE_URL"
       assert.strictEqual(Number(row.total_cents), 100, "already-accrued money must not be restated");
     } finally {
       await db.query(
-        `UPDATE creative_billing_rates SET rate = NULL WHERE org_id = $1 AND rate_key = 'generation_markup_pct'`,
-        [org]);
+        `UPDATE creative_billing_rates SET rate = $2 WHERE org_id = $1 AND rate_key = 'generation_markup_pct'`,
+        [org, shippedRates['generation_markup_pct'] ?? null]);
     }
   });
 
@@ -289,8 +356,8 @@ describe("social, onboarding and metering", { skip: !HAVE_DB ? "no DATABASE_URL"
         `UPDATE creative_usage_events SET status='void', void_reason='test' WHERE id=$1`, [id]));
     } finally {
       await db.query(
-        `UPDATE creative_billing_rates SET rate = NULL WHERE org_id = $1 AND rate_key = 'managed_spend_pct'`,
-        [org]);
+        `UPDATE creative_billing_rates SET rate = $2 WHERE org_id = $1 AND rate_key = 'managed_spend_pct'`,
+        [org, shippedRates['managed_spend_pct'] ?? null]);
     }
   });
 
@@ -308,8 +375,8 @@ describe("social, onboarding and metering", { skip: !HAVE_DB ? "no DATABASE_URL"
       assert.deepStrictEqual(seen, [], "partner B read partner A's billing rows");
     } finally {
       await db.query(
-        `UPDATE creative_billing_rates SET rate = NULL WHERE org_id = $1 AND rate_key = 'generation_markup_pct'`,
-        [org]);
+        `UPDATE creative_billing_rates SET rate = $2 WHERE org_id = $1 AND rate_key = 'generation_markup_pct'`,
+        [org, shippedRates['generation_markup_pct'] ?? null]);
     }
   });
 
