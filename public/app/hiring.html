@@ -1771,7 +1771,7 @@ function cardHTML(a){
   var d = daysSince(a.entered_stage_at);
   var cls='ccard'+(a.needs_human?' needs':'')+(a.status!=='open'?' closed':'');
   var chips=[];
-  chips.push('<span class="tag'+(a.has_video?' has':' off')+'" title="has_video — a boolean. No transcript, thumbnail or duration exists.">video</span>');
+  chips.push('<span class="tag'+(a.has_video?' has':' off')+'" title="has_video — the board&#39;s boolean, (video_url IS NOT NULL). No thumbnail, transcript or duration exists here; the URL itself is returned only by api/hiring/application.mjs and is linked in the drawer.">video</span>');
   chips.push('<span class="tag'+(a.has_resume?' has':' off')+'" title="has_resume — a boolean. resume_document_id is never returned and storage keys are stripped by redact().">resume</span>');
   if(a.disc_profile) chips.push('<span class="tag" title="disc_profile is free text — a bonus, never a filter and never an auto-disqualifier (051 §C).">DISC '+esc(a.disc_profile)+'</span>');
   if(a.linkedin_profile_url) chips.push('<span class="tag has" title="linkedin_profile_url only. No photo, headline, employer, school or connections are stored or fetched.">li url</span>');
