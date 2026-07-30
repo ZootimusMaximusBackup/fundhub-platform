@@ -11,8 +11,7 @@
 //
 // Read-only. SELECT only. Mirrors api/dashboard/clients.mjs style.
 import { db } from "../../src/db.mjs";
-import { checkDashboardAuth } from "../../src/http/dashboard-auth.mjs";
-import { attachStaff } from "../../src/http/middleware/requireAuth.mjs";
+import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
 
 // Stages first, so a stage with no cards still renders as an empty column
 // rather than vanishing from the board.
@@ -48,10 +47,8 @@ const CARDS_SQL = `
 export default async function handler(req, res) {
   // Staff session first; DASHBOARD_SECRET stays as the fallback until cutover,
   // matching the other dashboard routes.
-  const staff = await attachStaff(req, { db });
-  if (!staff && !checkDashboardAuth(req)) {
-    return res.status(401).json({ ok: false, error: "unauthorized" });
-  }
+  const staff = await requireDashboardAccess(req, res, { db });
+  if (!staff) return;
 
   const key = String(req.query?.key || "sales");
   const limit = Math.min(parseInt(req.query?.limit ?? "500", 10) || 500, 2000);

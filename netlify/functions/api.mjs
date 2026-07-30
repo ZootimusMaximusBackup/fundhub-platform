@@ -9,6 +9,7 @@
 // Zero changes to the handlers themselves — this file is the only
 // Netlify-specific code in the repo.
 
+import { safeError } from "../../src/http/health.mjs";
 import authLogin from "../../api/auth/login.mjs";
 import authLogout from "../../api/auth/logout.mjs";
 import authSession from "../../api/auth/session.mjs";
@@ -34,6 +35,7 @@ import readFailedEvents from "../../api/read/failed-events.mjs";
 import readAgents from "../../api/read/agents.mjs";
 import readInquiries from "../../api/read/inquiries.mjs";
 import readProducts from "../../api/read/products.mjs";
+import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -85,6 +87,13 @@ function routePath(pathname) {
 export default async function handler(request, context) {
   const url = new URL(request.url);
   const path = routePath(url.pathname);
+
+  /* /api/inngest is served by Inngest's own Web-standard handler, which takes a
+     Request and returns a Response. It must NOT go through the (req, res) shim
+     below: inngest/node's serve() reads the body as a stream and throws on the
+     plain object the shim provides, which is why this endpoint 500'd on every
+     POST and PUT even once it was routed. */
+  if (path === "inngest") return inngestWeb(request);
 
   let route = ROUTES[path];
   const query = toQueryObject(url.searchParams);
@@ -155,7 +164,11 @@ export default async function handler(request, context) {
     if (!res._finished) res.status(500).json({ ok: false, error: "handler_no_response" });
   } catch (err) {
     if (!res._finished) {
-      res.status(500).json({ ok: false, error: "internal_error", message: err?.message });
+      // err.message quotes the DSN on a connection failure, so an
+      // UNAUTHENTICATED caller could read the database host, port and username
+      // straight out of a 500 body — POST /api/auth/login with the database
+      // down was enough. Scrub it the same way health.mjs does.
+      res.status(500).json({ ok: false, error: "internal_error", message: safeError(err) });
     }
   }
   return done;

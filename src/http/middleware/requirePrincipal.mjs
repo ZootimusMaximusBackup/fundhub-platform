@@ -16,7 +16,7 @@
 // a client session get a 403 there rather than a task list.
 
 import { db as defaultDb } from "../../db.mjs";
-import { authenticate } from "./requireAuth.mjs";
+import { authenticate, AUTH_UNAVAILABLE } from "./requireAuth.mjs";
 import { verifyAccountSession } from "../../auth/account-session.mjs";
 import { bearerToken } from "./requireAuth.mjs";
 
@@ -25,6 +25,10 @@ export const ALL_KINDS = ["staff", "client", "affiliate", "partner"];
 /* resolvePrincipal — request → principal or null. Never throws. */
 export async function resolvePrincipal(req, { db = defaultDb, env = process.env } = {}) {
   const staffResult = await authenticate(req, { db, env });
+  // Short-circuit: if the staff check could not run, the account check is about
+  // to fail the same way. Falling through would still be correct but would
+  // double the timeout during an outage.
+  if (staffResult === AUTH_UNAVAILABLE) return AUTH_UNAVAILABLE;
   if (staffResult && staffResult.staff) {
     const s = staffResult.staff;
     return {
@@ -44,7 +48,8 @@ export async function resolvePrincipal(req, { db = defaultDb, env = process.env 
     const acct = await verifyAccountSession(db, token, { env });
     return acct ? acct.principal : null;
   } catch {
-    return null;
+    // Same distinction requireAuth makes: could-not-check is not not-signed-in.
+    return AUTH_UNAVAILABLE;
   }
 }
 
@@ -66,6 +71,10 @@ export async function requirePrincipal(req, res, kinds, opts = {}) {
   }
 
   const principal = await resolvePrincipal(req, opts);
+  if (principal === AUTH_UNAVAILABLE) {
+    res.status(503).json({ ok: false, error: "auth_unavailable", db: "down" });
+    return null;
+  }
   if (!principal) {
     res.status(401).json({ ok: false, error: "unauthorized" });
     return null;

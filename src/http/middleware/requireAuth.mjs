@@ -46,23 +46,43 @@ export function bearerToken(req) {
       const eq = part.indexOf("=");
       if (eq === -1) continue;
       if (part.slice(0, eq).trim() === "fundhub_session") {
-        return decodeURIComponent(part.slice(eq + 1).trim());
+        const raw = part.slice(eq + 1).trim();
+        // decodeURIComponent throws URIError on a malformed escape ("%zz").
+        // That threw out of authenticate() — which is called BEFORE its own
+        // try — and 500'd every authenticated route including logout, so a
+        // browser holding one bad cookie could not clear it from inside the
+        // app. A malformed cookie is simply not a valid token.
+        try { return decodeURIComponent(raw); } catch { return raw; }
       }
     }
   }
   return null;
 }
 
-// authenticate — request → { staff, session } or null. Never throws: a database
-// that is down produces an unauthenticated request, not a 500, so the
-// shared-secret fallback in the dashboard routes still has a chance to answer.
+/* AUTH_UNAVAILABLE — "I could not check", which is NOT "you are not signed in".
+
+   authenticate() used to swallow a database failure and return null, so every
+   session-gated route answered 401 during an outage. That is actively
+   misleading: the user is told their credentials are bad, the frontend treats it
+   as signed-out, and the person retries a login that cannot succeed for a reason
+   nothing on screen mentions. The original justification — leaving room for the
+   dashboard shared-secret fallback — no longer holds, because that fallback now
+   fails closed.
+
+   Routes distinguish the two: a real 401 stays 401, an outage becomes 503 with
+   db:"down", which public/app/data.js already classifies as "nodb" and renders
+   as a backend-unavailable banner rather than "not signed in". */
+export const AUTH_UNAVAILABLE = Symbol("auth_unavailable");
+
 export async function authenticate(req, { db = defaultDb, env = process.env } = {}) {
   const token = bearerToken(req);
   if (!token) return null;
   try {
     return await verifySession(db, token, { env });
-  } catch {
-    return null;
+  } catch (err) {
+    // A bad token is not an error — verifySession returns null for that. Getting
+    // here means the CHECK itself failed, which is our problem, not the caller's.
+    return AUTH_UNAVAILABLE;
   }
 }
 
@@ -70,6 +90,9 @@ export async function authenticate(req, { db = defaultDb, env = process.env } = 
 // Returns the staff object or null. Use when a route wants auth to be optional.
 export async function attachStaff(req, opts = {}) {
   const result = await authenticate(req, opts);
+  // Callers that only want "is there a staff member" treat an outage as "no",
+  // but the flag is left on the request so requireAuth can tell them apart.
+  if (result === AUTH_UNAVAILABLE) { req.authUnavailable = true; return null; }
   if (!result) return null;
   req.staff = result.staff;
   req.session = result.session;
@@ -85,6 +108,13 @@ export async function attachStaff(req, opts = {}) {
 export async function requireAuth(req, res, opts = {}) {
   const staff = await attachStaff(req, opts);
   if (!staff) {
+    if (req.authUnavailable) {
+      // Ours, not theirs. 503 + db:"down" is the shape data.js reads as an
+      // outage, so the screens say "backend unavailable" instead of logging
+      // everyone out.
+      res.status(503).json({ ok: false, error: "auth_unavailable", db: "down" });
+      return null;
+    }
     res.status(401).json({ ok: false, error: "unauthorized" });
     return null;
   }
