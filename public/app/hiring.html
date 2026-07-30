@@ -473,7 +473,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           The board carries the <b>latest</b> score only (a <span class="k">LATERAL … LIMIT 1</span>);
           the full history is on the application, so there is no trend line here to draw.
           <span class="k">has_video</span> and <span class="k">has_resume</span> are booleans <b>on this
-          endpoint</b> — <span class="k">candidates.mjs:47-49</span> reduces both to
+          endpoint</b> — <span class="k">candidates.mjs:48-49</span> reduces both to
           <span class="k">IS NOT NULL</span>, so the board has no thumbnail, no transcript and no duration.
           The review drawer is built from <span class="k">api/hiring/application.mjs</span>, which returns
           <span class="k">a.video_url</span> in full and links it; the resume stays a boolean everywhere
@@ -548,7 +548,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           <span class="k">candidate_applications.job_posting_id</span>
           (<span class="k">api/hiring/postings.mjs:36-40</span>), the second one narrowed to
           <span class="k">applied_at &gt; now() - interval '7 days'</span>. They reconcile row-for-row with
-          HR-03 — and they are small, because only <b>5</b> of the <b>24</b> applications on the board came
+          HR-03 — and they are small, because only <b>6</b> of the <b>24</b> applications on the board came
           through a posting at all. Referrals, ads and the client base arrive with
           <span class="k">job_posting_id</span> NULL and are counted here nowhere.
           The two columns are independent: A-1064 applied through
@@ -1171,7 +1171,7 @@ var APPS = [
    disc_profile:'D', linkedin_profile_url:null,
    applied_at:'2026-04-02 10:15', entered_stage_at:'2026-07-01 09:00',
    video_url:'https://www.loom.com/share/3f28c6d1a0b74e95bc84f7e2d105a6b7', has_resume:true, posting_title:null, posting_channel:null,
-   notes:'Cleared the 60-day trial on Jul 1. rampReview only queued the review task; the stage move out of ramp was a person calling advance(). Status is still open — this row never went through the Hired stage, which is why it could be advanced twice after the offer.',
+   notes:'Cleared the 60-day trial on Jul 1. rampReview only queued the review task; the stage move out of ramp was a person calling advance(). Status is still open — this row never went through the Hired stage, which is why it could keep being advanced after the offer.',
    answers:{years_selling:'10', best_month_cash_collected:'$97,000',
      current_situation:'Was closing for a competitor', income_goal_12mo:'$220,000',
      why_this_role:'Sarah has been trying to hire me for two years.',
@@ -1400,7 +1400,7 @@ var APPS = [
    `applications` and `applications_7d` are the two correlated subqueries at
    postings.mjs:36-40 — count(candidate_applications WHERE job_posting_id = p.id),
    the second one restricted to applied_at > now() - 7 days. They count the same
-   rows the board shows, so every number below reconciles against HR-03: only five
+   rows the board shows, so every number below reconciles against HR-03: only six
    of the twenty-four applications carry a job_posting_id at all. */
 var POSTINGS = [
   {id:'P-006', channel:'linkedin', role_key:'setter', title:'Setter — Fundhub (Remote, US)',
