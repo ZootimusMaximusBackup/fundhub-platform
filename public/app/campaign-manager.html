@@ -741,7 +741,15 @@ function jsonline(o){ try{ return JSON.stringify(o); }catch(e){ return '{}'; } }
 /* uid — stable pseudo-uuids so the sample ids look and behave like the real
    ones (target_id joins, ?id= in the drawer) without forty hand-typed uuids. */
 function uid(key){
+  /* THE WHOLE KEY IS MIXED IN FIRST. The digit loop below reads
+     key.charCodeAt(i % key.length) for i < 32 only, so on its own it never sees
+     past the 32nd character — and two ad sets whose names share a 32-character
+     prefix ('adset:fund-tornado-tt:Tornado · TT broad US 25-54' and
+     '…Tornado · TT creator lookalike') would land on one id. ADSET_BY_ID would
+     then resolve both to whichever was indexed last, and CM-08 would print an ad
+     set name that contradicts the budget in its own Change column. */
   var h = 2166136261, out = '';
+  for(var j=0;j<key.length;j++){ h ^= key.charCodeAt(j); h = Math.imul(h, 16777619) >>> 0; }
   for(var i=0;i<32;i++){
     h ^= key.charCodeAt(i % key.length) + i*7;
     h = Math.imul(h, 16777619) >>> 0;
