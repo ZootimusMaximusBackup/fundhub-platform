@@ -93,10 +93,10 @@ pass auth and fail only on `INQUIRY_API_SECRET` not being set locally.
 
 1. **`INQUIRY_API_SECRET` is unset**, so `/api/inquiry` 500s for permitted roles.
    Expected locally; needs setting wherever the inquiry runtime is reachable.
-2. **FIXED in Unit 14.** The seed suite now uses throwaway `+seedtest` addresses, so the real six accounts survive a full `npm test` run.
-   teardown.** A full `npm test` therefore leaves you unable to log in until you
-   re-run `scripts/seed-staff.mjs`. This bit twice during verification. Already
-   in `HANDOFF.md`; worth fixing by giving that suite its own throwaway emails.
+2. ~~`src/auth/seed-staff.pg.test.mjs` deletes the six real staff accounts in
+   its teardown, so a full `npm test` leaves you unable to log in.~~
+   **FIXED in Unit 14** — the suite now uses throwaway `+seedtest` addresses.
+   Verified: all six real accounts survive a full `npm test` run.
 3. **8 tests skip** — they need the `fundhub-docs` sibling repo, which is not on
    this account. They un-skip automatically when it exists.
 

@@ -5,10 +5,10 @@ what is finished and what only looks finished.
 
 ## The one-line summary
 
-The **data layer is built and tested**. The **product is not wired**: 19 of 21
-CRM screens still render hardcoded sample data, only staff can sign in, and no
-production database is configured. Do not open the deployed site expecting a
-working CRM.
+The **backend is built and tested** — all 14 units of the build queue are done.
+What is NOT done is the **front end**: 15 of 21 CRM screens still render
+hardcoded sample data, and no production database is configured. Do not open the
+deployed site expecting a working CRM.
 
 ---
 
@@ -24,7 +24,7 @@ sudo -u postgres psql -c "CREATE ROLE fundhub LOGIN PASSWORD 'localdev' SUPERUSE
 sudo -u postgres createdb -O fundhub fundhub
 export DATABASE_URL="postgres://fundhub:localdev@127.0.0.1:5432/fundhub"
 
-# 2. schema — 31 files, applies clean, re-running is a no-op
+# 2. schema — 33 files, applies clean, re-running is a no-op
 node db/migrate.mjs
 
 # 3. staff logins. Reads the password from the ENV, never argv.
@@ -33,7 +33,7 @@ node db/migrate.mjs
 STAFF_INITIAL_PASSWORD='<pick one, 12+ chars>' node scripts/seed-staff.mjs
 
 # 4. tests
-npm test                    # 1154 tests, 0 failures, 8 skipped
+npm test                    # 1178 tests, 0 failures, 8 skipped
 
 # 5. the screens
 npx http-server public -p 8899 -c-1
@@ -45,9 +45,9 @@ this account. They are the message-template seeders. They skip cleanly and
 un-skip automatically the moment `../fundhub-docs/sources` exists with the three
 copy source docs.
 
-(That suite used to delete these six accounts in its teardown, so a full
-`npm test` left you unable to log in. Fixed in Unit 14 — it uses throwaway
-`+seedtest` addresses now, and the real six survive a full run.)
+The staff seed suite used to delete these six accounts in its teardown, so a
+full `npm test` left you unable to log in. Fixed in Unit 14 — it uses throwaway
+`+seedtest` addresses now, and the real six survive a full run.
 
 ---
 
@@ -57,7 +57,7 @@ Each of these is verified against a real Postgres, not by reading code.
 
 | Area | Where | State |
 |---|---|---|
-| Schema | `db/migrations/` | 31 files, clean from scratch, idempotent |
+| Schema | `db/migrations/` | 33 files, clean from scratch, idempotent |
 | Dead-letter queue | `src/events/dead-letter.mjs` | Handler failures isolated + recorded, retry with backoff |
 | Task routing | `src/lib/create-task.mjs` | All 20 task-writing sites route to an owning role |
 | Entitlements | `src/entitlements/` | Grants, catalog, locked tiles |
@@ -77,14 +77,16 @@ Each of these is verified against a real Postgres, not by reading code.
 
 **6 of 21** read real data: `client-control-panel`, `pipeline`, `documents`,
 `staff-teams`, `affiliate`, `ops-admin`.
-The other 19 render invented sample rows — Command Center, Closer Dashboard,
-Messaging, Galaxy, everything. The read APIs those screens need now exist
+The other 15 render invented sample rows — Command Center, Closer Dashboard,
+Messaging, Galaxy, and the rest. The read APIs most of them need now exist
 (`/api/read/*` and the widened `/api/dashboard/client`), so this is wiring, not
 design.
 
 Rules that apply when you do it:
-- **Never change the layout.** Those 20 screens are the approved design. Replace
-  data, add loading and empty states, do not restyle or reorder.
+- **Never change the layout.** Those screens are the approved design. Replace
+  data, add loading and empty states, do not restyle or reorder. The four wired
+  in Unit 10 were checked element-by-element against their pre-wiring geometry;
+  do the same.
 - **Fall back, don't blank.** A wired screen keeps its sample markup and shows a
   banner when the API cannot answer. A missing database must never produce an
   empty screen.
@@ -119,8 +121,12 @@ no remote Postgres is reachable even with a connection string in hand.
 ### 4. Workflows do not fire in production
 
 `src/events/bus.mjs` only forwards to Inngest when `INNGEST_EVENT_KEY` is set.
-It is not. All 47 functions are inert. Set `INNGEST_EVENT_KEY` and
-`INNGEST_SIGNING_KEY` **after** a verification pass, not before.
+It is not. All 47 functions are inert.
+
+This is deliberate and is the LAST step: setting those keys turns 47 functions
+live against whatever `DATABASE_URL` points at. Unit 13's verification pass is
+clean (see `VERIFICATION.md`), so the gate is now just "do it when someone is
+watching" — an operator action, not a commit.
 
 ### 5. Brand Studio: backend done, screen not wired
 
