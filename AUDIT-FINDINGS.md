@@ -1,5 +1,54 @@
 # Audit findings — independent sign-off pass
 
+## STATUS: all blocking, high, medium and low findings are FIXED.
+
+Every finding below has been addressed, verified and pushed. The git log from
+`Independent audit: 53 findings` to `Wire the tenancy boundary` is the record.
+This document is kept as written — including the findings' original wording —
+because the *shape* of the mistakes is more useful than the list.
+
+Verification at close:
+
+```
+1348 tests · 1340 pass · 0 fail · 8 skipped   (was 1178 at the start)
+1127 tests pass with DATABASE_URL unset — pg tests skip cleanly
+33 migrations apply clean from scratch; re-run applies 0
+216 hostile-input cases  · 0 problems
+119 leak-sweep cases     · 0 leaking 5xx
+full outage matrix       · no leaks, nobody told they are signed out
+all 7 webhook providers  · 401 unsigned, none 500, none accepting
+20 app screens driven in Chromium · 0 console errors, 0 failed requests
+layout identical to the pre-wiring commit on every wired screen
+```
+
+Four things remain OPEN and are deliberate, not oversights:
+
+1. **Nothing transmits.** `sendTemplated` writes `messages` rows with
+   `status='queued'` and nothing sends them — there is no outbound fetch in
+   `src/adapters/` or `src/lib/`. Turning on the Inngest keys runs 47 workflows
+   and produces zero SMS or email. Needs a provider decision.
+2. **Six screens have no data source** — see HANDOFF. Each needs a modelling
+   decision first, not wiring.
+3. **`inquiry-remover` and `brand-studio` read but do not fully write.** There is
+   no write endpoint for `inquiry_log`.
+4. **`DATABASE_URL` and the Inngest keys are operator actions.**
+
+The five most useful lessons, in the order they cost the most time:
+
+1. **A fake that models the schema you wish you had cannot fail when the schema
+   moves.** Every money path now has a `*.pg.test.mjs` against real Postgres.
+2. **A structural check can pass over a half-dead feature.** `diagrams:check`
+   reported "up to date" for an adapter that answered 404.
+3. **"Absent config" must never mean "no gate."**
+4. **Banner tone plus "no console errors" does not mean a screen works.** Ask
+   whether the data is visible in the right element and survives the screen's own
+   controls.
+5. **Mutation-test the OVER-broad direction too.** Several tests here asserted
+   the defect — "fails open w/o signing key", "re-purchasing reinstates" — and
+   passed happily for months.
+
+---
+
 Produced by a seven-lens adversarial audit run against main at `a2625f9`, after the
 build queue was declared complete. Every lens ran on its own scratch Postgres and was
 required to RUN its checks rather than reason about them.

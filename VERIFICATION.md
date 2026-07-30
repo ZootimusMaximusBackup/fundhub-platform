@@ -12,6 +12,11 @@
 >
 > The general lesson is the one this document already stated and then fell for anyway: a
 > structural check that passes over a half-dead feature is worse than no check.
+>
+> **Both are now fixed.** `scope.mjs` has a production caller (`api/read/partners`) with
+> adversarial isolation tests, and the screen checks assert that real data is VISIBLE in the
+> right element and SURVIVES the screen's own filters, sorts and tabs. See
+> `AUDIT-FINDINGS.md` for the full close-out.
 
 # Unit 13 — verification pass
 
