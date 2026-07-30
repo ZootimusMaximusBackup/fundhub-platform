@@ -199,7 +199,7 @@ tr.dim td{opacity:.62}
 tr.rowbtn{cursor:pointer}
 tr.rowbtn:hover td{background:var(--soft)}
 tr.rowbtn[aria-expanded="true"] td{background:var(--soft)}
-.chev{display:inline-block;width:10px;color:var(--gray2);font-size:9px;transition:transform .16s;margin-right:6px}
+td .chev{display:inline-block;width:10px;color:var(--gray2);font-size:9px;transition:transform .16s;margin-right:6px}
 tr.rowbtn[aria-expanded="true"] .chev{transform:rotate(90deg)}
 tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 .detwrap{border-top:1px dashed var(--line);padding-top:11px;display:flex;gap:26px;flex-wrap:wrap}
@@ -1428,8 +1428,11 @@ var POSTINGS = [
    applications:0, applications_7d:0, last_error:null},
   {id:'P-002', channel:'linkedin', role_key:'closer', title:'Closer — Fundhub (Remote, US)',
    location:'Remote — United States', apply_url:'https://fundhub.ai/careers/closer',
-   status:'posted', is_published:true, posted_at:'2026-07-06 08:00', closed_at:null,
-   last_synced_at:'2026-07-29 04:03', created_at:'2026-07-06 07:52',
+   /* posted BEFORE the earliest application attributed to it — A-1035 applied
+      2026-06-28, so a created_at of 2026-07-06 would have made that job_posting_id
+      impossible to set. The four attributed rows are A-1035, A-1041, A-1052, A-1064. */
+   status:'posted', is_published:true, posted_at:'2026-06-26 08:00', closed_at:null,
+   last_synced_at:'2026-07-29 04:03', created_at:'2026-06-26 07:52',
    applications:4, applications_7d:1, last_error:null},
   {id:'P-001', channel:'linkedin', role_key:'closer', title:'Closer — Fundhub (Phoenix, AZ hybrid)',
    location:'Phoenix, AZ — hybrid', apply_url:'https://fundhub.ai/careers/closer-phx',

@@ -202,7 +202,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 
 /* library grid */
 .lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:12px;padding:16px}
-.acard{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff;cursor:pointer;text-align:left;font:inherit;color:inherit;padding:0;transition:border-color .12s,box-shadow .12s}
+/* align-self:start — the tile height follows the row's format, so a grid row of
+   mixed formats would otherwise stretch every card to the tallest and a button
+   centres its own content, floating the short cards in the middle of their box. */
+.acard{align-self:start;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff;cursor:pointer;text-align:left;font:inherit;color:inherit;padding:0;transition:border-color .12s,box-shadow .12s}
 .acard:hover{border-color:var(--gray2);box-shadow:0 2px 10px rgba(10,10,10,.06)}
 .acard.st-blocked{border-left:3px solid var(--alert)}
 .acard.st-pending{border-left:3px solid var(--warn)}
