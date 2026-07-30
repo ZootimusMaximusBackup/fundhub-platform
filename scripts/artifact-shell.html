@@ -1,0 +1,228 @@
+<title>Fundhub — Frontend & CRM</title>
+<style>
+  /* Chrome only. Every screen renders inside its own frame with the real
+     fundhub-brand.css, so nothing here can leak into the product. The rail
+     borrows the brand's ink/spectrum tokens so the wrapper reads as the same
+     system rather than a viewer bolted on. */
+  :root{
+    --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
+    --rail:#0A0A0A;
+    --rail-line:#26262B;
+    --rail-text:#E4E4E7;
+    --rail-dim:#8A8A93;
+    --rail-hover:#18181B;
+    --stage:#F4F4F5;
+    --stage-line:#E4E4E7;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --rail-w:264px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --stage:#101012; --stage-line:#26262B; }
+  }
+  :root[data-theme="dark"]{ --stage:#101012; --stage-line:#26262B; }
+  :root[data-theme="light"]{ --stage:#F4F4F5; --stage-line:#E4E4E7; }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--stage); color:var(--rail-text);
+    font-family:var(--sans);
+    display:grid; grid-template-columns:var(--rail-w) 1fr;
+  }
+
+  /* ── Rail ───────────────────────────────────────────────────────────── */
+  .rail{
+    background:var(--rail); border-right:1px solid var(--rail-line);
+    display:flex; flex-direction:column; min-height:0;
+  }
+  .rail-head{padding:22px 20px 16px; border-bottom:1px solid var(--rail-line)}
+  .mark{display:flex; align-items:baseline; gap:9px}
+  .mark b{font-size:19px; font-weight:700; letter-spacing:-.02em}
+  .pulse{
+    width:34px; height:3px; border-radius:2px; background:var(--spectrum);
+    transform:translateY(-4px);
+  }
+  .sub{
+    margin-top:8px; font-family:var(--mono); font-size:10.5px;
+    letter-spacing:.13em; text-transform:uppercase; color:var(--rail-dim);
+  }
+
+  .rail-scroll{overflow-y:auto; flex:1; padding:8px 0 24px; min-height:0}
+  .group{padding:14px 20px 4px}
+  .group h2{
+    margin:0; font-family:var(--mono); font-size:10px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--rail-dim); font-weight:600;
+  }
+  .group p{margin:6px 0 0; font-size:11.5px; line-height:1.45; color:#6E6E77}
+  .items{display:flex; flex-direction:column; padding:6px 10px 0}
+  .item{
+    appearance:none; border:0; background:none; cursor:pointer;
+    display:flex; align-items:center; gap:10px;
+    padding:7px 10px; border-radius:7px; text-align:left;
+    font:inherit; font-size:13.5px; color:#B4B4BC;
+  }
+  .item:hover{background:var(--rail-hover); color:var(--rail-text)}
+  .item:focus-visible{outline:2px solid #A9C6E8; outline-offset:1px}
+  .item .dot{
+    width:5px; height:5px; border-radius:50%; background:#3A3A42; flex:none;
+  }
+  .item[aria-current="true"]{background:#1C1C21; color:#fff}
+  .item[aria-current="true"] .dot{background:#A8D8B0}
+
+  /* ── Stage ──────────────────────────────────────────────────────────── */
+  .stage{display:flex; flex-direction:column; min-width:0; min-height:0}
+  .bar{
+    display:flex; align-items:center; gap:14px;
+    padding:0 16px; height:46px; flex:none;
+    background:var(--rail); border-bottom:1px solid var(--rail-line);
+  }
+  .crumb{font-size:13px; font-weight:600}
+  .path{
+    font-family:var(--mono); font-size:11.5px; color:var(--rail-dim);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .spacer{flex:1}
+  .btn{
+    appearance:none; cursor:pointer; font:inherit; font-size:12px;
+    color:#B4B4BC; background:#151519; border:1px solid var(--rail-line);
+    padding:5px 11px; border-radius:6px;
+  }
+  .btn:hover{background:#1C1C21; color:#fff}
+  .btn:focus-visible{outline:2px solid #A9C6E8; outline-offset:1px}
+  .btn[disabled]{opacity:.4; cursor:default}
+  .frame-wrap{flex:1; min-height:0; background:var(--stage)}
+  iframe{width:100%; height:100%; border:0; display:block; background:#fff}
+
+  @media (max-width:900px){
+    body{grid-template-columns:1fr; grid-template-rows:auto 1fr}
+    .rail{border-right:0; border-bottom:1px solid var(--rail-line); max-height:44vh}
+    .path{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<nav class="rail">
+  <div class="rail-head">
+    <div class="mark"><b>fundhub</b><span class="pulse"></span></div>
+    <div class="sub" id="count">frontend + crm</div>
+  </div>
+  <div class="rail-scroll" id="nav"></div>
+</nav>
+
+<main class="stage">
+  <div class="bar">
+    <button class="btn" id="back" title="Back">←</button>
+    <span class="crumb" id="crumb">Home</span>
+    <span class="path" id="path">index.html</span>
+    <span class="spacer"></span>
+    <button class="btn" id="reload">Reset screen</button>
+  </div>
+  <div class="frame-wrap"><iframe id="frame" title="Fundhub screen"></iframe></div>
+</main>
+
+<script id="nav-data" type="application/json">/*__NAV__*/null</script>
+<script id="page-data" type="application/json">/*__PAGES__*/null</script>
+<script>
+(function(){
+  var NAV = JSON.parse(document.getElementById("nav-data").textContent);
+  var PAGES = JSON.parse(document.getElementById("page-data").textContent);
+
+  var labels = {};
+  var total = 0;
+  NAV.forEach(function(g){ g.pages.forEach(function(p){ labels[p.rel] = p.label; total++; }); });
+  document.getElementById("count").textContent = total + " screens";
+
+  var frame = document.getElementById("frame");
+  var crumb = document.getElementById("crumb");
+  var path  = document.getElementById("path");
+  var backBtn = document.getElementById("back");
+  var history = [];
+  var current = null;
+
+  var buttons = {};
+  var nav = document.getElementById("nav");
+  NAV.forEach(function(g){
+    var sec = document.createElement("section");
+    sec.className = "group";
+    var h = document.createElement("h2"); h.textContent = g.name;
+    var note = document.createElement("p"); note.textContent = g.note;
+    sec.appendChild(h); sec.appendChild(note);
+    var list = document.createElement("div"); list.className = "items";
+    g.pages.forEach(function(p){
+      var b = document.createElement("button");
+      b.className = "item"; b.type = "button";
+      var dot = document.createElement("span"); dot.className = "dot";
+      b.appendChild(dot);
+      b.appendChild(document.createTextNode(p.label));
+      b.addEventListener("click", function(){ go(p.rel); });
+      buttons[p.rel] = b;
+      list.appendChild(b);
+    });
+    sec.appendChild(list);
+    nav.appendChild(sec);
+  });
+
+  function render(rel){
+    frame.srcdoc = PAGES[rel];
+    crumb.textContent = labels[rel] || rel;
+    path.textContent = rel;
+    Object.keys(buttons).forEach(function(k){
+      buttons[k].setAttribute("aria-current", String(k === rel));
+    });
+    if (buttons[rel]) buttons[rel].scrollIntoView({block:"nearest"});
+  }
+
+  function go(rel, skipHistory){
+    if (!PAGES[rel]) return;
+    if (current && !skipHistory) history.push(current);
+    current = rel;
+    backBtn.disabled = history.length === 0;
+    render(rel);
+  }
+
+  backBtn.addEventListener("click", function(){
+    var prev = history.pop();
+    if (!prev) return;
+    current = prev;
+    backBtn.disabled = history.length === 0;
+    render(prev);
+  });
+  document.getElementById("reload").addEventListener("click", function(){
+    if (current) render(current);
+  });
+
+  /* A link clicked inside a screen. The bridge sends the raw href plus the
+     route it was written in, so relative links resolve the way they would on
+     the served site — /app/pipeline.html links to "calendar.html" and means
+     app/calendar.html, while the marketing site's "app/" means the CRM. */
+  function resolve(from, href){
+    href = href.split("#")[0].split("?")[0];
+    if (!href) return null;
+    var base = from.indexOf("/") === -1 ? [] : from.split("/").slice(0, -1);
+    var parts = href.charAt(0) === "/" ? href.replace(/^\/+/, "").split("/")
+                                       : base.concat(href.split("/"));
+    var out = [];
+    parts.forEach(function(p){
+      if (p === "" || p === ".") return;
+      if (p === "..") out.pop(); else out.push(p);
+    });
+    var rel = out.join("/");
+    if (PAGES[rel]) return rel;
+    if (PAGES[rel + "/index.html"]) return rel + "/index.html";
+    if (PAGES[rel.replace(/\/$/, "") + "/index.html"]) return rel.replace(/\/$/, "") + "/index.html";
+    // /app and /app/ are the CRM front door; the served site forwards them.
+    if (rel === "app" || rel === "app/") return "app/closer-dashboard.html";
+    return null;
+  }
+
+  window.addEventListener("message", function(e){
+    var d = e.data;
+    if (!d || d.fh !== "navigate") return;
+    var rel = resolve(d.from || current || "", d.href);
+    if (rel) go(rel);
+  });
+
+  go("index.html");
+})();
+</script>
