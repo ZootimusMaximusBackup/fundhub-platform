@@ -33,7 +33,7 @@ node db/migrate.mjs
 STAFF_INITIAL_PASSWORD='<pick one, 12+ chars>' node scripts/seed-staff.mjs
 
 # 4. tests
-npm test                    # 1178 tests, 0 failures, 8 skipped
+npm test                    # 1210 tests, 0 failures, 8 skipped
 
 # 5. the screens
 npx http-server public -p 8899 -c-1
@@ -64,7 +64,7 @@ Each of these is verified against a real Postgres, not by reading code.
 | Agent registry | `src/agents/registry.mjs` | 14 agents; only Setter Josh + Inquiry Removal AI are live |
 | Partner isolation | `src/partners/scope.mjs` | Tenancy boundary, mutation-tested three ways |
 | Affiliate economics | `src/affiliates/economics.mjs` | Attribution, accrual, tier 2 |
-| Read APIs | `api/read/*` | 10 endpoints, role-gated, paginated, redacted |
+| Read APIs | `api/read/*` | 13 endpoints, role-gated, paginated, redacted |
 | Principals | `src/auth/account-session.mjs` | client/affiliate/partner sign-in; partner is invite-only |
 | Brand Studio | `api/partner-brand.mjs` | GET/PUT, Google-fonts-only, applied by shell.js |
 | Health | `api/health.mjs` | Always 200, names its state, leaks no host |
@@ -73,25 +73,46 @@ Each of these is verified against a real Postgres, not by reading code.
 
 ## What is NOT done — in the order it will bite you
 
-### 1. Seven screens are still on sample data
+### 1. Six screens are still on sample data
 
-**14 of 21** read real data: `client-control-panel`, `pipeline`, `documents`,
+**15 of 21** read real data: `client-control-panel`, `pipeline`, `documents`,
 `staff-teams`, `affiliate`, `ops-admin`, `command-center`, `products-commissions`,
 `client-portal`, `partner-galaxy`, `messaging`, `calendar`, `agent-editor`,
-`brand-studio`.
+`brand-studio`, `inquiry-remover`.
 
-The remaining **7** each lack a data source, not wiring. None of them is a
-wiring job you can just do — each needs a modelling decision first:
+The remaining **6** each lack a data source, not wiring. None is a wiring job
+you can just do — each needs a modelling decision first:
 
 | Screen | What it needs first |
 |---|---|
-| `closer-dashboard` | per-card APR/limit/balance — the calculators compute from table markup and no endpoint supplies cards |
+| `closer-dashboard` | credit-card tradelines with APR / limit / balance. **The `cards` table is NOT this** — see the warning below |
 | `automations` | a workflow-run history table; none exists |
 | `galaxy` | node/edge layout has no source (`/api/read/staff` exists, the graph does not) |
 | `content-admin` | the tier/tile content model has no table |
-| `inquiry-remover` | `/api/inquiry` returns the external Airtable shape, not these columns |
 | `sample-data` | a sample-data screen by design — leave it |
 | `index` | router, renders nothing |
+
+> **`cards` is a name collision.** `public.cards` is a PIPELINE KANBAN card —
+> `(client_id, pipeline_id, stage_id, owner)`. It has no APR, limit or balance
+> and has nothing to do with credit cards. `closer-dashboard`'s waterfall and
+> cliff calculators need real tradelines, and no table in the schema holds them.
+> Do not wire the dashboard to `cards`.
+
+**`inquiry-remover` reads, but does not write.** It now renders the real
+`inquiry_log` queue via `/api/read/inquiries`, and every interaction — expand,
+log an attempt, mark confirmed, filter by bureau — works on the real rows. But
+those actions are still LOCAL ONLY: there is no write endpoint for
+`inquiry_log`, so a click updates the screen and is lost on reload. That is the
+next job on this screen.
+
+Two things on it are reported rather than guessed:
+- **Status pills** are mapped only where the wording is unambiguous. Anything
+  else keeps its real text on a neutral pill and is counted in the banner
+  ("2 with an unmapped status"). `inquiry_log.status` is free text, so a
+  complete mapping would be an invention.
+- **The "Worked" stat** keeps its sample value. Nothing in `inquiry_log` records
+  who worked a row or when, and deriving it from `call_attempts > 0` would be a
+  guess. Queue Left, Calls and Confirmed ARE derived from the real rows.
 
 The read APIs most screens need now exist
 (`/api/read/*` and the widened `/api/dashboard/client`), so this is wiring, not

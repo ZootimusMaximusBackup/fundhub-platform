@@ -149,6 +149,9 @@ window.FHData = (function () {
     staff:           function (p) { return this.read("staff", p); },
     entitlements:    function (p) { return this.read("entitlements", p); },
     failedEvents:    function (p) { return this.read("failed-events", p); },
+    /* The LOCAL inquiry_log queue. Not /api/inquiry — that proxies the external
+       Airtable runtime and returns its shape, not these columns. */
+    inquiries:       function (p) { return this.read("inquiries", p); },
 
     /* GET /api/partner-brand — not under /api/read, so it gets its own reader
        rather than a path-traversal through read(). */

@@ -158,11 +158,31 @@ asserting the **tone the user sees**, not the HTTP status.
 The over-broad mutations matter as much as the absent ones: they prove the tests
 pin the boundary rather than just the happy path.
 
+## A screen that was recorded as blocked, and was not
+
+`inquiry-remover` was listed as having no data source, on the grounds that
+`/api/inquiry` returns the external Airtable shape. That was true and beside the
+point: there is a local `inquiry_log` table whose columns map 1:1 onto the
+screen's Work Queue (bureau, inquiry, status, call_attempts, outcome). The
+earlier note had checked the endpoint and never checked the schema.
+
+Wired via a new `/api/read/inquiries`. All ten of the screen's interactions were
+driven in Chromium against real rows — expand, collapse, log an attempt, mark
+confirmed, both stat bumps, and the bureau filter — because the screen binds its
+handlers to whatever rows exist at init, so wiring it wrong would have produced a
+page that renders correctly and does nothing.
+
+Re-checked the other five blocked screens against the schema rather than the
+notes. They are genuinely blocked. One trap worth recording: **`public.cards` is
+a pipeline kanban card, not a credit card.** It is the obvious-looking source for
+`closer-dashboard` and it is the wrong one.
+
 ## Suite after the follow-up pass
 
 ```
-1202 tests · 1194 pass · 0 fail · 8 skipped   (was 1178 · 1170)
+1210 tests · 1202 pass · 0 fail · 8 skipped   (was 1178 · 1170)
 33 migrations, clean from scratch, idempotent on re-run
-14 of 21 screens verified in Chromium: 0 console errors, 0 failed requests
+15 of 21 screens verified in Chromium: 0 console errors, 0 failed requests
 layout identical to the pre-wiring commit on every wired screen
+119 route/parameter combinations swept for error leaks: 0
 ```

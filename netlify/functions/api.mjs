@@ -32,6 +32,7 @@ import readStaff from "../../api/read/staff.mjs";
 import readEntitlements from "../../api/read/entitlements.mjs";
 import readFailedEvents from "../../api/read/failed-events.mjs";
 import readAgents from "../../api/read/agents.mjs";
+import readInquiries from "../../api/read/inquiries.mjs";
 import readProducts from "../../api/read/products.mjs";
 
 export const config = { path: "/api/*" };
@@ -59,6 +60,7 @@ const ROUTES = {
   "read/entitlements": readEntitlements,
   "read/failed-events": readFailedEvents,
   "read/agents": readAgents,
+  "read/inquiries": readInquiries,
   "read/products": readProducts
 };
 
