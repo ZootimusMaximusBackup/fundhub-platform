@@ -246,6 +246,9 @@ table.grid tr[data-row]{cursor:pointer}
 table.grid tr[data-row]:hover td{background:var(--soft)}
 table.grid tr[data-row][aria-expanded="true"] td{background:var(--soft)}
 .rchev{display:inline-block;width:10px;color:var(--gray2);font-size:9px;transition:transform .16s ease;margin-right:6px}
+/* caret + channel name are one unit. At 1180 the first column is narrow enough
+   that they would otherwise break across two lines. */
+table.grid tr[data-row]>td:first-child{white-space:nowrap}
 tr[data-row][aria-expanded="true"] .rchev{transform:rotate(90deg)}
 tr.det>td{background:var(--soft);padding:0 14px 13px !important}
 .detbox{border-top:1px dashed var(--line);padding-top:11px;display:flex;gap:20px;flex-wrap:wrap}
