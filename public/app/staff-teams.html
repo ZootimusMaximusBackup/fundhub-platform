@@ -607,5 +607,37 @@ document.getElementById('toAdvanced').addEventListener('click',function(){
 
 renderAll();
 </script>
+<script src="data.js"></script>
+<script>
+
+/* Staff & Teams — the real roster from /api/read/staff. Replaces the roster
+   table body only; the clock table and permissions grid have no endpoint and
+   keep their sample markup (reported in the unit notes). */
+(function () {
+  "use strict";
+  var esc = function (v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
+  };
+  var label = function (r) {
+    return String(r || "").replace(/_/g, " ").replace(/\b\w/g, function (m) { return m.toUpperCase(); });
+  };
+
+  FHData.wire(FHData.staff({ limit: 200 }), "roster", function (data) {
+    var rows = data.items || [];
+    if (!rows.length) return null;
+    var body = document.getElementById("rosterBody");
+    if (!body) return null;
+    body.innerHTML = rows.map(function (s) {
+      return "<tr><td>" + esc(s.name || s.email) + "</td>" +
+             "<td>" + esc(s.email) + "</td>" +
+             "<td>" + esc(label(s.role)) + "</td>" +
+             "<td>" + esc(s.status) + "</td>" +
+             "<td>" + esc(s.open_tasks == null ? "—" : s.open_tasks) + "</td></tr>";
+    }).join("");
+    return "live roster · " + rows.length + " staff";
+  });
+})();
+</script>
 </body>
 </html>

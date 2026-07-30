@@ -417,5 +417,39 @@ document.getElementById('q').addEventListener('input',renderLeads);
 
 renderLeads(); renderPayouts(); renderFunnel(); renderStats();
 </script>
+<script src="data.js"></script>
+<script>
+
+/* Affiliate — real balances from /api/read/affiliates.
+   NOTE: commission RATE is deliberately not shown as a number here. AF-04 is
+   undecided and affiliate_commission_rules ships empty, so an unrated
+   conversion carries commission_due NULL. Showing 12% would be inventing the
+   schedule; the KPI shows what actually accrued. */
+(function () {
+  "use strict";
+  var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+  var usd = function (n) {
+    // Two fraction digits always: toLocaleString's default drops a trailing
+    // zero, so 1250.50 rendered as "$1,250.5" — wrong for money on screen.
+    return "$" + Number(n || 0).toLocaleString("en-US",
+      { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  FHData.wire(FHData.affiliates({ limit: 200 }), "affiliate figures", function (data) {
+    var rows = data.items || [];
+    if (!rows.length) return null;
+    var owed = rows.reduce(function (a, r) { return a + Number(r.balance_due || 0); }, 0);
+    var converted = rows.filter(function (r) { return Number(r.balance_due || 0) > 0; }).length;
+    var tier2 = rows.filter(function (r) { return r.tier_level === "tier2"; }).length;
+
+    set("kOwed", usd(owed));
+    set("kConv", converted);
+    set("kConvRate", tier2 + " at tier 2");
+    // kPaid has no source: settled totals live in affiliate_payouts, which has
+    // no read endpoint yet. Left as-is rather than guessed.
+    return "live affiliate balances · " + rows.length + " affiliates · " + usd(owed) + " accrued";
+  });
+})();
+</script>
 </body>
 </html>

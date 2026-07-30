@@ -394,5 +394,53 @@ document.getElementById('pendingBtn').addEventListener('click',function(){
 
 renderTabs(); renderClassbar(); render();
 </script>
+<script src="data.js"></script>
+<script>
+
+/* Documents — real metadata from /api/read/documents. Layout untouched: this
+   replaces the four KPI numbers and the table body, nothing else. storage_key
+   is stripped server-side and is never in the payload. */
+(function () {
+  "use strict";
+  var esc = function (v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
+  };
+  var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+  var day = function (d) { return d ? new Date(d).toLocaleDateString("en-US",
+    { month:"short", day:"numeric", year:"2-digit" }) : "—"; };
+
+  FHData.wire(FHData.documents({ limit: 200 }), "documents", function (data) {
+    var rows = data.items || [];
+    if (!rows.length) return null;                 // keep the sample markup
+
+    var awaiting = rows.filter(function (r) { return r.signature_required && !r.signed_at; });
+    var undeliv  = rows.filter(function (r) { return !r.delivered_at; });
+    set("kTotal", rows.length);
+    set("kSign",  awaiting.length);
+    set("kUndel", undeliv.length);
+
+    var oldest = awaiting.concat(undeliv).sort(function (a, b) {
+      return new Date(a.created_at || 0) - new Date(b.created_at || 0); })[0];
+    set("kOld",    oldest ? day(oldest.created_at) : "—");
+    set("kOldWho", oldest ? (oldest.title || oldest.kind || "—") : "—");
+
+    var body = document.getElementById("body");
+    if (body) {
+      body.innerHTML = rows.map(function (r) {
+        var state = r.signed_at ? "signed"
+                  : r.signature_required ? "awaiting signature"
+                  : r.delivered_at ? "delivered" : "generated";
+        return "<tr><td>" + esc(r.title || r.document_key || "—") + "</td>" +
+               "<td>" + esc(r.kind || "—") + "</td>" +
+               "<td>" + esc(state) + "</td>" +
+               "<td>" + esc(day(r.generated_at || r.created_at)) + "</td>" +
+               "<td>" + esc(day(r.delivered_at)) + "</td></tr>";
+      }).join("");
+    }
+    return "live documents · " + rows.length + " records" + (data.hasMore ? " (first 200)" : "");
+  });
+})();
+</script>
 </body>
 </html>

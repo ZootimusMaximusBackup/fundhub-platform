@@ -79,9 +79,117 @@ window.FHData = (function () {
       if (o.clientId) q += "&client_id=" + encodeURIComponent(o.clientId);
       return get("/api/tasks" + q);
     },
+    /* GET /api/tasks?role= / ?mine=1 — the role queues from 041. */
+    taskQueue: function (opts) {
+      var o = opts || {};
+      var q = "?done=" + (o.done === true ? "true" : "false");
+      if (o.role) q += "&role=" + encodeURIComponent(o.role);
+      if (o.mine) q += "&mine=1";
+      if (o.unclaimed) q += "&unclaimed=1";
+      if (o.limit) q += "&limit=" + encodeURIComponent(o.limit);
+      return get("/api/tasks" + q);
+    },
+
+    /* The Unit 9 read endpoints. Each returns { ok, items, count, limit,
+       offset, hasMore } — read() unwraps to the same { ok, source, data }
+       shape as everything else so a screen branches once. */
+    read: function (resource, params) {
+      var q = [];
+      var o = params || {};
+      for (var k in o) {
+        if (Object.prototype.hasOwnProperty.call(o, k) && o[k] != null && o[k] !== "") {
+          q.push(encodeURIComponent(k) + "=" + encodeURIComponent(o[k]));
+        }
+      }
+      return get("/api/read/" + resource + (q.length ? "?" + q.join("&") : ""));
+    },
+
+    commissions:     function (p) { return this.read("commissions", p); },
+    invoices:        function (p) { return this.read("invoices", p); },
+    documents:       function (p) { return this.read("documents", p); },
+    fundingRounds:   function (p) { return this.read("funding-rounds", p); },
+    affiliates:      function (p) { return this.read("affiliates", p); },
+    partners:        function (p) { return this.read("partners", p); },
+    messageTemplates:function (p) { return this.read("message-templates", p); },
+    staff:           function (p) { return this.read("staff", p); },
+    entitlements:    function (p) { return this.read("entitlements", p); },
+    failedEvents:    function (p) { return this.read("failed-events", p); },
+
     /* The query string is how a screen is told which record to show. */
     param: function (name) {
       try { return new URLSearchParams(location.search).get(name); } catch (e) { return null; }
+    },
+
+    /* ---------------------------------------------------------------------
+       banner — the one place a screen says where its numbers came from.
+       Duplicated by hand in the first two wired screens; hoisted here so the
+       remaining nineteen cannot drift from it.
+
+         real   mint  — these are database rows
+         sample peach — built-in sample markup, backend not queried (demo)
+         error  rose  — backend could not answer; sample markup retained
+
+       RULE: a screen NEVER blanks. It keeps its sample markup and says so.
+       --------------------------------------------------------------------- */
+    banner: function (tone, text) {
+      var TONE = { real: "#A8D8B0", sample: "#F5CE8F", error: "#F2A69B" };
+      var el = document.getElementById("fh-data-banner");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "fh-data-banner";
+        el.setAttribute("role", "status");
+        document.body.appendChild(el);
+      }
+      el.style.cssText =
+        "position:fixed;left:0;right:0;bottom:0;z-index:2147482000;padding:7px 14px;" +
+        "background:" + (TONE[tone] || TONE.error) + ";color:#0A0A0A;" +
+        "font:600 11px/1.4 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.05em;text-align:center";
+      el.textContent = text;
+      return el;
+    },
+
+    /* explain — turn a failed read into the right banner, once, so nineteen
+       screens do not each invent their own wording for "no backend". */
+    explain: function (res, what) {
+      if (res && res.source === "demo") {
+        this.banner("sample", "sample " + what + " — demo session, the backend was not queried");
+      } else if (res && res.source === "unauthorized") {
+        this.banner("error", "sample " + what + " — not signed in for real data");
+      } else {
+        this.banner("error", "sample " + what + " — backend unavailable (" +
+          ((res && res.source) || "unknown") + ": " + ((res && res.error) || "no detail") + ")");
+      }
+    },
+
+    /* wire — the whole flow for a screen: fetch, hand rows to paint(), and on
+       failure leave the markup alone and say why.
+
+       THREE outcomes, not two, and conflating the last two is a lie the first
+       version of this told: a read that SUCCEEDS but returns no rows is not a
+       backend failure. An empty documents table on a fresh database is correct,
+       and reporting "backend unavailable" for it sends someone hunting a
+       connection problem that does not exist.
+
+         paint() returns a string  → real   (rows rendered)
+         paint() returns falsy     → empty  (read fine, nothing to show)
+         res.ok false / threw      → error/sample (per explain())            */
+    wire: function (promise, what, paint) {
+      var self = this;
+      return promise.then(function (res) {
+        if (res && res.ok) {
+          var note = null;
+          try { note = paint(res.data); }
+          catch (e) { self.banner("error", "sample " + what + " — render failed: " + e.message); return; }
+          if (note) { self.banner("real", note); return; }
+          // Connected, queried, nothing there. Sample markup stays on screen so
+          // the layout still reads, and the banner says exactly that.
+          self.banner("sample", "no " + what + " in the database yet — showing sample markup");
+          return;
+        }
+        self.explain(res, what);
+      }).catch(function (e) {
+        self.banner("error", "sample " + what + " — " + (e && e.message ? e.message : "read failed"));
+      });
     }
   };
 })();

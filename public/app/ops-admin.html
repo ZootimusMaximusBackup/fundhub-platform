@@ -724,5 +724,45 @@
   });
 })();
 </script>
+<script src="data.js"></script>
+<script>
+
+/* Ops & Admin — the dead-letter queue is the one thing on this screen with a
+   real source (039). Appends a health row into the existing KPI grid rather
+   than restyling anything; the AR table and affiliate block keep their sample
+   markup and are reported as unwired. */
+(function () {
+  "use strict";
+  var esc = function (v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
+  };
+
+  FHData.wire(FHData.failedEvents({ status: "pending", limit: 200 }), "ops health",
+    function (data) {
+      var rows = data.items || [];
+      var grid = document.getElementById("kpi-grid");
+      if (!grid) return null;
+
+      // Reuse whatever a KPI tile already looks like on this screen, so the
+      // added tile cannot drift from the approved design.
+      var tpl = grid.querySelector(".kpi") || grid.firstElementChild;
+      if (!tpl) return null;
+      var tile = tpl.cloneNode(true);
+      tile.id = "kpi-dlq";
+      var big = tile.querySelector(".sv, .kpi-value, .value, h3, strong");
+      var cap = tile.querySelector(".sd, .kpi-label, .label, p, span:last-child");
+      if (big) big.textContent = rows.length;
+      if (cap) cap.textContent = rows.length
+        ? "failed events awaiting retry"
+        : "no failed events";
+      if (!document.getElementById("kpi-dlq")) grid.appendChild(tile);
+
+      var worst = rows.slice(0, 1)[0];
+      return "live ops health · " + rows.length + " pending failure(s)" +
+             (worst ? " · latest: " + esc(worst.event_name) + "/" + esc(worst.handler_name) : "");
+    });
+})();
+</script>
 </body>
 </html>
