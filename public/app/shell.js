@@ -22,18 +22,49 @@
     "inquiry-remover.html", "affiliate.html", "client-portal.html", "partner-galaxy.html", "brand-studio.html"
   ];
 
+  /* partner-galaxy.html is the white-label partner's own Galaxy — scoped to
+     their book, with staff identities replaced by anonymous team nodes. It is
+     the one screen no sidebar links to, and employees get the real Galaxy
+     instead, so it stays out of the staff surface. */
+  var PRINCIPAL_ONLY = ["partner-galaxy.html"];
+
+  // staffTabs — every screen the sidebar links to, which is every screen a
+  // signed-in employee can reach from the chrome they are already looking at.
+  function staffTabs() {
+    return ALL.filter(function (s) { return PRINCIPAL_ONLY.indexOf(s) === -1; });
+  }
+
+  /* "staff" = the full employee surface; "*" = that plus the partner screen.
+     Every staff role gets the whole sidebar deliberately.
+
+     These lists used to be narrow — a setter had 3 of 19 tabs, a closer 6 —
+     while all 19 tabs were rendered on every screen regardless. Every tab
+     outside your list was a link that loaded the screen and threw you back,
+     which is the bug this file exists to have fixed. Narrowing the nav to
+     match the map (which is what the gate now does) traded that for a sidebar
+     that silently loses two thirds of its contents.
+
+     And it bought no security to begin with: /api/dashboard/* and /api/tasks
+     gate on a valid session, not on a role, so a staff member who could not
+     see a tab could still read every row behind it. Withholding the screen
+     withheld nothing but the screen.
+
+     So the boundary that is real is kept — the three external principals stay
+     on their own surface, because a client must not see the CRM — and the
+     internal one, which was costing navigation and protecting nothing, is
+     dropped. To put a role back on rails, replace "staff" with an explicit
+     list here; the gate handles narrow roles correctly now. If the concern is
+     specifically commission rates and staff comp (products-commissions.html,
+     staff-teams.html), gate those in the API first — that is where the data
+     actually is. */
   var ROLE_TABS = {
     owner: "*",
     admin: "*",
-    funding_advisor: ["closer-dashboard.html", "pipeline.html", "client-control-panel.html",
-                      "messaging.html", "calendar.html", "documents.html",
-                      "ops-admin.html", "command-center.html"],
-    closer: ["closer-dashboard.html", "pipeline.html", "client-control-panel.html",
-             "messaging.html", "calendar.html", "documents.html"],
-    inquiry_specialist: ["inquiry-remover.html", "client-control-panel.html",
-                         "messaging.html", "calendar.html"],
-    setter: ["pipeline.html", "messaging.html", "calendar.html"],
-    /* future principals (B4) land on a single screen */
+    funding_advisor: "staff",
+    closer: "staff",
+    inquiry_specialist: "staff",
+    setter: "staff",
+    /* future principals (B4) land on their own surface */
     client: ["client-portal.html"],
     affiliate: ["affiliate.html"],
     partner: ["partner-galaxy.html", "brand-studio.html"]
@@ -63,13 +94,12 @@
      login page, which signs straight back in and signs straight back out. A
      lockout loop, on a typo.
 
-     The screens are not the security boundary in any case: /api/dashboard/*
-     gates on a valid session, not on a role, so withholding a tab withholds
-     no data. An unknown role therefore gets the shared work surface — the
-     sidebar's "Work" group — and the chip says the role is unrecognised. */
-  var UNKNOWN_ROLE_TABS = ["pipeline.html", "client-control-panel.html",
-                           "messaging.html", "calendar.html", "documents.html"];
-
+     Anyone who reaches this file has authenticated through /api/auth/login,
+     which is the staff table — the three principal roles are unbuilt (B4) and
+     nothing issues them a session yet. So an unknown role is a staff role
+     spelled unexpectedly, and it gets the staff surface. The chip still marks
+     it unrecognised, so a genuinely wrong value stays visible rather than
+     silently inheriting access. */
   function isKnownRole(role) {
     return Object.prototype.hasOwnProperty.call(ROLE_TABS, role);
   }
@@ -78,7 +108,7 @@
     if (!role) return [];
     var m = ROLE_TABS[role];
     if (m === "*") return ALL.slice();
-    if (!m) return UNKNOWN_ROLE_TABS.slice();
+    if (m === "staff" || !m) return staffTabs();
     return m.slice();
   }
 
