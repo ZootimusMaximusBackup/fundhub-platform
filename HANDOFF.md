@@ -6,8 +6,8 @@ what is finished and what only looks finished.
 ## The one-line summary
 
 The **backend is built and tested** — all 14 units of the build queue are done.
-The **front end is now mostly wired too**: 12 of 21 screens read real data. What
-remains is 9 screens with no data source yet, and no production database. Do not
+The **front end is now mostly wired too**: 14 of 21 screens read real data. What
+remains is 7 screens with no data source yet, and no production database. Do not
 open the deployed site expecting live data until `DATABASE_URL` is set.
 
 ---
@@ -73,23 +73,23 @@ Each of these is verified against a real Postgres, not by reading code.
 
 ## What is NOT done — in the order it will bite you
 
-### 1. The screens are not wired (biggest gap)
+### 1. Seven screens are still on sample data
 
-**12 of 21** read real data: `client-control-panel`, `pipeline`, `documents`,
+**14 of 21** read real data: `client-control-panel`, `pipeline`, `documents`,
 `staff-teams`, `affiliate`, `ops-admin`, `command-center`, `products-commissions`,
-`client-portal`, `partner-galaxy`, `messaging`, `calendar`.
+`client-portal`, `partner-galaxy`, `messaging`, `calendar`, `agent-editor`,
+`brand-studio`.
 
-The remaining **9** each lack a data source, not wiring:
+The remaining **7** each lack a data source, not wiring. None of them is a
+wiring job you can just do — each needs a modelling decision first:
 
 | Screen | What it needs first |
 |---|---|
 | `closer-dashboard` | per-card APR/limit/balance — the calculators compute from table markup and no endpoint supplies cards |
 | `automations` | a workflow-run history table; none exists |
 | `galaxy` | node/edge layout has no source (`/api/read/staff` exists, the graph does not) |
-| `agent-editor` | `/api/read/agents` now exists — needs the editor bound to it |
 | `content-admin` | the tier/tile content model has no table |
 | `inquiry-remover` | `/api/inquiry` returns the external Airtable shape, not these columns |
-| `brand-studio` | endpoint exists (Unit 11); the form still writes localStorage |
 | `sample-data` | a sample-data screen by design — leave it |
 | `index` | router, renders nothing |
 
@@ -115,9 +115,11 @@ partner all sign in through `/api/auth/login`, which returns a `principal` field
 so the frontend can route. Partner is invite-only, enforced in code AND by a
 trigger.
 
-What is still missing is the SCREENS: `client-portal.html` and
-`partner-galaxy.html` are still hardcoded sample data, so a principal can now
-authenticate but lands on a wireframe. Wiring those is the remaining work.
+`client-portal.html` and `partner-galaxy.html` are both wired now, so a
+principal who signs in lands on real rows rather than a wireframe. What has NOT
+been exercised end-to-end is a real client/affiliate/partner session driving
+those two screens — they were verified with a staff session. Log in as each kind
+before trusting it.
 
 `036_partner_role.sql` seeded `partner` into the STAFF catalog as a stopgap. Now
 that real partner accounts exist it should be reverted — see the DESIGN NOTE in
@@ -143,11 +145,17 @@ live against whatever `DATABASE_URL` points at. Unit 13's verification pass is
 clean (see `VERIFICATION.md`), so the gate is now just "do it when someone is
 watching" — an operator action, not a commit.
 
-### 5. Brand Studio: backend done, screen not wired
+### 5. Brand Studio writes through, but only for a partner principal
 
-`043` + `api/partner-brand.mjs` + `shell.js applyBrand()` all landed in Unit 11,
-so tokens persist and are applied at boot. `brand-studio.html` itself still
-writes to localStorage — the screen needs pointing at the endpoint.
+`043` + `api/partner-brand.mjs` + `shell.js applyBrand()` landed in Unit 11, and
+`brand-studio.html` now PUTs to the endpoint as well as caching a local draft.
+The localStorage write was kept deliberately: a failed PUT leaves the draft
+intact and the banner says "saved LOCALLY only" rather than pretending it
+persisted.
+
+It only loads a real palette for a partner principal, or with an explicit
+`?partner_id=<id>`. A staff session with neither sees the sample palette — that
+is correct, not a bug.
 
 ---
 

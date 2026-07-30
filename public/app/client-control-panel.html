@@ -687,6 +687,10 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
       banner("sample", "sample data — open with ?id=<client id> to load a real record");
     } else if (res.source === "demo") {
       banner("sample", "sample data — demo session, the backend was not queried");
+    } else if (res.source === "notfound") {
+      banner("sample", "sample data — no client with that id (the backend is up)");
+    } else if (res.source === "badrequest") {
+      banner("sample", "sample data — that id is not a valid client id");
     } else {
       banner("error", "sample data — backend unavailable (" + res.source + ": " + res.error + ")");
     }

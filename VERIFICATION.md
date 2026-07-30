@@ -100,9 +100,69 @@ pass auth and fail only on `INQUIRY_API_SECRET` not being set locally.
 3. **8 tests skip** — they need the `fundhub-docs` sibling repo, which is not on
    this account. They un-skip automatically when it exists.
 
-## Suite at time of verification
+---
+
+## Follow-up pass: one real defect, found by driving the browser
+
+Unit 13 checked the API and the workflows. It did **not** check what a screen
+does with an error response, and that is where the defect was.
+
+### A 404 meant two different things and the frontend believed the wrong one
+
+`client-control-panel` opened with a stale `?id=` reported
+**"backend unavailable (offline: /api/\* not deployed)"** while the backend was
+up and answering correctly. `public/app/data.js` mapped every 404 to "the API is
+not deployed", so a missing row and a missing deployment were indistinguishable.
+
+Fixed by splitting the two: the router's fallthrough answers
+`{error:"not_found", path}` and only that is an outage. Anything else at 404 is
+a working backend saying the record does not exist, which is now a `sample`
+banner with a reason rather than an `error` banner.
+
+### The same request class was also a 500 with the raw Postgres message
+
+`?id=zzz` reached Postgres and raised SQLSTATE `22P02`, which every handler
+reported as a 500 quoting `invalid input syntax for type uuid: "zzz"`. Two
+problems in one: a client error reported as a server fault, and the query's
+internals echoed back to the caller.
+
+Swept **119 route/parameter combinations** for it. Five endpoints were affected:
+`dashboard/client`, `read/documents`, `read/commissions`, `read/entitlements`,
+`partner-brand`, plus `tasks` on both GET and PATCH. All now classify SQLSTATE
+class 22 as a **400 `invalid_parameter`** and scrub the fallback 500 through
+`safeError()`. Re-swept: **0 leaking 5xx**, and the write paths (PATCH/PUT) are
+clean too.
+
+Classification is on `err.code`, never the message — the message is localised
+and version-dependent.
+
+### Why the earlier pass missed it
+
+Both defects need an error path to be *rendered*, not just returned. The Unit 13
+checks asserted status codes and payloads; neither opened the page. The banner
+cases are now driven in Chromium — real record, absent id, malformed id, no id —
+asserting the **tone the user sees**, not the HTTP status.
+
+### Mutation testing on the fixes
+
+| Mutation | Tests that failed |
+|---|---|
+| all 404s → `offline` (the original bug) | 3 |
+| all 404s → `notfound` (over-broad, hides outages) | 2 |
+| match `error:"not_found"` without checking `path` | 1 |
+| `explain()` treats a missing record as an outage | 2 |
+| SQLSTATE classification removed | 2 |
+| SQLSTATE classification applied to *everything* | 2 |
+| `isUuid()` always true | 1 |
+
+The over-broad mutations matter as much as the absent ones: they prove the tests
+pin the boundary rather than just the happy path.
+
+## Suite after the follow-up pass
 
 ```
-1178 tests · 1170 pass · 0 fail · 8 skipped
+1202 tests · 1194 pass · 0 fail · 8 skipped   (was 1178 · 1170)
 33 migrations, clean from scratch, idempotent on re-run
+14 of 21 screens verified in Chromium: 0 console errors, 0 failed requests
+layout identical to the pre-wiring commit on every wired screen
 ```

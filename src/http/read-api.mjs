@@ -38,6 +38,26 @@ export function redact(value) {
 export const MAX_LIMIT = 200;
 export const DEFAULT_LIMIT = 50;
 
+/* Postgres SQLSTATE codes that mean "the value you sent does not fit the
+   column", i.e. a 400 rather than a 500. Class 22 is "data exception".
+   22P02 is the one that actually bites — `?id=zzz` against a uuid column —
+   but a bad date or an over-large number arrives the same way. */
+export const CLIENT_DATA_ERRORS = new Set([
+  "22P02", // invalid_text_representation — bad uuid, bad numeric
+  "22003", // numeric_value_out_of_range
+  "22007", // invalid_datetime_format
+  "22008"  // datetime_field_overflow
+]);
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/* isUuid — cheap guard for handlers that take an `?id=`. Catching a malformed
+   id here avoids firing a fan-out of parallel queries that cannot match, and
+   turns what used to be a 500 into an honest 400. */
+export function isUuid(v) {
+  return typeof v === "string" && UUID_RE.test(v.trim());
+}
+
 /* pageParams — limit/offset from a query string, bounded. The unit's rule is
    "paginated above 200 rows", so 200 is the ceiling and a caller asking for more
    silently gets 200 rather than an error: a screen requesting 1000 should still
@@ -119,6 +139,14 @@ export function readHandler({ roles, fetch, single = false }) {
       }
       return res.status(200).json({ ok: true, ...page(rows, { limit, offset }) });
     } catch (err) {
+      // A malformed parameter is the CALLER's error, not ours. Postgres raises
+      // SQLSTATE class 22 (data exception) for `?id=zzz` against a uuid column,
+      // and reporting that as a 500 told every screen "the backend is down" when
+      // only the query string was wrong. Classify on the code, not the message —
+      // the message is localised and version-dependent.
+      if (CLIENT_DATA_ERRORS.has(err && err.code)) {
+        return res.status(400).json({ ok: false, error: "invalid_parameter" });
+      }
       // The message can quote a DSN on a connection failure, same as health.
       const safe = String(err && err.message || "query failed")
         .replace(/postgres(ql)?:\/\/[^\s"']+/gi, "postgres://[redacted]")

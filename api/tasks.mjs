@@ -23,6 +23,8 @@
 import { db } from "../src/db.mjs";
 import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
 import { TASK_ROLES } from "../src/lib/create-task.mjs";
+import { isUuid, CLIENT_DATA_ERRORS } from "../src/http/read-api.mjs";
+import { safeError } from "../src/http/health.mjs";
 
 export default async function handler(req, res) {
   // STAFF ONLY, named explicitly. A client or affiliate session reaching the
@@ -44,7 +46,12 @@ export default async function handler(req, res) {
     const done = (q.done ?? "false").toLowerCase();
     if (done === "false") where.push("t.done = false");
     else if (done === "true") where.push("t.done = true");
-    if (q.client_id) add("t.client_id = ?", q.client_id);
+    if (q.client_id) {
+      if (!isUuid(q.client_id)) {
+        return res.status(400).json({ ok: false, error: "invalid_client_id" });
+      }
+      add("t.client_id = ?", q.client_id);
+    }
     if (q.q) add("t.title ILIKE ?", `%${q.q}%`);
 
     // Whose queue. `mine` is resolved from the authenticated session, so it can
@@ -85,7 +92,10 @@ export default async function handler(req, res) {
       const { rows } = await db.query(sql, params);
       return res.status(200).json({ ok: true, count: rows.length, tasks: rows });
     } catch (err) {
-      return res.status(500).json({ ok: false, error: "query_failed", message: err.message });
+      if (CLIENT_DATA_ERRORS.has(err && err.code)) {
+        return res.status(400).json({ ok: false, error: "invalid_parameter" });
+      }
+      return res.status(500).json({ ok: false, error: "query_failed", message: safeError(err) });
     }
   }
 
@@ -143,7 +153,10 @@ export default async function handler(req, res) {
       if (!rows[0]) return res.status(404).json({ ok: false, error: "not_found" });
       return res.status(200).json({ ok: true, task: rows[0] });
     } catch (err) {
-      return res.status(500).json({ ok: false, error: "update_failed", message: err.message });
+      if (CLIENT_DATA_ERRORS.has(err && err.code)) {
+        return res.status(400).json({ ok: false, error: "invalid_parameter" });
+      }
+      return res.status(500).json({ ok: false, error: "update_failed", message: safeError(err) });
     }
   }
 

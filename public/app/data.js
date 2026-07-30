@@ -8,7 +8,15 @@
  *   ok:false source:"unauthorized" — signed out, or the session is stale
  *   ok:false source:"nodb"         — API answered, database did not
  *   ok:false source:"offline"      — /api/* is not deployed or unreachable
+ *   ok:false source:"notfound"     — backend is fine; that record does not exist
+ *   ok:false source:"badrequest"   — backend is fine; the parameter was bad
+ *   ok:false source:"nodata"       — the screen had nothing to ask about
+ *   ok:false source:"demo"         — demo session, no read attempted
  *   ok:true  source:"api"          — real rows
+ *
+ * "notfound"/"badrequest" are NOT outages. A screen must report them as sample
+ * data with a reason, never as "backend unavailable" — see the reference
+ * wiring in client-control-panel.html.
  *
  * Screens must branch on `ok` and never assume `data` is populated. See
  * client-control-panel.html for the reference wiring.
@@ -35,12 +43,39 @@ window.FHData = (function () {
       return Promise.resolve(fail("demo", "demo session — no backend read attempted"));
     }
     var t = token();
-    return fetch(path, {
-      headers: t ? { accept: "application/json", authorization: "Bearer " + t }
-                 : { accept: "application/json" }
-    }).then(function (r) {
-      if (r.status === 404) return fail("offline", "/api/* not deployed");
+    var started;
+    // fetch() rejects rather than throws in a browser, but the "no reader ever
+    // rejects" contract above is load-bearing — no screen wraps its call in a
+    // .catch — so it must hold even if fetch is missing or throws outright.
+    try {
+      started = fetch(path, {
+        headers: t ? { accept: "application/json", authorization: "Bearer " + t }
+                   : { accept: "application/json" }
+      });
+    } catch (e) {
+      return Promise.resolve(fail("offline", (e && e.message) || "fetch unavailable"));
+    }
+    return Promise.resolve(started).then(function (r) {
       if (r.status === 401 || r.status === 403) return fail("unauthorized", "not signed in");
+      // A 404 is TWO different things and they must not share a banner. The
+      // router's fallthrough says error:"not_found" with the unmatched path,
+      // which means /api/* really is not deployed. An endpoint that ran and
+      // found no such row is a working backend answering honestly, and telling
+      // the user "backend unavailable" for a stale id in the URL is a lie.
+      if (r.status === 404) {
+        return r.json().then(function (d) {
+          return (d && d.error === "not_found" && typeof d.path === "string")
+            ? fail("offline", "/api/* not deployed")
+            : fail("notfound", "no such record");
+        }).catch(function () {
+          return fail("offline", "/api/* not deployed");
+        });
+      }
+      if (r.status === 400) {
+        return r.json().then(function (d) {
+          return fail("badrequest", (d && d.error) || "bad request");
+        }).catch(function () { return fail("badrequest", "bad request"); });
+      }
       return r.json().then(function (d) {
         if (r.status === 503 || (d && d.db === "down")) {
           return fail("nodb", (d && d.error) || "database unreachable");
@@ -115,6 +150,13 @@ window.FHData = (function () {
     entitlements:    function (p) { return this.read("entitlements", p); },
     failedEvents:    function (p) { return this.read("failed-events", p); },
 
+    /* GET /api/partner-brand — not under /api/read, so it gets its own reader
+       rather than a path-traversal through read(). */
+    brand: function (partnerId) {
+      if (!partnerId) return Promise.resolve(fail("nodata", "no partner id"));
+      return get("/api/partner-brand?partner_id=" + encodeURIComponent(partnerId));
+    },
+
     /* The query string is how a screen is told which record to show. */
     param: function (name) {
       try { return new URLSearchParams(location.search).get(name); } catch (e) { return null; }
@@ -171,6 +213,12 @@ window.FHData = (function () {
         this.banner("sample", "sample " + what + " — demo session, the backend was not queried", what);
       } else if (res && res.source === "unauthorized") {
         this.banner("error", "sample " + what + " — not signed in for real data", what);
+      } else if (res && (res.source === "notfound" || res.source === "badrequest")) {
+        // The backend answered. Nothing is broken except what was asked for, so
+        // this is a "sample" tone with a reason, not an outage.
+        this.banner("sample", "sample " + what + " — " +
+          (res.source === "notfound" ? "no matching record" : "the request was rejected") +
+          " (" + (res.error || "no detail") + ")", what);
       } else {
         this.banner("error", "sample " + what + " — backend unavailable (" +
           ((res && res.source) || "unknown") + ": " + ((res && res.error) || "no detail") + ")", what);

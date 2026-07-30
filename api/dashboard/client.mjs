@@ -4,8 +4,9 @@
 // No writes. SELECT only. ESM. Mirrors api/health.mjs style.
 import { db } from "../../src/db.mjs";
 import { clientDetailExtras } from "../../src/http/client-detail.mjs";
-import { redact } from "../../src/http/read-api.mjs";
+import { redact, isUuid, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { checkDashboardAuth } from "../../src/http/dashboard-auth.mjs";
+import { safeError } from "../../src/http/health.mjs";
 import { attachStaff } from "../../src/http/middleware/requireAuth.mjs";
 
 export default async function handler(req, res) {
@@ -15,6 +16,10 @@ export default async function handler(req, res) {
   if (!staff && !checkDashboardAuth(req)) return res.status(401).json({ ok: false, error: "unauthorized" });
   const { id } = req.query ?? {};
   if (!id) return res.status(400).json({ ok: false, error: "?id= required" });
+  // A malformed id is a bad request, not a server fault. Without this the seven
+  // queries below all fail on SQLSTATE 22P02 and the screen was told the whole
+  // backend was unreachable.
+  if (!isUuid(id)) return res.status(400).json({ ok: false, error: "invalid_id" });
 
   try {
     const [clientRes, txRes, crsRes, msgRes, taskRes, roundRes, invRes] = await Promise.all([
@@ -93,6 +98,11 @@ export default async function handler(req, res) {
       ...extras
     }));
   } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
+    if (CLIENT_DATA_ERRORS.has(err && err.code)) {
+      return res.status(400).json({ ok: false, error: "invalid_parameter" });
+    }
+    // err.message can quote the DSN on a connection failure — scrub it the same
+    // way health.mjs does rather than handing a host and password to the client.
+    res.status(500).json({ ok: false, error: safeError(err) });
   }
 }

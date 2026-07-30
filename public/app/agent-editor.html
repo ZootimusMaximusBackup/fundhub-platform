@@ -633,5 +633,51 @@ document.getElementById('newBtn').addEventListener('click',function(){
 
 select('AG-04');
 </script>
+<script src="data.js"></script>
+<script>
+
+/* Agent Editor — the list's mode and status come from the 037 registry.
+
+   The screen owns AGENTS as its working model, so this OVERLAYS the real status
+   onto the matching entries by code and re-renders through the screen's own
+   renderList(), rather than replacing the model. That keeps every interaction —
+   selection, editing, the guardrail panel — working exactly as before.
+
+   Prompts and guardrails are NOT overlaid: /api/read/agents does not return them
+   (they are operational config, and 037 ships them empty). The screen's sample
+   prompt text stays, and the banner says which agents have no real definition
+   stored, so the gap is visible rather than looking configured. */
+(function () {
+  "use strict";
+  if (typeof AGENTS === "undefined" || typeof renderList !== "function") return;
+
+  FHData.wire(FHData.read("agents", { limit: 200 }), "agent registry", function (data) {
+    var rows = data.items || [];
+    if (!rows.length) return null;
+    var byCode = {};
+    rows.forEach(function (a) { byCode[a.code] = a; });
+
+    var matched = 0;
+    AGENTS.forEach(function (a) {
+      var real = byCode[a.id];
+      if (!real) return;
+      a.mode = real.status === "live" ? "live"
+             : real.status === "shadow" ? "shadow" : "draft";
+      a.cls = real.agent_class === "ops" ? "Ops" : "Client-facing";
+      a.runtime = real.runtime || null;
+      matched++;
+    });
+    if (!matched) return null;
+    try { renderList(); } catch (e) { return null; }
+
+    var live = rows.filter(function (a) { return a.status === "live"; }).length;
+    var undefined_ = rows.filter(function (a) {
+      return (a.status === "live" || a.status === "shadow") &&
+             (a.prompt_missing || a.guardrails_missing); }).length;
+    return "live registry · " + matched + " agents · " + live + " live" +
+      (undefined_ ? " · " + undefined_ + " running with no stored prompt/guardrails" : "");
+  });
+})();
+</script>
 </body>
 </html>
