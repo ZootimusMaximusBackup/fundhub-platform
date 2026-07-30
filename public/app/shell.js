@@ -64,7 +64,12 @@
     closer: "staff",
     inquiry_specialist: "staff",
     setter: "staff",
-    /* future principals (B4) land on their own surface */
+    /* Principal types, not staff roles — they are gated here on staff.role only
+       because no principals table exists yet. 'partner' is seeded into the
+       staff_roles catalog by db/migrations/036_partner_role.sql purely to make
+       brand-studio.html reachable; 'client' and 'affiliate' have no catalog row
+       and nothing issues them a session. When the accounts table and its own
+       auth land, these three move out of ROLE_TABS and 036 is reverted. */
     client: ["client-portal.html"],
     affiliate: ["affiliate.html"],
     partner: ["partner-galaxy.html", "brand-studio.html"]
@@ -199,9 +204,28 @@
 
   /* Without a hint the gate cannot answer before paint, so hold the screen
      back rather than let a forbidden one flash. The timer is the safety net: a
-     backend that never answers must not leave a blank page. */
+     backend that never answers must not leave a blank page.
+
+     Two layers, because they fail differently. The document hold is the strong
+     one and it is what stops a forbidden screen being seen at all; the nav-row
+     rule (carried over from the fix on main) outlives it. If a stalled
+     /api/auth/session lets HOLD_MS expire, the screen has to come back — but
+     the sidebar should still not offer tabs whose permission is unknown, so the
+     rows stay hidden until gateLinks() has actually run. Clicks are blocked
+     independently in that window either way, so neither layer is load-bearing
+     for correctness; this is about not showing a nav we cannot stand behind. */
   var HOLD_MS = 4000;
   var held = false;
+
+  var navStyle = document.createElement("style");
+  navStyle.id = "fh-gate-style";
+  navStyle.textContent = ".navitem{visibility:hidden}";
+  (document.head || document.documentElement).appendChild(navStyle);
+
+  function revealNav() {
+    if (navStyle && navStyle.parentNode) navStyle.parentNode.removeChild(navStyle);
+  }
+
   function hold() {
     if (held || !document.documentElement) return;
     held = true;
@@ -302,6 +326,8 @@
         box.removeAttribute("data-fh-gated");
       }
     }
+    // The nav is now telling the truth, so it can be seen.
+    revealNav();
   }
 
   function mountChip(staff, demo) {
@@ -398,5 +424,6 @@
     // Never leave the screen held back on an unexpected failure.
     settleClicks(allowedNow || ALL.slice());
     reveal();
+    revealNav();
   });
 })();

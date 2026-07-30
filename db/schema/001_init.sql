@@ -383,7 +383,8 @@ CREATE TABLE staff (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id      uuid NOT NULL REFERENCES orgs(id),
   name        text NOT NULL,
-  role        text,   -- funding_advisor | closer | inquiry_specialist | admin
+  role        text,   -- owner | admin | funding_advisor | closer | inquiry_specialist | setter
+                      -- | partner (external, see 036_partner_role.sql). Catalog: staff_roles.
   comp        jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()

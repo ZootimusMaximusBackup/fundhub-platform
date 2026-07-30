@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS staff_targets (
   --   staff_id set  → per-person override
   --   role set      → role-level default (staff_id NULL)
   staff_id      uuid REFERENCES staff(id) ON DELETE CASCADE,
-  role          text,   -- funding_advisor | closer | inquiry_specialist | setter | admin
+  role          text,   -- owner | admin | funding_advisor | closer | inquiry_specialist | setter
+                        -- (targets are staff-only; 'partner' is external and never targeted)
   period        text NOT NULL,   -- daily | weekly | monthly
   metric        text NOT NULL,   -- calls | files | submissions | removals | deposits | funded_amount | bookings
   target_value  numeric(14,2) NOT NULL,
