@@ -21,12 +21,18 @@
 // ?role=mine is accepted as well as ?mine=1 because the screens ask both ways.
 
 import { db } from "../src/db.mjs";
-import { requireAuth } from "../src/http/middleware/requireAuth.mjs";
+import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
 import { TASK_ROLES } from "../src/lib/create-task.mjs";
 
 export default async function handler(req, res) {
-  const staff = await requireAuth(req, res);
-  if (!staff) return;
+  // STAFF ONLY, named explicitly. A client or affiliate session reaching the
+  // internal work queue would be a real leak, and requirePrincipal denies any
+  // kind an endpoint does not list.
+  const principal = await requirePrincipal(req, res, ["staff"], { db });
+  if (!principal) return;
+  // requirePrincipal returns staffId; the queries below key ?mine=1 and claim on
+  // it, and reading principal.id would silently be undefined.
+  const staff = { id: principal.staffId, role: principal.role };
 
   if (req.method === "GET") {
     const q = req.query || {};

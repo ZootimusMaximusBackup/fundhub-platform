@@ -7,6 +7,7 @@
 
 import { db } from "../../src/db.mjs";
 import { login } from "../../src/auth/login.mjs";
+import { loginAccount } from "../../src/auth/account-session.mjs";
 
 function clientIp(req) {
   const xf = req.headers?.["x-forwarded-for"];
@@ -19,12 +20,30 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
   }
   const { email, password } = req.body || {};
-  const out = await login(db, {
-    email,
-    password,
-    ip: clientIp(req),
-    userAgent: req.headers?.["user-agent"] || null
-  });
+  const ip = clientIp(req);
+  const userAgent = req.headers?.["user-agent"] || null;
+
+  const out = await login(db, { email, password, ip, userAgent });
+
+  // Not a staff member? Try the accounts table. Client, affiliate and partner
+  // principals sign in through the SAME endpoint so the frontend has one form,
+  // and the response carries `principal` so it knows where to route.
+  //
+  // Order matters only for speed, not for correctness: the two token spaces are
+  // separate tables. A 429 is NOT retried against accounts — a rate limit that
+  // can be sidestepped by having the second lookup answer is not a rate limit.
+  if (!out.ok && out.status !== 429) {
+    const acct = await loginAccount(db, { email, password, ip, userAgent });
+    if (acct.ok) {
+      return res.status(200).json({
+        ok: true,
+        token: acct.token,
+        expiresAt: acct.expiresAt,
+        principal: acct.principal.kind,
+        account: acct.principal
+      });
+    }
+  }
 
   if (!out.ok) {
     if (out.status === 429 && out.retryAfterMinutes) {
@@ -38,5 +57,8 @@ export default async function handler(req, res) {
     "Set-Cookie",
     `fundhub_session=${encodeURIComponent(out.token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`
   );
-  return res.status(200).json({ ok: true, token: out.token, expiresAt: out.expiresAt, staff: out.staff });
+  return res.status(200).json({
+    ok: true, token: out.token, expiresAt: out.expiresAt,
+    principal: "staff", staff: out.staff
+  });
 }
