@@ -18,6 +18,7 @@ import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { clientOutcomeTier, isFundingPath } from "../config/product-path.mjs";
 import { addTags } from "./tags.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
+import { createTask } from "../lib/create-task.mjs";
 
 const POD_TASK_SOURCE = "f-01-funding-intake";
 const POD_TASK_TITLE = "Assign pod roles for funding client";
@@ -33,12 +34,14 @@ async function createPodTask(db, { orgId, clientId, eventId }) {
     [clientId, POD_TASK_SOURCE, eventId]
   );
   if (dup.rows[0]) return { created: false };
-  await db.query(
-    `INSERT INTO tasks (org_id, client_id, assignee, title, body, due_at, source_workflow)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)
-     ON CONFLICT DO NOTHING`,
-    [orgId, clientId, null, POD_TASK_TITLE, eventId, null, POD_TASK_SOURCE]
-  );
+  await createTask(db, {
+      orgId: orgId,
+      clientId: clientId,
+      title: POD_TASK_TITLE,
+      sourceWorkflow: POD_TASK_SOURCE,
+      assigneeRole: "funding_advisor",
+      eventId: eventId
+    });
   return { created: true };
 }
 

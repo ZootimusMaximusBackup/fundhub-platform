@@ -20,6 +20,7 @@ import { addTags } from "./tags.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { createInvoice, depositKey } from "../invoices/index.mjs";
+import { createTask } from "../lib/create-task.mjs";
 
 export const EMAIL_TEMPLATE_KEY = "EMAIL-DS02-DIY-LETTERS-READY";
 const SOURCE_WORKFLOW = "ds-02-diy-letters";
@@ -33,12 +34,14 @@ function isDiyProduct(productName) {
 async function createInvoiceTaskOnce(db, { orgId, clientId, eventId }) {
   const dup = await db.query(`SELECT 1 FROM tasks WHERE client_id = $1 AND source_workflow = $2 AND body = $3`, [clientId, SOURCE_WORKFLOW, eventId]);
   if (dup.rows[0]) return { created: false };
-  await db.query(
-    `INSERT INTO tasks (org_id, client_id, assignee, title, body, due_at, source_workflow)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)
-     ON CONFLICT DO NOTHING`,
-    [orgId, clientId, null, "Send DIY invoice (Commas checkout) — confirm payment captured", eventId, null, SOURCE_WORKFLOW]
-  );
+  await createTask(db, {
+      orgId: orgId,
+      clientId: clientId,
+      title: "Send DIY invoice (Commas checkout) — confirm payment captured",
+      sourceWorkflow: SOURCE_WORKFLOW,
+      assigneeRole: "admin",
+      eventId: eventId
+    });
   return { created: true };
 }
 

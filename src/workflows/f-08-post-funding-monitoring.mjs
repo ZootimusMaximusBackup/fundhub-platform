@@ -11,6 +11,7 @@
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
+import { createTask } from "../lib/create-task.mjs";
 
 const SOURCE_WORKFLOW = "f-08-post-funding-monitoring";
 const TASK_TITLE = "30-day check-in + prep for next wave";
@@ -18,12 +19,14 @@ const TASK_TITLE = "30-day check-in + prep for next wave";
 async function createCheckinTask(db, { orgId, clientId, eventId }) {
   const dup = await db.query(`SELECT 1 FROM tasks WHERE client_id = $1 AND source_workflow = $2 AND body = $3`, [clientId, SOURCE_WORKFLOW, eventId]);
   if (dup.rows[0]) return { created: false };
-  await db.query(
-    `INSERT INTO tasks (org_id, client_id, assignee, title, body, due_at, source_workflow)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)
-     ON CONFLICT DO NOTHING`,
-    [orgId, clientId, null, TASK_TITLE, eventId, null, SOURCE_WORKFLOW]
-  );
+  await createTask(db, {
+      orgId: orgId,
+      clientId: clientId,
+      title: TASK_TITLE,
+      sourceWorkflow: SOURCE_WORKFLOW,
+      assigneeRole: "funding_advisor",
+      eventId: eventId
+    });
   return { created: true };
 }
 

@@ -25,6 +25,7 @@ import { sendTemplated } from "./messaging.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
 import { createInvoice, successFeeKey } from "../invoices/index.mjs";
+import { createTask } from "../lib/create-task.mjs";
 
 export const EMAIL_TEMPLATE_KEY = "EMAIL-F07-FUNDING-LOCKED";
 export const SMS_TEMPLATE_KEY = "SMS-F07-FUNDING-LOCKED";
@@ -34,12 +35,14 @@ const FEE_FIX_TASK_SOURCE = "f-07-funding-locked-fee-not-ready";
 async function createTaskOnce(db, { orgId, clientId, eventId, source, title }) {
   const dup = await db.query(`SELECT 1 FROM tasks WHERE client_id = $1 AND source_workflow = $2 AND body = $3`, [clientId, source, eventId]);
   if (dup.rows[0]) return { created: false };
-  await db.query(
-    `INSERT INTO tasks (org_id, client_id, assignee, title, body, due_at, source_workflow)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)
-     ON CONFLICT DO NOTHING`,
-    [orgId, clientId, null, title, eventId, null, source]
-  );
+  await createTask(db, {
+      orgId: orgId,
+      clientId: clientId,
+      title: title,
+      sourceWorkflow: source,
+      assigneeRole: "funding_advisor",
+      eventId: eventId
+    });
   return { created: true };
 }
 

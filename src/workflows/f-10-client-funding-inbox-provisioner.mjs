@@ -17,6 +17,7 @@ import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
+import { createTask } from "../lib/create-task.mjs";
 
 export const EMAIL_TEMPLATE_KEY = "EMAIL-F10-INBOX-SETUP";
 export const SMS_TEMPLATE_KEY = "SMS-F10-INBOX-SETUP";
@@ -31,12 +32,14 @@ async function forwardingAddressMissing(db, clientId) {
 async function createTaskOnce(db, { orgId, clientId, eventId }) {
   const dup = await db.query(`SELECT 1 FROM tasks WHERE client_id = $1 AND source_workflow = $2 AND body = $3`, [clientId, SOURCE_WORKFLOW, eventId]);
   if (dup.rows[0]) return { created: false };
-  await db.query(
-    `INSERT INTO tasks (org_id, client_id, assignee, title, body, due_at, source_workflow)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)
-     ON CONFLICT DO NOTHING`,
-    [orgId, clientId, null, TASK_TITLE, eventId, null, SOURCE_WORKFLOW]
-  );
+  await createTask(db, {
+      orgId: orgId,
+      clientId: clientId,
+      title: TASK_TITLE,
+      sourceWorkflow: SOURCE_WORKFLOW,
+      assigneeRole: "funding_advisor",
+      eventId: eventId
+    });
   return { created: true };
 }
 

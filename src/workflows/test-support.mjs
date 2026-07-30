@@ -159,15 +159,60 @@ export function pgFake(seed = {}) {
         return { rows: [] };
       }
 
-      // --- tasks (guard-select dedup, same pattern as src/handlers/comms.mjs) ---
+      // --- tasks ---
+      // Two select shapes now: the guard-select the workflows still do up front,
+      // and the one src/lib/create-task.mjs does (which returns id, and also
+      // dedupes on title when asked). Both are answered so a workflow patched to
+      // call createTask behaves the same here as against Postgres.
       if (/SELECT 1 FROM tasks/.test(sql)) {
         const [clientId, sourceWorkflow, body] = params;
         return { rows: tasks.find((t) => t.client_id === clientId && t.source_workflow === sourceWorkflow && t.body === body) ? [{ x: 1 }] : [] };
       }
+      if (/SELECT id FROM tasks/.test(sql)) {
+        const [clientId, sourceWorkflow, key] = params;
+        const byTitle = /AND title = \$3/.test(sql);
+        const hit = tasks.find((t) =>
+          t.client_id === clientId && t.source_workflow === sourceWorkflow &&
+          (byTitle ? t.title === key : t.body === key));
+        return { rows: hit ? [{ id: hit.id }] : [] };
+      }
       if (/INSERT INTO tasks/.test(sql)) {
-        // Column order: org_id, client_id, assignee, title, body, due_at, source_workflow.
-        tasks.push({ org_id: params[0], client_id: params[1], title: params[3], body: params[4], source_workflow: params[6] });
-        return { rows: [] };
+        // Two writer shapes, and they do NOT share a parameter order.
+        //
+        // src/lib/create-task.mjs writes assignee as a literal NULL in the
+        // VALUES list, so it binds EIGHT params:
+        //   0 org, 1 client, 2 title, 3 body, 4 due_at, 5 source_workflow,
+        //   6 assignee_role, 7 assignee_staff_id
+        //
+        // The pre-041 callers (src/handlers/comms.mjs) bind assignee, giving
+        // SEVEN with everything after it shifted by one:
+        //   0 org, 1 client, 2 assignee, 3 title, 4 body, 5 due_at, 6 source
+        //
+        // Keyed off the column list rather than params.length, because a shape
+        // that changes arity later should fail loudly here, not mis-map silently.
+        const wide = /assignee_role/.test(sql);
+        const row = wide ? {
+          id: "task-" + (tasks.length + 1),
+          org_id: params[0], client_id: params[1],
+          title: params[2], body: params[3], due_at: params[4],
+          source_workflow: params[5],
+          assignee_role: params[6], assignee_staff_id: params[7],
+          done: false
+        } : {
+          id: "task-" + (tasks.length + 1),
+          org_id: params[0], client_id: params[1],
+          title: params[3], body: params[4], due_at: params[5],
+          source_workflow: params[6],
+          assignee_role: null, assignee_staff_id: null,
+          done: false
+        };
+        // ON CONFLICT DO NOTHING against tasks_idempotency_idx
+        // (client_id, source_workflow, body) NULLS NOT DISTINCT.
+        const clash = tasks.find((t) => t.client_id === row.client_id &&
+          t.source_workflow === row.source_workflow && t.body === row.body);
+        if (clash) return { rows: [] };
+        tasks.push(row);
+        return { rows: [{ id: row.id }] };
       }
 
       // --- funding_rounds: N-06 still-eligible check (funded_amount > 0) ---

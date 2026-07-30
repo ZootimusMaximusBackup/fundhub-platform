@@ -21,6 +21,7 @@ import { mergeCustomFields } from "./custom-fields.mjs";
 import { removeTags, addTags } from "./tags.mjs";
 import { moveCardToStage } from "./cards.mjs";
 import { sendTemplated } from "./messaging.mjs";
+import { createTask } from "../lib/create-task.mjs";
 
 export const SMS_RESCHEDULE_TEMPLATE_KEY = "SMS-DPC04-RESCHEDULE-REBOOKING";
 const SOURCE_WORKFLOW = "dpc-03-inbound-reply-router";
@@ -60,12 +61,14 @@ async function callState(db, clientId) {
 async function createTaskOnce(db, { orgId, clientId, eventId, title, source }) {
   const dup = await db.query(`SELECT 1 FROM tasks WHERE client_id = $1 AND source_workflow = $2 AND body = $3`, [clientId, source, eventId]);
   if (dup.rows[0]) return { created: false };
-  await db.query(
-    `INSERT INTO tasks (org_id, client_id, assignee, title, body, due_at, source_workflow)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)
-     ON CONFLICT DO NOTHING`,
-    [orgId, clientId, null, title, eventId, null, source]
-  );
+  await createTask(db, {
+      orgId: orgId,
+      clientId: clientId,
+      title: title,
+      sourceWorkflow: source,
+      assigneeRole: "funding_advisor",
+      eventId: eventId
+    });
   return { created: true };
 }
 

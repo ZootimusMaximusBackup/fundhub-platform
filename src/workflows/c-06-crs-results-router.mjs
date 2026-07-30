@@ -17,6 +17,7 @@ import { addTags } from "./tags.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { DELIVER_LETTERS_URL } from "./ds-02-diy-letters.mjs";
+import { createTask } from "../lib/create-task.mjs";
 
 export const DECLINE_EMAIL_TEMPLATE_KEY = "EMAIL-C06-DECLINE";
 export const DECLINE_SMS_TEMPLATE_KEY = "SMS-C06-DECLINE";
@@ -65,12 +66,14 @@ async function createDeclineTaskOnce(db, { orgId, clientId, eventId }) {
     [clientId, SOURCE_WORKFLOW, eventId]
   );
   if (dup.rows[0]) return { created: false };
-  await db.query(
-    `INSERT INTO tasks (org_id, client_id, assignee, title, body, due_at, source_workflow)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)
-     ON CONFLICT DO NOTHING`,
-    [orgId, clientId, null, "Declined after CRS — document reason + confirm messaging sent", eventId, null, SOURCE_WORKFLOW]
-  );
+  await createTask(db, {
+      orgId: orgId,
+      clientId: clientId,
+      title: "Declined after CRS — document reason + confirm messaging sent",
+      sourceWorkflow: SOURCE_WORKFLOW,
+      assigneeRole: "funding_advisor",
+      eventId: eventId
+    });
   return { created: true };
 }
 

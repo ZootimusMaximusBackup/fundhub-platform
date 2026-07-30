@@ -19,6 +19,7 @@ import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { sendTemplated } from "./messaging.mjs";
+import { createTask } from "../lib/create-task.mjs";
 
 export const EMAIL_TEMPLATE_KEY = "EMAIL-N06-RENEWAL";
 export const SMS_TEMPLATE_KEY = "SMS-N06-RENEWAL";
@@ -41,12 +42,14 @@ async function createRenewalTask(db, { orgId, clientId, eventId }) {
     [clientId, SOURCE_WORKFLOW, eventId]
   );
   if (dup.rows[0]) return { created: false, reason: "duplicate" };
-  await db.query(
-    `INSERT INTO tasks (org_id, client_id, assignee, title, body, due_at, source_workflow)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)
-     ON CONFLICT DO NOTHING`,
-    [orgId, clientId, null, TASK_TITLE, eventId, null, SOURCE_WORKFLOW]
-  );
+  await createTask(db, {
+      orgId: orgId,
+      clientId: clientId,
+      title: TASK_TITLE,
+      sourceWorkflow: SOURCE_WORKFLOW,
+      assigneeRole: "funding_advisor",
+      eventId: eventId
+    });
   return { created: true };
 }
 
