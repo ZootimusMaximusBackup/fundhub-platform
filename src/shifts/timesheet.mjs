@@ -60,9 +60,89 @@
 // Sub-second remainders are floored per shift rather than accumulated, so the
 // total does not wobble with millisecond jitter in the timestamps.
 
+// ── A SHIFT SOFTWARE GUESSED THE END OF IS NOT A TIMESHEET FACT ─────────────
+// autoCloseStale() closes shifts nobody clocked out of, and when there is no
+// recorded activity to end them at it falls back to started_at — a closed shift
+// of zero length. Today that is EVERY forgotten shift belonging to anyone
+// outside the Inquiry Remover desk, because no other screen writes telemetry.
+//
+// Read naively, that row says "this person worked no time". It is indis-
+// tinguishable from a real 30-second shift on (started_at, ended_at) alone,
+// which is why migration 068 puts `closed_by` on the row itself.
+//
+// This file refuses those rows rather than totalling them, for exactly the
+// reason it already refuses a shift that ends before it starts: "quietly
+// reporting it as zero hides the break from the only person who could fix it
+// while still producing a plausible-looking timesheet." A wrong number that
+// looks right is the failure mode; a loud one is not.
+//
+// `sweep_idle` — closed by the sweep but WITH activity behind the end time — is
+// counted normally. It is an estimate, and it is the best evidence that exists,
+// and it is not zero.
+//
+// ── WHAT THOSE SHIFTS ARE WORTH: DECIDED 2026-07-31 ─────────────────────────
+// *** THE ONE ANSWER THAT IS NOT AVAILABLE IS ZERO. ***
+//
+// An employee clocked in, worked, and forgot to clock out. The employer's own
+// record is what failed. Under the FLSA the employer carries the duty to keep
+// accurate records of hours worked (29 CFR 516.2), and Anderson v. Mt. Clemens
+// Pottery (1946) settles what happens when it does not: the employee need only
+// show work was performed and produce enough to support a just and reasonable
+// inference of the amount; the burden then sits with the employer to negate it,
+// and approximate damages are awarded if it cannot. Paying nothing is the
+// employer taking the benefit of its own record-keeping failure, which is the
+// exact thing that rule exists to stop. A missed clock-out is a process failure
+// to be handled as one — it is not a reason to withhold pay for time worked.
+//
+// Overpaying is also wrong and is separately refused: autoCloseStale() already
+// declines to stamp now() as the end, because that credits every hour between
+// the forgotten clock-out and whenever the sweep happened to run.
+//
+// So the estimate is drawn from THE PERSON'S OWN RECORD — the median length of
+// their completed shifts. It is the best available inference about how long
+// this individual actually works, it comes from data the system already holds,
+// and it is neutral: it does not round toward the employer or the employee.
+//
+// A median, not a mean, because one forgotten shift already in the history (a
+// real 30-second row) or one genuine 14-hour day would drag an average and a
+// median shrugs both off.
+//
+// Bounded by `updated_at - started_at`. The sweep stamps updated_at when it
+// closes the shift, so that is the moment the system observed the person as
+// gone — they cannot have worked past it. The bound almost never binds (the
+// sweep only fires after the idle threshold has already elapsed) and costs
+// nothing to carry; it stops an absurd estimate if the threshold is ever set
+// very low.
+//
+// AND THE ESTIMATE IS STILL FLAGGED. Every estimated shift comes back in
+// needsReview so a human can correct it. The estimate is what gets paid if
+// nobody looks; it is not a claim that anybody looked. Confirmed time and
+// estimated time are reported as two separate numbers, always, so nobody can
+// mistake one for the other — and payable time is their sum, because that is
+// what has to be paid.
+//
+// NOT DECIDED HERE, because it is not this file's to decide: the rate. There is
+// still no wage anywhere in this system. This file reports seconds and stops.
+
 /** Seconds in an hour. Not money — named so hoursWorked() reads as a formula
  *  rather than as an unexplained 3600. */
 export const SECONDS_PER_HOUR = 3600;
+
+/** The `shifts.closed_by` value that means "software guessed, with nothing to
+ *  guess from". Mirrors CLOSED_BY.SWEEP_NO_EVIDENCE in ./store.mjs; it is a
+ *  string on a row rather than an import so this file stays pure and free of
+ *  any dependency that could drag a database handle in behind it. */
+export const UNRECONSTRUCTABLE = "sweep_no_evidence";
+
+/**
+ * needsReview(shift) — is this a shift whose end nobody can vouch for?
+ *
+ * True only for the no-evidence auto-close. An open shift is not "under review",
+ * it is in progress; a human clock-out is not under review at all.
+ */
+export function needsReview(shift) {
+  return !!shift && typeof shift === "object" && shift.closed_by === UNRECONSTRUCTABLE;
+}
 
 /** Milliseconds since epoch from a pg timestamptz (a Date) or an ISO string.
  *  A bare number is REFUSED: seconds and milliseconds are indistinguishable at
@@ -108,6 +188,19 @@ export function shiftSeconds(shift) {
   // happens to sit on an open shift should still be seen.
   const startedAt = instantMs(shift.started_at, "shiftSeconds: started_at");
 
+  // Refused, not zeroed. See the header. This is the same call the negative-span
+  // branch below makes, for the same reason: the caller must not be handed a
+  // plausible number for a span nobody can vouch for. timesheet() partitions
+  // these out before they ever reach here, so a throw means somebody totalled a
+  // raw list and needs to know.
+  if (needsReview(shift)) {
+    throw new RangeError(
+      `shiftSeconds: shift ${shift.id ?? "(no id)"} was auto-closed with no recorded activity, ` +
+      `so ended_at is started_at and the span is unknowable, not zero. ` +
+      `Use timesheet() to separate these, or have a human confirm the hours.`
+    );
+  }
+
   if (shift.ended_at === null || shift.ended_at === undefined) return 0;
   const endedAt = instantMs(shift.ended_at, "shiftSeconds: ended_at");
 
@@ -150,4 +243,110 @@ export function secondsWorked(shifts) {
  */
 export function hoursWorked(shifts) {
   return secondsWorked(shifts) / SECONDS_PER_HOUR;
+}
+
+/** The middle value, floored to whole seconds. Even counts average the two
+ *  middle values; `Math.floor` keeps the result a whole second like every other
+ *  span this file produces. Empty input is null — "no basis", not zero. */
+function medianSeconds(values) {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = sorted.length >> 1;
+  return sorted.length % 2
+    ? sorted[mid]
+    : Math.floor((sorted[mid - 1] + sorted[mid]) / 2);
+}
+
+/**
+ * estimateSeconds(shift, basis) — what an unvouchable shift is worth.
+ *
+ *   { seconds, method, sampleSize }
+ *
+ * `basis` is that person's completed shifts — the record the inference is drawn
+ * from. Only closed, vouchable, non-zero shifts count toward it: an open shift
+ * has no span yet, another unvouchable shift would be circular, and a zero-length
+ * row is the very defect being repaired and must not become evidence for it.
+ *
+ * `method` is `own_median` when there was something to infer from, and `none`
+ * when there was not — a first-day employee who forgot to clock out has no
+ * record of their own. `none` returns 0 seconds and is NOT a claim that they
+ * worked nothing: the shift stays flagged, and 0 is what an unanswered flag is
+ * worth until a human answers it. Say so on any screen that shows it.
+ *
+ * Capped at `updated_at - started_at` when updated_at is present — the sweep
+ * stamps it on closing, so it is the moment the person was observed gone.
+ */
+export function estimateSeconds(shift, basis = []) {
+  if (!Array.isArray(basis)) {
+    throw new TypeError(`estimateSeconds: expected an array for basis, got ${JSON.stringify(basis)}`);
+  }
+  const spans = [];
+  for (const row of basis) {
+    if (needsReview(row)) continue;                       // circular
+    if (!row || row.ended_at === null || row.ended_at === undefined) continue;  // still open
+    const s = shiftSeconds(row);
+    if (s > 0) spans.push(s);                             // a zero row is the defect, not evidence
+  }
+
+  const median = medianSeconds(spans);
+  if (median === null) return { seconds: 0, method: "none", sampleSize: 0 };
+
+  let seconds = median;
+  if (shift?.updated_at !== undefined && shift?.updated_at !== null) {
+    const observedGoneMs = instantMs(shift.updated_at, "estimateSeconds: updated_at")
+                         - instantMs(shift.started_at, "estimateSeconds: started_at");
+    if (observedGoneMs >= 0) seconds = Math.min(seconds, Math.floor(observedGoneMs / 1000));
+  }
+  return { seconds, method: "own_median", sampleSize: spans.length };
+}
+
+/**
+ * timesheet(shifts, { basis }) — the safe way to total a real, mixed list.
+ *
+ *   { seconds, hours, counted,
+ *     estimatedSeconds, estimatedHours,
+ *     payableSeconds, payableHours,
+ *     needsReview: [{ shift, seconds, method, sampleSize }] }
+ *
+ * THREE NUMBERS, AND THE DIFFERENCE BETWEEN THEM IS THE POINT.
+ *
+ *   seconds          time somebody vouched for — human clock-outs, and sweep
+ *                    closes that had recorded activity behind them.
+ *   estimatedSeconds time inferred for shifts nobody can date the end of.
+ *   payableSeconds   the two added up. THIS is what payroll uses, because a
+ *                    shift the employer failed to record still has to be paid.
+ *
+ * They are separate so no screen and no downstream caller can show estimated
+ * time as though somebody had checked it. A single figure would hide exactly the
+ * thing a person needs to see.
+ *
+ * `basis` defaults to the same list — a person's own countable shifts. Pass a
+ * longer history when you have one; a fortnight infers better than a week.
+ *
+ * `counted` is how many shifts fed the confirmed total, so a screen can say
+ * "8 hours from 3 shifts, 1 estimated" rather than just "8 hours".
+ */
+export function timesheet(shifts, { basis } = {}) {
+  if (!Array.isArray(shifts)) {
+    throw new TypeError(`timesheet: expected an array of shift rows, got ${JSON.stringify(shifts)}`);
+  }
+  const review = [];
+  const countable = [];
+  for (const shift of shifts) (needsReview(shift) ? review : countable).push(shift);
+
+  const seconds = secondsWorked(countable);
+  const inferFrom = basis ?? countable;
+  const estimates = review.map((shift) => ({ shift, ...estimateSeconds(shift, inferFrom) }));
+  const estimatedSeconds = estimates.reduce((t, e) => t + e.seconds, 0);
+
+  return {
+    seconds,
+    hours: seconds / SECONDS_PER_HOUR,
+    counted: countable.length,
+    estimatedSeconds,
+    estimatedHours: estimatedSeconds / SECONDS_PER_HOUR,
+    payableSeconds: seconds + estimatedSeconds,
+    payableHours: (seconds + estimatedSeconds) / SECONDS_PER_HOUR,
+    needsReview: estimates
+  };
 }
