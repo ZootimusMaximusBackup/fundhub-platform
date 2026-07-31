@@ -4,7 +4,51 @@ This file governs agent behavior. It is not product documentation.
 
 Domain facts, business rules, and architecture live in `docs/`. Read them when a task touches them. Do not restate them here.
 
-## 1. Ground rules
+## 0. STOP — split the work first
+
+This is a hard rule. It fires at the start of every new project, task, or build request. No exceptions.
+
+Before you plan, before you read code, before you write anything: propose how to split this into parallel workflows.
+
+I forget to do this. When I forget, a ten-minute job takes ten hours. Your job is to make sure I never start serial work that should have been parallel. Do not wait to be asked. Do not skip it because the task seems small.
+
+### Required output, before any other work
+
+1. The split. How many workflows, and what each one owns.
+2. What runs at the same time vs. what has to wait. Name any real dependency. If there is none, say "no dependencies — all parallel."
+3. A copy-paste prompt for each workflow. Written so I can open a new session, paste it, and go. Self-contained — each prompt must stand on its own without the others for context.
+4. Which one you are taking. You run one. I launch the rest.
+5. The shared board. Name the `docs/workflows/<batch>.md` file all workflows will read and write.
+
+Then stop and wait for my go.
+
+### If it truly cannot be split
+
+Say so in one line, give the reason, and continue. But bias hard toward splitting. Four workflows that finish in twenty minutes beat one that finishes in two hours, every time.
+
+### The test
+
+Before you begin any work, ask yourself: could a second agent be doing something useful right now? If yes, and I have not launched one, you did not do your job.
+
+## 1. Check the model before you start
+
+Right after the split proposal, state one line: the model this work needs, and whether the current one matches.
+
+Format: `Model: <tier> — current is <tier>. Match / Switch.`
+
+Rough mapping:
+
+* Haiku — mechanical and fully specified. Copy changes, renames, formatting, single-file edits where the answer is already decided.
+* Sonnet — normal build work. Building a component from a clear spec, writing tests, wiring a route.
+* Opus — anything where being wrong is expensive. Architecture, debugging something that already failed once, refactors across many files, anything touching a hard rule, compliance-flagged code, or work I cannot verify myself.
+
+Raise thinking effort — not just the tier — for debugging and architecture. Lower it for mechanical work.
+
+**Hard rule: if the current model is below what the work needs, say so and stop. Do not proceed underpowered and hope.** A cheap model on expensive work is the most costly mistake available — I cannot read the output, so I will not catch it.
+
+Overshooting is fine. If in doubt, ask for the higher tier.
+
+## 2. Ground rules
 
 This repo only. Do not read, reference, or modify systems outside it to "stay consistent" with them. If a task appears to require changes outside this repo, stop and say so.
 
@@ -25,14 +69,14 @@ Ask one question. Wait. Do not ask and proceed in the same turn.
 
 **Never invent.** If information is missing, that absence is the finding. Report it. Do not fill the gap with a plausible assumption.
 
-## 2. Before writing any code
+## 3. Before writing any code
 
 1. Read the relevant code. Symbol lookup before file reads (Grep patterns, not full file reads).
 2. Read the intended journey for any flow you are touching.
 3. Produce a plan in plain English. Name: files to be touched, journeys affected, how the change will be verified.
 4. Wait for approval. Do not write code in the same turn as the plan.
 
-## 3. Journey documentation
+## 4. Journey documentation
 
 Every flow in this system is documented as a Mermaid flowchart. This is how a non-coder sees what the system actually does. Keeping it accurate is part of the work, not a nice-to-have.
 
@@ -78,17 +122,9 @@ YYYY-MM-DD | <journey> | <what changed> | <why> | <commit>
 
 Newest at top. This is the human-readable record. Keep it honest — including when a change made a journey worse.
 
-## 4. Orchestration
+## 5. Orchestration
 
-### Always propose the split first
-
-Before starting any task with more than one independent unit of work, stop and propose a workflow decomposition. Do not begin serial work and do not wait to be asked.
-
-The proposal states: how many workflows, what each owns, what they share, what order they run in, and where they must sync.
-
-If the work genuinely has only one unit, say so in one line and proceed.
-
-If you have already given me a decomposition, follow it. If mine looks wrong, say why before starting — not after.
+The split proposal is section 0. It happens before anything else. This section covers how the workflows behave once running.
 
 ### Rules
 
@@ -118,7 +154,7 @@ Protocol:
 
 Keep this file human-readable. I use it to see what is happening without opening a single code file.
 
-## 5. Definition of done
+## 6. Definition of done
 
 Never report a task complete until all of these pass:
 
@@ -131,7 +167,7 @@ Never report a task complete until all of these pass:
 
 If something fails and you cannot fix it, say so plainly. Do not report partial work as finished. Do not make a suite pass by removing the test that failed.
 
-## 6. Compliance flagging
+## 7. Compliance flagging
 
 This is a regulated consumer-finance product. Domain rules live in `docs/compliance/`. Read them before touching related code.
 
@@ -139,7 +175,7 @@ Flag `COMPLIANCE REVIEW REQUIRED` at the top of your summary for any change affe
 
 Flagged changes ship only after explicit human approval. Never draft customer-facing claims about credit outcomes.
 
-## 7. Guardrails
+## 8. Guardrails
 
 **The stuck rule.** Two failed attempts at the same fix, stop. Report what you tried, what happened, and your best guess at the cause. Do not try a third time. Do not start rewriting surrounding code to make the problem go away. Thrashing is the most expensive failure mode there is.
 
@@ -155,7 +191,7 @@ Flagged changes ship only after explicit human approval. Never draft customer-fa
 
 **Conventions.** Simplest thing that works, no speculative abstraction. No new dependencies without asking. Match existing patterns in the file you are editing over your own preference. Never commit secrets — no keys, tokens, or PII in code, fixtures, or logs. Delete dead code you create.
 
-## 8. Task report
+## 9. Task report
 
 End every completed task with this, in this order:
 
@@ -167,7 +203,7 @@ End every completed task with this, in this order:
 
 If the answer to 4 is "nothing," say so explicitly. Silence there reads as complete, and if it wasn't, that is how things ship broken.
 
-## 9. How to talk to me
+## 10. How to talk to me
 
 I am the decision maker and I do not read code. Optimize for that.
 
