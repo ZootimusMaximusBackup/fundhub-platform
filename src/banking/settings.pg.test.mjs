@@ -21,6 +21,10 @@ import assert from "node:assert";
 import { db, close } from "../db.mjs";
 import { loadThresholds, configGaps, SettingsError } from "./settings.mjs";
 import { project, paymentWindow } from "./cashflow.mjs";
+// W7's side of the scale, imported rather than restated so that moving a band
+// there fails a test here instead of silently drifting apart.
+import { MAX_CONFIDENCE } from "./recurring.mjs";
+import { PRESENTABLE_CONFIDENCE_FLOOR } from "./cashflow-seam.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
 
@@ -53,11 +57,46 @@ after(async () => {
 // What 088 actually seeded.
 // ═══════════════════════════════════════════════════════════════════════════
 
-test("088 seeded the default org with all three thresholds", { skip: !HAS_DB }, async () => {
+test("088 + 089 seeded the default org with all three thresholds", { skip: !HAS_DB }, async () => {
   const t = await loadThresholds(db, { orgId });
   assert.equal(t.minBufferCents, 0, "the task's specified zero floor");
-  assert.equal(t.confidenceFloor, 0.8);
+  assert.equal(t.confidenceFloor, 0.75, "089 superseded 088's 0.800 placeholder");
   assert.equal(t.settlementLeadDays, 3);
+});
+
+test("the confidence floor is REACHABLE — above the detector's ceiling it confirms nothing", { skip: !HAS_DB }, async () => {
+  // The trap this guards. recurring.mjs caps its score at MAX_CONFIDENCE (95)
+  // because "nothing inferred from a transaction history is certain". A floor
+  // set above that ceiling is not merely strict — NO bill could ever clear it,
+  // so the committed track would be permanently empty and the projection would
+  // silently show every bill as unconfirmed forever. That failure is invisible:
+  // no error, no throw, just a projection that is quietly always pessimistic.
+  const { confidenceFloor } = await loadThresholds(db, { orgId });
+  assert.ok(
+    confidenceFloor <= MAX_CONFIDENCE / 100,
+    `confidence_floor ${confidenceFloor} is above the detector's ceiling of ${MAX_CONFIDENCE / 100} — no bill could ever be confirmed`
+  );
+  // And the other side: a floor at or below zero would confirm everything,
+  // including the bills the detector itself calls 'none'.
+  assert.ok(confidenceFloor > 0, "a floor of zero would confirm every bill the detector emits");
+});
+
+test("the floor is the detector's HIGH band, not its PRESENTABLE band — two different questions", { skip: !HAS_DB }, async () => {
+  // There is a 0.55 constant in cashflow-seam.mjs and these two must not be
+  // collapsed into one by a future reader who spots the disagreement:
+  //
+  //   PRESENTABLE_CONFIDENCE_FLOOR (0.55, = medium)  "safe to SHOW a person?"
+  //   cashflow_settings.confidence_floor (0.75, = high)
+  //                                     "certain enough to treat as money
+  //                                      DEFINITELY leaving the account?"
+  //
+  // Banking on a bill is a higher bar than displaying it. Calling a 'medium'
+  // bill certain would contradict the detector's own vocabulary.
+  const { confidenceFloor } = await loadThresholds(db, { orgId });
+  assert.ok(
+    confidenceFloor > PRESENTABLE_CONFIDENCE_FLOOR,
+    "the certainty floor must be stricter than the presentable floor, or the two questions have been conflated"
+  );
 });
 
 test("the reader returns NUMBERS, not the strings the driver hands back", { skip: !HAS_DB }, async () => {
