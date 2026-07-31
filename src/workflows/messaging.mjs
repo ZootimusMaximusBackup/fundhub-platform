@@ -10,8 +10,20 @@
 // Idempotent via the existing messages_org_providerref_uniq index (migration 004):
 // provider_ref is synthesized from the triggering event's id, so a replayed event
 // can't double-send even though this isn't a real external provider callback.
+//
+// STAFF TELEMETRY IS A SEAM HERE, AND IT IS EMPTY ON PURPOSE.
+// `staff_events` records "this person did this thing". Every one of this
+// function's 39 call sites is an Inngest workflow reacting to a system event,
+// and a workflow has no staff member — so there is nobody to attribute a
+// `text_sent` row to and none is written. The `staffId` argument below is the
+// place a staff-initiated send would pass one; there is no such send today (no
+// api/messages.mjs, no send action on any endpoint), so it is never supplied
+// and no row is ever produced. That is the correct outcome, not a gap to fill
+// with an invented actor. See src/shifts/TELEMETRY-CALLSITES.md.
 import { isOptedOut } from "../lib/opt-out.mjs";
 import { renderTemplate } from "../lib/render-template.mjs";
+import { logStaffEvent } from "../shifts/telemetry.mjs";
+import { resolveShiftId } from "../shifts/attribution.mjs";
 
 // Merge-tag context for the ported GHL copy, which merges `{{contact.*}}` — first name,
 // business name, the pre-approval amount. Every call site in src/workflows passes no
@@ -44,7 +56,7 @@ async function clientContext(db, clientId) {
   };
 }
 
-export async function sendTemplated(db, { orgId, clientId, channel, templateKey, eventId, context = {} }) {
+export async function sendTemplated(db, { orgId, clientId, channel, templateKey, eventId, context = {}, staffId, shiftId }) {
   // TCPA / suppression guard: skip opted-out contacts before touching any template.
   if (clientId && channel === "sms") {
     const suppressed = await isOptedOut(db, clientId, "sms");
@@ -70,11 +82,39 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
     contact: { ...(base.contact || {}), ...(context.contact || {}) }
   });
   const providerRef = `workflow:${templateKey}:${eventId}`;
-  await db.query(
+  // RETURNING id so a deduped replay can be told from a real queue. It changes
+  // nothing about what is written — ON CONFLICT DO NOTHING returns no row — and
+  // the return value below is deliberately unchanged, because every existing
+  // caller reads `sent` and a replay has always reported sent:true.
+  const ins = await db.query(
     `INSERT INTO messages (org_id, client_id, direction, channel, template_key, rendered_body, provider, provider_ref, status, compliance_check_passed)
      VALUES ($1,$2,'outbound',$3,$4,$5,'internal',$6,'queued',true)
-     ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING`,
+     ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING
+     RETURNING id`,
     [orgId, clientId, channel, templateKey, rendered, providerRef]
   );
+
+  /* THE SEAM. Inert until a staff-initiated send exists — see the header.
+     Three conditions, all necessary:
+       staffId   — a workflow passes none, and an unattributed row is worse than
+                   no row: `staff_events` means "this person did this".
+       sms       — the kind is `text_sent`. An email is not a text, and there is
+                   no kind for one; filing it here would make the count a lie.
+       a new row — a replayed event that deduped into DO NOTHING queued nothing,
+                   so counting it would inflate one person's numbers on retry.
+     Nothing below can fail the send: logStaffEvent never throws, and the message
+     row is already committed by the time this runs. */
+  if (staffId && channel === "sms" && ins?.rows?.[0]) {
+    await logStaffEvent(db, {
+      orgId,
+      staffId,
+      shiftId: await resolveShiftId(db, { staffId, shiftId }),
+      kind: "text_sent",
+      detail: { client_id: clientId ?? null, template_key: templateKey, channel, message_id: ins.rows[0].id }
+      // The rendered body is NOT copied in. It is client-facing copy about a
+      // consumer's file; `detail` is an index over work, not a second outbox.
+    });
+  }
+
   return { sent: true };
 }

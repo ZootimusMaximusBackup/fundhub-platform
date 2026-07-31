@@ -4,13 +4,20 @@ import { sendTemplated } from "./messaging.mjs";
 
 // In-memory DB fake covering message_templates, messages, opt_outs, and the client
 // record sendTemplated reads merge-tag context from.
-function pgFake({ templates = [], optOuts = [], clients = [] } = {}) {
+function pgFake({ templates = [], optOuts = [], clients = [], openShift = null, failOn = null } = {}) {
   const messages = [];
+  const events = [];          // staff_events, the telemetry seam's output
+  const sql = [];             // every statement issued, so a test can assert one was NOT
   return {
     messages,
+    events,
+    sql,
     optOuts,
     clients,
-    async query(sql, params = []) {
+    async query(statement, params = []) {
+      const sql = statement;
+      this.sql.push(String(statement));
+      if (failOn && failOn.test(sql)) throw Object.assign(new Error("simulated outage"), { code: "08006" });
       if (/SELECT first_name, last_name, email, phone, custom_fields FROM clients/.test(sql)) {
         const c = clients.find((c) => c.id === params[0]);
         return { rows: c ? [c] : [] };
@@ -24,13 +31,31 @@ function pgFake({ templates = [], optOuts = [], clients = [] } = {}) {
         const r = optOuts.find((o) => o.client_id === params[0] && o.channel === params[1] && !o.opted_in_at);
         return { rows: r ? [{ 1: 1 }] : [] };
       }
+      // staff_events before the generic branches: its statement also RETURNINGs.
+      if (/INSERT INTO staff_events/.test(sql)) {
+        const ev = { staff_id: params[0], org_id: params[1], shift_id: params[2], kind: params[3], detail: JSON.parse(params[4]) };
+        events.push(ev);
+        return { rows: [{ id: "ev-" + events.length, ...ev }] };
+      }
+      if (/FROM shifts/.test(sql)) return { rows: openShift ? [{ id: openShift }] : [] };
       if (/INSERT INTO messages/.test(sql)) {
+        // ON CONFLICT (org_id, provider_ref) DO NOTHING, modelled: a replay of
+        // the same event writes nothing and RETURNS no row.
+        const dup = messages.some((m) => m.org_id === params[0] && m.provider_ref === params[5]);
+        if (dup) return { rows: [] };
         messages.push({ org_id: params[0], client_id: params[1], channel: params[2], template_key: params[3], rendered_body: params[4], provider_ref: params[5] });
-        return { rows: [] };
+        return { rows: [{ id: "msg-" + messages.length }] };
       }
       return { rows: [] };
     }
   };
+}
+
+async function quietly(fn) {
+  const real = console.error;
+  const lines = [];
+  console.error = (...a) => lines.push(a.join(" "));
+  try { return { value: await fn(), lines }; } finally { console.error = real; }
 }
 
 const BASE = { orgId: "org-1", clientId: "cl-1", channel: "sms", eventId: "evt-1" };
@@ -166,4 +191,116 @@ test("template_pending short-circuits before the client record is loaded", async
   const res = await sendTemplated(db, { ...BASE, templateKey: "GHOST" });
   assert.equal(res.reason, "template_pending");
   assert.equal(loaded, false, "a no-op send must not cost a client query");
+});
+
+// =============================================================================
+// STAFF TELEMETRY — the `text_sent` seam.
+//
+// It is EMPTY in production: all 39 call sites of this function are Inngest
+// workflows with no staff member, and there is no staff-facing send endpoint in
+// the product. These tests pin the seam's shape so the day one is built, the
+// row is right — and, more importantly, pin that a workflow send writes NOTHING,
+// which is the behaviour every existing caller depends on.
+// =============================================================================
+
+const SHIFT = "55555555-5555-4555-8555-555555555555";
+const STAFF = "22222222-2222-4222-8222-222222222222";
+
+test("a workflow send — no staffId — never even ATTEMPTS a staff_events write", async () => {
+  // The whole of production, and asserted on the statement rather than on the
+  // outcome. logStaffEvent() would refuse an absent staff id by itself, so a
+  // test that only checks "no row landed" passes with the guard deleted — and
+  // 39 workflows would each issue a doomed write and log a failure line per
+  // send. What must be true is that the seam is not entered at all.
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")] });
+  const { value: res, lines } = await quietly(() => sendTemplated(db, { ...BASE, templateKey: "N-01-SMS" }));
+  assert.equal(res.sent, true);
+  assert.equal(db.messages.length, 1, "the message still queues");
+  assert.equal(db.events.length, 0, "a workflow has nobody to attribute the send to");
+  assert.ok(!db.sql.some((s) => /staff_events/.test(s)),
+    "an unattributed telemetry write must not be attempted, not merely refused downstream");
+  assert.ok(!db.sql.some((s) => /FROM shifts/.test(s)),
+    "and it must not cost a shift lookup for a person who does not exist");
+  // The guard's real teeth. Without it logStaffEvent still refuses the write —
+  // and logs a skip line for it. Every outbound message in the product goes
+  // through here, so that is a warning on every send, forever, about a person
+  // who was never supposed to exist. Silence is the requirement.
+  assert.deepEqual(lines, [], `a workflow send must be silent, got: ${JSON.stringify(lines)}`);
+});
+
+test("a staff-initiated sms writes one text_sent event on that person's shift", async () => {
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")] });
+  const res = await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS", staffId: STAFF, shiftId: SHIFT });
+  assert.equal(res.sent, true);
+  assert.equal(db.events.length, 1);
+  assert.equal(db.events[0].kind, "text_sent");
+  assert.equal(db.events[0].staff_id, STAFF);
+  assert.equal(db.events[0].shift_id, SHIFT);
+  assert.equal(db.events[0].detail.template_key, "N-01-SMS");
+  assert.equal(db.events[0].detail.client_id, "cl-1");
+});
+
+test("an email is not a text — no kind covers it, so none is written", async () => {
+  const db = pgFake({ templates: [tpl("F-07-EMAIL", "Funded.")] });
+  await sendTemplated(db, { ...BASE, channel: "email", templateKey: "F-07-EMAIL", staffId: STAFF, shiftId: SHIFT });
+  assert.equal(db.messages.length, 1, "the email still queues");
+  assert.equal(db.events.length, 0, "filing an email under text_sent would make the count a lie");
+});
+
+test("a suppressed send writes no event — nothing was sent", async () => {
+  const db = pgFake({
+    templates: [tpl("N-01-SMS", "Hey!")],
+    optOuts: [{ client_id: "cl-1", channel: "sms", opted_in_at: null }]
+  });
+  const res = await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS", staffId: STAFF, shiftId: SHIFT });
+  assert.equal(res.sent, false);
+  assert.equal(db.events.length, 0);
+});
+
+test("a missing template writes no event — nothing was sent", async () => {
+  const db = pgFake({ templates: [] });
+  await sendTemplated(db, { ...BASE, templateKey: "GHOST", staffId: STAFF, shiftId: SHIFT });
+  assert.equal(db.events.length, 0);
+});
+
+test("a replayed event queues nothing the second time and counts nothing the second time", async () => {
+  // The dedupe index makes the second insert a no-op. Counting it anyway would
+  // inflate one person's numbers every time a provider retried.
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")] });
+  const args = { ...BASE, templateKey: "N-01-SMS", staffId: STAFF, shiftId: SHIFT };
+  await sendTemplated(db, args);
+  await sendTemplated(db, args);
+  assert.equal(db.messages.length, 1, "the dedupe index is what stops the second queue");
+  assert.equal(db.events.length, 1, "and the replay must not count as a second text");
+});
+
+test("with no shift named, the sender's open shift is looked up", async () => {
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")], openShift: SHIFT });
+  await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS", staffId: STAFF });
+  assert.equal(db.events[0].shift_id, SHIFT);
+});
+
+test("sending off the clock is logged with a NULL shift, not refused", async () => {
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")], openShift: null });
+  await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS", staffId: STAFF });
+  assert.equal(db.events.length, 1);
+  assert.equal(db.events[0].shift_id, null);
+});
+
+test("a broken telemetry write does NOT fail the send it observes", async () => {
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")], failOn: /INSERT INTO staff_events/ });
+  const { value: res, lines } = await quietly(() =>
+    sendTemplated(db, { ...BASE, templateKey: "N-01-SMS", staffId: STAFF, shiftId: SHIFT })
+  );
+  assert.equal(res.sent, true, "telemetry took the send down with it");
+  assert.equal(db.messages.length, 1, "the message is the record; it must survive a broken observer");
+  assert.equal(db.events.length, 0);
+  assert.ok(lines.some((l) => /\[telemetry\].*write_failed/.test(l)), JSON.stringify(lines));
+});
+
+test("the rendered body is never copied into the telemetry detail", async () => {
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Your score is 512 and you were denied.")] });
+  await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS", staffId: STAFF, shiftId: SHIFT });
+  const detail = JSON.stringify(db.events[0].detail);
+  assert.ok(!/512|denied/.test(detail), `client-facing copy leaked into telemetry: ${detail}`);
 });
