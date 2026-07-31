@@ -38,6 +38,7 @@ const HAVE_DB = !!process.env.DATABASE_URL;
 const STAFF_EMAIL_LIKE = "spull_http_test_%@example.com";
 const ACCT_EMAIL_LIKE = "spull_http_acct_%@example.com";
 const CLIENT_EMAIL_LIKE = "spull.http.test.%@example.com";
+const FOREIGN_ORG_SLUG = "spull-http-test-other-co";
 
 const CRS_PAYLOAD = {
   tradelines: [
@@ -56,6 +57,7 @@ const res = () => {
 
 describe("/api/finance/soft-pull", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
   let org, client, otherClient;
+  let foreignOrg, foreignClient, foreignCloser;
   const staff = {};                 // role → { id, token }
   const acct = {};                  // label → { id, token }
 
@@ -76,8 +78,9 @@ describe("/api/finance/soft-pull", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
   )).rows;
 
   const wipe = async () => {
-    await db.query(`DELETE FROM tradelines WHERE client_id = ANY($1)`, [[client, otherClient]]);
-    await db.query(`DELETE FROM soft_pull_requests WHERE client_id = ANY($1)`, [[client, otherClient]]);
+    const subjects = [client, otherClient, foreignClient].filter(Boolean);
+    await db.query(`DELETE FROM tradelines WHERE client_id = ANY($1)`, [subjects]);
+    await db.query(`DELETE FROM soft_pull_requests WHERE client_id = ANY($1)`, [subjects]);
   };
 
   async function purge() {
@@ -86,6 +89,7 @@ describe("/api/finance/soft-pull", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
     if (ids.length) await db.query(`DELETE FROM clients WHERE id = ANY($1)`, [ids]);
     await db.query(`DELETE FROM accounts WHERE email LIKE $1`, [ACCT_EMAIL_LIKE]);
     await db.query(`DELETE FROM staff WHERE email LIKE $1`, [STAFF_EMAIL_LIKE]);
+    await db.query(`DELETE FROM orgs WHERE slug = $1`, [FOREIGN_ORG_SLUG]);
   }
 
   before(async () => {
@@ -111,6 +115,24 @@ describe("/api/finance/soft-pull", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
       `INSERT INTO clients (org_id, first_name, last_name, email)
        VALUES ($1,'Spull','Bystander','spull.http.test.bystander@example.com') RETURNING id`,
       [org])).rows[0].id;
+
+    // A SECOND COMPANY, with its own consumer and its own closer. Everything
+    // above shares one org, so nothing above can tell "any signed-in closer"
+    // apart from "a closer at this consumer's company".
+    foreignOrg = (await db.query(
+      `INSERT INTO orgs (slug, name) VALUES ($1,'Spull Httptest Other Co') RETURNING id`,
+      [FOREIGN_ORG_SLUG])).rows[0].id;
+    foreignClient = (await db.query(
+      `INSERT INTO clients (org_id, first_name, last_name, email)
+       VALUES ($1,'Spull','Otherco','spull.http.test.otherco@example.com') RETURNING id`,
+      [foreignOrg])).rows[0].id;
+    {
+      const id = (await db.query(
+        `INSERT INTO staff (org_id, name, role, email, status)
+         VALUES ($1,'Spull Httptest Otherco Closer','closer',$2,'active') RETURNING id`,
+        [foreignOrg, "spull_http_test_otherco_closer@example.com"])).rows[0].id;
+      foreignCloser = { id, token: (await createSession(db, { staffId: id, orgId: foreignOrg })).token };
+    }
 
     // 044's accounts_active_needs_hash needs a hash on an active account. These
     // sign in through createAccountSession directly, so the hash is a placeholder
@@ -237,6 +259,69 @@ describe("/api/finance/soft-pull", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
         assert.equal(r.code, 403, `${role} read the credit-pull history (${r.code})`);
         assert.equal(r.body.requests, undefined);
       }
+    });
+  });
+
+  // ── an employee reaches only their own company's consumers ───────────────
+
+  describe("a staff principal is bound to their own company", () => {
+    test("a closer cannot request a pull on another company's client", async () => {
+      // The harm is two-sided and neither side is a status code. Company A's
+      // ledger gains a credit pull on a consumer it has no relationship with,
+      // and company B — the one the consumer actually signed with — has no
+      // record that their consumer's credit was pulled at all.
+      await wipe();
+      const r = await call(
+        { client_id: foreignClient, reason: "another company's consumer" }, staff.closer.token);
+
+      assert.equal(r.code, 403,
+        `a closer reached another company's client (${r.code}: ${JSON.stringify(r.body)})`);
+      assert.equal(r.body.ok, false);
+      assert.deepEqual(await ledgerRows(foreignClient), [],
+        "one company's employee recorded a credit pull against another company's consumer");
+    });
+
+    test("no misfiled row lands in the caller's company either", async () => {
+      await wipe();
+      await call({ client_id: foreignClient, reason: "misfiling check" }, staff.owner.token);
+      const misfiled = (await db.query(
+        `SELECT id FROM soft_pull_requests WHERE org_id = $1 AND client_id = $2`,
+        [org, foreignClient])).rows;
+      assert.deepEqual(misfiled, [],
+        "the pull was stamped with the caller's company, so it sits in the wrong compliance ledger");
+    });
+
+    test("a closer cannot read another company's pull history", async () => {
+      await wipe();
+      const r = await call(undefined, staff.closer.token, "GET", { client_id: foreignClient });
+      assert.equal(r.code, 403, `a closer read another company's credit-pull history (${r.code})`);
+      assert.equal(r.body.requests, undefined);
+    });
+
+    test("the other company's closer is refused on this company's client, both ways", async () => {
+      await wipe();
+      const post = await call(
+        { client_id: client, reason: "reaching across companies" }, foreignCloser.token);
+      assert.equal(post.code, 403, `the other company's closer got ${post.code}`);
+      assert.deepEqual(await ledgerRows(), [],
+        "an outside company's employee recorded a credit pull on this company's consumer");
+
+      const get = await call(undefined, foreignCloser.token, "GET", { client_id: client });
+      assert.equal(get.code, 403);
+      assert.equal(get.body.requests, undefined);
+    });
+
+    test("a closer is still allowed on their own company's client", async () => {
+      // The fix must not close the door on the ordinary case.
+      await wipe();
+      const r = await call({ client_id: client, reason: "own company's file" }, staff.closer.token);
+      assert.equal(r.code, 200, JSON.stringify(r.body));
+      assert.equal(r.body.created, true);
+      assert.equal((await ledgerRows()).length, 1);
+
+      const own = await call(undefined, foreignCloser.token, "GET", { client_id: foreignClient });
+      assert.equal(own.code, 200, JSON.stringify(own.body));
+      assert.ok(Array.isArray(own.body.requests));
     });
   });
 
