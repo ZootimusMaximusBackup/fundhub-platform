@@ -1,0 +1,390 @@
+// GET /api/read/underwrite — the endpoint, against a stubbed database.
+//
+// NO DATABASE_URL, NO POSTGRES. The handler takes an optional third parameter
+// `{ db }`; Netlify and Vercel both call handler(req, res), so production always
+// gets the real pool and this file always gets the stub. That seam is the only
+// reason these checks run on every pass instead of only on the passes that happen
+// to have a database — which is exactly how the requireAuth `roles` hole survived
+// two rounds (see src/http/auth-gate.test.mjs).
+//
+// ⚠️ THIS FILE MUST LIVE UNDER src/. npm test's glob is "src/**" and "scripts/**"
+// only; a test placed next to the handler under api/ silently never runs.
+
+import { test, describe } from "node:test";
+import assert from "node:assert";
+
+import handler from "../../api/read/underwrite.mjs";
+
+const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const OTHER_ORG = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const CLIENT = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+const TRADELINE = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+
+/* A fake res that records instead of writing. Same surface the Netlify shim
+   implements: status().json(), setHeader, end. */
+function makeRes() {
+  const res = {
+    statusCode: null, body: null, headers: {},
+    status(code) { res.statusCode = code; return res; },
+    json(payload) { res.body = payload; return res; },
+    setHeader(k, v) { res.headers[k.toLowerCase()] = v; return res; },
+    end() { return res; }
+  };
+  return res;
+}
+
+/**
+ * A stub db that dispatches on the SQL text. Every query this handler can issue
+ * is answered explicitly; anything unrecognised THROWS rather than returning an
+ * empty result, so a new query added to the handler cannot silently read as
+ * "this client has no data".
+ */
+function makeDb({ session = {}, client = undefined, tradelines = [], liabilities = [], crs = [] } = {}) {
+  const calls = [];
+  return {
+    calls,
+    async query(sql, params) {
+      calls.push({ sql, params });
+
+      if (sql.includes("UPDATE sessions")) {
+        // verifySession's shape. `session: null` means no valid session.
+        if (session === null) return { rows: [] };
+        return {
+          rows: [{
+            session_id: "sess", expires_at: "2099-01-01T00:00:00Z",
+            staff_id: "staff-1", org_id: ORG, role: "closer",
+            email: "closer@example.com", name: "A Closer", status: "active",
+            active_flag: "true",
+            ...session
+          }]
+        };
+      }
+      if (sql.includes("FROM clients")) {
+        return { rows: client === undefined ? [] : [client] };
+      }
+      if (sql.includes("FROM tradelines")) return { rows: tradelines };
+      if (sql.includes("FROM card_liabilities")) return { rows: liabilities };
+      if (sql.includes("FROM crs_results")) return { rows: crs };
+
+      throw new Error("stub db: unexpected query:\n" + sql);
+    }
+  };
+}
+
+const req = (over = {}) => ({
+  method: "GET",
+  headers: { authorization: "Bearer test-token" },
+  query: { client_id: CLIENT },
+  ...over
+});
+
+const CLIENT_ROW = {
+  id: CLIENT,
+  custom_fields: {
+    crs_inquiries_ex: 4, crs_inquiries_eq: 1, crs_inquiries_tu: 0,
+    crs_negative_items_count: 0,
+    crs_late_payments_count: 0,
+    business_age_months: 30
+  }
+};
+
+const TRADELINE_ROW = {
+  id: TRADELINE, org_id: ORG, client_id: CLIENT,
+  lender: "Chase", kind: "revolving",
+  credit_limit_cents: 2_000_000,  // $20,000
+  balance_cents: 1_700_000,       // $17,000 -> 85%
+  apr: "0.1899", closed_at: null
+};
+
+const CRS_ROW = { result: { scores: { ex: 720, eq: 705, tu: 710 } }, created_at: "2026-01-02T00:00:00Z" };
+
+/* The deps object the handler takes as its third parameter. Returns { db } — not
+   a bare db — because `deps.db ?? db` silently falls back to the REAL pool when
+   the shape is wrong, and the resulting 503 looks like a broken assertion rather
+   than a broken fixture. */
+const fullDb = (over = {}) => ({
+  db: makeDb({ client: CLIENT_ROW, tradelines: [TRADELINE_ROW], crs: [CRS_ROW], ...over })
+});
+
+/* ─────────────────────────── method and auth ─────────────────────────── */
+
+describe("method, auth and role gate", () => {
+  test("a non-GET method is refused with an allow header", async () => {
+    const res = makeRes();
+    await handler(req({ method: "POST" }), res, { db: makeDb() });
+    assert.equal(res.statusCode, 405);
+    assert.equal(res.headers.allow, "GET");
+  });
+
+  test("no session is 401", async () => {
+    const res = makeRes();
+    await handler(req({ headers: {} }), res, { db: makeDb({ session: null }) });
+    assert.equal(res.statusCode, 401);
+    assert.equal(res.body.ok, false);
+  });
+
+  test("an invalid token is 401", async () => {
+    const res = makeRes();
+    await handler(req(), res, { db: makeDb({ session: null }) });
+    assert.equal(res.statusCode, 401);
+  });
+
+  test("a role outside ROLE_SETS.STAFF is 403", async () => {
+    const res = makeRes();
+    await handler(req(), res, fullDb({ session: { role: "affiliate_manager" } }));
+    assert.equal(res.statusCode, 403);
+    assert.equal(res.body.error, "forbidden");
+  });
+
+  test("every ROLE_SETS.STAFF role is admitted", async () => {
+    for (const role of ["owner", "admin", "funding_advisor", "closer", "inquiry_specialist", "setter"]) {
+      const res = makeRes();
+      await handler(req(), res, fullDb({ session: { role } }));
+      assert.equal(res.statusCode, 200, `role ${role} should be admitted`);
+    }
+  });
+});
+
+/* ─────────────────────────── org scoping ─────────────────────────── */
+
+describe("org scoping comes from the session and fails closed", () => {
+  test("a session with no org is refused, not run unscoped", async () => {
+    for (const org_id of [null, undefined, "", "not-a-uuid"]) {
+      const res = makeRes();
+      const deps = fullDb({ session: { org_id } });
+      await handler(req(), res, deps);
+      assert.equal(res.statusCode, 403, `org_id ${JSON.stringify(org_id)} must fail closed`);
+      // And it must not have gone on to read anything.
+      assert.ok(!deps.db.calls.some((c) => c.sql.includes("FROM clients")),
+        "a session without an org must never reach a data query");
+    }
+  });
+
+  test("the org is taken from the session, NEVER from the query string", async () => {
+    const res = makeRes();
+    const deps = fullDb();
+    // A caller trying to widen their own scope.
+    await handler(req({ query: { client_id: CLIENT, org_id: OTHER_ORG } }), res, deps);
+    assert.equal(res.statusCode, 200);
+    const clientQuery = deps.db.calls.find((c) => c.sql.includes("FROM clients"));
+    assert.deepEqual(clientQuery.params, [CLIENT, ORG],
+      "the org parameter must be the session's, and the query string's must be ignored");
+  });
+
+  test("a client in another org is 404, not 403", async () => {
+    // The stub returns no row because the handler's WHERE includes org_id.
+    // 404 rather than 403 on purpose: 403 would confirm the uuid names a real
+    // client somewhere, which is the thing the scope is hiding.
+    const res = makeRes();
+    await handler(req(), res, fullDb({ client: undefined }));
+    assert.equal(res.statusCode, 404);
+    assert.equal(res.body.error, "client_not_found");
+  });
+
+  test("every data query carries the org id as well as the client id", async () => {
+    const res = makeRes();
+    const deps = fullDb();
+    await handler(req(), res, deps);
+    assert.equal(res.statusCode, 200);
+    for (const table of ["FROM tradelines", "FROM card_liabilities", "FROM crs_results"]) {
+      const call = deps.db.calls.find((c) => c.sql.includes(table));
+      assert.ok(call, `expected a query against ${table}`);
+      assert.deepEqual(call.params, [CLIENT, ORG],
+        `${table} must be scoped by org as well as client`);
+    }
+  });
+});
+
+/* ─────────────────────────── input validation ─────────────────────────── */
+
+describe("client_id validation", () => {
+  test("a missing or non-uuid client_id is 400", async () => {
+    for (const client_id of [undefined, "", "123", "'; DROP TABLE clients; --"]) {
+      const res = makeRes();
+      await handler(req({ query: { client_id } }), res, fullDb());
+      assert.equal(res.statusCode, 400, `client_id ${JSON.stringify(client_id)} must be refused`);
+    }
+  });
+});
+
+/* ─────────────────────────── the payload ─────────────────────────── */
+
+describe("the response body", () => {
+  test("returns the engine assessment, the sentences, and the numbers behind them", async () => {
+    const res = makeRes();
+    await handler(req(), res, fullDb());
+    assert.equal(res.statusCode, 200);
+    const body = res.body;
+
+    assert.equal(body.ok, true);
+    assert.equal(body.clientId, CLIENT);
+
+    // The engine's own output is present and unmodified in shape.
+    assert.equal(body.underwrite.primary_bureau, "experian");
+    assert.equal(body.underwrite.metrics.score, 720);
+    assert.equal(body.underwrite.metrics.utilization_pct, 85,
+      "$17,000 on a $20,000 limit is 85 PERCENT UNITS — not 0.85 and not 8500");
+
+    // Every suggestion carries its reasoning.
+    assert.ok(body.suggestions.length > 0);
+    for (const s of body.suggestions) {
+      assert.equal(typeof s.text, "string");
+      assert.equal(s.engine, "underwrite_iq_lite");
+      assert.equal(s.recognised, true, `unrecognised sentence: ${s.text}`);
+      assert.ok(s.basis, `no basis for: ${s.text}`);
+    }
+
+    const util = body.suggestions.find((s) => s.topic === "utilization");
+    assert.ok(util, "an 85% utilization must produce a utilization sentence");
+    assert.equal(util.basis.utilization_pct, 85);
+    assert.equal(util.basis.unit, "percent");
+    assert.equal(util.basis.compared_against.extreme_band_from_pct, 80);
+
+    // The vendored commit travels with the response.
+    assert.match(body.engine.upstreamCommit, /^[0-9a-f]{40}$/);
+  });
+
+  test("the engine's sentences are returned verbatim, never rewritten", async () => {
+    const res = makeRes();
+    await handler(req(), res, fullDb());
+    // Exact strings from the vendored engine. If the endpoint ever starts
+    // editorialising, this breaks.
+    assert.ok(res.body.suggestions.some((s) =>
+      s.text === "Your utilization is extremely high (80%+). Paying balances down aggressively will unlock a large jump in scores and approvals."));
+  });
+
+  test("BOTH utilization engines are reported, each naming itself", async () => {
+    const res = makeRes();
+    await handler(req(), res, fullDb());
+    const voices = res.body.utilizationVoices;
+
+    const iq = voices.find((v) => v.engine === "underwrite_iq_lite");
+    const fundhub = voices.find((v) => v.engine === "fundhub_alerts_evaluate");
+    assert.ok(iq, "the vendored engine's utilization line must be attributed");
+    assert.ok(fundhub, "fundhub's own evaluateUtilization line must be attributed");
+
+    // Same portfolio, two conventions, both stated rather than silently merged.
+    assert.equal(iq.value, 85);
+    assert.equal(iq.unit, "percent");
+    assert.equal(fundhub.value, 0.85);
+    assert.equal(fundhub.unit, "fraction");
+    assert.equal(fundhub.over, true);
+  });
+
+  test("a client with no credit pull gets an honest empty assessment, not a guess", async () => {
+    const res = makeRes();
+    await handler(req(), res, fullDb({ crs: [], tradelines: [] }));
+    assert.equal(res.statusCode, 200);
+    const body = res.body;
+
+    assert.deepEqual(body.dataCompleteness.bureausAssessed, []);
+    assert.deepEqual(body.dataCompleteness.bureausUnavailable, ["experian", "equifax", "transunion"]);
+    assert.ok(body.dataCompleteness.missing.client.some((m) => m.field === "crs_results"));
+
+    // The banner number must be flagged as the engine's hardcoded floor.
+    assert.equal(body.underwrite.lite_banner_funding, 15000);
+    assert.equal(body.caveats.bannerFundingIsFallback, true);
+    assert.match(body.caveats.bannerFundingNote, /not an amount this client is approved for/);
+  });
+
+  test("PARTIAL DATA: a sentence resting on an unentered field names that field", async () => {
+    // Negatives and late payments deliberately absent from custom_fields.
+    const res = makeRes();
+    await handler(req(), res, fullDb({
+      client: { id: CLIENT, custom_fields: { crs_inquiries_ex: 2 } }
+    }));
+    assert.equal(res.statusCode, 200);
+
+    const missingFields = res.body.dataCompleteness.missing.experian.map((m) => m.field);
+    assert.ok(missingFields.includes("negatives"),
+      "an unentered negatives count must be named, because the engine counts it as zero");
+    assert.ok(missingFields.includes("late_payment_events"));
+
+    // At least one sentence must be flagged as resting on data nobody entered,
+    // with the field named rather than a confident line built on a null.
+    const resting = res.body.suggestions.filter((s) => s.restsOnMissingData);
+    assert.ok(resting.length > 0, "some advice here rests on absent data and must say so");
+    for (const s of resting) {
+      assert.ok(s.missingFields.length > 0, `${s.id} is flagged but names no field`);
+      for (const f of s.missingFields) {
+        assert.ok(f.field && f.reason && f.effect,
+          "a named missing field must say what it is, why it is missing and what it changes");
+      }
+    }
+  });
+
+  test("the seasoning gap is reported on every response", async () => {
+    // fundhub stores no account-opened date, so every funding figure is a floor.
+    // A caller must not be able to read the numbers without seeing that.
+    const res = makeRes();
+    await handler(req(), res, fullDb());
+    assert.equal(res.body.caveats.fundingFiguresAreFloors, true);
+    assert.match(res.body.caveats.fundingFiguresNote, /no account-opened date/);
+    assert.ok(res.body.dataCompleteness.tradelineGaps.every((g) => g.missing.includes("opened")));
+  });
+
+  test("no promise is added on top of the engine's own strings", async () => {
+    const res = makeRes();
+    await handler(req(), res, fullDb());
+    // Every sentence in the response must be one the vendored engine produced.
+    // Nothing this repo wrote may appear as advice to a client.
+    const { buildSuggestions } = await import("../underwrite/engine.mjs");
+    const engineStrings = new Set(buildSuggestions(res.body.underwrite));
+    for (const s of res.body.suggestions) {
+      assert.ok(engineStrings.has(s.text),
+        `"${s.text}" is not a sentence the engine produced — the endpoint must not add advice`);
+    }
+  });
+});
+
+/* ─────────────────────────── failure handling ─────────────────────────── */
+
+describe("failures", () => {
+  test("a malformed-uuid database error becomes a 400, not a 500", async () => {
+    const deps = fullDb();
+    const inner = deps.db.query.bind(deps.db);
+    deps.db.query = async (sql, params) => {
+      if (sql.includes("FROM clients")) {
+        const e = new Error("invalid input syntax for type uuid");
+        e.code = "22P02";
+        throw e;
+      }
+      return inner(sql, params);
+    };
+    const res = makeRes();
+    await handler(req(), res, deps);
+    assert.equal(res.statusCode, 400);
+  });
+
+  test("an unexpected database error is not swallowed", async () => {
+    const deps = fullDb();
+    const inner = deps.db.query.bind(deps.db);
+    deps.db.query = async (sql, params) => {
+      if (sql.includes("FROM tradelines")) throw new Error("connection terminated");
+      return inner(sql, params);
+    };
+    const res = makeRes();
+    await assert.rejects(() => handler(req(), res, deps), /connection terminated/,
+      "a real outage must surface, not be reported as a clean empty result");
+  });
+
+  test("the handler never reads DATABASE_URL", () => {
+    // Proves the seam is real: this whole file runs with no database configured.
+    assert.equal(process.env.DATABASE_URL, undefined,
+      "these tests must run without a database; if this fails the suite is not proving what it claims");
+  });
+});
+
+/* ─────────────────────────── routing ─────────────────────────── */
+
+describe("the handler is actually reachable", () => {
+  test("read/underwrite is in the hardcoded ROUTES map", async () => {
+    // A handler file is not a route. This repo has shipped an unrouted handler
+    // twice; src/http/routes.test.mjs is the general check and this is the
+    // specific one for this endpoint.
+    const { ROUTES } = await import("../../netlify/functions/api.mjs");
+    assert.equal(typeof ROUTES["read/underwrite"], "function",
+      "api/read/underwrite.mjs must be wired into netlify/functions/api.mjs or it 404s");
+    assert.equal(ROUTES["read/underwrite"], handler);
+  });
+});
