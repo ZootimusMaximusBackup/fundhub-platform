@@ -229,16 +229,27 @@ export async function currentShift(db, { staffId } = {}) {
  * wait before deciding they left, not time they worked. Paying the idle window
  * would invent up to 12 hours per forgotten clock-out.
  *
- * ⚠ THIS IS ONLY AS GOOD AS THE TELEMETRY, AND THE TELEMETRY HAS NO WRITERS.
- * logStaffEvent() (src/shifts/telemetry.mjs) has zero call sites — see
- * src/shifts/TELEMETRY-CALLSITES.md — so `staff_events` today contains nothing
- * but this function's own audit rows. Until those call sites land, every open
- * shift has last_active_at = started_at, which means this reads as "close
- * shifts with no recorded activity since clock-in" and writes a near-zero-length
- * shift. That is the honest answer to the data available, not a safe one to pay
- * from. Nothing runs it — autoCloseStale() still has no caller and no scheduler
- * — so nothing is currently harmed. Wire the telemetry call sites BEFORE
- * scheduling this sweep.
+ * ⚠ THIS IS ONLY AS GOOD AS THE TELEMETRY, AND THE TELEMETRY IS PARTIAL.
+ * logStaffEvent() (src/shifts/telemetry.mjs) had zero call sites when this was
+ * written, so `staff_events` held nothing but this function's own audit rows and
+ * every open shift read as idle since clock-in. That is fixed for the work this
+ * system can attribute: logAttempt() in src/inquiries/work.mjs now emits
+ * `call_made` and `letter_issued`, and telemetry-wiring.pg.test.mjs proves end
+ * to end that a shift stays open while those events keep arriving and closes at
+ * the last one when they stop.
+ *
+ * WHAT IS STILL NOT COVERED, and it is the reason this is a ⚠ and not a note:
+ * the Inquiry Remover desk is the ONLY work that produces activity. A closer on
+ * calls, a funding advisor moving rounds, anyone whose whole day happens on a
+ * screen that writes no `staff_events` row — all of them still look idle from
+ * the moment they clock in, and this sweep would end their shift at its start
+ * time. `pull_run`, `text_sent` and `file_touched` have no writer at all; see
+ * src/shifts/TELEMETRY-CALLSITES.md and docs/workflows/finish-the-build.md §W1.
+ *
+ * Nothing runs this — autoCloseStale() still has no caller and no scheduler — so
+ * nothing is currently harmed. BEFORE SCHEDULING IT, decide what happens to a
+ * role that generates no telemetry. Its shifts will be closed at their start
+ * time, and these are timesheet rows.
  *
  * EVERY CLOSE IS RECORDED. One `staff_events` row per shift, kind
  * AUTO_CLOSE_EVENT_KIND, detail carrying the threshold used, the original

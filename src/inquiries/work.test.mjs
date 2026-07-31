@@ -14,22 +14,57 @@ import { logAttempt, confirmRemoval, setStatus, InquiryWriteError } from "./work
 const INQUIRY = "11111111-1111-4111-8111-111111111111";
 const STAFF = "22222222-2222-4222-8222-222222222222";
 const ORG = "33333333-3333-4333-8333-333333333333";
+const CLIENT = "44444444-4444-4444-8444-444444444444";
+const SHIFT = "55555555-5555-4555-8555-555555555555";
 
-/* A stub that records every statement and answers the two SELECT/RETURNING
-   shapes these functions depend on. connect() is implemented so the
-   transactional path is the one under test, not the fallback. */
-function stubDb({ found = true } = {}) {
+/* A stub that records every statement and answers the SELECT/RETURNING shapes
+   these functions depend on. connect() is implemented so the transactional path
+   is the one under test, not the fallback.
+
+   `failOn` injects a database error at whichever statement it matches. It is
+   how the telemetry tests below break the `staff_events` write specifically,
+   without breaking the inquiry write that must survive it.
+
+   `openShift` is what a `SELECT ... FROM shifts` answers, so the shift-id
+   fallback can be driven both ways.
+
+   THE staff_events AND shifts BRANCHES COME FIRST. The staff_events statement
+   also contains RETURNING, so a generic /RETURNING/ test would answer it with
+   an inquiry row and quietly hide which statement was actually issued. */
+function stubDb({ found = true, failOn = null, openShift = null } = {}) {
   const calls = [];
   const client = {
     query(sql, params = []) {
       calls.push({ sql: sql.replace(/\s+/g, " ").trim(), params });
+      if (failOn && failOn.test(sql)) {
+        return Promise.reject(Object.assign(new Error("simulated outage"), { code: "08006" }));
+      }
+      if (/INSERT INTO staff_events/.test(sql)) {
+        return { rows: [{ id: "ev-1", org_id: ORG, staff_id: params[0], shift_id: params[2], kind: params[3] }] };
+      }
+      if (/FROM shifts/.test(sql)) return { rows: openShift ? [{ id: openShift }] : [] };
       if (/FOR UPDATE/.test(sql)) return { rows: found ? [{ id: INQUIRY, org_id: ORG }] : [] };
-      if (/RETURNING/.test(sql)) return { rows: found ? [{ id: INQUIRY, call_attempts: 1 }] : [] };
+      if (/RETURNING/.test(sql)) {
+        return { rows: found ? [{ id: INQUIRY, org_id: ORG, client_id: CLIENT, call_attempts: 1 }] : [] };
+      }
       return { rows: [] };
     },
     release() {}
   };
   return { calls, connect: async () => client, query: (s, p) => client.query(s, p) };
+}
+
+/** The staff_events statements a run issued, if any. */
+const telemetryCalls = (db) => db.calls.filter((c) => /INSERT INTO staff_events/.test(c.sql));
+
+/* logStaffEvent announces every skipped write on console.error. A test that
+   expects a skip captures the line rather than printing it into the run, and
+   asserts on it — a silent skip and a logged skip are different bugs. */
+async function quietly(fn) {
+  const real = console.error;
+  const lines = [];
+  console.error = (...args) => lines.push(args.join(" "));
+  try { return { value: await fn(), lines }; } finally { console.error = real; }
 }
 
 test("logAttempt requires an inquiry and a staff member", async () => {
@@ -106,4 +141,147 @@ test("setStatus clears confirmed_at when a row moves off a confirmed state", asy
 test("setStatus requires a non-empty status", async () => {
   const db = stubDb();
   await assert.rejects(() => setStatus(db, { inquiryId: INQUIRY, staffId: STAFF, status: "  " }), /status is required/);
+});
+
+// =============================================================================
+// STAFF TELEMETRY — the `staff_events` write this function now emits.
+//
+// src/shifts/telemetry.mjs had zero call sites, so `staff_events` was empty and
+// autoCloseStale() — which measures idleness from that table — read every open
+// shift as idle since clock-in. These are the two call sites that fill it.
+//
+// The ordering and the swallowing are the two things that matter here and both
+// are asserted rather than described: the emit is after COMMIT, and a broken
+// telemetry write does not fail the attempt it was observing.
+// =============================================================================
+
+test("a call attempt emits call_made, and a letter attempt emits letter_issued", async () => {
+  for (const [attemptKind, eventKind] of [["call", "call_made"], ["letter", "letter_issued"]]) {
+    const db = stubDb();
+    await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: attemptKind, shiftId: SHIFT });
+    const ev = telemetryCalls(db);
+    assert.equal(ev.length, 1, `${attemptKind}: expected exactly one staff_events write`);
+    assert.equal(ev[0].params[3], eventKind);
+  }
+});
+
+test("a portal filing and a working note emit nothing — neither has a kind in the vocabulary", async () => {
+  // `portal` is a real staff-performed action with no EVENT_KINDS equivalent and
+  // is reported as a gap; filing it under letter_issued would make "letters
+  // issued" a number nobody can trust. `note` is not an attempt at all.
+  for (const kind of ["portal", "note"]) {
+    const db = stubDb();
+    await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind, shiftId: SHIFT });
+    assert.equal(telemetryCalls(db).length, 0, `${kind} must not be filed under one of the other four kinds`);
+  }
+});
+
+test("the telemetry row is written AFTER the commit, never inside the transaction", async () => {
+  // Inside the transaction, a failed telemetry write would roll back the
+  // attempt it describes, and a rolled-back attempt would still have said
+  // "called". Both are one-way mistakes, so the position is asserted.
+  const db = stubDb();
+  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: SHIFT });
+  const sqls = db.calls.map((c) => c.sql);
+  const commit = sqls.indexOf("COMMIT");
+  const emit = sqls.findIndex((s) => /INSERT INTO staff_events/.test(s));
+  assert.ok(commit >= 0 && emit >= 0, "both statements must have been issued");
+  assert.ok(emit > commit, "the staff_events write ran inside the transaction");
+});
+
+test("the caller's open shift is stamped on the event", async () => {
+  const db = stubDb();
+  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: SHIFT });
+  assert.equal(telemetryCalls(db)[0].params[2], SHIFT, "shift_id must be the shift the caller named");
+  assert.equal(db.calls.filter((c) => /FROM shifts/.test(c.sql)).length, 0,
+    "the HTTP layer already resolved the shift — looking it up again is a wasted query per action");
+});
+
+test("with no shift named, the open shift is looked up and used", async () => {
+  const db = stubDb({ openShift: SHIFT });
+  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call" });
+  assert.equal(telemetryCalls(db)[0].params[2], SHIFT);
+});
+
+test("work done off the clock is logged with a NULL shift, not refused", async () => {
+  // NULL is a legitimate state: somebody worked a row without clocking in. A
+  // telemetry writer that refuses it loses the record of the work entirely.
+  const db = stubDb({ openShift: null });
+  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call" });
+  const ev = telemetryCalls(db);
+  assert.equal(ev.length, 1, "an unlinked event is still an event");
+  assert.equal(ev[0].params[2], null);
+});
+
+test("an explicit shiftId of null is taken at its word and skips the lookup", async () => {
+  const db = stubDb({ openShift: SHIFT });
+  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: null });
+  assert.equal(telemetryCalls(db)[0].params[2], null);
+  assert.equal(db.calls.filter((c) => /FROM shifts/.test(c.sql)).length, 0);
+});
+
+test("org_id comes off the inquiry row that was just written, never off the caller", async () => {
+  const db = stubDb();
+  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: SHIFT });
+  // params: [staffId, orgId-filter, shiftId, kind, detail]
+  assert.equal(telemetryCalls(db)[0].params[1], ORG);
+  assert.equal(telemetryCalls(db)[0].params[0], STAFF);
+});
+
+test("the detail carries the ids and the outcome, and never the free-text note", async () => {
+  const db = stubDb();
+  await logAttempt(db, {
+    inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: SHIFT,
+    outcome: "Left voicemail", note: "consumer said her SSN ends 1234"
+  });
+  const detail = JSON.parse(telemetryCalls(db)[0].params[4]);
+  assert.equal(detail.inquiry_id, INQUIRY);
+  assert.equal(detail.client_id, CLIENT);
+  assert.equal(detail.attempt_kind, "call");
+  assert.equal(detail.outcome, "Left voicemail");
+  assert.equal(detail.attempt_no, 1);
+  assert.equal(detail.note, undefined,
+    "operator free text about a consumer's dispute must not be copied into a telemetry index");
+});
+
+test("an unknown outcome stays NULL rather than being recorded as a result", async () => {
+  const db = stubDb();
+  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: SHIFT });
+  assert.equal(JSON.parse(telemetryCalls(db)[0].params[4]).outcome, null);
+});
+
+// --- THE ONE THAT MATTERS MOST ----------------------------------------------
+
+test("a database error on the telemetry write does NOT fail the attempt it observes", async () => {
+  // The whole design constraint of src/shifts/telemetry.mjs, asserted from the
+  // call site rather than trusted from its header. The failure is injected at
+  // the staff_events INSERT only, so the inquiry write is untouched and a
+  // failure here can only have come from telemetry.
+  const db = stubDb({ failOn: /INSERT INTO staff_events/ });
+
+  const { value: updated, lines } = await quietly(() =>
+    logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", outcome: "removed", shiftId: SHIFT })
+  );
+
+  assert.equal(updated.id, INQUIRY, "the attempt must still be returned when telemetry is broken");
+  assert.equal(updated.call_attempts, 1);
+  assert.ok(db.calls.some((c) => c.sql === "COMMIT"), "the attempt must still have committed");
+  assert.ok(!db.calls.some((c) => c.sql === "ROLLBACK"), "a telemetry failure must not roll the attempt back");
+  assert.ok(lines.some((l) => /\[telemetry\].*write_failed/.test(l)),
+    `the swallowed failure must be logged, not silent: ${JSON.stringify(lines)}`);
+});
+
+test("a database error on the open-shift lookup does NOT fail the attempt either", async () => {
+  // The lookup runs after the commit, so the attempt is already recorded. The
+  // shift link is lost; the work is not.
+  const db = stubDb({ failOn: /FROM shifts/ });
+
+  const { value: updated, lines } = await quietly(() =>
+    logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call" })
+  );
+
+  assert.equal(updated.id, INQUIRY);
+  assert.equal(telemetryCalls(db).length, 1, "the event is still written, with no shift attached");
+  assert.equal(telemetryCalls(db)[0].params[2], null);
+  assert.ok(lines.some((l) => /open-shift lookup failed/.test(l)), JSON.stringify(lines));
 });

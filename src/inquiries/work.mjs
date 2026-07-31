@@ -14,9 +14,72 @@
 // A 'note' IS NOT AN ATTEMPT. Working notes are logged in the same table, for a
 // single readable timeline, but do not count toward call_attempts: a desk that
 // inflates its attempt count is lying to a bureau, slowly.
+//
+// THIS IS ALSO THE ONLY STAFF-ATTRIBUTED TELEMETRY WRITER IN THE REPOSITORY.
+// `staff_events` (src/shifts/telemetry.mjs) records "this person did this thing,
+// at this time, on this shift". Of the five kinds it accepts, exactly two have a
+// call site where a named employee completes the action, and both are here:
+// a `call` attempt is `call_made`, a `letter` attempt is `letter_issued`. See
+// src/shifts/TELEMETRY-CALLSITES.md for the other three (`pull_run`,
+// `text_sent`, `file_touched`) and why nothing emits them — they are performed
+// by Inngest workflows, which have no staff member to attribute anything to.
+//
+// THE EMIT IS AFTER THE COMMIT, NEVER INSIDE IT. Two reasons, both one-way:
+// telemetry must not be able to roll back the attempt it is describing, and a
+// row that says "called" must not exist for a call whose transaction was rolled
+// back. logStaffEvent() never throws and never rejects, so the emit cannot fail
+// the write it observes — that is its whole design constraint, and
+// work.test.mjs injects a database error at the staff_events INSERT to prove
+// this function still returns the updated inquiry when telemetry is broken.
+
+import { logStaffEvent } from "../shifts/telemetry.mjs";
+import { currentShift } from "../shifts/store.mjs";
 
 const ATTEMPT_KINDS = new Set(["call", "letter", "portal", "note"]);
 const COUNTING_KINDS = new Set(["call", "letter", "portal"]);
+
+/* Which attempt kinds have a `staff_events` kind, and which one.
+   `portal` and `note` are deliberately absent and MUST STAY absent.
+
+   `portal` — filing through a bureau portal — is a real, counted, staff-performed
+   action with no equivalent in EVENT_KINDS. Filing it under `letter_issued`
+   because that is the nearest word would make "letters issued" a number nobody
+   can trust. It is reported as a gap in docs/workflows/finish-the-build.md
+   instead, and whoever owns the telemetry vocabulary decides.
+
+   `note` is not an attempt at all (see the header) and must not become one here
+   after this file went to the trouble of keeping it out of call_attempts. */
+const TELEMETRY_KIND = Object.freeze({
+  call: "call_made",
+  letter: "letter_issued"
+});
+
+/* Which shift this work belongs on.
+ *
+ * An explicitly passed shiftId WINS, including an explicit null. The HTTP layer
+ * has already resolved the caller's open shift — requireActiveShift() returns
+ * the `shifts` row and api/inquiries.mjs passes its id straight down — so the
+ * request path costs no extra query. A caller that says `shiftId: null` is
+ * stating a fact ("this work is off the clock"), not omitting one, and is taken
+ * at its word.
+ *
+ * Only an ABSENT shiftId triggers the lookup, so a direct caller with no HTTP
+ * layer above it still gets the link rather than a null that cannot be repaired
+ * later. `null` is a legitimate answer here — somebody working off the clock —
+ * and is stored as such rather than refused.
+ *
+ * A failed lookup is null and a log line, never a throw: this runs after the
+ * commit, so the attempt is already recorded, and losing the shift link is not
+ * a reason to fail an action that has already happened. */
+async function resolveShiftId(db, { staffId, shiftId }) {
+  if (shiftId !== undefined) return shiftId ?? null;
+  try {
+    return (await currentShift(db, { staffId }))?.id ?? null;
+  } catch (err) {
+    console.error(`[telemetry] open-shift lookup failed, shift_id will be NULL (staff=${staffId}): ${err.message}`);
+    return null;
+  }
+}
 
 export class InquiryWriteError extends Error {
   constructor(message, { status = 400 } = {}) {
@@ -32,13 +95,18 @@ export class InquiryWriteError extends Error {
  * Transactional because three writes must agree: the attempt row, the
  * recomputed counter, and the attribution columns. A partial apply here would
  * leave a row that claims three attempts with two logged.
+ *
+ * `shiftId` is optional and only affects telemetry: pass the caller's open
+ * shift when it is already known (the HTTP path does), omit it to have the open
+ * shift looked up, pass null to state that this work is off the clock. It has
+ * no effect on the inquiry write itself.
  */
-export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcome = null, note = null }) {
+export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcome = null, note = null, shiftId }) {
   if (!inquiryId) throw new InquiryWriteError("inquiryId is required");
   if (!staffId) throw new InquiryWriteError("staffId is required", { status: 401 });
   if (!ATTEMPT_KINDS.has(kind)) throw new InquiryWriteError(`unknown attempt kind: ${kind}`);
 
-  return withTransaction(db, async (tx) => {
+  const updated = await withTransaction(db, async (tx) => {
     const inquiry = (await tx.query(
       `SELECT id, org_id FROM inquiry_log WHERE id = $1 FOR UPDATE`, [inquiryId]
     )).rows[0];
@@ -70,6 +138,37 @@ export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcom
 
     return updated;
   });
+
+  /* AFTER THE COMMIT. See the header. Nothing below this line may throw, and
+     nothing below this line may change what is returned. */
+  const eventKind = TELEMETRY_KIND[kind];
+  if (eventKind) {
+    await logStaffEvent(db, {
+      /* The org filter comes off the inquiry_log row this function just wrote,
+         never off a request body — an org id a caller can choose is an org id a
+         caller can lie about. logStaffEvent stores the org from the `staff` row
+         itself and uses this only to insist the two agree. */
+      orgId:   updated.org_id,
+      staffId,
+      shiftId: await resolveShiftId(db, { staffId, shiftId }),
+      kind:    eventKind,
+      detail:  {
+        inquiry_id: updated.id,
+        client_id:  updated.client_id,
+        attempt_kind: kind,
+        // NULL survives. The desk may not know the outcome at the moment it
+        // logs the attempt, and "unknown" must not be recorded as a result.
+        outcome:    outcome ?? null,
+        attempt_no: updated.call_attempts ?? null
+      }
+      /* `note` is deliberately NOT copied in. It is operator free text about a
+         consumer's dispute and can carry anything the desk typed; `detail` is a
+         telemetry index, not a second copy of the record. The note already
+         lives, once, in inquiry_attempts. */
+    });
+  }
+
+  return updated;
 }
 
 /**
