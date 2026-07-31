@@ -223,6 +223,21 @@ describe("demo logins", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
     if (!exists.rows.length) return;   // roster not seeded here — nothing to check
 
     for (const env of [OFF, ON]) {
+      /* CLEAR THIS ACCOUNT'S FAILED ATTEMPTS FIRST.
+         This case deliberately signs in with a wrong password, twice, and every
+         other case in this file that touches a real row does the same. The rate
+         limiter (src/auth/login.mjs checkRateLimit) counts those and starts
+         answering `too_many_attempts` instead of `invalid_credentials` — which
+         is the limiter WORKING, not a defect, but it made this assertion fail
+         for a reason that has nothing to do with the demo gate it exists to
+         test. Clearing the counter for one email keeps the case honest without
+         weakening it: the assertion below is still that a real account is
+         refused for being WRONG and never for being demo. */
+      await db.query(
+        `DELETE FROM login_attempts WHERE org_id = $1 AND lower(email) = $2`,
+        [org, real]
+      ).catch(() => {});
+
       const out = await login(db, { email: real, password: "deliberately-wrong-password", env });
       assert.equal(out.ok, false);
       assert.notEqual(out.error, "demo_logins_disabled",

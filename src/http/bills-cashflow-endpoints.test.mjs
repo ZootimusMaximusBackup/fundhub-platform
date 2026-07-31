@@ -582,6 +582,25 @@ describe("cashflow — the projection", () => {
     assert.ok(named, "the bill is in the projection but carries no label");
   });
 
+  test("a timestamptz balance date does not refuse the projection it was meant to date", async () => {
+    /* A REAL DEFECT, FOUND BY src/http/bills-cashflow-endpoints.pg.test.mjs AND
+       MISSED HERE. `bank_accounts.balance_as_of` is a timestamptz and
+       node-postgres hands it over as a Date OBJECT. The first version of the
+       handler did `String(value).slice(0, 10)`, which is the HUMAN-READABLE form
+       — "Fri Jul 31" — so project() refused the whole projection with
+       "balances[0].asOf is not an ISO date" and a client with a perfectly good
+       balance got nothing at all.
+
+       This fixture is the Date the driver actually produces, so the unit test can
+       no longer sail past it on a tidy string. */
+    stubDb({ accountRows: [ACCOUNT_ROW({ balance_as_of: new Date("2026-07-30T09:15:00.000Z") })] });
+    const res = await call(cashflow, { query: { client_id: CID, horizon_days: "30" } });
+    assert.equal(res.statusCode, 200, JSON.stringify(res.body));
+    assert.equal(res.body.projection.ok, true,
+      "a Date in balance_as_of refused the projection: " + JSON.stringify(res.body.projection.reason));
+    assert.equal(res.body.accounts_used[0].asOf, "2026-07-30");
+  });
+
   test("an unknown balance refuses the whole projection instead of being read as zero", async () => {
     stubDb({ accountRows: [ACCOUNT_ROW({ balance_cents: null })] });
     const res = await call(cashflow, { query: { client_id: CID, horizon_days: "30" } });

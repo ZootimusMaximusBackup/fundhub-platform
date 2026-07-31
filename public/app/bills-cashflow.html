@@ -147,7 +147,17 @@
        is the only way off it, and back() does nothing at all when the page was
        opened from a pasted or bookmarked URL (audit M20). shell.js gates this
        link like any other screen link. -->
-  <div class="fh-back"><a href="command-center.html">← Command Center</a></div>
+  <!-- TWO WAYS OUT, AND THE SECOND ONE IS THE POINT OF THE HUB PASS.
+       "← Command Center" leaves the client behind, because the Command
+       Center is not about one client. "Client hub" goes back to
+       finance-os.html still holding whoever you were looking at — shell.js
+       appends ?client_id= to this link for every screen in CLIENT_SCREENS,
+       so it is deliberately written bare here rather than built by hand in
+       two places. Without it, walking Plan → Cards → Bank accounts meant
+       typing the uuid back in three times. -->
+  <div class="fh-back"><a href="command-center.html">← Command Center</a>
+    <span aria-hidden="true"> · </span>
+    <a href="finance-os.html">← Client hub</a></div>
 
   <div class="fh-head">
     <h1 class="fh-title">Bills &amp; Cash Flow</h1>
@@ -956,9 +966,15 @@
       state.includeCandidates = checked("inclCand");
       state.cashRead = false;
       state.cashError = null;
+      /* Two renders, and both are needed. The first repaints IMMEDIATELY so the
+         projection section says "Building the projection…" rather than sitting
+         on the previous horizon's figures while the new read is in flight —
+         stale figures under a control the person just changed read as the
+         answer to the question they just asked. The second is inside the
+         Promise.all: loadBills() and loadCash() only put rows into state, so
+         without it the new answer would never reach the screen at all. */
       render();
-      loadBills();
-      loadCash();
+      Promise.all([loadBills(), loadCash()]).then(render, render);
     });
 
     var detectForm = document.getElementById("detectForm");

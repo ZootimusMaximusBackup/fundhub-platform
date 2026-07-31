@@ -321,11 +321,22 @@ function idOf(row, idField, index, kind) {
 }
 
 /** A component of a day's movement, rendered once so every consumer agrees. */
-function component({ direction, kind, sourceId, label, amountCents, certainty, confidence = null }) {
+function component({ direction, kind, sourceId, label, amountCents, certainty, confidence = null, subjectId = null }) {
   return {
     direction,
     kind,
     sourceId,
+    /* THE DATABASE KEY FOR THIS COMPONENT'S SUBJECT, when it has one.
+
+       sourceId is a STREAM identity and for a bill it is the composite
+       "<bankAccountId>:<merchantKey>:<cadence>" that survives re-detection. It
+       is not a uuid and must never be written to a uuid column —
+       cashflow_reminders.subject_id (087:113) raised Postgres 22P02 on exactly
+       that, surfacing as a flat 400 on the one case the cash-flow screen is for.
+
+       NULL when the subject has no stored row. A writer MUST check rather than
+       fall back to sourceId, because falling back is the original defect. */
+    subjectId,
     label,
     amountCents,
     amount: fromCents(amountCents),
@@ -687,6 +698,9 @@ export function project({
           direction: "out",
           kind: "bill",
           sourceId,
+          // The stored recurring_bills uuid, carried by toCashflowBill(). NULL
+          // for a hand-built bill that was never stored.
+          subjectId: row?.subjectId ?? null,
           label,
           amountCents: cents,
           certainty: cls.certainty,
@@ -714,6 +728,9 @@ export function project({
       blindSpots.push({
         kind: "card",
         sourceId,
+        // A card's sourceId is the card_liabilities uuid, so it is a real
+        // database key. Carried explicitly so recordReminders() can write it.
+        subjectId: sourceId,
         label,
         reason:
           "this card has no due date, so the day its payment must leave the account is unknown"
@@ -726,6 +743,9 @@ export function project({
       blindSpots.push({
         kind: "card",
         sourceId,
+        // A card's sourceId is the card_liabilities uuid, so it is a real
+        // database key. Carried explicitly so recordReminders() can write it.
+        subjectId: sourceId,
         label,
         date: fromDayNumber(dueDay),
         reason:
@@ -757,6 +777,9 @@ export function project({
       blindSpots.push({
         kind: "card",
         sourceId,
+        // A card's sourceId is the card_liabilities uuid, so it is a real
+        // database key. Carried explicitly so recordReminders() can write it.
+        subjectId: sourceId,
         label,
         date: fromDayNumber(dueDay),
         reason:
@@ -770,6 +793,10 @@ export function project({
         direction: "out",
         kind: "card_minimum",
         sourceId,
+        // A card's sourceId IS the card_liabilities uuid, so it is already a
+        // valid database key. Stated explicitly rather than defaulted, so the
+        // bill case cannot silently inherit a fallback and reintroduce 22P02.
+        subjectId: sourceId,
         label,
         amountCents: minCents,
         certainty: "confirmed"
@@ -1365,6 +1392,22 @@ function subjectKindFor(kind) {
  * already short before anything left it) there is nothing honest to attribute
  * it to, so no reminder is produced and the skip is recorded.
  */
+/* A subject can only be RECORDED if it has a real database key.
+   cashflow_reminders.subject_id is a `uuid` column (087:113). A bill's
+   `sourceId` is the composite "<bankAccountId>:<merchantKey>:<cadence>" that
+   identifies a STREAM across re-detection, and writing it raised Postgres 22P02
+   — surfacing as a flat 400 "invalid_parameter" on the exact case this screen
+   exists for, a projected balance going negative BECAUSE OF a bill — while a
+   card reminder written earlier in the same request stayed behind.
+
+   toCashflowBill() now carries the stored row's own uuid as `subjectId`. NULL
+   means the subject was never stored (a hand-built bill in a test), and the
+   honest answer is to SKIP with a named reason rather than fall back to
+   sourceId, which is the original defect wearing a different name. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const recordableId = (c) =>
+  typeof c?.subjectId === "string" && UUID_RE.test(c.subjectId) ? c.subjectId : null;
+
 export function recordReminders({ orgId, clientId, projection, window, subject } = {}) {
   const reminders = [];
   const skipped = [];
@@ -1401,9 +1444,14 @@ export function recordReminders({ orgId, clientId, projection, window, subject }
       skip("input_missing", `a blind spot of kind "${spot.kind}" has no subject_kind to record it under`);
       continue;
     }
+    const spotId = recordableId(spot);
+    if (spotId === null) {
+      skip("input_missing", `"${spot.label}" has no stored record to attach a reminder to, so it cannot be saved`);
+      continue;
+    }
     push({
       subjectKind,
-      subjectId: spot.sourceId,
+      subjectId: spotId,
       subjectLabel: spot.label,
       reminderKind: "input_missing",
       body: `We cannot project your cash flow around "${spot.label}" yet: ${spot.reason}. Until that is known, no payment date is being estimated for it.`,
@@ -1425,10 +1473,12 @@ export function recordReminders({ orgId, clientId, projection, window, subject }
       const subjectKind = subjectKindFor(biggest.kind);
       if (subjectKind === null) {
         skip("projected_shortfall", `the largest outflow on ${shortDay.date} is of kind "${biggest.kind}", which has no subject_kind`);
+      } else if (recordableId(biggest) === null) {
+        skip("projected_shortfall", `the largest outflow on ${shortDay.date} is "${biggest.label}", which has no stored record to attach a reminder to`);
       } else {
         push({
           subjectKind,
-          subjectId: biggest.sourceId,
+          subjectId: recordableId(biggest),
           subjectLabel: biggest.label,
           reminderKind: "projected_shortfall",
           body: `Your projected balance falls to ${fromCents(shortDay.worstCaseClosingCents)} on ${shortDay.date}, below zero. The largest amount leaving that day is "${biggest.label}" at ${biggest.amount}. This is an estimate based on the bills and balances on file.`,

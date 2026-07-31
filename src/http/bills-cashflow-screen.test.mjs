@@ -77,12 +77,29 @@ function makeEl(id, html = "") {
     value: "",
     checked: false,
     style: { cssText: "" },
+    // Listeners are KEPT rather than dropped, so a test can press the one
+    // control this screen is built around — the Project button. Without that,
+    // everything below only ever exercises the first paint, and the repaint
+    // after a horizon is chosen is the half a person actually uses.
+    _on: {},
     setAttribute() {},
     getAttribute() { return null; },
-    addEventListener() {},
+    addEventListener(type, fn) { (this._on[type] = this._on[type] || []).push(fn); },
     appendChild() {},
     querySelectorAll() { return []; }
   };
+}
+
+/** Fire every handler bound to `type` on an element, and drain the queue.
+ *
+ * The listener list is COPIED before it is walked. The handler re-renders, the
+ * re-render calls bind() again, and iterating the live array meant each press
+ * added a handler that was then pressed, which added a handler — an infinite
+ * loop that hung the whole test run. A real event dispatch snapshots too. */
+async function fire(el, type) {
+  const fns = [...((el._on && el._on[type]) || [])];
+  for (const fn of fns) fn({ preventDefault() {} });
+  for (let i = 0; i < 30; i++) await new Promise((r) => setImmediate(r));
 }
 
 /**
@@ -94,11 +111,30 @@ function makeEl(id, html = "") {
  * not the wiring of a fake DOM.
  */
 async function runScreen({ search = `?client_id=${CID}`, respond } = {}) {
-  const els = {
-    cashflowMount: makeEl("cashflowMount"),
-    cashflowMountSource: makeEl("cashflowMountSource")
-  };
+  const els = {};
   const calls = [];
+
+  /* A REPAINT DESTROYS THE CONTROLS, AND THE STUB HAS TO MODEL THAT.
+     `mount.innerHTML = ...` in a real browser throws away every element inside
+     it, listeners and all, and the next getElementById returns a brand new one.
+     A stub that hands back the same cached object forever accumulates a listener
+     per render, so one press of Project fires three times and the "did it
+     repaint" assertion below passes for the wrong reason. Setting the mount's
+     innerHTML therefore clears the element cache, keeping only the two elements
+     that live OUTSIDE the mount in the real page plus the banner data.js appends
+     to <body>. */
+  const KEEP = new Set(["cashflowMount", "cashflowMountSource", "fh-data-banner"]);
+  const mountEl = makeEl("cashflowMount");
+  let mountHtml = "";
+  Object.defineProperty(mountEl, "innerHTML", {
+    get: () => mountHtml,
+    set: (v) => {
+      mountHtml = v;
+      for (const k of Object.keys(els)) if (!KEEP.has(k)) delete els[k];
+    }
+  });
+  els.cashflowMount = mountEl;
+  els.cashflowMountSource = makeEl("cashflowMountSource");
 
   const sandbox = {
     console,
@@ -137,6 +173,11 @@ async function runScreen({ search = `?client_id=${CID}`, respond } = {}) {
   return {
     els,
     calls,
+    /* Elements are created on demand by the wiring, so a control the script has
+       not looked at yet does not exist in `els`. This mints it the same way
+       document.getElementById does, which is how a test can type into a box
+       before the handler that reads it has ever run. */
+    el: (id) => (els[id] || (els[id] = makeEl(id))),
     html: () => els.cashflowMount.innerHTML,
     banner: () => (els["fh-data-banner"] ? els["fh-data-banner"].textContent : "")
   };
@@ -443,6 +484,27 @@ describe("bills-cashflow.html — the projection", () => {
     assert.match(s.html(), /Say how many days ahead to look/);
     assert.ok(!MONEY_SHAPED.test(clientPart(s.html()).split("Can they cover it")[1] || ""),
       "figures are on screen before anybody said how far ahead to look");
+  });
+
+  test("pressing Project reads with the horizon typed in AND repaints with the answer", async () => {
+    /* THE BUG THIS CATCHES SHIPPED IN THE FIRST DRAFT OF THIS SCREEN. The submit
+       handler called loadBills() and loadCash() and never rendered again — both
+       only put rows into state — so pressing Project fetched the projection and
+       left the page exactly as it was. The reader would have concluded the button
+       did nothing, or worse, read the previous horizon's figures as the answer to
+       the horizon they had just typed. */
+    const s = await runScreen({ respond: respondWith({}) });
+    assert.ok(!s.calls.some((c) => /horizon_days=/.test(c)), "it projected before being asked");
+
+    s.el("horizonDays").value = "45";
+    await fire(s.el("viewForm"), "submit");
+
+    assert.ok(s.calls.some((c) => /horizon_days=45/.test(c)),
+      "pressing Project did not ask for the horizon that was typed in");
+    assert.match(s.html(), /2,484\.01/,
+      "the projection came back and the page was never repainted with it");
+    assert.ok(!/Say how many days ahead to look/.test(s.html()),
+      "the 'choose a horizon' prompt is still on screen after a horizon was chosen");
   });
 
   test("a refused projection prints the reason at full size", async () => {

@@ -15,44 +15,129 @@
      than an eighth time here. -->
 <link rel="stylesheet" href="finance-os.css">
 <script src="shell.js"></script>
+<style>
+  /* Only what the shared sheet does not already carry. Everything structural —
+     .fh-wrap, .fh-panel, .fh-row, .fh-num, .fh-form, .fh-btn, .fh-empty, .fh-msg
+     — comes from finance-os.css, so this screen cannot drift from the other five
+     Finance OS screens. */
+
+  .fh-section{ margin-top:26px; }
+  .fh-section h2{ font:700 14px/1.3 'Inter',system-ui,sans-serif; color:var(--text);
+                  margin:0 0 9px; letter-spacing:-.005em; }
+  .fh-section .hint{ font:400 12px/1.55 'Inter',system-ui,sans-serif; color:var(--text-dim);
+                     margin:0 0 10px; max-width:74ch; }
+
+  /* The waterfall and the card list. A table, because the question is "which
+     card, how much, in what order" — read across a row, compared down a column. */
+  .fh-table{ width:100%; border-collapse:collapse; }
+  .fh-table th{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.07em;
+                text-transform:uppercase; color:var(--text-faint); text-align:left;
+                padding:11px 14px; border-bottom:1px solid var(--soft); white-space:nowrap; }
+  .fh-table td{ font:500 12px/1.45 'Inter',system-ui,sans-serif; color:var(--text);
+                padding:11px 14px; border-bottom:1px solid var(--soft); vertical-align:top; }
+  .fh-table tr:last-child td{ border-bottom:0; }
+  .fh-table td.num, .fh-table th.num{ font:600 12px/1.45 'JetBrains Mono',ui-monospace,monospace;
+                text-align:right; white-space:nowrap; }
+  /* The em-dash rule again, on a table cell. Same weight and colour as
+     .fh-num.is-unknown in finance-os.css — one rule, identical wherever an
+     unknown lands. */
+  .fh-table td.num.is-unknown{ color:var(--text-faint); font-weight:500; }
+  .fh-table tr.is-drawn td{ background:rgba(0,0,0,.025); }
+  .fh-table tr.is-untouched td{ color:var(--text-dim); }
+  .fh-scroll{ overflow-x:auto; }
+
+  /* THE SUM, SPELLED OUT. A net-cash figure nobody can take apart is a figure
+     people either trust or ignore, and both are wrong. The deduction rows are
+     marked so the eye can follow the subtraction down to the total. */
+  .fh-row.is-deduction .fh-label{ color:var(--text-dim); }
+  .fh-row.is-deduction .fh-num::before{ content:"− "; color:var(--text-faint); }
+  .fh-row.is-total{ border-top:2px solid var(--ink2); }
+  .fh-row.is-total .fh-label{ font-weight:700; }
+  .fh-row.is-total .fh-num{ font-size:22px; }
+
+  /* THE VERDICT. Three states and they get three looks, because "stop" and
+     "there is something you should know" are different instructions. */
+  .fh-verdict{ border:1px solid var(--soft); border-left:4px solid var(--text-faint);
+               border-radius:6px; padding:14px 16px; margin:0 0 14px; background:var(--surface); }
+  .fh-verdict h3{ font:800 12px/1.2 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.08em;
+                  text-transform:uppercase; margin:0 0 7px; color:var(--text); }
+  .fh-verdict p{ font:400 12px/1.6 'Inter',system-ui,sans-serif; color:var(--text-dim);
+                 margin:0 0 6px; max-width:78ch; }
+  .fh-verdict p:last-child{ margin-bottom:0; }
+  .fh-verdict.stop{ border-left-color:var(--red,#6E2A22); }
+  .fh-verdict.stop h3{ color:var(--red,#6E2A22); }
+  .fh-verdict.note{ border-left-color:var(--amber,#8A6A1F); }
+  .fh-verdict.clear{ border-left-color:var(--green,#2C5138); }
+  .fh-verdict.clear h3{ color:var(--green,#2C5138); }
+
+  .fh-tag{ display:inline-block; font:600 9px/1 'JetBrains Mono',ui-monospace,monospace;
+           letter-spacing:.07em; text-transform:uppercase; border:1px solid currentColor;
+           border-radius:3px; padding:3px 5px; color:var(--text-faint); }
+  .fh-tag.stop{ color:var(--red,#6E2A22); }
+  .fh-tag.pre{ color:var(--amber,#8A6A1F); }
+
+  /* The sentence that has to be on the screen and not only in the code: this
+     page computes, it does not commit anything to anybody. */
+  .fh-standing{ border:1px solid var(--soft); border-left:3px solid var(--text-faint);
+                border-radius:6px; padding:12px 15px; margin:0 0 18px;
+                font:400 12px/1.6 'Inter',system-ui,sans-serif; color:var(--text-dim);
+                max-width:78ch; background:var(--surface); }
+  .fh-standing strong{ color:var(--text); font-weight:700; }
+</style>
 </head>
 <body>
 
 <!-- ===========================================================================
-     Deal Model — SCAFFOLD SHELL. TRACK 6 OWNS THIS FILE.
+     Deal Model — what a client actually walks away with, and how a draw spreads
+     across their cards.
 
-     This is a minimal valid page, not the screen. It exists so the route, the
-     nav row and the file all land in one pass: a screen added to shell.js and
-     nowhere else has no way in, and src/http/app-nav-reachability.test.mjs fails
-     when that happens (audit M20). Track 6 builds the real controls inside
-     #modelMount and deletes the placeholder note below.
+     Posts to /api/finance/model, which calls src/calculators/deal-math.mjs and
+     src/calculators/deal-funding.mjs. Open it as deal-model.html?client_id=<uuid>
+     for the waterfall; the cash and monthly figures work with no client at all.
 
-     Reads and writes /api/finance/model.
+     THE RULES THIS SCREEN IS HELD TO.
 
-     THE RULES THIS SCREEN IS HELD TO, BEFORE ANY MARKUP IS WRITTEN:
+     • NOTHING IS COMPUTED IN THIS FILE. Every figure below arrives already
+       formed from the endpoint. public/app/closer-dashboard.html reimplements a
+       funding waterfall in inline JavaScript against sample rows, and that is
+       exactly the drift this avoids: a second implementation in a script block
+       is a second answer that goes stale. The only arithmetic here is display
+       formatting — grouping digits, and turning a server-sent fraction into a
+       percentage to read. Nothing computed here is ever sent back.
 
-     • ESCAPE EVERYTHING. A lender name, a merchant string and a client note are
-       record data, never markup. Every screen in public/app defines its own
-       esc(); define one here and run every interpolated value through it.
+     • ESCAPE EVERYTHING. A lender name is record data typed by a person or read
+       out of a bureau file. Every interpolated value goes through esc(). There
+       are 252 innerHTML sites across public/app and this is how each stays safe.
 
-     • NEVER SHOW A NUMBER THE SERVER DID NOT SEND. If a read returns nothing,
-       say so on the page in words (.fh-empty). Do not leave sample markup on
-       screen under a real client's name — that exact bug shipped and is audit
-       finding M8. This shell therefore ships with NO sample figures at all.
+     • NEVER SHOW A NUMBER THE SERVER DID NOT SEND. This file ships with no
+       sample figures at all — not in a row, not in a placeholder. Where there is
+       nothing to show it says so in words (.fh-empty). A failed read CLEARS the
+       figures rather than leaving the last good ones under new inputs. Leaving
+       sample markup on screen under a real client's name is audit finding M8 and
+       it shipped once already.
 
-     • UNKNOWN IS AN EM DASH. Set .is-unknown from `display === null` and
-       .is-partial from `basis.partial`, independently. See finance-os.css.
+     • UNKNOWN IS AN EM DASH. A card with no recorded limit and a card with a
+       $0 limit are different facts, and only one of them is a claim about
+       somebody's money.
 
      • THE DEPOSIT LOWERS NET CASH. It is money on top of the success fee, not a
        discount against it — the billing path invoices the full fee regardless
        (src/workflows/f-07-funding-locked.mjs:74) and the schema keeps deposit
        and success_fee as separate payment kinds (011_sales.sql:82). The
        calculator got this backwards until the scaffold pass fixed it and
-       overstated net cash by $6,000 on the worked example. Nothing on this
-       screen is computed in the browser: the numbers arrive already formed.
+       overstated net cash by $6,000 on the worked example. That is why the four
+       lines are shown separately: a total nobody can take apart is a total
+       nobody can check.
+
+     • THE GUARDRAIL IS MARGINAL, NOT ABSOLUTE. A hard stop means THIS DRAW
+       crosses the line. A card already over it is a note, not a block — a client
+       sitting at 38% would fail an absolute gate forever, at zero draw
+       (src/calculators/deal-funding.mjs:101). The two get different words and
+       different advice on this page because they are different situations.
 
      • THERE IS NO BROWSER AND NO PLAYWRIGHT IN THIS ENVIRONMENT, so nobody has
-       looked at this rendering. A human has to open it.
+       looked at this rendering. A human has to open it; the steps are in the
+       track report.
      =========================================================================== -->
 
 <div class="fh-wrap">
@@ -60,26 +145,629 @@
        is the only way off it, and back() does nothing at all when the page was
        opened from a pasted or bookmarked URL (audit M20). shell.js gates this
        link like any other screen link. -->
-  <div class="fh-back"><a href="command-center.html">← Command Center</a></div>
+  <!-- TWO WAYS OUT, AND THE SECOND ONE IS THE POINT OF THE HUB PASS.
+       "← Command Center" leaves the client behind, because the Command
+       Center is not about one client. "Client hub" goes back to
+       finance-os.html still holding whoever you were looking at — shell.js
+       appends ?client_id= to this link for every screen in CLIENT_SCREENS,
+       so it is deliberately written bare here rather than built by hand in
+       two places. Without it, walking Plan → Cards → Bank accounts meant
+       typing the uuid back in three times. -->
+  <div class="fh-back"><a href="command-center.html">← Command Center</a>
+    <span aria-hidden="true"> · </span>
+    <a href="finance-os.html">← Client hub</a></div>
 
   <div class="fh-head">
     <h1 class="fh-title">Deal Model</h1>
-    <span class="fh-source" id="modelMountSource">not built</span>
+    <span class="fh-source" id="modelMountSource">no client</span>
   </div>
   <p class="fh-sub">What a client actually walks away with, and how a draw spreads across their cards.</p>
 
-  <!-- TRACK 6 FILLS THIS. It is empty on purpose: an empty container reads
-       as "nothing here yet", and sample rows read as this client's real figures. -->
-  <div id="modelMount"></div>
-
-  <!-- PLACEHOLDER — TRACK 6 DELETES THIS BLOCK. -->
-  <p class="fh-note" id="modelMountPlaceholder">
-    This screen is being built. The endpoint behind it — <code>/api/finance/model</code> —
-    is routed and answers <code>501 not_implemented</code> until its handler is finished,
-    so nothing here is showing you stale or invented figures.
+  <p class="fh-standing">
+    <strong>Nothing on this page is saved and nothing here charges anybody.</strong>
+    It is a calculator: the numbers you type are sent, worked out on the server and
+    sent back. No record is written, no fee is raised, and closing the page loses the
+    working. The cards come from what has already been recorded for this client —
+    they are read, never changed here.
   </p>
+
+  <!-- Filled by the script. Empty on purpose: an empty container reads as
+       "nothing here yet"; sample rows read as this client's real figures. -->
+  <div id="modelMount"></div>
 </div>
 
 <script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (!window.FHData) return;
+
+  var mount = document.getElementById("modelMount");
+  var sourceBadge = document.getElementById("modelMountSource");
+  var clientId = FHData.param("client_id");
+
+  /* ── the rules every value on this page goes through ─────────────────────── */
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* Thousands separators, for display only. The values on the wire are plain
+     numbers of dollars and are never edited here. */
+  function group(s) {
+    var parts = String(s).split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
+  }
+
+  /* money — the em-dash rule, in one place.
+     null → an em dash in the dimmer .is-unknown weight. NEVER "0.00": "nobody
+     recorded this" and "this is nothing" are different facts about somebody's
+     money and only one of them is a claim. */
+  function money(n) {
+    if (n == null || n === "") return '<span class="fh-num is-unknown">—</span>';
+    return '<span class="fh-num">' + esc(group(Number(n).toFixed(2))) + "</span>";
+  }
+
+  function moneyCell(n) {
+    return n == null || n === ""
+      ? '<td class="num is-unknown">—</td>'
+      : '<td class="num">' + esc(group(Number(n).toFixed(2))) + "</td>";
+  }
+
+  /* pct — a server-sent FRACTION shown as a percentage. 0.249 reads as 24.9%.
+     This is formatting and nothing else: the fraction is what was sent, the
+     fraction is what gets sent back, and this string is never parsed again. The
+     server does the same conversion for its own sentences
+     (src/finance/os-grid.mjs:190). */
+  function pct(fraction, places) {
+    if (fraction == null || fraction === "") return null;
+    return (Number(fraction) * 100).toFixed(places == null ? 1 : places) + "%";
+  }
+
+  function pctCell(fraction, places) {
+    var s = pct(fraction, places);
+    return s == null ? '<td class="num is-unknown">—</td>' : '<td class="num">' + esc(s) + "</td>";
+  }
+
+  function row(label, valueHtml, cls) {
+    return '<div class="fh-row' + (cls ? " " + cls : "") + '">' +
+             '<div class="fh-label">' + esc(label) + "</div>" +
+             "<div>" + valueHtml + "</div></div>";
+  }
+
+  /* A row whose figure is a floor rather than a total. `.is-partial` puts the
+     "+" on it, and finance-os.css already refuses to stack that marker on an em
+     dash (audit m16) — so the two flags are set independently and neither is
+     derived from the other. */
+  function floorRow(label, n, basis) {
+    var unknown = n == null || n === "";
+    return '<div class="fh-row is-partial"><div class="fh-label">' + esc(label) +
+             '<span class="fh-basis">' + esc(basis) + "</span></div>" +
+           '<div><span class="fh-num is-partial' + (unknown ? " is-unknown" : "") + '">' +
+             (unknown ? "—" : esc(group(Number(n).toFixed(2)))) + "</span></div></div>";
+  }
+
+  /* ── state ───────────────────────────────────────────────────────────────
+     `answer` is the last thing the server said, and it is the ONLY source of a
+     figure on this page. It is set to null before every attempt, so a failed run
+     cannot leave the previous answer's numbers sitting under the new inputs — an
+     answer to a question nobody asked, which is the M8 shape. */
+  var state = { answer: null, asked: false, busy: false, failed: null };
+
+  /* ── the form ────────────────────────────────────────────────────────────
+     Rendered ONCE, and never rebuilt. Everything below it is redrawn on every
+     answer; the boxes are not, because rebuilding an input while somebody is
+     typing in it throws away what they typed and moves the cursor.
+
+     NO PLACEHOLDER CARRIES A NUMBER THAT COULD BE READ AS MONEY. A greyed-out
+     "49.00" in a price box is still a money-shaped figure on screen under a
+     named client, and that shipped once on the subscriptions screen before its
+     test caught it. The hints are words, and the two fraction hints are written
+     with one decimal place so they cannot be mistaken for dollars. */
+  function field(id, label, hint, attrs) {
+    return '<div class="fh-field"><label for="' + esc(id) + '">' + esc(label) + "</label>" +
+           '<input id="' + esc(id) + '" type="text" inputmode="decimal" autocomplete="off" ' +
+           'placeholder="' + esc(hint) + '"' + (attrs || "") + "></div>";
+  }
+
+  function formHtml() {
+    return '<div class="fh-panel">' +
+      '<form class="fh-form" id="modelForm">' +
+        field("dmFunding", "Approved funding", "dollars") +
+        field("dmFeePct", "Fee rate", "0.1 is ten percent") +
+        field("dmDeposit", "Deposit taken", "dollars") +
+        field("dmDebts", "Debts to pay off", "dollars") +
+        field("dmRequested", "Amount to draw", "dollars") +
+        field("dmThreshold", "Guardrail line", "0.3 is thirty percent") +
+        '<button type="submit" class="fh-btn">Work it out</button>' +
+      "</form>" +
+      '<form class="fh-form" id="modelTermsForm">' +
+        field("dmIntroMonths", "Intro months", "whole months") +
+        field("dmPostApr", "Rate after intro", "0.249 is 24.9 percent") +
+        field("dmMinPct", "Minimum payment rate", "0.025 is 2.5 percent") +
+        field("dmAmortApr", "Term-loan rate", "leave blank if none") +
+        field("dmAmortMonths", "Term-loan months", "leave blank if none") +
+      "</form>" +
+      '<p class="fh-msg" id="modelMsg"></p>' +
+      '<div class="fh-empty">Leave a box empty and the calculator uses its own standard for it, ' +
+        "or reports the figure as unknown. Nothing is assumed on your behalf and nothing is saved. " +
+        "The fee rate, the guardrail line and the two rates are fractions, not percentages — a " +
+        "value above 1 is refused rather than guessed at, because 10 could mean ten percent or " +
+        "a thousand percent and only one of those is a fee anybody has ever charged." +
+      "</div></div>";
+  }
+
+  /* ── the answer ──────────────────────────────────────────────────────────── */
+
+  function netPanel() {
+    if (!state.answer) return null;
+    var n = state.answer.net || {};
+    var fee = (state.answer.deal && state.answer.deal.cashPosition && state.answer.deal.cashPosition.fee) || null;
+
+    if (n.approved_funding == null) {
+      return '<div class="fh-panel"><div class="fh-empty">' +
+        "Put the approved funding amount in the box above and this fills in: what comes in, what " +
+        "the fee is, what the deposit is, and what the client is left holding." +
+        "</div></div>";
+    }
+
+    /* WHERE THE FEE IS PAID FROM is a separate sentence from WHAT IT COSTS,
+       and it does not move the total. The money leaves the client either way;
+       the flag only says whether it comes out of the funding or is wired
+       separately (src/calculators/deal-math.mjs:85). */
+    var feeBasis = "";
+    if (fee) {
+      if (fee.fromProceeds > 0 && fee.paidDown > 0) {
+        feeBasis = "part netted out of the funding, part paid separately";
+      } else if (fee.fromProceeds > 0) {
+        feeBasis = "netted out of the funding";
+      } else if (fee.paidDown > 0) {
+        feeBasis = "paid separately, not netted out of the funding";
+      }
+    }
+
+    var html = '<div class="fh-panel">' +
+      row("Approved funding", money(n.approved_funding)) +
+      '<div class="fh-row is-deduction"><div class="fh-label">Success fee' +
+        (feeBasis ? '<span class="fh-basis">' + esc(feeBasis) + "</span>" : "") +
+        "</div><div>" + money(n.success_fee) + "</div></div>" +
+      row("Deposit taken up front", money(n.deposit), "is-deduction") +
+      row("Cash to the client", money(n.net_cash_to_client), "is-total");
+
+    /* The debts line only appears when somebody entered one. An em dash here
+       would read as "we do not know this client's debts", which is a different
+       and much larger claim than "no payoff was typed into this model". */
+    if (n.existing_debts != null) {
+      html += row("Debts to pay off", money(n.existing_debts), "is-deduction") +
+              row("Cash left after debts", money(n.net_cash_after_debts), "is-total");
+    }
+
+    html += "</div>";
+    if (n.existing_debts != null) {
+      html += '<p class="hint">The debt payoff is a number typed into this screen. Nothing in ' +
+        "Fundhub stores or bills one, so it is shown as your assumption, kept apart from the " +
+        "fee and the deposit, which are real terms of the deal.</p>";
+    }
+    return html;
+  }
+
+  function monthlyPanel() {
+    if (!state.answer) return null;
+    var deal = state.answer.deal || {};
+    var m = deal.monthly;
+    if (!m) {
+      return '<div class="fh-panel"><div class="fh-empty">' +
+        "The monthly payment needs the approved funding amount." +
+        "</div></div>";
+    }
+
+    var intro = m.intro || {};
+    var post = m.postIntro || {};
+    var amort = m.amort || {};
+    var html = '<div class="fh-panel">' +
+      row("First month's minimum payment", money(intro.month1Payment)) +
+      row("Balance when the intro rate ends", money(intro.balanceAtIntroExpiry)) +
+      row("Interest each month after that", money(post.interestOnlyMonthly)) +
+      (amort.monthlyPayment == null && !amort.fundingAmount
+        ? ""
+        : row("Term-loan payment", money(amort.monthlyPayment))) +
+      "</div>";
+
+    /* THE CLIFF. The calculator decides whether there is one and writes the
+       sentence; this page only chooses which box to put it in. */
+    var cliff = deal.cliff;
+    if (cliff && cliff.triggered) {
+      html = '<div class="fh-verdict stop"><h3>Balance grows after the intro rate ends</h3>' +
+        "<p>" + esc(cliff.message || "") + "</p>" +
+        "<p>Interest each month is larger than the minimum payment, so paying the minimum leaves " +
+        "the client owing more every month, not less.</p></div>" + html;
+    } else if (cliff) {
+      html = '<div class="fh-verdict clear"><h3>No negative-amortization cliff</h3>' +
+        "<p>The minimum payment after the intro rate ends still covers the interest, so the " +
+        "balance goes down rather than up.</p></div>" + html;
+    }
+    return html;
+  }
+
+  function cardsLink(text) {
+    return clientId
+      ? '<a href="card-stack.html?client_id=' + encodeURIComponent(clientId) + '">' + esc(text) + "</a>"
+      : esc(text);
+  }
+
+  function noCardsPanel(reasons) {
+    var why;
+    if (reasons.indexOf("no_client_named") !== -1) {
+      why = "No client is named in the address bar, so there are no cards to draw against. " +
+            "Open this screen as <code>deal-model.html?client_id=&lt;id&gt;</code>. The cash and " +
+            "monthly figures above work without one.";
+    } else if (reasons.indexOf("no_drawable_cards_on_file") !== -1) {
+      why = "This client has lines on file, but none of them is a card that can be drawn against — " +
+            "an auto loan or another instalment debt cannot be borrowed from. Add their revolving " +
+            "cards on the " + cardsLink("card stack") + " screen and this fills in.";
+    } else {
+      why = "No cards are on file for this client, so there is nothing to spread a draw across. " +
+            "Add them on the " + cardsLink("card stack") + " screen and this fills in. Nothing is " +
+            "modelled against cards nobody has recorded.";
+    }
+    return '<div class="fh-panel"><div class="fh-empty">' + why + "</div></div>";
+  }
+
+  function cardListPanel() {
+    var cards = state.answer.cards;
+    var rows = (cards && cards.list) || [];
+    if (!rows.length) return "";
+    return '<div class="fh-panel"><div class="fh-scroll"><table class="fh-table">' +
+      "<thead><tr><th>Card</th><th class=\"num\">Rate</th><th class=\"num\">Limit</th>" +
+      "<th class=\"num\">Balance</th></tr></thead><tbody>" +
+      rows.map(function (c) {
+        return "<tr><td>" + esc(c.lender == null ? "unnamed line" : c.lender) + "</td>" +
+          pctCell(c.apr, 2) + moneyCell(c.credit_limit) + moneyCell(c.current_balance) + "</tr>";
+      }).join("") + "</tbody></table></div></div>";
+  }
+
+  /* THE HOLES IN THE CARD DATA, SAID OUT LOUD.
+     Two different holes with two different consequences, and the second one is
+     the dangerous one: a card with no recorded balance reaches the calculator as
+     a balance of ZERO (src/tradelines/index.mjs:169), so its utilization reads
+     0% and the guardrail is OPTIMISTIC about it — the one direction a safety
+     gate must not be wrong in. The server counts both from the stored rows; this
+     only puts the count into a sentence. */
+  function holesNote() {
+    var cards = state.answer.cards;
+    if (!cards) return "";
+    var out = [];
+    if (cards.excluded_no_credit_limit > 0) {
+      out.push("<p>" + esc(String(cards.excluded_no_credit_limit)) + " card(s) on file have no " +
+        "recorded credit limit, so they add no headroom here. The available-credit figure is a " +
+        "floor — marked <strong>+</strong> — not a total.</p>");
+    }
+    if (cards.balance_unknown > 0) {
+      var lenders = (cards.list || []).filter(function (c) { return c.balance_known === false; })
+        .map(function (c) { return c.lender == null ? "unnamed line" : c.lender; });
+      out.push("<p><strong>" + esc(String(cards.balance_unknown)) + " card(s) have no recorded " +
+        "balance</strong>" + (lenders.length ? " (" + esc(lenders.join(", ")) + ")" : "") +
+        ". The calculator treats an unrecorded balance as nothing owed, so the headroom below is " +
+        "a best case and the guardrail verdict is more forgiving than it should be. Record the " +
+        "balances on the " + cardsLink("card stack") + " screen before relying on it.</p>");
+    }
+    return out.length ? '<div class="fh-verdict note"><h3>What is missing from the card data</h3>' +
+      out.join("") + "</div>" : "";
+  }
+
+  function waterfallPanel() {
+    if (!state.answer) return null;
+    var reasons = state.answer.reasons || [];
+    var funding = state.answer.funding;
+    if (!funding) return noCardsPanel(reasons);
+
+    var cards = state.answer.cards || {};
+    var partial = cards.excluded_no_credit_limit > 0;
+    var head = '<div class="fh-panel">' +
+      (partial
+        ? floorRow("Total available credit", funding.totalAvailableCredit,
+            "counted " + cards.considered + " of " + cards.on_file +
+            " line(s) · " + cards.excluded_no_credit_limit + " reported no limit — this is a floor")
+        : row("Total available credit", money(funding.totalAvailableCredit))) +
+      "</div>";
+
+    var alloc = funding.allocation;
+    if (!alloc) {
+      return holesNote() + head +
+        '<div class="fh-panel"><div class="fh-empty">' +
+          "Put an amount to draw in the box above and this shows which card it comes from, in what " +
+          "order, and whether it can be filled at all." +
+        "</div></div>" + cardListPanel();
+    }
+
+    var table = '<div class="fh-panel"><div class="fh-scroll"><table class="fh-table">' +
+      "<thead><tr><th>Card</th><th class=\"num\">Rate</th><th class=\"num\">Limit</th>" +
+      "<th class=\"num\">Balance used</th><th class=\"num\">Room</th><th class=\"num\">Drawn</th>" +
+      "</tr></thead><tbody>" +
+      alloc.draws.map(function (d) {
+        return '<tr class="' + (d.draw > 0 ? "is-drawn" : "is-untouched") + '">' +
+          "<td>" + esc(d.lender == null ? "unnamed line" : d.lender) + "</td>" +
+          pctCell(d.apr, 2) + moneyCell(d.creditLimit) + moneyCell(d.currentBalance) +
+          moneyCell(d.availableHeadroom) + moneyCell(d.draw) + "</tr>";
+      }).join("") + "</tbody></table></div>" +
+      row("Asked for", money(alloc.requestedAmount)) +
+      row("Drawn in total", money(alloc.totalDrawn)) +
+      (alloc.shortfall > 0
+        ? row("Short by", money(alloc.shortfall))
+        : "") +
+      "</div>";
+
+    var note = alloc.fullyFunded
+      ? '<p class="hint">Cheapest money first: the draw fills the lowest rate before it touches ' +
+        "the next one. A card with no recorded rate is drawn last, because unpriced money is not " +
+        "known to be cheap.</p>"
+      : '<div class="fh-verdict note"><h3>This draw cannot be filled</h3><p>The cards on file are ' +
+        "short by " + esc(group(Number(alloc.shortfall).toFixed(2))) + " dollars. Every card is " +
+        "already at its limit in this plan.</p></div>";
+
+    return holesNote() + head + note + table;
+  }
+
+  function guardrailPanel() {
+    if (!state.answer) return null;
+    var t = state.answer.guardrail_threshold || {};
+    var funding = state.answer.funding;
+    var line = pct(t.value, 0);
+
+    /* WHERE THE LINE CAME FROM travels with the verdict. A hard stop shown
+       without the line it was measured against is a verdict nobody in the room
+       can check, and the line is settable — so it has to say when it was set. */
+    var sourceWords = {
+      request: "the line typed into the box above",
+      org_configuration: "the line configured for this company",
+      "default": "the standard line, because nobody has configured one"
+    };
+    var basis = "Measured against " + esc(line == null ? "no line" : line) + " — " +
+      esc(sourceWords[t.source] || "an unrecorded source") + "." +
+      (t.note ? " " + esc(t.note) + "." : "");
+
+    if (!funding || !funding.guardrail) {
+      return '<div class="fh-panel"><div class="fh-empty">' +
+        "The guardrail needs a client's cards and an amount to draw. It checks whether this draw " +
+        "pushes the client's card usage over the line — which is what moves a credit score, and " +
+        "with it the next round.<br><br>" + basis + "</div></div>";
+    }
+
+    var g = funding.guardrail;
+    var caused = (g.perCard || []).filter(function (c) { return c.causedBreach; });
+    var pre = (g.perCard || []).filter(function (c) { return c.preExistingOver; });
+    var names = function (list) {
+      return list.map(function (c) { return c.lender == null ? "unnamed line" : c.lender; }).join(", ");
+    };
+
+    var box;
+    if (g.hardStop) {
+      box = '<div class="fh-verdict stop"><h3>Hard stop — this draw crosses the line</h3>' +
+        (caused.length
+          ? "<p>Caused by: <strong>" + esc(names(caused)) + "</strong>. " +
+            "Each of these was at or under the line before this deal and is over it afterwards.</p>"
+          : "") +
+        (g.aggregateBreaches
+          ? "<p>Across all their cards together, usage goes from " +
+            esc(pct(g.aggregateUtilizationBefore) || "an unknown figure") + " to " +
+            esc(pct(g.aggregateUtilization) || "an unknown figure") + ".</p>"
+          : "") +
+        "<p>" + esc(g.message || "") + "</p>" +
+        "<p>What to do: draw less, or spread the same amount differently so no single card crosses " +
+        "the line.</p></div>";
+    } else if (pre.length) {
+      box = '<div class="fh-verdict note"><h3>Clear — but they were already over</h3>' +
+        "<p><strong>" + esc(names(pre)) + "</strong> " +
+        (pre.length === 1 ? "was" : "were") + " already above the line before this deal existed. " +
+        "That is a pre-existing condition, not something this draw caused, and it does not block " +
+        "this deal — a client sitting above the line would otherwise fail forever, even drawing " +
+        "nothing at all.</p>" +
+        "<p>" + esc(g.message || "") + "</p>" +
+        "<p>What to do: this is a pay-down conversation for later, separate from whether this " +
+        "round goes ahead.</p></div>";
+    } else {
+      box = '<div class="fh-verdict clear"><h3>Clear</h3>' +
+        "<p>No card crosses the line because of this draw, and no card was over it beforehand.</p>" +
+        "</div>";
+    }
+
+    var detail = '<div class="fh-panel"><div class="fh-scroll"><table class="fh-table">' +
+      "<thead><tr><th>Card</th><th class=\"num\">Usage before</th><th class=\"num\">Usage after</th>" +
+      "<th class=\"num\">Change</th><th>Verdict</th></tr></thead><tbody>" +
+      (g.perCard || []).map(function (c) {
+        var tag = c.causedBreach
+          ? '<span class="fh-tag stop">this draw crosses it</span>'
+          : (c.preExistingOver ? '<span class="fh-tag pre">already over</span>' : "");
+        return "<tr>" +
+          "<td>" + esc(c.lender == null ? "unnamed line" : c.lender) + "</td>" +
+          pctCell(c.utilizationBefore) + pctCell(c.utilizationAfter) + pctCell(c.utilizationDelta) +
+          "<td>" + tag + "</td></tr>";
+      }).join("") + "</tbody></table></div>" +
+      row("All cards together, before", pctSpan(g.aggregateUtilizationBefore)) +
+      row("All cards together, after", pctSpan(g.aggregateUtilization)) +
+      "</div>";
+
+    return box + '<div class="fh-panel"><div class="fh-empty">' + basis + "</div></div>" + detail;
+  }
+
+  function pctSpan(fraction) {
+    var s = pct(fraction);
+    return s == null ? '<span class="fh-num is-unknown">—</span>'
+                     : '<span class="fh-num">' + esc(s) + "</span>";
+  }
+
+  function section(title, hint, body) {
+    if (body == null) return "";
+    return '<div class="fh-section"><h2>' + esc(title) + "</h2>" +
+      (hint ? '<p class="hint">' + hint + "</p>" : "") + body + "</div>";
+  }
+
+  /* renderResults — everything below the form. Called on every answer and on
+     every failure; the form itself is never touched. */
+  function renderResults() {
+    var el = document.getElementById("modelResults");
+    if (!el) return;
+
+    if (state.failed) {
+      /* A FAILED RUN CLEARS THE FIGURES. Leaving the last good answer on screen
+         under changed inputs shows a number that answers a question nobody
+         asked, which is the M8 shape with an extra step. */
+      el.innerHTML = '<div class="fh-section"><div class="fh-panel"><div class="fh-empty">' +
+        esc(state.failed) + "</div></div></div>";
+      return;
+    }
+    if (!state.answer) {
+      el.innerHTML = '<div class="fh-section"><div class="fh-panel"><div class="fh-empty">' +
+        (state.busy ? "Working it out…" : "Fill the boxes above and press Work it out.") +
+        "</div></div></div>";
+      return;
+    }
+
+    el.innerHTML =
+      section("What the client walks away with", "", netPanel()) +
+      section("What it costs them each month", "", monthlyPanel()) +
+      section("Where the money comes from",
+        "Lowest rate first. Every figure is worked out on the server from the cards on file.",
+        waterfallPanel()) +
+      section("The guardrail",
+        "Whether <em>this draw</em> pushes their card usage over the line. A card that was " +
+        "already over is a note, not a block.",
+        guardrailPanel());
+  }
+
+  /* ── asking ──────────────────────────────────────────────────────────────── */
+
+  function val(id) {
+    var el = document.getElementById(id);
+    return el ? String(el.value == null ? "" : el.value).trim() : "";
+  }
+
+  function say(cls, text) {
+    var el = document.getElementById("modelMsg");
+    if (!el) return;
+    el.className = "fh-msg " + cls;
+    el.textContent = text;   // textContent, not innerHTML: this carries a server
+                             // message, and a server message is data.
+  }
+
+  /* payload — only the boxes somebody actually filled in. An empty box is left
+     OUT rather than sent as an empty string or a zero: the calculator's own
+     defaults are the only defaults in this product, and a screen that sends 0
+     for an empty deposit box has decided something on the client's behalf. */
+  function payload() {
+    var body = {};
+    if (clientId) body.client_id = clientId;
+    var map = {
+      approved_funding: "dmFunding",
+      fee_pct: "dmFeePct",
+      down_payment: "dmDeposit",
+      existing_debts: "dmDebts",
+      requested_amount: "dmRequested",
+      utilization_threshold: "dmThreshold",
+      intro_months: "dmIntroMonths",
+      post_intro_apr: "dmPostApr",
+      min_payment_pct: "dmMinPct",
+      amort_apr: "dmAmortApr",
+      amort_term_months: "dmAmortMonths"
+    };
+    for (var key in map) {
+      if (!Object.prototype.hasOwnProperty.call(map, key)) continue;
+      var v = val(map[key]);
+      if (v !== "") body[key] = v;
+    }
+    return body;
+  }
+
+  /* run — one ask, one answer.
+     FHData.write() does the token header, the JSON and the status
+     classification, including the 501 branch that reads as "not built yet"
+     rather than as an outage (audit m17). The message for a 400 is THE SERVER'S
+     OWN SENTENCE — "fee_pct is a fraction, not a percentage" — because that
+     sentence is the only part of the answer somebody can act on. */
+  function run() {
+    if (state.busy) return null;
+    state.busy = true;
+    state.answer = null;      // never show the old answer beside new inputs
+    state.failed = null;
+    say("", "Working it out…");
+    renderResults();
+
+    return FHData.write("/api/finance/model", payload()).then(function (res) {
+      state.busy = false;
+      state.asked = true;
+      if (res && res.ok) {
+        state.answer = res.data;
+        say("ok", "Worked out just now. Nothing was saved.");
+        var cards = res.data.cards;
+        FHData.banner("real",
+          "live deal model" + (cards ? " · " + cards.on_file + " card(s) on file" : " · no client named"),
+          "deal model");
+      } else {
+        var detail = (res && res.error) || "no detail";
+        var source = res && res.source;
+        if (source === "unauthorized") {
+          state.failed = "Not worked out — you are not signed in, or your role cannot model deals.";
+        } else if (source === "unbuilt") {
+          state.failed = "Not worked out — this part is not built yet (" + detail + ").";
+        } else if (source === "nodb") {
+          state.failed = "Not worked out — the database is not answering (" + detail + ").";
+        } else if (source === "demo") {
+          state.failed = "Not worked out — this is a demo session and it does not reach the server.";
+        } else if (source === "offline") {
+          state.failed = "Not worked out — we could not reach the server (" + detail + ").";
+        } else if (source === "server") {
+          state.failed = "Not worked out — something went wrong on our side. The database did not " +
+            "report a problem. (" + detail + ")";
+        } else {
+          // badrequest (400) and notfound: the backend is fine and the answer is
+          // a sentence about what was typed. Show it.
+          state.failed = "Not worked out — " + detail;
+        }
+        say("bad", state.failed);
+        FHData.explain(res, "deal model");
+      }
+      renderResults();
+      return null;
+    });
+  }
+
+  /* Recompute as the boxes change, but not on every keystroke: a debounce keeps
+     one request in flight for a burst of typing. The submit button runs it
+     immediately, so the screen still works if the timer never fires. */
+  var pending = null;
+  function schedule() {
+    if (pending) clearTimeout(pending);
+    pending = setTimeout(function () { pending = null; run(); }, 400);
+  }
+
+  function bind() {
+    ["modelForm", "modelTermsForm"].forEach(function (id) {
+      var form = document.getElementById(id);
+      if (!form) return;
+      form.addEventListener("submit", function (e) {
+        if (e && e.preventDefault) e.preventDefault();
+        if (pending) { clearTimeout(pending); pending = null; }
+        run();
+      });
+      form.addEventListener("input", schedule);
+      form.addEventListener("change", schedule);
+    });
+  }
+
+  /* ── start ───────────────────────────────────────────────────────────────── */
+
+  sourceBadge.textContent = clientId ? "deal model" : "no client";
+  mount.innerHTML = formHtml() + '<div id="modelResults"></div>';
+  bind();
+  /* The first run happens with empty boxes on purpose. With a client named it
+     comes back with their cards, their available credit and the line this org
+     measures against — real facts, before anybody types a thing. With no client
+     it comes back saying so. Neither invents a figure. */
+  run();
+})();
+</script>
 </body>
 </html>

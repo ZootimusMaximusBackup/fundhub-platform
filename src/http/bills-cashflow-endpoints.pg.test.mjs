@@ -47,8 +47,18 @@ const res = () => ({
   json(p) { this.body = p; return this; }
 });
 
+/* THE COLUMNS OF cashflow_settings, spelled once. Used to snapshot and restore
+   the row this file writes over — see the note in before()/after(). */
+const SETTINGS_COLUMNS = [
+  "min_buffer_cents", "min_buffer_signed_off_at", "min_buffer_signed_off_by",
+  "confidence_floor", "confidence_floor_signed_off_at", "confidence_floor_signed_off_by",
+  "settlement_lead_days", "settlement_lead_signed_off_at", "settlement_lead_signed_off_by",
+  "notes"
+];
+
 describe("bills + cashflow endpoints against real Postgres", { skip: !HAS_DB && "DATABASE_URL not set" }, () => {
   let org, client, account, token;
+  let settingsBefore = null;   // see the restore note below
 
   /* The handlers run the real requireAuth against the real sessions table, so
      every call below carries a token minted for a real row. There is no
@@ -86,6 +96,23 @@ describe("bills + cashflow endpoints against real Postgres", { skip: !HAS_DB && 
     if (!HAS_DB) return;
     org = await resolveDefaultOrg(db);
     await purge();
+
+    /* cashflow_settings IS ONE ROW PER ORG AND THIS FILE WRITES OVER IT.
+       Everything else here is scoped to a client this file created and deletes
+       again, but the thresholds belong to the whole company — and the default
+       org's row is the one 088 and 089 seeded, which
+       src/banking/settings.pg.test.mjs asserts against by name. Leaving a
+       cleared buffer behind failed four of its tests on the next run, and the
+       failure looked like a defect in a file nobody had touched.
+
+       So the row is snapshotted here and put back in after(). A test that
+       changes shared state and does not change it back is a test that makes the
+       next one lie. */
+    const snap = await db.query(
+      `SELECT ${SETTINGS_COLUMNS.join(", ")} FROM cashflow_settings WHERE org_id = $1`,
+      [org]
+    );
+    settingsBefore = snap.rows[0] ?? null;
 
     const staffId = (await db.query(
       `INSERT INTO staff (org_id, name, role, email, status)
@@ -131,6 +158,20 @@ describe("bills + cashflow endpoints against real Postgres", { skip: !HAS_DB && 
   after(async () => {
     if (!HAS_DB) return;
     await purge();
+
+    // Put the company's thresholds back exactly as they were found. See before().
+    if (settingsBefore) {
+      await db.query(
+        `UPDATE cashflow_settings
+            SET ${SETTINGS_COLUMNS.map((c, i) => `${c} = $${i + 2}`).join(", ")}
+          WHERE org_id = $1`,
+        [org, ...SETTINGS_COLUMNS.map((c) => settingsBefore[c])]
+      );
+    } else {
+      // There was no row before this file ran, so there must be none after.
+      await db.query(`DELETE FROM cashflow_settings WHERE org_id = $1`, [org]);
+    }
+
     await close();
   });
 

@@ -3,26 +3,87 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fundhub — Finance OS</title>
+<title>Fundhub — Client hub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
+<!-- THE SHARED FINANCE OS FRAME, AND THIS LINK IS THE POINT OF THIS PASS.
+     public/app/finance-os.css was written by the scaffold so the six new write
+     screens would not each re-invent "an unknown value renders as an em dash".
+     Its own header says finance-os.html and banking-surface.html were left out
+     deliberately, because rewriting a working screen to share a stylesheet is a
+     drive-by refactor. That reason expired the moment this screen became the hub
+     the other six hang off: a hub that does not look like the screens it links
+     to is the thing that makes seven pages feel like seven products.
+
+     So this file now takes its page frame — .fh-wrap, .fh-back, .fh-head,
+     .fh-title, .fh-source, .fh-sub, .fh-note, .fh-panel, .fh-label, .fh-basis,
+     .fh-num, .fh-field, .fh-btn, .fh-msg, .fh-empty — from that one file, and the
+     <style> block below carries only what is genuinely local to this screen: the
+     seven-row grid and the hub cards.
+
+     THE SEVEN-ROW GRID KEEPS ITS OWN .fos-* RULES ON PURPOSE. They are correct,
+     they are byte-for-byte the same measurements finance-os.css uses, and
+     src/http/partial-marker.test.mjs lifts the "+" marker rule out of THIS file's
+     inline <style> and evaluates it against what the grid actually painted. Moving
+     that one rule into the shared sheet would leave the test looking for a rule
+     that is no longer here and would take the audit-m16 guard down with it. The
+     hub cards below reuse the SHARED .fh-num signals instead, so there is exactly
+     one "+" rule in this file and exactly one in the shared sheet, each covering
+     a different set of elements. -->
+<link rel="stylesheet" href="finance-os.css">
 <style>
-  :root{ --surface:#FFFFFF; --text:var(--ink2); --text-dim:var(--gray); --text-faint:var(--gray2); }
+  /* ── the hub ──────────────────────────────────────────────────────────────
+     One client, picked once, and every area of their file with one real number
+     on it. Before this pass the whole screen was the seven-row grid below and
+     the only way to name a client was to type a uuid into the address bar. */
 
-  .fos-wrap{ max-width:960px; margin:0 auto; padding:28px 20px 64px; }
-  .fos-nav-back{ font:400 13px/1 'Inter',system-ui,sans-serif; color:var(--link); margin-bottom:12px; }
-  .fos-nav-back a{ cursor:pointer; text-decoration:underline; }
-  .fos-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:6px; }
-  .fos-title{ font:800 22px/1.2 'Inter',system-ui,sans-serif; color:var(--text); letter-spacing:-.01em; }
-  .fos-source{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.09em; text-transform:uppercase;
-               color:var(--text-faint); border:1px solid currentColor; border-radius:3px; padding:4px 7px; }
-  .fos-sub{ font:400 13px/1.5 'Inter',system-ui,sans-serif; color:var(--text-dim); margin:0 0 20px; max-width:60ch; }
+  .fos-h2{ font:700 12px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.1em;
+           text-transform:uppercase; color:var(--text-faint); margin:28px 0 10px; }
 
-  /* THE SEVEN ROWS. A grid, not a tile deck: these are read top to bottom in a
-     fixed order and the eye should travel down one column of numbers, not hunt
-     around a mosaic. */
+  /* The picker. A <select>, not a search box: the owner has one book and it
+     fits in a list, and a list cannot be typed wrong. */
+  .fos-pick{ padding:15px 18px; display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+  .fos-pick .fh-field{ flex:1 1 320px; }
+  .fos-pick select{ width:100%; }
+  .fos-who{ font:600 13px/1.4 'Inter',system-ui,sans-serif; color:var(--text); }
+  .fos-who .id{ display:block; margin-top:3px; font:500 10px/1.4 'JetBrains Mono',ui-monospace,monospace;
+                letter-spacing:.04em; color:var(--text-faint); }
+
+  /* ── area cards ───────────────────────────────────────────────────────────
+     A <ul>/<li>, and the <li> is load-bearing. shell.js's gateLinks() hides
+     `a.closest("li")` for any screen the signed-in role may not open, so a
+     closer — who cannot open subscriptions.html or bank-accounts.html — loses
+     those two CARDS rather than being left with a titled box that goes nowhere.
+     Every link inside a card points at that card's own screen for the same
+     reason: a link to a DIFFERENT screen would hide this card when the role
+     lacks that other screen, which is not what anyone means. */
+  .fos-areas{ list-style:none; margin:0; padding:0; display:grid; gap:12px;
+              grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); }
+  .fos-card{ border:1px solid var(--soft); border-radius:8px; background:var(--surface);
+             padding:14px 16px 15px; display:flex; flex-direction:column; gap:9px; }
+  .fos-card-top{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+  .fos-card-name{ font:700 13px/1.2 'Inter',system-ui,sans-serif; color:var(--text);
+                  text-decoration:none; }
+  .fos-card-name:hover{ text-decoration:underline; }
+  .fos-card-go{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.08em;
+                text-transform:uppercase; color:var(--text-faint); }
+  /* The headline line inside a card is laid out exactly like a grid row —
+     label left, figure right — so the eye reads a card and a grid row the same
+     way. The figure itself is a shared .fh-num, which is where the em dash and
+     the "+" come from. */
+  .fos-card-line{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,auto);
+                  gap:10px; align-items:baseline; }
+  .fos-card-say{ font:400 12px/1.5 'Inter',system-ui,sans-serif; color:var(--text-dim); margin:0; }
+  .fos-card-say a{ color:var(--link); text-decoration:underline; }
+  /* A card that could not be read must not look like a card with no data. */
+  .fos-card.is-bad{ border-color:#F2A69B; }
+
+  /* ── the seven rows ───────────────────────────────────────────────────────
+     A grid, not a tile deck: these are read top to bottom in a fixed order and
+     the eye should travel down one column of numbers, not hunt around a
+     mosaic. */
   .fos-grid{ border:1px solid var(--soft); border-radius:8px; overflow:hidden; background:var(--surface); }
   .fos-row{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,auto); gap:12px;
             align-items:baseline; padding:15px 18px; border-bottom:1px solid var(--soft); }
@@ -56,70 +117,160 @@
      its dash, and the basis line under it says which of the two it is. */
   .fos-row.is-partial .fos-value:not(.is-unknown)::after{ content:"+"; margin-left:2px; color:var(--text-faint); font-weight:500; }
 
-  .fos-note{ margin-top:18px; font:400 12px/1.6 'Inter',system-ui,sans-serif; color:var(--text-dim); max-width:70ch; }
-  .fos-note code{ font:500 11px/1 'JetBrains Mono',ui-monospace,monospace; }
   @media (max-width:520px){ .fos-row{ grid-template-columns:1fr; } .fos-value{ text-align:left; } }
 </style>
 <script src="shell.js"></script>
 </head>
 <body>
 
-<div class="fos-wrap">
+<div class="fh-wrap">
   <!-- A REAL HREF, NOT history.back(). This screen carries no sidebar, so this
        is the only way off it. history.back() does nothing at all when the page
        was opened from a pasted or bookmarked URL, which left the browser's own
        Back button as the only exit (audit M20). shell.js gates this link like
-       any other screen link; every role that may open Finance OS may also open
-       the Command Center. -->
-  <div class="fos-nav-back"><a href="command-center.html">← Command Center</a></div>
-  <div class="fos-head">
-    <h1 class="fos-title">Finance OS</h1>
-    <span class="fos-source" id="fosSource">tradelines</span>
+       any other screen link; every role that may open the hub may also open the
+       Command Center. -->
+  <div class="fh-back"><a href="command-center.html">← Command Center</a></div>
+
+  <div class="fh-head">
+    <h1 class="fh-title">Client hub</h1>
+    <span class="fh-source" id="fosSource">tradelines</span>
   </div>
-  <p class="fos-sub">
-    One client's revolving credit, read from their most recent pull.
-    A row marked <strong>+</strong> is a floor, not a total — some lines did not report that figure.
+  <p class="fh-sub">
+    One client, every part of their money file, and the way through to each of them.
+    A figure nobody reported shows as an em dash — never as <code>0.00</code>.
+    A figure marked <strong>+</strong> is a floor, not a total: some lines did not report it.
   </p>
 
-  <!-- SEVEN ROWS OF SAMPLE MARKUP. The screen never blanks: if the read fails
-       this markup stays and the banner says where the numbers came from, which
-       is the rule data.js enforces for every wired screen. -->
-  <div class="fos-grid" id="fosGrid">
-    <div class="fos-row"><div class="fos-label">Total credit limit<span class="fos-basis">sample</span></div><div class="fos-value">15,000.00</div></div>
-    <div class="fos-row"><div class="fos-label">Total balance<span class="fos-basis">sample</span></div><div class="fos-value">3,500.00</div></div>
-    <div class="fos-row"><div class="fos-label">Available credit<span class="fos-basis">sample</span></div><div class="fos-value">11,500.00</div></div>
-    <div class="fos-row"><div class="fos-label">Utilization<span class="fos-basis">sample</span></div><div class="fos-value">23.3%</div></div>
-    <div class="fos-row"><div class="fos-label">Open revolving lines<span class="fos-basis">sample</span></div><div class="fos-value">2</div></div>
-    <div class="fos-row"><div class="fos-label">Average APR (limit-weighted)<span class="fos-basis">sample</span></div><div class="fos-value">19.74%</div></div>
-    <div class="fos-row"><div class="fos-label">Cheapest money available<span class="fos-basis">sample</span></div><div class="fos-value">18.99% · Amex · 7,500.00</div></div>
+  <!-- ── who ────────────────────────────────────────────────────────────────
+       THE CLIENT PICKER IS THE HEADLINE FIX ON THIS SCREEN. Until this pass the
+       only way to name a client anywhere in the Finance OS was to paste a uuid
+       into the address bar, which is why a finished product felt like a set of
+       developer pages. Pick once here and shell.js carries the choice onto every
+       link on every screen from here on. -->
+  <div class="fh-panel">
+    <div class="fos-pick">
+      <div class="fh-field">
+        <label for="fosClient">Client</label>
+        <select id="fosClient"><option value="">Loading the client list…</option></select>
+      </div>
+      <div class="fh-field">
+        <label>Currently open</label>
+        <div class="fos-who" id="fosWho">nobody yet</div>
+      </div>
+      <a class="fh-btn secondary" id="fosPanel" href="client-control-panel.html">Client control panel</a>
+    </div>
+    <div class="fh-msg" id="fosPickMsg"></div>
   </div>
 
-  <p class="fos-note">
-    Open this screen with a client in the address bar — <code>finance-os.html?client_id=&lt;id&gt;</code>.
-    Every figure here comes from credit-report tradelines and nothing else.
+  <!-- ── the areas ──────────────────────────────────────────────────────────
+       Six cards, six live endpoints, one real number each. The static text in
+       every card is the word "Loading", never a figure: a screen must never show
+       a number the server did not send, and sample money under a real person's
+       name is audit finding M8. -->
+  <h2 class="fos-h2">This client's file</h2>
+  <ul class="fos-areas" id="fosAreas">
+
+    <li class="fos-card" id="fosCardPlan">
+      <div class="fos-card-top">
+        <a class="fos-card-name" href="subscriptions.html">Plan &amp; card on file</a>
+        <span class="fos-card-go">open →</span>
+      </div>
+      <div id="fosBodyPlan"><p class="fos-card-say">Loading…</p></div>
+    </li>
+
+    <li class="fos-card" id="fosCardCards">
+      <div class="fos-card-top">
+        <a class="fos-card-name" href="card-stack.html">Credit cards</a>
+        <span class="fos-card-go">open →</span>
+      </div>
+      <div id="fosBodyCards"><p class="fos-card-say">Loading…</p></div>
+    </li>
+
+    <li class="fos-card" id="fosCardBank">
+      <div class="fos-card-top">
+        <a class="fos-card-name" href="bank-accounts.html">Bank accounts</a>
+        <span class="fos-card-go">open →</span>
+      </div>
+      <div id="fosBodyBank"><p class="fos-card-say">Loading…</p></div>
+    </li>
+
+    <li class="fos-card" id="fosCardBills">
+      <div class="fos-card-top">
+        <a class="fos-card-name" href="bills-cashflow.html">Bills &amp; cash flow</a>
+        <span class="fos-card-go">open →</span>
+      </div>
+      <div id="fosBodyBills"><p class="fos-card-say">Loading…</p></div>
+    </li>
+
+    <li class="fos-card" id="fosCardAlerts">
+      <div class="fos-card-top">
+        <a class="fos-card-name" href="alerts.html">Alerts</a>
+        <span class="fos-card-go">open →</span>
+      </div>
+      <div id="fosBodyAlerts"><p class="fos-card-say">Loading…</p></div>
+    </li>
+
+    <li class="fos-card" id="fosCardModel">
+      <div class="fos-card-top">
+        <a class="fos-card-name" href="deal-model.html">Deal modeling</a>
+        <span class="fos-card-go">open →</span>
+      </div>
+      <!-- NO NUMBER HERE, AND THAT IS THE HONEST ANSWER. api/finance/model.mjs
+           answers POST only and stores nothing (it is a calculator), so there is
+           no live figure to read. Putting one here would mean computing it in the
+           browser, which is a second answer that goes stale, or inventing one,
+           which is the bug this whole pass exists to remove. -->
+      <div id="fosBodyModel">
+        <p class="fos-card-say">A calculator. It saves nothing and charges nothing,
+        so there is no stored figure to show here.</p>
+      </div>
+    </li>
+
+  </ul>
+
+  <!-- ── the seven rows ─────────────────────────────────────────────────────
+       THERE IS NO SAMPLE GRID IN THIS MARKUP ANY MORE. It used to hold seven
+       rows of invented money — 15,000.00, 3,500.00, 19.74% — so that the screen
+       "never blanks". Under a picked client's name those figures are a claim
+       about that person's credit, and that exact failure is audit finding M8.
+       An honest empty state is what a screen with nothing to show owes the
+       reader; the wiring below replaces this the moment a real read lands. -->
+  <h2 class="fos-h2">Revolving credit, from the latest pull</h2>
+  <div class="fos-grid" id="fosGrid">
+    <div class="fh-empty">Pick a client above to read their credit lines.</div>
+  </div>
+
+  <p class="fh-note">
+    Every figure in the seven rows comes from credit-report tradelines and nothing else.
+    The six cards above each read that area's own live endpoint under
+    <code>/api/finance/</code>. Nothing on this page, or on any page it links to,
+    sends anything to any outside company.
   </p>
 </div>
 
 <script src="data.js"></script>
 <script>
-/* THE SEVEN NUMBERS ARE NOT COMPUTED HERE. They arrive already formed from
-   /api/read/finance-os, which calls src/finance/os-grid.mjs. closer-dashboard
-   reimplements a funding waterfall in inline JS against sample rows and that is
-   exactly the drift this avoids: a second implementation in a <script> block is
-   a second answer that goes stale. This file renders; it does not decide. */
+/* THE SEVEN NUMBERS ARE NOT COMPUTED HERE, AND NEITHER IS ANY CARD HEADLINE.
+   They arrive already formed from the endpoints — /api/read/finance-os calls
+   src/finance/os-grid.mjs, /api/finance/liabilities calls
+   src/liabilities/card-stack.mjs, and so on. closer-dashboard reimplements a
+   funding waterfall in inline JS against sample rows and that is exactly the
+   drift this avoids: a second implementation in a <script> block is a second
+   answer that goes stale. This file renders; it does not decide. */
 (function () {
   if (!window.FHData) return;
 
-  var grid = document.getElementById("fosGrid");
-  var clientId = FHData.param("client_id");
+  /* A uuid, or nothing. A junk client_id in the address bar must not be spread
+     onto six card links and six fetches — the endpoints would each answer 400
+     and the screen would report six separate faults for one typo. */
+  var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  var raw = FHData.param("client_id");
+  var clientId = UUID.test(String(raw == null ? "" : raw).trim())
+    ? String(raw).trim() : "";
+  var clientIdGiven = raw != null && String(raw).trim() !== "";
 
-  if (!clientId) {
-    // No client named is not a backend failure. The sample grid stays and the
-    // banner says what is missing, rather than reporting an outage that is not
-    // happening.
-    FHData.banner("sample", "sample finance grid — open with ?client_id=<id> for a real client", "finance os");
-    return;
-  }
+  var $ = function (id) { return document.getElementById(id); };
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -135,6 +286,378 @@
     return parts.join(".");
   }
 
+  /* href — one place that builds a link to another Finance OS screen carrying
+     the client. shell.js does this too, for every static link on every screen
+     in the app, and its withClient() deliberately leaves alone any link that
+     already names a client — so these win and there is no double answer. The
+     hub builds its own because the hub is the one screen that always knows which
+     client it is looking at. */
+  function href(screen, cid) {
+    return screen + (cid ? "?client_id=" + encodeURIComponent(cid) : "");
+  }
+
+  /* figure — a headline number on a card, with the two signals this product
+     runs on. Both come from the SHARED sheet (finance-os.css): .is-unknown dims
+     it to an em dash, .is-partial suffixes the "+". They are set from separate
+     fields and never derived from each other. */
+  function figure(display, partial) {
+    var unknown = display === null || display === undefined;
+    var cls = "fh-num" + (unknown ? " is-unknown" : (partial ? " is-partial" : ""));
+    return '<div class="' + cls + '">' + esc(unknown ? "—" : group(display)) + "</div>";
+  }
+
+  /* line — the label/figure pair, laid out like a row of the grid below it. */
+  function line(label, basis, display, partial) {
+    return '<div class="fos-card-line">' +
+             '<div class="fh-label">' + esc(label) +
+               (basis ? '<span class="fh-basis">' + esc(basis) + "</span>" : "") +
+             "</div>" + figure(display, partial) +
+           "</div>";
+  }
+
+  /* say — a sentence under the figure. `to` is a link to THIS card's own screen
+     and nothing else; see the note on .fos-areas in the stylesheet. */
+  function say(text, to, linkText, cid) {
+    return '<p class="fos-card-say">' + esc(text) +
+           (to ? ' <a href="' + esc(href(to, cid)) + '">' + esc(linkText) + " →</a>" : "") +
+           "</p>";
+  }
+
+  /* ── reading /api/finance/* ────────────────────────────────────────────────
+     FHData.read() hard-codes the /api/read/ prefix and FHData's own get() is
+     private to its closure, so there is no shared reader for these six
+     endpoints. Every one of the six Finance OS screens built this pass carries
+     its own copy of the twenty lines below, each one reporting the same reason:
+     data.js was being edited by five other workflows at the time and a collision
+     in it breaks every screen in the app at once.
+
+     THAT REASON HAS NOW EXPIRED AND THIS IS THE SEVENTH COPY. The fix is one
+     named reader — FHData.finance(resource, params) — in data.js, with all seven
+     screens pointed at it. It is not done here because data.js is not this
+     pass's file to change, and it is written up as the first follow-up rather
+     than left for somebody to discover.
+
+     The classification below is deliberately data.js's, value for value, and
+     every sentence a user reads still comes from FHData.explain(), so the
+     WORDING cannot drift even while the plumbing is duplicated. */
+  function apiGet(path) {
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+    var started;
+    try {
+      started = fetch(path, {
+        headers: t ? { accept: "application/json", authorization: "Bearer " + t }
+                   : { accept: "application/json" }
+      });
+    } catch (e) {
+      return Promise.resolve({ ok: false, source: "offline", data: null,
+                               error: (e && e.message) || "fetch unavailable" });
+    }
+    return Promise.resolve(started).then(function (r) {
+      if (r.status === 401 || r.status === 403) {
+        return { ok: false, source: "unauthorized", data: null, error: "not signed in, or not allowed" };
+      }
+      if (r.status === 501) {
+        return { ok: false, source: "unbuilt", data: null, error: "not_implemented" };
+      }
+      if (r.status === 404) {
+        return r.json().then(function (d) {
+          return (d && d.error === "not_found" && typeof d.path === "string")
+            ? { ok: false, source: "offline", data: null, error: "/api/* not deployed" }
+            : { ok: false, source: "notfound", data: null, error: "no such record" };
+        }).catch(function () {
+          return { ok: false, source: "offline", data: null, error: "/api/* not deployed" };
+        });
+      }
+      if (r.status === 400 || r.status === 409) {
+        return r.json().then(function (d) {
+          return { ok: false, source: "badrequest", data: null, error: (d && d.error) || "rejected" };
+        }).catch(function () {
+          return { ok: false, source: "badrequest", data: null, error: "rejected" };
+        });
+      }
+      return r.json().then(function (d) {
+        if (r.status === 503 || (d && d.db === "down")) {
+          return { ok: false, source: "nodb", data: null, error: (d && d.error) || "database unreachable" };
+        }
+        if (!d || d.ok !== true) {
+          return { ok: false, source: "server", data: null,
+                   error: "HTTP " + r.status + " " + ((d && d.error) || "request failed") };
+        }
+        return { ok: true, source: "api", data: d, error: null };
+      }).catch(function () {
+        return { ok: false, source: "offline", data: null, error: "response was not JSON" };
+      });
+    }).catch(function (e) {
+      return { ok: false, source: "offline", data: null, error: (e && e.message) || "network error" };
+    });
+  }
+
+  /* ── the client picker ─────────────────────────────────────────────────── */
+
+  function nameOf(c) {
+    var n = [c.first_name, c.last_name].filter(Boolean).join(" ").trim();
+    if (n) return n;
+    if (c.email) return String(c.email);
+    return "(no name on file)";
+  }
+
+  function paintWho(name) {
+    var who = $("fosWho");
+    if (!who) return;
+    who.innerHTML = clientId
+      ? esc(name || "this client") + '<span class="id">' + esc(clientId) + "</span>"
+      : "nobody yet";
+  }
+
+  function mountPicker() {
+    var sel = $("fosClient");
+    if (!sel) return;                       // not a browser — nothing to mount
+    var msg = $("fosPickMsg");
+
+    // The control panel takes the SAME client under a different parameter name
+    // (`id`, not `client_id`). Reported rather than papered over; shell.js
+    // carries the same mapping so the sidebar row keeps the client too.
+    var panel = $("fosPanel");
+    if (panel && clientId) {
+      panel.setAttribute("href", "client-control-panel.html?id=" + encodeURIComponent(clientId));
+    }
+
+    if (sel.addEventListener) {
+      sel.addEventListener("change", function () {
+        if (!sel.value) return;
+        location.href = href("finance-os.html", sel.value);
+      });
+    }
+
+    FHData.clients(200).then(function (res) {
+      if (!res || !res.ok || !res.data || !Array.isArray(res.data.clients)) {
+        sel.innerHTML = '<option value="">the client list could not be read</option>';
+        // The picker is a data source of its own and a failure here has to be
+        // as loud as a failure in the grid, or the screen looks merely empty.
+        FHData.explain(res, "the client list");
+        return;
+      }
+      var list = res.data.clients;
+      var html = ['<option value="">— pick a client —</option>'];
+      var found = null;
+      for (var i = 0; i < list.length; i++) {
+        var c = list[i];
+        if (!c || !c.id) continue;
+        if (String(c.id) === clientId) found = c;
+        html.push('<option value="' + esc(c.id) + '"' +
+                  (String(c.id) === clientId ? " selected" : "") + ">" +
+                  esc(nameOf(c)) + "</option>");
+      }
+      sel.innerHTML = html.join("");
+      if (found) paintWho(nameOf(found));
+
+      if (msg) {
+        if (clientId && !found) {
+          /* THE ID IN THE BAR IS NOT IN THE LIST. Two different things and the
+             screen must not pick one: the client may sit past the 200 the list
+             endpoint returns, or the id may belong to nobody. Both are said. */
+          msg.className = "fh-msg bad";
+          msg.textContent = "The client in the address bar is not in the newest " +
+            list.length + " clients. Either they are older than that, or the id is wrong.";
+        } else if (!list.length) {
+          msg.className = "fh-msg bad";
+          msg.textContent = "There are no clients on file yet.";
+        } else {
+          msg.className = "fh-msg";
+          msg.textContent = "";
+        }
+      }
+    });
+  }
+
+  /* ── the six area cards ────────────────────────────────────────────────────
+     Each one reads its own live endpoint and prints ONE number the server sent.
+
+     THEY DO NOT WRITE TO THE BOTTOM BANNER ON SUCCESS, on purpose. data.js's
+     banner joins every source on the page with a separator, and eight healthy
+     sources produce a strip of text nobody reads — at which point the one line
+     that matters is invisible. A card that succeeds says so in the card. A card
+     that FAILS calls FHData.explain(), so the failure appears in the banner in
+     data.js's wording as well as on the card itself. Silence is never an
+     outcome. */
+
+  function areaFailed(bodyId, cardId, res, what) {
+    var body = $(bodyId);
+    var card = $(cardId);
+    if (card && card.classList) card.classList.add("is-bad");
+
+    /* A 403 HERE IS A ROLE ANSWER, NOT AN OUTAGE, AND IT MUST NOT SAY "NOT
+       SIGNED IN". The six /api/finance/ routes do not share one gate: three of
+       them (subscriptions, bank-accounts, bills/cashflow) are owner-and-admin
+       only, and shell.js's OWNER_ADMIN_ONLY list hides those three CARDS for
+       everybody else. But the hub fires all six reads before it knows the role —
+       it cannot know it, the session resolves in shell.js — so a closer opening
+       this page gets three 403s. Handing those to FHData.explain() would print
+       "not signed in for real data" three times along the bottom of the screen
+       at somebody who is perfectly well signed in, and send them to reset a
+       password that is not the problem. The card says the true thing instead,
+       and the banner is left out of it. */
+    if (res && res.source === "unauthorized") {
+      if (body) {
+        body.innerHTML = '<p class="fos-card-say">This part of the file is not open to ' +
+          'your role. If you have just been signed out, signing in again will fix it.</p>';
+      }
+      return;
+    }
+
+    if (body) {
+      body.innerHTML = '<p class="fos-card-say">This part of the file could not be read. ' +
+        'The message at the bottom of the page says why.</p>';
+    }
+    FHData.explain(res, what);
+  }
+
+  function area(opts) {
+    var body = $(opts.body);
+    if (!body) return;                      // not a browser — nothing to paint
+    apiGet(opts.path).then(function (res) {
+      if (!res || !res.ok) { areaFailed(opts.body, opts.card, res, opts.what); return; }
+      var html;
+      try { html = opts.paint(res.data); }
+      catch (e) {
+        areaFailed(opts.body, opts.card,
+          { source: "server", error: "render failed: " + (e && e.message) }, opts.what);
+        return;
+      }
+      body.innerHTML = html;
+    });
+  }
+
+  function mountAreas() {
+    if (!$("fosAreas")) return;             // not a browser — fire no requests
+    var cid = clientId;
+    var q = "?client_id=" + encodeURIComponent(cid);
+
+    /* PLAN. `current` is the live subscription version or null; price_cents is
+       allowed to be null and means "nobody has decided the price", which is a
+       different fact from free. price_display is computed server-side. */
+    area({
+      body: "fosBodyPlan", card: "fosCardPlan", what: "the plan",
+      path: "/api/finance/subscriptions" + q,
+      paint: function (d) {
+        var cur = d && d.current;
+        var versions = (d && d.history && d.history.length) || 0;
+        if (!cur) {
+          return say("No plan has ever been started for this client.",
+                     "subscriptions.html", "Start one", cid);
+        }
+        return line("Plan price", esc(cur.tier || "no tier recorded"), cur.price_display, false) +
+               say(versions === 1
+                     ? "One version of this plan on record."
+                     : versions + " versions of this plan on record.",
+                   "subscriptions.html", "Open the plan", cid);
+      }
+    });
+
+    /* CREDIT CARDS. `totals` from src/liabilities/card-stack.mjs is the SAME row
+       shape the seven-row grid uses, basis and all, so the balance row is
+       reprinted here rather than recomputed. */
+    area({
+      body: "fosBodyCards", card: "fosCardCards", what: "the credit cards",
+      path: "/api/finance/liabilities" + q,
+      paint: function (d) {
+        var lines = (d && d.lines) || 0;
+        if (!lines) {
+          return say("No credit cards are recorded for this client.",
+                     "card-stack.html", "Add one", cid);
+        }
+        var totals = (d && d.totals) || [];
+        var bal = null;
+        for (var i = 0; i < totals.length; i++) {
+          if (totals[i] && totals[i].key === "balance") bal = totals[i];
+        }
+        var basis = bal && bal.basis
+          ? "counted " + bal.basis.counted + " of " + bal.basis.lines + " card(s)"
+          : "";
+        return line("Total balance", basis, bal ? bal.display : null,
+                    !!(bal && bal.basis && bal.basis.partial)) +
+               say(lines + " card(s) on file" +
+                   (d.disagreements ? ", " + d.disagreements + " with two balances that disagree" : "") + ".",
+                   "card-stack.html", "Open the card stack", cid);
+      }
+    });
+
+    /* BANK ACCOUNTS. The headline is a COUNT, not a money total, and that is a
+       deliberate choice. src/finance/banking-surface.mjs sums the cents columns
+       of a group without looking at currency_code, so a group holding a USD and
+       a CAD account produces one number that is neither — reported by the
+       bank-accounts track and still open. A count cannot be wrong that way. */
+    area({
+      body: "fosBodyBank", card: "fosCardBank", what: "the bank accounts",
+      path: "/api/finance/bank-accounts" + q,
+      paint: function (d) {
+        var s = (d && d.surface) || {};
+        var total = s.accounts || 0;
+        if (!total) {
+          return say("No bank accounts have been entered for this client. " +
+                     "Nothing in this product reads a bank, so they are typed in by hand.",
+                     "bank-accounts.html", "Add one", cid);
+        }
+        return line("Open accounts", total + " on file, " + (s.closed_accounts || 0) + " closed",
+                    String(s.open_accounts == null ? "" : s.open_accounts) || null, false) +
+               say(s.needs_classification
+                     ? s.unclassified + " account(s) are not marked personal or business, " +
+                       "so their money is not counted as this client's own."
+                     : "Every account is marked personal or business.",
+                   "bank-accounts.html", "Open bank accounts", cid);
+      }
+    });
+
+    /* BILLS. A client with no bills and no charges is "nobody has entered this
+       client's bank history"; a client with no bills and 4,000 charges is "we
+       looked and found no repeating pattern". Opposite findings, and the
+       endpoint sends both numbers precisely so a screen can tell them apart. */
+    area({
+      body: "fosBodyBills", card: "fosCardBills", what: "the bills",
+      path: "/api/finance/bills" + q,
+      paint: function (d) {
+        var bills = (d && d.bills && d.bills.length) || 0;
+        var charges = (d && d.transaction_count) || 0;
+        if (!charges) {
+          return say("No charges are recorded, so no repeating bills can be found yet.",
+                     "bills-cashflow.html", "Open bills & cash flow", cid);
+        }
+        return line("Repeating bills", charges + " charge(s) examined", String(bills), false) +
+               say(bills === 0
+                     ? "We looked at the charges on file and found no repeating pattern."
+                     : (d.candidate_count || 0) + " weaker pattern(s) were found and are NOT counted as bills.",
+                   "bills-cashflow.html", "Open bills & cash flow", cid);
+      }
+    });
+
+    /* ALERTS. The client read returns every state, newest first — an alert that
+       was raised and dismissed is part of what happened to this person. `state`
+       is a column on the row, so counting the open ones is a filter over what
+       the server sent, not a second opinion about it. */
+    area({
+      body: "fosBodyAlerts", card: "fosCardAlerts", what: "the alerts",
+      path: "/api/finance/alerts" + q + "&limit=200",
+      paint: function (d) {
+        var all = (d && d.alerts) || [];
+        if (!all.length) {
+          return say("No alert has ever been raised for this client. " +
+                     "That is not the same as “nothing is wrong” — the rules only " +
+                     "run when somebody runs them.",
+                     "alerts.html", "Run the rules", cid);
+        }
+        var open = all.filter(function (a) { return a && a.state === "open"; }).length;
+        return line("Open alerts", all.length + " on this client's file", String(open), false) +
+               say(open === 0
+                     ? "Everything raised has been dealt with."
+                     : "These are waiting on somebody.",
+                   "alerts.html", "Open the alert queue", cid);
+      }
+    });
+  }
+
+  /* ── the seven rows ────────────────────────────────────────────────────── */
+
   function basisText(r) {
     if (r.unit === "count") return r.basis.lines + " line(s) held";
     if (r.value === null) {
@@ -147,39 +670,81 @@
     return "all " + r.basis.lines + " line(s) reported";
   }
 
-  /* FHData.read() and NOT a hand-built fetch: `get()` is private to data.js's
-     IIFE and is not on the returned object — calling FHData.get() throws
-     "not a function" and the screen silently keeps its sample markup, which is
-     exactly how it failed the first time the smoke test ran it. read() also
-     gives this screen the same 401/404/503 classification every other wired
-     screen gets, for free. No new reader was added to data.js: a named one
-     would be house style, but it is a shared file another parallel workflow is
-     also editing, and read() already does the job. */
-  FHData.wire(
-    FHData.read("finance-os", { client_id: clientId }),
-    "finance os",
-    function (data) {
-      var rows = (data && data.rows) || [];
-      if (!rows.length) return null;   // read fine, nothing to show — data.js says so
+  function mountGrid() {
+    var grid = $("fosGrid");
+    if (!grid) return;
 
-      document.getElementById("fosSource").textContent = data.source || "tradelines";
+    /* FHData.read() and NOT a hand-built fetch for THIS one: /api/read/finance-os
+       is a read endpoint, so read() applies, and it gives this screen the same
+       401/404/503 classification every other wired screen gets for free. The six
+       cards above cannot use it — they live under /api/finance/ — which is the
+       whole of the note on apiGet(). */
+    FHData.wire(
+      FHData.read("finance-os", { client_id: clientId }),
+      "finance os",
+      function (data) {
+        var rows = (data && data.rows) || [];
+        if (!rows.length) {
+          /* THE READ WORKED AND THERE IS NOTHING IN IT. os-grid.mjs always
+             returns seven rows, so this is the pathological case rather than
+             the empty-client one — an empty client comes back as seven rows of
+             em dashes with "no tradelines on file" under each. Either way the
+             screen says so in words instead of leaving anything on screen that
+             could be read as this person's money. */
+          grid.innerHTML = '<div class="fh-empty">The credit grid came back with no ' +
+            'rows at all. Nothing is being shown, because there is nothing to show.</div>';
+          return "finance grid read · the response carried no rows";
+        }
 
-      grid.innerHTML = rows.map(function (r) {
-        var unknown = r.display === null || r.display === undefined;
-        // An unknown value renders as an em dash, never as 0.00. See the CSS note.
-        var shown = unknown ? "—" : group(r.display);
-        return '<div class="fos-row' + (r.basis && r.basis.partial ? " is-partial" : "") + '">' +
-                 '<div class="fos-label">' + esc(r.label) +
-                   '<span class="fos-basis">' + esc(basisText(r)) + "</span></div>" +
-                 '<div class="fos-value' + (unknown ? " is-unknown" : "") + '">' + esc(shown) + "</div>" +
-               "</div>";
-      }).join("");
+        var src = $("fosSource");
+        if (src) src.textContent = data.source || "tradelines";
 
-      var partial = rows.filter(function (r) { return r.basis && r.basis.partial; }).length;
-      return "live finance grid · " + data.lines + " tradeline(s) · source " + (data.source || "?") +
-             (partial ? " · " + partial + " row(s) partial" : "");
+        grid.innerHTML = rows.map(function (r) {
+          var unknown = r.display === null || r.display === undefined;
+          // An unknown value renders as an em dash, never as 0.00. See the CSS note.
+          var shown = unknown ? "—" : group(r.display);
+          return '<div class="fos-row' + (r.basis && r.basis.partial ? " is-partial" : "") + '">' +
+                   '<div class="fos-label">' + esc(r.label) +
+                     '<span class="fos-basis">' + esc(basisText(r)) + "</span></div>" +
+                   '<div class="fos-value' + (unknown ? " is-unknown" : "") + '">' + esc(shown) + "</div>" +
+                 "</div>";
+        }).join("");
+
+        var partial = rows.filter(function (r) { return r.basis && r.basis.partial; }).length;
+        return "live finance grid · " + data.lines + " tradeline(s) · source " + (data.source || "?") +
+               (partial ? " · " + partial + " row(s) partial" : "");
+      }
+    );
+  }
+
+  /* ── boot ──────────────────────────────────────────────────────────────── */
+
+  mountPicker();
+
+  if (!clientId) {
+    /* NO CLIENT NAMED IS NOT A BACKEND FAILURE, and it is no longer a reason to
+       paint invented money either. The picker above is the answer to it, so the
+       grid and the cards keep their honest "pick somebody" text and the banner
+       says which of the two situations this is. */
+    var cards = $("fosAreas");
+    if (cards) {
+      var bodies = ["fosBodyPlan", "fosBodyCards", "fosBodyBank", "fosBodyBills", "fosBodyAlerts"];
+      for (var i = 0; i < bodies.length; i++) {
+        var b = $(bodies[i]);
+        if (b) b.innerHTML = '<p class="fos-card-say">Pick a client to see this.</p>';
+      }
     }
-  );
+    FHData.banner("sample",
+      clientIdGiven
+        ? "no client opened — the client_id in the address bar is not a valid id"
+        : "no client opened — pick one at the top of the page (or use ?client_id=<id>)",
+      "finance os");
+    return;
+  }
+
+  paintWho(null);
+  mountGrid();
+  mountAreas();
 })();
 </script>
 </body>

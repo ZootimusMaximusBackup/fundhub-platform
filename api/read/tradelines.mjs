@@ -14,7 +14,11 @@ import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid, redact, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { listTradelines } from "../../src/tradelines/store.mjs";
 import { toCalculatorCards, fromCents } from "../../src/tradelines/index.mjs";
-import { calcFunding } from "../../src/calculators/deal-funding.mjs";
+import {
+  calcFunding,
+  parseUtilizationThreshold,
+  UTILIZATION_THRESHOLD_REFUSALS
+} from "../../src/calculators/deal-funding.mjs";
 
 // THE ROLE GATE IS TWO CALLS, NOT ONE ARGUMENT. requireAuth's third parameter
 // is { db, env } — src/http/middleware/requireAuth.mjs passes it straight to
@@ -59,10 +63,44 @@ export default async function handler(req, res) {
       ? undefined
       : Number(query.requested_amount);
 
+    /* THE GUARDRAIL THRESHOLD IS VALIDATED, AND IT WAS NOT.
+       This line used to read
+           ...(query.utilization_threshold ? { utilizationThreshold: Number(query.utilization_threshold) } : {})
+       which put an unchecked query parameter straight into the only thing
+       standing between a closer and a draw that costs the client their next
+       funding round. `?utilization_threshold=0.99` parses, passes, and makes
+       calcFunding's hard stop unreachable — at a 99% line no draw a real card
+       can carry crosses it, so `guardrail.hardStop` is false for every deal and
+       the screen says "clear". Nothing recorded that the line had been moved.
+       `?utilization_threshold=abc` was worse still: Number("abc") is NaN, every
+       comparison against NaN is false, and the guardrail silently reported no
+       breach for the same reason while looking like it had run.
+
+       The band and the refusals live in the calculator that acts on the number —
+       src/calculators/deal-funding.mjs, parseUtilizationThreshold — so this
+       endpoint and /api/finance/model cannot drift apart on what a legal
+       threshold is. A bad one is a 400 naming the rule, never a clamp and never
+       a silent fall back to the default: a caller who asked for a different line
+       and quietly got the standard one has been answered about a deal they did
+       not ask about. Omitting the parameter is not an error — calcFunding's own
+       0.30 default applies, which is what every existing caller already gets. */
+    let utilizationThreshold;
+    if (query.utilization_threshold !== undefined && String(query.utilization_threshold).trim() !== "") {
+      const parsed = parseUtilizationThreshold(query.utilization_threshold);
+      if (!parsed.ok) {
+        return res.status(400).json({
+          ok: false,
+          error: UTILIZATION_THRESHOLD_REFUSALS[parsed.reason] || "utilization_threshold is not usable",
+          reason: parsed.reason
+        });
+      }
+      utilizationThreshold = parsed.value;
+    }
+
     const funding = calcFunding({
       cards,
       requestedAmount: Number.isFinite(requestedAmount) ? requestedAmount : undefined,
-      ...(query.utilization_threshold ? { utilizationThreshold: Number(query.utilization_threshold) } : {})
+      ...(utilizationThreshold === undefined ? {} : { utilizationThreshold })
     });
 
     return res.status(200).json({
