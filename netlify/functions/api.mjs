@@ -54,6 +54,7 @@ import readInquiries from "../../api/read/inquiries.mjs";
 import readProducts from "../../api/read/products.mjs";
 import readConversations from "../../api/read/conversations.mjs";
 import readTradelines from "../../api/read/tradelines.mjs";
+import readFinanceOs from "../../api/read/finance-os.mjs";
 import inquiries from "../../api/inquiries.mjs";
 import pii from "../../api/pii.mjs";
 import shifts from "../../api/shifts.mjs";
@@ -119,6 +120,14 @@ export const ROUTES = {
   // first would have shipped the hole, and fixing it without routing would have
   // left the Closer Dashboard's live mode 404ing against a working endpoint.
   "read/tradelines": readTradelines,
+
+  // read/finance-os summarises the same rows read/tradelines serves, so it
+  // carries the same ROLE_SETS.STAFF gate — gating the summary more tightly
+  // than the detail would buy nothing, since anyone refused here can read the
+  // underlying lines next door and add them up. Routed in the same commit as
+  // the handler and the screen: a screen whose endpoint 404s is the failure
+  // this map exists to prevent, and it has shipped twice.
+  "read/finance-os": readFinanceOs,
 
   // Write endpoints. Hand-rolled rather than readHandler-based, so each one owns
   // its own method switch, its 405 + allow header, and its domain-error mapping.
