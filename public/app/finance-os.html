@@ -982,11 +982,11 @@ return VIEW;
   var q = clientId ? "?client_id=" + encodeURIComponent(clientId) : "";
 
   Promise.all([
-    // Tradelines REQUIRE a client_id (the endpoint 400s without one) and are
-    // STAFF-gated today, so a client principal gets a 403 here. Both cases are
-    // classified honestly rather than shown as an empty book.
-    clientId ? send("/api/read/tradelines" + q)
-             : Promise.resolve({ status: 400, body: { error: "no client id in the URL" } }),
+    // /api/read/finance-os admits a CLIENT principal and scopes to their own
+    // client_id from the session, so a signed-in client reads their own cards
+    // and cannot widen it by editing the URL. Staff must name a client, hence
+    // the local 400 when there is no id and no client session to supply one.
+    send("/api/read/finance-os" + q),
     send("/api/read/subscriptions" + q),
     send("/api/read/alerts" + q),
     send("/api/read/entitlements" + q + (q ? "&" : "?") + "limit=200")

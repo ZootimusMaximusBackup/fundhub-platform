@@ -77,10 +77,12 @@ the gap stays visible.
 | `src/http/finance-os-view.test.mjs` | New. 80 tests. Covers every null path, both response shapes, all nine `classify()` branches, and the marker-block consistency check. |
 | `public/app/finance-os.html` | New. The screen. Carries a verbatim copy of the view module between `/* ==FHVIEW-BEGIN== */` and `/* ==FHVIEW-END== */`. |
 | `public/app/shell.js` | `finance-os.html` appended to the `ALL` array. Without this the gate at `shell.js:483` redirects the page to `command-center.html`. |
+| `api/read/finance-os.mjs` | New. `GET /api/read/finance-os?client_id=` — the screen's own read endpoint. Admits a `client` principal scoped to their own rows. Returns tradeline rows only; no derived totals. |
+| `src/http/finance-os-read.pg.test.mjs` | New. 10 tests against the real router, including the cross-tenant isolation assertions. |
+| `netlify/functions/api.mjs` | `read/finance-os` registered in the `ROUTES` map. A handler file is not a route; without this it 404s locally and deployed. |
 | `docs/workflows/finance-os-banking.md` | New. This board. |
 
-No migration. No new dependency. No API handler added, so `ROUTES` in
-`netlify/functions/api.mjs` is unchanged.
+No migration. No new dependency.
 
 ### Assumptions recorded (made without stopping, per the run instruction)
 
@@ -94,8 +96,13 @@ No migration. No new dependency. No API handler added, so `ROUTES` in
    an approved implementation that does exist. **No tile was invented to fill
    the gap.**
 
-2. **The screen reuses `/api/read/tradelines`.** It already exists, is already
-   routed, and already returns per-card rows. No new endpoint was written.
+2. **The screen reads `/api/read/finance-os`, its own endpoint.** The first
+   cut reused the existing `/api/read/tradelines`, which works for staff but
+   403s a client principal — see the resolved blocker below. The new endpoint
+   returns ROWS ONLY and derives nothing: utilization and the portfolio totals
+   are computed by the view module, which the screen carries and which is unit
+   tested. Computing them server-side as well would create a second answer that
+   can disagree with the first.
 
 3. **"Monthly optimization report" is NOT `src/optimize/`.** That module
    optimises ad spend — campaign budgets and platform ceilings — and has
@@ -118,21 +125,34 @@ No migration. No new dependency. No API handler added, so `ROUTES` in
    and the brief requires those two to stay distinct. `send()` in the screen
    captures the raw status and hands it to `classify()`.
 
-6. **A client principal cannot currently read their own cards.** See the
-   blocker below.
+6. **Most permissive reasonable gate.** `/api/read/finance-os` serves staff
+   (`ROLE_SETS.STAFF`, any named client) and a `client` principal (their own
+   rows only). Affiliates and partners are not admitted — they have no business
+   with a consumer's card balances. Anonymous callers are refused.
 
-### Blocker for another lane
+### The client-access blocker — RESOLVED inside this lane
 
-`api/read/tradelines.mjs:36-37` gates on `ROLE_SETS.STAFF`. Finance OS is a
-CLIENT-facing subscription surface, so a signed-in client principal gets a 403
-and sees "your account is not permitted to view your cards". `/api/read/
-entitlements` already solves this correctly — it admits a `client` principal
-and scopes to `principal.clientId`, ignoring `?client_id=` so editing the URL
-cannot widen it. Tradelines needs the same treatment before a real client can
-use this screen. **W9 did not change the endpoint** — a security gate on
-per-person credit balances is not a drive-by edit, and the adversarial test
-that must come with it (a client MUST NOT read another client's balances)
-belongs with whoever owns that change.
+Originally reported here as a blocker for another workflow. It is fixed.
+
+`api/read/tradelines.mjs:36-37` gates on `ROLE_SETS.STAFF` and takes
+`client_id` from the query string. That is correct for the Closer Dashboard — a
+closer looks at somebody else's file — but it means a signed-in client on their
+own Finance OS screen got a 403.
+
+Rather than widen a shared staff endpoint (whose other caller does not want
+client scoping), W9 added **`api/read/finance-os.mjs`**: a `readHandler` that
+admits a `client` principal and takes the scope from the SESSION, never the
+query string, exactly as `api/read/entitlements.mjs` does. Staff must name a
+client; a client reads only their own rows and `?client_id=` is ignored for
+them, so editing the URL cannot widen it.
+
+`api/read/tradelines.mjs` is **unchanged** — no other lane's surface was
+touched.
+
+Covered by `src/http/finance-os-read.pg.test.mjs` (10 tests against the real
+router), written adversarially: the assertions that matter are the ones where a
+client tries to read another client's balances by naming them in the URL, and
+where an anonymous caller and an affiliate are refused.
 
 ### Bug found by running it, not by reading it
 
@@ -158,7 +178,12 @@ have stayed green forever.
 - An invalid session redirects to `login.html?next=/app/finance-os.html` —
   `shell.js` handles that before the screen loads, so `classify()`'s 401 branch
   is defensive only (it fires if a session expires mid-fetch).
-- Mutation check: six deliberate breaks of the critical rules — unknown
+- `node db/migrate.mjs` applies clean and re-applies as a no-op (0 applied on
+  the second run). W9 adds no migration; this confirms it broke nobody else's.
+- Endpoint mutation check: three deliberate breaks — taking the client scope
+  from the query string (the cross-tenant leak), letting closed lines through,
+  and admitting affiliates. **All three were caught.**
+- View-module mutation check: six deliberate breaks of the critical rules — unknown
   utilization returning 0, zero-limit dividing, clamping over-limit to 100%,
   collapsing 403 into 401, dropping the `items` shape, and letting unknown
   cards into the totals. **All six were caught** by 1–8 failing tests each.
