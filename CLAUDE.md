@@ -27,7 +27,7 @@ Ask one question. Wait. Do not ask and proceed in the same turn.
 
 ## 2. Before writing any code
 
-1. Read the relevant code. Use Serena — symbol lookup before file reads.
+1. Read the relevant code. Symbol lookup before file reads (Grep patterns, not full file reads).
 2. Read the intended journey for any flow you are touching.
 3. Produce a plan in plain English. Name: files to be touched, journeys affected, how the change will be verified.
 4. Wait for approval. Do not write code in the same turn as the plan.
@@ -92,7 +92,7 @@ Never report a task complete until all of these pass:
 1. `npm run lint`
 2. `npx tsc --noEmit`
 3. Test suite green — no skipped, deleted, or weakened tests
-4. Playwright check on any UI change
+4. Playwright check on any UI change (run locally before pushing)
 5. `-actual.md` journeys updated, changelog appended
 6. Change manifest emitted
 
