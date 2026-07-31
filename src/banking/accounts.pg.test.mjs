@@ -51,8 +51,11 @@ before(async () => {
   orgId = (await db.query(`SELECT id FROM orgs WHERE is_default LIMIT 1`)).rows[0]?.id;
   assert.ok(orgId, "the default org must exist — run the migrations");
 
+  // `slug` is NOT NULL and UNIQUE on orgs — a scratch org needs both columns.
   otherOrgId = (await db.query(
-    `INSERT INTO orgs (name) VALUES ('w1-scratch-other-org') RETURNING id`)).rows[0].id;
+    `INSERT INTO orgs (slug, name) VALUES ('w1-scratch-other', 'W1 Scratch Other Org')
+     ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
+     RETURNING id`)).rows[0].id;
 
   clientId = (await db.query(
     `INSERT INTO clients (org_id, first_name, last_name)
@@ -147,14 +150,32 @@ test("096 REFUSES an APR in percent units at the database", { skip: !HAS_DB }, a
   const card = await createManualBankAccount(db,
     { name: "Constraint Card", account_type: "credit" }, { orgId, clientId });
 
-  // Straight past the writer's readApr(), to prove the constraint is real and
-  // not just the conversion being polite.
+  /* Straight past the writer's readApr(), to prove the database refuses this on
+     its own and not just because the conversion was polite.
+
+     IT IS THE COLUMN TYPE THAT BITES FIRST, NOT THE CHECK. numeric(6,5) is
+     precision 6 with scale 5, so the largest value it can hold is 9.99999 and
+     24.99 raises 22003 (numeric_value_out_of_range) before the CHECK is ever
+     evaluated. This test originally asserted 23514 and failed — which is the
+     finding: the `apr <= 1` CHECK is a SECOND line of defence for the 1..9.99999
+     band, not the first. Both are real; the type is simply narrower than the
+     CHECK for the case that actually happens. */
   await assert.rejects(
     () => db.query(
       `INSERT INTO account_statement_cycles (org_id, client_id, bank_account_id, apr)
        VALUES ($1,$2,$3,$4)`, [orgId, clientId, card.id, 24.99]),
-    (e) => e.code === "23514",
+    (e) => e.code === "22003",
     "an APR of 24.99 must be rejected — as a fraction that is 2499%"
+  );
+
+  // And the band the CHECK owns alone: a value the TYPE accepts but the rule
+  // does not. 2.5 fits numeric(6,5) comfortably and is still a 250% rate.
+  await assert.rejects(
+    () => db.query(
+      `INSERT INTO account_statement_cycles (org_id, client_id, bank_account_id, apr)
+       VALUES ($1,$2,$3,$4)`, [orgId, clientId, card.id, 2.5]),
+    (e) => e.code === "23514",
+    "the CHECK is what stops a rate between 1 and 9.99999"
   );
 });
 

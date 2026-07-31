@@ -99,17 +99,24 @@ test("a malformed session cookie does not crash the handler", async () => {
   // could not clear it from inside the app. bearerToken() now catches that and
   // falls back to the raw value.
   //
-  // SO THE ANSWER HERE IS 503, NOT 401, AND THAT IS CORRECT. A token was
-  // extracted, so the handler goes on to verify it, which needs a database this
-  // test deliberately does not have. 503 + db:"down" is the shape
-  // public/app/data.js reads as an outage and renders as "backend unavailable"
-  // rather than logging the user out — which is the whole point of
-  // AUTH_UNAVAILABLE being distinct from a bad session.
+  // THE STATUS DEPENDS ON THE ENVIRONMENT, AND THE ASSERTION MUST NOT.
+  // A token WAS extracted, so the handler goes on to verify it:
+  //   - with no database  -> 503 + db:"down" (AUTH_UNAVAILABLE, "I could not
+  //     check"), which public/app/data.js renders as "backend unavailable"
+  //     rather than logging the user out;
+  //   - with a database   -> 401, because the token is simply not a session.
+  //
+  // Both are correct. An earlier version of this test pinned 503 and passed
+  // without DATABASE_URL and FAILED with it — a test that only holds when a
+  // dependency is missing is the exact shape of the problem this repo keeps
+  // hitting. What is being asserted is the contract that holds either way: a bad
+  // cookie is handled, never an unhandled crash.
   const res = makeRes();
   await handler({ method: "GET", headers: { cookie: "fundhub_session=%zz" }, query: {} }, res);
-  assert.equal(res.statusCode, 503);
-  assert.equal(res.body.db, "down");
+  assert.ok([401, 503].includes(res.statusCode),
+    `expected 401 or 503, got ${res.statusCode}`);
   assert.notEqual(res.statusCode, 500, "a bad cookie must never be an unhandled crash");
+  if (res.statusCode === 503) assert.equal(res.body.db, "down");
 });
 
 /* --------------------------------------------------- the gate, in the source */
