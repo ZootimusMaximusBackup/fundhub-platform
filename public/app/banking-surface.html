@@ -121,6 +121,18 @@
     return;
   }
 
+  /* ONCE THE URL NAMES A CLIENT, THE SAMPLE MONEY GOES. Immediately, before the
+     read resolves, and whatever the read does next. The sample block states
+     "Personal 2,400.00" and "Unclassified 9,000.00"; left under a real client's
+     name those are a balance nobody has, contradicted only by an 11px banner
+     along the bottom edge. Every ending — rows, no rows, or no answer at all —
+     now replaces it, because nothing in this repo writes bank_accounts yet and
+     "no answer" and "no rows" are the two endings a real client actually gets. */
+  function state(msg) {
+    host.innerHTML = '<div class="bs-group"><div class="bs-empty">' + esc(msg) + "</div></div>";
+  }
+  state("Loading bank accounts…");
+
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -163,11 +175,24 @@
   }
 
   FHData.wire(
-    FHData.read("banking-surface", { client_id: clientId }),
+    /* A read that never reaches paint() still has to clear the sample. wire()
+       leaves the markup alone on failure by design — that is right for a screen
+       with nobody named on it, and wrong for this one. */
+    FHData.read("banking-surface", { client_id: clientId }).then(function (res) {
+      if (!res || !res.ok) {
+        state("Bank accounts for this client could not be read. The banner at the " +
+              "bottom of the screen says why. No balances are shown because none are known.");
+      }
+      return res;
+    }),
     "banking",
     function (data) {
       var groups = (data && data.groups) || [];
-      if (!groups.length) return null;
+      if (!groups.length) {
+        // Answered, but with no groups to draw. Nothing is known, so nothing is shown.
+        state("No bank accounts on file for this client.");
+        return null;
+      }
 
       document.getElementById("bsSource").textContent = data.source || "bank_accounts";
 
@@ -184,8 +209,8 @@
       // an unclassified card with rows in it is the point of the screen.
       var shown = groups.filter(function (g) { return g.count > 0; });
       if (!shown.length) {
-        // No real accounts — render a placeholder instead of leaving the sample.
-        host.innerHTML = '<p style="margin-top: 2rem; color: #666;">No bank accounts on file.</p>';
+        // No real accounts — say so rather than leaving the sample figures up.
+        state("No bank accounts on file for this client.");
         return null;
       }
 
