@@ -13,14 +13,21 @@ import {
 } from "./client-lifecycle.mjs";
 
 // In-memory Postgres fake: interprets the exact queries the handlers issue.
-function pgFake() {
-  const clients = [], transactions = [], crs = [];
+function pgFake({ openShift = null, failOn = null } = {}) {
+  const clients = [], transactions = [], crs = [], events = [];
   let n = 0;
   const findClient = (org, email) =>
     clients.find((c) => c.org_id === org && String(c.email || "").toLowerCase() === String(email).toLowerCase());
   return {
-    clients, transactions, crs,
+    clients, transactions, crs, events,
     async query(sql, params = []) {
+      if (failOn && failOn.test(sql)) throw Object.assign(new Error("simulated outage"), { code: "08006" });
+      if (/INSERT INTO staff_events/.test(sql)) {
+        const e = { staff_id: params[0], org_id: params[1], shift_id: params[2], kind: params[3], detail: JSON.parse(params[4]) };
+        events.push(e);
+        return { rows: [{ id: "ev-" + events.length, ...e }] };
+      }
+      if (/FROM shifts/.test(sql)) return { rows: openShift ? [{ id: openShift }] : [] };
       if (/SELECT id FROM clients/.test(sql)) {
         const c = findClient(params[0], params[1]);
         return { rows: c ? [{ id: c.id }] : [] };
@@ -147,4 +154,76 @@ test("analysis.completed: stores crs_result once, idempotent by event id", async
   await onAnalysisCompleted(e, db); // replay same event
   assert.equal(db.crs.length, 1);
   assert.equal(db.crs[0].outcome_tier, "REPAIR_ONLY");
+});
+
+// =============================================================================
+// STAFF TELEMETRY — the `pull_run` seam.
+//
+// It is EMPTY in production: a credit pull is requested and returned entirely by
+// automation reacting to the client's $32 diagnostic payment, and the event
+// carries no staff member. These tests pin that a normal pull writes NOTHING —
+// the behaviour everything depends on today — and pin the row's shape for the
+// 05/30 model, where the pull runs live on the call and finally has an actor.
+// =============================================================================
+
+const PULL_STAFF = "22222222-2222-4222-8222-222222222222";
+const PULL_SHIFT = "55555555-5555-4555-8555-555555555555";
+
+test("an automated pull — no staffId on the event — writes no staff_events row", async () => {
+  const db = pgFake();
+  await onAnalysisCompleted(ev("analysis.completed", { email: "a@b.com", outcomeTier: "REPAIR_ONLY" }, { id: "evt-auto" }), db);
+  assert.equal(db.crs.length, 1, "the result is still stored");
+  assert.equal(db.events.length, 0, "a workflow has nobody to attribute the pull to");
+});
+
+test("a staff-run pull writes one pull_run event on that person's shift", async () => {
+  const db = pgFake();
+  await onAnalysisCompleted(ev("analysis.completed", {
+    email: "a@b.com", outcomeTier: "FULL_FUNDING", staffId: PULL_STAFF, shiftId: PULL_SHIFT
+  }, { id: "evt-live" }), db);
+  assert.equal(db.events.length, 1);
+  assert.equal(db.events[0].kind, "pull_run");
+  assert.equal(db.events[0].staff_id, PULL_STAFF);
+  assert.equal(db.events[0].shift_id, PULL_SHIFT);
+  assert.equal(db.events[0].detail.outcome_tier, "FULL_FUNDING");
+  assert.equal(db.events[0].detail.event_id, "evt-live");
+});
+
+test("a replayed pull stores nothing twice and counts nothing twice", async () => {
+  const db = pgFake();
+  const e = ev("analysis.completed", { email: "a@b.com", outcomeTier: "REPAIR_ONLY", staffId: PULL_STAFF, shiftId: PULL_SHIFT }, { id: "evt-replay" });
+  await onAnalysisCompleted(e, db);
+  await onAnalysisCompleted(e, db);
+  assert.equal(db.crs.length, 1);
+  assert.equal(db.events.length, 1, "a replayed pull must not count as a second pull against that person");
+});
+
+test("the bureau payload is never copied into the telemetry detail", async () => {
+  const db = pgFake();
+  await onAnalysisCompleted(ev("analysis.completed", {
+    email: "a@b.com", outcomeTier: "REPAIR_ONLY", ssn: "123-45-6789", scores: { ex: 512 },
+    staffId: PULL_STAFF, shiftId: PULL_SHIFT
+  }, { id: "evt-pii" }), db);
+  const detail = JSON.stringify(db.events[0].detail);
+  assert.ok(!/123-45-6789|512/.test(detail), `the consumer's credit file leaked into telemetry: ${detail}`);
+});
+
+test("with no shift on the event, the runner's open shift is looked up", async () => {
+  const db = pgFake({ openShift: PULL_SHIFT });
+  await onAnalysisCompleted(ev("analysis.completed", { email: "a@b.com", staffId: PULL_STAFF }, { id: "evt-lookup" }), db);
+  assert.equal(db.events[0].shift_id, PULL_SHIFT);
+});
+
+test("a broken telemetry write does NOT lose the credit-pull result", async () => {
+  const db = pgFake({ failOn: /INSERT INTO staff_events/ });
+  const real = console.error; const lines = [];
+  console.error = (...a) => lines.push(a.join(" "));
+  try {
+    await onAnalysisCompleted(ev("analysis.completed", {
+      email: "a@b.com", outcomeTier: "REPAIR_ONLY", staffId: PULL_STAFF, shiftId: PULL_SHIFT
+    }, { id: "evt-broken" }), db);
+  } finally { console.error = real; }
+  assert.equal(db.crs.length, 1, "the pull result is the record; it must survive a broken observer");
+  assert.equal(db.events.length, 0);
+  assert.ok(lines.some((l) => /\[telemetry\].*write_failed/.test(l)), JSON.stringify(lines));
 });
