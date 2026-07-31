@@ -75,6 +75,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/090_soft_pull_one_open_per_client.sql",
   "migrations/091_recurring_bill_anchor_day.sql",
   "migrations/092_bank_account_fk.sql",
+  "migrations/093_recurring_bills_org_index.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql"
 ]);

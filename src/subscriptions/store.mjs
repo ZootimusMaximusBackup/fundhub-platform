@@ -266,6 +266,11 @@ export async function listSubscriptions(db, { orgId, clientId } = {}) {
  * carrying the old window forward would assert an answer to it.
  *
  * Returns the new live row. The closed one is in listSubscriptions().
+ *
+ * Throws SubscriptionConflictError (status 409) if the live version was closed
+ * or cancelled by another writer in the gap between this call's read and its
+ * write. Nothing is written in that case, so the caller's move is to re-read and
+ * decide again — not to retry blindly, because what they were changing is gone.
  */
 export async function changeTier(db, input = {}) {
   const orgId = required(input.orgId ?? input.org_id, "changeTier: orgId");

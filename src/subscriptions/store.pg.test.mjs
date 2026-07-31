@@ -16,7 +16,7 @@ import { db, close } from "../db.mjs";
 import {
   putClientCard, listClientCards, removeClientCard,
   startSubscription, getSubscriptionAt, listSubscriptions,
-  changeTier, cancelSubscription, attachCard
+  changeTier, cancelSubscription, attachCard, SubscriptionConflictError
 } from "./store.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
@@ -410,6 +410,67 @@ test("a genuine double-booking is refused in words, not a constraint name",
       },
       "the second live subscription is still refused — just readably"
     );
+  });
+
+// m11. changeTier reads the live version, then closes it and opens the successor
+// in one statement. If that live version is closed by SOMEBODY ELSE in the gap
+// between the read and the write, the statement updates no rows, so it inserts
+// no rows either, and the call ends in a branch no test had ever executed.
+//
+// Reaching it by running two real calls at the same time is a coin toss, so the
+// second writer is landed EXACTLY in the gap instead: the handle below is shaped
+// like the one src/db.mjs exports (`{ query }`, nothing else) and cancels the
+// subscription on the way into the plan-change statement. That is a real
+// sequence — a closer cancelling a client while a manager upgrades them — held
+// still so it happens every run rather than one run in a thousand.
+test("a plan change that loses a race says so in words, and says nothing was saved",
+  { skip: !HAS_DB }, async () => {
+    await reset();
+    const first = await startSubscription(db, {
+      orgId, clientId, tier: "starter", priceCents: 9900,
+      at: new Date(Date.now() - 86_400_000).toISOString()
+    });
+
+    let raced = false;
+    const somebodyElseGetsThereFirst = {
+      query: async (sql, params) => {
+        if (!raced && /WITH closed AS/.test(sql)) {
+          raced = true;
+          await cancelSubscription(db, { orgId, clientId });
+        }
+        return db.query(sql, params);
+      }
+    };
+
+    await assert.rejects(
+      () => changeTier(somebodyElseGetsThereFirst, { orgId, clientId, tier: "pro", priceCents: 19900 }),
+      (err) => {
+        assert.ok(raced, "the second writer must actually have landed in the gap");
+        assert.ok(err instanceof SubscriptionConflictError,
+          "a caller has to be able to tell 'someone else edited this' from 'the server broke'");
+        assert.equal(err.status, 409,
+          "409 is the answer an endpoint should give; a plain Error becomes a 500 at "
+          + "netlify/functions/api.mjs:334, which blames the server for a human collision");
+        assert.match(err.message, /somebody else changed this subscription/);
+        assert.doesNotMatch(err.message, /subscriptions_|SQLSTATE|23P01/,
+          "no constraint names — this sentence is read by a person");
+        return true;
+      }
+    );
+
+    const history = await listSubscriptions(db, { orgId, clientId });
+    assert.equal(history.length, 1, "no successor row was opened — nothing is half-applied");
+    assert.equal(history[0].id, first.id);
+    assert.equal(history[0].tier, "starter", "and the tier the client is on did not move");
+    assert.equal(history[0].status, "cancelled", "what actually happened is the cancellation");
+    assert.equal(await getSubscriptionAt(db, { orgId, clientId }), null,
+      "there is no live version, which is why the change had nothing to change");
+
+    // And the caller can act on it: re-reading shows the cancellation, and the
+    // client can be signed up again. The error is a fork in the road, not a wall.
+    const resumed = await startSubscription(db, { orgId, clientId, tier: "pro", priceCents: 19900 });
+    assert.equal(resumed.status, "active");
+    assert.equal(resumed.effective_to, null);
   });
 
 test("the period window must be a real window or absent entirely", { skip: !HAS_DB }, async () => {

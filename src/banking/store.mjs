@@ -241,6 +241,15 @@ export async function saveDetection(db, result, { orgId, includeCandidates = tru
  * sorted and serialised inside a 10-second function budget. An unbounded read
  * with no page size is not a read anybody can turn down.
  *
+ * AND INDEXED. `idx_recurring_bills_org_amount` (db/migrations/093) is
+ * (org_id, typical_amount_cents, merchant_key) — the always-present filter
+ * followed by this ORDER BY, so the LIMIT bounds what is READ and not just what
+ * is sent back. None of 086's three indexes leads with org_id and two of them
+ * are partial on predicates this read does not carry, so before 093 every call
+ * scanned the whole table and sorted it in memory. If the WHERE or the ORDER BY
+ * below changes, that index has to change with it — src/banking/
+ * recurring-bills-index.test.mjs fails if they drift apart.
+ *
  * RETURNS RAW DATABASE ROWS, in snake_case. Anything feeding the cash-flow
  * projector wants listRecurringBillsFor() below instead — the two vocabularies
  * are not interchangeable and mixing them fails silently. See fromBillRow().
