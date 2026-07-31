@@ -141,11 +141,22 @@ rather than wait. These are the ones that could reasonably have gone another way
 * `src/inquiries/work.pg.test.mjs` — cleanup only, for the rows the new write
   leaves behind.
 * `src/shifts/telemetry-wiring.pg.test.mjs` — **new file.** The end-to-end proof.
+* `db/migrations/068_shifts_close_reason.sql` — **new file.** Adds
+  `shifts.closed_by`, a check constraint on its three values, and a partial index
+  over the shifts that need a human. New nullable column, default NULL, no
+  existing data touched.
+* `src/shifts/store.mjs` — the sweep stamps `closed_by` and returns it.
+* `src/shifts/timesheet.mjs` — `needsReview()`, `timesheet()`, and a refusal to
+  total a shift whose end nobody can vouch for.
+* `src/shifts/timesheet.test.mjs` — 6 new tests; the export guard extended.
+* `src/shifts/store.pg.test.mjs` — 3 new tests.
 
 **Exports added:** `resolveShiftId` (`src/shifts/attribution.mjs`).
 **Props changed:** `sendTemplated()` and `logAttempt()` each take one new
 optional input; both default to today's behaviour, so no existing caller changes.
-**Routes affected:** none. **Migrations:** none — this workflow adds no schema.
+**Routes affected:** none. **Migrations:** one — `068_shifts_close_reason.sql`,
+a new nullable column with a NULL default. Applies clean on a virgin database
+(51 migrations), re-applies as a no-op, and is idempotent run by hand twice.
 **Journeys impacted:** none exist.
 
 **Behaviour that is genuinely new**
@@ -166,8 +177,9 @@ watched go red, and then restored. See "Verification" below.
 * Against Postgres: no failing test name that was not already failing on `main`
   before any of this. The 24 pre-existing failures are all in the ad-campaign and
   creative-library endpoints and are untouched by this work.
-* `npm run migrate` re-applies as a no-op (0 applied). This workflow adds no
-  schema; the check was run anyway because the proof list asked for it.
+* `npm run migrate` applies 068 clean on a virgin database and re-applies as a
+  no-op. The file is idempotent on its own too — run twice by hand against the
+  same database it changes nothing the second time.
 * Mutation-checked, each break confirmed red and then restored:
   * removed the telemetry write → the end-to-end shift test fails,
   * moved the telemetry write inside the transaction → the ordering test fails,
@@ -179,7 +191,12 @@ watched go red, and then restored. See "Verification" below.
   * counted a replayed send as a second text → the replay test fails,
   * filed an email under `text_sent` → the channel test fails,
   * invented an actor for an automated credit pull → the seam test fails,
-  * made the shared resolver ignore an explicit "off the clock" → three fail.
+  * made the shared resolver ignore an explicit "off the clock" → three fail,
+  * marked every sweep close the same → 8 shift tests fail,
+  * stamped a human clock-out as a sweep close → the normal-case test fails,
+  * let an unvouchable shift total as zero → the timesheet test fails,
+  * silently dropped the review rows → two timesheet tests fail,
+  * dropped the check constraint from the migration → the vocabulary test fails.
 
 **One mutation did not go red on the first attempt, and the test was fixed
 rather than the result written up as a pass.** Removing the sender guard from
@@ -211,7 +228,10 @@ eye, because they concern consumer data:
 
 * Everything W2–W10 own. Those are other people's branches.
 * Any new endpoint, screen, route or migration. This workflow adds none.
-* Scheduling the auto-close sweep. See the warning below.
+* Scheduling the auto-close sweep. The reason it was unsafe is gone; switching
+  it on is still an operator action.
+* What payroll pays for a shift on the review list. No answer exists in this
+  repository and none was invented.
 * Turning either seam on. That needs a staff-facing send, or a pull that carries
   who ran it — neither exists.
 
@@ -222,19 +242,48 @@ eye, because they concern consumer data:
 * Nothing schedules `autoCloseStale()`. This work removes the reason it could not
   be scheduled; it does not schedule it. **That is still a deliberate decision
   for the owner, and it affects people's pay.**
+* Nothing reads the review list yet. The column and the index exist and the
+  timesheet returns the rows; no screen shows them. Whoever builds the timesheet
+  view gets that for free.
 
-### ⚠ The one thing to read before switching the sweep on
+### The roles that produce no telemetry — decided
 
-Only the Inquiry Remover desk now produces activity. **Everybody else still looks
-idle from the moment they clock in.**
+Only the Inquiry Remover desk produces activity. A closer on calls all day, a
+funding advisor moving rounds, an admin — the sweep cannot see any of their work.
+Left alone, every one of their forgotten shifts would close at its own start time
+and read as **"worked 0 seconds"**, which is a payroll input and is wrong.
 
-A closer on calls all day, a funding advisor moving rounds, anyone whose work
-happens on a screen that records nothing — the sweep cannot see any of it. If it
-were switched on today it would end their shift at its start time, and those are
-the rows a timesheet is built from.
+There were three ways out. Two are bad:
 
-This work fixed the reason the sweep was unsafe for one desk. It did not fix it
-for the others, and it could not: there is nothing to record their work from. The
-choices are to give those screens something to record, to run the sweep only for
-roles that produce telemetry, or to leave it off. **That is a decision, and it is
-yours.**
+* **Don't close those shifts.** An open shift blocks that person's next clock-in
+  (that is what the one-open-shift rule does). You trade a wrong timesheet row
+  for an employee who cannot start work in the morning.
+* **Guess the hours.** There is no basis for a guess anywhere in this system — no
+  default shift length, no rota, no scheduled hours in the database or in any
+  config. A guess would put invented time into pay.
+
+**What was built instead: close it, and mark it.** The shift row now says who
+ended it.
+
+| value | meaning |
+|---|---|
+| empty | the person clocked out themselves, or is still on the clock. The normal case. |
+| `sweep_idle` | software ended it, at the last thing they were recorded doing. An estimate **with evidence behind it** — counted normally. |
+| `sweep_no_evidence` | software ended it with **nothing to go on**, so the shift reads as zero length. Not a fact about time worked. |
+
+Then the timesheet was taught the difference. `timesheet()` returns the hours it
+can stand behind, plus the shifts nobody can vouch for, handed back whole so a
+person can be shown them. It does not invent the missing hours and it does not
+quietly drop them. Anything that tries to total one of those shifts directly gets
+a loud error naming the row, not a plausible zero — the same treatment this file
+already gave a shift that ends before it starts, for the same reason.
+
+**What this means in practice.** The sweep is now safe to schedule for every
+role. Nobody gets locked out in the morning, and nobody's forgotten shift
+silently becomes a zero. What lands instead is a short list of shifts with a
+question attached: *how long was this person actually here?*
+
+**Still open, and genuinely a decision:** what payroll should do with a shift on
+that list. Pay a default? Ask the employee? Ask their manager? There is no answer
+in this repository and none was invented. The column and the review list are what
+make the question findable and answerable.

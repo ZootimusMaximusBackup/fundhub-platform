@@ -60,9 +60,45 @@
 // Sub-second remainders are floored per shift rather than accumulated, so the
 // total does not wobble with millisecond jitter in the timestamps.
 
+// ── A SHIFT SOFTWARE GUESSED THE END OF IS NOT A TIMESHEET FACT ─────────────
+// autoCloseStale() closes shifts nobody clocked out of, and when there is no
+// recorded activity to end them at it falls back to started_at — a closed shift
+// of zero length. Today that is EVERY forgotten shift belonging to anyone
+// outside the Inquiry Remover desk, because no other screen writes telemetry.
+//
+// Read naively, that row says "this person worked no time". It is indis-
+// tinguishable from a real 30-second shift on (started_at, ended_at) alone,
+// which is why migration 068 puts `closed_by` on the row itself.
+//
+// This file refuses those rows rather than totalling them, for exactly the
+// reason it already refuses a shift that ends before it starts: "quietly
+// reporting it as zero hides the break from the only person who could fix it
+// while still producing a plausible-looking timesheet." A wrong number that
+// looks right is the failure mode; a loud one is not.
+//
+// `sweep_idle` — closed by the sweep but WITH activity behind the end time — is
+// counted normally. It is an estimate, and it is the best evidence that exists,
+// and it is not zero.
+
 /** Seconds in an hour. Not money — named so hoursWorked() reads as a formula
  *  rather than as an unexplained 3600. */
 export const SECONDS_PER_HOUR = 3600;
+
+/** The `shifts.closed_by` value that means "software guessed, with nothing to
+ *  guess from". Mirrors CLOSED_BY.SWEEP_NO_EVIDENCE in ./store.mjs; it is a
+ *  string on a row rather than an import so this file stays pure and free of
+ *  any dependency that could drag a database handle in behind it. */
+export const UNRECONSTRUCTABLE = "sweep_no_evidence";
+
+/**
+ * needsReview(shift) — is this a shift whose end nobody can vouch for?
+ *
+ * True only for the no-evidence auto-close. An open shift is not "under review",
+ * it is in progress; a human clock-out is not under review at all.
+ */
+export function needsReview(shift) {
+  return !!shift && typeof shift === "object" && shift.closed_by === UNRECONSTRUCTABLE;
+}
 
 /** Milliseconds since epoch from a pg timestamptz (a Date) or an ISO string.
  *  A bare number is REFUSED: seconds and milliseconds are indistinguishable at
@@ -108,6 +144,19 @@ export function shiftSeconds(shift) {
   // happens to sit on an open shift should still be seen.
   const startedAt = instantMs(shift.started_at, "shiftSeconds: started_at");
 
+  // Refused, not zeroed. See the header. This is the same call the negative-span
+  // branch below makes, for the same reason: the caller must not be handed a
+  // plausible number for a span nobody can vouch for. timesheet() partitions
+  // these out before they ever reach here, so a throw means somebody totalled a
+  // raw list and needs to know.
+  if (needsReview(shift)) {
+    throw new RangeError(
+      `shiftSeconds: shift ${shift.id ?? "(no id)"} was auto-closed with no recorded activity, ` +
+      `so ended_at is started_at and the span is unknowable, not zero. ` +
+      `Use timesheet() to separate these, or have a human confirm the hours.`
+    );
+  }
+
   if (shift.ended_at === null || shift.ended_at === undefined) return 0;
   const endedAt = instantMs(shift.ended_at, "shiftSeconds: ended_at");
 
@@ -150,4 +199,41 @@ export function secondsWorked(shifts) {
  */
 export function hoursWorked(shifts) {
   return secondsWorked(shifts) / SECONDS_PER_HOUR;
+}
+
+/**
+ * timesheet(shifts) — the safe way to total a real, mixed list of shift rows.
+ *
+ *   { seconds, hours, counted, needsReview: [rows] }
+ *
+ * `seconds` and `hours` cover ONLY the shifts whose span is known: human
+ * clock-outs, shifts still open (zero, as always), and sweep closes that had
+ * activity behind them. `needsReview` is every shift the sweep closed with
+ * nothing to go on — returned whole, so a caller can show them to somebody
+ * rather than being told a number.
+ *
+ * IT DOES NOT GUESS AT THE MISSING HOURS AND IT DOES NOT DROP THEM SILENTLY.
+ * Both would be answers. There is no basis in this repository for either: no
+ * default shift length, no rota, no scheduled hours anywhere in the schema or in
+ * src/config/. Inventing one would put invented time in a payroll input. The
+ * rows come back so the question reaches a person who can answer it.
+ *
+ * `counted` is how many shifts fed the total, so "8 hours" can be shown as
+ * "8 hours from 3 shifts, 1 more needs review" instead of just "8 hours".
+ */
+export function timesheet(shifts) {
+  if (!Array.isArray(shifts)) {
+    throw new TypeError(`timesheet: expected an array of shift rows, got ${JSON.stringify(shifts)}`);
+  }
+  const review = [];
+  const countable = [];
+  for (const shift of shifts) (needsReview(shift) ? review : countable).push(shift);
+
+  const seconds = secondsWorked(countable);
+  return {
+    seconds,
+    hours: seconds / SECONDS_PER_HOUR,
+    counted: countable.length,
+    needsReview: review
+  };
 }

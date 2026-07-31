@@ -79,6 +79,25 @@ export const STALE_SHIFT_HOURS = 12;
  */
 export const AUTO_CLOSE_EVENT_KIND = "shift_auto_closed";
 
+/**
+ * CLOSED_BY — the `shifts.closed_by` vocabulary (migration 068). Three values,
+ * and the difference between the last two is whether anyone may be paid for the
+ * shift without asking a human first.
+ *
+ * NULL (absent from this object, deliberately — you cannot write it by picking a
+ * name) means the staff member clocked out, or the shift is still open. That is
+ * the normal case and the only one that needs no explanation.
+ */
+export const CLOSED_BY = Object.freeze({
+  /** The sweep closed it; ended_at is the last recorded activity. An estimate,
+   *  but one with evidence behind it. */
+  SWEEP_IDLE: "sweep_idle",
+  /** The sweep closed it and there was NO recorded activity at all, so ended_at
+   *  fell back to started_at and the shift reads as zero length. Not a timesheet
+   *  fact. src/shifts/timesheet.mjs refuses to total it. */
+  SWEEP_NO_EVIDENCE: "sweep_no_evidence"
+});
+
 function requireId(value, field) {
   if (!value) throw new ShiftError(`${field} is required`);
   return value;
@@ -291,13 +310,19 @@ export async function autoCloseStale(db, { olderThanHours = STALE_SHIFT_HOURS } 
      closed AS (
        UPDATE shifts s
           SET ended_at   = a.last_active_at,
+              -- STAMPED ON THE ROW, not only in the audit event's detail. Every
+              -- reader of the shifts table -- timesheet.mjs above all, which is
+              -- pure and receives rows as arguments -- has to be able to see
+              -- that this ended_at is software's guess, without joining to
+              -- another table it has no way to reach.
+              closed_by  = CASE WHEN a.had_activity THEN $3::text ELSE $4::text END,
               updated_at = now()
          FROM activity a
         WHERE s.id = a.id
           AND s.ended_at IS NULL
           AND a.last_active_at < now() - make_interval(secs => $1::double precision * 3600)
         RETURNING s.id, s.org_id, s.staff_id, s.started_at, s.ended_at,
-                  a.had_activity
+                  s.closed_by, a.had_activity
      ),
      logged AS (
        INSERT INTO staff_events (org_id, staff_id, shift_id, kind, detail)
@@ -317,10 +342,10 @@ export async function autoCloseStale(db, { olderThanHours = STALE_SHIFT_HOURS } 
          FROM closed c
        RETURNING shift_id
      )
-     SELECT c.id, c.org_id, c.staff_id, c.started_at, c.ended_at, c.had_activity
+     SELECT c.id, c.org_id, c.staff_id, c.started_at, c.ended_at, c.closed_by, c.had_activity
        FROM closed c
       ORDER BY c.started_at ASC`,
-    [hours, AUTO_CLOSE_EVENT_KIND]
+    [hours, AUTO_CLOSE_EVENT_KIND, CLOSED_BY.SWEEP_IDLE, CLOSED_BY.SWEEP_NO_EVIDENCE]
   );
   return res.rows;
 }

@@ -15,7 +15,10 @@ import {
   SECONDS_PER_HOUR,
   shiftSeconds,
   secondsWorked,
-  hoursWorked
+  hoursWorked,
+  needsReview,
+  timesheet as buildTimesheet,
+  UNRECONSTRUCTABLE
 } from "./timesheet.mjs";
 
 // A closed shift of exactly `hours` hours, as a pg row would arrive (Date
@@ -115,7 +118,12 @@ test("secondsWorked: a non-array, including null, throws rather than reading as 
 test("timesheet exports time only — no rate, no comp function, no money import", () => {
   assert.deepEqual(
     Object.keys(timesheet).sort(),
-    ["SECONDS_PER_HOUR", "hoursWorked", "secondsWorked", "shiftSeconds"],
+    // UNRECONSTRUCTABLE / needsReview / timesheet were added when the auto-close
+    // sweep gained the ability to close a shift it could not date the end of.
+    // All three are about WHICH TIME COUNTS, which is this file's question. None
+    // of them is a rate, and none multiplies anything.
+    ["SECONDS_PER_HOUR", "UNRECONSTRUCTABLE", "hoursWorked", "needsReview",
+     "secondsWorked", "shiftSeconds", "timesheet"],
     "a new export here is either time or it is in the wrong file"
   );
   assert.equal(SECONDS_PER_HOUR, 3600, "not money — the divisor that makes hoursWorked a formula");
@@ -129,4 +137,75 @@ test("timesheet exports time only — no rate, no comp function, no money import
     assert.equal(timesheet[gone], undefined,
       `${gone} is back. Rates are rows in commission_rules; the calculator is src/commissions/calculate.mjs.`);
   }
+});
+
+// =============================================================================
+// A SHIFT SOFTWARE GUESSED THE END OF IS NOT A TIMESHEET FACT.
+//
+// autoCloseStale() falls back to started_at when there is no recorded activity,
+// producing a zero-length closed shift. Today that is every forgotten shift
+// belonging to anyone outside the Inquiry Remover desk, because no other screen
+// writes telemetry. Read naively it says "worked no time", and it is identical
+// on (started_at, ended_at) to a real 30-second shift.
+// =============================================================================
+
+const at = (iso) => new Date(iso);
+const humanShift = (h) => ({
+  id: "sh-human", started_at: at("2026-07-31T09:00:00Z"),
+  ended_at: at(`2026-07-31T${String(9 + h).padStart(2, "0")}:00:00Z`), closed_by: null
+});
+const sweptWithEvidence = {
+  id: "sh-evidence", started_at: at("2026-07-30T09:00:00Z"),
+  ended_at: at("2026-07-30T17:00:00Z"), closed_by: "sweep_idle"
+};
+const sweptBlind = {
+  id: "sh-blind", started_at: at("2026-07-29T09:00:00Z"),
+  ended_at: at("2026-07-29T09:00:00Z"), closed_by: UNRECONSTRUCTABLE
+};
+
+test("needsReview is true only for the no-evidence auto-close", () => {
+  assert.equal(needsReview(sweptBlind), true);
+  assert.equal(needsReview(sweptWithEvidence), false, "an estimate with evidence is still the best answer there is");
+  assert.equal(needsReview(humanShift(8)), false);
+  assert.equal(needsReview({ started_at: at("2026-07-31T09:00:00Z"), ended_at: null, closed_by: null }), false,
+    "a shift in progress is not under review");
+  assert.equal(needsReview(null), false);
+});
+
+test("totalling an unreconstructable shift throws instead of reporting zero", () => {
+  // The whole point. Zero looks like an answer. This file already refuses a
+  // shift that ends before it starts for the same reason.
+  assert.throws(() => shiftSeconds(sweptBlind), RangeError);
+  assert.throws(() => secondsWorked([humanShift(8), sweptBlind]), /unknowable, not zero/);
+  assert.throws(() => secondsWorked([sweptBlind]), /sh-blind/, "the error must name the row a human has to go and look at");
+});
+
+test("timesheet() counts what is known and hands back what is not", () => {
+  const out = buildTimesheet([humanShift(8), sweptWithEvidence, sweptBlind]);
+  assert.equal(out.seconds, 8 * 3600 + 8 * 3600, "8 clocked hours plus 8 estimated-with-evidence hours");
+  assert.equal(out.hours, 16);
+  assert.equal(out.counted, 2);
+  assert.equal(out.needsReview.length, 1);
+  assert.equal(out.needsReview[0].id, "sh-blind", "the row comes back whole, so somebody can be shown it");
+});
+
+test("timesheet() neither guesses the missing hours nor drops the shift", () => {
+  // Both would be answers, and there is no basis for either anywhere in this
+  // repository — no default shift length, no rota, no scheduled hours.
+  const out = buildTimesheet([sweptBlind]);
+  assert.equal(out.seconds, 0, "nothing is invented");
+  assert.equal(out.counted, 0, "and the zero is not presented as a shift that was counted");
+  assert.equal(out.needsReview.length, 1, "and it is not silently discarded either");
+});
+
+test("timesheet() on an ordinary week is just the total, with nothing to review", () => {
+  const out = buildTimesheet([humanShift(8), humanShift(6)]);
+  assert.equal(out.hours, 14);
+  assert.equal(out.counted, 2);
+  assert.deepEqual(out.needsReview, []);
+});
+
+test("timesheet() refuses anything that is not a list", () => {
+  assert.throws(() => buildTimesheet(null), TypeError);
+  assert.throws(() => buildTimesheet(humanShift(8)), TypeError);
 });
