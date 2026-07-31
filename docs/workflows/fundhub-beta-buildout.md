@@ -22,7 +22,7 @@ write why, and STOP. Do not work around another workflow's unfinished output.
 
 | Workflow | Owns | Migrations | Status | Owner |
 |---|---|---|---|---|
-| W1 | Provider seam, mock bank, manual entry, statement cycles, investments | 096–098 | `claimed` | this session |
+| W1 | Provider seam, mock bank, manual entry, statement cycles, investments | 096–097 (098 unused) | `done` | this session |
 | W2 | Consent capture + soft-pull request gate | 099 | `pending` | — |
 | W3 | Retention policy + dry-run purge | 100 | `pending` | — |
 | W4 | Deletion, erasure, orphan-transaction bug, key rotation, revocation | 101–102 | `pending` | — |
@@ -162,9 +162,100 @@ Clear it before believing anything you see on a screen.
 
 ## Change manifests
 
-### W1 — Provider seam, mock bank, manual entry
+### W1 — Provider seam, mock bank, manual entry — `done`
 
-*Status: claimed. Manifest written on completion.*
+**New files**
+
+| File | What it is |
+|---|---|
+| `db/migrations/096_account_statement_cycles.sql` | Statement cycles for accounts NOT from a credit report |
+| `db/migrations/097_investment_holdings.sql` | Brokerage positions |
+| `src/banking/provider.mjs` | **THE SEAM. Import this, never plaid.mjs or mock.mjs.** |
+| `src/banking/mock.mjs` | Deterministic mock provider |
+| `src/banking/statement-cycles.mjs` | PURE. The month-end rule lives here and nowhere else |
+| `src/banking/accounts.mjs` | The writer for `bank_accounts`, cycles, holdings |
+| `src/banking/import.mjs` | Provider → database |
+| `api/banking/accounts.mjs` | GET + POST, action discriminator |
+| `public/app/banking-entry.html` | The screen |
+
+Migration 098 was allocated to W1 and **not used**. It is free — coordinate before taking it.
+
+**Changed files** — four, all additive:
+- `netlify/functions/api.mjs` — one import, one ROUTES entry (`banking/accounts`)
+- `public/app/shell.js` — added `banking-entry.html` to `ALL`
+- `public/app/banking-surface.html`, `public/app/finance-os.html` — one nav link each
+
+**Exports other workflows will want**
+
+```js
+// src/banking/provider.mjs
+bankingProviderFromEnv(env) // { name, ready, missing[], problems[] }
+bankingProviderName(env)    // "mock" | "plaid" | null
+isBankingEnabled(env)       // boolean
+linkAccount({ clientId, publicToken, env })
+getAccounts({ itemId, env })
+
+// src/banking/accounts.mjs — every one takes { orgId, clientId }
+createManualBankAccount(db, input, scope)
+saveStatementCycle(db, input, { ...scope, bankAccountId })
+replaceHoldings(db, holdings[], { ...scope, bankAccountId })
+listBankAccounts(db, scope) / listStatementCycles(db, scope) / listHoldings(db, scope)
+BankAccountWriteError   // .status, .field
+
+// src/banking/statement-cycles.mjs — PURE, `today` is always a parameter
+nextDueDate(cycleRow, { today })      // { dueOn, daysAway, unknownReason }
+nextStatementClose(cycleRow, { today })
+daysBetween(fromIso, toIso)
+UNKNOWN_REASONS
+
+// src/banking/import.mjs
+importAccounts(db, { orgId, clientId, env, today })
+```
+
+**W6 — read this before building the dashboard**
+
+- `GET /api/banking/accounts?client_id=<uuid>` returns
+  `{ ok, provider, accounts[], cycles[], holdings[], as_of }`.
+- **Each cycle already carries `next_due` and `next_close`, computed server-side.**
+  Do NOT recompute a due date in the browser — that would put the month-end rule in two
+  languages. When `next_due.dueOn` is null, `next_due.unknownReason` names the missing
+  field; print that, do not leave the cell blank.
+- **Bigint columns arrive as STRINGS** from node-postgres. `current_balance_cents` is
+  `"250000"`, not `250000`. Do not do arithmetic on it without `Number()`.
+- `provider` is `"mock"` when the data is invented. The screen must say so.
+- A credit account's `available_balance_cents` is HEADROOM, not cash.
+- Statement cycles live in TWO places and mean different things: `card_liabilities`
+  (083, bureau-sourced, requires a tradeline) and `account_statement_cycles` (096,
+  hand-entered or provider). The dashboard must say which source a due date came from.
+
+**W5 — the card data you are adapting**
+
+Cards now arrive from two places: `card_liabilities` (bureau) and `bank_accounts` where
+`account_type = 'credit'` joined to `account_statement_cycles` (hand-entered or
+provider). `credit_limit_cents` and `current_balance_cents` live on `bank_accounts`;
+`apr`, `minimum_payment_cents` and the due schedule live on the cycle row. A
+hand-entered card frequently has a NULL limit — that is the partial case your
+suggestions must NAME rather than compute around.
+
+**W4 — the orphan bug, precisely located**
+
+`085_bank_transactions.sql` declares `bank_account_id uuid NOT NULL` with **no foreign
+key at all**. Its own column comment says *"No FK yet — the bank_accounts table is owned
+by the Plaid-link workflow and does not exist in this repo"* — but `081` created that
+table. So `client_id` is `ON DELETE SET NULL` and `bank_account_id` references nothing:
+delete a client and the transactions lose the person, delete an account and they point
+at a row that is gone. Both routes back are severed. `src/banking/import.mjs` now writes
+these rows, so the volume is about to grow.
+
+**Verification**
+
+- `npm test` — 2619 tests, **0 failures**, 321 skipped (no `DATABASE_URL`).
+- 104 new unit tests passing; 13 pg tests correctly SKIPPING (0 passes, not green-by-absence).
+- Three guards proven by reverting them — see the commit message on `74f5dbb`.
+
+**⚠ `npm install` FIRST.** A fresh clone has no `node_modules`, and `npm test` then
+reports **132 failures** that are entirely `Cannot find package 'inngest'`. That is not a
+broken suite. Install, then measure.
 
 ### W2 — Consent capture
 
@@ -199,6 +290,8 @@ these; they need their own scoped task.
 | F2 | `src/banking/store.mjs:69` uses the broken `withTransaction` probe. `saveDetection()` writes bills and evidence with autocommit; a mid-run failure leaves bills with no evidence. | W1 | medium |
 | F3 | The org-scope and nav-reachability tests the brief relies on do not exist. Nothing enforces either rule today. | W1 | medium |
 | F4 | `src/pii/index.mjs` `revealSsn()` has the same broken transaction probe, so its rule "the access log is written in the same transaction as the reveal" does not hold as shipped. Noted in `soft-pulls.mjs` and still open. | W1 (confirming an existing note) | high — compliance |
+| F5 | `bank_transactions.bank_account_id` has NO foreign key, and its column comment claims `bank_accounts` does not exist in this repo — 081 created it. With `client_id ON DELETE SET NULL`, transactions orphan on both axes. **This is W4's assigned bug; located precisely, not fixed.** | W1 | high |
+| F6 | A fresh clone has no `node_modules` and `npm test` reports 132 failures that are entirely missing packages. Nothing in the repo says to run `npm install` first, and the failure text does not obviously say "missing dependency". | W1 | low — but it cost real time |
 
 ---
 
