@@ -3,10 +3,22 @@
 //   GET  ?partner_id=<uuid>   → the effective brand (falls back to fundhub's)
 //   PUT  { partner_id, ... }  → upsert
 //
-// WRITABLE ONLY BY THE OWNING PARTNER OR AN ADMIN. Until the accounts table
-// exists (Unit 12) there is no partner SESSION, so today that reduces to
-// owner/admin — but the check is written against the principal, not against the
-// staff role, so it does not need rewriting when partner sessions land.
+// READABLE AND WRITABLE ONLY BY THE OWNING PARTNER OR AN ADMIN. Until the
+// accounts table exists (Unit 12) there is no partner SESSION, so today that
+// reduces to owner/admin — but the check is written against the principal, not
+// against the staff role, so it does not need rewriting when partner sessions
+// land.
+//
+// THE READ USED TO HAVE NO GATE AT ALL (audit m8). The GET branch called
+// requireAuth and stopped there, which answers exactly one question — is this
+// caller signed in — and every staff row is signed in. That includes
+// role='partner', a REAL staff role seeded by db/migrations/036_partner_role.sql
+// for external white-label operators. So any signed-in rival could pass another
+// partner's uuid and read their wordmark, colour ramp, trading name, postal
+// address, support address, custom domain and the exact list of funnels they
+// have chosen to run. That is a competitor's product and marketing strategy, and
+// it was one query parameter away. The write path had the correct check twelve
+// lines below the whole time; only the read was open.
 //
 // THE BS-05 COMPLIANCE BLOCKS ARE NOT WRITABLE HERE. The disclosure copy comes
 // from a master template with entity_name injected; this endpoint accepts the
@@ -83,9 +95,42 @@ function validate(body) {
   return bad;
 }
 
-// canWrite — the owning partner, or an admin. Written against a principal so it
-// survives Unit 12 unchanged.
-function canWrite(staff, partnerId) {
+/* canAccessBrand — the owning partner, or an admin. Written against a principal
+   so it survives Unit 12 unchanged.
+
+   ONE PREDICATE FOR BOTH METHODS. This was `canWrite` and the GET did not call
+   it (audit m8). Reading and writing get the same answer here on purpose: a
+   partner's brand IS that partner's configuration, and there is no role that
+   should be able to see a rival's colours, trading name, domain and funnel
+   selection but not edit them. Two predicates that agree today are two
+   predicates that drift, and the one that drifts is always the read — nobody
+   reviews a SELECT as hard as an INSERT. So there is one, and both branches
+   call it.
+
+   IT IS A ROLE CHECK **AND** AN OWNERSHIP CHECK, and it needs both arms:
+
+     * A role check alone (owner/admin) locks a partner out of their OWN brand,
+       which is the entire point of the Brand Studio screen.
+     * An ownership check alone locks owner/admin out of every partner's brand,
+       and they are the people who set white-label partners up.
+
+   NOT ROLE_SETS/requireRole from src/http/read-api.mjs, which is how the
+   api/read/* siblings gate. Deliberate, for two reasons. No set there contains
+   'partner' — STAFF excludes it on purpose (see src/http/dashboard-role-gate.test.mjs,
+   audit M1), so requireRole could never admit the owning partner. And the set
+   that matches the admin arm by value, FINANCE, means "money and people";
+   binding this endpoint to it would silently widen partner brand access the
+   next time somebody widens FINANCE for a commission report. The allowed roles
+   are named here, in the open, where a reviewer reads them.
+
+   NOTE — `staff.partner_id` DOES NOT EXIST YET. src/auth/session.mjs:88-90
+   selects id, org_id, role, email, name, status; the staff table has no
+   partner_id column. So the partner arm is unreachable today and role='partner'
+   gets a 403 on BOTH methods. That is not a regression: the write path has
+   behaved exactly this way since it was written, and public/app/shell.js:439
+   already gives up when staff.partner_id is absent. When Unit 12 lands partner
+   sessions, this function starts admitting them with no edit. */
+function canAccessBrand(staff, partnerId) {
   const role = String(staff && staff.role || "").trim().toLowerCase();
   if (role === "owner" || role === "admin") return true;
   if (role === "partner" && staff.partner_id && staff.partner_id === partnerId) return true;
@@ -102,6 +147,17 @@ export default async function handler(req, res) {
     // A malformed id is a 400. Letting it reach Postgres produced a 500 quoting
     // the raw type error, which reads to a screen as "the backend is down".
     if (!isUuid(partnerId)) return res.status(400).json({ ok: false, error: "invalid_partner_id" });
+    /* THE GATE (audit m8). Same predicate, same order and same refusal shape as
+       the PUT below, so the two branches cannot mean different things. It sits
+       AFTER the two 400s on purpose: uuid syntax is not a secret, and matching
+       the PUT's precedence keeps "which error do I get" from becoming a way to
+       tell the branches apart. It sits BEFORE the query, so a refused caller
+       never touches the row and cannot time the difference between a partner id
+       that exists and one that does not. */
+    if (!canAccessBrand(staff, partnerId)) {
+      return res.status(403).json({ ok: false, error: "forbidden",
+        message: "only the owning partner or an admin may read this brand" });
+    }
     try {
       const { rows } = await db.query(
         `SELECT * FROM v_partner_brand_effective WHERE partner_id = $1`, [partnerId]);
@@ -120,7 +176,7 @@ export default async function handler(req, res) {
     const partnerId = body.partner_id;
     if (!partnerId) return res.status(400).json({ ok: false, error: "partner_id_required" });
     if (!isUuid(partnerId)) return res.status(400).json({ ok: false, error: "invalid_partner_id" });
-    if (!canWrite(staff, partnerId)) {
+    if (!canAccessBrand(staff, partnerId)) {
       return res.status(403).json({ ok: false, error: "forbidden",
         message: "only the owning partner or an admin may edit this brand" });
     }
