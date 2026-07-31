@@ -133,11 +133,19 @@ is the only gate that exists.
 - RLS has never been enforced in production. Above.
 - `docs/journeys/` does not exist. CLAUDE.md section 4 describes it in detail
   and names eight journeys; the directory is absent, so there is no
-  `-actual.md` to update and no `CHANGELOG.md` to append to. Not invented here
-  — that is a separate job. This change alters no user-facing flow either way.
+  `-actual.md` to update and no `CHANGELOG.md` to append to. This change alters
+  no user-facing flow either way.
+  **CLOSED — do not pick this up.** Chris confirmed 2026-07-31 that journeys
+  are already being built by another workflow on
+  `claude/journeys-actual-generated`. Leave that branch to it.
 - `npm run lint` does not exist in `package.json`, and there is no TypeScript,
   so `npx tsc --noEmit` has nothing to check. Definition-of-done items 1 and 2
   cannot be run as written.
+  **DEFERRED by Chris 2026-07-31** — skip lint for now. Playwright and the
+  journey tests are the intended verification layer, landing as Phase 1 of the
+  next spec.
+- The documented test baseline was stale. **FIXED** — CLAUDE.md §12 now reads
+  45, with the measurement conditions recorded alongside it.
 - Netlify env var **scope** matters and is easy to get wrong: if `DATABASE_URL`
   is scoped "Functions only", the build cannot see it and the new guard fails
   the deploy. Covered as a step in the runbook.
