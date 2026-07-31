@@ -10,8 +10,17 @@ rather than editing anyone else's.
 
 ## W8
 
-**Task:** the cash-flow projection model, the payment window, and reminder
-storage (migration 087). `status: done`
+**Task:** the cash-flow projection model, the payment window, `recordReminders`,
+and reminder storage (migration 087). `status: done`
+
+> **COMPLIANCE REVIEW REQUIRED — estimates shown to a consumer.**
+> `recordReminders()` composes sentences quoting PROJECTED figures and PREDICTED
+> dates for a client of a regulated consumer-finance product. Every body that
+> carries a number says "estimated" or "projected", and two tests enforce that
+> wording so it cannot be edited out for brevity. No body makes any claim about
+> a credit score or a credit outcome, and a test asserts that too. Flagged, not
+> blocked: this produces rows, and no row reaches a person until somebody builds
+> a surface for it, which is a separate decision.
 
 **What changed in plain language:** the system can now work out, day by day,
 what a client's bank balance will look like for the next few weeks, and use that
@@ -127,7 +136,25 @@ just removed from `src/shifts/timesheet.mjs`. `cashflow.mjs` deliberately
 computes none of its numbers and shares no constants with it. **Not touched:
 outside this task's scope.** Flagged for whoever owns it.
 
-**5. A reminder that is about neither a card nor a bill has no home.**
+**5. `WORKFLOW-AUTONOMY.md` does not exist.** The autonomous-build directive
+named it as the decision framework to read first. It is not in the working tree
+and `git log --all --diff-filter=A` finds it in no branch's history. Proceeded on
+the decision rules inlined in the directive itself, which were sufficient.
+Reported rather than invented.
+
+**6. `payment_window_closing` can never fire, and that is a property of the
+maths.** Feasibility is monotone in the payment date: the suffix-minimum of the
+projected balance is non-decreasing as the date moves later, and a payment is a
+one-off outflow with no other effect, so **paying later is never worse than
+paying earlier.** The safe window therefore always ends on the due date and
+there is no earlier "last safe day" to warn about. The only bound carrying
+information is `earliestDate`. The kind stays in 087's CHECK constraint for a
+future caller with a constraint this module does not model (a promotional rate
+expiring, a transfer that must clear first); nothing emits it today and
+`recordReminders` records that as a runtime skip rather than leaving it to look
+like an oversight.
+
+**7. A reminder that is about neither a card nor a bill has no home.**
 `subject_kind` is a closed two-value set, per the task's wording ("about which
 liability or bill"). A finding like "we cannot project your cash flow because an
 account balance is unknown" is about an ACCOUNT and cannot be stored. Widening
@@ -139,10 +166,10 @@ the enum was not done on a guess about who such a reminder would be for.
 
 | File | Change |
 |---|---|
-| `src/banking/cashflow.mjs` | New. `project()`, `paymentWindow()`, `CashflowInputError`. Pure — no I/O, no clock, no database. Imports only `fromCents`. |
-| `src/banking/cashflow.test.mjs` | New. 86 pure unit tests. |
+| `src/banking/cashflow.mjs` | New. `project()`, `paymentWindow()`, `recordReminders()`, `CashflowInputError`. Pure — no I/O, no clock, no database. Imports only `fromCents`. |
+| `src/banking/cashflow.test.mjs` | New. 103 pure unit tests, including two compliance-wording guards. |
 | `src/banking/reminders.mjs` | New. `createReminder`, `dueReminders`, `forClient`, `acknowledge`, `getReminder`, `ReminderError`, and the three frozen vocabularies. |
-| `src/banking/reminders.pg.test.mjs` | New. 26 tests against real Postgres; skips cleanly with `DATABASE_URL` unset. |
+| `src/banking/reminders.pg.test.mjs` | New. 28 tests against real Postgres; skips cleanly with `DATABASE_URL` unset. Includes the model-to-store handoff. |
 | `db/migrations/087_cashflow_reminders.sql` | New. One table, four indexes, one trigger. `IF NOT EXISTS` throughout. |
 | `docs/workflows/finance-os-banking.md` | New. This board. |
 
@@ -151,7 +178,7 @@ the enum was not done on a guess about who such a reminder would be for.
 ### Exports added
 
 ```
-src/banking/cashflow.mjs   project, paymentWindow, CashflowInputError
+src/banking/cashflow.mjs   project, paymentWindow, recordReminders, CashflowInputError
 src/banking/reminders.mjs  createReminder, dueReminders, forClient, acknowledge,
                            getReminder, ReminderError,
                            SUBJECT_KINDS, REMINDER_KINDS, ACK_BY_KINDS
@@ -186,21 +213,22 @@ Migration 087
   51 files apply from scratch on a virgin database             ✔
 
 Unit tests (no DATABASE_URL)
-  src/banking/cashflow.test.mjs          86 tests, 86 pass, 0 fail
-  full suite                           1999 tests, 0 fail, 221 skipped
+  src/banking/cashflow.test.mjs         103 tests, 103 pass, 0 fail
+  full suite                           2018 tests,   0 fail, 223 skipped
 
 Postgres tests (DATABASE_URL set)
-  src/banking/reminders.pg.test.mjs      26 tests, 26 pass, 0 fail
-  full suite                           2454 tests, 8 skipped
+  src/banking/reminders.pg.test.mjs      28 tests, 28 pass, 0 fail
   failing test NAMES vs the same suite with src/banking removed:
                                        BYTE-IDENTICAL (28 pre-existing, all in
                                        the creative / partner modules; none in
                                        src/banking)
 
-Mutation testing              39 deliberate defects injected, 39 killed, 0 survived
-  cashflow.mjs   27/27   incl. both sides of every boundary, the pessimistic-track
-                         rule, the blind-spot refusal, and each threshold being
-                         filled in with a picked number
+Mutation testing              47 deliberate defects injected, 47 killed, 0 survived
+  cashflow.mjs   35/35   incl. both sides of every boundary, the pessimistic-track
+                         rule, the blind-spot refusal, each threshold being filled
+                         in with a picked number, the shortfall attribution, and
+                         BOTH compliance-wording rules (dropping "estimated", and
+                         adding a credit-outcome claim)
   reminders.mjs  12/12   incl. org scoping on all three reads, first-ack-wins,
                          and the due-at-exactly-asOf boundary
 

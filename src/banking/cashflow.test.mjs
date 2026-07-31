@@ -19,7 +19,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert";
-import { project, paymentWindow, CashflowInputError } from "./cashflow.mjs";
+import { project, paymentWindow, recordReminders, CashflowInputError } from "./cashflow.mjs";
 
 const NOW = "2026-08-01";
 
@@ -1226,5 +1226,319 @@ test("paymentWindow: every candidate date carries its own working", () => {
     assert.equal(c.feasible, true);
     // $1,000 - $800 rent - $150 payment = $50 left at the low point, every date.
     assert.equal(c.lowestBalanceAfterPaymentCents, 5_000);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// recordReminders() — turning findings into rows. Still pure; still sends
+// nothing. The rows are handed to src/banking/reminders.mjs to be stored.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const card = (over = {}) => ({
+  liabilityId: "amex",
+  label: "Amex Blue Business",
+  dueDate: "2026-08-20",
+  minimumPaymentCents: 3_500,
+  ...over
+});
+
+test("recordReminders: a missing or malformed projection throws", () => {
+  for (const bad of [undefined, null, "projection", 42, []]) {
+    assert.throws(() => recordReminders({ projection: bad }), CashflowInputError);
+  }
+});
+
+test("recordReminders: a refused projection produces no rows and says why", () => {
+  const p = project(req({ balances: [{ accountId: "a", balanceCents: null }] }));
+  const out = recordReminders({ orgId: "o", clientId: "c", projection: p });
+  assert.deepEqual(out.reminders, []);
+  assert.equal(out.skipped.length, 1);
+  assert.equal(out.skipped[0].reminderKind, "input_missing");
+  assert.match(out.skipped[0].reason, /UNKNOWN_BALANCE/);
+});
+
+test("recordReminders: a blind spot becomes an input_missing row against that card", () => {
+  const p = project(req({ cardLiabilities: [card({ minimumPaymentCents: undefined })] }));
+  const out = recordReminders({ orgId: "o", clientId: "c", projection: p });
+  assert.equal(out.reminders.length, 1);
+  const r = out.reminders[0];
+  assert.equal(r.reminderKind, "input_missing");
+  assert.equal(r.subjectKind, "card_liability");
+  assert.equal(r.subjectId, "amex");
+  assert.equal(r.subjectLabel, "Amex Blue Business");
+  assert.equal(r.orgId, "o");
+  assert.equal(r.clientId, "c");
+  assert.equal(r.surfaceAt, "2026-08-01T00:00:00.000Z", "an unknown fact surfaces now");
+  assert.match(r.body, /no payment date is being estimated/);
+});
+
+test("recordReminders: a projected shortfall is attributed to the largest outflow that day", () => {
+  const p = project(
+    req({
+      horizonDays: 10,
+      balances: [{ accountId: "a", balanceCents: 10_000 }],
+      recurringBills: [
+        bill("small", "2026-08-03", 2_000, { confirmed: true }),
+        bill("rent", "2026-08-03", 50_000, { confirmed: true })
+      ]
+    })
+  );
+  const out = recordReminders({ orgId: "o", clientId: "c", projection: p });
+  const short = out.reminders.find((r) => r.reminderKind === "projected_shortfall");
+  assert.ok(short, "a below-zero projection must produce a shortfall reminder");
+  assert.equal(short.subjectKind, "recurring_bill");
+  assert.equal(short.subjectId, "rent", "the biggest outflow, not the first one");
+  assert.match(short.body, /-420\.00/);
+  assert.match(short.body, /estimate/i);
+});
+
+test("recordReminders: a shortfall with nothing leaving that day is skipped, not guessed at", () => {
+  // The account was already short before anything moved. There is no card or
+  // bill to attribute it to and `subject_kind` has no third value.
+  const p = project(req({ balances: [{ accountId: "a", balanceCents: -5_000 }], horizonDays: 3 }));
+  const out = recordReminders({ orgId: "o", clientId: "c", projection: p });
+  assert.deepEqual(out.reminders, []);
+  const skip = out.skipped.find((s) => s.reminderKind === "projected_shortfall");
+  assert.ok(skip);
+  assert.match(skip.reason, /nothing leaves the account/);
+});
+
+test("recordReminders: an unconfirmed bill can trigger a shortfall — the worst case counts", () => {
+  const p = project(
+    req({
+      horizonDays: 10,
+      balances: [{ accountId: "a", balanceCents: 10_000 }],
+      recurringBills: [bill("maybe", "2026-08-03", 50_000)]
+    })
+  );
+  const out = recordReminders({ orgId: "o", clientId: "c", projection: p });
+  assert.ok(out.reminders.some((r) => r.reminderKind === "projected_shortfall"));
+});
+
+test("recordReminders: with no window, only projection-level findings are produced", () => {
+  const p = project(req({ cardLiabilities: [card()] }));
+  const out = recordReminders({ orgId: "o", clientId: "c", projection: p });
+  assert.deepEqual(out.reminders, []);
+  assert.deepEqual(out.skipped, []);
+});
+
+test("recordReminders: a window with no named subject is skipped, not attributed to a guess", () => {
+  const p = project(req({ horizonDays: 30 }));
+  const w = paymentWindow({ projectedBalances: p, dueDate: "2026-08-20", minimumPaymentCents: 3_500 });
+  const out = recordReminders({ orgId: "o", clientId: "c", projection: p, window: w });
+  assert.deepEqual(out.reminders, []);
+  assert.match(out.skipped.find((s) => s.reminderKind === "payment_due").reason, /no subject card was named/);
+});
+
+test("recordReminders: a good window becomes a payment_due row on the recommended date", () => {
+  const p = project(req({ horizonDays: 30, cardLiabilities: [card()] }));
+  const w = paymentWindow({
+    projectedBalances: p,
+    dueDate: "2026-08-20",
+    minimumPaymentCents: 3_500,
+    excludeSourceIds: ["amex"]
+  });
+  assert.equal(w.ok, true);
+  const out = recordReminders({
+    orgId: "o",
+    clientId: "c",
+    projection: p,
+    window: w,
+    subject: { subjectId: "amex", subjectLabel: "Amex Blue Business" }
+  });
+  const due = out.reminders.find((r) => r.reminderKind === "payment_due");
+  assert.ok(due);
+  assert.equal(due.surfaceAt, "2026-08-20T00:00:00.000Z");
+  assert.equal(due.subjectKind, "card_liability");
+  assert.match(due.body, /Estimated best date/);
+  assert.match(due.body, /\$?35\.00/);
+});
+
+test("recordReminders: a refused window still produces a row — silence is the wrong answer", () => {
+  const p = project(req({ horizonDays: 30, balances: [{ accountId: "a", balanceCents: 100 }] }));
+  const w = paymentWindow({ projectedBalances: p, dueDate: "2026-08-20", paymentAmountCents: 500_000 });
+  assert.equal(w.ok, false);
+  const out = recordReminders({
+    orgId: "o",
+    clientId: "c",
+    projection: p,
+    window: w,
+    subject: { subjectId: "amex", subjectLabel: "Amex Blue Business" }
+  });
+  const miss = out.reminders.find((r) => r.reminderKind === "input_missing");
+  assert.ok(miss, "a window we could not compute must still reach a person");
+  assert.match(miss.body, /cannot estimate a safe payment date/i);
+  assert.equal(miss.surfaceAt, "2026-08-01T00:00:00.000Z");
+});
+
+test("recordReminders: a statement close in the future becomes a row on that date", () => {
+  const p = project(req({ horizonDays: 30, cardLiabilities: [card()] }));
+  const w = paymentWindow({
+    projectedBalances: p,
+    dueDate: "2026-08-20",
+    statementClose: "2026-08-05",
+    minimumPaymentCents: 3_500,
+    excludeSourceIds: ["amex"]
+  });
+  const out = recordReminders({
+    orgId: "o",
+    clientId: "c",
+    projection: p,
+    window: w,
+    subject: { subjectId: "amex", subjectLabel: "Amex Blue Business", statementClose: "2026-08-05" }
+  });
+  const closed = out.reminders.find((r) => r.reminderKind === "statement_closed");
+  assert.ok(closed);
+  assert.equal(closed.surfaceAt, "2026-08-05T00:00:00.000Z");
+});
+
+test("recordReminders: a statement that closed before today is not announced", () => {
+  const p = project(req({ horizonDays: 30, cardLiabilities: [card()] }));
+  const w = paymentWindow({
+    projectedBalances: p,
+    dueDate: "2026-08-20",
+    minimumPaymentCents: 3_500,
+    excludeSourceIds: ["amex"]
+  });
+  const out = recordReminders({
+    orgId: "o",
+    clientId: "c",
+    projection: p,
+    window: w,
+    subject: { subjectId: "amex", subjectLabel: "Amex Blue Business", statementClose: "2026-07-25" }
+  });
+  assert.equal(out.reminders.find((r) => r.reminderKind === "statement_closed"), undefined);
+});
+
+test("recordReminders: payment_window_closing is never emitted, and the reason is stated", () => {
+  // Paying later is never worse than paying earlier, so the safe window always
+  // ends on the due date. There is no earlier last-safe-day to warn about.
+  const p = project(req({ horizonDays: 30, cardLiabilities: [card()] }));
+  const w = paymentWindow({
+    projectedBalances: p,
+    dueDate: "2026-08-20",
+    minimumPaymentCents: 3_500,
+    excludeSourceIds: ["amex"]
+  });
+  assert.equal(w.latestDate, "2026-08-20", "the window always runs to the due date");
+  const out = recordReminders({
+    orgId: "o",
+    clientId: "c",
+    projection: p,
+    window: w,
+    subject: { subjectId: "amex", subjectLabel: "Amex Blue Business" }
+  });
+  assert.equal(out.reminders.find((r) => r.reminderKind === "payment_window_closing"), undefined);
+  assert.match(
+    out.skipped.find((s) => s.reminderKind === "payment_window_closing").reason,
+    /paying later is never worse/
+  );
+});
+
+test("recordReminders: missing threshold rows surface on the output", () => {
+  const p = project(
+    req({ horizonDays: 30, recurringBills: [bill("b", "2026-08-04", 100, { confidence: 0.5 })] })
+  );
+  const w = paymentWindow({ projectedBalances: p, dueDate: "2026-08-20", minimumPaymentCents: 1 });
+  const out = recordReminders({
+    orgId: "o",
+    clientId: "c",
+    projection: p,
+    window: w,
+    subject: { subjectId: "amex", subjectLabel: "Amex" }
+  });
+  const names = out.thresholdGaps.map((g) => g.name).sort();
+  assert.deepEqual(names, ["confidenceFloor", "minBufferCents", "settlementLeadDays"]);
+});
+
+test("recordReminders: every row is shaped for createReminder, with no extra keys", () => {
+  const p = project(req({ horizonDays: 30, cardLiabilities: [card()] }));
+  const w = paymentWindow({
+    projectedBalances: p,
+    dueDate: "2026-08-20",
+    minimumPaymentCents: 3_500,
+    excludeSourceIds: ["amex"]
+  });
+  const out = recordReminders({
+    orgId: "o",
+    clientId: "c",
+    projection: p,
+    window: w,
+    subject: { subjectId: "amex", subjectLabel: "Amex Blue Business", statementClose: "2026-08-05" }
+  });
+  assert.ok(out.reminders.length >= 2);
+  const expected = [
+    "orgId",
+    "clientId",
+    "subjectKind",
+    "subjectId",
+    "subjectLabel",
+    "reminderKind",
+    "body",
+    "surfaceAt"
+  ].sort();
+  for (const r of out.reminders) {
+    assert.deepEqual(Object.keys(r).sort(), expected, JSON.stringify(r));
+    assert.equal(typeof r.body, "string");
+    assert.ok(r.body.trim().length > 0, "the database refuses an empty body");
+    assert.ok(["card_liability", "recurring_bill"].includes(r.subjectKind));
+    assert.match(r.surfaceAt, /^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/);
+  }
+});
+
+test("COMPLIANCE: every figure quoted to a client is marked as an estimate", () => {
+  // A regulated consumer-finance product must not present a projection as a
+  // fact. This asserts the wording rule the module header commits to, so it
+  // cannot be edited out for brevity without the suite failing.
+  const p = project(
+    req({
+      horizonDays: 30,
+      balances: [{ accountId: "a", balanceCents: 10_000 }],
+      cardLiabilities: [card()],
+      recurringBills: [bill("rent", "2026-08-03", 50_000, { confirmed: true })]
+    })
+  );
+  const w = paymentWindow({ projectedBalances: p, dueDate: "2026-08-20", minimumPaymentCents: 3_500 });
+  const out = recordReminders({
+    orgId: "o",
+    clientId: "c",
+    projection: p,
+    window: w,
+    subject: { subjectId: "amex", subjectLabel: "Amex Blue Business", statementClose: "2026-08-05" }
+  });
+  assert.ok(out.reminders.length > 0);
+  for (const r of out.reminders) {
+    if (/\d+\.\d{2}/.test(r.body)) {
+      assert.match(
+        r.body,
+        /estimat|projected/i,
+        `a body quoting a figure must say it is an estimate: ${r.body}`
+      );
+    }
+  }
+});
+
+test("COMPLIANCE: no reminder claims anything about credit scores or outcomes", () => {
+  // Never draft customer-facing claims about credit outcomes. These sentences
+  // describe arithmetic and absence, and nothing else.
+  const p = project(
+    req({
+      horizonDays: 30,
+      balances: [{ accountId: "a", balanceCents: 10_000 }],
+      cardLiabilities: [card(), card({ liabilityId: "visa", label: "Visa", minimumPaymentCents: undefined })],
+      recurringBills: [bill("rent", "2026-08-03", 50_000, { confirmed: true })]
+    })
+  );
+  const w = paymentWindow({ projectedBalances: p, dueDate: "2026-08-20", minimumPaymentCents: 3_500 });
+  const out = recordReminders({
+    orgId: "o",
+    clientId: "c",
+    projection: p,
+    window: w,
+    subject: { subjectId: "amex", subjectLabel: "Amex Blue Business" }
+  });
+  const forbidden = /credit score|fico|vantage|improve your credit|boost|guarantee|will raise|will increase your|repair your credit|remove.*from your report/i;
+  for (const r of out.reminders) {
+    assert.doesNotMatch(r.body, forbidden, `body makes a credit claim: ${r.body}`);
   }
 });

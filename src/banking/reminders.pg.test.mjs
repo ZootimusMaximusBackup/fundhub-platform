@@ -37,6 +37,7 @@ import {
   SUBJECT_KINDS,
   REMINDER_KINDS
 } from "./reminders.mjs";
+import { project, paymentWindow, recordReminders } from "./cashflow.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
 
@@ -510,5 +511,88 @@ test("dueReminders honours its limit", { skip: !HAS_DB }, async () => {
   }
   assert.equal((await dueReminders(db, { orgId, asOf: T2 })).length, REMINDER_KINDS.length);
   assert.equal((await dueReminders(db, { orgId, asOf: T2, limit: 2 })).length, 2);
+  await db.query(`DELETE FROM cashflow_reminders WHERE org_id = $1`, [orgId]);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// The seam: what the model produces is what the store accepts.
+// ═══════════════════════════════════════════════════════════════════════════
+
+test("recordReminders output is directly storable, and re-running stores nothing new", { skip: !HAS_DB }, async () => {
+  // Two halves built separately are only one unit if the handoff works. This
+  // drives the real model into the real table with no adapter in between —
+  // every subject_kind and reminder_kind it emits has to satisfy the CHECK
+  // constraints, and every body has to be non-empty.
+  const projection = project({
+    balances: [{ accountId: "chk", label: "Checking", balanceCents: 10_000 }],
+    now: "2026-08-01",
+    horizonDays: 30,
+    cardLiabilities: [
+      { liabilityId: CARD_ID, label: "Amex Blue Business", dueDate: "2026-08-20", minimumPaymentCents: 3_500 }
+    ],
+    recurringBills: [
+      { billId: BILL_ID, label: "Rent", confirmed: true, occurrences: [{ date: "2026-08-03", amountCents: 50_000 }] }
+    ]
+  });
+  const window = paymentWindow({
+    projectedBalances: projection,
+    dueDate: "2026-08-20",
+    minimumPaymentCents: 3_500,
+    excludeSourceIds: [CARD_ID]
+  });
+  const { reminders } = recordReminders({
+    orgId,
+    clientId: clientA,
+    projection,
+    window,
+    subject: { subjectId: CARD_ID, subjectLabel: "Amex Blue Business", statementClose: "2026-08-05" }
+  });
+  assert.ok(reminders.length > 0, "this fixture must produce something to store");
+
+  const first = [];
+  for (const r of reminders) first.push(await createReminder(db, r));
+  assert.ok(first.every((x) => x.created), "every row the model produced must insert");
+
+  // The projection is pure and takes its clock as a parameter, so a second
+  // nightly run over unchanged inputs produces byte-identical findings. Not one
+  // of them may become a second row.
+  const second = [];
+  for (const r of reminders) second.push(await createReminder(db, r));
+  assert.ok(second.every((x) => !x.created), "a re-run must create nothing");
+
+  const { rows } = await db.query(
+    `SELECT count(*)::int AS n FROM cashflow_reminders WHERE client_id = $1`,
+    [clientA]
+  );
+  assert.equal(rows[0].n, reminders.length);
+  await db.query(`DELETE FROM cashflow_reminders WHERE org_id = $1`, [orgId]);
+});
+
+test("a refusal from the model reaches the table as a real row", { skip: !HAS_DB }, async () => {
+  // The case that matters most: the model could not work out a safe date. That
+  // has to become something a person sees, not a silence.
+  const projection = project({
+    balances: [{ accountId: "chk", balanceCents: 100 }],
+    now: "2026-08-01",
+    horizonDays: 30
+  });
+  const window = paymentWindow({
+    projectedBalances: projection,
+    dueDate: "2026-08-20",
+    paymentAmountCents: 500_000
+  });
+  assert.equal(window.ok, false);
+  const { reminders } = recordReminders({
+    orgId,
+    clientId: clientA,
+    projection,
+    window,
+    subject: { subjectId: CARD_ID, subjectLabel: "Amex Blue Business" }
+  });
+  const miss = reminders.find((r) => r.reminderKind === "input_missing");
+  assert.ok(miss);
+  const { reminder } = await createReminder(db, miss);
+  assert.equal(reminder.reminder_kind, "input_missing");
+  assert.match(reminder.body, /cannot estimate a safe payment date/i);
   await db.query(`DELETE FROM cashflow_reminders WHERE org_id = $1`, [orgId]);
 });

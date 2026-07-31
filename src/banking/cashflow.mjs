@@ -146,6 +146,24 @@
 // in floating-point dollars. This module asks when money moves, in integer
 // cents. Neither computes the other's number, and neither should start to.
 
+// ── COMPLIANCE REVIEW REQUIRED — ESTIMATES SHOWN TO A CONSUMER ─────────────
+//
+// recordReminders() composes sentences that quote PROJECTED figures and
+// PREDICTED dates to a client of a regulated consumer-finance product. Two
+// things about that need a human's sign-off before any of it reaches a screen:
+//
+//   1. Every number in a reminder body is an ESTIMATE, and the wording has to
+//      keep saying so. The bodies below say "projected" and "estimated" in
+//      every sentence that carries a figure, on purpose. That is a compliance
+//      choice, not a style one, and it must not be edited out for brevity.
+//   2. NOTHING HERE MAY BECOME ADVICE. These sentences state what the arithmetic
+//      shows and what is unknown. They do not tell anyone what to do with a
+//      credit account, and they make no claim whatsoever about a credit
+//      outcome, a score, or what paying on a given date will do to either.
+//
+// Flagged rather than blocked: this produces rows, and no row reaches a person
+// until somebody builds a surface for it, which is a separate decision.
+
 import { fromCents } from "../commissions/money.mjs";
 
 /**
@@ -1244,6 +1262,14 @@ export function paymentWindow({
   // longer is money available for everything else that lands first. Every day
   // between the earliest and the latest is offered so a person who wants slack
   // can take it.
+  //
+  // WORTH KNOWING: `latestDate` is ALWAYS the due date whenever the window is
+  // non-empty, and that is a property of the maths, not a coincidence.
+  // Feasibility is monotone — suffixMin[] is non-decreasing in the day, because
+  // a later day minimises over a smaller tail, and a payment is a one-off
+  // outflow with no other effect. So paying later is never worse than paying
+  // earlier. The bound that actually carries information is `earliestDate`:
+  // the first day the account can stand it.
   const recommendedDay = latestFeasibleDay;
   let initiateByDate = null;
   let initiateByReason = null;
@@ -1283,4 +1309,211 @@ export function paymentWindow({
     notes,
     thresholdGaps: gapsToList(gaps)
   };
+}
+
+/* A reminder surfaces at the start of its UTC day. project() works in calendar
+   days and `cashflow_reminders.surface_at` is a timestamptz, so the two have to
+   meet somewhere and midnight UTC is the only point on a day that does not
+   require inventing an hour somebody would have had to choose. */
+const atStartOfDay = (date) => `${date}T00:00:00.000Z`;
+
+/** Map a projection component's kind onto the reminder table's subject_kind. */
+function subjectKindFor(kind) {
+  if (kind === "card" || kind === "card_minimum") return "card_liability";
+  if (kind === "bill") return "recurring_bill";
+  return null;
+}
+
+/**
+ * recordReminders({ orgId, clientId, projection, window, subject }) — turn a
+ * projection and a payment window into the reminder rows they justify.
+ *
+ * PURE. It RETURNS rows; it does not write them, and it could not send one if
+ * it wanted to. Hand the result to createReminder() in src/banking/reminders.mjs.
+ * Splitting "decide what to say" from "store it" is what keeps this testable
+ * without a database and keeps the storage layer free of judgement.
+ *
+ * ── WHICH REMINDERS THIS CAN PRODUCE, AND WHY THOSE ────────────────────────
+ *
+ * Every reminder needs a `surface_at`, and the obvious rule for one — "warn N
+ * days before the due date" — HAS NO ROW ANYWHERE IN THIS SCHEMA. So this
+ * function only emits reminders whose surfacing date falls out of the model
+ * itself, and refuses the rest. Each one below is derived, not chosen:
+ *
+ *   input_missing        at `now`. Something is unknown and somebody needs to
+ *                        go and find it out; there is no reason to wait.
+ *   projected_shortfall  at `now`, for the same reason.
+ *   statement_closed     on the statement close date. The date IS the event.
+ *   payment_due          on the recommended date. The model worked out the day
+ *                        the money should move, so that is the day to say so.
+ *   payment_window_closing  on the last safe date, and ONLY when that date is
+ *                        earlier than the due date — that gap is the surprising,
+ *                        dangerous case ("this is due on the 20th but you have
+ *                        to pay it by the 12th"). When the two coincide it would
+ *                        just be a second copy of payment_due, so it is skipped.
+ *
+ * Anything that would need a warn-ahead number is not emitted, and the missing
+ * threshold is reported in `thresholdGaps` instead. Everything not emitted is
+ * listed in `skipped` with its reason, so a caller can tell "nothing to say"
+ * from "could not work out what to say".
+ *
+ * ── ATTRIBUTING A SHORTFALL ────────────────────────────────────────────────
+ * `cashflow_reminders.subject_kind` is a card or a bill and nothing else, so a
+ * shortfall — which is a fact about the whole account — is attributed to the
+ * LARGEST outflow on the day it happens, which is the bill or card most
+ * responsible for it. If that day has no outflow at all (the account was
+ * already short before anything left it) there is nothing honest to attribute
+ * it to, so no reminder is produced and the skip is recorded.
+ */
+export function recordReminders({ orgId, clientId, projection, window, subject } = {}) {
+  const reminders = [];
+  const skipped = [];
+  const gaps = new Set();
+
+  const push = (r) => reminders.push({ orgId: orgId ?? null, clientId: clientId ?? null, ...r });
+  const skip = (reminderKind, reason) => skipped.push({ reminderKind, reason });
+
+  if (projection === null || projection === undefined) {
+    throw new CashflowInputError("recordReminders: a projection is required");
+  }
+  if (typeof projection !== "object" || Array.isArray(projection)) {
+    throw new CashflowInputError("recordReminders: projection must be a project() result");
+  }
+
+  // A projection that could not be produced at all is itself the thing to say,
+  // but it has no subject to hang a row on — the reason it failed is an unknown
+  // balance or no accounts, and neither is a card or a bill.
+  if (projection.ok !== true) {
+    skip(
+      "input_missing",
+      `the projection could not be produced (${projection.reason?.code ?? "unknown"}) and the reason is not about a card or a bill, so there is no subject to record it against`
+    );
+    return { reminders, skipped, thresholdGaps: gapsToList(gaps) };
+  }
+
+  const nowAt = atStartOfDay(projection.startDate);
+  for (const g of projection.thresholdGaps ?? []) gaps.add(g.name);
+
+  // ── 1. Blind spots. Something is owed and its size or date is unknown. ────
+  for (const spot of projection.blindSpots ?? []) {
+    const subjectKind = subjectKindFor(spot.kind);
+    if (subjectKind === null) {
+      skip("input_missing", `a blind spot of kind "${spot.kind}" has no subject_kind to record it under`);
+      continue;
+    }
+    push({
+      subjectKind,
+      subjectId: spot.sourceId,
+      subjectLabel: spot.label,
+      reminderKind: "input_missing",
+      body: `We cannot project your cash flow around "${spot.label}" yet: ${spot.reason}. Until that is known, no payment date is being estimated for it.`,
+      surfaceAt: nowAt
+    });
+  }
+
+  // ── 2. A projected shortfall. ─────────────────────────────────────────────
+  const shortDay = (projection.days ?? []).find((d) => d.worstCaseBelowZero);
+  if (shortDay) {
+    const outflows = shortDay.components.filter((c) => c.direction === "out");
+    if (outflows.length === 0) {
+      skip(
+        "projected_shortfall",
+        `the projected balance is below zero on ${shortDay.date} but nothing leaves the account that day, so there is no card or bill to attribute it to`
+      );
+    } else {
+      const biggest = outflows.reduce((a, b) => (b.amountCents > a.amountCents ? b : a));
+      const subjectKind = subjectKindFor(biggest.kind);
+      if (subjectKind === null) {
+        skip("projected_shortfall", `the largest outflow on ${shortDay.date} is of kind "${biggest.kind}", which has no subject_kind`);
+      } else {
+        push({
+          subjectKind,
+          subjectId: biggest.sourceId,
+          subjectLabel: biggest.label,
+          reminderKind: "projected_shortfall",
+          body: `Your projected balance falls to ${fromCents(shortDay.worstCaseClosingCents)} on ${shortDay.date}, below zero. The largest amount leaving that day is "${biggest.label}" at ${biggest.amount}. This is an estimate based on the bills and balances on file.`,
+          surfaceAt: nowAt
+        });
+      }
+    }
+  }
+
+  // ── 3. Everything below is about one card, and needs one to have been named. ──
+  if (window === null || window === undefined) return { reminders, skipped, thresholdGaps: gapsToList(gaps) };
+
+  if (!subject || !subject.subjectId || !subject.subjectLabel) {
+    skip(
+      "payment_due",
+      "a payment window was supplied but no subject card was named, so there is nothing to record the reminder against"
+    );
+    return { reminders, skipped, thresholdGaps: gapsToList(gaps) };
+  }
+  const card = {
+    subjectKind: "card_liability",
+    subjectId: subject.subjectId,
+    subjectLabel: subject.subjectLabel
+  };
+  for (const g of window.thresholdGaps ?? []) gaps.add(g.name);
+
+  // The statement closing is an event with its own date, so it needs no rule.
+  // Only worth saying if it has not already happened.
+  if (subject.statementClose) {
+    const closeDay = toDayNumber(subject.statementClose, "subject.statementClose");
+    const startDay = toDayNumber(projection.startDate, "projection.startDate");
+    if (closeDay >= startDay) {
+      push({
+        ...card,
+        reminderKind: "statement_closed",
+        body: `The statement for "${subject.subjectLabel}" closes on ${fromDayNumber(closeDay)}. The balance is fixed from that date and a payment made before it may not settle it.`,
+        surfaceAt: atStartOfDay(fromDayNumber(closeDay))
+      });
+    }
+  }
+
+  if (window.ok !== true) {
+    // A refused window is the most important thing this function can say. It is
+    // the difference between "no reminder" and "we could not work out a safe
+    // date and you need to know that".
+    push({
+      ...card,
+      reminderKind: "input_missing",
+      body: `We cannot estimate a safe payment date for "${subject.subjectLabel}": ${window.reason?.message ?? "the inputs were incomplete."}`,
+      surfaceAt: nowAt
+    });
+    return { reminders, skipped, thresholdGaps: gapsToList(gaps) };
+  }
+
+  push({
+    ...card,
+    reminderKind: "payment_due",
+    body: `Estimated best date to pay ${window.amount} on "${subject.subjectLabel}" is ${window.recommendedDate}. Based on the projected balance, paying on or before that date should not take the account below ${fromCents(window.floorCents)}.`,
+    surfaceAt: atStartOfDay(window.recommendedDate)
+  });
+
+  /* *** payment_window_closing CANNOT FIRE, AND THAT IS A PROPERTY OF THE
+     MATHS RATHER THAN A GAP IN THIS FUNCTION. ***
+
+     Feasibility is monotone in the payment date. suffixMin[] is the lowest
+     balance from a day to the end of the horizon, so it is non-decreasing as
+     the day moves later — a later day minimises over a strictly smaller set.
+     A payment is a one-off outflow with no other effect, so if paying on day D
+     clears the floor, paying on any day after D clears it by at least as much.
+     PAYING LATER IS NEVER WORSE.
+
+     Therefore the safe window ALWAYS ends on the due date, and there is no
+     "last safe day" earlier than the due date to warn anybody about. The only
+     genuinely interesting bound is the EARLIEST safe date, which is what
+     `earliestDate` carries.
+
+     The kind stays in 087's CHECK constraint because a caller with a
+     constraint this module does not model — a promotional rate expiring, a
+     transfer that must clear first — could legitimately have one. Nothing
+     emits it today, and the skip below says so at runtime rather than leaving
+     a future reader to wonder whether it was forgotten. */
+  skip(
+    "payment_window_closing",
+    "paying later is never worse than paying earlier, so the safe window always ends on the due date and there is no earlier last-safe-day to warn about"
+  );
+
+  return { reminders, skipped, thresholdGaps: gapsToList(gaps) };
 }
