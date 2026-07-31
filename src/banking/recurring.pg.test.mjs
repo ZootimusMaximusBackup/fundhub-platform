@@ -38,7 +38,15 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert";
 import { db, close } from "../db.mjs";
-import { detectRecurringBills, toBillRow, parseDay, formatDay } from "./recurring.mjs";
+import {
+  detectRecurringBills, toBillRow, parseDay, formatDay, normaliseMerchant
+} from "./recurring.mjs";
+import {
+  upsertRecurringBill,
+  saveDetection,
+  listRecurringBills,
+  getBillEvidence
+} from "./store.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
 
@@ -47,9 +55,19 @@ const HAS_DB = !!process.env.DATABASE_URL;
 const PROVIDER_PREFIX = "W7PGTEST";
 const MERCHANT_PREFIX = "W7PGTEST";
 const CLIENT_EMAIL = "recurring_bills_pg_test@example.com";
+const OTHER_ORG_SLUG = "w7-pg-test-other-org";
+
+// The sentinel prefix is itself stripped by normaliseMerchant() — it is a mixed
+// alphanumeric token, which the normaliser correctly treats as a reference id.
+// So a stored merchant_key is the NORMALISED name, and the test must look it up
+// that way rather than by the raw descriptor it inserted.
+const merchantKeyFor = (merchant) => normaliseMerchant(`${MERCHANT_PREFIX} ${merchant}`);
 
 const ACCOUNT_A = "aaaaaaaa-0000-4000-8000-00000000a001";
 const ACCOUNT_B = "bbbbbbbb-0000-4000-8000-00000000b002";
+const ACCOUNT_C = "cccccccc-0000-4000-8000-00000000c003";
+const ACCOUNT_D = "dddddddd-0000-4000-8000-00000000d004";
+const TEST_ACCOUNTS = [ACCOUNT_A, ACCOUNT_B, ACCOUNT_C, ACCOUNT_D];
 
 let orgId = null;
 let clientId = null;
@@ -61,11 +79,12 @@ async function wipe() {
         SELECT id FROM bank_transactions WHERE provider_transaction_id LIKE $1 || '%')`,
     [PROVIDER_PREFIX]
   );
-  await db.query(`DELETE FROM recurring_bills WHERE bank_account_id IN ($1, $2)`,
-    [ACCOUNT_A, ACCOUNT_B]);
+  await db.query(`DELETE FROM recurring_bills WHERE bank_account_id = ANY($1::uuid[])`,
+    [TEST_ACCOUNTS]);
   await db.query(`DELETE FROM bank_transactions WHERE provider_transaction_id LIKE $1 || '%'`,
     [PROVIDER_PREFIX]);
   await db.query(`DELETE FROM clients WHERE email = $1`, [CLIENT_EMAIL]);
+  await db.query(`DELETE FROM orgs WHERE slug = $1`, [OTHER_ORG_SLUG]);
 }
 
 /** Insert a bank transaction. Returns the row as the database stored it. */
@@ -90,24 +109,16 @@ async function insertTxn({
   return r.rows[0];
 }
 
-/** Write a detected bill through toBillRow, exactly as a real writer would. */
-async function upsertBill(bill) {
-  const row = toBillRow(bill, { orgId });
-  const cols = Object.keys(row);
-  const placeholders = cols.map((_, i) => `$${i + 1}`);
-  const updates = cols
-    .filter((c) => !["org_id", "bank_account_id", "merchant_key", "cadence"].includes(c))
-    .map((c) => `${c} = EXCLUDED.${c}`);
-  const r = await db.query(
-    `INSERT INTO recurring_bills (${cols.join(", ")})
-     VALUES (${placeholders.join(", ")})
-     ON CONFLICT (bank_account_id, merchant_key, cadence)
-     DO UPDATE SET ${updates.join(", ")}, updated_at = now()
-     RETURNING *`,
-    cols.map((c) => row[c])
-  );
-  return r.rows[0];
-}
+/**
+ * Write a detected bill through the REAL writer.
+ *
+ * This used to be hand-rolled INSERT ... ON CONFLICT SQL right here, which is
+ * how the 031_invoices failure begins: the column names live in a test, the
+ * migration moves them, and the test is the last place anybody looks. The write
+ * path is src/banking/store.mjs now, and this test exercises it rather than
+ * imitating it.
+ */
+const upsertBill = (bill) => upsertRecurringBill(db, bill, { orgId });
 
 const errorOf = async (fn) => {
   try {
@@ -548,6 +559,181 @@ test("no stored bill anywhere claims a next date off only two occurrences",
     assert.equal(stored.confidence_label, "low");
     assert.equal(stored.is_business, null, "unknown, not false");
   });
+
+/* ========================================================================= *
+ * The writer — src/banking/store.mjs
+ * ========================================================================= */
+
+test("saveDetection writes bills, candidates and their evidence in one go",
+  { skip: !HAS_DB }, async () => {
+    const account = ACCOUNT_C;
+    await db.query(`DELETE FROM recurring_bills WHERE bank_account_id = $1`, [account]);
+
+    // A confident monthly bill and a two-occurrence guess, on one account.
+    for (const [i, d] of ["2026-01-08", "2026-02-08", "2026-03-08", "2026-04-08"].entries()) {
+      await insertTxn({
+        account, providerId: `SAVE${i}`, amountCents: -8800, postedOn: d,
+        merchant: `${MERCHANT_PREFIX} INSURANCE`
+      });
+    }
+    for (const [i, d] of ["2026-03-02", "2026-04-02"].entries()) {
+      await insertTxn({
+        account, providerId: `SAVEG${i}`, amountCents: -4500, postedOn: d,
+        merchant: `${MERCHANT_PREFIX} MAYBE`
+      });
+    }
+    // A single charge — no cadence, so nothing to store about it.
+    await insertTxn({
+      account, providerId: "SAVEONE", amountCents: -777, postedOn: "2026-04-11",
+      merchant: `${MERCHANT_PREFIX} ONEOFF`
+    });
+
+    const rows = (await db.query(
+      `SELECT * FROM bank_transactions WHERE bank_account_id = $1`, [account]
+    )).rows;
+    const result = detectRecurringBills(rows, { now: "2026-04-20" });
+
+    assert.equal(result.bills.length, 1);
+    assert.equal(result.candidates.length, 1);
+    assert.equal(result.rejected.length, 1);
+
+    const summary = await saveDetection(db, result, { orgId });
+
+    assert.equal(summary.bills, 1);
+    assert.equal(summary.candidates, 1);
+    assert.equal(summary.evidenceLinked, 6, "four monthly charges plus the two-occurrence pair");
+    assert.equal(summary.unidentifiedEvidence, 0);
+    assert.equal(summary.rejectedNotStored, 1, "the one-off is reported, not written");
+
+    const stored = (await db.query(
+      `SELECT merchant_key, confidence_label, next_expected_on, next_expected_unknown_reason
+         FROM recurring_bills WHERE bank_account_id = $1 ORDER BY merchant_key`, [account]
+    )).rows;
+    assert.equal(stored.length, 2, "the rejected group is NOT a row");
+    assert.equal(stored[0].merchant_key, merchantKeyFor("INSURANCE"));
+    assert.equal(formatDay(parseDay(stored[0].next_expected_on)), "2026-05-08");
+    assert.equal(stored[1].merchant_key, merchantKeyFor("MAYBE"));
+    assert.equal(stored[1].confidence_label, "low");
+    assert.equal(stored[1].next_expected_on, null);
+    assert.equal(stored[1].next_expected_unknown_reason,
+      "two_occurrences_is_a_guess_not_a_cadence");
+  });
+
+test("listRecurringBills hides the low-confidence guesses unless asked by name",
+  { skip: !HAS_DB }, async () => {
+    const account = ACCOUNT_C;
+
+    const safe = await listRecurringBills(db, { orgId, bankAccountId: account });
+    assert.equal(safe.length, 1, "the default answer contains no guesses");
+    assert.equal(safe[0].confidence_label, "medium");
+
+    const all = await listRecurringBills(db, {
+      orgId, bankAccountId: account, presentableOnly: false
+    });
+    assert.equal(all.length, 2);
+    assert.deepEqual(all.map((r) => r.confidence_label), ["medium", "low"],
+      "ordered largest outflow first — the amounts are negative, so ASC");
+
+    await assert.rejects(() => listRecurringBills(db, {}), /orgId is required/);
+  });
+
+test("getBillEvidence returns the actual charges behind a stored bill",
+  { skip: !HAS_DB }, async () => {
+    const account = ACCOUNT_C;
+    const bill = (await db.query(
+      `SELECT id FROM recurring_bills WHERE bank_account_id = $1 AND merchant_key = $2`,
+      [account, merchantKeyFor("INSURANCE")]
+    )).rows[0];
+
+    const evidence = await getBillEvidence(db, bill.id);
+
+    assert.equal(evidence.length, 4);
+    assert.deepEqual(
+      evidence.map((t) => formatDay(parseDay(t.posted_on))),
+      ["2026-01-08", "2026-02-08", "2026-03-08", "2026-04-08"]
+    );
+    for (const t of evidence) assert.equal(Number(t.amount_cents), -8800);
+  });
+
+test("re-saving replaces evidence rather than accumulating it", { skip: !HAS_DB }, async () => {
+  const account = ACCOUNT_C;
+  const rows = (await db.query(
+    `SELECT * FROM bank_transactions WHERE bank_account_id = $1`, [account]
+  )).rows;
+
+  await saveDetection(db, detectRecurringBills(rows, { now: "2026-04-21" }), { orgId });
+  await saveDetection(db, detectRecurringBills(rows, { now: "2026-04-22" }), { orgId });
+
+  const bills = Number((await db.query(
+    `SELECT count(*)::int AS n FROM recurring_bills WHERE bank_account_id = $1`, [account]
+  )).rows[0].n);
+  const links = Number((await db.query(
+    `SELECT count(*)::int AS n FROM recurring_bill_transactions l
+       JOIN recurring_bills b ON b.id = l.recurring_bill_id
+      WHERE b.bank_account_id = $1`, [account]
+  )).rows[0].n);
+
+  assert.equal(bills, 2, "three runs, two bills");
+  assert.equal(links, 6, "*** evidence is replaced, not appended ***");
+});
+
+test("saveDetection can be told to store only the confident set", { skip: !HAS_DB }, async () => {
+  const account = ACCOUNT_D;
+  for (const [i, d] of ["2026-02-05", "2026-03-05"].entries()) {
+    await insertTxn({
+      account, providerId: `ONLY${i}`, amountCents: -3300, postedOn: d,
+      merchant: `${MERCHANT_PREFIX} ONLYGUESS`
+    });
+  }
+  const rows = (await db.query(
+    `SELECT * FROM bank_transactions WHERE bank_account_id = $1`, [account]
+  )).rows;
+  const result = detectRecurringBills(rows, { now: "2026-03-10" });
+  assert.equal(result.candidates.length, 1);
+
+  const summary = await saveDetection(db, result, { orgId, includeCandidates: false });
+
+  assert.equal(summary.candidates, 0);
+  const n = Number((await db.query(
+    `SELECT count(*)::int AS n FROM recurring_bills WHERE bank_account_id = $1`, [account]
+  )).rows[0].n);
+  assert.equal(n, 0);
+  await db.query(`DELETE FROM recurring_bills WHERE bank_account_id = $1`, [account]);
+});
+
+test("saveDetection refuses to write without an org — tenancy is the caller's to assert",
+  { skip: !HAS_DB }, async () => {
+    await assert.rejects(
+      () => saveDetection(db, { bills: [], candidates: [] }, {}),
+      /orgId is required/
+    );
+  });
+
+test("one org cannot read another org's bills", { skip: !HAS_DB }, async () => {
+  // The unit test can only prove the WHERE clause was SENT. This proves it
+  // actually isolates, against real rows in a real table — the distinction
+  // AUDIT-FINDINGS' tenancy findings turn on.
+  const otherOrg = (await db.query(
+    `INSERT INTO orgs (slug, name) VALUES ($1,$2) RETURNING id`,
+    [OTHER_ORG_SLUG, "W7 pg test other org"]
+  )).rows[0].id;
+
+  try {
+    const mine = await listRecurringBills(db, { orgId, bankAccountId: ACCOUNT_C });
+    assert.ok(mine.length > 0, "this org has bills on that account");
+
+    const theirs = await listRecurringBills(db, { orgId: otherOrg, bankAccountId: ACCOUNT_C });
+    assert.deepEqual(theirs, [], "*** the same account id, a different org, zero rows ***");
+
+    const theirsUnfiltered = await listRecurringBills(db, {
+      orgId: otherOrg, bankAccountId: ACCOUNT_C, presentableOnly: false
+    });
+    assert.deepEqual(theirsUnfiltered, [],
+      "asking for the guesses too must not open a way around the org boundary");
+  } finally {
+    await db.query(`DELETE FROM orgs WHERE slug = $1`, [OTHER_ORG_SLUG]);
+  }
+});
 
 test("every stored bill obeys the invariants its migration promises",
   { skip: !HAS_DB }, async () => {

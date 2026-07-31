@@ -45,8 +45,10 @@ it. Actually getting the data from Plaid is W5's job.
 | `db/migrations/085_bank_transactions.sql` | The `bank_transactions` table: one row per transaction per account, integer cents, a unique index that makes a re-sync impossible to double-count. |
 | `db/migrations/086_recurring_bills.sql` | `recurring_bills` + `recurring_bill_transactions`: the detected bills and the transactions that prove each one. |
 | `src/banking/recurring.mjs` | The detector. Every function pure — no database, no network, no clock. |
-| `src/banking/recurring.test.mjs` | 63 pure unit tests. |
-| `src/banking/recurring.pg.test.mjs` | 13 tests against real Postgres. Skips cleanly with no `DATABASE_URL`. |
+| `src/banking/store.mjs` | The writer. The only thing in the repo that inserts into either table. |
+| `src/banking/recurring.test.mjs` | 63 pure unit tests for the detector. |
+| `src/banking/store.test.mjs` | 19 unit tests for the writer, against a fake that models no schema. |
+| `src/banking/recurring.pg.test.mjs` | 20 tests against real Postgres. Skips cleanly with no `DATABASE_URL`. |
 | `src/banking/PROPOSED-EVENTS.md` | Event names proposed, not added. `src/events/canonical.mjs` is untouched. |
 | `docs/workflows/finance-os-banking.md` | This board. |
 
@@ -66,9 +68,20 @@ Nothing existing was modified. **Zero files changed outside `src/banking/`,
 | `capLabelForEvidence(label, n)` | function | The two-occurrence cap. Exported so it can be tested directly. |
 | `SIGN_CONVENTION`, `CADENCES`, `CADENCE_NAMES`, `PRESENTABLE_LABELS`, `REASONS`, `EXCLUSION_REASONS`, `MAX_CONFIDENCE` | const | Frozen. |
 
+### Exports added — `src/banking/store.mjs`
+
+| Export | Notes |
+|---|---|
+| `saveDetection(db, result, { orgId, includeCandidates? })` | Persists a whole run — bills, candidates and evidence — in ONE transaction. Never stores `rejected` or `excluded`. |
+| `upsertRecurringBill(db, bill, { orgId })` | Upserts on `(bank_account_id, merchant_key, cadence)`. |
+| `replaceEvidence(db, billId, ids)` | Replaces, never appends. Returns `{ linked, unidentified }`. |
+| `listRecurringBills(db, { orgId, ... })` | **`presentableOnly` defaults to TRUE** — a caller who has not thought about confidence gets no guesses. |
+| `getBillEvidence(db, billId)` | The charges behind one stored bill. |
+
 **No imports from W5, W6 or W8.** The detector takes account ids and rows as
 parameters. Its only repo import is `roundHalfUp` from
-`src/commissions/money.mjs`.
+`src/commissions/money.mjs`; the writer imports only `toBillRow` from the
+detector.
 
 ### Routes, journeys, events — all unchanged
 
@@ -159,6 +172,29 @@ IS NULL))`. A row physically cannot say "I don't know" without saying why.
 10. **Re-detection upserts** on `(bank_account_id, merchant_key, cadence)`.
     Without it, weekly detection would leave 52 rows for one subscription and
     any sum would report a client's outgoings at 52× their true value.
+11. **The write path is code, not test SQL.** The first cut of this workflow
+    hand-rolled the `INSERT ... ON CONFLICT` inside `recurring.pg.test.mjs`.
+    That is the opening move of the 031_invoices failure — column names living
+    in a test, a migration moving them, and the test being the last place
+    anybody looks. `src/banking/store.mjs` is now the only writer and the pg
+    test calls it instead of imitating it.
+12. **A bill and its evidence are written in ONE transaction.** A half-written
+    bill asserts a client pays $54.99 a month with nothing behind it, and is
+    indistinguishable from a well-evidenced one at every call site that does
+    not join.
+13. **`listRecurringBills` hides low-confidence rows by default.** Seeing the
+    guesses takes `presentableOnly: false` — a deliberate act with a name on
+    it. The detector's `bills` / `candidates` split is carried through to the
+    read side so it cannot be lost in between.
+14. **The sign convention is FINAL, not open for the batch to revisit.**
+    Negative = money out. It is enforced by `recurring_bills_outflow_ck` and by
+    the detector's `inflow_not_an_outflow` exclusion. W5: negate at the Plaid
+    boundary. Anything else fails on the first write, which is the intent.
+15. **The read gate for a future endpoint is `ROLE_SETS.FINANCE`
+    (owner/admin), not `STAFF`.** Recorded here as a decision so W9/W10 do not
+    have to re-litigate it. This is a client's personal bank ledger;
+    AUDIT-FINDINGS already records inquiry data reaching closers through a
+    `STAFF`-gated endpoint added after the fact.
 
 ### Compliance
 
@@ -181,14 +217,14 @@ It writes no customer-facing text and makes no claim about credit outcomes.
 
 ```
 migrations         52 apply clean on a virgin database; re-run applies 0
-unit tests         63 pure, all pass, no database
-pg tests           13 against real Postgres, all pass; skip cleanly unset
-npm test (no DB)   1963 tests · 1755 pass · 0 fail · 208 skipped · exit 0
-npm test (with DB) 2386 pass · 24 fail · 8 skipped
+unit tests         82 pure (63 detector + 19 writer), all pass, no database
+pg tests           20 against real Postgres, all pass; skip cleanly unset
+npm test (no DB)   1989 tests · 1774 pass · 0 fail · 215 skipped · exit 0
+npm test (with DB) 2412 pass · 24 fail · 8 skipped
                    -> 24 is the pre-existing baseline on this repo
                    -> NEW FAILING NAMES: none, over three consecutive runs
                       on a fresh database, diffed by NAME not by total
-mutation check     20/20 mutations killed
+mutation check     36/36 killed (20 detector + 16 writer)
 ```
 
 **Mutation check.** Twenty rules were deleted one at a time and the suite had to
@@ -202,6 +238,13 @@ tests, now fixed:
 - the month-end anchor test happened to pass either way, because its LAST
   occurrence was not the February-clamped one. The fixture was rebuilt so that
   it is.
+
+The writer was mutation-checked separately, sixteen rules, and **one survived**:
+deleting `WHERE org_id = $1` from `listRecurringBills` left every parameter
+assertion green, because the mutation still bound `$1`. That is a tenancy filter
+passing a test that could not see it. The clause is now asserted directly, and a
+real cross-org read is proved against Postgres — a second org, the same account
+id, zero rows.
 
 This is AUDIT-FINDINGS' closing lesson applied: *"Mutation-test the OVER-broad
 direction too. Several tests here asserted the defect ... and passed happily for
@@ -219,11 +262,14 @@ months."*
    silent no-op). It is a two-step: sweep or delete orphan rows FIRST, then
    `ADD CONSTRAINT`, on both `bank_transactions.bank_account_id` and
    `recurring_bills.bank_account_id`.
-3. **Nothing writes to either table yet.** The detector produces bills and
-   `toBillRow()` shapes them for storage, but no ingest, endpoint or handler
-   calls either in production. This is the same shape as the AUDIT-FINDINGS
-   entry *"Nothing in production ever writes a sale ..."* — flagged here on
-   purpose so it does not become a discovery later. W5 owns the ingest.
+3. **The write path now exists, but nothing CALLS it in production yet.**
+   `src/banking/store.mjs` is a real, tested writer — the gap is no longer a
+   missing writer, it is a missing caller. Nothing produces `bank_transactions`
+   rows, because that is W5's ingest. Still the AUDIT-FINDINGS shape
+   (*"Nothing in production ever writes a sale ..."*) and still flagged, but it
+   is now one wire away rather than a module away. **W5: after ingesting a
+   window, call `detectRecurringBills(rows, { now })` and hand the result to
+   `saveDetection(db, result, { orgId })`. That is the whole integration.**
 4. **One merchant key yields at most one cadence.** Grouping is by
    `(account, merchant_key)`, so a merchant billing monthly AND annually under
    a byte-identical descriptor is reported as one bill. Providers normally send
