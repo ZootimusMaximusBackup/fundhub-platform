@@ -12,7 +12,8 @@
     "artifact": "node scripts/build-artifact.mjs",
     "diagrams": "node scripts/diagrams/generate.mjs",
     "diagrams:check": "node scripts/diagrams/generate.mjs --check",
-    "test": "node --test \"src/**/*.test.mjs\" \"scripts/**/*.test.mjs\""
+    "test": "node --test \"src/**/*.test.mjs\" \"scripts/**/*.test.mjs\"",
+    "guard:db": "node --test src/security/superuser-guard.test.mjs"
   },
   "dependencies": {
     "inngest": "^3.21.2",
