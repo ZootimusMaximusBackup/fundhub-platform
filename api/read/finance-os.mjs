@@ -73,11 +73,15 @@ export default async function handler(req, res, deps = {}) {
     // thing under test, and it must be correct for any row set handed to it,
     // not only for the one this endpoint happens to fetch.
     const rows = await listTradelines(database, {
-      clientId: String(query.client_id).trim(),
       // From the session, never the request. A client in another org matches
       // nothing, and the grid renders as "no lines" rather than as another
-      // org's balances.
-      orgId
+      // org's balances. Written as `orgId: staff.org_id` rather than passing the
+      // validated local, because src/http/read-endpoints-org-scope.test.mjs on
+      // the audit branch proves delegation by matching that exact text — an
+      // endpoint excused from writing its own WHERE clause has to show, in
+      // source, that it hands the SESSION's org to the store.
+      orgId: staff.org_id,
+      clientId: String(query.client_id).trim()
     });
     return res.status(200).json({ ok: true, ...financeOsGrid(rows) });
   } catch (e) {

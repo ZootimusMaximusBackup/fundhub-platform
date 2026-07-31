@@ -231,6 +231,65 @@ company gets nothing" would also pass if the endpoint returned nothing to
 ### Not done here
 
 * No migration. This did not need one.
-* Other endpoints were not audited for the same hole. This task named two files
-  and fixed those two. **A repo-wide sweep for unscoped client reads is worth its
-  own task** — the pattern is any query filtering on `client_id` with no `org_id`.
+* ~~Other endpoints were not audited.~~ **Sweep done — see F1b below.**
+
+---
+
+## F1b — The repo-wide sweep, and what it found
+
+**Task:** sweep every read endpoint for the missing-company-check pattern, using
+the audit branch's existing source-level guard rather than a new one. `status: done`
+
+### The answer, in one line
+
+**`main` is exposed on 15 read endpoints right now — and the complete fix already
+exists, finished, on a branch nobody has merged.**
+
+### What the sweep found on `main`
+
+Ran `src/http/read-endpoints-org-scope.test.mjs` from
+`origin/claude/finance-os-audit-w1-w10-7jkl5x` against this branch (which is
+`main` plus the UnderwriteIQ work).
+
+| Finding | Count | Files |
+|---|---|---|
+| Read endpoints with NO company filter at all | **15** | affiliates, agents, banking-surface, commissions, conversations, documents, entitlements, failed-events, funding-rounds, inquiries, invoices, message-templates, partners, products, staff |
+| Of those, filtering on the DEFAULT company instead of the caller's | **3** | products, agents, affiliates |
+
+The three that filter on the default company are the worse kind. They *look*
+scoped. `org_id = (SELECT id FROM orgs WHERE is_default LIMIT 1)` reads like
+tenancy and is a hardcoded lookup of one particular company that ignores who is
+asking. With one company in the database nothing looks wrong.
+
+### Why nothing was fixed here
+
+**All 17 are already fixed on `origin/claude/finance-os-audit-w1-w10-7jkl5x`** —
+the 15 above plus `tradelines.mjs` and `finance-os.mjs`, which F1 fixed
+independently on this branch before the overlap was known.
+
+Re-fixing 15 files of security-critical SQL that already have a finished fix
+elsewhere would be two answers to one question across two branches, and 15
+guaranteed merge conflicts. That is the duplication this repo keeps paying for,
+so it was not done.
+
+The guard test was pulled in, run, and then REMOVED from this branch. It belongs
+with the branch that makes it pass; carrying a red copy here would either sit
+broken or invite somebody to weaken it to get the suite green.
+
+### What this branch does still contribute
+
+* `tradelines.mjs` / `finance-os.mjs` were fixed here independently. The two call
+  sites are now written `orgId: staff.org_id`, matching the audit branch's exact
+  convention, so the merge is a near-identical diff rather than a conflict to reason about.
+* `src/http/tradelines-org-scope.test.mjs` — 15 BEHAVIOURAL tests driving both
+  handlers with a stubbed database. The audit branch's guard is source-level and
+  its behavioural test covers products/agents/affiliates, so these are additive,
+  not duplicate.
+* `listTradelines()` here also validates `clientId` and carries a longer refusal
+  message. Functionally the same guarantee as the audit branch's version.
+
+### The recommendation
+
+**Merge `claude/finance-os-audit-w1-w10-7jkl5x` to `main`.** That is the delivery
+for this finding. Nothing on this branch substitutes for it — this branch closes
+2 of 17.

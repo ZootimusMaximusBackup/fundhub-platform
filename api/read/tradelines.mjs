@@ -84,11 +84,14 @@ export default async function handler(req, res, deps = {}) {
 
   try {
     const rows = await listTradelines(database, {
-      clientId,
       // From the session. A client in another org matches nothing and the
       // response is an empty card table — which leaks less than a 404, because
-      // a 404 would confirm the uuid names a real client somewhere.
-      orgId,
+      // a 404 would confirm the uuid names a real client somewhere. Written as
+      // `orgId: staff.org_id` rather than passing the validated local, because
+      // src/http/read-endpoints-org-scope.test.mjs on the audit branch proves
+      // delegation by matching that exact text.
+      orgId: staff.org_id,
+      clientId,
       includeClosed: query.include_closed === "true"
     });
     const cards = toCalculatorCards(rows);
