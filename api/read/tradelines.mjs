@@ -44,6 +44,9 @@ export default async function handler(req, res) {
 
   try {
     const rows = await listTradelines(db, {
+      // The session's org, not the caller's parameter: a client id from
+      // another org must return nothing rather than that consumer's cards.
+      orgId: staff.org_id,
       clientId,
       includeClosed: query.include_closed === "true"
     });
