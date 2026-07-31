@@ -37,14 +37,16 @@ const LIVE = {
   }, { severity: "warning" })
 };
 
+const OFF = { active: false, needs_config: true };
 const SEEDED_AS_SHIPPED = {
   utilization_drop_clean_pull: rule({
     utilization_ceiling_pct: null, min_drop_basis_points: null,
     clean_pull_max_inquiries_per_bureau: null, clean_pull_max_late_payments: null
-  }, { active: false, needs_config: true }),
-  seasoned_tradelines: rule({ min_age_months: null, min_seasoned_lines: null }, { active: false, needs_config: true }),
-  strength_signals: rule({ min_total_limit_cents: null, min_open_revolving_lines: null, max_utilization_pct: null },
-    { active: false, needs_config: true })
+  }, OFF),
+  seasoned_tradelines: rule({ min_age_months: null, min_seasoned_lines: null }, OFF),
+  strength_signals: rule({ min_total_limit_cents: null, min_open_revolving_lines: null, max_utilization_pct: null }, OFF),
+  score_improvement: rule({ min_score_gain: null, min_score: null }, OFF),
+  card_upgrade_candidate: rule({ apr_at_or_above: null, min_balance_cents: null }, OFF)
 };
 
 const CLEAN = { crs_inquiries_ex: 1, crs_inquiries_eq: 0, crs_inquiries_tu: 0, crs_late_payments_count: 0 };
@@ -113,7 +115,7 @@ describe("the artifact is produced every period, including the quiet ones", () =
     const r = build({ rules: SEEDED_AS_SHIPPED });
     assert.strictEqual(r.signal_count, 0);
     assert.deepStrictEqual(r.alerts, []);
-    assert.strictEqual(r.blanks.length, 3, "one blank per unconfigured condition");
+    assert.strictEqual(r.blanks.length, 5, "one blank per unconfigured condition");
     assert.ok(r.artifact.key, "the artifact exists even though nothing happened");
     for (const b of r.blanks) assert.match(b.reason, /threshold\(s\) not set|inactive/);
   });
@@ -162,5 +164,31 @@ describe("the artifact carries evidence, never a claim", () => {
     const r = build();
     assert.ok(Array.isArray(r.alerts));
     assert.ok(r.alerts.every((a) => a.kind && a.payload), "each alert is ready for raiseAlerts(), already shaped for 078");
+  });
+});
+
+describe("the report carries the score conditions too (W4 second pass)", () => {
+  test("a score gain fires inside the artifact and shows up as an alert to raise", () => {
+    const r = build({
+      rules: { score_improvement: rule({ min_score_gain: 20, min_score: 680 }, { severity: "info" }) },
+      scores: { previous: 640, current: 700 }
+    });
+    assert.strictEqual(r.signal_count, 1);
+    assert.strictEqual(r.alerts[0].kind, "score_improvement");
+    assert.strictEqual(r.alerts[0].payload.metrics.score_gain, 60);
+  });
+
+  test("with no score readings the condition is a blank with a reason, not a silent pass", () => {
+    const r = build({
+      rules: { score_improvement: rule({ min_score_gain: 20, min_score: 680 }) },
+      scores: null
+    });
+    assert.strictEqual(r.signal_count, 0);
+    assert.match(r.blanks[0].reason, /no current credit score supplied/);
+  });
+
+  test("monthlyReport is the same function under the build plan's name", async () => {
+    const { monthlyReport } = await import("./optimization-report.mjs");
+    assert.strictEqual(monthlyReport, buildMonthlyOptimizationReport);
   });
 });

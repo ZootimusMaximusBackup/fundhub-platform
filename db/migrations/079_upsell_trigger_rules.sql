@@ -66,6 +66,13 @@
 -- the column is a change to 054's ingest path and to the normalizer that fills
 -- it, which is not this migration's block, so it is reported rather than done.
 --
+-- WHAT SCORE HISTORY LOOKS LIKE, BY CONTRAST. `score_improvement` needs two
+-- readings and can actually get them: `public.snapshots` (db/schema/001_init.sql)
+-- stores one row per pull with `source`, `bureau` and `score`, so the previous
+-- and current readings are both on disk. That is why the score rule asks for two
+-- numbers and refuses on one, while the utilization rule has to be handed the
+-- previous position by its caller — see the third finding below.
+--
 -- THIRD FINDING — `tradelines` KEEPS NO HISTORY, so "utilization DROPPED" cannot
 -- be answered from that table alone. src/tradelines/store.mjs upserts in place by
 -- (client_id, account_ref): a new pull overwrites the balance and the previous
@@ -163,7 +170,19 @@ SELECT o.id, v.k, v.n, v.d, v.p::jsonb, 'info', false, true
      'Raise when total credit limit, count of open revolving lines and utilization are all at or beyond their thresholds at the same time. FLAGGED: all three are deliberately unset, and nothing in this repository defines what a strength signal is or where it cuts. min_total_limit_cents is INTEGER CENTS (054''s money convention). max_utilization_pct is in PERCENT UNITS.',
      '{"min_total_limit_cents": null,
        "min_open_revolving_lines": null,
-       "max_utilization_pct": null}')
+       "max_utilization_pct": null}'),
+
+    ('score_improvement',
+     'The credit score rose enough to revisit funding',
+     'Raise when the score gained at least min_score_gain since the previous reading AND has reached min_score. FLAGGED: both numbers are deliberately unset. Scores come from public.snapshots (source, bureau, score) which — unlike tradelines — really is per-pull history, so both readings are available. Two readings are required: a gain cannot be measured from one number.',
+     '{"min_score_gain": null,
+       "min_score": null}'),
+
+    ('card_upgrade_candidate',
+     'A card is expensive enough to be worth replacing',
+     'Raise when at least one open revolving line carries an APR at or above apr_at_or_above while holding a balance of at least min_balance_cents. FLAGGED: both numbers are deliberately unset. apr_at_or_above is a DECIMAL FRACTION in [0,1] — 0.2499 is 24.99% — matching tradelines.apr (054), NOT a percentage. min_balance_cents is INTEGER CENTS. A line whose APR is unknown is reported as unpriced, never as cheap.',
+     '{"apr_at_or_above": null,
+       "min_balance_cents": null}')
 
   ) AS v(k, n, d, p)
  WHERE o.is_default

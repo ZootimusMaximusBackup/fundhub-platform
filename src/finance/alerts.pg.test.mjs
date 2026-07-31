@@ -12,7 +12,7 @@
 //     condition can be raised again later rather than being suppressed forever;
 //   * the 078 CHECK constraints refuse a bad severity, a blank kind and an
 //     acknowledgement that predates the raise;
-//   * the three 079 rules really do ship inactive with every threshold null, and
+//   * the five 079 rules really do ship inactive with every threshold null, and
 //     v_upsell_config_gaps really does report each missing number;
 //   * the whole path — rows in, evaluate, alert written — works against the real
 //     schema with the real column names.
@@ -139,10 +139,13 @@ test("the store refuses a null severity by name rather than letting the driver r
   );
 });
 
-test("the three 079 rules ship inactive, flagged, and with every threshold null", { skip: !HAS_DB }, async () => {
+test("the five 079 rules ship inactive, flagged, and with every threshold null", { skip: !HAS_DB }, async () => {
   const rules = await loadUpsellRules(db, { orgId: defaultOrgId });
   const keys = Object.keys(rules).sort();
-  assert.deepEqual(keys, ["seasoned_tradelines", "strength_signals", "utilization_drop_clean_pull"]);
+  assert.deepEqual(keys, [
+    "card_upgrade_candidate", "score_improvement", "seasoned_tradelines",
+    "strength_signals", "utilization_drop_clean_pull"
+  ]);
 
   for (const [key, r] of Object.entries(rules)) {
     assert.equal(r.active, false, `${key} must not be live`);
@@ -165,7 +168,7 @@ test("nothing fires against the rules exactly as they ship, and every blank says
     now: "2026-07-31T00:00:00Z"
   });
   assert.equal(firedAlerts(results).length, 0);
-  assert.equal(results.length, 3);
+  assert.equal(results.length, 5);
   for (const r of results) assert.match(r.reason, /inactive/);
 });
 
@@ -182,7 +185,11 @@ test("v_upsell_config_gaps names every unset number and the schema block on seas
     "upsell_trigger_rules.seasoned_tradelines.min_seasoned_lines",
     "upsell_trigger_rules.strength_signals.min_total_limit_cents",
     "upsell_trigger_rules.strength_signals.min_open_revolving_lines",
-    "upsell_trigger_rules.strength_signals.max_utilization_pct"
+    "upsell_trigger_rules.strength_signals.max_utilization_pct",
+    "upsell_trigger_rules.score_improvement.min_score_gain",
+    "upsell_trigger_rules.score_improvement.min_score",
+    "upsell_trigger_rules.card_upgrade_candidate.apr_at_or_above",
+    "upsell_trigger_rules.card_upgrade_candidate.min_balance_cents"
   ]) {
     assert.ok(configs.includes(expected), `${expected} must be reported as an open decision`);
   }

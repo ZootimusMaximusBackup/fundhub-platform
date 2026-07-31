@@ -32,7 +32,9 @@ import {
   centsOrNull, countOrNull, percentOrNull, dateOrNull,
   openDrawableLines, positionOf, headroomCents,
   utilizationBasisPoints, additionalCapacityCents, monthsBetween,
-  cleanPull, UPSELL_RULES, DRAWABLE_KINDS
+  cleanPull, UPSELL_RULES, DRAWABLE_KINDS,
+  evaluateUtilization, evaluateScore, suggestCardUpgrade,
+  aprFractionOrNull, scoreOrNull
 } from "./upsell.mjs";
 import { calcFunding } from "../calculators/deal-funding.mjs";
 import { toCalculatorCards } from "../tradelines/index.mjs";
@@ -617,9 +619,9 @@ describe("evaluate reports every rule row and every unconfigured condition", () 
     assert.strictEqual(hit.client_id, "c1");
   });
 
-  test("the two conditions with no rule row are reported, not silently absent", () => {
+  test("every condition with no rule row is reported, not silently absent", () => {
     const out = evaluate({ tradelines: rows, previousTradelines: prior, pull: CLEAN, rules: liveRules });
-    for (const key of ["seasoned_tradelines", "strength_signals"]) {
+    for (const key of ["seasoned_tradelines", "strength_signals", "score_improvement", "card_upgrade_candidate"]) {
       const r = byKey(out, key);
       assert.ok(r, `${key} must appear in the results`);
       assert.strictEqual(r.fires, false);
@@ -637,19 +639,24 @@ describe("evaluate reports every rule row and every unconfigured condition", () 
     assert.match(r.reason, /inactive and still needs its thresholds decided/);
   });
 
-  test("this is exactly how the three rules ship in 079: nothing fires and every reason says why", () => {
+  test("this is exactly how the five rules ship in 079: nothing fires and every reason says why", () => {
+    const off = { active: false, needs_config: true };
     const asSeeded = {
       utilization_drop_clean_pull: rule({
         utilization_ceiling_pct: null, min_drop_basis_points: null,
         clean_pull_max_inquiries_per_bureau: null, clean_pull_max_late_payments: null
-      }, { active: false, needs_config: true }),
-      seasoned_tradelines: rule({ min_age_months: null, min_seasoned_lines: null }, { active: false, needs_config: true }),
-      strength_signals: rule({ min_total_limit_cents: null, min_open_revolving_lines: null, max_utilization_pct: null },
-        { active: false, needs_config: true })
+      }, off),
+      seasoned_tradelines: rule({ min_age_months: null, min_seasoned_lines: null }, off),
+      strength_signals: rule({ min_total_limit_cents: null, min_open_revolving_lines: null, max_utilization_pct: null }, off),
+      score_improvement: rule({ min_score_gain: null, min_score: null }, off),
+      card_upgrade_candidate: rule({ apr_at_or_above: null, min_balance_cents: null }, off)
     };
-    const out = evaluate({ tradelines: rows, previousTradelines: prior, pull: CLEAN, rules: asSeeded });
+    const out = evaluate({
+      tradelines: rows, previousTradelines: prior, pull: CLEAN,
+      scores: { previous: 640, current: 700 }, rules: asSeeded
+    });
     assert.strictEqual(firedAlerts(out).length, 0);
-    assert.strictEqual(blanksOf(out).length, 3);
+    assert.strictEqual(blanksOf(out).length, 5);
     for (const b of blanksOf(out)) assert.ok(b.reason.length > 0, "a blank without a reason is just silence");
   });
 
@@ -703,5 +710,185 @@ describe("evaluate reports every rule row and every unconfigured condition", () 
   test("firedAlerts and blanksOf refuse anything that is not a result list", () => {
     assert.throws(() => firedAlerts("nope"), TypeError);
     assert.throws(() => blanksOf(null), TypeError);
+  });
+});
+
+/* ───────────────── rule 4: score improvement (W4 second pass) ───────────── */
+
+describe("score_improvement needs two readings and will not guess the second", () => {
+  const params = { min_score_gain: 20, min_score: 680 };
+  const run = (over = {}) => evaluateScore({ params, scores: { previous: 640, current: 700 }, ...over });
+
+  test("a real gain that clears the floor fires", () => {
+    const out = run();
+    assert.strictEqual(out.fires, true);
+    assert.strictEqual(out.metrics.score_gain, 60);
+    assert.strictEqual(out.metrics.score_now, 700);
+  });
+
+  test("with no thresholds set it does not fire and names them", () => {
+    const out = run({ params: { min_score_gain: null, min_score: null } });
+    assert.strictEqual(out.fires, false);
+    assert.match(out.reason, /threshold\(s\) not set: min_score_gain, min_score/);
+  });
+
+  test("one reading is not a gain — it refuses rather than treating today as the baseline", () => {
+    const out = run({ scores: { previous: null, current: 700 } });
+    assert.strictEqual(out.fires, false);
+    assert.match(out.reason, /a gain cannot be measured from a single reading/);
+    assert.strictEqual(out.metrics.score_now, 700, "what is known is still reported");
+  });
+
+  test("no scores at all refuses", () => {
+    assert.strictEqual(run({ scores: null }).fires, false);
+    assert.match(run({ scores: null }).reason, /no current credit score supplied/);
+  });
+
+  test("BOUNDARY: exactly the required gain and exactly the floor both fire; one under each does not", () => {
+    assert.strictEqual(run({ scores: { previous: 660, current: 680 } }).fires, true);
+    const shortGain = run({ scores: { previous: 661, current: 680 } });
+    assert.strictEqual(shortGain.fires, false);
+    assert.match(shortGain.reason, /gained 19 point\(s\), under the 20 required/);
+
+    const underFloor = run({ scores: { previous: 600, current: 679 } });
+    assert.strictEqual(underFloor.fires, false);
+    assert.match(underFloor.reason, /score is 679, under the 680 required/);
+  });
+
+  test("a score that fell does not fire", () => {
+    const out = run({ scores: { previous: 720, current: 700 } });
+    assert.strictEqual(out.fires, false);
+    assert.strictEqual(out.metrics.score_gain, -20);
+  });
+
+  test("THE THRESHOLD IS THE ROW: the same readings answer differently under a different floor", () => {
+    const scores = { previous: 640, current: 700 };
+    assert.strictEqual(run({ scores, params: { min_score_gain: 20, min_score: 680 } }).fires, true);
+    assert.strictEqual(run({ scores, params: { min_score_gain: 20, min_score: 720 } }).fires, false);
+  });
+
+  test("a utilization percentage arriving where a score belongs throws instead of being compared", () => {
+    assert.throws(() => scoreOrNull(2500, "score"), RangeError);
+    assert.throws(() => run({ scores: { previous: 640, current: 250_000 } }), RangeError);
+    assert.throws(() => run({ scores: { previous: "six forty", current: 700 } }), TypeError);
+  });
+});
+
+/* ──────────── rule 5: card upgrade candidate (W4 second pass) ───────────── */
+
+describe("card_upgrade_candidate treats an unknown APR as unpriced, never as cheap", () => {
+  const params = { apr_at_or_above: 0.2499, min_balance_cents: 100_000 };
+  const expensive = line({ id: "exp", apr: 0.2999, balance_cents: 500_000 });
+  const cheap = line({ id: "cheap", apr: 0.0999, balance_cents: 500_000 });
+  const run = (over = {}) => suggestCardUpgrade({ tradelines: [expensive, cheap], params, ...over });
+
+  test("an expensive card with a real balance is a candidate, and the interest is stated", () => {
+    const out = run();
+    assert.strictEqual(out.fires, true);
+    assert.strictEqual(out.metrics.candidates.length, 1);
+    assert.strictEqual(out.metrics.candidates[0].id, "exp");
+    assert.strictEqual(out.metrics.candidates[0].interest_at_current_balance_cents, 149_950); // $1,499.50
+    assert.ok(Number.isInteger(out.metrics.candidates[0].interest_at_current_balance_cents));
+  });
+
+  test("with no thresholds set it does not fire and names them", () => {
+    const out = run({ params: { apr_at_or_above: null, min_balance_cents: null } });
+    assert.strictEqual(out.fires, false);
+    assert.match(out.reason, /threshold\(s\) not set: apr_at_or_above, min_balance_cents/);
+  });
+
+  test("BOUNDARY: exactly at the APR floor and exactly at the balance floor both qualify", () => {
+    const out = run({ tradelines: [line({ apr: 0.2499, balance_cents: 100_000 })] });
+    assert.strictEqual(out.fires, true);
+  });
+
+  test("BOUNDARY: a hair under either threshold does not qualify", () => {
+    assert.strictEqual(run({ tradelines: [line({ apr: 0.2498, balance_cents: 500_000 })] }).fires, false);
+    assert.strictEqual(run({ tradelines: [line({ apr: 0.2999, balance_cents: 99_999 })] }).fires, false);
+  });
+
+  test("a card with no APR is counted as unpriced and the reason says so", () => {
+    const out = run({ tradelines: [cheap, line({ id: "unknown", apr: null, balance_cents: 900_000 })] });
+    assert.strictEqual(out.fires, false);
+    assert.strictEqual(out.metrics.lines_with_no_apr, 1);
+    assert.match(out.reason, /unpriced, not cheap/);
+  });
+
+  test("candidates come back most expensive first", () => {
+    const out = run({ tradelines: [
+      line({ id: "a", apr: 0.2599, balance_cents: 200_000 }),
+      line({ id: "b", apr: 0.3499, balance_cents: 200_000 })
+    ] });
+    assert.deepStrictEqual(out.metrics.candidates.map((c) => c.id), ["b", "a"]);
+  });
+
+  test("a line of credit and a closed card are not card-upgrade candidates", () => {
+    const out = run({ tradelines: [
+      line({ id: "loc", kind: "loc", apr: 0.2999, balance_cents: 500_000 }),
+      line({ id: "shut", apr: 0.2999, balance_cents: 500_000, closed_at: "2026-01-01T00:00:00Z" })
+    ] });
+    assert.strictEqual(out.fires, false);
+    assert.strictEqual(out.metrics.open_revolving_lines, 0);
+  });
+
+  test("THE THRESHOLD IS THE ROW: the same cards answer differently under a different APR floor", () => {
+    assert.strictEqual(run({ params: { apr_at_or_above: 0.2499, min_balance_cents: 1 } }).metrics.candidates.length, 1);
+    assert.strictEqual(run({ params: { apr_at_or_above: 0.0500, min_balance_cents: 1 } }).metrics.candidates.length, 2);
+  });
+
+  test("an APR given as a percentage throws rather than being read as 2499%", () => {
+    assert.throws(() => aprFractionOrNull(24.99, "apr"), RangeError);
+    assert.throws(() => run({ params: { apr_at_or_above: 24.99, min_balance_cents: 1 } }), RangeError);
+    assert.throws(() => run({ tradelines: [line({ apr: 24.99 })] }), RangeError);
+  });
+});
+
+describe("the four named entry points are names for the rules, not second copies", () => {
+  test("evaluateUtilization is the same function evaluate() runs for that rule row", () => {
+    const args = {
+      tradelines: [line({ credit_limit_cents: 1_000_000, balance_cents: 250_000 })],
+      previousTradelines: [line({ credit_limit_cents: 1_000_000, balance_cents: 500_000 })],
+      pull: CLEAN,
+      params: { utilization_ceiling_pct: 30, min_drop_basis_points: null,
+                clean_pull_max_inquiries_per_bureau: 2, clean_pull_max_late_payments: 0 }
+    };
+    const direct = evaluateUtilization(args);
+    const viaEvaluate = evaluate({
+      ...args, rules: { utilization_drop_clean_pull: rule(args.params) }
+    }).find((r) => r.rule_key === "utilization_drop_clean_pull");
+    assert.strictEqual(direct.fires, viaEvaluate.fires);
+    assert.deepStrictEqual(direct.metrics, viaEvaluate.metrics);
+    assert.strictEqual(direct.reason, viaEvaluate.reason);
+  });
+
+  test("evaluateScore and suggestCardUpgrade agree with their rule rows too", () => {
+    const scoreParams = { min_score_gain: 20, min_score: 680 };
+    const scores = { previous: 640, current: 700 };
+    assert.strictEqual(
+      evaluateScore({ params: scoreParams, scores }).reason,
+      evaluate({ scores, rules: { score_improvement: rule(scoreParams) } })
+        .find((r) => r.rule_key === "score_improvement").reason
+    );
+
+    const cardParams = { apr_at_or_above: 0.2499, min_balance_cents: 100_000 };
+    const tradelines = [line({ apr: 0.2999, balance_cents: 500_000 })];
+    assert.strictEqual(
+      suggestCardUpgrade({ params: cardParams, tradelines }).reason,
+      evaluate({ tradelines, rules: { card_upgrade_candidate: rule(cardParams) } })
+        .find((r) => r.rule_key === "card_upgrade_candidate").reason
+    );
+  });
+
+  test("all five conditions are implemented, so no rule row in 079 is orphaned", () => {
+    assert.deepStrictEqual(Object.keys(UPSELL_RULES).sort(), [
+      "card_upgrade_candidate", "score_improvement", "seasoned_tradelines",
+      "strength_signals", "utilization_drop_clean_pull"
+    ]);
+  });
+
+  test("the entry points refuse a non-object argument rather than reading undefined", () => {
+    assert.throws(() => evaluateUtilization("nope"), TypeError);
+    assert.throws(() => evaluateScore([]), TypeError);
+    assert.throws(() => suggestCardUpgrade({ params: "nope" }), TypeError);
   });
 });

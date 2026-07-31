@@ -74,6 +74,7 @@ export function nextMonthStart(date) {
  * @param {Array}   opts.tradelines           rows shaped like `tradelines` (054)
  * @param {Array?}  opts.previousTradelines   the same shape, from the previous period
  * @param {object?} opts.pull                 the latest pull's inquiry/late-payment counts
+ * @param {object?} opts.scores               { previous, current } from `snapshots.score`
  * @param {object}  opts.rules                `upsell_trigger_rules` rows (079)
  * @param {Date|string?} opts.now             when the report was built; no clock in here
  */
@@ -85,6 +86,7 @@ export function buildMonthlyOptimizationReport({
   tradelines = [],
   previousTradelines = null,
   pull = null,
+  scores = null,
   rules = {},
   now = null
 } = {}) {
@@ -102,7 +104,7 @@ export function buildMonthlyOptimizationReport({
   const builtAt = dateOrNull(now, "now");
   const periodKey = monthKey(start);
 
-  const signals = evaluate({ clientId, tradelines, previousTradelines, pull, rules, now: builtAt });
+  const signals = evaluate({ clientId, tradelines, previousTradelines, pull, scores, rules, now: builtAt });
   const position = positionOf(tradelines);
   const previousPosition = previousTradelines === null || previousTradelines === undefined
     ? null
@@ -148,5 +150,9 @@ export function buildMonthlyOptimizationReport({
     blanks
   };
 }
+
+/* The short name the build plan uses for this function. One implementation, two
+   names — not a second builder. */
+export { buildMonthlyOptimizationReport as monthlyReport };
 
 export default buildMonthlyOptimizationReport;

@@ -111,6 +111,31 @@ export function percentOrNull(value, label = "percent") {
   return n;
 }
 
+/** An APR as tradelines.apr stores it: a DECIMAL FRACTION in [0,1]. 0.2499 is
+ *  24.99%. A value above 1 is refused rather than divided by 100 — a threshold
+ *  row that meant 24.99% and said 24.99 must fail loudly, not quietly become
+ *  2499% or quietly become 24.99% depending on which module read it. */
+export function aprFractionOrNull(value, label = "apr") {
+  if (value === null || value === undefined || value === "") return null;
+  const n = numeric(value, label);
+  if (!Number.isFinite(n)) throw new TypeError(`${label}: not a number: ${JSON.stringify(value)}`);
+  if (n < 0 || n > 1) {
+    throw new RangeError(`${label}: APR must be a decimal fraction in [0,1] — 0.2499 is 24.99% — got ${n}`);
+  }
+  return n;
+}
+
+/** A bureau score. The 0-1200 band is a TYPO GUARD, not a policy: it exists to
+ *  catch a utilization percentage or a dollar amount arriving where a score
+ *  belongs. Which scores matter is a threshold, and thresholds are rows. */
+export function scoreOrNull(value, label = "score") {
+  const n = countOrNull(value, label);
+  if (n !== null && n > 1200) {
+    throw new RangeError(`${label}: ${n} is not a plausible credit score — check the caller is not passing a percentage or an amount`);
+  }
+  return n;
+}
+
 /** A timestamp off a row or an argument. Invalid dates throw rather than becoming
  *  NaN-valued Dates, which compare false against everything in silence. */
 export function dateOrNull(value, label = "timestamp") {
@@ -439,8 +464,135 @@ export const UPSELL_RULES = {
       reason: `total limit, open revolving line count and utilization all clear their thresholds`,
       metrics
     };
+  },
+
+  /* The score rose enough to revisit funding.
+     TWO READINGS ARE REQUIRED. A gain cannot be measured from one number, and
+     "we only have today's score" is not "the score did not move". Unlike the
+     tradeline position, both readings genuinely exist on disk: `snapshots` keeps
+     one row per pull with a `score` column. */
+  score_improvement({ params, scores }) {
+    const minGain = countOrNull(params.min_score_gain, "min_score_gain");
+    const minScore = scoreOrNull(params.min_score, "min_score");
+
+    const unset = [];
+    if (minGain === null) unset.push("min_score_gain");
+    if (minScore === null) unset.push("min_score");
+    if (unset.length) return unsetThresholds(unset);
+
+    const previous = scoreOrNull(scores?.previous, "scores.previous");
+    const current = scoreOrNull(scores?.current, "scores.current");
+    if (current === null) return blank("no current credit score supplied");
+    if (previous === null) {
+      return blank("no previous credit score supplied — a gain cannot be measured from a single reading", { score_now: current });
+    }
+
+    const gain = current - previous;
+    const metrics = { score_before: previous, score_now: current, score_gain: gain,
+                      min_score_gain: minGain, min_score: minScore };
+
+    if (current < minScore) return blank(`the score is ${current}, under the ${minScore} required`, metrics);
+    if (gain < minGain) return blank(`the score gained ${gain} point(s), under the ${minGain} required`, metrics);
+
+    return { fires: true, reason: `the score rose ${gain} point(s) to ${current}`, metrics };
+  },
+
+  /* A card expensive enough to be worth replacing.
+     AN UNKNOWN APR IS UNPRICED, NEVER CHEAP. 054's own header makes the same
+     point about the funding waterfall: a card with no rate must not be treated
+     as the cheapest money available. Here the direction is reversed and the rule
+     is the same — a card whose rate we do not know is not evidence that the
+     client has nothing expensive. */
+  card_upgrade_candidate({ tradelines, params }) {
+    const aprFloor = aprFractionOrNull(params.apr_at_or_above, "apr_at_or_above");
+    const minBalance = centsOrNull(params.min_balance_cents, "min_balance_cents");
+
+    const unset = [];
+    if (aprFloor === null) unset.push("apr_at_or_above");
+    if (minBalance === null) unset.push("min_balance_cents");
+    if (unset.length) return unsetThresholds(unset);
+
+    const lines = openDrawableLines(tradelines).filter((r) => String(r.kind ?? "revolving") === "revolving");
+    const candidates = [];
+    let unpriced = 0;
+    let unknownBalance = 0;
+
+    for (const r of lines) {
+      const apr = aprFractionOrNull(r.apr, "tradeline.apr");
+      const balance = centsOrNull(r.balance_cents, "tradeline.balance_cents");
+      if (apr === null) { unpriced += 1; continue; }
+      if (balance === null) { unknownBalance += 1; continue; }
+      if (apr < aprFloor || balance < minBalance) continue;
+      candidates.push({
+        id: r.id ?? null,
+        lender: r.lender ?? null,
+        apr,
+        balance_cents: balance,
+        // Simple annual interest on TODAY'S balance at TODAY'S rate. Not a
+        // projection of what the client will pay — payments move the balance —
+        // and labelled that way so nobody quotes it as one. roundHalfUp keeps it
+        // on a whole cent; percentOf is not used because its input is percent
+        // units and converting a fraction into them adds a float round-trip for
+        // no gain.
+        interest_at_current_balance_cents: roundHalfUp(balance * apr)
+      });
+    }
+
+    // Cheapest-money-last: the most expensive card is the one worth replacing.
+    candidates.sort((a, b) => b.apr - a.apr || b.balance_cents - a.balance_cents);
+
+    const metrics = {
+      open_revolving_lines: lines.length,
+      candidates,
+      lines_with_no_apr: unpriced,
+      lines_with_no_balance: unknownBalance,
+      apr_at_or_above: aprFloor,
+      min_balance_cents: minBalance
+    };
+
+    if (candidates.length) {
+      return {
+        fires: true,
+        reason: `${candidates.length} open revolving line(s) carry an APR at or above ${aprFloor} on a balance of at least ${minBalance} cents`,
+        metrics
+      };
+    }
+    if (unpriced || unknownBalance) {
+      return blank(
+        `no line could be shown to qualify, and ${unpriced} line(s) have no APR and ${unknownBalance} have no balance — ` +
+        "a card whose rate is unknown is unpriced, not cheap",
+        metrics
+      );
+    }
+    return blank(`no open revolving line reaches an APR of ${aprFloor} on a balance of ${minBalance} cents`, metrics);
   }
 };
+
+/* ── the four named entry points ────────────────────────────────────────────
+   Thin, deliberately. Each is the rule function under its public name, so a
+   caller that wants one condition does not have to build a rules map and read
+   an array back. There is exactly one implementation of each condition; these
+   are names for it, not second copies of it. */
+
+/** "Utilization dropped and the pull is clean" → fundable for $X more. */
+export const evaluateUtilization = (opts = {}) => UPSELL_RULES.utilization_drop_clean_pull(withParams(opts));
+
+/** "The score rose enough to revisit funding." */
+export const evaluateScore = (opts = {}) => UPSELL_RULES.score_improvement(withParams(opts));
+
+/** "This card is expensive enough to be worth replacing." */
+export const suggestCardUpgrade = (opts = {}) => UPSELL_RULES.card_upgrade_candidate(withParams(opts));
+
+function withParams(opts) {
+  if (opts === null || typeof opts !== "object" || Array.isArray(opts)) {
+    throw new TypeError(`expected an options object, got ${typeOf(opts)}`);
+  }
+  const params = opts.params ?? {};
+  if (params === null || typeof params !== "object" || Array.isArray(params)) {
+    throw new TypeError(`params must be an object, got ${typeOf(params)}`);
+  }
+  return { tradelines: [], previousTradelines: null, pull: null, scores: null, now: null, ...opts, params };
+}
 
 /* cleanPull — is the latest pull inside the limits the rule row sets?
    Reads the real column names from db/schema/005_client_custom_fields.sql. A
@@ -500,6 +652,7 @@ export function cleanPull(pull, { maxInquiries, maxLate }) {
  * @param {Array}   opts.tradelines        rows shaped like `tradelines` (054)
  * @param {Array?}  opts.previousTradelines the same shape, from an earlier pull
  * @param {object?} opts.pull              crs_inquiries_ex/_eq/_tu, crs_late_payments_count
+ * @param {object?} opts.scores            { previous, current } — from `snapshots.score`
  * @param {object}  opts.rules             { rule_key: { active, needs_config, severity, params } }
  * @param {Date|string?} opts.now          evaluation time; there is no clock in here
  */
@@ -508,6 +661,7 @@ export function evaluate({
   tradelines = [],
   previousTradelines = null,
   pull = null,
+  scores = null,
   rules = {},
   now = null
 } = {}) {
@@ -553,7 +707,7 @@ export function evaluate({
     }
 
     results.push(finish(ruleKey, rule, evaluatedAt,
-      fn({ tradelines, previousTradelines, pull, params, now: at }), params));
+      fn({ tradelines, previousTradelines, pull, scores, params, now: at }), params));
   }
 
   for (const ruleKey of Object.keys(UPSELL_RULES).sort()) {

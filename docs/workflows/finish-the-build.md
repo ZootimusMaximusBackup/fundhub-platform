@@ -14,6 +14,15 @@ migrations 078 (alerts) and 079 (upsell trigger rules), the pure rule evaluator,
 and the monthly optimization report re-aimed as a subscription artifact.
 `status: done`
 
+**Second pass (autonomous W1-W10 build).** The autonomous build plan names four
+entry points for W4 — `evaluateUtilization`, `evaluateScore`,
+`suggestCardUpgrade`, `monthlyReport`. Two existed under other names and are now
+exported under these; two are new conditions (`score_improvement`,
+`card_upgrade_candidate`) added as rule rows in 079 and rule functions in
+`upsell.mjs`. Five conditions total. `WORKFLOW-AUTONOMY.md` **does not exist in
+this repository** — searched the whole tree — so the decision rules came from the
+build prompt itself; recorded rather than invented.
+
 **What changed in plain language:** the system can now work out, from a client's
 credit cards, whether something has happened that is worth telling somebody
 about — their card balances dropped, their cards are old enough to be worth a
@@ -21,8 +30,8 @@ line of credit, or they look strong enough for a second business. It writes that
 down as an "alert", which is just a note on a list. The rules for when to raise
 one live in a table an owner can edit, not in code a developer has to change.
 
-**It does not work yet, on purpose.** All three rules ship switched OFF, because
-nobody has decided the numbers they need — see "The seven numbers nobody has
+**It does not work yet, on purpose.** All five rules ship switched OFF, because
+nobody has decided the numbers they need — see "The eleven numbers nobody has
 decided" below. Nothing sends anything to anybody: an alert is a note in the
 database and that is all it is.
 
@@ -35,7 +44,7 @@ database and that is all it is.
    refers to "the addendum's Finance OS" as well, so the document is real and is
    simply not checked in. I built from the task text and from what the schema can
    actually answer, and every place I could not source something is reported
-   rather than filled in. **If §8 names any of the seven numbers below, they
+   rather than filled in. **If §8 names any of the eleven numbers below, they
    should go in as an UPDATE against the 079 rows and nothing in the code needs
    to change.**
 2. **`docs/journeys/` does not exist.** CLAUDE.md §4 requires updating
@@ -59,9 +68,9 @@ database and that is all it is.
 
 ---
 
-### The seven numbers nobody has decided — READ THIS FIRST
+### The eleven numbers nobody has decided — READ THIS FIRST
 
-This is the finding, not a to-do I skipped. Every threshold the three conditions
+This is the finding, not a to-do I skipped. Every threshold the five conditions
 need ships as `null`, every rule ships `active = false`, and the evaluator
 refuses to fire a rule whose numbers are unset. That refusal is tested and
 mutation-checked.
@@ -75,9 +84,11 @@ mutation-checked.
 | `seasoned_tradelines` | `min_age_months` | No source. **Also blocked by the schema** — see below. |
 | `seasoned_tradelines` | `min_seasoned_lines` | No source. |
 | `strength_signals` | `min_total_limit_cents`, `min_open_revolving_lines`, `max_utilization_pct` | Nothing in this repository defines what a "strength signal" is or where it cuts. Grep for "second entity" returns nothing. |
+| `score_improvement` | `min_score_gain`, `min_score` | No source for either. Unlike the tradeline position, both readings genuinely exist on disk — `snapshots` keeps one row per pull with a `score` column — so this rule is blocked only on the numbers, not on the schema. |
+| `card_upgrade_candidate` | `apr_at_or_above`, `min_balance_cents` | No source. `apr_at_or_above` is a decimal fraction in [0,1] matching `tradelines.apr`; a value above 1 throws rather than being read as a percentage. |
 
 They are reported on a screen, not just here: `v_upsell_config_gaps` returns one
-row per unset number.
+row per unset number — 14 rows as shipped.
 
 **To turn a rule on, set its numbers and flip it live in one statement:**
 
@@ -127,8 +138,9 @@ UPDATE upsell_trigger_rules
 | `src/finance/upsell.mjs` | new — the pure evaluator. No clock, no I/O, no threshold. Imports only `src/commissions/money.mjs`. |
 | `src/finance/optimization-report.mjs` | new — the monthly artifact builder. Pure. |
 | `src/finance/alerts.mjs` | new — the database half: raise / acknowledge / list, plus `loadUpsellRules` and `unconfiguredUpsellRules`. |
-| `src/finance/upsell.test.mjs` | new — 76 pure unit tests. |
-| `src/finance/optimization-report.test.mjs` | new — 14 pure unit tests. |
+| `src/finance/index.mjs` | new — barrel for the four named entry points plus the store. |
+| `src/finance/upsell.test.mjs` | new — 97 pure unit tests. |
+| `src/finance/optimization-report.test.mjs` | new — 17 pure unit tests. |
 | `src/finance/alerts.pg.test.mjs` | new — 13 real-Postgres tests, skipped when `DATABASE_URL` is unset. |
 | `src/finance/PROPOSED-EVENTS.md` | new — three proposed canonical events. `src/events/canonical.mjs` untouched. |
 | `docs/workflows/finish-the-build.md` | new — this board. |
@@ -140,13 +152,17 @@ Nothing else was modified. `src/shifts/**`, `src/commissions/**`, `src/mail/**`,
 
 Nothing existing changed name or shape. New exports, all from `src/finance/`:
 
-* `upsell.mjs` — `evaluate` (default too), `firedAlerts`, `blanksOf`,
-  `UPSELL_RULES`, `DRAWABLE_KINDS`, `positionOf`, `headroomCents`,
-  `openDrawableLines`, `utilizationBasisPoints`, `additionalCapacityCents`,
-  `monthsBetween`, `cleanPull`, `centsOrNull`, `countOrNull`, `percentOrNull`,
-  `dateOrNull`
+* `upsell.mjs` — `evaluateUtilization`, `evaluateScore`, `suggestCardUpgrade`,
+  `evaluate` (default too), `firedAlerts`, `blanksOf`, `UPSELL_RULES`,
+  `DRAWABLE_KINDS`, `positionOf`, `headroomCents`, `openDrawableLines`,
+  `utilizationBasisPoints`, `additionalCapacityCents`, `monthsBetween`,
+  `cleanPull`, `centsOrNull`, `countOrNull`, `percentOrNull`, `dateOrNull`,
+  `aprFractionOrNull`, `scoreOrNull`
 * `optimization-report.mjs` — `buildMonthlyOptimizationReport` (default too),
-  `monthKey`, `nextMonthStart`, `DOCUMENT_KIND`, `ENTITLEMENT_CODE`, `CADENCE`
+  `monthlyReport` (the same function under the build plan's name), `monthKey`,
+  `nextMonthStart`, `DOCUMENT_KIND`, `ENTITLEMENT_CODE`, `CADENCE`
+* `index.mjs` — a barrel re-exporting the four entry points and the store.
+  Re-exports only, so the barrel and the module cannot disagree.
 * `alerts.mjs` — `raiseAlert`, `raiseAlerts`, `acknowledgeAlert`, `listAlerts`,
   `loadUpsellRules`, `unconfiguredUpsellRules`, `SEVERITIES`
 
@@ -181,15 +197,15 @@ to a provider decision nobody has made.
 
 | Check | Result |
 |---|---|
-| 078/079 on an empty database | 52 migrations applied clean from scratch |
+| 078/079 on an empty database | 52 migrations applied clean from scratch (re-verified after the second pass) |
 | re-apply | 0 applied — idempotent |
-| `npm test` with `DATABASE_URL` unset | **1990 tests, 0 fail, 208 skipped** (baseline was 1887 / 0 fail / 195 skipped) |
-| `npm test` against real Postgres | 2445 tests, 24 fail — **the same 24 names as the baseline**, diffed by name, zero new |
+| `npm test` with `DATABASE_URL` unset | **2014 tests, 0 fail, 208 skipped** (baseline was 1887 / 0 fail / 195 skipped) |
+| `npm test` against real Postgres | 2469 tests, 24 fail — **the same 24 names as the baseline**, diffed by name, zero new |
 | `npm run diagrams:check` | up to date (12 files) |
 | `npm run lint` | script does not exist in this repository |
 | `npx tsc --noEmit` | no `tsconfig.json`; repository is plain ESM JavaScript |
 | Playwright | no UI change, so nothing to drive |
-| Mutation check | 11 deliberate defects introduced one at a time; every one was caught (see below) |
+| Mutation check | 20 deliberate defects introduced one at a time; every one was caught (see below) |
 
 ### Mutation check — what was broken, and what caught it
 
@@ -206,6 +222,15 @@ to a provider decision nobody has made.
 | 9 | the alert dedupe guard dropped (plain INSERT) | 3 |
 | 10 | `raised_at` overwritten by an out-of-order replay | 1 |
 | 11 | the severity check accepts anything | 1 |
+| 12 | a score gain measured from one reading (previous treated as 0) | 1 |
+| 13 | the score floor ignored, only the gain checked | 2 |
+| 14 | the score gain boundary flipped from `>=` to `>` | 1 |
+| 15 | a card with an unknown APR treated as 100%, i.e. expensive | 1 |
+| 16 | the APR fraction guard removed, so 24.99 reads as an APR | 1 |
+| 17 | card upgrade includes lines of credit and closed cards | 1 |
+| 18 | interest computed on twice the balance | 1 |
+| 19 | the score typo guard removed, so 2500 reads as a score | 1 |
+| 20 | a named entry point given its own divergent copy of the rule | 10 |
 
 There is also a standing test that is not about this module at all:
 `headroomCents()` is pinned to `calcFunding().totalAvailableCredit` over a shared
@@ -230,6 +255,36 @@ This touches credit-repair messaging. Three things a reviewer should look at:
    human's to write; this code carries the evidence.
 3. **Nothing is transmitted.** No email, no SMS, no outbound `fetch`, no
    scheduler. An alert is a row.
+4. **`interest_at_current_balance_cents`** on a card-upgrade candidate is simple
+   annual interest on today's balance at today's APR. It is **not** a projection
+   of what the client will pay — payments move the balance — and it is named that
+   way so nobody quotes it as one. If a screen renders it, the label needs a
+   human's wording.
+5. **`score_improvement` reads a bureau score.** It compares two readings and
+   reports the gain. It makes no statement about what the score qualifies anybody
+   for.
+
+### Decisions made in the second pass (autonomous build, no questions asked)
+
+| Decision | Why |
+|---|---|
+| Table named `upsell_trigger_rules`, not `upsell_triggers` | Matches `commission_rules` and `optimization_rules`, the two tables it is modelled on. The rows are rules, not triggers. |
+| 079 amended in place rather than a new 080 | The migration block for W4 is 078–079 only. 079 had not merged and no shared database had applied it. **Anyone who applied the pre-amendment 079 to a scratch database must delete its `schema_migrations` row or rebuild** — editing an applied migration is a silent no-op, which is the point of saying so here. |
+| `evaluateUtilization` / `evaluateScore` / `suggestCardUpgrade` are thin named wrappers over `UPSELL_RULES` | One implementation per condition. A test asserts each wrapper returns exactly what `evaluate()` returns for the same rule row, so the two call styles cannot drift. |
+| `monthlyReport` is an alias export, not a new function | Same reason. |
+| APR thresholds are decimal fractions in [0,1] | Matches `tradelines.apr` (054). A value above 1 **throws** rather than being divided by 100 — a threshold row that meant 24.99% and said `24.99` must fail loudly, not silently mean two different things in two modules. |
+| Scores accepted in 0–1200 | A typo guard against a percentage or an amount arriving where a score belongs, not a policy about which scores matter. |
+| Kept `seasoned_tradelines` and `strength_signals` | They were the original W4 ask and already shipped. Removing them to match a shorter list would be deleting working, tested code. |
+| No HTTP endpoint | W9 owns the Finance OS screen and its `api/read/finance-os.mjs`. Adding a second reader here would be two answers to one question. |
+| Most permissive reasonable gate | Not applicable — nothing here is reachable over HTTP. When W9 exposes it, the alert list is staff-level data (client PII), so `ROLE_SETS.STAFF` via `requireAuth` **then** `requireRole` — `requireAuth` ignores a `roles` key. |
+
+### Out of scope, stated plainly
+
+Sending an alert (no email, no SMS, no outbound fetch — none exists in this
+repository and none was added), any scheduler or cron, subscriptions and card
+storage (W2), the soft-pull request path (W3), an acknowledgement endpoint or an
+`acknowledged_by` column, the Finance OS screen and its read endpoint (W9), and
+adding an `opened_at` column to `tradelines` (054's block, not this one).
 
 ### Findings for other workflows
 
