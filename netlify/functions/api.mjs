@@ -76,6 +76,7 @@ import hiringDecisions from "../../api/hiring/decisions.mjs";
 import hiringFunnel from "../../api/hiring/funnel.mjs";
 import hiringBench from "../../api/hiring/bench.mjs";
 import financeSoftPull from "../../api/finance/soft-pull.mjs";
+import consentCapture from "../../api/consent/capture.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
 
@@ -184,7 +185,20 @@ export const ROUTES = {
   // it looks like the audit trail exists. The endpoint's own gate is narrower
   // than ROLE_SETS.STAFF and is spelled out in api/finance/soft-pull.mjs.
   // Nothing behind it transmits.
-  "finance/soft-pull": financeSoftPull
+  "finance/soft-pull": financeSoftPull,
+
+  // Consent capture — the gate in front of the route directly above. Routed in
+  // the same commit as the handler, the migration and the screen, because an
+  // unreachable consent endpoint is worse here than anywhere else in this map:
+  // requestSoftPull() now REFUSES without a live consent row, so a 404 on this
+  // path does not degrade the feature, it disables soft pulls entirely and the
+  // only visible symptom is a 403 from a different endpoint.
+  //
+  // Serves staff AND client principals: the consumer captures their own consent
+  // in the portal, and an employee may record one given on a call. Its role gate
+  // is the same narrow set as finance/soft-pull and is spelled out in
+  // api/consent/capture.mjs. Nothing behind it transmits.
+  "consent/capture": consentCapture
 
   /* NOT ROUTED, ON PURPOSE — see ALLOWED_UNROUTED in src/http/routes.test.mjs
      for the current list and the reason attached to each entry. That list is

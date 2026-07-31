@@ -65,6 +65,39 @@ const rowFor = (over = {}) => ({
 
 const ok = { orgId: ORG, clientId: CLIENT, requestedBy: { kind: "staff", id: STAFF }, reason: "why" };
 
+/* THE CONSENT PRECONDITION (rule 0, added with db/migrations/099_client_consents.sql).
+ *
+ * requestSoftPull() now reads client_consents BEFORE either duplicate guard, so
+ * every test below that expects a request to get as far as the guards has to
+ * satisfy the gate first. That is a real new precondition, not test scaffolding:
+ * without a consent row the correct behaviour IS a refusal, and the tests that
+ * assert the refusal are in the "no consent, no request" block further down.
+ *
+ * CONSENT_OK is the first entry in each fake queue for that reason. The queue is
+ * consumed in order, so it stands in for the gate's SELECT and the rest of each
+ * scenario is unchanged from before the gate existed. */
+const consentRow = (over = {}) => ({
+  id: "66666666-6666-6666-6666-666666666666",
+  org_id: ORG, client_id: CLIENT, kind: "soft_pull_consent",
+  consent_text: "I authorize Fundhub to obtain my consumer credit report through a soft inquiry.",
+  consent_version: "soft-pull-v1",
+  granted_by_kind: "client", granted_by_account_id: ACCOUNT, granted_by_staff_id: null,
+  capture_method: "typed", granted_name: "Dana Client",
+  captured_ip: null, captured_user_agent: null, document_id: null,
+  granted_at: new Date(Date.now() - 60_000), expires_at: null,
+  revoked_at: null, revoked_reason: null, revoked_by_kind: null,
+  revoked_by_account_id: null, revoked_by_staff_id: null,
+  created_at: new Date(), updated_at: new Date(),
+  is_valid: true,
+  ...over
+});
+
+/** A live consent, as the gate's query returns it. */
+const CONSENT_OK = () => ({ rows: [consentRow()] });
+
+/** No consent at all — the gate's query finds nothing. */
+const CONSENT_NONE = () => ({ rows: [] });
+
 // ── rule 1: no attribution, no pull ─────────────────────────────────────────
 
 describe("an unattributed soft pull is refused before anything is written", () => {
@@ -209,25 +242,176 @@ describe("cost is integer cents and NULL survives as unknown", () => {
   });
 });
 
+// ── rule 0: no consent, no request ─────────────────────────────────────────
+//
+// The gate added with db/migrations/099_client_consents.sql. These are the tests
+// that prove a soft pull cannot be REQUESTED for somebody who never agreed, or
+// who has taken their agreement back.
+//
+// They assert on the fake db's call log as well as on the thrown error, for the
+// same reason the attribution tests do: "refused" is only meaningful if nothing
+// was written first. A guard that inserts and then raises is a different and
+// much weaker promise.
+
+describe("no consent, no request", () => {
+  const gateRefusal = (e) => {
+    assert.ok(e instanceof SoftPullError, `threw ${e.name}, not SoftPullError`);
+    assert.equal(e.status, 403, `consent refusal produced ${e.status}, not 403`);
+    assert.equal(e.code, "consent_required",
+      "the refusal carried no machine-readable code — the screen would have to match on wording");
+    return true;
+  };
+
+  /** Everything the gate must refuse, and the shape of the row that causes it.
+   *  Each entry is a row the gate's SELECT could return, with is_valid false —
+   *  which is what Postgres computes from the VALID_PREDICATE in
+   *  src/consent/index.mjs. The unit test cannot evaluate that SQL, so it pins
+   *  the JavaScript half: given a row the database calls invalid, the module
+   *  refuses. soft-pulls.pg.test.mjs pins the SQL half against real Postgres. */
+  const refused = [
+    ["no consent has ever been captured", CONSENT_NONE()],
+    ["the consent was revoked", { rows: [consentRow({
+      is_valid: false, revoked_at: new Date(Date.now() - 1000),
+      revoked_reason: "client withdrew on a call", revoked_by_kind: "client",
+      revoked_by_account_id: ACCOUNT
+    })] }],
+    ["the consent has expired", { rows: [consentRow({
+      is_valid: false, expires_at: new Date(Date.now() - 1000)
+    })] }],
+    ["the consent is not effective yet", { rows: [consentRow({
+      is_valid: false, granted_at: new Date(Date.now() + 600_000)
+    })] }]
+  ];
+
+  for (const [label, consentResult] of refused) {
+    test(`${label}: the request is refused and NOTHING is inserted`, async () => {
+      const db = fakeDb([consentResult]);
+      await assert.rejects(() => requestSoftPull(db, ok), gateRefusal);
+
+      assert.ok(!db.calls.some((c) => /INSERT/i.test(c.text)),
+        `${label} still recorded a consumer-credit event`);
+      // Exactly one query: the gate. It refused before the replay lookup and
+      // before the open-request lookup, so no other work was done at all.
+      assert.equal(db.calls.length, 1,
+        `${label} issued ${db.calls.length} queries — the gate must refuse before any other guard`);
+      assert.match(db.calls[0].text, /FROM client_consents/i);
+    });
+  }
+
+  test("a revoked consent fails the check IMMEDIATELY — nothing is cached between calls", async () => {
+    // The same module instance, two calls, two different answers. This is the
+    // property that makes revocation real: if the gate memoised a verdict, or if
+    // a consent decision were copied onto the request row, the second call here
+    // would still succeed. Nothing may sit between the revocation and the refusal.
+    const granted = fakeDb([CONSENT_OK(), { rows: [] }, { rows: [rowFor()] }]);
+    const first = await requestSoftPull(granted, ok);
+    assert.equal(first.created, true, "the pull was refused while consent was live");
+
+    const revoked = fakeDb([{ rows: [consentRow({
+      is_valid: false, revoked_at: new Date(),
+      revoked_reason: "client withdrew", revoked_by_kind: "client",
+      revoked_by_account_id: ACCOUNT
+    })] }]);
+    await assert.rejects(() => requestSoftPull(revoked, ok), gateRefusal);
+    assert.ok(!revoked.calls.some((c) => /INSERT/i.test(c.text)),
+      "a revoked consent still let a pull be recorded");
+  });
+
+  test("the refusal says WHICH of the four ways it failed", async () => {
+    // Not cosmetic. "None on file" and "expired" send a closer to the capture
+    // screen; "revoked" means stop and do not ask again. One shared string would
+    // send somebody to re-collect a consent the client deliberately withdrew.
+    const cases = [
+      [CONSENT_NONE(), /no soft-pull consent on file/i],
+      [{ rows: [consentRow({ is_valid: false, revoked_at: new Date(), revoked_reason: "x",
+                             revoked_by_kind: "client", revoked_by_account_id: ACCOUNT })] }, /revoked/i],
+      [{ rows: [consentRow({ is_valid: false, expires_at: new Date(Date.now() - 1000) })] }, /expired/i],
+      [{ rows: [consentRow({ is_valid: false, granted_at: new Date(Date.now() + 600_000) })] }, /not effective yet/i]
+    ];
+    for (const [consentResult, pattern] of cases) {
+      await assert.rejects(
+        () => requestSoftPull(fakeDb([consentResult]), ok),
+        (e) => { assert.match(e.message, pattern); return true; }
+      );
+    }
+  });
+
+  test("the gate is scoped by the org it was given, and that org reaches the query", async () => {
+    // Org scoping comes from the session at the call site. What this asserts is
+    // that requestSoftPull passes it through to the consent read rather than
+    // dropping it — an unscoped gate is a gate that answers for another tenant.
+    const db = fakeDb([CONSENT_OK(), { rows: [] }, { rows: [rowFor()] }]);
+    await requestSoftPull(db, ok);
+    const gate = db.calls[0];
+    assert.match(gate.text, /org_id = \$1/, "the consent read was not scoped by org");
+    assert.equal(gate.params[0], ORG);
+    assert.equal(gate.params[1], CLIENT);
+    assert.equal(gate.params[2], "soft_pull_consent",
+      "the gate asked about a kind other than the one 099 and kinds.mjs define");
+  });
+
+  test("the gate runs BEFORE the replay guard, so a replayed tap cannot bypass it", async () => {
+    // Ordering matters and is easy to get wrong. If the idempotency lookup ran
+    // first, a caller replaying a key from before a revocation would get a
+    // cheerful `created:false` and read it as permission still standing.
+    const db = fakeDb([{ rows: [consentRow({
+      is_valid: false, revoked_at: new Date(), revoked_reason: "withdrew",
+      revoked_by_kind: "client", revoked_by_account_id: ACCOUNT
+    })] }]);
+    await assert.rejects(
+      () => requestSoftPull(db, { ...ok, idempotencyKey: "tap-1" }), gateRefusal);
+    assert.equal(db.calls.length, 1);
+    assert.ok(!db.calls.some((c) => /idempotency_key/i.test(c.text)),
+      "the replay lookup ran despite the consent gate having refused");
+  });
+
+  test("attribution is still checked first — an unattributed request never reaches the gate", async () => {
+    // Rule 1 stays ahead of rule 0. A request that cannot say who asked is
+    // refused without any database read at all, consent or otherwise.
+    const db = fakeDb([CONSENT_OK()]);
+    await assert.rejects(() => requestSoftPull(db, { ...ok, requestedBy: null }),
+      (e) => e.status === 401);
+    assert.deepEqual(db.calls, [], "an unattributed request queried the consent table");
+  });
+
+  test("the fulfil and record paths are NOT gated — an answer that arrived is still stored", async () => {
+    // Deliberate, and stated in the module header. Consent governs whether we
+    // may ASK. A pull that already happened is a fact, and refusing to store it
+    // because the paperwork is now wrong would lose the only copy of what a
+    // bureau said about a person. recordPull() without a requestId is the paid
+    // C-00 path, which predates the ledger entirely.
+    const crs = { id: "77777777-7777-7777-7777-777777777777", org_id: ORG, client_id: CLIENT,
+                  result: {}, outcome_tier: null, created_at: new Date() };
+    const db = fakeDb([{ rows: [crs] }, { rows: [] }]);
+    await recordPull(db, { orgId: ORG, clientId: CLIENT, result: { tradelines: [] } });
+    assert.ok(!db.calls.some((c) => /FROM client_consents/i.test(c.text)),
+      "recordPull consulted the consent gate — the ingest path must stay ungated");
+  });
+});
+
 // ── rule 2: one tap is one pull ────────────────────────────────────────────
 
 describe("one tap is one pull", () => {
   test("a repeated idempotency key returns the first request and inserts nothing", async () => {
     const existing = rowFor({ idempotency_key: "tap-1" });
-    const db = fakeDb([{ rows: [existing] }]);
+    const db = fakeDb([CONSENT_OK(), { rows: [existing] }]);
     const out = await requestSoftPull(db, { ...ok, idempotencyKey: "tap-1" });
 
     assert.equal(out.created, false);
     assert.equal(out.reason, "replay");
     assert.equal(out.request.id, existing.id);
-    assert.equal(db.calls.length, 1, "a replayed tap issued more than the lookup");
-    assert.ok(!/INSERT/i.test(db.calls[0].text), "a replayed tap issued an INSERT");
+    // Two queries and no more: the consent gate, then the replay lookup. Named
+    // individually rather than counted, so swapping one for another fails here.
+    assert.equal(db.calls.length, 2, "a replayed tap issued more than the gate and the lookup");
+    assert.match(db.calls[0].text, /FROM client_consents/i, "the consent gate did not run first");
+    assert.match(db.calls[1].text, /idempotency_key = \$2/, "the replay lookup did not run second");
+    assert.ok(!db.calls.some((c) => /INSERT/i.test(c.text)), "a replayed tap issued an INSERT");
   });
 
   test("an already-open request for the client is returned, not duplicated", async () => {
     const open = rowFor();
-    // no idempotency key → first query is the open-request lookup
-    const db = fakeDb([{ rows: [open] }]);
+    // no idempotency key → after the consent gate, the open-request lookup
+    const db = fakeDb([CONSENT_OK(), { rows: [open] }]);
     const out = await requestSoftPull(db, ok);
 
     assert.equal(out.created, false);
@@ -238,7 +422,7 @@ describe("one tap is one pull", () => {
   });
 
   test("with nothing open, the request is inserted as queued", async () => {
-    const db = fakeDb([{ rows: [] }, { rows: [rowFor()] }]);
+    const db = fakeDb([CONSENT_OK(), { rows: [] }, { rows: [rowFor()] }]);
     const out = await requestSoftPull(db, ok);
 
     assert.equal(out.created, true);
@@ -249,7 +433,7 @@ describe("one tap is one pull", () => {
   });
 
   test("the insert carries the session's attribution, in the columns 077 checks", async () => {
-    const db = fakeDb([{ rows: [] }, { rows: [rowFor()] }]);
+    const db = fakeDb([CONSENT_OK(), { rows: [] }, { rows: [rowFor()] }]);
     await requestSoftPull(db, { ...ok, requestedBy: { kind: "client", id: ACCOUNT } });
     const insert = db.calls.find((c) => /INSERT INTO soft_pull_requests/i.test(c.text));
     // [orgId, clientId, kind, staffId, accountId, reason, ...]
@@ -259,7 +443,7 @@ describe("one tap is one pull", () => {
   });
 
   test("provider defaults to 'internal' — the same word a queued message carries", async () => {
-    const db = fakeDb([{ rows: [] }, { rows: [rowFor()] }]);
+    const db = fakeDb([CONSENT_OK(), { rows: [] }, { rows: [rowFor()] }]);
     await requestSoftPull(db, ok);
     const insert = db.calls.find((c) => /INSERT INTO soft_pull_requests/i.test(c.text));
     assert.equal(insert.params[9], "internal");
@@ -268,7 +452,7 @@ describe("one tap is one pull", () => {
   test("a blank idempotency key is stored as NULL, not as an empty string", async () => {
     // "" in a unique index is a value, so two unrelated taps that both send ""
     // would collide and the second client would be handed the first one's row.
-    const db = fakeDb([{ rows: [] }, { rows: [rowFor()] }]);
+    const db = fakeDb([CONSENT_OK(), { rows: [] }, { rows: [rowFor()] }]);
     await requestSoftPull(db, { ...ok, idempotencyKey: "   " });
     const insert = db.calls.find((c) => /INSERT INTO soft_pull_requests/i.test(c.text));
     assert.equal(insert.params[8], null);
@@ -284,7 +468,7 @@ describe("nothing transmits", () => {
     // The guard is structural: if somebody adds an outbound call to this module
     // it will not be a db.query, and a fake db cannot answer it. Asserting the
     // call shape is the cheapest standing check that the seam stayed a seam.
-    const db = fakeDb([{ rows: [] }, { rows: [rowFor()] }]);
+    const db = fakeDb([CONSENT_OK(), { rows: [] }, { rows: [rowFor()] }]);
     await requestSoftPull(db, ok);
     assert.ok(db.calls.length > 0);
     for (const c of db.calls) assert.equal(typeof c.text, "string");

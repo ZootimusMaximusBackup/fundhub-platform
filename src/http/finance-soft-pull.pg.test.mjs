@@ -31,6 +31,7 @@ import { resolveDefaultOrg } from "../auth/org.mjs";
 import { createSession } from "../auth/session.mjs";
 import { createAccountSession } from "../auth/account-session.mjs";
 import { fulfilSoftPull } from "../finance/soft-pulls.mjs";
+import { captureConsent } from "../consent/index.mjs";
 import handler from "../../api/finance/soft-pull.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
@@ -121,6 +122,31 @@ describe("/api/finance/soft-pull", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
          VALUES ($1,'client',$2,$3,'active',$4,'scrypt$placeholder') RETURNING id`,
         [org, `spull_http_acct_${label}@example.com`, `Spull Acct ${label}`, subject])).rows[0].id;
       acct[label] = { id, token: (await createAccountSession(db, { accountId: id, orgId: org })).token };
+    }
+
+    /* THE CONSENT PRECONDITION (rule 0, db/migrations/099_client_consents.sql).
+     *
+     * /api/finance/soft-pull now refuses with 403 code=consent_required unless
+     * the client has a live consent, so every scenario below that expects a
+     * request to be recorded needs one on file. Both clients get one: the
+     * bystander appears in the "a client may only ask for their own file"
+     * scenarios, which must fail on ownership rather than on consent.
+     *
+     * Granted through the module rather than by raw SQL so this fixture goes
+     * through the same validation the endpoint does — a consent this test could
+     * create but the product could not would make the suite agree with itself
+     * and with nothing else.
+     *
+     * The endpoint's OWN consent behaviour is covered in
+     * src/consent/consent.pg.test.mjs and src/http/consent-capture.test.mjs. */
+    for (const subject of [client, otherClient]) {
+      await captureConsent(db, {
+        orgId: org, clientId: subject, kind: "soft_pull_consent",
+        consentText: "I authorize Fundhub to obtain my consumer credit report through a soft inquiry.",
+        consentVersion: "soft-pull-v1",
+        grantedBy: { kind: "staff", id: staff.owner.id },
+        captureMethod: "checkbox"
+      });
     }
   });
 

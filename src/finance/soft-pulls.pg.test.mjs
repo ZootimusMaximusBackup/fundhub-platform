@@ -26,6 +26,7 @@ import { test, before, after, describe } from "node:test";
 import assert from "node:assert";
 import { db, close } from "../db.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
+import { captureConsent } from "../consent/index.mjs";
 import {
   requestSoftPull,
   fulfilSoftPull,
@@ -118,9 +119,44 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
       `INSERT INTO accounts (org_id, kind, email, name, status, client_id)
        VALUES ($1,'client','softpull_pg_test_acct@example.com','Softpull Pgtest Client','invited',$2)
        RETURNING id`, [org, client])).rows[0].id;
+
+    /* THE CONSENT PRECONDITION (rule 0, db/migrations/099_client_consents.sql).
+     *
+     * requestSoftPull() now refuses without a live consent for the client, so
+     * every scenario below that expects a request to be RECORDED needs one on
+     * file first. This is a real precondition of the product, not test
+     * scaffolding: with no consent the correct behaviour is a 403 and no row.
+     *
+     * Granted here in before() rather than per test because wipeLedger() clears
+     * soft_pull_requests and tradelines and deliberately leaves client_consents
+     * alone — consent outlives any one request, which is the point of it being
+     * a separate record rather than a field on the request.
+     *
+     * BOTH clients get one: `otherClient` is the bystander in the "two clients
+     * may each have an open request" and "a crs row for another client is
+     * refused" scenarios, and those must fail for the reason they are testing,
+     * not because the bystander never consented.
+     *
+     * The gate's own behaviour — refusal with none, expired, or revoked — is
+     * proven in src/consent/consent.pg.test.mjs against these same tables,
+     * rather than duplicated here. */
+    for (const c of [client, otherClient]) {
+      await captureConsent(db, {
+        orgId: org, clientId: c, kind: "soft_pull_consent",
+        consentText: "I authorize Fundhub to obtain my consumer credit report through a soft inquiry.",
+        consentVersion: "soft-pull-v1",
+        grantedBy: { kind: "staff", id: staffId },
+        captureMethod: "checkbox"
+      });
+    }
   });
 
-  after(async () => { await purge(); await close(); });
+  after(async () => {
+    // client_consents cascades from clients, so purge() takes it. Explicit here
+    // only so the next reader does not go looking for a missing cleanup.
+    await purge();
+    await close();
+  });
 
   // ── 1. an unattributed pull is refused, by the table itself ───────────────
 
