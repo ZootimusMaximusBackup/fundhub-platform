@@ -20,7 +20,8 @@
     "agent-editor.html", "automations.html", "products-commissions.html",
     "staff-teams.html", "content-admin.html", "sample-data.html",
     "inquiry-remover.html", "affiliate.html", "client-portal.html", "partner-galaxy.html", "brand-studio.html",
-    "campaign-manager.html", "social-studio.html", "creative-factory.html", "hiring.html"
+    "campaign-manager.html", "social-studio.html", "creative-factory.html", "hiring.html",
+    "finance-os.html"
   ];
 
   /* partner-galaxy.html is the white-label partner's own Galaxy — scoped to
