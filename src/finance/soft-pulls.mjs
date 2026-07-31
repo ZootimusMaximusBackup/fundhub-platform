@@ -28,6 +28,10 @@
 //      already-open request for the same client is RETURNED rather than
 //      duplicated. Neither is decorative — pulling a consumer's credit twice
 //      because a request timed out is a real harm and a real cost.
+//      Both guards are backed by a unique index and the INSERT carries ON
+//      CONFLICT DO NOTHING, because reading and then writing leaves a gap two
+//      simultaneous taps both fit through — which they did, three times over,
+//      against a real Postgres. See GUARD 3 and 090.
 //
 //   3. ONE READER OF A PULL PAYLOAD. fulfil() calls ingestCrsResult() from
 //      src/tradelines/store.mjs. It does not parse crs_results.result itself and
@@ -148,6 +152,18 @@ export function decorate(row) {
   return row ? { ...row, cost_display: costDisplay(row.cost_cents) } : row;
 }
 
+/* priorByIdemKey — the row a replayed tap already made, or null. One reader, two
+   call sites: the guard before the insert, and the re-read after an insert that
+   lost a race to another caller carrying the same key. */
+async function priorByIdemKey(db, orgId, idem) {
+  const res = await db.query(
+    `SELECT ${SELECT_COLUMNS} FROM soft_pull_requests
+      WHERE org_id = $1 AND idempotency_key = $2`,
+    [orgId, idem]
+  );
+  return res.rows[0] ? decorate(res.rows[0]) : null;
+}
+
 /**
  * openRequestFor — the client's outstanding request, or null.
  * Exported because "is a pull already in flight for this client" is a question
@@ -198,12 +214,8 @@ export async function requestSoftPull(db, {
   // GUARD 1 — the same tap, replayed. Checked before the open-request guard so
   // a retry gets back the row it made rather than somebody else's older one.
   if (idem) {
-    const prior = await db.query(
-      `SELECT ${SELECT_COLUMNS} FROM soft_pull_requests
-        WHERE org_id = $1 AND idempotency_key = $2`,
-      [orgId, idem]
-    );
-    if (prior.rows[0]) return { created: false, reason: "replay", request: decorate(prior.rows[0]) };
+    const prior = await priorByIdemKey(db, orgId, idem);
+    if (prior) return { created: false, reason: "replay", request: prior };
   }
 
   // GUARD 2 — a pull is already outstanding for this client. Returning it is the
@@ -212,15 +224,47 @@ export async function requestSoftPull(db, {
   const open = await openRequestFor(db, { clientId });
   if (open) return { created: false, reason: "already_open", request: open };
 
+  /* GUARD 3 — THE SAME TWO GUARDS, ADJUDICATED BY POSTGRES.
+     Guards 1 and 2 read and then write, and between the read and the write
+     another caller can do the same. Both see nothing open, both insert: one
+     question, two consumer-credit events, two charges. Proven, not theorised —
+     three simultaneous requests for one client wrote three rows.
+     ON CONFLICT DO NOTHING hands that decision to the unique indexes instead:
+     uq_soft_pull_requests_one_open (090) for a second open request, and
+     uq_soft_pull_requests_idem (077) for a replayed key. Untargeted, so it
+     covers both. A caller that loses is not an error — it re-reads below and
+     gets the winner's row, the same answer a second tap has always got. */
   const res = await db.query(
     `INSERT INTO soft_pull_requests
        (org_id, client_id, requested_by_kind, requested_by_staff_id, requested_by_account_id,
         reason, cost_cents, subscription_id, idempotency_key, provider, status)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'queued')
+     ON CONFLICT DO NOTHING
      RETURNING ${SELECT_COLUMNS}`,
     [orgId, clientId, requester.kind, requester.staffId, requester.accountId,
      statedReason, cost, subscriptionId ?? null, idem, String(provider || "internal")]
   );
+
+  if (!res.rows[0]) {
+    // Somebody else got there first, in the microseconds since guard 2. Their
+    // row is the answer to this tap. Same order as the guards above: the
+    // caller's own replayed key first, then the client's open request.
+    if (idem) {
+      const prior = await priorByIdemKey(db, orgId, idem);
+      if (prior) return { created: false, reason: "replay", request: prior };
+    }
+    const raced = await openRequestFor(db, { clientId });
+    if (raced) return { created: false, reason: "already_open", request: raced };
+
+    // Nothing was written and nothing explains why. Refusing loudly is the only
+    // honest option: reporting success would tell a screen a pull is under way
+    // when no ledger row exists, and retrying blindly is how a double charge
+    // happens in the first place.
+    throw new SoftPullError(
+      "the soft pull request could not be recorded — please try again",
+      { status: 409 }
+    );
+  }
 
   /* ── PROVIDER SEAM ───────────────────────────────────────────────────────
      This is where a real soft pull would be requested, and it is not here.
