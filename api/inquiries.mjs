@@ -74,7 +74,14 @@ export default async function handler(req, res) {
             inquiryId, staffId,
             kind: body.kind || "call",
             outcome: body.outcome ?? null,
-            note: body.note ?? null
+            note: body.note ?? null,
+            /* The shift the gate above already resolved, threaded down so the
+               `staff_events` row this attempt writes says which clock the work
+               was on. It is free here — requireActiveShift returned the row —
+               and passing it means logAttempt does not repeat the SELECT.
+               `shift.id` is never null on this branch: the gate refuses the
+               request when there is no open shift. */
+            shiftId: shift.id
           });
           break;
         case "confirm":

@@ -74,6 +74,16 @@ describe("POST /api/inquiries — active-shift gate", { skip: !HAVE_DB ? "no DAT
     `SELECT id, kind, outcome, note, staff_id FROM inquiry_attempts
       WHERE inquiry_id = $1 ORDER BY created_at, id`, [inquiryId])).rows;
 
+  /* The `staff_events` rows this endpoint caused. Scoped to the fixture staff
+     member, because the seeded accounts and the other suites write here too. */
+  const eventRows = async () => (await db.query(
+    `SELECT id, org_id, staff_id, shift_id, kind, detail, created_at
+       FROM staff_events WHERE staff_id = $1 ORDER BY created_at, id`, [staffId])).rows;
+
+  const clearEvents = async () => {
+    await db.query(`DELETE FROM staff_events WHERE staff_id = $1`, [staffId]);
+  };
+
   // --- the clock ------------------------------------------------------------
   // Written with plain SQL rather than through src/shifts/store.mjs on purpose:
   // that module belongs to another workflow, and this suite is testing the gate,
@@ -91,6 +101,7 @@ describe("POST /api/inquiries — active-shift gate", { skip: !HAVE_DB ? "no DAT
   // "the write did not happen" is a statement about THIS test and not about
   // whichever one ran before it.
   const resetInquiry = async () => {
+    await clearEvents();
     await db.query(`DELETE FROM inquiry_attempts WHERE inquiry_id = $1`, [inquiryId]);
     await db.query(
       `UPDATE inquiry_log
@@ -101,6 +112,7 @@ describe("POST /api/inquiries — active-shift gate", { skip: !HAVE_DB ? "no DAT
 
   const assertUntouched = async (where) => {
     const row = await inquiryRow();
+    assert.equal((await eventRows()).length, 0, `${where}: a staff_events row was written anyway`);
     assert.equal((await attemptRows()).length, 0, `${where}: an inquiry_attempts row was written anyway`);
     assert.equal(row.call_attempts, 0, `${where}: call_attempts moved`);
     assert.equal(row.status, "New", `${where}: status was changed`);
@@ -222,7 +234,8 @@ describe("POST /api/inquiries — active-shift gate", { skip: !HAVE_DB ? "no DAT
   // AN OPEN SHIFT → the writes go through, exactly as before the gate existed.
   // =========================================================================
   describe("with an open shift", () => {
-    before(async () => { await closeAllShifts(); await openShift(); });
+    let shiftId;
+    before(async () => { await closeAllShifts(); shiftId = await openShift(); });
     after(async () => { await closeAllShifts(); });
 
     test('action:"attempt" logs the call and attributes it', async () => {
@@ -263,6 +276,115 @@ describe("POST /api/inquiries — active-shift gate", { skip: !HAVE_DB ? "no DAT
       const row = await inquiryRow();
       assert.equal(row.status, "Hold");
       assert.equal(row.worked_by, staffId);
+    });
+
+    // ---- STAFF TELEMETRY -----------------------------------------------------
+    // The whole reason `staff_events` was empty is that nothing called
+    // logStaffEvent(). This is the endpoint end of that wiring, checked against
+    // the table rather than against the 200 the handler returned.
+
+    test('action:"attempt" kind:"call" writes a call_made event on the caller\'s own shift', async () => {
+      await resetInquiry();
+      const r = await call("POST", {
+        token,
+        body: { inquiry_id: inquiryId, action: "attempt", kind: "call", outcome: "removed", note: "spoke to furnisher" }
+      });
+      assert.equal(r.code, 200, JSON.stringify(r.body));
+
+      const events = await eventRows();
+      assert.equal(events.length, 1, "one attempt, one event");
+      const ev = events[0];
+      assert.equal(ev.kind, "call_made");
+      assert.equal(ev.staff_id, staffId);
+      assert.equal(ev.shift_id, shiftId,
+        "the gate had already resolved this shift; an unlinked event cannot be repaired later");
+      assert.equal(ev.org_id, org, "org_id comes off the staff row, never off the request body");
+      assert.equal(ev.detail.inquiry_id, inquiryId);
+      assert.equal(ev.detail.client_id, clientId);
+      assert.equal(ev.detail.outcome, "removed");
+      assert.equal(ev.detail.attempt_no, 1);
+      assert.equal(ev.detail.note, undefined, "the free-text note must not be copied into telemetry");
+    });
+
+    test('action:"attempt" kind:"letter" writes letter_issued', async () => {
+      await resetInquiry();
+      const r = await call("POST", { token, body: { inquiry_id: inquiryId, action: "attempt", kind: "letter" } });
+      assert.equal(r.code, 200, JSON.stringify(r.body));
+      const events = await eventRows();
+      assert.equal(events.length, 1);
+      assert.equal(events[0].kind, "letter_issued");
+      assert.equal(events[0].shift_id, shiftId);
+    });
+
+    test('kind:"portal" and kind:"note" write no event — neither has a kind in the vocabulary', async () => {
+      for (const kind of ["portal", "note"]) {
+        await resetInquiry();
+        const r = await call("POST", { token, body: { inquiry_id: inquiryId, action: "attempt", kind } });
+        assert.equal(r.code, 200, JSON.stringify(r.body));
+        assert.equal((await attemptRows()).length, 1, `${kind}: the attempt itself must still be logged`);
+        assert.equal((await eventRows()).length, 0,
+          `${kind}: no EVENT_KINDS entry covers this, and inventing one corrupts the counts`);
+      }
+      await resetInquiry();
+    });
+
+    test('action:"confirm" and action:"status" write no event — file_touched is undefined', async () => {
+      // Both write inquiry_log.worked_by, so both are staff work. The only kind
+      // that could describe them is `file_touched`, which the schema names and
+      // nothing defines. Picking call sites for it would be inventing the
+      // definition; it is reported as a gap instead.
+      await resetInquiry();
+      await call("POST", { token, body: { inquiry_id: inquiryId, action: "confirm", status: "Removed" } });
+      await call("POST", { token, body: { inquiry_id: inquiryId, action: "status", status: "Hold" } });
+      assert.equal((await eventRows()).length, 0);
+      await resetInquiry();
+    });
+
+    test("a broken staff_events write still answers 200 and still logs the attempt", async () => {
+      // The design constraint, driven through the real endpoint: telemetry must
+      // never fail the business action it observes. The failure is injected at
+      // the staff_events INSERT alone, so nothing else in the request is
+      // disturbed and a 500 here could only have come from telemetry.
+      await resetInquiry();
+
+      const realQuery = db.query;
+      let sawTelemetryWrite = false;
+      db.query = (sql, params) => {
+        if (/INSERT INTO staff_events/i.test(String(sql))) {
+          sawTelemetryWrite = true;
+          return Promise.reject(Object.assign(new Error("simulated outage"), { code: "08006" }));
+        }
+        return realQuery(sql, params);
+      };
+
+      const realError = console.error;
+      const logged = [];
+      console.error = (...a) => logged.push(a.join(" "));
+
+      let r;
+      try {
+        r = await call("POST", {
+          token,
+          body: { inquiry_id: inquiryId, action: "attempt", kind: "call", outcome: "removed" }
+        });
+      } finally {
+        db.query = realQuery;
+        console.error = realError;
+      }
+
+      assert.ok(sawTelemetryWrite, "the telemetry write never ran — this test proved nothing");
+      assert.equal(r.code, 200, `telemetry took the attempt down with it: ${JSON.stringify(r.body)}`);
+
+      const attempts = await attemptRows();
+      assert.equal(attempts.length, 1, "the attempt is the record; it must survive a broken observer");
+      const row = await inquiryRow();
+      assert.equal(row.call_attempts, 1);
+      assert.equal(row.worked_by, staffId);
+      assert.equal((await eventRows()).length, 0, "and the event genuinely did not land");
+      assert.ok(logged.some((l) => /\[telemetry\].*write_failed/.test(l)),
+        `a swallowed failure must be logged, not silent: ${JSON.stringify(logged)}`);
+
+      await resetInquiry();
     });
   });
 

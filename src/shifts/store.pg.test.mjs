@@ -25,7 +25,8 @@ import {
   currentShift,
   autoCloseStale,
   ShiftError,
-  AUTO_CLOSE_EVENT_KIND
+  AUTO_CLOSE_EVENT_KIND,
+  CLOSED_BY
 } from "./store.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
@@ -205,6 +206,8 @@ test("autoCloseStale ends an idle shift at its last activity, not when the sweep
   assert.equal(new Date(mine.ended_at).toISOString(), new Date(lastAct).toISOString(),
     "ended_at is the last recorded activity; now() would credit the 20 idle hours");
   assert.equal(mine.had_activity, true, "the audit must be able to say the estimate had evidence behind it");
+  assert.equal(mine.closed_by, CLOSED_BY.SWEEP_IDLE,
+    "the row itself must say software ended it — timesheet.mjs is pure and cannot reach the audit event");
   assert.ok(new Date(mine.ended_at) < new Date(), "and it is in the past, not the moment of the sweep");
 });
 
@@ -287,4 +290,50 @@ test("auto-closing frees the staff member to clock in again — an abandoned shi
   const row = await clockIn(db, { orgId, staffId: staffB });
   assert.equal(row.ended_at, null);
   await clockOut(db, { staffId: staffB });
+});
+
+// --- closed_by: which shifts a human has to be asked about --------------------
+//
+// The sweep's fallback — ended_at = started_at when there is no activity at all
+// — produces a CLOSED SHIFT OF ZERO LENGTH. That is every forgotten shift
+// belonging to anyone outside the Inquiry Remover desk, because no other screen
+// writes staff_events. On (started_at, ended_at) alone it is indistinguishable
+// from a real 30-second shift, and it is a payroll input.
+
+test("a shift closed with no evidence is marked on the row, not only in the audit event", { skip: !HAS_DB }, async () => {
+  // staffC still holds the deliberately-still-active shift from the §14
+  // inactivity test above, and uq_shifts_one_open allows exactly one.
+  await db.query(`DELETE FROM staff_events WHERE staff_id = $1`, [staffC]);
+  await db.query(`DELETE FROM shifts WHERE staff_id = $1`, [staffC]);
+  const opened = (await db.query(
+    `INSERT INTO shifts (org_id, staff_id, started_at) VALUES ($1,$2, now() - interval '40 hours') RETURNING *`,
+    [orgId, staffC]
+  )).rows[0];
+
+  const closed = await autoCloseStale(db, { olderThanHours: 8 });
+  const mine = closed.find((r) => r.id === opened.id);
+  assert.ok(mine, "40 hours with no activity at all is exactly the forgotten shift");
+  assert.equal(mine.had_activity, false);
+  assert.equal(mine.closed_by, CLOSED_BY.SWEEP_NO_EVIDENCE);
+
+  const row = (await db.query(`SELECT started_at, ended_at, closed_by FROM shifts WHERE id=$1`, [opened.id])).rows[0];
+  assert.equal(row.closed_by, CLOSED_BY.SWEEP_NO_EVIDENCE, "persisted, not merely returned");
+  assert.equal(new Date(row.ended_at).getTime(), new Date(row.started_at).getTime(),
+    "this is the zero-length row the flag exists to make visible");
+});
+
+test("a human clock-out leaves closed_by NULL — the normal case stays unmarked", { skip: !HAS_DB }, async () => {
+  await db.query(`DELETE FROM shifts WHERE staff_id = $1`, [staffC]);
+  await clockIn(db, { orgId, staffId: staffC });
+  const out = await clockOut(db, { staffId: staffC });
+  assert.equal(out.closed_by, null, "NULL means a person did it, and most shifts must stay NULL");
+});
+
+test("the database refuses a closed_by nobody agreed on", { skip: !HAS_DB }, async () => {
+  // staff_events.kind was left free text and two writers promptly invented two
+  // vocabularies for it. This column decides whether time is payable.
+  await assert.rejects(
+    () => db.query(`UPDATE shifts SET closed_by = 'whatever' WHERE staff_id = $1`, [staffC]),
+    (e) => e.code === "23514" && /shifts_closed_by_known/.test(e.message + (e.constraint ?? ""))
+  );
 });
