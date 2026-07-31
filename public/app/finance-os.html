@@ -65,7 +65,13 @@
 <body>
 
 <div class="fos-wrap">
-  <div class="fos-nav-back"><a onclick="window.history.back()">← Back</a></div>
+  <!-- A REAL HREF, NOT history.back(). This screen carries no sidebar, so this
+       is the only way off it. history.back() does nothing at all when the page
+       was opened from a pasted or bookmarked URL, which left the browser's own
+       Back button as the only exit (audit M20). shell.js gates this link like
+       any other screen link; every role that may open Finance OS may also open
+       the Command Center. -->
+  <div class="fos-nav-back"><a href="command-center.html">← Command Center</a></div>
   <div class="fos-head">
     <h1 class="fos-title">Finance OS</h1>
     <span class="fos-source" id="fosSource">tradelines</span>

@@ -42,8 +42,14 @@
      makes after the sign-off, not a tidy-up. */
   var OWNER_ADMIN_ONLY = ["banking-surface.html"];
 
-  // staffTabs — every screen the sidebar links to, which is every screen a
-  // signed-in employee can reach from the chrome they are already looking at.
+  /* staffTabs — every screen a signed-in employee may open, which is every row
+     the shared sidebar leaves them looking at.
+
+     The sidebar markup itself carries one row more than this: banking-surface
+     .html is in it so owner and admin can reach it, and gateLinks() hides that
+     row for everybody else. partner-galaxy.html is in no sidebar at all, per
+     the note above. Adding a screen to ALL and to nothing else gives it no way
+     in — src/http/app-nav-reachability.test.mjs fails when that happens. */
   function staffTabs() {
     return ALL.filter(function (s) {
       return PRINCIPAL_ONLY.indexOf(s) === -1 && OWNER_ADMIN_ONLY.indexOf(s) === -1;

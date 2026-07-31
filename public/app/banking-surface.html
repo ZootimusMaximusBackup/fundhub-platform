@@ -80,7 +80,13 @@
 <body>
 
 <div class="bs-wrap">
-  <div class="bs-nav-back"><a onclick="window.history.back()">← Back</a></div>
+  <!-- A REAL HREF, NOT history.back(). This screen carries no sidebar, so this
+       is the only way off it. history.back() does nothing at all when the page
+       was opened from a pasted or bookmarked URL, which left the browser's own
+       Back button as the only exit (audit M20). Only owner and admin can open
+       this screen (shell.js OWNER_ADMIN_ONLY) and both land on the Command
+       Center, so that is where this goes. -->
+  <div class="bs-nav-back"><a href="command-center.html">← Command Center</a></div>
   <div class="bs-head">
     <h1 class="bs-title">Banking Surface</h1>
     <span class="bs-source" id="bsSource">bank_accounts</span>
