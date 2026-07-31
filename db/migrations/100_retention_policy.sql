@@ -37,34 +37,80 @@
 --
 --
 -- ============================================================================
--- *** EVERY retain_days IS SEEDED NULL, AND NULL MEANS UNSET, NOT ZERO. ***
+-- *** THE RETENTION WINDOWS ARE OWNER-SET. NULL STILL MEANS UNSET, NOT ZERO. ***
 -- ============================================================================
 --
--- This is the most important paragraph in the file.
+-- This is the most important section in the file. Read section B before changing
+-- any number in it.
 --
--- How long a consumer-credit record must be kept is a LEGAL question. FCRA,
--- GLBA, state law and whatever the lender-of-record agreement ends up saying all
--- bear on it, and none of them are settled in this repository. Picking a
--- plausible-sounding "7 years" and writing it into a column would be inventing a
--- compliance decision and disguising it as a default — and CLAUDE.md is explicit
--- that a missing fact is a finding to report, never a gap to fill with something
--- that reads well.
+-- How long a consumer-credit record must be kept is a LEGAL question, and this
+-- file does not answer it by inference. The owner answered it directly, on the
+-- record, as the decision-maker for this business:
 --
--- So every retention period starts NULL. src/retention/policy.mjs maps a NULL to
--- an ABSENT key rather than to a number, exactly as src/banking/settings.mjs does
--- for the cash-flow thresholds, and for the same reason: deleting a value has to
--- return the system to "nobody has decided this", never to "somebody decided
--- zero". Zero would mean "purge everything immediately", which is the single
--- worst thing a NULL could silently become in this table.
+--     credit reports        25 months
+--     SSN access log        25 months
+--     credit-check ledger   25 months
+--     bank transactions     24 months
+--     demo / test data       7 days
 --
--- *** THE CONSEQUENCE, STATED PLAINLY: the purge runner removes NOTHING today,
--- *** on any class, in any org, even with --apply, until a human sets a number
--- *** and signs it off. That is the correct starting state, not a bug.
+-- Those are carried below as owner-set and signed off, with counsel review
+-- recorded as a condition the owner stated: reviewed before real customers are
+-- onboarded. They are NOT derived, NOT defaults, and NOT this file's invention —
+-- the provenance is written into every notes column so a later reader can see
+-- where the numbers came from without asking anybody.
 --
--- The CHECK is `retain_days >= 1` and not `>= 0`. A zero-day retention is
--- indistinguishable from a mistake, and the cost of the mistake is destroyed
--- consumer records. If somebody genuinely wants same-day expiry they can say so
--- in a migration that argues for it.
+-- ONLY THE DEFAULT ORG IS SET. Every other org — a white-label tenant, anything
+-- created after this migration — still gets its row with retain_days NULL, and
+-- v_retention_policy_gaps keeps reporting it. One business's retention decision
+-- is not another business's, and silently applying the owner's numbers to a
+-- tenant nobody has spoken to would be exactly the invention this file avoids.
+--
+-- NULL CONTINUES TO MEAN UNSET AND MUST NEVER BECOME ZERO. src/retention/policy.mjs
+-- maps a NULL to an ABSENT key rather than to a number, exactly as
+-- src/banking/settings.mjs does for the cash-flow thresholds, and for the same
+-- reason: clearing a value has to return the system to "nobody has decided this",
+-- never to "somebody decided zero". Zero would mean "purge everything
+-- immediately", which is the single worst thing a NULL could silently become in
+-- this table. The CHECK is `retain_days >= 1` and not `>= 0` for that reason.
+--
+-- *** THE CONSEQUENCE, STATED PLAINLY: the purge runner will now act on the
+-- *** default org under --apply. It still removes nothing without --apply, and
+-- *** still removes nothing for any org whose window is NULL.
+--
+--
+-- ============================================================================
+-- MONTHS ARE NOT DAYS. THE CONVERSION ROUNDS UP, AND HERE IS WHY.
+-- ============================================================================
+--
+-- retain_days is an integer number of DAYS, because "older than N days" is a
+-- comparison Postgres can make against a timestamp without a calendar argument.
+-- The owner specified MONTHS, and months are 28 to 31 days long, so a month
+-- figure has to be converted and the direction of the rounding is a real
+-- decision.
+--
+-- *** IT ROUNDS UP, TO THE LONGEST POSSIBLE SPAN. ***
+--
+-- A retention window stated in months is a FLOOR — "keep it for at least this
+-- long". The two directions of error are not equal:
+--
+--   rounded up   → a handful of records are held a few days longer than the
+--                  minimum before being purged. Cost: a few days of storage.
+--   rounded down → records are destroyed BEFORE the window they were supposed to
+--                  cover has elapsed. Cost: the record you needed for a dispute
+--                  is gone, permanently, and no later decision can bring it back.
+--
+-- That asymmetry is the same shape as 088's settlement_lead_days, and it gets the
+-- same answer: sit on the safe side of realistic.
+--
+--   25 months → 762 days. The longest 25 consecutive months run 762 days: two
+--               years including a leap February (366 + 365 = 731) plus a 31-day
+--               month. 760 (25 x 30.4) would be SHORT for a window starting in
+--               the wrong month, which is precisely the silent failure to avoid.
+--   24 months → 731 days. Two years including a leap February.
+--    7 days   →   7 days. No conversion; a day is a day.
+--
+-- These are ceilings, not averages. Every window is guaranteed to be at least as
+-- long as the owner specified, in every starting month, in every leap year.
 --
 --
 -- ============================================================================
@@ -259,7 +305,7 @@ COMMENT ON COLUMN retention_policy.action IS
 
 
 -- ---------------------------------------------------------------------------
--- B. The seed — every class, every org, every period UNSET
+-- B1. The rows — every class, every org, period still UNSET
 -- ---------------------------------------------------------------------------
 --
 -- Seeded for EVERY org rather than only the default one. The class list is fixed
@@ -268,8 +314,10 @@ COMMENT ON COLUMN retention_policy.action IS
 -- give it one. Orgs created after this migration are caught by the last branch of
 -- the gaps view.
 --
--- retain_days is omitted from the INSERT and therefore NULL. That is the whole
--- point: this migration creates the QUESTION, it does not answer it.
+-- retain_days is omitted from this INSERT and is therefore NULL for every org.
+-- B2 then fills in the DEFAULT org only, with the owner's numbers. Every other
+-- org keeps its NULL and keeps being reported, which is the correct state for a
+-- tenant whose retention nobody has decided.
 
 INSERT INTO retention_policy (org_id, data_class, action, notes)
 SELECT o.id, c.data_class, c.action, c.notes
@@ -287,6 +335,62 @@ SELECT o.id, c.data_class, c.action, c.notes
     'Demo and smoke rows. DELETE: nothing legitimate is destroyed. THERE IS NO is_demo COLUMN IN THIS SCHEMA — only rows from scripts/demo-journey.mjs are identifiable, by their demo: idempotency keys, and the markers live in src/retention/classes.mjs. The demo client and its cascade are reported, never deleted. retain_days UNSET.')
  ) AS c(data_class, action, notes)
 ON CONFLICT (org_id, data_class) DO NOTHING;
+
+
+-- ---------------------------------------------------------------------------
+-- B2. [OWNER-SET] The retention windows
+-- ---------------------------------------------------------------------------
+--
+-- The owner set these directly, as the decision-maker for this business, and
+-- asked for them to be recorded as owner-set. They are signed off here because
+-- that is what signing off means: a named human took the position. The header
+-- explains why each month figure rounds UP to a day count.
+--
+--   crs_raw_payloads    25 months → 762 days
+--   pii_access_log      25 months → 762 days
+--   soft_pull_ledger    25 months → 762 days
+--   bank_transactions   24 months → 731 days
+--   mock_data            7 days   →   7 days
+--
+-- *** THE OWNER'S STATED CONDITION, RECORDED SO IT DOES NOT GET LOST: counsel
+-- *** reviews these before real customers are onboarded. ***
+-- Signing a window off removes it from v_retention_policy_gaps — that is the
+-- view's whole design — so the gaps report will NOT keep raising this, and the
+-- condition lives in the notes column below and on the shared board instead. If
+-- counsel changes a number, that is a NEW migration: migrate.mjs keys
+-- schema_migrations by `<dir>/<file>`, so editing this file after it has been
+-- applied is a silent no-op. Supersede it the way 089 superseded 088.
+--
+-- DEFAULT ORG ONLY. `WHERE o.is_default` is doing real work — see the header.
+--
+-- GUARDED ON THE WINDOW STILL BEING UNSET, the same guard 089 used. If a human
+-- has already set or signed off a window by the time this runs, their decision
+-- stands and this migration leaves it alone. A migration that overwrites a
+-- considered human value is worse than no migration.
+
+UPDATE retention_policy p
+   SET retain_days   = v.days,
+       signed_off_at = now(),
+       signed_off_by = 'owner',
+       notes         = coalesce(p.notes, '') ||
+                       ' | 100 B2: OWNER-SET ' || v.stated || ' (' || v.days || ' days). ' ||
+                       'Set directly by the owner as the decision-maker, not derived and not a default. ' ||
+                       'Month figures round UP to the longest possible span so the window is never short — ' ||
+                       'see the migration header. CONDITION STATED BY THE OWNER: counsel reviews these ' ||
+                       'before real customers are onboarded. A change from counsel is a NEW migration, ' ||
+                       'not an edit to this one.',
+       updated_at    = now()
+  FROM (VALUES
+    ('crs_raw_payloads',  762, '25 months'),
+    ('pii_access_log',    762, '25 months'),
+    ('soft_pull_ledger',  762, '25 months'),
+    ('bank_transactions', 731, '24 months'),
+    ('mock_data',           7, '7 days')
+  ) AS v(data_class, days, stated)
+ WHERE p.data_class = v.data_class
+   AND p.org_id = (SELECT id FROM orgs WHERE is_default LIMIT 1)
+   AND p.retain_days IS NULL
+   AND p.signed_off_at IS NULL;
 
 
 -- ---------------------------------------------------------------------------

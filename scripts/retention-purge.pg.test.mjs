@@ -223,22 +223,84 @@ describe("migration 100 — the table and the view", () => {
     );
   });
 
-  test("*** every seeded retention period is NULL — nobody has decided ***", { skip: !HAS_DB }, async () => {
-    // The default org is the one migration 100 seeded. Not one class may carry a
-    // number, because a retention period for consumer-credit data is a legal
-    // decision and this repository has not made one.
+  /* The owner's windows, as stated. `months` is what the owner said; `days` is
+     what B2 wrote. The test below proves the second is never shorter than the
+     first, using Postgres's own calendar rather than arithmetic in this file. */
+  const OWNER_SET = [
+    { data_class: "crs_raw_payloads",  days: 762, months: 25 },
+    { data_class: "pii_access_log",    days: 762, months: 25 },
+    { data_class: "soft_pull_ledger",  days: 762, months: 25 },
+    { data_class: "bank_transactions", days: 731, months: 24 },
+    { data_class: "mock_data",         days: 7,   months: null }
+  ];
+
+  test("*** the default org carries the owner-set windows, signed off ***", { skip: !HAS_DB }, async () => {
     const defaultOrg = (await db.query(`SELECT id FROM orgs WHERE is_default LIMIT 1`)).rows[0].id;
     const { rows } = await db.query(
-      `SELECT data_class, retain_days, action, signed_off_at
+      `SELECT data_class, retain_days, action, signed_off_at, signed_off_by, notes
          FROM retention_policy WHERE org_id = $1 ORDER BY data_class`,
       [defaultOrg]
     );
     assert.equal(rows.length, DATA_CLASSES.length, "migration 100 did not seed every class");
-    for (const r of rows) {
-      assert.equal(r.retain_days, null, `${r.data_class} shipped with a retention period already set`);
-      assert.equal(r.signed_off_at, null, `${r.data_class} shipped pre-signed-off`);
-      assert.ok(["delete", "de_identify"].includes(r.action));
+
+    for (const want of OWNER_SET) {
+      const got = rows.find((r) => r.data_class === want.data_class);
+      assert.ok(got, `${want.data_class} is missing`);
+      assert.equal(got.retain_days, want.days, `${want.data_class} window is not the owner's number`);
+      assert.equal(got.signed_off_by, "owner", `${want.data_class} is not recorded as owner-set`);
+      assert.ok(got.signed_off_at, `${want.data_class} is not signed off`);
+      // The owner's stated condition has to stay findable after the gaps view
+      // stops reporting a signed-off class.
+      assert.match(got.notes, /counsel reviews these/i, `${want.data_class} lost the counsel-review condition`);
+      assert.match(got.notes, /OWNER-SET/, `${want.data_class} lost its provenance`);
     }
+  });
+
+  test("*** the month-to-day conversion is never SHORT, per Postgres's calendar ***", { skip: !HAS_DB }, async () => {
+    // The failure this guards against is silent: 25 x 30.4 = 760 days, which is
+    // two days short of a 25-month window that starts in the wrong month, and
+    // records would be destroyed before the window they were meant to cover had
+    // elapsed. Asked of the database rather than computed here, so a leap year is
+    // handled by the thing that actually knows about leap years.
+    for (const want of OWNER_SET) {
+      if (want.months === null) continue;
+      const { rows } = await db.query(
+        `SELECT max((d + make_interval(months => $1::int))::date - d::date) AS longest
+           FROM generate_series(date '2024-01-01', date '2031-12-01', interval '1 month') d`,
+        [want.months]
+      );
+      const longest = Number(rows[0].longest);
+      assert.ok(
+        want.days >= longest,
+        `${want.data_class}: ${want.days} days is SHORTER than the longest ${want.months}-month span (${longest} days) — records would be purged early`
+      );
+      // And not absurdly generous either — within a month of the true ceiling.
+      assert.ok(want.days <= longest + 31, `${want.data_class}: ${want.days} days overshoots ${want.months} months`);
+    }
+  });
+
+  test("a NON-default org keeps its NULL window — one business's call is not another's", { skip: !HAS_DB }, async () => {
+    // orgA was created by this suite, after the migration, so it has no rows at
+    // all. The point being pinned is that B2 is scoped to is_default: a tenant
+    // nobody has spoken to must never inherit the owner's numbers.
+    const { rows } = await db.query(
+      `SELECT count(*)::int AS n
+         FROM retention_policy
+        WHERE org_id <> (SELECT id FROM orgs WHERE is_default LIMIT 1)
+          AND retain_days IS NOT NULL
+          AND signed_off_by = 'owner'`
+    );
+    assert.equal(rows[0].n, 0, "the owner's windows leaked onto another org");
+  });
+
+  test("the seeded windows drop out of the gaps report, because they are signed off", { skip: !HAS_DB }, async () => {
+    // This is the flip side of signing off, and it is stated here so it is not a
+    // surprise later: v_retention_policy_gaps reports until BOTH set and signed.
+    // The default org is now both, so it is silent. The counsel-review condition
+    // lives in the notes column, asserted above.
+    const defaultOrg = (await db.query(`SELECT id FROM orgs WHERE is_default LIMIT 1`)).rows[0].id;
+    const gaps = await policyGaps(db, { orgId: defaultOrg });
+    assert.deepEqual(gaps, [], "a signed-off window is still being reported as a gap");
   });
 
   test("a zero retention period is refused by the column", { skip: !HAS_DB }, async () => {
