@@ -361,15 +361,26 @@ CREATE TRIGGER trg_client_consents_updated_at
   BEFORE UPDATE ON client_consents
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- DELIBERATELY NOT DONE: a backfill from clients.cf_crs_softpull_consent.
+-- NOT DONE, AND SETTLED: there is no backfill from clients.cf_crs_softpull_consent.
 --
--- That column holds a CRM dropdown value with no wording, no capture method, no
--- attribution and no evidence. Copying it in here would manufacture consent
--- records that look identical to real ones while satisfying none of the
--- standard this table exists to hold — and they would immediately start passing
--- the gate in src/finance/soft-pulls.mjs. An empty table that refuses every
--- pull is the honest starting state; a populated one built out of a text field
--- is a compliance finding waiting to be discovered by somebody else.
+-- *** DECIDED BY CHRIS (owner), 2026-07-31: do not migrate the old CRM values.
+-- *** Leave them where they are and capture fresh consent going forward.
 --
--- If those rows should be honoured, that is a decision for Chris and counsel,
--- and it needs its own migration saying so on the record.
+-- The reasoning on the record: that column holds a CRM dropdown value with no
+-- wording, no capture method, no attribution and no evidence. Copying it in
+-- would manufacture consent records that look identical to real ones while
+-- satisfying none of the standard this table exists to hold — and they would
+-- immediately start passing the gate in src/finance/soft-pulls.mjs. An empty
+-- table that refuses every pull is the honest starting state; a populated one
+-- built out of a text field is a compliance finding waiting to be discovered by
+-- somebody else.
+--
+-- This is not an open question and should not be reopened as one. Anybody
+-- writing a backfill later is reversing an owner decision and needs a new one,
+-- in writing, before the migration is merged.
+--
+-- THE PRACTICAL CONSEQUENCE, so nobody is surprised by it: on the day this
+-- ships, EVERY client has no consent on file and every soft-pull request is
+-- refused with 403 consent_required until somebody captures one through
+-- public/app/consent-capture.html. That is the intended behaviour, not an
+-- outage.

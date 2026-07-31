@@ -19,8 +19,76 @@ this product exists. Branch from the current feature lineage instead.
 | # | Task | Owner | Status |
 |---|---|---|---|
 | 099 | Consent record + capture flow + `hasValidConsent` + gate on the soft-pull REQUEST path | migration-099-consent | **done** |
+| PGSUITE | Make the Postgres test suite return the same numbers on identical runs | *unclaimed* | **pending** |
 
 Other workflows: append your rows here.
+
+### PGSUITE — copy-paste prompt
+
+Chris asked for this as its own workflow. Everything a fresh session needs is
+below; it does not depend on the 099 session's context.
+
+```
+Repo: fundhub-platform. Branch: cut a new branch from claude/migration-099-consent-repknn
+(NOT from main — main is an unrelated, empty history, see docs/workflows/fundhub-beta-buildout.md).
+Shared board: docs/workflows/fundhub-beta-buildout.md — read it, claim task PGSUITE
+before starting, write your change manifest before reporting done.
+
+THE PROBLEM. The Postgres test suite reports a different number of failures on
+identical runs. Measured on 2026-07-31 with no code change whatsoever between
+runs: 47 failures, then 60. Whole blocks move — every `conversations` test failed
+in one run and passed in the other; `campaigns` and `principal-reads` did the
+reverse. Suites that fail in a full run pass when run alone. A suite that cannot
+give the same answer twice cannot tell anyone whether they broke something, which
+means nobody can trust `npm test` before a deploy.
+
+YOUR JOB: make the number stable and correct. Not "make it green" — a stable
+honest failure list is the deliverable. Do NOT delete, skip or weaken a test to
+reach a number.
+
+HOW TO GET A DATABASE (this is not documented anywhere else):
+  pg_ctlcluster 16 main start
+  su postgres -c "psql -c \"CREATE ROLE fundhub LOGIN PASSWORD 'fundhub' SUPERUSER;\""
+  su postgres -c "createdb -O fundhub fundhub_test"
+  export DATABASE_URL="postgresql://fundhub:fundhub@127.0.0.1:5432/fundhub_test"
+  npm ci && node db/migrate.mjs
+Postgres 16 is preinstalled in the image and stopped by default. Without
+DATABASE_URL, ~321 tests skip and the suite reports 0 failures — that green is
+meaningless (CLAUDE.md §12).
+
+WHAT IS ALREADY KNOWN — start here, do not re-derive:
+  * 52 *.pg.test.mjs files share ONE database. `node --test` runs files in
+    parallel at concurrency = CPU count (4 in this image), so 4 suites are
+    mutating the same tables at once.
+  * Suites clean up with `DELETE ... WHERE email LIKE '<prefix>%'` patterns and
+    several call resolveDefaultOrg(db), so they contend on shared org/staff rows.
+  * `--test-concurrency=1` was tried and the run reported 330 failures and 553
+    cancelled — but THAT RUN IS NOT EVIDENCE: the Postgres server was killed
+    partway through it (a stale pid file had to be removed to restart, and no
+    clean-shutdown line is in /var/log/postgresql/postgresql-16-main.log). Disk
+    and memory were both fine. Re-run serially on a healthy server before
+    concluding anything about serial vs parallel — and find out what killed the
+    server, because a database that dies under the suite is its own bug and may
+    be the whole story.
+  * Many cancellations report `failureType: 'cancelledByParent'` — "test did not
+    finish before its parent and was cancelled". That is usually a test-authoring
+    defect (a subtest created after its parent settled, or an un-awaited async
+    call in a describe body), NOT a database problem. Grep for describe blocks
+    that call async work without awaiting it.
+
+SUGGESTED ORDER: (1) find out what kills Postgres; (2) fix the cancelledByParent
+authoring bugs, which are corrupting the counts; (3) only then decide whether
+suites need isolation (schema-per-suite, or a unique org per suite) or serial
+execution. Measure after each step by running the full suite 3x and diffing the
+FAILING TEST NAMES, not the counts.
+
+DEFINITION OF DONE: three consecutive full runs produce an identical list of
+failing test names. Document the remaining real failures as a baseline in the
+shared board so the next person can diff against it.
+
+There is no lint script, no TypeScript and no Playwright in this repo. Do not
+claim those gates passed.
+```
 
 ## Shared context brief
 
@@ -76,7 +144,7 @@ same modules.
 |---|---|
 | `db/migrations/099_client_consents.sql` | `client_consents` table — what/who/when/how/expiry/revocation/document ref |
 | `src/consent/index.mjs` | `hasValidConsent`, `consentStatus`, `captureConsent`, `revokeConsent`, `listConsents` |
-| `src/consent/disclosures.mjs` | Server-owned consent wording, versioned, append-only. **Wording is DRAFT — needs counsel** |
+| `src/consent/disclosures.mjs` | Server-owned consent wording, versioned, append-only. **Wording APPROVED by Chris 2026-07-31** |
 | `api/consent/capture.mjs` | `GET`/`POST` capture + revoke endpoint |
 | `public/app/consent-capture.html` | The capture screen |
 | `src/consent/consent.test.mjs` | 67 unit tests, no database |
@@ -144,15 +212,26 @@ No. `subscription_id` on `soft_pull_requests` still carries no FK, and
 `client_consents.document_id` points at `documents` (030), which already exists.
 Nothing here couples to another workflow's unfinished output.
 
-## Blockers and open questions
+## Decisions on the record — CLOSED, do not reopen
 
-1. **The consent wording needs a lawyer.** `src/consent/disclosures.mjs` is
-   marked DRAFT. It makes no claim about credit outcomes (pinned by a test) but
-   it is customer-facing authorization text in a regulated product.
-2. **Should the existing `cf_crs_softpull_consent` CRM values be honoured?**
-   Deliberately **not** backfilled — that column has no wording, no capture
-   method, no attribution. Backfilling would manufacture records that pass the
-   gate while meeting none of the standard. Decision for Chris + counsel.
+Both taken by Chris (owner) on 2026-07-31. CLAUDE.md §7 requires explicit human
+approval before a compliance-flagged change ships; it was given. No further
+legal review is being sought for either.
+
+1. **Consent wording approved as written.** `soft-pull-v1` in
+   `src/consent/disclosures.mjs` ships as-is. The approval covers **that exact
+   string only** — a reworded disclosure is a new version key and needs its own
+   approval. Never edit an approved string in place.
+2. **Do NOT migrate the old CRM "Yes" values.** `clients.cf_crs_softpull_consent`
+   stays where it is; consent is captured fresh from here on. Recorded in the
+   header of `db/migrations/099_client_consents.sql`. Writing a backfill later
+   reverses an owner decision and needs a new one in writing.
+
+**Consequence to plan for:** on the day 099 ships, every client has no consent
+on file, so every soft-pull request is refused until one is captured. Intended,
+not an outage.
+
+## Blockers and open questions
 3. **Migration 099 has not been applied to the real database.** It was applied
    and fully exercised against a local Postgres 16 in this container, but
    `api.netlify.com` and `api.supabase.com` are blocked by the network policy, so

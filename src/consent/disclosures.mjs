@@ -1,12 +1,17 @@
 // The words a consumer is shown before they consent — held on the SERVER.
 //
-// *** THE WORDING BELOW IS DRAFT AND HAS NOT BEEN REVIEWED BY COUNSEL. ***
-// It is written to be factual and to promise nothing, but it is a
-// customer-facing authorization statement in a regulated consumer-finance
-// product and it ships only after a lawyer has signed it off. CLAUDE.md §7
-// flags consent capture as COMPLIANCE REVIEW REQUIRED and this file is the part
-// a reviewer should read first. Changing these words is a compliance decision,
-// not a copy edit — see WHY VERSIONS ARE APPEND-ONLY below.
+// *** WORDING APPROVED — Chris (owner), 2026-07-31. ***
+// `soft-pull-v1` below is approved as written. CLAUDE.md §7 requires explicit
+// human approval before a compliance-flagged change ships; that approval was
+// given for this text, on the record, and no further legal review is being
+// requested for it.
+//
+// THAT APPROVAL IS FOR THIS EXACT STRING AND NO OTHER. It does not extend to a
+// future edit of it, and there must never be one — see WHY VERSIONS ARE
+// APPEND-ONLY below. New wording is a NEW version key and needs its own
+// approval before it is used. Changing an approved string in place would mean
+// people are recorded as having agreed to an approved paragraph while having
+// been shown an unapproved one.
 //
 //
 // WHY THE TEXT IS NOT ACCEPTED FROM THE REQUEST BODY.
