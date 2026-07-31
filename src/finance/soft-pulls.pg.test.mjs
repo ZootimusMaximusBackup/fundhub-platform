@@ -479,6 +479,82 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
         "the two callers were handed different requests");
       assert.equal(outs.filter((o) => o.created).length, 1);
     });
+
+    /* THE RETRY KEY IS THE OTHER HALF OF RULE 2, AND IT IS THE HALF THE
+       DATABASE ADJUDICATES ON ITS OWN INDEX.
+
+       uq_soft_pull_requests_idem (077) is keyed (org_id, idempotency_key) —
+       the CLIENT is not in it. The test above races two taps that share a key
+       AND a client, so Postgres may settle it on either index and the retry
+       key's own behaviour is never isolated. These two do isolate it: same org,
+       same key, DIFFERENT clients, so uq_soft_pull_requests_idem is the only
+       index that can fire.
+
+       What must never happen, in either order:
+
+         * a caller asking about client Y is handed client X's request row.
+           That row says who asked for X's credit to be pulled, why, and what it
+           cost — another consumer's credit-pull record, returned to somebody who
+           asked about a different person.
+         * Y's request is silently dropped while the caller is told `ok`. The
+           screen then shows a pull in flight that no ledger row records.
+         * a raw Postgres unique violation (SQLSTATE 23505) escapes. The route
+           (api/finance/soft-pull.mjs) only converts SoftPullError and
+           CLIENT_DATA_ERRORS, so anything else reaches netlify/functions/api.mjs
+           and becomes a 500 on somebody's phone.
+
+       A refusal is a correct answer here. Handing back the wrong person's row
+       is not. */
+    const crossKeyOk = (outcome, askedAbout) => {
+      if (outcome.status === "rejected") {
+        const e = outcome.reason;
+        assert.ok(e instanceof SoftPullError,
+          `a reused retry key raised a raw database error (${e && e.code}: ${e && e.message})`);
+        assert.ok(e.status >= 400 && e.status < 500,
+          `a reused retry key answered ${e.status} — a 5xx is a broken screen`);
+        return;
+      }
+      assert.equal(String(outcome.value.request.client_id), String(askedAbout),
+        "a caller was handed a soft pull request belonging to a different client");
+    };
+
+    test("a retry key reused for a different client is refused, not answered with that client's row", async () => {
+      await wipeLedger();
+      const first = await requestSoftPull(db, {
+        orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId },
+        reason: "first client, keyed tap", idempotencyKey: "tap-cross-1", costCents: 1500
+      });
+      assert.equal(first.created, true);
+
+      const second = await Promise.allSettled([requestSoftPull(db, {
+        orgId: org, clientId: otherClient, requestedBy: { kind: "staff", id: staffId },
+        reason: "second client, same key by accident", idempotencyKey: "tap-cross-1", costCents: 1500
+      })]);
+      crossKeyOk(second[0], otherClient);
+    });
+
+    test("two clients tapping at the same instant under one retry key never cross", async () => {
+      await wipeLedger();
+      const conns = [];
+      let outs;
+      try {
+        for (let i = 0; i < 2; i++) conns.push(await pool().connect());
+        const asked = [client, otherClient];
+        outs = await Promise.allSettled(conns.map((c, i) => requestSoftPull(c, {
+          orgId: org, clientId: asked[i], requestedBy: { kind: "staff", id: staffId },
+          reason: "two files, one retry key", idempotencyKey: "tap-cross-2", costCents: 1500
+        })));
+        outs.forEach((o, i) => crossKeyOk(o, asked[i]));
+      } finally {
+        for (const c of conns) c.release();
+      }
+
+      // Whoever won wrote exactly one row, and it is theirs.
+      const written = (await db.query(
+        `SELECT client_id FROM soft_pull_requests WHERE idempotency_key = 'tap-cross-2'`
+      )).rows;
+      assert.equal(written.length, 1, `one retry key wrote ${written.length} rows`);
+    });
   });
 
   // ── the ledger reads back the way an audit asks the question ─────────────

@@ -271,9 +271,14 @@ export async function changeTier(db, input = {}) {
  * apart. cancelled_at is when they asked. effective_to is when the arrangement
  * stops applying, which for a cancellation that runs to the end of a paid period
  * is later — and until then the row is still live and still explains the charge
- * the client already made. Pass `endsAt` when that date is known; leave it out
- * and the row stays open, which is the honest state for "cancelled, runs to
- * period end, end date not decided".
+ * the client already made. Pass `endsAt` when that date is known; omit it and
+ * effective_to defaults to the cancel time, closing the row.
+ *
+ * A cancelled row MUST have an effective_to, because the database overlap
+ * constraint (075:241) checks only dates, not status. A row with NULL
+ * effective_to is treated as open-ended and blocks every future subscription
+ * overlapping its start date, making resigning impossible. Confirmed: a client
+ * who cancels cannot create a new subscription with default parameters.
  *
  * Idempotent: cancelling twice keeps the first date. A second call must not
  * move the date a dispute turns on.
@@ -281,14 +286,16 @@ export async function changeTier(db, input = {}) {
 export async function cancelSubscription(db, { orgId, clientId, at = null, endsAt = null } = {}) {
   required(orgId, "cancelSubscription: orgId");
   required(clientId, "cancelSubscription: clientId");
+  const cancelledAt = at ? new Date(at) : new Date();
+  const closingAt = endsAt ? new Date(endsAt) : cancelledAt;
   const res = await db.query(
     `UPDATE subscriptions
         SET status       = 'cancelled',
-            cancelled_at = COALESCE(cancelled_at, COALESCE($3::timestamptz, now())),
-            effective_to = COALESCE($4::timestamptz, effective_to)
+            cancelled_at = COALESCE(cancelled_at, $3::timestamptz),
+            effective_to = COALESCE(effective_to, $4::timestamptz)
       WHERE org_id = $1 AND client_id = $2 AND effective_to IS NULL
       RETURNING ${SUB_COLUMNS}`,
-    [orgId, clientId, at, endsAt]
+    [orgId, clientId, cancelledAt, closingAt]
   );
   return res.rows[0] ?? null;
 }

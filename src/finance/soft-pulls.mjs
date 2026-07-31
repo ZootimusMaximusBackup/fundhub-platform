@@ -164,6 +164,28 @@ async function priorByIdemKey(db, orgId, idem) {
   return res.rows[0] ? decorate(res.rows[0]) : null;
 }
 
+/* replayOrRefuse — a prior row found under this caller's retry key is either
+   THIS caller's retry or somebody else's row, and those are opposite answers.
+
+   uq_soft_pull_requests_idem (077) is keyed (org_id, idempotency_key); the
+   client is deliberately not in it, so within one org a key is global. A retry
+   key identifies one tap, and a tap is about one client, so a prior row naming a
+   DIFFERENT client is a collision and not a replay. Returning it would hand the
+   caller another consumer's credit-pull record — who asked, why, what it cost —
+   while silently dropping the request this caller actually made, so a screen
+   shows a pull in flight that no ledger row records. Refusing is the only answer
+   that is neither a disclosure nor a lie, and 409 (not a raw unique violation)
+   is what keeps it off the 500 path in netlify/functions/api.mjs. */
+function replayOrRefuse(prior, clientId) {
+  if (String(prior.client_id) !== String(clientId)) {
+    throw new SoftPullError(
+      "that idempotency key has already been used for a different client",
+      { status: 409 }
+    );
+  }
+  return { created: false, reason: "replay", request: prior };
+}
+
 /**
  * openRequestFor — the client's outstanding request, or null.
  * Exported because "is a pull already in flight for this client" is a question
@@ -215,7 +237,7 @@ export async function requestSoftPull(db, {
   // a retry gets back the row it made rather than somebody else's older one.
   if (idem) {
     const prior = await priorByIdemKey(db, orgId, idem);
-    if (prior) return { created: false, reason: "replay", request: prior };
+    if (prior) return replayOrRefuse(prior, clientId);
   }
 
   // GUARD 2 — a pull is already outstanding for this client. Returning it is the
@@ -251,7 +273,7 @@ export async function requestSoftPull(db, {
     // caller's own replayed key first, then the client's open request.
     if (idem) {
       const prior = await priorByIdemKey(db, orgId, idem);
-      if (prior) return { created: false, reason: "replay", request: prior };
+      if (prior) return replayOrRefuse(prior, clientId);
     }
     const raced = await openRequestFor(db, { clientId });
     if (raced) return { created: false, reason: "already_open", request: raced };
