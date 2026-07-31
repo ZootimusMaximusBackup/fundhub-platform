@@ -1,8 +1,27 @@
-# fundhub-beta-buildout — shared board
+# MIGRATION-099 — consent record and the soft-pull gate
 
-> This file did not exist when Migration 099 started. It was created by that
-> workflow so there was a board to claim against. Other workflows in this batch:
-> add your rows, do not rewrite anyone else's.
+One workflow's file in the `fundhub-beta-buildout` batch. The batch board is
+`docs/workflows/fundhub-beta-buildout.md`, one level up.
+
+> **Why this is here and not in the batch board.** It started life AS the batch
+> board, which was a mistake: this repo's convention is a batch board at
+> `<batch>.md` and one file per workflow at `<batch>/<unit>.md` — exactly how
+> `finish-the-build.md` sits beside `finish-the-build/W3.md`, `W4.md` and the
+> rest. Written to the batch path, this file collided add/add with the
+> MIGRATION-100 workflow, which had independently created the same path. Moving
+> it here removes the collision outright: the two branches no longer touch a
+> shared path, so they merge with nothing to resolve by hand.
+
+> **TWO ROWS FOR WHOEVER OWNS THE BATCH BOARD.** The board that lands from
+> MIGRATION-100 says "No other units were claimed in this batch." That was true
+> when it was written and is not now. Add these:
+>
+> | Unit | What it is | Owner | Status |
+> |---|---|---|---|
+> | MIGRATION-099 | Consent record, capture flow, `hasValidConsent`, gate on the soft-pull REQUEST path | `claude/migration-099-consent-repknn` | **done** — see `fundhub-beta-buildout/099-consent.md` |
+> | PGSUITE | Make the Postgres test suite return the same numbers on identical runs | *unclaimed* | **pending** — prompt in `fundhub-beta-buildout/099-consent.md` |
+>
+> It is two lines and it is the only manual step left between these branches.
 
 ## Branch note — RETRACTED, and what to do instead
 
@@ -41,8 +60,12 @@ below; it does not depend on the 099 session's context.
 Repo: fundhub-platform. Branch: cut a new branch from main as normal.
 (If `git ls-tree origin/main db/migrations/` comes back empty you have a stale
 cached ref — `git fetch origin main --force` and look again. The repo is fine.)
-Shared board: docs/workflows/fundhub-beta-buildout.md — read it, claim task PGSUITE
-before starting, write your change manifest before reporting done.
+Shared board: docs/workflows/fundhub-beta-buildout.md — read it, and read
+docs/workflows/fundhub-beta-buildout/099-consent.md, which is where PGSUITE is
+written up. Claim PGSUITE on the batch board before starting. Write your own
+file at docs/workflows/fundhub-beta-buildout/pgsuite.md — one file per workflow
+is this repo's convention (see finish-the-build/W3.md and friends), and writing
+your manifest straight into the batch board is how two workflows collide on it.
 
 THE PROBLEM. The Postgres test suite reports a different number of failures on
 identical runs. Measured on 2026-07-31 with no code change whatsoever between
