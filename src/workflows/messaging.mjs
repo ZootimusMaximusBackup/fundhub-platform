@@ -10,8 +10,15 @@
 // Idempotent via the existing messages_org_providerref_uniq index (migration 004):
 // provider_ref is synthesized from the triggering event's id, so a replayed event
 // can't double-send even though this isn't a real external provider callback.
+//
+// STAFF TELEMETRY IS OPT-IN AND SILENT BY DEFAULT. `staffId` is a new optional
+// argument. All 39 existing call sites are Inngest workflows with no staff
+// member, they pass nothing, and no staff_events row is written for them — which
+// is the correct outcome, not a gap. Attributing an automated send to an
+// employee would be inventing an actor. See src/shifts/TELEMETRY-CALLSITES.md.
 import { isOptedOut } from "../lib/opt-out.mjs";
 import { renderTemplate } from "../lib/render-template.mjs";
+import { logStaffEvent } from "../shifts/telemetry.mjs";
 
 // Merge-tag context for the ported GHL copy, which merges `{{contact.*}}` — first name,
 // business name, the pre-approval amount. Every call site in src/workflows passes no
@@ -44,7 +51,7 @@ async function clientContext(db, clientId) {
   };
 }
 
-export async function sendTemplated(db, { orgId, clientId, channel, templateKey, eventId, context = {} }) {
+export async function sendTemplated(db, { orgId, clientId, channel, templateKey, eventId, context = {}, staffId = null, shiftId = null }) {
   // TCPA / suppression guard: skip opted-out contacts before touching any template.
   if (clientId && channel === "sms") {
     const suppressed = await isOptedOut(db, clientId, "sms");
@@ -76,5 +83,17 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
      ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING`,
     [orgId, clientId, channel, templateKey, rendered, providerRef]
   );
+
+  // Only a send a person initiated produces a staff_events row. Note what such a
+  // row would mean: this INSERT writes status='queued' and nothing in the repo
+  // transmits, so `text_sent` records that a message was queued, not that one
+  // reached a phone.
+  if (staffId && channel === "sms") {
+    await logStaffEvent(db, {
+      orgId, staffId, shiftId,
+      kind: "text_sent",
+      detail: { client_id: clientId ?? null, template_key: templateKey, channel }
+    });
+  }
   return { sent: true };
 }

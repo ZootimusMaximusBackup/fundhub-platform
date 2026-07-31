@@ -12,6 +12,24 @@
 // Register once at boot: `import { register } from "./handlers/client-lifecycle.mjs"; register();`
 
 import { on } from "../events/registry.mjs";
+import { logStaffEvent } from "../shifts/telemetry.mjs";
+
+/* actorStaffId — the staff member an event names as having caused it, or null.
+ *
+ * NOTHING IN THIS REPOSITORY SETS THIS FIELD TODAY, and that is the finding, not
+ * an oversight: a credit pull is requested by a workflow reacting to
+ * `diagnostic.paid` and returned by an adapter, and neither has a staff member.
+ * `staff_events.staff_id` is NOT NULL, so an unattributed pull cannot be written
+ * without inventing an employee to blame it on.
+ *
+ * This reads the field rather than requiring it, so the day a staff-initiated
+ * pull exists — a "run a pull" button that stamps the actor onto the event — the
+ * telemetry starts working with no further change here. Until then every pull is
+ * automated and no row is written. See src/shifts/TELEMETRY-CALLSITES.md. */
+function actorStaffId(event) {
+  const p = event?.payload || {};
+  return p.actorStaffId ?? p.actor_staff_id ?? p.staffId ?? p.staff_id ?? null;
+}
 
 // --- helpers ----------------------------------------------------------------
 
@@ -135,6 +153,21 @@ export async function onAnalysisCompleted(event, db) {
     `INSERT INTO crs_results (org_id, client_id, result, outcome_tier) VALUES ($1,$2,$3,$4)`,
     [event.orgId, clientId, JSON.stringify(result), event.payload?.outcomeTier || null]
   );
+
+  // This INSERT is the line where "a pull ran" becomes true, so it is where the
+  // telemetry belongs — but only when the event names who ran it. It sits after
+  // the dedupe guard above on purpose: a replayed event must not log a second
+  // pull for work that happened once.
+  const staffId = actorStaffId(event);
+  if (staffId) {
+    await logStaffEvent(db, {
+      orgId: event.orgId,
+      staffId,
+      shiftId: event.payload?.shiftId ?? null,
+      kind: "pull_run",
+      detail: { client_id: clientId, event_id: event.id ?? null, outcome_tier: event.payload?.outcomeTier ?? null }
+    });
+  }
 }
 
 // decision.rendered — stamp the 6-tier outcome + funding estimate on the client.

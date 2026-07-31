@@ -1,6 +1,41 @@
 # Where `logStaffEvent()` should be called from
 
-**Nothing in this document has been applied. No call site was edited.**
+**APPLIED (W1). All four call sites below are now wired.** This document was a
+proposal; it is now the record of what was done and what deliberately was not.
+
+What changed, and what did not:
+
+| kind | call site | state |
+|---|---|---|
+| `call_made` | `src/inquiries/work.mjs` `logAttempt()`, `kind: "call"` | **writes a row today** |
+| `letter_issued` | same function, `kind: "letter"` | **writes a row today** |
+| `text_sent` | `src/workflows/messaging.mjs` `sendTemplated()` | wired, **silent** — emits only when a caller passes `staffId`, and no caller does |
+| `pull_run` | `src/handlers/client-lifecycle.mjs` `onAnalysisCompleted()` | wired, **silent** — emits only when the event names an actor, and no emitter does |
+
+The two silent ones are silent because **there is no actor to name**, not because
+the wiring is incomplete. The analysis in the rest of this document is why. A row
+appearing in either place today would mean somebody invented an employee.
+
+Decisions taken while applying it:
+
+1. **The `shift_id` question (see below) was answered with option 2** —
+   `currentShift()` is resolved at the `logAttempt` call site, one extra `SELECT`
+   per attempt. Rationale: §14 telemetry exists to answer "on whose clock", a
+   null `shift_id` cannot be repaired later without guessing, and someone who is
+   not clocked in still honestly gets null.
+2. **`portal` and `note` write nothing.** `portal` is a real staff action with no
+   word in `EVENT_KINDS`; filing it under `letter_issued` would make the letter
+   count wrong. Still a reportable gap (item 2 under "What is missing").
+3. **`sendTemplated()` gained optional `staffId` / `shiftId` arguments.** All 39
+   existing call sites pass neither and are unaffected. The guard is
+   `if (staffId && channel === "sms")` rather than relying on `logStaffEvent()`
+   refusing a null id, so an automated send does not print a swallowed-failure
+   line on every message.
+4. **`pull_run` reads `actorStaffId` off the event payload** and emits only when
+   present. It sits after the replay-dedupe guard, so a replayed
+   `analysis.completed` cannot log a second pull.
+
+Tests: `src/shifts/telemetry-callsites.test.mjs`.
 
 `src/shifts/telemetry.mjs` is the writer for `staff_events`. This file is the
 other half of the job: for each of the five kinds in `EVENT_KINDS`, *where the

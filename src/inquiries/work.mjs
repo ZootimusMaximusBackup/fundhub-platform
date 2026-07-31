@@ -14,9 +14,23 @@
 // A 'note' IS NOT AN ATTEMPT. Working notes are logged in the same table, for a
 // single readable timeline, but do not count toward call_attempts: a desk that
 // inflates its attempt count is lying to a bureau, slowly.
+//
+// TELEMETRY IS EMITTED AFTER THE COMMIT, NEVER INSIDE IT. logStaffEvent() cannot
+// throw, but it can still be slow, and a row that says "called" must not exist
+// for a call whose transaction rolled back. See src/shifts/TELEMETRY-CALLSITES.md.
+
+import { logStaffEvent } from "../shifts/telemetry.mjs";
+import { currentShift } from "../shifts/store.mjs";
 
 const ATTEMPT_KINDS = new Set(["call", "letter", "portal", "note"]);
 const COUNTING_KINDS = new Set(["call", "letter", "portal"]);
+
+/* Which attempt kinds have a staff_events vocabulary word. `portal` and `note`
+   have none, and are NOT filed under one of the others — inquiry_attempts.kind
+   includes `portal` (a bureau-portal filing, a real staff action) and
+   EVENT_KINDS has no equivalent. Miscounting it as a letter would be worse than
+   not counting it. Reported as a gap, not papered over. */
+const TELEMETRY_KIND = { call: "call_made", letter: "letter_issued" };
 
 export class InquiryWriteError extends Error {
   constructor(message, { status = 400 } = {}) {
@@ -38,7 +52,7 @@ export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcom
   if (!staffId) throw new InquiryWriteError("staffId is required", { status: 401 });
   if (!ATTEMPT_KINDS.has(kind)) throw new InquiryWriteError(`unknown attempt kind: ${kind}`);
 
-  return withTransaction(db, async (tx) => {
+  const updated = await withTransaction(db, async (tx) => {
     const inquiry = (await tx.query(
       `SELECT id, org_id FROM inquiry_log WHERE id = $1 FOR UPDATE`, [inquiryId]
     )).rows[0];
@@ -70,6 +84,39 @@ export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcom
 
     return updated;
   });
+
+  const eventKind = TELEMETRY_KIND[kind];
+  if (eventKind) {
+    // The shift link is resolved here rather than inside logStaffEvent(), which
+    // deliberately never guesses which clock work belongs on. One extra SELECT
+    // per attempt buys the telemetry the ability to answer "on whose shift" —
+    // the §14 question it exists for — and a null shift_id cannot be repaired
+    // later without guessing. Not clocked in is still null, honestly.
+    let shiftId = null;
+    try {
+      shiftId = (await currentShift(db, { staffId }))?.id ?? null;
+    } catch {
+      // currentShift throws on a bad id or a dead connection. The attempt is
+      // already committed and is the fact; an unlinked telemetry row beats
+      // failing the write that already succeeded.
+      shiftId = null;
+    }
+
+    await logStaffEvent(db, {
+      orgId: updated?.org_id ?? null,
+      staffId,
+      shiftId,
+      kind: eventKind,
+      detail: {
+        inquiry_id: updated?.id ?? inquiryId,
+        client_id: updated?.client_id ?? null,
+        outcome: outcome ?? null,          // NULL survives — the desk may not know yet
+        attempt_no: updated?.call_attempts ?? null
+      }
+    });
+  }
+
+  return updated;
 }
 
 /**
