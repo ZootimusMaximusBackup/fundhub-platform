@@ -1542,3 +1542,76 @@ test("COMPLIANCE: no reminder claims anything about credit scores or outcomes", 
     assert.doesNotMatch(r.body, forbidden, `body makes a credit claim: ${r.body}`);
   }
 });
+
+test("recordReminders: with a settlement lead, the payment reminder surfaces on the START date", () => {
+  // A reminder that arrives on the day the money must LAND is a reminder that
+  // arrives too late to act on. With a lead time known, it moves earlier.
+  const p = project(req({ horizonDays: 30, cardLiabilities: [card()] }));
+  const w = paymentWindow({
+    projectedBalances: p,
+    dueDate: "2026-08-20",
+    minimumPaymentCents: 3_500,
+    excludeSourceIds: ["amex"],
+    thresholds: { settlementLeadDays: 3 }
+  });
+  assert.equal(w.initiateByDate, "2026-08-17");
+  const out = recordReminders({
+    orgId: "o",
+    clientId: "c",
+    projection: p,
+    window: w,
+    subject: { subjectId: "amex", subjectLabel: "Amex Blue Business" }
+  });
+  const due = out.reminders.find((r) => r.reminderKind === "payment_due");
+  assert.equal(due.surfaceAt, "2026-08-17T00:00:00.000Z", "three days before it must land");
+  assert.match(due.body, /Start the payment/);
+  assert.match(due.body, /by 2026-08-17/);
+  assert.match(due.body, /lands by the estimated best date of 2026-08-20/);
+});
+
+test("recordReminders: with NO settlement lead, it says plainly that the date is a landing date", () => {
+  const p = project(req({ horizonDays: 30, cardLiabilities: [card()] }));
+  const w = paymentWindow({
+    projectedBalances: p,
+    dueDate: "2026-08-20",
+    minimumPaymentCents: 3_500,
+    excludeSourceIds: ["amex"]
+  });
+  assert.equal(w.initiateByDate, null);
+  const out = recordReminders({
+    orgId: "o",
+    clientId: "c",
+    projection: p,
+    window: w,
+    subject: { subjectId: "amex", subjectLabel: "Amex Blue Business" }
+  });
+  const due = out.reminders.find((r) => r.reminderKind === "payment_due");
+  assert.equal(due.surfaceAt, "2026-08-20T00:00:00.000Z");
+  assert.match(due.body, /to LAND is 2026-08-20/);
+  assert.match(due.body, /not recorded in this system/, "it must not imply a same-day post");
+  assert.doesNotMatch(due.body, /Start the payment/);
+});
+
+test("recordReminders: a lead time longer than the window still lands on a real date", () => {
+  // Boundary: a 10-day lead against a window that opens today. The start date
+  // can legitimately fall before the window opens — that is information, not an
+  // error, and it must not silently clamp to today and lose the warning.
+  const p = project(req({ horizonDays: 30, cardLiabilities: [card({ dueDate: "2026-08-05" })] }));
+  const w = paymentWindow({
+    projectedBalances: p,
+    dueDate: "2026-08-05",
+    minimumPaymentCents: 3_500,
+    excludeSourceIds: ["amex"],
+    thresholds: { settlementLeadDays: 10 }
+  });
+  assert.equal(w.initiateByDate, "2026-07-26", "ten days before the 5th, even though that is in the past");
+  const out = recordReminders({
+    orgId: "o",
+    clientId: "c",
+    projection: p,
+    window: w,
+    subject: { subjectId: "amex", subjectLabel: "Amex Blue Business" }
+  });
+  const due = out.reminders.find((r) => r.reminderKind === "payment_due");
+  assert.equal(due.surfaceAt, "2026-07-26T00:00:00.000Z");
+});

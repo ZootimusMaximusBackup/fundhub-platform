@@ -11,7 +11,7 @@ rather than editing anyone else's.
 ## W8
 
 **Task:** the cash-flow projection model, the payment window, `recordReminders`,
-and reminder storage (migration 087). `status: done`
+reminder storage (087) and the threshold settings (088). `status: done`
 
 > **COMPLIANCE REVIEW REQUIRED — estimates shown to a consumer.**
 > `recordReminders()` composes sentences quoting PROJECTED figures and PREDICTED
@@ -38,7 +38,7 @@ to send them.
 | Rule | How |
 |---|---|
 | Nothing transmits | No `fetch`, no email, no SMS, no push anywhere in `src/banking/`. `cashflow_reminders` has no `sent_at`, no `channel`, no `status`, no retry counter, no scheduler and no activation flag. A pg test asserts the absence of all twelve of those column names, so adding one later fails the suite. |
-| Thresholds are rows, not constants | `src/banking/cashflow.mjs` holds no operator number at all. Thresholds arrive in a `thresholds` argument; every absent one is reported by name in `thresholdGaps`. **There is no table in this schema that holds any of them — that gap is the finding below.** |
+| Thresholds are rows, not constants | `src/banking/cashflow.mjs` holds no operator number at all — thresholds arrive in a `thresholds` argument and every absent one is reported by name in `thresholdGaps`. There was no table to hold them; **088 creates one** (`cashflow_settings`), and `src/banking/settings.mjs` is the only thing that reads it. The model stayed pure and constant-free throughout. |
 | Money is integer cents | Every amount is an integer count of cents, validated with `Number.isSafeInteger`. No division and no rounding anywhere, so there is nothing to round. `fromCents` from `src/commissions/money.mjs` renders the display strings. Numeric strings are REFUSED, not parsed — see the assumption on that below. |
 | NULL survives | An unknown account balance refuses the whole projection with `UNKNOWN_BALANCE`; it is never read as zero. A card with no minimum payment becomes a blind spot, not a zero charge. |
 | No W5/W6/W7 imports | `cashflow.mjs` imports exactly one thing: `fromCents`. Balances, bills and liabilities are parameters. This is what let the unit be finished and fully tested before those land. |
@@ -75,6 +75,8 @@ these were decided rather than asked)
    "without driving the projected balance below zero", so zero is the floor and
    needs no row. A buffer ABOVE zero is a policy and does need one; when it is
    absent the floor stays at zero and `minBufferCents` is reported as a gap.
+   088 stores that zero explicitly so it can be raised deliberately — but see
+   finding 1: raising it is NOT the safe direction.
 
 6. **`paymentWindow()` recommends the LATEST feasible landing date.** The
    owner's question is about keeping outgoing money from wrecking cash flow, and
@@ -100,21 +102,46 @@ these were decided rather than asked)
 
 ### FINDINGS — absences reported rather than filled in
 
-**1. There is no row anywhere in this schema for any cash-flow threshold.**
-This is the headline finding and it is the reason `paymentWindow()` will not
-give an initiate-by date. Checked against `db/schema` and `db/migrations`, not
-against a plan: there is no `cashflow_settings` table, no `banking_config`
-table, no threshold column on `orgs`, and `src/config/` holds three pure
-classifiers with no operator numbers in them. Three values have no home:
+**1. RESOLVED in 088 — the thresholds now have a home, and values.** The
+original finding stood: there was nowhere in this schema to put a cash-flow
+threshold. The owner said to figure it out, so `088_cashflow_settings.sql`
+creates `cashflow_settings` and fills it in, following the pattern
+`052_config_defaults.sql` established when the same thing happened to the
+creative and hiring config — one file, so reverting to unconfigured is a single
+`git revert`, and every value carried with `signed_off_at IS NULL` so it is
+reported as provisional until a human confirms it.
 
-| Threshold | What it decides | Consequence of it being missing |
-|---|---|---|
-| `minBufferCents` | how much cushion must remain after a payment | floor stays at the zero the task states; reported as a gap |
-| `confidenceFloor` | how sure a detected bill must be to count as certain | scored bills stay unconfirmed and are priced in the worst case; nothing is dropped, nothing is promoted |
-| `settlementLeadDays` | how many days a payment takes to post | **`initiateByDate` is null with a stated reason.** Assuming same-day posting is a claim about payment rails that is often false, and being wrong is a missed payment |
+**The three values are not equally risky, and which direction each one hurts in
+is the whole story:**
 
-None of these were guessed at. **Deciding them is an owner call, and a row is
-needed before the model can give a complete answer.**
+| Threshold | Value | Basis | Which way it hurts |
+|---|---|---|---|
+| `settlement_lead_days` | **3** | `[DERIVED]` | **Asymmetric.** Too high costs a little float. Too low costs a late payment — a fee and a credit-report mark. **Errs high on purpose.** |
+| `min_buffer_cents` | **0** | `[SPEC]` | **Asymmetric the other way — the trap.** A bigger buffer sounds safer and is not: it refuses MORE payment dates, pushing the payment later, risking the same missed payment. |
+| `confidence_floor` | **0.800** | `[PLACEHOLDER]` | **Cannot affect safety at all.** Both sides of the floor land in the pessimistic track `paymentWindow()` tests against. |
+
+**The derivation for 3 days**, since it is the value that mattered: a card
+payment pushed from a bank account is an ACH debit, and standard ACH settles on
+the *next banking day* — not instantly, and same-day ACH is a separate opted-into
+product that cannot be assumed. Three things push the realistic figure above that
+floor: banking days are not calendar days (a Friday start settles Monday at the
+earliest — three calendar days for one banking day); the issuer still has to post
+it against the card, a second step on its own cycle; and cut-off times mean a
+payment started late in the day is tomorrow's payment, which a module with no
+clock cannot detect. Three covers the Friday case, which is the common one a
+one- or two-day figure gets wrong.
+
+⚠️ **This is a property of a payment rail, not a universal fact.** Paying on the
+issuer's own site with a debit card often posts same day; a mailed cheque takes a
+week. If a rail is ever wired in, re-derive from its documented timing.
+
+`v_cashflow_config_gaps` reports all three until signed off, with what being
+wrong about each one costs — 052's rule that a default which stops being visible
+is a default nobody re-examines.
+
+**The payoff:** the payment reminder now surfaces on the day somebody has to
+press the button, not the day the money must land. A reminder that arrives on the
+landing date arrives too late to act on.
 
 **2. `docs/journeys/` does not exist.** CLAUDE.md §4 describes eight tracked
 journeys, `-intended.md` / `-actual.md` pairs and a `docs/journeys/CHANGELOG.md`.
@@ -171,6 +198,9 @@ the enum was not done on a guess about who such a reminder would be for.
 | `src/banking/reminders.mjs` | New. `createReminder`, `dueReminders`, `forClient`, `acknowledge`, `getReminder`, `ReminderError`, and the three frozen vocabularies. |
 | `src/banking/reminders.pg.test.mjs` | New. 28 tests against real Postgres; skips cleanly with `DATABASE_URL` unset. Includes the model-to-store handoff. |
 | `db/migrations/087_cashflow_reminders.sql` | New. One table, four indexes, one trigger. `IF NOT EXISTS` throughout. |
+| `db/migrations/088_cashflow_settings.sql` | New. `cashflow_settings` + `v_cashflow_config_gaps` + trigger. Seeds the default org; every value unsigned. |
+| `src/banking/settings.mjs` | New. `loadThresholds`, `configGaps`, `SettingsError`. The only thing that reads the settings row — keeps the model pure. |
+| `src/banking/settings.pg.test.mjs` | New. 16 tests against real Postgres. |
 | `docs/workflows/finance-os-banking.md` | New. This board. |
 
 **No existing file was modified.** Nothing was renamed, nothing was refactored.
@@ -179,6 +209,7 @@ the enum was not done on a guess about who such a reminder would be for.
 
 ```
 src/banking/cashflow.mjs   project, paymentWindow, recordReminders, CashflowInputError
+src/banking/settings.mjs   loadThresholds, configGaps, SettingsError
 src/banking/reminders.mjs  createReminder, dueReminders, forClient, acknowledge,
                            getReminder, ReminderError,
                            SUBJECT_KINDS, REMINDER_KINDS, ACK_BY_KINDS
@@ -212,19 +243,28 @@ Migration 087
   the raw SQL applied directly a 2nd and 3rd time             ✔ no-op, no error
   51 files apply from scratch on a virgin database             ✔
 
+Migration 088
+  applies clean, re-applies through migrate.mjs as a no-op            OK
+  raw SQL applied directly twice — no duplicate settings row          OK
+
 Unit tests (no DATABASE_URL)
-  src/banking/cashflow.test.mjs         103 tests, 103 pass, 0 fail
-  full suite                           2018 tests,   0 fail, 223 skipped
+  src/banking/cashflow.test.mjs         106 tests, 106 pass, 0 fail
+  full suite                           2037 tests,   0 fail, 239 skipped
 
 Postgres tests (DATABASE_URL set)
   src/banking/reminders.pg.test.mjs      28 tests, 28 pass, 0 fail
+  src/banking/settings.pg.test.mjs       16 tests, 16 pass, 0 fail
   failing test NAMES vs the same suite with src/banking removed:
                                        BYTE-IDENTICAL (28 pre-existing, all in
                                        the creative / partner modules; none in
                                        src/banking)
 
-Mutation testing              47 deliberate defects injected, 47 killed, 0 survived
-  cashflow.mjs   35/35   incl. both sides of every boundary, the pessimistic-track
+Mutation testing              59 deliberate defects injected, 59 killed, 0 survived
+  settings.mjs   10/10   incl. THE BIG ONE — a NULL threshold becoming a zero —
+                         plus an explicit zero being dropped as though unset, the
+                         driver's strings passing through unconverted, and org
+                         scoping on both reads
+  cashflow.mjs   37/37   incl. both sides of every boundary, the pessimistic-track
                          rule, the blind-spot refusal, each threshold being filled
                          in with a picked number, the shortfall attribution, and
                          BOTH compliance-wording rules (dropping "estimated", and
@@ -249,5 +289,11 @@ npm run lint / npx tsc --noEmit         NOT RUNNABLE — see finding 3
 - **W7:** hand over dated `occurrences`, plus either `confidence` (0–1) or
   `confirmed: true`. See assumptions 1 and 2.
 - **Anyone writing reminders:** `surface_at` is yours to supply and there is no
-  default. If you find yourself wanting "due date minus N days", N is finding 1
-  — report it, do not pick it.
+  default. `recordReminders()` derives one for every reminder it emits; if you
+  need a different rule, read `cashflow_settings` through
+  `src/banking/settings.mjs` rather than adding a constant.
+- **Anyone reading `cashflow_settings`:** go through `loadThresholds()`. It is
+  the only place that converts the driver's strings to numbers and the only
+  place that keeps a NULL as an ABSENT key rather than a zero. A zero
+  `settlementLeadDays` asserts payments post same-day; an absent one makes the
+  model say it does not know.

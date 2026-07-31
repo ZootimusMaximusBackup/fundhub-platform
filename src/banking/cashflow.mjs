@@ -1483,11 +1483,23 @@ export function recordReminders({ orgId, clientId, projection, window, subject }
     return { reminders, skipped, thresholdGaps: gapsToList(gaps) };
   }
 
+  /* WHERE THE PAYMENT REMINDER SURFACES, AND WHY IT MOVES.
+     With a settlement lead time known, `initiateByDate` is the day somebody has
+     to actually press the button for the money to land on the recommended date.
+     That is the day worth telling them about — a reminder that arrives on the
+     landing date is a reminder that arrives too late to act on. With no lead
+     time known, paymentWindow() refuses to give an initiate-by date at all
+     rather than assume same-day posting, so the reminder falls back to the
+     landing date and the body says plainly that it is a landing date. Both
+     dates are derived by the model; neither is picked here. */
+  const startBy = window.initiateByDate;
   push({
     ...card,
     reminderKind: "payment_due",
-    body: `Estimated best date to pay ${window.amount} on "${subject.subjectLabel}" is ${window.recommendedDate}. Based on the projected balance, paying on or before that date should not take the account below ${fromCents(window.floorCents)}.`,
-    surfaceAt: atStartOfDay(window.recommendedDate)
+    body: startBy
+      ? `Start the payment of ${window.amount} on "${subject.subjectLabel}" by ${startBy} so it lands by the estimated best date of ${window.recommendedDate}. Based on the projected balance, that should not take the account below ${fromCents(window.floorCents)}.`
+      : `Estimated best date for a payment of ${window.amount} on "${subject.subjectLabel}" to LAND is ${window.recommendedDate}. How long your payment takes to arrive is not recorded in this system, so start it early enough to be sure. Based on the projected balance, landing on or before that date should not take the account below ${fromCents(window.floorCents)}.`,
+    surfaceAt: atStartOfDay(startBy ?? window.recommendedDate)
   });
 
   /* *** payment_window_closing CANNOT FIRE, AND THAT IS A PROPERTY OF THE
