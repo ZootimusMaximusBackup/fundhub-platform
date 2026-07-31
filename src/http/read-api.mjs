@@ -200,6 +200,16 @@ export function readHandler({ roles, fetch, single = false, principals = null })
       if (CLIENT_DATA_ERRORS.has(err && err.code)) {
         return res.status(400).json({ ok: false, error: "invalid_parameter" });
       }
+      // A handler's own precondition — api/hiring/application.mjs throws this
+      // when ?id= is missing. It is the caller's error for the same reason a bad
+      // uuid is, and was reaching the 500 branch below, so a screen that simply
+      // forgot the id was told the database had fallen over.
+      if (err && err.code === "BAD_REQUEST") {
+        const safe = String(err && err.message || "bad request")
+          .replace(/postgres(ql)?:\/\/[^\s"']+/gi, "postgres://[redacted]")
+          .slice(0, 200);
+        return res.status(400).json({ ok: false, error: "bad_request", message: safe });
+      }
       // The message can quote a DSN on a connection failure, same as health.
       const safe = String(err && err.message || "query failed")
         .replace(/postgres(ql)?:\/\/[^\s"']+/gi, "postgres://[redacted]")
