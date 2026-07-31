@@ -30,6 +30,7 @@
 //      is not.
 
 import crypto from "node:crypto";
+import { db as sharedDb, pool } from "../db.mjs";
 
 const ALGO = "aes-256-gcm";
 const IV_BYTES = 12;
@@ -197,8 +198,11 @@ export async function accessHistory(db, { clientId, limit = 100 }) {
 }
 
 async function withTransaction(db, fn) {
-  if (typeof db.connect !== "function") return fn(db);
-  const client = await db.connect();
+  const acquire = typeof db?.connect === "function"
+    ? () => db.connect()
+    : (db === sharedDb ? () => pool().connect() : null);
+  if (!acquire) return fn(db);
+  const client = await acquire();
   try {
     await client.query("BEGIN");
     const out = await fn(client);

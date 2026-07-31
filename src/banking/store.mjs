@@ -56,19 +56,25 @@
 // answerable question rather than a silent absence. Pass
 // `includeCandidates: false` if a caller genuinely wants only the confident set.
 
+import { db as sharedDb, pool } from "../db.mjs";
+
 /* ------------------------------------------------------------------------- *
  * Transaction helper
  *
- * Same shape as withTransaction() in src/inquiries/work.mjs, including the
- * fallback for a handle with no connect() — matching the existing pattern
- * rather than inventing a second one. The fallback matters for the same reason
- * it does there: the transactional path must be exercisable by something other
- * than a real database.
+ * A real transaction, which took catching to get right. The broken probe
+ * `if (typeof db.connect !== "function")` was always true for the shared handle
+ * (db = { query }, no connect), so writes ran unprotected with autocommit in
+ * production. Fixed by checking db.connect directly, reaching for pool() if db
+ * is the shared singleton, and only then falling back to inline execution for a
+ * plain fake in a unit test. See src/finance/soft-pulls.mjs:502.
  * ------------------------------------------------------------------------- */
 
 async function withTransaction(db, fn) {
-  if (typeof db.connect !== "function") return fn(db);
-  const client = await db.connect();
+  const acquire = typeof db?.connect === "function"
+    ? () => db.connect()
+    : (db === sharedDb ? () => pool().connect() : null);
+  if (!acquire) return fn(db);
+  const client = await acquire();
   try {
     await client.query("BEGIN");
     const out = await fn(client);
