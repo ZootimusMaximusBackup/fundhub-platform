@@ -45,8 +45,10 @@ import {
   upsertRecurringBill,
   saveDetection,
   listRecurringBills,
+  listRecurringBillsFor,
   getBillEvidence
 } from "./store.mjs";
+import { toCashflowBills } from "./cashflow-seam.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
 
@@ -635,6 +637,41 @@ test("listRecurringBills hides the low-confidence guesses unless asked by name",
       "ordered largest outflow first — the amounts are negative, so ASC");
 
     await assert.rejects(() => listRecurringBills(db, {}), /orgId is required/);
+  });
+
+test("a bill read out of the real table reaches the cash-flow projector intact",
+  { skip: !HAS_DB }, async () => {
+    // THE STORE/SEAM CROSSING, AGAINST REAL COLUMN TYPES. The unit version in
+    // store-seam.test.mjs decodes its row with node-postgres's own type parsers;
+    // this one gets the row from Postgres, so the `date` columns are Dates and
+    // the bigint is a string because the DATABASE made them that way. If 086's
+    // column types move under the mapping, this is what fails.
+    const account = ACCOUNT_C;
+
+    const raw = await listRecurringBills(db, { orgId, bankAccountId: account });
+    const bills = await listRecurringBillsFor(db, { orgId, bankAccountId: account });
+    assert.equal(bills.length, 1);
+
+    // Read back in the detector's own vocabulary: day strings, integer cents.
+    assert.equal(bills[0].nextExpectedDate, "2026-05-08");
+    assert.match(bills[0].firstSeenOn, /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(bills[0].typicalAmountCents, -8800);
+    assert.equal(typeof bills[0].typicalAmountCents, "number", "bigint arrives as a string");
+
+    const window = { from: "2026-05-01", to: "2026-08-31" };
+    const projected = toCashflowBills({ bills }, window);
+    assert.deepEqual(projected.skipped, [], "a stored bill must not vanish on the way to a screen");
+    assert.deepEqual(
+      projected.recurringBills[0].occurrences.map((o) => o.date),
+      ["2026-05-08", "2026-06-08", "2026-07-08", "2026-08-08"]
+    );
+    assert.equal(projected.recurringBills[0].occurrences[0].amountCents, 8800,
+      "positive magnitude — the sign flip happens in the seam and nowhere else");
+
+    // And the raw rows, which look like the same thing, project nothing at all.
+    const rawProjected = toCashflowBills({ bills: raw }, window);
+    assert.deepEqual(rawProjected.recurringBills, [],
+      "*** snake_case rows fed straight to the projector lose every bill, silently ***");
   });
 
 test("getBillEvidence returns the actual charges behind a stored bill",
