@@ -22,9 +22,9 @@ against what it was *meant* to do. These pages are a mirror, not a test.
 | [client](./client-actual.md) | `client` | reaches 9 of 53 routes |
 | [role-owner](./role-owner-actual.md) | `owner` | reaches 53 of 53 routes |
 | [role-sales-manager](./role-sales-manager-actual.md) | — | **no such role exists** |
-| [role-closer](./role-closer-actual.md) | `closer` | reaches 37 of 53 routes |
-| [role-funding-advisor](./role-funding-advisor-actual.md) | `funding_advisor` | reaches 38 of 53 routes |
-| [role-inquiry-remover](./role-inquiry-remover-actual.md) | `inquiry_specialist` | reaches 38 of 53 routes |
+| [role-closer](./role-closer-actual.md) | `closer` | reaches 36 of 53 routes |
+| [role-funding-advisor](./role-funding-advisor-actual.md) | `funding_advisor` | reaches 37 of 53 routes |
+| [role-inquiry-remover](./role-inquiry-remover-actual.md) | `inquiry_specialist` | reaches 37 of 53 routes |
 | [affiliate](./affiliate-actual.md) | `affiliate` | reaches 7 of 53 routes |
 | [white-label](./white-label-actual.md) | `partner` | reaches 18 of 53 routes |
 

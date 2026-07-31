@@ -83,7 +83,7 @@ flowchart TD
 | `/api/hiring/postings` | GET | owner, admin |
 | `/api/inquiries` | GET, POST | staff |
 | `/api/inquiry` | — | inquiry_specialist, admin, owner |
-| `/api/partner-brand` | GET, PUT | any signed-in employee |
+| `/api/partner-brand` | GET, PUT | owner, admin |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/privacy/erasure` | GET, POST | owner, admin |
 | `/api/read/affiliates` | GET | owner, admin |

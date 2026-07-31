@@ -199,7 +199,21 @@ describe("nothing is invented", () => {
     assert.ok(!page.includes("flowchart"),
       "a diagram was drawn for a role that does not exist — that is inventing a journey");
     assert.match(page, /no such role/i);
-    assert.match(page, /finding/i, "the page must say this is a finding, not a gap to quietly fill");
+  });
+
+  test("the sales-manager page carries the owner's decision, so nobody re-opens it", () => {
+    // The page used to ask which of two things was true: planned-but-unbuilt, or
+    // renamed-and-should-be-dropped. The owner answered on 2026-07-31 — it is
+    // planned, it stays tracked, and it must NOT be built yet. That answer lives
+    // in the generator so the page stays generated rather than hand-edited, and
+    // this test stops a later pass quietly reverting to "which is it?".
+    const page = files["role-sales-manager-actual.md"];
+    assert.match(page, /FUTURE WORK/,
+      "the page must record that this is planned work, not a stale entry to clean up");
+    assert.match(page, /[Dd]o not build it yet/,
+      "the page must say plainly that no agent should create this role on its own initiative");
+    assert.ok(!/should stop listing it/.test(page),
+      "the page still suggests dropping it from CLAUDE.md — the owner decided it stays");
   });
 
   test("the missing role really is missing, checked against the source", () => {

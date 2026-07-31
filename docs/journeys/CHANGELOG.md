@@ -12,6 +12,8 @@ this file is not, because "what changed and why" is a judgement nobody can gener
 
 ---
 
+2026-07-31 | role-owner, role-closer, role-funding-advisor, role-inquiry-remover, client, affiliate, white-label | `/api/partner-brand` moved from "any signed-in employee" to owner/admin on every page | The journeys found the read was ungated — any employee could read a partner's trading name and registered address. Gated to owner+admin; pages regenerated | (this commit)
+2026-07-31 | role-sales-manager | Page now records the owner's decision: the role is FUTURE WORK, stays tracked in CLAUDE.md §4, and must not be built yet | Owner confirmed the role is planned (Sarah runs sales), not dropped — the page previously asked which of two things was true | (this commit)
 2026-07-31 | role-owner, role-closer, role-funding-advisor, role-inquiry-remover, client, affiliate, white-label | Two routes added to every journey — `/api/banking/revoke` and `/api/privacy/erasure`, both owner/admin only | The banking revoke + erasure work (PR #59) added them; the staleness guard caught the drift on merge and the pages were regenerated rather than hand-edited | (this commit)
 2026-07-31 | white-label | First actual journey: the `partner` kind reaches 18 of 51 routes — campaigns, Creative Factory, its own brand tokens | No journey documentation existed for any flow; owner asked for actual-files only | (this commit)
 2026-07-31 | affiliate | First actual journey: the `affiliate` kind reaches only the open routes — **no endpoint anywhere admits an affiliate** | Generated from the routing table; recorded as a finding rather than smoothed over | (this commit)

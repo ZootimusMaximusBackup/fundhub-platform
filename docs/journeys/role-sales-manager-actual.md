@@ -20,9 +20,14 @@ owner, admin, funding_advisor, closer, inquiry_specialist, setter, partner
 No diagram is drawn here. Drawing one would mean inventing a journey, and a made-up
 picture of who can do what is worse than an empty page — somebody would plan against it.
 
-**This is a finding, not a gap to fill in.** One of two things is true and a human has
-to say which:
+## Owner decision, 2026-07-31 — this is FUTURE WORK
 
-1. The role was planned and never built. Then this journey is a to-do, and the tracked
-   list in `CLAUDE.md` §4 is describing an intention rather than the system.
-2. The role was renamed or dropped. Then `CLAUDE.md` §4 should stop listing it.
+**The role is planned, not dropped.** Sarah runs sales. `role-sales-manager` stays
+listed in `CLAUDE.md` §4 as a tracked journey, and the absence of the role in the code
+is a to-do rather than a stale entry to clean up.
+
+**Do not build it yet.** No agent should create a `sales_manager` role, add it to a
+`ROLE_SETS` value, or write endpoints for it on its own initiative. When somebody does
+build it, this page starts drawing itself — nothing here needs editing by hand.
+
+Recorded on the board at `docs/workflows/pii-and-journeys.md`.

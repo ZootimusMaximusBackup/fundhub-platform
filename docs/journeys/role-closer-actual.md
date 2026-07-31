@@ -23,19 +23,19 @@ flowchart TD
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 1 route]
     CAN --> A_read[Reading data — 11 routes]
-    CAN --> A_top_level[Everything else — 6 routes]
+    CAN --> A_top_level[Everything else — 5 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 16 routes]
+    WHO -->|Yes| CANT[Blocked — 17 routes]
     CANT --> B_banking[banking — 1 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_read[Reading data — 6 blocked]
-    CANT --> B_top_level[Everything else — 2 blocked]
+    CANT --> B_top_level[Everything else — 3 blocked]
 ```
 
 ## What they can reach
 
-**37 of 53 routes.**
+**36 of 53 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -61,7 +61,6 @@ flowchart TD
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/inquiries` | GET, POST | staff |
-| `/api/partner-brand` | GET, PUT | any signed-in employee |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/banking-surface` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
@@ -79,14 +78,13 @@ flowchart TD
 
 ### Worth knowing
 
-- **1 route is open to any signed-in employee, whatever their role.** That is not a gate on this journey specifically — anyone who can sign in reaches it: `/api/partner-brand`.
 - **4 routes also accept a shared secret instead of a sign-in** (`DASHBOARD_SECRET`), so a caller holding that value reaches them without being anybody in particular: `/api/dashboard/client`, `/api/dashboard/clients`, `/api/dashboard/pipeline`, `/api/dashboard/seed`.
 - **4 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/session`, `/api/health`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**16 of 53 routes.**
+**17 of 53 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -98,6 +96,7 @@ flowchart TD
 | `/api/hiring/funnel` | GET | owner, admin |
 | `/api/hiring/postings` | GET | owner, admin |
 | `/api/inquiry` | — | inquiry_specialist, admin, owner |
+| `/api/partner-brand` | GET, PUT | owner, admin |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/privacy/erasure` | GET, POST | owner, admin |
 | `/api/read/affiliates` | GET | owner, admin |
