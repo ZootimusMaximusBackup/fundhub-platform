@@ -1,6 +1,17 @@
 # Where `logStaffEvent()` should be called from
 
-**Nothing in this document has been applied. No call site was edited.**
+> **STATUS — partly applied.** The `call_made` / `letter_issued` proposal below
+> is now live in `logAttempt()` (`src/inquiries/work.mjs`), reached from
+> `POST /api/inquiries { action: "attempt" }`. The `shift_id` question at the
+> bottom was settled as **option 3**: the endpoint already resolves the open
+> shift to decide whether the write is allowed, so it threads that id down as a
+> new optional `shiftId` argument — the correct answer at zero extra queries.
+>
+> `pull_run` and `text_sent` remain **unwired, deliberately**, for exactly the
+> reason this document gives: there is no staff-attributed call site for either
+> one. Both findings were re-verified against `main` before wiring, and both
+> still hold — every `sendTemplated()` caller is an Inngest workflow, and no
+> endpoint under `api/` runs a credit pull. Everything below is unchanged.
 
 `src/shifts/telemetry.mjs` is the writer for `staff_events`. This file is the
 other half of the job: for each of the five kinds in `EVENT_KINDS`, *where the

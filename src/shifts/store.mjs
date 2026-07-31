@@ -229,16 +229,18 @@ export async function currentShift(db, { staffId } = {}) {
  * wait before deciding they left, not time they worked. Paying the idle window
  * would invent up to 12 hours per forgotten clock-out.
  *
- * ⚠ THIS IS ONLY AS GOOD AS THE TELEMETRY, AND THE TELEMETRY HAS NO WRITERS.
- * logStaffEvent() (src/shifts/telemetry.mjs) has zero call sites — see
- * src/shifts/TELEMETRY-CALLSITES.md — so `staff_events` today contains nothing
- * but this function's own audit rows. Until those call sites land, every open
- * shift has last_active_at = started_at, which means this reads as "close
- * shifts with no recorded activity since clock-in" and writes a near-zero-length
- * shift. That is the honest answer to the data available, not a safe one to pay
- * from. Nothing runs it — autoCloseStale() still has no caller and no scheduler
- * — so nothing is currently harmed. Wire the telemetry call sites BEFORE
- * scheduling this sweep.
+ * ⚠ THIS IS ONLY AS GOOD AS THE TELEMETRY, AND THE TELEMETRY COVERS ONE DESK.
+ * logStaffEvent() (src/shifts/telemetry.mjs) now has exactly one production call
+ * site: logAttempt() in src/inquiries/work.mjs, which emits `call_made` and
+ * `letter_issued` for the Inquiry Remover desk. Everyone else — closers, funding
+ * advisors, sales managers — still generates no `staff_events` rows at all, so
+ * for them every open shift still has last_active_at = started_at and this still
+ * reads as "close shifts with no recorded activity since clock-in", writing a
+ * near-zero-length shift. That is the honest answer to the data available, not a
+ * safe one to pay from. Nothing runs it — autoCloseStale() still has no caller
+ * and no scheduler — so nothing is currently harmed. Wire telemetry for the
+ * remaining roles BEFORE scheduling this sweep.
+ * See src/shifts/TELEMETRY-CALLSITES.md for what is still unwired and why.
  *
  * EVERY CLOSE IS RECORDED. One `staff_events` row per shift, kind
  * AUTO_CLOSE_EVENT_KIND, detail carrying the threshold used, the original

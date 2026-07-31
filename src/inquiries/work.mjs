@@ -14,9 +14,29 @@
 // A 'note' IS NOT AN ATTEMPT. Working notes are logged in the same table, for a
 // single readable timeline, but do not count toward call_attempts: a desk that
 // inflates its attempt count is lying to a bureau, slowly.
+//
+// THIS IS THE ONLY STAFF-ATTRIBUTED CALL SITE FOR `staff_events` IN THE REPO.
+// Everything else that issues a letter, sends a text or runs a credit pull is an
+// Inngest workflow reacting to a system event, and a workflow has no employee to
+// attribute the work to (src/shifts/TELEMETRY-CALLSITES.md walks all of them).
+// A call logged here is a real person phoning a bureau or a furnisher, and the
+// staff id is already required and already validated below — so this is where
+// the §14 telemetry counters can be fed without inventing an actor.
+
+import { logStaffEvent } from "../shifts/telemetry.mjs";
 
 const ATTEMPT_KINDS = new Set(["call", "letter", "portal", "note"]);
 const COUNTING_KINDS = new Set(["call", "letter", "portal"]);
+
+/* Which attempt kinds have a `staff_events` kind, and which one.
+   `note` is deliberately absent: it is not an attempt (see the header), so
+   counting it would inflate the same number the counter above refuses to
+   inflate. `portal` is deliberately absent too, and that one is a GAP, not a
+   decision — filing through a bureau portal is real, counted, staff-performed
+   work and EVENT_KINDS has no word for it. Filing it under `letter_issued`
+   would make the letter count wrong to avoid admitting the vocabulary is
+   short. Reported instead. */
+const TELEMETRY_KINDS = Object.freeze({ call: "call_made", letter: "letter_issued" });
 
 export class InquiryWriteError extends Error {
   constructor(message, { status = 400 } = {}) {
@@ -32,13 +52,21 @@ export class InquiryWriteError extends Error {
  * Transactional because three writes must agree: the attempt row, the
  * recomputed counter, and the attribution columns. A partial apply here would
  * leave a row that claims three attempts with two logged.
+ *
+ * shiftId is optional and defaults to null, which is an honest value —
+ * `staff_events.shift_id` is nullable precisely because "this work is not linked
+ * to a shift" is a real answer. /api/inquiries passes the real one: the endpoint
+ * already resolved the open shift to decide whether the write was allowed at
+ * all, so threading that id down here costs nothing, where looking it up inside
+ * the telemetry writer would cost one extra SELECT per attempt and would attach
+ * the work to a shift no caller ever named.
  */
-export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcome = null, note = null }) {
+export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcome = null, note = null, shiftId = null }) {
   if (!inquiryId) throw new InquiryWriteError("inquiryId is required");
   if (!staffId) throw new InquiryWriteError("staffId is required", { status: 401 });
   if (!ATTEMPT_KINDS.has(kind)) throw new InquiryWriteError(`unknown attempt kind: ${kind}`);
 
-  return withTransaction(db, async (tx) => {
+  const updated = await withTransaction(db, async (tx) => {
     const inquiry = (await tx.query(
       `SELECT id, org_id FROM inquiry_log WHERE id = $1 FOR UPDATE`, [inquiryId]
     )).rows[0];
@@ -70,6 +98,38 @@ export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcom
 
     return updated;
   });
+
+  /* AFTER THE COMMIT, NEVER INSIDE IT. Two failures this ordering prevents:
+     telemetry must not be able to roll back the attempt it is describing, and
+     `staff_events` must not end up holding a row that says "called" for a call
+     whose transaction was rolled back.
+
+     Awaited, not fired and dropped. logStaffEvent() cannot throw or reject — it
+     returns a verdict object and logs its own failures — so awaiting it can only
+     cost latency, never an outcome. A floating promise here would cost the row
+     instead: this runs in a Netlify function that stops executing the moment the
+     handler responds, so an un-awaited write is a write that sometimes silently
+     does not happen. Its return value is ignored on purpose; there is nothing a
+     caller can usefully do about an unwritten index over work that did happen. */
+  const eventKind = TELEMETRY_KINDS[kind];
+  if (eventKind) {
+    await logStaffEvent(db, {
+      orgId: updated.org_id,
+      staffId,
+      shiftId,
+      kind: eventKind,
+      detail: {
+        inquiry_id: updated.id,
+        client_id: updated.client_id ?? null,
+        // NULL survives. "The desk has not recorded an outcome yet" is not the
+        // same as any outcome string, and a default would erase the difference.
+        outcome: outcome ?? null,
+        attempt_no: updated.call_attempts ?? null
+      }
+    });
+  }
+
+  return updated;
 }
 
 /**

@@ -267,6 +267,108 @@ describe("POST /api/inquiries — active-shift gate", { skip: !HAVE_DB ? "no DAT
   });
 
   // =========================================================================
+  // STAFF TELEMETRY. POST /api/inquiries is the only path in this repository
+  // that puts a row in `staff_events` on behalf of a real person; everything
+  // else in that table was written by the auto-close sweep.
+  //
+  // Asserted here, against Postgres, rather than only in the unit tests,
+  // because the two claims worth making are claims about the database: that the
+  // row survives the commit, and that shift_id holds the id of the shift the
+  // gate above actually resolved. A stub cannot tell a real FK from a string.
+  //
+  // NOTE ON ORDERING: shifts.id is ON DELETE SET NULL from staff_events, so
+  // closeAllShifts() blanks shift_id on every row already written. Every
+  // assertion about shift_id therefore happens while its shift is still open.
+  // =========================================================================
+  describe("staff telemetry", () => {
+    let shiftId;
+    before(async () => { await closeAllShifts(); shiftId = await openShift(); });
+    after(async () => { await closeAllShifts(); });
+
+    const eventRows = async () => (await db.query(
+      `SELECT kind, shift_id, org_id, detail FROM staff_events
+        WHERE staff_id = $1 ORDER BY created_at, id`, [staffId])).rows;
+
+    const clearEvents = async () => {
+      await db.query(`DELETE FROM staff_events WHERE staff_id = $1`, [staffId]);
+    };
+
+    const attempt = (body) => call("POST", { token, body: { inquiry_id: inquiryId, action: "attempt", ...body } });
+
+    test("a logged call writes one call_made row, on the shift it was worked on", async () => {
+      await resetInquiry();
+      await clearEvents();
+
+      const r = await attempt({ kind: "call", outcome: "No answer" });
+      assert.equal(r.code, 200, JSON.stringify(r.body));
+
+      const rows = await eventRows();
+      assert.equal(rows.length, 1, "one call, one row");
+      assert.equal(rows[0].kind, "call_made");
+      assert.equal(rows[0].shift_id, shiftId, "the event must name the shift the endpoint already resolved");
+      assert.equal(rows[0].org_id, org);
+      assert.equal(rows[0].detail.inquiry_id, inquiryId);
+      assert.equal(rows[0].detail.client_id, clientId);
+      assert.equal(rows[0].detail.outcome, "No answer");
+      assert.equal(rows[0].detail.attempt_no, 1);
+    });
+
+    test("a mailed letter writes letter_issued", async () => {
+      await resetInquiry();
+      await clearEvents();
+
+      assert.equal((await attempt({ kind: "letter", outcome: "Mailed" })).code, 200);
+
+      const rows = await eventRows();
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].kind, "letter_issued");
+      assert.equal(rows[0].shift_id, shiftId);
+    });
+
+    test("an outcome nobody has recorded yet stays unknown instead of becoming a value", async () => {
+      await resetInquiry();
+      await clearEvents();
+
+      assert.equal((await attempt({ kind: "call" })).code, 200);
+      assert.equal((await eventRows())[0].detail.outcome, null);
+    });
+
+    test("notes and portal filings write nothing — neither has an honest kind", async () => {
+      await resetInquiry();
+      await clearEvents();
+
+      assert.equal((await attempt({ kind: "note", note: "Client called back" })).code, 200);
+      assert.equal((await attempt({ kind: "portal", outcome: "Filed" })).code, 200);
+
+      assert.deepEqual(await eventRows(), [],
+        "a note is not an attempt, and EVENT_KINDS has no word for a portal filing");
+    });
+
+    test("confirming and moving a status write nothing either", async () => {
+      await resetInquiry();
+      await clearEvents();
+
+      assert.equal((await call("POST", { token, body: { inquiry_id: inquiryId, action: "confirm" } })).code, 200);
+      assert.equal((await call("POST", { token, body: { inquiry_id: inquiryId, action: "status", status: "Hold" } })).code, 200);
+
+      assert.deepEqual(await eventRows(), [],
+        "these are attribution writes, not calls or letters — counting them would double-count the desk");
+    });
+
+    test("a refused write leaves no telemetry behind", async () => {
+      await resetInquiry();
+      await clearEvents();
+      await closeAllShifts();
+
+      const r = await attempt({ kind: "call", outcome: "No answer" });
+      assert.equal(r.code, 403);
+      assert.deepEqual(await eventRows(), [], "an event for work the gate refused is a lie about the day");
+
+      shiftId = await openShift();
+    });
+  });
+
+  // =========================================================================
   // THE GATE FOLLOWS THE SHIFT. Clocking out closes the endpoint again — it is
   // not a one-time check performed at sign-in.
   // =========================================================================

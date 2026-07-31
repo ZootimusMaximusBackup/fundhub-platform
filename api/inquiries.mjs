@@ -70,11 +70,17 @@ export default async function handler(req, res) {
       let inquiry;
       switch (body.action) {
         case "attempt":
+          /* shift.id is handed down so the staff_events row this write emits
+             says which shift the work fell on. The gate above already had to
+             resolve the open shift to decide whether the write was allowed, so
+             this is the answer for free; resolving it again further down would
+             be a second SELECT for a fact already in hand. */
           inquiry = await logAttempt(db, {
             inquiryId, staffId,
             kind: body.kind || "call",
             outcome: body.outcome ?? null,
-            note: body.note ?? null
+            note: body.note ?? null,
+            shiftId: shift.id ?? null
           });
           break;
         case "confirm":
