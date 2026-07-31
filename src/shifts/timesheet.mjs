@@ -70,11 +70,14 @@
 // tinguishable from a real 30-second shift on (started_at, ended_at) alone,
 // which is why migration 068 puts `closed_by` on the row itself.
 //
-// This file refuses those rows rather than totalling them, for exactly the
-// reason it already refuses a shift that ends before it starts: "quietly
-// reporting it as zero hides the break from the only person who could fix it
-// while still producing a plausible-looking timesheet." A wrong number that
-// looks right is the failure mode; a loud one is not.
+// This file never counts those rows at face value, for exactly the reason it
+// refuses a shift that ends before it starts: "quietly reporting it as zero
+// hides the break from the only person who could fix it while still producing a
+// plausible-looking timesheet." A wrong number that looks right is the failure
+// mode; a loud one is not. shiftSeconds() — one row, with no other shift of that
+// person's to infer from — refuses outright. Every total (secondsWorked,
+// hoursWorked, timesheet) has the rest of the list in hand, so it separates
+// those rows out and estimates them by the rule below instead of throwing.
 //
 // `sweep_idle` — closed by the sweep but WITH activity behind the end time — is
 // counted normally. It is an estimate, and it is the best evidence that exists,
@@ -190,9 +193,11 @@ export function shiftSeconds(shift) {
 
   // Refused, not zeroed. See the header. This is the same call the negative-span
   // branch below makes, for the same reason: the caller must not be handed a
-  // plausible number for a span nobody can vouch for. timesheet() partitions
-  // these out before they ever reach here, so a throw means somebody totalled a
-  // raw list and needs to know.
+  // plausible number for a span nobody can vouch for. ONE ROW ON ITS OWN HAS NO
+  // BASIS TO INFER FROM — the estimate needs that person's other shifts, which
+  // this function is never given — so refusing is the only honest answer here.
+  // Every total in this file (secondsWorked, hoursWorked, timesheet) partitions
+  // these rows out and estimates them before they can reach this line.
   if (needsReview(shift)) {
     throw new RangeError(
       `shiftSeconds: shift ${shift.id ?? "(no id)"} was auto-closed with no recorded activity, ` +
@@ -216,24 +221,46 @@ export function shiftSeconds(shift) {
   return Math.floor(ms / 1000);
 }
 
-/**
- * secondsWorked(shifts) — total whole seconds logged across shift rows.
- *
- * THIS is the exact number. hoursWorked() below is the human-readable view of
- * the same fact. Anything that eventually pays for time should start here, in
- * whole seconds, not from a decimal hours figure.
- */
-export function secondsWorked(shifts) {
-  if (!Array.isArray(shifts)) {
-    throw new TypeError(`secondsWorked: expected an array of shift rows, got ${JSON.stringify(shifts)}`);
-  }
+/** Sum of vouchable spans. Internal: the caller must already have partitioned
+ *  the unvouchable rows out, which is why it does not do it itself. */
+function sumShiftSeconds(shifts) {
   let total = 0;
   for (const shift of shifts) total += shiftSeconds(shift);
   return total;
 }
 
 /**
- * hoursWorked(shifts) — total logged time expressed in hours.
+ * secondsWorked(shifts) — total whole payable seconds across shift rows.
+ *
+ * THIS is the exact number. hoursWorked() below is the human-readable view of
+ * the same fact. Anything that eventually pays for time should start here, in
+ * whole seconds, not from a decimal hours figure.
+ *
+ * A LIST OUT OF THE `shifts` TABLE TOTALS TO A NUMBER. It used to throw the
+ * moment one forgotten clock-out was in the list, which made every reader of the
+ * raw table an error page waiting to happen and left timesheet() as the only
+ * entry point that worked. The unvouchable rows are partitioned out and
+ * estimated here exactly as timesheet() does it, so this is timesheet()'s
+ * payableSeconds and cannot disagree with it — two totals of one week that
+ * differ is the defect this file was cleared of once already.
+ *
+ * Corruption is still loud: a garbage timestamp, a camelCase key or a shift that
+ * ends before it starts throws, because none of those is a shift anybody worked.
+ *
+ * WHAT THIS NUMBER DOES NOT TELL YOU is how much of it nobody checked. Call
+ * timesheet() for that — it returns confirmed, estimated and payable as three
+ * separate numbers plus the rows a human still has to look at. Any SCREEN
+ * showing time must use timesheet(); this is the total for whoever pays it.
+ */
+export function secondsWorked(shifts) {
+  if (!Array.isArray(shifts)) {
+    throw new TypeError(`secondsWorked: expected an array of shift rows, got ${JSON.stringify(shifts)}`);
+  }
+  return timesheet(shifts).payableSeconds;
+}
+
+/**
+ * hoursWorked(shifts) — the same payable total, expressed in hours.
  *
  * FOR DISPLAY AND REPORTING. It is seconds / 3600, a repeating decimal for most
  * real timesheets, and a decimal number of hours multiplied by a rate is
@@ -334,7 +361,7 @@ export function timesheet(shifts, { basis } = {}) {
   const countable = [];
   for (const shift of shifts) (needsReview(shift) ? review : countable).push(shift);
 
-  const seconds = secondsWorked(countable);
+  const seconds = sumShiftSeconds(countable);
   const inferFrom = basis ?? countable;
   const estimates = review.map((shift) => ({ shift, ...estimateSeconds(shift, inferFrom) }));
   const estimatedSeconds = estimates.reduce((t, e) => t + e.seconds, 0);
