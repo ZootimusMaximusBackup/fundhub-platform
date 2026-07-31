@@ -223,7 +223,28 @@ They cannot pass and are not claimed.
    out loud, and that is not this unit's call.
 7. **`recurring_bills` has no `anchor_day_of_month` column**, so month-end bills
    drift. Needs a migration; this unit owns none.
-8. **`api/read/finance-os.mjs` and `api/read/banking-surface.mjs` do not
+8. **FOUR OF THE FIVE TABLES THIS SCREEN READS HAVE NO LIVE WRITER.** Traced by
+   following imports, not assumed. This is the single most important thing on
+   this board, because it decides what the screen actually shows on day one:
+
+   | table | writer module | is anything calling it? |
+   |---|---|---|
+   | `tradelines` | `src/tradelines/store.mjs` `ingestCrsResult()` | **YES** — `src/finance/soft-pulls.mjs`, reached by the routed `POST /api/finance/soft-pull`. |
+   | `card_liabilities` | `src/liabilities/store.mjs` `ingestCrsLiabilities()` | **NO.** Nothing in `src/` or `api/` imports that module. |
+   | `recurring_bills` | `src/banking/store.mjs` `saveDetection()` | **NO.** Nothing imports it. |
+   | `bank_accounts` | none | **NO STORE MODULE EXISTS.** The only `INSERT INTO bank_accounts` in the repository is inside `src/banking/plaid.pg.test.mjs`. `plaid.mjs` says the rows are "upserted by a separate store module" — that module was never written. |
+   | `cashflow_reminders` | `src/banking/reminders.mjs` `createReminder()` | **NO.** Nothing imports it, and nothing calls `recordReminders()` either. |
+
+   Consequence, stated plainly: after a soft pull this screen shows real cards,
+   real utilization from all three engines, and a real funding plan. Payment due
+   dates, repeating bills, cash flow and bank balances will be **empty and will
+   say so on the page** until somebody wires the four missing writers. The
+   screen was built to state that rather than to look full.
+
+   Wiring those writers is four separate units of work and none of them is this
+   one. They are named here so the next workflow can claim them.
+
+9. **`api/read/finance-os.mjs` and `api/read/banking-surface.mjs` do not
    org-scope their queries.** They gate on a valid staff session and a
    `client_id`, and then read that client's rows without checking the client is
    in the caller's org. The new endpoint does check. The two existing ones were
