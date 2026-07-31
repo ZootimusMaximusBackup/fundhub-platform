@@ -246,6 +246,9 @@ table.grid tr[data-row]{cursor:pointer}
 table.grid tr[data-row]:hover td{background:var(--soft)}
 table.grid tr[data-row][aria-expanded="true"] td{background:var(--soft)}
 .rchev{display:inline-block;width:10px;color:var(--gray2);font-size:9px;transition:transform .16s ease;margin-right:6px}
+/* caret + channel name are one unit. At 1180 the first column is narrow enough
+   that they would otherwise break across two lines. */
+table.grid tr[data-row]>td:first-child{white-space:nowrap}
 tr[data-row][aria-expanded="true"] .rchev{transform:rotate(90deg)}
 tr.det>td{background:var(--soft);padding:0 14px 13px !important}
 .detbox{border-top:1px dashed var(--line);padding-top:11px;display:flex;gap:20px;flex-wrap:wrap}
@@ -493,6 +496,8 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
                   <label for="cAsset">Asset — optional, one only</label>
                   <select id="cAsset"></select>
                   <span class="hint">asset_id is a single nullable FK — no carousels, no join table</span>
+                  <span class="hint">schedule() never reads creative_assets.compliance_state, and no CHECK or trigger
+                    in 049 gates on it — a <b>pending</b> or <b>blocked</b> asset attaches and publishes</span>
                 </div>
                 <div class="field">
                   <label for="cWhen">scheduled_for — override (UTC)</label>
@@ -530,9 +535,13 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
             and disclosure copy rules apply in full — a caption is judged exactly as an ad would be.
             <br><br>
             This panel compiles the same seeded <code class="mono">compliance_rules</code> patterns the engine uses, so it
-            is a faithful preview — but the authoritative verdict is the one
-            <code class="mono">src/compliance/screen.mjs</code> writes to <code class="mono">compliance_screenings</code>, and
-            that engine <b>fails closed</b>: any error at all returns <code class="mono">blocked</code> /
+            is a faithful preview — but the authoritative verdict is the one <code class="mono">screen()</code> returns in
+            <code class="mono">src/compliance/screen.mjs</code>. <b>screen.mjs does not write it here.</b>
+            <code class="mono">schedule()</code> issues its own INSERT into <code class="mono">compliance_screenings</code>
+            (<code class="mono">scheduler.mjs:64–70</code>); the organic path never calls
+            <code class="mono">screenAndRecord()</code>, and that INSERT names neither <code class="mono">platform</code> nor
+            <code class="mono">rules_version</code>, so both columns stay NULL on every organic screening row. The engine
+            <b>fails closed</b>: any error at all returns <code class="mono">blocked</code> /
             <code class="mono">screen_error</code>. Rules are also cached per org for 60s, so a rule edit can take a minute
             to bite.
           </div>
@@ -837,14 +846,21 @@ var RULES = [
    social_channels and social_posts are partner-RLS'd. A staff session reading them
    through the partner read APIs must name a partner or gets 400 partner_id_required
    — so this screen is scoped to one partner at a time and there is no merged feed.
+
+   THE ROSTER IS SHARED. These three ids and names are the same book Creative
+   Factory selects over and the one Campaigns is scoped to. Nothing here pins a
+   partner to an offer type, because nothing in the schema does either: partners
+   (042:30-64) has no offer column and no CHECK or trigger on one. offer_type is
+   per POST (049:66, CHECK 049:87-88), so the same partner may legitimately carry
+   funding, credit_cards and credit_repair rows — and below, Ironwood does.
    ════════════════════════════════════════════════════════════════════════ */
 var PARTNERS = [
   {id:'8f3c2a91-4d17-4b0e-9c62-1a7e5d3b8042', name:'Ironwood Capital Group', brand_name:'Ironwood Capital',
    slug:'ironwood-capital', status:'active',
    settings:{approve_before_launch:true, autopilot_enabled:false, launch_enabled:true,
              weekly_asset_target:18, max_concurrent_jobs:3}},
-  {id:'b47d5e60-90aa-4f31-8e55-6c204f9a1bd3', name:'Meridian Card Collective', brand_name:'Meridian Cards',
-   slug:'meridian-cards', status:'active',
+  {id:'b47d5e60-90aa-4f31-8e55-6c204f9a1bd3', name:'Larkspur Card Collective', brand_name:'Larkspur Cards',
+   slug:'larkspur-cards', status:'active',
    settings:{approve_before_launch:false, autopilot_enabled:true, launch_enabled:true,
              weekly_asset_target:15, max_concurrent_jobs:5}},
   {id:'c9a10f34-2be7-4a88-b0d9-7f61e2c4a915', name:'Halcyon Credit Works', brand_name:'Halcyon',
@@ -895,7 +911,7 @@ var SOCIAL_CHANNELS = [
    best_times:{tue:['19:00'], thu:['19:00'], sun:['13:00']},
    created_at:'2026-05-16T15:30:08.000Z'},
 
-  {id:'c3f8017d', partner:1, channel:'linkedin', handle:'@meridian-cards',
+  {id:'c3f8017d', partner:1, channel:'linkedin', handle:'@larkspur-cards',
    external_account_id:'urn:li:organization:90447122', connection_state:'pending',
    has_access_token:false, has_refresh_token:false, token_expires_at:null,
    scopes:[], last_error:null, timezone:'America/New_York',
@@ -1090,7 +1106,7 @@ var POSTS = [
    caption:'Friday: three things to have ready before the next quarter closes.',
    created_at:'2026-07-24T18:39:27.000Z'},
 
-  /* ---- Meridian Card Collective -------------------------------------- */
+  /* ---- Larkspur Card Collective -------------------------------------- */
   {id:'cc1f60d8', partner:1, channel_id:'c3f8017d', asset_id:'0f5b91ac', offer_type:'credit_cards',
    status:'queued', attempt:0, last_error:null, scheduled_for:'2026-07-29T13:00:00.000Z',
    posted_at:null, external_post_id:null, blocked_reasons:[],
@@ -1235,6 +1251,8 @@ function previewScreen(caption, offerType, approveBeforeLaunch){
       if(!inText && !hasDisclosureAsset) reasons.push(fromRule(rule));
       return;
     }
+    /* mirrors screen.mjs:182 verbatim. Unreachable on this screen — the platforms
+       check above already returned, because platform is always null here. */
     if(rule.rule_key === 'tiktok-credit-repair-prohibited') return;
     var matched = rule.match_type === 'phrase'
       ? hay.toLowerCase().indexOf(String(rule.pattern).toLowerCase()) !== -1
@@ -1539,7 +1557,7 @@ function renderQueue(){
   if(!rows.length){ host.innerHTML = '<div class="empty">Nothing queued for this partner and filter.</div>'; return; }
   host.innerHTML = '<table class="grid"><thead><tr>'+
     '<th>Channel</th><th>Caption</th><th>Offer type</th><th>scheduled_for</th>'+
-    '<th>Attempt</th><th>State</th></tr></thead><tbody>'+
+    '<th>Attempt</th><th>Disposition — derived, not a column</th></tr></thead><tbody>'+
     rows.map(function(p){
       var qs = queueState(p);
       return '<tr data-row="'+esc(p.id)+'" tabindex="0" aria-expanded="false">'+
@@ -1608,8 +1626,12 @@ function renderFailed(){
       : '';
     return;
   }
+  /* The dedupe point is about how many of THIS PARTNER's posts failed, not how many
+     survive the channel/offer filter — so the prose below counts the unfiltered set.
+     Filtering the table must not change what the index does. */
+  var allFailed = byStatus('failed');
   strip.innerHTML = open.map(function(t){
-    var mismatch = rows.length > 1;
+    var mismatch = allFailed.length > 1;
     return '<div class="task">'+
       '<div class="tk">partner_onboarding_tasks · task_key '+esc(t.task_key)+' · severity '+esc(t.severity)+'</div>'+
       '<div class="tt" style="margin-top:5px">'+esc(t.title)+'</div>'+
@@ -1617,7 +1639,7 @@ function renderFailed(){
       '<div class="td" style="opacity:.85">opened '+esc(fmtLong(t.created_at))+' · refreshed '+esc(fmtLong(t.updated_at))+
         ' · resolved_at '+(t.resolved_at?esc(fmtLong(t.resolved_at)):'null')+'</div>'+
       '<div class="td" style="opacity:.85;border-top:1px dashed var(--warn);padding-top:8px;margin-top:9px">'+
-        rows.length+' failed post'+(rows.length===1?'':'s')+', <b>one</b> task row. The partial unique index is '+
+        allFailed.length+' failed post'+(allFailed.length===1?'':'s')+' for this partner, <b>one</b> task row. The partial unique index is '+
         '(partner_id, task_key, connection_id, campaign_id) NULLS NOT DISTINCT WHERE resolved_at IS NULL, and a '+
         'social_post_failed task carries neither id — so every failure after the first is an ON CONFLICT DO UPDATE '+
         'that refreshes <b>detail</b> only.'+
@@ -1692,7 +1714,8 @@ function detailRow(p, span){
     '<div class="detcol"><div class="dt">asset</div>'+
       (a ? kvline('asset_id', a.id)+kvline('kind / format', a.kind+' '+a.format)+
            kvline('compliance_state', a.compliance_state)+kvline('ai_generated', String(a.ai_generated))+
-           kvline('synthetic_performer', String(a.synthetic_performer))
+           kvline('synthetic_performer', String(a.synthetic_performer))+
+           '<div class="jsonline">compliance_state is <b>not a gate</b> here — schedule() never reads it.</div>'
          : '<div class="jsonline">asset_id: null — a caption-only post</div>')+'</div>'+
     '<div class="detcol" style="flex:2;min-width:240px"><div class="dt">caption</div>'+
       '<div class="pcap">'+esc(p.caption)+'</div>'+
@@ -1759,7 +1782,8 @@ function openDrawer(id){
     '<div style="margin-bottom:9px"><span class="badge '+(SCREEN_BADGE[p.screening.state]||'b-gray')+'">'+esc(p.screening.state)+'</span></div>'+
     kvline('subject_type', 'social_post')+
     kvline('subject_id', p.id)+
-    kvline('platform', 'null — organic is not an ad placement (scheduler.mjs:59)')+
+    kvline('platform', 'null — screen() is called with platform null because organic is not an ad placement '+
+                       '(scheduler.mjs:59), and schedule()\'s own INSERT omits the column anyway (scheduler.mjs:64-70)')+
     kvline('rules_version', 'null — the column exists (047:130) but schedule() never sets it')+
     (p.screening.codes.length
       ? '<div class="jsonline"><b>reasons[].code:</b> '+esc(p.screening.codes.join(', '))+'</div>'
@@ -1776,6 +1800,10 @@ function openDrawer(id){
          kvline('ai_generated', String(a.ai_generated))+
          kvline('synthetic_performer', String(a.synthetic_performer))+
          (a.duration_sec ? kvline('duration_sec', a.duration_sec) : '')+
+         '<div class="jsonline"><b>Nothing gates on compliance_state.</b> schedule() passes only asset_id '+
+           '(scheduler.mjs:40-46) and never reads creative_assets; no CHECK or trigger in 049 looks at the asset '+
+           'beyond partner_id, which trg_social_post_same_partner checks. A '+esc(a.compliance_state)+' asset is '+
+           'published exactly like an approved one.</div>'+
          '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:9.5px;color:var(--gray2)">storage_key is redacted out of every API response</div>'
        : '')+
 
@@ -1884,7 +1912,8 @@ function renderApproval(){
     '</span></div>'+
     '<div class="notice bad" style="margin-top:10px"><span class="ni">◆</span><span>'+
       '<b>credit_repair ignores this switch entirely.</b> screen.mjs returns <code>needs_approval</code> for every '+
-      'credit_repair subject before the setting is consulted, and that gate cannot be turned off. '+
+      'credit_repair subject that clears the hard-block filter — <code>screen.mjs:200-201</code> returns '+
+      '<code>blocked</code> first — before the setting is consulted, and that gate cannot be turned off. '+
       'This partner has <b>'+crRows.length+'</b> credit_repair post'+(crRows.length===1?'':'s')+'.'+
       '<br><br>Separately: the seeded <code>croa-consumer-rights</code> rule is <code>match_type = \'required\'</code>, and '+
       '<code>schedule()</code> never passes <code>hasDisclosureAsset</code> — so a credit_repair caption that does not itself '+

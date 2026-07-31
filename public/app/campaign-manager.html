@@ -193,6 +193,7 @@ table.grid td.srccell{white-space:nowrap}
 table.grid td.srccell .sub{white-space:normal}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;vertical-align:middle}
 .dot.real{background:var(--ok)}.dot.sample{background:var(--warn)}.dot.error{background:var(--alert)}
+.dot.reading{background:var(--line)}   /* in flight — not yet an outcome, so not a colour */
 
 /* drawer */
 .scrim{position:fixed;inset:0;background:rgba(10,10,10,.42);opacity:0;pointer-events:none;transition:opacity .18s;z-index:60}
@@ -344,20 +345,28 @@ table.grid td.srccell .sub{white-space:normal}
           </div>
           <div>
             <div class="mono" style="font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:7px">Per-panel source</div>
-            <div class="dw-tbl">
+            <div class="dw-tbl"><div class="tblscroll">
               <table class="grid">
                 <thead><tr><th>Panel</th><th>Endpoint</th><th>Source</th><th>Rows</th></tr></thead>
                 <tbody id="srcRows"></tbody>
               </table>
-            </div>
+            </div></div>
           </div>
         </div>
         <div class="cap">
-          <b>Source names come from <code>public/app/data.js</code></b>, not from this screen:
+          <b>The source vocabulary is <code>public/app/data.js</code>'s</b>, but the values in this
+          column are assigned by this file: <code>FHData</code> exposes readers for
+          <code>/api/read/*</code> and <code>/api/dashboard/*</code> and none for
+          <code>/api/campaigns/*</code>, so the same <code>{ ok, source, data, error }</code> envelope
+          is reproduced here rather than reaching into its private <code>get()</code>.
           <code>api</code> (real rows) · <code>demo</code> (demo session, nothing queried) ·
           <code>unauthorized</code> · <code>nodb</code> · <code>offline</code> ·
-          <code>notfound</code> · <code>badrequest</code> · <code>nodata</code>.
-          A panel that cannot be read keeps its sample markup and says so — it never blanks.
+          <code>notfound</code> · <code>badrequest</code> are all reproduced faithfully;
+          <code>nodata</code> is data.js's and is never reached from here, because these panels
+          always have something to ask about. Two names in the column are <b>this screen's own
+          state, not a reader outcome</b>: <code>…</code> while a fetch is in flight, and
+          <code>sample</code> for the built-in markup before any read. A panel that cannot be read
+          keeps its sample markup and says so — it never blanks.
         </div>
         <div class="cap">
           <b>A bad filter is a 500, not a 400.</b> <code>stateFilter</code> throws on an unknown
@@ -558,12 +567,24 @@ table.grid td.srccell .sub{white-space:normal}
           list and no reconnect link in the response, so this screen offers none.
         </div>
         <div class="cap">
-          <b>Blockers are per connection only.</b> They are unresolved
-          <code>partner_onboarding_tasks</code> rows whose <code>connection_id</code> matches, written
-          by <code>checkLaunchReadiness</code>: <code>connection_not_active</code> ·
-          <code>verify_business</code> · <code>link_croa_disclosure</code>, severity
-          <code>blocker</code> or <code>warning</code>. Tasks scoped to a campaign are returned by no
-          endpoint, so there is no campaign-blocker panel to build.
+          <b>A blocker is written per CAMPAIGN and shown per connection.</b> These are unresolved
+          <code>partner_onboarding_tasks</code> rows — <code>connection_not_active</code> ·
+          <code>verify_business</code> · <code>link_croa_disclosure</code> — and
+          <code>checkLaunchReadiness</code> writes each one against <b>both</b> the connection and the
+          campaign it ran for (the open-task unique index is
+          <code>partner_id, task_key, connection_id, campaign_id</code>). The connections endpoint
+          joins on <code>connection_id</code> alone and does not project
+          <code>campaign_id</code>, so the same <code>task_key</code> can appear once per blocked
+          campaign on the same connection, and the wording gives it away: the detail text names that
+          campaign's own <code>offer_type</code>. What you cannot get from this response is
+          <i>which</i> campaign — that column is not returned, so this screen does not name one.
+          Severity is <code>blocker</code> or <code>warning</code> in the CHECK, but
+          <code>checkLaunchReadiness</code> passes none of the three and
+          <code>openOnboardingTask</code> defaults to <code>blocker</code>, so every row here is one.
+          The check runs over one campaign at a time and emits every blocker that campaign has, so a
+          connection showing one of two applicable blockers would mean the check never ran.
+        </div>
+        <div class="cap">
           <code>google</code> is a legal platform value everywhere, but
           <code>adapterFor('google')</code> throws — it has no write adapter, so a Google row here is
           a connection, not a controllable channel.
@@ -618,6 +639,20 @@ table.grid td.srccell .sub{white-space:normal}
           progress" and "attempt 2 of 3" would all be invented — errors are classified as
           <code>retryable</code> in <code>_api.mjs</code> but nothing in this repo retries or records
           an attempt.
+        </div>
+        <div class="cap">
+          <b>Every <code>kill_switch_ceiling</code> row reads "logged · never executed", and that is
+          the writer, not the outcome.</b> <code>runKillSwitch</code> is the one automated action that
+          does not go through <code>guardedWrite</code>: it INSERTs its own <code>action_log</code>
+          row with no <code>executed_at</code> in the column list and never updates it afterwards, and
+          <code>guardedWrite</code> is the only thing in the repo that stamps that column. The pause
+          itself is not in doubt — the same transaction stamps <code>spend_ceilings.breached_at</code>
+          (the <b>breached</b> flag in CM-03) and runs
+          <code>UPDATE campaigns SET approval_state = 'paused'</code> over the ceiling's scope, which
+          is why the campaign named in this row reads <b>paused</b> in CM-04. It updates
+          <code>campaigns</code> only: the ad sets underneath keep whatever state they had, so a
+          killed campaign with <code>live</code> ad sets under it is the expected shape, not a
+          leftover.
         </div>
         <div class="cap">
           <b>The log row is written BEFORE the platform call</b> and stamped afterwards
@@ -706,7 +741,15 @@ function jsonline(o){ try{ return JSON.stringify(o); }catch(e){ return '{}'; } }
 /* uid — stable pseudo-uuids so the sample ids look and behave like the real
    ones (target_id joins, ?id= in the drawer) without forty hand-typed uuids. */
 function uid(key){
+  /* THE WHOLE KEY IS MIXED IN FIRST. The digit loop below reads
+     key.charCodeAt(i % key.length) for i < 32 only, so on its own it never sees
+     past the 32nd character — and two ad sets whose names share a 32-character
+     prefix ('adset:fund-tornado-tt:Tornado · TT broad US 25-54' and
+     '…Tornado · TT creator lookalike') would land on one id. ADSET_BY_ID would
+     then resolve both to whichever was indexed last, and CM-08 would print an ad
+     set name that contradicts the budget in its own Change column. */
   var h = 2166136261, out = '';
+  for(var j=0;j<key.length;j++){ h ^= key.charCodeAt(j); h = Math.imul(h, 16777619) >>> 0; }
   for(var i=0;i<32;i++){
     h ^= key.charCodeAt(i % key.length) + i*7;
     h = Math.imul(h, 16777619) >>> 0;
@@ -716,15 +759,28 @@ function uid(key){
 }
 
 /* TODAY — 'today' on these endpoints is the DATABASE's CURRENT_DATE. There is
-   no timezone column in the module, so the screen does not pretend to localise. */
+   no timezone column in the module, so the screen does not pretend to localise.
+
+   NOW is the single instant this sample response was built at. One response is
+   one query, and every now() inside it is the same now(): the fatigue endpoint
+   evaluates greatest(0, rotate_every_hours − age(rotated_at)) once per query and
+   /detail evaluates learning_until > now() once, so no two rows below may imply
+   two different clocks. */
 var TODAY = '2026-07-30';
+var NOW   = '2026-07-30T15:00:00Z';
 
 /* ══ SAMPLE DATA ═════════════════════════════════════════════════════════
    One partner's book. Every field below is a column or a derived flag that
    api/campaigns/* actually returns — nothing is here that the backend could
    not produce.
    ════════════════════════════════════════════════════════════════════════ */
-var PARTNER = { id: uid('partner:meridian'), name: 'Meridian Capital Partners' };
+
+/* A REAL partners.id, not a uid() pseudo-uuid, and the first entry of the same
+   three-partner roster Creative Factory and Social Studio select over. This
+   screen shows ONE of those three; it does not invent a fourth company.
+   Ironwood is the partner whose book actually spans all three offer types — see
+   the credit_repair posts under the same partner_id in Social Studio. */
+var PARTNER = { id: '8f3c2a91-4d17-4b0e-9c62-1a7e5d3b8042', name: 'Ironwood Capital Group' };
 
 /* GET /api/campaigns/connections → items[] (redactConnection applied).
    ORDER BY c.platform, c.created_at — so google, then the two meta accounts
@@ -738,9 +794,18 @@ var CONNECTIONS = [
     created_at:'2026-07-29T14:58:02Z',
     has_access_token:false, has_refresh_token:false, token_expired:false,
     can_launch:false, can_launch_credit_offer:false,
+    /* BOTH blockers, because checkLaunchReadiness emits them in ONE pass over one
+       campaign and this connection has exactly one: goog-cc-test, a credit_cards
+       draft. connection_state is pending, so connection_not_active; credit_cards
+       is in CREDIT_OFFER_TYPES and verification is unverified, so verify_business.
+       A single blocker here would mean the check never ran — and then the other
+       one would not be here either. Order is push order in onboarding.mjs. */
     blockers:[{ task_key:'connection_not_active', severity:'blocker',
       title:'Reconnect your google account',
-      detail:'The connection is pending. A campaign cannot launch until it is active.' }],
+      detail:'The connection is pending. A campaign cannot launch until it is active.' },
+      { task_key:'verify_business', severity:'blocker',
+      title:'Complete business verification on google',
+      detail:"Verification is unverified. google requires an approved business before a credit_cards campaign can run. This is done in the platform's own Business Manager, not here." }],
     campaign_count:1 },
 
   { id: uid('conn:meta1'), platform:'meta',
@@ -766,22 +831,33 @@ var CONNECTIONS = [
       detail:'The connection is expired. A campaign cannot launch until it is active.' }],
     campaign_count:1 },
 
+  /* VERIFICATION IS approved HERE, AND IT HAS TO BE. Both campaigns on this
+     connection are credit offers (funding, credit_cards) and both have run —
+     trg_campaign_launch_gate refuses approval_state = 'live' for any of the three
+     offer types unless the connection is active AND verification is approved, and
+     nothing in the repo writes platform_verification_state afterwards, so it
+     cannot have been approved at launch and something else now. An 'unapproved'
+     tiktok row here would make the live campaign in CM-04, the paused-from-live
+     row in CM-08, three fatigue ads and two ceilings all unreachable at once. */
   { id: uid('conn:tt1'), platform:'tiktok',
     external_business_id:'7392044118820331521', external_ad_account_id:'7392041887330058241',
-    connection_state:'active', platform_verification_state:'submitted',
+    connection_state:'active', platform_verification_state:'approved',
     scopes:['ad_account.info','campaign.operate','report.read'],
     token_expires_at:'2026-08-19T09:30:00Z', last_error:null, last_synced_at:null,
     created_at:'2026-06-18T11:05:52Z',
     has_access_token:true, has_refresh_token:true, token_expired:false,
-    can_launch:true, can_launch_credit_offer:false,
-    blockers:[{ task_key:'verify_business', severity:'blocker',
-      title:'Complete business verification on tiktok',
-      detail:'Verification is submitted. tiktok requires an approved business before a funding campaign can run. This is done in the platform’s own Business Manager, not here.' }],
+    can_launch:true, can_launch_credit_offer:true, blockers:[],
     campaign_count:2 }
 ];
 
 /* GET /api/campaigns/list → items[]. status and synced_at are null on every row
-   because nothing in the repo writes either column. ORDER BY created_at DESC. */
+   because nothing in the repo writes either column. ORDER BY created_at DESC.
+
+   FOUR FIELDS BELOW ARE NOT ON THE list RESPONSE. `targeting` comes back from
+   /detail (used by the drawer, never by the table); `connection_id` is a real
+   campaigns column that neither list nor detail selects, carried here only so the
+   sample's own campaign_count and launch-gate story stay checkable; `key` and `m`
+   are generator input for the deterministic series and are never rendered. */
 function C(o){ o.id = uid('camp:'+o.key); o.status = null; o.synced_at = null; return o; }
 var CAMPAIGNS = [
   C({ key:'goog-cc-test', name:'Credit Cards — Google search test', platform:'google',
@@ -862,8 +938,17 @@ var CAMPAIGNS = [
       targeting:{ geo:['US'], retargeting:{ window_days:14 }, placements:['PLACEMENT_TIKTOK'] },
       m:{ from:'2026-07-01', to:'2026-07-29', roas:0.61, ctr:1.4, freq:1.3, cpa:11800 } }),
 
+  /* PAUSED BY THE KILL SWITCH AT 14:22 TODAY, not by a person. Its campaign-scope
+     ceiling is breached in CM-03 and the kill_switch_ceiling row is the newest
+     entry in CM-08 — and runKillSwitch ends with
+     UPDATE campaigns SET approval_state='paused' WHERE partner_id=$1 AND
+     approval_state='live' AND ($2::uuid IS NULL OR id=$2), $2 being this campaign
+     for a campaign-scope ceiling. A breached ceiling and a live campaign cannot
+     both be true of the same row. Its AD SETS are still 'live' below: the kill
+     switch pauses the campaigns mirror and the platform, and never touches
+     ad_sets. */
   C({ key:'cc-vft1', name:'Credit Cards — Venus Fly Trap 1 retarget', platform:'meta',
-      offer_type:'credit_cards', approval_state:'live', strategy_key:'venus_fly_trap_1',
+      offer_type:'credit_cards', approval_state:'paused', strategy_key:'venus_fly_trap_1',
       special_ad_category:'CREDIT', objective:'OUTCOME_LEADS', budget_cents:28000,
       spend_yesterday_cents:27960, roas_7d:2.41, ad_set_count:2, ad_count:6,
       has_disclosure_asset:false, approved_at:'2026-06-28T11:07:03Z', last_error:null,
@@ -889,7 +974,8 @@ var AD_SETS = {};
     AD_SETS[uid('camp:'+campKey)] = rows.map(function(r){
       return { id: uid('adset:'+campKey+':'+r[0]), name:r[0], status:null, budget_cents:r[1],
                approval_state:r[2], learning_until:r[3] || null,
-               in_learning_phase: !!(r[3] && new Date(r[3]) > new Date(TODAY+'T23:59:59Z')),
+               /* detail.mjs:34 is learning_until > now(), not > end of today. */
+               in_learning_phase: !!(r[3] && new Date(r[3]) > new Date(NOW)),
                ad_count:r[4] };
     });
   }
@@ -957,7 +1043,9 @@ var CEILINGS = [
 
 /* GET /api/campaigns/fatigue → items[]. ORDER BY frequency DESC NULLS LAST,
    ctr ASC NULLS LAST. hours_until_next_rotation is what the endpoint computed —
-   the 72-hour cadence behind it is never in the response, so it is not restated. */
+   the cadence behind it is never in the response, so it is not restated. Every
+   non-null value below is greatest(0, cadence − age(rotated_at)) at the SAME
+   instant, NOW, because one query has one now(). */
 function F(o){ o.ad_id = uid('ad:'+o.key); o.campaign_id = uid('camp:'+o.ck); o.ad_set_id = uid('adset:'+o.ck+':'+o.asn); o.last_date = o.last_date || TODAY; return o; }
 var FATIGUE = [
   F({ key:'vft1-hookA', ck:'cc-vft1', asn:'VFT1 · site visitors 30d',
@@ -971,7 +1059,7 @@ var FATIGUE = [
   F({ key:'tt-hookB', ck:'fund-tornado-tt', asn:'Tornado · TT broad US 25-54',
       ad_name:'Tornado · TT hook B · 9x16', campaign_name:'Funding — Tornado TikTok cold',
       platform:'tiktok', spend_cents:19800, impressions:402100, frequency:2.8800, ctr:1.210000, roas:0.880000,
-      rotated_at:'2026-07-29T18:00:00Z', hours_until_next_rotation:51.3, recommendation:'queue' }),
+      rotated_at:'2026-07-29T18:00:00Z', hours_until_next_rotation:51.0, recommendation:'queue' }),
   F({ key:'for-hookA', ck:'fund-forester', asn:'Forester · broad 25-54 · US',
       ad_name:'Forester · hook A · 9x16 UGC', campaign_name:'Funding — Forester Q3 broad',
       platform:'meta', spend_cents:24100, impressions:198400, frequency:2.6400, ctr:2.410000, roas:1.920000,
@@ -987,7 +1075,7 @@ var FATIGUE = [
   F({ key:'tt-hookA', ck:'fund-tornado-tt', asn:'Tornado · TT creator lookalike',
       ad_name:'Tornado · TT hook A · 9x16', campaign_name:'Funding — Tornado TikTok cold',
       platform:'tiktok', spend_cents:22600, impressions:448700, frequency:1.7700, ctr:1.880000, roas:1.020000,
-      rotated_at:'2026-07-30T02:00:00Z', hours_until_next_rotation:58.7, recommendation:'refresh' }),
+      rotated_at:'2026-07-30T02:00:00Z', hours_until_next_rotation:59.0, recommendation:'refresh' }),
   F({ key:'for-hookB', ck:'fund-forester', asn:'Forester · lookalike 1% purchasers',
       ad_name:'Forester · hook B · 4x5 static', campaign_name:'Funding — Forester Q3 broad',
       platform:'meta', spend_cents:17300, impressions:141200, frequency:1.6200, ctr:2.940000, roas:2.180000,
@@ -1027,7 +1115,13 @@ var ACTIONS = [
       reason:'actual platform spend 31980 exceeded the campaign ceiling 28000',
       metrics_snapshot:{ actual_spend_cents:31980, limit_cents:28000 },
       before:{ ceiling_breached:false }, after:{ ceiling_breached:true },
-      executed_at:'2026-07-30T14:22:09Z', revertible:true }),
+      /* executed_at IS NULL, AND ALWAYS WILL BE ON THIS RULE. runKillSwitch does
+         not go through guardedWrite: it INSERTs into action_log itself, with no
+         executed_at in the column list and no later UPDATE. guardedWrite is the
+         only thing in the repo that stamps it. So every kill_switch_ceiling row
+         reads "logged · never executed" by this screen's own derivation — which
+         is a fact about the writer, not about whether the pause happened. */
+      executed_at:null, revertible:true }),
   A({ key:'scale-for-broad', created_at:'2026-07-30T09:15:04Z', actor:'agent',
       target_type:'ad_set', target_id: uid('adset:fund-forester:Forester · broad 25-54 · US'),
       rule_key:'scale_winner', reason:'ROAS at or above 1 for 3 consecutive days',
@@ -1303,7 +1397,12 @@ function tiles(){
   return [
     { key:'spend_today', eyebrow:'SPEND TODAY',
       value: pc ? cents(pc.spend_today_cents) : nul(),
-      sd: pc ? dec(pc.pct_of_ceiling,2)+'% of the partner ceiling' : 'no partner-scope ceiling',
+      /* .sd is escaped on render, so it must be text — dec() returns the nul SPAN
+         when pct_of_ceiling is null (a ceiling with daily_limit_cents = 0), and
+         that would print as visible markup. */
+      sd: !pc ? 'no partner-scope ceiling'
+        : pc.pct_of_ceiling === null ? 'partner ceiling limit is 0 — no percentage'
+        : dec(pc.pct_of_ceiling,2)+'% of the partner ceiling',
       formula: 'v_partner_spend_vs_ceiling.spend_today_cents\n  WHERE scope = \'partner\'\n\n= sum(ad_metrics_daily.spend_cents)\n  WHERE partner_id = $partner AND date = CURRENT_DATE',
       inputs: pc ? [['partner ceiling row', 1], ['spend_today_cents', pc.spend_today_cents], ['daily_limit_cents', pc.daily_limit_cents], ['pct_of_ceiling', pc.pct_of_ceiling]] : [['partner-scope ceiling rows', 0]],
       src: 'GET /api/campaigns/spend — the PARTNER-scope row only. The three scopes overlap, so summing every row would count the same spend up to three times. This is our mirror, not platform truth.' },
@@ -1370,7 +1469,7 @@ function attention(){
     { n:failed.length, t:'Actions failed or never executed', d:'action-log?state=failed · execute_error IS NOT NULL OR executed_at IS NULL',
       sev: failed.length ? 'bad' : 'ok', go:function(){ UI.logState='failed'; renderLog(); jump('secLog'); } },
     { n:stuck.length, t:'Connections that cannot launch', d:'connections · can_launch = false OR blockers ≠ []',
-      sev: stuck.length ? 'warn' : 'ok', go:function(){ UI.connState='all'; renderConn(true); jump('secConn'); } },
+      sev: stuck.length ? 'warn' : 'ok', go:function(){ UI.connState='all'; renderConn(); jump('secConn'); } },
     { n:errs.length, t:'Campaigns carrying a last_error', d:'list · campaigns.last_error, the platform’s own words',
       sev: errs.length ? 'warn' : 'ok', go:function(){ UI.campState='all'; UI.campOffset=0; renderCampaigns(true); jump('secCampaigns'); } }
   ];
@@ -1443,9 +1542,13 @@ function renderCampaigns(reset){
 
   var from = all.length ? UI.campOffset + 1 : 0;
   document.getElementById('campPager').innerHTML =
-    '<span>' + from + '–' + (UI.campOffset + page.length) + ' of ' + all.length +
-    ' · limit ' + UI.campLimit + ' · offset ' + UI.campOffset +
-    ' · hasMore ' + (hasMore ? 'true' : 'false') + '</span>' +
+    /* NOT the endpoint's limit/offset/hasMore envelope — these are client-side
+       slice bounds over the single ?limit=200 read wireAll makes. Named
+       differently so the row cannot be misread as API paging. */
+    '<span title="A client-side slice of one GET /api/campaigns/list?limit=200. The endpoint&#39;s own limit / offset / hasMore envelope is not what these numbers are.">' +
+    from + '–' + (UI.campOffset + page.length) + ' of ' + all.length +
+    ' · page size ' + UI.campLimit + ' · from row ' + UI.campOffset +
+    ' · more below ' + (hasMore ? 'yes' : 'no') + '</span>' +
     '<span class="spacer" style="flex:1"></span>' +
     '<button class="btn sm mono" id="cPrev"'+(UI.campOffset<=0?' disabled':'')+'>‹ prev</button>' +
     '<button class="btn sm mono" id="cNext"'+(hasMore?'':' disabled')+'>next ›</button>';
@@ -1614,7 +1717,7 @@ function renderLog(){
     '</tr>';
   }).join('') : '<tr><td colspan="8"><div class="empty">' +
       ((UI.logRule==='cpa_over_target' || UI.logRule==='cpa_recovering')
-        ? 'Nothing under <span class="mono k">'+esc(UI.logRule)+'</span>. <span class="mono k">cpa_over_target.target_cpa_cents</span> is not seeded by any migration, so the rule returns null and never fires — and <span class="mono k">optimization_rules</span> forbids an active rule that still needs config.'
+        ? 'Nothing under <span class="mono k">'+esc(UI.logRule)+'</span>. <span class="mono k">cpa_over_target.target_cpa_cents</span> is not seeded by any migration, so the rule returns null before it looks at a single day and never fires. It is not switched off: 048 seeds it <span class="mono k">active</span> with <span class="mono k">needs_config false</span>, so the <span class="mono k">NOT (needs_config AND active)</span> CHECK never catches it — it is an enabled rule with nothing to compare against.'
         : (UI.logRule==='learning_phase'
             ? 'Nothing under <span class="mono k">learning_phase</span>. It is a proposal with <span class="mono k">action = \'none\'</span>, and the runner skips those before anything is logged — the phase is visible on the ad set instead (CM-05).'
             : 'No action matches this filter.')) +
@@ -1653,8 +1756,28 @@ function renderLog(){
   document.getElementById('logFoot').textContent =
     rows.length + ' of ' + ACTIONS.length + ' actions · newest first · append-only (DELETE raises; UPDATE may touch only executed_at, execute_error, undone_at, undone_by)';
 }
-/* ══ CM-05 · CAMPAIGN DETAIL DRAWER ══════════════════════════════════════ */
-var DW = { id:null, days:30, metric:'spend_cents' };
+/* ══ CM-05 · CAMPAIGN DETAIL DRAWER ══════════════════════════════════════
+   THIS PANEL IS ITS OWN READ. /api/campaigns/detail is the only endpoint that
+   returns `targeting`, the ad sets, the daily series and the campaign's own
+   action history — none of that is on the list row — so the drawer cannot be
+   rendered from the list and claim to be the detail endpoint. It opens instantly
+   on the row already in memory, then replaces itself when the read answers.
+   DW.detail null means you are looking at the sample body, and CM-01's detail
+   row says which of the two it is, with the failure if there was one.
+   ════════════════════════════════════════════════════════════════════════ */
+var DW = { id:null, days:30, metric:'spend_cents', detail:null, seq:0 };
+
+/* metrics_daily comes back with `date` as a full timestamp once it has been
+   through JSON, and every sum()/avg() as a numeric STRING. The formatters all
+   Number() their input; only the date needs narrowing back to a day. */
+function normalizeSeries(rows){
+  return (rows || []).map(function(r){
+    var o = {}, k;
+    for(k in r){ if(Object.prototype.hasOwnProperty.call(r,k)) o[k] = r[k]; }
+    o.date = String(r.date).slice(0,10);
+    return o;
+  });
+}
 var METRICS = [
   { k:'spend_cents',  label:'spend',       agg:'SUM', fmt:function(v){return cents(v);},  kind:'bar' },
   { k:'impressions',  label:'impressions', agg:'SUM', fmt:function(v){return int(v);},    kind:'bar' },
@@ -1731,18 +1854,22 @@ function chartSVG(series, mk){
 }
 
 function renderDrawerBody(){
-  var c = CAMP_BY_ID[DW.id];
+  /* the /detail body when it answered, otherwise the list row this screen holds.
+     Named `det`, not `d`: the callbacks below already bind `d` to a series row. */
+  var det = DW.detail;
+  var c = det || CAMP_BY_ID[DW.id];
   var host = document.getElementById('dwBody');
   var sub = document.getElementById('dwSub');
-  if(sub) sub.textContent = 'GET /api/campaigns/detail?id=' + DW.id + '&days=' + DW.days;
+  if(sub) sub.textContent = 'GET /api/campaigns/detail?id=' + DW.id + '&days=' + DW.days +
+    (det ? '' : c ? ' · sample body' : '');
   if(!c){
     host.innerHTML = '<div class="empty">HTTP 404 <span class="mono k">not_found</span>. ' +
       'A missing campaign and one belonging to another partner are deliberately indistinguishable — ' +
       'telling a partner that a campaign exists but is not theirs is itself a disclosure.</div>';
     return;
   }
-  var sets = AD_SETS[c.id] || [];
-  var series = seriesFor(c, DW.days);
+  var sets   = det ? (det.ad_sets || []) : (AD_SETS[c.id] || []);
+  var series = det ? normalizeSeries(det.metrics_daily) : seriesFor(c, DW.days);
   var m = metricDef(DW.metric);
 
   var sum = function(k){ return series.reduce(function(n,d){ return n + Number(d[k]||0); }, 0); };
@@ -1785,7 +1912,9 @@ function renderDrawerBody(){
     '</tr>';
   }).join('') : '<tr><td colspan="7"><div class="empty">This campaign has no ad sets.</div></td></tr>';
 
-  var acts = ACTIONS.filter(function(a){
+  /* /detail returns recent_actions already scoped to this campaign and its ad
+     sets, newest first, capped at 50 — the same filter, run in SQL. */
+  var acts = det ? (det.recent_actions || []) : ACTIONS.filter(function(a){
     if(a.target_id === c.id) return true;
     var e = ADSET_BY_ID[a.target_id];
     return !!(e && e.campaign_id === c.id);
@@ -1819,8 +1948,8 @@ function renderDrawerBody(){
     '</div>' +
 
     '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">CM-05.2 <span class="sep">/</span> AD SETS</div>' +
-      '<div class="dw-tbl"><table class="grid"><thead><tr><th>Ad set</th><th>Approval</th><th>Status</th><th>Budget / day</th><th>Ads</th><th>learning_until</th><th>In learning</th></tr></thead>' +
-      '<tbody>'+setRows+'</tbody></table></div>' +
+      '<div class="dw-tbl"><div class="tblscroll"><table class="grid"><thead><tr><th>Ad set</th><th>Approval</th><th>Status</th><th>Budget / day</th><th>Ads</th><th>learning_until</th><th>In learning</th></tr></thead>' +
+      '<tbody>'+setRows+'</tbody></table></div></div>' +
       '<p class="note" style="margin-top:7px"><code>in_learning_phase</code> is <code>learning_until &gt; now()</code> — exactly the condition the optimiser refuses to touch. It returns <code>rule_key = \'learning_phase\'</code>, <code>action = \'none\'</code>, and the runner drops "none" before anything is written, so a learning-phase skip never appears in the action log.</p>' +
     '</div>' +
 
@@ -1869,7 +1998,13 @@ function renderDrawerBody(){
     '</div>';
 
   var ds = document.getElementById('dwDays');
-  if(ds) ds.addEventListener('change', function(){ DW.days = Number(ds.value); renderDrawerBody(); });
+  /* days= is a SERVER parameter — the window is applied by the endpoint's
+     `m.date > CURRENT_DATE - $2 days`, so on live data it has to be re-read.
+     The sample series is generated client-side and does narrow in place. */
+  if(ds) ds.addEventListener('change', function(){
+    DW.days = Number(ds.value);
+    if(DW.detail) loadDetail(DW.id); else renderDrawerBody();
+  });
   document.querySelectorAll('#dwMetrics button').forEach(function(b){
     b.addEventListener('click', function(){ DW.metric = b.dataset.m; renderDrawerBody(); });
   });
@@ -1906,20 +2041,56 @@ function hookChart(series, mk){
   svg.addEventListener('mouseleave', function(){ tip.classList.remove('on'); if(cur) cur.style.opacity = 0; });
 }
 
+/* loadDetail — the CM-05 read. Fires on open and on a window change, and is the
+   reason the detail row in CM-01 has a source at all. A stale response (the user
+   opened another campaign while this one was in flight) is dropped on the seq
+   check rather than painting the wrong campaign. */
+function loadDetail(id){
+  var seq = ++DW.seq;
+  SRC.detail = { source:'…', note:'reading', rows:null };
+  renderSources();
+  return apiGet(scoped('/api/campaigns/detail?id=' + encodeURIComponent(id) + '&days=' + DW.days))
+    .then(function(res){
+      if(seq !== DW.seq) return res;                 /* a newer open won */
+      if(res.ok && res.data && res.data.id){
+        DW.detail = res.data;
+        SRC.detail = { source:'api', rows:1,
+          note:'live record · ' + ((res.data.ad_sets||[]).length) + ' ad sets · ' +
+               ((res.data.metrics_daily||[]).length) + ' days · ' +
+               ((res.data.recent_actions||[]).length) + ' actions' };
+      } else {
+        DW.detail = null;                            /* sample body stays up */
+        SRC.detail = { source: res.ok ? 'api' : res.source, rows: res.ok ? 0 : null,
+          note: res.ok ? 'answered with no campaign body; sample kept'
+              : (res.source === 'notfound') ? '404 not_found — missing, or another partner’s'
+              : (res.source === 'demo') ? 'demo session — backend not queried'
+              : (res.source === 'unauthorized') ? 'not signed in for real data'
+              : (res.source === 'badrequest') ? 'request rejected (' + res.error + ')'
+              : 'sample kept — ' + res.error };
+      }
+      renderDrawerBody();
+      renderSources();
+      return res;
+    });
+}
+
 function openDrawer(id){
-  DW.id = id; DW.days = 30; DW.metric = 'spend_cents';
+  DW.id = id; DW.days = 30; DW.metric = 'spend_cents'; DW.detail = null;
   var c = CAMP_BY_ID[id];
   document.getElementById('dwTitle').textContent = c ? c.name : 'not_found';
-  document.getElementById('dwSub').textContent = c
-    ? 'GET /api/campaigns/detail?id=' + id + '&days=' + DW.days
-    : 'GET /api/campaigns/detail?id=' + id;
   renderDrawerBody();
   document.getElementById('drawer').classList.add('on');
   document.getElementById('drawer').setAttribute('aria-hidden','false');
   document.getElementById('scrim').classList.add('on');
   document.getElementById('dwClose').focus();
+  loadDetail(id);
 }
 function closeDrawer(){
+  DW.seq++;                       /* anything still in flight no longer applies */
+  if(SRC.detail && SRC.detail.source === '…'){
+    SRC.detail = { source:'sample', note:'read on demand, when a row is opened', rows:null };
+    renderSources();
+  }
   document.getElementById('drawer').classList.remove('on');
   document.getElementById('drawer').setAttribute('aria-hidden','true');
   document.getElementById('scrim').classList.remove('on');
@@ -1939,7 +2110,10 @@ var PANELS = [
 ];
 var SRC = {};
 PANELS.forEach(function(p){ SRC[p.key] = { source:'sample', note:'built-in sample markup', rows:null }; });
-function tone(src){ return src==='api' ? 'real' : (src==='demo'||src==='notfound'||src==='badrequest'||src==='nodata'||src==='sample') ? 'sample' : 'error'; }
+/* '…' is the in-flight marker wireAll seeds every panel with, not an outcome —
+   painting it like a failure reports six errors while nothing has failed yet. */
+function tone(src){ return src==='api' ? 'real' : src==='…' ? 'reading'
+  : (src==='demo'||src==='notfound'||src==='badrequest'||src==='nodata'||src==='sample') ? 'sample' : 'error'; }
 function renderSources(){
   document.getElementById('srcRows').innerHTML = PANELS.map(function(p){
     var s = SRC[p.key];
@@ -1970,7 +2144,11 @@ function renderScope(){
 document.getElementById('fPlatform').addEventListener('change', function(){ UI.campPlatform = this.value; renderCampaigns(true); });
 document.getElementById('fOffer').addEventListener('change',    function(){ UI.campOffer    = this.value; renderCampaigns(true); });
 document.getElementById('fLimit').addEventListener('change',    function(){ UI.campLimit = Number(this.value); renderCampaigns(true); });
-document.getElementById('fDays').addEventListener('change',     function(){ UI.fatDays = Number(this.value); renderFatigue(); });
+/* days= is applied by the endpoint (`d.date > CURRENT_DATE - $3 days`, capped at
+   30), so changing the window has to re-read it. Re-rendering the rows already in
+   memory would leave 7-day rows under a footer claiming 30 — the one caption on
+   this screen that could assert something the data does not back. */
+document.getElementById('fDays').addEventListener('change',     function(){ UI.fatDays = Number(this.value); renderFatigue(); readFatigue(); });
 document.getElementById('fTarget').addEventListener('change',   function(){ UI.logTarget = this.value; renderLog(); });
 document.getElementById('fRule').addEventListener('change',     function(){ UI.logRule = this.value; renderLog(); });
 
@@ -2049,6 +2227,14 @@ function wirePanel(key, path, apply){
   });
 }
 
+/* The one place the fatigue window is sent, called by wireAll and again by the
+   CM-06 Window select — a client-side re-render cannot change a server window. */
+function readFatigue(){
+  return wirePanel('fatigue', '/api/campaigns/fatigue?state=all&days=' + UI.fatDays, function(items){
+    FATIGUE = items; renderFatigue();
+  });
+}
+
 function wireAll(){
   PANELS.forEach(function(p){ SRC[p.key] = { source:'…', note:'reading', rows:null }; });
   SRC.detail = { source:'sample', note:'read on demand, when a row is opened', rows:null };
@@ -2061,9 +2247,7 @@ function wireAll(){
     wirePanel('list', '/api/campaigns/list?state=all&limit=200', function(items){
       CAMPAIGNS = items; reindex(); renderCampaigns(true); renderTiles(); renderAttention();
     }),
-    wirePanel('fatigue', '/api/campaigns/fatigue?state=all&days=' + UI.fatDays, function(items){
-      FATIGUE = items; renderFatigue();
-    }),
+    readFatigue(),
     wirePanel('conn', '/api/campaigns/connections?state=all', function(items){
       CONNECTIONS = items; reindex(); renderConn(); renderAttention();
     }),

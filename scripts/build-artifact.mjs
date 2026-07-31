@@ -96,6 +96,46 @@ const BRIDGE = (rel) => `
   var ROUTE = ${JSON.stringify(rel)};
   function send(msg){ msg.from = ROUTE; parent.postMessage(msg, "*"); }
 
+  /* RBAC: single source of truth mirrored from src/lib/rbac.ts. The shell
+     stamps the CURRENT viewer's role onto <html data-role> right before it
+     hands this document to the iframe (see render() in artifact-shell.html) —
+     this is never the page's own "owner" role, it's whoever is looking.
+     Items a role can't reach are removed from the DOM outright, not hidden:
+     view-source shows the same thing the eye does. */
+  var ROLE_ROUTES = {
+    admin: ["app/closer-dashboard.html","app/pipeline.html","app/client-control-panel.html","app/messaging.html","app/calendar.html","app/documents.html","app/campaign-manager.html","app/social-studio.html","app/creative-factory.html","app/command-center.html","app/ops-admin.html","app/galaxy.html","app/automations.html","app/agent-editor.html","app/hiring.html","app/products-commissions.html","app/staff-teams.html","app/content-admin.html","app/brand-studio.html","app/inquiry-remover.html","app/sample-data.html","app/client-portal.html","app/partner-galaxy.html","app/affiliate.html"],
+    staff: ["app/closer-dashboard.html","app/pipeline.html","app/client-control-panel.html","app/messaging.html","app/calendar.html","app/documents.html","app/campaign-manager.html","app/social-studio.html","app/creative-factory.html","app/command-center.html","app/galaxy.html","app/automations.html","app/agent-editor.html","app/hiring.html","app/staff-teams.html","app/content-admin.html","app/brand-studio.html","app/inquiry-remover.html","app/sample-data.html","app/client-portal.html"],
+    partner: ["app/partner-galaxy.html","app/affiliate.html","app/client-portal.html","app/brand-studio.html","app/campaign-manager.html"],
+    affiliate: ["app/affiliate.html","app/client-portal.html"],
+    client: ["app/client-portal.html"]
+  };
+
+  function resolveHref(pageRel, href){
+    href = href.split("#")[0].split("?")[0];
+    if(!href) return pageRel;
+    var dir = pageRel.indexOf("/") === -1 ? [] : pageRel.split("/").slice(0, -1);
+    var parts = href.charAt(0) === "/" ? href.replace(/^\\/+/, "").split("/") : dir.concat(href.split("/"));
+    var out = [];
+    parts.forEach(function(p){ if(p === "" || p === ".") return; if(p === "..") out.pop(); else out.push(p); });
+    return out.join("/");
+  }
+
+  function applyRoleFilter(){
+    var role = document.documentElement.getAttribute("data-role") || "staff";
+    if(role === "admin") return;
+    var allowed = ROLE_ROUTES[role] || [];
+    var items = document.querySelectorAll(".navitem[href]");
+    for(var i=0;i<items.length;i++){
+      var full = resolveHref(ROUTE, items[i].getAttribute("href"));
+      if(allowed.indexOf(full) === -1) items[i].parentNode.removeChild(items[i]);
+    }
+    var groups = document.querySelectorAll(".navgroup");
+    for(var j=0;j<groups.length;j++){
+      if(!groups[j].querySelector(".navitem")) groups[j].parentNode.removeChild(groups[j]);
+    }
+  }
+  applyRoleFilter();
+
   document.addEventListener("click", function(e){
     var a = e.target && e.target.closest && e.target.closest("a[href]");
     if(!a) return;
@@ -195,7 +235,11 @@ function bundlePage(rel) {
     }
   );
 
-  html = html.replace(/<html/i, `<html data-fh-route="${rel}"`);
+  // data-role is a placeholder: the shell overwrites it with the CURRENT
+  // viewer's role right before every render() call, never a fixed value baked
+  // at build time (see artifact-shell.html). "staff" here is dead as soon as
+  // the page is ever framed.
+  html = html.replace(/<html/i, `<html data-fh-route="${rel}" data-role="staff"`);
 
   const bridge = BRIDGE(rel);
   if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, () => `${bridge}</body>`);

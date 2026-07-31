@@ -90,7 +90,7 @@
 
 <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-label="Jump to screen">
   <div class="panel" id="panel">
-    <div class="panel-head"><b>fundhub</b><span class="bar"></span><span id="here">index.html</span></div>
+    <div class="panel-head"><b>fundhub</b><span class="bar"></span><select id="roleSwitch" style="margin-left:auto;padding:4px 8px;border-radius:4px;border:1px solid var(--cardline);background:var(--card);color:var(--cardtext);font-size:11px;cursor:pointer"><option value="admin">Admin</option><option value="staff" selected>Staff</option><option value="partner">Partner</option><option value="affiliate">Affiliate</option><option value="client">Client</option></select><span id="here" style="margin-left:12px">index.html</span></div>
     <div id="groups"></div>
     <p class="panel-foot">
       Sign in is pre-filled — hit Sign in on the login screen and you land in the CRM,
@@ -110,30 +110,65 @@
   var sheet = document.getElementById("sheet");
   var pill  = document.getElementById("pill");
   var here  = document.getElementById("here");
-  var current = null, history = [], buttons = {};
+  var current = null, history = [], buttons = {}, currentRole = 'staff';
 
-  /* Where the served site sends you after a successful sign-in. shell.js would
-     pick this from the role; there is no session here, so the closer desk is
-     the door — it is the screen the most people actually land on. */
-  var HOME = "app/closer-dashboard.html";
+  /* RBAC: single source of truth (mirrors src/lib/rbac.ts). Only app/ routes
+     are gated — the public site (index, login, education, etc.) is open to
+     everyone, same as production before anyone signs in. */
+  var ROLE_ROUTES = {
+    admin: ['app/closer-dashboard.html','app/pipeline.html','app/client-control-panel.html','app/messaging.html','app/calendar.html','app/documents.html','app/campaign-manager.html','app/social-studio.html','app/creative-factory.html','app/command-center.html','app/ops-admin.html','app/galaxy.html','app/automations.html','app/agent-editor.html','app/hiring.html','app/products-commissions.html','app/staff-teams.html','app/content-admin.html','app/brand-studio.html','app/inquiry-remover.html','app/sample-data.html','app/client-portal.html','app/partner-galaxy.html','app/affiliate.html'],
+    // All internal ops screens, minus billing/admin settings (ops-admin, products-commissions).
+    staff: ['app/closer-dashboard.html','app/pipeline.html','app/client-control-panel.html','app/messaging.html','app/calendar.html','app/documents.html','app/campaign-manager.html','app/social-studio.html','app/creative-factory.html','app/command-center.html','app/galaxy.html','app/automations.html','app/agent-editor.html','app/hiring.html','app/staff-teams.html','app/content-admin.html','app/brand-studio.html','app/inquiry-remover.html','app/sample-data.html','app/client-portal.html'],
+    // Partner Galaxy + Affiliate Portal + Client Portal + brand design + Facebook ads (campaign-manager).
+    partner: ['app/partner-galaxy.html','app/affiliate.html','app/client-portal.html','app/brand-studio.html','app/campaign-manager.html'],
+    affiliate: ['app/affiliate.html','app/client-portal.html'],
+    client: ['app/client-portal.html'],
+  };
+  var ROLE_DEFAULTS = {admin:'app/command-center.html', staff:'app/closer-dashboard.html', partner:'app/partner-galaxy.html', affiliate:'app/affiliate.html', client:'app/client-portal.html'};
+
+  function canAccess(role, path){
+    if(role === 'admin') return true;
+    if(path.indexOf('app/') !== 0) return true; // public site — no gate
+    var allowed = ROLE_ROUTES[role] || [];
+    return allowed.indexOf(path) !== -1;
+  }
+
+  var HOME = ROLE_DEFAULTS[currentRole];
 
   var groups = document.getElementById("groups");
-  NAV.forEach(function(g){
-    var sec = document.createElement("section"); sec.className = "grp";
-    var h = document.createElement("h2"); h.textContent = g.name; sec.appendChild(h);
-    var grid = document.createElement("div"); grid.className = "grid";
-    g.pages.forEach(function(p){
-      var b = document.createElement("button");
-      b.className = "go"; b.type = "button"; b.textContent = p.label;
-      b.addEventListener("click", function(){ closeSheet(); go(p.rel); });
-      buttons[p.rel] = b; grid.appendChild(b);
+
+  /* The jump sheet lists only what the current role can reach — an affiliate
+     never sees that Campaigns or Hiring exist, same as the sidebar. Rebuilt
+     from scratch on every role switch. */
+  function buildPanel(role){
+    groups.innerHTML = "";
+    buttons = {};
+    NAV.forEach(function(g){
+      var pages = g.pages.filter(function(p){ return canAccess(role, p.rel); });
+      if(!pages.length) return;
+      var sec = document.createElement("section"); sec.className = "grp";
+      var h = document.createElement("h2"); h.textContent = g.name; sec.appendChild(h);
+      var grid = document.createElement("div"); grid.className = "grid";
+      pages.forEach(function(p){
+        var b = document.createElement("button");
+        b.className = "go"; b.type = "button"; b.textContent = p.label;
+        b.addEventListener("click", function(){ closeSheet(); go(p.rel); });
+        buttons[p.rel] = b; grid.appendChild(b);
+      });
+      sec.appendChild(grid); groups.appendChild(sec);
     });
-    sec.appendChild(grid); groups.appendChild(sec);
-  });
+    Object.keys(buttons).forEach(function(k){
+      buttons[k].setAttribute("aria-current", String(k === current));
+    });
+  }
+  buildPanel(currentRole);
 
   function render(rel){
     current = rel;
-    frame.srcdoc = PAGES[rel];
+    // Stamp the CURRENT viewer's role onto the document right before it's
+    // framed — this is what the page's own bridge script reads to filter its
+    // sidebar. Never the page's build-time identity, always who's looking.
+    frame.srcdoc = PAGES[rel].replace(/data-role="[^"]*"/, 'data-role="' + currentRole + '"');
     here.textContent = rel;
     Object.keys(buttons).forEach(function(k){
       buttons[k].setAttribute("aria-current", String(k === rel));
@@ -142,6 +177,10 @@
 
   function go(rel){
     if (!PAGES[rel] || rel === current) return;
+    if (!canAccess(currentRole, rel)) {
+      go(ROLE_DEFAULTS[currentRole]);
+      return;
+    }
     if (current) history.push(current);
     render(rel);
   }
@@ -160,6 +199,17 @@
 
   pill.addEventListener("click", openSheet);
   sheet.addEventListener("click", function(e){ if (e.target === sheet) closeSheet(); });
+
+  /* Dev mode: role switcher */
+  var roleSwitch = document.getElementById("roleSwitch");
+  roleSwitch.addEventListener("change", function(e){
+    currentRole = e.target.value;
+    HOME = ROLE_DEFAULTS[currentRole];
+    history = [];
+    current = null; // force render(): HOME may equal the stale `current`
+    buildPanel(currentRole);
+    go(HOME);
+  });
 
   /* Also called with a plain object forwarded from a framed screen, which has
      no preventDefault and no target — hence the guards. */

@@ -202,15 +202,19 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 
 /* library grid */
 .lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:12px;padding:16px}
-.acard{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff;cursor:pointer;text-align:left;font:inherit;color:inherit;padding:0;transition:border-color .12s,box-shadow .12s}
+/* align-self:start — the tile height follows the row's format, so a grid row of
+   mixed formats would otherwise stretch every card to the tallest and a button
+   centres its own content, floating the short cards in the middle of their box. */
+.acard{align-self:start;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff;cursor:pointer;text-align:left;font:inherit;color:inherit;padding:0;transition:border-color .12s,box-shadow .12s}
 .acard:hover{border-color:var(--gray2);box-shadow:0 2px 10px rgba(10,10,10,.06)}
 .acard.st-blocked{border-left:3px solid var(--alert)}
 .acard.st-pending{border-left:3px solid var(--warn)}
 .acard.st-passed{border-left:3px solid var(--ok)}
-.tile{position:relative;background:linear-gradient(135deg,#0A0A0A,#26262B);display:flex;align-items:center;justify-content:center;overflow:hidden}
-.tile .logo{width:62%;aspect-ratio:2698/543;filter:invert(1);opacity:.16;flex:none;height:auto}
-.tile .fmt{position:absolute;left:5px;top:5px;font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;color:var(--paper);background:rgba(10,10,10,.72);border-radius:3px;padding:1px 5px}
-.tile .dur{position:absolute;right:5px;bottom:5px;font-family:var(--mono);font-size:8.5px;color:var(--paper);background:rgba(10,10,10,.82);border-radius:3px;padding:1px 5px}
+/* One tile treatment only. There is no "has an object" variant, because the
+   endpoint cannot tell the screen which rows have one — see CF-04. */
+.tile{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.tile .fmt{position:absolute;left:5px;top:5px;font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;border-radius:3px;padding:1px 5px}
+.tile .dur{position:absolute;right:5px;bottom:5px;font-family:var(--mono);font-size:8.5px;border-radius:3px;padding:1px 5px}
 .tile.none{background:repeating-linear-gradient(135deg,var(--soft),var(--soft) 7px,var(--line) 7px,var(--line) 14px);border-bottom:1px solid var(--line)}
 .tile.none .np{font-family:var(--mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--gray2);text-align:center;padding:0 8px;line-height:1.5}
 .ameta{padding:9px 10px 10px}
@@ -301,8 +305,11 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
      carries no control that claims to write. Nothing calls enqueue(), claim() or run()
      anywhere in the repo either; see CF-12.
 
-     NO PREVIEWS. storage_key is never selected and redact() would strip it anyway, and the
-     provider's CDN url is thrown away by storeAsset(). Every tile below is a placeholder.
+     NO PREVIEWS, AND NO FLAG EITHER. storage_key is never selected, the provider's CDN url
+     is thrown away by storeAsset(), and the derived has_storage_key boolean does not survive
+     redact() — FORBIDDEN_KEY (read-api.mjs:18) matches `storage_key` as an unanchored
+     substring, so page() strips it out of every row. Every tile below is the same
+     placeholder, because the screen has nothing to tell one from another.
 
      Sample rows below — there is no live API call on this page. -->
 <div class="app">
@@ -520,19 +527,32 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         <div class="req" id="libReq"></div>
         <div class="cap">
           <b>There is no preview and there never will be from this endpoint.</b>
-          <code>storage_key</code> is not selected, <code>redact()</code> strips anything matching
-          <code>/storage_key/</code>, there is no signed-URL route in <code>api/</code>, and
-          <code>storeAsset()</code> throws away the provider's <code>source_url</code> —
-          <code>creative_assets</code> has no url, thumbnail or meta column. The screen gets the
-          boolean <code>has_storage_key</code> and nothing else, so every tile is a placeholder.
+          <code>storage_key</code> is not selected, there is no signed-URL route in
+          <code>api/</code>, and <code>storeAsset()</code> throws away the provider's
+          <code>source_url</code> — <code>creative_assets</code> has no url, thumbnail or meta
+          column.
         </div>
         <div class="cap">
-          <b>Copy rows always read "no object stored".</b> <code>storageKeyFor()</code> returns NULL
-          for <code>kind = 'copy'</code> because copy lives in the row, not object storage — so
-          <code>has_storage_key</code> is false for every copy asset by design. And there is no text
-          column on <code>creative_assets</code>: the generated words exist only in
-          <code>compliance_screenings.screened_text</code>, which no endpoint returns. <b>A copy card
-          cannot show its copy.</b>
+          <b>Not even the boolean arrives.</b> <code>library.mjs:40</code> selects
+          <code>(storage_key IS NOT NULL) AS has_storage_key</code>, but
+          <code>partnerReadHandler</code> returns <code>page()</code>, <code>page()</code> runs
+          <code>redact()</code> over every item, and <code>FORBIDDEN_KEY</code>
+          (<code>read-api.mjs:18</code>) carries an unanchored <code>storage_key</code> alternative
+          that matches the substring inside <code>has_storage_key</code>. <code>ALLOWED_EXACT</code>
+          (<code>:22</code>) whitelists only <code>ssn_present</code> and <code>has_ssn</code>. So
+          the derived boolean is stripped along with the column it describes: <b>this screen cannot
+          tell whether an object exists for a row</b>, and every tile below is the same placeholder
+          rather than two placeholders pretending to know the difference.
+          <code>creative-endpoints.pg.test.mjs:107-118</code> asserts the boolean is a boolean, but
+          it calls <code>fetchRows</code> directly and never goes through <code>redact()</code> —
+          which is why CI is green on a field no screen can receive.
+        </div>
+        <div class="cap">
+          <b>A copy card cannot show its copy.</b> <code>storageKeyFor()</code> returns NULL for
+          <code>kind = 'copy'</code> because copy lives in the row, not object storage — the tile
+          says so from <code>kind</code>, which <i>is</i> returned, not from a storage flag. And
+          there is no text column on <code>creative_assets</code>: the generated words exist only in
+          <code>compliance_screenings.screened_text</code>, which no endpoint returns.
         </div>
         <div class="cap">
           <b><code>?kind=</code> and <code>?format=</code> fail silently by design</b>
@@ -598,7 +618,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           <code>platform</code> are NULL. For a <code>campaign</code> row, <code>subtype</code> is
           the (nullable) <code>strategy_key</code> and <code>detail</code> is the campaign
           <i>name</i>; <code>ai_generated</code> and <code>synthetic_performer</code> are NULL. Nulls
-          are rendered blank here, never as <code>false</code> or <code>$0</code>.
+          are rendered blank here, never as <code>false</code> or <code>$0</code>. <b>Updated</b> is
+          <code>updated_at</code> on both branches — the asset branch selects no
+          <code>created_at</code> at all, and the whole UNION is ordered
+          <code>q.updated_at DESC</code>, so these are not the timestamps CF-04 shows.
         </div>
         <div class="cap">
           <b>A campaign's <code>reasons</code> is not a reason list.</b> It is a synthesised
@@ -619,6 +642,16 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           no per-asset approve or reject — and no route to perform either; the queue is a worklist,
           and the decision is recorded against <code>campaigns.approval_state</code> elsewhere.
         </div>
+        <div class="cap">
+          <b><code>approval_state</code> is a workflow value, not a verdict.</b> The campaign branch
+          selects on <code>approval_state = 'awaiting_approval'</code>, which says a human has not
+          moved the row yet — it does not say what compliance thought. A partner with
+          <code>approve_before_launch</code> off gets screenings that come back <code>passed</code>
+          and campaigns that still sit here until someone clicks; a partner with it on gets
+          <code>needs_approval</code> on <i>every</i> non-credit-repair subject, because
+          <code>screen.mjs:215</code> reads one per-partner boolean and cannot disagree with itself
+          between two campaigns of the same partner.
+        </div>
       </div>
 
       <!-- ══ CF-07 · BLOCK REASON CATALOGUE ════════════════════════════════ -->
@@ -635,12 +668,28 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </table>
         </div>
         <div class="cap">
-          <b>These are the only codes a <code>blocked_reasons</code> element can carry.</b> The first
-          twelve are <code>compliance_rules</code> rows seeded by 047; the rest are generated by
-          <code>src/compliance/screen.mjs</code> and exist in no table. A reason object is
-          <code>{code, rule_set, message, citation?, severity?, detail?}</code> — <b>no timestamp, no
-          reviewer, no id, no resolved flag</b>. There is nothing to build a review-history timeline
-          from.
+          <b>Every code this screen can render, from all three sources.</b> Twelve are
+          <code>compliance_rules</code> rows seeded by 047. Eight are built in code by
+          <code>src/compliance/screen.mjs</code>. Nine more come from
+          <code>src/compliance/targeting.mjs</code>, which <code>screen.mjs:154-157</code> splices into
+          the verdict for a <b>meta campaign payload</b> — those nine reach this screen through the
+          campaign screenings in CF-06 and can never appear in an asset's
+          <code>blocked_reasons</code>, because <code>generate.mjs</code> screens an asset with no
+          <code>targeting</code> key. Seventeen of the twenty-nine exist in no table at all. A reason
+          object is <code>{code, rule_set, message, citation?, severity?, detail?}</code> — <b>no
+          timestamp, no reviewer, no id, no resolved flag</b>. There is nothing to build a
+          review-history timeline from.
+        </div>
+        <div class="cap">
+          <b>Only a <code>compliance_rules</code> row has a severity.</b> The column is CHECKed to
+          <code>block</code> or <code>warn</code> (047:75) and all twelve seeded rows ship as
+          <code>block</code>. The seventeen code-built reasons have <b>no severity key at all</b> —
+          <code>r()</code> (screen.mjs:251) and <code>reason()</code> (targeting.mjs:162) do not set
+          one — so the Severity column reads <code>null</code> for them rather than guessing a value.
+          What decides the outcome is <code>hardBlocks</code> (screen.mjs:200), which counts anything
+          whose severity is not <code>warn</code>: an absent severity blocks. There is no
+          <code>gate</code> severity anywhere in the schema or the engine; the two approval codes are
+          returned from a different <i>branch</i>, not with a different severity.
         </div>
         <div class="cap">
           <b>Two gates are structural and have no override.</b> TikTok + credit_repair is rejected
@@ -658,13 +707,13 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           is a platform fault, not your copy." Treat it as an incident, not a rewrite.
         </div>
         <div class="cap">
-          <b>Two codes will never appear on an asset.</b>
-          <code>human_approval_required_credit_repair</code> and
-          <code>human_approval_required_setting</code> come back with state
-          <code>needs_approval</code>, and generate.mjs writes <code>blocked_reasons</code> only when
-          the verdict is <code>blocked</code> — otherwise <code>[]</code>. They live in
-          <code>compliance_screenings.reasons</code>, which has no endpoint. Likewise no
-          <code>warn</code> bucket: all twelve seeded rules are <code>block</code>.
+          <b>Eleven codes will never appear on an asset.</b> The two approval codes come back with
+          state <code>needs_approval</code>, and generate.mjs writes <code>blocked_reasons</code> only
+          when the verdict is <code>blocked</code> — otherwise <code>[]</code>. The nine targeting
+          codes are never evaluated for an asset at all. All eleven live in
+          <code>compliance_screenings.reasons</code>, which has no endpoint of its own; the only way
+          they reach a screen is the <code>jsonb_agg</code> the approvals query builds for a campaign
+          row. Likewise no <code>warn</code> bucket: all twelve seeded rules are <code>block</code>.
         </div>
       </div>
 
@@ -946,11 +995,36 @@ var PROVIDER_KEYS   = ['static','ugc-video','product-video','copy','resize'];
 
 /* ══ PARTNERS ════════════════════════════════════════════════════════════
    Every read resolves to exactly one partner. The three below are the same book
-   Social Studio and Campaigns are scoped to.
+   Social Studio selects over and the one Campaigns is scoped to — same ids, same
+   names, one roster.
+
+   `offers` IS DERIVED, NOT DECLARED. There is no offer column on partners
+   (042:30-64) and no CHECK or trigger anywhere that binds a partner to a set of
+   offer types. offer_type is an attribute of the WORK: campaigns.offer_type
+   (046:166, CHECK 046:181-182) and social_posts.offer_type (049:66, CHECK
+   049:87-88), each `IN ('funding','credit_cards','credit_repair')`. Even
+   compliance scopes by offer, not by partner — compliance_rules.offer_types
+   (047:51). creative_assets and brand_kits carry no offer_type at all.
+
+   So this array is a SUMMARY of the offer types each partner is actually shown
+   running on the other two screens, rendered as chips next to the picker. It is
+   not a constraint, and nothing may treat it as one: a partner running all three
+   offers is ordinary, not an error. The two offer-linked rules that DO exist are
+   both per-campaign, never per-partner — credit_repair may not run on TikTok
+   (046:219-221) and a credit_repair campaign cannot go approved/live without a
+   named approver (046:204-206).
    ════════════════════════════════════════════════════════════════════════ */
 var PARTNERS = [
-  {id:'8f3c2a91-4d17-4b0e-9c62-1a7e5d3b8042', name:'Ironwood Capital Group',   offers:['funding','credit_cards']},
-  {id:'b47d5e60-90aa-4f31-8e55-6c204f9a1bd3', name:'Meridian Card Collective', offers:['credit_cards']},
+  /* funding + credit_cards from the campaigns below; credit_repair because the
+     same partner_id carries credit_repair posts in Social Studio and a
+     credit_repair book in Campaigns. That credit_repair work is meta-only — never
+     TikTok, which CHECK campaigns_tiktok_credit_repair_ck forbids outright. The
+     funding book is not: campaign 2f80d651 below runs funding on TikTok, which is
+     permitted, and Campaigns shows the same partner doing it. */
+  {id:'8f3c2a91-4d17-4b0e-9c62-1a7e5d3b8042', name:'Ironwood Capital Group',   offers:['funding','credit_cards','credit_repair']},
+  /* credit_repair because Social Studio has a blocked credit_repair post on this
+     partner's LinkedIn channel. Blocked by the CROA rules is still a row. */
+  {id:'b47d5e60-90aa-4f31-8e55-6c204f9a1bd3', name:'Larkspur Card Collective', offers:['credit_cards','credit_repair']},
   {id:'c9a10f34-2be7-4a88-b0d9-7f61e2c4a915', name:'Halcyon Credit Works',     offers:['credit_repair']}
 ];
 
@@ -984,7 +1058,7 @@ var KITS = [
    products:[{name:'SBA bridge', offer_type:'funding'}],
    created_at:'2025-11-03T18:41:07Z', updated_at:'2026-02-09T13:15:00Z'},
 
-  {id:'a2704f19-8c6b-4e0d-b933-51ca7e260f84', partner:1, name:'Meridian Cards — House',
+  {id:'a2704f19-8c6b-4e0d-b933-51ca7e260f84', partner:1, name:'Larkspur Cards — House',
    status:'active', asset_count:9, source_url:null, scraped_at:null,
    logo_asset_id:'d5b3907a-42c1-4f68-9a07-6e2148cb35f2',
    palette:{primary:'#1F3A5F', accent:'#C9A227', surface:'#FBFAF7'},
@@ -1077,14 +1151,14 @@ var JOBS = [
    idempotency_key:'ironwood-legacy-refresh-1', asset_kind:'static', formats:['16x9'], variants:3,
    asset_count:3, created_at:'2026-07-27T16:02:09Z', started_at:'2026-07-27T16:02:11Z', finished_at:'2026-07-27T16:03:20Z'},
 
-  /* Meridian */
+  /* Larkspur */
   {id:'e5390a71-8c46-4d02-bf19-7a2650e4318b', partner:1, brand_kit_id:KITS[3].id,
    provider:'static', status:'succeeded', attempt:1, error:null,
-   idempotency_key:'meridian-cc-w31-static-a', asset_kind:'static', formats:['1x1','4x5'], variants:2,
+   idempotency_key:'larkspur-cc-w31-static-a', asset_kind:'static', formats:['1x1','4x5'], variants:2,
    asset_count:4, created_at:'2026-07-29T13:44:51Z', started_at:'2026-07-29T13:44:53Z', finished_at:'2026-07-29T13:46:02Z'},
   {id:'27b6f4e0-1d59-4a83-9c07-3e15820ad6f9', partner:1, brand_kit_id:KITS[3].id,
    provider:null, status:'queued', attempt:0, error:null,
-   idempotency_key:'meridian-cc-w31-copy-a', asset_kind:'copy', formats:null, variants:5,
+   idempotency_key:'larkspur-cc-w31-copy-a', asset_kind:'copy', formats:null, variants:5,
    asset_count:0, created_at:'2026-07-30T08:05:16Z', started_at:null, finished_at:null},
 
   /* Halcyon — credit_repair */
@@ -1133,8 +1207,33 @@ var RZ = {
 };
 
 /* ══ CREATIVE LIBRARY — GET /api/creative/library ═════════════════════════
-   Exactly the columns library.mjs selects. storage_key is NOT here — has_storage_key
-   is. duration_sec is numeric(10,3), which node-pg hands back as a STRING, so it is a
+   The columns library.mjs selects and that SURVIVE THE RESPONSE, plus updated_at.
+
+   NO has_storage_key. library.mjs:40 does select (storage_key IS NOT NULL) AS
+   has_storage_key, but the row never reaches a client with it: partnerReadHandler
+   returns page(), page() runs redact() over items, and redact()'s FORBIDDEN_KEY
+   (read-api.mjs:18) carries a bare, unanchored `storage_key` alternative that
+   matches the substring inside has_storage_key. ALLOWED_EXACT (:22) whitelists
+   only ssn_present and has_ssn. So the boolean is stripped with the column it
+   describes, and CF-04 below cannot know whether an object exists for a row.
+   (creative-endpoints.pg.test.mjs:107-118 asserts the boolean is present, but it
+   calls fetchRows directly and never goes through redact — which is why CI is
+   green on a field no screen can receive.)
+
+   NO brand_kit_name either, though library.mjs:41 does return it — the rows below
+   omit it and kitName() reconstructs the label from KITS, since these rows are the
+   sample stand-in for four separate reads.
+
+   updated_at is HERE and created_at is here, because these rows feed two endpoints
+   with different projections: library.mjs returns created_at and not updated_at,
+   approvals.mjs returns updated_at and not created_at. CF-04 reads created_at,
+   CF-06 reads updated_at, and neither renders a column its own endpoint omits.
+   updated_at is one second after created_at on every row because storeAsset()
+   INSERTs and then immediately UPDATEs compliance_state (generate.mjs:237-240)
+   under the set_updated_at trigger (045:367-383) — it is never equal to created_at
+   and never earlier.
+
+   duration_sec is numeric(10,3), which node-pg hands back as a STRING, so it is a
    string here too, and it is null on every non-video row (CHECK 045:210).
    archived_at is null on every row because no code path in the repo ever sets it.
    ════════════════════════════════════════════════════════════════════════ */
@@ -1143,79 +1242,81 @@ var ASSETS = [
   {id:'3f9c14b7-6a02-4d55-8e31-b7205cc41d09', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'1x1',
    provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T08:12:31Z', has_storage_key:true},
+   created_at:'2026-07-30T08:12:31Z', updated_at:'2026-07-30T08:12:32Z'},
   {id:'a71e6d29-4b53-4c08-9f27-0e6318da54b1', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'1x1',
    provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'blocked', blocked_reasons:[RZ.guaranteedFunding], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T08:12:47Z', has_storage_key:true},
+   created_at:'2026-07-30T08:12:47Z', updated_at:'2026-07-30T08:12:48Z'},
   {id:'5d80b3f6-27c1-4e94-8a05-6b1349fe207c', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'4x5',
    provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T08:13:02Z', has_storage_key:true},
+   created_at:'2026-07-30T08:13:02Z', updated_at:'2026-07-30T08:13:03Z'},
   {id:'e2461c95-0a78-4d3b-b6f1-8c5027ae9b34', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'4x5',
    provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T08:13:18Z', has_storage_key:true},
+   created_at:'2026-07-30T08:13:18Z', updated_at:'2026-07-30T08:13:19Z'},
   {id:'c85302ad-7f16-4b60-91e4-2a70d6c8153f', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'9x16',
    provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'blocked', blocked_reasons:[RZ.incomeCue], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T08:13:35Z', has_storage_key:true},
+   created_at:'2026-07-30T08:13:35Z', updated_at:'2026-07-30T08:13:36Z'},
   {id:'70b9e438-5c02-4a17-8d63-91f47025ce6a', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'9x16',
    provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T08:13:50Z', has_storage_key:true},
+   created_at:'2026-07-30T08:13:50Z', updated_at:'2026-07-30T08:13:51Z'},
 
   /* ugc-video: synthetic_performer is hardcoded true by the provider, so ai_generated
      must be true as well — the CHECK forbids the other combination. */
   {id:'19c7d580-6e34-4f21-a08b-53627fd914e0', partner:0, brand_kit_id:KITS[0].id, kind:'video', format:'9x16',
    provider:'ugc-video', duration_sec:'18.400', ai_generated:true, synthetic_performer:true,
    compliance_state:'pending', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-28T14:35:12Z', has_storage_key:true},
+   created_at:'2026-07-28T14:35:12Z', updated_at:'2026-07-28T14:35:13Z'},
   {id:'86f403b1-2d59-4c76-b3e0-1a7852069df4', partner:0, brand_kit_id:KITS[0].id, kind:'video', format:'9x16',
    provider:'ugc-video', duration_sec:'21.750', ai_generated:true, synthetic_performer:true,
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-28T14:38:04Z', has_storage_key:true},
+   created_at:'2026-07-28T14:38:04Z', updated_at:'2026-07-28T14:38:05Z'},
 
   /* resize children: kind and both disclosure flags INHERITED from the parent, plus
      parent_asset_id. A resize is not a kind — the parent was static, so these are static. */
   {id:'2ba85e07-9314-4d6f-80c9-64e13a7f5b28', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'4x5',
    provider:'resize', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:'3f9c14b7-6a02-4d55-8e31-b7205cc41d09',
-   archived_at:null, created_at:'2026-07-29T15:06:51Z', has_storage_key:true},
+   archived_at:null, created_at:'2026-07-29T15:06:51Z', updated_at:'2026-07-29T15:06:52Z'},
   {id:'d3719fc4-8065-4b2a-97e1-05c2f4b8360d', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'9x16',
    provider:'resize', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:'3f9c14b7-6a02-4d55-8e31-b7205cc41d09',
-   archived_at:null, created_at:'2026-07-29T15:07:14Z', has_storage_key:true},
+   archived_at:null, created_at:'2026-07-29T15:07:14Z', updated_at:'2026-07-29T15:07:15Z'},
   {id:'4e0d68a3-51b7-492c-8f06-732be1d05947', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'16x9',
    provider:'resize', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:'3f9c14b7-6a02-4d55-8e31-b7205cc41d09',
-   archived_at:null, created_at:'2026-07-29T15:07:39Z', has_storage_key:true},
+   archived_at:null, created_at:'2026-07-29T15:07:39Z', updated_at:'2026-07-29T15:07:40Z'},
 
-  /* copy: format 1x1 is the neutral value (format is NOT NULL and the library filters on
-     it), and has_storage_key is false on every copy row because copy lives in the row. */
+  /* copy: format 1x1 is copy.mjs's DEFAULT (`spec.format || '1x1'`), not a fixed value —
+     format is NOT NULL and the library filters on it, so the provider supplies a neutral
+     one when the caller names none. storageKeyFor() returns NULL for kind='copy', but the
+     screen learns that from `kind`, not from the row: see the header above. */
   {id:'ba5c2716-4038-4e1d-95a7-6c0f8324ed19', partner:0, brand_kit_id:KITS[0].id, kind:'copy', format:'1x1',
    provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-28T09:27:05Z', has_storage_key:false},
+   created_at:'2026-07-28T09:27:05Z', updated_at:'2026-07-28T09:27:06Z'},
   {id:'f608b1d5-72a9-4c34-8016-9e5b4023af7c', partner:0, brand_kit_id:KITS[0].id, kind:'copy', format:'1x1',
    provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'blocked', blocked_reasons:[RZ.guaranteedApproval], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-28T09:27:21Z', has_storage_key:false},
+   created_at:'2026-07-28T09:27:21Z', updated_at:'2026-07-28T09:27:22Z'},
   {id:'8c1740e6-b529-4a0f-93d8-2607f1b54e83', partner:0, brand_kit_id:KITS[0].id, kind:'copy', format:'1x1',
    provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'pending', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-28T09:27:38Z', has_storage_key:false},
+   created_at:'2026-07-28T09:27:38Z', updated_at:'2026-07-28T09:27:39Z'},
 
   /* the fail-closed case: screening itself fell over, so the asset is blocked with an
      engine reason rather than a copy reason. */
   {id:'71ea3958-0c47-4b62-a8d1-53f9207e6cb4', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'16x9',
    provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'blocked', blocked_reasons:[RZ.screenError], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-27T16:03:11Z', has_storage_key:true},
+   created_at:'2026-07-27T16:03:11Z', updated_at:'2026-07-27T16:03:12Z'},
   {id:'0f2c86b4-9d13-4507-be9a-4182c0e73da5', partner:0, brand_kit_id:KITS[2].id, kind:'static', format:'16x9',
    provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-27T16:02:58Z', has_storage_key:true},
+   created_at:'2026-07-27T16:02:58Z', updated_at:'2026-07-27T16:02:59Z'},
 
   /* ai_generated is TRUE here, as it is on every row: static.mjs:58 hardcodes it, and
      storeAsset() stores `a.ai_generated !== false`. No provider in this module emits a
@@ -1224,43 +1325,43 @@ var ASSETS = [
   {id:'56d90b28-3f74-4e15-8c02-b937a154e60f', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'1x1',
    provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-26T12:40:03Z', has_storage_key:true},
+   created_at:'2026-07-26T12:40:03Z', updated_at:'2026-07-26T12:40:04Z'},
 
-  /* Meridian */
+  /* Larkspur */
   {id:'d5b3907a-42c1-4f68-9a07-6e2148cb35f2', partner:1, brand_kit_id:KITS[3].id, kind:'static', format:'1x1',
    provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-29T13:45:10Z', has_storage_key:true},
+   created_at:'2026-07-29T13:45:10Z', updated_at:'2026-07-29T13:45:11Z'},
   {id:'93a6f102-8b47-4d59-a0e3-7c1258f4b60d', partner:1, brand_kit_id:KITS[3].id, kind:'static', format:'4x5',
    provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'blocked', blocked_reasons:[RZ.categoryUnset], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-29T13:45:44Z', has_storage_key:true},
+   created_at:'2026-07-29T13:45:44Z', updated_at:'2026-07-29T13:45:45Z'},
   {id:'417ce805-6a92-4b31-97f0-2d5b8340e169', partner:1, brand_kit_id:KITS[3].id, kind:'video', format:'16x9',
    provider:'product-video', duration_sec:'12.000', ai_generated:true, synthetic_performer:false,
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-26T10:22:37Z', has_storage_key:true},
+   created_at:'2026-07-26T10:22:37Z', updated_at:'2026-07-26T10:22:38Z'},
   {id:'a0b74c31-5e28-4f96-83d1-609ecb2f4571', partner:1, brand_kit_id:KITS[3].id, kind:'copy', format:'1x1',
    provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'pending', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-25T17:03:12Z', has_storage_key:false},
+   created_at:'2026-07-25T17:03:12Z', updated_at:'2026-07-25T17:03:13Z'},
 
   /* Halcyon — credit_repair, so the CROA rule set applies */
   {id:'6b28f503-c941-4a70-85de-1f0327b46c82', partner:2, brand_kit_id:KITS[4].id, kind:'copy', format:'1x1',
    provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'blocked', blocked_reasons:[RZ.scoreIncrease], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T07:10:41Z', has_storage_key:false},
+   created_at:'2026-07-30T07:10:41Z', updated_at:'2026-07-30T07:10:42Z'},
   {id:'ce4082b7-1f36-4d95-a07c-583b2916e0d4', partner:2, brand_kit_id:KITS[4].id, kind:'copy', format:'1x1',
    provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'blocked', blocked_reasons:[RZ.disclosure], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T07:10:58Z', has_storage_key:false},
+   created_at:'2026-07-30T07:10:58Z', updated_at:'2026-07-30T07:10:59Z'},
   {id:'32f5a70c-8d61-4b28-9e04-71c3068ad5f9', partner:2, brand_kit_id:KITS[4].id, kind:'copy', format:'1x1',
    provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'pending', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T07:11:15Z', has_storage_key:false},
+   created_at:'2026-07-30T07:11:15Z', updated_at:'2026-07-30T07:11:16Z'},
   {id:'7de1b640-4a95-4c03-b28f-16057e3924ac', partner:2, brand_kit_id:KITS[4].id, kind:'static', format:'4x5',
    provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-24T11:38:20Z', has_storage_key:true}
+   created_at:'2026-07-24T11:38:20Z', updated_at:'2026-07-24T11:38:21Z'}
 ];
 
 /* ══ CAMPAIGNS AWAITING APPROVAL — the second branch of the UNION ALL ═════
@@ -1282,15 +1383,27 @@ var CAMPAIGNS = [
    screenings:[{code:'blocked', message:[RZ.categoryUnset]},
                {code:'needs_approval', message:[RZ.approvalSetting]}]},
 
+  /* tiktok + funding, so neither structural block applies and the tiktok rule row is
+     scoped to credit_repair — the copy rules leave this clean. It still cannot come
+     back 'passed': Ironwood has approve_before_launch ON (the two rows above prove it,
+     and Social Studio shows the same setting for the same partner_id), and
+     screen.mjs:215-221 returns needs_approval for EVERY non-credit_repair subject while
+     that boolean is true. One partner, one boolean, one verdict. */
   {id:'2f80d651-3b97-4e14-a5c0-916428de70b3', partner:0, name:'Tornado — 72h funding push',
    strategy_key:'tornado', offer_type:'funding', platform:'tiktok', budget_cents:120000,
    updated_at:'2026-07-29T18:22:47Z',
-   screenings:[{code:'passed', message:[]}]},
+   screenings:[{code:'needs_approval', message:[RZ.approvalSetting]}]},
 
-  {id:'8a61e304-7f52-4b9d-86c1-40b7f2596ea8', partner:1, name:'Meridian — Harvester retarget',
+  /* The one clean 'passed' on this screen, and it has to be this partner: Larkspur is
+     the partner whose approve_before_launch is OFF (social-studio.html:862-865), so a
+     credit_cards subject with clean copy falls through to `return {state:'passed'}`.
+     A passed screening carries reasons: [] — the renderer says so rather than hiding
+     the row. approval_state is still awaiting_approval, because that is a workflow
+     value on campaigns, not a compliance verdict. */
+  {id:'8a61e304-7f52-4b9d-86c1-40b7f2596ea8', partner:1, name:'Larkspur — Harvester retarget',
    strategy_key:'harvester', offer_type:'credit_cards', platform:'meta', budget_cents:65000,
    updated_at:'2026-07-29T12:09:33Z',
-   screenings:[{code:'needs_approval', message:[RZ.approvalSetting]}]},
+   screenings:[{code:'passed', message:[]}]},
 
   /* strategy_key is NULLABLE on this row shape — a campaign that has not been given one
      still appears in the queue, and the cell is rendered blank, not "—unknown—". */
@@ -1302,10 +1415,34 @@ var CAMPAIGNS = [
 ];
 
 /* ══ COMPLIANCE RULE CATALOGUE ═══════════════════════════════════════════
-   The twelve seeded compliance_rules rows (047:205-300) plus the eight engine codes
-   src/compliance/screen.mjs can emit that exist in no table. Every message and
-   citation below is verbatim. All twelve seeded rules are severity 'block' — no
-   'warn' rule ships, so there is no warnings bucket anywhere on this screen.
+   Three sources, and the difference between them is the point of the table:
+
+     src:'seeded'     12 compliance_rules rows (047:205-300). `severity` is the
+                      real column value, CHECKed to 'block' | 'warn'
+                      (compliance_rules_severity_ck, 047:75). All twelve ship as
+                      'block' — no 'warn' rule exists, so there is no warnings
+                      bucket anywhere on this screen.
+     src:'engine'      8 codes src/compliance/screen.mjs builds with
+                      r(code, rule_set, message) at screen.mjs:251.
+     src:'targeting'   9 codes src/compliance/targeting.mjs builds with
+                      reason(code, message) at targeting.mjs:162, which
+                      screen.mjs:154-157 splices into the result for any META
+                      campaign payload.
+
+   SEVERITY IS NULL ON EVERY CODE THAT IS NOT A RULE ROW. Neither r() nor reason()
+   sets a severity key, so the reason object literally has severity === undefined —
+   there is no 'gate' severity and no engine 'block' severity to show, and this
+   table renders the absence rather than inventing a value. What the code DOES
+   determine is the verdict: hardBlocks at screen.mjs:200 counts anything whose
+   severity is not 'warn', so an absent severity blocks; the two approval codes are
+   returned from the needs_approval branches instead. `verdict` below is that
+   behaviour, not a column.
+
+   SCOPE. The nine targeting codes reach a CAMPAIGN screening only. An asset is
+   screened by generate.mjs:216 with no `targeting` key at all, so screen.mjs skips
+   screenTargeting for it and none of these can ever appear in
+   creative_assets.blocked_reasons. Every message and citation below is verbatim;
+   templated messages keep the engine's placeholders.
    ════════════════════════════════════════════════════════════════════════ */
 var RULES = [
   {code:'guaranteed-score-increase', rule_set:'croa', match_type:'regex', severity:'block',
@@ -1357,37 +1494,80 @@ var RULES = [
    message:'TikTok prohibits credit repair and debt relief advertising outright. This offer cannot run on TikTok on any account, with any creative.',
    citation:'TikTok Advertising Policies — Prohibited Industries'},
 
-  {code:'screen_error', rule_set:'engine', match_type:'—', severity:'block',
+  {code:'screen_error', rule_set:'engine', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:[], src:'engine',
    message:'Compliance screening could not complete, so this is blocked. Try again; if it persists this is a platform fault, not your copy.',
    citation:null},
-  {code:'offer_type_missing', rule_set:'engine', match_type:'—', severity:'block',
+  {code:'offer_type_missing', rule_set:'engine', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:[], src:'engine',
    message:'offer_type must be one of funding, credit_cards, credit_repair; got <the value>.',
    citation:null},
-  {code:'platform_unknown', rule_set:'engine', match_type:'—', severity:'block',
+  {code:'platform_unknown', rule_set:'engine', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:[], src:'engine',
    message:'platform must be one of meta, tiktok, google or null; got <the value>.',
    citation:null},
-  {code:'tiktok_credit_repair_prohibited', rule_set:'platform', match_type:'—', severity:'block',
+  {code:'tiktok_credit_repair_prohibited', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
    offers:['credit_repair'], platforms:['tiktok'], src:'engine',
    message:'TikTok prohibits credit repair and debt relief advertising outright. This offer cannot run on TikTok on any account, with any creative. There is no override.',
    citation:null},
-  {code:'special_ad_category_unset', rule_set:'platform', match_type:'—', severity:'block',
+  {code:'special_ad_category_unset', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:['meta'], src:'engine',
    message:'No special_ad_category is configured for meta/<offer_type>. Populate ad_platform_category_map before any Meta launch.',
    citation:null},
-  {code:'synthetic_without_ai_flag', rule_set:'disclosure', match_type:'—', severity:'block',
+  {code:'synthetic_without_ai_flag', rule_set:'disclosure', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:[], src:'engine',
    message:'An asset with a synthetic performer must also be marked ai_generated.',
    citation:null},
-  {code:'human_approval_required_credit_repair', rule_set:'approval', match_type:'—', severity:'gate',
+  {code:'human_approval_required_credit_repair', rule_set:'approval', match_type:'—', severity:null, verdict:'needs_approval',
    offers:['credit_repair'], platforms:[], src:'engine',
    message:'Credit-repair creative always requires human approval before launch. This gate cannot be turned off.',
    citation:null},
-  {code:'human_approval_required_setting', rule_set:'approval', match_type:'—', severity:'gate',
+  {code:'human_approval_required_setting', rule_set:'approval', match_type:'—', severity:null, verdict:'needs_approval',
    offers:[], platforms:[], src:'engine',
    message:'This partner has approve_before_launch enabled, so a human must approve before launch.',
+   citation:null},
+
+  /* src/compliance/targeting.mjs — the Meta special-ad-category restrictions, spliced
+     into a campaign screening by screen.mjs:154-157. rule_set is 'platform' on all
+     nine (targeting.mjs:162), they carry no citation and no severity, and every one of
+     them is a rejection rather than a correction: buildTargeting() forces age and
+     gender because those have exactly one legal value, and refuses everything else
+     rather than editing the partner's spend. */
+  {code:'targeting_missing', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
+   offers:[], platforms:['meta'], src:'targeting',
+   message:'A targeting payload is required. An empty spec cannot be certified against the special ad category rules.',
+   citation:null},
+  {code:'targeting_malformed', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
+   offers:[], platforms:['meta'], src:'targeting',
+   message:'Targeting must be an object.',
+   citation:null},
+  {code:'zip_targeting', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
+   offers:[], platforms:['meta'], src:'targeting',
+   message:'ZIP/postal-code targeting is not permitted for credit offers. Target by city, state or country.',
+   citation:null},
+  {code:'radius_too_small', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
+   offers:[], platforms:['meta'], src:'targeting',
+   message:'A <n>-mile radius is below the 15-mile minimum for credit offers (<where>).',
+   citation:null},
+  {code:'location_exclusion', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
+   offers:[], platforms:['meta'], src:'targeting',
+   message:'Location exclusions are not permitted for credit offers.',
+   citation:null},
+  {code:'age_range', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
+   offers:[], platforms:['meta'], src:'targeting',
+   message:'age_min must be 18 for credit offers; got <the value>. (age_max must be 65, "65+", by the same rule.)',
+   citation:null},
+  {code:'gender_restriction', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
+   offers:[], platforms:['meta'], src:'targeting',
+   message:'Gender restrictions are not permitted for credit offers.',
+   citation:null},
+  {code:'lookalike_audience', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
+   offers:[], platforms:['meta'], src:'targeting',
+   message:'Lookalike audiences are not permitted for credit offers.',
+   citation:null},
+  {code:'detailed_targeting_expansion', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
+   offers:[], platforms:['meta'], src:'targeting',
+   message:'Detailed-targeting expansion must be off for credit offers.',
    citation:null}
 ];
 
@@ -1400,7 +1580,7 @@ var PROVIDER_FLAGS = [
   {key:'product-video', ai:'always true', synth:'defaults false',
    how:'product-video.mjs:55 hardcodes aiGenerated: true — the footage is machine-made either way. :56 defaults syntheticPerformer to false and lets the caller set it.'},
   {key:'copy', ai:'always true', synth:'always false',
-   how:'copy.mjs sets aiGenerated: true, syntheticPerformer: false — copy has no performer and no canvas (format is the neutral 1x1).'},
+   how:'copy.mjs sets aiGenerated: true, syntheticPerformer: false — copy has no performer and no canvas. Its format is `spec.format || "1x1"` (copy.mjs:50): 1x1 is the default a caller who names nothing gets, not a fixed value.'},
   {key:'resize', ai:'inherited', synth:'inherited',
    how:'resize.mjs:64-65 inherits both from the parent — a crop of an AI image is still AI, and a crop of a synthetic presenter still shows one. Recomputing them would drop both flags on every derived asset.'}
 ];
@@ -1463,7 +1643,7 @@ var LEDGER = [
   {s:'CF-02 Generation jobs', src:'api/creative/jobs.mjs', st:'readable', tone:'ok',
    note:'error is returned on purpose — scrub() strips anything key-shaped before it is stored. cost_cents is not.'},
   {s:'CF-04 Creative library', src:'api/creative/library.mjs', st:'readable', tone:'ok',
-   note:'has_storage_key only. No storage_key, no url, no text, no width/height/file_size — none of those columns exist.'},
+   note:'No storage_key, no url, no text, no width/height/file_size — and has_storage_key is selected but stripped by redact(), so previews are impossible in both directions.'},
   {s:'CF-06 Review queue', src:'api/creative/approvals.mjs', st:'readable', tone:'ok',
    note:'creative_asset (pending|blocked) + campaign (awaiting_approval). No ads, ad sets or social posts.'},
   {s:'CF-08 Brand kits', src:'api/creative/brand-kits.mjs', st:'readable', tone:'ok',
@@ -1563,7 +1743,16 @@ function renderScope(){
     'discards the query string.';
 }
 
-/* ══ CF-00 · STAT TILES + DERIVATION ═════════════════════════════════════ */
+/* ══ CF-00 · STAT TILES + DERIVATION ═════════════════════════════════════
+   FIVE SEPARATE READS, EACH AT limit=200. None of these four endpoints returns a
+   total — read-api.mjs derives hasMore by selecting limit+1 rows instead of running
+   a count query (:78-95), on purpose — so a tile can only ever count the rows one
+   response carried. Counting the CF-02/CF-04/CF-06 pages would make every tile move
+   when someone changed a limit dropdown, so the tiles issue their own reads at
+   MAX_LIMIT (200) and the numbers below are the row counts of those responses:
+   exact while hasMore is false, saturating at 200 above it. That is stated on every
+   derivation strip rather than implied.
+   ════════════════════════════════════════════════════════════════════════ */
 function statModel(){
   var jobs = byPartner(JOBS), assets = byPartner(ASSETS), kits = byPartner(KITS);
   var camps = CAMPAIGNS.filter(function(c){ return c.partner === S.partner; });
@@ -1586,8 +1775,10 @@ var DERIVS = {
     inputs:'queued = <b>' + m.queued.length + '</b> · of which retrying (attempt &gt; 0) = <b>' + m.retrying.length + '</b><br>' +
            'running = <b>' + m.running.length + '</b><br>' +
            'never claimed (queued, attempt 0) = <b>' + (m.queued.length - m.retrying.length) + '</b>',
-    src:'GET /api/creative/jobs?partner_id=…&amp;state=queued,running — counted from the rows the page returned. ' +
-        'The endpoint returns no total, so this is a PAGE count, not a table count.'};},
+    src:'GET /api/creative/jobs?partner_id=…&amp;state=queued,running&amp;limit=200 — this tile\'s own read at ' +
+        'MAX_LIMIT, not the CF-02 page below, which runs at whatever limit that card is set to. The endpoint ' +
+        'returns no total, so this counts the rows that response carried: exact while hasMore is false, and it ' +
+        'would saturate at 200.'};},
   failed: function(m){
     var withErr = m.failed.filter(function(j){ return j.error; }).length;
     var perm = m.failed.filter(function(j){ return /no active provider configured/.test(j.error||''); }).length;
@@ -1598,7 +1789,8 @@ var DERIVS = {
     inputs:'permanent — no provider configured = <b>' + perm + '</b><br>' +
            'reached the 3-claim ceiling = <b>' + m.failed.filter(function(j){return j.attempt>=3;}).length + '</b><br>' +
            'zero-asset responses = <b>' + m.failed.filter(function(j){return j.error==='provider returned zero assets';}).length + '</b>',
-    src:'GET /api/creative/jobs?state=failed. CHECK generation_jobs_error_ck (045:319) guarantees the ' +
+    src:'GET /api/creative/jobs?state=failed&amp;limit=200 — again one MAX_LIMIT read, counted from what came ' +
+        'back and exact while hasMore is false. CHECK generation_jobs_error_ck (045:319) guarantees the ' +
         'error is non-null on a failed row — a failed job that does not say why cannot exist.'};},
   review: function(m){
     var camp = m.camps.length;
@@ -1610,8 +1802,10 @@ var DERIVS = {
     inputs:'pending assets = <b>' + m.pending.length + '</b><br>' +
            'blocked assets = <b>' + m.blocked.length + '</b><br>' +
            'campaigns awaiting approval = <b>' + camp + '</b>',
-    src:'GET /api/creative/approvals?state=all — a UNION ALL of two shapes ordered updated_at DESC. ' +
-        'The asset branch is fixed to pending|blocked; \'passed\' and \'approved\' are excluded by the WHERE clause.'};},
+    src:'GET /api/creative/approvals?state=all&amp;limit=200 — a UNION ALL of two shapes ordered updated_at DESC, ' +
+        'counted from that one response and exact while hasMore is false; the CF-06 table below is a smaller ' +
+        'page of the same list. The asset branch is fixed to pending|blocked; \'passed\' and \'approved\' are ' +
+        'excluded by the WHERE clause.'};},
   library: function(m){ return {
     title:'Library assets',
     formula:'count(rows) WHERE archived_at IS NULL = <b>' + m.live.length + '</b><br>' +
@@ -1621,7 +1815,9 @@ var DERIVS = {
            'video = <b>' + m.live.filter(function(a){return a.kind==='video';}).length + '</b><br>' +
            'copy = <b>' + m.live.filter(function(a){return a.kind==='copy';}).length + '</b><br>' +
            'derived (parent_asset_id set) = <b>' + m.live.filter(function(a){return a.parent_asset_id;}).length + '</b>',
-    src:'GET /api/creative/library?state=all — archived rows are hidden unless include_archived=1. ' +
+    src:'GET /api/creative/library?state=all&amp;limit=200 — archived rows are hidden unless include_archived=1. ' +
+        'The number is the row count of that one MAX_LIMIT response, exact while hasMore is false; the grid ' +
+        'below is a separate, smaller page and is expected to show fewer. ' +
         '\'approved\' is 0 and always will be: it is in the CHECK constraint and in the ?state= allowlist, ' +
         'but no code in the repo ever writes it.'};},
   kits: function(m){
@@ -1633,9 +1829,11 @@ var DERIVS = {
     inputs:'draft = <b>' + m.kits.filter(function(k){return k.status==='draft';}).length + '</b><br>' +
            'active = <b>' + m.active.length + '</b><br>' +
            'archived = <b>' + m.kits.filter(function(k){return k.status==='archived';}).length + '</b>',
-    src:'GET /api/creative/brand-kits?state=active. asset_count is a correlated subquery over ALL ' +
-        'non-archived assets for the kit — it is a full count, unlike the library grid below it, which ' +
-        'is page-local. The two are allowed to disagree.'};}
+    src:'GET /api/creative/brand-kits?state=all&amp;limit=200 — state=all, not state=active, because the ' +
+        'draft/active/archived split beside this and the "of N total" on the tile are counted client-side from ' +
+        'that one response; a ?state=active read carries no draft or archived row to count. asset_count itself ' +
+        'is different: a correlated subquery over ALL non-archived assets for the kit, so it is a full count ' +
+        'rather than a page count — unlike every other number on this strip. The two are allowed to disagree.'};}
 };
 
 function renderStats(){
@@ -1647,7 +1845,7 @@ function renderStats(){
      d:'all carry a reason', cls:m.failed.length ? 'bad' : ''},
     {k:'review',  label:'AWAITING REVIEW', v:(m.pending.length + m.blocked.length + m.camps.length),
      d:m.blocked.length + ' blocked · ' + m.camps.length + ' campaigns', cls:m.blocked.length ? 'warn' : ''},
-    {k:'library', label:'LIBRARY ASSETS', v:m.live.length, d:'non-archived, this page', cls:''},
+    {k:'library', label:'LIBRARY ASSETS', v:m.live.length, d:'non-archived · one limit-200 read', cls:''},
     {k:'kits',    label:'ACTIVE BRAND KITS', v:m.active.length, d:'of ' + m.kits.length + ' total', cls:''}
   ];
   document.getElementById('stats').innerHTML = tiles.map(function(t){
@@ -1924,21 +2122,16 @@ function renderLibFilters(){
 
 var RATIO = {'1x1':'1 / 1', '4x5':'4 / 5', '9x16':'9 / 16', '16x9':'16 / 9'};
 
+/* One tile shape, because the endpoint gives the screen no way to tell a stored
+   object from a missing one — redact() strips has_storage_key. The second line is
+   derived from `kind`, which IS returned. */
 function assetCard(a){
-  var tile;
-  if(a.has_storage_key){
-    tile = '<div class="tile" style="aspect-ratio:' + RATIO[a.format] + '">' +
-      '<span class="logo" role="presentation"></span>' +
-      '<span class="fmt">' + esc(a.format) + '</span>' +
-      (a.duration_sec ? '<span class="dur">' + esc(a.duration_sec) + 's</span>' : '') +
-    '</div>';
-  } else {
-    tile = '<div class="tile none" style="aspect-ratio:' + RATIO[a.format] + '">' +
+  var tile = '<div class="tile none" style="aspect-ratio:' + RATIO[a.format] + '">' +
       '<span class="np">no preview available<br>' +
-      (a.kind==='copy' ? 'copy has no stored object' : 'has_storage_key = false') + '</span>' +
+      (a.kind==='copy' ? 'copy has no stored object' : 'storage_key never leaves the process') + '</span>' +
       '<span class="fmt" style="background:var(--soft);color:var(--gray);border:1px solid var(--line)">' + esc(a.format) + '</span>' +
+      (a.duration_sec ? '<span class="dur" style="background:var(--soft);color:var(--gray);border:1px solid var(--line)">' + esc(a.duration_sec) + 's</span>' : '') +
     '</div>';
-  }
   var flags = '';
   if(a.ai_generated) flags += '<span class="flag ai">AI-generated</span>';
   else flags += '<span class="flag">not AI</span>';
@@ -2008,8 +2201,13 @@ function apprRows(){
       out.push({item_type:'creative_asset', id:a.id, state:a.compliance_state,
         subtype:a.kind, detail:a.format, reasons:a.blocked_reasons,
         budget_cents:null, offer_type:null, platform:null,
+        /* updated_at, not created_at: the asset branch of approvals.mjs selects
+           a.updated_at and no created_at at all, and the whole UNION is ordered
+           q.updated_at DESC (approvals.mjs:51). On every generated asset it is
+           strictly later than created_at — storeAsset() UPDATEs the row it just
+           inserted, under the set_updated_at trigger. */
         ai_generated:a.ai_generated, synthetic_performer:a.synthetic_performer,
-        updated_at:a.created_at, _asset:a});
+        updated_at:a.updated_at, _asset:a});
     });
   }
   if(want==='all' || want==='awaiting_approval'){
@@ -2170,13 +2368,24 @@ function renderRules(){
 
   var rows = RULES.filter(function(r){ return S.ruleSet==='all' || r.rule_set===S.ruleSet; });
   document.getElementById('ruleBody').innerHTML = rows.map(function(r){
-    var stripe = r.severity==='gate' ? 'stripe-info' : 'stripe-bad';
+    /* The stripe follows the VERDICT the code produces, not a severity string:
+       only compliance_rules rows have a severity at all. */
+    var gate = r.verdict === 'needs_approval';
+    var stripe = gate ? 'stripe-info' : 'stripe-bad';
+    var origin = r.src==='seeded' ? 'compliance_rules row'
+               : (r.src==='targeting' ? 'targeting.mjs · in no table' : 'screen.mjs · in no table');
+    /* severity is NULL for every non-row code — r() and reason() never set it. */
+    var sevCell = r.severity
+      ? '<span class="badge b-alert">' + esc(r.severity) + '</span><span class="sub">compliance_rules.severity</span>'
+      : '<span class="nul">null</span><span class="sub">' +
+        (gate ? 'no severity key · state needs_approval' : 'no severity key · counts as a hard block') +
+        '</span>';
     return '<tr class="rowbtn ' + stripe + '" data-rule="' + esc(r.code) + '" tabindex="0" aria-expanded="false">' +
       '<td><span class="chev">▸</span><span class="mono">' + esc(r.code) + '</span>' +
-        '<span class="sub">' + (r.src==='seeded' ? 'compliance_rules row' : 'engine-generated · in no table') + '</span></td>' +
+        '<span class="sub">' + origin + '</span></td>' +
       '<td><span class="badge b-gray">' + esc(r.rule_set) + '</span></td>' +
       '<td class="mono">' + esc(r.match_type) + '</td>' +
-      '<td><span class="badge ' + (r.severity==='gate'?'b-info':'b-alert') + '">' + esc(r.severity) + '</span></td>' +
+      '<td>' + sevCell + '</td>' +
       '<td class="mono">' + esc((r.offers.length ? r.offers.join(' ') : 'all offers') +
         (r.platforms.length ? ' · ' + r.platforms.join(' ') : '')) + '</td>' +
       '<td class="mono" style="font-size:10.5px">' + (r.citation ? esc(r.citation) : nul('—')) + '</td>' +
@@ -2186,13 +2395,23 @@ function renderRules(){
     return '<div class="detwrap"><div class="detfull">' + reasonCard(r) +
       '<p class="note" style="margin-top:8px">' +
       (r.src==='seeded'
-        ? 'A <code>compliance_rules</code> row. Rule edits take effect within <b>60 seconds</b> ' +
+        ? 'A <code>compliance_rules</code> row, and the only kind of code on this table with a real ' +
+          '<code>severity</code>. Rule edits take effect within <b>60 seconds</b> ' +
           '(<code>RULE_TTL_MS = 60_000</code>) without a cache flush. Patterns are compiled by both Postgres ' +
           'and JavaScript, so boundaries are written as explicit character classes rather than <code>\\y</code> ' +
           'or <code>\\b</code> — a rule that reports clean because it cannot match is worse than no rule.'
-        : 'Generated by <code>src/compliance/screen.mjs</code>. It exists in no table, so it cannot be edited, ' +
-          'deactivated or re-worded by an operator.') +
-      (r.severity==='gate'
+        : (r.src==='targeting'
+          ? 'Built by <code>src/compliance/targeting.mjs</code> and spliced into the result by ' +
+            '<code>screen.mjs:154-157</code> for a <b>meta campaign payload only</b>. ' +
+            '<code>reason()</code> (targeting.mjs:162) sets <code>{code, message, rule_set}</code> and no ' +
+            '<code>severity</code>, so <code>hardBlocks</code> counts it as a block. It exists in no table — ' +
+            'these are Meta\'s terms for advertising credit at all, not a fundhub preference, so they are not ' +
+            'editable and there is no override. An asset never carries one: generate.mjs screens it with no ' +
+            '<code>targeting</code> key.'
+          : 'Generated by <code>src/compliance/screen.mjs</code>. <code>r()</code> (screen.mjs:251) sets ' +
+            '<code>{code, rule_set, message}</code> and no <code>severity</code>. It exists in no table, so it ' +
+            'cannot be edited, deactivated or re-worded by an operator.')) +
+      (r.verdict==='needs_approval'
         ? ' <b>This is an approval gate, not a block</b> — it comes back with state <code>needs_approval</code>, ' +
           'which generate.mjs maps to asset state <code>passed</code>. It will never appear in an asset\'s ' +
           '<code>blocked_reasons</code>.'
@@ -2345,7 +2564,6 @@ function openAsset(a){
     ['provider', a.provider, 1], ['compliance_state', a.compliance_state, 1],
     ['duration_sec', a.duration_sec, 1],
     ['ai_generated', String(a.ai_generated), 1], ['synthetic_performer', String(a.synthetic_performer), 1],
-    ['has_storage_key', String(a.has_storage_key), 1],
     ['brand_kit_id', a.brand_kit_id, 1], ['brand_kit_name', kitName(a.brand_kit_id), 0],
     ['parent_asset_id', a.parent_asset_id, 1],
     ['archived_at', a.archived_at, 1], ['created_at', a.created_at, 1]
@@ -2353,22 +2571,23 @@ function openAsset(a){
 
   html += '<div class="dw-sec"><h3>Preview</h3>' +
     '<div style="max-width:230px">' +
-    (a.has_storage_key
-      ? '<div class="tile" style="aspect-ratio:' + RATIO[a.format] + ';border-radius:9px"><span class="logo" role="presentation"></span><span class="fmt">' + esc(a.format) + '</span></div>'
-      : '<div class="tile none" style="aspect-ratio:' + RATIO[a.format] + ';border-radius:9px;border:1px solid var(--line)"><span class="np">no preview available</span></div>') +
+    '<div class="tile none" style="aspect-ratio:' + RATIO[a.format] + ';border-radius:9px;border:1px solid var(--line)"><span class="np">no preview available</span></div>' +
     '</div>' +
     '<p class="note" style="margin-top:9px">' +
-      (a.has_storage_key
-        ? 'The object exists — <code>storage_key</code> is non-null — but it never leaves the process. It is not ' +
-          'selected by <code>library.mjs</code>, <code>redact()</code> strips anything matching ' +
-          '<code>/storage_key/</code>, and there is no signed-URL endpoint. The provider\'s own CDN url was ' +
-          'discarded by <code>storeAsset()</code>: <code>creative_assets</code> has no url column.'
-        : (a.kind==='copy'
-          ? 'Copy has no stored object by design — <code>storageKeyFor()</code> returns NULL for ' +
-            '<code>kind = \'copy\'</code>. The words themselves are not on this row either: there is no text, body, ' +
-            'headline or caption column. They exist only in <code>compliance_screenings.screened_text</code>, ' +
-            'truncated to 8000 characters, and no endpoint returns that table.'
-          : 'No object is stored for this row.')) +
+      'Whether an object was stored for this row is <b>not knowable from the response</b>. ' +
+      '<code>library.mjs</code> does not select <code>storage_key</code>, and the boolean it does select — ' +
+      '<code>(storage_key IS NOT NULL) AS has_storage_key</code> — is removed by <code>redact()</code> before ' +
+      'the body is written, because <code>FORBIDDEN_KEY</code> matches <code>storage_key</code> anywhere in a ' +
+      'key name and <code>ALLOWED_EXACT</code> lists only <code>ssn_present</code> and <code>has_ssn</code>. ' +
+      'There is no signed-URL endpoint either, and the provider\'s own CDN url was discarded by ' +
+      '<code>storeAsset()</code>: <code>creative_assets</code> has no url column.' +
+      (a.kind==='copy'
+        ? ' For this row the answer is knowable anyway, from <code>kind</code> rather than from a flag: ' +
+          '<code>storageKeyFor()</code> returns NULL for <code>kind = \'copy\'</code>, so no object was ever ' +
+          'stored. The words are not on the row either — there is no text, body, headline or caption column. ' +
+          'They exist only in <code>compliance_screenings.screened_text</code>, truncated to 8000 characters, ' +
+          'and no endpoint returns that table.'
+        : '') +
     '</p>' +
     '<p class="note" style="margin-top:7px;color:var(--gray2)">Aspect ratio <b>' + esc(a.format) +
       '</b> is the stored <code>format</code> enum. Pixel dimensions are not stored anywhere — the size map is a ' +
@@ -2394,9 +2613,11 @@ function openAsset(a){
   '</div>';
 
   html += '<div class="dw-sec"><h3>What is not on this row</h3>' +
-    '<p class="note"><code>storage_key</code>, <code>org_id</code>, <code>partner_id</code>, ' +
+    '<p class="note"><code>storage_key</code>, <code>has_storage_key</code> (selected, then stripped by ' +
+    '<code>redact()</code>), <code>org_id</code>, <code>partner_id</code>, ' +
     '<code>provider_asset_id</code>, <code>created_by_agent_id</code> and <code>updated_at</code> are not ' +
-    'returned. There is no impressions, clicks, CTR, spend or ROAS column on <code>creative_assets</code> at ' +
+    'returned by <code>library.mjs</code> — <code>updated_at</code> reaches CF-06 through ' +
+    '<code>approvals.mjs</code> instead. There is no impressions, clicks, CTR, spend or ROAS column on <code>creative_assets</code> at ' +
     'all, and no screening history — <code>blocked_reasons</code> carries no timestamp, reviewer or resolution ' +
     'field, and <code>compliance_screenings</code> has no endpoint. There is also no approve, reject, re-screen ' +
     'or archive route: every <code>api/creative/*</code> file answers non-GET with 405.</p></div>';
@@ -2417,8 +2638,9 @@ function flagExplain(a){
       '(<code>trg_creative_asset_lineage</code>), even in a staff context.';
   if(a.provider==='copy')
     return '<code>copy</code> sets <code>ai_generated: true</code> and <code>synthetic_performer: false</code> — ' +
-      'there is no performer in a line of text. <code>format</code> is <code>1x1</code> as the neutral value ' +
-      'because the column is NOT NULL and the library filters on it.';
+      'there is no performer in a line of text. <code>format</code> is <code>spec.format || \'1x1\'</code> ' +
+      '(copy.mjs:50) — the column is NOT NULL and the library filters on it, so 1x1 is the neutral default a ' +
+      'caller who names no format gets, not a value copy is pinned to.';
   if(!a.ai_generated)
     return 'Not AI-generated — a state <b>no provider in this module can produce</b>. Every adapter sets ' +
       '<code>aiGenerated: true</code> (or inherits a true parent), and <code>storeAsset()</code> stores ' +
