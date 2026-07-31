@@ -18,6 +18,8 @@ import {
   requestSoftPull,
   fulfilSoftPull,
   closeSoftPull,
+  recordPull,
+  getLatestPull,
   listSoftPullRequests,
   openRequestFor,
   normalizeRequester,
@@ -460,5 +462,108 @@ describe("reading the ledger", () => {
     for (const fn of [listSoftPullRequests, openRequestFor]) {
       await assert.rejects(() => fn(fakeDb(), {}), (e) => e instanceof SoftPullError);
     }
+  });
+});
+
+// ── recordPull / getLatestPull ─────────────────────────────────────────────
+
+describe("recordPull stores the pull and routes it through the one ingest path", () => {
+  test("a missing org or client is refused before any query", async () => {
+    for (const args of [{}, { orgId: ORG }, { clientId: CLIENT }]) {
+      const db = fakeDb();
+      await assert.rejects(() => recordPull(db, { ...args, result: {} }),
+        (e) => e instanceof SoftPullError);
+      assert.deepEqual(db.calls, []);
+    }
+  });
+
+  test("a payload that is not an object is refused — an empty pull is not a pull", async () => {
+    // Storing `{}` would put a row in the history that reads as "we pulled and
+    // they have no credit". That is a different and much worse claim than "the
+    // pull failed", which is what closeSoftPull(status:'failed') is for.
+    for (const result of [undefined, null, "", "{}", 0, 7, true, []]) {
+      const db = fakeDb();
+      await assert.rejects(() => recordPull(db, { orgId: ORG, clientId: CLIENT, result }),
+        (e) => e instanceof SoftPullError, `result ${JSON.stringify(result)} was accepted`);
+      assert.deepEqual(db.calls, [], `result ${JSON.stringify(result)} reached the database`);
+    }
+  });
+
+  test("with no requestId the pull is still stored and still ingested", async () => {
+    // The paid path (diagnostic.paid -> C-00) predates the ledger and files no
+    // request. Refusing it here would break a flow that already works.
+    const payload = { tradelines: [{ lender: "Amex", credit_limit: 9000, account_ref: "a1" }] };
+    const crs = { id: "c1", org_id: ORG, client_id: CLIENT, created_at: new Date(), result: payload };
+    const db = fakeDb([{ rows: [crs] }, { rows: [{ id: "t1" }] }]);
+    const out = await recordPull(db, { orgId: ORG, clientId: CLIENT, result: payload });
+
+    assert.equal(out.crsResult.id, "c1");
+    assert.equal(out.request, null, "a pull with no request invented one");
+    assert.equal(out.ingested, 1);
+    assert.ok(db.calls.some((c) => /INSERT INTO crs_results/i.test(c.text)));
+    assert.ok(!db.calls.some((c) => /soft_pull_requests/i.test(c.text)),
+      "a pull with no request still touched the ledger");
+  });
+
+  test("with a requestId the pull closes the ledger row, in the same transaction", async () => {
+    const payload = { tradelines: [{ lender: "Amex", credit_limit: 9000, account_ref: "a1" }] };
+    const crs = { id: "c1", org_id: ORG, client_id: CLIENT, created_at: new Date(), result: payload };
+    const db = fakeDb([
+      { rows: [crs] },
+      { rows: [rowFor()] },
+      { rows: [crs] },
+      { rows: [rowFor({ status: "fulfilled", crs_result_id: "c1", resolved_at: new Date() })] },
+      { rows: [{ id: "t1" }] }
+    ]);
+    const out = await recordPull(db, { orgId: ORG, clientId: CLIENT, requestId: "r1", result: payload });
+
+    assert.equal(out.request.status, "fulfilled");
+    assert.equal(out.request.crs_result_id, "c1");
+    assert.equal(out.ingested, 1);
+  });
+
+  test("the payload is serialised once, as jsonb, and not read by this module", async () => {
+    const payload = { tradelines: [{ creditor: "Chase", credit_limit: 5000, account_number: "z9" }] };
+    const crs = { id: "c1", org_id: ORG, client_id: CLIENT, created_at: new Date(), result: payload };
+    const db = fakeDb([{ rows: [crs] }, { rows: [{ id: "t1" }] }]);
+    await recordPull(db, { orgId: ORG, clientId: CLIENT, result: payload });
+
+    const insert = db.calls.find((c) => /INSERT INTO crs_results/i.test(c.text));
+    assert.equal(insert.params[2], JSON.stringify(payload));
+    assert.equal(insert.params[3], null, "outcome_tier defaulted to something other than unknown");
+
+    // The cards must come out of src/tradelines/store.mjs, not out of a second
+    // parser grown here.
+    const ingest = db.calls.find((c) => /INSERT INTO tradelines/i.test(c.text));
+    assert.match(ingest.text, /ON CONFLICT \(client_id, account_ref\) WHERE account_ref IS NOT NULL/);
+  });
+});
+
+describe("getLatestPull", () => {
+  test("a read with no client is refused rather than returning somebody's", async () => {
+    await assert.rejects(() => getLatestPull(fakeDb(), {}), (e) => e instanceof SoftPullError);
+    await assert.rejects(() => getLatestPull(fakeDb()), (e) => e instanceof SoftPullError);
+  });
+
+  test("null when the client has never been pulled — not an empty object", async () => {
+    assert.equal(await getLatestPull(fakeDb([{ rows: [] }]), { clientId: CLIENT }), null);
+  });
+
+  test("ordering breaks ties on id, because created_at defaults to now()", async () => {
+    // Two pulls recorded in one transaction share a now(). Ordering on the
+    // timestamp alone would make "the latest" arbitrary between them.
+    const db = fakeDb([{ rows: [{ id: "c2" }] }]);
+    await getLatestPull(db, { clientId: CLIENT });
+    assert.match(db.calls[0].text, /ORDER BY created_at DESC, id DESC/);
+    assert.match(db.calls[0].text, /LIMIT 1/);
+  });
+
+  test("it returns the row as stored and does not normalize the payload", async () => {
+    // Callers that want the cards read `tradelines`, which recordPull already
+    // populated through the one normalizer. A second parser here is exactly what
+    // this module refuses to grow.
+    const row = { id: "c1", client_id: CLIENT, result: { tradelines: [{ lender: "Amex" }] } };
+    const out = await getLatestPull(fakeDb([{ rows: [row] }]), { clientId: CLIENT });
+    assert.deepEqual(out, row);
   });
 });

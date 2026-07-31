@@ -46,6 +46,7 @@
 // land without the other. NULL is a legitimate value here and means "ad-hoc, or
 // the plan is unknown", never "free".
 
+import { db as sharedDb, pool } from "../db.mjs";
 import { fromCents } from "../commissions/money.mjs";
 import { ingestCrsResult } from "../tradelines/store.mjs";
 
@@ -252,8 +253,18 @@ export async function requestSoftPull(db, {
 export async function fulfilSoftPull(db, { requestId, crsResultId } = {}) {
   if (!requestId) throw new SoftPullError("requestId is required");
   if (!crsResultId) throw new SoftPullError("crsResultId is required");
+  return withTransaction(db, (tx) => fulfilWithin(tx, { requestId, crsResultId }));
+}
 
-  return withTransaction(db, async (tx) => {
+/* fulfilWithin — the body of fulfilSoftPull, minus the transaction.
+   Extracted so recordPull() can run "write the pull" and "close the request"
+   inside ONE transaction. Calling fulfilSoftPull() from inside another
+   transaction would not work: withTransaction() branches on
+   `typeof db.connect === "function"`, and a pg PoolClient has a connect method,
+   so it would try to open a nested connection from a client rather than reusing
+   the one it was handed. One helper, two wrappers, no nesting. */
+async function fulfilWithin(tx, { requestId, crsResultId }) {
+  {
     const request = (await tx.query(
       `SELECT ${SELECT_COLUMNS} FROM soft_pull_requests WHERE id = $1 FOR UPDATE`,
       [requestId]
@@ -297,7 +308,85 @@ export async function fulfilSoftPull(db, { requestId, crsResultId } = {}) {
     const ingest = await ingestCrsResult(tx, crsRow);
 
     return { request: decorate(updated), ingested: ingest.ingested, tradelines: ingest.rows };
+  }
+}
+
+/**
+ * recordPull — a pull came back. Store it, and put the cards where the closer's
+ * calculator reads them.
+ *
+ * This is the write half of the on-demand path: `crs_results` is the history of
+ * pull OUTPUT (001_init.sql, "full engine output per pull, history not
+ * latest-only"), and every pull that arrives gets a row there whether or not a
+ * ledger entry asked for it — a pull that happened is a fact, and refusing to
+ * store one because nobody filed the paperwork would lose the only copy.
+ *
+ * `requestId` is OPTIONAL and that is deliberate:
+ *   * given    — the answer is attributed to the request that asked for it, and
+ *                the ledger row closes. Same transaction, so a client's cards
+ *                cannot be updated by a pull the ledger says never completed.
+ *   * omitted  — the pull is still stored and still ingested. This is the paid
+ *                path (`diagnostic.paid` → C-00), which predates the ledger and
+ *                does not file a request. Refusing it here would break the flow
+ *                that already works.
+ *
+ * ONE READER. Both branches reach `tradelines` through ingestCrsResult(); this
+ * function never looks inside `result` itself.
+ */
+export async function recordPull(db, {
+  orgId, clientId, result, outcomeTier = null, requestId = null
+} = {}) {
+  if (!orgId || !clientId) throw new SoftPullError("orgId and clientId are required");
+  // A pull with no payload is not a pull. Storing `{}` would put a row in the
+  // history that reads as "we pulled and they have no credit", which is a
+  // different and much worse claim than "the pull failed" — that is what
+  // closeSoftPull(status:'failed') is for.
+  if (result === null || result === undefined || typeof result !== "object" || Array.isArray(result)) {
+    throw new SoftPullError("result must be the pull payload object");
+  }
+
+  return withTransaction(db, async (tx) => {
+    const crsRow = (await tx.query(
+      `INSERT INTO crs_results (org_id, client_id, result, outcome_tier)
+       VALUES ($1,$2,$3,$4)
+       RETURNING id, org_id, client_id, result, outcome_tier, created_at`,
+      [orgId, clientId, JSON.stringify(result), outcomeTier]
+    )).rows[0];
+
+    if (requestId) {
+      const out = await fulfilWithin(tx, { requestId, crsResultId: crsRow.id });
+      return { crsResult: crsRow, request: out.request, ingested: out.ingested, tradelines: out.tradelines };
+    }
+
+    const ingest = await ingestCrsResult(tx, crsRow);
+    return { crsResult: crsRow, request: null, ingested: ingest.ingested, tradelines: ingest.rows };
   });
+}
+
+/**
+ * getLatestPull — the most recent pull output for one client, or null.
+ *
+ * Ordered by created_at DESC, id DESC. The id is the tiebreaker and it is not
+ * decoration: `crs_results.created_at` defaults to now() and two pulls recorded
+ * in the same transaction share a now(), so ordering on the timestamp alone
+ * would make "the latest" arbitrary between them.
+ *
+ * Returns the row as stored. It does NOT normalize the payload — callers that
+ * want the cards read `tradelines`, which recordPull() has already populated
+ * through the one normalizer. A second parser here is exactly what this module
+ * refuses to grow.
+ */
+export async function getLatestPull(db, { clientId } = {}) {
+  if (!clientId) throw new SoftPullError("clientId is required");
+  const res = await db.query(
+    `SELECT id, org_id, client_id, result, outcome_tier, created_at, updated_at
+       FROM crs_results
+      WHERE client_id = $1
+      ORDER BY created_at DESC, id DESC
+      LIMIT 1`,
+    [clientId]
+  );
+  return res.rows[0] ?? null;
 }
 
 /**
@@ -366,11 +455,38 @@ export async function getSoftPullRequest(db, requestId) {
   return res.rows[0] ? decorate(res.rows[0]) : null;
 }
 
-/* Same shape as src/pii/index.mjs: a pool gets a real transaction, a plain
-   client or a test double is used as-is. */
+/* withTransaction — a REAL transaction, which took catching to get right.
+ *
+ * The idiom in src/pii/index.mjs is `if (typeof db.connect !== "function")
+ * return fn(db)` — "a pool gets a transaction, a test double is used as-is".
+ * That probe is wrong against this repo's own database handle: `src/db.mjs`
+ * exports `db` as `{ query }` and NOTHING ELSE. It has no connect(), so the
+ * probe takes the no-transaction branch and the callback runs with autocommit,
+ * on the one object every production caller actually passes.
+ *
+ * Caught by a test, not by reading: "a pull naming an already-resolved request
+ * stores NOTHING" failed with an orphan `crs_results` row — the INSERT had
+ * committed itself before the fulfil raised. Without the fix, recordPull()
+ * would leave the pull history claiming a pull that the ledger says never
+ * completed, which is precisely the disagreement this module exists to prevent.
+ *
+ * So: use the handle's own connect() when it has one (a real Pool, or a test
+ * double that wants to observe BEGIN/COMMIT), reach for the pool when we were
+ * handed the shared singleton, and only then fall back to running inline for a
+ * plain fake in a unit test.
+ *
+ * NOTE FOR WHOEVER OWNS src/pii/index.mjs: revealSsn() has this same probe and
+ * the same handle, so its rule 3 — "the access log is written in the same
+ * transaction as the reveal; if the log write fails, the reveal fails" — does
+ * not hold as shipped. I did not change it here; it is a behavioural change to
+ * a compliance path and deserves its own review. Written up as a finding.
+ */
 async function withTransaction(db, fn) {
-  if (typeof db.connect !== "function") return fn(db);
-  const client = await db.connect();
+  const acquire = typeof db?.connect === "function"
+    ? () => db.connect()
+    : (db === sharedDb ? () => pool().connect() : null);
+  if (!acquire) return fn(db);
+  const client = await acquire();
   try {
     await client.query("BEGIN");
     const out = await fn(client);

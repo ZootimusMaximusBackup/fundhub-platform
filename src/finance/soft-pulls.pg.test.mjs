@@ -33,6 +33,8 @@ import {
   listSoftPullRequests,
   openRequestFor,
   getSoftPullRequest,
+  recordPull,
+  getLatestPull,
   SoftPullError
 } from "./soft-pulls.mjs";
 
@@ -512,6 +514,125 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
         ),
         (e) => /soft_pull_requests_result_ck/.test(String(e.message))
       );
+    });
+  });
+
+  // ── recordPull / getLatestPull, against the real crs_results table ────────
+
+  describe("recording a pull", () => {
+    test("a pull with no request is stored and its cards land in tradelines", async () => {
+      // The paid path (diagnostic.paid -> C-00) files no ledger request. A pull
+      // that happened is a fact; refusing to store it for want of paperwork
+      // would lose the only copy.
+      await wipeLedger();
+      await db.query(`DELETE FROM crs_results WHERE client_id = $1`, [client]);
+
+      const out = await recordPull(db, { orgId: org, clientId: client, result: CRS_PAYLOAD });
+      assert.equal(out.request, null);
+      assert.equal(out.ingested, 3);
+      assert.ok(out.crsResult.id);
+
+      const lines = await tradelineRows();
+      assert.equal(lines.length, 3, `tradelines has ${lines.length} rows, not 3`);
+      assert.equal(lines.find((l) => l.lender === "Amex Blue Business").credit_limit_cents, "1000000");
+      assert.equal(lines.find((l) => l.lender === "Capital One Spark").apr, null,
+        "a missing APR was filled in with a guess");
+      assert.deepEqual(await ledgerRows(), [], "a pull with no request wrote a ledger row anyway");
+    });
+
+    test("a pull with a request closes the ledger row and ingests, atomically", async () => {
+      await wipeLedger();
+      await db.query(`DELETE FROM crs_results WHERE client_id = $1`, [client]);
+
+      const { request } = await requestSoftPull(db, {
+        orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId },
+        reason: "closer asked for a refresh"
+      });
+      const out = await recordPull(db, {
+        orgId: org, clientId: client, requestId: request.id, result: CRS_PAYLOAD
+      });
+
+      assert.equal(out.request.status, "fulfilled");
+      assert.equal(out.request.crs_result_id, out.crsResult.id);
+      assert.equal(out.ingested, 3);
+      assert.equal((await tradelineRows()).length, 3);
+    });
+
+    test("a pull naming an already-resolved request stores NOTHING — both halves roll back", async () => {
+      // The transaction is the claim. If the crs_results row survived a failed
+      // fulfil, the history would carry a pull the ledger says never completed.
+      await wipeLedger();
+      await db.query(`DELETE FROM crs_results WHERE client_id = $1`, [client]);
+
+      const { request } = await requestSoftPull(db, {
+        orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId }, reason: "first"
+      });
+      await recordPull(db, { orgId: org, clientId: client, requestId: request.id, result: CRS_PAYLOAD });
+      const crsCountAfterFirst = Number((await db.query(
+        `SELECT count(*) n FROM crs_results WHERE client_id = $1`, [client])).rows[0].n);
+
+      await assert.rejects(
+        () => recordPull(db, { orgId: org, clientId: client, requestId: request.id, result: CRS_PAYLOAD }),
+        (e) => e instanceof SoftPullError && e.status === 409
+      );
+
+      const after = Number((await db.query(
+        `SELECT count(*) n FROM crs_results WHERE client_id = $1`, [client])).rows[0].n);
+      assert.equal(after, crsCountAfterFirst,
+        "a refused recordPull left an orphan crs_results row behind");
+    });
+
+    test("a request cannot be closed by a pull recorded against another client", async () => {
+      await wipeLedger();
+      const { request } = await requestSoftPull(db, {
+        orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId }, reason: "mis-join"
+      });
+      await assert.rejects(
+        () => recordPull(db, {
+          orgId: org, clientId: otherClient, requestId: request.id, result: CRS_PAYLOAD
+        }),
+        (e) => e instanceof SoftPullError && e.status === 409
+      );
+      assert.deepEqual(await tradelineRows(otherClient), [],
+        "another client's cards were ingested against this request");
+      assert.equal((await ledgerRows())[0].status, "queued");
+    });
+  });
+
+  describe("getLatestPull", () => {
+    test("null for a client who has never been pulled", async () => {
+      // A fresh client, deliberately: `otherClient` picked up a crs_results row
+      // from the mis-join test above, so asserting against it would prove
+      // nothing about the empty case.
+      const virgin = await mkClient("neverpulled");
+      assert.equal(await getLatestPull(db, { clientId: virgin }), null);
+    });
+
+    test("the newest pull wins, and the tiebreak holds inside one transaction", async () => {
+      // crs_results.created_at defaults to now(), which is the TRANSACTION
+      // timestamp — two rows written in one transaction share it exactly. Order
+      // on the timestamp alone and "the latest" is arbitrary between them.
+      await wipeLedger();
+      await db.query(`DELETE FROM crs_results WHERE client_id = $1`, [client]);
+
+      const first = await recordPull(db, {
+        orgId: org, clientId: client, result: { tradelines: [], marker: "first" }
+      });
+      const second = await recordPull(db, {
+        orgId: org, clientId: client, result: { tradelines: [], marker: "second" }
+      });
+
+      const latest = await getLatestPull(db, { clientId: client });
+      assert.ok(latest, "a client with two pulls returned none");
+      assert.ok(latest.id === second.crsResult.id || latest.id === first.crsResult.id);
+      assert.equal(latest.result.marker, "second",
+        `getLatestPull returned the older pull (${latest.result.marker})`);
+    });
+
+    test("it returns the payload as stored and does not normalize it", async () => {
+      const latest = await getLatestPull(db, { clientId: client });
+      assert.ok("result" in latest, "the payload was dropped");
+      assert.equal(latest.client_id, client);
     });
   });
 });
