@@ -1,0 +1,22 @@
+# Journey changelog
+
+One line per journey change, newest at top. This is the human-readable record —
+including when a change made a journey worse.
+
+```
+YYYY-MM-DD | <journey> | <what changed> | <why> | <commit>
+```
+
+Hand-maintained. The `-actual.md` pages next to it are generated (`npm run journeys`);
+this file is not, because "what changed and why" is a judgement nobody can generate.
+
+---
+
+2026-07-31 | white-label | First actual journey: the `partner` kind reaches 18 of 51 routes — campaigns, Creative Factory, its own brand tokens | No journey documentation existed for any flow; owner asked for actual-files only | (this commit)
+2026-07-31 | affiliate | First actual journey: the `affiliate` kind reaches only the open routes — **no endpoint anywhere admits an affiliate** | Generated from the routing table; recorded as a finding rather than smoothed over | (this commit)
+2026-07-31 | role-inquiry-remover | First actual journey for `inquiry_specialist`, the role behind the Inquiry Remover screen | Journey is named for the product, the role for the database column — mapping written down so nobody re-derives it | (this commit)
+2026-07-31 | role-funding-advisor | First actual journey for `funding_advisor` | As above | (this commit)
+2026-07-31 | role-closer | First actual journey for `closer` | As above | (this commit)
+2026-07-31 | role-sales-manager | Page created stating the role DOES NOT EXIST in the code; no diagram drawn | CLAUDE.md §4 tracks the journey and nothing in `src/`, `api/` or `db/` defines the role. Drawing one would be inventing it | (this commit)
+2026-07-31 | role-owner | First actual journey for `owner` | As above | (this commit)
+2026-07-31 | client | First actual journey: the `client` kind reaches 9 of 51 routes, of which 7 are open or signature-verified rather than client-specific | Generated from the routing table and each handler's gate | (this commit)
