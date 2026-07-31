@@ -1,16 +1,22 @@
 import { test } from "node:test";
 import assert from "node:assert";
 import { healthState, classify, safeError } from "./health.mjs";
+import { EXPECTED_MIGRATIONS } from "../../db/expected-migrations.mjs";
 
 const AT = () => new Date("2026-07-30T00:00:00.000Z");
 const throwing = (err) => ({ query: async () => { throw err; } });
 const err = (message, code) => Object.assign(new Error(message), code ? { code } : {});
 
-test("a reachable database reports up, with the migration count", async () => {
-  const db = { query: async () => ({ rows: [{ n: 25 }] }) };
+test("a reachable, fully migrated database reports up, with the migration count", async () => {
+  // "Reachable" alone is not up any more — the applied keys have to cover what
+  // this build expects. See health-migrations.test.mjs for the behind case.
+  const db = { query: async () => ({ rows: EXPECTED_MIGRATIONS.map((key) => ({ key })) }) };
   const b = await healthState(db, AT);
   assert.deepEqual(b, {
-    ok: true, db: "up", state: "up", migrations: 25,
+    ok: true, db: "up", state: "up",
+    migrations: EXPECTED_MIGRATIONS.length,
+    expected: EXPECTED_MIGRATIONS.length,
+    pending: 0,
     error: null, checkedAt: "2026-07-30T00:00:00.000Z"
   });
 });
@@ -97,11 +103,12 @@ test("healthState never rejects — a health check that can fail is not one", as
 
   const junk = { query: async () => ({}) };
   const b = await healthState(junk, AT);
-  assert.equal(b.ok, true);
   assert.equal(b.migrations, 0);      // never NaN, never undefined
+  assert.equal(b.state, "behind");    // no keys read back is not a healthy database
+  assert.equal(b.ok, false);
 
-  const nonNumeric = { query: async () => ({ rows: [{ n: "many" }] }) };
-  assert.equal((await healthState(nonNumeric, AT)).migrations, 0);
+  const unusableRows = { query: async () => ({ rows: [{ n: "many" }] }) };
+  assert.equal((await healthState(unusableRows, AT)).migrations, 0);
 });
 
 test("classify defaults to 'error' for anything unrecognised", () => {
