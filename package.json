@@ -12,6 +12,8 @@
     "artifact": "node scripts/build-artifact.mjs",
     "diagrams": "node scripts/diagrams/generate.mjs",
     "diagrams:check": "node scripts/diagrams/generate.mjs --check",
+    "journeys": "node scripts/journeys/generate.mjs",
+    "journeys:check": "node scripts/journeys/generate.mjs --check",
     "test": "node --test \"src/**/*.test.mjs\" \"scripts/**/*.test.mjs\""
   },
   "dependencies": {
