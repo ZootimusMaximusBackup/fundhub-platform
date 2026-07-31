@@ -65,6 +65,14 @@ const OTHER_ORG_SLUG = "w7-pg-test-other-org";
 // that way rather than by the raw descriptor it inserted.
 const merchantKeyFor = (merchant) => normaliseMerchant(`${MERCHANT_PREFIX} ${merchant}`);
 
+// Four accounts with fixed ids so a wipe can target them exactly.
+//
+// THESE ARE REAL bank_accounts ROWS, INSERTED IN before(). They used to be bare
+// uuids that existed nowhere, which the schema accepted because bank_account_id
+// had no foreign key. 092_bank_account_fk.sql added it, so a transaction or a
+// bill can no longer name an account that does not exist — see
+// src/banking/account-link.pg.test.mjs. Nothing else in this file changed: the
+// same ids, the same rows, the same assertions.
 const ACCOUNT_A = "aaaaaaaa-0000-4000-8000-00000000a001";
 const ACCOUNT_B = "bbbbbbbb-0000-4000-8000-00000000b002";
 const ACCOUNT_C = "cccccccc-0000-4000-8000-00000000c003";
@@ -85,6 +93,7 @@ async function wipe() {
     [TEST_ACCOUNTS]);
   await db.query(`DELETE FROM bank_transactions WHERE provider_transaction_id LIKE $1 || '%'`,
     [PROVIDER_PREFIX]);
+  await db.query(`DELETE FROM bank_accounts WHERE id = ANY($1::uuid[])`, [TEST_ACCOUNTS]);
   await db.query(`DELETE FROM clients WHERE email = $1`, [CLIENT_EMAIL]);
   await db.query(`DELETE FROM orgs WHERE slug = $1`, [OTHER_ORG_SLUG]);
 }
@@ -140,6 +149,13 @@ before(async () => {
     `INSERT INTO clients (org_id, email, first_name) VALUES ($1,$2,'Banking') RETURNING id`,
     [orgId, CLIENT_EMAIL]
   )).rows[0].id;
+  // The accounts every transaction and bill below hangs off. Hand-entered rows
+  // (no plaid_item_id), which 081 explicitly allows.
+  await db.query(
+    `INSERT INTO bank_accounts (id, org_id, client_id, name)
+     SELECT a, $2, $3, 'W7 pg test account' FROM unnest($1::uuid[]) AS a`,
+    [TEST_ACCOUNTS, orgId, clientId]
+  );
 });
 
 after(async () => {
