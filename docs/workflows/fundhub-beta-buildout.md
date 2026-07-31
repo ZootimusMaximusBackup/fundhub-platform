@@ -4,15 +4,24 @@
 > workflow so there was a board to claim against. Other workflows in this batch:
 > add your rows, do not rewrite anyone else's.
 
-## Branch note — read before you start
+## Branch note — RETRACTED, and what to do instead
 
-`origin/main` and the working branches are **two unrelated git histories**. They
-share no common ancestor (different root commits). `origin/main` holds 13 commits
-of early-phase work with **zero migrations** and none of `src/finance/`,
-`netlify/`, `docs/` or `CLAUDE.md`.
+**An earlier version of this file said `origin/main` was an unrelated, empty
+history and told you not to branch from it. That was WRONG. Ignore it.**
 
-**Do not cut a branch from `origin/main`.** You will get a tree in which none of
-this product exists. Branch from the current feature lineage instead.
+What actually happened: at the start of the 099 session the sandbox's cached
+`origin/main` ref pointed at a stale commit (`e354ebe`) carrying 13 early-phase
+commits and zero migrations, with no common ancestor with the working branch.
+Re-fetching later force-updated the ref to the real `main` (`e67e2db`), which is
+correct and has all 54 migrations. The real repository was fine the whole time.
+
+**Branch from `main` as normal.** If `git log origin/main` looks impossibly old
+or `git ls-tree origin/main db/migrations/` returns nothing, you have the stale
+ref, not a broken repo — run `git fetch origin main --force` and look again.
+Confirm against the real GitHub repo before concluding anything about history.
+
+The lesson worth keeping: a sandbox git ref is not authoritative. Check the real
+remote before you act on a scary-looking history finding.
 
 ## Tasks
 
@@ -29,8 +38,9 @@ Chris asked for this as its own workflow. Everything a fresh session needs is
 below; it does not depend on the 099 session's context.
 
 ```
-Repo: fundhub-platform. Branch: cut a new branch from claude/migration-099-consent-repknn
-(NOT from main — main is an unrelated, empty history, see docs/workflows/fundhub-beta-buildout.md).
+Repo: fundhub-platform. Branch: cut a new branch from main as normal.
+(If `git ls-tree origin/main db/migrations/` comes back empty you have a stale
+cached ref — `git fetch origin main --force` and look again. The repo is fine.)
 Shared board: docs/workflows/fundhub-beta-buildout.md — read it, claim task PGSUITE
 before starting, write your change manifest before reporting done.
 
