@@ -14,6 +14,13 @@
 // A 'note' IS NOT AN ATTEMPT. Working notes are logged in the same table, for a
 // single readable timeline, but do not count toward call_attempts: a desk that
 // inflates its attempt count is lying to a bureau, slowly.
+//
+// TELEMETRY (W1 wiring): call_made and letter_issued are logged to staff_events
+// after the inquiry_attempts row commits. Portal and note do not generate
+// telemetry (portal has no canonical kind, note is not an action). See
+// src/shifts/TELEMETRY-CALLSITES.md.
+
+import { logStaffEvent } from "../shifts/telemetry.mjs";
 
 const ATTEMPT_KINDS = new Set(["call", "letter", "portal", "note"]);
 const COUNTING_KINDS = new Set(["call", "letter", "portal"]);
@@ -32,13 +39,16 @@ export class InquiryWriteError extends Error {
  * Transactional because three writes must agree: the attempt row, the
  * recomputed counter, and the attribution columns. A partial apply here would
  * leave a row that claims three attempts with two logged.
+ *
+ * After commit, fires telemetry for call and letter kinds (fire-and-forget via
+ * logStaffEvent, which never throws).
  */
 export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcome = null, note = null }) {
   if (!inquiryId) throw new InquiryWriteError("inquiryId is required");
   if (!staffId) throw new InquiryWriteError("staffId is required", { status: 401 });
   if (!ATTEMPT_KINDS.has(kind)) throw new InquiryWriteError(`unknown attempt kind: ${kind}`);
 
-  return withTransaction(db, async (tx) => {
+  const updated = await withTransaction(db, async (tx) => {
     const inquiry = (await tx.query(
       `SELECT id, org_id FROM inquiry_log WHERE id = $1 FOR UPDATE`, [inquiryId]
     )).rows[0];
@@ -70,6 +80,26 @@ export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcom
 
     return updated;
   });
+
+  // Telemetry fires after commit (fire-and-forget). call_made and letter_issued
+  // are staff-attributed. portal and note do not generate telemetry.
+  // See src/shifts/TELEMETRY-CALLSITES.md.
+  if (kind === "call" || kind === "letter") {
+    await logStaffEvent(db, {
+      orgId: updated.org_id,
+      staffId,
+      shiftId: null,
+      kind: kind === "call" ? "call_made" : "letter_issued",
+      detail: {
+        inquiry_id: updated.id,
+        client_id: updated.client_id,
+        outcome: outcome ?? null,
+        attempt_no: updated.call_attempts
+      }
+    });
+  }
+
+  return updated;
 }
 
 /**
