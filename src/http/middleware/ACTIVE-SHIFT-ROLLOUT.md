@@ -198,10 +198,24 @@ to someone who fails both), but it is worth confirming that is the intent.
    decided policy: `STALE_SHIFT_HOURS = 12`, set by the owner on 2026-07-31. The
    number is settled; this question is not. Once these endpoints are gated, that
    sweep acquires a second, larger consequence: it revokes dashboard access
-   mid-task. §14 says "auto-close on **inactivity**", which is a different trigger
-   from the elapsed-time one that is implemented. **That mismatch is worth a look
-   independently of this gate.** Nothing calls `autoCloseStale()` today — there is
-   no scheduler and no caller — so no shift is being swept at any threshold yet.
+   mid-task.
+
+   The trigger mismatch flagged here is now **resolved**. §14 says "auto-close on
+   **inactivity**" and the owner confirmed that reading on 2026-07-31: "a closer
+   working a 13-hour day with activity should never get auto-closed. Idle 12h
+   closes it." `autoCloseStale()` now closes on time since the last
+   `staff_events` row for the shift, not on elapsed time since clock-in, and
+   `ended_at` is that last activity rather than clock-in plus the threshold.
+
+   ⚠ But the sweep is only as good as the telemetry, and **`logStaffEvent()` has
+   zero call sites** (see `../../shifts/TELEMETRY-CALLSITES.md`). Until those
+   land, `staff_events` holds nothing but the sweep's own audit rows, every open
+   shift reads as idle since clock-in, and a swept shift is written with a
+   near-zero length. Nothing calls `autoCloseStale()` today — no scheduler, no
+   caller — so nothing is harmed. **Wire the telemetry call sites before
+   scheduling the sweep**, or it will close active shifts and pay nothing for
+   them. Gating these endpoints makes that ordering more important, not less: a
+   wrongly-swept shift would also lock the person out of the dashboard.
 4. **Whether a refused action should be recorded.** `staff_events` is the obvious
    home for "tried to act off the clock", and it would be a genuinely useful
    telemetry signal (people repeatedly forgetting to clock in is a fixable process

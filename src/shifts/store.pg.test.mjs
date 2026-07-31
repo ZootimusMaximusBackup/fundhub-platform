@@ -31,11 +31,13 @@ import {
 const HAS_DB = !!process.env.DATABASE_URL;
 const EMAIL_A = "shifts_pg_test@example.com";
 const EMAIL_B = "shifts_pg_test_b@example.com";
-const EMAILS = [EMAIL_A, EMAIL_B];
+const EMAIL_C = "shifts_pg_test_c@example.com";
+const EMAILS = [EMAIL_A, EMAIL_B, EMAIL_C];
 
 let orgId = null;
 let staffA = null;
 let staffB = null;
+let staffC = null;
 
 async function wipe() {
   // staff_events.shift_id is ON DELETE SET NULL, so events go before shifts or
@@ -62,6 +64,7 @@ before(async () => {
   )).rows[0].id;
   staffA = await mk(EMAIL_A, "Shift Tester A");
   staffB = await mk(EMAIL_B, "Shift Tester B");
+  staffC = await mk(EMAIL_C, "Shift Tester C");
 });
 
 after(async () => {
@@ -182,20 +185,68 @@ test("a closed shift does not block the next one — the index is partial on end
 
 // --- autoCloseStale -----------------------------------------------------------
 
-test("autoCloseStale ends a forgotten shift at the hour it should have ended, not when the sweep ran", { skip: !HAS_DB }, async () => {
+test("autoCloseStale ends an idle shift at its last activity, not when the sweep ran", { skip: !HAS_DB }, async () => {
   const opened = (await db.query(
     `INSERT INTO shifts (org_id, staff_id, started_at) VALUES ($1,$2, now() - interval '30 hours') RETURNING *`,
     [orgId, staffB]
   )).rows[0];
+  // Worked a while, then went quiet 20 hours ago — past an 8-hour idle
+  // threshold, so this one is genuinely forgotten.
+  const lastAct = (await db.query(
+    `INSERT INTO staff_events (org_id, staff_id, shift_id, kind, detail, created_at)
+     VALUES ($1,$2,$3,'pull_run','{}'::jsonb, now() - interval '20 hours') RETURNING created_at`,
+    [orgId, staffB, opened.id]
+  )).rows[0].created_at;
 
   const closed = await autoCloseStale(db, { olderThanHours: 8 });
   const mine = closed.find((r) => r.id === opened.id);
-  assert.ok(mine, "a 30-hour-old shift is past an 8-hour threshold");
+  assert.ok(mine, "idle for 20 hours is past an 8-hour threshold");
 
-  const expected = new Date(new Date(opened.started_at).getTime() + 8 * 3600 * 1000);
-  assert.equal(new Date(mine.ended_at).toISOString(), expected.toISOString(),
-    "ended_at is started_at + the threshold; using now() would credit the 22 hours since");
+  assert.equal(new Date(mine.ended_at).toISOString(), new Date(lastAct).toISOString(),
+    "ended_at is the last recorded activity; now() would credit the 20 idle hours");
+  assert.equal(mine.had_activity, true, "the audit must be able to say the estimate had evidence behind it");
   assert.ok(new Date(mine.ended_at) < new Date(), "and it is in the past, not the moment of the sweep");
+});
+
+test("autoCloseStale leaves a long shift alone while it is still active — §14 is inactivity", { skip: !HAS_DB }, async () => {
+  // The case the owner named on 2026-07-31: a closer 13 hours into a shift who
+  // is still working. Under the elapsed-time rule this replaced, that shift was
+  // closed mid-shift and uq_shifts_one_open then blocked the next clock-in.
+  const opened = (await db.query(
+    `INSERT INTO shifts (org_id, staff_id, started_at) VALUES ($1,$2, now() - interval '13 hours') RETURNING *`,
+    [orgId, staffC]
+  )).rows[0];
+  await db.query(
+    `INSERT INTO staff_events (org_id, staff_id, shift_id, kind, detail, created_at)
+     VALUES ($1,$2,$3,'call_made','{}'::jsonb, now() - interval '10 minutes')`,
+    [orgId, staffC, opened.id]
+  );
+
+  const closed = await autoCloseStale(db, { olderThanHours: 12 });
+  assert.ok(!closed.find((r) => r.id === opened.id),
+    "13 hours elapsed but active 10 minutes ago — closing this is the bug, not the feature");
+
+  const still = (await db.query(`SELECT ended_at FROM shifts WHERE id=$1`, [opened.id])).rows[0];
+  assert.equal(still.ended_at, null, "and it is genuinely still open, not merely absent from the return");
+});
+
+test("the sweep's own audit rows are not activity — a stale shift cannot look busy", { skip: !HAS_DB }, async () => {
+  // AUTO_CLOSE_EVENT_KIND rows carry the shift_id they closed. If they counted
+  // as activity, last_active_at would advance to the sweep's own write.
+  const opened = (await db.query(
+    `INSERT INTO shifts (org_id, staff_id, started_at) VALUES ($1,$2, now() - interval '40 hours') RETURNING *`,
+    [orgId, staffA]
+  )).rows[0];
+  await db.query(
+    `INSERT INTO staff_events (org_id, staff_id, shift_id, kind, detail, created_at)
+     VALUES ($1,$2,$3,$4,'{}'::jsonb, now())`,
+    [orgId, staffA, opened.id, AUTO_CLOSE_EVENT_KIND]
+  );
+
+  const closed = await autoCloseStale(db, { olderThanHours: 8 });
+  const mine = closed.find((r) => r.id === opened.id);
+  assert.ok(mine, "a sweep row dated now() must not make a 40-hour-idle shift look active");
+  assert.equal(mine.had_activity, false, "there was no real activity — only the sweep's own row");
 });
 
 test("every auto-closed shift leaves a staff_events row saying software closed it, on what assumption", { skip: !HAS_DB }, async () => {

@@ -208,18 +208,40 @@ test("autoCloseStale refuses a negative, NaN or non-numeric threshold", async ()
   assert.equal(db.calls.length, 0, "a garbage threshold never becomes an interval");
 });
 
-test("autoCloseStale ends a stale shift at the hour it should have ended, not when the sweep ran", async () => {
+test("autoCloseStale ends a shift at its last recorded activity, not at the sweep's clock", async () => {
   const db = stubDb({ rows: [] });
   await autoCloseStale(db, { olderThanHours: 8 });
   const sql = db.calls[0].sql;
-  assert.match(sql, /SET ended_at = s\.started_at \+ make_interval/);
-  assert.doesNotMatch(sql, /SET ended_at = now\(\)/, "stamping the sweep's clock invents hours nobody worked");
+  assert.match(sql, /SET ended_at\s+= a\.last_active_at/);
+  assert.doesNotMatch(sql, /SET ended_at\s+= now\(\)/, "stamping the sweep's clock invents hours nobody worked");
+  // Nor the idle window: the threshold is how long we wait before deciding they
+  // left, not time they worked. Adding it would pay up to 8 hours of absence.
+  assert.doesNotMatch(sql, /SET ended_at\s+= a\.last_active_at \+ make_interval/);
 });
 
-test("autoCloseStale only touches shifts already past the threshold", async () => {
+test("autoCloseStale closes on INACTIVITY, not on elapsed time since clock-in", async () => {
   const db = stubDb({ rows: [] });
   await autoCloseStale(db, { olderThanHours: 8 });
-  assert.match(db.calls[0].sql, /WHERE s\.ended_at IS NULL AND s\.started_at < now\(\) - make_interval/);
+  const sql = db.calls[0].sql;
+  // Spec §14, confirmed by the owner 2026-07-31: a closer working a 13-hour day
+  // with activity must never be auto-closed. Gating on started_at did exactly
+  // that — and then blocked their next clock-in via uq_shifts_one_open.
+  assert.match(sql, /a\.last_active_at < now\(\) - make_interval/);
+  assert.doesNotMatch(sql, /s\.started_at < now\(\) - make_interval/,
+    "started_at is elapsed time; that is the rule this replaced");
+});
+
+test("autoCloseStale reads activity from staff_events and ignores its own sweep rows", async () => {
+  const db = stubDb({ rows: [] });
+  await autoCloseStale(db, { olderThanHours: 8 });
+  const sql = db.calls[0].sql;
+  assert.match(sql, /LEFT JOIN staff_events e/);
+  assert.match(sql, /e\.shift_id = s\.id/);
+  // A row this function wrote is not evidence the person was working.
+  assert.match(sql, /e\.kind IS DISTINCT FROM \$2/);
+  // No events at all means idle since clock-in — clocking in is itself an act,
+  // so the shift is assessable rather than exempt.
+  assert.match(sql, /COALESCE\(MAX\(e\.created_at\), s\.started_at\)/);
 });
 
 test("autoCloseStale records why each shift was closed in staff_events, in the same statement", async () => {
@@ -229,7 +251,7 @@ test("autoCloseStale records why each shift was closed in staff_events, in the s
   const sql = db.calls[0].sql;
   assert.match(sql, /INSERT INTO staff_events \(org_id, staff_id, shift_id, kind, detail\)/);
   assert.equal(db.calls[0].params[1], AUTO_CLOSE_EVENT_KIND);
-  for (const key of ["threshold_hours", "started_at", "ended_at", "swept_at", "reason", "closed_by"]) {
+  for (const key of ["threshold_hours", "started_at", "ended_at", "swept_at", "reason", "closed_by", "rule", "had_activity"]) {
     assert.match(sql, new RegExp(`'${key}'`), `the audit detail must record ${key}`);
   }
 });
