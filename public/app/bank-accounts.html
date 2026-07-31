@@ -15,43 +15,121 @@
      than an eighth time here. -->
 <link rel="stylesheet" href="finance-os.css">
 <script src="shell.js"></script>
+<style>
+  /* Only what the shared sheet does not already carry. Everything structural —
+     .fh-wrap, .fh-panel, .fh-row, .fh-num, .fh-form, .fh-btn, .fh-empty, .fh-msg
+     — comes from finance-os.css, so this screen cannot drift from the other five
+     Finance OS screens. */
+
+  .fh-section{ margin-top:26px; }
+  .fh-section h2{ font:700 14px/1.3 'Inter',system-ui,sans-serif; color:var(--text);
+                  margin:0 0 9px; letter-spacing:-.005em; }
+  .fh-section .hint{ font:400 12px/1.55 'Inter',system-ui,sans-serif; color:var(--text-dim);
+                     margin:0 0 10px; max-width:74ch; }
+
+  .fh-standing{ font:400 12px/1.6 'Inter',system-ui,sans-serif; color:var(--text-dim);
+                border:1px solid var(--soft); border-left:3px solid var(--ink2);
+                border-radius:6px; padding:12px 14px; margin:0 0 20px; max-width:74ch; }
+
+  /* THE CALL TO ACTION. 082's whole argument is that an unclassified account
+     must prompt a question rather than be answered by a guess, so the count of
+     them is the loudest thing on this page when it is not zero. */
+  .fh-cta{ font:500 12px/1.6 'Inter',system-ui,sans-serif; color:var(--text);
+           border:1px solid var(--amber,#B4823A); border-radius:6px; background:rgba(180,130,58,.07);
+           padding:12px 14px; margin:0 0 18px; max-width:74ch; }
+  .fh-cta strong{ font-weight:700; }
+
+  /* A GROUP. Personal, business, then unclassified — and the third one is drawn
+     differently on purpose. Same-looking boxes read as three equivalent piles of
+     the client's money, and two of the three are not established to be that. */
+  .fh-group{ margin-bottom:22px; }
+  .fh-group-head{ display:flex; align-items:baseline; justify-content:space-between;
+                  gap:12px; flex-wrap:wrap; margin:0 0 8px; }
+  .fh-group-name{ font:700 13px/1.35 'Inter',system-ui,sans-serif; color:var(--text); }
+  .fh-group-count{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.07em;
+                   text-transform:uppercase; color:var(--text-faint); }
+  .fh-group.is-unclassified{ border-top:1px dashed var(--soft); padding-top:20px; margin-top:30px; }
+  .fh-group.is-unclassified .fh-panel{ border-style:dashed; }
+  .fh-group.is-unclassified .fh-group-name{ color:var(--amber,#B4823A); }
+
+  /* One account. A block rather than a table row: an account carries a name, a
+     mask, two figures with different meanings depending on its type, a date, a
+     classification and two controls, and none of that reads across a column. */
+  .fh-acct{ padding:15px 18px; border-bottom:1px solid var(--soft); }
+  .fh-acct:last-child{ border-bottom:0; }
+  .fh-acct.is-closed{ background:rgba(0,0,0,.02); }
+  .fh-acct-top{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .fh-acct-name{ font:600 13px/1.35 'Inter',system-ui,sans-serif; color:var(--text); }
+  .fh-acct-mask{ font:600 12px/1.35 'JetBrains Mono',ui-monospace,monospace; color:var(--text-dim); }
+  .fh-acct-meta{ margin-top:4px; font:500 11px/1.5 'JetBrains Mono',ui-monospace,monospace;
+                 letter-spacing:.03em; color:var(--text-faint); }
+  .fh-spacer{ flex:1 1 auto; }
+
+  /* The figures. .fh-num and .fh-num.is-unknown come from finance-os.css — this
+     only lays them out in pairs. */
+  .fh-figs{ display:flex; flex-wrap:wrap; gap:22px; margin-top:10px; }
+  .fh-fig{ min-width:0; }
+  .fh-fig .k{ display:block; font:600 10px/1.4 'JetBrains Mono',ui-monospace,monospace;
+              letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); }
+  .fh-fig .fh-num{ font-size:16px; text-align:left; }
+  .fh-cur{ font:500 10px/1 'JetBrains Mono',ui-monospace,monospace; color:var(--text-faint);
+           margin-left:4px; }
+
+  .fh-tag{ display:inline-block; font:600 9px/1 'JetBrains Mono',ui-monospace,monospace;
+           letter-spacing:.07em; text-transform:uppercase; border:1px solid currentColor;
+           border-radius:3px; padding:3px 5px; color:var(--text-faint); }
+  .fh-tag.personal{ color:var(--ink2); }
+  .fh-tag.business{ color:var(--green,#2C5138); }
+  .fh-tag.unknown{ color:var(--amber,#B4823A); }
+  .fh-tag.closed{ color:var(--text-faint); }
+  .fh-tag.warn{ color:var(--red,#6E2A22); }
+
+  /* The per-account controls sit inside the account, not in a toolbar: which
+     account a classification applies to has to be unmissable. */
+  .fh-acct .fh-form{ padding:11px 0 0; border-bottom:0; gap:8px; }
+  .fh-acct .fh-form select, .fh-acct .fh-form input{ font-size:12px; padding:6px 8px; }
+  .fh-acct .fh-btn{ padding:7px 11px; }
+
+  .fh-warn{ margin-top:8px; font:500 11px/1.55 'Inter',system-ui,sans-serif;
+            color:var(--red,#6E2A22); max-width:70ch; }
+  .fh-basisline{ font:500 10px/1.5 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.04em;
+                 color:var(--text-faint); margin-top:3px; }
+</style>
 </head>
 <body>
 
 <!-- ===========================================================================
-     Bank Accounts — SCAFFOLD SHELL. TRACK 3 OWNS THIS FILE.
+     Bank Accounts — the hand-entry screen for `bank_accounts`.
 
-     This is a minimal valid page, not the screen. It exists so the route, the
-     nav row and the file all land in one pass: a screen added to shell.js and
-     nowhere else has no way in, and src/http/app-nav-reachability.test.mjs fails
-     when that happens (audit M20). Track 3 builds the real controls inside
-     #accountsMount and deletes the placeholder note below.
+     Reads and writes /api/finance/bank-accounts. Open it with a client in the
+     address bar: bank-accounts.html?client_id=<uuid>.
 
-     Reads and writes /api/finance/bank-accounts.
+     THE RULES THIS SCREEN IS HELD TO:
 
-     THE RULES THIS SCREEN IS HELD TO, BEFORE ANY MARKUP IS WRITTEN:
+     • ESCAPE EVERYTHING. An account name and a subtype are typed by a person and
+       stored as text. Every interpolated value below goes through esc().
 
-     • ESCAPE EVERYTHING. A lender name, a merchant string and a client note are
-       record data, never markup. Every screen in public/app defines its own
-       esc(); define one here and run every interpolated value through it.
+     • NEVER SHOW A NUMBER THE SERVER DID NOT SEND. There are no sample figures
+       anywhere in this file. If the read returns nothing, the page says so in
+       words — audit finding M8 is this exact screen's sibling leaving two
+       invented dollar figures on screen under a real client's name.
 
-     • NEVER SHOW A NUMBER THE SERVER DID NOT SEND. If a read returns nothing,
-       say so on the page in words (.fh-empty). Do not leave sample markup on
-       screen under a real client's name — that exact bug shipped and is audit
-       finding M8. This shell therefore ships with NO sample figures at all.
+     • UNKNOWN IS AN EM DASH. .is-unknown comes from `display === null`,
+       .is-partial from `basis.partial`, set independently. See finance-os.css.
 
-     • UNKNOWN IS AN EM DASH. Set .is-unknown from `display === null` and
-       .is-partial from `basis.partial`, independently. See finance-os.css.
+     • UNKNOWN IS NOT PERSONAL. The three groups arrive already grouped from
+       src/finance/banking-surface.mjs and are rendered in the order it sends
+       them, unclassified LAST and drawn differently. This file does not decide
+       which pile an account is in and must not start.
 
      • ENTERED BY HAND IS THE PRODUCT, NOT A PLACEHOLDER. src/banking/plaid.mjs
        is a named empty seam that returns not_implemented, because storing bank
        credentials is behind a SOC 2 review and a consent flow that are both
-       open. So a person types these balances in. An account nobody has typed a
-       balance for shows an em dash, never 0.00 — and 'unknown' is a real answer
-       for personal-vs-business, not a null waiting to be guessed at.
+       open. So a person types these balances in.
 
      • THERE IS NO BROWSER AND NO PLAYWRIGHT IN THIS ENVIRONMENT, so nobody has
-       looked at this rendering. A human has to open it.
+       looked at this rendering. A human has to open it; the steps are in the
+       track report.
      =========================================================================== -->
 
 <div class="fh-wrap">
@@ -63,22 +141,623 @@
 
   <div class="fh-head">
     <h1 class="fh-title">Bank Accounts</h1>
-    <span class="fh-source" id="accountsMountSource">not built</span>
+    <span class="fh-source" id="accountsMountSource">no client</span>
   </div>
   <p class="fh-sub">This client's bank accounts, entered by hand, with each one marked personal or business.</p>
 
-  <!-- TRACK 3 FILLS THIS. It is empty on purpose: an empty container reads
-       as "nothing here yet", and sample rows read as this client's real figures. -->
-  <div id="accountsMount"></div>
-
-  <!-- PLACEHOLDER — TRACK 3 DELETES THIS BLOCK. -->
-  <p class="fh-note" id="accountsMountPlaceholder">
-    This screen is being built. The endpoint behind it — <code>/api/finance/bank-accounts</code> —
-    is routed and answers <code>501 not_implemented</code> until its handler is finished,
-    so nothing here is showing you stale or invented figures.
+  <p class="fh-standing">
+    <strong>Nothing on this page connects to a bank.</strong>
+    There is no bank connection in this product — storing bank credentials is behind
+    a security review and a consent flow that are both still open — so every figure
+    here is one a person typed in, and it is only as fresh as the date beside it.
+    A box left empty is stored as <strong>unknown</strong> and shown as a dash. It is
+    never stored as zero, because “we do not know” and “there is nothing in it” are
+    different facts about somebody's money.
   </p>
+
+  <!-- Filled by the script. Empty on purpose: an empty container reads as
+       "nothing here yet"; sample rows read as this client's real figures. -->
+  <div id="accountsMount"></div>
 </div>
 
 <script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (!window.FHData) return;
+
+  var mount = document.getElementById("accountsMount");
+  var sourceBadge = document.getElementById("accountsMountSource");
+  var clientId = FHData.param("client_id");
+
+  /* ── the rules every value on this page goes through ─────────────────────── */
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* Thousands separators for display only. The FORMATTING is not done here:
+     every *_display arrives from the server already run through
+     money.fromCents(), because 1204.5 as a JavaScript float is not 1204.50 and a
+     screen that formats money is a second answer to how money looks. This only
+     groups the digits the server already sent. */
+  function group(s) {
+    if (s == null) return null;
+    var neg = String(s).charAt(0) === "-";
+    var parts = String(s).replace(/^-/, "").split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return (neg ? "-" : "") + parts.join(".");
+  }
+
+  /* money — the em-dash rule, in one place.
+     null → an em dash in the dimmer .is-unknown weight. Never "0.00". */
+  function money(display, currency, partial) {
+    var cls = "fh-num" + (display == null ? " is-unknown" : "") + (partial ? " is-partial" : "");
+    if (display == null) return '<span class="' + cls + '">—</span>';
+    return '<span class="' + cls + '">' + esc(group(display)) +
+           (currency ? '<span class="fh-cur">' + esc(currency) + "</span>" : "") + "</span>";
+  }
+
+  /* day — the date part of a timestamp.
+     Deliberately NOT toLocaleDateString: this is a record date somebody may have
+     to quote back later, and "31/07/2026" versus "07/31/2026" depends on the
+     reader's machine. The ISO date reads the same everywhere. */
+  function day(v) {
+    if (v == null || v === "") return "";
+    var s = String(v);
+    return s.length >= 10 ? s.slice(0, 10) : s;
+  }
+
+  /* ── the vocabulary ───────────────────────────────────────────────────────
+     THE TWO BALANCE COLUMNS DO NOT MEAN THE SAME THING ON EVERY ACCOUNT, and
+     printing "Available" over both is audit finding M10 in miniature.
+     db/migrations/081_bank_accounts.sql:85-87: on a deposit account `available`
+     is spendable cash and `current` is the ledger figure; on a credit line
+     `available` is remaining HEADROOM and `current` is the amount OWED. The same
+     number under the same word means two opposite things about a client's
+     position, so the word changes with the type. */
+  var FIGURE_LABELS = {
+    depository: { available: "Spendable now", current: "Ledger balance" },
+    credit:     { available: "Headroom left", current: "Owed" },
+    loan:       { available: "Available to draw", current: "Owed" },
+    investment: { available: "Available now", current: "Value" },
+    other:      { available: "Available (as reported)", current: "Current (as reported)" },
+    unknown:    { available: "Available (as reported)", current: "Current (as reported)" }
+  };
+
+  var TYPE_WORDS = {
+    depository: "deposit account", credit: "credit line", loan: "loan",
+    investment: "investment", other: "type not modelled"
+  };
+
+  var SOURCE_WORDS = {
+    client_stated: "the client told us",
+    staff_reviewed: "somebody here looked and decided",
+    document_verified: "backed by a document on file",
+    connection_metadata: "read from a bank connection"
+  };
+
+  var KIND_WORDS = { personal: "personal", business: "business", unknown: "unclassified" };
+
+  /* ── the reader ──────────────────────────────────────────────────────────
+     data.js's get() is PRIVATE to its IIFE and is not on the returned object —
+     FHData.get() throws "not a function", which is how finance-os.html failed
+     the first time its smoke test ran. FHData.read() exists but hard-codes the
+     /api/read/ prefix, and this endpoint lives under /api/finance/.
+
+     So this screen carries its own GET, with deliberately the SAME
+     classification data.js uses — including the two distinctions that were got
+     wrong before (audit m17): a 501 is "not built yet" and not an outage, and a
+     crashed handler is our code and not the database. The result is handed to
+     FHData.explain(), so the WORDING for a failed read still comes from one
+     place even though the fetch does not.
+
+     This should be a named reader in data.js — FHData.finance(resource, params)
+     — and it is not, because data.js is a shared file that five other workflows
+     are editing in this same batch and a collision there breaks every screen at
+     once. It is named in the track report as the thing to hoist. */
+  function apiGet(path) {
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+    function fail(source, error) { return { ok: false, source: source, data: null, error: error }; }
+    var started;
+    try {
+      started = fetch(path, {
+        headers: t ? { accept: "application/json", authorization: "Bearer " + t }
+                   : { accept: "application/json" }
+      });
+    } catch (e) {
+      return Promise.resolve(fail("offline", (e && e.message) || "fetch unavailable"));
+    }
+    return Promise.resolve(started).then(function (r) {
+      if (r.status === 401 || r.status === 403) return fail("unauthorized", "not signed in, or not allowed");
+      if (r.status === 501) return fail("unbuilt", "not_implemented");
+      return r.json().then(function (d) {
+        if (r.status === 404) {
+          return (d && d.error === "not_found" && typeof d.path === "string")
+            ? fail("offline", "/api/* not deployed")
+            : fail("notfound", (d && d.error) || "no such record");
+        }
+        if (r.status === 400) return fail("badrequest", (d && d.error) || "bad request");
+        if (r.status === 503 || (d && d.db === "down")) return fail("nodb", (d && d.error) || "database unreachable");
+        if (!d || d.ok !== true) return fail("server", "HTTP " + r.status + " " + ((d && d.error) || "request failed"));
+        return { ok: true, source: "api", data: d, error: null };
+      }).catch(function () { return fail("offline", "response was not JSON"); });
+    }).catch(function (e) {
+      return fail("offline", (e && e.message) || "network error");
+    });
+  }
+
+  /* ── state ────────────────────────────────────────────────────────────────
+     Nothing here is invented. `surface` and `details` start null, and a page
+     whose read has not answered says it is reading rather than drawing a shape
+     with nothing in it. `flash` survives the re-render that follows a successful
+     write: everything else on this page is rebuilt from the server's answer, and
+     the confirmation would be rebuilt away with it, leaving somebody who just
+     pressed a button with no idea whether it worked. */
+  var state = { surface: null, details: null, read: false, flash: null };
+
+  /* ── the page ─────────────────────────────────────────────────────────────
+     THE GROUPING IS NOT DECIDED HERE. state.surface arrives already grouped from
+     src/finance/banking-surface.mjs, which is the file that carries the rule —
+     unknown is never folded into personal, and there is deliberately no combined
+     total across the three groups. This renders what it is handed, in the order
+     it is handed, and totals nothing of its own. */
+
+  function figures(a, det) {
+    var type = a.account_type || "unknown";
+    var labels = FIGURE_LABELS[type] || FIGURE_LABELS.unknown;
+    var cur = det ? det.currency_code : null;
+    var out =
+      '<div class="fh-fig"><span class="k">' + esc(labels.available) + "</span>" +
+        money(a.available_display, cur) + "</div>" +
+      '<div class="fh-fig"><span class="k">' + esc(labels.current) + "</span>" +
+        money(a.current_display, cur) + "</div>";
+    /* The credit line is the context for the headroom above it, and it is
+       meaningless on a deposit account (081:87) — so it is shown only where it
+       means something and only when somebody has typed one in. */
+    if (det && det.credit_limit_display != null) {
+      out += '<div class="fh-fig"><span class="k">Credit line</span>' +
+             money(det.credit_limit_display, cur) + "</div>";
+    }
+    return '<div class="fh-figs">' + out + "</div>";
+  }
+
+  function classifyForm(a) {
+    var opts = ["personal", "business", "unknown"].map(function (k) {
+      return '<option value="' + esc(k) + '"' + (a.entity_kind === k ? " selected" : "") + ">" +
+             esc(KIND_WORDS[k]) + "</option>";
+    }).join("");
+    var srcOpts = ['<option value="">how do you know?</option>']
+      .concat(["staff_reviewed", "document_verified", "client_stated"].map(function (s) {
+        return '<option value="' + esc(s) + '"' + (a.entity_kind_source === s ? " selected" : "") + ">" +
+               esc(SOURCE_WORDS[s]) + "</option>";
+      })).join("");
+
+    return '<form class="fh-form" data-form="classify" data-account="' + esc(a.id) + '">' +
+      '<div class="fh-field"><label for="kind-' + esc(a.id) + '">Whose money</label>' +
+        '<select id="kind-' + esc(a.id) + '" data-role="kind">' + opts + "</select></div>" +
+      '<div class="fh-field"><label for="src-' + esc(a.id) + '">On what basis</label>' +
+        '<select id="src-' + esc(a.id) + '" data-role="source">' + srcOpts + "</select></div>" +
+      '<button type="submit" class="fh-btn secondary">Save who owns it</button>' +
+      (a.closed_at ? "" :
+        '<button type="button" class="fh-btn secondary" data-act="close" data-account="' +
+        esc(a.id) + '">Mark closed</button>') +
+      "</form>" +
+      '<p class="fh-msg" id="msg-' + esc(a.id) + '"></p>';
+  }
+
+  function account(a) {
+    var det = (state.details && state.details[a.id]) || null;
+    var kind = a.entity_kind || "unknown";
+    var bits = [];
+    bits.push(TYPE_WORDS[a.account_type] || "type not recorded");
+    if (a.account_subtype) bits.push(a.account_subtype);
+    if (det && det.currency_code) bits.push(det.currency_code);
+    else bits.push("currency not recorded");
+    bits.push(a.balance_as_of
+      ? "balances as of " + day(a.balance_as_of)
+      : "nobody recorded when these balances were true");
+
+    var basis = a.entity_kind_source
+      ? SOURCE_WORDS[a.entity_kind_source] || a.entity_kind_source
+      : (kind === "unknown" ? "nobody has decided yet" : "no basis recorded");
+
+    var warn = "";
+    /* `overdrawn` is true / false / null, and null is not false. On a loan, an
+       investment account, or an account whose type nobody recorded, whether it
+       is overdrawn is not established — banking-surface.mjs:132 sends null for
+       exactly those and this only paints the true case. */
+    if (a.overdrawn === true) {
+      warn += '<p class="fh-warn">This account is overdrawn — the ledger balance is below zero.</p>';
+    }
+    if (a.closed_at && (a.available_display != null || a.current_display != null)) {
+      warn += '<p class="fh-warn">Closed on ' + esc(day(a.closed_at)) +
+              ". The figures above are the last ones recorded and are not money anybody can reach.</p>";
+    }
+
+    return '<div class="fh-acct' + (a.closed_at ? " is-closed" : "") + '">' +
+      '<div class="fh-acct-top">' +
+        '<span class="fh-acct-name">' + esc(a.name || "unnamed account") + "</span>" +
+        (a.mask ? '<span class="fh-acct-mask">····' + esc(a.mask) + "</span>" : "") +
+        '<span class="fh-spacer"></span>' +
+        '<span class="fh-tag ' + esc(kind) + '">' + esc(KIND_WORDS[kind] || kind) + "</span>" +
+        (a.closed_at ? ' <span class="fh-tag closed">closed ' + esc(day(a.closed_at)) + "</span>" : "") +
+      "</div>" +
+      '<div class="fh-acct-meta">' + esc(bits.join(" · ")) + "</div>" +
+      '<div class="fh-acct-meta">whose money: ' + esc(basis) +
+        (a.entity_kind_set_at ? " · decided " + esc(day(a.entity_kind_set_at)) : "") + "</div>" +
+      figures(a, det) +
+      warn +
+      classifyForm(a) +
+    "</div>";
+  }
+
+  /* THE GROUP TOTAL SAYS WHAT IT COUNTED, EVERY TIME.
+     banking-surface.mjs:165 totals OPEN DEPOSITORY accounts only — a credit
+     line's "available" is headroom and its "current" is a debt, and adding
+     either to cash on hand is the defect audit M10 named. A total that does not
+     say which accounts it is over invites the reader to assume it covers all of
+     them. */
+  function totalBasis(t, what) {
+    var b = t.basis || { lines: 0, counted: 0, unknown: 0, partial: false };
+    if (b.lines === 0) return "no open deposit accounts in this group — nothing to total";
+    if (t.display == null) return "none of the " + b.lines + " open deposit account(s) has a " + what + " recorded";
+    if (b.partial) {
+      return "counted " + b.counted + " of " + b.lines + " open deposit account(s) · " +
+             b.unknown + " has no " + what + " recorded — this is a floor, not a total";
+    }
+    return "all " + b.lines + " open deposit account(s) reported";
+  }
+
+  function totalRow(label, t, what) {
+    var partial = !!(t.basis && t.basis.partial);
+    return '<div class="fh-row' + (partial ? " is-partial" : "") + '">' +
+      '<div class="fh-label">' + esc(label) +
+        '<span class="fh-basis">' + esc(totalBasis(t, what)) + "</span></div>" +
+      "<div>" + money(t.display, null, partial) + "</div>" +
+    "</div>";
+  }
+
+  /* CURRENCIES ARE NOT CHECKED BY THE TOTAL, AND THAT IS WORTH SAYING OUT LOUD.
+     081:80 — "an amount whose currency is unknown must never be added to one
+     whose currency is known" — but src/finance/banking-surface.mjs sums the
+     cents columns without looking at currency_code at all, so a group holding a
+     USD account and a CAD account produces one number that is neither. This
+     screen cannot fix that (the total is computed on the server and this file
+     must not compute a second one), so it says so where the total is, rather
+     than letting a reader take it at face value. Named in the track report as a
+     defect in the reading half. */
+  function currencyWarning(g) {
+    var seen = {}, n = 0, unknown = 0;
+    (g.accounts || []).forEach(function (a) {
+      if (a.closed_at || a.account_type !== "depository") return;
+      var det = (state.details && state.details[a.id]) || null;
+      var c = det && det.currency_code;
+      if (!c) { unknown++; return; }
+      if (!seen[c]) { seen[c] = true; n++; }
+    });
+    if (n > 1) {
+      return '<p class="fh-warn">These totals add accounts in ' + n +
+             " different currencies as if they were one. Treat them as a rough count, not a figure.</p>";
+    }
+    if (n >= 1 && unknown > 0) {
+      return '<p class="fh-warn">' + unknown + " account(s) in this group have no currency recorded, " +
+             "and their balances were added to the total anyway.</p>";
+    }
+    return "";
+  }
+
+  function groupBlock(g) {
+    var isUnknown = g.key === "unknown";
+    var body = (g.accounts && g.accounts.length)
+      ? g.accounts.map(account).join("")
+      : '<div class="fh-empty">' +
+          (isUnknown
+            ? "Nothing is waiting to be classified. Every account on file has been marked personal or business."
+            : "No accounts recorded as " + esc(KIND_WORDS[g.key] || g.key) + ".") +
+        "</div>";
+
+    var totals = (g.accounts && g.accounts.length)
+      ? totalRow("Spendable now", g.available, "spendable balance") +
+        totalRow("Ledger balance", g.current, "ledger balance")
+      : "";
+
+    return '<div class="fh-group' + (isUnknown ? " is-unclassified" : "") + '">' +
+      '<div class="fh-group-head">' +
+        '<span class="fh-group-name">' + esc(g.label) + "</span>" +
+        '<span class="fh-group-count">' + g.count + " account(s) · " + g.open_count + " open</span>" +
+      "</div>" +
+      '<div class="fh-panel">' + totals + body + "</div>" +
+      currencyWarning(g) +
+    "</div>";
+  }
+
+  function opt(v, label) { return '<option value="' + esc(v) + '">' + esc(label) + "</option>"; }
+
+  function addForm() {
+    var types = [opt("", "not recorded")]
+      .concat(["depository", "credit", "loan", "investment", "other"].map(function (t) {
+        return opt(t, TYPE_WORDS[t]);
+      })).join("");
+
+    /* ONE form, not two. The fields wrap onto several lines because .fh-form is
+       a flex row, but they belong to a single submit: a second <form> around the
+       money boxes would look identical and would silently leave half the entry
+       out of the keyboard's Enter. */
+    return '<div class="fh-panel">' +
+      '<form class="fh-form" id="addForm">' +
+        '<div class="fh-field"><label for="addName">What the client calls it</label>' +
+          '<input id="addName" type="text" placeholder="Business Checking" autocomplete="off"></div>' +
+        '<div class="fh-field"><label for="addMask">Last 2-4 digits</label>' +
+          '<input id="addMask" type="text" inputmode="numeric" maxlength="4" placeholder="1234" autocomplete="off"></div>' +
+        '<div class="fh-field"><label for="addType">Kind of account</label>' +
+          '<select id="addType">' + types + "</select></div>" +
+        '<div class="fh-field"><label for="addSubtype">Bank\'s own wording</label>' +
+          '<input id="addSubtype" type="text" placeholder="checking" autocomplete="off"></div>' +
+        '<div class="fh-field"><label for="addCurrency">Currency</label>' +
+          '<input id="addCurrency" type="text" maxlength="3" placeholder="USD" autocomplete="off"></div>' +
+        '<div class="fh-field"><label for="addAvailable">Spendable / headroom</label>' +
+          '<input id="addAvailable" type="text" inputmode="decimal" placeholder="dollars" autocomplete="off"></div>' +
+        '<div class="fh-field"><label for="addCurrent">Ledger / owed</label>' +
+          '<input id="addCurrent" type="text" inputmode="decimal" placeholder="dollars" autocomplete="off"></div>' +
+        '<div class="fh-field"><label for="addLimit">Credit line</label>' +
+          '<input id="addLimit" type="text" inputmode="decimal" placeholder="dollars" autocomplete="off"></div>' +
+        '<div class="fh-field"><label for="addAsOf">These were true on</label>' +
+          '<input id="addAsOf" type="date" autocomplete="off"></div>' +
+        '<div class="fh-field"><label for="addKind">Whose money</label>' +
+          '<select id="addKind">' + opt("unknown", "not decided yet") + opt("personal", "personal") +
+            opt("business", "business") + "</select></div>" +
+        '<div class="fh-field"><label for="addSource">On what basis</label>' +
+          '<select id="addSource">' + opt("", "not decided yet") +
+            opt("staff_reviewed", SOURCE_WORDS.staff_reviewed) +
+            opt("document_verified", SOURCE_WORDS.document_verified) +
+            opt("client_stated", SOURCE_WORDS.client_stated) + "</select></div>" +
+        '<button type="submit" class="fh-btn">Add this account</button>' +
+      "</form>" +
+      '<p class="fh-msg" id="addMsg"></p>' +
+      '<div class="fh-empty">Leave any money box empty if nobody has the figure yet — it is stored as ' +
+        "unknown and shown as a dash, not as zero. The last digits box takes 2 to 4 digits and " +
+        "nothing longer: a full account number is refused, not trimmed, and this product has " +
+        "nowhere to store one. There is no box for a routing number for the same reason. " +
+        "Leave “whose money” as not decided if you do not know — that is a real answer here, and " +
+        "an unclassified account is never counted as the client's own money." +
+      "</div>" +
+    "</div>";
+  }
+
+  function render() {
+    if (!state.read) {
+      mount.innerHTML = '<div class="fh-panel"><div class="fh-empty">Reading this client\'s accounts…</div></div>';
+      return;
+    }
+
+    var s = state.surface;
+    if (!s) {
+      /* The read failed. NOTHING is drawn in place of it — no zeroes, no empty
+         groups that read as "this client has no accounts". FHData.explain() has
+         already put the reason in the banner. */
+      mount.innerHTML = '<p class="fh-msg" id="flashMsg"></p>' +
+        '<div class="fh-panel"><div class="fh-empty">' +
+        "This client's accounts could not be read, so nothing is shown. The bar at the bottom of " +
+        "the page says why. Nothing on this page is a figure for this client." +
+        "</div></div>";
+      if (state.flash) say("flashMsg", "ok", state.flash);
+      return;
+    }
+
+    var cta = s.needs_classification
+      ? '<p class="fh-cta"><strong>' + s.unclassified + " account(s) have not been marked personal or " +
+        "business.</strong> Until somebody decides, their balances are not counted as this client's " +
+        "own money and they sit in the dashed group at the bottom. Pick “whose money” on each one " +
+        "and say how you know." +
+        "</p>"
+      : "";
+
+    var groups = (s.groups || []).map(groupBlock).join("");
+
+    mount.innerHTML =
+      '<p class="fh-msg" id="flashMsg"></p>' +
+      cta +
+      '<div class="fh-section"><h2>Accounts on file</h2>' +
+        '<p class="hint">' + s.accounts + " account(s) recorded · " + s.open_accounts + " open · " +
+        s.closed_accounts + " closed. Group totals count <strong>open deposit accounts only</strong> — " +
+        "a credit line's headroom is not cash and a closed account's last balance is not money anybody " +
+        "can reach. There is deliberately no single total across the three groups." +
+        "</p>" + groups + "</div>" +
+      '<div class="fh-section"><h2>Add an account</h2>' +
+        '<p class="hint">Typed in by hand, because there is no bank connection in this product. ' +
+        "Everything except the boxes you fill in is stored as unknown.</p>" +
+        addForm() + "</div>";
+
+    if (state.flash) say("flashMsg", "ok", state.flash);
+    bind();
+  }
+
+  /* ── writes ─────────────────────────────────────────────────────────────── */
+
+  function say(id, cls, text) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.className = "fh-msg " + cls;
+    el.textContent = text;   // textContent, not innerHTML: this string carries a
+                             // server message, and a server message is data.
+  }
+
+  function val(id) {
+    var el = document.getElementById(id);
+    return el ? String(el.value || "").trim() : "";
+  }
+
+  /* send — one path for every write on this page.
+
+     FHData.write() does the token header, the JSON and the status
+     classification, including the 501 branch that reads as "not built yet"
+     rather than as an outage. A failed write says so ON the control that failed:
+     the bottom banner is shared by every source on the page, and a save failure
+     that only appears down there scrolls out of the reader's attention.
+
+     THE MESSAGE SHOWN FOR A 400 IS THE SERVER'S OWN SENTENCE. The endpoint
+     answers "mask must be the last 2-4 digits only — that looks like a full
+     account number, and this product has nowhere to put one. Nothing was
+     stored", and that sentence is the whole reason it is written there.
+     Replacing it with "save failed" would throw away the only part of the answer
+     a person can act on.
+
+     THE RESPONSE TO A WRITE IS THE WHOLE SURFACE AGAIN, so the page re-renders
+     from what the database now holds rather than from what this file assumed the
+     write did. No second round trip, and no window in which the screen shows a
+     state the database has already left. */
+  function send(payload, msgId, workingText, doneText) {
+    state.flash = null;
+    say(msgId, "", workingText);
+    return FHData.write("/api/finance/bank-accounts", payload).then(function (res) {
+      if (res && res.ok) {
+        state.surface = res.data.surface || null;
+        state.details = res.data.details || {};
+        state.flash = doneText;
+        render();
+        FHData.banner("real", bannerText(), "bank accounts");
+        return res;
+      }
+      var detail = (res && res.error) || "no detail";
+      var source = res && res.source;
+      if (source === "unauthorized") {
+        say(msgId, "bad", "Not saved — you are not signed in, or your role cannot change bank accounts.");
+      } else if (source === "unbuilt") {
+        say(msgId, "bad", "Not saved — this part is not built yet (" + detail + ").");
+      } else if (source === "nodb") {
+        say(msgId, "bad", "Not saved — the database is not answering (" + detail + ").");
+      } else if (source === "demo") {
+        say(msgId, "bad", "Not saved — this is a demo session and it does not write anything.");
+      } else if (source === "offline") {
+        say(msgId, "bad", "Not saved — we could not reach the server (" + detail + ").");
+      } else if (source === "server") {
+        say(msgId, "bad", "Not saved — something went wrong on our side. The database did not " +
+                          "report a problem. (" + detail + ")");
+      } else {
+        // badrequest and notfound: the backend is fine and the answer is a
+        // sentence naming the field. Show it.
+        say(msgId, "bad", "Not saved — " + detail);
+      }
+      return null;
+    });
+  }
+
+  function bind() {
+    // Named addEl, not addForm: addForm() is the function that BUILT this markup
+    // and shadowing it inside bind() is one careless edit away from a bug.
+    var addEl = document.getElementById("addForm");
+    if (addEl) addEl.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var payload = { action: "add", client_id: clientId };
+      /* A BOX LEFT EMPTY IS OMITTED, NOT SENT AS "". The endpoint treats an
+         absent key as "I am not saying anything about this" and stores NULL —
+         which is the same outcome here, but the two are different sentences on
+         the wire and the endpoint distinguishes them for the money fields.
+         Sending "" for every untouched box would make every add look like a
+         caller explicitly asserting six unknowns. */
+      var name = val("addName"); if (name) payload.name = name;
+      var mask = val("addMask"); if (mask) payload.mask = mask;
+      var type = val("addType"); if (type) payload.account_type = type;
+      var sub = val("addSubtype"); if (sub) payload.account_subtype = sub;
+      var cur = val("addCurrency"); if (cur) payload.currency_code = cur;
+      var av = val("addAvailable"); if (av) payload.available = av;
+      var cu = val("addCurrent"); if (cu) payload.current = cu;
+      var lim = val("addLimit"); if (lim) payload.credit_limit = lim;
+      var asOf = val("addAsOf"); if (asOf) payload.balance_as_of = asOf;
+      var kind = val("addKind");
+      if (kind && kind !== "unknown") {
+        payload.entity_kind = kind;
+        var src = val("addSource");
+        if (src) payload.entity_kind_source = src;
+        /* If the basis box was left empty the endpoint refuses the whole add
+           with a sentence naming the field, rather than filing a classification
+           with no provenance. 082's CHECK would refuse it in SQL anyway; the
+           endpoint answers first so the person gets a sentence and not a 500. */
+      }
+      send(payload, "addMsg", "Saving…",
+        "Account added. Nothing was fetched from a bank — these are the figures you typed.");
+    });
+
+    Array.prototype.forEach.call(mount.querySelectorAll('form[data-form="classify"]'), function (form) {
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var id = form.getAttribute("data-account");
+        var kindEl = form.querySelector('[data-role="kind"]');
+        var srcEl = form.querySelector('[data-role="source"]');
+        var payload = {
+          action: "classify",
+          account_id: id,
+          entity_kind: kindEl ? kindEl.value : ""
+        };
+        if (srcEl && srcEl.value) payload.entity_kind_source = srcEl.value;
+        send(payload, "msg-" + id, "Saving…",
+          payload.entity_kind === "unknown"
+            ? "Marked as not decided. The basis and the date were cleared with it."
+            : "Saved. This account is recorded as " + payload.entity_kind + ", with the basis you picked.");
+      });
+    });
+
+    Array.prototype.forEach.call(mount.querySelectorAll('button[data-act="close"]'), function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-account");
+        send({ action: "close", account_id: id }, "msg-" + id, "Saving…",
+          "Marked closed today. It stays on the record — a closed account still explains the " +
+          "money that moved through it — but its balance is no longer counted as reachable.");
+      });
+    });
+  }
+
+  /* ── load ─────────────────────────────────────────────────────────────────
+     One read, one page. The banner names what came back so a reader can tell a
+     real empty ("this client has no accounts") from a failed read. */
+  function bannerText() {
+    var s = state.surface;
+    if (!s) return "bank accounts unreadable";
+    return "live bank accounts · " + s.accounts + " on file · " + s.open_accounts + " open" +
+           (s.unclassified ? " · " + s.unclassified + " not yet classified" : "");
+  }
+
+  function load() {
+    return apiGet("/api/finance/bank-accounts?client_id=" + encodeURIComponent(clientId))
+      .then(function (res) {
+        state.read = true;
+        if (res.ok) {
+          state.surface = res.data.surface || null;
+          state.details = res.data.details || {};
+          FHData.banner("real", bannerText(), "bank accounts");
+        } else {
+          /* THE PAGE DOES NOT KEEP A STALE SURFACE ON A FAILED RE-READ. Leaving
+             the previous answer on screen under a "could not read" banner is how
+             a figure outlives the fact it described. */
+          state.surface = null;
+          state.details = null;
+          FHData.explain(res, "bank accounts");
+        }
+        render();
+      });
+  }
+
+  if (!clientId) {
+    /* No client named. NOT a backend failure, and nothing is invented to fill
+       the space — the page says what is missing and how to fix it. */
+    sourceBadge.textContent = "no client";
+    mount.innerHTML = '<div class="fh-panel"><div class="fh-empty">' +
+      "Open this screen with a client in the address bar — " +
+      "<code>bank-accounts.html?client_id=&lt;id&gt;</code>. Nothing is shown without one, " +
+      "because a bank account belongs to a named person." +
+      "</div></div>";
+    FHData.banner("sample", "no client named — open with ?client_id=<id>", "bank accounts");
+    return;
+  }
+
+  sourceBadge.textContent = "bank_accounts";
+  render();   // paints the "reading…" state, so the page is never blank
+  load();
+})();
+</script>
 </body>
 </html>
