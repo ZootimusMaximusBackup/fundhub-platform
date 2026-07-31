@@ -52,22 +52,27 @@ export function calcDeal({
   });
 
   // --- 2. Cash position ---
-  // The down payment is collected out-of-pocket (separately), so only the
-  // from-proceeds portion of the fee reduces the cash the client actually receives.
-  // netCash = funding − fromProceeds (NOT funding − fee). With feeFromProceeds off,
-  // the whole fee is paid separately and nothing comes out of the proceeds.
-  const fromProceeds = missing
-    ? null
-    : feeFromProceeds
-      ? Math.max(0, feeDollar - downPayment)
-      : 0;
+  // The deposit is money ON TOP of the success fee, not a credit against it.
+  // src/workflows/f-07-funding-locked.mjs:74 invoices approvedAmount × feePercent
+  // with no deposit offset, so a larger deposit cannot reduce what is billed.
+  // Both the fee and the deposit therefore come out of what the client walks
+  // away with: net = funding − fee − deposit. That matches the closer dashboard
+  // (public/app/closer-dashboard.html:609-614), which is the authority here.
+  //
+  // This module previously computed max(0, feeDollar − downPayment), which made a
+  // LARGER deposit RAISE net cash. The two implementations moved in opposite
+  // directions, so which figure a closer quoted depended on whether the endpoint
+  // answered. The screen was right; this is the correction.
+  const fromProceeds = missing ? null : (feeFromProceeds ? feeDollar : 0);
   const cashPosition = missing
     ? { netCashToClient: null, fee: null }
     : {
-        netCashToClient: approvedFunding - fromProceeds,
+        netCashToClient: approvedFunding - fromProceeds - downPayment,
         fee: {
           total: feeDollar,
-          paidDown: feeDollar - fromProceeds, // out-of-pocket portion
+          // The fee is owed in full either way; this only says where it is drawn
+          // from. It is NOT reduced by the deposit — see above.
+          paidSeparately: feeFromProceeds ? 0 : feeDollar,
           fromProceeds,
         },
       };

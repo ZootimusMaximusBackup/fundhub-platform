@@ -13,12 +13,13 @@ test('worked example — cash position', () => {
     minPaymentPct: 0.02,
   });
 
-  // net cash = funding − fromProceeds ($22k), NOT funding − fee. The $3k down is
-  // collected out-of-pocket, so the client still receives $228k (spec §1b Block 1).
-  assert.equal(result.cashPosition.netCashToClient, 228000, 'netCash should be $228,000');
+  // The deposit is money on top of the fee, not a credit against it, so both come
+  // out: 250000 − 25000 fee − 3000 deposit = 222000. f-07-funding-locked.mjs:74
+  // invoices the fee in full with no deposit offset, which is what settles this.
+  assert.equal(result.cashPosition.netCashToClient, 222000, 'netCash should be $222,000');
   assert.equal(result.cashPosition.fee.total, 25000, 'fee total should be $25,000');
-  assert.equal(result.cashPosition.fee.paidDown, 3000, 'paidDown should be $3,000');
-  assert.equal(result.cashPosition.fee.fromProceeds, 22000, 'fromProceeds should be $22,000');
+  assert.equal(result.cashPosition.fee.paidSeparately, 0, 'fee is drawn from proceeds by default');
+  assert.equal(result.cashPosition.fee.fromProceeds, 25000, 'the whole fee comes from proceeds');
 });
 
 test('worked example — intro schedule month 1', () => {
@@ -79,15 +80,19 @@ test('feeDollar override flows through calcDeal', () => {
   assert.equal(result.cashPosition.netCashToClient, 220000);
 });
 
-test('downPayment >= fee clamps fromProceeds to 0', () => {
-  const result = calcDeal({
-    approvedFunding: 250000,
-    feePct: 0.10, // fee = $25k
-    downPayment: 30000, // exceeds fee
-  });
+// Regression guard for the inversion this module used to carry. It computed
+// max(0, feeDollar − downPayment), so a larger deposit RAISED net cash and a big
+// enough one zeroed the fee out of proceeds entirely — the opposite of what the
+// closer dashboard showed for the same client.
+test('a larger deposit lowers net cash and never reduces the fee', () => {
+  const small = calcDeal({ approvedFunding: 250000, feePct: 0.10, downPayment: 3000 });
+  const large = calcDeal({ approvedFunding: 250000, feePct: 0.10, downPayment: 30000 });
 
-  assert.equal(result.cashPosition.fee.paidDown, 25000, 'paidDown capped at fee total');
-  assert.equal(result.cashPosition.fee.fromProceeds, 0, 'fromProceeds should be 0, not negative');
+  assert.ok(large.cashPosition.netCashToClient < small.cashPosition.netCashToClient,
+    'a bigger deposit must lower net cash, not raise it');
+  assert.equal(large.cashPosition.netCashToClient, 195000, '250000 − 25000 fee − 30000 deposit');
+  assert.equal(large.cashPosition.fee.total, 25000, 'the fee is unchanged by the deposit');
+  assert.equal(large.cashPosition.fee.fromProceeds, 25000, 'the whole fee still comes from proceeds');
 });
 
 test('zero funding → netCash = 0, no null crash', () => {

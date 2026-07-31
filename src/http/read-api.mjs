@@ -71,6 +71,29 @@ export function isUuid(v) {
   return typeof v === "string" && UUID_RE.test(v.trim());
 }
 
+/* unitFraction — a query parameter that must be a fraction in (0, 1].
+   Returns { present, value, valid } so a handler can tell "absent" apart from
+   "present and wrong"; absent is fine and falls through to a default, wrong is a 400.
+
+   THIS EXISTS BECAUSE A GUARDRAIL WAS BYPASSABLE FROM THE URL BAR.
+   api/read/tradelines.mjs took the closer's utilization ceiling straight off the
+   query string as a bare Number(). `?utilization_threshold=999` set the ceiling to
+   99,900%, which no card can breach, and `=abc` produced NaN — every comparison
+   against NaN is false, so that disabled the guardrail too, while looking like a
+   number. Bounds are the whole point of a bound, so they are checked here rather
+   than trusted at each call site.
+
+   Deliberately NOT clamping, unlike pageParams above. A caller asking for 1000 rows
+   plainly wants "as many as possible" and 200 answers that. A caller asking for a
+   99,900% utilization ceiling is not asking for 100% — quietly substituting one is
+   how the control gets bypassed without anyone seeing an error. */
+export function unitFraction(raw) {
+  const present = raw != null && raw !== "";
+  if (!present) return { present: false, value: undefined, valid: true };
+  const value = Number(raw);
+  return { present: true, value, valid: Number.isFinite(value) && value > 0 && value <= 1 };
+}
+
 /* pageParams — limit/offset from a query string, bounded. The unit's rule is
    "paginated above 200 rows", so 200 is the ceiling and a caller asking for more
    silently gets 200 rather than an error: a screen requesting 1000 should still

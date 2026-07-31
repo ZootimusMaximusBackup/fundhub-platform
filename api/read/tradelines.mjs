@@ -11,7 +11,7 @@
 // for, and it is exactly the kind of endpoint that becomes a breach.
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
-import { ROLE_SETS, requireRole, isUuid, redact, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
+import { ROLE_SETS, requireRole, isUuid, redact, unitFraction, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { listTradelines } from "../../src/tradelines/store.mjs";
 import { toCalculatorCards, fromCents } from "../../src/tradelines/index.mjs";
 import { calcFunding } from "../../src/calculators/deal-funding.mjs";
@@ -42,6 +42,26 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: "client_id is required and must be a uuid" });
   }
 
+  // The guardrail ceiling arrives from the query string, and it used to reach
+  // calcFunding as a bare Number() with no bounds. `?utilization_threshold=999`
+  // set the ceiling to 99,900%, so no card could ever breach it; `=abc` passed
+  // NaN, and every comparison against NaN is false, which disables the guardrail
+  // just as completely but without looking wrong. Either way a caller could turn
+  // off the one control that stops a closer over-drawing a client, by editing a URL.
+  //
+  // The wire value is a FRACTION — public/app/closer-dashboard.html:1132 sends
+  // guard / 100 — so anything outside (0, 1] is not a threshold at all. Refused
+  // rather than clamped: silently substituting a different ceiling would answer a
+  // question the caller did not ask, which is how the guardrail got bypassed here
+  // in the first place.
+  const threshold = unitFraction(query.utilization_threshold);
+  if (!threshold.valid) {
+    return res.status(400).json({
+      ok: false,
+      error: "utilization_threshold must be a fraction greater than 0 and at most 1"
+    });
+  }
+
   try {
     const rows = await listTradelines(db, {
       clientId,
@@ -59,7 +79,7 @@ export default async function handler(req, res) {
     const funding = calcFunding({
       cards,
       requestedAmount: Number.isFinite(requestedAmount) ? requestedAmount : undefined,
-      ...(query.utilization_threshold ? { utilizationThreshold: Number(query.utilization_threshold) } : {})
+      ...(threshold.present ? { utilizationThreshold: threshold.value } : {})
     });
 
     return res.status(200).json({

@@ -2,7 +2,8 @@ import { test, describe } from "node:test";
 import assert from "node:assert";
 import {
   redact, pageParams, page, allowsRole, requireRole, readHandler,
-  ROLE_SETS, MAX_LIMIT, DEFAULT_LIMIT, isUuid, CLIENT_DATA_ERRORS, boundedLimit
+  ROLE_SETS, MAX_LIMIT, DEFAULT_LIMIT, isUuid, CLIENT_DATA_ERRORS, boundedLimit,
+  unitFraction
 } from "./read-api.mjs";
 
 const res = () => {
@@ -296,5 +297,49 @@ describe("boundedLimit", () => {
       const n = boundedLimit(v, OPTS);
       assert.ok(Number.isInteger(n) && n >= 1 && n <= 200, `${v} -> ${n}`);
     }
+  });
+});
+
+/* The guardrail ceiling api/read/tradelines.mjs takes off the query string. It
+   used to reach calcFunding as a bare Number(), so the one control that stops a
+   closer over-drawing a client could be switched off from the URL bar. These are
+   the two ways that happened, and they fail in opposite-looking ways. */
+describe("unitFraction — the guardrail bypass", () => {
+
+  test("a ceiling above 1 is refused, not clamped", () => {
+    // ?utilization_threshold=999 set the ceiling to 99,900%. No card can breach
+    // that, so every allocation passed the guardrail.
+    for (const v of ["999", "1.0001", "100", "30"]) {
+      assert.equal(unitFraction(v).valid, false, v);
+    }
+  });
+
+  test("a non-numeric ceiling is refused, because NaN silently disables it", () => {
+    // Number("abc") is NaN and every comparison against NaN is false, so the
+    // guardrail never fires — the same bypass, without looking like a number.
+    for (const v of ["abc", "NaN", "Infinity", "1e999", {}, []]) {
+      assert.equal(unitFraction(v).valid, false, JSON.stringify(v));
+    }
+  });
+
+  test("zero and negatives are refused", () => {
+    for (const v of ["0", "-0.3", "-1"]) {
+      assert.equal(unitFraction(v).valid, false, v);
+    }
+  });
+
+  test("absent is valid and carries no value, so the default stands", () => {
+    for (const v of [undefined, null, ""]) {
+      const r = unitFraction(v);
+      assert.equal(r.valid, true, JSON.stringify(v));
+      assert.equal(r.present, false);
+      assert.equal(r.value, undefined);
+    }
+  });
+
+  test("a real fraction passes through, including the boundary", () => {
+    assert.deepEqual(unitFraction("0.3"), { present: true, value: 0.3, valid: true });
+    assert.deepEqual(unitFraction("1"), { present: true, value: 1, valid: true });
+    assert.deepEqual(unitFraction(0.29), { present: true, value: 0.29, valid: true });
   });
 });
