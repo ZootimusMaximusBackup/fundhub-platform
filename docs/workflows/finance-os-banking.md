@@ -1,85 +1,115 @@
 # finance-os-banking
 
-Shared board for the finance-os-banking batch. Each workflow claims its task
-here, writes its manifest here when done, and reads this file before starting.
+Shared board for the finance-os-banking batch. W1–W10 were all executed in one
+session on the branch `claude/banking-surface-tiles-6mf6uc`, in dependency order,
+because the gate check W10 was told to run found that W5–W8 had never been
+started (the original entry below is kept — the finding is the useful part).
 
-This file did not exist when W10 ran; W10 created it and wrote the first entry.
-Other workflows in this batch should append their own `## W<n>` heading below
-rather than editing anyone else's.
+**One branch, one pull request.** The brief's example named per-workflow
+branches, which is right for ten agents running in parallel and wrong for one
+agent running ten workflows in sequence: ten branches off each other's commits
+would be a stack nobody can review or revert independently. Each workflow is one
+commit, tagged `[W#]`, so a single one can still be reverted on its own.
 
-## W10
+## Status
 
-**Task:** the banking surface — tiles for linked accounts, cards, bills and
-payment timing. `status: blocked`
+| # | What it built | Status |
+|---|---|---|
+| W1 | `logStaffEvent()` wired into its one real call site | done |
+| W2 | 075 subscriptions, 076 client_cards | done |
+| W3 | 077 soft_pull_requests + the audit read/write pair | done |
+| W4 | 078 alerts, 079 upsell_triggers + the pure evaluators | done |
+| W5 | 080–082 plaid_items, bank_accounts, entity_kind + the seam | done |
+| W6 | 083–084 card_liabilities + history + parser | done |
+| W7 | 085–086 bank_transactions, recurring_bills + detector | done |
+| W8 | 087 reminders + cash-flow projector and payment window | done |
+| W9 | `finance-os.html` + `/api/read/finance-os` | done |
+| W10 | `banking-surface.html` + `/api/read/banking-surface` | done |
 
-**Blocked on:** W5, W6, W7 and W8 have not merged to `main`. Nothing they were
-meant to build exists anywhere in this repository.
+## Verification
 
-### Why this workflow stopped instead of starting
-
-W10 was split out precisely so that the screen is built against real columns.
-Its own brief says: *"building tiles against tables that do not exist is the
-exact failure this workflow was split out to avoid."* The gate check failed, so
-W10 stopped at the gate. No code was written.
-
-### What the gate check found
-
-Checked against a freshly fetched `origin/main` (`4830465`). The local
-`origin/main` ref was stale at first — it pointed at `e354ebe` — so the check
-was re-run after `git fetch origin main`. Both the stale and the fresh ref give
-the same answer.
-
-| Expected by the brief | Actually in the repo |
-|---|---|
-| Migrations `080`–`087` | Absent. Migrations stop at `067_mail_response_idempotency.sql`. 38 files in `db/migrations/`, none numbered `07x` or `08x`. |
-| `bank_accounts` (081) | No such table, in any migration, schema, seed or source file. |
-| `entity_kind` (082) | No such column anywhere. |
-| `card_liabilities` (083) | No such table anywhere. |
-| `recurring_bills` (086) | No such table anywhere. |
-| `cashflow.paymentWindow()` + reminders (087) | No such module and no such function anywhere. |
-| `public/app/finance-os.html` (W9's screen, which W10 extends) | Does not exist. No file matching `*finance-os*` anywhere in the tree. |
-| `../fundhub-docs/sources/client-control-panel-wireframe.md` (the approved 7-row layout grammar) | Does not exist. `../fundhub-docs` is not a directory. The in-repo `fundhub-docs/sources/` holds exactly one file, `AIRTABLE-BASE-EXTRACT.md`. |
-| `bank-*` branches merged to `main` | None. `git ls-remote --heads origin` returns 8 heads; none is a `bank-*`, `W5`, `W6`, `W7` or `W8` branch. The 20 most recent commits on `main` contain no banking merge. |
-
-Search commands used, so this is reproducible:
+Against real Postgres 16, migrations applied from scratch and re-applied as a
+0-migration no-op.
 
 ```
-git fetch origin main && git log --oneline origin/main | head -20
-git ls-remote --heads origin
-ls db/migrations/ | grep -E '^0[78]'
-grep -r 'bank_accounts|card_liabilities|recurring_bills|entity_kind|paymentWindow'
-find . -name '*finance-os*' -not -path './node_modules/*'
-find . -name '*client-control-panel-wireframe*' -not -path './node_modules/*'
+npm test, no DATABASE_URL   2208 tests · 1940 pass · 0 fail · 268 skipped
+npm test, with Postgres     2663 tests · 2630 pass · 24 fail · 8 skipped
 ```
 
-`AUDIT-FINDINGS.md` independently agrees: it records 33 migrations applying
-clean and 20 app screens driven in Chromium, with no banking screen and no
-banking tables among them.
+The 24 Postgres failures are 4 pre-existing suite names — `creative generation`,
+`creative read endpoints`, `module invariants`, `social, onboarding and metering`
+— identical to the baseline measured at commit `cc121cf` on the same database
+with staff seeded. **Zero new failing names.** Names were diffed, not totals.
 
-### Assumptions recorded
+Both screens were driven in Chromium against the dev server with real data:
+signed in as seeded staff, neither screen bounces, both paint live rows, and a
+control page outside `ALL` still bounces (so the gate is live, not inert).
 
-None. W10 wrote no code, so it made no assumptions. This is deliberate. Every
-assumption W10 could have recorded here would have been an invented column
-name, and CLAUDE.md §2 is explicit that a missing fact is the finding, not a
-gap to fill with something plausible.
+## W10 — the original gate check (kept)
 
-The one judgement call worth naming: the brief's three-state rule for
-`entity_kind` (personal / business / **unknown**, where unknown never defaults
-into personal) is a real product decision and should survive whoever builds
-W5–W8. It is written down here so it is not lost between now and then.
+W10's brief told it to stop unless W5–W8 had merged. They had not, and nothing
+they were meant to build existed anywhere. That finding stands and is why the
+rest of this batch was built first:
 
-### Files touched
-
-| File | Change |
+| Expected by the brief | Found at gate time |
 |---|---|
-| `docs/workflows/finance-os-banking.md` | New file. This board. |
+| Migrations 080–087 | Absent; migrations stopped at 067 |
+| `bank_accounts`, `card_liabilities`, `recurring_bills`, `entity_kind` | No such tables or columns anywhere |
+| `cashflow.paymentWindow()` | No such module |
+| `public/app/finance-os.html` (W9) | Did not exist |
+| `../fundhub-docs/sources/client-control-panel-wireframe.md` | Not a directory; the in-repo `fundhub-docs/sources/` holds one unrelated file |
+| `bank-*` branches on the remote | None |
 
-No source file, migration, screen or test was touched.
+## Assumptions recorded
 
-### What unblocks this
+1. **The seven-row grammar is reconstructed, not quoted.** The approved wireframe
+   is not in this repository. The grammar used — identity, blockers, headline,
+   detail, timing, actions, system — is derived from the two rules the brief
+   quoted verbatim ("blockers only when they exist", "system facts small and
+   read-only") plus `client-control-panel.html`, the closest approved screen. It
+   is written out at the top of `src/http/finance-os-view.mjs` so it can be
+   diffed against the real document when that turns up.
 
-W5, W6, W7 and W8 merged to `main`, carrying migrations `080`–`087`. W9's
-`public/app/finance-os.html` also needs to exist, because W10 extends that
-surface rather than replacing it, and the approved wireframe grammar at
-`client-control-panel-wireframe.md` needs to be reachable. When those land,
-re-run the gate check at the top of the W10 brief and start.
+2. **`client_cards` (076) is accounts receivable, not the client's credit.** The
+   brief named the table; what it holds was a judgement. It is the card that pays
+   Fundhub. This is now the third card-shaped table in the schema and 076's
+   header names all three, because confusing them is expensive.
+
+3. **`shiftId` on telemetry is resolved with `currentShift()`** — option 2 of the
+   three `TELEMETRY-CALLSITES.md` offered. One extra SELECT on a desk action, and
+   a null shift_id cannot be repaired later without guessing.
+
+4. **The earliest safe day is recommended, not the latest.** Both are defensible;
+   holding cash longer is the textbook answer but makes one missed reminder a
+   late payment. `latest` is still returned for a caller who wants the float.
+
+5. **Detected bills are excluded from payment-window projections.** They are
+   guesses, and a guess that closes somebody's payment window is a guess that
+   changed their behaviour. Only other cards' reported minimums compete.
+
+## Compliance flags raised
+
+| Workflow | Flag |
+|---|---|
+| W2 | **Payment rails.** No PAN and no CVV is stored; enforced by CHECK and asserted by test. Review before any writer is built. |
+| W3 | **Permissible purpose.** `soft_pull_requests.reason` is free text, deliberately and temporarily — no FCRA purpose vocabulary exists in this repo and inventing one in a migration would be inventing the compliance model unreviewed. Not a compliance artifact until counsel names the purposes. |
+| W4 | **Credit-repair messaging.** Alert text states what moved, never what happens next; a test asserts no will/guarantee/improve wording. Upsell rationale is internal and must never reach a consumer. |
+| W5 | **SOC 2.** Not in place. No access log for bank data equivalent to `pii_access_log`; retention and deletion undecided; vendor review not done. |
+| W8 | **Estimates shown to the user.** Reminders built on inferred bills carry `basis` and `confidence`, enforced against each other by CHECK. |
+| W10 | **Bank-data reads are unlogged.** Same SOC 2 gap as W5, restated at the endpoint that actually reads the data. |
+
+## What is NOT built, and is the honest gap
+
+* **Nothing syncs.** `src/banking/plaid.mjs` is a documented, empty seam and
+  makes no network call. Every banking table is populated by nobody. `plaid` was
+  not added as a dependency — this repo has two, `pg` and `inngest`.
+* **Nothing sends.** No reminder is delivered; `reminders.sent_at` is NULL on
+  every row this system can produce.
+* **No writers for the new tables.** The evaluators (W4) return findings and do
+  not persist them; `recordReminders` (W8) is called by nobody; C-00 was not
+  rewired to write `soft_pull_requests` because that touches a workflow file
+  owned elsewhere.
+* **`entity_kind` has no write path.** The banking screen surfaces "classify
+  these accounts" as text, not a button. Building the endpoint was not asked for.
+* **`pull_run` and `text_sent` telemetry have no actor** and were deliberately
+  not wired. See W1's commit message.
