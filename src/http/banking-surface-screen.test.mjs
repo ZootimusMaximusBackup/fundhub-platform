@@ -231,7 +231,12 @@ describe("banking-surface.html — a named client never sees invented money", ()
       respond: () => ({ status: 503, body: { ok: false, error: "database unreachable" } })
     });
     assertNoInventedMoney(screen, "503 from the endpoint");
-    assert.match(screen.banner(), /backend unavailable/);
+    /* This used to assert /backend unavailable/. Audit m17 split that one
+       message into the cases the front end can actually tell apart: a 503 is
+       the database saying so itself, so it — and only it — names the database.
+       A 500 from a crashed handler now reads differently; see the sibling
+       assertion in src/http/data-js.test.mjs. */
+    assert.match(screen.banner(), /the database is not answering/);
   });
 
   test("the id in the URL is stale and the endpoint rejects it", async () => {

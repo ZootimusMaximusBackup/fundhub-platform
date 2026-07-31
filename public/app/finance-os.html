@@ -40,7 +40,21 @@
   /* PARTIAL IS NOT COMPLETE. A total computed over a data set with holes in it
      is a floor. Saying so in the row is the whole point of the basis line. */
   .fos-row.is-partial .fos-basis{ color:var(--ink2); }
-  .fos-row.is-partial .fos-value::after{ content:"+"; margin-left:2px; color:var(--text-faint); font-weight:500; }
+  /* ...BUT A FLOOR MARKER ON A MISSING NUMBER IS NONSENSE (audit m16). The two
+     classes are set independently by the wiring script below: the ROW gets
+     is-partial from r.basis.partial, the VALUE gets is-unknown from
+     r.display === null. src/finance/os-grid.mjs sets both at once whenever every
+     line had a hole — sumKnown() returns total:null when nothing was usable
+     (os-grid.mjs:79) while basisOf() still reports partial:true because
+     unknown > 0 (os-grid.mjs:86). A client whose tradelines report no credit
+     limit at all therefore got content:"+" stacked on the em dash and the row
+     read "—+", which is not a number, not a dash and not a marker; it reads as
+     the page being broken. Worse, the plus means "there is more than this",
+     which is meaningless attached to "we have no number".
+     :not(.is-unknown) drops only the pair. Both signals still work where each
+     is true: a known-but-partial total keeps its plus, an unknown value keeps
+     its dash, and the basis line under it says which of the two it is. */
+  .fos-row.is-partial .fos-value:not(.is-unknown)::after{ content:"+"; margin-left:2px; color:var(--text-faint); font-weight:500; }
 
   .fos-note{ margin-top:18px; font:400 12px/1.6 'Inter',system-ui,sans-serif; color:var(--text-dim); max-width:70ch; }
   .fos-note code{ font:500 11px/1 'JetBrains Mono',ui-monospace,monospace; }

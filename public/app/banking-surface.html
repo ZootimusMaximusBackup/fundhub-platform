@@ -41,7 +41,19 @@
               letter-spacing:.04em; color:var(--text-faint); }
   .bs-gtotal{ font:700 17px/1.2 'JetBrains Mono',ui-monospace,monospace; color:var(--text); text-align:right; white-space:nowrap; }
   .bs-gtotal.is-unknown{ color:var(--text-faint); font-weight:500; }
-  .bs-gtotal.is-partial::after{ content:"+"; margin-left:2px; color:var(--text-faint); font-weight:500; }
+  /* THE PLUS AND THE DASH MUST NEVER LAND ON THE SAME NUMBER (audit m16). Both
+     classes are written onto this one element by the wiring script below —
+     is-unknown from g.current.display === null, is-partial from
+     g.current.basis.partial — and src/finance/banking-surface.mjs sets both at
+     once through the shared sumKnown()/basisOf() pair in
+     src/finance/os-grid.mjs:79 and :86: a group whose open accounts all failed
+     to report a balance has total null AND unknown > 0. That group rendered as
+     the literal string "—+". The dash means "we have no number"; the plus means
+     "there is more than this". Together they say nothing and look like a bug.
+     :not(.is-unknown) suppresses only that pair, so a known-but-partial group
+     total still shows the plus and an unknown one still shows the dash, with
+     the basis line under it explaining which. */
+  .bs-gtotal.is-partial:not(.is-unknown)::after{ content:"+"; margin-left:2px; color:var(--text-faint); font-weight:500; }
 
   .bs-acct{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,auto); gap:12px;
             align-items:baseline; padding:11px 16px; border-bottom:1px solid var(--soft); }
