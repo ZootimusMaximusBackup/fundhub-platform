@@ -175,8 +175,9 @@ const FH = (() => {
 
   /* ---------------- api ---------------- */
   async function api(path, opts = {}) {
-    if (isDemo() || path === "/api/auth/login") {
-      if (!isDemo()) {
+    const demo = isDemo();
+    if (demo || path === "/api/auth/login") {
+      if (!demo) {
         // Try the real backend once. If it can't answer, use demo.
         try {
           const r = await fetch(path, {
@@ -197,7 +198,18 @@ const FH = (() => {
           }
         } catch { /* backend unreachable → demo */ }
       }
-      return demoRoute(path, opts);
+      const res = demoRoute(path, opts);
+      // Reaching here on a REAL (non-demo) session means the backend never gave
+      // a usable answer: it threw, or /api/auth/login 404'd. demoRoute's reply
+      // is then a guess, and for the login path its guess is a fabricated
+      // 401 invalid_credentials — indistinguishable in the UI from a genuinely
+      // wrong password. That is the exact confusion this file used to cause, so
+      // report the truth instead. A demo credential that DOES match still logs
+      // in normally, which keeps static/demo deploys working.
+      if (!demo && path === "/api/auth/login" && !res.ok) {
+        return { status: 0, ok: false, data: { ok: false, error: "backend_unreachable" } };
+      }
+      return res;
     }
 
     const r = await fetch(path, {

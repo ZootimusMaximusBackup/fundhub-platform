@@ -2,7 +2,7 @@
 
 **Your password was never wrong. `demo1234` cannot work, and it never could.**
 
-Do these three things, in order. Total time: about two minutes.
+Two steps. Total time: about a minute.
 
 ---
 
@@ -11,42 +11,54 @@ Do these three things, in order. Total time: about two minutes.
 Open **Supabase Dashboard → SQL Editor → New query**. Paste the entire contents of
 [`scripts/fix-owner-login.sql`](./fix-owner-login.sql) and hit **Run**.
 
-**Expected output — exactly one row:**
+**Read the `verdict` column. That is the whole answer.**
 
-| id | email | role | status | org_slug | hash_len | hash_clean |
-|----|-------|------|--------|----------|----------|------------|
-| `<uuid>` | `chris@fundhub.ai` | `owner` | `active` | `fundhub` | `90` | `t` |
+| verdict | email | role | status | active | org_slug | hash_len | hash_clean |
+|---|---|---|---|---|---|---|---|
+| `LOGIN WILL WORK` | `chris@fundhub.ai` | `owner` | `active` | `true` | `fundhub` | `90` | `t` |
 
-- `hash_len` must be **90** and `hash_clean` must be **t**. Anything else means the paste
-  was mangled — re-run the file, it is safe to run as many times as you like.
-- **Zero rows returned?** Your `DEFAULT_ORG_SLUG` env var in Netlify is not `fundhub`.
-  Find-and-replace `fundhub` throughout the SQL file with its real value and re-run.
+- Any verdict other than `LOGIN WILL WORK` names the specific problem in the text of the
+  cell. Re-run the file — it is safe to run as many times as you like.
+- **More than one row?** A staff row for this email also exists in another org. The extra
+  rows are labelled `IGNORED — this row is in org "x", not the login org` and are harmless;
+  only the row whose `org_slug` matches can log in.
+- **An error instead of a result?** The script has two guards that deliberately refuse to
+  run and change nothing:
+  - *"STOPPED — no org has slug 'fundhub'…"* — your `DEFAULT_ORG_SLUG` env var in Netlify
+    is not `fundhub`. The error message lists the slugs that **do** exist in your database.
+    Pick the right one and see the note below.
+  - *"STOPPED — the email literal in this file has been altered…"* — a find-and-replace
+    went too wide. Re-copy the file and try again.
+
+> **If you have to change the org slug:** replace the quoted 9-character string
+> `'fundhub'` — *single quotes included* — everywhere in the file. Do **not** replace the
+> bare word: it also appears inside `'chris@fundhub.ai'`, and rewriting the email would
+> create an account under an address nobody is signing in with. The script's second guard
+> catches that mistake, but it is easier not to make it.
+
+The script never invents an org. An earlier draft created the `fundhub` org when it was
+missing; that silently produced a *second*, empty org, wrote the new staff row into it,
+printed a perfect-looking confirmation, and left login still returning
+*"Wrong email or password."* That failure mode is now impossible — the script aborts instead.
 
 ---
 
-## Step 2 — Clear the browser's demo mode
-
-On the login page, open the browser console (F12) and run:
-
-```js
-localStorage.clear()
-```
-
-Then reload the page. **Do not skip this.** `public/fh.js` keeps a client-side demo mode
-in `localStorage`. Once it engages, every future login is answered from a hardcoded table
-inside the page and never reaches your server at all — so the new password would be
-rejected without a single request leaving the browser.
-
----
-
-## Step 3 — Sign in
-
-**Clear the pre-filled password box first.** It contains `demo1234`.
+## Step 2 — Sign in
 
 ```
 email:    chris@fundhub.ai
 password: j32edOAlODrrRfT4H3GZ
 ```
+
+The password box is no longer pre-filled — `demo1234` is gone from the form, and the page
+now clears the browser's sticky demo mode on every load, so there is nothing to reset by
+hand.
+
+> **If the deployed page is still the old one** (the box arrives pre-filled with dots, or
+> the copy still says *"demo1234 — pre-filled, just hit Sign in"*), the fix has not deployed
+> yet. Clear the box, and open the console (F12) and run `localStorage.clear()` before
+> signing in — the old `fh.js` answers `/api/auth/login` from a hardcoded table once demo
+> mode engages, and your real password never leaves the browser.
 
 You are in. Everything below is explanation and follow-up.
 
@@ -61,8 +73,8 @@ Two independent faults, and only the first one blocked you.
 
 `src/auth/hash.mjs` enforces a 12-character minimum in `hashPassword()`. `demo1234` is
 8 characters. No code path in this repo — not the seeder, not the invite flow, not account
-creation — can ever produce a stored hash for it. The login form pre-fills a password that
-is guaranteed to fail, and advertises it as working.
+creation — can ever produce a stored hash for it. The login form pre-filled a password that
+was guaranteed to fail, and advertised it as working. That pre-fill is now removed.
 
 The backend was answering **HTTP 401 `invalid_credentials`** — correctly. It was telling
 the truth the whole time.
@@ -99,35 +111,55 @@ a rate-limit lockout, and a suspended account. All of those would have logged yo
 > **Caveat, stated honestly:** this proof holds because you submitted the *pre-filled*
 > `demo1234`. If you had typed the intended password instead, demo mode would have rejected
 > it too and every backend fault would look identical. If you were not using the pre-fill,
-> re-check with Step 4.
+> re-check with Step 3. Either way the repair in Step 1 is the same, and the rewritten
+> client no longer renders any backend fault as a credential error — so a second wrong
+> guess cannot cost you another round trip.
 
 ### Verification actually performed
 
-Not assumed — executed, against a real PostgreSQL 16 cluster built for the purpose:
+Not assumed — executed, against a real PostgreSQL 16 cluster built for the purpose. Five
+separate databases, each migrated from scratch and then repaired by the script:
 
-- All 66 migrations applied cleanly (10 schema + 54 migrations + 2 seed).
-- `fix-owner-login.sql` ran with `ON_ERROR_STOP=1`: inserts on first run, updates on
-  second, always exactly one row.
-- It repairs a deliberately damaged row (`status='invited'`, `password_hash=NULL`,
-  `active=false`, `role='Owner'`) back to a working login.
-- It is a clean no-op when the `active` column does not exist.
-- The repo's own `login()` was then called against that database:
-  - `j32edOAlODrrRfT4H3GZ` → **OK 200**, `role=owner`, session token issued
-  - `demo1234` → **401 invalid_credentials** ← reproduces your exact symptom
+| Database state | Result |
+|---|---|
+| Fresh, migrated, no staff row | inserts; `LOGIN WILL WORK`; run twice → still one row |
+| Row damaged: `status='suspended'`, `active=false`, `role='Owner'`, bcrypt hash, 6 failed attempts queued | repaired; rate limiter cleared |
+| A duplicate `chris@fundhub.ai` in a second org | correct row fixed, other row labelled `IGNORED` |
+| `active` column dropped (012 never applied) | clean no-op, `active` reads `(column absent)` |
+| Org slug is `fundhub-prod`, not `fundhub` | **aborts, writes nothing**, names the real slug |
+| Naive find-and-replace corrupted the email literal | **aborts, writes nothing** |
+
+In every database that the script was allowed to repair, the repo's own `login()` was then
+called directly against it:
+
+- `j32edOAlODrrRfT4H3GZ` → **OK 200**, `role=owner`, session token issued
+- `demo1234` → **401 invalid_credentials** ← reproduces your exact symptom
+
+The password hash was independently re-verified by loading it back out of the `.sql` file
+and calling this repo's own `verifyPassword()`: `true` for `j32edOAlODrrRfT4H3GZ`, `false`
+for `demo1234`, `needsRehash` `false`, length 90.
+
+The rewritten client was replayed against a stubbed backend for every status, with both
+the demo password and the real one. With the real password there is now **no** backend
+fault that renders as *"Wrong email or password."* — 401 alone produces it; 500/502 say
+*"this is not your password"*; a 404 or a dead network says *"Could not reach the server —
+this is not your password."* instead of fabricating a credential rejection out of demo mode.
+
+Full test suite: **2203 passing, 0 failing.**
 
 ---
 
-## Step 4 — If it still fails after Step 3
+## Step 3 — If it still fails
 
 The error message is now honest (once this commit deploys). Read it literally:
 
 | Message | Meaning | Action |
 |---|---|---|
-| *Wrong email or password.* | Genuine 401 | Step 1's SELECT returned no row, or the org slug is wrong |
+| *Wrong email or password.* | Genuine 401 | Step 1's verdict was not `LOGIN WILL WORK`, or the org slug is wrong |
 | *Account not active — ask an admin.* | 403 | `status` or `active` is wrong — re-run Step 1 |
 | *Too many attempts* | 429 | Wait 15 min, or re-run Step 1 (it clears the counter) |
-| *Server error (HTTP 5xx)* | Backend fault | Check `/api/health` below — **not** a password problem |
-| *Could not reach the server.* | 404 / network | The function is not deployed |
+| *Server error (HTTP 5xx) — this is not your password* | Backend fault | Check `/api/health` below |
+| *Could not reach the server — this is not your password* | 404 / network | The function is not deployed |
 
 Confirm the backend independently — this is unauthenticated, always returns 200, and costs
 no rate limit:
@@ -144,7 +176,7 @@ Read `migrations` in the response:
 
 ---
 
-## Step 5 — Separately: apply migrations 075–089
+## Step 4 — Separately: apply migrations 075–089
 
 **This did not break your login** — verified: the login path touches only `orgs`, `staff`,
 `auth_attempts`, `sessions`, `accounts` and `account_sessions`, and nothing in 075–089
@@ -177,16 +209,14 @@ and migrate afterwards.
 
 ## Recommendations (not done — they need your call)
 
-1. **Change the login form's pre-filled password.** `public/login.html` still pre-fills
-   `demo1234` and advertises it in the copy. It cannot ever work. Left alone deliberately:
-   commit `3ca41a1` reverted an earlier attempt to change it, so this looks like a product
-   decision rather than a bug.
-2. **Reconsider client-side demo mode in a live CRM.** `fh.js` falls back to a hardcoded
-   user table when the backend 404s or is unreachable, and once engaged it sticks in
-   `localStorage`. It is why a broken backend looked like a working login for months.
-3. **Make deploys apply migrations,** or at least fail loudly when the ledger is behind the
+1. **Reconsider client-side demo mode in a live CRM.** `fh.js` still falls back to a
+   hardcoded user table when `/api/auth/login` 404s, and once engaged it sticks in
+   `localStorage`. The login page now clears that flag on load and no longer lets a demo
+   answer masquerade as a real credential rejection, but a production CRM arguably should
+   not ship a fake user table at all.
+2. **Make deploys apply migrations,** or at least fail loudly when the ledger is behind the
    repo. Not changed here: editing `netlify.toml`'s build command to touch the database
    risks breaking every deploy, which is a worse failure than the one being fixed.
-4. **`shell.js:248` and `crm.html:317`** still redirect to the login page on *any*
+3. **`shell.js:248` and `crm.html:317`** still redirect to the login page on *any*
    `/api/auth/session` failure, including 500s — so a broken backend still presents as
    "you are signed out". Fixing it needs a banner UI, not an error-branch rewrite.

@@ -13,15 +13,29 @@
     <div class="err" id="err"></div>
     <form id="f">
       <input id="email" type="email" placeholder="email" autocomplete="username" value="chris@fundhub.ai" required>
-      <input id="pw" type="password" placeholder="password" autocomplete="current-password" value="demo1234" required>
+      <!-- NOT pre-filled. This field used to ship value="demo1234", which is 8
+           characters; src/auth/hash.mjs enforces a 12-character minimum in
+           hashPassword(), so no stored hash for it can exist and the pre-fill
+           was guaranteed to produce "Wrong email or password." on a perfectly
+           healthy backend. -->
+      <input id="pw" type="password" placeholder="password" autocomplete="current-password" required autofocus>
       <button class="btn primary" id="go" type="submit">Sign in</button>
     </form>
-    <p class="note" style="margin-top:14px"><b>chris@fundhub.ai</b> / <b>demo1234</b> — pre-filled, just hit Sign in.</p>
+    <p class="note" style="margin-top:14px">Enter your password to continue.</p>
     <p class="note"><a href="/" style="text-decoration:underline">← Back to fundhub.ai</a></p>
   </div>
 </div>
 <script src="/fh.js"></script>
 <script>
+// Landing on the sign-in page always re-tries the real backend. fh.js keeps a
+// client-side demo mode in localStorage, and once it engages it answers
+// /api/auth/login from a hardcoded table without sending anything to the
+// server — so a correct new password comes back "Wrong email or password."
+// with no request ever leaving the browser. Clearing it here means nobody has
+// to know that, or open a console to escape it. Demo mode simply re-engages on
+// the next attempt if the backend really is absent.
+try { localStorage.removeItem("fh_demo"); localStorage.removeItem("fh_demo_staff"); } catch (e) {}
+
 document.getElementById("f").addEventListener("submit", async (e) => {
   e.preventDefault();
   const err = document.getElementById("err"), btn = document.getElementById("go");
@@ -44,7 +58,7 @@ document.getElementById("f").addEventListener("submit", async (e) => {
     else if (s === 400) msg = "Enter both an email and a password.";
     else if (s >= 500)  msg = "Server error (HTTP " + s + ") — this is not your password. "
                             + "The backend could not complete the request.";
-    else if (!s || !data) msg = "Could not reach the server.";
+    else if (!s || !data) msg = "Could not reach the server — this is not your password.";
     else                msg = "Sign-in failed (HTTP " + s + ").";
     err.style.display = "block";
     err.textContent = msg;
