@@ -26,10 +26,19 @@
 // rule became "any authenticated staff session, any role" on an endpoint serving
 // a named client's balances.
 //
-// ROLE_SETS.STAFF, matching the finance-os and tradelines endpoints. Bank
-// balances are not more sensitive than the credit limits and balances those
-// already serve to the same set, and splitting the gate would leave a closer
-// able to see the client's cards but not their cash while working the same file.
+// ROLE_SETS.FINANCE, NOT STAFF — AND THAT IS THE SECOND APPROVAL (audit M9).
+// This endpoint used to admit the whole staff set, on the argument that bank
+// balances are no more sensitive than the credit limits finance-os and
+// tradelines already serve to that set. The difference is where the data comes
+// from. Those read what this system was told; this reads a bank connection, and
+// bank connections are not approved: src/banking/plaid.mjs is two empty seams
+// waiting on a SOC 2 review of storing bank credentials and a consent-capture
+// flow compliance has signed off (docs/workflows/finish-the-build/W5.md, still
+// open). isPlaidEnabled() below asks whether the credentials exist; it cannot
+// ask whether anyone agreed to this. So setting three environment variables for
+// one test client must not put that person's real balances on every employee's
+// desk — configuration is not consent and it is not an approval. Owner/admin
+// only until a human widens it deliberately, which is a one-word edit here.
 //
 // SELECTED COLUMNS, NOT `SELECT *`. `plaid_items.encrypted_access_token` lives
 // one join away and there is no reason for a read endpoint to be one typo from
@@ -56,7 +65,7 @@ export default async function handler(req, res) {
 
   const staff = await requireAuth(req, res, { db });
   if (!staff) return;
-  if (!requireRole(res, staff, ROLE_SETS.STAFF)) return;
+  if (!requireRole(res, staff, ROLE_SETS.FINANCE)) return;
 
   if (!isPlaidEnabled()) {
     return res.status(403).json({ ok: false, error: "banking surface requires plaid configuration" });

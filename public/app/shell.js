@@ -30,10 +30,24 @@
      instead, so it stays out of the staff surface. */
   var PRINCIPAL_ONLY = ["partner-galaxy.html"];
 
+  /* NOT PART OF THE SHARED STAFF SURFACE — waiting on a human approval, not on
+     a nav decision. banking-surface.html shows a named client's bank balances,
+     read from a bank connection. Bank connections are not approved in this
+     product: the SOC 2 review of storing bank credentials and the consent
+     flow are both open (src/banking/plaid.mjs, docs/workflows/finish-the-build/
+     W5.md). api/read/banking-surface.mjs answers this screen only for
+     ROLE_SETS.FINANCE for that reason, so leaving it in the shared surface
+     would have offered every employee a screen the data behind it refuses.
+     Owner and admin have "*" and keep it. Widening this is a decision somebody
+     makes after the sign-off, not a tidy-up. */
+  var OWNER_ADMIN_ONLY = ["banking-surface.html"];
+
   // staffTabs — every screen the sidebar links to, which is every screen a
   // signed-in employee can reach from the chrome they are already looking at.
   function staffTabs() {
-    return ALL.filter(function (s) { return PRINCIPAL_ONLY.indexOf(s) === -1; });
+    return ALL.filter(function (s) {
+      return PRINCIPAL_ONLY.indexOf(s) === -1 && OWNER_ADMIN_ONLY.indexOf(s) === -1;
+    });
   }
 
   /* "staff" = the full employee surface; "*" = that plus the partner screen.
