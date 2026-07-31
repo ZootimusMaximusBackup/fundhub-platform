@@ -65,10 +65,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_shifts_one_open
 -- source in this codebase for either decision. Setting ended_at = now() would
 -- be the obvious one-liner and it would write hours that nobody worked onto a
 -- timesheet — inventing a value where the honest answer is "an operator has to
--- look". src/shifts/store.mjs has the same hole at
--- STALE_SHIFT_HOURS_PLACEHOLDER and reports it rather than filling it. If a
--- repair is wanted it belongs in its own migration, after somebody decides the
--- rule, not smuggled into the constraint that exposed the problem.
+-- look". If a repair is wanted it belongs in its own migration, after somebody
+-- decides the rule, not smuggled into the constraint that exposed the problem.
+--
+-- (Comment corrected 2026-07-31. This paragraph used to cite
+-- STALE_SHIFT_HOURS_PLACEHOLDER in src/shifts/store.mjs as another instance of
+-- the same unfilled hole. That constant is now STALE_SHIFT_HOURS = 12, set as
+-- policy, so the cross-reference is dead — but the point above still stands:
+-- what to do with ALREADY-BROKEN duplicate open shifts is still undecided, and
+-- autoCloseStale() still has no caller. Editing an applied migration's DDL
+-- would be a silent no-op and is forbidden here; a comment executes nothing, so
+-- fixing a dangling identifier is safe and beats leaving it for the next reader
+-- to chase.)
 --
 -- WHAT WAS DELIBERATELY NOT DONE (2): idx_shifts_open IS NOT DROPPED. The new
 -- index has the same key and the same predicate, so it makes the old one

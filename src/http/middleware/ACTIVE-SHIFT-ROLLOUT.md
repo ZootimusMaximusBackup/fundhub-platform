@@ -1,5 +1,40 @@
 # Proposed rollout — `requireActiveShift`
 
+> ## SUPERSEDED IN PART — 2026-07-31 (workflow W2)
+>
+> The gate is now applied. **Two endpoints are gated and only two:
+> `api/inquiries.mjs` POST and `api/tasks.mjs` PATCH.** The decision this document
+> was waiting on has been made, so what follows is no longer a description of the
+> code.
+>
+> The owner ruled, verbatim: *"Gate writes that affect attribution or pay:
+> claiming a lead, logging a call outcome, moving a pipeline stage, sending
+> client messages. Do not gate read-only screens."* He then confirmed separately
+> that `api/tasks.mjs PATCH { claim: true }` is what "claiming a lead" meant here.
+>
+> Measured against that rule, **§1's list of four is two right and two wrong.**
+> `api/inquiries.mjs` and `api/tasks.mjs` are the two right — though §1 reaches
+> `api/tasks.mjs` by arguing from "the most literal reading of *dashboard
+> action*", a term the owner never used, so it is the right answer on an argument
+> that did not establish it; it was held for a ruling rather than adopted on that
+> reasoning. `api/pii.mjs` and `api/inquiry.mjs` are the two wrong — argued below
+> on sensitivity and on cost, and neither is attribution or pay. **§3a is closed**
+> — reads are not gated. §2 was re-checked and is correct in full. §4 questions
+> 2–4 remain open.
+>
+> **`api/tasks.mjs` claims a TASK, not a lead.** Real lead-claiming does not exist
+> in this repository: `cards.owner` (`db/schema/001_init.sql:214`) is never written
+> by anything, and `clients` has no assignee column. That is logged as a gap for a
+> later thread, not built.
+>
+> Two of the owner's four categories have **no endpoint in this repository at
+> all** — pipeline-stage moves and client messaging both happen inside Inngest
+> workflows and webhook handlers, which have no staff principal.
+>
+> **The record of what was decided, and why, is `docs/workflows/comp-and-shift-gate.md`
+> section `## W2`.** Everything below is left exactly as written, as the reasoning
+> that preceded the ruling. Read it as history, not as the current list.
+
 **Proposal only. Not one endpoint has been edited.** `src/http/middleware/requireActiveShift.mjs`
 exists, is tested, and is currently called from nowhere.
 
@@ -159,12 +194,28 @@ to someone who fails both), but it is worth confirming that is the intent.
    `db/migrations/060_shifts_one_open.sql` or the spec distinguishes roles for the
    purpose of shifts. Left unimplemented rather than guessed.
 3. **What happens to work in flight when a shift auto-closes underneath someone.**
-   `autoCloseStale()` (`src/shifts/store.mjs`) exists and its threshold is an
-   explicitly-flagged placeholder (`STALE_SHIFT_HOURS_PLACEHOLDER = 16`, "NOT A
-   POLICY"). Once these endpoints are gated, that sweep acquires a second, larger
-   consequence: it revokes dashboard access mid-task. §14 says "auto-close on
-   **inactivity**", which is a different trigger from the elapsed-time one that is
-   implemented. **That mismatch is worth a look independently of this gate.**
+   `autoCloseStale()` (`src/shifts/store.mjs`) exists and its threshold is now a
+   decided policy: `STALE_SHIFT_HOURS = 12`, set by the owner on 2026-07-31. The
+   number is settled; this question is not. Once these endpoints are gated, that
+   sweep acquires a second, larger consequence: it revokes dashboard access
+   mid-task.
+
+   The trigger mismatch flagged here is now **resolved**. §14 says "auto-close on
+   **inactivity**" and the owner confirmed that reading on 2026-07-31: "a closer
+   working a 13-hour day with activity should never get auto-closed. Idle 12h
+   closes it." `autoCloseStale()` now closes on time since the last
+   `staff_events` row for the shift, not on elapsed time since clock-in, and
+   `ended_at` is that last activity rather than clock-in plus the threshold.
+
+   ⚠ But the sweep is only as good as the telemetry, and **`logStaffEvent()` has
+   zero call sites** (see `../../shifts/TELEMETRY-CALLSITES.md`). Until those
+   land, `staff_events` holds nothing but the sweep's own audit rows, every open
+   shift reads as idle since clock-in, and a swept shift is written with a
+   near-zero length. Nothing calls `autoCloseStale()` today — no scheduler, no
+   caller — so nothing is harmed. **Wire the telemetry call sites before
+   scheduling the sweep**, or it will close active shifts and pay nothing for
+   them. Gating these endpoints makes that ordering more important, not less: a
+   wrongly-swept shift would also lock the person out of the dashboard.
 4. **Whether a refused action should be recorded.** `staff_events` is the obvious
    home for "tried to act off the clock", and it would be a genuinely useful
    telemetry signal (people repeatedly forgetting to clock in is a fixable process

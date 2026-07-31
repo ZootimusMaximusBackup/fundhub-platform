@@ -19,9 +19,47 @@
 // pointed at another person.
 //
 // ?role=mine is accepted as well as ?mine=1 because the screens ask both ways.
+//
+// *** THE PATCH BRANCH REQUIRES AN OPEN SHIFT. THE GET BRANCH DOES NOT. ***
+//
+// The rule this implements, verbatim from the owner: "Gate writes that affect
+// attribution or pay: claiming a lead, logging a call outcome, moving a pipeline
+// stage, sending client messages. Do not gate read-only screens." The owner then
+// confirmed specifically that `PATCH { id, claim: true }` here is what "claiming
+// a lead" meant in this codebase.
+//
+// THE WHOLE PATCH BRANCH IS GATED, NOT ONLY THE claim PATH. Reasoning, because
+// this is the one judgement call in the change:
+//
+//   claim              writes assignee_staff_id = the caller. Named by the owner.
+//   assignee_staff_id  writes the same column for somebody else. Reassignment is
+//                      assignment; it is the same attribution write aimed at a
+//                      different person, and exempting it would leave the column
+//                      writable off the clock by the longer route.
+//   done               writes no attribution column — `tasks` records no
+//                      completed_by — so on the letter of the rule it is the weak
+//                      one. It is gated anyway for two reasons. First, per-staff
+//                      work IS counted off this pair: api/read/staff.mjs's
+//                      `open_tasks` is count(*) WHERE assignee_staff_id = s.id
+//                      AND done = false, so closing a task off the clock moves a
+//                      named person's work number with no shift to attribute it
+//                      to. Second, a gate placed in two of three code paths
+//                      inside one method branch is a gate the fourth action
+//                      written next month will not have, and nothing will fail
+//                      when it does not — which is the exact drift
+//                      requireActiveShift.mjs exists as one file to prevent.
+//
+// This is the same call made on api/inquiries.mjs POST, and it is made on
+// weaker evidence here: there, every action in the branch wrote worked_by. Here
+// `done` does not. Flagged in docs/workflows/comp-and-shift-gate.md so the owner
+// can narrow it to claim + reassign in one line if that reading is wrong.
+//
+// GET is untouched. It is the queue screen — read-only, and the rule ends "do
+// not gate read-only screens."
 
 import { db } from "../src/db.mjs";
 import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
+import { requireActiveShift } from "../src/http/middleware/requireActiveShift.mjs";
 import { TASK_ROLES } from "../src/lib/create-task.mjs";
 import { isUuid, CLIENT_DATA_ERRORS, boundedLimit } from "../src/http/read-api.mjs";
 import { safeError } from "../src/http/health.mjs";
@@ -100,6 +138,23 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "PATCH") {
+    /* Composes AFTER requirePrincipal above, never instead of it: that decides
+       WHO this is, this decides whether they are on the clock. The principal is
+       passed explicitly because requirePrincipal attaches nothing to `req` — it
+       calls authenticate() directly, so there is no req.staff for the gate to
+       read. Note `staff` above is a reshaped { id, role }, not a principal, and
+       must not be passed in its place.
+
+       First in the branch, before the body is destructured: whether you may
+       write at all is not a question about the payload. The gate writes its own
+       refusal and returns null, so `if (!shift) return;` is the whole contract —
+       including the 503 it answers when the shift CHECK itself failed, which must
+       never collapse into "you are not clocked in" and must never fall through to
+       an UPDATE. It is deliberately outside the try/catch below, which maps
+       failures onto 400/500 and would otherwise be able to reshape that 503. */
+    const shift = await requireActiveShift(req, res, { db, principal });
+    if (!shift) return;
+
     const { id, done, claim, assignee_staff_id } = req.body || {};
     const RET = `id, client_id, title, body, due_at, source_workflow,
                  assignee_role, assignee_staff_id, done, created_at`;

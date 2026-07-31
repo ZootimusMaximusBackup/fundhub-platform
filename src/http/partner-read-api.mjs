@@ -29,7 +29,7 @@
 
 import { requirePrincipal } from "./middleware/requirePrincipal.mjs";
 import { withPartnerScope } from "../partners/rls.mjs";
-import { redact, pageParams, page } from "./read-api.mjs";
+import { redact, pageParams, page, CLIENT_DATA_ERRORS } from "./read-api.mjs";
 import { redactConnection } from "../adplatforms/tokens.mjs";
 
 /* partnerReadHandler({ fetch, single })
@@ -74,6 +74,27 @@ export function partnerReadHandler({ fetch, single = false, mapRow = null }) {
       }
       return res.status(200).json({ ok: true, ...page(shaped, { limit, offset }) });
     } catch (err) {
+      // A malformed parameter is the CALLER's error, not ours. Same reasoning as
+      // read-api.mjs: reporting a bad query string as a 500 tells every screen
+      // "the database is unreachable" (public/app/data.js) when the backend is
+      // perfectly healthy and only the request was wrong. Classify on the code,
+      // never the message — messages are localised and version-dependent.
+      //
+      // Three families land here, and all three are 400s:
+      //   BAD_STATE    — stateFilter() rejected an unknown ?state=. The allowed
+      //                  list is echoed back, because a screen filtering on a
+      //                  typo needs to be told which values exist.
+      //   BAD_REQUEST  — a handler's own precondition, e.g. detail.mjs with no ?id=.
+      //   SQLSTATE 22  — Postgres data exception, e.g. ?id=zzz against a uuid.
+      if (err && err.code === "BAD_STATE") {
+        return res.status(400).json({ ok: false, error: "bad_state", message: safeMessage(err) });
+      }
+      if (err && err.code === "BAD_REQUEST") {
+        return res.status(400).json({ ok: false, error: "bad_request", message: safeMessage(err) });
+      }
+      if (CLIENT_DATA_ERRORS.has(err && err.code)) {
+        return res.status(400).json({ ok: false, error: "invalid_parameter" });
+      }
       return res.status(500).json({ ok: false, error: "query_failed", message: safeMessage(err) });
     }
   };

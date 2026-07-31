@@ -49,23 +49,26 @@ export class ShiftError extends Error {
 }
 
 /**
- * STALE_SHIFT_HOURS_PLACEHOLDER — *** NOT A POLICY. ***
+ * STALE_SHIFT_HOURS — *** POLICY. 12 HOURS. ***
  *
  * autoCloseStale() needs to know how long an open shift may sit before it is
  * treated as forgotten rather than in progress. That number is an operator
  * decision about how this desk works — a 24/7 rota, an overnight processing
- * shift and a 9-to-5 want different answers — and THERE IS NO SOURCE FOR IT
- * ANYWHERE IN THIS REPOSITORY. Not in the schema, not in src/config/, not in
- * any doc on disk.
+ * shift and a 9-to-5 want different answers — and it used to have no source
+ * anywhere in this repository, so it was carried here as a flagged placeholder.
  *
- * So it is a parameter, and this constant is the single place a fallback value
- * is written down. It is named to be impossible to mistake for a decided rule
- * at a call site, it is deliberately generous (a threshold that is too short
- * closes shifts people are actually working), and it is reported as a gap
- * rather than quietly shipped. Callers that know the real number should pass
- * it; when somebody decides, this constant is the one line that changes.
+ * IT HAS A SOURCE NOW. The owner set the stale-shift threshold at 12 hours on
+ * 2026-07-31. That decision is what this constant holds, and this comment is
+ * where it is written down; there is no other record of it in the schema, in
+ * src/config/ or in any doc on disk. Changing the number means changing the
+ * policy, which is the owner's call and not a refactor.
+ *
+ * It stays a parameter on autoCloseStale() so a caller with a different desk
+ * can pass its own threshold, but the default is now a decided rule rather than
+ * a guess, and a call site that takes the default is applying the 12-hour
+ * policy on purpose.
  */
-export const STALE_SHIFT_HOURS_PLACEHOLDER = 16;
+export const STALE_SHIFT_HOURS = 12;
 
 /**
  * AUTO_CLOSE_EVENT_KIND — the `staff_events.kind` written when the sweep closes
@@ -202,13 +205,40 @@ export async function currentShift(db, { staffId } = {}) {
  * a row that will read as an infinite day to anything that totals hours, and it
  * also blocks that person's next clock-in now that uq_shifts_one_open exists.
  *
- * ended_at IS NOT now(). It is `started_at + olderThanHours`, the point the
- * shift should have ended. Stamping the sweep's own clock would credit every
- * hour between the forgotten clock-out and whenever the sweep happened to run —
- * on a job that runs nightly, a Friday shift left open reads as 60 hours on
- * Monday. Deriving the end from the threshold at least produces a number whose
- * provenance is a single stated assumption instead of a scheduling accident.
- * It is still an estimate. That is precisely why the next paragraph exists.
+ * IDLE, NOT ELAPSED. §14 says auto-close on INACTIVITY, and the owner confirmed
+ * that reading on 2026-07-31: "a closer working a 13-hour day with activity
+ * should never get auto-closed. Idle 12h closes it." This function used to
+ * close on `started_at < now() - threshold`, which is elapsed time — it would
+ * have closed that closer mid-shift while they were demonstrably working, and
+ * then blocked their next clock-in via uq_shifts_one_open.
+ *
+ * Activity is `staff_events` rows for the shift. That table is the only record
+ * of a staff member doing anything, and its index (staff_id, created_at) exists
+ * for exactly this kind of question. The sweep's own AUTO_CLOSE_EVENT_KIND rows
+ * are excluded — a row this function wrote is not evidence the person was
+ * working.
+ *
+ * last_active_at = the newest such event, or started_at when there are none.
+ * Clocking in is itself an act, so a shift with no events is idle from the
+ * moment it opened rather than un-assessable.
+ *
+ * ended_at IS last_active_at — the last moment we have evidence they were
+ * working. NOT now(), which would credit every hour between the forgotten
+ * clock-out and whenever the sweep ran (a Friday shift reads as 60 hours on
+ * Monday). NOT last_active_at + threshold either: the threshold is how long we
+ * wait before deciding they left, not time they worked. Paying the idle window
+ * would invent up to 12 hours per forgotten clock-out.
+ *
+ * ⚠ THIS IS ONLY AS GOOD AS THE TELEMETRY, AND THE TELEMETRY HAS NO WRITERS.
+ * logStaffEvent() (src/shifts/telemetry.mjs) has zero call sites — see
+ * src/shifts/TELEMETRY-CALLSITES.md — so `staff_events` today contains nothing
+ * but this function's own audit rows. Until those call sites land, every open
+ * shift has last_active_at = started_at, which means this reads as "close
+ * shifts with no recorded activity since clock-in" and writes a near-zero-length
+ * shift. That is the honest answer to the data available, not a safe one to pay
+ * from. Nothing runs it — autoCloseStale() still has no caller and no scheduler
+ * — so nothing is currently harmed. Wire the telemetry call sites BEFORE
+ * scheduling this sweep.
  *
  * EVERY CLOSE IS RECORDED. One `staff_events` row per shift, kind
  * AUTO_CLOSE_EVENT_KIND, detail carrying the threshold used, the original
@@ -224,7 +254,7 @@ export async function currentShift(db, { staffId } = {}) {
  *
  * Idempotent: `ended_at IS NULL` means a second run finds nothing left to do.
  */
-export async function autoCloseStale(db, { olderThanHours = STALE_SHIFT_HOURS_PLACEHOLDER } = {}) {
+export async function autoCloseStale(db, { olderThanHours = STALE_SHIFT_HOURS } = {}) {
   // Validated rather than coerced. `Number(undefined)` is NaN, and a NaN
   // interval in the WHERE clause is not "close nothing" — it is a comparison
   // Postgres will reject or, worse, an interval built from a value nobody
@@ -236,28 +266,47 @@ export async function autoCloseStale(db, { olderThanHours = STALE_SHIFT_HOURS_PL
   }
 
   const res = await db.query(
-    `WITH closed AS (
-       UPDATE shifts s
-          SET ended_at   = s.started_at + make_interval(secs => $1::double precision * 3600),
-              updated_at = now()
+    `WITH activity AS (
+       SELECT s.id,
+              GREATEST(s.started_at, COALESCE(MAX(e.created_at), s.started_at)) AS last_active_at,
+              count(e.id) > 0                                                   AS had_activity
+         FROM shifts s
+         LEFT JOIN staff_events e
+                ON e.shift_id = s.id
+               AND e.kind IS DISTINCT FROM $2::text
         WHERE s.ended_at IS NULL
-          AND s.started_at < now() - make_interval(secs => $1::double precision * 3600)
-        RETURNING s.id, s.org_id, s.staff_id, s.started_at, s.ended_at
+        GROUP BY s.id, s.started_at
+     ),
+     closed AS (
+       UPDATE shifts s
+          SET ended_at   = a.last_active_at,
+              updated_at = now()
+         FROM activity a
+        WHERE s.id = a.id
+          AND s.ended_at IS NULL
+          AND a.last_active_at < now() - make_interval(secs => $1::double precision * 3600)
+        RETURNING s.id, s.org_id, s.staff_id, s.started_at, s.ended_at,
+                  a.had_activity
      ),
      logged AS (
        INSERT INTO staff_events (org_id, staff_id, shift_id, kind, detail)
        SELECT c.org_id, c.staff_id, c.id, $2::text, jsonb_build_object(
-                'reason',          'shift left open past the stale-shift threshold and was closed by the sweep, not by the staff member',
+                'reason',          'shift idle past the stale-shift threshold and was closed by the sweep, not by the staff member',
                 'closed_by',       'src/shifts/store.mjs autoCloseStale',
+                'rule',            'inactivity since last recorded staff_event (spec 14), not elapsed time since clock-in',
                 'threshold_hours', $1::double precision,
                 'started_at',      c.started_at,
                 'ended_at',        c.ended_at,
+                -- false means there was NO recorded activity at all, so ended_at
+                -- fell back to started_at. A reader auditing a disputed shift
+                -- needs to know the estimate had nothing behind it.
+                'had_activity',    c.had_activity,
                 'swept_at',        now()
               )
          FROM closed c
        RETURNING shift_id
      )
-     SELECT c.id, c.org_id, c.staff_id, c.started_at, c.ended_at
+     SELECT c.id, c.org_id, c.staff_id, c.started_at, c.ended_at, c.had_activity
        FROM closed c
       ORDER BY c.started_at ASC`,
     [hours, AUTO_CLOSE_EVENT_KIND]
