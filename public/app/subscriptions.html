@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fundhub — Subscriptions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
+<!-- The shared Finance OS frame. It carries .is-unknown and .is-partial, which
+     are the two rules this product cannot get wrong: an unknown renders as an em
+     dash and never as 0.00, and a total over a set with holes in it carries a
+     "+" because it is a floor rather than a figure. Written once there rather
+     than an eighth time here. -->
+<link rel="stylesheet" href="finance-os.css">
+<script src="shell.js"></script>
+</head>
+<body>
+
+<!-- ===========================================================================
+     Subscriptions — SCAFFOLD SHELL. TRACK 1 OWNS THIS FILE.
+
+     This is a minimal valid page, not the screen. It exists so the route, the
+     nav row and the file all land in one pass: a screen added to shell.js and
+     nowhere else has no way in, and src/http/app-nav-reachability.test.mjs fails
+     when that happens (audit M20). Track 1 builds the real controls inside
+     #subsMount and deletes the placeholder note below.
+
+     Reads and writes /api/finance/subscriptions and /api/finance/cards.
+
+     THE RULES THIS SCREEN IS HELD TO, BEFORE ANY MARKUP IS WRITTEN:
+
+     • ESCAPE EVERYTHING. A lender name, a merchant string and a client note are
+       record data, never markup. Every screen in public/app defines its own
+       esc(); define one here and run every interpolated value through it.
+
+     • NEVER SHOW A NUMBER THE SERVER DID NOT SEND. If a read returns nothing,
+       say so on the page in words (.fh-empty). Do not leave sample markup on
+       screen under a real client's name — that exact bug shipped and is audit
+       finding M8. This shell therefore ships with NO sample figures at all.
+
+     • UNKNOWN IS AN EM DASH. Set .is-unknown from `display === null` and
+       .is-partial from `basis.partial`, independently. See finance-os.css.
+
+     • Starting, changing or cancelling a plan here RECORDS what a client is on.
+       It does not charge anybody: src/subscriptions/store.mjs has no processor
+       call, no scheduler and no next-charge column, and a billing run is a
+       payment-rail change that needs compliance review before a line of it
+       exists. There is no "add a card" control either — normalizeCardMeta()
+       throws on a card number and on a CVV, and nothing in this repository
+       transmits, so there is no processor to tokenise one against.
+
+     • THERE IS NO BROWSER AND NO PLAYWRIGHT IN THIS ENVIRONMENT, so nobody has
+       looked at this rendering. A human has to open it.
+     =========================================================================== -->
+
+<div class="fh-wrap">
+  <!-- A REAL HREF, NOT history.back(). This screen carries no sidebar, so this
+       is the only way off it, and back() does nothing at all when the page was
+       opened from a pasted or bookmarked URL (audit M20). shell.js gates this
+       link like any other screen link. -->
+  <div class="fh-back"><a href="command-center.html">← Command Center</a></div>
+
+  <div class="fh-head">
+    <h1 class="fh-title">Subscriptions</h1>
+    <span class="fh-source" id="subsMountSource">not built</span>
+  </div>
+  <p class="fh-sub">The plan this client is on, the price, and the card on file for it.</p>
+
+  <!-- TRACK 1 FILLS THIS. It is empty on purpose: an empty container reads
+       as "nothing here yet", and sample rows read as this client's real figures. -->
+  <div id="subsMount"></div>
+
+  <!-- PLACEHOLDER — TRACK 1 DELETES THIS BLOCK. -->
+  <p class="fh-note" id="subsMountPlaceholder">
+    This screen is being built. The endpoint behind it — <code>/api/finance/subscriptions and /api/finance/cards</code> —
+    is routed and answers <code>501 not_implemented</code> until its handler is finished,
+    so nothing here is showing you stale or invented figures.
+  </p>
+</div>
+
+<script src="data.js"></script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fundhub — Bills & Cash Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
+<!-- The shared Finance OS frame. It carries .is-unknown and .is-partial, which
+     are the two rules this product cannot get wrong: an unknown renders as an em
+     dash and never as 0.00, and a total over a set with holes in it carries a
+     "+" because it is a floor rather than a figure. Written once there rather
+     than an eighth time here. -->
+<link rel="stylesheet" href="finance-os.css">
+<script src="shell.js"></script>
+</head>
+<body>
+
+<!-- ===========================================================================
+     Bills & Cash Flow — SCAFFOLD SHELL. TRACK 4 OWNS THIS FILE.
+
+     This is a minimal valid page, not the screen. It exists so the route, the
+     nav row and the file all land in one pass: a screen added to shell.js and
+     nowhere else has no way in, and src/http/app-nav-reachability.test.mjs fails
+     when that happens (audit M20). Track 4 builds the real controls inside
+     #cashflowMount and deletes the placeholder note below.
+
+     Reads and writes /api/finance/bills and /api/finance/cashflow.
+
+     THE RULES THIS SCREEN IS HELD TO, BEFORE ANY MARKUP IS WRITTEN:
+
+     • ESCAPE EVERYTHING. A lender name, a merchant string and a client note are
+       record data, never markup. Every screen in public/app defines its own
+       esc(); define one here and run every interpolated value through it.
+
+     • NEVER SHOW A NUMBER THE SERVER DID NOT SEND. If a read returns nothing,
+       say so on the page in words (.fh-empty). Do not leave sample markup on
+       screen under a real client's name — that exact bug shipped and is audit
+       finding M8. This shell therefore ships with NO sample figures at all.
+
+     • UNKNOWN IS AN EM DASH. Set .is-unknown from `display === null` and
+       .is-partial from `basis.partial`, independently. See finance-os.css.
+
+     • A LOW-CONFIDENCE CANDIDATE IS NOT A BILL and must never be drawn as one —
+       the detector splits them for that reason and the endpoint defaults to the
+       presentable set only. The projection refuses rather than guesses: when it
+       comes back ok:false, or carries threshold gaps and blind spots, those ARE
+       the answer and this screen shows them. A projection drawn with its gaps
+       dropped is a confident number built on holes.
+
+     • THERE IS NO BROWSER AND NO PLAYWRIGHT IN THIS ENVIRONMENT, so nobody has
+       looked at this rendering. A human has to open it.
+     =========================================================================== -->
+
+<div class="fh-wrap">
+  <!-- A REAL HREF, NOT history.back(). This screen carries no sidebar, so this
+       is the only way off it, and back() does nothing at all when the page was
+       opened from a pasted or bookmarked URL (audit M20). shell.js gates this
+       link like any other screen link. -->
+  <div class="fh-back"><a href="command-center.html">← Command Center</a></div>
+
+  <div class="fh-head">
+    <h1 class="fh-title">Bills & Cash Flow</h1>
+    <span class="fh-source" id="cashflowMountSource">not built</span>
+  </div>
+  <p class="fh-sub">Recurring bills detected from the account history, and the day-by-day cash projection built on them.</p>
+
+  <!-- TRACK 4 FILLS THIS. It is empty on purpose: an empty container reads
+       as "nothing here yet", and sample rows read as this client's real figures. -->
+  <div id="cashflowMount"></div>
+
+  <!-- PLACEHOLDER — TRACK 4 DELETES THIS BLOCK. -->
+  <p class="fh-note" id="cashflowMountPlaceholder">
+    This screen is being built. The endpoint behind it — <code>/api/finance/bills and /api/finance/cashflow</code> —
+    is routed and answers <code>501 not_implemented</code> until its handler is finished,
+    so nothing here is showing you stale or invented figures.
+  </p>
+</div>
+
+<script src="data.js"></script>
+</body>
+</html>

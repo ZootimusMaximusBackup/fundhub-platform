@@ -191,6 +191,90 @@ window.FHData = (function () {
       return get("/api/partner-brand?partner_id=" + encodeURIComponent(partnerId));
     },
 
+    /* ---------------------------------------------------------------------
+       write — the POST half. Same contract as get(): it ALWAYS resolves, never
+       rejects, and returns the same { ok, source, data, error } shape, so a
+       screen branches on `ok` exactly once whether it is reading or writing.
+
+       WHY THIS IS HERE AND NOT IN EACH SCREEN. Until the Finance OS screens
+       landed, every wired screen was read-only and this file had no writer, so
+       the first screen that needed to POST would have hand-rolled the token
+       header, the JSON encoding and the status classification — and the next
+       five would have hand-rolled them again, slightly differently. Six copies
+       of "how do we tell a 403 from an outage" is six chances to tell a user
+       the database is down when their session simply expired. One copy, here.
+
+       IT REUSES get()'s CLASSIFICATION DELIBERATELY, including the distinction
+       audit m17 was about: a crashed handler is source:"server", and only the
+       database saying so itself is source:"nodb".
+
+       A 501 IS NOT AN OUTAGE AND MUST NOT BE REPORTED AS ONE. The eight
+       /api/finance/* routes are registered before their handlers are finished
+       and answer 501 not_implemented in the meantime — deliberately, so a
+       feature cannot be built and left unreachable (netlify/functions/api.mjs).
+       That is "built, not finished", which is a true and useful thing to put in
+       front of somebody; "we could not reach the server" is not. It gets its own
+       source so a screen can say so.
+
+       DEMO SESSIONS DO NOT WRITE. A demo session holds a sentinel token, not a
+       credential. A read under one falls back to sample markup harmlessly; a
+       WRITE under one would either be rejected or, worse, accepted — so it is
+       refused here rather than attempted. */
+    write: function (path, body) {
+      if (isDemo()) {
+        return Promise.resolve(fail("demo", "demo session — no write attempted"));
+      }
+      var t = token();
+      var headers = { accept: "application/json", "content-type": "application/json" };
+      if (t) headers.authorization = "Bearer " + t;
+      var started;
+      try {
+        started = fetch(path, {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify(body || {})
+        });
+      } catch (e) {
+        return Promise.resolve(fail("offline", (e && e.message) || "fetch unavailable"));
+      }
+      return Promise.resolve(started).then(function (r) {
+        if (r.status === 401 || r.status === 403) return fail("unauthorized", "not signed in, or not allowed");
+        if (r.status === 501) {
+          return r.json().then(function (d) {
+            return fail("unbuilt", (d && d.error) || "not_implemented");
+          }).catch(function () { return fail("unbuilt", "not_implemented"); });
+        }
+        if (r.status === 404) {
+          return r.json().then(function (d) {
+            return (d && d.error === "not_found" && typeof d.path === "string")
+              ? fail("offline", "/api/* not deployed")
+              : fail("notfound", "no such record");
+          }).catch(function () { return fail("offline", "/api/* not deployed"); });
+        }
+        if (r.status === 400 || r.status === 409) {
+          // 409 is "the record moved under you, look again" — a real answer the
+          // user can act on, not a fault. It shares the badrequest source
+          // because both mean "the backend is fine, the request was not".
+          return r.json().then(function (d) {
+            return fail("badrequest", (d && (d.error || d.message)) || "rejected");
+          }).catch(function () { return fail("badrequest", "rejected"); });
+        }
+        return r.json().then(function (d) {
+          if (r.status === 503 || (d && d.db === "down")) {
+            return fail("nodb", (d && d.error) || "database unreachable");
+          }
+          if (!d || d.ok !== true) {
+            return fail("server", "HTTP " + r.status + " " + ((d && d.error) || "request failed"));
+          }
+          return { ok: true, source: "api", data: d, error: null };
+        }).catch(function () {
+          return fail("offline", "response was not JSON");
+        });
+      }).catch(function (e) {
+        return fail("offline", (e && e.message) || "network error");
+      });
+    },
+
     /* The query string is how a screen is told which record to show. */
     param: function (name) {
       try { return new URLSearchParams(location.search).get(name); } catch (e) { return null; }
@@ -248,6 +332,12 @@ window.FHData = (function () {
         this.banner("sample", "sample " + what + " — demo session, the backend was not queried", what);
       } else if (res && res.source === "unauthorized") {
         this.banner("error", "sample " + what + " — not signed in for real data", what);
+      } else if (res && res.source === "unbuilt") {
+        // 501 from a route that is registered but whose handler is not finished.
+        // "Sample" tone, not "error": nothing is broken and nothing is down —
+        // this part of the product is not built yet, which is a different
+        // sentence and sends the reader somewhere different.
+        this.banner("sample", what + " — this part is not built yet (" + detail + ")", what);
       } else if (res && (res.source === "notfound" || res.source === "badrequest")) {
         // The backend answered. Nothing is broken except what was asked for, so
         // this is a "sample" tone with a reason, not an outage.

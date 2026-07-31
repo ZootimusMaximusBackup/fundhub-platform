@@ -76,6 +76,14 @@ import hiringDecisions from "../../api/hiring/decisions.mjs";
 import hiringFunnel from "../../api/hiring/funnel.mjs";
 import hiringBench from "../../api/hiring/bench.mjs";
 import financeSoftPull from "../../api/finance/soft-pull.mjs";
+import financeSubscriptions from "../../api/finance/subscriptions.mjs";
+import financeCards from "../../api/finance/cards.mjs";
+import financeLiabilities from "../../api/finance/liabilities.mjs";
+import financeBankAccounts from "../../api/finance/bank-accounts.mjs";
+import financeBills from "../../api/finance/bills.mjs";
+import financeCashflow from "../../api/finance/cashflow.mjs";
+import financeAlerts from "../../api/finance/alerts.mjs";
+import financeModel from "../../api/finance/model.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
 
@@ -184,7 +192,62 @@ export const ROUTES = {
   // it looks like the audit trail exists. The endpoint's own gate is narrower
   // than ROLE_SETS.STAFF and is spelled out in api/finance/soft-pull.mjs.
   // Nothing behind it transmits.
-  "finance/soft-pull": financeSoftPull
+  "finance/soft-pull": financeSoftPull,
+
+  // ── The Finance OS write surface ────────────────────────────────────────────
+  //
+  // ROUGHLY 7,000 LINES OF TESTED BUSINESS LOGIC HAD NO WAY IN. Twelve modules —
+  // subscriptions/store, liabilities/store, banking/store, banking/recurring,
+  // banking/cashflow, banking/reminders, banking/settings, alerts/store,
+  // alerts/evaluate, calculators/deal-math and calculators/deal-funding — were
+  // complete, tested and unreachable: no route, no screen, no caller. The owner
+  // opened the deployed app and saw a seven-row read-only grid. That is the
+  // third and largest instance of the exact failure the header of this file
+  // describes, and these eight entries are the fix for it.
+  //
+  // ROUTED BEFORE THE HANDLERS ARE FINISHED, DELIBERATELY. Each file below is
+  // currently a working shell — real auth, real role gate, real org scoping from
+  // the session, real method switch — whose action bodies answer 501
+  // not_implemented. Six build agents fill those bodies in, one file each. The
+  // routes exist FIRST so that no agent can finish a feature and leave it
+  // unreachable, which is precisely what happened the previous three times. A
+  // 501 is an honest "built, not finished"; a 404 is a feature that does not
+  // exist, and the difference matters to whoever has to debug it.
+  //
+  // ONE PATH PER RESOURCE, WITH AN `action` IN THE POST BODY. The same shape
+  // api/inquiries.mjs and api/shifts.mjs already use. It keeps this map short
+  // and — the reason that actually mattered here — it gives each build agent
+  // exactly one file to own, so six parallel workflows cannot collide.
+  //
+  // EVERY ONE OF THEM SCOPES TO staff.org_id AND TO A VERIFIED CLIENT, and none
+  // of them takes an org from a query string or a body. Three of the store
+  // modules behind these routes (liabilities' three readers, and
+  // getBillEvidence) filter on an id alone with no org column in the WHERE
+  // clause, so the endpoint's ownership check is not defence in depth there — it
+  // is the only thing standing between a pasted uuid and another company's
+  // consumer file. The handlers say so at their own call sites.
+  //
+  // THE ROLE GATES ARE NOT UNIFORM AND MUST NOT BE MADE SO. FINANCE {owner,
+  // admin} for anything carrying a price, a payment instrument or bank-derived
+  // data (subscriptions, cards, bank-accounts, bills, cashflow); STAFF for the
+  // reads that are no more sensitive than the tradelines this API already serves
+  // that set (liabilities, alerts, model). alerts additionally narrows
+  // `set_trigger` to FINANCE inside the handler, because changing a threshold
+  // changes who gets flagged across the whole book. public/app/shell.js's
+  // OWNER_ADMIN_ONLY list mirrors these gates screen by screen, so that the app
+  // never offers somebody a screen whose data refuses them.
+  //
+  // NOTHING BEHIND ANY OF THESE TRANSMITS. There is no outbound fetch in
+  // src/adapters/ or src/lib/; src/banking/plaid.mjs is a named empty seam, so
+  // bank accounts and cards are entered by hand. That is the product today.
+  "finance/subscriptions": financeSubscriptions,
+  "finance/cards": financeCards,
+  "finance/liabilities": financeLiabilities,
+  "finance/bank-accounts": financeBankAccounts,
+  "finance/bills": financeBills,
+  "finance/cashflow": financeCashflow,
+  "finance/alerts": financeAlerts,
+  "finance/model": financeModel
 
   /* NOT ROUTED, ON PURPOSE — see ALLOWED_UNROUTED in src/http/routes.test.mjs
      for the current list and the reason attached to each entry. That list is

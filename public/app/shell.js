@@ -21,7 +21,18 @@
     "staff-teams.html", "content-admin.html", "sample-data.html",
     "inquiry-remover.html", "affiliate.html", "client-portal.html", "partner-galaxy.html", "brand-studio.html",
     "campaign-manager.html", "social-studio.html", "creative-factory.html", "hiring.html",
-    "finance-os.html", "banking-surface.html"
+    "finance-os.html", "banking-surface.html",
+    /* The Finance OS write surface. Twelve tested modules — subscriptions,
+       liabilities, bank accounts, recurring bills, the cash-flow projection,
+       alerts and the two deal calculators — had no screen and no route, so the
+       owner opened the app and saw a seven-row read-only grid. These six screens
+       and the eight /api/finance/* routes registered in
+       netlify/functions/api.mjs are the way in. Added to the sidebar in the same
+       pass, in every file that carries one: a screen in ALL and nowhere else has
+       no way in, and src/http/app-nav-reachability.test.mjs fails when that
+       happens (audit M20). */
+    "subscriptions.html", "card-stack.html", "bank-accounts.html",
+    "bills-cashflow.html", "alerts.html", "deal-model.html"
   ];
 
   /* partner-galaxy.html is the white-label partner's own Galaxy — scoped to
@@ -39,8 +50,35 @@
      ROLE_SETS.FINANCE for that reason, so leaving it in the shared surface
      would have offered every employee a screen the data behind it refuses.
      Owner and admin have "*" and keep it. Widening this is a decision somebody
-     makes after the sign-off, not a tidy-up. */
-  var OWNER_ADMIN_ONLY = ["banking-surface.html"];
+     makes after the sign-off, not a tidy-up.
+
+     THE THREE FINANCE OS SCREENS BELOW ARE HERE FOR THE SAME REASON, AND THE
+     RULE IS THE ONE THIS LIST ALREADY ENFORCES: the nav must not offer a screen
+     whose data refuses the person clicking it.
+
+       subscriptions.html   /api/finance/subscriptions and /api/finance/cards
+                            both gate on ROLE_SETS.FINANCE. A subscription row
+                            carries a price and a payment instrument, which is
+                            the narrowest thing this API serves.
+       bank-accounts.html   /api/finance/bank-accounts gates on FINANCE, matching
+                            api/read/banking-surface.mjs over the same rows.
+       bills-cashflow.html  /api/finance/bills and /api/finance/cashflow gate on
+                            FINANCE — both are bank-derived, and the cash-flow
+                            thresholds are an operator policy.
+
+     The other three stay in the shared staff surface because their endpoints
+     do: card-stack.html reads liabilities (ROLE_SETS.STAFF, the same gate
+     api/read/tradelines.mjs carries over the same cards), alerts.html reads the
+     queue (STAFF, with trigger CONFIGURATION narrowed to FINANCE inside the
+     handler), and deal-model.html is a calculator closers use to do their job.
+
+     MOVE A GATE AND MOVE ITS ROW. If a build agent widens or narrows a role set
+     in api/finance/*, this list has to follow in the same commit, or the app
+     goes back to offering screens that 403. */
+  var OWNER_ADMIN_ONLY = [
+    "banking-surface.html",
+    "subscriptions.html", "bank-accounts.html", "bills-cashflow.html"
+  ];
 
   /* staffTabs — every screen a signed-in employee may open, which is every row
      the shared sidebar leaves them looking at.
