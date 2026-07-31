@@ -181,6 +181,21 @@
   }
   .stat-value{transition:color .2s;}
   .stat-value.bumped{color:var(--green);}
+
+  /* ---------- write controls + identity line ----------
+     NEW ELEMENTS ONLY. Nothing above is modified. The work strip in the
+     approved design carries two buttons and a log; persisting those actions
+     needs a kind to log, a status to save, and — for a specialist who has to
+     identify a consumer to a bureau — the masked SSN and a reason box for
+     revealing it. Every rule here styles an element that did not exist before,
+     using the tokens already declared at the top of this file. */
+  .qbtn.qinput{font-weight:400;min-width:148px;}
+  select.qbtn{padding:5px 8px;}
+  .pii-ssn{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;letter-spacing:.02em;}
+  .pii-note{font-size:11px;color:var(--text-faint);}
+  .worklog .wl-fail{color:var(--red);}
+  .worklog .wl-pend{color:var(--text-faint);}
+  .status-pending{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-faint);}
   /* ---------- shared chrome: the 23-item sidebar, identical on every internal surface ---------- */
   .app{display:flex;min-height:100vh}
   .side{width:230px;flex:0 0 230px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
@@ -397,6 +412,515 @@
 })();
 </script>
 
+<script>
+/* ───────────────────────────────────────────────────────────────────────────
+   FHInquiryView — the screen's decision logic.
+
+   THIS BLOCK IS A VERBATIM COPY of src/http/inquiry-remover-view.mjs, from its
+   first `export` onward, with the word `export ` stripped, wrapped in an IIFE
+   that returns VIEW. DO NOT EDIT IT HERE. Edit the module, then paste it back:
+   src/http/inquiry-remover-view.test.mjs compares the two character for
+   character and fails the build if they differ.
+
+   Why a copy at all: npm test globs src/** and scripts/** only, so anything
+   that lives solely inside this file is untestable by construction — and this
+   screen's logic decides whether a consumer's credit-report action is shown as
+   having happened. public/ is the static publish root and cannot import from
+   src/, so the choice is a copy with a drift test or logic nobody can test.
+   ─────────────────────────────────────────────────────────────────────────── */
+window.FHInquiryView = (function () {
+"use strict";
+/* ==FHVIEW-BEGIN== */
+const ATTEMPT_KINDS = ["call", "letter", "portal", "note"];
+
+// Mirrors COUNTING_KINDS in src/inquiries/work.mjs: a working note is logged in
+// the same timeline but does not count toward call_attempts, because a desk that
+// inflates its attempt count is lying to a bureau, slowly.
+const COUNTING_KINDS = ["call", "letter", "portal"];
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+class ViewError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "ViewError";
+  }
+}
+
+function isUuid(v) {
+  return typeof v === "string" && UUID_RE.test(v.trim());
+}
+
+/* blankToNull — "the user typed nothing" is not a value. Whitespace-only input
+   collapses to null so it is omitted from a body rather than stored as text
+   nobody wrote. */
+function blankToNull(v) {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim();
+  return s === "" ? null : s;
+}
+
+/* pill — status text → the pill class the screen renders.
+   Mapped ONLY where the wording is unambiguous. inquiry_log.status is free text
+   written by several producers (the external Airtable runtime among them), so an
+   unrecognised value keeps its real text on a neutral pill and is counted into
+   the banner as unmapped. A complete mapping would be an invention, and 055
+   deliberately declined to constrain the column for the same reason. */
+function pill(status, outcome) {
+  const s = String(status || outcome || "").trim();
+  const k = s.toLowerCase();
+  if (!s) return { cls: "new", text: "No status recorded", known: false, done: false };
+  if (/removed|confirmed/.test(k)) return { cls: "confirmed", text: s, known: true, done: true };
+  if (/no answer|unreachable/.test(k)) return { cls: "noanswer", text: s, known: true, done: false };
+  if (/filed|sent|progress|pending/.test(k)) return { cls: "progress", text: s, known: true, done: false };
+  if (/new|queued/.test(k)) return { cls: "new", text: s, known: true, done: false };
+  return { cls: "", text: s, known: false, done: false };
+}
+
+/* ── REQUEST SHAPING ──────────────────────────────────────────────────────────
+   Every builder returns { method, path, body? } and throws rather than
+   producing a request that cannot succeed. The ids come from data- attributes
+   the wiring block copies off the read response; a row rendered from the sample
+   markup has none, and firing a POST at a missing or malformed id would be a
+   write aimed at nothing.                                                     */
+
+function requireInquiryId(id) {
+  if (!isUuid(id)) throw new ViewError("inquiry_id must be a uuid — this row is not a database row");
+}
+
+function requireClientId(id) {
+  if (!isUuid(id)) throw new ViewError("client_id must be a uuid — this row is not a database row");
+}
+
+function buildAttemptRequest(opts) {
+  const o = opts || {};
+  requireInquiryId(o.inquiryId);
+  const kind = o.kind === undefined || o.kind === null ? "call" : String(o.kind);
+  if (ATTEMPT_KINDS.indexOf(kind) === -1) {
+    throw new ViewError("unknown attempt kind: " + kind);
+  }
+  const body = { inquiry_id: o.inquiryId, action: "attempt", kind: kind };
+  const outcome = blankToNull(o.outcome);
+  const note = blankToNull(o.note);
+  if (outcome !== null) body.outcome = outcome;
+  if (note !== null) body.note = note;
+  return { method: "POST", path: "/api/inquiries", body: body };
+}
+
+/* confirmRemoval defaults to status "Removed" server-side, chosen there to match
+   wording already present in the live data. Restating it here would fork the
+   default across two files; the screen sends a status only when a human typed
+   one. */
+function buildConfirmRequest(opts) {
+  const o = opts || {};
+  requireInquiryId(o.inquiryId);
+  const body = { inquiry_id: o.inquiryId, action: "confirm" };
+  const status = blankToNull(o.status);
+  if (status !== null) body.status = status;
+  return { method: "POST", path: "/api/inquiries", body: body };
+}
+
+function buildStatusRequest(opts) {
+  const o = opts || {};
+  requireInquiryId(o.inquiryId);
+  const status = blankToNull(o.status);
+  if (status === null) throw new ViewError("a status is required");
+  return {
+    method: "POST",
+    path: "/api/inquiries",
+    body: { inquiry_id: o.inquiryId, action: "status", status: status }
+  };
+}
+
+function buildAttemptsRequest(opts) {
+  const o = opts || {};
+  requireInquiryId(o.inquiryId);
+  return { method: "GET", path: "/api/inquiries?inquiry_id=" + encodeURIComponent(o.inquiryId) };
+}
+
+function buildIdentityRequest(opts) {
+  const o = opts || {};
+  requireClientId(o.clientId);
+  return { method: "GET", path: "/api/pii?client_id=" + encodeURIComponent(o.clientId) };
+}
+
+/* buildRevealRequest — the only call in this file that discloses a protected
+   value, and the only one that refuses to run on missing input rather than
+   defaulting it.
+
+   THE REASON IS NOT OPTIONAL HERE. src/pii/index.mjs states it as rule 4 — "A
+   REASON IS REQUIRED. Every reveal records who, what field, and when" — and
+   api/pii.mjs now rejects a reveal with no reason with a 400, so this check is
+   the screen agreeing with the server rather than substituting for it. Keep
+   both: failing here means the user gets told before a request is sent, and
+   failing there means curl gets told too. What this must NEVER do is satisfy
+   the parameter with filler, which would fill the audit log with a sentence
+   nobody wrote and make every entry equally worthless.
+
+   The reason and the client id travel in the BODY. Nothing here goes in a URL:
+   query strings are logged, cached and forwarded by things nobody audits. */
+function buildRevealRequest(opts) {
+  const o = opts || {};
+  requireClientId(o.clientId);
+  const reason = blankToNull(o.reason);
+  if (reason === null) {
+    throw new ViewError("a reason is required — every reveal is written to pii_access_log");
+  }
+  return {
+    method: "POST",
+    path: "/api/pii",
+    body: { client_id: o.clientId, action: "reveal", reason: reason }
+  };
+}
+
+/* ── FAILURE → BANNER COPY ────────────────────────────────────────────────────
+   `res` is what the HTML's send() produces and never a thrown error:
+     { transport: true, detail }        the request never got an answer
+     { status, body }                   an answer, body possibly null
+   Returns { code, tone, text, status, scope, saved } where `saved` is "no" when
+   the request is known to have been rejected before any write, and "unknown"
+   when it might have landed.                                                  */
+
+const ENDPOINT = { inquiry: "/api/inquiries", identity: "/api/pii" };
+
+function failure(code, text, extra) {
+  return Object.assign({ code: code, tone: "error", text: text, status: null, saved: "no" }, extra || {});
+}
+
+function describeFailure(res, opts) {
+  const scope = (opts && opts.scope) === "identity" ? "identity" : "inquiry";
+  const endpoint = ENDPOINT[scope];
+  const body = res && res.body && typeof res.body === "object" ? res.body : null;
+  const detail = body && typeof body.error === "string" ? body.error : null;
+  const suffix = detail ? " (" + detail + ")" : "";
+
+  // No answer at all. The request may have reached the server and committed
+  // before the connection dropped, so this is the one case that must not tell
+  // the user their click did nothing.
+  if (!res || res.transport) {
+    return failure("offline",
+      "could not reach " + endpoint + " — reload before assuming this did not save" +
+      (res && res.detail ? " (" + res.detail + ")" : ""),
+      { scope: scope, saved: "unknown" });
+  }
+
+  const status = Number(res.status) || 0;
+  const base = { status: status, scope: scope };
+
+  // TWO DIFFERENT 404s. The router's fallthrough answers {error:"not_found",
+  // path:"..."} for a path nothing serves — the endpoint is in the repo and not
+  // deployed, which is an ops problem. A 404 from the handler itself means the
+  // row is gone, which is a data problem. Telling a closer the backend is down
+  // when it is up and answering honestly sends someone hunting a fault that
+  // does not exist.
+  if (status === 404 && body && body.error === "not_found" && typeof body.path === "string") {
+    return failure("unrouted",
+      endpoint + " is not deployed — the handler exists but no route serves it. Nothing was saved.",
+      base);
+  }
+  if (status === 404) {
+    return failure("not_found",
+      scope === "identity"
+        ? "no identity on file for this client" + suffix
+        : "that inquiry is no longer in the database" + suffix,
+      base);
+  }
+  if (status === 401) {
+    return failure("unauthorized", "your session has expired — sign in again. Nothing was saved.", base);
+  }
+  if (status === 403) {
+    return failure("forbidden",
+      scope === "identity"
+        ? "your role cannot see identity data — /api/pii is limited to owner, admin, inquiry specialist and funding advisor"
+        : "your role cannot write to the inquiry queue. Nothing was saved.",
+      base);
+  }
+  if (status === 400) {
+    return failure("bad_request", "the request was rejected" + suffix + ". Nothing was saved.", base);
+  }
+  if (status === 405) {
+    return failure("method_not_allowed", endpoint + " refused the method. Nothing was saved.", base);
+  }
+  // requirePrincipal answers 503 {error:"auth_unavailable", db:"down"} when the
+  // session lookup itself could not run — the write never started.
+  if (status === 503 && body && (body.error === "auth_unavailable" || body.db === "down")) {
+    return failure("db_down", "the database is unreachable — nothing was saved", base);
+  }
+  // The other 503 on this screen is PiiError's: the encryption key is not set,
+  // so the server is refusing to handle identity data at all.
+  if (status === 503) {
+    return failure("unavailable",
+      (detail || "the endpoint is unavailable") + " — nothing was saved", base);
+  }
+  if (status >= 500) {
+    return failure("server_error",
+      "the server failed" + suffix + " — reload before assuming this did not save",
+      Object.assign({ saved: "unknown" }, base));
+  }
+  return failure("unexpected", "unexpected response " + status + suffix, Object.assign({ saved: "unknown" }, base));
+}
+
+/* interpretWrite — the single place a POST /api/inquiries response becomes
+   either a row to render or a banner to show. A 200 whose body is not
+   {ok:true} is a failure however friendly its status code was. */
+function interpretWrite(res) {
+  if (res && !res.transport && Number(res.status) === 200 &&
+      res.body && res.body.ok === true) {
+    return { ok: true, inquiry: res.body.inquiry || null };
+  }
+  return { ok: false, failure: describeFailure(res, { scope: "inquiry" }) };
+}
+
+/* interpretAttempts — GET /api/inquiries?inquiry_id=. An empty list is an
+   answer: a row nobody has worked yet has no attempts, which is different from
+   a history we could not fetch. */
+function interpretAttempts(res) {
+  if (res && !res.transport && Number(res.status) === 200 &&
+      res.body && res.body.ok === true && Array.isArray(res.body.attempts)) {
+    return { ok: true, attempts: res.body.attempts };
+  }
+  return { ok: false, failure: describeFailure(res, { scope: "inquiry" }) };
+}
+
+function interpretIdentity(res) {
+  if (res && !res.transport && Number(res.status) === 200 &&
+      res.body && res.body.ok === true) {
+    // A client with no identity row is a 200 with identity:null. That is an
+    // answer, not a failure — "we have nothing on file" is a fact the screen
+    // should state plainly.
+    return { ok: true, identity: res.body.identity || null };
+  }
+  return { ok: false, failure: describeFailure(res, { scope: "identity" }) };
+}
+
+function interpretReveal(res) {
+  if (res && !res.transport && Number(res.status) === 200 &&
+      res.body && res.body.ok === true && typeof res.body.ssn === "string") {
+    return { ok: true, ssn: res.body.ssn };
+  }
+  return { ok: false, failure: describeFailure(res, { scope: "identity" }) };
+}
+
+/* ── IDENTITY DISPLAY ─────────────────────────────────────────────────────────
+   Masked is the default and the only thing rendered without a deliberate act.
+   Three states, none of them guessed:
+     no row at all           → nothing is on file for this person
+     row without an SSN      → we hold a DOB/addresses but no number
+     row whose key is missing→ readIdentity() returns ssn_last4:null when the
+                               ciphertext cannot be opened. That is "unavailable",
+                               NOT "this client has no SSN", and the difference
+                               decides whether someone goes looking for a key. */
+function maskedSsnLabel(identity) {
+  if (!identity) return { text: "no identity record on file", present: false, degraded: false };
+  if (!identity.ssn_present) return { text: "no SSN on file", present: false, degraded: false };
+  if (!identity.ssn_last4) {
+    return { text: "SSN on file · last four unavailable", present: true, degraded: true };
+  }
+  return { text: "SSN ***-**-" + String(identity.ssn_last4), present: true, degraded: false };
+}
+
+function canReveal(identity) {
+  return !!(identity && identity.ssn_present);
+}
+
+/* formatRevealed — group nine digits for reading. Anything that is not nine
+   digits is returned untouched: reshaping a value we do not recognise would be
+   asserting something about it. */
+function formatRevealed(ssn) {
+  const raw = ssn === null || ssn === undefined ? "" : String(ssn);
+  const d = raw.replace(/\D/g, "");
+  if (d.length !== 9) return raw;
+  return d.slice(0, 3) + "-" + d.slice(3, 5) + "-" + d.slice(5);
+}
+
+/* ── THE ROW STATE MACHINE ────────────────────────────────────────────────────
+   idle → pending → idle. Three transitions, no fourth, and the displayed state
+   changes on exactly one of them.
+
+   `done` is the flag that decides whether a row reads as Removed, so it has two
+   sources and takes either: confirmed_at is the unambiguous one 055 added, and
+   the free-text status is what the external runtime writes. Requiring both
+   would un-confirm rows that were confirmed before 055 existed.               */
+
+function createRowState(row) {
+  const r = row || {};
+  const p = pill(r.status, r.outcome);
+  return {
+    phase: "idle",
+    status: r.status === undefined ? null : r.status,
+    outcome: r.outcome === undefined ? null : r.outcome,
+    attempts: r.call_attempts === undefined || r.call_attempts === null
+      ? null : Number(r.call_attempts),
+    done: r.confirmed_at ? true : p.done,
+    pending: null,
+    error: null,
+    refused: null,
+    snapshot: null,
+    stale: false
+  };
+}
+
+function idleFrom(base) {
+  return {
+    phase: "idle",
+    status: base.status,
+    outcome: base.outcome,
+    attempts: base.attempts,
+    done: base.done,
+    pending: null,
+    error: null,
+    refused: null,
+    snapshot: null,
+    stale: false
+  };
+}
+
+/* beginWrite — arm the write. NOTE WHAT IT DOES NOT DO: it does not change
+   status, done or attempts. The row goes on looking exactly as it did until the
+   server answers. A second click while one is in flight is refused rather than
+   sent, because two attempt POSTs for one human action is a double-count on a
+   dispute record. */
+function beginWrite(state, action) {
+  if (state.phase === "pending") {
+    return Object.assign({}, state, { refused: "busy" });
+  }
+  return Object.assign({}, state, {
+    phase: "pending",
+    pending: action || null,
+    error: null,
+    refused: null,
+    stale: false,
+    snapshot: {
+      status: state.status,
+      outcome: state.outcome,
+      attempts: state.attempts,
+      done: state.done
+    }
+  });
+}
+
+/* settleWrite — adopt the row the server returned. Fields the response did not
+   carry keep the value they had; a response is not a statement that everything
+   it omitted is now empty. */
+function settleWrite(state, inquiry) {
+  const base = state.snapshot || state;
+  if (!inquiry || typeof inquiry !== "object") {
+    // The write succeeded and we cannot show what it produced. Say so rather
+    // than painting a state nobody sent.
+    return Object.assign(idleFrom(base), { stale: true });
+  }
+  const status = inquiry.status === undefined ? base.status : inquiry.status;
+  const outcome = inquiry.outcome === undefined ? base.outcome : inquiry.outcome;
+  const attempts = inquiry.call_attempts === undefined || inquiry.call_attempts === null
+    ? base.attempts
+    : Number(inquiry.call_attempts);
+  const done = !!inquiry.confirmed_at || pill(status, outcome).done;
+  return {
+    phase: "idle",
+    status: status,
+    outcome: outcome,
+    attempts: attempts,
+    done: done,
+    pending: null,
+    error: null,
+    refused: null,
+    snapshot: null,
+    stale: false
+  };
+}
+
+/* failWrite — put the row back exactly as it was and hang the failure off it.
+   The restore is from the snapshot beginWrite took, not from re-reading the
+   DOM, so a half-applied render cannot survive as the new truth. */
+function failWrite(state, fail) {
+  const base = state.snapshot || state;
+  return Object.assign(idleFrom(base), { error: fail || null });
+}
+
+/* attemptsDelta — how far the Calls tile should move. Derived from the two
+   counts rather than assumed to be +1, because the server recomputes the
+   counter and a retry can legitimately produce no change at all. Unknown on
+   either side means no movement: a tile must not drift on a guess. */
+function attemptsDelta(before, after) {
+  if (typeof before !== "number" || typeof after !== "number") return 0;
+  if (!isFinite(before) || !isFinite(after)) return 0;
+  return after - before;
+}
+
+/* ── THE ATTEMPT HISTORY ──────────────────────────────────────────────────────
+   The work strip's log used to hold this session's clicks and nothing else, so
+   it emptied on reload. listAttempts() serves the real dated trail — which is
+   the thing migration 055 added the table for: "a counter cannot answer what
+   happened on the second call, and a bureau dispute wants a dated trail".
+
+   attemptLine renders ONLY what the query selected. An attempt with no outcome
+   and no note is a kind and a date, and that is what it renders — the blank is
+   the record, and filling it with "no outcome recorded" would put words into an
+   append-only log of what a human did to a consumer's credit file. */
+function attemptLine(attempt) {
+  const a = attempt || {};
+  const parts = [String(a.kind || "attempt")];
+  // outcome first, note second: an outcome is what happened, a note is colour.
+  const detail = blankToNull(a.outcome) || blankToNull(a.note);
+  if (detail) parts.push(detail);
+  const who = blankToNull(a.staff_name);
+  if (who) parts.push(who);
+  const when = formatWhen(a.created_at);
+  if (when) parts.push(when);
+  return parts.join(" · ");
+}
+
+/* formatWhen — a timestamp the desk can read, or null. A date that will not
+   parse renders as nothing rather than as "Invalid Date". */
+function formatWhen(ts) {
+  if (!ts) return null;
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+function pendingLabel(action) {
+  if (action === "attempt") return "logging attempt...";
+  if (action === "confirm") return "confirming removal...";
+  if (action === "status") return "saving status...";
+  return "saving...";
+}
+
+const VIEW = {
+  ATTEMPT_KINDS: ATTEMPT_KINDS,
+  COUNTING_KINDS: COUNTING_KINDS,
+  ViewError: ViewError,
+  isUuid: isUuid,
+  blankToNull: blankToNull,
+  pill: pill,
+  buildAttemptRequest: buildAttemptRequest,
+  buildConfirmRequest: buildConfirmRequest,
+  buildStatusRequest: buildStatusRequest,
+  buildAttemptsRequest: buildAttemptsRequest,
+  buildIdentityRequest: buildIdentityRequest,
+  buildRevealRequest: buildRevealRequest,
+  describeFailure: describeFailure,
+  interpretWrite: interpretWrite,
+  interpretIdentity: interpretIdentity,
+  interpretReveal: interpretReveal,
+  maskedSsnLabel: maskedSsnLabel,
+  canReveal: canReveal,
+  formatRevealed: formatRevealed,
+  createRowState: createRowState,
+  beginWrite: beginWrite,
+  settleWrite: settleWrite,
+  failWrite: failWrite,
+  attemptsDelta: attemptsDelta,
+  attemptLine: attemptLine,
+  formatWhen: formatWhen,
+  interpretAttempts: interpretAttempts,
+  pendingLabel: pendingLabel
+};
+/* ==FHVIEW-END== */
+return VIEW;
+})();
+</script>
+
 <script src="data.js"></script>
 <script>
 /* ───────────────────────────────────────────────────────────────────────────
@@ -411,20 +935,13 @@ window.__fhQueueReady = (function () {
   var table = document.querySelector('table.queue');
   if (!table || !window.FHData) return Promise.resolve();
 
-  /* Status → pill class. Mapped ONLY where the wording is unambiguous; an
+  /* Status → pill class now lives in FHInquiryView.pill, because the write path
+     has to re-render a status the server just returned and a second copy of the
+     mapping would eventually disagree with this one about what "Removed" looks
+     like. Same rule as before: mapped ONLY where the wording is unambiguous, an
      unrecognised status keeps its real text on a neutral pill and is counted
-     into the banner rather than being guessed into a colour that would assert
-     something the database did not say. */
-  function pill(status, outcome) {
-    var s = String(status || outcome || '').trim();
-    var k = s.toLowerCase();
-    if (!s) return { cls: 'new', text: 'No status recorded', known: false, done: false };
-    if (/removed|confirmed/.test(k))        return { cls: 'confirmed', text: s, known: true, done: true };
-    if (/no answer|unreachable/.test(k))    return { cls: 'noanswer', text: s, known: true, done: false };
-    if (/filed|sent|progress|pending/.test(k)) return { cls: 'progress', text: s, known: true, done: false };
-    if (/new|queued/.test(k))               return { cls: 'new', text: s, known: true, done: false };
-    return { cls: '', text: s, known: false, done: false };
-  }
+     into the banner rather than guessed into a colour the database did not say. */
+  var pill = window.FHInquiryView.pill;
 
   function cell(html) { var td = document.createElement('td'); td.innerHTML = html; return td; }
   function esc(v) {
@@ -458,6 +975,16 @@ window.__fhQueueReady = (function () {
       tr.setAttribute('data-row', '');
       if (it.bureau) tr.dataset.bureau = it.bureau;
       if (p.done) tr.dataset.done = '1';
+      /* The two ids the write path needs. A row WITHOUT data-id is sample
+         markup, and the work strip disables every button on it rather than
+         posting at an id it made up. */
+      if (it.id) tr.dataset.id = it.id;
+      if (it.client_id) tr.dataset.clientId = it.client_id;
+      /* The raw row, so the work strip seeds its state from what the database
+         said rather than from the pill text it is about to render — otherwise a
+         status-less row would come back out of the DOM as the literal string
+         "No status recorded" and get saved as one. */
+      tr._row = { status: it.status, outcome: it.outcome, call_attempts: it.call_attempts };
       tr.tabIndex = 0;
       tr.setAttribute('aria-expanded', 'false');
       tr.appendChild(cell('<span class="rowchev">&#9656;</span>' +
@@ -503,22 +1030,78 @@ window.__fhQueueReady = (function () {
 
 <script>
 /* ───────────────────────────────────────────────────────────────────────────
-   Inquiry Remover — queue behaviour. The body below is UNCHANGED from the
-   wireframe: it reads the table out of the DOM at init and binds every
-   interaction to whatever rows it finds. That is why the wiring block above
-   rewrites the rows FIRST and then calls this, rather than re-implementing the
-   binding — real rows get the same behaviour the sample rows had.
+   Inquiry Remover — queue behaviour. The filtering and expand/collapse below
+   are UNCHANGED from the wireframe: they read the table out of the DOM at init
+   and bind every interaction to whatever rows they find. That is why the wiring
+   block above rewrites the rows FIRST and then calls this — real rows get the
+   same behaviour the sample rows had.
 
-   Marking confirmed / logging an attempt are still LOCAL ONLY. There is no
-   write endpoint for inquiry_log, so a click updates the screen and is lost on
-   reload. Wiring the writes is a separate job; see HANDOFF.md.
+   WHAT CHANGED: the work strip now WRITES. "Log an attempt", "Mark confirmed"
+   and "Set status" POST to /api/inquiries (src/inquiries/work.mjs), and the
+   identity line reads and reveals through /api/pii (src/pii/index.mjs). HANDOFF
+   still says there is no write endpoint for inquiry_log; that stopped being
+   true at migration 055.
+
+   THERE IS NO OPTIMISTIC UI ON THIS SCREEN, DELIBERATELY. A click arms a
+   pending state and changes NOTHING the row claims. Only the row the server
+   sends back moves a status, an attempt count or a tile, and a failure puts the
+   row back exactly as it was and says why. A credit-report action that appears
+   to have happened and did not is the worst thing this page could do to
+   somebody, and it costs one round trip to never do it.
+
+   The decisions — what a request body looks like, when a row may read as
+   Removed, what a failure means — are all in FHInquiryView above, which is a
+   copy of a module with tests. What is left here is DOM plumbing.
    ─────────────────────────────────────────────────────────────────────────── */
 window.__fhInitQueue = function(){
-  var table  = document.querySelector('table.queue'),
+  var V      = window.FHInquiryView,
+      table  = document.querySelector('table.queue'),
       rows   = [].slice.call(table.querySelectorAll('tr[data-row]')),
       chips  = [].slice.call(document.querySelectorAll('.bureau-chip[data-bureau]')),
       note   = document.getElementById('filter-note'),
       filter = null;
+
+  function esc(v){
+    return String(v == null ? '' : v)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* A demo session must not write, for the same reason data.js will not read on
+     one: the sentinel token is not a credential and presenting it as one gets a
+     401 that reads like a real session expiry. */
+  function isDemo(){
+    try { return localStorage.getItem('fh_demo') === '1'; } catch(e){ return false; }
+  }
+
+  /* send — one request, and it NEVER rejects. Callers branch on the shape
+     FHInquiryView.interpret*() expects: {transport:true,detail} for "no answer
+     at all", {status,body} for an answer. A screen-level .catch that forgot a
+     case is how a failed write becomes a silent one. */
+  function send(spec){
+    var headers = { accept: 'application/json' };
+    var init = { method: spec.method, headers: headers };
+    if (spec.body){ headers['content-type'] = 'application/json'; init.body = JSON.stringify(spec.body); }
+    var t = ''; try { t = localStorage.getItem('fh_token') || ''; } catch(e){}
+    if (t) headers.authorization = 'Bearer ' + t;
+    var started;
+    try { started = fetch(spec.path, init); }
+    catch (e) { return Promise.resolve({ transport:true, detail:(e && e.message) || 'fetch unavailable' }); }
+    return Promise.resolve(started).then(function(r){
+      return r.json().then(
+        function(b){ return { status:r.status, body:b }; },
+        function(){ return { status:r.status, body:null }; }
+      );
+    }, function(e){
+      return Promise.resolve({ transport:true, detail:(e && e.message) || 'network error' });
+    });
+  }
+
+  /* Two banner keys, so a failed write cannot hide behind a successful read and
+     the identity line cannot overwrite the queue's own line. FHData.banner
+     keeps each part and shows the worst tone across all of them. */
+  function banner(tone, text, key){
+    if (window.FHData) FHData.banner(tone, text, key || 'inquiry writes');
+  }
 
   function clock(){
     return new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
@@ -588,11 +1171,37 @@ window.__fhInitQueue = function(){
     log.insertBefore(line, log.firstChild);
   }
 
+  /* rowState — one state object per row, kept ON the row so it survives a
+     collapse. Seeded from the raw database row the wiring block stashed, and
+     only from the DOM when there was none (the sample markup). */
+  function rowState(r){
+    if (r._state) return r._state;
+    var raw = r._row;
+    if (!raw){
+      var txt = r.cells[3].textContent.trim();
+      raw = {
+        status: r.cells[4].textContent.trim(),
+        call_attempts: /^\d+$/.test(txt) ? Number(txt) : null,
+        confirmed_at: r.dataset.done === '1' ? true : null
+      };
+    }
+    r._state = V.createRowState(raw);
+    return r._state;
+  }
+
   function expand(r){
-    var locked = r.dataset.locked, done = r.dataset.done === '1',
-        client = r.cells[0].textContent.trim(),
+    var locked = r.dataset.locked,
         bureau = r.dataset.bureau,
-        attempts = r.cells[3];
+        attemptsCell = r.cells[3],
+        statusCell   = r.cells[4],
+        inquiryId    = r.dataset.id || null,
+        clientId     = r.dataset.clientId || null,
+        /* "live" means this row exists in the database. Sample markup has no
+           data-id, and a POST at an invented uuid is worse than a disabled
+           button that says why. */
+        live         = V.isUuid(inquiryId);
+
+    rowState(r);
 
     var tr = document.createElement('tr');
     tr.className = 'workrow';
@@ -602,6 +1211,22 @@ window.__fhInitQueue = function(){
     var strip = document.createElement('div');
     strip.className = 'workstrip';
 
+    /* The four kinds are the four the CHECK constraint in migration 055 allows,
+       read from the module rather than typed out again here — a fifth option
+       would be a constraint violation at the end of a click. */
+    var kind = document.createElement('select');
+    kind.className = 'qbtn';
+    kind.title = 'What to log: call, letter, portal or note. A note does not count as an attempt.';
+    /* aria-label rather than a visible <label>: the strip is a single row of
+       controls in the approved design and a label element would add a line to
+       it. A control with no accessible name at all is not an option. */
+    kind.setAttribute('aria-label', 'attempt kind');
+    V.ATTEMPT_KINDS.forEach(function(k){
+      var o = document.createElement('option');
+      o.value = k; o.textContent = k;
+      kind.appendChild(o);
+    });
+
     var call = document.createElement('button');
     call.type = 'button'; call.className = 'qbtn';
     call.textContent = 'Log an attempt';
@@ -610,44 +1235,279 @@ window.__fhInitQueue = function(){
     conf.type = 'button'; conf.className = 'qbtn primary';
     conf.textContent = 'Mark confirmed';
 
+    /* Free text, because inquiry_log.status IS free text — 055 declined to add
+       an enum on the grounds that the status vocabulary is a business decision.
+       A dropdown here would invent that vocabulary in the least visible place. */
+    var statusIn = document.createElement('input');
+    statusIn.type = 'text'; statusIn.className = 'qbtn qinput';
+    statusIn.placeholder = 'new status';
+    statusIn.title = 'inquiry_log.status is free text — type what the desk actually uses.';
+    statusIn.setAttribute('aria-label', 'new status for this inquiry');
+
+    var setSt = document.createElement('button');
+    setSt.type = 'button'; setSt.className = 'qbtn';
+    setSt.textContent = 'Set status';
+
     var log = document.createElement('div');
     log.className = 'worklog';
 
-    strip.appendChild(call); strip.appendChild(conf); strip.appendChild(log);
-    td.appendChild(strip); tr.appendChild(td);
+    strip.appendChild(kind); strip.appendChild(call); strip.appendChild(conf);
+    strip.appendChild(statusIn); strip.appendChild(setSt); strip.appendChild(log);
+
+    /* ── the identity line ─────────────────────────────────────────────────
+       Masked by default and never fetched for a row that is not in the
+       database. api/pii.mjs gates on IDENTITY_ROLES — owner, admin, inquiry
+       specialist, funding advisor — because disputing an inquiry with a bureau
+       means identifying the consumer, and a setter or a closer has no such
+       need. A 403 here is a role answer, not an outage. */
+    var pii = document.createElement('div');
+    pii.className = 'workstrip';
+
+    var ssnEl = document.createElement('span');
+    ssnEl.className = 'pii-ssn';
+    ssnEl.textContent = 'SSN —';
+
+    var reasonIn = document.createElement('input');
+    reasonIn.type = 'text'; reasonIn.className = 'qbtn qinput';
+    reasonIn.placeholder = 'reason for reveal';
+    reasonIn.setAttribute('aria-label', 'reason for revealing this SSN — written to the access log');
+
+    var reveal = document.createElement('button');
+    reveal.type = 'button'; reveal.className = 'qbtn';
+    reveal.textContent = 'Reveal SSN';
+    reveal.disabled = true;
+
+    /* Said BEFORE the click, in one line, because an audit trail the user does
+       not know about is a dark pattern. */
+    var pnote = document.createElement('span');
+    pnote.className = 'pii-note';
+    pnote.textContent = 'Revealing writes your name and this reason to the access log.';
+
+    pii.appendChild(ssnEl); pii.appendChild(reasonIn); pii.appendChild(reveal); pii.appendChild(pnote);
+
+    td.appendChild(strip); td.appendChild(pii); tr.appendChild(td);
     r.parentNode.insertBefore(tr, r.nextSibling);
     r._strip = tr;
     r.setAttribute('aria-expanded','true');
 
-    if(locked){
-      call.disabled = conf.disabled = true;
-      call.title = conf.title = locked;
+    /* ── rendering ─────────────────────────────────────────────────────────
+       syncButtons runs on every state change. paintRow runs ONLY after a write
+       has been armed or answered, so expanding a sample row never rewrites the
+       markup it came with (the "2d 14h" stuck age lives in that cell). */
+    function syncButtons(){
+      var s = r._state, busy = s.phase === 'pending', off = busy || !live || !!locked;
+      kind.disabled = call.disabled = off;
+      statusIn.disabled = setSt.disabled = off;
+      conf.disabled = off || s.done;
+      if (s.done && !off) conf.title = 'Already confirmed and removed.';
+    }
+
+    function paintRow(){
+      var s = r._state, p = V.pill(s.status, s.outcome);
+      attemptsCell.textContent = s.attempts === null ? '—' : String(s.attempts);
+      statusCell.innerHTML =
+        '<span class="status-pill ' + p.cls + '">' + esc(p.text) + '</span>' +
+        (s.phase === 'pending'
+          ? ' <span class="status-pending">' + esc(V.pendingLabel(s.pending)) + '</span>'
+          : '');
+      if (s.done){ r.dataset.done = '1'; r.classList.remove('stuck'); }
+      else { delete r.dataset.done; }
+      syncButtons();
+    }
+
+    /* The strip can be gone by the time a response lands — the user is allowed
+       to collapse a row mid-write. The row cells still update; the log line is
+       simply dropped. */
+    function note_(txt, cls){ if (r._strip) logLine(r, txt, cls); }
+
+    var LABEL = { attempt: 'attempt logged', confirm: 'confirmed removed', status: 'status saved' };
+
+    /* run — arm, send, settle or restore. The whole no-optimistic-UI rule is
+       these twenty lines: beginWrite touches nothing the row claims, and only
+       out.inquiry (the row Postgres returned) is allowed to change it. */
+    function run(action, build){
+      /* The double-submit guard is the module's, not a second one written here:
+         two attempt POSTs for one human click is a double-count on a dispute
+         record, and that rule has a test. */
+      var armed = V.beginWrite(r._state, action);
+      if (armed.refused) return;
+
+      var spec;
+      try { spec = build(); }
+      catch (e){ note_(LABEL[action] + ' NOT SENT · ' + e.message, 'wl-fail'); return; }
+
+      if (isDemo()){
+        note_(LABEL[action] + ' NOT SENT · demo session — nothing is written', 'wl-fail');
+        return;
+      }
+
+      r._state = armed;
+      paintRow();
+      note_(V.pendingLabel(action), 'wl-pend');
+
+      send(spec).then(function(res){
+        var before = r._state.snapshot || r._state;
+        var wasAttempts = before.attempts, wasDone = before.done;
+        var out = V.interpretWrite(res);
+
+        if (!out.ok){
+          r._state = V.failWrite(r._state, out.failure);
+          paintRow();
+          note_(LABEL[action] + ' FAILED · ' + out.failure.text, 'wl-fail');
+          banner('error', 'inquiry write failed — ' + out.failure.text);
+          return;
+        }
+
+        r._state = V.settleWrite(r._state, out.inquiry);
+        paintRow();
+
+        /* Tiles move by the difference between two server-known counts, not by
+           a hardcoded +1: work.mjs RECOMPUTES call_attempts from the attempt
+           log inside the write transaction, so a retry can legitimately leave
+           it unchanged. */
+        var d = V.attemptsDelta(wasAttempts, r._state.attempts);
+        if (d) bump('calls', d);
+        if (r._state.done && !wasDone){
+          bump('confirmed', 1); bump('worked', 1); bump('left', -1);
+          bumpChip(bureau, -1);
+        } else if (!r._state.done && wasDone){
+          bump('confirmed', -1); bump('left', 1);
+          bumpChip(bureau, 1);
+        }
+
+        note_(LABEL[action] + ' · ' + clock() +
+          (r._state.stale ? ' (saved — the server sent no row, reload to see it)' : ''));
+        banner('real', 'inquiry writes are saving to the database');
+      });
+    }
+
+    call.addEventListener('click', function(){
+      run('attempt', function(){
+        return V.buildAttemptRequest({ inquiryId: inquiryId, kind: kind.value });
+      });
+    });
+    conf.addEventListener('click', function(){
+      /* No status argument: confirmRemoval's own default is "Removed", chosen
+         there to match wording already in the live data. */
+      run('confirm', function(){ return V.buildConfirmRequest({ inquiryId: inquiryId }); });
+    });
+    setSt.addEventListener('click', function(){
+      run('status', function(){
+        return V.buildStatusRequest({ inquiryId: inquiryId, status: statusIn.value });
+      });
+    });
+
+    /* ── identity ──────────────────────────────────────────────────────────
+       maskedText holds the MASKED label only. The revealed number is written
+       straight into the DOM from inside the response callback and is never
+       assigned to anything that outlives it, so hiding and re-revealing makes a
+       fresh request — and a fresh, correct, log entry. */
+    var maskedText = 'SSN —', identityReady = false;
+
+    /* Reveal stays disabled until there is something to reveal AND a reason to
+       put in the log. Once revealed the button is the Hide control, so it is
+       enabled regardless of what the reason box now says. */
+    function syncReveal(){
+      if (reveal.dataset.shown === '1'){ reveal.disabled = false; return; }
+      reveal.disabled = !identityReady || !reasonIn.value.trim();
+    }
+    reasonIn.addEventListener('input', syncReveal);
+
+    function noIdentity(text){
+      ssnEl.textContent = text;
+      maskedText = text;
+      identityReady = false;
+      reasonIn.disabled = true;
+      syncReveal();
+    }
+
+    function loadIdentity(){
+      if (locked){ noIdentity('SSN not read — this file is frozen'); pnote.textContent = locked; return; }
+      if (!live || !V.isUuid(clientId)){ noIdentity('SSN — sample row, no client on file'); pnote.textContent = ''; return; }
+      if (isDemo()){ noIdentity('SSN — demo session, identity not read'); pnote.textContent = ''; return; }
+
+      ssnEl.textContent = 'SSN — checking';
+      send(V.buildIdentityRequest({ clientId: clientId })).then(function(res){
+        var out = V.interpretIdentity(res);
+        if (!out.ok){
+          noIdentity(out.failure.code === 'forbidden' ? 'SSN — hidden from your role' : 'SSN — unavailable');
+          pnote.textContent = out.failure.text;
+          return;
+        }
+        var m = V.maskedSsnLabel(out.identity);
+        ssnEl.textContent = m.text;
+        maskedText = m.text;
+        identityReady = V.canReveal(out.identity) && !m.degraded;
+        reasonIn.disabled = !identityReady;
+        if (!identityReady) pnote.textContent = m.degraded
+          ? 'the stored number could not be opened — a key is missing or wrong'
+          : '';
+        syncReveal();
+      });
+    }
+
+    reveal.addEventListener('click', function(){
+      if (reveal.dataset.shown === '1'){
+        ssnEl.textContent = maskedText;
+        reveal.textContent = 'Reveal SSN';
+        reveal.dataset.shown = '';
+        pnote.textContent = 'Revealing writes your name and this reason to the access log.';
+        syncReveal();
+        return;
+      }
+      var spec;
+      try { spec = V.buildRevealRequest({ clientId: clientId, reason: reasonIn.value }); }
+      catch (e){ pnote.textContent = e.message; return; }
+
+      reveal.disabled = true; reveal.textContent = 'revealing...';
+      send(spec).then(function(res){
+        reveal.textContent = 'Reveal SSN';
+        var out = V.interpretReveal(res);
+        if (!out.ok){
+          pnote.textContent = out.failure.text;
+          banner('error', 'identity — ' + out.failure.text, 'identity');
+          syncReveal();
+          return;
+        }
+        ssnEl.textContent = V.formatRevealed(out.ssn);
+        reveal.textContent = 'Hide';
+        reveal.dataset.shown = '1';
+        reveal.disabled = false;
+        pnote.textContent = 'recorded in the access log · ' + clock();
+      });
+    });
+
+    if (locked){
+      kind.disabled = call.disabled = conf.disabled = true;
+      statusIn.disabled = setSt.disabled = true;
+      kind.title = call.title = conf.title = statusIn.title = setSt.title = locked;
       logLine(r, locked, 'wl-lock');
+      loadIdentity();
       return;
     }
-    if(done){
-      conf.disabled = true;
-      conf.title = 'Already confirmed and removed.';
+
+    /* ── the real attempt history ──────────────────────────────────────────
+       The log used to hold this session's clicks and empty on reload. 055 added
+       inquiry_attempts precisely so a dated trail exists; listAttempts serves
+       it. Oldest first into logLine, which inserts at the top, so the newest
+       ends up on top and this session's lines land above the history. */
+    function loadHistory(){
+      if (!live || isDemo()) return;
+      send(V.buildAttemptsRequest({ inquiryId: inquiryId })).then(function(res){
+        if (!r._strip) return;
+        var out = V.interpretAttempts(res);
+        if (!out.ok){ logLine(r, 'history unavailable · ' + out.failure.text, 'wl-fail'); return; }
+        if (!out.attempts.length){ logLine(r, 'no attempts logged yet', 'wl-pend'); return; }
+        out.attempts.slice().reverse().forEach(function(a){ logLine(r, V.attemptLine(a)); });
+      });
     }
 
-    /* log an attempt — bumps this row's attempt count and Alvin's call tally */
-    call.addEventListener('click', function(){
-      attempts.textContent = String(parseInt(attempts.textContent,10) + 1);
-      bump('calls', 1);
-      logLine(r, 'attempt logged · ' + clock());
-    });
-
-    /* mark confirmed — settles the row to the same wording the table already uses */
-    conf.addEventListener('click', function(){
-      r.cells[4].innerHTML = '<span class="status-pill confirmed">Confirmed · Removed</span>';
-      r.classList.remove('stuck');
-      r.dataset.done = '1';
-      conf.disabled = true;
-      conf.title = 'Already confirmed and removed.';
-      bump('confirmed', 1); bump('worked', 1); bump('left', -1);
-      bumpChip(bureau, -1);
-      logLine(r, 'confirmed removed · ' + clock());
-    });
+    syncButtons();
+    if (!live){
+      logLine(r, 'sample row — not in the database, nothing here will save', 'wl-lock');
+    }
+    loadHistory();
+    loadIdentity();
   }
 
   rows.forEach(function(r){

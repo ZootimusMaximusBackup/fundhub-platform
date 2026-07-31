@@ -136,6 +136,10 @@
 
   .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
   .calc-panel{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:13px 15px 15px;}
+  /* LOADING STATE — set only while a /api/read/tradelines request is in flight,
+     removed the moment it resolves either way. Nothing else in the design keys
+     off this attribute; it is not a second visual state to maintain. */
+  .calc-panel[data-fh-busy]{opacity:.55;}
   .calc-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
   .calc-title{font-size:13px;font-weight:800;}
   .calc-client{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
@@ -472,6 +476,15 @@
    DEAL CALCULATORS  (deal-funding 1a + deal-math 1b)
    Formulas per fundhub-docs/sources/closer-dashboard-calculators.md.
    Card data is read from the table so the markup stays the single source.
+
+   THIS BLOCK IS NOW THE FALLBACK, NOT THE ANSWER. Unchanged except for one
+   guard at the top of recompute(). When the wiring below has real tradelines
+   it sets window.__fhCloserLive and every number on the funding side comes
+   from GET /api/read/tradelines — i.e. from src/calculators/deal-funding.mjs,
+   the same calculator this block re-implements against the sample table. Two
+   implementations of one waterfall that can disagree is the whole reason the
+   endpoint returns `funding`. With no client id, no session, or no backend,
+   this runs exactly as it always did and the screen still demonstrates itself.
    ══════════════════════════════════════════════════════════════════════════ */
 (function(){
 "use strict";
@@ -539,6 +552,10 @@ function minInterest(alloc,minPct,months){
 }
 
 function recompute(){
+  /* Live data is on screen: leave it alone. The listeners below still fire —
+     they keep the draw box and the slider in step — but the sample math must
+     not overwrite an API answer with numbers scraped out of the sample table. */
+  if(window.__fhCloserLive) return;
   var draw    = Math.max(0,Math.min(TOTAL_HEAD, num($('iDraw').value)));
   var guard   = Math.max(1,num($('iGuard').value)||30);
   var deposit = num($('iDeposit').value);
@@ -623,6 +640,549 @@ $('iDrawRange').addEventListener('input',function(){ $('iDraw').value=$('iDrawRa
 });
 $('iDrawRange').max=TOTAL_HEAD;
 recompute();
+})();
+</script>
+
+<script src="data.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   VIEW MODEL — a VERBATIM COPY of src/http/closer-dashboard-view.mjs.
+
+   There is no bundler in this repo and a <script> cannot import from src/, so
+   the page carries its own copy. It is not on trust: src/http/
+   closer-dashboard-view.test.mjs extracts everything between the two markers
+   below, runs it in a vm, and pushes the same fixtures through both this copy
+   and the module, asserting deep-equal output. Edit one, edit the other, or the
+   suite goes red. Every comment explaining WHY a rule is what it is lives in
+   the module; this copy is deliberately kept thin.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* FH-VIEW-BEGIN */
+window.FHCloserView = (function () {
+  "use strict";
+
+  function num(v) {
+    if (v == null || v === "") return null;
+    var n = typeof v === "number" ? v : Number(v);
+    return isFinite(n) ? n : null;
+  }
+
+  function round2(n) {
+    return n == null ? null : Math.round(n * 100) / 100;
+  }
+
+  function esc(v) {
+    return String(v == null ? "" : v)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  /* NULL MEANS UNKNOWN AND MUST NOT BECOME $0. */
+  function usd(v) {
+    var n = num(v);
+    return n == null ? "—" : "$" + Math.round(n).toLocaleString("en-US");
+  }
+
+  function numText(v) {
+    var n = num(v);
+    return n == null ? "—" : Math.round(n).toLocaleString("en-US");
+  }
+
+  /* A FRACTION (0.1499) as a percentage ("14.99%") — the one place APR stops
+     being a fraction. */
+  function pctText(v, dp) {
+    var n = num(v);
+    return n == null ? "—" : (n * 100).toFixed(dp == null ? 0 : dp) + "%";
+  }
+
+  function classify(res, opts) {
+    var o = opts || {};
+    var clientId = o.clientId;
+    var S = "sample calculators — ";
+
+    if (!clientId) {
+      return { mode: "sample", tone: "sample",
+        text: S + "open this screen with ?client_id=<uuid> to load a real client" };
+    }
+
+    if (!res || res.ok !== true) {
+      var source = (res && res.source) || "unknown";
+      var detail = (res && res.error) || "no detail";
+      if (source === "demo") {
+        return { mode: "sample", tone: "sample", text: S + "demo session, the backend was not queried" };
+      }
+      if (source === "unauthorized") {
+        return { mode: "sample", tone: "error",
+          text: S + "not signed in (401) — sign in to load this client's tradelines. The backend is up." };
+      }
+      if (source === "offline") {
+        return { mode: "sample", tone: "error",
+          text: S + "GET /api/read/tradelines did not answer (" + detail +
+                ") — the endpoint is not deployed or not routed. This is not a sign-in problem." };
+      }
+      if (source === "nodb") {
+        return { mode: "sample", tone: "error",
+          text: S + "the API answered but the database did not (" + detail + ")" };
+      }
+      if (source === "notfound") {
+        return { mode: "sample", tone: "sample",
+          text: S + "the backend is up and has no client with that id" };
+      }
+      if (source === "badrequest") {
+        return { mode: "sample", tone: "sample",
+          text: S + "the request was rejected (" + detail + ")" };
+      }
+      if (source === "nodata") {
+        return { mode: "sample", tone: "sample", text: S + "no client id to ask about" };
+      }
+      return { mode: "sample", tone: "error",
+        text: S + "the tradeline read failed (" + source + ": " + detail + ")" };
+    }
+
+    var body = res.data || {};
+    var rows = Array.isArray(body.data) ? body.data : [];
+    if (!rows.length) {
+      return { mode: "empty", tone: "sample",
+        text: "no tradelines on file for this client — every number on this screen is sample markup" };
+    }
+
+    var funding = body.funding || {};
+    var alloc = funding.allocation || null;
+    var drawable = alloc && Array.isArray(alloc.draws) ? alloc.draws.length : null;
+    if (drawable === 0) {
+      return { mode: "empty", tone: "sample",
+        text: rows.length + " tradeline(s) on file for this client, none of them drawable " +
+              "(installment, closed, or no credit limit recorded) — showing sample markup" };
+    }
+
+    return { mode: "live", tone: "real", text: null };
+  }
+
+  function buildView(payload) {
+    var body = payload || {};
+    var stored = Array.isArray(body.data) ? body.data : [];
+    var funding = body.funding || {};
+    var alloc = funding.allocation || null;
+    var guard = funding.guardrail || null;
+    var pm = funding.payMethodComparison || null;
+    var draws = alloc && Array.isArray(alloc.draws) ? alloc.draws : [];
+
+    var rows = draws.map(function (d) {
+      var apr = num(d.apr);
+      var draw = num(d.draw);
+      var drawn = draw != null && draw > 0;
+      return {
+        lender: d.lender == null || d.lender === "" ? "(no lender recorded)" : String(d.lender),
+        /* An unpriced card is NOT a 0% card. */
+        aprText: apr == null ? "APR not on file" : pctText(apr, 2) + " APR",
+        aprOnly: apr == null ? "—" : pctText(apr, 2),
+        limitText: numText(d.creditLimit),
+        balanceText: numText(d.currentBalance),
+        headroomText: numText(d.availableHeadroom),
+        drawText: drawn ? numText(draw) : "—",
+        unused: !drawn,
+        minPaymentText: "—"
+      };
+    });
+
+    var totalAvailable = num(funding.totalAvailableCredit);
+    var totalDrawn = alloc ? num(alloc.totalDrawn) : null;
+    var requested = alloc ? num(alloc.requestedAmount) : null;
+    var shortfall = alloc ? num(alloc.shortfall) : null;
+    var headroomLeft = (totalAvailable != null && totalDrawn != null)
+      ? round2(totalAvailable - totalDrawn) : null;
+
+    var totalLimit = null;
+    for (var i = 0; i < draws.length; i++) {
+      var lim = num(draws[i].creditLimit);
+      if (lim != null) totalLimit = (totalLimit == null ? 0 : totalLimit) + lim;
+    }
+
+    var utilizationHtml = guard
+      ? "Utilisation after draw <b>" + pctText(guard.aggregateUtilization, 0) + "</b> of " +
+        usd(round2(totalLimit)) + " total limit · threshold " + pctText(guard.threshold, 0)
+      : "Utilisation not computed — the response carried no guardrail";
+
+    var guardrail = null;
+    if (guard) {
+      if (guard.hardStop) {
+        guardrail = {
+          cls: "alert-box",
+          title: "⛔ Pre-Approval Guardrail — Hard Stop",
+          bodyHtml: guard.message
+            ? esc(guard.message)
+            : "This draw crosses the " + pctText(guard.threshold, 0) + " utilisation threshold."
+        };
+      } else if (guard.message) {
+        guardrail = {
+          cls: "alert-box warn",
+          title: "⚠ Pre-Approval Guardrail — Pre-Existing Utilisation",
+          bodyHtml: esc(guard.message)
+        };
+      } else {
+        guardrail = {
+          cls: "alert-box clear",
+          title: "✓ Pre-Approval Guardrail — Clear",
+          bodyHtml: "This draw sits at <b>" + pctText(guard.aggregateUtilization, 0) +
+            "</b> utilisation, under the " + pctText(guard.threshold, 0) +
+            " threshold. Round 2 is not at risk from this draw."
+        };
+      }
+    }
+
+    var payMethods = null;
+    if (pm && Array.isArray(pm.horizons)) {
+      payMethods = {};
+      pm.horizons.forEach(function (h) {
+        var months = num(h && h.months);
+        if (months == null) return;
+        var io = usd(h.interestOnly && h.interestOnly.totalInterest);
+        payMethods[months] = {
+          lump: usd(h.lumpSum && h.lumpSum.totalInterest),
+          min: usd(h.minPayments && h.minPayments.totalInterest),
+          io: months === 36 && io !== "—" ? io + " + balloon" : io
+        };
+      });
+    }
+
+    var cardCount = stored.length;
+    var drawableCount = draws.length;
+
+    return {
+      cardCount: cardCount,
+      drawableCount: drawableCount,
+      excludedCount: Math.max(0, cardCount - drawableCount),
+      totalAvailable: totalAvailable,
+      totalAvailableText: usd(totalAvailable),
+      /* Two forms of one number, never two numbers. */
+      totalDrawnText: numText(totalDrawn),
+      totalDrawnUsd: usd(totalDrawn),
+      requestedText: requested == null ? null : usd(requested),
+      shortfall: shortfall,
+      shortfallText: usd(shortfall),
+      fullyFunded: alloc ? alloc.fullyFunded === true : null,
+      headroomLeftLabel: "Total drawn · " + usd(headroomLeft) + " headroom left",
+      rows: rows,
+      utilizationHtml: utilizationHtml,
+      guardrail: guardrail,
+      payMethods: payMethods,
+      drawMax: totalAvailable
+    };
+  }
+
+  /* Everything on this screen GET /api/read/tradelines cannot answer. Named in
+     the banner, because a sample number beside live ones is indistinguishable
+     from a real one. Same treatment as "Worked" on inquiry-remover. */
+  var NOT_SOURCED =
+    "still sample: today's pipeline, the shift stats, the Deal Math panel " +
+    "(net cash, monthly obligation, negative-amortization cliff) and the per-card minimums";
+
+  function bannerText(view) {
+    var v = view || {};
+    var bits = ["live tradelines · " + v.cardCount + (v.cardCount === 1 ? " line" : " lines") + " on file"];
+    if (v.excludedCount > 0) {
+      bits.push(v.excludedCount + " not drawable (installment, closed or no limit on file)");
+    }
+    bits.push(v.totalAvailableText + " available");
+    if (v.requestedText) bits.push("requested " + v.requestedText + " · allocated " + v.totalDrawnUsd);
+    if (v.shortfall != null && v.shortfall > 0) bits.push("shortfall " + v.shortfallText);
+    bits.push(NOT_SOURCED);
+    return bits.join(" · ");
+  }
+
+  return {
+    esc: esc, usd: usd, numText: numText, pctText: pctText,
+    classify: classify, buildView: buildView, bannerText: bannerText,
+    NOT_SOURCED: NOT_SOURCED
+  };
+})();
+/* FH-VIEW-END */
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   WIRING — GET /api/read/tradelines?client_id=<uuid> becomes the funding side
+   of this screen. DOM writes only; every decision above this line is in
+   FHCloserView, which is unit-tested.
+
+   THREE RULES, IN THE ORDER THEY MATTER:
+
+   1. FALL BACK, DON'T BLANK. With no ?client_id, no session, or no route, the
+      sample markup and the sample calculators are left running exactly as
+      designed and a banner says which. That path is the one that runs today —
+      "read/tradelines" is not in the ROUTES map yet, so the read 404s and
+      data.js classifies it "offline".
+   2. A LIVE SCREEN NEVER REVERTS. Once real figures are painted, a failed
+      refresh keeps them and reports the failure. The last audit found seven
+      screens that fell back to sample on the first keystroke under a green
+      badge; that is worse than not wiring them.
+   3. NOTHING IS INVENTED. The deal-math panel, the per-card minimums, today's
+      pipeline and the shift stats have no source in this response. They keep
+      their sample values, are marked in the UI, and are named in the banner.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function () {
+  "use strict";
+  if (!window.FHData || !window.FHCloserView) return;
+
+  var V = window.FHCloserView;
+  var $ = function (id) { return document.getElementById(id); };
+  // client_id is what the endpoint calls it; ?id= is accepted so a link copied
+  // from another screen still lands somewhere useful.
+  var clientId = FHData.param("client_id") || FHData.param("id");
+
+  var panels = [].slice.call(document.querySelectorAll(".calc-panel"));
+  var dealTable = document.querySelector("table.deal");
+  var seq = 0, timer = null, live = false, marked = false;
+
+  function busy(on) {
+    panels.forEach(function (p) {
+      if (on) p.setAttribute("data-fh-busy", "1"); else p.removeAttribute("data-fh-busy");
+    });
+  }
+
+  function cell(text, id) {
+    var td = document.createElement("td");
+    td.textContent = text;          // lender names are record data, never markup
+    if (id) td.id = id;
+    return td;
+  }
+
+  function tableByFirstHeader(want) {
+    var ts = [].slice.call(document.querySelectorAll("table.pm"));
+    for (var i = 0; i < ts.length; i++) {
+      var th = ts[i].querySelector("th");
+      if (th && th.textContent.trim().toLowerCase() === want) return ts[i];
+    }
+    return null;
+  }
+
+  function subHeading(tag) {
+    var subs = [].slice.call(document.querySelectorAll(".bd-sub"));
+    for (var i = 0; i < subs.length; i++) {
+      if (subs[i].textContent.indexOf(tag) === 0) return subs[i];
+    }
+    return null;
+  }
+
+  /* CD-02a. Rebuilt from funding.allocation.draws — lender, limit, balance,
+     headroom and draw all arrive computed, in the calculator's own draw order.
+     The sample rows are dropped; the header and the totals row are not. */
+  function renderWaterfall(view) {
+    if (!dealTable) return;
+    var totalRow = dealTable.querySelector("tr.total");
+    if (!totalRow) return;
+    var parent = totalRow.parentNode;
+    [].slice.call(dealTable.querySelectorAll("tr")).forEach(function (tr) {
+      if (tr.hasAttribute("data-fh-row") || tr.querySelector(".apr-tag")) tr.remove();
+    });
+
+    if (!view.rows.length) {
+      var er = document.createElement("tr");
+      er.setAttribute("data-fh-row", "");
+      var td = document.createElement("td");
+      td.colSpan = 5;
+      var sp = document.createElement("span");
+      sp.className = "empty-slot";
+      sp.textContent = "No drawable credit lines on file for this client.";
+      td.appendChild(sp);
+      er.appendChild(td);
+      parent.insertBefore(er, totalRow);
+      return;
+    }
+
+    view.rows.forEach(function (r, i) {
+      var tr = document.createElement("tr");
+      tr.setAttribute("data-fh-row", "");
+      if (r.unused) tr.className = "unused";
+      var first = document.createElement("td");
+      first.appendChild(document.createTextNode(r.lender + " "));
+      var tag = document.createElement("span");
+      tag.className = "apr-tag";
+      tag.textContent = r.aprText;
+      first.appendChild(tag);
+      tr.appendChild(first);
+      tr.appendChild(cell(r.limitText));
+      tr.appendChild(cell(r.balanceText));
+      tr.appendChild(cell(r.headroomText));
+      tr.appendChild(cell(r.drawText, "d" + i));
+      parent.insertBefore(tr, totalRow);
+    });
+  }
+
+  /* CD-03. Minimum-payment and interest-only cells carry ids; the lump-sum row
+     does not, so it is found by its own label rather than by position. */
+  function renderPayMethods(view) {
+    var lumpRow = null;
+    var t = tableByFirstHeader("method");
+    if (t) {
+      var trs = [].slice.call(t.querySelectorAll("tr"));
+      for (var i = 0; i < trs.length; i++) {
+        var td = trs[i].querySelector("td");
+        if (td && td.textContent.trim().toLowerCase() === "lump sum") { lumpRow = trs[i]; break; }
+      }
+    }
+    [12, 24, 36].forEach(function (m, idx) {
+      var v = view.payMethods ? view.payMethods[m] : null;
+      var minCell = $("m" + m), ioCell = $("i" + m);
+      if (minCell) minCell.textContent = v ? v.min : "—";
+      if (ioCell) ioCell.textContent = v ? v.io : "—";
+      if (lumpRow) {
+        var cells = lumpRow.querySelectorAll("td");
+        if (cells[idx + 1]) cells[idx + 1].textContent = v ? v.lump : "—";
+      }
+    });
+  }
+
+  /* D-04. Lender and APR are real; the minimum payment is NOT — the endpoint
+     takes no minimum-payment percentage, so nothing in the response is that
+     number. Blanked rather than carried over from a sample row belonging to a
+     different card, which is the precedent the unmapped status pills on
+     inquiry-remover set. */
+  function renderMinTable(view) {
+    var t = tableByFirstHeader("card");
+    if (!t) return;
+    var head = t.querySelector("tr");
+    var host = (head && head.parentNode) || t;
+    [].slice.call(t.querySelectorAll("tr")).forEach(function (tr) {
+      if (tr.hasAttribute("data-fh-row") || tr.querySelector("td")) tr.remove();
+    });
+    view.rows.forEach(function (r) {
+      var tr = document.createElement("tr");
+      tr.setAttribute("data-fh-row", "");
+      tr.appendChild(cell(r.lender));
+      tr.appendChild(cell(r.aprOnly));
+      tr.appendChild(cell(r.minPaymentText));
+      host.appendChild(tr);
+    });
+  }
+
+  /* Rule 3, in the UI rather than in a code comment. Runs once, the first time
+     real figures land, because that is the moment a sample number beside them
+     starts reading as real. */
+  function markUnsourced() {
+    if (marked) return;
+    marked = true;
+
+    // The endpoint returns tradelines, not a client record: there is no name in
+    // the response. The id we were given is the only sourced label for this
+    // person, and leaving "Priya Nair" over another client's balances is the
+    // kind of confident nonsense this repo keeps deleting.
+    var titles = [].slice.call(document.querySelectorAll(".section-title"));
+    for (var i = 0; i < titles.length; i++) {
+      if (titles[i].textContent.indexOf("CD-02") === 0) {
+        titles[i].textContent = "CD-02 / Deal Calculators — client " + clientId;
+      }
+    }
+
+    var note = document.querySelector(".res-note");
+    if (note) {
+      note.textContent = "SAMPLE — no endpoint computes deal math. Net cash, monthly obligation " +
+        "and the cliff below are this screen's built-in sample figures and do not describe this client.";
+    }
+    var d03 = subHeading("D-03b");
+    if (d03) d03.textContent = "D-03b / How the net cash is arrived at — SAMPLE, no deal-math endpoint";
+    var d04 = subHeading("D-04");
+    if (d04) d04.textContent = "D-04 / Minimum payment, card by card — the minimum has no API source";
+
+    var cliffBox = $("cliffBox");
+    if (cliffBox) cliffBox.className = "alert-box warn";
+    var cliffTitle = $("cliffTitle");
+    if (cliffTitle) cliffTitle.textContent = "⚠ Negative-Amortization Cliff — not computed";
+    var cliffBody = $("cliffBody");
+    if (cliffBody) {
+      cliffBody.textContent = "Not computed for this client. The cliff belongs to the deal-math " +
+        "calculator, which no endpoint returns yet, and re-deriving it in the browser is exactly " +
+        "how the funding side ended up with two answers. The figures above are sample.";
+    }
+  }
+
+  function render(view) {
+    var credit = $("oCredit");
+    if (credit) credit.textContent = view.totalAvailableText;
+    renderWaterfall(view);
+    var drawn = $("oDrawn");
+    if (drawn) drawn.textContent = view.totalDrawnText;
+    var left = $("oLeft");
+    if (left) left.textContent = view.headroomLeftLabel;
+    // Digits and symbols only — see buildView; no record data reaches innerHTML.
+    var util = $("oUtil");
+    if (util) util.innerHTML = view.utilizationHtml;
+    if (view.guardrail) {
+      var box = $("guardBox"), title = $("guardTitle"), body = $("guardBody");
+      if (box) box.className = view.guardrail.cls;
+      if (title) title.textContent = view.guardrail.title;
+      if (body) body.innerHTML = view.guardrail.bodyHtml;
+    }
+    renderPayMethods(view);
+    renderMinTable(view);
+    var range = $("iDrawRange");
+    if (range && view.drawMax != null) range.max = Math.round(view.drawMax);
+    markUnsourced();
+  }
+
+  function requestParams() {
+    var p = { client_id: clientId };
+    var draw = Number($("iDraw").value);
+    var guard = Number($("iGuard").value);
+    if (isFinite(draw) && draw >= 0) p.requested_amount = draw;
+    // The API wants a FRACTION (0.30); the box is a percentage, per the design.
+    if (isFinite(guard) && guard > 0) p.utilization_threshold = guard / 100;
+    return p;
+  }
+
+  function failed(res, decision) {
+    if (live) {
+      FHData.banner("error", "these are the last figures that loaded — the refresh failed (" +
+        ((res && res.source) || "unknown") + "), so the boxes above no longer describe them",
+        "tradelines");
+      return;
+    }
+    FHData.banner(decision.tone, decision.text, "tradelines");
+  }
+
+  function load(isRefresh) {
+    var mine = ++seq;
+    busy(true);
+    if (!isRefresh) {
+      FHData.banner("sample", "loading tradelines for client " + clientId + " …", "tradelines");
+    }
+    return FHData.read("tradelines", requestParams()).then(function (res) {
+      if (mine !== seq) return;   // a later keystroke already asked; that answer wins
+      busy(false);
+      var decision = V.classify(res, { clientId: clientId });
+      if (decision.mode !== "live") { failed(res, decision); return; }
+      var view = V.buildView(res.data);
+      render(view);
+      live = true;
+      window.__fhCloserLive = true;   // stands the sample calculators down
+      FHData.banner("real", V.bannerText(view), "tradelines");
+    }).catch(function (e) {
+      // FHData never rejects, but the contract holding is not the same as this
+      // screen surviving if it stops holding.
+      if (mine !== seq) return;
+      busy(false);
+      failed({ source: "render", error: (e && e.message) || "read failed" },
+        { tone: "error", text: "sample calculators — the tradeline read threw (" +
+          ((e && e.message) || "unknown") + ")" });
+    });
+  }
+
+  if (!clientId) {
+    FHData.banner("sample", V.classify(null, {}).text, "tradelines");
+    return;
+  }
+
+  /* A new draw or threshold is a new question for the calculator, not a new
+     browser computation: re-ask the endpoint, debounced. */
+  function schedule() {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(function () { timer = null; load(true); }, 300);
+  }
+  ["iDraw", "iDrawRange", "iGuard"].forEach(function (id) {
+    var el = $(id);
+    if (el) el.addEventListener("input", schedule);
+  });
+
+  load(false);
 })();
 </script>
 </body>

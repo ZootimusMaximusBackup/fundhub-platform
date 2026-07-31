@@ -3,6 +3,7 @@
 //   GET  ?client_id=<uuid>              → { ok, identity }  masked: ssn_last4 only
 //   GET  ?client_id=<uuid>&history=1    → { ok, access }     who has revealed it
 //   POST { client_id, action: "reveal", reason }  → { ok, ssn }   ACCESS-LOGGED
+//        reason is REQUIRED — a reveal with no stated purpose is a 400.
 //   POST { client_id, action: "store", ssn?, dob?, addresses? } → { ok, identity }
 //
 // THE ROLE GATE IS NARROWER THAN ROLE_SETS.STAFF, DELIBERATELY. STAFF includes
@@ -49,13 +50,25 @@ export default async function handler(req, res) {
       if (!isUuid(body.client_id)) return res.status(400).json({ ok: false, error: "client_id must be a uuid" });
 
       if (body.action === "reveal") {
+        // RULE 4 OF src/pii/index.mjs IS ENFORCED HERE, NOT IN THE BROWSER.
+        // "A reason is required" was documented in the service module and
+        // checked only by the screen, while revealSsn() defaults reason to
+        // null and degrades the log row to a bare "ssn". That was invisible
+        // for as long as this route 404'd. It is reachable now, so the rule
+        // has to hold for curl and for a script, not just for the one screen
+        // that happens to ask. An unexplained disclosure is indistinguishable
+        // from every other one, which is the state rule 4 exists to prevent.
+        const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+        if (!reason) {
+          return res.status(400).json({ ok: false, error: "reason is required — every reveal is written to pii_access_log" });
+        }
         const { ssn } = await revealSsn(db, {
           clientId: body.client_id,
           // The session's staff id, never a name from the request body: an
           // attributable log entry cannot let the caller choose its own
           // attribution.
           accessedBy: principal.staffId,
-          reason: body.reason ?? null
+          reason
         });
         return res.status(200).json({ ok: true, ssn });
       }
