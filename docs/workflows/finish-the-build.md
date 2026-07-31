@@ -196,7 +196,13 @@ watched go red, and then restored. See "Verification" below.
   * stamped a human clock-out as a sweep close → the normal-case test fails,
   * let an unvouchable shift total as zero → the timesheet test fails,
   * silently dropped the review rows → two timesheet tests fail,
-  * dropped the check constraint from the migration → the vocabulary test fails.
+  * dropped the check constraint from the migration → the vocabulary test fails,
+  * paid zero for an unvouchable shift → three tests fail,
+  * used the average instead of the middle value → two fail,
+  * let zero-length rows count as evidence → one fails,
+  * let an unvouchable shift feed its own estimate → one fails,
+  * folded estimated time into the confirmed figure → three fail,
+  * dropped the observed-gone cap → one fails.
 
 **One mutation did not go red on the first attempt, and the test was fixed
 rather than the result written up as a pass.** Removing the sender guard from
@@ -230,8 +236,8 @@ eye, because they concern consumer data:
 * Any new endpoint, screen, route or migration. This workflow adds none.
 * Scheduling the auto-close sweep. The reason it was unsafe is gone; switching
   it on is still an operator action.
-* What payroll pays for a shift on the review list. No answer exists in this
-  repository and none was invented.
+* The hourly rate. Still not modelled anywhere in this system — the timesheet
+  reports seconds and stops.
 * Turning either seam on. That needs a staff-facing send, or a pull that carries
   who ran it — neither exists.
 
@@ -242,9 +248,10 @@ eye, because they concern consumer data:
 * Nothing schedules `autoCloseStale()`. This work removes the reason it could not
   be scheduled; it does not schedule it. **That is still a deliberate decision
   for the owner, and it affects people's pay.**
-* Nothing reads the review list yet. The column and the index exist and the
-  timesheet returns the rows; no screen shows them. Whoever builds the timesheet
-  view gets that for free.
+* Nothing reads the review list yet. The column, the index, the estimate and the
+  three-number total all exist; no screen shows them. Whoever builds the
+  timesheet view gets that for free.
+* No wage rate anywhere, so nothing multiplies these seconds by anything yet.
 
 ### The roles that produce no telemetry — decided
 
@@ -283,7 +290,44 @@ role. Nobody gets locked out in the morning, and nobody's forgotten shift
 silently becomes a zero. What lands instead is a short list of shifts with a
 question attached: *how long was this person actually here?*
 
-**Still open, and genuinely a decision:** what payroll should do with a shift on
-that list. Pay a default? Ask the employee? Ask their manager? There is no answer
-in this repository and none was invented. The column and the review list are what
-make the question findable and answerable.
+### What those shifts are worth — decided
+
+**Zero was never actually one of the options.** The employer's own record is what
+failed. Under US wage law the employer carries the duty to keep accurate records
+of hours worked, and the long-settled rule (*Anderson v. Mt. Clemens Pottery*,
+1946) is that when those records fail, the failure does not transfer to the
+employee: they need only show they worked and support a reasonable estimate of
+how much, and the burden is then on the employer to disprove it. Paying nothing
+is the employer taking the benefit of its own missing paperwork. A missed
+clock-out is a **process** problem, handled as one — it is not a reason to
+withhold pay for time worked.
+
+Overpaying is wrong too, and was already refused: the sweep does not stamp "now"
+as the end time, because that would credit every hour between the forgotten
+clock-out and whenever the sweep happened to run.
+
+**The estimate is the person's own typical day** — the middle value of their own
+completed shifts. It comes from data the system already holds, it is about that
+individual rather than an invented average, and it leans neither way.
+
+* **The middle value, not the average.** One 14-hour day would drag an average
+  upward; one already-broken zero-length row would drag it down. The middle value
+  shrugs off both.
+* **Zero-length rows are never evidence.** Letting a previously-swept shift into
+  the calculation would make the record-keeping failure feed itself.
+* **Capped at the moment the sweep saw them gone.** They cannot have worked past
+  it. It almost never binds, and costs nothing to carry.
+* **Somebody's first day is the one case with no answer.** A new employee with no
+  completed shifts has nothing to infer from. That comes back as zero *with the
+  reason attached*, and the shift stays flagged. It is not a claim they worked
+  nothing.
+
+**And it is still flagged.** The timesheet reports **three numbers, never one**:
+time somebody vouched for, time that was estimated, and the two added together —
+which is what gets paid. They stay separate so no screen can show estimated time
+as though a human had checked it. The estimate is what is paid if nobody looks;
+it is not a claim that anybody looked.
+
+**Not decided here, because it is not this file's to decide:** the rate. There is
+still no hourly wage modelled anywhere in this system. This reports seconds and
+stops.
