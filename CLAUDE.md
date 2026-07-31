@@ -80,10 +80,43 @@ Newest at top. This is the human-readable record. Keep it honest — including w
 
 ## 4. Orchestration
 
-* Fan out only on independent units — one agent per screen or module. Never parallelize steps that depend on each other's output.
+### Always propose the split first
+
+Before starting any task with more than one independent unit of work, stop and propose a workflow decomposition. Do not begin serial work and do not wait to be asked.
+
+The proposal states: how many workflows, what each owns, what they share, what order they run in, and where they must sync.
+
+If the work genuinely has only one unit, say so in one line and proceed.
+
+If you have already given me a decomposition, follow it. If mine looks wrong, say why before starting — not after.
+
+### Rules
+
+* Fan out only on independent units — one workflow per screen or module. Never parallelize steps that depend on each other's output.
+* Ground once, fan out. One agent reads shared context and writes a brief. Other agents consume the brief. Never have four agents independently read the same modules.
 * Pipeline, don't barrier. Each unit runs ground → build → verify on its own. Do not hold a whole phase for the slowest agent.
 * Cap at 5 concurrent agents. Past that: rate limits and merge conflicts, not speed.
-* Build agents emit a change manifest — files touched, exports added, props changed, routes affected, journeys impacted. Verify agents read the manifest. Never rediscover changes by re-reading the tree.
+
+### How workflows coordinate
+
+Agents do not message each other. They coordinate through a shared file. That file is the communication layer.
+
+Every multi-workflow batch gets `docs/workflows/<batch-name>.md` containing:
+
+* The task list — every unit, its owner, its status (`pending` / `claimed` / `done` / `blocked`)
+* The shared context brief from the ground phase
+* Change manifests — files touched, exports added, props changed, routes affected, journeys impacted
+* Blockers and open questions
+
+Protocol:
+
+* Claim a task by marking it `claimed` before starting. Never work an unclaimed or already-claimed task.
+* Write your manifest to the file when done, before reporting complete.
+* Read the file before starting. Another workflow may have already changed something you depend on.
+* Verify agents read manifests. They never rediscover changes by re-reading the tree.
+* Blocked? Mark it `blocked`, write why, and stop. Do not work around another workflow's unfinished output.
+
+Keep this file human-readable. I use it to see what is happening without opening a single code file.
 
 ## 5. Definition of done
 
@@ -92,7 +125,7 @@ Never report a task complete until all of these pass:
 1. `npm run lint`
 2. `npx tsc --noEmit`
 3. Test suite green — no skipped, deleted, or weakened tests
-4. Playwright check on any UI change (run locally before pushing)
+4. Playwright check on any UI change
 5. `-actual.md` journeys updated, changelog appended
 6. Change manifest emitted
 
@@ -106,21 +139,55 @@ Flag `COMPLIANCE REVIEW REQUIRED` at the top of your summary for any change affe
 
 Flagged changes ship only after explicit human approval. Never draft customer-facing claims about credit outcomes.
 
-## 7. Conventions
+## 7. Guardrails
 
-* Simplest approach that works. No speculative abstraction.
-* No new dependencies without asking.
-* Match existing patterns in the file you are editing over your own preference.
-* Never commit secrets — no keys, tokens, or PII in code, fixtures, or logs.
-* Delete dead code you create. No commented-out blocks left behind.
+**The stuck rule.** Two failed attempts at the same fix, stop. Report what you tried, what happened, and your best guess at the cause. Do not try a third time. Do not start rewriting surrounding code to make the problem go away. Thrashing is the most expensive failure mode there is.
 
-## 8. How to talk to me
+**Scope discipline.** Touch only what the task requires. No drive-by refactors, no renaming things you happened to notice, no "while I was in there." If you find something worth fixing, write it down and move on.
+
+**Scope creep check.** If the work grows past roughly double what the plan estimated, stop and re-scope with me. Do not push through a task that turned out to be three tasks.
+
+**Reuse before you build.** Search for an existing implementation before writing a new one. Two functions doing the same thing is a bug that takes months to surface.
+
+**Commit working states.** Commit whenever the suite is green and a unit is complete. Small commits mean a bad build costs minutes to undo instead of a day.
+
+**Checkpoint when context fills.** If a session is long or has gone sideways, write current state to the workflow file and tell me to start fresh. Do not push a degraded session forward. Quality drops well before you run out of room.
+
+**Conventions.** Simplest thing that works, no speculative abstraction. No new dependencies without asking. Match existing patterns in the file you are editing over your own preference. Never commit secrets — no keys, tokens, or PII in code, fixtures, or logs. Delete dead code you create.
+
+## 8. Task report
+
+End every completed task with this, in this order:
+
+1. What changed — one line, in plain language
+2. What I need you to check — the one or two things only a human can verify, with exact steps
+3. Risk — anything that could break elsewhere, or "none"
+4. Left undone — anything skipped, deferred, or worked around
+5. Next — the single next action
+
+If the answer to 4 is "nothing," say so explicitly. Silence there reads as complete, and if it wasn't, that is how things ship broken.
+
+## 9. How to talk to me
 
 I am the decision maker and I do not read code. Optimize for that.
 
+### Plain language — required
+
+Write everything at a 5th grade reading level. This is not optional and it is not a style preference. If I cannot understand what broke, I cannot decide what to do about it.
+
+* No jargon. If a technical term is unavoidable, define it in one short sentence right there.
+* Say what broke in terms of what the user sees, not what the code does. Not "null pointer on the auth middleware" — "people can't log in."
+* No acronyms unless you spell them out first.
+* Short sentences. One idea each.
+* Never assume I know a tool, library, or pattern. I don't.
+
+If you catch yourself writing a sentence I would have to look up, rewrite it.
+
+### Everything else
+
 * No preamble, no filler, no "Sure, I'd be happy to."
 * No hedging. State it.
-* Short sentences. Lead with the answer, reasoning after.
+* Lead with the answer, reasoning after.
 * When something breaks: fastest likely fix first, then the next two causes. No troubleshooting trees.
 * Flag risk in one line, not a paragraph. Skip obvious warnings.
 * One question at a time, and only when it actually blocks you.
