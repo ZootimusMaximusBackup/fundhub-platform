@@ -57,9 +57,11 @@
 --      which silently makes campaign-row-creation a prerequisite of ingestion
 --      and breaks the ingestion thread rather than this one.
 --
--- The linkage is therefore `mail_campaigns.campaign_key` — a UNIQUE text column
--- holding exactly the string that appears in `mail_universe.campaign_id`. The
--- join is `mail_universe.campaign_id = mail_campaigns.campaign_key`. It is a
+-- The linkage is therefore `mail_campaigns.campaign_key` — a text column unique
+-- WITHIN AN ORG (uq_mail_campaigns_org_key), holding exactly the string that
+-- appears in `mail_universe.campaign_id`. The join is
+-- `mail_universe.campaign_id = mail_campaigns.campaign_key` AND matching
+-- org_id — never the key alone, which does not identify a campaign. It is a
 -- soft link and it is honest about being one. Tightening it to a real FK is a
 -- later migration that must FIRST backfill a campaign row per distinct
 -- campaign_id, THEN repoint, and it needs to see production data before anyone
@@ -114,10 +116,14 @@ CREATE TABLE IF NOT EXISTS mail_campaigns (
 
   -- The join key into mail_universe.campaign_id. See the long note above: this
   -- is a soft link by string equality, not a foreign key, because the existing
-  -- column is text and may hold data that no FK would accept. UNIQUE so that
-  -- the string identifies exactly one campaign — which is the property
-  -- mail_universe.campaign_id never had on its own.
-  campaign_key   text NOT NULL UNIQUE,
+  -- column is text and may hold data that no FK would accept.
+  --
+  -- UNIQUE PER ORG, NOT GLOBALLY. See uq_mail_campaigns_org_key below: the
+  -- string identifies exactly one campaign WITHIN AN ORG, which is the property
+  -- mail_universe.campaign_id never had on its own. A bare column-level UNIQUE
+  -- here would have let one org's label ("2026-Q3") permanently block every
+  -- other org's, in a table whose first column is org_id.
+  campaign_key   text NOT NULL,
 
   -- What a human calls it. Distinct from campaign_key so the label can be
   -- corrected without orphaning every mail_universe row that references it.
@@ -167,6 +173,23 @@ CREATE TABLE IF NOT EXISTS mail_campaigns (
   CONSTRAINT mail_campaigns_dropped_date_ck
     CHECK (status <> 'dropped' OR batch_date IS NOT NULL)
 );
+
+-- THE JOIN KEY IS SCOPED TO THE ORG. Every comparable key in this schema is
+-- org-scoped and not global — hiring_roles (org_id, key), candidates
+-- (org_id, email), accounts (org_id, lower(email)), staff_roles
+-- (org_id, lower(key)), clients_org_email_uniq, documents_org_key_uniq. A
+-- global UNIQUE on campaign_key would break that pattern in the one direction
+-- that cannot be undone quietly: the first org to use an obvious label like
+-- "2026-Q3" or "spring-mailer" takes it away from every other org forever,
+-- and the failure surfaces as a duplicate-key error on a tenant that has done
+-- nothing wrong.
+--
+-- The code already assumes this scoping: src/mail/suppression.mjs joins
+-- `ON mc.campaign_key = mu.campaign_id AND mc.org_id = mu.org_id`, which is
+-- only meaningful if the key is unique within an org rather than across all
+-- of them. This index makes the schema agree with the query.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_mail_campaigns_org_key
+  ON mail_campaigns (org_id, campaign_key);
 
 -- The list screen: this org's campaigns, most recent drop first. NULLS FIRST
 -- because an unscheduled campaign is the one still being worked on.
@@ -363,7 +386,7 @@ END $$;
 COMMENT ON TABLE mail_campaigns IS
   'Direct-mail (Deluxe) campaign. NOTHING MAILS: prescreen data requires a firm offer of credit under FCRA, and no drop happens until the FCRA research, Deluxe compliance review and legal sign-off on lender-of-record are all in. No activation path is wired — see db/migrations/065_mail_campaigns.sql and src/mail/README.md.';
 COMMENT ON COLUMN mail_campaigns.campaign_key IS
-  'Soft join key: equals mail_universe.campaign_id. Not a foreign key — that column is text and may hold data. See the 065 header.';
+  'Soft join key: equals mail_universe.campaign_id. Unique per org, not globally — always join on org_id as well. Not a foreign key: that column is text and may hold data. See the 065 header.';
 COMMENT ON TABLE mail_responses IS
   'Append-only log of responses against a mail_universe record. mail_universe.responded_at / outcome_tier are the denormalised latest state; this is the history.';
 COMMENT ON TABLE mail_tracked_numbers IS

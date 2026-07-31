@@ -668,11 +668,14 @@ export async function setOutcomeTier(db, { recordId, tier } = {}) {
  *
  * ===== SCOPING =====
  *
- * mail_campaigns.campaign_key is UNIQUE, so when a campaign row exists the
- * string identifies exactly one campaign and its org is used. mail_universe.
- * campaign_id has NO such guarantee — it is free text and two orgs could use the
- * same label — so when there is no campaign row and no orgId was passed, the
- * counts span every org that used the string and `orgId` comes back null with a
+ * mail_campaigns.campaign_key is unique PER ORG (uq_mail_campaigns_org_key in
+ * 065), not globally, so the string alone does not identify a campaign: two
+ * orgs may both run a "2026-Q3". The campaign lookup is therefore scoped by
+ * orgId when one is passed, and when none is and the key resolves to more than
+ * one org, `campaign` comes back null with a reason rather than picking a row.
+ * mail_universe.campaign_id has no uniqueness guarantee at all — it is free
+ * text — so when there is no campaign row and no orgId was passed, the counts
+ * span every org that used the string and `orgId` comes back null with a
  * reason. Pass orgId to scope it (Rule 7); a caller behind requireAuth already
  * has req.staff.org_id.
  */
@@ -698,12 +701,29 @@ export async function attributionByCampaign(db, { campaignId, orgId = null } = {
   // mail_universe rows can exist for a campaign_id string with no
   // mail_campaigns row behind it, which is exactly the condition 065 was written
   // to end and has not finished ending.
+  //
+  // THE CAMPAIGN ROW IS RESOLVED WITHIN AN ORG. 065 scopes the key with
+  // uq_mail_campaigns_org_key (org_id, campaign_key), so campaign_key alone
+  // does NOT identify a campaign — two orgs may both legitimately run a
+  // "2026-Q3". Selecting on the key alone returned whichever row Postgres
+  // reached first, which meant a caller who correctly scoped its counts to its
+  // own org could still be handed another org's campaign name, status and
+  // order quantity in the same payload.
   const camp = await db.query(
     `SELECT id, org_id, name, status, batch_date, records_ordered
-       FROM mail_campaigns WHERE campaign_key = $1 LIMIT 1`,
-    [key]
+       FROM mail_campaigns
+      WHERE campaign_key = $1
+        AND ($2::uuid IS NULL OR org_id = $2)
+      ORDER BY created_at`,
+    [key, orgId]
   );
-  const campaign = camp.rows[0] || null;
+
+  // More than one row is only reachable with no orgId, and it means more than
+  // one org uses this key. Picking one would be a guess, and a guess here
+  // mislabels every count under it — so the campaign comes back null with a
+  // reason, the same way every other unanswerable field in this function does.
+  const ambiguousCampaign = camp.rows.length > 1;
+  const campaign = camp.rows.length === 1 ? camp.rows[0] : null;
   const scope = orgId || (campaign ? campaign.org_id : null);
 
   const universe = await db.query(
@@ -749,6 +769,14 @@ export async function attributionByCampaign(db, { campaignId, orgId = null } = {
       "no response in this campaign is linked to a client. funded is only computable through " +
       "mail_responses.client_id -> clients.funded, and mail_responses.client_id has no writer in " +
       "this repo, so a count here would be a 0 that means 'never linked', not 'nobody funded'.";
+  }
+
+  if (ambiguousCampaign) {
+    unavailable.campaign =
+      "more than one org has a campaign with this campaign_key. The key is unique per org " +
+      "(uq_mail_campaigns_org_key in 065), not globally, so the string alone does not identify a " +
+      "campaign and returning either row would attribute one org's campaign metadata to another. " +
+      "Pass orgId to resolve it.";
   }
 
   if (!scope) {
