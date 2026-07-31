@@ -75,6 +75,7 @@ import hiringPostings from "../../api/hiring/postings.mjs";
 import hiringDecisions from "../../api/hiring/decisions.mjs";
 import hiringFunnel from "../../api/hiring/funnel.mjs";
 import hiringBench from "../../api/hiring/bench.mjs";
+import financeSoftPull from "../../api/finance/soft-pull.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
 
@@ -174,7 +175,16 @@ export const ROUTES = {
   "hiring/postings": hiringPostings,
   "hiring/decisions": hiringDecisions,
   "hiring/funnel": hiringFunnel,
-  "hiring/bench": hiringBench
+  "hiring/bench": hiringBench,
+
+  // Finance. The one-tap soft pull for a client already on file. Routed in the
+  // same commit that adds the handler, deliberately: this is the third time a
+  // feature in this repo has been finished and left unreachable, and a
+  // credit-pull ledger that nobody can write to is worse than not having one —
+  // it looks like the audit trail exists. The endpoint's own gate is narrower
+  // than ROLE_SETS.STAFF and is spelled out in api/finance/soft-pull.mjs.
+  // Nothing behind it transmits.
+  "finance/soft-pull": financeSoftPull
 
   /* NOT ROUTED, ON PURPOSE — see ALLOWED_UNROUTED in src/http/routes.test.mjs
      for the current list and the reason attached to each entry. That list is

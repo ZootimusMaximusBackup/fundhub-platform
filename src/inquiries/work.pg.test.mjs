@@ -20,6 +20,16 @@ let staffId = null;
 let inquiryId = null;
 
 async function wipe() {
+  /* logAttempt now emits a `staff_events` row for call and letter attempts, and
+     this suite borrows a seeded staff member rather than creating its own — so
+     nothing cascades those rows away. They are matched by the inquiry they name
+     and must go BEFORE the client, which is what makes them findable. */
+  await db.query(
+    `DELETE FROM staff_events
+      WHERE detail->>'inquiry_id' IN (
+        SELECT il.id::text FROM inquiry_log il
+          JOIN clients c ON c.id = il.client_id
+         WHERE c.email = $1)`, [EMAIL]);
   await db.query(`DELETE FROM clients WHERE email=$1`, [EMAIL]); // cascades inquiry_log → inquiry_attempts
 }
 
