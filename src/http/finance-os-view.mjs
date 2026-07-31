@@ -268,21 +268,31 @@ export function portfolioTotals(cards) {
  * { transport: true, detail } when there was no answer at all. Deliberately
  * NOT fed from data.js's `source`, which maps 401 and 403 onto one value.
  *
- * `code` is the machine-readable outcome, `tone` picks the banner colour
- * (matching client-control-panel.html's three tones exactly), and `text` is
- * the sentence a non-technical person reads.
+ * TWO AUDIENCES, TWO FIELDS, AND THEY MUST NOT BE THE SAME STRING.
+ *
+ *   `text`   is read by a CUSTOMER. Plain English, no filenames, no status
+ *            codes, no jargon. It says what happened and what they can do.
+ *   `detail` is read by an ENGINEER. The migration that has not shipped, the
+ *            status number, the endpoint's own error. The screen puts it in the
+ *            console and on a title tooltip — never in the sentence.
+ *
+ * The first cut of this file put "075_subscriptions.sql has not shipped" in
+ * `text`, on a page a consumer opens. The distinction the brief actually
+ * requires — that "you are signed out" and "we have not built this yet" must
+ * not look alike — is carried by `code` and by four genuinely different
+ * sentences. It never required showing somebody a .sql filename.
  */
 export function classify(res, opts) {
-  const what = (opts && opts.what) || "data";
+  const what = (opts && opts.what) || "this";
   const pending = opts && opts.pending ? String(opts.pending) : null;
 
   // No answer at all — the request never completed. Distinct from every
   // status-bearing case below because nothing is known about the far end.
   if (!res || res.transport) {
-    const detail = res && res.detail ? " (" + res.detail + ")" : "";
     return {
       code: "offline", tone: "error", live: false,
-      text: "could not reach the server for " + what + detail
+      text: "We could not reach the server. Check your connection and reload.",
+      detail: "no response for " + what + (res && res.detail ? " — " + res.detail : "")
     };
   }
 
@@ -292,7 +302,8 @@ export function classify(res, opts) {
   if (status === 401) {
     return {
       code: "signedout", tone: "sample", live: false,
-      text: "your session has expired — sign in again to see your " + what
+      text: "Your session has expired. Sign in again to see " + what + ".",
+      detail: "401 on " + what
     };
   }
 
@@ -302,7 +313,8 @@ export function classify(res, opts) {
   if (status === 403) {
     return {
       code: "forbidden", tone: "sample", live: false,
-      text: "your account is not permitted to view " + what
+      text: "Your account does not have access to " + what + ".",
+      detail: "403 on " + what + " — role or principal kind not admitted"
     };
   }
 
@@ -315,48 +327,54 @@ export function classify(res, opts) {
     if (unrouted) {
       return {
         code: "unrouted", tone: "error", live: false,
-        text: pending
-          ? what + " — not available yet, " + pending + " has not shipped"
-          : what + " — this part of the site is not deployed on this server"
+        // What a customer needs: this is us, not them, and there is nothing to
+        // do about it. The migration name is diagnostic and stays in `detail`.
+        text: "We are still building this. It will appear here when it is ready.",
+        detail: "unrouted: " + (body.path || "unknown path") +
+                (pending ? " — " + pending + " has not shipped" : "")
       };
     }
     return {
       code: "notfound", tone: "sample", live: false,
-      text: "nothing on file yet for " + what
+      text: "We do not have " + what + " on file yet.",
+      detail: "404 on " + what + (body && body.error ? " — " + body.error : "")
     };
   }
 
   if (status === 400) {
-    const detail = body && typeof body.error === "string" ? " (" + body.error + ")" : "";
     return {
       code: "badrequest", tone: "sample", live: false,
-      text: "could not ask for " + what + detail
+      text: "We could not load " + what + ".",
+      detail: "400 on " + what + (body && typeof body.error === "string" ? " — " + body.error : "")
     };
   }
 
   if (status === 503 || (body && body.db === "down")) {
     return {
       code: "nodb", tone: "error", live: false,
-      text: "the database is unreachable — could not load " + what
+      text: "We are having trouble loading " + what + " right now. Try again in a few minutes.",
+      detail: "database unreachable" + (body && body.error ? " — " + body.error : "")
     };
   }
 
   if (status >= 500) {
     return {
       code: "servererror", tone: "error", live: false,
-      text: "the server failed while loading " + what + " (error " + status + ")"
+      text: "Something went wrong on our end loading " + what + ". Try again shortly.",
+      detail: "server error " + status + " on " + what
     };
   }
 
   // A 200 that is not ok:true is a failure wearing a success code.
   if (status === 200 && body && body.ok === true) {
-    return { code: "live", tone: "real", live: true, text: null };
+    return { code: "live", tone: "real", live: true, text: null, detail: null };
   }
 
-  const detail = body && typeof body.error === "string" ? " (" + body.error + ")" : "";
   return {
     code: "badresponse", tone: "sample", live: false,
-    text: "could not read " + what + detail
+    text: "We could not load " + what + ".",
+    detail: "unusable response on " + what +
+            (body && typeof body.error === "string" ? " — " + body.error : "")
   };
 }
 
@@ -399,7 +417,9 @@ export function buildSubscription(res) {
   const row = rows(res.body)[0] || null;
   if (!row) {
     return {
-      state: { code: "empty", tone: "sample", live: false, text: "no subscription on file for this account" },
+      state: { code: "empty", tone: "sample", live: false,
+               text: "We do not have a subscription on file for you yet.",
+               detail: "subscriptions returned zero rows" },
       tier: null, status: null
     };
   }
@@ -457,7 +477,7 @@ export function buildRoadmap(res) {
     return {
       state: state, held: false,
       name: null, grantedAt: null,
-      note: "not part of your plan yet"
+      note: "This is not part of your plan yet."
     };
   }
   return {
@@ -465,7 +485,7 @@ export function buildRoadmap(res) {
     held: match.active === true,
     name: match.entitlement_name || null,
     grantedAt: match.granted_at || null,
-    note: match.active === true ? null : "included in your plan but not active"
+    note: match.active === true ? null : "This is included in your plan but is not active yet."
   };
 }
 
@@ -477,12 +497,14 @@ export function buildRoadmap(res) {
  * nothing is worse than one that says why it cannot. */
 export function softPullState(available) {
   if (available === true) {
-    return { enabled: true, label: "Request a credit refresh", reason: null };
+    return { enabled: true, label: "Request a credit refresh", reason: null, detail: null };
   }
   return {
     enabled: false,
     label: "Request a credit refresh",
-    reason: "not available yet — " + PENDING_SOURCES["soft-pull"] + " has not shipped"
+    // Customer-facing. The unshipped component name is diagnostic, not copy.
+    reason: "We are still building this.",
+    detail: PENDING_SOURCES["soft-pull"] + " has not shipped"
   };
 }
 
@@ -493,19 +515,28 @@ export function softPullState(available) {
  * wins so a single failure is never hidden behind three successes. */
 export function summarize(states) {
   const list = (Array.isArray(states) ? states : []).filter(Boolean);
-  if (!list.length) return { tone: "sample", text: "nothing loaded" };
+  if (!list.length) return { tone: "sample", text: "Nothing loaded.", detail: "no sections" };
 
   const live = list.filter((s) => s.live);
   const failed = list.filter((s) => !s.live);
   const tone = failed.some((s) => s.tone === "error") ? "error"
     : failed.length ? "sample" : "real";
 
-  if (!failed.length) return { tone: "real", text: "live · " + live.length + " of " + list.length + " sections loaded" };
+  const detail = failed.map((s) => s.code + ": " + (s.detail || "")).join(" · ") || null;
 
+  if (!failed.length) {
+    return { tone: "real", text: "Everything on this page is up to date.", detail: null };
+  }
+
+  // The customer gets ONE sentence naming how much of the page is real. The
+  // per-section reasons are already printed next to the sections themselves;
+  // repeating all of them in the banner is noise, and stacking filenames in it
+  // was the original mistake.
   return {
     tone: tone,
-    text: live.length + " of " + list.length + " sections loaded · " +
-      failed.map((s) => s.text).join(" · ")
+    text: live.length + " of " + list.length + " sections loaded. " +
+          "The rest could not be shown — see the note on each one.",
+    detail: detail
   };
 }
 

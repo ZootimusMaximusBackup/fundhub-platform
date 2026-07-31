@@ -112,13 +112,18 @@ No migration. No new dependency.
    `entitlement_catalog` (032), which `client-portal.html` already renders. The
    tile reports whether the client holds it and claims nothing else.
 
-4. **The unavailable banners name the missing migration file**
-   (`075_subscriptions.sql`, `078_alerts.sql`). This is developer wording on a
-   consumer-facing screen. It was kept deliberately: the brief requires the
-   difference between "not deployed" and "not signed in" to be legible, the
-   screen cannot ship to real clients until W2/W3/W4 land anyway, and a vague
-   "coming soon" is exactly what rule 1 forbids. **Soften this copy before real
-   clients see the page.**
+4. **Two audiences, two fields — RESOLVED.** The first cut put
+   "075_subscriptions.sql has not shipped" into the banner a CUSTOMER reads.
+   That was wrong, and the fix is not to drop the distinction the brief
+   requires but to split it: `classify()` now returns `text` (plain English for
+   a customer, no filenames, no status codes, no jargon) alongside `detail`
+   (the migration, the status number, the endpoint's own error). The screen
+   renders `text`, puts `detail` on a `title` tooltip, and logs one
+   `[finance-os]` console line per failed section. The four failure states stay
+   four genuinely different sentences, carried by `code` — showing somebody a
+   `.sql` filename was never what made them distinguishable. A sweep test
+   asserts no banned token can reach customer copy again, and every sentence is
+   checked for sentence case and a full stop.
 
 5. **The screen does its own `fetch` rather than using `FHData.get()`.**
    `public/app/data.js:59` maps 401 and 403 onto one `"unauthorized"` source,
@@ -190,10 +195,20 @@ have stayed green forever.
 
 ### Repo facts worth carrying forward
 
-- **`npm run lint` and `npx tsc --noEmit` do not exist in this repo.**
-  `package.json` has no `lint` script, and there is no `tsconfig.json` or
-  eslint config anywhere. CLAUDE.md §6 lists both as gates. Either add them or
-  correct §6 — right now that checklist cannot be completed as written.
+- **`npm run lint` now exists.** It did not, and §6 requires it. `scripts/
+  lint.mjs` is a zero-dependency syntax gate: it parses every `.mjs`/`.js`
+  under `src`, `scripts`, `api`, `netlify`, `db` and `public`, plus every
+  inline `<script>` in the HTML screens — which is where this repo's browser
+  logic lives, none of which any test imports. 468 files parse clean across the
+  whole repo, so it is not a red gate. Mutation-checked: a broken `.mjs` and a
+  broken inline script are both caught. It deliberately does NOT check style,
+  unused variables or types; `pg` and `inngest` are the only dependencies this
+  repo has and §8 forbids adding more without asking. If real linting is
+  wanted, add eslint deliberately rather than growing that file.
+- **`npx tsc --noEmit` still does not apply.** There is no `tsconfig.json` and
+  no TypeScript anywhere; this is a plain JavaScript repo. §6 should drop that
+  line or the repo should adopt TypeScript — pretending otherwise would mean
+  adding a dependency to satisfy a checklist rather than a need.
 - **`node_modules` was empty at session start**, which made `npm test` report
   119 failures that were all `Cannot find package 'inngest'`. Run `npm install`
   before trusting a red suite.

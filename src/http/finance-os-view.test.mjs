@@ -317,83 +317,81 @@ test("portfolioTotals: non-array input does not throw", () => {
   assert.equal(portfolioTotals(undefined).cardCount, 0);
 });
 
-/* ── classify — four failures, four sentences ──────────────────────────────── */
+/* ── classify — four failures, four sentences, two audiences ───────────────── */
+
+/* THE RULE THIS BLOCK ENFORCES. `text` is read by a customer and `detail` by an
+   engineer. The first cut put "075_subscriptions.sql has not shipped" into
+   `text`, on a page a consumer opens. The last test here is the guard that
+   stops that coming back. */
 
 test("classify: no answer at all is 'offline' and never blames the session", () => {
   const s = classify({ transport: true, detail: "network down" }, { what: "your cards" });
   assert.equal(s.code, "offline");
   assert.equal(s.live, false);
-  assert.match(s.text, /could not reach/);
+  assert.match(s.text, /could not reach the server/i);
+  assert.match(s.detail, /network down/);
 });
 
-test("classify: 401 says the session expired", () => {
+test("classify: 401 tells the customer to sign in again", () => {
   const s = classify({ status: 401, body: null }, { what: "your cards" });
   assert.equal(s.code, "signedout");
-  assert.match(s.text, /session has expired/);
+  assert.match(s.text, /session has expired/i);
+  assert.match(s.text, /sign in again/i);
 });
 
-test("classify: 403 says the role is not permitted — NOT 'sign in again'", () => {
+test("classify: 403 says no access — and does NOT say 'sign in again'", () => {
   const s = classify({ status: 403, body: null }, { what: "your cards" });
   assert.equal(s.code, "forbidden");
-  assert.match(s.text, /not permitted/);
-  assert.equal(/sign in/.test(s.text), false);
+  assert.match(s.text, /does not have access/i);
+  assert.equal(/sign in/i.test(s.text), false,
+    "telling somebody to sign in again when that cannot help is the bug this branch prevents");
 });
 
 test("classify: 401 and 403 never collapse into the same answer", () => {
-  const a = classify({ status: 401 }, { what: "x" });
-  const b = classify({ status: 403 }, { what: "x" });
+  const a = classify({ status: 401 }, { what: "your cards" });
+  const b = classify({ status: 403 }, { what: "your cards" });
   assert.notEqual(a.code, b.code);
   assert.notEqual(a.text, b.text);
 });
 
-test("classify: a router-fallthrough 404 means NOT DEPLOYED, and names the missing migration", () => {
+test("classify: a router-fallthrough 404 tells the customer we are still building it", () => {
   const s = classify(
     { status: 404, body: { error: "not_found", path: "/api/read/subscriptions" } },
-    { what: "your subscription", pending: "075_subscriptions.sql" }
+    { what: "your subscription details", pending: "075_subscriptions.sql" }
   );
   assert.equal(s.code, "unrouted");
-  assert.match(s.text, /075_subscriptions\.sql/);
-  assert.match(s.text, /not available yet/);
+  assert.match(s.text, /still building/i);
+  // the migration name is diagnostic — present, but NOT in the sentence
+  assert.match(s.detail, /075_subscriptions\.sql/);
+  assert.equal(/075_subscriptions/.test(s.text), false,
+    "a .sql filename reached a consumer-facing sentence");
 });
 
-test("classify: an endpoint's own 404 means no such row, and does NOT claim the backend is down", () => {
+test("classify: an endpoint's own 404 means no such row, and does NOT claim we are still building", () => {
   const s = classify({ status: 404, body: { ok: false, error: "no such client" } }, { what: "your cards" });
   assert.equal(s.code, "notfound");
-  assert.equal(/not deployed/.test(s.text), false);
-  assert.equal(s.text, "nothing on file yet for your cards");
+  assert.match(s.text, /do not have your cards on file/i);
+  assert.equal(/still building/i.test(s.text), false);
 });
 
-/* Copy that reads as English. Every branch interpolates the same possessive
-   noun phrase, so a template that only works for one section is a bug the
-   browser check found once already ("no your cards on file", "your alerts is
-   not available"). These pin the wording of both shapes. */
-test("classify: every failure sentence reads correctly for a plural section name", () => {
-  ["your cards", "your alerts", "your subscription details"].forEach((what) => {
-    [401, 403, 400, 500, 503].forEach((status) => {
-      const t = classify({ status: status, body: null }, { what: what }).text;
-      assert.equal(/\bno your\b|\balerts is\b|\bdetails is\b/.test(t), false,
-        "ungrammatical copy for " + what + " at " + status + ": " + t);
-    });
-    const nf = classify({ status: 404, body: { ok: false } }, { what: what }).text;
-    assert.equal(/\bno your\b/.test(nf), false, "ungrammatical 404 copy: " + nf);
-  });
-});
-
-test("classify: 400 reports the parameter problem", () => {
+test("classify: 400 keeps the parameter problem in detail, not in the sentence", () => {
   const s = classify({ status: 400, body: { error: "client_id is required" } }, { what: "your cards" });
   assert.equal(s.code, "badrequest");
-  assert.match(s.text, /client_id is required/);
+  assert.match(s.detail, /client_id is required/);
+  assert.equal(/client_id/.test(s.text), false, "a parameter name reached the customer");
 });
 
 test("classify: 503 and a db:down body both mean the database, not the network", () => {
   assert.equal(classify({ status: 503, body: null }, {}).code, "nodb");
   assert.equal(classify({ status: 200, body: { db: "down" } }, {}).code, "nodb");
+  assert.match(classify({ status: 503 }, { what: "your cards" }).text, /try again/i);
 });
 
-test("classify: a 5xx names the status so a support ticket can quote it", () => {
+test("classify: a 5xx keeps the status number in detail so a ticket can quote it", () => {
   const s = classify({ status: 502, body: null }, { what: "your cards" });
   assert.equal(s.code, "servererror");
-  assert.match(s.text, /502/);
+  assert.match(s.detail, /502/);
+  assert.equal(/502/.test(s.text), false, "a raw status code reached the customer");
 });
 
 test("classify: 200 with ok:true is the only live state", () => {
@@ -412,6 +410,43 @@ test("classify: a 200 that is not ok:true is a failure wearing a success code", 
 test("classify: a missing response is offline rather than a throw", () => {
   assert.equal(classify(null, {}).code, "offline");
   assert.equal(classify(undefined, {}).code, "offline");
+});
+
+/* THE GUARD. Sweep every branch and assert no engineer-facing token ever
+   appears in the sentence a customer reads. */
+test("classify: NO customer-facing sentence ever leaks a filename, status code, or jargon", () => {
+  const responses = [
+    { transport: true, detail: "ECONNRESET" },
+    { status: 401, body: null },
+    { status: 403, body: null },
+    { status: 404, body: { error: "not_found", path: "/api/read/alerts" } },
+    { status: 404, body: { ok: false, error: "no such client" } },
+    { status: 400, body: { error: "client_id is required" } },
+    { status: 503, body: null },
+    { status: 500, body: null },
+    { status: 502, body: null },
+    { status: 200, body: { ok: false, error: "boom" } }
+  ];
+  const BANNED = /\.sql|\.mjs|\bmigration\b|\b[45]\d\d\b|client_id|not_found|uuid|endpoint|API|SQL|null|undefined|ECONNRESET|\/api\//;
+  ["your cards", "your alerts", "your subscription details"].forEach((what) => {
+    responses.forEach((r) => {
+      const s = classify(r, { what: what, pending: "078_alerts.sql" });
+      if (s.text === null) return;
+      assert.equal(BANNED.test(s.text), false,
+        "engineer detail leaked into customer copy: " + JSON.stringify(s.text));
+      // and the sentence is a sentence: starts capitalised, ends with a stop
+      assert.match(s.text, /^[A-Z]/, "not sentence-cased: " + s.text);
+      assert.match(s.text, /[.!]$/, "no full stop: " + s.text);
+    });
+  });
+});
+
+test("classify: every failure carries a detail for the console", () => {
+  [{ status: 401 }, { status: 403 }, { status: 500 },
+   { status: 404, body: { error: "not_found", path: "/x" } }].forEach((r) => {
+    const s = classify(r, { what: "your cards" });
+    assert.ok(s.detail && s.detail.length > 0, "no diagnostic for code " + s.code);
+  });
 });
 
 /* ── buildCards ────────────────────────────────────────────────────────────── */
@@ -453,8 +488,8 @@ test("buildSubscription: with 075 unshipped the tile says so and invents no tier
   assert.equal(out.state.code, "unrouted");
   assert.equal(out.tier, null);
   assert.equal(out.status, null);
-  assert.match(out.state.text, /075_subscriptions\.sql/);
-  assert.match(out.state.text, /not available yet/);
+  assert.match(out.state.detail, /075_subscriptions\.sql/);
+  assert.equal(/075_subscriptions/.test(out.state.text), false, "a .sql name reached the customer");
 });
 
 test("buildSubscription: a live row carries only the two fields §8 names", () => {
@@ -485,7 +520,8 @@ test("buildAlerts: with 078 unshipped the tile says so and shows no alerts", () 
   const out = buildAlerts({ status: 404, body: { error: "not_found", path: "/api/read/alerts" } });
   assert.equal(out.state.code, "unrouted");
   assert.deepEqual(out.alerts, []);
-  assert.match(out.state.text, /078_alerts\.sql/);
+  assert.match(out.state.detail, /078_alerts\.sql/);
+  assert.equal(/078_alerts/.test(out.state.text), false, "a .sql name reached the customer");
 });
 
 test("buildAlerts: live rows map to message and severity", () => {
@@ -527,7 +563,16 @@ test("buildRoadmap: an active grant is held", () => {
 test("buildRoadmap: no matching entitlement is 'not in your plan', not an error", () => {
   const out = buildRoadmap({ status: 200, body: { ok: true, data: [{ entitlement_code: "funding-snapshot", active: true }] } });
   assert.equal(out.held, false);
-  assert.match(out.note, /not part of your plan/);
+  assert.match(out.note, /not part of your plan/i);
+});
+
+test("buildRoadmap: every customer-facing note is a proper sentence", () => {
+  const notHeld = buildRoadmap({ status: 200, body: { ok: true, items: [] } });
+  const inactive = buildRoadmap({ status: 200, body: { ok: true, items: [{ entitlement_code: ROADMAP_CODE, active: false }] } });
+  [notHeld.note, inactive.note].forEach((n) => {
+    assert.match(n, /^[A-Z]/, 'not sentence-cased: ' + n);
+    assert.match(n, /[.!]$/, 'no full stop: ' + n);
+  });
 });
 
 test("buildRoadmap: a revoked grant is present but not held", () => {
@@ -536,7 +581,7 @@ test("buildRoadmap: a revoked grant is present but not held", () => {
     body: { ok: true, data: [{ entitlement_code: "credit-optimization-roadmap", active: false }] }
   });
   assert.equal(out.held, false);
-  assert.match(out.note, /not active/);
+  assert.match(out.note, /not active/i);
 });
 
 test("buildRoadmap: a failed read claims nothing", () => {
@@ -550,7 +595,9 @@ test("buildRoadmap: a failed read claims nothing", () => {
 test("softPullState: with no request path the button is disabled and says why", () => {
   const s = softPullState(false);
   assert.equal(s.enabled, false);
-  assert.match(s.reason, /has not shipped/);
+  assert.match(s.reason, /still building/i);
+  assert.match(s.detail, /has not shipped/);
+  assert.equal(/shipped/.test(s.reason), false, "engineer wording reached the button copy");
 });
 
 test("softPullState: available only when explicitly true", () => {
@@ -562,10 +609,11 @@ test("softPullState: available only when explicitly true", () => {
 
 /* ── summarize ─────────────────────────────────────────────────────────────── */
 
-test("summarize: all live is a real banner", () => {
+test("summarize: all live is a real banner and says so plainly", () => {
   const s = summarize([{ live: true, tone: "real" }, { live: true, tone: "real" }]);
   assert.equal(s.tone, "real");
-  assert.match(s.text, /2 of 2/);
+  assert.match(s.text, /up to date/i);
+  assert.equal(s.detail, null);
 });
 
 test("summarize: one error outranks three successes — a failure is never hidden", () => {
@@ -573,15 +621,16 @@ test("summarize: one error outranks three successes — a failure is never hidde
     { live: true, tone: "real" },
     { live: true, tone: "real" },
     { live: true, tone: "real" },
-    { live: false, tone: "error", text: "the database is unreachable" }
+    { live: false, tone: "error", code: "nodb", text: "x", detail: "database unreachable" }
   ]);
   assert.equal(s.tone, "error");
   assert.match(s.text, /3 of 4/);
-  assert.match(s.text, /database is unreachable/);
+  // the reason lives on the section, and in the console — not stacked in the banner
+  assert.match(s.detail, /nodb/);
 });
 
 test("summarize: a non-error failure keeps the sample tone", () => {
-  const s = summarize([{ live: true, tone: "real" }, { live: false, tone: "sample", text: "no subscription" }]);
+  const s = summarize([{ live: true, tone: "real" }, { live: false, tone: "sample", text: "no subscription", code: "empty" }]);
   assert.equal(s.tone, "sample");
 });
 
