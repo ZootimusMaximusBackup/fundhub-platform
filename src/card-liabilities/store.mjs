@@ -307,6 +307,64 @@ export async function termsAsOf(db, { cardLiabilityId, at } = {}) {
   return res.rows[0] ?? null;
 }
 
+// ---------------------------------------------------------------------------
+// the W6 read contract
+// ---------------------------------------------------------------------------
+
+/* Resolve either calling convention to a card id. A caller that already holds
+   the card passes cardLiabilityId; a caller coming from the aggregator holds
+   (clientId, accountRef) and nothing else. Both are legitimate and neither
+   should have to do a lookup the store can do. */
+async function resolveCardId(db, { cardLiabilityId, clientId, accountRef }) {
+  if (cardLiabilityId) return cardLiabilityId;
+  if (!clientId || !accountRef) {
+    throw new TypeError("card-liabilities: pass cardLiabilityId, or clientId and accountRef");
+  }
+  const card = await getCardLiability(db, { clientId, accountRef });
+  return card ? card.id : null;
+}
+
+/**
+ * getCurrentLiability — the card AND the terms in effect right now.
+ *
+ * The two halves are separate tables on purpose (083 is what is true now, 084
+ * is the dated record of how it got that way), and this is the call that puts
+ * them back together for the ordinary "what does this card look like today"
+ * question, so a caller does not have to know that 084 exists.
+ *
+ * Returns null when there is no such card. `terms` is null when the card exists
+ * but nobody has recorded a term row for it — which is a real state, not an
+ * error, and must not be papered over with an empty object full of zeroes.
+ */
+export async function getCurrentLiability(db, { cardLiabilityId, clientId, accountRef } = {}) {
+  let card;
+  if (cardLiabilityId) {
+    card = (await db.query(`SELECT * FROM card_liabilities WHERE id = $1`, [cardLiabilityId])).rows[0] ?? null;
+  } else {
+    card = await getCardLiability(db, { clientId, accountRef });
+  }
+  if (!card) return null;
+  return { card, terms: await currentTerms(db, { cardLiabilityId: card.id }) };
+}
+
+/**
+ * getLiabilityHistory — every set of terms this card has ever carried, newest
+ * first, each one dated.
+ *
+ * This is the whole point of 084 in one call: the answer to "what was the limit
+ * when we underwrote them in March" is in here, and it stays correct no matter
+ * how many times the issuer has moved it since.
+ *
+ * An unknown card returns [] rather than throwing. A card with no recorded
+ * terms also returns [] — the two are distinguished by getCurrentLiability
+ * returning null for the first and a card for the second.
+ */
+export async function getLiabilityHistory(db, { cardLiabilityId, clientId, accountRef } = {}) {
+  const id = await resolveCardId(db, { cardLiabilityId, clientId, accountRef });
+  if (!id) return [];
+  return listTerms(db, { cardLiabilityId: id });
+}
+
 /* withTransaction is re-exported rather than reimplemented: src/documents/
    register.mjs already solved "pool vs checked-out client vs bare { query }"
    and a second copy of that logic is a second thing to get subtly wrong. It is

@@ -30,7 +30,9 @@ import {
   currentTerms,
   changeTerms,
   listTerms,
-  termsAsOf
+  termsAsOf,
+  getCurrentLiability,
+  getLiabilityHistory
 } from "./store.mjs";
 import { coerceLiabilityRow, summarise, utilisation } from "./index.mjs";
 
@@ -457,6 +459,44 @@ test("term history is exactly one answer at every instant it covers", { skip: !H
   }
   const open = history.filter((r) => r.effective_to === null);
   assert.equal(open.length, 1, "and exactly one row is open");
+});
+
+test("getCurrentLiability returns the card and the terms in effect right now", { skip: !HAS_DB }, async () => {
+  const byId = await getCurrentLiability(db, { cardLiabilityId: termCardId });
+  assert.equal(byId.card.account_ref, "bank-acct-terms");
+  assert.equal(Number(byId.terms.credit_limit_cents), 3500000, "the LIVE limit, not the first one");
+  assert.strictEqual(byId.terms.effective_to, null);
+
+  const byRef = await getCurrentLiability(db, { clientId, accountRef: "bank-acct-terms" });
+  assert.equal(byRef.card.id, termCardId, "both calling conventions resolve to the same card");
+});
+
+test("getCurrentLiability separates 'no such card' from 'card with no terms recorded'", { skip: !HAS_DB }, async () => {
+  assert.strictEqual(await getCurrentLiability(db, { clientId, accountRef: "does-not-exist" }), null);
+
+  const bare = await upsertCardLiability(db, {
+    orgId, clientId, accountRef: "bank-acct-noterms",
+    row: card({ accountRef: "bank-acct-noterms", issuer: "No Terms Yet" })
+  });
+  const found = await getCurrentLiability(db, { cardLiabilityId: bare.id });
+  assert.ok(found.card, "the card exists");
+  assert.strictEqual(found.terms, null, "and nobody has recorded its terms — not an empty object of zeroes");
+});
+
+test("getLiabilityHistory returns every dated set of terms, newest first", { skip: !HAS_DB }, async () => {
+  const history = await getLiabilityHistory(db, { clientId, accountRef: "bank-acct-terms" });
+  assert.ok(history.length >= 4);
+  for (let i = 0; i < history.length - 1; i += 1) {
+    assert.ok(history[i].effective_from > history[i + 1].effective_from, "newest first");
+  }
+  assert.strictEqual(history[0].effective_to, null, "the newest row is the open one");
+  assert.equal(Number(history[history.length - 1].credit_limit_cents), 2000000,
+    "and the oldest still says what was true at the start");
+});
+
+test("getLiabilityHistory on an unknown card is empty, not an error", { skip: !HAS_DB }, async () => {
+  assert.deepEqual(await getLiabilityHistory(db, { clientId, accountRef: "does-not-exist" }), []);
+  await assert.rejects(() => getLiabilityHistory(db, {}), /cardLiabilityId, or clientId and accountRef/);
 });
 
 test("deleting the client takes the cards and their history with it", { skip: !HAS_DB }, async () => {
