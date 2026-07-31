@@ -77,14 +77,43 @@ export async function ingestCrsResult(db, crsRow) {
 }
 
 /** listTradelines — open lines for one client, cheapest money first (the
- *  waterfall's own order, so the screen and the calculator agree). */
-export async function listTradelines(db, { clientId, includeClosed = false }) {
+ *  waterfall's own order, so the screen and the calculator agree).
+ *
+ * ⚠️ `orgId` IS REQUIRED AND IT IS A SECURITY BOUNDARY, NOT A FILTER.
+ *
+ * This function used to take `clientId` alone. Both callers —
+ * api/read/tradelines.mjs and api/read/finance-os.mjs — passed the client id
+ * straight off the query string, so ANY authenticated staff session could read
+ * ANY client's credit limits and balances in ANY org, just by knowing the uuid.
+ * The role gate was correct on both; there was simply no tenant check anywhere
+ * between the request and the rows.
+ *
+ * This is the same defect class 054's own header warns about and the same one
+ * the `roles`-key hole was (src/http/auth-gate.test.mjs): a guard that reads like
+ * it is doing something and is not. It is fixed the way that one was — by making
+ * the missing thing IMPOSSIBLE TO OMIT rather than by remembering to pass it.
+ *
+ * So this THROWS on a missing org rather than defaulting to unscoped. A caller
+ * that cannot name an org has no business reading a client's balances, and a
+ * silent fallback is exactly how the hole lasted this long. The org must come
+ * from the SESSION (`staff.org_id`), never from user input — a caller-supplied
+ * org is not a scope, it is a request to be trusted.
+ */
+export async function listTradelines(db, { clientId, orgId, includeClosed = false }) {
+  if (!clientId) throw new TypeError("listTradelines: clientId is required");
+  if (!orgId) {
+    throw new TypeError(
+      "listTradelines: orgId is required and must come from the session (staff.org_id). " +
+      "Reading tradelines without an org scope exposes every org's credit data."
+    );
+  }
   const res = await db.query(
     `SELECT * FROM tradelines
       WHERE client_id = $1
-        AND ($2::boolean OR closed_at IS NULL)
+        AND org_id = $2
+        AND ($3::boolean OR closed_at IS NULL)
       ORDER BY apr ASC NULLS LAST, lender ASC`,
-    [clientId, includeClosed]
+    [clientId, orgId, includeClosed]
   );
   return res.rows;
 }

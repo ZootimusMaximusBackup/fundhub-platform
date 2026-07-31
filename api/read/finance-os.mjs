@@ -30,15 +30,37 @@ import { ROLE_SETS, requireRole, isUuid, CLIENT_DATA_ERRORS } from "../../src/ht
 import { listTradelines } from "../../src/tradelines/store.mjs";
 import { financeOsGrid } from "../../src/finance/os-grid.mjs";
 
-export default async function handler(req, res) {
+//
+// ── AND THE SCOPE IS THE SESSION'S ORG, WHICH IT WAS NOT ──
+// The role gate was written out correctly here from the start. The TENANT check
+// was not: `client_id` came off the query string and reached a lookup filtered
+// on client alone, so any authenticated staff session in any org could read any
+// client's seven-row credit summary by knowing the uuid. A correct role gate
+// over an unscoped read is still an unscoped read, and this endpoint summarises
+// exactly the rows api/read/tradelines.mjs serves, so it had the same hole for
+// the same reason.
+//
+// `staff.org_id` now scopes the query and listTradelines() refuses to run
+// without an org. A session with no readable org is turned away rather than
+// falling through to a query that happens to match nothing.
+export default async function handler(req, res, deps = {}) {
+  const database = deps.db ?? db;
+
   if (req.method && req.method !== "GET") {
     res.setHeader("allow", "GET");
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
   }
 
-  const staff = await requireAuth(req, res, { db });
+  const staff = await requireAuth(req, res, { db: database });
   if (!staff) return;
   if (!requireRole(res, staff, ROLE_SETS.STAFF)) return;
+
+  // FAIL CLOSED. No org on the session means no scope, and no scope is a
+  // refusal — never an unscoped read.
+  const orgId = staff.org_id;
+  if (!isUuid(orgId)) {
+    return res.status(403).json({ ok: false, error: "forbidden" });
+  }
 
   const query = req.query || {};
   if (!isUuid(query.client_id)) {
@@ -50,7 +72,13 @@ export default async function handler(req, res) {
     // grid's own DRAWABLE filter. Belt and braces on purpose: the grid is the
     // thing under test, and it must be correct for any row set handed to it,
     // not only for the one this endpoint happens to fetch.
-    const rows = await listTradelines(db, { clientId: String(query.client_id).trim() });
+    const rows = await listTradelines(database, {
+      clientId: String(query.client_id).trim(),
+      // From the session, never the request. A client in another org matches
+      // nothing, and the grid renders as "no lines" rather than as another
+      // org's balances.
+      orgId
+    });
     return res.status(200).json({ ok: true, ...financeOsGrid(rows) });
   } catch (e) {
     if (CLIENT_DATA_ERRORS.has(e.code)) {

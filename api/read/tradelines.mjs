@@ -31,10 +31,30 @@ import { calcFunding } from "../../src/calculators/deal-funding.mjs";
 // This one is hand-rolled because it returns rows AND the calculator's output
 // rather than a page, so the gate has to be written out. The endpoint was
 // unrouted until now, which is the only reason this was never exploitable.
-export default async function handler(req, res) {
-  const staff = await requireAuth(req, res, { db });
+//
+// ── AND THE SCOPE IS THE SESSION'S ORG, WHICH IT WAS NOT ──
+// The role gate above was fixed; the TENANT check was still missing. `client_id`
+// arrives on the query string and went straight into a lookup that filtered on
+// client alone, so any authenticated staff session in any org could read any
+// client's credit limits and balances by knowing the uuid. A correct role gate
+// over an unscoped read is still an unscoped read.
+//
+// `staff.org_id` now scopes the query, listTradelines() REFUSES to run without
+// an org, and a session carrying no readable org is turned away here rather than
+// falling through to a query that would match nothing by luck.
+export default async function handler(req, res, deps = {}) {
+  const database = deps.db ?? db;
+
+  const staff = await requireAuth(req, res, { db: database });
   if (!staff) return;
   if (!requireRole(res, staff, ROLE_SETS.STAFF)) return;
+
+  // FAIL CLOSED. No org on the session means no scope, and no scope must be a
+  // refusal — never an unscoped read.
+  const orgId = staff.org_id;
+  if (!isUuid(orgId)) {
+    return res.status(403).json({ ok: false, error: "forbidden" });
+  }
 
   const query = req.query || {};
   const clientId = query.client_id;
@@ -63,8 +83,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const rows = await listTradelines(db, {
+    const rows = await listTradelines(database, {
       clientId,
+      // From the session. A client in another org matches nothing and the
+      // response is an empty card table — which leaks less than a 404, because
+      // a 404 would confirm the uuid names a real client somewhere.
+      orgId,
       includeClosed: query.include_closed === "true"
     });
     const cards = toCalculatorCards(rows);

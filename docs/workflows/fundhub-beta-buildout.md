@@ -11,6 +11,23 @@ own `## <name>` heading below rather than editing anyone else's section.
 | # | Owner | Task | Status |
 |---|---|---|---|
 | UW | `claude/underwrite-iq-lite-integration-cjd5at` | Vendor UnderwriteIQ Lite, adapt fundhub data to it, expose a read endpoint, pin fixtures | **done** |
+| F1 | `claude/underwrite-iq-lite-integration-cjd5at` | Close the cross-org read hole in `read/tradelines` and `read/finance-os` | **done** |
+| F2 | — | Store the card opening date so funding figures stop defaulting to the $15,000 placeholder | pending |
+| F3 | — | Create `docs/journeys/` with `-actual.md` files only, generated from code | pending |
+
+---
+
+## Owner decisions (standing)
+
+Per the **Owner decisions are final** section of `CLAUDE.md`. Recorded as
+owner-set, not re-raised.
+
+| Date | Decision |
+|---|---|
+| 2026-07-31 | **The engine's wording ships as written, blank fields or not.** The "You're approved…" sentence is NOT gated or held back when a client's file is thin. The missing-fields list stays attached so the owner can see what is thin, but it does not suppress the sentence. All UnderwriteIQ wording is owner-approved as written. Beta; owner is the only user. |
+
+`COMPLIANCE REVIEW REQUIRED` stays as a label on qualifying changes — the owner
+asked for the marker. The advice attached to it does not.
 
 ---
 
@@ -136,9 +153,84 @@ two vendored files stay free of network calls.
   written rather than inventing a format. **Needs a decision.**
 * **An account-opened date needs storing.** Until then every funding figure this
   endpoint reports is a floor. Needs a migration, which this workflow does not own.
-* **Existing cross-org read gap, not fixed here.** `api/read/tradelines.mjs` and
-  `api/read/finance-os.mjs` filter on `client_id` alone — `listTradelines()`
-  takes no org and neither endpoint checks one, so a staff session in org A can
-  read a client in org B by knowing the uuid. The new endpoint does not copy that
-  pattern, but the two existing ones were left alone as out of scope. **Worth a
-  separate task.**
+* ~~**Existing cross-org read gap, not fixed here.**~~ **Closed by F1 below.**
+
+---
+
+## F1 — Close the cross-org read hole
+
+**Task:** two existing endpoints let a staff member from one company read another
+company's client credit data. `status: done`
+
+### What was wrong, in plain language
+
+Two screens-behind-the-scenes — the card table and the Finance OS grid — checked
+**who you are** but never checked **which company you belong to**.
+
+Both asked "is this person staff?" and stopped there. Neither asked "does this
+client belong to the same company as the person asking?" So anyone signed in as
+staff at any company could pull up any client's credit limits, balances and
+interest rates, as long as they knew that client's ID number.
+
+The permission check was real. It was just checking the wrong thing.
+
+This is the same kind of mistake as the `roles` bug already recorded in this
+repo: a guard that reads like it is doing something and is not.
+
+### The fix
+
+The lookup that fetches a client's cards now **refuses to run** unless it is told
+which company to limit itself to. It throws an error rather than quietly
+returning everything.
+
+That matters more than fixing the two callers. If it were just a parameter people
+had to remember to pass, the next person would forget it and the hole would come
+back. Now it cannot be forgotten — the code stops.
+
+The company is read from the signed-in session, never from the web address. Both
+endpoints also turn away any session with no company on it, rather than running
+a lookup and hoping it matches nothing.
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `src/tradelines/store.mjs` | `listTradelines()` now requires `orgId` and throws without it. Query filters on `org_id` as well as `client_id`. |
+| `api/read/tradelines.mjs` | Reads `staff.org_id` from the session, refuses a session without one (403), passes it down. Added a `deps` seam so it is testable without Postgres. |
+| `api/read/finance-os.mjs` | Same three changes. |
+| `src/tradelines/store.pg.test.mjs` | Two call sites updated for the stricter signature. Not weakened — `orgId` was already in scope. |
+
+### Files added
+
+| File | What it is |
+|---|---|
+| `src/http/tradelines-org-scope.test.mjs` | 15 regression tests covering both endpoints and the store's refusal. |
+
+### How I know the tests actually catch it
+
+I removed the fix from `finance-os.mjs` on purpose and re-ran: **3 tests failed.**
+Then I put it back and they passed. A test that passes both before and after a
+fix proves nothing, so this was checked rather than assumed.
+
+One test pair needed strengthening to make that true: asserting only "another
+company gets nothing" would also pass if the endpoint returned nothing to
+*everyone*. It now also asserts the client's own company still gets its data.
+
+### Change manifest
+
+* **Signature changed (breaking):** `listTradelines(db, { clientId, orgId, includeClosed })`
+  — `orgId` is now required and throws when absent. All three call sites updated.
+  Verified by grep that no other caller exists.
+* **Handler signatures:** both endpoints gained an optional third `deps` argument,
+  defaulting to the real pool. Netlify and Vercel both call `handler(req, res)`,
+  so production behaviour is unchanged.
+* **Status codes added:** `403` when a session carries no readable org.
+* **Routes:** unchanged.
+* **Journeys impacted:** none updated — `docs/journeys/` still does not exist (F3).
+
+### Not done here
+
+* No migration. This did not need one.
+* Other endpoints were not audited for the same hole. This task named two files
+  and fixed those two. **A repo-wide sweep for unscoped client reads is worth its
+  own task** — the pattern is any query filtering on `client_id` with no `org_id`.
