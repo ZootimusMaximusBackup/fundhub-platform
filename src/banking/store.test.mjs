@@ -335,10 +335,17 @@ test("listRecurringBills filters are optional and are passed as parameters, neve
     const { handle, calls } = recorder({ transactional: false });
     await listRecurringBills(handle, { orgId: ORG, bankAccountId: ACCOUNT, clientId: "c-1" });
 
-    assert.deepEqual(calls[0].params, [ORG, ACCOUNT, "c-1", true]);
+    assert.deepEqual(calls[0].params, [ORG, ACCOUNT, "c-1", true, 500]);
     assert.ok(!calls[0].sql.includes(ORG), "no value is interpolated into the SQL");
     assert.ok(calls[0].sql.includes("ORDER BY typical_amount_cents ASC"),
       "amounts are negative, so ASC is largest outflow first");
+
+    // BOUNDED. The result has no natural bound — one row per account x merchant
+    // x cadence across every client — and there was no LIMIT and no page size to
+    // turn down. A company with 3,000 clients averaging 12 bills each is 36,000
+    // rows read, sorted and serialised inside a 10-second function budget.
+    assert.ok(calls[0].sql.includes("LIMIT $5"),
+      "*** the read is bounded and the bound is a parameter, not interpolated ***");
 
     // MUTATION-CHECKED. Asserting the PARAMETERS alone survived replacing
     // `WHERE org_id = $1` with a no-op predicate that still bound $1 — the

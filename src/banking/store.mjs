@@ -88,7 +88,7 @@ async function withTransaction(db, fn) {
   }
 }
 
-import { toBillRow } from "./recurring.mjs";
+import { toBillRow, fromBillRow } from "./recurring.mjs";
 
 /* ------------------------------------------------------------------------- *
  * Writes
@@ -234,12 +234,25 @@ export async function saveDetection(db, result, { orgId, includeCandidates = tru
  * Ordered by typical_amount_cents ASC — the amounts are negative, so ascending
  * is largest outflow first, which is the order a person reading a list of their
  * own bills wants.
+ *
+ * BOUNDED. `limit` defaults to 500 and is capped at 2000. The result has no
+ * natural bound — one row per account × merchant × cadence across every client —
+ * so a company with 3,000 clients averaging 12 bills each is 36,000 rows read,
+ * sorted and serialised inside a 10-second function budget. An unbounded read
+ * with no page size is not a read anybody can turn down.
+ *
+ * RETURNS RAW DATABASE ROWS, in snake_case. Anything feeding the cash-flow
+ * projector wants listRecurringBillsFor() below instead — the two vocabularies
+ * are not interchangeable and mixing them fails silently. See fromBillRow().
  */
 export async function listRecurringBills(
   db,
-  { orgId, bankAccountId = null, clientId = null, presentableOnly = true } = {}
+  { orgId, bankAccountId = null, clientId = null, presentableOnly = true, limit = 500 } = {}
 ) {
   if (!orgId) throw new TypeError("listRecurringBills: orgId is required");
+
+  const n = Number.parseInt(limit, 10);
+  const capped = !Number.isFinite(n) || n <= 0 ? 500 : Math.min(n, 2000);
 
   const res = await db.query(
     `SELECT * FROM recurring_bills
@@ -247,10 +260,28 @@ export async function listRecurringBills(
         AND ($2::uuid IS NULL OR bank_account_id = $2)
         AND ($3::uuid IS NULL OR client_id = $3)
         AND ($4 = false OR confidence_label IN ('medium', 'high'))
-      ORDER BY typical_amount_cents ASC, merchant_key ASC`,
-    [orgId, bankAccountId, clientId, presentableOnly]
+      ORDER BY typical_amount_cents ASC, merchant_key ASC
+      LIMIT $5`,
+    [orgId, bankAccountId, clientId, presentableOnly, capped]
   );
   return res.rows;
+}
+
+/**
+ * The same read, in the vocabulary every consumer of a bill actually speaks.
+ *
+ * THIS IS THE ONE THAT CROSSES THE STORE/SEAM LINE. listRecurringBills() hands
+ * back raw snake_case rows; src/banking/cashflow-seam.mjs reads camelCase and
+ * one field is renamed outright (`next_expected_on` -> `nextExpectedDate`).
+ * Feeding raw rows to the projector threw nothing and produced a client with no
+ * bills at all — see fromBillRow() for the full account.
+ *
+ * Takes the same options, returns the same rows, mapped once through the one
+ * place the mapping is written.
+ */
+export async function listRecurringBillsFor(db, opts = {}) {
+  const rows = await listRecurringBills(db, opts);
+  return rows.map(fromBillRow);
 }
 
 /**
