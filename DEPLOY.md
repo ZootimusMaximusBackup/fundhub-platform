@@ -60,13 +60,15 @@ printf '%s' 'your-inngest-signing-key' | vercel env add INNGEST_SIGNING_KEY prod
 
 ## When it breaks — see [docs/RUNBOOK.md](docs/RUNBOOK.md)
 
-Rollback steps, what each `/api/health` state means and its first action, how to
-apply migrations the deploy did not run, how to point an uptime monitor at
-`/api/health?strict=1`, and an honest list of what is not monitored. The person
+Rollback steps, what each `/api/health` state means — `up`, `behind`,
+`unreachable`, `unconfigured`, `error` — and its first action, how to apply
+migrations the deploy did not run, how to point an uptime monitor at
+`/api/health?strict=1`, and an honest list of what is not monitored: no
+alerting, no error reporting, no metrics and no on-call rota today. The person
 who just deployed is exactly the person who needs it, which is why it is linked
 from here rather than duplicated — two copies of a procedure disagree eventually.
 
-Two things worth knowing before the first deploy:
+Three things worth knowing before the first deploy:
 - **The build command is an `echo`.** No deploy has ever run a migration, and
   there is no CI to run them. After shipping a change that adds a `.sql` file
   under `db/`, apply it yourself or `/api/health` will report `state:"behind"`
@@ -74,22 +76,10 @@ Two things worth knowing before the first deploy:
 - **`/api/health` answers 200 in every state on purpose** — the CRM status chip
   reads it that way. Monitors must use `/api/health?strict=1`, which answers 503
   when the deployment is not trustworthy.
-
-## When something breaks — read `docs/RUNBOOK.md`
-
-Deploying is the easy half. `docs/RUNBOOK.md` is the other half, written for
-someone who does not read code:
-
-- **What each `/api/health` answer means**, and the first thing to do for each —
-  `up`, `behind`, `unreachable`, `unconfigured`, `error`.
-- **How to roll a deploy back** (Netlify → Deploys → Publish deploy), including
-  the part people get wrong: rolling the code back does **not** roll the database
-  back. Migrations only move forward.
-- **How to set up a monitor**, which nobody has done yet. Point it at
-  `/api/health?strict=1` and alert on a 503.
-- **What nobody is watching.** There is no alerting, no error reporting, no
-  metrics and no on-call rota today. The runbook says so plainly rather than
-  leaving it to be discovered during an outage.
+- **Rolling back moves the code, not the database.** Netlify → Deploys →
+  Publish deploy puts the previous version live in seconds; migrations only ever
+  move forward, so the schema stays where it is. The runbook says when that
+  matters.
 
 ## Notes
 - No `DASHBOARD_SECRET` set + `NODE_ENV=production` → dashboard endpoints return 401 (fail-closed). Always set the secret.
