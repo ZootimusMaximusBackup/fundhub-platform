@@ -79,6 +79,25 @@ export const STALE_SHIFT_HOURS = 12;
  */
 export const AUTO_CLOSE_EVENT_KIND = "shift_auto_closed";
 
+/**
+ * CLOSED_BY — the `shifts.closed_by` vocabulary (migration 068). Three values,
+ * and the difference between the last two is whether anyone may be paid for the
+ * shift without asking a human first.
+ *
+ * NULL (absent from this object, deliberately — you cannot write it by picking a
+ * name) means the staff member clocked out, or the shift is still open. That is
+ * the normal case and the only one that needs no explanation.
+ */
+export const CLOSED_BY = Object.freeze({
+  /** The sweep closed it; ended_at is the last recorded activity. An estimate,
+   *  but one with evidence behind it. */
+  SWEEP_IDLE: "sweep_idle",
+  /** The sweep closed it and there was NO recorded activity at all, so ended_at
+   *  fell back to started_at and the shift reads as zero length. Not a timesheet
+   *  fact. src/shifts/timesheet.mjs refuses to total it. */
+  SWEEP_NO_EVIDENCE: "sweep_no_evidence"
+});
+
 function requireId(value, field) {
   if (!value) throw new ShiftError(`${field} is required`);
   return value;
@@ -229,16 +248,27 @@ export async function currentShift(db, { staffId } = {}) {
  * wait before deciding they left, not time they worked. Paying the idle window
  * would invent up to 12 hours per forgotten clock-out.
  *
- * ⚠ THIS IS ONLY AS GOOD AS THE TELEMETRY, AND THE TELEMETRY HAS NO WRITERS.
- * logStaffEvent() (src/shifts/telemetry.mjs) has zero call sites — see
- * src/shifts/TELEMETRY-CALLSITES.md — so `staff_events` today contains nothing
- * but this function's own audit rows. Until those call sites land, every open
- * shift has last_active_at = started_at, which means this reads as "close
- * shifts with no recorded activity since clock-in" and writes a near-zero-length
- * shift. That is the honest answer to the data available, not a safe one to pay
- * from. Nothing runs it — autoCloseStale() still has no caller and no scheduler
- * — so nothing is currently harmed. Wire the telemetry call sites BEFORE
- * scheduling this sweep.
+ * ⚠ THIS IS ONLY AS GOOD AS THE TELEMETRY, AND THE TELEMETRY IS PARTIAL.
+ * logStaffEvent() (src/shifts/telemetry.mjs) had zero call sites when this was
+ * written, so `staff_events` held nothing but this function's own audit rows and
+ * every open shift read as idle since clock-in. That is fixed for the work this
+ * system can attribute: logAttempt() in src/inquiries/work.mjs now emits
+ * `call_made` and `letter_issued`, and telemetry-wiring.pg.test.mjs proves end
+ * to end that a shift stays open while those events keep arriving and closes at
+ * the last one when they stop.
+ *
+ * WHAT IS STILL NOT COVERED, and it is the reason this is a ⚠ and not a note:
+ * the Inquiry Remover desk is the ONLY work that produces activity. A closer on
+ * calls, a funding advisor moving rounds, anyone whose whole day happens on a
+ * screen that writes no `staff_events` row — all of them still look idle from
+ * the moment they clock in, and this sweep would end their shift at its start
+ * time. `pull_run`, `text_sent` and `file_touched` have no writer at all; see
+ * src/shifts/TELEMETRY-CALLSITES.md and docs/workflows/finish-the-build.md §W1.
+ *
+ * Nothing runs this — autoCloseStale() still has no caller and no scheduler — so
+ * nothing is currently harmed. BEFORE SCHEDULING IT, decide what happens to a
+ * role that generates no telemetry. Its shifts will be closed at their start
+ * time, and these are timesheet rows.
  *
  * EVERY CLOSE IS RECORDED. One `staff_events` row per shift, kind
  * AUTO_CLOSE_EVENT_KIND, detail carrying the threshold used, the original
@@ -280,13 +310,19 @@ export async function autoCloseStale(db, { olderThanHours = STALE_SHIFT_HOURS } 
      closed AS (
        UPDATE shifts s
           SET ended_at   = a.last_active_at,
+              -- STAMPED ON THE ROW, not only in the audit event's detail. Every
+              -- reader of the shifts table -- timesheet.mjs above all, which is
+              -- pure and receives rows as arguments -- has to be able to see
+              -- that this ended_at is software's guess, without joining to
+              -- another table it has no way to reach.
+              closed_by  = CASE WHEN a.had_activity THEN $3::text ELSE $4::text END,
               updated_at = now()
          FROM activity a
         WHERE s.id = a.id
           AND s.ended_at IS NULL
           AND a.last_active_at < now() - make_interval(secs => $1::double precision * 3600)
         RETURNING s.id, s.org_id, s.staff_id, s.started_at, s.ended_at,
-                  a.had_activity
+                  s.closed_by, a.had_activity
      ),
      logged AS (
        INSERT INTO staff_events (org_id, staff_id, shift_id, kind, detail)
@@ -306,10 +342,10 @@ export async function autoCloseStale(db, { olderThanHours = STALE_SHIFT_HOURS } 
          FROM closed c
        RETURNING shift_id
      )
-     SELECT c.id, c.org_id, c.staff_id, c.started_at, c.ended_at, c.had_activity
+     SELECT c.id, c.org_id, c.staff_id, c.started_at, c.ended_at, c.closed_by, c.had_activity
        FROM closed c
       ORDER BY c.started_at ASC`,
-    [hours, AUTO_CLOSE_EVENT_KIND]
+    [hours, AUTO_CLOSE_EVENT_KIND, CLOSED_BY.SWEEP_IDLE, CLOSED_BY.SWEEP_NO_EVIDENCE]
   );
   return res.rows;
 }
