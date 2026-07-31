@@ -31,10 +31,13 @@ vercel --prod
 
 ## 5. Verify
 - Health: `https://<deployment>/api/health` → `{"ok":true,"db":"up",...}`
-- Dashboard: `https://<deployment>/dashboard.html?key=<DASHBOARD_SECRET>`
+- Dashboard: `https://<deployment>/dashboard.html` — the page asks for the key on
+  first load and keeps it for that browser tab only.
   - Click **“+ Sample data”** a few times → sample clients populate the table.
   - Or run the scripted single-client demo: `DATABASE_URL='…' node scripts/demo-journey.mjs`
-- Send Chris the dashboard URL **with `?key=…`** (the key is the auth).
+- Send Chris the plain dashboard URL and the key **separately**. Never put the key
+  in the address bar: the server no longer accepts it there, and a URL-borne key
+  ends up in browser history, bookmarks, shared links and `Referer` headers.
 
 ## Inngest (workflow automation)
 
