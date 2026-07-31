@@ -136,6 +136,12 @@ export async function removeClientCard(db, { orgId, id, at = null } = {}) {
  * constraint in 075 answers that at write time, which is the only place a
  * double-submitted signup can be caught; a SELECT here would just widen the
  * window it races in.
+ *
+ * What the constraint raises is SQLSTATE 23P01 carrying the constraint name
+ * `subscriptions_no_overlap`, and nothing above this reads that code, so it
+ * reached the caller verbatim. The rejection is right; the wording was not.
+ * This turns it into the same kind of sentence attachCard gives, without
+ * softening what is refused.
  */
 export async function startSubscription(db, input = {}) {
   const orgId = required(input.orgId ?? input.org_id, "startSubscription: orgId");
@@ -147,8 +153,10 @@ export async function startSubscription(db, input = {}) {
     input.priceCents ?? input.price_cents ?? null, "startSubscription: priceCents"
   );
 
-  const res = await db.query(
-    `INSERT INTO subscriptions
+  let res;
+  try {
+    res = await db.query(
+      `INSERT INTO subscriptions
        (org_id, client_id, tier, status, price_cents, currency, card_id,
         provider, provider_ref, current_period_start, current_period_end,
         effective_from, notes)
@@ -156,13 +164,22 @@ export async function startSubscription(db, input = {}) {
              COALESCE($8, 'commas'), $9, $10, $11,
              COALESCE($12::timestamptz, now()), $13)
      RETURNING ${SUB_COLUMNS}`,
-    [orgId, clientId, tier, input.status ?? null, priceCents, input.currency ?? null,
-      input.cardId ?? input.card_id ?? null, input.provider ?? null,
-      input.providerRef ?? input.provider_ref ?? null,
-      input.periodStart ?? input.current_period_start ?? null,
-      input.periodEnd ?? input.current_period_end ?? null,
-      input.at ?? null, input.notes ?? null]
-  );
+      [orgId, clientId, tier, input.status ?? null, priceCents, input.currency ?? null,
+        input.cardId ?? input.card_id ?? null, input.provider ?? null,
+        input.providerRef ?? input.provider_ref ?? null,
+        input.periodStart ?? input.current_period_start ?? null,
+        input.periodEnd ?? input.current_period_end ?? null,
+        input.at ?? null, input.notes ?? null]
+    );
+  } catch (err) {
+    if (err?.code === "23P01" && err?.constraint === "subscriptions_no_overlap") {
+      throw new Error(
+        "startSubscription: this client already has a subscription covering that date — "
+        + "cancel or close the current one first"
+      );
+    }
+    throw err;
+  }
   return res.rows[0];
 }
 
@@ -282,6 +299,13 @@ export async function changeTier(db, input = {}) {
  *
  * Idempotent: cancelling twice keeps the first date. A second call must not
  * move the date a dispute turns on.
+ *
+ * Closing the row is what makes the second call need the `already` branch. The
+ * UPDATE finds live rows (effective_to IS NULL) and the first call closes this
+ * one, so a retry matches nothing and would report "no such subscription" for a
+ * subscription that is sitting right there, already cancelled. The read hands
+ * the same row back untouched instead. It is a read, so it cannot move a date;
+ * a caller that genuinely has nothing to cancel still gets null.
  */
 export async function cancelSubscription(db, { orgId, clientId, at = null, endsAt = null } = {}) {
   required(orgId, "cancelSubscription: orgId");
@@ -289,12 +313,22 @@ export async function cancelSubscription(db, { orgId, clientId, at = null, endsA
   const cancelledAt = at ? new Date(at) : new Date();
   const closingAt = endsAt ? new Date(endsAt) : cancelledAt;
   const res = await db.query(
-    `UPDATE subscriptions
-        SET status       = 'cancelled',
-            cancelled_at = COALESCE(cancelled_at, $3::timestamptz),
-            effective_to = COALESCE(effective_to, $4::timestamptz)
-      WHERE org_id = $1 AND client_id = $2 AND effective_to IS NULL
-      RETURNING ${SUB_COLUMNS}`,
+    `WITH cancelled AS (
+       UPDATE subscriptions
+          SET status       = 'cancelled',
+              cancelled_at = COALESCE(cancelled_at, $3::timestamptz),
+              effective_to = COALESCE(effective_to, $4::timestamptz)
+        WHERE org_id = $1 AND client_id = $2 AND effective_to IS NULL
+        RETURNING ${SUB_COLUMNS}
+     ), already AS (
+       SELECT ${SUB_COLUMNS} FROM subscriptions
+        WHERE org_id = $1 AND client_id = $2 AND cancelled_at IS NOT NULL
+        ORDER BY effective_from DESC, created_at DESC
+        LIMIT 1
+     )
+     SELECT * FROM cancelled
+      UNION ALL
+     SELECT * FROM already WHERE NOT EXISTS (SELECT 1 FROM cancelled)`,
     [orgId, clientId, cancelledAt, closingAt]
   );
   return res.rows[0] ?? null;
