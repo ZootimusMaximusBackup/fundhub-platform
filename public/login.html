@@ -4,6 +4,38 @@
 <title>Fundhub — Sign in</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/fh.css">
+<style>
+  /* Scoped to the demo switcher. Nothing here touches the sign-in form, so a
+     deploy with the switch off renders byte-for-byte the page it always did. */
+  #fh-demo { margin-top: 16px; border-top: 1px solid #26262B; padding-top: 14px; }
+  #fh-demo h2 {
+    margin: 0 0 2px; font: 700 11px/1.3 'JetBrains Mono', monospace;
+    letter-spacing: .10em; text-transform: uppercase; color: #F5CE8F;
+  }
+  #fh-demo-grid { display: grid; gap: 6px; margin: 10px 0 0; }
+  .fh-demo-btn {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    background: none; border: 1px solid #3F3F46; border-radius: 8px;
+    padding: 9px 11px; color: #E4E4E7; font: inherit;
+  }
+  .fh-demo-btn:hover:not(:disabled) { border-color: #A8D8B0; background: #101014; }
+  .fh-demo-btn:disabled { opacity: .55; cursor: progress; }
+  .fh-demo-btn b { display: block; font: 600 13px/1.4 Inter, sans-serif; color: #fff; }
+  .fh-demo-btn span {
+    display: block; font: 500 10px/1.5 'JetBrains Mono', monospace;
+    letter-spacing: .04em; color: #A1A1AA;
+  }
+  .fh-demo-btn[data-current="1"] { border-color: #A8D8B0; background: #0E1410; }
+  .fh-demo-btn[data-current="1"] b::after {
+    content: "YOU ARE HERE"; float: right;
+    font: 700 9px/1.6 'JetBrains Mono', monospace; letter-spacing: .10em; color: #A8D8B0;
+  }
+  #fh-demo-now {
+    margin: 0 0 10px; border: 1px solid #A8D8B0; border-radius: 8px;
+    padding: 8px 11px; background: #0E1410;
+    font: 500 11px/1.5 'JetBrains Mono', monospace; letter-spacing: .04em; color: #A8D8B0;
+  }
+</style>
 </head><body>
 <div class="spectrum"></div>
 <div class="login-box">
@@ -13,40 +45,306 @@
     <div class="err" id="err"></div>
     <form id="f">
       <input id="email" type="email" placeholder="email" autocomplete="username" value="chris@fundhub.ai" required>
-      <input id="pw" type="password" placeholder="password" autocomplete="current-password" value="demo1234" required>
+      <!-- PREFILL REMOVED. This field used to ship value="demo1234", and the
+           note beneath it advertised that password as working. It cannot be:
+           src/auth/hash.mjs:MIN_PASSWORD_LENGTH is 12, hashPassword() throws
+           below it, and EVERY path that writes a staff credential goes through
+           that function (src/auth/seed-staff.mjs, scripts/create-staff.mjs,
+           src/auth/invite.mjs). So no staff row in any database has ever held
+           an 8-character password, and anyone who trusted the prefill and hit
+           Sign in got "Wrong email or password" with no idea why. An empty box
+           is honest; a wrong answer typed in for you is not. -->
+      <input id="pw" type="password" placeholder="password" autocomplete="current-password" required>
       <button class="btn primary" id="go" type="submit">Sign in</button>
     </form>
-    <p class="note" style="margin-top:14px"><b>chris@fundhub.ai</b> / <b>demo1234</b> — pre-filled, just hit Sign in.</p>
+    <p class="note" style="margin-top:14px">Your own account is <b>chris@fundhub.ai</b>. Type your password.</p>
+
+    <!-- THE DEMO SWITCHER MOUNTS HERE, OR IT DOES NOT MOUNT AT ALL.
+         ═══════════════════════════════════════════════════════════════════════
+         THIS ELEMENT IS EMPTY IN THE SERVED FILE ON PURPOSE, AND MUST STAY EMPTY.
+
+         The previous version of this page carried the nine demo addresses and
+         the shared password as a JavaScript literal a few lines below here. That
+         is a credential published on a static asset: `curl .../login.html`
+         returned the password whether or not DEMO_LOGINS_ENABLED was set on the
+         deploy, and it would go on returning it on the day somebody switched
+         demo logins off in production, because switching an env var does not
+         rewrite an HTML file. The switch worked; the page still gave the
+         password away.
+
+         So the roster now comes from GET /api/auth/login (api/auth/login.mjs),
+         which reads the switch server-side and answers { enabled:false } —
+         no addresses, no password, no roster — when it is off. With the switch
+         off this panel does not render, because there is nothing to render it
+         from. That is the difference between "hidden" and "absent", and only
+         one of them survives View Source.
+
+         Do not put a demo address, a role list or a password back into this
+         file. src/http/demo-logins.test.mjs fails if any of them appear here.
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <div id="fh-demo-mount"></div>
+
     <p class="note"><a href="/" style="text-decoration:underline">← Back to fundhub.ai</a></p>
   </div>
 </div>
 <script src="/fh.js"></script>
 <script>
+/* esc — the same helper every screen in this repo defines (public/app/shell.js
+   :esc, and one per app screen). EVERYTHING that reaches innerHTML goes through
+   it. The switcher's text arrives over the wire from GET /api/auth/login, and
+   "it is our own endpoint" is not a reason to trust it into innerHTML: the day
+   a demo account's name is edited in the database to contain a tag, an escaped
+   page shows the tag and an unescaped one runs it. */
+function esc(v) {
+  return String(v == null ? "" : v)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+/* Which demo role this browser last signed in as. THE MARKER, and the reason it
+   lives here rather than in the app.
+
+   The requirement is a visible, permanent marker while signed in as a demo
+   account. There already is one and it is inside the app: public/app/shell.js
+   :mountChip draws a fixed chip top-right reading `staff.name`, and every demo
+   row is named "DEMO Owner", "DEMO Affiliate", "DEMO Client" and so on
+   (src/auth/demo-roster.mjs) — so every portal screen says DEMO in the corner
+   without shell.js being touched. shell.js and public/app/*.html belong to
+   another workflow in this tree and are not edited from here.
+
+   What this key adds is the OTHER half: when he comes back to this page to
+   switch, it says which portal he was just in and marks that button, so nine
+   sign-ins in a row do not blur together.
+
+   IT IS ONLY BELIEVED ALONGSIDE A TOKEN. shell.js:signOut() clears fh_token but
+   knows nothing about this key, so on its own it would outlive the session and
+   claim he is signed in as an affiliate an hour after he signed out. No token,
+   no claim — and the stale key is dropped. */
+var DEMO_ROLE_KEY = "fh_demo_role";
+
+function currentDemoRole() {
+  try {
+    if (!localStorage.getItem("fh_token")) { localStorage.removeItem(DEMO_ROLE_KEY); return null; }
+    return localStorage.getItem(DEMO_ROLE_KEY) || null;
+  } catch (e) { return null; }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   signIn — ask the REAL backend, and only fall back to the offline mock when
+   there is genuinely no backend to ask.
+
+   TWO BUGS IN public/fh.js MADE THIS NECESSARY, AND BETWEEN THEM THEY ARE WHY
+   "I still can't log in" was true even after accounts existed.
+
+   1. DEMO MODE IS STICKY AND NEVER LETS GO. fh.js:109 sets localStorage
+      fh_demo="1" the first time the client-side mock answers a login. After
+      that fh.js:177 reads `if (isDemo() || path === "/api/auth/login")` and
+      then `if (!isDemo())` — so once that flag is set, the real backend is
+      NEVER contacted again, for anything, including the next login. The only
+      thing that clears it is signing out. A browser that once fell back
+      because the API was down is permanently stuck on seven hardcoded
+      @fundhub.ai addresses, and no real account — no matter how correctly it
+      is seeded — can ever sign in from it. Clearing the flag here, on the one
+      page whose entire job is to start a session, is what unsticks it. The
+      offline fallback is NOT removed: if the backend really is unreachable,
+      the catch below still reaches it, and fh.js sets the flag again.
+
+   2. A REAL REFUSAL IS SWALLOWED AND REPLACED BY A GUESS. fh.js:188 keeps the
+      backend's answer only when `data.ok || r.status === 401`. Every other
+      refusal — a 403 for a suspended account, a 403 for demo logins being
+      switched off, a 429 rate limit — is discarded and the local mock answers
+      instead, which for any address it does not recognise says
+      "invalid_credentials". So the page told people their password was wrong
+      when it was right. Going straight to fetch() here keeps the real answer.
+
+   fh.js is another workflow's file in this tree and is not edited from here.
+   ─────────────────────────────────────────────────────────────────────────── */
+async function signIn(body) {
+  // See (1). Do this BEFORE anything else, or FH.api below never leaves the box.
+  localStorage.removeItem("fh_demo");
+  localStorage.removeItem("fh_demo_staff");
+
+  try {
+    const r = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    let data = null;
+    try { data = await r.json(); } catch (e) { data = null; }
+    // A 5xx or a non-JSON body means the backend is there but broken, which is
+    // the case fh.js's fallback exists for. Anything else is a real answer and
+    // is reported as given — including 403 and 429.
+    if (data && r.status < 500) return { ok: r.ok && data.ok === true, status: r.status, data };
+  } catch (e) { /* no backend at all — fall through to the offline mock */ }
+
+  return FH.api("/api/auth/login", { method: "POST", body });
+}
+
+/* roleFrom — the role key public/app/shell.js gates on, pulled out of whatever
+   shape the login reply arrived in.
+
+   A client, affiliate or partner has no staff row — it is a principal from the
+   accounts table (db/migrations/044_accounts.sql) and its KIND is the key
+   shell.js ROLE_TABS uses for its portal. Without the second and third branches
+   those three signed in, cached no role, and the shell held the screen blank
+   until the slow path resolved. */
+function roleFrom(data) {
+  return (data && data.staff && data.staff.role)
+    || (data && data.account && data.account.kind)
+    || (data && data.principal && data.principal !== "staff" ? data.principal : null);
+}
+
+function storeSession(data, demoRole) {
+  if (data.token) localStorage.setItem("fh_token", data.token);
+  var role = roleFrom(data);
+  // Hand the role to /app/shell.js so the first screen is gated before it
+  // paints, instead of drawing and then bouncing while the session resolves.
+  if (role) localStorage.setItem("fh_role", String(role).trim().toLowerCase());
+  else localStorage.removeItem("fh_role");
+  try {
+    if (demoRole) localStorage.setItem(DEMO_ROLE_KEY, demoRole);
+    else localStorage.removeItem(DEMO_ROLE_KEY);
+  } catch (e) { /* private mode — the marker is cosmetic, the session is not */ }
+}
+
+function failureText(status, data) {
+  // "demo accounts are switched off" is named rather than folded into the
+  // generic 403. The password WAS right; what is missing is an environment
+  // variable, and "Account not active — ask an admin" would send whoever hit
+  // this to reset a password that was never wrong.
+  if (status === 429) return "Too many attempts — wait 15 minutes.";
+  if (data && data.error === "demo_logins_disabled") {
+    return "Demo logins are switched off on this deploy. Set DEMO_LOGINS_ENABLED=1 and redeploy.";
+  }
+  if (status === 403) return "Account not active — ask an admin.";
+  return "Wrong email or password.";
+}
+
 document.getElementById("f").addEventListener("submit", async (e) => {
   e.preventDefault();
   const err = document.getElementById("err"), btn = document.getElementById("go");
   err.style.display = "none"; btn.disabled = true; btn.textContent = "Signing in…";
-  const { ok, status, data } = await FH.api("/api/auth/login", {
-    method: "POST",
-    body: { email: document.getElementById("email").value, password: document.getElementById("pw").value }
+  const { ok, status, data } = await signIn({
+    email: document.getElementById("email").value,
+    password: document.getElementById("pw").value
   });
   btn.disabled = false; btn.textContent = "Sign in";
   if (!ok) {
     err.style.display = "block";
-    err.textContent = status === 429 ? "Too many attempts — wait 15 minutes."
-      : status === 403 ? "Account not active — ask an admin." : "Wrong email or password.";
+    err.textContent = failureText(status, data);
     return;
   }
-  if (data.token) localStorage.setItem("fh_token", data.token);
-  // Hand the role to /app/shell.js so the first screen is gated before it
-  // paints, instead of drawing and then bouncing while the session resolves.
-  if (data.staff && data.staff.role) {
-    localStorage.setItem("fh_role", String(data.staff.role).trim().toLowerCase());
-  } else {
-    localStorage.removeItem("fh_role");
-  }
+  storeSession(data, null);   // typed by hand — not a demo switch, clear the marker
   const next = new URLSearchParams(location.search).get("next");
   location.href = next && next.startsWith("/") ? next : "/app/";
 });
+
+/* ───────────────────────────────────────────────────────────────────────────
+   THE SWITCHER.
+
+   The workflow this is shaped around, in the owner's words: open a portal, look
+   at it, say "that's good", switch to the next one. Nine times. Nine sign-out /
+   sign-in cycles with nine remembered passwords is enough friction that the
+   review stops after two, so a click has to do the whole thing — sign in AND
+   arrive on that role's own home screen, not a generic landing page.
+
+   `home` comes from the server, and the server takes it from
+   src/auth/demo-roster.mjs, which is asserted against public/app/shell.js's
+   HOME map by src/http/demo-logins.test.mjs. That chain matters: shell.js sends
+   a role that asks for a screen it may not open back to its home, and a role
+   with NO allowed screens straight to signOut() — so a button pointing at the
+   wrong screen looks exactly like a broken login. The test is what keeps the
+   button and the shell agreeing.
+   ─────────────────────────────────────────────────────────────────────────── */
+async function loadSwitcher() {
+  var mount = document.getElementById("fh-demo-mount");
+  if (!mount) return;
+
+  var demo = null;
+  try {
+    // Cache-busted: this page is a static asset behind a CDN and the answer
+    // changes when an env var changes, with no redeploy of the HTML to bust it.
+    var r = await fetch("/api/auth/login", { headers: { accept: "application/json" }, cache: "no-store" });
+    if (!r.ok) return;                       // 404 (no API deployed) or 5xx — draw nothing
+    var body = await r.json();
+    demo = body && body.demo;
+  } catch (e) { return; }                    // no backend at all — draw nothing
+
+  // THE ONE DECISION, AND THE SERVER MADE IT. Anything other than an explicit
+  // `enabled === true` with a roster attached means no panel. Not a disabled
+  // panel, not a panel that explains itself — nothing rendered, because with
+  // the switch off there is no password and no roster to render.
+  if (!demo || demo.enabled !== true || !Array.isArray(demo.logins) || !demo.logins.length) return;
+
+  var current = currentDemoRole();
+  var now = current
+    ? '<p id="fh-demo-now">Signed in now as <b>' + esc(current) + '</b>. Pick another to switch.</p>'
+    : "";
+
+  mount.innerHTML =
+    '<div id="fh-demo">' +
+      '<h2>Demo portals — one click each</h2>' +
+      '<p class="note" style="margin:0">Click a role. It signs in and opens that role\'s own screen.</p>' +
+      now +
+      '<div id="fh-demo-grid"></div>' +
+      '<p class="note" style="margin-top:10px;opacity:.75">' +
+        'These are not real people. Every address is on a domain that resolves nowhere and ' +
+        'every row is flagged as a demo row. They stop working the moment <b>' +
+        esc(demo.envVar || "DEMO_LOGINS_ENABLED") + '</b> is unset on this deploy. ' +
+        'Shared password: <b>' + esc(demo.password) + '</b> — you do not need to type it.' +
+      '</p>' +
+    '</div>';
+
+  var grid = document.getElementById("fh-demo-grid");
+  demo.logins.forEach(function (d) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "fh-demo-btn";
+    b.setAttribute("data-role", d.role);
+    if (current && d.role === current) b.setAttribute("data-current", "1");
+    // "Affiliate — Affiliate Portal": what he is, then what opens. The address
+    // is the second line so the button is still self-describing when something
+    // goes wrong and he has to tell somebody which account it was.
+    b.innerHTML =
+      "<b>" + esc(d.label) + " — " + esc(d.portal) + "</b>" +
+      "<span>" + esc(d.email) + " → " + esc(d.home) + "</span>";
+    b.addEventListener("click", function () { return openAs(d, demo.password, b); });
+    grid.appendChild(b);
+  });
+}
+
+/* openAs — one click: sign in as this role, land on that role's home screen.
+
+   It goes through the SAME signIn() the typed form uses, which is the same
+   POST /api/auth/login, which is the same scrypt verifyPassword as every other
+   account. There is no bypass here and there must never be one: the button
+   knows the password because the server just told it, not because the check is
+   skipped. With DEMO_LOGINS_ENABLED unset this function is unreachable (the
+   panel never renders) AND would fail anyway (the server refuses demo rows). */
+async function openAs(d, password, btn) {
+  var err = document.getElementById("err");
+  err.style.display = "none";
+  var was = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = "<b>Opening " + esc(d.portal) + "…</b><span>" + esc(d.email) + "</span>";
+
+  var out = await signIn({ email: d.email, password: password });
+  if (!out.ok) {
+    btn.disabled = false; btn.innerHTML = was;
+    err.style.display = "block";
+    err.textContent = failureText(out.status, out.data);
+    return;
+  }
+  storeSession(out.data, d.role);
+  // Straight to the role's own screen. `home` is server-supplied, so it is
+  // checked before it becomes a navigation: a same-origin /app/ path and
+  // nothing else. A value that failed this would be a bug in the roster, but
+  // "it came from our own API" is not a reason to hand an unchecked string to
+  // location.href.
+  location.href = /^\/app\/[a-z0-9-]+\.html$/.test(d.home) ? d.home : "/app/";
+}
+
+loadSwitcher();
 </script>
 </body></html>
