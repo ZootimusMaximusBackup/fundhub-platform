@@ -55,6 +55,7 @@ import readProducts from "../../api/read/products.mjs";
 import readConversations from "../../api/read/conversations.mjs";
 import readTradelines from "../../api/read/tradelines.mjs";
 import readFinanceOs from "../../api/read/finance-os.mjs";
+import readBankingSurface from "../../api/read/banking-surface.mjs";
 import inquiries from "../../api/inquiries.mjs";
 import pii from "../../api/pii.mjs";
 import shifts from "../../api/shifts.mjs";
@@ -128,6 +129,14 @@ export const ROUTES = {
   // the handler and the screen: a screen whose endpoint 404s is the failure
   // this map exists to prevent, and it has shipped twice.
   "read/finance-os": readFinanceOs,
+
+  // read/banking-surface is the cash companion to read/finance-os and carries
+  // the same ROLE_SETS.STAFF gate. Bank balances are no more sensitive than the
+  // credit limits read/tradelines already serves to that set, and splitting the
+  // gate would leave a closer able to see a client's cards but not their cash
+  // while working the same file. Routed in the same commit as the handler and
+  // the screen.
+  "read/banking-surface": readBankingSurface,
 
   // Write endpoints. Hand-rolled rather than readHandler-based, so each one owns
   // its own method switch, its 405 + allow header, and its domain-error mapping.
