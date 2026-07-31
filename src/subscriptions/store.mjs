@@ -23,6 +23,32 @@ import {
   normalizeCardMeta, assertPriceCents, planChange
 } from "./index.mjs";
 
+/**
+ * SubscriptionConflictError — "somebody else got here first", as a type a caller
+ * can branch on rather than a sentence it would have to pattern-match.
+ *
+ * WHY A CLASS AND NOT JUST A BETTER MESSAGE (audit m11). Every refusal in this
+ * module used to be a plain `Error`, and `netlify/functions/api.mjs:334` turns a
+ * plain Error into HTTP 500 — "the server broke". Two of the refusals here are
+ * not that: the client is not double-booked because of a fault, and a plan
+ * change is not lost because of a fault. Both mean "the record moved under you,
+ * look again", which is a 409 and a retry, not an incident.
+ *
+ * The shape is deliberately the one src/finance/soft-pulls.mjs:57 already uses —
+ * a message plus a `status` — because api/finance/soft-pull.mjs:126 already
+ * knows how to turn that into a response (`res.status(e.status)`), so the first
+ * subscription endpoint to exist inherits the mapping instead of inventing a
+ * second convention. There is no subscription endpoint yet; this is what one
+ * will need on the day it is written, and it is testable now.
+ */
+export class SubscriptionConflictError extends Error {
+  constructor(message, { status = 409 } = {}) {
+    super(message);
+    this.name = "SubscriptionConflictError";
+    this.status = status;
+  }
+}
+
 const SUB_COLUMNS = `
   id, org_id, client_id, tier, status, price_cents, currency, card_id,
   provider, provider_ref, current_period_start, current_period_end,
@@ -173,7 +199,9 @@ export async function startSubscription(db, input = {}) {
     );
   } catch (err) {
     if (err?.code === "23P01" && err?.constraint === "subscriptions_no_overlap") {
-      throw new Error(
+      // Same sentence as before; it is now carried by the shared conflict type so
+      // a caller gets a 409 out of it instead of a 500. See the class above.
+      throw new SubscriptionConflictError(
         "startSubscription: this client already has a subscription covering that date — "
         + "cancel or close the current one first"
       );
@@ -273,10 +301,22 @@ export async function changeTier(db, input = {}) {
   );
 
   if (!res.rows[0]) {
-    // The live row disappeared between the read and the write — another writer
-    // closed or cancelled it. Nothing was written (the INSERT selects from the
-    // UPDATE), so this is a clean retry, not a half-applied change.
-    throw new Error("changeTier: no live subscription to change — it was closed by another writer");
+    // THE ONLY BRANCH HERE THAT TWO PEOPLE EDITING AT ONCE CAN REACH (audit m11).
+    // getSubscriptionAt() found a live row a moment ago and planChange() refuses
+    // to go any further without one, so reaching this line means the row was
+    // closed or cancelled between that read and this write. Nothing was written:
+    // the INSERT selects FROM the UPDATE, so an empty UPDATE inserts nothing and
+    // there is no half-applied change to unpick.
+    //
+    // It used to be a plain Error, which api.mjs:334 renders as HTTP 500 — the
+    // caller is told the server broke when what actually happened is that
+    // somebody else changed the same subscription first. Typed as a conflict so
+    // the answer is 409 and "look again", and worded for the person who has to
+    // read it (CLAUDE.md §10) rather than for the engineer who wrote it.
+    throw new SubscriptionConflictError(
+      "changeTier: somebody else changed this subscription while you were changing it — "
+      + "nothing was saved. Reload the client and try again."
+    );
   }
   return res.rows[0];
 }

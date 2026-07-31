@@ -368,6 +368,129 @@ test("a history row points at the current-position row that stands", { skip: !HA
   assert.equal(history.liability_id, current.id);
 });
 
+// ---------------------------------------------------------------------------
+// m10 — the link to the projection cannot be left dangling.
+//
+// recordLiability() makes three writes: append the series row, upsert the
+// projection, then link the two. The third used to be a bare UPDATE with
+// nothing reconciling it, on a code path that was not in a transaction at all
+// for the handle every production caller passes (src/db.mjs exports `{ query }`,
+// which has no connect(), so every "can I pin a connection?" probe in this repo
+// answers no for it — audit M7). A history row that misses the link drops out of
+// any joined view: the card's series quietly loses an observation and nothing
+// raises. These three cover the three ways that is now closed.
+// ---------------------------------------------------------------------------
+
+test("the three writes are one unit on the handle production actually passes",
+  { skip: !HAS_DB }, async () => {
+    await clearPositions();
+    // A BEFORE INSERT trigger that raises only for THIS test's client, so a
+    // suite running beside this one against the same database is untouched. The
+    // client id is interpolated because a trigger's WHEN clause is DDL and
+    // cannot take a bind parameter; it is a uuid this file just read back out of
+    // Postgres, not caller input.
+    await db.query(`DROP TRIGGER IF EXISTS card_liab_atomicity_probe ON card_liabilities`);
+    await db.query(
+      `CREATE OR REPLACE FUNCTION card_liab_atomicity_probe() RETURNS trigger
+         LANGUAGE plpgsql AS $fn$
+       BEGIN RAISE EXCEPTION 'card_liab_atomicity_probe'; END $fn$`
+    );
+    await db.query(
+      `CREATE TRIGGER card_liab_atomicity_probe BEFORE INSERT ON card_liabilities
+         FOR EACH ROW WHEN (NEW.client_id = '${clientId}')
+         EXECUTE FUNCTION card_liab_atomicity_probe()`
+    );
+    try {
+      await assert.rejects(
+        () => recordLiability(db, { orgId, clientId, tradelineId: tradelineA, row: position() }),
+        /card_liab_atomicity_probe/,
+        "the projection write fails — that is the point of the probe"
+      );
+      assert.deepEqual(
+        await getLiabilityHistory(db, { tradelineId: tradelineA }), [],
+        "the series row must roll back with it. Without the transaction the shared "
+        + "handle now gets, the history row commits on its own and the card's series "
+        + "carries an observation the current-position table has never heard of"
+      );
+    } finally {
+      await db.query(`DROP TRIGGER IF EXISTS card_liab_atomicity_probe ON card_liabilities`);
+      await db.query(`DROP FUNCTION IF EXISTS card_liab_atomicity_probe()`);
+    }
+  });
+
+test("the link is written with the series row, not bolted on afterwards",
+  { skip: !HAS_DB }, async () => {
+    await clearPositions();
+    const first = await recordLiability(db, {
+      orgId, clientId, tradelineId: tradelineA, row: position({ as_of: "2026-05-31" })
+    });
+
+    // A handle shaped EXACTLY like the one src/db.mjs exports — `{ query }` and
+    // nothing else — that fails the relink. Modelling the real handle matters:
+    // audit m9 is a test whose fake had a capability production does not have,
+    // which is how the missing transaction survived review in the first place.
+    const failsTheRelink = {
+      query: (sql, params) => {
+        if (/^\s*UPDATE card_liability_history/.test(sql)) {
+          throw new Error("connection lost before the link was written");
+        }
+        return db.query(sql, params);
+      }
+    };
+    await assert.rejects(
+      () => recordLiability(failsTheRelink, {
+        orgId, clientId, tradelineId: tradelineA, row: position({ as_of: "2026-06-30" })
+      }),
+      /connection lost/
+    );
+
+    const series = await getLiabilityHistory(db, { tradelineId: tradelineA });
+    assert.equal(series.length, 2, "the June observation was written");
+    for (const row of series) {
+      assert.equal(row.liability_id, first.current.id,
+        "and it is linked, because the INSERT resolved the link itself — the "
+        + "row is joinable even though the write that used to do this never ran");
+    }
+  });
+
+test("an observation orphaned by an earlier interrupted write is repaired by the next one",
+  { skip: !HAS_DB }, async () => {
+    await clearPositions();
+    await recordLiability(db, {
+      orgId, clientId, tradelineId: tradelineA, row: position({ as_of: "2026-04-30" })
+    });
+    await recordLiability(db, {
+      orgId, clientId, tradelineId: tradelineA, row: position({ as_of: "2026-05-31" })
+    });
+    // Exactly what the database looks like today for any row written before this
+    // fix, and for any row whose third write was lost: linked to nothing.
+    await db.query(
+      `UPDATE card_liability_history SET liability_id = NULL WHERE tradeline_id = $1`,
+      [tradelineA]
+    );
+
+    const { current } = await recordLiability(db, {
+      orgId, clientId, tradelineId: tradelineA, row: position({ as_of: "2026-06-30" })
+    });
+
+    const joined = await db.query(
+      `SELECT h.as_of FROM card_liability_history h
+         JOIN card_liabilities c ON c.id = h.liability_id
+        WHERE h.tradeline_id = $1
+        ORDER BY h.as_of`,
+      [tradelineA]
+    );
+    assert.equal(joined.rows.length, 3,
+      "all three observations are visible through the join — the repair covers the "
+      + "whole card, not just the row this call happened to write");
+    const orphans = await db.query(
+      `SELECT count(*)::int AS n FROM card_liability_history
+        WHERE tradeline_id = $1 AND liability_id IS DISTINCT FROM $2`,
+      [tradelineA, current.id]
+    );
+    assert.equal(orphans.rows[0].n, 0, "and nothing is left pointing anywhere else");
+  });
+
 test("as_of is NOT NULL — an observation that cannot be placed in time is refused",
   { skip: !HAS_DB }, async () => {
   for (const table of ["card_liabilities", "card_liability_history"]) {

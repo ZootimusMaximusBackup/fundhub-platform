@@ -9,6 +9,28 @@
 // both in a single transaction — there is no path that writes one and not the
 // other, which is what stops the two from becoming two answers to one question.
 //
+// THE LINK BETWEEN THEM IS WRITTEN WITH THE ROW, NOT AFTER IT (audit m10).
+// There is a third write: `card_liability_history.liability_id`, which names the
+// 083 projection the series entry feeds. It used to be a bare UPDATE issued
+// after the two upserts, with nothing reconciling it if it did not land — and it
+// could fail to land, because on the handle every production caller passes the
+// three writes were not in a transaction at all (see below). A history row left
+// with a NULL `liability_id` disappears from any view that joins the series to
+// the projection: the card's series silently loses an observation and no error
+// is raised anywhere. Two changes close that:
+//
+//   1. The INSERT carries the link itself, resolved by subselect on
+//      `tradeline_id`. 083 is unique on `tradeline_id` (`uq_card_liabilities_
+//      tradeline`), so there is exactly one projection row per card for the life
+//      of the card and the link is a pure function of the card — never a guess.
+//      Only the very first observation of a brand-new card can miss it, because
+//      the projection does not exist yet at that instant.
+//   2. `relinkHistory()` then repairs EVERY unlinked row for that card, not just
+//      the one this call wrote. That is what makes the link recoverable: a row
+//      orphaned by an interrupted call — including rows already in the database
+//      from before this fix — is repaired by the next `recordLiability()` for
+//      the same card, and the repair is an idempotent no-op after that.
+//
 // THE PROJECTION NEVER MOVES BACKWARDS. The 083 upsert carries
 // `WHERE EXCLUDED.as_of >= card_liabilities.as_of`. A backfill of an older
 // statement lands in the series and leaves the current position alone. Without
@@ -40,6 +62,22 @@ import { normalizeLiabilitiesFromCrs } from "./index.mjs";
 // only because that is where it was first needed; nothing about it is
 // document-specific.
 import { withTransaction } from "../documents/register.mjs";
+// THE HANDLE, NOT THE HELPER, WAS THE BUG. `src/db.mjs` exports the shared
+// handle as `{ query }` and NOTHING ELSE — no connect() — so every helper in
+// this repo that decides "can I pin a connection?" by looking at the handle
+// answers NO for the one object every production caller actually passes, and
+// runs the callback unwrapped with autocommit. That is audit M7 (four copies of
+// a broken probe) and it applies here through the import above: the "single
+// transaction" this file's header promised did not exist in production, which
+// is how the third write could land on its own or not at all.
+//
+// The correction is the one src/finance/soft-pulls.mjs:550 arrived at and that
+// src/inquiries/work.mjs:218, src/banking/store.mjs:72 and src/pii/index.mjs:200
+// were fixed to match: when we are handed the shared singleton, reach for the
+// pool it is a facade over. Done here by swapping the HANDLE rather than by
+// copying the helper — a fifth variant of BEGIN/COMMIT is the last thing this
+// repo needs, and `withTransaction` is already correct once it is given a Pool.
+import { db as sharedDb, pool } from "../db.mjs";
 
 // The measure columns, in one list, used to build every statement below. One
 // list means the two tables cannot drift apart column by column.
@@ -73,11 +111,16 @@ function valuesFor(row) {
  * the write, which is not necessarily this observation (see the backfill guard
  * above).
  *
- * Pass a pool for real atomicity. A checked-out client runs inline inside the
- * transaction the caller already opened. The plain `{ query }` wrapper from
- * src/db.mjs cannot be pinned to one connection, so it runs unwrapped — safe
- * here because both writes are upserts keyed on the same observation, so a
- * retry of an interrupted call converges rather than duplicating.
+ * ATOMIC ON EVERY HANDLE A CALLER CAN REALISTICALLY PASS. The shared `{ query }`
+ * handle from src/db.mjs is swapped for the pool it fronts, so it gets a real
+ * BEGIN/COMMIT on one pinned connection instead of three autocommitted writes on
+ * three possibly-different connections (audit m10 / M7 — see the import block).
+ * A pool passed directly behaves the same way. A checked-out client runs inline
+ * inside the transaction the caller already opened, which is how this composes
+ * into a larger unit of work. Only a plain fake in a unit test runs unwrapped —
+ * and even then nothing is left dangling, because the link is written by the
+ * INSERT and repaired by relinkHistory() rather than depending on one bare
+ * UPDATE landing.
  */
 export async function recordLiability(db, { orgId, clientId, tradelineId, row }) {
   if (!orgId || !clientId || !tradelineId) {
@@ -85,28 +128,64 @@ export async function recordLiability(db, { orgId, clientId, tradelineId, row })
   }
   if (!row?.as_of) throw new TypeError("recordLiability: row.as_of is required");
 
-  return withTransaction(db, async (tx) => {
+  // `pool()` is only reached when the caller handed us the shared singleton, in
+  // which case DATABASE_URL is already required for any query at all — so this
+  // cannot turn a working call into a missing-configuration error.
+  const handle = db === sharedDb ? pool() : db;
+
+  return withTransaction(handle, async (tx) => {
     const historyRow = await appendHistory(tx, { orgId, clientId, tradelineId, row });
     const current = await upsertCurrent(tx, { orgId, clientId, tradelineId, row });
-    // Point the series entry at the projection it feeds. Done after both writes
+    // Point the series at the projection it feeds. This runs after both writes
     // because on a backfill the projection is an OLDER row than this one, and
-    // the link should name whichever projection is actually live.
+    // the link must name whichever projection is actually live — and it relinks
+    // the WHOLE card, not just the row we wrote, so a row orphaned by an earlier
+    // interrupted call is repaired here rather than staying invisible forever.
     if (current?.id) {
-      await tx.query(`UPDATE card_liability_history SET liability_id = $1 WHERE id = $2`,
-        [current.id, historyRow.id]);
+      await relinkHistory(tx, { tradelineId, liabilityId: current.id });
       historyRow.liability_id = current.id;
     }
     return { history: historyRow, current };
   });
 }
 
+/**
+ * relinkHistory — point every series entry for one card at the projection that
+ * stands for it. The reconciliation m10 says nothing was doing.
+ *
+ * Safe to run at any time and safe to run twice: 083 is unique on tradeline_id,
+ * so one card has exactly one projection row and the correct link is not a
+ * matter of opinion. `IS DISTINCT FROM` (not `IS NULL`) means it also repairs a
+ * row left pointing at a projection that was dropped and rebuilt — 084's
+ * `ON DELETE SET NULL` keeps the series through that rebuild, and this puts the
+ * link back. In the steady state it matches nothing and updates nothing.
+ */
+async function relinkHistory(db, { tradelineId, liabilityId }) {
+  await db.query(
+    `UPDATE card_liability_history
+        SET liability_id = $2
+      WHERE tradeline_id = $1
+        AND liability_id IS DISTINCT FROM $2`,
+    [tradelineId, liabilityId]
+  );
+}
+
 async function appendHistory(db, { orgId, clientId, tradelineId, row }) {
   const values = [orgId, clientId, tradelineId, ...valuesFor(row)];
   const placeholders = values.map((_, i) => `$${i + 1}`).join(", ");
   const res = await db.query(
-    `INSERT INTO card_liability_history (org_id, client_id, tradeline_id, ${MEASURES.join(", ")})
-     VALUES (${placeholders})
+    // `liability_id` is resolved here, in the same statement that creates the
+    // row, so the series entry is linked from the instant it exists. $3 is
+    // tradeline_id; 083 is unique on it, so the subselect returns at most one
+    // id and returns NULL only for a card whose projection does not exist yet —
+    // the first observation of a new card, which relinkHistory() then fills in.
+    `INSERT INTO card_liability_history (org_id, client_id, tradeline_id, ${MEASURES.join(", ")}, liability_id)
+     VALUES (${placeholders}, (SELECT id FROM card_liabilities WHERE tradeline_id = $3))
      ON CONFLICT (tradeline_id, as_of) DO UPDATE SET
+       -- COALESCE, not overwrite: a restatement that arrives before the
+       -- projection exists must not blank a link we already had. Same rule the
+       -- APR columns follow — absence is not a correction.
+       liability_id            = COALESCE(EXCLUDED.liability_id, card_liability_history.liability_id),
        statement_balance_cents = EXCLUDED.statement_balance_cents,
        current_balance_cents   = EXCLUDED.current_balance_cents,
        minimum_payment_cents   = EXCLUDED.minimum_payment_cents,
