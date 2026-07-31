@@ -57,12 +57,20 @@ stays unknown until a person says otherwise, because Plaid does not tell us.
    instruction set said to read it first. It is not there, on this branch or on
    `main`. The decision rules pasted inline in that message were followed instead.
 
-3. **`docs/journeys/` does not exist.** `CLAUDE.md` §4 describes
-   `<name>-intended.md` / `<name>-actual.md` pairs and a
-   `docs/journeys/CHANGELOG.md`. Neither the directory nor the changelog is in
-   the repo — `docs/` contains only `diagrams/` and `workflows/`. Nothing was
-   invented to fill the gap. The generated diagrams under `docs/diagrams/` were
-   updated instead, which is the mechanism that actually exists.
+3. **`docs/journeys/` did not exist — W5 started it, for its own flow only.**
+   `CLAUDE.md` §4 describes `-intended.md` / `-actual.md` pairs for eight named
+   journeys plus a changelog, and none of it was in the repository. §6 requires
+   the actual-journey diagram in the same commit as the code, so
+   `docs/journeys/banking-actual.md` and `docs/journeys/CHANGELOG.md` are now
+   there, traced out of the code rather than written from the spec.
+
+   **Two limits a reader needs.** There is no `banking-intended.md`, and agents
+   do not write those — so the "gaps between intended and actual are findings"
+   check has not been run on this flow, because there is nothing to compare
+   against. And the other eight journeys were NOT back-filled: an `-actual.md`
+   has to be traced out of code, and inventing eight of them from assumption is
+   what §4 forbids. `banking` is also not one of the eight names §4 lists, so
+   whether it belongs in that set is an owner's call.
 
 4. **The adapter-boundary diagram used to assume every adapter was inbound.**
    Adding the first outbound-only adapter exposed two false edges: an arrow from
@@ -138,6 +146,8 @@ stays unknown until a person says otherwise, because Plaid does not tell us.
 | `scripts/diagrams/render.mjs` | outbound-only adapters draw the request leaving; only emitting adapters get a bus edge |
 | `scripts/diagrams/generate.test.mjs` | adapter count 8 → 9; five assertions added pinning Plaid as outbound-only and emitting nothing |
 | `docs/diagrams/{README,event-flow,adapter-boundary}.md` | regenerated |
+| `docs/journeys/banking-actual.md` | new — 5 flowcharts traced from the code: linking, refresh, classification, the gate, what never leaves |
+| `docs/journeys/CHANGELOG.md` | new — first entry, plus what this record does and does not cover |
 
 ### Exports added
 
