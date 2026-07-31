@@ -203,6 +203,57 @@ describe("GET /api/read/card-liabilities", { skip: !HAS_DB ? "no DATABASE_URL" :
       [clientId, "http-acct-2"]);
   });
 
+  test("the endpoint reports what the card ACTUALLY charges on the day asked about", async () => {
+    await upsertCardLiability(db, {
+      orgId, clientId, accountRef: "http-acct-promo",
+      row: coerceLiabilityRow({
+        accountRef: "http-acct-promo", issuer: "Chase Ink Unlimited", isBusiness: true,
+        creditLimit: 20000, balance: 5000,
+        aprPurchase: 18.99, promoPurchaseApr: 0, promoPurchaseEndsOn: "2026-12-01"
+      })
+    });
+
+    const inside = await call({ client_id: clientId, as_of: "2026-08-01" }, closerToken);
+    const c1 = inside.body.data.find((c) => c.account_ref === "http-acct-promo");
+    assert.strictEqual(c1.effective_apr.purchase.apr, 0, "inside the window it is free money");
+    assert.equal(c1.effective_apr.purchase.basis, "promo");
+    assert.equal(c1.effective_apr.purchase.daysRemaining, 122);
+
+    const after = await call({ client_id: clientId, as_of: "2026-12-02" }, closerToken);
+    const c2 = after.body.data.find((c) => c.account_ref === "http-acct-promo");
+    assert.equal(c2.effective_apr.purchase.apr, 0.1899, "the day after, it is 18.99%");
+    assert.equal(c2.effective_apr.purchase.promoState, "expired");
+  });
+
+  test("a bad as_of is refused, never quietly treated as today", async () => {
+    const r = await call({ client_id: clientId, as_of: "next tuesday" }, closerToken);
+    assert.equal(r.code, 400, "asking about March and silently getting today is the failure this prevents");
+    const ok = await call({ client_id: clientId }, closerToken);
+    assert.equal(ok.code, 200, "an absent as_of still means today");
+    assert.equal(ok.body.promo_window.as_of.length, 10);
+  });
+
+  test("the promo window totals only datable, live, drawable headroom", async () => {
+    await upsertCardLiability(db, {
+      orgId, clientId, accountRef: "http-acct-promo-undated",
+      row: coerceLiabilityRow({
+        accountRef: "http-acct-promo-undated", issuer: "Undated Promo",
+        creditLimit: 9000, balance: 0, aprPurchase: 22.99, promoPurchaseApr: 0
+      })
+    });
+
+    const r = await call({ client_id: clientId, as_of: "2026-08-01" }, closerToken);
+    const w = r.body.promo_window.purchase;
+    assert.equal(w.count, 1, "only the datable window counts");
+    assert.equal(w.availableCents, 1500000, "$20,000 limit less a $5,000 balance");
+    assert.equal(w.expiryUnknownCount, 1, "the undated one is surfaced, not counted and not hidden");
+    assert.equal(w.soonestExpiry, "2026-12-01");
+    assert.equal(w.cards[0].issuer, "Chase Ink Unlimited");
+
+    await db.query(`DELETE FROM card_liabilities WHERE client_id=$1 AND account_ref=ANY($2)`,
+      [clientId, ["http-acct-promo", "http-acct-promo-undated"]]);
+  });
+
   test("an unlinked card merges to itself, so `merged` means the same thing on every row", async () => {
     const r = await call({ client_id: clientId }, closerToken);
     const card = r.body.data.find((c) => c.account_ref === "http-acct-1");

@@ -34,7 +34,7 @@ import {
   getCurrentLiability,
   getLiabilityHistory
 } from "./store.mjs";
-import { coerceLiabilityRow, summarise, utilisation } from "./index.mjs";
+import { coerceLiabilityRow, summarise, utilisation, effectiveApr, promoWindow } from "./index.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
 const EMAIL = "card_liabilities_pg_test@example.com";
@@ -497,6 +497,114 @@ test("getLiabilityHistory returns every dated set of terms, newest first", { ski
 test("getLiabilityHistory on an unknown card is empty, not an error", { skip: !HAS_DB }, async () => {
   assert.deepEqual(await getLiabilityHistory(db, { clientId, accountRef: "does-not-exist" }), []);
   await assert.rejects(() => getLiabilityHistory(db, {}), /cardLiabilityId, or clientId and accountRef/);
+});
+
+test("a 0% window round-trips as a rate AND a date, and drives the effective rate", { skip: !HAS_DB }, async () => {
+  const row = await upsertCardLiability(db, {
+    orgId, clientId, accountRef: "bank-acct-promo",
+    row: coerceLiabilityRow({
+      accountRef: "bank-acct-promo", issuer: "Chase Ink Unlimited",
+      creditLimit: 20000, balance: 5000,
+      aprPurchase: 18.99, promoPurchaseApr: 0, promoPurchaseEndsOn: "2026-12-01",
+      promoBalanceTransferApr: 2.99, promoBalanceTransferEndsOn: "2027-02-01"
+    })
+  });
+  assert.strictEqual(Number(row.promo_purchase_apr), 0, "0% is a rate and must survive the column");
+  assert.equal(Number(row.promo_balance_transfer_apr), 0.0299);
+
+  const inside = effectiveApr(row, { scope: "purchase", asOf: "2026-08-01" });
+  assert.strictEqual(inside.apr, 0);
+  assert.equal(inside.basis, "promo");
+
+  const after = effectiveApr(row, { scope: "purchase", asOf: "2026-12-02" });
+  assert.equal(after.apr, 0.1899);
+  assert.equal(after.promoState, "expired");
+});
+
+test("the schema refuses an out-of-range promotional rate", { skip: !HAS_DB }, async () => {
+  await assert.rejects(
+    () => db.query(
+      `INSERT INTO card_liabilities (org_id, client_id, account_ref, issuer, promo_purchase_apr)
+       VALUES ($1,$2,'bad-promo','Bad',1.5)`, [orgId, clientId]),
+    /violates check constraint/
+  );
+});
+
+test("a promo with no end date stores the rate and a NULL date, and is not applied", { skip: !HAS_DB }, async () => {
+  const row = await upsertCardLiability(db, {
+    orgId, clientId, accountRef: "bank-acct-promo-undated",
+    row: coerceLiabilityRow({
+      accountRef: "bank-acct-promo-undated", issuer: "Undated Promo",
+      creditLimit: 10000, balance: 0, aprPurchase: 22.99, promoPurchaseApr: 0
+    })
+  });
+  assert.strictEqual(Number(row.promo_purchase_apr), 0, "the promotion is on file");
+  assert.strictEqual(row.promo_purchase_ends_on, null, "and nobody invented an end date for it");
+
+  const r = effectiveApr(row, { scope: "purchase", asOf: "2026-08-01" });
+  assert.equal(r.apr, 0.2299, "the go-to rate is quoted, not the 0% we cannot date");
+  assert.equal(r.promoState, "expiry_unknown");
+});
+
+test("promoWindow over the real rows counts only datable, live windows", { skip: !HAS_DB }, async () => {
+  const rows = await listCardLiabilities(db, { clientId });
+  const w = promoWindow(rows, { scope: "purchase", asOf: "2026-08-01" });
+  assert.equal(w.count, 1, "only bank-acct-promo has a datable live window");
+  assert.equal(w.expiryUnknownCount, 1, "and the undated one is visible without being counted");
+  assert.equal(w.availableCents, 1500000, "$20,000 limit less a $5,000 balance");
+  assert.equal(w.soonestExpiry, "2026-12-01");
+});
+
+test("a promotional window is a TERM and is versioned when it moves", { skip: !HAS_DB }, async () => {
+  const out = await changeTerms(db, {
+    orgId, cardLiabilityId: termCardId,
+    terms: { promo_purchase_apr: 0, promo_purchase_ends_on: "2026-12-01" },
+    reason: "intro period recorded"
+  });
+  assert.equal(out.changed, true);
+  assert.deepEqual(out.changedFields.sort(), ["promo_purchase_apr", "promo_purchase_ends_on"]);
+
+  const moved = await changeTerms(db, {
+    orgId, cardLiabilityId: termCardId,
+    terms: { promo_purchase_ends_on: "2027-03-01" }, source: "manual", reason: "issuer extended the offer"
+  });
+  assert.equal(moved.changed, true);
+  assert.deepEqual(moved.changedFields, ["promo_purchase_ends_on"]);
+  assert.strictEqual(Number(moved.opened.promo_purchase_apr), 0, "the rate carried forward");
+
+  // The whole point: the ORIGINAL end date is still on the record.
+  const history = await listTerms(db, { cardLiabilityId: termCardId });
+  const previous = history.find((r) => r.id === moved.closed.id);
+  const day = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  assert.equal(day(previous.promo_purchase_ends_on), "2026-12-01",
+    "what the window WAS is still answerable — 'was that card still inside its intro period in January?'");
+});
+
+test("an unchanged promotional window writes no history row, Date object or not", { skip: !HAS_DB }, async () => {
+  // THE BUG THIS PINS. Postgres returns a `date` as a JS Date OBJECT and a
+  // caller supplies '2027-03-01'. A bare !== between those is true every time,
+  // so a nightly refresh would append a row per night to the table whose whole
+  // job is answering "when did this change".
+  const before = (await listTerms(db, { cardLiabilityId: termCardId })).length;
+  const out = await changeTerms(db, {
+    orgId, cardLiabilityId: termCardId,
+    terms: { promo_purchase_apr: 0, promo_purchase_ends_on: "2027-03-01" }
+  });
+  assert.equal(out.changed, false);
+  assert.deepEqual(out.changedFields, []);
+  assert.equal((await listTerms(db, { cardLiabilityId: termCardId })).length, before);
+});
+
+test("084 refuses editing a promotional window in place", { skip: !HAS_DB }, async () => {
+  const open = await currentTerms(db, { cardLiabilityId: termCardId });
+  await assert.rejects(
+    () => db.query(`UPDATE card_liability_terms SET promo_purchase_ends_on = '2028-01-01' WHERE id = $1`, [open.id]),
+    /cannot be edited in place/
+  );
+  await assert.rejects(
+    () => db.query(`UPDATE card_liability_terms SET promo_purchase_apr = NULL WHERE id = $1`, [open.id]),
+    /cannot be edited in place/
+  );
 });
 
 test("deleting the client takes the cards and their history with it", { skip: !HAS_DB }, async () => {

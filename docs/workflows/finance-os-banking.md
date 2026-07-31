@@ -117,14 +117,19 @@ not a debt hidden in a nullable column.
 1. **"APR(s)" is three named rates:** `apr_purchase`, `apr_cash_advance`,
    `apr_balance_transfer`. Those are the three a card actually quotes and the
    three an aggregator reports as distinct types.
-2. **Promotional / 0%-intro APR was deliberately NOT built.** It is not a rate,
-   it is a rate *with a term* — it needs an end date, a fall-back rate, and a
-   rule about what happens on the boundary. For a card-stacking business that is
-   an important number, so this is flagged rather than half-built. **Open item
-   for the owner: does the 0% intro period need modelling?** If yes it is its
-   own migration, not a column bolted onto 083.
+2. **Promotional / 0%-intro APR IS built.** This was raised as an open question
+   and the owner answered "figure it out", so: yes. The business sells
+   "Card Stacking DFY" — the 0% window *is* the product, and a system holding
+   only the go-to rate quotes 18.99% on a card that is currently free money and
+   sends the draw to the wrong card. Modelled as a rate AND an end date, per
+   promoted scope (purchases, balance transfers), with `effectiveApr()` deciding
+   which rate is in force on a given day. **The conservative rule: a promotion
+   whose expiry is unknown is NOT applied** — see "The undatable-promo rule"
+   below. There is no "reverts to" column; the go-to rate three lines up in 083
+   already is that, and a copy would drift.
 3. **084 versions terms, not balances.** A "term" is the credit limit, the three
-   APRs and the business/personal classification. Balances change daily and are
+   go-to APRs, the promotional rate and end date for each promoted scope, and
+   the business/personal classification. Balances change daily and are
    not terms; a balance history is a different problem and would be a different
    table. The task said "a limit or APR change", which is what is versioned.
 4. **`is_business` is a genuine three-state value** — `true`, `false`, `NULL`.
@@ -143,7 +148,7 @@ not a debt hidden in a nullable column.
 |---|---|
 | `db/migrations/083_card_liabilities.sql` | new — one row per card, all money in integer cents, APR as a fraction in [0,1] |
 | `db/migrations/084_card_liability_terms.sql` | new — effective-dated term history; one open row per card enforced by a unique partial index; a trigger that refuses an in-place rate edit |
-| `src/card-liabilities/index.mjs` | new — PURE. `utilisation`, `availableCreditCents`, `summarise`, `mergeCardView`, `coerceLiabilityRow`, `readIsBusiness`, `readLast4` |
+| `src/card-liabilities/index.mjs` | new — PURE. `utilisation`, `availableCreditCents`, `effectiveApr`, `promoWindow`, `summarise`, `mergeCardView`, `coerceLiabilityRow`, `readIsBusiness`, `readLast4`, `readDate` |
 | `src/card-liabilities/index.test.mjs` | new — pure unit tests, no database |
 | `src/card-liabilities/store.mjs` | new — the database half. `upsertCardLiability`, `listCardLiabilities`, `getCardLiability`, `openTerms`, `currentTerms`, `changeTerms`, `listTerms`, `termsAsOf` |
 | `src/card-liabilities/store.pg.test.mjs` | new — real Postgres |
@@ -155,8 +160,9 @@ not a debt hidden in a nullable column.
 ### Exports added
 
 `src/card-liabilities/index.mjs`: `utilisation`, `availableCreditCents`,
-`summarise`, `mergeCardView`, `coerceLiabilityRow`, `readIsBusiness`,
-`readLast4`, `TERM_FIELDS`, `BANK_REPORTED_FIELDS`.
+`effectiveApr`, `promoWindow`, `summarise`, `mergeCardView`,
+`coerceLiabilityRow`, `readIsBusiness`, `readLast4`, `readDate`, `TERM_FIELDS`,
+`TERM_DATE_FIELDS`, `BANK_REPORTED_FIELDS`, `APR_SCOPES`.
 
 `src/card-liabilities/index.mjs` also re-exports `toCents` and `readApr` from
 `src/tradelines/index.mjs`, and exports `asCents` / `asRate` (Postgres returns
@@ -192,12 +198,12 @@ Against a real Postgres 16, from a database created empty each time.
 ```
 migrations apply from scratch      52 applied, 0 errors
 re-run                             0 applied  (a no-op, as required)
-pure unit tests (no database)      60 pass, 0 fail
-card-liability pg tests            33 pass, 0 fail
-endpoint pg tests                  14 pass, 0 fail
-npm test, DATABASE_URL unset       0 fail, 228 skipped
+pure unit tests (no database)      83 pass, 0 fail
+card-liability pg tests            44 pass, 0 fail
+endpoint pg tests                  17 pass, 0 fail
+npm test, DATABASE_URL unset       0 fail, 239 skipped
 npm test, virgin db, first run     24 fail — the SAME 24 NAMES as clean main
-mutation check                     20/20 caught
+mutation check                     33/33 caught
 ```
 
 The 24 failures were diffed by NAME, not by count, against a control run of
@@ -223,6 +229,44 @@ new failing name, and none of the pre-existing ones accidentally fixed.
    lives in its own non-default org. This repo already carries five
    order-dependent suites; a sixth was not worth four saved lines.
 
+### The undatable-promo rule, and why it goes that way
+
+`effectiveApr(card, { scope, asOf })` returns the rate a card ACTUALLY charges
+on a day, and one of its four states is the whole argument:
+
+| state | meaning | rate applied |
+|---|---|---|
+| `none` | no promotional rate on file | the go-to rate |
+| `active` | promo recorded, ends on or after `asOf` | **the promo rate** |
+| `expired` | promo recorded, ended before `asOf` | the go-to rate |
+| `expiry_unknown` | promo recorded, **no end date** | the go-to rate |
+
+That last row is the deliberate call. "There is a 0% promo and nobody knows when
+it ends" is a real and common state — a client says so on a call and the
+statement is not to hand — so the schema allows it rather than forcing whoever
+types it to invent a date. But it is **not applied to the rate**. Being wrong in
+that direction understates a benefit the client turns out to have. Being wrong
+the other way tells a client their money is free when it is not, in a regulated
+consumer-finance product. Those two errors are not symmetric.
+
+The state is *reported*, not swallowed, so a screen can say "0% intro on file,
+expiry unknown — confirm before drawing" rather than pretending the promotion
+does not exist. `promoWindow()` counts those cards in `expiryUnknownCount`,
+separately from the drawable total.
+
+Three other choices worth a reviewer's eye:
+
+* **The end date is inclusive.** A promotion ending 2026-12-01 is still in force
+  on 2026-12-01, which is how issuers state it. `daysRemaining` is 0 that day.
+* **`asOf` is required and never defaults to today.** This module is pure and
+  reads no clock; defaulting would make it read one. The clock lives at the
+  edge, in the endpoint, where `?as_of=` also lets a caller ask what a card
+  charged in March — the question 084 exists to answer. An unparseable
+  `?as_of=` is a 400, not a silent fallback to today.
+* **The promotional window is a versioned TERM.** When an issuer moves or ends
+  it, 084 closes the old row and opens a new one, so "was that card still inside
+  its intro period when we drew on it in January?" stays answerable.
+
 ### Findings (not fixed here — other units' files)
 
 * **`api/read/tradelines.mjs` reports an unknown credit limit as $0 available.**
@@ -243,8 +287,7 @@ new failing name, and none of the pre-existing ones accidentally fixed.
 
 ### Blockers and open questions
 
-* **Open — for the owner:** does the 0%/promotional intro APR need modelling?
-  (Assumption 2 above.) Not built.
+* **Answered and built:** the 0%/promotional intro APR. See assumption 2.
 * **Open — for W5:** `card_liabilities.account_ref` needs a foreign key once the
   accounts table exists. One migration, one line.
 * **Open — nobody claimed:** nothing populates `tradeline_id`. A bank-card to

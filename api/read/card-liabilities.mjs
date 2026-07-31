@@ -33,13 +33,14 @@ import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid, redact, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { listCardLiabilities } from "../../src/card-liabilities/store.mjs";
 import {
-  summarise, utilisation, availableCreditCents, asCents, asRate, mergeCardView
+  summarise, utilisation, availableCreditCents, asCents, asRate, mergeCardView,
+  effectiveApr, promoWindow, readDate
 } from "../../src/card-liabilities/index.mjs";
 
 /* Postgres hands bigint and numeric back as STRINGS. Shipping those verbatim
    would make every consumer parse them, and a consumer that forgot would
    compare '1000000' < '9' lexically and be wrong above a million. */
-function wireRow(r) {
+function wireRow(r, asOf) {
   return {
     id: r.id,
     client_id: r.client_id,
@@ -57,11 +58,25 @@ function wireRow(r) {
     apr_balance_transfer: asRate(r.apr_balance_transfer),
     statement_close_date: r.statement_close_date,
     payment_due_date: r.payment_due_date,
+    promo_purchase_apr: asRate(r.promo_purchase_apr),
+    promo_purchase_ends_on: readDate(r.promo_purchase_ends_on),
+    promo_balance_transfer_apr: asRate(r.promo_balance_transfer_apr),
+    promo_balance_transfer_ends_on: readDate(r.promo_balance_transfer_ends_on),
     as_of: r.as_of,
     closed_at: r.closed_at,
     // Derived here and stored nowhere, the rule 054 sets and 083 repeats.
     utilisation: utilisation(r.balance_cents, r.credit_limit_cents),
-    available_cents: availableCreditCents(r.credit_limit_cents, r.balance_cents)
+    available_cents: availableCreditCents(r.credit_limit_cents, r.balance_cents),
+    // WHAT THE CARD ACTUALLY CHARGES on `asOf`, per scope, with the reason.
+    // `basis` is "promo" or "standard"; `promoState` distinguishes "no
+    // promotion" from "expired" from "we hold a promotional rate and do not
+    // know when it ends", and that last one is NOT applied to the rate — see
+    // effectiveApr. A screen must surface it rather than round it away.
+    effective_apr: {
+      purchase: effectiveApr(r, { scope: "purchase", asOf }),
+      balance_transfer: effectiveApr(r, { scope: "balance_transfer", asOf }),
+      cash_advance: effectiveApr(r, { scope: "cash_advance", asOf })
+    }
   };
 }
 
@@ -81,6 +96,20 @@ export default async function handler(req, res) {
   }
 
   try {
+    // THE CLOCK LIVES HERE, AT THE EDGE. src/card-liabilities/index.mjs is pure
+    // and reads no clock, so effectiveApr() requires the day to be passed in.
+    // ?as_of= lets a caller ask what a card charged on some past day — which is
+    // the question 084 exists to answer — and an absent one means today.
+    // An UNPARSEABLE ?as_of= is refused rather than quietly treated as today: a
+    // caller who asked about March and silently got August would be told the
+    // wrong rate with no indication anything went wrong.
+    const asOf = query.as_of == null || query.as_of === ""
+      ? new Date().toISOString().slice(0, 10)
+      : readDate(query.as_of);
+    if (!asOf) {
+      return res.status(400).json({ ok: false, error: "as_of must be a calendar day, YYYY-MM-DD" });
+    }
+
     const rows = await listCardLiabilities(db, {
       clientId,
       includeClosed: query.include_closed === "true"
@@ -112,14 +141,23 @@ export default async function handler(req, res) {
     return res.status(200).json({
       ok: true,
       data: redact(rows.map((r) => ({
-        ...wireRow(r),
+        ...wireRow(r, asOf),
         merged: mergeCardView(r.tradeline_id ? byId.get(r.tradeline_id) ?? null : null, r)
       }))),
       // Split by classification, with the unclassified cards reported as their
       // own bucket rather than folded into personal. summarise() carries the
       // unknown COUNTS alongside the known sums so a caller can tell a partial
       // total from a whole one.
-      summary: summarise(rows)
+      summary: summarise(rows),
+      // The card-stacking question: which cards are inside a 0% window right
+      // now, how much can be drawn at those rates, and which window shuts
+      // first. Undatable promotions are counted separately rather than added
+      // to the total — a window nobody can date is not drawable credit.
+      promo_window: {
+        as_of: asOf,
+        purchase: promoWindow(rows, { scope: "purchase", asOf }),
+        balance_transfer: promoWindow(rows, { scope: "balance_transfer", asOf })
+      }
     });
   } catch (e) {
     if (CLIENT_DATA_ERRORS.has(e.code)) {

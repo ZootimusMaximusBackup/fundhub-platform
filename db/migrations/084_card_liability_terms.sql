@@ -24,9 +24,10 @@
 -- person in a hurry.
 --
 -- WHAT IS A "TERM" HERE, AND WHAT IS NOT. Versioned: the credit limit, the
--- three APRs, and the business/personal classification. Those are what the
--- issuer sets and changes on a schedule, and each of them changes the meaning
--- of every historical number computed from it.
+-- three go-to APRs, the promotional rate and its end date for each promoted
+-- scope, and the business/personal classification. Those are what the issuer
+-- sets and changes on a schedule, and each of them changes the meaning of every
+-- historical number computed from it.
 --
 -- NOT versioned: balances, statement balance, minimum payment, due dates. Those
 -- are not terms, they are readings — they change every single day, and a
@@ -61,6 +62,21 @@ CREATE TABLE IF NOT EXISTS card_liability_terms (
   apr_purchase         numeric(6,5) CHECK (apr_purchase         >= 0 AND apr_purchase         <= 1),
   apr_cash_advance     numeric(6,5) CHECK (apr_cash_advance     >= 0 AND apr_cash_advance     <= 1),
   apr_balance_transfer numeric(6,5) CHECK (apr_balance_transfer >= 0 AND apr_balance_transfer <= 1),
+
+  -- THE PROMOTIONAL WINDOW IS VERSIONED TOO, and it is arguably the single most
+  -- important thing in this table. A 0% window closing is the moment a card
+  -- stops being free money and starts costing the go-to rate, and it is exactly
+  -- the fact somebody will need to reconstruct later: "was that card still
+  -- inside its intro period when we drew on it in March?" If the end date were
+  -- overwritten when the issuer extended or ended the promotion, that question
+  -- would have no answer, and the answer decides whether the advice given was
+  -- sound.
+  promo_purchase_apr             numeric(6,5)
+    CHECK (promo_purchase_apr         >= 0 AND promo_purchase_apr         <= 1),
+  promo_purchase_ends_on         date,
+  promo_balance_transfer_apr     numeric(6,5)
+    CHECK (promo_balance_transfer_apr >= 0 AND promo_balance_transfer_apr <= 1),
+  promo_balance_transfer_ends_on date,
 
   -- Three states, same as 083: true / false / NULL-means-unclassified. A card
   -- reclassified from personal to business is a term change worth versioning,
@@ -159,6 +175,10 @@ BEGIN
   OR NEW.apr_purchase         IS DISTINCT FROM OLD.apr_purchase
   OR NEW.apr_cash_advance     IS DISTINCT FROM OLD.apr_cash_advance
   OR NEW.apr_balance_transfer IS DISTINCT FROM OLD.apr_balance_transfer
+  OR NEW.promo_purchase_apr             IS DISTINCT FROM OLD.promo_purchase_apr
+  OR NEW.promo_purchase_ends_on         IS DISTINCT FROM OLD.promo_purchase_ends_on
+  OR NEW.promo_balance_transfer_apr     IS DISTINCT FROM OLD.promo_balance_transfer_apr
+  OR NEW.promo_balance_transfer_ends_on IS DISTINCT FROM OLD.promo_balance_transfer_ends_on
   OR NEW.is_business          IS DISTINCT FROM OLD.is_business
   OR NEW.source               IS DISTINCT FROM OLD.source
   OR NEW.reason               IS DISTINCT FROM OLD.reason

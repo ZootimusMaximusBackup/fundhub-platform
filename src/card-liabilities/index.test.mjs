@@ -25,7 +25,10 @@ import {
   coerceLiabilityRow,
   summarise,
   mergeCardView,
+  effectiveApr,
+  promoWindow,
   TERM_FIELDS,
+  TERM_DATE_FIELDS,
   BANK_REPORTED_FIELDS
 } from "./index.mjs";
 
@@ -287,6 +290,232 @@ test("coerceLiabilityRow keeps the unparsed record and defaults it to an object"
   assert.deepEqual(coerceLiabilityRow({ accountRef: "a", issuer: "X", raw: "not an object" }).raw, {});
 });
 
+/* ------------------------------------------------- the promotional window */
+
+const promoCard = (over = {}) => ({
+  id: "c1", issuer: "Chase Ink", last4: "1004", is_business: true,
+  credit_limit_cents: 2000000, balance_cents: 500000, closed_at: null,
+  apr_purchase: 0.1899, apr_cash_advance: 0.2999, apr_balance_transfer: 0.2199,
+  promo_purchase_apr: 0, promo_purchase_ends_on: "2026-12-01",
+  promo_balance_transfer_apr: null, promo_balance_transfer_ends_on: null,
+  ...over
+});
+
+test("effectiveApr will not read the clock — asOf is required", () => {
+  assert.throws(() => effectiveApr(promoCard(), { scope: "purchase" }), /`asOf` is required/);
+  assert.throws(() => effectiveApr(promoCard(), { scope: "purchase", asOf: null }), /`asOf` is required/);
+  assert.throws(() => effectiveApr(promoCard(), { scope: "purchase", asOf: "soon" }), /`asOf` is required/);
+});
+
+test("effectiveApr refuses a scope that does not exist", () => {
+  assert.throws(() => effectiveApr(promoCard(), { scope: "mortgage", asOf: "2026-08-01" }), RangeError);
+});
+
+test("inside the intro window the card charges the PROMO rate", () => {
+  const r = effectiveApr(promoCard(), { scope: "purchase", asOf: "2026-08-01" });
+  assert.strictEqual(r.apr, 0);
+  assert.equal(r.basis, "promo");
+  assert.equal(r.promoState, "active");
+  assert.equal(r.standardApr, 0.1899, "the go-to rate is still reported alongside");
+  assert.equal(r.promoEndsOn, "2026-12-01");
+  assert.equal(r.daysRemaining, 122);
+});
+
+test("the end date is INCLUSIVE — the promo is still live on its last day", () => {
+  const r = effectiveApr(promoCard(), { scope: "purchase", asOf: "2026-12-01" });
+  assert.strictEqual(r.apr, 0);
+  assert.equal(r.promoState, "active");
+  assert.equal(r.daysRemaining, 0, "last day, zero days left, still 0%");
+});
+
+test("the day AFTER the window closes, the card charges the go-to rate", () => {
+  const r = effectiveApr(promoCard(), { scope: "purchase", asOf: "2026-12-02" });
+  assert.equal(r.apr, 0.1899);
+  assert.equal(r.basis, "standard");
+  assert.equal(r.promoState, "expired");
+  assert.strictEqual(r.daysRemaining, null);
+  assert.strictEqual(r.promoApr, 0, "the expired promo is still reported, so a screen can explain why the rate jumped");
+});
+
+test("A PROMO WITH NO KNOWN END DATE IS NOT APPLIED — the deliberate conservative call", () => {
+  const r = effectiveApr(
+    promoCard({ promo_purchase_apr: 0, promo_purchase_ends_on: null }),
+    { scope: "purchase", asOf: "2026-08-01" }
+  );
+  assert.equal(r.apr, 0.1899, "quote the go-to rate, not the 0% we cannot date");
+  assert.notStrictEqual(r.apr, 0, "telling a client their money is free when it may not be is the error that matters");
+  assert.equal(r.basis, "standard");
+  assert.equal(r.promoState, "expiry_unknown", "but the promotion is reported so somebody can go and confirm it");
+  assert.strictEqual(r.promoApr, 0);
+  assert.strictEqual(r.daysRemaining, null);
+});
+
+test("a card with no promotion at all reports the go-to rate and state 'none'", () => {
+  const r = effectiveApr(
+    promoCard({ promo_purchase_apr: null, promo_purchase_ends_on: null }),
+    { scope: "purchase", asOf: "2026-08-01" }
+  );
+  assert.equal(r.apr, 0.1899);
+  assert.equal(r.basis, "standard");
+  assert.equal(r.promoState, "none");
+});
+
+test("a 0% promo is a real rate and does not read as absent", () => {
+  // The over-broad direction: `promoApr || standardApr` would discard a 0%
+  // promotion, which is the only promotion this business actually cares about.
+  const r = effectiveApr(promoCard(), { scope: "purchase", asOf: "2026-08-01" });
+  assert.strictEqual(r.apr, 0);
+  assert.notStrictEqual(r.apr, 0.1899);
+});
+
+test("an unknown go-to rate stays unknown once the promo expires", () => {
+  const r = effectiveApr(
+    promoCard({ apr_purchase: null }),
+    { scope: "purchase", asOf: "2026-12-02" }
+  );
+  assert.strictEqual(r.apr, null, "we do not know what it reverted to, and must not guess");
+  assert.strictEqual(r.basis, null, "no basis, because no rate was read at all");
+});
+
+test("a live promo answers even when the go-to rate is unknown", () => {
+  const r = effectiveApr(promoCard({ apr_purchase: null }), { scope: "purchase", asOf: "2026-08-01" });
+  assert.strictEqual(r.apr, 0);
+  assert.equal(r.basis, "promo");
+  assert.strictEqual(r.standardApr, null);
+});
+
+test("balance transfers carry their own window, independent of purchases", () => {
+  const card = promoCard({
+    promo_balance_transfer_apr: 0.0299, promo_balance_transfer_ends_on: "2027-02-01"
+  });
+  const bt = effectiveApr(card, { scope: "balance_transfer", asOf: "2026-08-01" });
+  assert.equal(bt.apr, 0.0299);
+  assert.equal(bt.promoEndsOn, "2027-02-01");
+
+  const p = effectiveApr(card, { scope: "purchase", asOf: "2026-08-01" });
+  assert.strictEqual(p.apr, 0, "the purchase window is a different window");
+  assert.equal(p.promoEndsOn, "2026-12-01");
+});
+
+test("cash advances are never promoted and answer uniformly rather than throwing", () => {
+  const r = effectiveApr(promoCard(), { scope: "cash_advance", asOf: "2026-08-01" });
+  assert.equal(r.apr, 0.2999);
+  assert.equal(r.basis, "standard");
+  assert.equal(r.promoState, "none");
+  assert.strictEqual(r.promoApr, null);
+});
+
+test("effectiveApr reads Postgres's shapes — numeric strings and Date objects", () => {
+  const r = effectiveApr(
+    promoCard({
+      apr_purchase: "0.18990", promo_purchase_apr: "0.00000",
+      promo_purchase_ends_on: new Date(Date.UTC(2026, 11, 1))
+    }),
+    { scope: "purchase", asOf: new Date(Date.UTC(2026, 7, 1)) }
+  );
+  assert.strictEqual(r.apr, 0);
+  assert.equal(r.promoEndsOn, "2026-12-01");
+  assert.equal(r.daysRemaining, 122);
+});
+
+test("effectiveApr on a null card is all-unknown rather than a crash", () => {
+  const r = effectiveApr(null, { scope: "purchase", asOf: "2026-08-01" });
+  assert.strictEqual(r.apr, null);
+  assert.strictEqual(r.basis, null);
+  assert.equal(r.promoState, "none");
+});
+
+test("promoWindow lists only the cards inside a live window, soonest to close first", () => {
+  const w = promoWindow([
+    promoCard({ id: "a", promo_purchase_ends_on: "2027-01-01" }),
+    promoCard({ id: "b", promo_purchase_ends_on: "2026-09-15" }),
+    promoCard({ id: "c", promo_purchase_apr: null, promo_purchase_ends_on: null })
+  ], { asOf: "2026-08-01" });
+
+  assert.equal(w.count, 2, "the card with no promotion is not in the window");
+  assert.deepEqual(w.cards.map((c) => c.id), ["b", "a"], "soonest expiry first — the order a closer works");
+  assert.equal(w.soonestExpiry, "2026-09-15");
+});
+
+test("promoWindow sums the headroom that is actually drawable at the promo rate", () => {
+  const w = promoWindow([
+    promoCard({ id: "a", credit_limit_cents: 2000000, balance_cents: 500000 }),
+    promoCard({ id: "b", credit_limit_cents: 1000000, balance_cents: 250000 })
+  ], { asOf: "2026-08-01" });
+  assert.equal(w.availableCents, 1500000 + 750000);
+  assert.equal(w.availableUnknownCount, 0);
+});
+
+test("promoWindow counts a card with an unknown limit as unknown, never as zero headroom", () => {
+  const w = promoWindow([
+    promoCard({ id: "a", credit_limit_cents: 2000000, balance_cents: 500000 }),
+    promoCard({ id: "b", credit_limit_cents: null, balance_cents: 250000 })
+  ], { asOf: "2026-08-01" });
+  assert.equal(w.count, 2, "it is still inside its window");
+  assert.equal(w.availableCents, 1500000, "only the known headroom is summed");
+  assert.equal(w.availableUnknownCount, 1, "and the rest is counted, not silently added as 0");
+});
+
+test("promoWindow keeps undatable promotions visible but out of the total", () => {
+  const w = promoWindow([
+    promoCard({ id: "a" }),
+    promoCard({ id: "b", promo_purchase_ends_on: null })
+  ], { asOf: "2026-08-01" });
+  assert.equal(w.count, 1, "an undatable window is not drawable credit");
+  assert.equal(w.expiryUnknownCount, 1, "but it is reported so somebody confirms it");
+  assert.equal(w.availableCents, 1500000);
+});
+
+test("promoWindow drops expired windows and closed cards", () => {
+  const w = promoWindow([
+    promoCard({ id: "expired", promo_purchase_ends_on: "2026-01-01" }),
+    promoCard({ id: "closed", closed_at: "2026-02-02T00:00:00Z" }),
+    promoCard({ id: "live" })
+  ], { asOf: "2026-08-01" });
+  assert.equal(w.count, 1);
+  assert.equal(w.cards[0].id, "live");
+});
+
+test("promoWindow over nothing is empty with no expiry, not a zero date", () => {
+  const w = promoWindow([], { asOf: "2026-08-01" });
+  assert.equal(w.count, 0);
+  assert.equal(w.availableCents, 0);
+  assert.strictEqual(w.soonestExpiry, null);
+});
+
+test("coerceLiabilityRow keeps a 0% promo with an unknown end date as exactly that", () => {
+  const row = coerceLiabilityRow({
+    accountRef: "a", issuer: "X", promoPurchaseApr: 0
+  });
+  assert.strictEqual(row.promo_purchase_apr, 0, "the promotion exists and must not be dropped");
+  assert.strictEqual(row.promo_purchase_ends_on, null, "and the missing date must stay missing");
+});
+
+test("coerceLiabilityRow reads promo rates as fractions and dates as calendar days", () => {
+  const row = coerceLiabilityRow({
+    accountRef: "a", issuer: "X",
+    promoPurchaseApr: 0, promoPurchaseEndsOn: "2026-12-01",
+    promoBalanceTransferApr: 2.99, promoBalanceTransferEndsOn: "2027-02-01T00:00:00Z"
+  });
+  assert.strictEqual(row.promo_purchase_apr, 0);
+  assert.equal(row.promo_purchase_ends_on, "2026-12-01");
+  assert.equal(row.promo_balance_transfer_apr, 0.0299);
+  assert.equal(row.promo_balance_transfer_ends_on, "2027-02-01");
+});
+
+test("the promotional window is bank-only in a merge", () => {
+  const m = mergeCardView(bureauRow(), bankRow({
+    promo_purchase_apr: 0, promo_purchase_ends_on: "2026-12-01"
+  }));
+  assert.strictEqual(m.promoPurchaseApr, 0);
+  assert.equal(m.promoPurchaseEndsOn, "2026-12-01");
+  assert.equal(m.provenance.promoPurchaseApr, "bank");
+
+  const bureauOnly = mergeCardView(bureauRow(), null);
+  assert.strictEqual(bureauOnly.promoPurchaseApr, null, "a credit report has no concept of an intro rate");
+  assert.strictEqual(bureauOnly.provenance.promoPurchaseApr, null);
+});
+
 /* ---------------------------------------------------------------- summarise */
 
 const card = (over = {}) => ({
@@ -512,8 +741,13 @@ test("merging a 0% APR does not fall through to the bureau", () => {
 
 test("TERM_FIELDS names exactly what 084 versions", () => {
   assert.deepEqual(TERM_FIELDS, [
-    "credit_limit_cents", "apr_purchase", "apr_cash_advance", "apr_balance_transfer", "is_business"
+    "credit_limit_cents", "apr_purchase", "apr_cash_advance", "apr_balance_transfer",
+    "promo_purchase_apr", "promo_purchase_ends_on",
+    "promo_balance_transfer_apr", "promo_balance_transfer_ends_on",
+    "is_business"
   ]);
+  assert.deepEqual([...TERM_DATE_FIELDS], ["promo_purchase_ends_on", "promo_balance_transfer_ends_on"],
+    "the date-valued terms must be named, or the store compares a Date to a string every night");
   for (const f of ["balance_cents", "statement_balance_cents", "minimum_payment_cents", "payment_due_date"]) {
     assert.ok(!TERM_FIELDS.includes(f), `${f} is a reading, not a term — versioning it is a different table`);
   }

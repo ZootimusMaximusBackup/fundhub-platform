@@ -36,8 +36,22 @@ export const TERM_FIELDS = [
   "apr_purchase",
   "apr_cash_advance",
   "apr_balance_transfer",
+  "promo_purchase_apr",
+  "promo_purchase_ends_on",
+  "promo_balance_transfer_apr",
+  "promo_balance_transfer_ends_on",
   "is_business"
 ];
+
+/* Which TERM_FIELDS are calendar days rather than numbers. Named here because
+   the store has to compare them with readDate() — Postgres hands a `date` back
+   as a JS Date object, and `dateObject !== '2026-08-15'` is true every single
+   time, which would append a history row every night for a promotion that never
+   moved. */
+export const TERM_DATE_FIELDS = new Set([
+  "promo_purchase_ends_on",
+  "promo_balance_transfer_ends_on"
+]);
 
 /* The columns a bank knows and a bureau file does not. Used by mergeCardView to
    decide which side can even be asked about a field. */
@@ -49,7 +63,13 @@ export const BANK_REPORTED_FIELDS = [
   "last4",
   "is_business",
   "apr_cash_advance",
-  "apr_balance_transfer"
+  "apr_balance_transfer",
+  // A bureau file reports what an account accrues at, never what the issuer
+  // advertised when it opened, so the whole promotional window is bank-only.
+  "promo_purchase_apr",
+  "promo_purchase_ends_on",
+  "promo_balance_transfer_apr",
+  "promo_balance_transfer_ends_on"
 ];
 
 /* asCents — a stored cents value as a JavaScript integer, or null.
@@ -219,6 +239,169 @@ export function readDate(value) {
   return `${y}-${mo}-${d}`;
 }
 
+// ---------------------------------------------------------------------------
+// the promotional window — which rate is actually in force on a given day
+// ---------------------------------------------------------------------------
+
+/* The scopes a card can carry a rate for. Only purchases and balance transfers
+   are ever promoted; cash advances are listed so a caller can ask about any of
+   the three uniformly and get a truthful "no promotion" rather than a throw. */
+export const APR_SCOPES = {
+  purchase: { standard: "apr_purchase", promo: "promo_purchase_apr", endsOn: "promo_purchase_ends_on" },
+  balance_transfer: {
+    standard: "apr_balance_transfer",
+    promo: "promo_balance_transfer_apr",
+    endsOn: "promo_balance_transfer_ends_on"
+  },
+  cash_advance: { standard: "apr_cash_advance", promo: null, endsOn: null }
+};
+
+const MS_PER_DAY = 86400000;
+
+/* Whole days from one calendar day to another, both as 'YYYY-MM-DD'. Computed
+   in UTC off the date parts alone, so it never picks up a daylight-saving hour
+   and never depends on where the caller is sitting. */
+function daysBetween(fromDay, toDay) {
+  const a = Date.parse(`${fromDay}T00:00:00Z`);
+  const b = Date.parse(`${toDay}T00:00:00Z`);
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return Math.round((b - a) / MS_PER_DAY);
+}
+
+/**
+ * effectiveApr — the rate this card ACTUALLY charges on a given day, and why.
+ *
+ * WHY THIS IS THE MOST IMPORTANT FUNCTION IN THE MODULE. The business draws on
+ * cards inside their 0% intro window and repays before it closes. A system that
+ * knows only the go-to rate quotes 18.99% on a card that is currently free
+ * money and sends the draw to the wrong card; a system that knows only the
+ * promotional rate quotes 0% on a card whose window shut in March. Neither is a
+ * rounding error — both change which card the money comes from.
+ *
+ * `asOf` IS REQUIRED AND IS NOT DEFAULTED TO TODAY. This module is pure and
+ * reads no clock; defaulting would make it read one. It is also the honest
+ * shape: a caller asking "what did this card charge in March" and a caller
+ * asking "what does it charge now" are asking different questions, and the
+ * second one should have to say so. The clock lives at the edge, in the
+ * endpoint, which is where 054 already puts unit conversions.
+ *
+ * THE FOUR STATES, and the one that matters:
+ *
+ *   none            no promotional rate recorded  -> the go-to rate
+ *   active          promo recorded, ends on or after asOf -> the PROMO rate
+ *   expired         promo recorded, ended before asOf -> the go-to rate
+ *   expiry_unknown  promo recorded, NO end date   -> the GO-TO rate
+ *
+ * That last one is the deliberate call. A promotion with no known end date is
+ * NOT applied. Being wrong in that direction understates a benefit the client
+ * turns out to have; being wrong the other way tells a client their money is
+ * free when it is not, and this is a regulated consumer-finance product where
+ * those two errors are not symmetric. The state is reported so a screen can say
+ * "0% intro on file, expiry unknown — confirm before drawing" rather than
+ * silently pretending the promotion does not exist.
+ *
+ * The end date is INCLUSIVE: a promotion ending 2026-08-15 is still in force on
+ * 2026-08-15, which is how issuers state it. daysRemaining is 0 on that day.
+ */
+export function effectiveApr(card, { scope = "purchase", asOf } = {}) {
+  const spec = APR_SCOPES[scope];
+  if (!spec) throw new RangeError(`effectiveApr: unknown scope: ${scope}`);
+  const day = readDate(asOf);
+  if (!day) throw new TypeError("effectiveApr: `asOf` is required — a calendar day, not a default of today");
+
+  const standardApr = card ? asRate(card[spec.standard]) : null;
+  const promoApr = spec.promo && card ? asRate(card[spec.promo]) : null;
+  const promoEndsOn = spec.endsOn && card ? readDate(card[spec.endsOn]) : null;
+
+  let promoState = "none";
+  let daysRemaining = null;
+
+  if (promoApr !== null) {
+    if (promoEndsOn === null) {
+      promoState = "expiry_unknown";
+    } else {
+      const remaining = daysBetween(day, promoEndsOn);
+      if (remaining !== null && remaining >= 0) {
+        promoState = "active";
+        daysRemaining = remaining;
+      } else {
+        promoState = "expired";
+      }
+    }
+  }
+
+  const usePromo = promoState === "active";
+  const apr = usePromo ? promoApr : standardApr;
+
+  return {
+    apr,
+    // null, not "standard", when nothing is known at all: a card with no rate
+    // on file has no basis, and saying "standard" would imply we had read one.
+    basis: apr === null ? null : (usePromo ? "promo" : "standard"),
+    standardApr,
+    promoApr,
+    promoEndsOn,
+    promoState,
+    daysRemaining
+  };
+}
+
+/**
+ * promoWindow — the card-stacking question, answered over a client's whole book:
+ * which cards are inside a promotional window right now, how much can be drawn
+ * at those rates, and which window closes first.
+ *
+ * Closed cards are skipped, and so are promotions whose expiry is unknown —
+ * those are counted separately in `expiryUnknownCount` so they are visible
+ * without being counted as available. Same reasoning as effectiveApr: a window
+ * nobody can date is not a window anyone should draw against.
+ *
+ * `availableCents` is the sum over promo-active cards whose headroom is KNOWN,
+ * with `availableUnknownCount` alongside it — the same honest-partial-sum shape
+ * summarise() uses, for the same reason.
+ */
+export function promoWindow(rows = [], { scope = "purchase", asOf } = {}) {
+  const out = {
+    cards: [],
+    count: 0,
+    availableCents: 0,
+    availableUnknownCount: 0,
+    expiryUnknownCount: 0,
+    soonestExpiry: null
+  };
+
+  for (const row of rows) {
+    if (!row || row.closed_at) continue;
+    const rate = effectiveApr(row, { scope, asOf });
+    if (rate.promoState === "expiry_unknown") out.expiryUnknownCount += 1;
+    // ONLY "active" is drawable. An undatable window was counted just above so
+    // it stays visible, an expired one is gone, and neither is credit anybody
+    // should be told they can draw at a promotional rate.
+    if (rate.promoState !== "active") continue;
+
+    const available = availableCreditCents(row.credit_limit_cents, row.balance_cents);
+    out.count += 1;
+    if (available === null) out.availableUnknownCount += 1; else out.availableCents += available;
+    if (out.soonestExpiry === null || rate.promoEndsOn < out.soonestExpiry) {
+      out.soonestExpiry = rate.promoEndsOn;
+    }
+    out.cards.push({
+      id: row.id ?? null,
+      issuer: row.issuer ?? null,
+      last4: row.last4 ?? null,
+      isBusiness: row.is_business ?? null,
+      apr: rate.apr,
+      promoEndsOn: rate.promoEndsOn,
+      daysRemaining: rate.daysRemaining,
+      availableCents: available
+    });
+  }
+
+  // Soonest to close first — the order a closer works the list in.
+  out.cards.sort((a, b) => (a.promoEndsOn < b.promoEndsOn ? -1 : a.promoEndsOn > b.promoEndsOn ? 1 : 0));
+  return out;
+}
+
 /**
  * coerceLiabilityRow — a caller-supplied card into the shape 083 stores.
  *
@@ -262,6 +445,19 @@ export function coerceLiabilityRow(input = {}) {
     apr_purchase: readApr(pick("aprPurchase", "apr_purchase", "purchaseApr", "apr")),
     apr_cash_advance: readApr(pick("aprCashAdvance", "apr_cash_advance", "cashApr")),
     apr_balance_transfer: readApr(pick("aprBalanceTransfer", "apr_balance_transfer", "balanceTransferApr")),
+
+    // The promotional rate and its end date are read as a PAIR, but coerced
+    // independently: "0% until we-do-not-know-when" has to survive as exactly
+    // that, so effectiveApr can refuse to apply it. Pairing them here — say,
+    // dropping the rate when the date is missing — would erase the fact that a
+    // promotion exists at all, and nobody would know to go and confirm it.
+    promo_purchase_apr: readApr(pick("promoPurchaseApr", "promo_purchase_apr", "introApr", "promoApr")),
+    promo_purchase_ends_on: readDate(
+      pick("promoPurchaseEndsOn", "promo_purchase_ends_on", "introEndsOn", "promoEndsOn")),
+    promo_balance_transfer_apr: readApr(
+      pick("promoBalanceTransferApr", "promo_balance_transfer_apr", "btIntroApr")),
+    promo_balance_transfer_ends_on: readDate(
+      pick("promoBalanceTransferEndsOn", "promo_balance_transfer_ends_on", "btIntroEndsOn")),
 
     statement_close_date: readDate(pick("statementCloseDate", "statement_close_date", "lastStatementIssueDate")),
     payment_due_date: readDate(pick("paymentDueDate", "payment_due_date", "nextPaymentDueDate")),
@@ -365,6 +561,13 @@ const MERGE_FIELDS = [
   { key: "aprPurchase", bank: "apr_purchase", bureau: "apr", rate: true },
   { key: "aprCashAdvance", bank: "apr_cash_advance", bureau: null, rate: true },
   { key: "aprBalanceTransfer", bank: "apr_balance_transfer", bureau: null, rate: true },
+  // A bureau file has no concept of a promotional rate — it reports what the
+  // account accrues at, not what the issuer advertised when it opened. So these
+  // four are bank-only, and a card known only to the bureau has no promo.
+  { key: "promoPurchaseApr", bank: "promo_purchase_apr", bureau: null, rate: true },
+  { key: "promoPurchaseEndsOn", bank: "promo_purchase_ends_on", bureau: null },
+  { key: "promoBalanceTransferApr", bank: "promo_balance_transfer_apr", bureau: null, rate: true },
+  { key: "promoBalanceTransferEndsOn", bank: "promo_balance_transfer_ends_on", bureau: null },
   { key: "statementBalanceCents", bank: "statement_balance_cents", bureau: null, cents: true },
   { key: "minimumPaymentCents", bank: "minimum_payment_cents", bureau: null, cents: true },
   { key: "statementCloseDate", bank: "statement_close_date", bureau: null },

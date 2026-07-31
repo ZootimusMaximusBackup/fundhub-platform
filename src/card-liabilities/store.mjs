@@ -26,7 +26,7 @@
 // for tradelines.
 
 import { withTransaction } from "../documents/register.mjs";
-import { TERM_FIELDS, asCents, asRate } from "./index.mjs";
+import { TERM_FIELDS, TERM_DATE_FIELDS, asCents, asRate, readDate } from "./index.mjs";
 
 export { TERM_FIELDS };
 
@@ -45,6 +45,10 @@ const LIABILITY_COLUMNS = [
   "apr_purchase",
   "apr_cash_advance",
   "apr_balance_transfer",
+  "promo_purchase_apr",
+  "promo_purchase_ends_on",
+  "promo_balance_transfer_apr",
+  "promo_balance_transfer_ends_on",
   "statement_close_date",
   "payment_due_date",
   "as_of",
@@ -189,6 +193,13 @@ export async function currentTerms(db, { cardLiabilityId } = {}) {
    with rows where nothing happened. */
 function termChanged(field, current, proposed) {
   if (field === "is_business") return current !== proposed;
+  // A `date` column comes back as a JS Date OBJECT, and a caller supplies
+  // '2026-08-15'. `dateObject !== string` is true every single time, so without
+  // this branch a nightly refresh would append a history row every night for a
+  // promotional window that had not moved — and the table whose entire job is
+  // answering "when did this change" would be buried under nights when it did
+  // not.
+  if (TERM_DATE_FIELDS.has(field)) return readDate(current) !== readDate(proposed);
   const a = field === "credit_limit_cents" ? asCents(current) : asRate(current);
   const b = field === "credit_limit_cents" ? asCents(proposed) : asRate(proposed);
   return a !== b;

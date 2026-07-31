@@ -136,15 +136,50 @@ CREATE TABLE IF NOT EXISTS card_liabilities (
   -- independently NULL-able, because a feed that reports one and not the others
   -- is ordinary.
   --
-  -- A PROMOTIONAL / 0%-INTRO APR IS NOT MODELLED HERE, DELIBERATELY. It is not
-  -- a rate, it is a rate with a term: it needs an end date, a fall-back rate
-  -- and a rule for the boundary. Adding a bare `apr_promotional` column would
-  -- record a 0% that never expires, which for a card-stacking business is the
-  -- most expensive possible wrong number. Flagged on the board as an open
-  -- question for the owner; it is its own migration if the answer is yes.
+  -- These three are the GO-TO rates: what the card charges once no promotion
+  -- applies. The promotional rates are separate columns below, because a promo
+  -- is not a rate — it is a rate WITH A TERM.
   apr_purchase         numeric(6,5) CHECK (apr_purchase         >= 0 AND apr_purchase         <= 1),
   apr_cash_advance     numeric(6,5) CHECK (apr_cash_advance     >= 0 AND apr_cash_advance     <= 1),
   apr_balance_transfer numeric(6,5) CHECK (apr_balance_transfer >= 0 AND apr_balance_transfer <= 1),
+
+  -- THE 0%-INTRO WINDOW. For a card-stacking business this is not a detail, it
+  -- is the product: the whole point of the stack is drawing money at 0% and
+  -- repaying it before the window closes. A system that holds the go-to rate
+  -- and not the promotional one quotes 18.99% on a card that is currently free
+  -- money, and picks the wrong card to draw from.
+  --
+  -- A PROMO IS A RATE PLUS AN END DATE, AND MODELLING ONLY THE RATE IS THE
+  -- DANGEROUS HALF. A bare `apr_promotional` column records a 0% that never
+  -- expires, which is the most expensive possible wrong number here. So the
+  -- rate and its end date are stored as a pair, per scope, and
+  -- src/card-liabilities/index.mjs decides which rate is actually in force on a
+  -- given day.
+  --
+  -- THERE IS NO "REVERTS TO" COLUMN, on purpose. The rate a promotion reverts
+  -- to is the go-to rate three lines up. A separate copy of it would be a
+  -- second answer to the same question and would drift the first time an issuer
+  -- repriced the card.
+  --
+  -- NO CHECK TIES THE RATE TO THE DATE. "There is a 0% promo and we do not know
+  -- when it ends" is a real and common state — a client says so on a call and
+  -- the statement is not to hand. Requiring the date would force whoever typed
+  -- it to invent one. Instead the ABSENCE is treated as the risk it is:
+  -- effectiveApr() refuses to apply a promotion whose expiry is unknown and
+  -- quotes the go-to rate, because being wrong in that direction understates a
+  -- benefit, while the other direction tells a client their money is free when
+  -- it is not.
+  --
+  -- ONLY TWO SCOPES. Purchases and balance transfers are what issuers actually
+  -- promote. Cash advances are not promoted by any card this business works
+  -- with, and inventing a column for a promotion that does not exist would
+  -- invite somebody to populate it.
+  promo_purchase_apr             numeric(6,5)
+    CHECK (promo_purchase_apr         >= 0 AND promo_purchase_apr         <= 1),
+  promo_purchase_ends_on         date,
+  promo_balance_transfer_apr     numeric(6,5)
+    CHECK (promo_balance_transfer_apr >= 0 AND promo_balance_transfer_apr <= 1),
+  promo_balance_transfer_ends_on date,
 
   -- Statement cycle. DATE, not timestamptz: a due date is a calendar day the
   -- issuer names, not an instant, and storing it as an instant invents a
