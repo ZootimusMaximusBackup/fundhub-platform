@@ -54,11 +54,18 @@ map is untouched and `src/http/routes.test.mjs` is unaffected.
 
 ### Journeys impacted
 
-None updated, because **`docs/journeys/` does not exist in this repository.**
-Neither does `docs/compliance/`, nor `docs/journeys/CHANGELOG.md`. CLAUDE.md §4
-and §7 describe both as if they were present. Writing eight journey files from
-memory would be inventing them, so this is reported as a gap rather than filled
-in. See "Open findings" below.
+**None, and this is verified rather than assumed.** `npm run journeys:check`
+reports `docs/journeys is up to date (9 files)` with this branch merged.
+
+The journey generator reads the routing table and each handler's gate. This unit
+adds **no route and no gate** — the purge runner is a terminal command, not an
+endpoint, so `netlify/functions/api.mjs`'s `ROUTES` map is untouched. Nothing for
+the generator to pick up.
+
+`docs/journeys/` did not exist when this unit started. It does now: W2 built it on
+`claude/journeys-actual-generated` and it merged to `main` as `e68bb63`. That
+branch point is merged into this one, so the check above ran against the real
+generator rather than against an empty folder.
 
 ### The retention windows — OWNER-SET
 
@@ -106,10 +113,12 @@ applied in your environment, do not edit it — add a new migration.**
 
 ## Open findings
 
-1. **`docs/journeys/` and `docs/compliance/` do not exist.** CLAUDE.md §4 requires
-   an `-intended.md` / `-actual.md` pair per journey and §7 points at
-   `docs/compliance/` for domain rules. Neither directory is in the repo. No
-   journey could be read before building, and none could be updated after.
+1. ~~**`docs/journeys/` and `docs/compliance/` do not exist.**~~ **RESOLVED for
+   journeys** — W2 generated `docs/journeys/` from code on
+   `claude/journeys-actual-generated`, merged to `main` as `e68bb63`. Merged into
+   this branch; `npm run journeys:check` is clean. `docs/compliance/` (CLAUDE.md
+   §7) still does not exist, and the owner has confirmed the folders are coming —
+   left as-is, not flagged again.
 
 2. **Deleting a `crs_results` row can fail outright.** `soft_pull_requests.crs_result_id`
    is `ON DELETE SET NULL`, but `soft_pull_requests_result_ck` demands that a
@@ -129,7 +138,16 @@ applied in your environment, do not edit it — add a new migration.**
    reported but never deleted — a cascading client delete touches five tables and
    is not something a script should do on its own.
 
-5. **`bank_transactions` de-identification is partial by choice.** Merchant name
+5. **The transaction helper will need consolidating once PR #59 lands.** This unit
+   exports the working `withTransaction` from `src/finance/soft-pulls.mjs` rather
+   than writing a second copy. `docs/workflows/pii-and-journeys.md` records that
+   PR #59 introduces `src/db/with-transaction.mjs` as a shared module, and that
+   W1 will delete the broken copy in `src/pii/index.mjs` once it merges. When that
+   happens `scripts/retention-purge.mjs` should import from the shared module too,
+   and the `export` added here can go back to being private. Not a blocker — one
+   import line — but it is the third helper in a tree that should have one.
+
+6. **`bank_transactions` de-identification is partial by choice.** Merchant name
    and the verbatim provider payload are scrubbed; the amount, the dates and the
    client link stay. Severing `client_id` too would be stronger de-identification
    and would destroy per-client cash-flow history. That trade is a policy call,
