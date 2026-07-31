@@ -2,9 +2,17 @@
 //
 //   GET  ?client_id=<uuid>            → { ok, configured, items, accounts }
 //   GET  ?client_id=<uuid>&history=1  → { ok, syncs }   who has read this client's bank data
+//   POST { action: "link_token", client_id }    — permission to open Plaid Link
 //   POST { action: "link",     client_id, public_token, institution_id?, institution_name? }
 //   POST { action: "sync",     item_id }        — refresh balances for one link
 //   POST { action: "classify", account_id, entity_kind, business_id? }
+//
+// THE THREE STEPS OF LINKING, IN ORDER. `link_token` gives the browser
+// permission to open Plaid Link; the client authenticates at their own bank;
+// Link hands the browser a public_token; `link` trades it for the standing
+// credential. Step two happens entirely inside Plaid and the client's bank —
+// this platform never sees a bank username or password, and there is no
+// argument anywhere in this file that could carry one.
 //
 // THIS ENDPOINT NEVER RETURNS AN ACCESS TOKEN. Not masked, not partially, not
 // behind a flag. src/banking/index.mjs has no function that would produce one,
@@ -34,6 +42,7 @@ import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
 import { isUuid, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import {
+  createLinkToken,
   linkItem,
   syncItem,
   listItems,
@@ -96,6 +105,23 @@ async function get(req, res, principal) {
 async function post(req, res, principal) {
   const body = req.body || {};
 
+  if (body.action === "link_token") {
+    if (!isUuid(body.client_id)) return res.status(400).json({ ok: false, error: "client_id must be a uuid" });
+    if (!(await clientInOrg(body.client_id, principal.orgId))) {
+      return res.status(404).json({ ok: false, error: "no such client" });
+    }
+    /* The client's own uuid is the Plaid user id. Stable for the life of the
+       record, unlike an email or a name — Plaid stores this value and uses it to
+       recognise the same person across sessions, so one that changes when
+       somebody gets married makes their earlier sessions unrecognisable. */
+    const out = await createLinkToken({ clientUserId: body.client_id });
+    /* The link token DOES go to the browser — that is what it is for. It
+       authorises opening a Link session for one named client and expires on its
+       own. The access token never travels this way and there is no code path
+       here that would let it. */
+    return res.status(200).json({ ok: true, link_token: out.linkToken, expiration: out.expiration });
+  }
+
   if (body.action === "link") {
     if (!isUuid(body.client_id)) return res.status(400).json({ ok: false, error: "client_id must be a uuid" });
     if (typeof body.public_token !== "string" || !body.public_token.trim()) {
@@ -147,7 +173,7 @@ async function post(req, res, principal) {
     return res.status(200).json({ ok: true, account });
   }
 
-  return res.status(400).json({ ok: false, error: "action must be one of: link, sync, classify" });
+  return res.status(400).json({ ok: false, error: "action must be one of: link_token, link, sync, classify" });
 }
 
 /* TENANCY. Every id in a request body is attacker-chosen. Without these checks a

@@ -266,7 +266,17 @@ describe("bank linking", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
     test("an unknown action is a 400 with the allowed list", async () => {
       const r = await call({ action: "delete_everything", client_id: client }, staff.admin.token);
       assert.equal(r.code, 400);
-      assert.match(r.body.error, /link, sync, classify/);
+      assert.match(r.body.error, /link_token, link, sync, classify/);
+    });
+
+    test("a closer cannot open a Link session either", async () => {
+      const r = await call({ action: "link_token", client_id: client }, staff.closer.token);
+      assert.equal(r.code, 403, JSON.stringify(r.body));
+    });
+
+    test("a Link session cannot be opened for another org's client", async () => {
+      const r = await call({ action: "link_token", client_id: otherClient }, staff.owner.token);
+      assert.equal(r.code, 404, JSON.stringify(r.body));
     });
 
     test("an unsupported method is a 405 with an allow header", async () => {
@@ -688,6 +698,45 @@ describe("bank linking", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
       assert.equal(rows[0].error_code, "INVALID_PUBLIC_TOKEN");
       assert.equal(rows[0].request_id, "req-x", "Plaid's request_id is the only handle their support can act on");
       assert.equal(rows[0].triggered_by, staff.funding_advisor.id);
+    });
+
+    test("step one: a link token comes back, and the client's own uuid is the Plaid user id", async () => {
+      let seen = null;
+      const r = await withPlaid(
+        async (url, init) => {
+          seen = { url: String(url), body: JSON.parse(init.body) };
+          return { ok: true, status: 200, text: async () => JSON.stringify({ link_token: "link-sandbox-xyz", expiration: "2026-07-31T10:00:00Z" }) };
+        },
+        async () => {
+          process.env.PLAID_CLIENT_NAME = "Fundhub";
+          process.env.PLAID_PRODUCTS = "transactions";
+          try {
+            return await call({ action: "link_token", client_id: client }, staff.funding_advisor.token);
+          } finally {
+            delete process.env.PLAID_CLIENT_NAME;
+            delete process.env.PLAID_PRODUCTS;
+          }
+        }
+      );
+
+      assert.equal(r.code, 200, JSON.stringify(r.body));
+      assert.equal(r.body.link_token, "link-sandbox-xyz");
+      assert.equal(r.body.expiration, "2026-07-31T10:00:00Z");
+      assert.equal(seen.url, "https://sandbox.plaid.com/link/token/create");
+      assert.equal(seen.body.user.client_user_id, client, "Plaid was given something other than our stable client id");
+    });
+
+    test("with PLAID_PRODUCTS unset the endpoint refuses — it does not pick a consent scope", async () => {
+      // PLAID_CLIENT_ID/SECRET/ENV are set here; only the Link-specific pair is
+      // missing. The refusal has to come from the consent-scope check, and it
+      // has to name the variable so an operator knows what to decide.
+      const r = await withPlaid(
+        async () => { throw new Error("must not dial out without a consent scope"); },
+        () => call({ action: "link_token", client_id: client }, staff.admin.token)
+      );
+      assert.equal(r.code, 503, JSON.stringify(r.body));
+      assert.equal(r.body.error, "not_configured");
+      assert.match(r.body.message, /PLAID_CLIENT_NAME|PLAID_PRODUCTS/);
     });
 
     test("a configured deploy reports configured:true on the read", async () => {

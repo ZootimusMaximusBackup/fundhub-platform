@@ -11,16 +11,19 @@
 // calls Meta and TikTok. What is new here is outbound in src/adapters/, and
 // outbound carrying a credential that reads a named person's bank account.)
 //
-// THE FENCE. Nothing outside this file may call fetch against Plaid. Two
+// THE FENCE. Nothing outside this file may call fetch against Plaid. Three
 // operations exist and no more:
 //
+//   createLinkToken()      -> link_token                  (POST /link/token/create)
 //   exchangePublicToken()  public_token -> access_token   (POST /item/public_token/exchange)
 //   fetchAccounts()        access_token -> accounts       (POST /accounts/balance/get)
 //
-// Transactions, liabilities, identity, income, link-token creation: none of them
-// are here. Adding one means adding it HERE, where the credential handling, the
-// scrubbing, the timeout and the refusal-when-unconfigured already apply, rather
-// than in a second place where they would have to be remembered.
+// They are the three steps of one flow and nothing else: ask for permission to
+// open Link, trade the result for a standing credential, read balances with it.
+// Transactions, liabilities, identity, income: none of them are here. Adding one
+// means adding it HERE, where the credential handling, the scrubbing, the
+// timeout and the refusal-when-unconfigured already apply, rather than in a
+// second place where they would have to be remembered.
 //
 // PLAID LINK ONLY. There is no code path in this module that accepts a bank
 // username or password, and none may be added. The client authenticates inside
@@ -258,6 +261,115 @@ async function callPlaid(path, body, { env, fetchImpl } = {}) {
     throw new PlaidApiError("Plaid returned a body that is not JSON", { status: 502, retryable: true });
   }
   return parsed;
+}
+
+/**
+ * linkTokenConfig — the extra config /link/token/create needs, resolved or
+ * REFUSED. Private: nothing outside this module opens a Link session.
+ *
+ * SEPARATE FROM plaidConfig() ON PURPOSE. These variables are only needed to
+ * open a Link session, and folding them into plaidConfig() would mean an
+ * unrelated balance refresh started failing because nobody had set a display
+ * name. Each call refuses on exactly what it needs.
+ */
+function linkTokenConfig({ env = process.env } = {}) {
+  const base = plaidConfig({ env });
+
+  /* NO DEFAULT FOR EITHER OF THESE, DELIBERATELY.
+   *
+   * `products` is literally what the consumer is asked to agree to on the bank's
+   * consent screen. Choosing it in code chooses the scope of a real person's
+   * consent, and every plausible default is wrong in a way that matters: 'auth'
+   * asks for account and routing numbers this platform deliberately has nowhere
+   * to store (see 081_bank_accounts.sql), and 'transactions' asks for a year of
+   * spending history to show somebody a balance. Over-collection is not a
+   * neutral default in a regulated consumer-finance product.
+   *
+   * `client_name` is the name that appears on that same screen, above a button
+   * that hands over bank access. Guessing a legal display name for a lender is
+   * not a thing this module gets to do.
+   *
+   * So both are required, and an operator decides. Absent means Link cannot
+   * open — which is the same rule the rest of this file follows. */
+  const clientName = str(env.PLAID_CLIENT_NAME);
+  const products = str(env.PLAID_PRODUCTS).split(",").map((p) => p.trim()).filter(Boolean);
+
+  const missing = [];
+  if (!clientName) missing.push("PLAID_CLIENT_NAME");
+  if (!products.length) missing.push("PLAID_PRODUCTS");
+  if (missing.length) {
+    throw new PlaidNotConfiguredError(
+      `Plaid Link is not configured — ${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} not set. ` +
+      "Both appear on the consent screen a client sees, so neither has a default."
+    );
+  }
+
+  /* These two DO have defaults, because neither is a consent scope. Country is a
+     jurisdiction and this is a US consumer-finance product; language is a
+     display preference. Both are still overridable. */
+  const countryCodes = (str(env.PLAID_COUNTRY_CODES) || "US").split(",").map((c) => c.trim().toUpperCase()).filter(Boolean);
+  const language = str(env.PLAID_LANGUAGE) || "en";
+
+  /* Optional, and only relevant in production: banks that use OAuth send the
+     client back to this URL after they authenticate. Without it those
+     institutions fail at the bank's own screen rather than here, which is why
+     this is not in the required list — a sandbox deploy has no use for it. */
+  const redirectUri = str(env.PLAID_REDIRECT_URI) || null;
+
+  return { ...base, clientName, products, countryCodes, language, redirectUri };
+}
+
+/**
+ * createLinkToken — permission to open Plaid Link for ONE client.
+ *
+ * This is step one of three, and without it the other two are unreachable: a
+ * browser cannot open Link without a link_token, so no public_token is ever
+ * produced and no bank is ever connected.
+ *
+ * `clientUserId` is this platform's own client uuid. It is what Plaid uses to
+ * recognise the same person across Link sessions, and it must be a stable id
+ * rather than an email or a name — Plaid stores it, and a value that changes
+ * when someone gets married makes their previous sessions unrecognisable.
+ *
+ * THE RETURNED TOKEN IS SHORT-LIVED AND IS MEANT FOR THE BROWSER. Unlike the
+ * access token it has to travel to the client's page, which is its whole
+ * purpose. It is still not logged and not stored: it authorises opening a Link
+ * session for one named person, and it expires on its own.
+ */
+export async function createLinkToken({ clientUserId } = {}, { env, fetchImpl } = {}) {
+  const userId = str(clientUserId);
+  if (!userId) throw new PlaidApiError("clientUserId is required", { status: 400 });
+
+  // Refuses here, before any network work, exactly like the other two.
+  const cfg = linkTokenConfig({ env });
+
+  const out = await callPlaid(
+    "/link/token/create",
+    {
+      client_name: cfg.clientName,
+      language: cfg.language,
+      country_codes: cfg.countryCodes,
+      products: cfg.products,
+      user: { client_user_id: userId },
+      ...(cfg.redirectUri ? { redirect_uri: cfg.redirectUri } : {})
+    },
+    { env, fetchImpl }
+  );
+
+  const linkToken = str(out.link_token);
+  if (!linkToken) {
+    throw new PlaidApiError("Plaid's link token response was missing link_token", {
+      status: 502,
+      requestId: out.request_id ?? null
+    });
+  }
+  return {
+    linkToken,
+    // Plaid's own expiry, passed through. NULL if Plaid did not send one — the
+    // browser should treat that as "assume it is short" rather than "no expiry".
+    expiration: str(out.expiration) || null,
+    requestId: out.request_id ?? null
+  };
 }
 
 /**

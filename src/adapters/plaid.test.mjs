@@ -23,6 +23,7 @@ import assert from "node:assert";
 import {
   plaidConfig,
   isPlaidConfigured,
+  createLinkToken,
   exchangePublicToken,
   fetchAccounts,
   normalizeAccount,
@@ -183,6 +184,131 @@ describe("unconfigured refuses BEFORE the network is touched", () => {
       PlaidNotConfiguredError
     );
     assert.equal(fetchImpl.calls.length, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Step one: permission to open Link
+// ---------------------------------------------------------------------------
+
+const LINK_ENV = Object.freeze({ ...ENV, PLAID_CLIENT_NAME: "Fundhub", PLAID_PRODUCTS: "transactions" });
+const CLIENT_UUID = "33333333-3333-4333-8333-333333333333";
+
+describe("createLinkToken", () => {
+  test("posts the client's own uuid as the Plaid user id", async () => {
+    const fetchImpl = spy(() =>
+      jsonResponse(200, { link_token: "link-sandbox-abc", expiration: "2026-07-31T10:00:00Z", request_id: "req-lt" })
+    );
+    const out = await createLinkToken({ clientUserId: CLIENT_UUID }, { env: LINK_ENV, fetchImpl });
+
+    assert.equal(fetchImpl.calls[0].url, "https://sandbox.plaid.com/link/token/create");
+    const body = JSON.parse(fetchImpl.calls[0].init.body);
+    assert.deepEqual(body.user, { client_user_id: CLIENT_UUID });
+    assert.equal(body.client_name, "Fundhub");
+    assert.deepEqual(body.products, ["transactions"]);
+    assert.deepEqual(body.country_codes, ["US"]);
+    assert.equal(body.language, "en");
+    assert.equal("redirect_uri" in body, false, "an unset redirect uri must be absent, not null");
+
+    assert.deepEqual(out, { linkToken: "link-sandbox-abc", expiration: "2026-07-31T10:00:00Z", requestId: "req-lt" });
+  });
+
+  test("PLAID_CLIENT_NAME and PLAID_PRODUCTS have NO defaults — both are on the consent screen", async () => {
+    /* Defaulting `products` would choose the scope of a real person's consent in
+       code. 'auth' asks for account and routing numbers this platform
+       deliberately cannot store; 'transactions' asks for a year of spending
+       history to show somebody a balance. Defaulting `client_name` would invent
+       a lender's legal display name. Neither is ours to decide. */
+    for (const missing of ["PLAID_CLIENT_NAME", "PLAID_PRODUCTS"]) {
+      const env = { ...LINK_ENV };
+      delete env[missing];
+      const fetchImpl = exploding();
+      const err = await rejected(
+        () => createLinkToken({ clientUserId: CLIENT_UUID }, { env, fetchImpl }),
+        PlaidNotConfiguredError
+      );
+      assert.match(err.message, new RegExp(missing));
+      assert.equal(fetchImpl.calls.length, 0, "an unconfigured Link session still dialled out");
+    }
+  });
+
+  test("an empty PLAID_PRODUCTS is refused — it is not 'no products'", async () => {
+    const fetchImpl = exploding();
+    await rejected(
+      () => createLinkToken({ clientUserId: CLIENT_UUID }, { env: { ...LINK_ENV, PLAID_PRODUCTS: " , , " }, fetchImpl }),
+      PlaidNotConfiguredError
+    );
+    assert.equal(fetchImpl.calls.length, 0);
+  });
+
+  test("the base credentials are still required, and still refuse first", async () => {
+    const fetchImpl = exploding();
+    await rejected(
+      () => createLinkToken({ clientUserId: CLIENT_UUID }, { env: { PLAID_CLIENT_NAME: "x", PLAID_PRODUCTS: "auth" }, fetchImpl }),
+      PlaidNotConfiguredError
+    );
+    assert.equal(fetchImpl.calls.length, 0);
+  });
+
+  test("balance-only config does NOT silently start asking for transactions", async () => {
+    // The mutation this catches: somebody gives PLAID_PRODUCTS a default while
+    // "tidying up", and every client is quietly asked to hand over a year of
+    // spending history to display one balance.
+    const fetchImpl = spy(() => jsonResponse(200, { link_token: "t" }));
+    await createLinkToken({ clientUserId: CLIENT_UUID }, { env: { ...LINK_ENV, PLAID_PRODUCTS: "auth" }, fetchImpl });
+    assert.deepEqual(JSON.parse(fetchImpl.calls[0].init.body).products, ["auth"]);
+  });
+
+  test("multiple products and countries are split on commas and trimmed", async () => {
+    const fetchImpl = spy(() => jsonResponse(200, { link_token: "t" }));
+    await createLinkToken(
+      { clientUserId: CLIENT_UUID },
+      { env: { ...LINK_ENV, PLAID_PRODUCTS: "auth, transactions ", PLAID_COUNTRY_CODES: "us, ca" }, fetchImpl }
+    );
+    const body = JSON.parse(fetchImpl.calls[0].init.body);
+    assert.deepEqual(body.products, ["auth", "transactions"]);
+    assert.deepEqual(body.country_codes, ["US", "CA"]);
+  });
+
+  test("a redirect uri is passed through when set — OAuth banks need it", async () => {
+    const fetchImpl = spy(() => jsonResponse(200, { link_token: "t" }));
+    await createLinkToken(
+      { clientUserId: CLIENT_UUID },
+      { env: { ...LINK_ENV, PLAID_REDIRECT_URI: "https://app.example.com/link" }, fetchImpl }
+    );
+    assert.equal(JSON.parse(fetchImpl.calls[0].init.body).redirect_uri, "https://app.example.com/link");
+  });
+
+  test("no client user id is refused locally, without a round trip", async () => {
+    const fetchImpl = exploding();
+    await rejected(() => createLinkToken({}, { env: LINK_ENV, fetchImpl }), PlaidApiError);
+    assert.equal(fetchImpl.calls.length, 0);
+  });
+
+  test("a response with no link_token is an error, not an empty string", async () => {
+    const fetchImpl = spy(() => jsonResponse(200, { expiration: "2026-07-31T10:00:00Z", request_id: "req-z" }));
+    const err = await rejected(() => createLinkToken({ clientUserId: CLIENT_UUID }, { env: LINK_ENV, fetchImpl }), PlaidApiError);
+    assert.equal(err.requestId, "req-z");
+  });
+
+  test("an absent expiration is null, not a fabricated one", async () => {
+    const fetchImpl = spy(() => jsonResponse(200, { link_token: "t" }));
+    const out = await createLinkToken({ clientUserId: CLIENT_UUID }, { env: LINK_ENV, fetchImpl });
+    assert.equal(out.expiration, null);
+  });
+
+  test("a Plaid refusal keeps Plaid's code and loses our secret", async () => {
+    const fetchImpl = spy(() =>
+      jsonResponse(400, {
+        error_code: "INVALID_PRODUCT",
+        error_type: "INVALID_INPUT",
+        error_message: `bad products for ${LINK_ENV.PLAID_SECRET}`,
+        request_id: "req-bad"
+      })
+    );
+    const err = await rejected(() => createLinkToken({ clientUserId: CLIENT_UUID }, { env: LINK_ENV, fetchImpl }), PlaidApiError);
+    assert.equal(err.errorCode, "INVALID_PRODUCT");
+    assert.ok(!err.message.includes(LINK_ENV.PLAID_SECRET));
   });
 });
 
@@ -486,7 +612,7 @@ describe("nothing is invented", () => {
 // The fence
 // ---------------------------------------------------------------------------
 
-describe("the outbound surface is two operations and no more", () => {
+describe("the outbound surface is three operations and no more", () => {
   test("the module exports no generic request helper", async () => {
     const mod = await import("./plaid.mjs");
     const exported = Object.keys(mod).sort();
@@ -494,11 +620,19 @@ describe("the outbound surface is two operations and no more", () => {
     // request that skips the scrubbing and the config gate. If this assertion
     // fails because an export was ADDED, the question to answer is whether the
     // new thing belongs behind this fence or should not exist.
+    //
+    // `createLinkToken` was added deliberately, and this list was updated in the
+    // same commit: it is step one of the same three-step flow, and without it
+    // the other two are unreachable because no browser can open Link.
+    // `linkTokenConfig` is NOT exported — nothing outside this module opens a
+    // Link session.
     assert.ok(!exported.includes("callPlaid"));
+    assert.ok(!exported.includes("linkTokenConfig"));
     assert.deepEqual(exported, [
       "PlaidApiError",
       "PlaidNotConfiguredError",
       "centsOrNull",
+      "createLinkToken",
       "exchangePublicToken",
       "fetchAccounts",
       "isPlaidConfigured",
@@ -507,5 +641,16 @@ describe("the outbound surface is two operations and no more", () => {
       "plaidConfig",
       "scrub"
     ]);
+  });
+
+  test("only the three flow endpoints are reachable — no transactions, no liabilities", async () => {
+    /* W6 owns liabilities, W7 owns transactions. The fence is what keeps a later
+       workflow from adding a fourth Plaid call somewhere the scrubbing and the
+       config gate do not apply, so it is worth asserting that this module talks
+       to exactly three paths. */
+    const fs = await import("node:fs");
+    const src = await fs.promises.readFile(new URL("./plaid.mjs", import.meta.url), "utf8");
+    const paths = [...src.matchAll(/callPlaid\(\s*"([^"]+)"/g)].map((m) => m[1]).sort();
+    assert.deepEqual(paths, ["/accounts/balance/get", "/item/public_token/exchange", "/link/token/create"]);
   });
 });

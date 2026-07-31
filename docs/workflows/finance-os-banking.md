@@ -35,8 +35,12 @@ stays unknown until a person says otherwise, because Plaid does not tell us.
 | 8 | Which business, when known | `business_id uuid REFERENCES businesses(id)` | `businesses` already exists in `001_init.sql`. No new table invented. |
 | 9 | Who may use the endpoint | `owner`, `admin`, `funding_advisor` | Narrower than `ROLE_SETS.STAFF` on purpose — a setter or closer has no reason to see a client's chequing balance. Same reasoning as `/api/pii`'s narrower gate. |
 | 10 | Client-facing linking | **Not built.** Staff-only for now. | The real flow is the client opening Plaid Link themselves. W5's fence excludes UI, and a client-facing write path with no screen to exercise it is a hole nobody watches. |
-| 11 | Plaid SDK | **Not added.** Plain `fetch` against the REST API. | Dependencies stay `pg` + `inngest`. Two endpoints do not justify an SDK. |
-| 12 | Naming vs. the second brief | Kept `isPlaidConfigured` / `linkItem` / `fetchAccounts` | The second brief asked for `isPlaidEnabled` / `linkAccount` / `getAccounts`. Same three functions. Adding aliases would be two names for one thing. |
+| 10b | `/link/token/create` | **Built**, after the owner said "figure it out" | It was recorded below as the one gap between this endpoint and a real bank connection. It needs no migration, adds no dependency, and every control it requires — config gate, scrubbing, timeout, role gate, org check — already existed in the fence. Splitting it out would have meant a second session re-reading all of this to add one call to a file it does not own. |
+| 10c | `PLAID_PRODUCTS` and `PLAID_CLIENT_NAME` defaults | **None. Both required; Link refuses without them.** | `products` is literally what the consumer agrees to on their bank's consent screen. Every plausible default is wrong in a way that matters: `auth` asks for account and routing numbers this platform deliberately cannot store (081), `transactions` asks for a year of spending history to display one balance. Over-collection is not a neutral default in a regulated consumer-finance product. `client_name` is the name above the button that hands over bank access — not a legal display name this module gets to guess. |
+| 10d | Auditing link-token creation | **Not audited**, and no new `action` value added | Opening a Link session reads none of the client's financial data; it asks their bank for permission to ask. The next step — `linkItem()` — is the moment a standing credential exists, and that one is audited. Adding a third `action` value would need migration 083, which belongs to W6. If a reviewer wants it recorded, that is the place. |
+| 10e | `PLAID_REDIRECT_URI` | Optional pass-through | OAuth institutions (Chase and similar) require it in production; a sandbox deploy has no use for it. Absent means those banks fail at their own screen, not here. |
+| 11 | Plaid SDK | **Not added.** Plain `fetch` against the REST API. | Dependencies stay `pg` + `inngest`. Three endpoints do not justify an SDK. |
+| 12 | Naming vs. the second brief | Kept `isPlaidConfigured` / `linkItem` / `fetchAccounts` | The second brief asked for `isPlaidEnabled` / `linkAccount` / `getAccounts`. Same functions. Adding aliases would be two names for one thing, which `CLAUDE.md` §8 calls a bug that takes months to surface. |
 | 13 | Audit summary contents | Account ids, masks, types, and *whether* a balance was present — never a figure | An audit trail is not a second copy of the client's finances. |
 | 14 | Commit footer | `Co-Authored-By: Claude Opus 5` | The instruction template said Sonnet 5. This ran on Opus 5, and a commit trailer should be true. |
 
@@ -77,11 +81,15 @@ stays unknown until a person says otherwise, because Plaid does not tell us.
    clean-`main` baseline is 0 failures. Anyone diffing test totals against an
    earlier note should check this first.
 
-7. **No `/link/token/create`.** A client's browser needs a `link_token` before
-   Plaid Link will open, and the brief scoped the adapter to exchange + balances
-   only. Until that exists, a `public_token` has to come from somewhere else
-   (Plaid's sandbox helper). This is the one thing standing between the endpoint
-   and a real client linking a real bank.
+7. **`/link/token/create` — RESOLVED.** This was recorded as the one thing
+   standing between the endpoint and a real client linking a real bank: a browser
+   cannot open Plaid Link without a `link_token`, so no `public_token` is ever
+   produced. The owner's instruction was "figure it out", so it is built —
+   `createLinkToken()` in the same fenced adapter, `POST { action: "link_token" }`
+   on the same role-gated, org-scoped endpoint. The three steps of the flow are
+   now all present: ask for permission, trade the result, read balances. What is
+   still absent is a **screen** for the client to open Link in, which W5's fence
+   excludes and W10 owns.
 
 8. **Two mutations initially survived**, and both were real test gaps rather than
    false alarms:
@@ -117,13 +125,13 @@ stays unknown until a person says otherwise, because Plaid does not tell us.
 | `db/migrations/080_plaid_items.sql` | new — `plaid_items` (ciphertext-only token column) + `plaid_sync_audit` (append-only) |
 | `db/migrations/081_bank_accounts.sql` | new — one row per account; balances as `bigint` `_cents`; no derived columns; no account numbers |
 | `db/migrations/082_bank_account_entity_kind.sql` | new — `entity_kind` personal\|business\|unknown (default `unknown`), `business_id`, classification attribution + 5 CHECK constraints |
-| `src/adapters/plaid.mjs` | new — the only outbound Plaid call. Two operations. Refuses when unconfigured, scrubs every secret, injects `fetchImpl` |
-| `src/adapters/plaid.test.mjs` | new — 45 tests, network stubbed at the module boundary |
+| `src/adapters/plaid.mjs` | new — the only outbound Plaid call. Three operations: link token, token exchange, balances. Refuses when unconfigured, scrubs every secret, injects `fetchImpl` |
+| `src/adapters/plaid.test.mjs` | new — 57 tests, network stubbed at the module boundary |
 | `src/banking/index.mjs` | new — encrypt-at-rest (AES-256-GCM, client id as AAD), item/account store, audit writer, classification |
 | `src/banking/index.test.mjs` | new — 24 tests, no database |
 | `src/banking/PROPOSED-EVENTS.md` | new — 4 proposed events. `src/events/canonical.mjs` NOT edited |
-| `api/banking/plaid.mjs` | new — GET read, POST link/sync/classify. Role-gated + org-scoped |
-| `src/http/banking.pg.test.mjs` | new — 44 tests against real Postgres |
+| `api/banking/plaid.mjs` | new — GET read, POST link_token/link/sync/classify. Role-gated + org-scoped |
+| `src/http/banking.pg.test.mjs` | new — 48 tests against real Postgres |
 | `netlify/functions/api.mjs` | `banking/plaid` added to `ROUTES` (+ import) |
 | `src/http/read-api.mjs` | `redact()`'s forbidden-key net widened: `access_token`, `refresh_token`, `token_enc` |
 | `scripts/diagrams/extract.mjs` | `outbound` detection now also matches `globalThis.fetch` |
@@ -133,11 +141,13 @@ stays unknown until a person says otherwise, because Plaid does not tell us.
 
 ### Exports added
 
-`src/adapters/plaid.mjs` — `plaidConfig`, `isPlaidConfigured`,
+`src/adapters/plaid.mjs` — `plaidConfig`, `isPlaidConfigured`, `createLinkToken`,
 `exchangePublicToken`, `fetchAccounts`, `normalizeAccount`, `normalizeItem`,
 `centsOrNull`, `scrub`, `PlaidNotConfiguredError`, `PlaidApiError`. A test pins
 this list exactly: an added export is a widened outbound surface and should be a
-decision, not a drift.
+decision, not a drift. `linkTokenConfig` is deliberately NOT exported. A second
+test asserts the module talks to exactly three Plaid paths, so a later workflow
+cannot quietly add a fourth.
 
 `src/banking/index.mjs` — `encryptAccessToken`, `decryptAccessToken`, `linkItem`,
 `syncItem`, `classifyAccount`, `listItems`, `listAccounts`, `syncHistory`,
@@ -152,6 +162,11 @@ decision, not a drift.
 | `PLAID_ENV` | `sandbox` or `production` | same. Any other value also refuses |
 | `BANK_TOKEN_ENC_KEY` | 32 bytes, base64. Encrypts the access token at rest | linking refuses **before** the exchange, so no credential is created that cannot be stored |
 | `PLAID_TIMEOUT_MS` | optional, default 10000 | default applies; a bad value falls back rather than disabling the timeout |
+| `PLAID_CLIENT_NAME` | the name a client sees on their bank's consent screen | **Plaid Link cannot open.** No default — see decision 10c |
+| `PLAID_PRODUCTS` | comma-separated Plaid products; the consent scope | **Plaid Link cannot open.** No default — see decision 10c |
+| `PLAID_COUNTRY_CODES` | optional, default `US` | default applies. A jurisdiction, not a consent scope |
+| `PLAID_LANGUAGE` | optional, default `en` | default applies |
+| `PLAID_REDIRECT_URI` | optional; required by OAuth banks in production | those institutions fail at their own screen |
 
 ### What W6 / W7 / W8 need from this
 
@@ -170,13 +185,15 @@ decision, not a drift.
 
 ```
 npm ci                                            (node_modules was absent at session start)
-npm test, no DATABASE_URL     1761 pass · 0 fail · 195 skipped   (baseline 1692 · 0 · 195)
-npm test, real Postgres       2416 pass · 4 suites failing       (baseline: same 4 suites)
+npm test, no DATABASE_URL     1773 pass · 0 fail · 195 skipped   (baseline 1692 · 0 · 195)
+npm test, real Postgres       2439 pass · 4 suites failing       (baseline: same 4 suites)
                               failing NAMES diffed, not totals — zero new
 migrations                    53 apply clean to an empty DB; re-run applies 0
                               080/081/082 also re-apply as raw SQL with no error
-mutation checks               12 run · 12 killed
-                              (2 survived on the first pass; both were real gaps, both fixed)
+mutation checks               19 run · 19 killed
+                              (3 survived on a first pass: 2 were real gaps and are
+                               fixed; 1 was a badly written mutation that changed no
+                               behaviour, rewritten and then killed)
 live Plaid calls in tests     0 — every test injects fetchImpl or stubs globalThis.fetch
 ```
 

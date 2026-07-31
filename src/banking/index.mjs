@@ -42,6 +42,7 @@
 
 import crypto from "node:crypto";
 import {
+  createLinkToken,
   exchangePublicToken,
   fetchAccounts,
   isPlaidConfigured,
@@ -540,6 +541,12 @@ export async function syncHistory(db, { clientId, limit = 100 } = {}) {
 }
 
 /* Re-exported so an endpoint can answer "is bank linking available on this
-   deploy" without importing the adapter directly and without a second copy of
-   the rule. */
-export { isPlaidConfigured, PlaidNotConfiguredError, PlaidApiError };
+   deploy" — and open a Link session — without importing the adapter directly
+   and without a second copy of the rule.
+
+   createLinkToken touches no table and writes no audit row, which is why it
+   passes straight through rather than getting a wrapper here. Opening a Link
+   session reads none of the client's financial data; it only asks their bank
+   for permission to ask. The step AFTER it — linkItem() — is the moment a
+   standing credential exists, and that one is audited. */
+export { createLinkToken, isPlaidConfigured, PlaidNotConfiguredError, PlaidApiError };
