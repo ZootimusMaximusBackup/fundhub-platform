@@ -33,7 +33,7 @@
 // this function still returns the updated inquiry when telemetry is broken.
 
 import { logStaffEvent } from "../shifts/telemetry.mjs";
-import { currentShift } from "../shifts/store.mjs";
+import { resolveShiftId } from "../shifts/attribution.mjs";
 
 const ATTEMPT_KINDS = new Set(["call", "letter", "portal", "note"]);
 const COUNTING_KINDS = new Set(["call", "letter", "portal"]);
@@ -53,33 +53,6 @@ const TELEMETRY_KIND = Object.freeze({
   call: "call_made",
   letter: "letter_issued"
 });
-
-/* Which shift this work belongs on.
- *
- * An explicitly passed shiftId WINS, including an explicit null. The HTTP layer
- * has already resolved the caller's open shift — requireActiveShift() returns
- * the `shifts` row and api/inquiries.mjs passes its id straight down — so the
- * request path costs no extra query. A caller that says `shiftId: null` is
- * stating a fact ("this work is off the clock"), not omitting one, and is taken
- * at its word.
- *
- * Only an ABSENT shiftId triggers the lookup, so a direct caller with no HTTP
- * layer above it still gets the link rather than a null that cannot be repaired
- * later. `null` is a legitimate answer here — somebody working off the clock —
- * and is stored as such rather than refused.
- *
- * A failed lookup is null and a log line, never a throw: this runs after the
- * commit, so the attempt is already recorded, and losing the shift link is not
- * a reason to fail an action that has already happened. */
-async function resolveShiftId(db, { staffId, shiftId }) {
-  if (shiftId !== undefined) return shiftId ?? null;
-  try {
-    return (await currentShift(db, { staffId }))?.id ?? null;
-  } catch (err) {
-    console.error(`[telemetry] open-shift lookup failed, shift_id will be NULL (staff=${staffId}): ${err.message}`);
-    return null;
-  }
-}
 
 export class InquiryWriteError extends Error {
   constructor(message, { status = 400 } = {}) {

@@ -12,6 +12,8 @@
 // Register once at boot: `import { register } from "./handlers/client-lifecycle.mjs"; register();`
 
 import { on } from "../events/registry.mjs";
+import { logStaffEvent } from "../shifts/telemetry.mjs";
+import { resolveShiftId } from "../shifts/attribution.mjs";
 
 // --- helpers ----------------------------------------------------------------
 
@@ -121,6 +123,14 @@ export async function onSaleClosed(event, db) {
 
 // analysis.completed — store the CRS result as history (ports latest_crs_result_full).
 // Deduped by (client_id, event id) carried in result.__event_id so replay is safe.
+//
+// This INSERT is the line where "a credit pull ran" becomes true, so it is where
+// the `pull_run` staff telemetry belongs. THE SEAM IS EMPTY TODAY: the pull is
+// requested and returned entirely by automation reacting to the client's $32
+// diagnostic payment, and the event carries orgId/clientId and no staff member —
+// so `staffId` is never present and no row is written. Under the 05/30 model
+// drift the pull runs live on the call, which gives it an actor for the first
+// time; when the emitter carries one, this reads it. It is not invented here.
 export async function onAnalysisCompleted(event, db) {
   const clientId = await resolveClient(db, event);
   if (!clientId) return;
@@ -135,6 +145,26 @@ export async function onAnalysisCompleted(event, db) {
     `INSERT INTO crs_results (org_id, client_id, result, outcome_tier) VALUES ($1,$2,$3,$4)`,
     [event.orgId, clientId, JSON.stringify(result), event.payload?.outcomeTier || null]
   );
+
+  // Below the dedupe return above, so a replayed pull cannot be counted twice
+  // against whoever ran it. logStaffEvent never throws; the result row is
+  // already written and nothing here can take it back.
+  const staffId = event.payload?.staffId ?? null;
+  if (staffId) {
+    await logStaffEvent(db, {
+      orgId: event.orgId,
+      staffId,
+      shiftId: await resolveShiftId(db, { staffId, shiftId: event.payload?.shiftId }),
+      kind: "pull_run",
+      detail: {
+        client_id: clientId,
+        event_id: String(event.id),
+        // The bureau payload itself is NOT copied in — it is the consumer's
+        // credit file. The tier is the one summary a telemetry reader needs.
+        outcome_tier: event.payload?.outcomeTier ?? null
+      }
+    });
+  }
 }
 
 // decision.rendered — stamp the 6-tier outcome + funding estimate on the client.
