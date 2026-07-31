@@ -83,6 +83,17 @@ const isUuid = (v) => typeof v === "string" && UUID_RE.test(v.trim());
 /* KEPT_WITH_REASON — what this product retains after an erasure, and on what
    basis. Section 3.
 
+   *** OWNER-APPROVED 2026-07-31, AS WRITTEN. *** The owner reviewed this list and
+   signed it off; it is a settled decision, not a draft awaiting review. CLAUDE.md
+   §7 is the governing rule ("flagged changes ship only after explicit human
+   approval") and that approval has been given, so this list does not need
+   re-flagging on every change that touches it.
+   Recorded on the board at docs/workflows/fundhub-beta-buildout.md.
+
+   WHAT WOULD REOPEN IT: adding a table to this list, removing one, or changing
+   what a reason claims. The approval covers the list below as it stands — it is
+   not a standing waiver on the concept of retention.
+
    These are written out as constants rather than composed at the call site so
    that every audit row for every client carries the same sentence. Two audit
    rows whose wording differs invite the reader to wonder whether the policy

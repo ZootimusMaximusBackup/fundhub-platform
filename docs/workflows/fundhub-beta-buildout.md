@@ -50,6 +50,26 @@ A later erasure request cannot find them. They are invisible and permanent.
 BEFORE INSERT/UPDATE trigger so any writer picks it up, including a psql session or a
 backfill this repo does not own. Backfilled for existing rows.
 
+### Owner decisions — settled, do not re-litigate
+
+| Date | Decision | Status |
+|---|---|---|
+| 2026-07-31 | **The kept-list in `src/privacy/erasure.mjs` ships as written.** What an erasure retains, and the written reason attached to each entry, is approved as-is. | **Owner-set.** Not to be re-flagged for compliance review. |
+| 2026-07-31 | **Revoking a bank login keeps the transactions.** Disconnect and erase are different requests. | **Owner-set.** Do not change. |
+
+CLAUDE.md §7 is the governing rule — "flagged changes ship only after explicit human
+approval." That approval has been given for both items above, so they are approved rather
+than pending. Anyone touching them should treat the decision as made.
+
+Scope of the first approval: it covers the list as it stands. Adding a table, removing
+one, or changing what a reason claims is a new decision and needs a fresh look.
+
+> Note for the record: the approval was given citing an "Owner decisions are final"
+> section of CLAUDE.md. No such section exists — CLAUDE.md runs §0–§12 and none of them
+> is that. The approval itself is valid under §7 regardless, which is what is cited
+> above. Flagged here rather than silently written down, because a compliance record
+> that cites a rule which does not exist is the kind of thing that fails an audit later.
+
 ### Decisions other workflows need to know
 
 1. **Revoking a bank login does NOT delete transactions.** It removes the credential and
