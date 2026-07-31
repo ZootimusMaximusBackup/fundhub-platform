@@ -8,7 +8,7 @@ below sets secrets — that's Chris's action, not ours.
 
 | # | Owner | Task | Status |
 |---|---|---|---|
-| A | (assistant, this session) | Verify Netlify build config + redirect/bounce behavior | pending |
+| A | (assistant, this session) | Verify Netlify build config + redirect/bounce behavior | done |
 | B | (Opus session) | Debug login bounce / confirm missing env var | pending |
 | C | (Sonnet session) | Audit frontend-to-API wiring across screens | pending |
 | D | (Sonnet session) | Deploy + end-to-end verification | pending |
@@ -40,4 +40,20 @@ and say why if you can't proceed.
 
 ## Change manifests
 
-(fill in per workflow as completed)
+### A — Netlify build config (done)
+
+No files changed. Findings:
+
+- `netlify.toml` build settings, functions directory, and redirects are all
+  correct. No new redirect loop found; the documented `/app` vs `/app.html`
+  fix is intact.
+- Traced the actual bounce mechanism to confirm it's the missing env var, not
+  a config bug: `public/app/shell.js` calls `GET /api/auth/session` on every
+  `/app/*` load. `src/db.mjs:9` throws `"DATABASE_URL not set"` on first query
+  when the var is absent, so the session check always fails, and `shell.js`
+  redirects to `/login.html`. That's the full loop: app → session check fails
+  → login → sign in → app → session check fails again → login.
+- No code fix needed for this — expected to resolve once `DATABASE_URL` is
+  set in Netlify. Workflow B should verify this is actually true after Chris
+  loads the var (login itself will also 500 under the same missing var until
+  then — see `src/auth/login.mjs` → `login()` → `db.query`).
