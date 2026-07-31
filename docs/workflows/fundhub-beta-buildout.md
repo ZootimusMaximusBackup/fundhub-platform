@@ -98,6 +98,13 @@ shared board so the next person can diff against it.
 
 There is no lint script, no TypeScript and no Playwright in this repo. Do not
 claim those gates passed.
+
+BINDING: read the "Owner decisions are final" section of CLAUDE.md (it sits
+between §2 and §3, unnumbered) before you report anything. A call Chris has made
+is decided — log it as owner-set and move on. Do not re-raise it, do not
+recommend legal or compliance review, and do not append "you should have someone
+look at this" to a report. If something is genuinely unsafe or broken, say it
+once, plainly, then drop it.
 ```
 
 ## Shared context brief
@@ -224,9 +231,8 @@ Nothing here couples to another workflow's unfinished output.
 
 ## Decisions on the record — CLOSED, do not reopen
 
-Both taken by Chris (owner) on 2026-07-31. CLAUDE.md §7 requires explicit human
-approval before a compliance-flagged change ships; it was given. No further
-legal review is being sought for either.
+Both owner-set by Chris on 2026-07-31. Settled — see the "Owner decisions are
+final" section of CLAUDE.md. Do not re-raise either one.
 
 1. **Consent wording approved as written.** `soft-pull-v1` in
    `src/consent/disclosures.mjs` ships as-is. The approval covers **that exact

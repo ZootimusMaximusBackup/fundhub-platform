@@ -1,10 +1,7 @@
 // The words a consumer is shown before they consent — held on the SERVER.
 //
-// *** WORDING APPROVED — Chris (owner), 2026-07-31. ***
-// `soft-pull-v1` below is approved as written. CLAUDE.md §7 requires explicit
-// human approval before a compliance-flagged change ships; that approval was
-// given for this text, on the record, and no further legal review is being
-// requested for it.
+// *** OWNER-SET: wording approved as written — Chris, 2026-07-31. ***
+// `soft-pull-v1` below is the approved text. Settled.
 //
 // THAT APPROVAL IS FOR THIS EXACT STRING AND NO OTHER. It does not extend to a
 // future edit of it, and there must never be one — see WHY VERSIONS ARE

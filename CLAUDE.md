@@ -69,6 +69,24 @@ Ask one question. Wait. Do not ask and proceed in the same turn.
 
 **Never invent.** If information is missing, that absence is the finding. Report it. Do not fill the gap with a plausible assumption.
 
+## Owner decisions are final.
+
+I'm the owner and sole decision-maker. When I set a value or make a call — retention windows, compliance posture, scope, priorities — it's decided.
+
+Log it as owner-set and move on.
+
+Do not re-raise it. Do not recommend legal or compliance review. Do not add "you should have counsel look at this" to reports or summaries.
+
+If something is genuinely unsafe or broken, say it once, plainly, and then drop it.
+
+**This section qualifies the ones around it.** Where it and another section disagree, this one wins:
+
+* §2's "ask when you are not certain" does not apply to a call I have already made. Uncertainty about *how* to build it is still a question worth asking. Uncertainty about *whether I meant it* is not.
+* §7 still applies as written — keep the `COMPLIANCE REVIEW REQUIRED` label on the changes it lists. That label is a marker I asked for, not a recommendation. What stops is the advice attached to it.
+* §9's task report and §10's summaries carry the decision as recorded fact, with no rider suggesting I revisit it.
+
+**Left unnumbered on purpose.** Section numbers are referenced 27 times across this repo (`CLAUDE.md §4`, `§12`, and so on). Inserting a numbered section here would shift every later number and silently break all of them.
+
 ## 3. Before writing any code
 
 1. Read the relevant code. Symbol lookup before file reads (Grep patterns, not full file reads).
