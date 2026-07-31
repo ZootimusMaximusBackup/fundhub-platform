@@ -46,6 +46,8 @@ it. Actually getting the data from Plaid is W5's job.
 | `db/migrations/086_recurring_bills.sql` | `recurring_bills` + `recurring_bill_transactions`: the detected bills and the transactions that prove each one. |
 | `src/banking/recurring.mjs` | The detector. Every function pure — no database, no network, no clock. |
 | `src/banking/store.mjs` | The writer. The only thing in the repo that inserts into either table. |
+| `src/banking/cashflow-seam.mjs` | The W7 -> W8 handover. Closes three real breaks between the detector's output and the projector's input contract. |
+| `src/banking/cashflow-seam.test.mjs` | 21 pure unit tests for the seam. |
 | `src/banking/recurring.test.mjs` | 63 pure unit tests for the detector. |
 | `src/banking/store.test.mjs` | 19 unit tests for the writer, against a fake that models no schema. |
 | `src/banking/recurring.pg.test.mjs` | 20 tests against real Postgres. Skips cleanly with no `DATABASE_URL`. |
@@ -82,6 +84,62 @@ Nothing existing was modified. **Zero files changed outside `src/banking/`,
 parameters. Its only repo import is `roundHalfUp` from
 `src/commissions/money.mjs`; the writer imports only `toBillRow` from the
 detector.
+
+### *** W8: READ THIS. THE TWO MODULES DID NOT FIT. ***
+
+W7 and W8 were built in parallel against the same scope fence and had never been
+run against each other. Reading W8's real input contract
+(`src/banking/cashflow.mjs` on `claude/cashflow-projection-model-b2tfb4`)
+against W7's real output shows **three breaks**. `src/banking/cashflow-seam.mjs`
+closes all three, on this side, because W8's own header says the recurrence
+expansion is W7's job.
+
+| # | Break | What would have happened |
+|---|---|---|
+| 1 | **Confidence scale.** W8 validates `recurringBills[].confidence` as **0–1** and throws outside it. W7 emits `confidencePct`, an integer **0–100**. | **SILENT.** Pass nothing and W8 classifies every bill `unconfirmed` with the reason "no confidence was supplied" — a complete, plausible cash-flow projection in which every detected bill has quietly been downgraded, and no error anywhere. Pass `88` and it throws instead. |
+| 2 | **Sign.** W8 runs `occurrences[].amountCents` through `requireNonNegativeCents()` and applies `direction: "out"` itself. W7's amounts are **negative** by 085's convention. | Throws — but the obvious fix at a call site is `Math.abs(...)`, which is the un-reviewed sign flip 085 calls the most expensive mistake available here. It now happens once, in one tested place. |
+| 3 | **Dates.** W8 has no recurrence engine and says so: *"W7 detects the pattern and hands over dates; this module adds up money."* W7 emitted ONE `nextExpectedDate`. | Nothing on either side turned a cadence into the dated series W8 wants. Projections would simply contain no bills. |
+
+**Break 1 is the dangerous one.** 2 and 3 fail loudly. 1 produces a confident,
+complete, wrong answer.
+
+Use `toCashflowBills(result, { from, to })` — it returns `{ recurringBills,
+skipped }` in exactly W8's documented shape. `PRESENTABLE_CONFIDENCE_FLOOR`
+(0.55) is exported so W8's `thresholds.confidenceFloor` can be set to the value
+that makes its classification agree with this repo's own medium/high split,
+rather than someone inventing 0.8 at a call site.
+
+**The honesty rule survives the crossing, which is the point.** A bill with no
+confident next date expands to ZERO occurrences and carries a `skippedReason`.
+It is never given a plausible first date so the projection has something to
+draw — a date invented at the seam is indistinguishable, three modules
+downstream, from one the detector actually stood behind.
+
+A fourth thing came out of building it: **`nextExpectedDate` can be clamped**
+(a bill charged on the 31st predicts the 30th in a 30-day month), so carrying it
+forward pins the bill to the 30th permanently. The detector now publishes
+`anchorDayOfMonth` — the real billing day — because it cannot be recovered from
+the clamped date. The seam's first version had exactly that bug and the
+month-end test caught it.
+
+### Compatibility checked against the other branches
+
+- **`bank_accounts.id` is `uuid`** on `plaid-banking-w5`, so the FK this
+  workflow deferred is addable exactly as described. No change needed here.
+- **No migration-number collision.** W2 has 075–076, W3 077, W4 078–079, W5
+  080–082, W6 083–084, W7 085–086, W8 087. Verified by listing every branch.
+- **`src/banking/` is shared with W5, W6 and W8** and no filenames collide
+  (`plaid.mjs`, `card-liabilities.mjs`, `cashflow.mjs`, `reminders.mjs` vs this
+  workflow's `recurring.mjs`, `store.mjs`, `cashflow-seam.mjs`).
+- **W5's `entity_kind` is three-valued** (`unknown`/`personal`/`business`) with
+  a `entity_kind_source`. This workflow's `accountIsBusiness` map is boolean and
+  a naive wiring — `entity_kind === 'business'` — would turn **`unknown` into
+  `false`**, i.e. silently assert "personal" about an account nobody has
+  classified. W10's own brief says `unknown != personal`. **The map is
+  three-state-safe as written** (absent -> `null` with a reason), but the
+  correct wiring is: pass an entry ONLY for `personal` and `business`, and leave
+  `unknown` out of the map entirely. Recorded here because the wrong version is
+  the one that looks natural.
 
 ### Routes, journeys, events — all unchanged
 
@@ -217,14 +275,14 @@ It writes no customer-facing text and makes no claim about credit outcomes.
 
 ```
 migrations         52 apply clean on a virgin database; re-run applies 0
-unit tests         82 pure (63 detector + 19 writer), all pass, no database
+unit tests         105 pure (65 detector + 19 writer + 21 seam), no database
 pg tests           20 against real Postgres, all pass; skip cleanly unset
-npm test (no DB)   1989 tests · 1774 pass · 0 fail · 215 skipped · exit 0
-npm test (with DB) 2412 pass · 24 fail · 8 skipped
+npm test (no DB)   2012 tests · 1797 pass · 0 fail · 215 skipped · exit 0
+npm test (with DB) 2435 pass · 24 fail · 8 skipped
                    -> 24 is the pre-existing baseline on this repo
                    -> NEW FAILING NAMES: none, over three consecutive runs
                       on a fresh database, diffed by NAME not by total
-mutation check     36/36 killed (20 detector + 16 writer)
+mutation check     52/52 killed (20 detector + 16 writer + 16 seam)
 ```
 
 **Mutation check.** Twenty rules were deleted one at a time and the suite had to

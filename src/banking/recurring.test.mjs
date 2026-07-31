@@ -901,6 +901,35 @@ test("month-end bills anchor on the real billing day, not on February's clamp", 
   assert.equal(bill.nextExpectedDate, "2026-03-31", "the 31st, not February's clamped 28th");
 });
 
+test("the real billing day is published, because a clamped date cannot be un-clamped", () => {
+  // A bill charged on the 31st, whose next predicted date lands in a 30-day
+  // month and is therefore clamped. Anything downstream that carries the
+  // prediction forward from the clamped value pins the bill to the 30th for
+  // ever — so the true anchor has to travel with the answer.
+  const rows = [
+    tx("2026-01-31", -5000), tx("2026-02-28", -5000),
+    tx("2026-03-31", -5000), tx("2026-05-31", -5000)
+  ];
+
+  const bill = only(detectRecurringBills(rows, { now: "2026-06-02" }).bills);
+
+  assert.equal(bill.nextExpectedDate, "2026-06-30", "clamped: June has 30 days");
+  assert.equal(bill.anchorDayOfMonth, 31, "*** but the bill is really charged on the 31st ***");
+});
+
+test("anchorDayOfMonth is null for cadences where a day-of-month means nothing", () => {
+  const weekly = only(detectRecurringBills(
+    ["2026-06-01", "2026-06-08", "2026-06-15", "2026-06-22"].map((d) => tx(d, -2500)),
+    { now: "2026-06-25" }
+  ).bills);
+  assert.equal(weekly.anchorDayOfMonth, null);
+
+  const monthly = only(detectRecurringBills(
+    monthlyOn15th(["2026-01", "2026-02", "2026-03"]), { now: "2026-03-20" }
+  ).bills);
+  assert.equal(monthly.anchorDayOfMonth, 15);
+});
+
 test("a month-end anchor still clamps down for a genuinely shorter month", () => {
   const rows = [
     tx("2026-01-31", -5000), tx("2026-02-28", -5000),

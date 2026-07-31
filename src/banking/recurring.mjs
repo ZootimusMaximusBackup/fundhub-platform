@@ -1078,6 +1078,18 @@ function detectOneGroup(occurrences, { today, detectedAsOf, accountIsBusiness })
     sameDayCollapsedDays,
     firstSeenOn: formatDay(firstSeen),
     lastSeenOn: formatDay(lastSeen),
+
+    // THE DAY OF THE MONTH THE BILL ACTUALLY LANDS ON, for month-based
+    // cadences; null for weekly and biweekly, where it means nothing.
+    //
+    // This is the anchor advance() uses, published because it CANNOT BE
+    // RECOVERED FROM `nextExpectedDate`. A bill charged on the 31st whose next
+    // predicted date falls in a 30-day month has that date clamped to the 30th,
+    // and anything downstream that carries the prediction forward from the
+    // clamped value pins the bill to the 30th permanently. The seam to the
+    // cash-flow projector hit exactly that and needs the real number.
+    anchorDayOfMonth: fit.cadence.months === 0 ? null : anchorDom,
+
     nextExpectedDate,
     nextExpectedUnknownReason,
     confidencePct,
