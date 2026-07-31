@@ -28,6 +28,7 @@ import {
   listRecurringBills,
   getBillEvidence
 } from "./store.mjs";
+import { db as sharedDb, close as closeDb } from "../db.mjs";
 
 const ORG = "44444444-4444-4444-8444-444444444444";
 const ACCOUNT = "11111111-1111-4111-8111-111111111111";
@@ -270,6 +271,47 @@ test("a handle with no connect() still runs, so the path is not database-only", 
 
   assert.equal(summary.bills, 1);
   assert.ok(!calls.some((c) => c.sql === "BEGIN"));
+});
+
+/* THE HANDLE PRODUCTION ACTUALLY PASSES. The fallback above is for a plain fake
+   in a unit test. Every real caller passes `db` from src/db.mjs, which is
+   `{ query }` and nothing else — so a probe of the form "no connect(), run it
+   inline" sends the LIVE path down the fallback, and saveDetection deletes a
+   bill's supporting charges and re-inserts them with no transaction around the
+   pair. A failure in between leaves a bill asserting a monthly charge with
+   nothing behind it.
+
+   No database is needed to ask this. DATABASE_URL points at a port nothing
+   listens on, so acquiring a dedicated connection must fail — and the write must
+   fail with it, rather than quietly running through the shared handle. */
+test("saveDetection given the shared production handle never writes through it", async () => {
+  process.env.DATABASE_URL = "postgres://nobody:nothing@127.0.0.1:1/unreachable";
+  process.env.PG_CONNECT_TIMEOUT_MS = "1000";
+
+  const issued = [];
+  const original = sharedDb.query;
+  sharedDb.query = async (sql) => {
+    issued.push(String(sql).replace(/\s+/g, " ").trim());
+    return { rows: [{ id: "bill-1" }] };
+  };
+
+  let error = null;
+  try {
+    await saveDetection(sharedDb,
+      { bills: [bill()], candidates: [], rejected: [], excluded: [] }, { orgId: ORG });
+  } catch (e) {
+    error = e;
+  } finally {
+    sharedDb.query = original;
+    await closeDb();
+  }
+
+  assert.deepEqual(issued, [],
+    "the bill upsert and the evidence swap were issued straight through the shared " +
+    "handle, which autocommits each statement separately");
+  assert.ok(error,
+    "with no connection obtainable the write must fail; a success here means it ran " +
+    "unprotected");
 });
 
 /* ========================================================================= *
