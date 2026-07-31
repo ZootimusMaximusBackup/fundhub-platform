@@ -1,16 +1,36 @@
 # Where `logStaffEvent()` should be called from
 
-**Nothing in this document has been applied. No call site was edited.**
+> ## STATUS — APPLIED 2026-07-31, on branch `claude/telemetry-writers`
+>
+> The `call_made` / `letter_issued` call site in `src/inquiries/work.mjs` is
+> **wired**. `staff_events` now has a writer and `autoCloseStale()` has real
+> activity to measure. Nothing else in this document was applied, because
+> nothing else in it proposed a call — see the finding below, which held up on
+> re-verification against the tree.
+>
+> Two things below are now out of date and are left in place rather than
+> rewritten, because the reasoning is the useful part:
+>
+> * **The `shift_id` problem was decided.** Option 3 was taken, and it no longer
+>   "needs a place to live that does not exist yet" — `requireActiveShift()`
+>   already resolves the caller's open shift in order to gate the write, and
+>   `api/inquiries.mjs` passes that id down. A caller that does not pass one gets
+>   option 2's lookup as a fallback, so a direct caller is not silently unlinked.
+> * **`logAttempt()`'s line numbers have moved**, and it now takes an optional
+>   `shiftId`.
+>
+> The record of what was wired, what was not, and why is
+> `docs/workflows/finish-the-build.md` under `## W1`.
 
 `src/shifts/telemetry.mjs` is the writer for `staff_events`. This file is the
 other half of the job: for each of the five kinds in `EVENT_KINDS`, *where the
 action actually completes today* and *the exact call that should be added there*.
 
-It is a proposal, not a patch, for one reason: those call sites are spread across
-files other build threads are writing in right now, and the plan's own rule is
-"prefer emitting from existing call sites over inventing new ones" — which means
-the emit belongs in files this thread does not own. Whoever integrates should
-apply these one at a time, each with the file's owner.
+It was written as a proposal rather than a patch, for one reason: those call
+sites are spread across files other build threads were writing in at the time,
+and the plan's own rule is "prefer emitting from existing call sites over
+inventing new ones" — which meant the emit belonged in files that thread did not
+own.
 
 ---
 
