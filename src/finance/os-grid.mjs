@@ -62,8 +62,13 @@ const money = (c) => (c === null ? null : fromCents(c));
 
 /* sumKnown — total the values that exist, and COUNT the ones that do not.
    Returns null for the total when nothing was usable, so a client with no rows
-   reads as "unknown", not as "$0.00". */
-function sumKnown(values) {
+   reads as "unknown", not as "$0.00".
+
+   EXPORTED because src/finance/banking-surface.mjs needs the identical rule for
+   bank balances. "A total over a data set with holes in it is a floor, and it
+   must say so" is one rule, and two copies of it would drift — which is the
+   defect class this repo keeps finding. */
+export function sumKnown(values) {
   let total = 0;
   let known = 0;
   let unknown = 0;
@@ -74,7 +79,7 @@ function sumKnown(values) {
   return { total: known ? total : null, known, unknown };
 }
 
-const basisOf = (s, counted) => ({
+export const basisOf = (s, counted) => ({
   lines: counted,
   counted: s.known,
   unknown: s.unknown,
