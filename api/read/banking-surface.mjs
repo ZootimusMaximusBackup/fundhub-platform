@@ -81,11 +81,20 @@ export default async function handler(req, res) {
        accounts and two are closed" is a different fact from "this client has
        four accounts", and the grouping module is what decides that a closed
        account's last known balance is not reachable money. */
+    /* org_id COMES FROM THE SESSION, NEVER THE QUERY — and it is not optional.
+       This read filtered on client_id alone. bank_accounts.org_id is
+       `uuid NOT NULL` (db/migrations/081) and every request knows the caller's
+       org, but the two were never compared, so a staff member of org A who knew
+       a client id belonging to org B received that consumer's bank balances.
+       Identical to the hole found on the tradeline path and closed in
+       src/tradelines/store.mjs listTradelines(), which now refuses to run
+       without an org id. finance-os inherits that guard by going through the
+       store; this endpoint owns its SQL and had to say it itself. */
     const rows = (await db.query(
       `SELECT ${COLUMNS} FROM bank_accounts
-        WHERE client_id = $1
+        WHERE org_id = $1 AND client_id = $2
         ORDER BY entity_kind, name NULLS LAST, id`,
-      [String(query.client_id).trim()]
+      [staff.org_id, String(query.client_id).trim()]
     )).rows;
 
     return res.status(200).json({ ok: true, ...bankingSurface(rows) });
