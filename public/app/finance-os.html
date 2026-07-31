@@ -12,6 +12,8 @@
   :root{ --surface:#FFFFFF; --text:var(--ink2); --text-dim:var(--gray); --text-faint:var(--gray2); }
 
   .fos-wrap{ max-width:960px; margin:0 auto; padding:28px 20px 64px; }
+  .fos-nav-back{ font:400 13px/1 'Inter',system-ui,sans-serif; color:var(--link); margin-bottom:12px; }
+  .fos-nav-back a{ cursor:pointer; text-decoration:underline; }
   .fos-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:6px; }
   .fos-title{ font:800 22px/1.2 'Inter',system-ui,sans-serif; color:var(--text); letter-spacing:-.01em; }
   .fos-source{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.09em; text-transform:uppercase;
@@ -49,6 +51,7 @@
 <body>
 
 <div class="fos-wrap">
+  <div class="fos-nav-back"><a onclick="window.history.back()">← Back</a></div>
   <div class="fos-head">
     <h1 class="fos-title">Finance OS</h1>
     <span class="fos-source" id="fosSource">tradelines</span>

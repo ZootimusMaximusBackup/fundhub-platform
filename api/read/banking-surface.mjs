@@ -39,6 +39,7 @@ import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { bankingSurface } from "../../src/finance/banking-surface.mjs";
+import { isPlaidEnabled } from "../../src/banking/plaid.mjs";
 
 const COLUMNS = `
   id, client_id, name, official_name, mask,
@@ -56,6 +57,10 @@ export default async function handler(req, res) {
   const staff = await requireAuth(req, res, { db });
   if (!staff) return;
   if (!requireRole(res, staff, ROLE_SETS.STAFF)) return;
+
+  if (!isPlaidEnabled()) {
+    return res.status(403).json({ ok: false, error: "banking surface requires plaid configuration" });
+  }
 
   const query = req.query || {};
   if (!isUuid(query.client_id)) {

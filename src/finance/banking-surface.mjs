@@ -141,8 +141,13 @@ export function bankingSurface(rows = []) {
     // balance is not money anybody can reach.
     const open = mine.filter((v) => !v.closed_at);
 
-    const available = sumKnown(open.map((v) => v.available_balance_cents));
-    const current = sumKnown(open.map((v) => v.current_balance_cents));
+    // Only count depository accounts (checking, savings) in totals. Credit,
+    // loan, and investment accounts have different semantics and must not be
+    // added to cash on hand: available = headroom, current = owed.
+    const depository = open.filter((v) => v.account_type === "depository");
+
+    const available = sumKnown(depository.map((v) => v.available_balance_cents));
+    const current = sumKnown(depository.map((v) => v.current_balance_cents));
 
     return {
       key,
@@ -152,11 +157,11 @@ export function bankingSurface(rows = []) {
       accounts: mine,
       available: {
         value: available.total, display: money(available.total),
-        basis: basisOf(available, open.length)
+        basis: basisOf(available, depository.length)
       },
       current: {
         value: current.total, display: money(current.total),
-        basis: basisOf(current, open.length)
+        basis: basisOf(current, depository.length)
       }
     };
   });
