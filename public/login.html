@@ -32,9 +32,22 @@ document.getElementById("f").addEventListener("submit", async (e) => {
   });
   btn.disabled = false; btn.textContent = "Sign in";
   if (!ok) {
+    // Distinct failures have to read as distinct failures. This branch used to
+    // collapse every non-429/403 response into "Wrong email or password.", so a
+    // 500 from a missing table and a dead function both accused the user of
+    // mistyping a password they had typed correctly. Never guess at a status.
+    const s = Number(status) || 0;
+    let msg;
+    if (s === 401)      msg = "Wrong email or password.";
+    else if (s === 403) msg = "Account not active — ask an admin.";
+    else if (s === 429) msg = "Too many attempts — wait 15 minutes.";
+    else if (s === 400) msg = "Enter both an email and a password.";
+    else if (s >= 500)  msg = "Server error (HTTP " + s + ") — this is not your password. "
+                            + "The backend could not complete the request.";
+    else if (!s || !data) msg = "Could not reach the server.";
+    else                msg = "Sign-in failed (HTTP " + s + ").";
     err.style.display = "block";
-    err.textContent = status === 429 ? "Too many attempts — wait 15 minutes."
-      : status === 403 ? "Account not active — ask an admin." : "Wrong email or password.";
+    err.textContent = msg;
     return;
   }
   if (data.token) localStorage.setItem("fh_token", data.token);

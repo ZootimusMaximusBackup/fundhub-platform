@@ -184,9 +184,16 @@ const FH = (() => {
             headers: { "content-type": "application/json", ...(opts.headers || {}) },
             body: opts.body && typeof opts.body !== "string" ? JSON.stringify(opts.body) : opts.body
           });
-          if (r.status !== 404 && r.status < 500) {
+          // A backend that ANSWERS is authoritative, even when it answers
+          // badly. Only "no endpoint deployed" (404) may fall through to demo.
+          // Routing a 500 into demoRoute rewrote every backend fault as a fake
+          // invalid_credentials 401, which the login page then reported as a
+          // wrong password — the real fault was invisible from the browser.
+          if (r.status !== 404) {
             let data = null; try { data = await r.json(); } catch {}
-            if (data && (data.ok || r.status === 401)) return { status: r.status, ok: r.ok, data };
+            // A 2xx whose body will not parse is the one case still worth
+            // falling back on: there is no session in it to hand the page.
+            if (data || !r.ok) return { status: r.status, ok: r.ok, data };
           }
         } catch { /* backend unreachable → demo */ }
       }
