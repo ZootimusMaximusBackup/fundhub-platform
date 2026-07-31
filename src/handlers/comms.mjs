@@ -14,11 +14,20 @@
 // resolveClient (create-if-missing by email) is reused from client-lifecycle for
 // booking.created; the SMS/mail/voice handlers only LINK to an existing client
 // (they must not mint a client from an inbound message — could be spam).
+//
+// THREADING. The two handlers that write `messages` also maintain the client's
+// `conversations` row for that channel and fill in messages.conversation_id.
+// Until now both were left NULL, so the conversations table, idx_messages_convo
+// and fk_messages_convo all existed with nothing on either end. The writer lives
+// in src/conversations/store.mjs; see threadMessage() below for why it swallows
+// its own failures and where last_pulse_at comes from. Nothing here writes
+// `sentiment` — no code in this repo computes Hot/Warm/Cold.
 
 import { on } from "../events/registry.mjs";
 import { resolveClient } from "./client-lifecycle.mjs";
 import { recordOptOut, recordOptIn } from "../lib/opt-out.mjs";
 import { createTask } from "../lib/create-task.mjs";
+import { upsertConversation, linkMessage } from "../conversations/store.mjs";
 
 // TCPA standard opt-out and opt-in keyword sets (case-insensitive, trimmed).
 const STOP_KEYWORDS  = new Set(["STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"]);
@@ -40,37 +49,118 @@ async function findClient(db, orgId, { email, phone } = {}) {
   return null;
 }
 
+/* THREADING — messages.conversation_id used to be left NULL by both writers
+   below, so `conversations`, `idx_messages_convo` and fk_messages_convo all
+   existed with nothing on either end of them. These two helpers close that.
+
+   THE MESSAGE ROW IS THE SOURCE OF THE PULSE TIME. Neither the Twilio nor the
+   Bland payload carries a timestamp — normalizeTwilioEvent yields
+   {from,to,body,sid,...} and Bland's yields {callId,status,disposition,
+   durationSec,transferred} — so last_pulse_at comes from the messages row's own
+   created_at, returned by the INSERT. That is a real recorded fact rather than
+   a new Date() invented at handler time, and on the dedupe path it stays the
+   ORIGINAL message's time instead of drifting forward on every redelivery.
+
+   FAILURE HERE MUST NOT LOSE THE MESSAGE. The messages row is the record of
+   what a client actually said; the conversation row is an index over it. If the
+   thread write fails, the message insert has already committed and must stay
+   committed, so this logs and swallows rather than throwing back into dispatch()
+   — a throw would dead-letter an event whose primary work succeeded, and a
+   retry of it would then re-run the whole handler. */
+
+// The already-stored row behind a provider_ref, for the ON CONFLICT DO NOTHING
+// path where the INSERT returns no row because the message is a redelivery.
+async function findMessageByRef(db, orgId, providerRef) {
+  if (!providerRef) return null;
+  const r = await db.query(
+    `SELECT id, created_at FROM messages WHERE org_id=$1 AND provider_ref=$2 LIMIT 1`,
+    [orgId, providerRef]
+  );
+  return r.rows[0] || null;
+}
+
+// Upsert the (client, channel) thread and point the message at it.
+// `channel` is passed in by the caller as the exact value it wrote to
+// messages.channel — no parallel vocabulary is minted here.
+async function threadMessage(db, { orgId, clientId, channel, inserted, providerRef }) {
+  // conversations.client_id is NOT NULL, and these handlers deliberately do not
+  // mint a client from an inbound message (it could be spam). An SMS from an
+  // unrecognised number therefore has no thread to join; it stays a messages row
+  // with conversation_id NULL, which is the honest state, not a bug.
+  if (!clientId) return null;
+  try {
+    const message = inserted || (await findMessageByRef(db, orgId, providerRef));
+    if (!message) return null;
+    // summary is not passed: no payload here carries one, and sentiment is never
+    // written at all — see the header of src/conversations/store.mjs.
+    const convo = await upsertConversation(db, {
+      orgId,
+      clientId,
+      channel,
+      lastPulseAt: message.created_at || null
+    });
+    await linkMessage(db, { messageId: message.id, conversationId: convo.id });
+    return convo;
+  } catch (err) {
+    console.error(
+      `[comms] conversation threading failed for ${channel} message ` +
+      `(provider_ref=${providerRef || "none"}): ${err && err.message}`
+    );
+    return null;
+  }
+}
+
 // message.inbound — inbound SMS (Twilio). Link to client by phone if known.
 // Handles TCPA STOP/START keywords before logging the message row.
 export async function onMessageInbound(event, db) {
   const p = event.payload || {};
   const clientId = event.clientId || (await findClient(db, event.orgId, { phone: p.from }));
   const word = String(p.body || "").trim().toUpperCase();
-  if (clientId && (p.channel || "sms") === "sms") {
+  const channel = p.channel || "sms";
+  const providerRef = p.sid || null;
+  if (clientId && channel === "sms") {
     if (STOP_KEYWORDS.has(word)) {
       await recordOptOut(db, clientId, event.orgId, "sms", "inbound_keyword");
     } else if (START_KEYWORDS.has(word)) {
       await recordOptIn(db, clientId, "sms");
     }
   }
-  await db.query(
+  const ins = await db.query(
     `INSERT INTO messages (org_id, client_id, direction, channel, rendered_body, provider, provider_ref, status)
      VALUES ($1,$2,'inbound',$3,$4,$5,$6,'received')
-     ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING`,
-    [event.orgId, clientId, p.channel || "sms", p.body || null, p.source || "twilio", p.sid || null]
+     ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING
+     RETURNING id, created_at`,
+    [event.orgId, clientId, channel, p.body || null, p.source || "twilio", providerRef]
   );
+  await threadMessage(db, {
+    orgId: event.orgId,
+    clientId,
+    channel,
+    inserted: (ins.rows || [])[0] || null,
+    providerRef
+  });
 }
 
 // call.completed — a finished Bland voice call. Logged as a voice message row.
 export async function onCallCompleted(event, db) {
   const p = event.payload || {};
   const clientId = event.clientId || null;
-  await db.query(
+  const providerRef = p.callId || null;
+  const ins = await db.query(
     `INSERT INTO messages (org_id, client_id, direction, channel, rendered_body, provider, provider_ref, status)
      VALUES ($1,$2,'outbound','voice',$3,$4,$5,$6)
-     ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING`,
-    [event.orgId, clientId, p.disposition || null, p.source || "bland", p.callId || null, p.status || "completed"]
+     ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING
+     RETURNING id, created_at`,
+    [event.orgId, clientId, p.disposition || null, p.source || "bland", providerRef, p.status || "completed"]
   );
+  await threadMessage(db, {
+    orgId: event.orgId,
+    clientId,
+    // 'voice' is the literal this handler already writes to messages.channel.
+    channel: "voice",
+    inserted: (ins.rows || [])[0] || null,
+    providerRef
+  });
 }
 
 // mail.response — a classified bank email (Mailgun). Deduped by event id in raw.

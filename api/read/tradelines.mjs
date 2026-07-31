@@ -11,14 +11,30 @@
 // for, and it is exactly the kind of endpoint that becomes a breach.
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
-import { ROLE_SETS, isUuid, redact, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
+import { ROLE_SETS, requireRole, isUuid, redact, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { listTradelines } from "../../src/tradelines/store.mjs";
 import { toCalculatorCards, fromCents } from "../../src/tradelines/index.mjs";
 import { calcFunding } from "../../src/calculators/deal-funding.mjs";
 
+// THE ROLE GATE IS TWO CALLS, NOT ONE ARGUMENT. requireAuth's third parameter
+// is { db, env } — src/http/middleware/requireAuth.mjs passes it straight to
+// authenticate(), which destructures exactly those two names. A `roles` key
+// there is accepted by the object literal and then silently dropped, so the
+// gate this endpoint declared never ran: the effective rule was "any
+// authenticated staff session, any role", on an endpoint that returns a named
+// client's credit limits and balances. staff.role is nullable with no CHECK
+// against the catalog (deferred on purpose, per HANDOFF.md) and
+// db/migrations/036_partner_role.sql seeds a 'partner' role into it, so the
+// roles admitted beyond ROLE_SETS.STAFF were real, not theoretical.
+//
+// readHandler-based endpoints get this for free (it calls requireRole itself).
+// This one is hand-rolled because it returns rows AND the calculator's output
+// rather than a page, so the gate has to be written out. The endpoint was
+// unrouted until now, which is the only reason this was never exploitable.
 export default async function handler(req, res) {
-  const staff = await requireAuth(req, res, { roles: ROLE_SETS.STAFF });
+  const staff = await requireAuth(req, res, { db });
   if (!staff) return;
+  if (!requireRole(res, staff, ROLE_SETS.STAFF)) return;
 
   const query = req.query || {};
   const clientId = query.client_id;

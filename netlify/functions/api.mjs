@@ -8,6 +8,23 @@
 //
 // Zero changes to the handlers themselves — this file is the only
 // Netlify-specific code in the repo.
+//
+// THIS FILE IS A ROUTING TABLE, AND A ROUTING TABLE IS A PLACE THINGS GET LOST.
+// Twice now a feature has been built end to end — handler, service module, tests,
+// migration — and then never reached a caller, because nobody added the one line
+// here. AUDIT-FINDINGS.md records the first: /api/inngest was absent, so all 47
+// workflow functions were unreachable while the operator was told the only
+// remaining gate was an unset key. The lesson it draws — "a structural check can
+// pass over a half-dead feature" — is exactly right, and it recurred: 21 handler
+// files under api/ were missing from ROUTES and answered 404 on every method, on
+// the deploy target AND under scripts/dev-server.mjs, which proxies /api/*
+// through this same module.
+//
+// So ROUTES and routePath are EXPORTED, and src/http/routes.test.mjs walks api/
+// on disk and fails if a handler file is neither routed nor on its explicit,
+// commented ALLOWED-UNROUTED list. That test is the actual fix; the entries below
+// are just this round's backlog. Adding a file under api/ now breaks the build
+// until someone decides, in writing, whether it is reachable.
 
 import { safeError } from "../../src/http/health.mjs";
 import authLogin from "../../api/auth/login.mjs";
@@ -35,12 +52,36 @@ import readFailedEvents from "../../api/read/failed-events.mjs";
 import readAgents from "../../api/read/agents.mjs";
 import readInquiries from "../../api/read/inquiries.mjs";
 import readProducts from "../../api/read/products.mjs";
+import readConversations from "../../api/read/conversations.mjs";
+import readTradelines from "../../api/read/tradelines.mjs";
+import inquiries from "../../api/inquiries.mjs";
+import pii from "../../api/pii.mjs";
+import shifts from "../../api/shifts.mjs";
+import campaignsList from "../../api/campaigns/list.mjs";
+import campaignsDetail from "../../api/campaigns/detail.mjs";
+import campaignsSpend from "../../api/campaigns/spend.mjs";
+import campaignsFatigue from "../../api/campaigns/fatigue.mjs";
+import campaignsConnections from "../../api/campaigns/connections.mjs";
+import campaignsActionLog from "../../api/campaigns/action-log.mjs";
+import creativeLibrary from "../../api/creative/library.mjs";
+import creativeBrandKits from "../../api/creative/brand-kits.mjs";
+import creativeJobs from "../../api/creative/jobs.mjs";
+import creativeApprovals from "../../api/creative/approvals.mjs";
+import hiringCandidates from "../../api/hiring/candidates.mjs";
+import hiringApplication from "../../api/hiring/application.mjs";
+import hiringPostings from "../../api/hiring/postings.mjs";
+import hiringDecisions from "../../api/hiring/decisions.mjs";
+import hiringFunnel from "../../api/hiring/funnel.mjs";
+import hiringBench from "../../api/hiring/bench.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
 
 export const config = { path: "/api/*" };
 
-const ROUTES = {
+/* The key is the path minus the leading /api/ — "read/products" serves
+   /api/read/products. Exported so src/http/routes.test.mjs can diff it against
+   the api/ directory; nothing at runtime reads it from outside this module. */
+export const ROUTES = {
   "auth/login": authLogin,
   "auth/logout": authLogout,
   "auth/session": authSession,
@@ -64,7 +105,65 @@ const ROUTES = {
   "read/failed-events": readFailedEvents,
   "read/agents": readAgents,
   "read/inquiries": readInquiries,
-  "read/products": readProducts
+  "read/products": readProducts,
+  "read/conversations": readConversations,
+
+  // read/tradelines was held out of this map by the routing pass because
+  // api/read/tradelines.mjs declared a role gate it did not get: it passed
+  // { roles: ROLE_SETS.STAFF } as requireAuth's third argument, which is
+  // { db, env }, so the key was dropped and any authenticated staff session of
+  // any role could read a named client's credit limits and balances. That is
+  // now a real requireRole() call in the handler, and the entry it was blocking
+  // is here. Routed and gated in the same pass, deliberately — routing it
+  // first would have shipped the hole, and fixing it without routing would have
+  // left the Closer Dashboard's live mode 404ing against a working endpoint.
+  "read/tradelines": readTradelines,
+
+  // Write endpoints. Hand-rolled rather than readHandler-based, so each one owns
+  // its own method switch, its 405 + allow header, and its domain-error mapping.
+  // They were built, tested and left unrouted; /api/inquiries in particular is
+  // the entire write path of the Inquiry Remover dashboard, whose read half
+  // (/api/read/inquiries) has been routed the whole time — the queue rendered
+  // and no button on it worked.
+  //
+  // /api/pii gates on its own IDENTITY_ROLES set — {owner, admin,
+  // inquiry_specialist, funding_advisor} — which is NARROWER than ROLE_SETS.STAFF
+  // and deliberately so: a setter or closer has no reason to read a social
+  // security number. Left exactly as written; routing it does not widen it.
+  "inquiries": inquiries,
+  "pii": pii,
+  "shifts": shifts,
+
+  // Creative Factory. All ten go through src/http/partner-read-api.mjs, which is
+  // requirePrincipal(["partner","staff"]) + withPartnerScope, so a partner sees
+  // only their own rows via RLS and a staff caller must name ?partner_id=.
+  "campaigns/list": campaignsList,
+  "campaigns/detail": campaignsDetail,
+  "campaigns/spend": campaignsSpend,
+  "campaigns/fatigue": campaignsFatigue,
+  "campaigns/connections": campaignsConnections,
+  "campaigns/action-log": campaignsActionLog,
+  "creative/library": creativeLibrary,
+  "creative/brand-kits": creativeBrandKits,
+  "creative/jobs": creativeJobs,
+  "creative/approvals": creativeApprovals,
+
+  // Hiring. ROLE_SETS.HIRING is {owner, admin} — NOT the STAFF set, because
+  // these carry applicant PII and the scoring trail of an automated employment
+  // decision tool. Routing them changes nothing about that gate.
+  "hiring/candidates": hiringCandidates,
+  "hiring/application": hiringApplication,
+  "hiring/postings": hiringPostings,
+  "hiring/decisions": hiringDecisions,
+  "hiring/funnel": hiringFunnel,
+  "hiring/bench": hiringBench
+
+  /* NOT ROUTED, ON PURPOSE — see ALLOWED_UNROUTED in src/http/routes.test.mjs
+     for the current list and the reason attached to each entry. That list is
+     EMPTY as of this integration pass: every handler file under api/ is either
+     in this map or reached by one of the three prefix/short-circuit branches in
+     handler() below. Adding a file under api/ now fails routes.test.mjs until
+     somebody decides, in writing, whether it is reachable. */
 };
 
 /* A NUL byte anywhere in a query value makes Postgres raise
@@ -90,8 +189,9 @@ function toQueryObject(searchParams) {
 // two ways: directly on /api/* via config.path above, or on
 // /.netlify/functions/api/* when netlify.toml's rewrite is what routed it.
 // Both must reduce to the same key ("auth/session"), or the rewrite path
-// 404s on every route.
-function routePath(pathname) {
+// 404s on every route. Exported so routes.test.mjs can assert that round-trip
+// for every key in ROUTES rather than for the two somebody happened to try.
+export function routePath(pathname) {
   return pathname
     .replace(/^\/\.netlify\/functions\/api\/?/, "")
     .replace(/^\/api\/?/, "")

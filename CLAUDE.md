@@ -227,3 +227,48 @@ If you catch yourself writing a sentence I would have to look up, rewrite it.
 * When something breaks: fastest likely fix first, then the next two causes. No troubleshooting trees.
 * Flag risk in one line, not a paragraph. Skip obvious warnings.
 * One question at a time, and only when it actually blocks you.
+
+## 11. Deployment and infrastructure
+
+| | |
+|---|---|
+| Deploys from | `main` |
+| Netlify team | `zootimusmaximusbackup` |
+| Netlify site | `transcendent-wisp-888771` |
+| Supabase project ref | `oqpnlusrotpxfenysfxz` (Postgres, session pooler, us-west-2) |
+
+Config lives in Netlify env vars. Schema lives in `db/schema`, `db/migrations`, `db/seed` and is applied by `db/migrate.mjs`. The app reads `DATABASE_URL`.
+
+### Do these without asking
+
+* **A new env var is yours to set.** When code you write or review reads one:
+  `netlify env:set KEY "value" --context production --context deploy-preview --context branch-deploy --secret`.
+  Generate strong random values for secrets. Do not hand me a form to fill out.
+* **`--secret` on anything holding a credential.** Always.
+* **Deploy after any env var change:** `netlify deploy --build --prod`
+* **Apply new SQL yourself** when it lands in `db/schema`, `db/migrations` or `db/seed`:
+  `DATABASE_URL="$(netlify env:get DATABASE_URL --context production)" node db/migrate.mjs`
+* **Never print a secret value back to me.** Confirm by name only.
+
+### Ask me first — these three only
+
+1. Anything that **deletes data**.
+2. Anything that **repoints `DATABASE_URL`** at a different database.
+3. Anything that turns on **`INNGEST_EVENT_KEY`** — that switch makes 47 workflow functions go live.
+
+### Egress
+
+`api.netlify.com` and `api.supabase.com` are blocked by the network policy in the hosted agent environment. Both CLIs fail with a 403 at `CONNECT` before any request is sent. A 403 from the proxy is an org policy denial: report the blocked host, do not retry or route around it.
+
+## 12. Traps in this repo
+
+These have already cost time. Read them before you trust a green result.
+
+* **`npm test`'s glob is `src/**` and `scripts/**` only.** A test placed under `api/` silently never runs. Endpoint tests live at `src/http/<name>.pg.test.mjs` and import the `api/` handler.
+* **The suite is not as green as it looks.** With `DATABASE_URL` unset, ~193 `.pg.test.mjs` tests skip and the suite reports 0 failures. Against a real Postgres there are ~24 pre-existing failures — 29 on a virgin database, because five `inquiries` suites are order-dependent and pass on a second run. Verify with `DATABASE_URL` set, and diff against the baseline commit before concluding you broke something.
+* **A handler file is not a route.** `netlify/functions/api.mjs` holds a hardcoded `ROUTES` map; a handler absent from it 404s locally and deployed. This has shipped twice. `src/http/routes.test.mjs` now fails if a handler is neither routed nor on an explicit allow-list — keep it passing.
+* **`requireAuth` ignores a `roles` key.** It forwards `opts` to `authenticate()`, which reads only `db` and `env`. Gate with `requireRole` after it. `src/http/auth-gate.test.mjs` fails on the broken shape.
+* **Editing an applied migration is a silent no-op.** `migrate.mjs` records each file in `schema_migrations` keyed `<dir>/<file>`. Supersede it with a new file instead.
+* **Money is integer cents** via `src/commissions/money.mjs`. `fromCents` returns a string; `percentOf` takes percent units (`10` = 10%). NULL means unknown and must survive — never default it to 0.
+* **Nothing transmits.** There is no outbound `fetch` in `src/adapters/` or `src/lib/`; `sendTemplated` writes `messages` rows with `status='queued'`.
+* **`src/mail/` mails nothing, deliberately.** No scheduler, no send path, no activation flag. Prescreen data needs a firm offer of credit under FCRA; nothing drops until the FCRA report is in, Deluxe compliance reviews the piece, and a lawyer signs off on the broker/lender-of-record structure. The build is not gated — the drop is.
