@@ -19,18 +19,18 @@ against what it was *meant* to do. These pages are a mirror, not a test.
 
 | Journey | Who that is in the code | Reach |
 |---|---|---|
-| [client](./client-actual.md) | `client` | reaches 9 of 51 routes |
-| [role-owner](./role-owner-actual.md) | `owner` | reaches 51 of 51 routes |
+| [client](./client-actual.md) | `client` | reaches 9 of 53 routes |
+| [role-owner](./role-owner-actual.md) | `owner` | reaches 53 of 53 routes |
 | [role-sales-manager](./role-sales-manager-actual.md) | — | **no such role exists** |
-| [role-closer](./role-closer-actual.md) | `closer` | reaches 37 of 51 routes |
-| [role-funding-advisor](./role-funding-advisor-actual.md) | `funding_advisor` | reaches 38 of 51 routes |
-| [role-inquiry-remover](./role-inquiry-remover-actual.md) | `inquiry_specialist` | reaches 38 of 51 routes |
-| [affiliate](./affiliate-actual.md) | `affiliate` | reaches 7 of 51 routes |
-| [white-label](./white-label-actual.md) | `partner` | reaches 18 of 51 routes |
+| [role-closer](./role-closer-actual.md) | `closer` | reaches 37 of 53 routes |
+| [role-funding-advisor](./role-funding-advisor-actual.md) | `funding_advisor` | reaches 38 of 53 routes |
+| [role-inquiry-remover](./role-inquiry-remover-actual.md) | `inquiry_specialist` | reaches 38 of 53 routes |
+| [affiliate](./affiliate-actual.md) | `affiliate` | reaches 7 of 53 routes |
+| [white-label](./white-label-actual.md) | `partner` | reaches 18 of 53 routes |
 
 ## What was found while generating these
 
-- **51 routes** are reachable in total.
+- **53 routes** are reachable in total.
 - **0 routes have gates that could not be traced.** Every gate resolved to its source.
 - **4 routes are genuinely open** (signing in, signing out, "who am I", and the health check).
 - **3 routes need no sign-in but are not open** — a signed link, a provider signature, and Inngest's own request signing. Anyone may call them; the wrong signature is refused.

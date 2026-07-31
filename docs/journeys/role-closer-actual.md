@@ -25,15 +25,17 @@ flowchart TD
     CAN --> A_read[Reading data — 11 routes]
     CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 14 routes]
+    WHO -->|Yes| CANT[Blocked — 16 routes]
+    CANT --> B_banking[banking — 1 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
+    CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_read[Reading data — 6 blocked]
     CANT --> B_top_level[Everything else — 2 blocked]
 ```
 
 ## What they can reach
 
-**37 of 51 routes.**
+**37 of 53 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -84,10 +86,11 @@ flowchart TD
 
 ## What they are blocked from
 
-**14 of 51 routes.**
+**16 of 53 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
+| `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/hiring/application` | GET | owner, admin |
 | `/api/hiring/bench` | GET | owner, admin |
 | `/api/hiring/candidates` | GET | owner, admin |
@@ -96,6 +99,7 @@ flowchart TD
 | `/api/hiring/postings` | GET | owner, admin |
 | `/api/inquiry` | — | inquiry_specialist, admin, owner |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
+| `/api/privacy/erasure` | GET, POST | owner, admin |
 | `/api/read/affiliates` | GET | owner, admin |
 | `/api/read/commissions` | GET | owner, admin |
 | `/api/read/failed-events` | GET | owner, admin |

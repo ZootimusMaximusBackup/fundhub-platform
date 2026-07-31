@@ -12,6 +12,7 @@ this file is not, because "what changed and why" is a judgement nobody can gener
 
 ---
 
+2026-07-31 | role-owner, role-closer, role-funding-advisor, role-inquiry-remover, client, affiliate, white-label | Two routes added to every journey — `/api/banking/revoke` and `/api/privacy/erasure`, both owner/admin only | The banking revoke + erasure work (PR #59) added them; the staleness guard caught the drift on merge and the pages were regenerated rather than hand-edited | (this commit)
 2026-07-31 | white-label | First actual journey: the `partner` kind reaches 18 of 51 routes — campaigns, Creative Factory, its own brand tokens | No journey documentation existed for any flow; owner asked for actual-files only | (this commit)
 2026-07-31 | affiliate | First actual journey: the `affiliate` kind reaches only the open routes — **no endpoint anywhere admits an affiliate** | Generated from the routing table; recorded as a finding rather than smoothed over | (this commit)
 2026-07-31 | role-inquiry-remover | First actual journey for `inquiry_specialist`, the role behind the Inquiry Remover screen | Journey is named for the product, the role for the database column — mapping written down so nobody re-derives it | (this commit)
