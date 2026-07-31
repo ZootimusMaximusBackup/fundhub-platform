@@ -59,10 +59,18 @@ export function renderEventFlow({ canonicalGroups, adapters, busHandlers, workfl
   out.push("  REG[[registry handlers<br/>synchronous]]");
   out.push("  ING[[Inngest functions<br/>durable, with waits]]");
   out.push("");
-  for (const a of adapters) out.push(`  ext_${id(a.name)} --> adp_${id(a.name)}`);
   for (const a of adapters) {
-    const evs = a.events.length ? a.events.join("<br/>") : "—";
-    out.push(`  adp_${id(a.name)} -- ${q(evs)} --> BUS`);
+    // Outbound-only: the platform asks first, and the answer comes back.
+    if (a.outbound && !a.inbound) out.push(`  adp_${id(a.name)} -- request --> ext_${id(a.name)}`);
+    out.push(`  ext_${id(a.name)} --> adp_${id(a.name)}`);
+  }
+  for (const a of adapters) {
+    /* An adapter that emits nothing gets NO arrow to the bus. The old
+       unconditional edge labelled that case "—", which draws an arrow into the
+       event table and then says the arrow carries nothing — a reader follows
+       the line, not the label. See the matching note in renderAdapterBoundary. */
+    if (!a.events.length) continue;
+    out.push(`  adp_${id(a.name)} -- ${q(a.events.join("<br/>"))} --> BUS`);
   }
   out.push("  BUS --> REG", "  BUS --> ING", "```", "");
 
@@ -202,8 +210,18 @@ export function renderAdapterBoundary({ adapters }) {
   }
   out.push("  end", "  BUS[(canonical event bus)]", "");
   for (const a of adapters) {
+    /* AN OUTBOUND-ONLY ADAPTER'S FIRST MOVE LEAVES. Every adapter here used to
+       be something that arrived, so both edges were drawn unconditionally:
+       outside → adapter → bus. src/adapters/plaid.mjs is the first that dials
+       out, and drawn that way it would have appeared to be another webhook. */
+    if (a.outbound && !a.inbound) out.push(`  b_${id(a.name)} -- request --> o_${id(a.name)}`);
     out.push(`  o_${id(a.name)} --> b_${id(a.name)}`);
-    out.push(`  b_${id(a.name)} --> BUS`);
+    /* AND ONLY AN ADAPTER THAT EMITS GETS AN ARROW TO THE BUS. Every adapter
+       that existed when this was written emits at least one canonical event, so
+       the edge was unconditional and correct by accident. plaid emits none —
+       see src/banking/PROPOSED-EVENTS.md — and an arrow into the bus would tell
+       a reader that linking a bank fires something downstream. It does not. */
+    if (a.events.length) out.push(`  b_${id(a.name)} --> BUS`);
   }
   out.push("```", "");
 

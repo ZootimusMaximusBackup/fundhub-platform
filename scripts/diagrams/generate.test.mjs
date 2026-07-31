@@ -112,7 +112,7 @@ test("every canonical event lands in exactly one group", async () => {
 test("adapters report their auth scheme and emitted events", async () => {
   const { canonicalEvents } = await extractAll();
   const adapters = extractAdapters(canonicalEvents);
-  assert.equal(adapters.length, 8, "8 adapters in src/adapters");
+  assert.equal(adapters.length, 9, "9 adapters in src/adapters");
 
   const twilio = adapters.find((a) => a.name === "twilio");
   assert.equal(twilio.scheme, "HMAC-SHA1", "Twilio signs with SHA1, unlike the rest");
@@ -121,6 +121,19 @@ test("adapters report their auth scheme and emitted events", async () => {
   const crs = adapters.find((a) => a.name === "crs");
   assert.equal(crs.inbound, false, "CRS is a direct call, not a signed webhook");
   assert.equal(crs.verifiers.length, 0);
+
+  /* Plaid is the odd one out and the map has to say so. Every other adapter here
+     parses something that ARRIVED — a signed webhook body — and this one dials
+     out carrying a credential that reads a named person's bank account. If this
+     assertion ever flips to inbound:true or outbound:false, either the adapter
+     grew a webhook nobody mentioned or the boundary map has stopped describing
+     the direction of the platform's only bank-data call. */
+  const plaid = adapters.find((a) => a.name === "plaid");
+  assert.ok(plaid, "src/adapters/plaid.mjs is missing from the boundary map");
+  assert.equal(plaid.inbound, false, "Plaid is an outbound call, not a webhook we receive");
+  assert.equal(plaid.outbound, true, "Plaid is the outbound adapter — the map must show the arrow leaving");
+  assert.equal(plaid.verifiers.length, 0);
+  assert.deepEqual(plaid.events, [], "bank linking emits no canonical event yet — see src/banking/PROPOSED-EVENTS.md");
 
   for (const a of adapters) {
     assert.ok(a.events.every((e) => canonicalEvents.includes(e)), `${a.name} emits a non-canonical event`);

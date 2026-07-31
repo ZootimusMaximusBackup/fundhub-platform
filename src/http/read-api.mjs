@@ -15,7 +15,14 @@
 // Columns that must never reach a client, whatever the query selected. Matched
 // case-insensitively against the key name, so a future `ssn_last4` or
 // `storage_key_v2` is caught by the same rule rather than needing a new one.
-const FORBIDDEN_KEY = /(^|_)(ssn|social_security)(_|$)|storage_key|storage_path|s3_key|object_key|password|password_hash|token_hash/i;
+// `access_token`, `refresh_token` and any `*_token_enc` were added when bank
+// linking landed: 080_plaid_items.sql stores a Plaid access token as ciphertext
+// in `access_token_enc`, and 046_ad_platforms.sql has held
+// `encrypted_access_token`/`encrypted_refresh_token` since the Creative Factory.
+// None of the three is projected by any endpoint today — that is the actual
+// control — but the whole point of this net is that it catches the column
+// nobody remembered to leave out of a SELECT.
+const FORBIDDEN_KEY = /(^|_)(ssn|social_security)(_|$)|storage_key|storage_path|s3_key|object_key|password|password_hash|token_hash|access_token|refresh_token|token_enc/i;
 
 // Keys that are allowed through despite matching above, because they are the
 // safe derived form the screens actually need.

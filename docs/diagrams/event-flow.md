@@ -20,6 +20,7 @@ flowchart LR
     ext_crs["CRS engine output"]
     ext_lendflow["Lendflow alt-fin"]
     ext_mailgun["Mailgun inbound-email"]
+    ext_plaid["Plaid"]
     ext_twilio["Twilio inbound SMS"]
   end
   subgraph ADP[Adapters — verify, normalize, emit]
@@ -31,6 +32,7 @@ flowchart LR
     adp_crs["crs<br/>direct call"]
     adp_lendflow["lendflow<br/>HMAC-SHA256"]
     adp_mailgun["mailgun<br/>HMAC-SHA256"]
+    adp_plaid["plaid<br/>direct call"]
     adp_twilio["twilio<br/>HMAC-SHA1"]
   end
   BUS[(events table<br/>append-only, idempotent)]
@@ -44,6 +46,8 @@ flowchart LR
   ext_crs --> adp_crs
   ext_lendflow --> adp_lendflow
   ext_mailgun --> adp_mailgun
+  adp_plaid -- request --> ext_plaid
+  ext_plaid --> adp_plaid
   ext_twilio --> adp_twilio
   adp_bland -- "call.completed" --> BUS
   adp_calcom -- "booking.created" --> BUS

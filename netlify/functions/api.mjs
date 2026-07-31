@@ -75,6 +75,7 @@ import hiringFunnel from "../../api/hiring/funnel.mjs";
 import hiringBench from "../../api/hiring/bench.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
+import bankingPlaid from "../../api/banking/plaid.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -156,7 +157,19 @@ export const ROUTES = {
   "hiring/postings": hiringPostings,
   "hiring/decisions": hiringDecisions,
   "hiring/funnel": hiringFunnel,
-  "hiring/bench": hiringBench
+  "hiring/bench": hiringBench,
+
+  // Bank linking (Plaid). Gates on its own BANKING_ROLES set — {owner, admin,
+  // funding_advisor} — which is NARROWER than ROLE_SETS.STAFF and deliberately
+  // so: a setter or a closer has no reason to see how much money is in a
+  // client's chequing account. Routing it does not widen it.
+  //
+  // Routed in the same commit as the handler, on purpose. This map is where
+  // features go to be unreachable — /api/inngest and 21 others have already been
+  // built, tested and left 404ing — and a bank-linking endpoint that answers 404
+  // would look exactly like "Plaid is not configured yet", which is the other
+  // thing this feature legitimately does.
+  "banking/plaid": bankingPlaid
 
   /* NOT ROUTED, ON PURPOSE — see ALLOWED_UNROUTED in src/http/routes.test.mjs
      for the current list and the reason attached to each entry. That list is

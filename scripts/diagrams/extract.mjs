@@ -152,7 +152,14 @@ export function extractAdapters(canonicalEvents, dir = "src/adapters") {
       inbound: verifiers.length > 0,
       verifiers,
       scheme: verifiers.length ? scheme : null,
-      outbound: /export async function submit\w+|fetch\(/.test(src),
+      /* `globalThis.fetch` was added when src/adapters/plaid.mjs landed — the
+         first adapter in this directory that is outbound-ONLY. It takes its
+         fetch implementation as an injected argument so its tests can stub the
+         network, so the literal string `fetch(` never appears in it, and the
+         boundary map would have drawn the one genuinely outbound adapter as
+         though it only listened. A diagram that hides the direction of the
+         platform's only bank-data call is worse than no diagram. */
+      outbound: /export async function submit\w+|fetch\(|globalThis\.fetch/.test(src),
       events,
       unverified: /⚠️[^\n]*CONFIRM|⚠️ CONFIRM/.test(src)
     };

@@ -18,6 +18,7 @@ flowchart TB
     o_crs["CRS engine output"]
     o_lendflow["Lendflow alt-fin"]
     o_mailgun["Mailgun inbound-email"]
+    o_plaid["Plaid"]
     o_twilio["Twilio inbound SMS"]
   end
   subgraph BOUNDARY[Adapter layer]
@@ -29,6 +30,7 @@ flowchart TB
     b_crs["crs<br/>no signature<br/>direct call"]
     b_lendflow["lendflow<br/>HMAC-SHA256<br/>fail-closed"]
     b_mailgun["mailgun<br/>HMAC-SHA256<br/>fail-closed"]
+    b_plaid["plaid<br/>no signature<br/>direct call"]
     b_twilio["twilio<br/>HMAC-SHA1<br/>fail-closed"]
   end
   BUS[(canonical event bus)]
@@ -47,6 +49,8 @@ flowchart TB
   b_lendflow --> BUS
   o_mailgun --> b_mailgun
   b_mailgun --> BUS
+  b_plaid -- request --> o_plaid
+  o_plaid --> b_plaid
   o_twilio --> b_twilio
   b_twilio --> BUS
 ```
@@ -60,9 +64,10 @@ flowchart TB
 | `crs` | direct call | none — not a webhook | `analysis.completed`<br/>`decision.rendered` | yes |
 | `lendflow` | inbound webhook + outbound call | `verifyLendflowSignature` (HMAC-SHA256) | `round.started`<br/>`round.submitted`<br/>`round.approved`<br/>`round.funded` | ⚠️ **no** — carries a CONFIRM banner |
 | `mailgun` | inbound webhook | `verifyMailgunSignature` (HMAC-SHA256) | `mail.response` | yes |
+| `plaid` | outbound call | none — not a webhook | — | yes |
 | `twilio` | inbound webhook | `verifyTwilioSignature` (HMAC-SHA1) | `message.inbound` | yes |
 
-> ⚠️ 4 of 8 adapters still carry a `CONFIRM` banner in their header:
+> ⚠️ 4 of 9 adapters still carry a `CONFIRM` banner in their header:
 > `bland`, `clickfunnels`, `commas`, `lendflow`. Their field paths, header names or signature
 > schemes were written from documentation rather than from an observed payload. The boundary is drawn
 > here as the code intends it, which is not the same as how the vendor actually behaves.
