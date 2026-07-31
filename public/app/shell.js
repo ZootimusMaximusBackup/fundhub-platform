@@ -20,7 +20,14 @@
     "agent-editor.html", "automations.html", "products-commissions.html",
     "staff-teams.html", "content-admin.html", "sample-data.html",
     "inquiry-remover.html", "affiliate.html", "client-portal.html", "partner-galaxy.html", "brand-studio.html",
-    "campaign-manager.html", "social-studio.html", "creative-factory.html", "hiring.html"
+    "campaign-manager.html", "social-studio.html", "creative-factory.html", "hiring.html",
+    /* A SCREEN NOT IN THIS ARRAY IS UNREACHABLE. allowedFor() derives every
+       role's list from ALL, so a page missing here is in nobody's list, fails
+       the `ok.indexOf(PAGE) === -1` check below, and location.replace()s to the
+       role's home — which reads as "the app opens and throws me straight back".
+       Adding the file under public/app/ is not enough; src/http/shell-screens.test.mjs
+       fails if a screen exists on disk and is absent here. */
+    "finance-os.html", "banking-surface.html"
   ];
 
   /* partner-galaxy.html is the white-label partner's own Galaxy — scoped to

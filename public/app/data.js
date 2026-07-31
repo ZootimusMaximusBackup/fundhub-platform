@@ -34,8 +34,17 @@ window.FHData = (function () {
     try { return localStorage.getItem("fh_demo") === "1"; } catch (e) { return false; }
   }
 
-  function fail(source, error) {
-    return { ok: false, source: source, data: null, error: error };
+  /* `status` is the HTTP status when there was one, and null when the request
+     never got an answer (no network, fetch missing, non-JSON body). It is
+     ADDITIVE: every `source` value below is unchanged, so no existing screen's
+     banner moves. It exists because `source` deliberately folds 401 and 403
+     into one "unauthorized" — right for a screen that only needs to say "sign
+     in", wrong for one that must distinguish "you are signed out" from "you are
+     signed in and not allowed to see this", which are different instructions to
+     the person reading them. A screen that does not care ignores it. */
+  function fail(source, error, status) {
+    return { ok: false, source: source, data: null, error: error,
+             status: status == null ? null : status };
   }
 
   function get(path) {
@@ -56,7 +65,9 @@ window.FHData = (function () {
       return Promise.resolve(fail("offline", (e && e.message) || "fetch unavailable"));
     }
     return Promise.resolve(started).then(function (r) {
-      if (r.status === 401 || r.status === 403) return fail("unauthorized", "not signed in");
+      if (r.status === 401 || r.status === 403) {
+        return fail("unauthorized", r.status === 403 ? "not permitted" : "not signed in", r.status);
+      }
       // A 404 is TWO different things and they must not share a banner. The
       // router's fallthrough says error:"not_found" with the unmatched path,
       // which means /api/* really is not deployed. An endpoint that ran and
@@ -65,25 +76,25 @@ window.FHData = (function () {
       if (r.status === 404) {
         return r.json().then(function (d) {
           return (d && d.error === "not_found" && typeof d.path === "string")
-            ? fail("offline", "/api/* not deployed")
-            : fail("notfound", "no such record");
+            ? fail("offline", "/api/* not deployed", 404)
+            : fail("notfound", "no such record", 404);
         }).catch(function () {
-          return fail("offline", "/api/* not deployed");
+          return fail("offline", "/api/* not deployed", 404);
         });
       }
       if (r.status === 400) {
         return r.json().then(function (d) {
-          return fail("badrequest", (d && d.error) || "bad request");
-        }).catch(function () { return fail("badrequest", "bad request"); });
+          return fail("badrequest", (d && d.error) || "bad request", 400);
+        }).catch(function () { return fail("badrequest", "bad request", 400); });
       }
       return r.json().then(function (d) {
         if (r.status === 503 || (d && d.db === "down")) {
-          return fail("nodb", (d && d.error) || "database unreachable");
+          return fail("nodb", (d && d.error) || "database unreachable", r.status);
         }
-        if (!d || d.ok !== true) return fail("nodb", (d && d.error) || "request failed");
+        if (!d || d.ok !== true) return fail("nodb", (d && d.error) || "request failed", r.status);
         return { ok: true, source: "api", data: d, error: null };
       }).catch(function () {
-        return fail("offline", "response was not JSON");
+        return fail("offline", "response was not JSON", r.status);
       });
     }).catch(function (e) {
       return fail("offline", (e && e.message) || "network error");

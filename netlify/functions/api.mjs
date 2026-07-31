@@ -54,6 +54,8 @@ import readInquiries from "../../api/read/inquiries.mjs";
 import readProducts from "../../api/read/products.mjs";
 import readConversations from "../../api/read/conversations.mjs";
 import readTradelines from "../../api/read/tradelines.mjs";
+import readFinanceOs from "../../api/read/finance-os.mjs";
+import readBankingSurface from "../../api/read/banking-surface.mjs";
 import inquiries from "../../api/inquiries.mjs";
 import pii from "../../api/pii.mjs";
 import shifts from "../../api/shifts.mjs";
@@ -118,6 +120,14 @@ export const ROUTES = {
   // first would have shipped the hole, and fixing it without routing would have
   // left the Closer Dashboard's live mode 404ing against a working endpoint.
   "read/tradelines": readTradelines,
+
+  /* The Finance OS pair. Routed in the same commit that adds the handlers, and
+     gated with a real requireRole() call inside each — the two mistakes this
+     map has already made once (a handler nobody routed, and a role gate passed
+     as requireAuth's third argument where it is silently dropped) are both
+     tested for by src/http/routes.test.mjs and src/http/auth-gate.test.mjs. */
+  "read/finance-os": readFinanceOs,
+  "read/banking-surface": readBankingSurface,
 
   // Write endpoints. Hand-rolled rather than readHandler-based, so each one owns
   // its own method switch, its 405 + allow header, and its domain-error mapping.
