@@ -107,3 +107,111 @@ test("setStatus requires a non-empty status", async () => {
   const db = stubDb();
   await assert.rejects(() => setStatus(db, { inquiryId: INQUIRY, staffId: STAFF, status: "  " }), /status is required/);
 });
+
+/* ---------------------------------------------------------------------------
+   W1 — telemetry emission.
+
+   These prove the four things that make the emit safe: it happens after the
+   commit, only for the two kinds that have a real telemetry kind, with the
+   shift resolved, and it cannot take the attempt down with it. What a
+   staff_events row looks like in Postgres is telemetry.pg.test.mjs's job.
+--------------------------------------------------------------------------- */
+
+const SHIFT = "44444444-4444-4444-8444-444444444444";
+
+/* Like stubDb, but answers the two statements the telemetry path adds and lets
+   a test break either of them. Kept separate so the tests above keep exercising
+   the original stub unchanged. */
+function telemetryDb({ shift = { id: SHIFT }, shiftThrows = false, insertThrows = false } = {}) {
+  const calls = [];
+  const answer = (sql, params) => {
+    calls.push({ sql: sql.replace(/\s+/g, " ").trim(), params });
+    if (/FROM shifts/.test(sql)) {
+      if (shiftThrows) throw new Error("shifts unavailable");
+      return { rows: shift ? [shift] : [] };
+    }
+    if (/INSERT INTO staff_events/.test(sql)) {
+      if (insertThrows) throw new Error("staff_events unavailable");
+      return { rows: [{ id: "event-1" }] };
+    }
+    if (/FOR UPDATE/.test(sql)) return { rows: [{ id: INQUIRY, org_id: ORG }] };
+    if (/RETURNING/.test(sql)) return { rows: [{ id: INQUIRY, org_id: ORG, client_id: "client-1", call_attempts: 3 }] };
+    return { rows: [] };
+  };
+  const client = { query: answer, release() {} };
+  return { calls, connect: async () => client, query: answer };
+}
+
+const telemetryInsert = (db) => db.calls.find((c) => /INSERT INTO staff_events/.test(c.sql));
+
+test("a logged call emits call_made, and only after the transaction commits", async () => {
+  const db = telemetryDb();
+  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", outcome: "No answer" });
+
+  const sqls = db.calls.map((c) => c.sql);
+  const commit = sqls.indexOf("COMMIT");
+  const emit = sqls.findIndex((s) => /INSERT INTO staff_events/.test(s));
+  assert.ok(emit > commit, "telemetry must not be able to roll back the attempt it describes");
+  assert.equal(telemetryInsert(db).params[3], "call_made");
+});
+
+test("a logged letter emits letter_issued, not call_made", async () => {
+  const db = telemetryDb();
+  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "letter", outcome: "Mailed" });
+  assert.equal(telemetryInsert(db).params[3], "letter_issued");
+});
+
+test("a portal filing emits nothing — EVENT_KINDS has no kind for it", async () => {
+  const db = telemetryDb();
+  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "portal" });
+  assert.equal(telemetryInsert(db), undefined,
+    "filing through a bureau portal must not be counted as a phone call or a letter");
+});
+
+test("a working note emits nothing — a note is not an attempt", async () => {
+  const db = telemetryDb();
+  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "note", note: "Client called back" });
+  assert.equal(telemetryInsert(db), undefined);
+});
+
+test("the emitted row carries the open shift, the org and the attempt detail", async () => {
+  const db = telemetryDb();
+  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", outcome: "Left voicemail" });
+
+  const [staffId, orgId, shiftId, kind, detail] = telemetryInsert(db).params;
+  assert.equal(staffId, STAFF);
+  assert.equal(orgId, ORG);
+  assert.equal(shiftId, SHIFT);
+  assert.equal(kind, "call_made");
+  assert.deepEqual(JSON.parse(detail), {
+    inquiry_id: INQUIRY, client_id: "client-1", outcome: "Left voicemail", attempt_no: 3
+  });
+});
+
+test("an outcome nobody has recorded yet stays null in the detail", async () => {
+  const db = telemetryDb();
+  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call" });
+  assert.equal(JSON.parse(telemetryInsert(db).params[4]).outcome, null,
+    "a desk that does not yet know the outcome must not have one invented for it");
+});
+
+test("someone who is not clocked in gets a null shift, not a missing row", async () => {
+  const db = telemetryDb({ shift: null });
+  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call" });
+  assert.equal(telemetryInsert(db).params[2], null);
+  assert.ok(telemetryInsert(db), "not being on a shift is not a reason to drop the telemetry");
+});
+
+test("a broken shift lookup still emits, with a null shift", async () => {
+  const db = telemetryDb({ shiftThrows: true });
+  const row = await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call" });
+  assert.equal(row.id, INQUIRY, "the attempt is committed and must be returned");
+  assert.equal(telemetryInsert(db).params[2], null);
+});
+
+test("a failed telemetry write never fails the attempt it describes", async () => {
+  const db = telemetryDb({ insertThrows: true });
+  const row = await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", outcome: "No answer" });
+  assert.equal(row.id, INQUIRY);
+  assert.equal(row.call_attempts, 3, "the desk's own write is unaffected by the observer");
+});

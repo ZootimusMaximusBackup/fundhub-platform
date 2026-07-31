@@ -15,8 +15,19 @@
 // single readable timeline, but do not count toward call_attempts: a desk that
 // inflates its attempt count is lying to a bureau, slowly.
 
+import { logStaffEvent } from "../shifts/telemetry.mjs";
+import { currentShift } from "../shifts/store.mjs";
+
 const ATTEMPT_KINDS = new Set(["call", "letter", "portal", "note"]);
 const COUNTING_KINDS = new Set(["call", "letter", "portal"]);
+
+/* Which attempt kinds have a telemetry kind to be counted under. `portal` is
+   deliberately absent: inquiry_attempts.kind includes it, EVENT_KINDS does not,
+   and filing it under call_made or letter_issued would make a bureau-portal
+   filing show up in a count of phone calls. See TELEMETRY-CALLSITES.md §"What is
+   missing" #2 — the gap is reported, not papered over. `note` is not an attempt
+   at all (see the header). */
+const TELEMETRY_KIND = { call: "call_made", letter: "letter_issued" };
 
 export class InquiryWriteError extends Error {
   constructor(message, { status = 400 } = {}) {
@@ -38,7 +49,7 @@ export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcom
   if (!staffId) throw new InquiryWriteError("staffId is required", { status: 401 });
   if (!ATTEMPT_KINDS.has(kind)) throw new InquiryWriteError(`unknown attempt kind: ${kind}`);
 
-  return withTransaction(db, async (tx) => {
+  const updated = await withTransaction(db, async (tx) => {
     const inquiry = (await tx.query(
       `SELECT id, org_id FROM inquiry_log WHERE id = $1 FOR UPDATE`, [inquiryId]
     )).rows[0];
@@ -70,6 +81,45 @@ export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcom
 
     return updated;
   });
+
+  // AFTER the commit, never inside it. Telemetry describes the attempt; it must
+  // not be able to roll one back, and a row saying "called" must not survive a
+  // transaction that did not. logStaffEvent() never throws and its verdict is
+  // deliberately discarded — a failed telemetry write is not the desk's problem.
+  const telemetryKind = TELEMETRY_KIND[kind];
+  if (telemetryKind) {
+    await logStaffEvent(db, {
+      orgId: updated.org_id,
+      staffId,
+      // Resolved here rather than inside logStaffEvent(), which refuses to
+      // attach work to a shift its caller never named. One extra SELECT on a
+      // desk action, and it is still null for someone who is not clocked in —
+      // which is honest, not missing. A null shift_id cannot be repaired later
+      // without guessing which shift a timestamp fell inside, so it is paid for
+      // once, here. (TELEMETRY-CALLSITES.md §"the shift_id problem", option 2.)
+      shiftId: await openShiftId(db, staffId),
+      kind: telemetryKind,
+      detail: {
+        inquiry_id: updated.id,
+        client_id: updated.client_id,
+        outcome: outcome ?? null,   // NULL survives — the desk may not know yet
+        attempt_no: updated.call_attempts
+      }
+    });
+  }
+
+  return updated;
+}
+
+/* The open shift, or null, and never an exception. currentShift() throws on a
+   missing staffId and can fail on a dropped connection; neither is a reason to
+   fail the attempt that was already committed. */
+async function openShiftId(db, staffId) {
+  try {
+    return (await currentShift(db, { staffId }))?.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**
