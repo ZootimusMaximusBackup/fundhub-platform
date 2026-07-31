@@ -54,6 +54,7 @@ import readInquiries from "../../api/read/inquiries.mjs";
 import readProducts from "../../api/read/products.mjs";
 import readConversations from "../../api/read/conversations.mjs";
 import readTradelines from "../../api/read/tradelines.mjs";
+import readCardLiabilities from "../../api/read/card-liabilities.mjs";
 import inquiries from "../../api/inquiries.mjs";
 import pii from "../../api/pii.mjs";
 import shifts from "../../api/shifts.mjs";
@@ -118,6 +119,14 @@ export const ROUTES = {
   // first would have shipped the hole, and fixing it without routing would have
   // left the Closer Dashboard's live mode 404ing against a working endpoint.
   "read/tradelines": readTradelines,
+
+  // Bank-sourced card liabilities (083/084). Routed in the SAME commit as the
+  // handler, deliberately: this file's own header records that a complete
+  // feature has twice been built and left unreachable because nobody added the
+  // one line here, and src/http/routes.test.mjs now fails the build rather than
+  // let it happen a third time. Gated with a real requireRole() call after
+  // requireAuth, not a `roles` key requireAuth would drop.
+  "read/card-liabilities": readCardLiabilities,
 
   // Write endpoints. Hand-rolled rather than readHandler-based, so each one owns
   // its own method switch, its 405 + allow header, and its domain-error mapping.
