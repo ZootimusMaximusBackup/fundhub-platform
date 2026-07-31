@@ -17,12 +17,14 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| CAN[Can reach]
     CAN --> A_auth[Signing in and out — 3 routes]
+    CAN --> A_banking[banking — 1 route]
     CAN --> A_campaigns[Campaigns — 6 routes]
     CAN --> A_creative[Creative Factory — 4 routes]
     CAN --> A_dashboard[The dashboard — 4 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 1 route]
     CAN --> A_hiring[Hiring — 6 routes]
+    CAN --> A_privacy[privacy — 1 route]
     CAN --> A_read[Reading data — 17 routes]
     CAN --> A_top_level[Everything else — 8 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
@@ -30,13 +32,14 @@ flowchart TD
 
 ## What they can reach
 
-**51 of 51 routes.**
+**53 of 53 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/auth/login` | — | anyone |
 | `/api/auth/logout` | — | anyone |
 | `/api/auth/session` | — | anyone |
+| `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/campaigns/action-log` | GET | partner, staff |
 | `/api/campaigns/connections` | GET | partner, staff |
 | `/api/campaigns/detail` | GET | partner, staff |
@@ -65,6 +68,7 @@ flowchart TD
 | `/api/inquiry` | — | inquiry_specialist, admin, owner |
 | `/api/partner-brand` | GET, PUT | any signed-in employee |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
+| `/api/privacy/erasure` | GET, POST | owner, admin |
 | `/api/read/affiliates` | GET | owner, admin |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/banking-surface` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
@@ -95,7 +99,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**0 of 51 routes.**
+**0 of 53 routes.**
 
 _None._
 

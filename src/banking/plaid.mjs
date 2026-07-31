@@ -238,7 +238,214 @@ export function redactPlaidItem(row) {
 }
 
 /* ---------------------------------------------------------------------------
-   3. The seams. Both empty. Both honest.
+   3. Key rotation — re-encrypt under a new key, with no downtime and NO
+      PLAINTEXT EVER WRITTEN ANYWHERE.
+   ------------------------------------------------------------------------ */
+
+/* THE RULE THIS SECTION IS BUILT AROUND, AND IT HAS NO EXCEPTIONS:
+   the decrypted access token exists ONLY as a local `const` inside
+   rotatePlaidTokenCiphertext(), for the handful of statements between decrypt
+   and encrypt. It is never written to a column, never to a temp column, never to
+   a file, never to a log line, never into an Error message, and never returned
+   to a caller. Everything below is arranged so there is nowhere for it to leak.
+
+   THE THREE PLACES A ROTATION NORMALLY LEAKS, AND WHY NONE OF THEM ARE HERE:
+
+     1. A TEMP PLAINTEXT COLUMN. The usual shape is "add plaintext_token, decrypt
+        everything into it, re-encrypt, drop the column". For the duration of the
+        rotation every credential in the system is readable by any SELECT *, and
+        the column survives in WAL, in backups, and in whatever replica was
+        snapshotted mid-run. Dropping it afterwards does not unwrite it. There is
+        no such column and 080's header already forbids adding one.
+
+     2. A LOG LINE. Rotation code logs progress, and the natural thing to log is
+        the row it is working on. This module logs NOTHING — there is no console
+        call in this file — and the returned summary carries counts and row ids
+        only. Errors name the key ENV VAR, never a key and never a token, which
+        is the rule keyFor() already follows.
+
+     3. AN ERROR MESSAGE. A decrypt failure mid-rotation is the moment a
+        well-meaning `catch` prints the value it was working on. rotatePlaidTokens
+        records failures as { itemId, error } where error is a fixed string, and
+        the underlying error is never spread into it.
+
+   NO DOWNTIME, AND THE REASON IT COMES FOR FREE. The key id is the first field
+   of the stored ciphertext ("v1:<iv>:<tag>:<ct>") and keyFor() resolves it per
+   row. So a half-rotated table is a perfectly normal state: rows still on v1
+   decrypt with PLAID_TOKEN_ENC_KEY, rows moved to v2 decrypt with
+   PLAID_TOKEN_ENC_KEY_V2, and any reader handles both without knowing a rotation
+   is running. There is no flag day, no lock, no maintenance window and no moment
+   where a token is unreadable.
+
+   The operator sequence that follows from that:
+     1. Set PLAID_TOKEN_ENC_KEY_V2 alongside the existing key. Both are now live.
+     2. Run the rotation. Reads keep working throughout, on both key versions.
+     3. When every row reports v2, retire the old key.
+   Step 3 is a human decision and there is no code here that takes it. */
+
+/** A key id is a short, lowercase, alphanumeric label ("v1", "v2", "v2026a").
+ *  Constrained because it is interpolated into an env var NAME by keyFor(): an
+ *  unconstrained id read off a database row would let the row choose which
+ *  environment variable gets read. */
+export const KEY_ID_PATTERN = /^[a-z0-9]{1,16}$/;
+
+/**
+ * plaidTokenKeyId(stored) → "v1" | null
+ *
+ * Which key a stored ciphertext is under, WITHOUT decrypting it and without
+ * needing any key to be present. This is how a rotation reports progress and how
+ * a caller skips rows that are already current — reading the label costs nothing
+ * and touches no key material.
+ *
+ * null for anything that is not a well-formed ciphertext, including null and the
+ * empty string. It does not throw: "what key is this on" is a question a
+ * monitoring path should be able to ask about a malformed row without handling an
+ * exception.
+ */
+export function plaidTokenKeyId(stored) {
+  if (stored === null || stored === undefined || stored === "") return null;
+  const parts = String(stored).split(":");
+  if (parts.length !== 4) return null;
+  const keyId = parts[0];
+  return KEY_ID_PATTERN.test(keyId) ? keyId : null;
+}
+
+/**
+ * rotatePlaidTokenCiphertext(stored, { itemId, toKeyId, env }) → new ciphertext
+ *
+ * THE ONE FUNCTION IN THIS FILE WHERE A DECRYPTED BANK CREDENTIAL EXISTS. It is
+ * the `plaintext` const below, it lives for two statements, and it leaves this
+ * function only as ciphertext under the new key.
+ *
+ * Ciphertext in, ciphertext out. It does not touch the database, so there is no
+ * code path from here to a column that could hold the intermediate value, and it
+ * is a pure function, so the rotation test can prove the round trip without a
+ * database at all.
+ *
+ * THE AAD BINDING IS PRESERVED. Both the decrypt and the re-encrypt use the same
+ * itemId, so a rotated token stays bound to its own plaid_items row. Losing that
+ * binding during rotation would silently undo the cross-client protection
+ * encryptPlaidToken() exists for, on every row at once, and every downstream
+ * check would still pass.
+ *
+ * Returns the input UNCHANGED when it is already under toKeyId. Not an error:
+ * re-running a rotation that was interrupted is the normal way to finish one, and
+ * it must be safe to run twice.
+ */
+export function rotatePlaidTokenCiphertext(stored, { itemId, toKeyId, env } = {}) {
+  if (stored === null || stored === undefined || stored === "") return null;
+  if (!itemId) {
+    throw new PlaidConfigError("rotatePlaidTokenCiphertext: itemId is required — it binds the ciphertext to one plaid_items row", { status: 400 });
+  }
+  if (typeof toKeyId !== "string" || !KEY_ID_PATTERN.test(toKeyId)) {
+    throw new PlaidConfigError("rotatePlaidTokenCiphertext: toKeyId must be a short lowercase alphanumeric key id", { status: 400 });
+  }
+
+  const from = plaidTokenKeyId(stored);
+  if (!from) throw new PlaidConfigError("rotatePlaidTokenCiphertext: malformed ciphertext", { status: 400 });
+
+  // Already there. Idempotent by design — see the docblock.
+  if (from === toKeyId) return String(stored);
+
+  // Both keys must be present and valid before anything is decrypted. keyFor()
+  // throws naming the env var if either is missing, and it throws BEFORE the
+  // plaintext below exists, so a misconfigured rotation never reaches a state
+  // where it is holding a credential it cannot re-seal.
+  keyFor(from, { env });
+  keyFor(toKeyId, { env });
+
+  // ---- the only two lines where a real bank credential is in the clear -------
+  const plaintext = decryptPlaidToken(stored, { itemId, env });
+  return encryptPlaidToken(plaintext, { itemId, keyId: toKeyId, env });
+  // ---- and it goes out of scope here, unwritten anywhere ---------------------
+}
+
+/**
+ * rotatePlaidTokens(db, { orgId, toKeyId, env, limit }) → summary
+ *
+ * Walk one org's stored bank credentials and move each to the new key. Returns
+ * { scanned, rotated, alreadyCurrent, failed[] } — counts and row ids, never a
+ * token and never a key.
+ *
+ * ROW BY ROW, EACH IN ITS OWN TRANSACTION, DELIBERATELY. One big transaction
+ * over every credential in the table would hold locks on the whole set for the
+ * length of the run and would throw away all completed work on a single bad row.
+ * Per-row means an interrupted rotation leaves a mix of v1 and v2, which — see
+ * the header — is a state the system reads correctly anyway. Re-run to finish.
+ *
+ * THE UPDATE IS GUARDED ON THE CIPHERTEXT IT READ. `AND encrypted_access_token =
+ * $3` means a row that was re-linked between the read and the write is skipped
+ * rather than overwritten with a ciphertext derived from the value it used to
+ * hold. Without that guard a concurrent re-link during a rotation would leave a
+ * row holding a token that decrypts to the wrong credential.
+ *
+ * ORG SCOPING COMES FROM THE SESSION AND FAILS CLOSED. A missing or malformed
+ * orgId throws rather than rotating every org's credentials.
+ */
+export async function rotatePlaidTokens(db, { orgId, toKeyId, env = process.env, limit = 500 } = {}) {
+  if (typeof orgId !== "string" || !orgId.trim()) {
+    throw new PlaidConfigError("rotatePlaidTokens: orgId is required", { status: 400 });
+  }
+  if (typeof toKeyId !== "string" || !KEY_ID_PATTERN.test(toKeyId)) {
+    throw new PlaidConfigError("rotatePlaidTokens: toKeyId must be a short lowercase alphanumeric key id", { status: 400 });
+  }
+
+  // Fail before reading a single credential if the destination key is absent or
+  // the wrong length. Discovering that halfway through means having decrypted
+  // rows with nowhere to put them.
+  keyFor(toKeyId, { env });
+
+  const bounded = Math.max(1, Math.min(Number(limit) || 500, 5000));
+
+  const rows = (await db.query(
+    `SELECT id, encrypted_access_token
+       FROM plaid_items
+      WHERE org_id = $1 AND encrypted_access_token IS NOT NULL
+      ORDER BY created_at
+      LIMIT $2`,
+    [orgId.trim(), bounded]
+  )).rows;
+
+  const summary = { scanned: rows.length, rotated: 0, alreadyCurrent: 0, failed: [] };
+
+  for (const row of rows) {
+    const current = plaidTokenKeyId(row.encrypted_access_token);
+    if (current === toKeyId) { summary.alreadyCurrent += 1; continue; }
+
+    try {
+      const next = rotatePlaidTokenCiphertext(row.encrypted_access_token, {
+        itemId: row.id, toKeyId, env
+      });
+
+      const updated = await db.query(
+        `UPDATE plaid_items
+            SET encrypted_access_token = $1, updated_at = now()
+          WHERE id = $2 AND encrypted_access_token = $3`,
+        [next, row.id, row.encrypted_access_token]
+      );
+
+      if (updated.rowCount === 1) summary.rotated += 1;
+      else {
+        // The row moved under us. Not a failure of the rotation — the new value
+        // is whatever the re-link wrote, under whatever key that used.
+        summary.failed.push({ itemId: row.id, error: "row changed during rotation; re-run to pick it up" });
+      }
+    } catch (e) {
+      // A FIXED STRING PLUS THE ERROR NAME. Never e.message, which on a bad
+      // decrypt could carry context about the value, and never the row's
+      // ciphertext or any key. The item id is enough to find the row by hand.
+      summary.failed.push({
+        itemId: row.id,
+        error: e && e.name === "PlaidConfigError" ? "key unavailable or invalid" : "decrypt or re-encrypt failed"
+      });
+    }
+  }
+
+  return summary;
+}
+
+/* ---------------------------------------------------------------------------
+   4. The seams. Both empty. Both honest.
    ------------------------------------------------------------------------ */
 
 /** Why a seam refused. Returned, never thrown — a caller asking an unbuilt
@@ -344,11 +551,15 @@ export default {
   PLAID_ENVIRONMENTS,
   REQUIRED_ENV,
   SEAM_REASONS,
+  KEY_ID_PATTERN,
   plaidConfigFromEnv,
   isPlaidEnabled,
   encryptPlaidToken,
   decryptPlaidToken,
   redactPlaidItem,
+  plaidTokenKeyId,
+  rotatePlaidTokenCiphertext,
+  rotatePlaidTokens,
   linkAccount,
   getAccounts
 };

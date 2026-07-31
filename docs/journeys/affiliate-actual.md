@@ -34,19 +34,21 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| NONE[Nothing admits this one — every endpoint refuses them]
     NONE --> OPENONLY[Only the routes anyone can reach without signing in]
-    WHO -->|Yes| CANT[Blocked — 44 routes]
+    WHO -->|Yes| CANT[Blocked — 46 routes]
+    CANT --> B_banking[banking — 1 blocked]
     CANT --> B_campaigns[Campaigns — 6 blocked]
     CANT --> B_creative[Creative Factory — 4 blocked]
     CANT --> B_dashboard[The dashboard — 4 blocked]
     CANT --> B_finance[Finance — 1 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
+    CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_read[Reading data — 17 blocked]
     CANT --> B_top_level[Everything else — 6 blocked]
 ```
 
 ## What they can reach
 
-**7 of 51 routes.**
+**7 of 53 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -66,10 +68,11 @@ flowchart TD
 
 ## What they are blocked from
 
-**44 of 51 routes.**
+**46 of 53 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
+| `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/campaigns/action-log` | GET | partner, staff |
 | `/api/campaigns/connections` | GET | partner, staff |
 | `/api/campaigns/detail` | GET | partner, staff |
@@ -95,6 +98,7 @@ flowchart TD
 | `/api/inquiry` | — | inquiry_specialist, admin, owner |
 | `/api/partner-brand` | GET, PUT | any signed-in employee |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
+| `/api/privacy/erasure` | GET, POST | owner, admin |
 | `/api/read/affiliates` | GET | owner, admin |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/banking-surface` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |

@@ -76,6 +76,8 @@ import hiringDecisions from "../../api/hiring/decisions.mjs";
 import hiringFunnel from "../../api/hiring/funnel.mjs";
 import hiringBench from "../../api/hiring/bench.mjs";
 import financeSoftPull from "../../api/finance/soft-pull.mjs";
+import bankingRevoke from "../../api/banking/revoke.mjs";
+import privacyErasure from "../../api/privacy/erasure.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
 
@@ -184,7 +186,29 @@ export const ROUTES = {
   // it looks like the audit trail exists. The endpoint's own gate is narrower
   // than ROLE_SETS.STAFF and is spelled out in api/finance/soft-pull.mjs.
   // Nothing behind it transmits.
-  "finance/soft-pull": financeSoftPull
+  "finance/soft-pull": financeSoftPull,
+
+  // Banking and privacy. Both are DESTRUCTIVE and both gate on {owner, admin},
+  // which is narrower than ROLE_SETS.STAFF and spelled out in each handler rather
+  // than inherited. Routed in the same commit that adds the handlers, because a
+  // revoke button that 404s is worse than no button: the person clicking it
+  // believes their bank connection is gone and it is not.
+  //
+  // Each gates with TWO calls — requireAuth, then a separate requireRole — because
+  // requireAuth forwards its third argument to authenticate(), which reads only
+  // { db, env }, so a `roles` key there is silently dropped. That is the exact
+  // hole api/read/tradelines.mjs shipped with, and src/http/auth-gate.test.mjs
+  // exists to catch it.
+  //
+  // /api/banking/revoke removes THIS SYSTEM'S stored bank credential. It does not
+  // revoke at the provider — nothing here transmits — and the response says so on
+  // every call.
+  //
+  // /api/privacy/erasure de-identifies a client on an explicit request and writes
+  // an audit row naming what was removed and what was kept. There is no schedule
+  // behind it; nothing in this system erases anything on its own.
+  "banking/revoke": bankingRevoke,
+  "privacy/erasure": privacyErasure
 
   /* NOT ROUTED, ON PURPOSE — see ALLOWED_UNROUTED in src/http/routes.test.mjs
      for the current list and the reason attached to each entry. That list is
