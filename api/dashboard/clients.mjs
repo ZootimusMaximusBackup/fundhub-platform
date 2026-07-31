@@ -4,7 +4,7 @@
 // No writes. SELECT only. ESM. Mirrors api/health.mjs style.
 import { db } from "../../src/db.mjs";
 import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
-import { boundedLimit } from "../../src/http/read-api.mjs";
+import { boundedLimit, requireRole, ROLE_SETS } from "../../src/http/read-api.mjs";
 
 const SQL = `
   SELECT
@@ -54,6 +54,13 @@ export default async function handler(req, res) {
   }
   const staff = await requireDashboardAccess(req, res, { db });
   if (!staff) return;
+  /* "Signed in" was the whole gate, and every staff row is signed in — including
+     role='partner', which is an EXTERNAL white-label operator. That handed the
+     entire client book (names, emails, funded amounts) to a party outside the
+     company. ROLE_SETS.STAFF already excludes 'partner' and denies unknown roles
+     by default; this endpoint simply never called it.
+     `true` is the DASHBOARD_SECRET fallback caller, which has no role to check. */
+  if (staff !== true && !requireRole(res, staff, ROLE_SETS.STAFF)) return;
   try {
     const limit = boundedLimit(req.query?.limit, { fallback: 50, cap: 500 });
     const { rows } = await db.query(SQL, [limit]);
