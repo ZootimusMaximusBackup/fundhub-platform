@@ -30,7 +30,7 @@ import { readHandler, ROLE_SETS, isUuid } from "../../src/http/read-api.mjs";
 
 export const run = readHandler({
   roles: ROLE_SETS.STAFF,
-  fetch: (db, { limit, offset, query }) => {
+  fetch: (db, { limit, offset, query, staff }) => {
     const raw = query.client_id;
     if (!isUuid(raw)) {
       throw Object.assign(
@@ -39,10 +39,22 @@ export const run = readHandler({
       );
     }
 
-    // No org filter, matching read/documents and read/funding-rounds: the
-    // client_id is already the narrowest possible scope, and conversations.org_id
-    // is derived from the client's own org on insert. Add one here only when
-    // there is a second org to separate, not on speculation.
+    /* THE ORG COMES FROM THE SESSION AND IS REQUIRED (audit C1).
+       This read previously carried no org filter, on the reasoning that
+       "client_id is already the narrowest possible scope" and that it matched
+       read/documents and read/funding-rounds. Both halves were wrong.
+
+       The narrowness argument inverts the actual attack. client_id is narrow
+       only if the caller may not choose it, and here they may — it arrives in
+       the query string. C1's chain is precisely this: list an unfiltered
+       endpoint with no client id, collect client_ids belonging to every
+       company, then hand one back to a per-client endpoint that trusts it. A
+       tight filter on an attacker-supplied value is not a scope.
+
+       The consistency argument is now stale in the safe direction: documents
+       and funding-rounds were both filtered as part of the same finding.
+
+       A session with no org binds NULL and matches no row — it fails CLOSED. */
     //
     // NULLS LAST is load-bearing. last_pulse_at is nullable and a thread that
     // has never pulsed is the LEAST recent thing, not the most; Postgres sorts
@@ -51,10 +63,11 @@ export const run = readHandler({
     return db.query(
       `SELECT id, channel, summary, sentiment, last_pulse_at, created_at
          FROM conversations
-        WHERE client_id = $3
+        WHERE org_id = $4::uuid
+          AND client_id = $3
         ORDER BY last_pulse_at DESC NULLS LAST, created_at DESC
         LIMIT $1 OFFSET $2`,
-      [limit + 1, offset, raw.trim()]
+      [limit + 1, offset, raw.trim(), (staff && staff.org_id) || null]
     ).then((r) => r.rows);
   }
 });

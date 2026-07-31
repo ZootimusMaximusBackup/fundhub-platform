@@ -7,9 +7,18 @@ import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { readHandler, ROLE_SETS } from "../../src/http/read-api.mjs";
 
+/* THE ORG COMES FROM THE SESSION AND IS REQUIRED (audit C1).
+   A session with no org binds NULL, and `org_id = NULL::uuid` matches no row —
+   it fails CLOSED. That is deliberate: the alternative, omitting the clause when
+   the org is unknown, turns a broken session into a firehose over every
+   company's rows. See src/http/read-api.mjs:150-153, which records the decision
+   to leave scoping to each endpoint's own SQL — a decision that then went
+   unimplemented in ten endpoints while the comment stayed. */
+const orgOf = (staff) => (staff && staff.org_id) || null;
+
 const run = readHandler({
   roles: ROLE_SETS.STAFF,
-  fetch: (db, { limit, offset, query }) =>
+  fetch: (db, { limit, offset, query, staff }) =>
     // client_name is joined here for the same reason as read/inquiries: the
     // screen shows a person, and making the caller do a round-trip per row to
     // turn a uuid into a name is how a 200-row page becomes 201 requests.
@@ -20,10 +29,11 @@ const run = readHandler({
            TRIM(COALESCE(c.first_name,'') || ' ' || COALESCE(c.last_name,'')) AS client_name
       FROM documents d
       LEFT JOIN clients c ON c.id = d.client_id
-     WHERE ($3::uuid IS NULL OR d.client_id = $3)
+     WHERE d.org_id = $5::uuid
+       AND ($3::uuid IS NULL OR d.client_id = $3)
        AND ($4::text IS NULL OR d.kind = $4)
      ORDER BY d.created_at DESC
-     LIMIT $1 OFFSET $2`, [limit + 1, offset, query.client_id || null, query.kind || null]).then((r) => r.rows)
+     LIMIT $1 OFFSET $2`, [limit + 1, offset, query.client_id || null, query.kind || null, orgOf(staff)]).then((r) => r.rows)
 });
 
 export default (req, res) => run(req, res, { db, requireAuth });
