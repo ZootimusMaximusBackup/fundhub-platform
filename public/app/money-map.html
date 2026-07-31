@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fundhub — Money Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
+<style>
+/* ══ SHARED CHROME — identical across every internal surface ══════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--butter:#F2E39B}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+.logo{width:118px;height:24px;flex:0 0 118px}
+.app{display:flex;min-height:100vh}
+
+.side{width:230px;flex:0 0 230px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
+.side::after{content:"";position:absolute;top:0;right:0;width:2px;height:100%;background:var(--spectrum);opacity:.9}
+.side.mini{width:60px;flex:0 0 60px}
+.side-top{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--cardline)}
+.side.mini .side-top{padding:0 12px}
+.side.mini .logo{display:none}
+.burger{margin-left:auto;width:26px;height:26px;flex:0 0 26px;border:1px solid var(--cardline);background:transparent;color:var(--gray2);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+.burger:hover{border-color:#3F3F46;color:var(--paper)}
+.side.mini .burger{margin:0 auto}
+.side-scroll{flex:1;overflow-y:auto;padding:12px 0 8px}
+.side-scroll::-webkit-scrollbar{width:6px}
+.side-scroll::-webkit-scrollbar-thumb{background:#27272A;border-radius:3px}
+.navgroup{margin-bottom:3px}
+.navhead{width:100%;background:transparent;border:0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;padding:9px 18px 6px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#71717A}
+.navhead:hover{color:var(--gray2)}
+.navhead .chev{margin-left:auto;font-size:9px;transition:transform .16s;color:#52525B}
+.navgroup.closed .chev{transform:rotate(-90deg)}
+.navgroup.closed .navlist{display:none}
+.side.mini .navhead{justify-content:center;padding:10px 0 6px;font-size:0;letter-spacing:0}
+.side.mini .navhead::after{content:"";display:block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;opacity:.5}
+.side.mini .navhead .chev{display:none}
+.navlist{display:flex;flex-direction:column}
+.navitem{display:flex;align-items:center;gap:11px;padding:7px 18px;font-size:12.5px;color:var(--gray2);position:relative;transition:color .12s,background .12s}
+.navitem:hover{color:var(--paper);background:#161619}
+.navitem .ico{font-family:var(--mono);font-size:12px;width:16px;flex:0 0 16px;text-align:center;opacity:.75}
+.navitem.on{color:var(--paper);background:#161619;font-weight:500}
+.navitem.on::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--spectrum);border-radius:0 2px 2px 0}
+.navitem.on .ico{opacity:1}
+.side.mini .navitem{justify-content:center;padding:9px 0}
+.side.mini .navitem .lbl{display:none}
+.side-foot{padding:12px 16px;border-top:1px solid var(--cardline);font-family:var(--mono);font-size:10px;color:#52525B;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
+.side.mini .side-foot .who{display:none}
+.side.mini .side-foot{justify-content:center;padding:12px 0}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.spacer{flex:1}
+.content{padding:22px 24px 60px;flex:1}
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+
+/* ══ SCREEN ══════════════════════════════════════════════════════════════ */
+:root{ --surface:#FFFFFF; --text:var(--ink2); --text-dim:var(--gray); --text-faint:var(--gray2); }
+
+.mm-wrap{ max-width:1080px; margin:0 auto; padding:22px 4px 40px; }
+.mm-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:4px; }
+.mm-title{ font:800 22px/1.2 'Inter',system-ui,sans-serif; color:var(--text); letter-spacing:-.01em; }
+.mm-source{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.09em; text-transform:uppercase;
+            color:var(--text-faint); border:1px solid currentColor; border-radius:3px; padding:4px 7px; }
+.mm-sub{ font:400 13px/1.55 'Inter',system-ui,sans-serif; color:var(--text-dim); margin:0 0 14px; max-width:76ch; }
+
+/* The way out. A REAL href, not history.back() — this URL gets pasted into a
+   message and opened cold, and back() does nothing on a first page load. */
+.mm-ways{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 18px; }
+.mm-way{ font:600 11px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.05em;
+         border:1px solid var(--soft); border-radius:5px; padding:7px 10px; color:var(--text-dim); background:var(--surface); }
+.mm-way:hover{ border-color:var(--text-faint); color:var(--text); }
+
+.mm-controls{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 20px;
+              font:500 11px/1 'JetBrains Mono',ui-monospace,monospace; color:var(--text-dim); }
+.mm-controls input{ width:88px; border:1px solid var(--soft); border-radius:5px; padding:7px 8px; background:var(--surface);
+                    font:500 11px/1 'JetBrains Mono',ui-monospace,monospace; }
+.mm-controls button{ border:1px solid var(--soft); border-radius:5px; padding:7px 12px; background:var(--ink); color:var(--paper);
+                     cursor:pointer; font:600 11px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.05em; }
+
+.mm-card{ border:1px solid var(--soft); border-radius:8px; background:var(--surface); margin:0 0 18px; overflow:hidden; }
+.mm-chead{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap;
+           padding:13px 16px; border-bottom:1px solid var(--soft); }
+.mm-ctitle{ font:700 14px/1.2 'Inter',system-ui,sans-serif; color:var(--text); }
+/* WHICH ENGINE PRODUCED THIS. Printed, not implied — three modules in this
+   system have an opinion about utilization and they do not agree. */
+.mm-engine{ font:500 10px/1.4 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.03em; color:var(--text-faint); }
+.mm-cbody{ padding:4px 0; }
+
+.mm-row{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,auto); gap:12px; align-items:baseline;
+         padding:12px 16px; border-bottom:1px solid var(--soft); }
+.mm-row:last-child{ border-bottom:0; }
+.mm-label{ font:600 13px/1.35 'Inter',system-ui,sans-serif; color:var(--text); }
+.mm-meta{ display:block; margin-top:3px; font:500 10px/1.5 'JetBrains Mono',ui-monospace,monospace;
+          letter-spacing:.03em; color:var(--text-faint); }
+.mm-value{ font:700 17px/1.2 'JetBrains Mono',ui-monospace,monospace; color:var(--text); text-align:right; white-space:nowrap; }
+
+/* UNKNOWN IS NOT ZERO and must not look like a number. An em dash reads as "we
+   do not have this"; "0.00" reads as "we checked and it is nothing", which is a
+   different and much worse claim. */
+.mm-value.is-unknown{ color:var(--text-faint); font-weight:500; }
+/* PARTIAL IS NOT COMPLETE. A total over rows with holes in them is a FLOOR. */
+.mm-value.is-partial::after{ content:"+"; margin-left:2px; color:var(--text-faint); font-weight:500; }
+.mm-value.is-bad{ color:#B3261E; }
+
+.mm-empty{ padding:16px; font:400 12.5px/1.6 'Inter',system-ui,sans-serif; color:var(--text-dim); }
+.mm-empty strong{ color:var(--text); }
+
+.mm-flag{ margin:0 0 18px; border:1px solid #E7C6C0; border-left:3px solid #B3261E; border-radius:6px; background:#FDF6F5;
+          padding:12px 14px; font:400 12.5px/1.6 'Inter',system-ui,sans-serif; color:#4A1D18; }
+.mm-flag h3{ font:700 12px/1.4 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.06em; text-transform:uppercase; margin:0 0 6px; }
+.mm-flag ul{ margin:6px 0 0 18px; }
+.mm-note{ margin:0 0 18px; border:1px solid var(--soft); border-left:3px solid var(--text-faint); border-radius:6px;
+          background:var(--surface); padding:12px 14px; font:400 12.5px/1.6 'Inter',system-ui,sans-serif; color:var(--text-dim); }
+.mm-note h3{ font:700 12px/1.4 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.06em; text-transform:uppercase;
+             margin:0 0 6px; color:var(--text); }
+.mm-note ul{ margin:6px 0 0 18px; }
+
+.mm-tablewrap{ overflow-x:auto; }
+table.mm-t{ width:100%; border-collapse:collapse; font:400 12.5px/1.45 'Inter',system-ui,sans-serif; }
+table.mm-t th{ text-align:left; font:600 10px/1.4 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.08em;
+               text-transform:uppercase; color:var(--text-faint); padding:10px 14px; border-bottom:1px solid var(--soft); white-space:nowrap; }
+table.mm-t td{ padding:11px 14px; border-bottom:1px solid var(--soft); vertical-align:top; }
+table.mm-t tr:last-child td{ border-bottom:0; }
+table.mm-t td.num{ font-family:'JetBrains Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; }
+table.mm-t td.dim{ color:var(--text-faint); font-weight:500; }
+table.mm-t td .sub{ display:block; margin-top:3px; font:500 10px/1.5 'JetBrains Mono',ui-monospace,monospace; color:var(--text-faint); }
+tr.is-overdue td{ background:#FDF6F5; }
+
+.mm-pill{ display:inline-block; font:600 9.5px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.07em;
+          text-transform:uppercase; border:1px solid var(--soft); border-radius:3px; padding:3px 5px; color:var(--text-faint); }
+.mm-pill.warn{ border-color:#E0B36A; color:#7A5210; }
+.mm-pill.bad{ border-color:#E7C6C0; color:#B3261E; }
+
+.mm-loading{ padding:26px 16px; text-align:center; font:500 12px/1.4 'JetBrains Mono',ui-monospace,monospace; color:var(--text-faint); }
+@media (max-width:640px){ .mm-row{ grid-template-columns:1fr; } .mm-value{ text-align:left; } }
+</style>
+<script src="shell.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
+    <nav class="side-scroll">
+      <div class="navgroup"><button class="navhead">Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Finance<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem on" href="money-map.html"><span class="ico">◪</span><span class="lbl">Money Map</span></a>
+        <a class="navitem" href="finance-os.html"><span class="ico">▩</span><span class="lbl">Finance OS</span></a>
+        <a class="navitem" href="banking-surface.html"><span class="ico">◧</span><span class="lbl">Banking</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
+        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Automation<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Marketing<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
+        <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
+        <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Setup<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
+        <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
+        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Specialist</span></a>
+        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Client<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+      </div></div>
+    </nav>
+    <div class="side-foot"><span class="pulse"></span><span class="who">CS · EMP-000001</span></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="crumb">Finance</span><h1>Money Map</h1>
+      <div class="spacer"></div>
+    </div>
+
+    <div class="content">
+      <div class="mm-wrap">
+        <div class="mm-head">
+          <h2 class="mm-title" id="mmTitle">Money Map</h2>
+          <span class="mm-source" id="mmSource">not loaded</span>
+        </div>
+        <p class="mm-sub" id="mmSub">
+          One client's money in one place: when every card payment is due, what bills repeat,
+          what comes in and goes out, how hard each card is being leaned on, and what could be drawn.
+          Every number on this page comes from the server. Nothing here is a sample.
+        </p>
+
+        <!-- THE WAY OUT. Real links, because this URL gets pasted and opened cold. -->
+        <div class="mm-ways" id="mmWays">
+          <a class="mm-way" href="client-control-panel.html">← Client Control Panel</a>
+          <a class="mm-way" href="command-center.html">Command Center</a>
+          <a class="mm-way" href="finance-os.html">Finance OS</a>
+          <a class="mm-way" href="banking-surface.html">Banking</a>
+        </div>
+
+        <form class="mm-controls" id="mmControls" autocomplete="off">
+          <label for="mmDays">window (days)</label>
+          <input id="mmDays" name="days" type="number" min="1" max="365" step="1">
+          <label for="mmAmount">draw amount ($)</label>
+          <input id="mmAmount" name="amount" type="number" min="0" step="100" placeholder="optional">
+          <button type="submit">Reload</button>
+        </form>
+
+        <div id="mmBody">
+          <div class="mm-loading">reading…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot"><span class="pulse"></span><span>systems nominal · fundhub.ai</span></div>
+  </div>
+</div>
+
+<script>
+/* ══ SHARED CHROME BEHAVIOUR ═════════════════════════════════════════════ */
+(function(){
+  var side=document.getElementById('side'),b=document.getElementById('burger');
+  b.addEventListener('click',function(){side.classList.toggle('mini');b.textContent=side.classList.contains('mini')?'››':'‹‹';});
+  document.querySelectorAll('.navhead').forEach(function(h){
+    h.addEventListener('click',function(){if(side.classList.contains('mini'))return;h.parentElement.classList.toggle('closed');});
+  });
+})();
+</script>
+
+<script src="data.js"></script>
+<script>
+/* ═════════════════════════════════════════════════════════════════════════
+   MONEY MAP — RENDER ONLY.
+   ═════════════════════════════════════════════════════════════════════════
+
+   NOTHING IS COMPUTED HERE. Every figure arrives already formed from
+   /api/read/money-map, which calls src/finance/money-map.mjs, which calls the
+   eight modules that own the rules. closer-dashboard.html reimplements a
+   funding waterfall in an inline <script> against sample rows, and that second
+   implementation is exactly the drift this avoids.
+
+   THERE IS NO SAMPLE MARKUP ON THIS SCREEN, AND THAT IS DELIBERATE.
+
+   Every other wired screen in this app keeps built-in sample rows when a read
+   fails — that is FHData.wire()'s contract, and it is why the sample grid on
+   finance-os.html stays on the page during an outage. A sample number that
+   looks live has already shipped here once. So this screen draws NOTHING until
+   real rows arrive, and an empty or failed read prints a plain sentence saying
+   which read returned nothing. FHData.read() is still used, for its
+   401/403/404/503 classification; FHData.wire() is not.
+
+   KNOWN TRAP, CHECKED FIRST. public/fh.js writes a sticky flag: with
+   fh_demo="1" in localStorage every FH.* call is answered by a client-side mock
+   that never contacts the backend. data.js refuses to read at all in that state
+   and reports source:"demo" — so this screen says so at the top of the page,
+   with the exact command to clear it, rather than rendering a screen full of
+   numbers nobody can trace.
+   ═════════════════════════════════════════════════════════════════════════ */
+(function () {
+  var body = document.getElementById("mmBody");
+  if (!window.FHData) {
+    body.innerHTML = '<div class="mm-flag"><h3>This screen cannot load</h3>' +
+      "<p>The shared data layer (data.js) did not load, so nothing can be read from the server. " +
+      "Reload the page. If it keeps happening the app files did not deploy.</p></div>";
+    return;
+  }
+
+  /* ESCAPE EVERYTHING INTERPOLATED. Lender names, merchant names and reason
+     strings all come from bureau files and bank feeds — none of it is ours and
+     all of it lands inside innerHTML. */
+  function esc(s) {
+    return String(s === null || s === undefined ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  var DASH = "—";
+
+  /* Thousands separators for display only. The string on the wire is untouched:
+     fromCents() produced it server-side and nothing here does arithmetic on it. */
+  function group(s) {
+    if (s === null || s === undefined) return null;
+    var str = String(s);
+    var neg = str.charAt(0) === "-";
+    var bodyStr = neg ? str.slice(1) : str;
+    var parts = bodyStr.split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return (neg ? "-" : "") + parts.join(".");
+  }
+
+  /* An {cents, display} pair from the server → what goes in the cell.
+     display === null means UNKNOWN and renders as an em dash, never "0.00". */
+  function m(a) {
+    if (!a || a.display === null || a.display === undefined) return DASH;
+    return group(a.display);
+  }
+  function isUnknown(a) { return !a || a.display === null || a.display === undefined; }
+
+  function pct(v) { return (v === null || v === undefined) ? DASH : (Math.round(v * 10) / 10) + "%"; }
+  function day(v) { return (v === null || v === undefined || v === "") ? DASH : String(v).slice(0, 10); }
+  function num(v) { return (v === null || v === undefined) ? DASH : String(v); }
+
+  function section(title, engineLabel, inner) {
+    return '<section class="mm-card"><div class="mm-chead">' +
+             '<div class="mm-ctitle">' + esc(title) + "</div>" +
+             (engineLabel ? '<div class="mm-engine">produced by ' + esc(engineLabel) + "</div>" : "") +
+           "</div><div class=\"mm-cbody\">" + inner + "</div></section>";
+  }
+
+  function emptyBlock(headline, detail) {
+    return '<div class="mm-empty"><strong>' + esc(headline) + "</strong><br>" + esc(detail) + "</div>";
+  }
+
+  function row(label, meta, value, cls) {
+    return '<div class="mm-row"><div class="mm-label">' + esc(label) +
+             (meta ? '<span class="mm-meta">' + esc(meta) + "</span>" : "") +
+           '</div><div class="mm-value ' + (cls || "") + '">' + esc(value) + "</div></div>";
+  }
+
+  function table(headers, rowsHtml) {
+    return '<div class="mm-tablewrap"><table class="mm-t"><thead><tr>' +
+      headers.map(function (h) { return "<th>" + esc(h) + "</th>"; }).join("") +
+      "</tr></thead><tbody>" + rowsHtml + "</tbody></table></div>";
+  }
+
+  /* ── the request ─────────────────────────────────────────────────────── */
+  var clientId = FHData.param("client_id");
+  var days = FHData.param("days");
+  var amountParam = FHData.param("amount");
+
+  document.getElementById("mmDays").value = days || 30;
+  if (amountParam) document.getElementById("mmAmount").value = amountParam;
+
+  /* The window and draw controls rebuild the URL rather than holding state in
+     JavaScript, so the address bar always describes exactly what is on screen
+     and the page can be shared as-is. */
+  document.getElementById("mmControls").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var q = [];
+    if (clientId) q.push("client_id=" + encodeURIComponent(clientId));
+    var dv = document.getElementById("mmDays").value;
+    var av = document.getElementById("mmAmount").value;
+    if (dv) q.push("days=" + encodeURIComponent(dv));
+    if (av) q.push("amount=" + encodeURIComponent(av));
+    location.search = "?" + q.join("&");
+  });
+
+  /* Keep the "way out" links pointed at the SAME client, so leaving this screen
+     does not lose the file somebody is working. */
+  if (clientId) {
+    var ways = document.getElementById("mmWays").querySelectorAll("a.mm-way");
+    for (var i = 0; i < ways.length; i++) {
+      var href = ways[i].getAttribute("href");
+      if (href === "command-center.html") continue;
+      ways[i].setAttribute("href", href + "?client_id=" + encodeURIComponent(clientId));
+    }
+  }
+
+  if (!clientId) {
+    document.getElementById("mmSource").textContent = "no client named";
+    body.innerHTML =
+      '<div class="mm-note"><h3>Open this with a client</h3>' +
+      "<p>This screen is about one person, and the address bar says which one. " +
+      "Add <code>?client_id=&lt;id&gt;</code> to the end of the address, or reach this screen " +
+      'from the <a href="client-control-panel.html" style="text-decoration:underline">Client Control Panel</a>, ' +
+      "which passes the id for you.</p>" +
+      "<p>Nothing is being shown below because nothing was asked for. " +
+      "There is no sample data on this screen.</p></div>";
+    return;
+  }
+
+  var params = { client_id: clientId };
+  if (days) params.days = days;
+  if (amountParam) params.amount = amountParam;
+
+  FHData.read("money-map", params).then(function (res) {
+    if (!res || !res.ok) return renderFailure(res);
+    try {
+      render(res.data);
+    } catch (e) {
+      body.innerHTML = '<div class="mm-flag"><h3>This screen could not draw the answer</h3>' +
+        "<p>The server replied, but this page failed while laying it out: " + esc(e.message) + "</p>" +
+        "<p>No numbers are shown, because a half-drawn money screen is worse than none.</p></div>";
+      FHData.banner("error", "money map — render failed: " + e.message, "money map");
+    }
+  });
+
+  /* ── the read did not succeed ────────────────────────────────────────── */
+  function renderFailure(res) {
+    var source = (res && res.source) || "unknown";
+    var detail = (res && res.error) || "no detail";
+    document.getElementById("mmSource").textContent = source;
+
+    var head, text;
+    if (source === "demo") {
+      /* THE STICKY DEMO FLAG. This is the trap that makes a screen behave
+         impossibly: public/fh.js sets fh_demo="1" in localStorage at demo
+         sign-in and it survives every later page load, routing calls to a
+         client-side mock. Named here with the exact fix. */
+      head = "You are in demo mode, so nothing was read from the server";
+      text = "Your browser is holding a demo sign-in. While that is set, this app answers from a " +
+             "built-in fake instead of the real database, and it can hide real permission errors. " +
+             "To clear it: open the browser console and run  localStorage.removeItem('fh_demo')  " +
+             "then sign in again and reload this page.";
+    } else if (source === "unauthorized") {
+      head = "You are not signed in for real data";
+      text = "The server refused this read. Either the sign-in expired, or this account's role " +
+             "cannot open a client's money file. Sign in again and try once more.";
+    } else if (source === "notfound") {
+      head = "There is no such client in your organisation";
+      text = "The address bar names a client id that either does not exist, or belongs to a " +
+             "different organisation than the one you are signed in to. Check the id.";
+    } else if (source === "badrequest") {
+      head = "The request was rejected";
+      text = "The server understood the request and said no: " + detail + ". " +
+             "The usual cause is a bad client id or a window outside 1 to 365 days.";
+    } else if (source === "nodb") {
+      head = "The database did not answer";
+      text = "The app is running but the database behind it did not reply (" + detail + "). " +
+             "Nothing is shown because there is nothing to show. This is not a screen problem.";
+    } else {
+      head = "The server could not be reached";
+      text = "The read failed before it got an answer (" + detail + "). Nothing is shown.";
+    }
+
+    body.innerHTML = '<div class="mm-flag"><h3>' + esc(head) + "</h3><p>" + esc(text) + "</p>" +
+      "<p>No figures are shown below. This screen never falls back to sample numbers.</p></div>";
+    FHData.explain(res, "money map");
+  }
+
+  /* ── the read succeeded ──────────────────────────────────────────────── */
+  function render(d) {
+    document.getElementById("mmSource").textContent = d.source || "money-map";
+    if (d.client && d.client.name) {
+      document.getElementById("mmTitle").textContent = "Money Map — " + d.client.name;
+    }
+    document.getElementById("mmSub").textContent =
+      "Window " + day(d.window && d.window.from) + " to " + day(d.window && d.window.to) +
+      " · " + d.horizon_days + " days. Every number below came from the server. " +
+      "A dash means nobody has told us that figure. A plus sign means the total counted " +
+      "only the rows that reported, so the real number is higher.";
+
+    var html = "";
+
+    /* Everything empty is the single most useful thing this screen can say. */
+    if (d.empty && d.empty.everything) {
+      html += '<div class="mm-flag"><h3>There is no money data on file for this client</h3>' +
+        "<p>No credit cards, no card statements, no bank accounts, no repeating bills and no " +
+        "reminders were found. That is not an error — nobody has run a credit pull or linked a " +
+        "bank for this person yet.</p>" +
+        "<p>Nothing is being made up to fill the page.</p></div>";
+    }
+
+    html += notesBlock(d);
+    html += alertsBlock(d);
+    html += cardsBlock(d);
+    html += billsBlock(d);
+    html += cashflowBlock(d);
+    html += balancesBlock(d);
+    html += utilizationBlock(d);
+    html += fundingBlock(d);
+
+    body.innerHTML = html;
+
+    FHData.banner(
+      "real",
+      "live money map · " + d.counts.tradelines + " card(s) · " + d.counts.liabilities +
+      " statement position(s) · " + d.counts.bank_accounts + " bank account(s) · " +
+      d.counts.recurring_bills + " bill(s) · " + d.alerts.count + " alert(s)",
+      "money map"
+    );
+  }
+
+  /* What this screen cannot tell you. Printed at the top, not buried. */
+  function notesBlock(d) {
+    var items = (d.notes || []).map(function (n) { return "<li>" + esc(n.note) + "</li>"; });
+
+    if (d.cashflow && d.cashflow.mixes_entity_kinds) {
+      var c = d.cashflow.entity_census || {};
+      items.push("<li>The cash-flow figures below pool " +
+        esc((c.personal || 0) + " personal, " + (c.business || 0) + " business and " +
+            (c.unknown || 0) + " unclassified") +
+        " account(s). That total is <strong>not</strong> the client's personal cash — an account " +
+        "nobody has placed yet is never counted as theirs.</li>");
+    }
+    if (d.cashflow && (d.cashflow.accounts_skipped || []).length) {
+      items.push("<li>" + esc(String(d.cashflow.accounts_skipped.length)) +
+        " bank account(s) were left out of the cash-flow figures. A credit line's " +
+        "&ldquo;available&rdquo; is borrowing room, not money in the bank.</li>");
+    }
+    (d.cashflow && d.cashflow.threshold_gaps ? d.cashflow.threshold_gaps : []).forEach(function (g) {
+      items.push("<li>No setting exists for <code>" + esc(g.name) + "</code>: " + esc(g.note) + "</li>");
+    });
+
+    if (!items.length) return "";
+    return '<div class="mm-note"><h3>Read this first</h3><ul>' + items.join("") + "</ul></div>";
+  }
+
+  /* ── alerts ──────────────────────────────────────────────────────────── */
+  function alertsBlock(d) {
+    var a = d.alerts || { rows: [], count: 0 };
+    if (!a.rows.length) {
+      return section("What needs attention", null,
+        emptyBlock("Nothing is flagged.",
+          "No stored reminders, no payments or bills falling inside this window, and no card past its due date. " +
+          "If that seems wrong, check the sections below — a card with no due date on file cannot raise an alert."));
+    }
+
+    /* EVERY LINE NAMES ITS SOURCE. Two engines write into this list — rows
+       already stored in cashflow_reminders, and outflows the projection placed
+       on days — plus the alerts engine's utilization verdict. Merging them into
+       one anonymous list would make them impossible to check. */
+    var rows = a.rows.map(function (r) {
+      var badge = r.kind === "payment_due_date_passed"
+        ? '<span class="mm-pill bad">past due</span>'
+        : (r.certainty === "unconfirmed" ? '<span class="mm-pill warn">not certain</span>' : "");
+      return "<tr><td class=\"num dim\">" + esc(day(r.at)) + "</td>" +
+             "<td>" + esc(r.subject_label || DASH) + " " + badge +
+               '<span class="sub">' + esc(r.kind) + "</span></td>" +
+             "<td>" + esc(r.body || "") + "</td>" +
+             '<td class="dim">' + esc(r.engine_label || r.engine || "") + "</td></tr>";
+    }).join("");
+
+    return section("What needs attention", null,
+      table(["when", "what", "detail", "which engine said so"], rows));
+  }
+
+  /* ── cards ───────────────────────────────────────────────────────────── */
+  function cardsBlock(d) {
+    var c = d.cards;
+    if (!c.rows.length) {
+      return section("Payment due dates", c.engine_label,
+        emptyBlock("No credit cards are on file for this client.",
+          "Nothing has been read from a credit report yet, so there is nothing to be due."));
+    }
+
+    var rows = c.rows.map(function (r) {
+      var when = r.due_date === null
+        ? '<span class="dim">' + DASH + '</span><span class="sub">' +
+          (r.has_liability ? "no due date was reported on this card"
+                           : "no statement has been read for this card") + "</span>"
+        : esc(day(r.due_date)) + '<span class="sub">' +
+          (r.days_until_due === null ? "" :
+            (r.days_until_due < 0 ? Math.abs(r.days_until_due) + " day(s) ago"
+                                  : "in " + r.days_until_due + " day(s)")) + "</span>";
+
+      return '<tr class="' + (r.overdue === true ? "is-overdue" : "") + '">' +
+        "<td>" + esc(r.lender || "Unnamed card") +
+          '<span class="sub">' + esc([r.kind, r.ref_mask].filter(Boolean).join(" · ")) + "</span></td>" +
+        '<td class="num">' + when + "</td>" +
+        '<td class="num' + (isUnknown(r.minimum_payment) ? " dim" : "") + '">' + esc(m(r.minimum_payment)) + "</td>" +
+        '<td class="num' + (isUnknown(r.statement_balance) ? " dim" : "") + '">' + esc(m(r.statement_balance)) + "</td>" +
+        '<td class="num' + (isUnknown(r.past_due) ? " dim" : "") + '">' + esc(m(r.past_due)) + "</td>" +
+        '<td class="num' + (r.utilization.pct === null ? " dim" : "") + '">' + esc(pct(r.utilization.pct)) +
+          '<span class="sub">' + esc(r.utilization.pct === null
+            ? (r.utilization.reason || "unknown")
+            : r.utilization.engine_label) + "</span></td>" +
+        "<td>" + (r.payment_status ? esc(r.payment_status) : '<span class="dim">' + DASH + "</span>") +
+          '<span class="sub">' + esc(r.has_liability
+            ? "statement read " + day(r.liability_as_of)
+            : "no statement on file") + "</span></td>" +
+      "</tr>";
+    }).join("");
+
+    var foot = "";
+    var t = c.minimum_payments_total;
+    foot += row("Total minimum payments",
+      t.basis && t.basis.partial
+        ? "counted " + t.basis.counted + " of " + t.basis.lines + " card(s) · " +
+          t.basis.unknown + " did not report a minimum — this is a floor, the real total is higher"
+        : "all " + (t.basis ? t.basis.lines : 0) + " card(s) reported",
+      isUnknown(t) ? DASH : m(t),
+      (isUnknown(t) ? "is-unknown" : "") + (t.basis && t.basis.partial ? " is-partial" : ""));
+
+    if (c.without_liability_row > 0) {
+      foot += row("Cards with no statement read",
+        "nobody has ingested a statement position for these — that is not the same as nothing being due",
+        String(c.without_liability_row), "is-unknown");
+    }
+    if (c.without_due_date > 0) {
+      foot += row("Cards with no due date",
+        "the file did not report when payment is due on these",
+        String(c.without_due_date), "is-unknown");
+    }
+    if (c.overdue > 0) {
+      foot += row("Cards past their due date",
+        "whether these were actually paid is not recorded anywhere this screen can read",
+        String(c.overdue), "is-bad");
+    }
+
+    return section("Payment due dates", c.engine_label,
+      table(["card", "due", "minimum", "statement balance", "past due", "utilization", "standing"], rows) + foot);
+  }
+
+  /* ── bills ───────────────────────────────────────────────────────────── */
+  function billsBlock(d) {
+    var b = d.bills;
+    if (!b.rows.length) {
+      return section("Repeating bills", b.engine_label,
+        emptyBlock("No repeating bills have been detected.",
+          "Either no bank account is linked, or there are not enough transactions yet for the " +
+          "detector to be sure a charge repeats. Only bills it is reasonably confident about are shown."));
+    }
+
+    var rows = b.rows.map(function (r) {
+      var next = r.next_expected_on === null
+        ? '<span class="dim">' + DASH + '</span><span class="sub">' +
+            esc(r.next_expected_unknown_reason || "no date given") + "</span>"
+        : esc(day(r.next_expected_on)) + '<span class="sub">' +
+            (r.in_window ? r.in_window + "× inside this window" : "not inside this window") + "</span>";
+
+      return "<tr><td>" + esc(r.merchant || DASH) +
+          '<span class="sub">' + esc(r.account_on_file
+            ? ((r.account_label || "Unnamed account") + (r.account_mask ? " ••" + r.account_mask : ""))
+            : "the account this was seen on is not on file for this client") + "</span></td>" +
+        "<td>" + esc(r.cadence || DASH) + "</td>" +
+        '<td class="num">' + esc(m(r.typical_amount)) + '<span class="sub">out</span></td>' +
+        '<td class="num">' + next + "</td>" +
+        "<td>" + esc(r.confidence_label || DASH) +
+          '<span class="sub">' + esc(num(r.confidence_pct) + "% · seen " + num(r.occurrence_count) + "×") + "</span></td>" +
+      "</tr>";
+    }).join("");
+
+    var foot = "";
+    if (b.without_next_date > 0) {
+      foot += row("Bills with no next date",
+        "the detector would not name one, so these are not in the cash-flow figures",
+        String(b.without_next_date), "is-unknown");
+    }
+    if (b.accounts_not_on_file > 0) {
+      foot += row("Bills on an account not on file",
+        "the bill was detected but the account it belongs to is not among this client's bank accounts",
+        String(b.accounts_not_on_file), "is-unknown");
+    }
+
+    return section("Repeating bills — across every account", b.engine_label,
+      table(["bill", "how often", "typical amount", "next expected", "confidence"], rows) + foot);
+  }
+
+  /* ── cash flow ───────────────────────────────────────────────────────── */
+  function cashflowBlock(d) {
+    var c = d.cashflow;
+
+    if (!c.ok) {
+      var reason = c.reason || {};
+      return section("Cash flow", c.engine_label,
+        emptyBlock("No cash-flow figures can be produced.",
+          (reason.message || "The projection was refused and gave no reason.") +
+          " Nothing is estimated in its place — an unknown balance is not zero."));
+    }
+
+    var out = "";
+    out += row("Money in", "nothing detects income yet, so this is zero by construction, not by measurement",
+      m(c.total_in), isUnknown(c.total_in) ? "is-unknown" : "");
+    out += row("Money out — committed", "bills the detector is confident about, plus card minimums with a known amount",
+      m(c.total_out_committed), isUnknown(c.total_out_committed) ? "is-unknown" : "");
+    out += row("Money out — not certain", "bills below the confidence line; counted in the worst case only",
+      m(c.total_out_unconfirmed), isUnknown(c.total_out_unconfirmed) ? "is-unknown" : "");
+    out += row("Starting balance", c.accounts_used.length + " open chequing/savings account(s)",
+      m(c.opening), isUnknown(c.opening) ? "is-unknown" : "");
+    out += row("What is left at the end of the window", "starting balance, plus money in, less committed money out",
+      m(c.closing), (isUnknown(c.closing) ? "is-unknown" : "") +
+        (c.closing && c.closing.cents !== null && c.closing.cents < 0 ? " is-bad" : ""));
+    if (c.lowest) {
+      out += row("Lowest point", "on " + day(c.lowest.date),
+        m(c.lowest), (isUnknown(c.lowest) ? "is-unknown" : "") +
+          (c.lowest.cents !== null && c.lowest.cents < 0 ? " is-bad" : ""));
+    }
+    if (c.worst_case_lowest) {
+      out += row("Lowest point if every uncertain bill also lands", "on " + day(c.worst_case_lowest.date),
+        m(c.worst_case_lowest), (isUnknown(c.worst_case_lowest) ? "is-unknown" : "") +
+          (c.worst_case_lowest.cents !== null && c.worst_case_lowest.cents < 0 ? " is-bad" : ""));
+    }
+
+    /* Blind spots are the whole reason to trust the rest. Something is owed and
+       its size or date is unknown; the projection says so rather than guessing. */
+    if ((c.blind_spots || []).length) {
+      out += '<div class="mm-empty"><strong>' + esc(String(c.blind_spots.length)) +
+        " thing(s) could not be put on the calendar:</strong><ul style=\"margin:6px 0 0 18px\">" +
+        c.blind_spots.map(function (s) {
+          return "<li>" + esc(s.label) + " — " + esc(s.reason) + "</li>";
+        }).join("") + "</ul></div>";
+    }
+    if ((c.excluded || []).length) {
+      out += '<div class="mm-empty"><strong>' + esc(String(c.excluded.length)) +
+        " movement(s) fall outside this window and are not counted.</strong> " +
+        "Widen the window above to include them.</div>";
+    }
+
+    return section("Cash flow — in, out, what is left", c.engine_label, out);
+  }
+
+  /* ── balances ────────────────────────────────────────────────────────── */
+  function balancesBlock(d) {
+    var b = d.balances;
+    if (!b || !b.groups || !b.accounts) {
+      return section("Bank balances", b && b.engine_label,
+        emptyBlock("No bank accounts are on file for this client.",
+          "Nothing has been linked yet, so there is no cash to show."));
+    }
+
+    var shown = b.groups.filter(function (g) { return g.count > 0; });
+    if (!shown.length) {
+      return section("Bank balances", b.engine_label,
+        emptyBlock("No bank accounts are on file for this client.",
+          "Nothing has been linked yet, so there is no cash to show."));
+    }
+
+    /* THERE IS DELIBERATELY NO COMBINED TOTAL ACROSS THESE GROUPS. One number
+       spanning personal, business and unclassified money reads as the client's,
+       and for two of the three that has not been established. */
+    var out = shown.map(function (g) {
+      var unknown = g.current.display === null || g.current.display === undefined;
+      var basis = !g.open_count
+        ? (g.count + " account(s), all closed")
+        : (g.current.value === null ? "no balance reported on any account"
+          : (g.current.basis.partial
+              ? "counted " + g.current.basis.counted + " of " + g.current.basis.lines +
+                " open account(s) — this is a floor"
+              : g.open_count + " open account(s) · all reported"));
+      return row(g.label, basis, unknown ? DASH : group(g.current.display),
+        (unknown ? "is-unknown" : "") + (g.current.basis.partial ? " is-partial" : ""));
+    }).join("");
+
+    if (b.needs_classification) {
+      out += '<div class="mm-empty"><strong>' + esc(String(b.unclassified)) +
+        " account(s) have not been placed yet.</strong> Until somebody says whose money they are, " +
+        "they are not counted as the client's.</div>";
+    }
+    out += '<div class="mm-empty">There is no single total across these groups on purpose. ' +
+           "One number spanning personal, business and unclassified money would be read as the " +
+           "client's, and for two of the three that has not been established.</div>";
+
+    return section("Bank balances — grouped by whose money it is", b.engine_label, out);
+  }
+
+  /* ── utilization ─────────────────────────────────────────────────────── */
+  function utilizationBlock(d) {
+    var u = d.utilization;
+
+    /* THREE ENGINES, EACH NAMED ON ITS OWN LINE. They round differently and
+       treat missing data differently, on purpose. A single unlabelled
+       "utilization" number would be picking one of them at random. */
+    var overall = u.overall.map(function (e) {
+      var value, meta;
+      if (e.engine === "alerts") {
+        value = e.pct === null ? DASH : pct(e.pct);
+        meta = e.note ? e.note
+          : (e.over === true ? "over the line" : e.over === false ? "under the line" : "unknown");
+        if (e.known_portion && e.pct === null) {
+          meta += " · the part we can measure is " + pct(e.known_portion.pct);
+        }
+      } else if (e.engine === "finance_os_grid") {
+        value = e.display === null || e.display === undefined ? DASH : e.display;
+        meta = e.note || (e.basis ? "all " + e.basis.lines + " line(s) reported" : "");
+      } else {
+        value = e.pct_after === null ? DASH : pct(e.pct_after);
+        meta = "before the draw " + pct(e.pct_before) +
+               (e.hard_stop ? " · HARD STOP: this draw crosses the line" : "");
+      }
+      return row(e.engine_label, meta, value,
+        (value === DASH ? "is-unknown" : "") + (e.hard_stop ? " is-bad" : ""));
+    }).join("");
+
+    var perCard = "";
+    if (u.per_card.length) {
+      var rows = u.per_card.map(function (c) {
+        return c.readings.map(function (r, idx) {
+          var v = r.engine === "alerts"
+            ? (r.pct === null ? DASH : pct(r.pct))
+            : (r.pct_after === null ? DASH : pct(r.pct_after));
+          var note = r.engine === "alerts"
+            ? (r.reason || (r.over === true ? "over the line" : r.over === false ? "under the line" : ""))
+            : ("before the draw " + pct(r.pct_before) + (r.caused_breach ? " · this draw crosses the line" : ""));
+          return "<tr><td>" + (idx === 0 ? esc(c.lender || "Unnamed card") : "") + "</td>" +
+                 '<td class="dim">' + esc(r.engine_label) + "</td>" +
+                 '<td class="num' + (v === DASH ? " dim" : "") + '">' + esc(v) + "</td>" +
+                 "<td>" + esc(note) + "</td></tr>";
+        }).join("");
+      }).join("");
+      perCard = table(["card", "which engine", "utilization", "note"], rows);
+    }
+
+    var unmatched = "";
+    if ((u.unmatched_funding_readings || []).length) {
+      unmatched = '<div class="mm-empty"><strong>' + esc(String(u.unmatched_funding_readings.length)) +
+        " reading(s) from the funding calculator could not be attached to a specific card:</strong>" +
+        "<ul style=\"margin:6px 0 0 18px\">" +
+        u.unmatched_funding_readings.map(function (x) {
+          return "<li>" + esc(x.lender || "unnamed") + " — " + esc(x.reason) + "</li>";
+        }).join("") + "</ul></div>";
+    }
+
+    return section("Utilization — overall", null, overall) +
+           (perCard ? section("Utilization — per card", null, perCard + unmatched) : "");
+  }
+
+  /* ── funding ─────────────────────────────────────────────────────────── */
+  function fundingBlock(d) {
+    var f = d.funding;
+    var out = "";
+
+    out += row("Total headroom the calculator can see",
+      f.cards_considered + " card(s) considered · " + f.cards_excluded_closed_or_installment +
+      " closed or instalment line(s) left out",
+      f.total_available_credit === null || f.total_available_credit === undefined
+        ? DASH : group(Number(f.total_available_credit).toFixed(2)),
+      f.total_available_credit === null || f.total_available_credit === undefined ? "is-unknown" : "");
+
+    /* The conservative figure, side by side, because the two disagree on
+       purpose: the grid refuses to count a card whose balance is unknown, and
+       the calculator reads that unknown as zero. */
+    if (f.conservative_available) {
+      out += row(f.conservative_available.engine_label + " — available credit",
+        f.conservative_available.basis && f.conservative_available.basis.partial
+          ? "counted only the lines that reported BOTH a limit and a balance — a floor"
+          : "counted every line",
+        f.conservative_available.display === null || f.conservative_available.display === undefined
+          ? DASH : group(f.conservative_available.display),
+        (f.conservative_available.display === null ? "is-unknown" : "") +
+        (f.conservative_available.basis && f.conservative_available.basis.partial ? " is-partial" : ""));
+    }
+
+    (f.caveats || []).forEach(function (c) {
+      out += '<div class="mm-empty"><strong>Careful.</strong> ' + esc(c.note) + "</div>";
+    });
+
+    if (!f.allocation) {
+      out += '<div class="mm-empty">No draw plan is shown because no amount was asked for. ' +
+             "Put a dollar amount in the box at the top of this screen to see which cards would be " +
+             "drawn, in what order, what it would cost, and whether it pushes utilization over the line.</div>";
+    } else {
+      var a = f.allocation;
+      out += row("Requested", "", group(Number(a.requestedAmount).toFixed(2)), "");
+      out += row("Could actually be drawn",
+        a.fullyFunded ? "the request can be filled" : "short by " + group(Number(a.shortfall).toFixed(2)),
+        group(Number(a.totalDrawn).toFixed(2)), a.fullyFunded ? "" : "is-bad");
+
+      var draws = a.draws.filter(function (x) { return x.draw > 0; });
+      if (draws.length) {
+        out += table(["card", "rate", "headroom", "would draw"],
+          draws.map(function (x) {
+            return "<tr><td>" + esc(x.lender || "Unnamed card") + "</td>" +
+              '<td class="num' + (x.apr === null ? " dim" : "") + '">' +
+                esc(x.apr === null ? DASH : (Math.round(x.apr * 10000) / 100) + "%") + "</td>" +
+              '<td class="num">' + esc(group(Number(x.availableHeadroom).toFixed(2))) + "</td>" +
+              '<td class="num">' + esc(group(Number(x.draw).toFixed(2))) + "</td></tr>";
+          }).join(""));
+      }
+
+      if (f.guardrail && f.guardrail.message) {
+        out += '<div class="mm-empty"><strong>' +
+          (f.guardrail.hardStop ? "Hard stop." : "Note.") + "</strong> " +
+          esc(f.guardrail.message) + "</div>";
+      }
+    }
+
+    return section("Funding — what could be drawn", f.engine_label, out);
+  }
+})();
+</script>
+</body>
+</html>
