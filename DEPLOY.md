@@ -31,6 +31,11 @@ vercel --prod
 
 ## 5. Verify
 - Health: `https://<deployment>/api/health` → `{"ok":true,"db":"up",...}`
+- Machine check: `https://<deployment>/api/health?strict=1` → same body, but the
+  status code is **200 only when the deployment is healthy** and **503** when it
+  is not. This is the URL to give an uptime monitor. The plain one above always
+  answers 200 on purpose — the CRM status chip reads its body — so a monitor
+  pointed at it stays green straight through a database outage.
 - Dashboard: `https://<deployment>/dashboard.html` — the page asks for the key on
   first load and keeps it for that browser tab only.
   - Click **“+ Sample data”** a few times → sample clients populate the table.
@@ -52,6 +57,39 @@ printf '%s' 'your-inngest-signing-key' | vercel env add INNGEST_SIGNING_KEY prod
 - `INNGEST_EVENT_KEY` — used by the event bus to forward canonical events to Inngest. Required in production; optional in dev/test (bridge is a no-op without it).
 - `INNGEST_SIGNING_KEY` — used by the serve handler to verify requests from Inngest. Required in production.
 - After deploy, sync the endpoint in the Inngest dashboard: `https://<deployment>/api/inngest`.
+
+## When it breaks — see [docs/RUNBOOK.md](docs/RUNBOOK.md)
+
+Rollback steps, what each `/api/health` state means and its first action, how to
+apply migrations the deploy did not run, how to point an uptime monitor at
+`/api/health?strict=1`, and an honest list of what is not monitored. The person
+who just deployed is exactly the person who needs it, which is why it is linked
+from here rather than duplicated — two copies of a procedure disagree eventually.
+
+Two things worth knowing before the first deploy:
+- **The build command is an `echo`.** No deploy has ever run a migration, and
+  there is no CI to run them. After shipping a change that adds a `.sql` file
+  under `db/`, apply it yourself or `/api/health` will report `state:"behind"`
+  and any screen touching the new tables will fail.
+- **`/api/health` answers 200 in every state on purpose** — the CRM status chip
+  reads it that way. Monitors must use `/api/health?strict=1`, which answers 503
+  when the deployment is not trustworthy.
+
+## When something breaks — read `docs/RUNBOOK.md`
+
+Deploying is the easy half. `docs/RUNBOOK.md` is the other half, written for
+someone who does not read code:
+
+- **What each `/api/health` answer means**, and the first thing to do for each —
+  `up`, `behind`, `unreachable`, `unconfigured`, `error`.
+- **How to roll a deploy back** (Netlify → Deploys → Publish deploy), including
+  the part people get wrong: rolling the code back does **not** roll the database
+  back. Migrations only move forward.
+- **How to set up a monitor**, which nobody has done yet. Point it at
+  `/api/health?strict=1` and alert on a 503.
+- **What nobody is watching.** There is no alerting, no error reporting, no
+  metrics and no on-call rota today. The runbook says so plainly rather than
+  leaving it to be discovered during an outage.
 
 ## Notes
 - No `DASHBOARD_SECRET` set + `NODE_ENV=production` → dashboard endpoints return 401 (fail-closed). Always set the secret.
