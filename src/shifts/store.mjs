@@ -49,23 +49,26 @@ export class ShiftError extends Error {
 }
 
 /**
- * STALE_SHIFT_HOURS_PLACEHOLDER — *** NOT A POLICY. ***
+ * STALE_SHIFT_HOURS — *** POLICY. 12 HOURS. ***
  *
  * autoCloseStale() needs to know how long an open shift may sit before it is
  * treated as forgotten rather than in progress. That number is an operator
  * decision about how this desk works — a 24/7 rota, an overnight processing
- * shift and a 9-to-5 want different answers — and THERE IS NO SOURCE FOR IT
- * ANYWHERE IN THIS REPOSITORY. Not in the schema, not in src/config/, not in
- * any doc on disk.
+ * shift and a 9-to-5 want different answers — and it used to have no source
+ * anywhere in this repository, so it was carried here as a flagged placeholder.
  *
- * So it is a parameter, and this constant is the single place a fallback value
- * is written down. It is named to be impossible to mistake for a decided rule
- * at a call site, it is deliberately generous (a threshold that is too short
- * closes shifts people are actually working), and it is reported as a gap
- * rather than quietly shipped. Callers that know the real number should pass
- * it; when somebody decides, this constant is the one line that changes.
+ * IT HAS A SOURCE NOW. The owner set the stale-shift threshold at 12 hours on
+ * 2026-07-31. That decision is what this constant holds, and this comment is
+ * where it is written down; there is no other record of it in the schema, in
+ * src/config/ or in any doc on disk. Changing the number means changing the
+ * policy, which is the owner's call and not a refactor.
+ *
+ * It stays a parameter on autoCloseStale() so a caller with a different desk
+ * can pass its own threshold, but the default is now a decided rule rather than
+ * a guess, and a call site that takes the default is applying the 12-hour
+ * policy on purpose.
  */
-export const STALE_SHIFT_HOURS_PLACEHOLDER = 16;
+export const STALE_SHIFT_HOURS = 12;
 
 /**
  * AUTO_CLOSE_EVENT_KIND — the `staff_events.kind` written when the sweep closes
@@ -224,7 +227,7 @@ export async function currentShift(db, { staffId } = {}) {
  *
  * Idempotent: `ended_at IS NULL` means a second run finds nothing left to do.
  */
-export async function autoCloseStale(db, { olderThanHours = STALE_SHIFT_HOURS_PLACEHOLDER } = {}) {
+export async function autoCloseStale(db, { olderThanHours = STALE_SHIFT_HOURS } = {}) {
   // Validated rather than coerced. `Number(undefined)` is NaN, and a NaN
   // interval in the WHERE clause is not "close nothing" — it is a comparison
   // Postgres will reject or, worse, an interval built from a value nobody

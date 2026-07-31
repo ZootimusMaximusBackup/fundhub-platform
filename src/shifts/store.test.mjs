@@ -18,7 +18,7 @@ import {
   currentShift,
   autoCloseStale,
   ShiftError,
-  STALE_SHIFT_HOURS_PLACEHOLDER,
+  STALE_SHIFT_HOURS,
   AUTO_CLOSE_EVENT_KIND
 } from "./store.mjs";
 
@@ -161,16 +161,20 @@ test("currentShift: a missing staff id is refused", async () => {
 
 // --- autoCloseStale ----------------------------------------------------------
 
-test("the stale-shift threshold has exactly one definition, and it is named as a placeholder", async () => {
-  assert.equal(typeof STALE_SHIFT_HOURS_PLACEHOLDER, "number");
-  assert.ok(STALE_SHIFT_HOURS_PLACEHOLDER > 0);
+test("the stale-shift threshold has exactly one definition, and it is the owner's 12 hours", async () => {
+  assert.equal(typeof STALE_SHIFT_HOURS, "number");
+  assert.ok(STALE_SHIFT_HOURS > 0);
 
-  // There is no second threshold hiding under a name that sounds decided. The
-  // number is an operator decision with no source in this repo, so the only
-  // export carrying one must announce itself as unsettled at every call site.
+  // 12 is the policy the owner set on 2026-07-31. It is pinned here rather than
+  // left as "some positive number" because changing it changes when people's
+  // forgotten shifts get closed, and that is a decision, not a refactor.
+  assert.equal(STALE_SHIFT_HOURS, 12, "the stale-shift threshold is 12 hours by owner decision");
+
+  // There is still no second threshold hiding under another name. One decided
+  // rule, one export, so no call site can apply a different number by accident.
   const exported = Object.keys(await import("./store.mjs"));
   const thresholds = exported.filter((k) => /HOUR|STALE|THRESHOLD/.test(k));
-  assert.deepEqual(thresholds, ["STALE_SHIFT_HOURS_PLACEHOLDER"]);
+  assert.deepEqual(thresholds, ["STALE_SHIFT_HOURS"]);
 });
 
 test("autoCloseStale takes the threshold as a parameter instead of hard-coding one", async () => {
@@ -179,10 +183,11 @@ test("autoCloseStale takes the threshold as a parameter instead of hard-coding o
   assert.equal(db.calls[0].params[0], 3);
 });
 
-test("autoCloseStale with no threshold falls back to the single named placeholder", async () => {
+test("autoCloseStale with no threshold applies the 12-hour policy, not a number of its own", async () => {
   const db = stubDb({ rows: [] });
   await autoCloseStale(db, {});
-  assert.equal(db.calls[0].params[0], STALE_SHIFT_HOURS_PLACEHOLDER);
+  assert.equal(db.calls[0].params[0], STALE_SHIFT_HOURS);
+  assert.equal(db.calls[0].params[0], 12, "the default sent to Postgres is the owner's 12 hours");
 });
 
 test("autoCloseStale refuses a threshold of zero rather than closing every open shift", async () => {
