@@ -64,6 +64,7 @@ import {
 import { importAccounts, BankImportError } from "../../src/banking/import.mjs";
 import { bankingProviderName } from "../../src/banking/provider.mjs";
 import { nextDueDate, nextStatementClose } from "../../src/banking/statement-cycles.mjs";
+import { requireClientInOrg } from "../../src/http/client-scope.mjs";
 
 /**
  * Dollars from a form → integer cents, PRESERVING UNKNOWN.
@@ -102,6 +103,13 @@ async function handleGet(req, res, staff) {
     return res.status(400).json({ ok: false, error: "client_id is required and must be a uuid" });
   }
 
+  /* Belt and braces. The store already binds org_id into every WHERE, so a
+     caller from another org gets empty lists rather than data — safe, but it
+     answers 200 where the three read endpoints next door answer 404, and
+     inconsistent security behaviour between neighbouring endpoints is how a gap
+     reappears later. Same check, same answer, everywhere. */
+  if (!(await requireClientInOrg(res, db, staff, String(clientId).trim()))) return;
+
   const scope = { orgId: staff.org_id, clientId: String(clientId).trim() };
   const [accounts, cycles, holdings] = await Promise.all([
     listBankAccounts(db, scope),
@@ -138,6 +146,10 @@ async function handlePost(req, res, staff) {
   if (!isUuid(clientId)) {
     return res.status(400).json({ ok: false, error: "client_id is required and must be a uuid" });
   }
+
+  // Same boundary on the write path. A write against another org's client must
+  // refuse for the same reason and with the same answer as a read.
+  if (!(await requireClientInOrg(res, db, staff, String(clientId).trim()))) return;
 
   const scope = { orgId: staff.org_id, clientId: String(clientId).trim() };
 

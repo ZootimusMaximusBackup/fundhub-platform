@@ -22,7 +22,7 @@ write why, and STOP. Do not work around another workflow's unfinished output.
 
 | Workflow | Owns | Migrations | Status | Owner |
 |---|---|---|---|---|
-| W1 | Provider seam, mock bank, manual entry, statement cycles, investments | 096–097 (098 unused) | `done` | this session |
+| W1 | Provider seam, mock bank, manual entry, statement cycles, investments | 096–097 | `done` | this session |
 | W2 | Consent capture + soft-pull request gate | 099 | `pending` | — |
 | W3 | Retention policy + dry-run purge | 100 | `pending` | — |
 | W4 | Deletion, erasure, orphan-transaction bug, key rotation, revocation | 101–102 | `pending` | — |
@@ -176,14 +176,17 @@ Clear it before believing anything you see on a screen.
 | `src/banking/accounts.mjs` | The writer for `bank_accounts`, cycles, holdings |
 | `src/banking/import.mjs` | Provider → database |
 | `api/banking/accounts.mjs` | GET + POST, action discriminator |
-| `public/app/banking-entry.html` | The screen |
+| `public/app/banking-entry.html` | The screen — manual entry, mock import, investments editor |
+| `src/http/client-scope.mjs` | `requireClientInOrg()` — the org boundary for per-client endpoints |
 
-Migration 098 was allocated to W1 and **not used**. It is free — coordinate before taking it.
+**Migration 098 is RELEASED.** W1 did not need it. It is unallocated and the next workflow that needs a migration number should take it — 099 through 102 stay with W2/W3/W4 as assigned.
 
-**Changed files** — four, all additive:
+**Changed files** — seven:
 - `netlify/functions/api.mjs` — one import, one ROUTES entry (`banking/accounts`)
 - `public/app/shell.js` — added `banking-entry.html` to `ALL`
 - `public/app/banking-surface.html`, `public/app/finance-os.html` — one nav link each
+- `api/read/banking-surface.mjs`, `api/read/finance-os.mjs`, `api/read/tradelines.mjs` — one
+  `requireClientInOrg()` call each (the F1 fix). **`src/tradelines/` was NOT touched.**
 
 **Exports other workflows will want**
 
@@ -247,11 +250,22 @@ delete a client and the transactions lose the person, delete an account and they
 at a row that is gone. Both routes back are severed. `src/banking/import.mjs` now writes
 these rows, so the volume is about to grow.
 
-**Verification**
+**Verification — now against a REAL Postgres, not only stubs**
 
-- `npm test` — 2619 tests, **0 failures**, 321 skipped (no `DATABASE_URL`).
-- 104 new unit tests passing; 13 pg tests correctly SKIPPING (0 passes, not green-by-absence).
-- Three guards proven by reverting them — see the commit message on `74f5dbb`.
+- No `DATABASE_URL`: 2643 tests, **0 failures**, 345 skipped.
+- With a database, settled over two runs on virgin databases: **26 distinct failures on
+  `e67e2db` (base), 27 here.** The one delta, `GET /api/read/inquiries`, fails identically
+  on the base commit when run in isolation — pre-existing and order-dependent. **Net new
+  failures: zero.**
+- Running the pg tests for the first time found **one real bug**: the import's
+  `ON CONFLICT` did not repeat the predicate of 081's PARTIAL unique index, so every
+  import failed on the first row. A stub could not catch it. Fixed in `eea2939`.
+- End-to-end through the running dev server: import wrote 7 accounts / 2 cycles /
+  4 holdings / 240 transactions; a full account number sent to the mask field stored as
+  `9876`; an empty credit-limit box stored as NULL, not 0; APR `"24.99"` stored as
+  `0.24990`; due dates computed server-side.
+- Guards proven by reverting: NULL-preservation, `toCents` misuse, the ROUTES entry, and
+  the org gate (without it a cross-org session gets **200 and the balance**; with it, 404).
 
 **⚠ `npm install` FIRST.** A fresh clone has no `node_modules`, and `npm test` then
 reports **132 failures** that are entirely `Cannot find package 'inngest'`. That is not a
@@ -286,7 +300,7 @@ these; they need their own scoped task.
 
 | # | Finding | Found by | Severity |
 |---|---|---|---|
-| F1 | `api/read/banking-surface.mjs` and `api/read/finance-os.mjs` filter on `client_id` only, with no org scope. Cross-org read of a named client's balances is possible. | W1 | high |
+| ~~F1~~ | ~~`api/read/banking-surface.mjs`, `api/read/finance-os.mjs` and `api/read/tradelines.mjs` filter on `client_id` only, with no org scope.~~ **FIXED** in `b3137c4` — `requireClientInOrg()` in `src/http/client-scope.mjs`, applied to all three. Proven by reverting: without it another org's session gets 200 and the balance. `src/tradelines/` untouched. | W1 | ~~high~~ closed |
 | F2 | `src/banking/store.mjs:69` uses the broken `withTransaction` probe. `saveDetection()` writes bills and evidence with autocommit; a mid-run failure leaves bills with no evidence. | W1 | medium |
 | F3 | The org-scope and nav-reachability tests the brief relies on do not exist. Nothing enforces either rule today. | W1 | medium |
 | F4 | `src/pii/index.mjs` `revealSsn()` has the same broken transaction probe, so its rule "the access log is written in the same transaction as the reveal" does not hold as shipped. Noted in `soft-pulls.mjs` and still open. | W1 (confirming an existing note) | high — compliance |

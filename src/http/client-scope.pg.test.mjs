@@ -1,4 +1,4 @@
-// The org boundary on the three endpoints that serve ONE named client's money.
+// The org boundary on the four endpoints that serve ONE named client's money.
 //
 // SKIPS unless DATABASE_URL is set. It does NOT pass quietly.
 //
@@ -7,7 +7,8 @@
 // api/read/banking-surface.mjs, api/read/finance-os.mjs and
 // api/read/tradelines.mjs each took a client_id from the query string and read
 // that client's financial detail with no check on which company the caller
-// belonged to. All three are gated on ROLE_SETS.STAFF, so the effective rule was:
+// belonged to. (api/banking/accounts.mjs is the fourth endpoint here; it always
+// scoped at the table level, and is covered so all four answer identically.) All three are gated on ROLE_SETS.STAFF, so the effective rule was:
 // any authenticated employee of ANY company could read ANY client's bank
 // balances, credit limits, utilisation and APRs, given only that client's id.
 //
@@ -28,6 +29,7 @@ import { db, close } from "../db.mjs";
 import bankingSurface from "../../api/read/banking-surface.mjs";
 import financeOs from "../../api/read/finance-os.mjs";
 import tradelines from "../../api/read/tradelines.mjs";
+import bankingAccounts from "../../api/banking/accounts.mjs";
 import { createSession } from "../auth/session.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
@@ -92,7 +94,12 @@ after(async () => {
 const ENDPOINTS = [
   ["read/banking-surface", bankingSurface],
   ["read/finance-os", financeOs],
-  ["read/tradelines", tradelines]
+  ["read/tradelines", tradelines],
+  // banking/accounts scopes at the table level too, so a cross-org caller would
+  // get empty lists rather than data even without the check. It is in this list
+  // anyway: it must answer 404 like its three neighbours, because inconsistent
+  // security behaviour between adjacent endpoints is how a gap reappears later.
+  ["banking/accounts", bankingAccounts]
 ];
 
 for (const [name, handler] of ENDPOINTS) {
@@ -142,4 +149,23 @@ test("a session whose org is missing is refused, not silently empty",
     assert.equal(ok, false);
     assert.equal(res.statusCode, 403);
     assert.equal(res.body.error, "no_org_on_session");
+  });
+
+test("banking/accounts refuses a cross-org WRITE, not only a read",
+  { skip: !HAS_DB }, async () => {
+    // The read gate and the write gate are separate branches in that handler. A
+    // fix that closed only the read would leave a caller from another company
+    // able to CREATE accounts against someone else's client.
+    const res = makeRes();
+    await bankingAccounts({
+      method: "POST",
+      headers: { authorization: "Bearer " + tokenB },
+      query: {},
+      body: { client_id: clientOfA, action: "create_account", name: "should not exist" }
+    }, res);
+
+    assert.equal(res.statusCode, 404);
+    const landed = await db.query(
+      `SELECT count(*)::int AS n FROM bank_accounts WHERE name = 'should not exist'`);
+    assert.equal(landed.rows[0].n, 0, "the write must not have landed anywhere");
   });
