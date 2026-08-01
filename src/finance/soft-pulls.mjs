@@ -626,8 +626,14 @@ export async function getSoftPullRequest(db, requestId) {
  * transaction as the reveal; if the log write fails, the reveal fails" — does
  * not hold as shipped. I did not change it here; it is a behavioural change to
  * a compliance path and deserves its own review. Written up as a finding.
+ *
+ * EXPORTED (100_retention_policy). scripts/retention-purge.mjs needs a real
+ * transaction and this is the only correct one in the tree — the version in
+ * src/pii/index.mjs is the broken probe described above. Exporting the working
+ * one beats copying it: two transaction helpers that drift apart is precisely
+ * the bug CLAUDE.md §8 "reuse before you build" is about. Nothing else changed.
  */
-async function withTransaction(db, fn) {
+export async function withTransaction(db, fn) {
   const acquire = typeof db?.connect === "function"
     ? () => db.connect()
     : (db === sharedDb ? () => pool().connect() : null);
