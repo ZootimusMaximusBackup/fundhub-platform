@@ -1,0 +1,179 @@
+# Run the test suite on every push and every pull request.
+#
+# *** WHY THIS FILE DID NOT EXIST UNTIL NOW, AND WHAT IT CHANGES. ***
+#
+# There was no `.github/` directory in this repository at all. No workflows, no
+# status checks, nothing. Every test result anyone has ever quoted here — including
+# every number in the W1-W10 audit — came from a human or an agent running `npm test`
+# by hand and reporting what they saw. Nothing has ever caught a regression
+# automatically, and a branch could merge red without anyone noticing.
+#
+# THREE OF THE SIX GATES IN CLAUDE.md SECTION 6 CANNOT RUN HERE, and this file does
+# not pretend otherwise:
+#   * `npm run lint`   — package.json has no `lint` script
+#   * `npx tsc --noEmit` — there is no TypeScript in this repository
+#   * Playwright        — there is no Playwright config and no .spec file anywhere
+# Adding a step that silently passes because the tool is absent would be worse than
+# having no step: it would report a gate as green that was never run. When those
+# tools land, add them here.
+#
+#
+# *** WHY THERE ARE TWO TEST JOBS AND ONLY ONE OF THEM BLOCKS. ***
+#
+# This suite behaves completely differently depending on whether a database is
+# reachable, and collapsing that into one number is how the most serious finding in
+# this codebase stayed hidden for eleven commits.
+#
+#   WITHOUT a DATABASE_URL, ~358 `.pg.test.mjs` tests SKIP and the suite reports
+#   3083 passing, 0 failing. That is a real, meaningful green: it covers every pure
+#   module, every handler against a stubbed database, and every source-level guard.
+#   It is fast, it is deterministic, and it must never go red. THIS JOB BLOCKS.
+#
+#   WITH a real Postgres, the same suite currently reports ~24 pre-existing failures
+#   that predate all of this work. They are NOT noise. Every one of them is a
+#   multi-tenant isolation test — two named literally "THE LEAK TEST", fourteen more
+#   saying "returns nothing for a partner who owns none of it" — and they fail
+#   because the connection role is a Postgres superuser, and a superuser bypasses
+#   row-level security entirely. The policies are written correctly; they are simply
+#   not being applied to that connection. A fix is in flight on
+#   `claude/postgres-superuser-migration-lzm6xt`.
+#
+# So the database job runs, and REPORTS, and does not block — for now. Making it
+# blocking today would paint every pull request red for a defect nobody can fix in
+# their own branch, and a permanently-red check is one people learn to ignore. That
+# is exactly how those 24 came to be waved past for eleven commits, with CLAUDE.md's
+# own trap note making it official.
+#
+# *** WHEN THE SUPERUSER FIX LANDS, DELETE `continue-on-error` FROM THAT JOB. ***
+# That is the whole remaining task, and it is the single highest-value line in this
+# file. A test that is allowed to fail forever is not a test.
+
+name: tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+# A second push to the same branch cancels the first. Nobody needs the results of a
+# commit that has already been replaced.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # THE BLOCKING JOB. Fast, deterministic, no services. If this is red, the branch
+  # is broken — no interpretation required.
+  # ---------------------------------------------------------------------------
+  unit:
+    name: suite (no database — 358 pg tests skip)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # package.json pins engines.node to 22.x.
+          node-version: "22"
+          cache: npm
+
+      # `npm ci` needs a lockfile; fall back rather than failing the whole run on a
+      # repository state this workflow does not control.
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      # DATABASE_URL is deliberately NOT set. See the header: this is the fast green.
+      - name: Run the suite
+        run: npm test
+
+      # The guards that catch the mistakes this repo has actually shipped, called out
+      # by name so a failure says WHICH class of defect came back rather than just
+      # "a test failed". All of these already ran inside `npm test` above; this step
+      # exists for the failure message, and it is cheap.
+      - name: Named guards (routing, auth shape, org scoping, nav reachability)
+        if: always()
+        run: |
+          node --test \
+            src/http/routes.test.mjs \
+            src/http/auth-gate.test.mjs \
+            src/http/read-endpoints-org-scope.test.mjs \
+            src/http/app-nav-reachability.test.mjs \
+            src/http/health-migrations.test.mjs
+
+  # ---------------------------------------------------------------------------
+  # THE REPORTING JOB. Runs the ~358 tests the job above skips, against a real
+  # Postgres. Does not block — yet. See the header for exactly when to change that.
+  # ---------------------------------------------------------------------------
+  postgres:
+    name: suite (real Postgres — reports, does not block)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    continue-on-error: true   # <-- DELETE THIS when the superuser fix lands.
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fundhub_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/fundhub_ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      # This is a real check in its own right. `db/migrate.mjs` applies db/schema,
+      # then db/migrations, then db/seed, recording each file in `schema_migrations`
+      # keyed `<dir>/<file>`. If a new migration does not apply to an empty database,
+      # this step fails here rather than on somebody's production deploy — and note
+      # that the Netlify build command is an echo, so NOTHING ELSE runs migrations
+      # automatically. This is the only automated proof they still apply.
+      - name: Apply every migration to an empty database
+        run: node db/migrate.mjs
+
+      # The generated manifest must match what is actually on disk, or the health
+      # check's "behind" state reports against a stale expectation.
+      - name: Migration manifest is not stale
+        run: |
+          npm run migrations:manifest
+          if ! git diff --quiet -- db/expected-migrations.mjs; then
+            echo "::error::db/expected-migrations.mjs is stale. Run 'npm run migrations:manifest' and commit the result."
+            git --no-pager diff -- db/expected-migrations.mjs
+            exit 1
+          fi
+
+      - name: Run the suite against Postgres
+        run: npm test
+
+      # Runs even when the suite above fails, because when it fails THIS is the
+      # question worth answering first.
+      - name: Is this connection able to bypass row-level security?
+        if: always()
+        run: |
+          node --test src/compliance/rls-bypass.pg.test.mjs || true
+          echo "::notice::A failure here means the connection role bypasses every partner-isolation policy. On CI that is expected — the service container connects as the postgres superuser. It is only a finding when it describes PRODUCTION."

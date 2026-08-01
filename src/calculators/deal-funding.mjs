@@ -14,6 +14,91 @@
 const round2 = (n) => (n == null ? null : Math.round(n * 100) / 100);
 const round6 = (n) => (n == null ? null : Math.round(n * 1e6) / 1e6); // rates need precision
 
+/* ───────────────────── the threshold, as a CALLER may set it ─────────────────
+ *
+ * THE DEFECT THIS EXISTS TO CLOSE. api/read/tradelines.mjs:65 read
+ * `?utilization_threshold=` straight off the query string and handed
+ * `Number(raw)` to calcFunding with no check of any kind. `Number("0.99")` is
+ * 0.99 and nothing refused it, so any staff session could switch the hard stop
+ * off from the address bar: at a 99% line, `causedBreach` is false for every
+ * draw a real card can carry, `hardStop` comes back false, and the screen says
+ * the deal is clear. The gate that exists to stop a closer wrecking the client's
+ * NEXT funding round was one query parameter wide, it left no trace, and the
+ * answer it produced looked exactly like an honest one.
+ *
+ * SO THE THRESHOLD IS VALIDATED IN ONE PLACE AND BOTH CALLERS USE IT. This
+ * function is not in an http file on purpose — the number belongs to this
+ * module, which is the only thing that acts on it, and a validator sitting next
+ * to one of its two callers is a validator the other one forgets.
+ *
+ * THE BAND, AND WHY IT IS NARROWER THAN "ANY NUMBER". This value is a credit
+ * utilization line: the point past which drawing more is expected to move a
+ * score. Configured values in this business sit between 10% and 50% and the
+ * effect the gate is about starts around 30%.
+ *
+ *   * ABOVE 50% is not a looser reading of the rule, it is a way of turning the
+ *     rule off. Turning a guardrail off is a product decision that belongs in
+ *     configuration where somebody signed for it (upsell_triggers, migration
+ *     079, which ships every rule unset for exactly this reason) — never in a
+ *     URL, and never invisibly.
+ *   * BELOW 1% makes every draw a hard stop, which does not read as a strict
+ *     policy, it reads as a broken screen.
+ *
+ * A value outside the band is REFUSED and named, not clamped. A clamped
+ * threshold is a wrong number wearing a plausible face — the caller asked for
+ * 0.99, got 0.50, and nothing on the answer says so. Same rule readApr() applies
+ * to a rate it cannot read (src/tradelines/index.mjs:56).
+ *
+ * PERCENT UNITS ARE REFUSED RATHER THAN GUESSED. `30` meaning 30% and `30`
+ * meaning 3000% are both readable from the same digits, and src/commissions/
+ * money.mjs uses percent units (10 = 10%) while this module uses a fraction
+ * (0.30). Two conventions already live in this repo, so a value above 1 gets a
+ * sentence telling the caller which one this parameter speaks, instead of a
+ * silent divide-by-100 that would make `0.30` and `30` mean the same thing and
+ * `0.5` ambiguous forever.
+ *
+ * Returns { ok, value, reason } rather than throwing, so each caller shapes its
+ * own refusal — same shape src/banking/cashflow.mjs project() uses for a fact it
+ * cannot work with.
+ */
+export const UTILIZATION_THRESHOLD_MIN = 0.01;
+export const UTILIZATION_THRESHOLD_MAX = 0.50;
+
+/* One sentence per refusal, written once, so the endpoint and the read API
+   cannot tell a caller two different stories about the same rejected number. */
+export const UTILIZATION_THRESHOLD_REFUSALS = Object.freeze({
+  absent: "no utilization threshold was supplied",
+  not_a_number: "utilization_threshold must be a number",
+  not_a_fraction:
+    "utilization_threshold is a fraction, not a percentage — 0.30 means 30%",
+  below_minimum:
+    `utilization_threshold must be at least ${UTILIZATION_THRESHOLD_MIN} (${UTILIZATION_THRESHOLD_MIN * 100}%) — ` +
+    "anything lower makes every draw a hard stop",
+  above_maximum:
+    `utilization_threshold must be at most ${UTILIZATION_THRESHOLD_MAX} (${UTILIZATION_THRESHOLD_MAX * 100}%) — ` +
+    "a higher line switches the guardrail off, which is a configuration decision and not a request parameter"
+});
+
+export function parseUtilizationThreshold(raw) {
+  const refuse = (reason) => ({ ok: false, value: null, reason });
+
+  if (raw === null || raw === undefined) return refuse("absent");
+  if (typeof raw === "string" && raw.trim() === "") return refuse("absent");
+  // A boolean, an array or an object all survive Number() with a plausible
+  // answer (true → 1, [] → 0) and none of them is a threshold anybody typed.
+  if (typeof raw !== "number" && typeof raw !== "string") return refuse("not_a_number");
+
+  const n = typeof raw === "number" ? raw : Number(String(raw).trim());
+  if (!Number.isFinite(n)) return refuse("not_a_number");
+  if (n > 1) return refuse("not_a_fraction");
+  if (n < UTILIZATION_THRESHOLD_MIN) return refuse("below_minimum");
+  if (n > UTILIZATION_THRESHOLD_MAX) return refuse("above_maximum");
+
+  // Six places, matching round6 above: the threshold is compared against a ratio
+  // this module rounds to the same precision.
+  return { ok: true, value: Math.round(n * 1e6) / 1e6, reason: null };
+}
+
 /** Available headroom on a single card, never negative. */
 function headroom(card) {
   const limit = num(card?.creditLimit);

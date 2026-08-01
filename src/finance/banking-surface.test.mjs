@@ -235,6 +235,72 @@ describe("overdrafts and closed accounts", () => {
   });
 });
 
+// ── account type ───────────────────────────────────────────────────────────
+
+describe("a card's balance is not cash", () => {
+  /* 081:85-87 says the two balance columns mean DIFFERENT THINGS per type:
+     on a deposit account `available` is spendable now, on a card it is
+     remaining headroom, and `current` is the amount OWED. Adding the two
+     together states a number that is not true in either currency. */
+
+  test("credit-card headroom and card debt are not added to the cash totals", () => {
+    // $2,000 in chequing, plus a Visa with $9,000 owed on a $10,000 limit.
+    // The client has $2,000. Not $11,000, and not $2,000 of "available"
+    // topped up with $1,000 of borrowing room.
+    const s = bankingSurface([
+      acct({ id: "cash", account_type: "depository", account_subtype: "checking",
+             available_balance_cents: "200000", current_balance_cents: "200000" }),
+      acct({ id: "visa", account_type: "credit", account_subtype: "credit card",
+             available_balance_cents: "100000", current_balance_cents: "900000" })
+    ]);
+    const g = group(s, "personal");
+    assert.equal(g.current.value, 200000, "card debt was added to cash on hand");
+    assert.equal(g.available.value, 200000, "borrowing headroom was added to spendable cash");
+    assert.ok(!JSON.stringify(s).includes("1100000"),
+      "a total mixing cash and a card appears in the response");
+    assert.equal(g.count, 2, "the card stopped being listed as an account");
+  });
+
+  test("a card with a balance owed is NOT reported as an overdraft", () => {
+    // On a card `current` is what is OWED, so a maxed-out card reads POSITIVE
+    // and this flag never fires for the account in the worst shape.
+    const maxed = bankingSurface([
+      acct({ account_type: "credit", account_subtype: "credit card",
+             available_balance_cents: "0", current_balance_cents: "1000000" })
+    ]);
+    assert.notEqual(group(maxed, "personal").accounts[0].overdrawn, true);
+
+    // And an OVERPAID card reads negative, which is the customer being ahead —
+    // the flag fires on the healthiest card on the screen. That inversion is
+    // the defect: the screen paints it red.
+    const overpaid = bankingSurface([
+      acct({ account_type: "credit", account_subtype: "credit card",
+             current_balance_cents: "-50000" })
+    ]);
+    assert.notEqual(group(overpaid, "personal").accounts[0].overdrawn, true,
+      "a card the client has overpaid was flagged as overdrawn");
+  });
+
+  test("overdrawn is not established on any account that is not a deposit account", () => {
+    // Not false — false reads as "we checked, it is fine". On a loan, an
+    // investment account, or an account whose type the bank never told us,
+    // whether it is overdrawn has not been established.
+    for (const t of ["credit", "loan", "investment", "other", null, undefined]) {
+      const s = bankingSurface([acct({ account_type: t, current_balance_cents: "-50000" })]);
+      assert.equal(group(s, "personal").accounts[0].overdrawn, null,
+        `account_type ${JSON.stringify(t)} claimed an overdraft verdict it cannot have`);
+    }
+  });
+
+  test("a real chequing overdraft is still flagged", () => {
+    const s = bankingSurface([
+      acct({ account_type: "depository", current_balance_cents: "-42000" })
+    ]);
+    assert.equal(group(s, "personal").accounts[0].overdrawn, true,
+      "the fix hid the overdraft it was supposed to keep");
+  });
+});
+
 // ── provenance ─────────────────────────────────────────────────────────────
 
 describe("how we know", () => {

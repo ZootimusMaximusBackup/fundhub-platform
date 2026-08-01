@@ -56,6 +56,9 @@ import readConversations from "../../api/read/conversations.mjs";
 import readTradelines from "../../api/read/tradelines.mjs";
 import readFinanceOs from "../../api/read/finance-os.mjs";
 import readBankingSurface from "../../api/read/banking-surface.mjs";
+import readUnderwrite from "../../api/read/underwrite.mjs";
+import readMoneyMap from "../../api/read/money-map.mjs";
+import bankingSyncAccounts from "../../api/banking/sync-accounts.mjs";
 import inquiries from "../../api/inquiries.mjs";
 import pii from "../../api/pii.mjs";
 import shifts from "../../api/shifts.mjs";
@@ -78,6 +81,16 @@ import hiringBench from "../../api/hiring/bench.mjs";
 import financeSoftPull from "../../api/finance/soft-pull.mjs";
 import bankingRevoke from "../../api/banking/revoke.mjs";
 import privacyErasure from "../../api/privacy/erasure.mjs";
+import financeSubscriptions from "../../api/finance/subscriptions.mjs";
+import financeCards from "../../api/finance/cards.mjs";
+import financeLiabilities from "../../api/finance/liabilities.mjs";
+import financeBankAccounts from "../../api/finance/bank-accounts.mjs";
+import financeBills from "../../api/finance/bills.mjs";
+import financeCashflow from "../../api/finance/cashflow.mjs";
+import financeAlerts from "../../api/finance/alerts.mjs";
+import financeModel from "../../api/finance/model.mjs";
+import bankingAccounts from "../../api/banking/accounts.mjs";
+import consentCapture from "../../api/consent/capture.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
 
@@ -139,6 +152,48 @@ export const ROUTES = {
   // while working the same file. Routed in the same commit as the handler and
   // the screen.
   "read/banking-surface": readBankingSurface,
+
+  // read/underwrite runs the vendored UnderwriteIQ Lite engine over the same
+  // tradeline rows read/tradelines and read/finance-os already serve to
+  // ROLE_SETS.STAFF, so it carries that same gate. Routed in the same commit as
+  // the handler — an endpoint that 404s on the deploy target is the exact failure
+  // this map exists to prevent, and it has shipped twice.
+  //
+  // Unlike its two neighbours, this handler scopes every query by the SESSION's
+  // org_id and refuses a session without one. Those two filter on client_id
+  // alone; that gap is recorded in the handler's header and is not this change's
+  // to close.
+  "read/underwrite": readUnderwrite,
+
+  // read/money-map gathers what read/finance-os, read/banking-surface and
+  // read/tradelines already serve, plus card_liabilities, recurring_bills and
+  // cashflow_reminders, into the one screen an owner opens for a client. Same
+  // ROLE_SETS.STAFF gate as its three neighbours — it exposes nothing they do
+  // not, and splitting the gate would leave a closer able to read the parts but
+  // not the summary of the file they are working.
+  //
+  // It is the only one of the four that also scopes on the SESSION'S org and
+  // refuses a session with no org at all. Routed in the same commit as the
+  // handler and the screen: a screen whose endpoint 404s is the exact failure
+  // this map exists to prevent, and it has shipped twice.
+  "read/money-map": readMoneyMap,
+
+  // banking/sync-accounts is the FIRST WRITER `bank_accounts` has ever had —
+  // until it, the only INSERT into that table in the whole repository was inside
+  // a pg test, and every bank-derived section of the Money Map was empty with no
+  // way to fill it.
+  //
+  // ROLE_SETS.FINANCE — {owner, admin} — NOT the STAFF set its read neighbours
+  // use, and deliberately narrower: this one creates the financial rows those
+  // screens total. Reading a balance and conjuring one are different powers.
+  //
+  // The provider is always named by the caller; there is no default, because a
+  // default is how a mock ends up running in production. The mock provider is
+  // additionally gated on BANKING_MOCK_PROVIDER=1 and every row it writes
+  // carries provider='mock' in a NOT NULL checked column. Nothing on either path
+  // transmits: the mock reads a fixture in this repository, and the Plaid seam
+  // is deliberately unclosed and returns its refusal unchanged.
+  "banking/sync-accounts": bankingSyncAccounts,
 
   // Write endpoints. Hand-rolled rather than readHandler-based, so each one owns
   // its own method switch, its 405 + allow header, and its domain-error mapping.
@@ -208,7 +263,91 @@ export const ROUTES = {
   // an audit row naming what was removed and what was kept. There is no schedule
   // behind it; nothing in this system erases anything on its own.
   "banking/revoke": bankingRevoke,
-  "privacy/erasure": privacyErasure
+  "privacy/erasure": privacyErasure,
+
+  // ── The Finance OS write surface ────────────────────────────────────────────
+  //
+  // ROUGHLY 7,000 LINES OF TESTED BUSINESS LOGIC HAD NO WAY IN. Twelve modules —
+  // subscriptions/store, liabilities/store, banking/store, banking/recurring,
+  // banking/cashflow, banking/reminders, banking/settings, alerts/store,
+  // alerts/evaluate, calculators/deal-math and calculators/deal-funding — were
+  // complete, tested and unreachable: no route, no screen, no caller. The owner
+  // opened the deployed app and saw a seven-row read-only grid. That is the
+  // third and largest instance of the exact failure the header of this file
+  // describes, and these eight entries are the fix for it.
+  //
+  // ROUTED BEFORE THE HANDLERS ARE FINISHED, DELIBERATELY. Each file below is
+  // currently a working shell — real auth, real role gate, real org scoping from
+  // the session, real method switch — whose action bodies answer 501
+  // not_implemented. Six build agents fill those bodies in, one file each. The
+  // routes exist FIRST so that no agent can finish a feature and leave it
+  // unreachable, which is precisely what happened the previous three times. A
+  // 501 is an honest "built, not finished"; a 404 is a feature that does not
+  // exist, and the difference matters to whoever has to debug it.
+  //
+  // ONE PATH PER RESOURCE, WITH AN `action` IN THE POST BODY. The same shape
+  // api/inquiries.mjs and api/shifts.mjs already use. It keeps this map short
+  // and — the reason that actually mattered here — it gives each build agent
+  // exactly one file to own, so six parallel workflows cannot collide.
+  //
+  // EVERY ONE OF THEM SCOPES TO staff.org_id AND TO A VERIFIED CLIENT, and none
+  // of them takes an org from a query string or a body. Three of the store
+  // modules behind these routes (liabilities' three readers, and
+  // getBillEvidence) filter on an id alone with no org column in the WHERE
+  // clause, so the endpoint's ownership check is not defence in depth there — it
+  // is the only thing standing between a pasted uuid and another company's
+  // consumer file. The handlers say so at their own call sites.
+  //
+  // THE ROLE GATES ARE NOT UNIFORM AND MUST NOT BE MADE SO. FINANCE {owner,
+  // admin} for anything carrying a price, a payment instrument or bank-derived
+  // data (subscriptions, cards, bank-accounts, bills, cashflow); STAFF for the
+  // reads that are no more sensitive than the tradelines this API already serves
+  // that set (liabilities, alerts, model). alerts additionally narrows
+  // `set_trigger` to FINANCE inside the handler, because changing a threshold
+  // changes who gets flagged across the whole book. public/app/shell.js's
+  // OWNER_ADMIN_ONLY list mirrors these gates screen by screen, so that the app
+  // never offers somebody a screen whose data refuses them.
+  //
+  // NOTHING BEHIND ANY OF THESE TRANSMITS. There is no outbound fetch in
+  // src/adapters/ or src/lib/; src/banking/plaid.mjs is a named empty seam, so
+  // bank accounts and cards are entered by hand. That is the product today.
+  "finance/subscriptions": financeSubscriptions,
+  "finance/cards": financeCards,
+  "finance/liabilities": financeLiabilities,
+  "finance/bank-accounts": financeBankAccounts,
+  "finance/bills": financeBills,
+  "finance/cashflow": financeCashflow,
+  "finance/alerts": financeAlerts,
+  "finance/model": financeModel,
+
+  // Banking manual entry. The first thing in this repository that writes
+  // bank_accounts — the table has existed since 080/081 with a read endpoint, a
+  // grouping module and a screen in front of it and no INSERT anywhere, which is
+  // why the Banking Surface screen has always been empty.
+  //
+  // Routed in the same commit as the handler, deliberately. This is the fourth
+  // feature in this repo to be finished end to end, and the three before it each
+  // shipped unreachable because nobody added the line here.
+  //
+  // The gate differs by method and is spelled out in the handler: reads are
+  // ROLE_SETS.STAFF, matching read/banking-surface which already serves the same
+  // rows; writes are ROLE_SETS.FINANCE, because replacing a person's financial
+  // records is a narrower act than reading them. Nothing behind it transmits —
+  // the mock provider invents its data and makes no network call.
+  "banking/accounts": bankingAccounts,
+
+  // Consent capture — the gate in front of the route directly above. Routed in
+  // the same commit as the handler, the migration and the screen, because an
+  // unreachable consent endpoint is worse here than anywhere else in this map:
+  // requestSoftPull() now REFUSES without a live consent row, so a 404 on this
+  // path does not degrade the feature, it disables soft pulls entirely and the
+  // only visible symptom is a 403 from a different endpoint.
+  //
+  // Serves staff AND client principals: the consumer captures their own consent
+  // in the portal, and an employee may record one given on a call. Its role gate
+  // is the same narrow set as finance/soft-pull and is spelled out in
+  // api/consent/capture.mjs. Nothing behind it transmits.
+  "consent/capture": consentCapture
 
   /* NOT ROUTED, ON PURPOSE — see ALLOWED_UNROUTED in src/http/routes.test.mjs
      for the current list and the reason attached to each entry. That list is

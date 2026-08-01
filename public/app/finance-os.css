@@ -1,0 +1,109 @@
+/* Shared page frame for the Finance OS write screens.
+ *
+ * WHY THIS FILE EXISTS. The rule "an unknown value renders as an em dash, never
+ * as 0.00" is the most important presentation rule in this product, and it was
+ * already written twice: once as `.fos-value.is-unknown` in finance-os.html and
+ * again as `.bs-gtotal.is-unknown` / `.bs-abal.is-unknown` in
+ * banking-surface.html. Six more screens were about to make it eight copies.
+ *
+ * Two copies of one rule is a bug that takes months to surface — it drifts one
+ * screen at a time, and the screen that drifts is the one showing somebody a
+ * number about their money. So the rule is written ONCE here and the six Finance
+ * OS screens link this file. finance-os.html and banking-surface.html are left
+ * alone deliberately: they work, they are owned by other passes, and rewriting a
+ * working screen to share a stylesheet is the drive-by refactor CLAUDE.md §8
+ * forbids.
+ *
+ * THE TWO SIGNALS, AND WHY THEY ARE SEPARATE.
+ *
+ *   .is-unknown   the server sent null. We do not have this number.
+ *                 Renders as an em dash in a dimmer weight so it does not read
+ *                 as a figure. "We do not know" and "it is zero" are different
+ *                 facts about someone's money and only one of them is a claim.
+ *
+ *   .is-partial   we have a number, but it was totalled over a set with holes in
+ *                 it. It is a FLOOR, not a total, and it carries a "+".
+ *                 src/finance/os-grid.mjs:71 sumKnown() is the server-side half
+ *                 of the same idea: it counts what it could not use.
+ *
+ * THEY CAN BOTH BE TRUE AT ONCE AND THE PAIR IS NONSENSE (audit m16). sumKnown()
+ * returns total:null when nothing was usable, while basisOf() still reports
+ * partial:true because unknown > 0 — so a client whose cards report no limit at
+ * all got a "+" stacked on the em dash and the row read "—+", which is not a
+ * number, not a dash and not a marker; it reads as the page being broken. Worse,
+ * the plus means "there is more than this", which is meaningless attached to "we
+ * have no number". `:not(.is-unknown)` on the ::after drops only that pair. Both
+ * signals still work wherever each is true on its own.
+ *
+ * Set the two classes INDEPENDENTLY from the response: `.is-unknown` from
+ * `display === null`, `.is-partial` from `basis.partial`. Do not derive one from
+ * the other.
+ */
+
+:root{ --surface:#FFFFFF; --text:var(--ink2); --text-dim:var(--gray); --text-faint:var(--gray2); }
+
+/* ── page frame ─────────────────────────────────────────────────────────────
+   Deliberately the same measurements finance-os.html uses, so the Finance OS
+   screens read as one surface rather than eight separate documents. */
+.fh-wrap{ max-width:960px; margin:0 auto; padding:28px 20px 64px; }
+.fh-back{ font:400 13px/1 'Inter',system-ui,sans-serif; color:var(--link); margin-bottom:12px; }
+.fh-back a{ cursor:pointer; text-decoration:underline; }
+.fh-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px;
+          flex-wrap:wrap; margin-bottom:6px; }
+.fh-title{ font:800 22px/1.2 'Inter',system-ui,sans-serif; color:var(--text); letter-spacing:-.01em; }
+.fh-source{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.09em;
+            text-transform:uppercase; color:var(--text-faint); border:1px solid currentColor;
+            border-radius:3px; padding:4px 7px; }
+.fh-sub{ font:400 13px/1.5 'Inter',system-ui,sans-serif; color:var(--text-dim);
+         margin:0 0 20px; max-width:60ch; }
+.fh-note{ margin-top:18px; font:400 12px/1.6 'Inter',system-ui,sans-serif;
+          color:var(--text-dim); max-width:70ch; }
+.fh-note code{ font:500 11px/1 'JetBrains Mono',ui-monospace,monospace; }
+
+/* ── a list of rows: label on the left, figure on the right ────────────────── */
+.fh-panel{ border:1px solid var(--soft); border-radius:8px; overflow:hidden; background:var(--surface); }
+.fh-row{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,auto); gap:12px;
+         align-items:baseline; padding:15px 18px; border-bottom:1px solid var(--soft); }
+.fh-row:last-child{ border-bottom:0; }
+.fh-label{ font:600 13px/1.3 'Inter',system-ui,sans-serif; color:var(--text); }
+.fh-basis{ display:block; margin-top:3px; font:500 10px/1.4 'JetBrains Mono',ui-monospace,monospace;
+           letter-spacing:.04em; color:var(--text-faint); }
+
+/* ── THE TWO SIGNALS. See the header. ─────────────────────────────────────── */
+.fh-num{ font:700 19px/1.2 'JetBrains Mono',ui-monospace,monospace; color:var(--text);
+         text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fh-num.is-unknown{ color:var(--text-faint); font-weight:500; }
+.fh-row.is-partial .fh-basis{ color:var(--ink2); }
+.fh-num.is-partial:not(.is-unknown)::after{ content:"+"; margin-left:2px;
+                                            color:var(--text-faint); font-weight:500; }
+
+/* ── forms: these screens WRITE, which the read-only ones did not ──────────── */
+.fh-form{ display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;
+          padding:15px 18px; border-bottom:1px solid var(--soft); }
+.fh-field{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+.fh-field label{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.06em;
+                 text-transform:uppercase; color:var(--text-faint); }
+.fh-field input, .fh-field select{ font:500 13px/1 'Inter',system-ui,sans-serif; color:var(--text);
+                 background:var(--surface); border:1px solid var(--soft); border-radius:6px;
+                 padding:8px 10px; min-width:8ch; }
+.fh-btn{ font:600 12px/1 'Inter',system-ui,sans-serif; cursor:pointer; border-radius:6px;
+         padding:9px 14px; border:1px solid var(--ink2); background:var(--ink2); color:#fff; }
+.fh-btn.secondary{ background:var(--surface); color:var(--text); border-color:var(--soft); }
+.fh-btn[disabled]{ opacity:.55; cursor:default; }
+
+/* A write that failed must say so ON the control that failed, not only in the
+   bottom banner — the banner is shared by every source on the page and a failed
+   save scrolls out of the reader's attention. */
+.fh-msg{ font:500 12px/1.5 'Inter',system-ui,sans-serif; margin:8px 18px 0; }
+.fh-msg.ok{ color:var(--green,#2C5138); }
+.fh-msg.bad{ color:var(--red,#6E2A22); }
+
+/* A screen that has nothing to show says so IN WORDS. It never leaves sample
+   markup on screen under a real client's name — that exact bug shipped and is
+   audit finding M8. */
+.fh-empty{ padding:22px 18px; font:400 13px/1.6 'Inter',system-ui,sans-serif; color:var(--text-dim); }
+
+@media (max-width:520px){
+  .fh-row{ grid-template-columns:1fr; }
+  .fh-num{ text-align:left; }
+}

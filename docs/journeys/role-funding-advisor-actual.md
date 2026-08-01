@@ -17,37 +17,42 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| CAN[Can reach]
     CAN --> A_auth[Signing in and out — 3 routes]
+    CAN --> A_banking[banking — 1 route]
     CAN --> A_campaigns[Campaigns — 6 routes]
+    CAN --> A_consent[consent — 1 route]
     CAN --> A_creative[Creative Factory — 4 routes]
     CAN --> A_dashboard[The dashboard — 4 routes]
     CAN --> A_documents[Documents — 1 route]
-    CAN --> A_finance[Finance — 1 route]
-    CAN --> A_read[Reading data — 11 routes]
+    CAN --> A_finance[Finance — 4 routes]
+    CAN --> A_read[Reading data — 12 routes]
     CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 16 routes]
-    CANT --> B_banking[banking — 1 blocked]
+    WHO -->|Yes| CANT[Blocked — 23 routes]
+    CANT --> B_banking[banking — 2 blocked]
+    CANT --> B_finance[Finance — 5 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
-    CANT --> B_read[Reading data — 6 blocked]
+    CANT --> B_read[Reading data — 7 blocked]
     CANT --> B_top_level[Everything else — 2 blocked]
 ```
 
 ## What they can reach
 
-**37 of 53 routes.**
+**43 of 66 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
-| `/api/auth/login` | — | anyone |
+| `/api/auth/login` | GET | anyone |
 | `/api/auth/logout` | — | anyone |
 | `/api/auth/session` | — | anyone |
+| `/api/banking/accounts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/campaigns/action-log` | GET | partner, staff |
 | `/api/campaigns/connections` | GET | partner, staff |
 | `/api/campaigns/detail` | GET | partner, staff |
 | `/api/campaigns/fatigue` | GET | partner, staff |
 | `/api/campaigns/list` | GET | partner, staff |
 | `/api/campaigns/spend` | GET | partner, staff |
+| `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/creative/approvals` | GET | partner, staff |
 | `/api/creative/brand-kits` | GET | partner, staff |
 | `/api/creative/jobs` | GET | partner, staff |
@@ -57,13 +62,15 @@ flowchart TD
 | `/api/dashboard/pipeline` | — | staff |
 | `/api/dashboard/seed` | — | staff |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
+| `/api/finance/alerts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/finance/liabilities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/finance/model` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/inquiries` | GET, POST | staff |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/banking-surface` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter<br>plus: client |
@@ -71,8 +78,10 @@ flowchart TD
 | `/api/read/funding-rounds` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/inquiries` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/message-templates` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/shifts` | GET, POST | staff |
 | `/api/tasks` | GET, PATCH | staff |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
@@ -85,11 +94,17 @@ flowchart TD
 
 ## What they are blocked from
 
-**16 of 53 routes.**
+**23 of 66 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/banking/revoke` | GET, POST | owner, admin |
+| `/api/banking/sync-accounts` | POST | owner, admin |
+| `/api/finance/bank-accounts` | GET, POST | owner, admin |
+| `/api/finance/bills` | GET, POST | owner, admin |
+| `/api/finance/cards` | GET, POST | owner, admin |
+| `/api/finance/cashflow` | GET, POST | owner, admin |
+| `/api/finance/subscriptions` | GET, POST | owner, admin |
 | `/api/hiring/application` | GET | owner, admin |
 | `/api/hiring/bench` | GET | owner, admin |
 | `/api/hiring/candidates` | GET | owner, admin |
@@ -100,6 +115,7 @@ flowchart TD
 | `/api/partner-brand` | GET, PUT | owner, admin |
 | `/api/privacy/erasure` | GET, POST | owner, admin |
 | `/api/read/affiliates` | GET | owner, admin |
+| `/api/read/banking-surface` | GET | owner, admin |
 | `/api/read/commissions` | GET | owner, admin |
 | `/api/read/failed-events` | GET | owner, admin |
 | `/api/read/invoices` | GET | owner, admin |

@@ -9,6 +9,7 @@
 import { newToken, hashToken, normalizeIp, ttlMs } from "./session.mjs";
 import { hashPassword, verifyPassword, validatePassword } from "./hash.mjs";
 import { resolveDefaultOrg } from "./org.mjs";
+import { demoLoginRefusal } from "./demo-logins.mjs";
 
 const truncate = (s, n) => (s == null ? null : String(s).slice(0, n));
 
@@ -144,9 +145,14 @@ export async function loginAccount(db, { email, password, ip, userAgent, env = p
   if (!mail || !password) return { ok: false, status: 400, error: "email_and_password_required" };
 
   const org = await resolveDefaultOrg(db);
+  // is_demo through to_jsonb, matching the staff query in src/auth/login.mjs:
+  // the column arrives with db/migrations/094_demo_logins.sql and this lookup
+  // must keep working against a database that has not applied it yet.
   const r = await db.query(
-    `SELECT id, kind, email, name, status, password_hash, client_id, affiliate_id, partner_id
-       FROM accounts WHERE org_id = $1 AND lower(email) = $2 LIMIT 1`,
+    `SELECT a.id, a.kind, a.email, a.name, a.status, a.password_hash,
+            a.client_id, a.affiliate_id, a.partner_id,
+            (to_jsonb(a) ->> 'is_demo') AS is_demo_flag
+       FROM accounts a WHERE a.org_id = $1 AND lower(a.email) = $2 LIMIT 1`,
     [org, mail]
   );
   const acct = r.rows[0];
@@ -164,6 +170,14 @@ export async function loginAccount(db, { email, password, ip, userAgent, env = p
   if (!(await verifyPassword(password, acct.password_hash))) {
     return { ok: false, status: 401, error: "invalid_credentials" };
   }
+
+  // Same gate, same placement, same reasoning as src/auth/login.mjs: AFTER the
+  // password has verified, so this can only ever refuse a login and never grant
+  // one. A demo principal on a deploy with DEMO_LOGINS_ENABLED unset gets 403
+  // and no session row is minted.
+  const demoRefusal = demoLoginRefusal(
+    { email: acct.email, is_demo: acct.is_demo_flag }, env);
+  if (demoRefusal) return demoRefusal;
 
   const s = await createAccountSession(db, { accountId: acct.id, orgId: org, ip, userAgent, env });
   await db.query(`UPDATE accounts SET last_login_at = now() WHERE id = $1`, [acct.id]);

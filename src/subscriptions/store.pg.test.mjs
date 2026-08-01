@@ -16,7 +16,7 @@ import { db, close } from "../db.mjs";
 import {
   putClientCard, listClientCards, removeClientCard,
   startSubscription, getSubscriptionAt, listSubscriptions,
-  changeTier, cancelSubscription, attachCard
+  changeTier, cancelSubscription, attachCard, SubscriptionConflictError
 } from "./store.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
@@ -335,15 +335,143 @@ test("cancelSubscription records when they asked, separately from when it ends",
   const cancelled = await cancelSubscription(db, { orgId, clientId });
   assert.equal(cancelled.status, "cancelled");
   assert.ok(cancelled.cancelled_at);
-  assert.equal(cancelled.effective_to, null,
-    "cancelled today, still in force to the end of the paid period — that is not an ended row");
+  assert.ok(cancelled.effective_to,
+    "a cancelled row must carry an end date — the overlap constraint reads dates, not status, "
+    + "so an open-ended cancelled row locks the client out of ever signing up again");
+  assert.deepEqual(cancelled.effective_to, cancelled.cancelled_at,
+    "with no end date supplied, the row closes at the moment they asked");
 
   const again = await cancelSubscription(db, { orgId, clientId });
   assert.deepEqual(again.cancelled_at, cancelled.cancelled_at, "a retry must not move the date");
+  assert.deepEqual(again.effective_to, cancelled.effective_to, "nor the date it ended");
 
   assert.equal(await cancelSubscription(db, { orgId, clientId: otherClientId }), null,
     "cancelling what does not exist returns nothing rather than inventing a row");
 });
+
+test("the date they asked and the date it ends stay separate when the end date is known",
+  { skip: !HAS_DB }, async () => {
+    await reset();
+    const askedAt = new Date(Date.now() - 5 * 86_400_000);
+    const endsAt = new Date(Date.now() + 25 * 86_400_000);
+    await startSubscription(db, {
+      orgId, clientId, tier: "starter", priceCents: 9900,
+      at: new Date(Date.now() - 30 * 86_400_000).toISOString()
+    });
+    const cancelled = await cancelSubscription(db, {
+      orgId, clientId, at: askedAt.toISOString(), endsAt: endsAt.toISOString()
+    });
+    assert.equal(new Date(cancelled.cancelled_at).getTime(), askedAt.getTime(),
+      "cancelled_at is when they asked");
+    assert.equal(new Date(cancelled.effective_to).getTime(), endsAt.getTime(),
+      "effective_to is when it stops applying — they paid to the end of the period");
+    assert.notDeepEqual(cancelled.cancelled_at, cancelled.effective_to,
+      "the two dates are not the same fact and a dispute turns on the difference");
+  });
+
+// M16. A client cancels, then comes back. The row they cancelled has to be
+// closed, or 075's exclusion constraint sees an open-ended date range and
+// refuses every subscription that follows it — for good, with a raw constraint
+// name rather than anything a person could act on.
+test("a client who cancels can sign up again", { skip: !HAS_DB }, async () => {
+  await reset();
+  const first = await startSubscription(db, {
+    orgId, clientId, tier: "starter", priceCents: 9900,
+    at: new Date(Date.now() - 86_400_000).toISOString()
+  });
+  await cancelSubscription(db, { orgId, clientId });
+
+  const second = await startSubscription(db, { orgId, clientId, tier: "pro", priceCents: 19900 });
+  assert.notEqual(second.id, first.id, "coming back opens a new row");
+  assert.equal(second.status, "active");
+  assert.equal(second.effective_to, null, "the new one is the live one");
+
+  const live = await getSubscriptionAt(db, { orgId, clientId });
+  assert.equal(live.id, second.id, "and it is what a reader now sees");
+
+  const history = await listSubscriptions(db, { orgId, clientId });
+  assert.equal(history.length, 2, "the cancelled version survives as history");
+  const closed = history.find((r) => r.id === first.id);
+  assert.equal(closed.status, "cancelled");
+  assert.ok(closed.effective_to, "closed, so it no longer covers the new one's dates");
+});
+
+test("a genuine double-booking is refused in words, not a constraint name",
+  { skip: !HAS_DB }, async () => {
+    await reset();
+    await startSubscription(db, { orgId, clientId, tier: "starter", priceCents: 9900 });
+    await assert.rejects(
+      () => startSubscription(db, { orgId, clientId, tier: "pro", priceCents: 19900 }),
+      (err) => {
+        assert.doesNotMatch(err.message, /subscriptions_no_overlap/,
+          "a Postgres constraint name is not something a person can act on");
+        assert.match(err.message, /already has a subscription/);
+        return true;
+      },
+      "the second live subscription is still refused — just readably"
+    );
+  });
+
+// m11. changeTier reads the live version, then closes it and opens the successor
+// in one statement. If that live version is closed by SOMEBODY ELSE in the gap
+// between the read and the write, the statement updates no rows, so it inserts
+// no rows either, and the call ends in a branch no test had ever executed.
+//
+// Reaching it by running two real calls at the same time is a coin toss, so the
+// second writer is landed EXACTLY in the gap instead: the handle below is shaped
+// like the one src/db.mjs exports (`{ query }`, nothing else) and cancels the
+// subscription on the way into the plan-change statement. That is a real
+// sequence — a closer cancelling a client while a manager upgrades them — held
+// still so it happens every run rather than one run in a thousand.
+test("a plan change that loses a race says so in words, and says nothing was saved",
+  { skip: !HAS_DB }, async () => {
+    await reset();
+    const first = await startSubscription(db, {
+      orgId, clientId, tier: "starter", priceCents: 9900,
+      at: new Date(Date.now() - 86_400_000).toISOString()
+    });
+
+    let raced = false;
+    const somebodyElseGetsThereFirst = {
+      query: async (sql, params) => {
+        if (!raced && /WITH closed AS/.test(sql)) {
+          raced = true;
+          await cancelSubscription(db, { orgId, clientId });
+        }
+        return db.query(sql, params);
+      }
+    };
+
+    await assert.rejects(
+      () => changeTier(somebodyElseGetsThereFirst, { orgId, clientId, tier: "pro", priceCents: 19900 }),
+      (err) => {
+        assert.ok(raced, "the second writer must actually have landed in the gap");
+        assert.ok(err instanceof SubscriptionConflictError,
+          "a caller has to be able to tell 'someone else edited this' from 'the server broke'");
+        assert.equal(err.status, 409,
+          "409 is the answer an endpoint should give; a plain Error becomes a 500 at "
+          + "netlify/functions/api.mjs:334, which blames the server for a human collision");
+        assert.match(err.message, /somebody else changed this subscription/);
+        assert.doesNotMatch(err.message, /subscriptions_|SQLSTATE|23P01/,
+          "no constraint names — this sentence is read by a person");
+        return true;
+      }
+    );
+
+    const history = await listSubscriptions(db, { orgId, clientId });
+    assert.equal(history.length, 1, "no successor row was opened — nothing is half-applied");
+    assert.equal(history[0].id, first.id);
+    assert.equal(history[0].tier, "starter", "and the tier the client is on did not move");
+    assert.equal(history[0].status, "cancelled", "what actually happened is the cancellation");
+    assert.equal(await getSubscriptionAt(db, { orgId, clientId }), null,
+      "there is no live version, which is why the change had nothing to change");
+
+    // And the caller can act on it: re-reading shows the cancellation, and the
+    // client can be signed up again. The error is a fork in the road, not a wall.
+    const resumed = await startSubscription(db, { orgId, clientId, tier: "pro", priceCents: 19900 });
+    assert.equal(resumed.status, "active");
+    assert.equal(resumed.effective_to, null);
+  });
 
 test("the period window must be a real window or absent entirely", { skip: !HAS_DB }, async () => {
   await reset();

@@ -64,6 +64,14 @@ const LABELS = {
    client has four accounts". */
 const isOpen = (a) => a && !a.closed_at;
 
+/* The only type whose balance columns mean cash. 081:85-87 spells out that they
+   mean something else on every other type — on a card `available` is remaining
+   headroom and `current` is the amount owed — and 081:71 warns that treating an
+   unclassified type as a deposit account "would quietly turn an unclassified
+   line of credit into cash on hand". One predicate, used by both the totals and
+   the overdrawn flag, so the two cannot drift apart. */
+const isDepository = (a) => a?.account_type === "depository";
+
 function cents(v) {
   if (v === null || v === undefined || v === "") return null;
   const n = Number(v);
@@ -111,7 +119,17 @@ function accountView(a) {
     closed_at: a.closed_at ?? null,
     // An overdrawn account is worth naming rather than leaving the reader to
     // notice a minus sign in a column of numbers.
-    overdrawn: current !== null && current < 0
+    //
+    // ONLY ON A DEPOSIT ACCOUNT, for the same reason the totals below only add
+    // deposit accounts. 081:85-87: on a card `current` is the amount OWED, so a
+    // maxed-out card reads POSITIVE and never trips this, while a card the
+    // client has OVERPAID reads negative and gets painted red — the flag fires
+    // on the healthiest card on the screen and stays silent on the worst one.
+    //
+    // NULL, NOT FALSE, on anything else. False reads as "we checked, it is
+    // fine". On a loan, an investment account, or an account whose type the
+    // bank never told us, whether it is overdrawn is not established.
+    overdrawn: isDepository(a) ? current !== null && current < 0 : null
   };
 }
 
@@ -141,8 +159,13 @@ export function bankingSurface(rows = []) {
     // balance is not money anybody can reach.
     const open = mine.filter((v) => !v.closed_at);
 
-    const available = sumKnown(open.map((v) => v.available_balance_cents));
-    const current = sumKnown(open.map((v) => v.current_balance_cents));
+    // Only count depository accounts (checking, savings) in totals. Credit,
+    // loan, and investment accounts have different semantics and must not be
+    // added to cash on hand: available = headroom, current = owed.
+    const depository = open.filter(isDepository);
+
+    const available = sumKnown(depository.map((v) => v.available_balance_cents));
+    const current = sumKnown(depository.map((v) => v.current_balance_cents));
 
     return {
       key,
@@ -152,11 +175,11 @@ export function bankingSurface(rows = []) {
       accounts: mine,
       available: {
         value: available.total, display: money(available.total),
-        basis: basisOf(available, open.length)
+        basis: basisOf(available, depository.length)
       },
       current: {
         value: current.total, display: money(current.total),
-        basis: basisOf(current, open.length)
+        basis: basisOf(current, depository.length)
       }
     };
   });

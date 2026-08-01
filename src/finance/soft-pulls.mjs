@@ -12,7 +12,26 @@
 // a bureau anything".
 //
 //
-// THE FOUR RULES THIS MODULE ENFORCES, rather than trusting callers to remember:
+// THE FIVE RULES THIS MODULE ENFORCES, rather than trusting callers to remember:
+//
+//   0. NO CONSENT, NO REQUEST. Rule 1 records who asked. This one asks whether
+//      the CONSUMER ever agreed. They are different questions and the platform
+//      could previously only answer the first: consent lived in a CRM text
+//      column (clients.cf_crs_softpull_consent), which cannot say what the
+//      person was shown, how they said yes, or whether they have since said no.
+//      db/migrations/099_client_consents.sql makes it a real record and
+//      src/consent/index.mjs is the gate. requestSoftPull() refuses without a
+//      live consent, BEFORE the replay and open-request guards, and a revoked
+//      consent fails from the instant it is revoked — the check is a read at
+//      request time, not a flag copied onto anything.
+//
+//      THE GATE IS ON REQUEST ONLY. fulfilSoftPull(), recordPull() and the CRS
+//      ingest path are deliberately untouched: a pull that already happened is
+//      a fact, and refusing to store or normalise it because the paperwork is
+//      now wrong would lose the only copy of what a bureau said about a person
+//      — see recordPull()'s own note on why `requestId` is optional. Consent
+//      governs whether we may ASK. It does not govern whether we may write down
+//      an answer that already arrived.
 //
 //   1. NO ATTRIBUTION, NO PULL. A soft pull is a consumer-credit event. Every
 //      request records who initiated it and why, and a request that cannot say
@@ -28,6 +47,10 @@
 //      already-open request for the same client is RETURNED rather than
 //      duplicated. Neither is decorative — pulling a consumer's credit twice
 //      because a request timed out is a real harm and a real cost.
+//      Both guards are backed by a unique index and the INSERT carries ON
+//      CONFLICT DO NOTHING, because reading and then writing leaves a gap two
+//      simultaneous taps both fit through — which they did, three times over,
+//      against a real Postgres. See GUARD 3 and 090.
 //
 //   3. ONE READER OF A PULL PAYLOAD. fulfil() calls ingestCrsResult() from
 //      src/tradelines/store.mjs. It does not parse crs_results.result itself and
@@ -49,12 +72,19 @@
 import { db as sharedDb, pool } from "../db.mjs";
 import { fromCents } from "../commissions/money.mjs";
 import { ingestCrsResult } from "../tradelines/store.mjs";
+import { consentStatus, CONSENT_REASONS } from "../consent/index.mjs";
 
 export class SoftPullError extends Error {
-  constructor(message, { status = 400 } = {}) {
+  constructor(message, { status = 400, code = null } = {}) {
     super(message);
     this.name = "SoftPullError";
     this.status = status;
+    // `code` is optional and defaults to null, so every existing throw site and
+    // every existing test keeps its shape. It exists so the consent refusal can
+    // be told apart from the other 4xx a screen might get back: the button needs
+    // to send the person to the consent screen, and matching on message text to
+    // decide that would break the first time somebody reworded the sentence.
+    this.code = code;
   }
 }
 
@@ -148,6 +178,40 @@ export function decorate(row) {
   return row ? { ...row, cost_display: costDisplay(row.cost_cents) } : row;
 }
 
+/* priorByIdemKey — the row a replayed tap already made, or null. One reader, two
+   call sites: the guard before the insert, and the re-read after an insert that
+   lost a race to another caller carrying the same key. */
+async function priorByIdemKey(db, orgId, idem) {
+  const res = await db.query(
+    `SELECT ${SELECT_COLUMNS} FROM soft_pull_requests
+      WHERE org_id = $1 AND idempotency_key = $2`,
+    [orgId, idem]
+  );
+  return res.rows[0] ? decorate(res.rows[0]) : null;
+}
+
+/* replayOrRefuse — a prior row found under this caller's retry key is either
+   THIS caller's retry or somebody else's row, and those are opposite answers.
+
+   uq_soft_pull_requests_idem (077) is keyed (org_id, idempotency_key); the
+   client is deliberately not in it, so within one org a key is global. A retry
+   key identifies one tap, and a tap is about one client, so a prior row naming a
+   DIFFERENT client is a collision and not a replay. Returning it would hand the
+   caller another consumer's credit-pull record — who asked, why, what it cost —
+   while silently dropping the request this caller actually made, so a screen
+   shows a pull in flight that no ledger row records. Refusing is the only answer
+   that is neither a disclosure nor a lie, and 409 (not a raw unique violation)
+   is what keeps it off the 500 path in netlify/functions/api.mjs. */
+function replayOrRefuse(prior, clientId) {
+  if (String(prior.client_id) !== String(clientId)) {
+    throw new SoftPullError(
+      "that idempotency key has already been used for a different client",
+      { status: 409 }
+    );
+  }
+  return { created: false, reason: "replay", request: prior };
+}
+
 /**
  * openRequestFor — the client's outstanding request, or null.
  * Exported because "is a pull already in flight for this client" is a question
@@ -162,6 +226,32 @@ export async function openRequestFor(db, { clientId }) {
     [clientId]
   );
   return res.rows[0] ? decorate(res.rows[0]) : null;
+}
+
+/* consentRefusal — why the gate said no, in a sentence the person who tapped the
+   button can act on.
+ *
+ * The four cases lead somewhere different, which is the whole reason they are
+ * not one message: "none on file" and "expired" mean go and capture consent,
+ * "revoked" means stop and do not ask again, and a scope failure is ours rather
+ * than theirs. A single "consent required" string would send a closer to the
+ * capture screen to re-collect a consent the client deliberately withdrew.
+ *
+ * Exported for the tests, which assert on the distinction rather than on the
+ * wording — the strings are allowed to be reworded, the branches are not. */
+export function consentRefusal(reason) {
+  switch (reason) {
+    case CONSENT_REASONS.REVOKED:
+      return "this client has revoked their soft-pull consent — do not request a pull; a new consent must be captured before asking again";
+    case CONSENT_REASONS.EXPIRED:
+      return "this client's soft-pull consent has expired — capture a new consent before requesting a pull";
+    case CONSENT_REASONS.NOT_YET:
+      return "this client's soft-pull consent is not effective yet";
+    case CONSENT_REASONS.NO_ORG:
+      return "no organisation on this session — a soft pull cannot be scoped and is refused";
+    default:
+      return "no soft-pull consent on file for this client — capture consent before requesting a pull";
+  }
 }
 
 /**
@@ -195,15 +285,39 @@ export async function requestSoftPull(db, {
     ? idempotencyKey.trim()
     : null;
 
+  /* GUARD 0 — THE CONSENT GATE. Rule 0 in the header.
+   *
+   * FIRST, before the replay guard and before the open-request guard. Those two
+   * exist to avoid recording a SECOND consumer-credit event; this one decides
+   * whether we may record a first. Ordering it after them would mean a replayed
+   * tap, or a tap while an older request sat open, returned a cheerful
+   * `created: false` to somebody who has revoked their consent — the request
+   * would not be new, but the answer would still be "yes, that's in hand", and
+   * the person asking would reasonably read it as permission still standing.
+   *
+   * READ AT REQUEST TIME, EVERY TIME. Nothing caches this and nothing copies a
+   * consent decision onto the request row, because a revocation has to bite
+   * immediately and a copied flag is a decision frozen at the wrong moment.
+   *
+   * SCOPED BY orgId, WHICH CAME FROM THE SESSION. api/finance/soft-pull.mjs
+   * takes it from principal.orgId and refuses when it is absent; consentStatus()
+   * fails closed on a blank org besides, so an unscoped call cannot open the
+   * gate by omission. */
+  const consent = await consentStatus(db, {
+    orgId, clientId, kind: "soft_pull_consent"
+  });
+  if (!consent.valid) {
+    throw new SoftPullError(consentRefusal(consent.reason), {
+      status: 403,
+      code: "consent_required"
+    });
+  }
+
   // GUARD 1 — the same tap, replayed. Checked before the open-request guard so
   // a retry gets back the row it made rather than somebody else's older one.
   if (idem) {
-    const prior = await db.query(
-      `SELECT ${SELECT_COLUMNS} FROM soft_pull_requests
-        WHERE org_id = $1 AND idempotency_key = $2`,
-      [orgId, idem]
-    );
-    if (prior.rows[0]) return { created: false, reason: "replay", request: decorate(prior.rows[0]) };
+    const prior = await priorByIdemKey(db, orgId, idem);
+    if (prior) return replayOrRefuse(prior, clientId);
   }
 
   // GUARD 2 — a pull is already outstanding for this client. Returning it is the
@@ -212,15 +326,47 @@ export async function requestSoftPull(db, {
   const open = await openRequestFor(db, { clientId });
   if (open) return { created: false, reason: "already_open", request: open };
 
+  /* GUARD 3 — THE SAME TWO GUARDS, ADJUDICATED BY POSTGRES.
+     Guards 1 and 2 read and then write, and between the read and the write
+     another caller can do the same. Both see nothing open, both insert: one
+     question, two consumer-credit events, two charges. Proven, not theorised —
+     three simultaneous requests for one client wrote three rows.
+     ON CONFLICT DO NOTHING hands that decision to the unique indexes instead:
+     uq_soft_pull_requests_one_open (090) for a second open request, and
+     uq_soft_pull_requests_idem (077) for a replayed key. Untargeted, so it
+     covers both. A caller that loses is not an error — it re-reads below and
+     gets the winner's row, the same answer a second tap has always got. */
   const res = await db.query(
     `INSERT INTO soft_pull_requests
        (org_id, client_id, requested_by_kind, requested_by_staff_id, requested_by_account_id,
         reason, cost_cents, subscription_id, idempotency_key, provider, status)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'queued')
+     ON CONFLICT DO NOTHING
      RETURNING ${SELECT_COLUMNS}`,
     [orgId, clientId, requester.kind, requester.staffId, requester.accountId,
      statedReason, cost, subscriptionId ?? null, idem, String(provider || "internal")]
   );
+
+  if (!res.rows[0]) {
+    // Somebody else got there first, in the microseconds since guard 2. Their
+    // row is the answer to this tap. Same order as the guards above: the
+    // caller's own replayed key first, then the client's open request.
+    if (idem) {
+      const prior = await priorByIdemKey(db, orgId, idem);
+      if (prior) return replayOrRefuse(prior, clientId);
+    }
+    const raced = await openRequestFor(db, { clientId });
+    if (raced) return { created: false, reason: "already_open", request: raced };
+
+    // Nothing was written and nothing explains why. Refusing loudly is the only
+    // honest option: reporting success would tell a screen a pull is under way
+    // when no ledger row exists, and retrying blindly is how a double charge
+    // happens in the first place.
+    throw new SoftPullError(
+      "the soft pull request could not be recorded — please try again",
+      { status: 409 }
+    );
+  }
 
   /* ── PROVIDER SEAM ───────────────────────────────────────────────────────
      This is where a real soft pull would be requested, and it is not here.
@@ -480,8 +626,14 @@ export async function getSoftPullRequest(db, requestId) {
  * transaction as the reveal; if the log write fails, the reveal fails" — does
  * not hold as shipped. I did not change it here; it is a behavioural change to
  * a compliance path and deserves its own review. Written up as a finding.
+ *
+ * EXPORTED (100_retention_policy). scripts/retention-purge.mjs needs a real
+ * transaction and this is the only correct one in the tree — the version in
+ * src/pii/index.mjs is the broken probe described above. Exporting the working
+ * one beats copying it: two transaction helpers that drift apart is precisely
+ * the bug CLAUDE.md §8 "reuse before you build" is about. Nothing else changed.
  */
-async function withTransaction(db, fn) {
+export async function withTransaction(db, fn) {
   const acquire = typeof db?.connect === "function"
     ? () => db.connect()
     : (db === sharedDb ? () => pool().connect() : null);

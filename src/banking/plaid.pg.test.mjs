@@ -53,8 +53,8 @@ after(async () => {
 describe("entity_kind — unknown is the default and unknown is not personal", () => {
   test("an account inserted without an entity_kind is 'unknown', never 'personal'", { skip: !HAS_DB }, async () => {
     const r = await db.query(
-      `INSERT INTO bank_accounts (org_id, client_id, plaid_item_id, name)
-       VALUES ($1,$2,$3,'Unclassified Checking') RETURNING entity_kind, entity_kind_source, entity_kind_set_at`,
+      `INSERT INTO bank_accounts (org_id, client_id, plaid_item_id, provider, name)
+       VALUES ($1,$2,$3,'plaid','Unclassified Checking') RETURNING entity_kind, entity_kind_source, entity_kind_set_at`,
       [orgId, clientId, itemId]
     );
     assert.strictEqual(r.rows[0].entity_kind, "unknown",
@@ -202,14 +202,14 @@ describe("bank_accounts — unknown balances survive as NULL", () => {
 
   test("re-reading the same Plaid account updates rather than duplicating", { skip: !HAS_DB }, async () => {
     await db.query(
-      `INSERT INTO bank_accounts (org_id, client_id, plaid_item_id, plaid_account_id, name)
-       VALUES ($1,$2,$3,'acct-w5-1','Checking')`,
+      `INSERT INTO bank_accounts (org_id, client_id, plaid_item_id, plaid_account_id, provider, name)
+       VALUES ($1,$2,$3,'acct-w5-1','plaid','Checking')`,
       [orgId, clientId, itemId]
     );
     await assert.rejects(
       db.query(
-        `INSERT INTO bank_accounts (org_id, client_id, plaid_item_id, plaid_account_id, name)
-         VALUES ($1,$2,$3,'acct-w5-1','Checking')`,
+        `INSERT INTO bank_accounts (org_id, client_id, plaid_item_id, plaid_account_id, provider, name)
+         VALUES ($1,$2,$3,'acct-w5-1','plaid','Checking')`,
         [orgId, clientId, itemId]
       ),
       /uq_bank_accounts_plaid/
@@ -232,7 +232,7 @@ describe("bank_accounts — unknown balances survive as NULL", () => {
       `INSERT INTO plaid_items (org_id, client_id) VALUES ($1,$2) RETURNING id`, [orgId, clientId]
     )).rows[0].id;
     await db.query(
-      `INSERT INTO bank_accounts (org_id, client_id, plaid_item_id, name) VALUES ($1,$2,$3,'Cascade')`,
+      `INSERT INTO bank_accounts (org_id, client_id, plaid_item_id, provider, name) VALUES ($1,$2,$3,'plaid','Cascade')`,
       [orgId, clientId, scratch]
     );
     await db.query(`DELETE FROM plaid_items WHERE id=$1`, [scratch]);

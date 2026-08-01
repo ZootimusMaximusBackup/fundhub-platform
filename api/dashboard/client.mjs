@@ -4,7 +4,7 @@
 // No writes. SELECT only. ESM. Mirrors api/health.mjs style.
 import { db } from "../../src/db.mjs";
 import { clientDetailExtras } from "../../src/http/client-detail.mjs";
-import { redact, isUuid, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
+import { redact, isUuid, requireRole, ROLE_SETS, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
 import { safeError } from "../../src/http/health.mjs";
 
@@ -13,6 +13,13 @@ export default async function handler(req, res) {
   // cutover, so existing links keep working while staff accounts roll out.
   const staff = await requireDashboardAccess(req, res, { db });
   if (!staff) return;
+  /* Same gap as api/dashboard/clients.mjs, and worse here: this response carries
+     phone, message bodies, and the consent / do-not-contact flags for a named
+     person. A session alone was enough, so role='partner' — an external
+     white-label operator — could read all of it. ROLE_SETS.STAFF excludes
+     'partner' and denies unknown roles by default.
+     `true` is the DASHBOARD_SECRET fallback caller, which has no role to check. */
+  if (staff !== true && !requireRole(res, staff, ROLE_SETS.STAFF)) return;
   const { id } = req.query ?? {};
   if (!id) return res.status(400).json({ ok: false, error: "?id= required" });
   // A malformed id is a bad request, not a server fault. Without this the seven

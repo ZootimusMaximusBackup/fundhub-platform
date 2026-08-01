@@ -15,21 +15,30 @@ import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { readHandler, ROLE_SETS } from "../../src/http/read-api.mjs";
 
+/* THE ORG COMES FROM THE SESSION AND IS REQUIRED (audit C1).
+   A session with no org binds NULL, and `org_id = NULL::uuid` matches no row —
+   it fails CLOSED. That is deliberate: omitting the clause when the org is
+   unknown turns a broken session into a firehose over every company's consumer
+   dispute records. */
+const orgOf = (staff) => (staff && staff.org_id) || null;
+
 const run = readHandler({
   roles: ROLE_SETS.STAFF,
-  fetch: (db, { limit, offset, query }) =>
+  fetch: (db, { limit, offset, query, staff }) =>
     db.query(
       `SELECT i.id, i.client_id, i.bureau, i.inquiry, i.status,
               i.call_attempts, i.outcome, i.created_at, i.updated_at,
               TRIM(COALESCE(c.first_name,'') || ' ' || COALESCE(c.last_name,'')) AS client_name
          FROM inquiry_log i
          LEFT JOIN clients c ON c.id = i.client_id
-        WHERE ($3::uuid IS NULL OR i.client_id = $3)
+        WHERE i.org_id = $6::uuid
+          AND ($3::uuid IS NULL OR i.client_id = $3)
           AND ($4::text IS NULL OR i.bureau = $4)
           AND ($5::text IS NULL OR i.status = $5)
         ORDER BY i.updated_at DESC, i.created_at DESC
         LIMIT $1 OFFSET $2`,
-      [limit + 1, offset, query.client_id || null, query.bureau || null, query.status || null]
+      [limit + 1, offset, query.client_id || null, query.bureau || null, query.status || null,
+       orgOf(staff)]
     ).then((r) => r.rows)
 });
 

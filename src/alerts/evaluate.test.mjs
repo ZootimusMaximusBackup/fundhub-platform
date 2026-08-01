@@ -492,6 +492,103 @@ test("one priced card alone has nothing to compare against", () => {
   assert.ok(!codes(r).includes(UPGRADE_REASONS.HIGH_APR_BALANCE));
 });
 
+/* ══════════════════ APR units — the 100x saving figure ══════════════════
+
+   These pin the defect readLine's `apr` reading used to have: a bare
+   Number(rawApr) with no unit normalisation. Every APR store in this repo is a
+   decimal FRACTION (db/migrations CHECKs `apr` into 0..1 on both card tables),
+   but a caller handing readLine a bureau or vendor payload can just as easily
+   state 24.99 as 0.2499. Unconverted, that value stayed a hundred times too
+   large through the whole HIGH_APR_BALANCE calculation, and the output of that
+   calculation is a dollar figure in a sentence about somebody's credit.
+
+   The tests below are deliberately paired: the same client, the same balances,
+   the same rates, written once in fractions and once in percent units. If the
+   two ever disagree, the normalisation is gone again. Asserting the correct
+   figure alone would not catch it — a single-shape test passed happily while the
+   defect was live, which is the failure mode this file's header warns about. */
+
+test("percent-unit and fraction APRs produce the SAME saving — not a 100x one", () => {
+  // $6,400 sitting on a 25% card while the client's own cheapest open card is
+  // 10%. Fifteen points of difference on $6,400 is $960.00 a year = 96000 cents.
+  const asFractions = suggestCardUpgrade([
+    { id: "cheap", kind: "revolving", credit_limit_cents: 5_000_000, balance_cents: 0, apr: 0.1 },
+    { id: "dear", kind: "revolving", credit_limit_cents: 5_000_000, balance_cents: 640_000, apr: 0.25 }
+  ]);
+  const asPercents = suggestCardUpgrade([
+    { id: "cheap", kind: "revolving", credit_limit_cents: 5_000_000, balance_cents: 0, apr: 10 },
+    { id: "dear", kind: "revolving", credit_limit_cents: 5_000_000, balance_cents: 640_000, apr: 25 }
+  ]);
+
+  assert.equal(asFractions.estimatedAnnualSavingCents, 96_000, "$960.00 a year");
+  assert.equal(
+    asPercents.estimatedAnnualSavingCents,
+    96_000,
+    "24.99-style percent units must be read as a rate, not multiplied raw"
+  );
+  // The number the defect actually produced. Named explicitly so a regression
+  // reads as "$96,000 is back" rather than as an anonymous number mismatch.
+  assert.notEqual(asPercents.estimatedAnnualSavingCents, 9_600_000, "$96,000 — the 100x figure");
+
+  // Not just the money: the rate reported alongside it must be a fraction too,
+  // because `bestApr` is written into an alert's `detail` and read back by
+  // whatever renders it.
+  assert.equal(asPercents.bestApr, 0.1);
+  assert.deepEqual(codes(asPercents), codes(asFractions));
+  assert.equal(asPercents.suggest, asFractions.suggest);
+});
+
+test("readLine normalises APR units the one way this repo normalises them", () => {
+  // Same answers readApr() gives in src/tradelines/index.mjs, because readLine
+  // now calls it rather than carrying a second opinion.
+  assert.equal(readLine({ apr: 24.99 }).apr, 0.2499, "percent units convert");
+  assert.equal(readLine({ apr: 0.2499 }).apr, 0.2499, "a fraction is left alone");
+  assert.equal(readLine({ apr: "24.99%" }).apr, 0.2499, "a payload string with a percent sign");
+  assert.equal(readLine({ apr: 1 }).apr, 1, "1 reads as 100%, the top of the accepted band");
+  // A real 0% intro rate is a fact, not a gap. It must survive as 0, and it must
+  // not be confused with the null cases below.
+  assert.equal(readLine({ apr: 0 }).apr, 0);
+  assert.notEqual(readLine({ apr: 0 }).apr, null);
+});
+
+test("an APR outside 0..100% is unknown, not clamped — and makes no dollar claim", () => {
+  // 150 is 150% after conversion. readApr refuses it rather than clamping,
+  // because a clamped rate is a wrong number wearing a plausible face and this
+  // rule sorts on price.
+  assert.equal(readLine({ apr: 150 }).apr, null);
+  assert.equal(readLine({ apr: -5 }).apr, null, "negative is refused, not absolute-valued");
+
+  const r = suggestCardUpgrade([
+    { id: "cheap", kind: "revolving", credit_limit_cents: 5_000_000, balance_cents: 0, apr: 0.1 },
+    { id: "junk", kind: "revolving", credit_limit_cents: 5_000_000, balance_cents: 640_000, apr: 150 }
+  ]);
+  assert.equal(r.estimatedAnnualSavingCents, null, "no readable rate gap, so no saving figure");
+  assert.ok(!codes(r).includes(UPGRADE_REASONS.HIGH_APR_BALANCE));
+  assert.equal(r.bestApr, null, "one priced card is not a comparison");
+  assert.equal(r.unknowns.linesMissingApr, 1, "the unreadable rate is counted, not hidden");
+});
+
+test("a missing APR stays null — it never becomes a 0% claim about a card", () => {
+  // 0% is not "unknown". It is a specific statement about somebody's card, and
+  // it would also be the cheapest rate on file, making it the baseline every
+  // saving figure is measured against. Both wrong, in the same direction.
+  for (const missing of [null, undefined, ""]) {
+    const line = readLine({ id: "x", kind: "revolving", credit_limit_cents: 5_000_000, balance_cents: 100_000, apr: missing });
+    assert.equal(line.apr, null, `apr: ${JSON.stringify(missing)} must read as unknown`);
+    assert.notEqual(line.apr, 0);
+  }
+
+  const r = suggestCardUpgrade([
+    { id: "cheap", kind: "revolving", credit_limit_cents: 5_000_000, balance_cents: 0, apr: 0.1 },
+    { id: "silent", kind: "revolving", credit_limit_cents: 5_000_000, balance_cents: 640_000, apr: null }
+  ]);
+  assert.equal(r.estimatedAnnualSavingCents, null);
+  assert.equal(r.unknowns.linesMissingApr, 1);
+  // Over-broad direction: the unknown card must not have been priced at 0% and
+  // then reported as the client's cheapest.
+  assert.notEqual(r.bestApr, 0);
+});
+
 test("low headroom fires only against a target the caller stated", () => {
   const lines = [row({ id: "a", limit: 1_000_000, balance: 0, apr: 0.19 })];
   assert.ok(!codes(suggestCardUpgrade(lines)).includes(UPGRADE_REASONS.LOW_HEADROOM), "no target, no invented target");

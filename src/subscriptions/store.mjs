@@ -23,6 +23,32 @@ import {
   normalizeCardMeta, assertPriceCents, planChange
 } from "./index.mjs";
 
+/**
+ * SubscriptionConflictError — "somebody else got here first", as a type a caller
+ * can branch on rather than a sentence it would have to pattern-match.
+ *
+ * WHY A CLASS AND NOT JUST A BETTER MESSAGE (audit m11). Every refusal in this
+ * module used to be a plain `Error`, and `netlify/functions/api.mjs:334` turns a
+ * plain Error into HTTP 500 — "the server broke". Two of the refusals here are
+ * not that: the client is not double-booked because of a fault, and a plan
+ * change is not lost because of a fault. Both mean "the record moved under you,
+ * look again", which is a 409 and a retry, not an incident.
+ *
+ * The shape is deliberately the one src/finance/soft-pulls.mjs:57 already uses —
+ * a message plus a `status` — because api/finance/soft-pull.mjs:126 already
+ * knows how to turn that into a response (`res.status(e.status)`), so the first
+ * subscription endpoint to exist inherits the mapping instead of inventing a
+ * second convention. There is no subscription endpoint yet; this is what one
+ * will need on the day it is written, and it is testable now.
+ */
+export class SubscriptionConflictError extends Error {
+  constructor(message, { status = 409 } = {}) {
+    super(message);
+    this.name = "SubscriptionConflictError";
+    this.status = status;
+  }
+}
+
 const SUB_COLUMNS = `
   id, org_id, client_id, tier, status, price_cents, currency, card_id,
   provider, provider_ref, current_period_start, current_period_end,
@@ -136,6 +162,12 @@ export async function removeClientCard(db, { orgId, id, at = null } = {}) {
  * constraint in 075 answers that at write time, which is the only place a
  * double-submitted signup can be caught; a SELECT here would just widen the
  * window it races in.
+ *
+ * What the constraint raises is SQLSTATE 23P01 carrying the constraint name
+ * `subscriptions_no_overlap`, and nothing above this reads that code, so it
+ * reached the caller verbatim. The rejection is right; the wording was not.
+ * This turns it into the same kind of sentence attachCard gives, without
+ * softening what is refused.
  */
 export async function startSubscription(db, input = {}) {
   const orgId = required(input.orgId ?? input.org_id, "startSubscription: orgId");
@@ -147,8 +179,10 @@ export async function startSubscription(db, input = {}) {
     input.priceCents ?? input.price_cents ?? null, "startSubscription: priceCents"
   );
 
-  const res = await db.query(
-    `INSERT INTO subscriptions
+  let res;
+  try {
+    res = await db.query(
+      `INSERT INTO subscriptions
        (org_id, client_id, tier, status, price_cents, currency, card_id,
         provider, provider_ref, current_period_start, current_period_end,
         effective_from, notes)
@@ -156,13 +190,24 @@ export async function startSubscription(db, input = {}) {
              COALESCE($8, 'commas'), $9, $10, $11,
              COALESCE($12::timestamptz, now()), $13)
      RETURNING ${SUB_COLUMNS}`,
-    [orgId, clientId, tier, input.status ?? null, priceCents, input.currency ?? null,
-      input.cardId ?? input.card_id ?? null, input.provider ?? null,
-      input.providerRef ?? input.provider_ref ?? null,
-      input.periodStart ?? input.current_period_start ?? null,
-      input.periodEnd ?? input.current_period_end ?? null,
-      input.at ?? null, input.notes ?? null]
-  );
+      [orgId, clientId, tier, input.status ?? null, priceCents, input.currency ?? null,
+        input.cardId ?? input.card_id ?? null, input.provider ?? null,
+        input.providerRef ?? input.provider_ref ?? null,
+        input.periodStart ?? input.current_period_start ?? null,
+        input.periodEnd ?? input.current_period_end ?? null,
+        input.at ?? null, input.notes ?? null]
+    );
+  } catch (err) {
+    if (err?.code === "23P01" && err?.constraint === "subscriptions_no_overlap") {
+      // Same sentence as before; it is now carried by the shared conflict type so
+      // a caller gets a 409 out of it instead of a 500. See the class above.
+      throw new SubscriptionConflictError(
+        "startSubscription: this client already has a subscription covering that date — "
+        + "cancel or close the current one first"
+      );
+    }
+    throw err;
+  }
   return res.rows[0];
 }
 
@@ -221,6 +266,11 @@ export async function listSubscriptions(db, { orgId, clientId } = {}) {
  * carrying the old window forward would assert an answer to it.
  *
  * Returns the new live row. The closed one is in listSubscriptions().
+ *
+ * Throws SubscriptionConflictError (status 409) if the live version was closed
+ * or cancelled by another writer in the gap between this call's read and its
+ * write. Nothing is written in that case, so the caller's move is to re-read and
+ * decide again — not to retry blindly, because what they were changing is gone.
  */
 export async function changeTier(db, input = {}) {
   const orgId = required(input.orgId ?? input.org_id, "changeTier: orgId");
@@ -256,10 +306,22 @@ export async function changeTier(db, input = {}) {
   );
 
   if (!res.rows[0]) {
-    // The live row disappeared between the read and the write — another writer
-    // closed or cancelled it. Nothing was written (the INSERT selects from the
-    // UPDATE), so this is a clean retry, not a half-applied change.
-    throw new Error("changeTier: no live subscription to change — it was closed by another writer");
+    // THE ONLY BRANCH HERE THAT TWO PEOPLE EDITING AT ONCE CAN REACH (audit m11).
+    // getSubscriptionAt() found a live row a moment ago and planChange() refuses
+    // to go any further without one, so reaching this line means the row was
+    // closed or cancelled between that read and this write. Nothing was written:
+    // the INSERT selects FROM the UPDATE, so an empty UPDATE inserts nothing and
+    // there is no half-applied change to unpick.
+    //
+    // It used to be a plain Error, which api.mjs:334 renders as HTTP 500 — the
+    // caller is told the server broke when what actually happened is that
+    // somebody else changed the same subscription first. Typed as a conflict so
+    // the answer is 409 and "look again", and worded for the person who has to
+    // read it (CLAUDE.md §10) rather than for the engineer who wrote it.
+    throw new SubscriptionConflictError(
+      "changeTier: somebody else changed this subscription while you were changing it — "
+      + "nothing was saved. Reload the client and try again."
+    );
   }
   return res.rows[0];
 }
@@ -271,24 +333,48 @@ export async function changeTier(db, input = {}) {
  * apart. cancelled_at is when they asked. effective_to is when the arrangement
  * stops applying, which for a cancellation that runs to the end of a paid period
  * is later — and until then the row is still live and still explains the charge
- * the client already made. Pass `endsAt` when that date is known; leave it out
- * and the row stays open, which is the honest state for "cancelled, runs to
- * period end, end date not decided".
+ * the client already made. Pass `endsAt` when that date is known; omit it and
+ * effective_to defaults to the cancel time, closing the row.
+ *
+ * A cancelled row MUST have an effective_to, because the database overlap
+ * constraint (075:241) checks only dates, not status. A row with NULL
+ * effective_to is treated as open-ended and blocks every future subscription
+ * overlapping its start date, making resigning impossible. Confirmed: a client
+ * who cancels cannot create a new subscription with default parameters.
  *
  * Idempotent: cancelling twice keeps the first date. A second call must not
  * move the date a dispute turns on.
+ *
+ * Closing the row is what makes the second call need the `already` branch. The
+ * UPDATE finds live rows (effective_to IS NULL) and the first call closes this
+ * one, so a retry matches nothing and would report "no such subscription" for a
+ * subscription that is sitting right there, already cancelled. The read hands
+ * the same row back untouched instead. It is a read, so it cannot move a date;
+ * a caller that genuinely has nothing to cancel still gets null.
  */
 export async function cancelSubscription(db, { orgId, clientId, at = null, endsAt = null } = {}) {
   required(orgId, "cancelSubscription: orgId");
   required(clientId, "cancelSubscription: clientId");
+  const cancelledAt = at ? new Date(at) : new Date();
+  const closingAt = endsAt ? new Date(endsAt) : cancelledAt;
   const res = await db.query(
-    `UPDATE subscriptions
-        SET status       = 'cancelled',
-            cancelled_at = COALESCE(cancelled_at, COALESCE($3::timestamptz, now())),
-            effective_to = COALESCE($4::timestamptz, effective_to)
-      WHERE org_id = $1 AND client_id = $2 AND effective_to IS NULL
-      RETURNING ${SUB_COLUMNS}`,
-    [orgId, clientId, at, endsAt]
+    `WITH cancelled AS (
+       UPDATE subscriptions
+          SET status       = 'cancelled',
+              cancelled_at = COALESCE(cancelled_at, $3::timestamptz),
+              effective_to = COALESCE(effective_to, $4::timestamptz)
+        WHERE org_id = $1 AND client_id = $2 AND effective_to IS NULL
+        RETURNING ${SUB_COLUMNS}
+     ), already AS (
+       SELECT ${SUB_COLUMNS} FROM subscriptions
+        WHERE org_id = $1 AND client_id = $2 AND cancelled_at IS NOT NULL
+        ORDER BY effective_from DESC, created_at DESC
+        LIMIT 1
+     )
+     SELECT * FROM cancelled
+      UNION ALL
+     SELECT * FROM already WHERE NOT EXISTS (SELECT 1 FROM cancelled)`,
+    [orgId, clientId, cancelledAt, closingAt]
   );
   return res.rows[0] ?? null;
 }

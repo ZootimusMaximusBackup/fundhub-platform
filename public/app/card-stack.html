@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fundhub — Card Stack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
+<!-- The shared Finance OS frame. It carries .is-unknown and .is-partial, which
+     are the two rules this product cannot get wrong: an unknown renders as an em
+     dash and never as 0.00, and a total over a set with holes in it carries a
+     "+" because it is a floor rather than a figure. Written once there rather
+     than an eighth time here. -->
+<link rel="stylesheet" href="finance-os.css">
+<script src="shell.js"></script>
+<style>
+  /* The stack itself. finance-os.css gives a label/figure row, which is right
+     for the four totals and wrong for a card: a card is seven figures read
+     across, not one read down. Only the grid is new here — every number inside
+     it still uses .fh-num and its two signal classes, so an unknown looks the
+     same on this screen as it does on Finance OS. */
+  .cs-stack{ border:1px solid var(--soft); border-radius:8px; overflow:hidden;
+             background:var(--surface); margin-top:14px; }
+  .cs-head, .cs-card{ display:grid;
+    grid-template-columns:minmax(0,2.2fr) repeat(5, minmax(0,1fr)) minmax(0,auto);
+    gap:10px; align-items:baseline; padding:12px 16px; border-bottom:1px solid var(--soft); }
+  .cs-card:last-child{ border-bottom:0; }
+  .cs-head{ background:var(--sand,#F7F5F1); }
+  .cs-head span{ font:600 10px/1.3 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.07em;
+                 text-transform:uppercase; color:var(--text-faint); text-align:right; }
+  .cs-head span:first-child{ text-align:left; }
+  .cs-name{ font:600 13px/1.3 'Inter',system-ui,sans-serif; color:var(--text); }
+  .cs-meta{ display:block; margin-top:3px; font:500 10px/1.4 'JetBrains Mono',ui-monospace,monospace;
+            letter-spacing:.04em; color:var(--text-faint); }
+  /* The per-card figures are smaller than the four headline totals — same
+     family, same unknown/partial rules, less shout. */
+  .cs-card .fh-num{ font-size:14px; }
+  .cs-actions{ display:flex; gap:6px; justify-content:flex-end; }
+  .cs-btn{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.05em;
+           text-transform:uppercase; cursor:pointer; border-radius:5px; padding:7px 9px;
+           border:1px solid var(--soft); background:var(--surface); color:var(--text); }
+  .cs-closed{ opacity:.62; }
+
+  /* THE DISAGREEMENT NOTE. Two tables in this database hold a balance and they
+     are allowed to differ; the screen's job is to say which number came from
+     where, not to pick one quietly. Amber, not red — this is a fact about what
+     we know, not a fault. */
+  .cs-split{ grid-column:1/-1; margin-top:6px; padding:8px 10px; border-radius:6px;
+             background:#FDF6E7; border:1px solid #EAD9AE;
+             font:500 11px/1.5 'Inter',system-ui,sans-serif; color:#5A4212; }
+  .cs-split a{ color:inherit; text-decoration:underline; }
+
+  .cs-drawer{ grid-column:1/-1; margin-top:10px; padding-top:12px; border-top:1px dashed var(--soft); }
+  .cs-sub{ font:700 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.08em;
+           text-transform:uppercase; color:var(--text-faint); margin:14px 0 6px; }
+  .cs-series{ width:100%; border-collapse:collapse; }
+  .cs-series th{ font:600 10px/1.3 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.06em;
+                 text-transform:uppercase; color:var(--text-faint); text-align:right;
+                 padding:5px 8px; border-bottom:1px solid var(--soft); }
+  .cs-series th:first-child, .cs-series td:first-child{ text-align:left; }
+  .cs-series td{ font:500 12px/1.4 'JetBrains Mono',ui-monospace,monospace; color:var(--text);
+                 text-align:right; padding:6px 8px; border-bottom:1px solid var(--soft); }
+  .cs-series td.is-unknown{ color:var(--text-faint); }
+  .cs-form{ display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; padding:0; border:0; }
+  .cs-hint{ font:400 11px/1.5 'Inter',system-ui,sans-serif; color:var(--text-dim);
+            max-width:70ch; margin:6px 0 0; }
+
+  @media (max-width:760px){
+    .cs-head{ display:none; }
+    .cs-card{ grid-template-columns:minmax(0,1fr) minmax(0,auto); }
+    .cs-card .fh-num{ text-align:right; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===========================================================================
+     Card Stack — what this client owes on each card, and how it has moved.
+
+     Reads and writes /api/finance/liabilities.
+
+     THE RULES THIS SCREEN IS HELD TO:
+
+     • ESCAPE EVERYTHING. A lender name is record data, never markup. esc() is
+       defined below and every interpolated value goes through it.
+
+     • NEVER SHOW A NUMBER THE SERVER DID NOT SEND. There is no sample markup on
+       this page at all. If a read returns nothing the page says so in words
+       (.fh-empty). Leaving sample rows on screen under a real client's name is
+       audit finding M8 and it shipped once already.
+
+     • UNKNOWN IS AN EM DASH. .is-unknown comes from `display === null` and
+       .is-partial from `basis.partial`, set independently — see finance-os.css.
+
+     • A CARD WITH NO OBSERVATIONS IS NOT A CARD WITH A ZERO BALANCE. An empty
+       series says so in words.
+
+     • THERE IS NO BROWSER AND NO PLAYWRIGHT IN THIS ENVIRONMENT, so nobody has
+       looked at this rendering. A human has to open it.
+     =========================================================================== -->
+
+<div class="fh-wrap">
+  <!-- A REAL HREF, NOT history.back(). This screen carries no sidebar, so this
+       is the only way off it, and back() does nothing at all when the page was
+       opened from a pasted or bookmarked URL (audit M20). -->
+  <!-- TWO WAYS OUT, AND THE SECOND ONE IS THE POINT OF THE HUB PASS.
+       "← Command Center" leaves the client behind, because the Command
+       Center is not about one client. "Client hub" goes back to
+       finance-os.html still holding whoever you were looking at — shell.js
+       appends ?client_id= to this link for every screen in CLIENT_SCREENS,
+       so it is deliberately written bare here rather than built by hand in
+       two places. Without it, walking Plan → Cards → Bank accounts meant
+       typing the uuid back in three times. -->
+  <div class="fh-back"><a href="command-center.html">← Command Center</a>
+    <span aria-hidden="true"> · </span>
+    <a href="finance-os.html">← Client hub</a></div>
+
+  <div class="fh-head">
+    <h1 class="fh-title">Card Stack</h1>
+    <span class="fh-source" id="cardsMountSource">no client</span>
+  </div>
+  <p class="fh-sub">
+    What this client owes on each card, and how those balances have moved.
+    Most expensive money first. A figure marked <strong>+</strong> is a floor, not a total —
+    some cards did not report that number.
+  </p>
+
+  <div id="cardsMount"></div>
+</div>
+
+<script src="data.js"></script>
+<script>
+/* ===========================================================================
+   THE READER. Note what this is NOT: it is not a copy of data.js's classifier.
+
+   public/app/data.js has FHData.read() for the /api/read/* endpoints and
+   FHData.write() for POSTs, and it has no general GET — its private get() is
+   inside the IIFE and is not on the returned object. This screen needs a GET to
+   /api/finance/liabilities, which is neither.
+
+   The correct fix is a named reader in data.js, the way brand() got one. It is
+   NOT done here because data.js is shared by six screens being built in
+   parallel this pass and editing it would collide; data.js's own comment on
+   brand() also rules out the shortcut of pushing "../finance/liabilities"
+   through read(), which would reach the right URL by path traversal and would
+   be a trap for whoever reads it next.
+
+   So: the fetch and the status classification are local, and EVERY USER-FACING
+   STRING IS STILL SHARED — the result is handed to FHData.explain(), which
+   words a 501, a 403, a 404 and an outage the same way on all twenty-odd
+   screens. When a named reader lands in data.js, delete apiGet and call it.
+   =========================================================================== */
+(function () {
+  if (!window.FHData) return;
+
+  var ENDPOINT = "/api/finance/liabilities";
+  var mount = document.getElementById("cardsMount");
+  var sourceBadge = document.getElementById("cardsMountSource");
+  var clientId = FHData.param("client_id");
+
+  /* ---- escaping. A lender name and a client note are record data. There are
+     252 innerHTML sites across public/app and every one of them needs this. -- */
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* Thousands separators for display only. The value on the wire is untouched,
+     and an unknown never reaches here — it is caught by num() first. */
+  function group(s) {
+    if (s == null) return null;
+    var parts = String(s).split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
+  }
+
+  /* THE ONE RULE THIS SCREEN CANNOT GET WRONG. `display === null` means the
+     server does not know. It renders as an em dash in the dimmer weight, never
+     as "0.00" — "we do not know what this client owes" and "this client owes
+     nothing" are opposite facts about somebody's money and only one of them is
+     a claim. `partial` is set independently and marks a floor. */
+  function num(display, partial, extraClass) {
+    var unknown = display === null || display === undefined;
+    var cls = "fh-num" + (unknown ? " is-unknown" : "") + (partial ? " is-partial" : "") +
+              (extraClass ? " " + extraClass : "");
+    return '<div class="' + cls + '">' + esc(unknown ? "—" : group(display)) + "</div>";
+  }
+  function cell(display) {  // the same rule inside the history table
+    var unknown = display === null || display === undefined;
+    return '<td class="' + (unknown ? "is-unknown" : "") + '">' + esc(unknown ? "—" : group(display)) + "</td>";
+  }
+  function txt(v) { return v === null || v === undefined || v === "" ? "—" : String(v); }
+
+  function token(v) { return String(v == null ? "" : v).replace(/[^A-Za-z0-9-]/g, ""); }
+
+  var state = { stack: null, open: null, series: {}, busy: false, flash: null };
+
+  /* ---- the reader. See the block comment above. ------------------------- */
+  function apiGet(qs) {
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+    var started;
+    try {
+      started = fetch(ENDPOINT + qs, {
+        headers: t ? { accept: "application/json", authorization: "Bearer " + t }
+                   : { accept: "application/json" }
+      });
+    } catch (e) {
+      return Promise.resolve({ ok: false, source: "offline", data: null, error: (e && e.message) || "fetch unavailable" });
+    }
+    return Promise.resolve(started).then(function (r) {
+      var bad = function (source, error) { return { ok: false, source: source, data: null, error: error }; };
+      if (r.status === 401 || r.status === 403) return bad("unauthorized", "not signed in, or not allowed");
+      if (r.status === 501) return bad("unbuilt", "not_implemented");
+      if (r.status === 404) return bad("notfound", "no such record");
+      if (r.status === 400) {
+        return r.json().then(function (d) { return bad("badrequest", (d && d.error) || "bad request"); },
+                             function () { return bad("badrequest", "bad request"); });
+      }
+      return r.json().then(function (d) {
+        // The database only gets blamed when the database says so — a 503 from
+        // the connection guard or db:"down". Everything else that failed is our
+        // side answering badly, which is a different sentence and sends whoever
+        // reads it somewhere different (audit m17).
+        if (r.status === 503 || (d && d.db === "down")) return bad("nodb", (d && d.error) || "database unreachable");
+        if (!d || d.ok !== true) return bad("server", "HTTP " + r.status + " " + ((d && d.error) || "request failed"));
+        return { ok: true, source: "api", data: d, error: null };
+      }, function () { return bad("offline", "response was not JSON"); });
+    }, function (e) {
+      return { ok: false, source: "offline", data: null, error: (e && e.message) || "network error" };
+    });
+  }
+
+  /* ---- writes go through FHData.write, which already knows how to hold the
+     token, encode the body and tell a 501 from an outage. -------------------*/
+  function send(body, label, cardId) {
+    if (state.busy) return Promise.resolve(false);
+    state.busy = true;
+    return FHData.write(ENDPOINT, body).then(function (res) {
+      state.busy = false;
+      if (res.ok) { say(label + " saved", "ok", cardId); return true; }
+      /* THE MESSAGE SAYS WHAT THE SERVER SAID. The handler answers a rejected
+         field with the field's name and what it wanted — "apr: enter the
+         percentage, not the decimal" — and swallowing that in favour of "save
+         failed" would leave somebody retyping the same value. */
+      say(label + " was not saved — " + (res.error || res.source), "bad", cardId);
+      return false;
+    });
+  }
+
+  /* A FAILED SAVE SAYS SO ON THE CONTROL THAT FAILED, not only in the shared
+     banner at the bottom of the window — the banner carries every source on the
+     page at once and a rejected field scrolls out of the reader's attention.
+     The message is held in state and repainted after every render, because a
+     successful save re-reads the stack and rebuilds the whole mount. */
+  function say(text, tone, cardId) {
+    state.flash = { text: text, tone: tone, card: cardId || null };
+    paintFlash();
+  }
+
+  function paintFlash() {
+    var all = mount.querySelectorAll(".fh-msg");
+    for (var i = 0; i < all.length; i++) { all[i].className = "fh-msg"; all[i].textContent = ""; }
+    var f = state.flash;
+    if (!f) return;
+    var el = (f.card && document.getElementById("csMsg-" + token(f.card))) || document.getElementById("csMsg");
+    if (!el) return;
+    el.className = "fh-msg " + (f.tone === "ok" ? "ok" : "bad");
+    el.textContent = f.text;
+  }
+
+  /* ---- render ------------------------------------------------------------ */
+
+  function totalsPanel(totals) {
+    return '<div class="fh-panel">' + totals.map(function (t) {
+      var partial = !!(t.basis && t.basis.partial);
+      return '<div class="fh-row' + (partial ? " is-partial" : "") + '">' +
+               '<div class="fh-label">' + esc(t.label) +
+                 '<span class="fh-basis">' + esc(basisText(t)) + "</span></div>" +
+               num(t.display, partial) +
+             "</div>";
+    }).join("") + "</div>";
+  }
+
+  function basisText(t) {
+    var b = t.basis || {};
+    if (t.value === null || t.value === undefined) {
+      return b.lines === 0 ? "no cards on file" : "not reported on any card";
+    }
+    if (b.partial) {
+      return "counted " + b.counted + " of " + b.lines + " card(s) · " +
+             b.unknown + " did not report — this is a floor";
+    }
+    return "all " + b.lines + " card(s) reported";
+  }
+
+  function cardRow(c) {
+    var open = state.open === c.tradeline_id;
+    var meta = [];
+    if (c.last4) meta.push("•••• " + c.last4);
+    if (c.kind && c.kind !== "revolving") meta.push(c.kind);
+    meta.push("opened " + txt(c.opened_on));
+    if (c.closed_at) meta.push("CLOSED " + c.closed_at);
+    meta.push(c.observations === 0 ? "no observations" : c.observations + " observation(s)");
+
+    var html =
+      '<div class="cs-card' + (c.closed_at ? " cs-closed" : "") + '">' +
+        '<div class="cs-name">' + esc(c.lender || "Unnamed card") +
+          '<span class="cs-meta">' + esc(meta.join(" · ")) + "</span></div>" +
+        num(c.apr_display) +
+        num(c.credit_limit) +
+        num(c.balance) +
+        num(c.headroom) +
+        num(c.utilization_display) +
+        '<div class="cs-actions">' +
+          '<button class="cs-btn" data-open="' + esc(c.tradeline_id) + '">' +
+            (open ? "Close" : "History") + "</button>" +
+        "</div>";
+
+    /* WHERE THE TWO TABLES DISAGREE, SAY SO AND NAME BOTH SOURCES rather than
+       picking one. The Finance OS grid reads tradelines; this screen leads with
+       the dated observation in card_liabilities. Both are shown, with the date,
+       and the link goes to the other screen so the reader can see for
+       themselves instead of taking this page's word for it. */
+    if (c.disagreement) {
+      html +=
+        '<div class="cs-split">The two records of this balance do not match. ' +
+        '<strong>' + esc(group(c.disagreement.card_liabilities)) + '</strong> was observed on ' +
+        esc(c.disagreement.as_of) + ' (card_liabilities, shown above); ' +
+        '<strong>' + esc(group(c.disagreement.tradelines)) + '</strong> is on the card record itself ' +
+        '(tradelines), which is what ' +
+        '<a href="finance-os.html?client_id=' + encodeURIComponent(clientId) + '">Finance OS</a> shows. ' +
+        'Record a new position to bring them together.</div>';
+    } else if (c.balance_source === "tradelines" && c.balance !== null) {
+      html += '<div class="cs-meta" style="grid-column:1/-1;margin-top:6px">' +
+              'Balance from the card record (tradelines) — nothing has been observed on a date yet.</div>';
+    }
+
+    if (open) html += drawer(c);
+    return html + "</div>";
+  }
+
+  function drawer(c) {
+    var series = state.series[c.tradeline_id];
+    var body;
+    if (series === undefined) {
+      body = '<p class="cs-hint">Loading…</p>';
+    } else if (series === null) {
+      body = '<p class="cs-hint">The series could not be read. The bottom banner says why.</p>';
+    } else if (!series.length) {
+      /* AN EMPTY SERIES IS NOT A ZERO BALANCE, and it is said in words. */
+      body = '<p class="cs-hint">Nothing has been recorded for this card yet. ' +
+             'That is not a balance of zero — it means nobody has written down what it owed on a date.</p>';
+    } else {
+      body =
+        '<table class="cs-series"><thead><tr>' +
+          "<th>As of</th><th>Balance</th><th>Statement</th><th>Minimum</th>" +
+          "<th>Past due</th><th>Due</th><th>Status</th><th>Source</th>" +
+        "</tr></thead><tbody>" +
+        series.map(function (o) {
+          return "<tr>" +
+            "<td>" + esc(txt(o.as_of)) + "</td>" +
+            cell(o.current_balance) + cell(o.statement_balance) +
+            cell(o.minimum_payment) + cell(o.past_due) +
+            "<td>" + esc(txt(o.payment_due_date)) + "</td>" +
+            "<td>" + esc(txt(o.payment_status)) + "</td>" +
+            "<td>" + esc(txt(o.source)) + "</td>" +
+          "</tr>";
+        }).join("") +
+        "</tbody></table>";
+    }
+
+    var id = esc(c.tradeline_id);
+    return '<div class="cs-drawer">' +
+      '<div class="cs-sub">Observed series — newest first</div>' + body +
+
+      '<div class="cs-sub">Record what this card owes today</div>' +
+      '<div class="fh-form cs-form" data-form="position" data-card="' + id + '">' +
+        field("as_of", "As of *", "date", "") +
+        field("current_balance", "Balance", "text", "") +
+        field("statement_balance", "Statement", "text", "") +
+        field("minimum_payment", "Minimum", "text", "") +
+        field("past_due", "Past due", "text", "") +
+        field("payment_due_date", "Due date", "date", "") +
+        select("payment_status", "Status", ["", "current", "late_30", "late_60", "late_90", "late_120",
+                                            "charge_off", "collection"], "") +
+        '<button class="fh-btn" data-act="position" data-card="' + id + '">Record</button>' +
+      "</div>" +
+      '<p class="cs-hint">"As of" is the date the figures were true, not today\'s date. ' +
+      'Leave a box empty when the figure is unknown — an empty box is stored as unknown, never as zero. ' +
+      'Recording an older date adds to the history without changing the current position.</p>' +
+
+      '<div class="cs-sub">Edit this card</div>' +
+      '<div class="fh-form cs-form" data-form="edit" data-card="' + id + '">' +
+        field("lender", "Issuer", "text", c.lender) +
+        field("last4", "Last 4", "text", c.last4) +
+        field("credit_limit", "Limit", "text", c.credit_limit) +
+        field("balance", "Balance", "text", c.facility_balance) +
+        field("apr", "APR %", "text", c.apr === null ? "" : (c.apr * 100).toFixed(2)) +
+        field("opened_on", "Opened", "date", c.opened_on) +
+        field("closed_on", "Closed", "date", c.closed_at) +
+        '<button class="fh-btn secondary" data-act="edit" data-card="' + id + '">Save changes</button>' +
+      "</div>" +
+      '<p class="cs-hint">Emptying a box records that we no longer know that figure. It does not set it to zero. ' +
+      'The limit and APR here are the card\'s own record — the same numbers Finance OS reads.</p>' +
+      '<p class="fh-msg" id="csMsg-' + id + '" style="margin-left:0"></p>' +
+    "</div>";
+  }
+
+  function field(name, label, type, value) {
+    return '<div class="fh-field"><label>' + esc(label) + "</label>" +
+           '<input name="' + esc(name) + '" type="' + esc(type) + '" value="' +
+           esc(value === null || value === undefined ? "" : value) + '"></div>';
+  }
+
+  function select(name, label, options, value) {
+    return '<div class="fh-field"><label>' + esc(label) + "</label><select name=\"" + esc(name) + '">' +
+      options.map(function (o) {
+        return '<option value="' + esc(o) + '"' + (o === value ? " selected" : "") + ">" +
+               esc(o === "" ? "unknown" : o) + "</option>";
+      }).join("") + "</select></div>";
+  }
+
+  function addForm() {
+    return '<div class="fh-panel" style="margin-top:18px">' +
+      '<div class="fh-row"><div class="fh-label">Add a card' +
+        '<span class="fh-basis">typed by hand — nothing in this system reads a bank or a bureau on its own</span>' +
+      "</div></div>" +
+      '<div class="fh-form" data-form="add">' +
+        field("lender", "Issuer *", "text", "") +
+        field("last4", "Last 4", "text", "") +
+        field("credit_limit", "Limit", "text", "") +
+        field("balance", "Balance", "text", "") +
+        field("apr", "APR %", "text", "") +
+        field("opened_on", "Opened", "date", "") +
+        select("kind", "Kind", ["revolving", "loc", "installment"], "revolving") +
+        '<button class="fh-btn" data-act="add">Add card</button>' +
+      "</div>" +
+      '<p class="fh-msg" id="csMsg"></p>' +
+      '<p class="cs-hint" style="padding:0 18px 16px">' +
+        'Enter the APR as a percentage — 24.99 means 24.99%. Leave anything you do not know empty; ' +
+        'it is stored as unknown and shows as a dash, which is different from zero.</p>' +
+    "</div>";
+  }
+
+  function render() {
+    var d = state.stack;
+    if (!d) return;
+
+    sourceBadge.textContent = d.source || "card stack";
+
+    var html = "";
+    if (!d.cards.length) {
+      /* NO SAMPLE MARKUP. The read worked and this client has no cards; that is
+         what it says, and the add form is right underneath it. */
+      html += '<div class="fh-panel"><p class="fh-empty">No cards on file for this client. ' +
+              "Nothing has been pulled and nothing has been typed in yet. Add the first one below.</p></div>";
+    } else {
+      html += totalsPanel(d.totals);
+      if (d.totalled !== d.lines) {
+        html += '<p class="cs-hint">The totals cover ' + esc(d.totalled) + " of " + esc(d.lines) +
+                " card(s) — closed cards and installment lines are listed but not totalled, " +
+                "because there is nothing to draw against them.</p>";
+      }
+      html += '<div class="cs-stack">' +
+        '<div class="cs-head"><span>Card</span><span>APR</span><span>Limit</span><span>Balance</span>' +
+        "<span>Headroom</span><span>Used</span><span></span></div>" +
+        d.cards.map(cardRow).join("") + "</div>";
+    }
+    html += addForm();
+    mount.innerHTML = html;
+    paintFlash();
+  }
+
+  /* ---- loading ----------------------------------------------------------- */
+
+  /* FHData.wire() is not used here, and the reason is the one audit M8 is about.
+     wire() leaves the existing markup alone when a read fails, because every
+     screen it was written for ships sample markup and keeping it is better than
+     a blank page. This screen ships NO sample markup — so "leave the markup
+     alone" would mean a blank page with an 11px banner pinned to the bottom
+     edge, which is how somebody misses that a read failed at all. A failed read
+     gets a panel, in words, in the middle of the page where the numbers would
+     have been. The BANNER wording still comes from FHData.explain(), so this
+     screen cannot drift from the other twenty in how it words a 403 or a 501. */
+  function loadStack() {
+    return apiGet("?client_id=" + encodeURIComponent(clientId)).then(function (res) {
+      if (!res.ok) {
+        state.stack = null;
+        mount.innerHTML = failPanel(res);
+        FHData.explain(res, "card stack");
+        return;
+      }
+      state.stack = res.data;
+      render();
+      if (!res.data.cards.length) {
+        // Connected, queried, nothing there. That is a correct answer about a
+        // new client, not an outage, and it must not be worded as one.
+        FHData.banner("sample", "no cards on file for this client yet", "card stack");
+        return;
+      }
+      FHData.banner("real",
+        "live card stack · " + res.data.lines + " card(s) · source " + res.data.source +
+        (res.data.disagreements ? " · " + res.data.disagreements + " balance disagreement(s)" : ""),
+        "card stack");
+    });
+  }
+
+  /* No figures, no sample rows, no guesses about which system is at fault — just
+     what happened and what the reader can do about it. */
+  function failPanel(res) {
+    var why = res.source === "unauthorized"
+        ? "You are not signed in, or this screen is not open to your role."
+      : res.source === "unbuilt"
+        ? "This part of the product is not finished yet."
+      : res.source === "notfound"
+        ? "There is no client with that id."
+      : res.source === "badrequest"
+        ? "That client id was rejected: " + (res.error || "no detail") + "."
+      : res.source === "nodb"
+        ? "The database is not answering."
+      : res.source === "server"
+        ? "Something went wrong on our side while answering. The database did not report a problem."
+      : "We could not reach the server.";
+    return '<div class="fh-panel"><p class="fh-empty">' +
+      "This client's cards could not be loaded, so nothing is shown. " + esc(why) +
+      " Nothing on this page is a figure from this client's file." +
+      "</p></div>";
+  }
+
+  function loadSeries(cardId) {
+    state.series[cardId] = undefined;
+    render();
+    return apiGet("?tradeline_id=" + encodeURIComponent(cardId)).then(function (res) {
+      if (res.ok) {
+        state.series[cardId] = res.data.observations || [];
+      } else {
+        state.series[cardId] = null;
+        FHData.explain(res, "card history");
+      }
+      render();
+    });
+  }
+
+  /* ---- events. One delegated listener: the rows are re-rendered on every
+     change and per-element handlers would be re-bound each time. ------------ */
+  mount.addEventListener("click", function (e) {
+    var t = e.target;
+    if (!t || t.tagName !== "BUTTON") return;
+
+    var openId = t.getAttribute("data-open");
+    if (openId) {
+      state.open = state.open === openId ? null : openId;
+      if (state.open && state.series[state.open] === undefined) { loadSeries(state.open); return; }
+      render();
+      return;
+    }
+
+    var act = t.getAttribute("data-act");
+    if (!act) return;
+    var card = t.getAttribute("data-card");
+    var form = act === "add"
+      ? mount.querySelector('[data-form="add"]')
+      : mount.querySelector('[data-form="' + (act === "edit" ? "edit" : "position") + '"][data-card="' +
+                            token(card) + '"]');
+    if (!form) return;
+
+    var body = { client_id: clientId };
+    var inputs = form.querySelectorAll("input, select");
+    for (var i = 0; i < inputs.length; i++) body[inputs[i].name] = inputs[i].value;
+
+    if (act === "add") {
+      body.action = "add_card";
+      send(body, "Card", null).then(function (ok) { if (ok) loadStack(); });
+      return;
+    }
+    body.tradeline_id = card;
+    if (act === "edit") {
+      body.action = "edit_card";
+      send(body, "Card", card).then(function (ok) { if (ok) loadStack(); });
+      return;
+    }
+    body.action = "upsert";
+    send(body, "Position", card).then(function (ok) {
+      if (!ok) return;
+      loadSeries(card);
+      loadStack();
+    });
+  });
+
+  /* ---- start ------------------------------------------------------------- */
+
+  if (!clientId) {
+    /* No client named is not a backend failure, and there is nothing honest to
+       draw. The page says what is missing and offers no figures at all. */
+    mount.innerHTML = '<div class="fh-panel"><p class="fh-empty">' +
+      "Open this screen with a client in the address bar — " +
+      "<code>card-stack.html?client_id=&lt;id&gt;</code>. " +
+      "Without one there is nothing to show, and this page will not show anything invented instead.</p></div>";
+    FHData.banner("sample", "no card stack — open with ?client_id=<id>", "card stack");
+    return;
+  }
+
+  loadStack();
+})();
+</script>
+</body>
+</html>

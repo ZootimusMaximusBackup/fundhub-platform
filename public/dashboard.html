@@ -246,10 +246,27 @@
 </div>
 
 <script>
-// Shared-secret gate: open /dashboard.html?key=<DASHBOARD_SECRET>. The key is sent
-// as the x-dashboard-key header on every API call (never rendered into the page).
-const DASH_KEY = new URLSearchParams(location.search).get('key') || '';
-const authHeaders = () => DASH_KEY ? { 'x-dashboard-key': DASH_KEY } : {};
+// Shared-secret gate. The key is sent as the x-dashboard-key header on every API
+// call (never rendered into the page) and is held for this tab only in
+// sessionStorage.
+//
+// It used to be read from the address bar. That put a never-expiring master key
+// into browser history, into bookmarks and shared links, and into the Referer
+// header sent to any third party the page touched. The server no longer accepts
+// it from the URL either (see src/http/dashboard-auth.mjs).
+const DASH_KEY_STORE = 'fh_dashboard_key';
+function dashKey() {
+  let k = '';
+  try { k = sessionStorage.getItem(DASH_KEY_STORE) || ''; } catch (e) { k = ''; }
+  if (k) return k;
+  k = (window.prompt('Dashboard key') || '').trim();
+  if (!k) return '';
+  try { sessionStorage.setItem(DASH_KEY_STORE, k); } catch (e) { /* private mode */ }
+  return k;
+}
+const authHeaders = () => { const k = dashKey(); return k ? { 'x-dashboard-key': k } : {}; };
+// A wrong key should not lock the tab into failing forever.
+function forgetDashKey() { try { sessionStorage.removeItem(DASH_KEY_STORE); } catch (e) {} }
 
 let allClients = [];
 let sortCol = 'created_at';
@@ -281,7 +298,12 @@ async function load() {
   try {
     const r = await fetch('/api/dashboard/clients?limit=200', { headers: authHeaders() });
     const data = await r.json();
-    if (!data.ok) throw new Error(data.error === 'unauthorized' ? 'unauthorized — add ?key=… to the URL' : data.error);
+    if (!data.ok) {
+      // Drop a rejected key so a refresh asks for it again instead of retrying
+      // the same wrong one for the life of the tab.
+      if (data.error === 'unauthorized') { forgetDashKey(); throw new Error('unauthorized — wrong dashboard key, refresh to re-enter it'); }
+      throw new Error(data.error);
+    }
     allClients = data.clients;
     document.getElementById('client-count').textContent = `${data.count} clients`;
     status(`Loaded ${data.count} clients — ${new Date().toLocaleTimeString()}`);

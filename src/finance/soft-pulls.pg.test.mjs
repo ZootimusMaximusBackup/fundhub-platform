@@ -24,8 +24,9 @@
 
 import { test, before, after, describe } from "node:test";
 import assert from "node:assert";
-import { db, close } from "../db.mjs";
+import { db, pool, close } from "../db.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
+import { captureConsent } from "../consent/index.mjs";
 import {
   requestSoftPull,
   fulfilSoftPull,
@@ -91,6 +92,23 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
        FROM tradelines WHERE client_id = $1 ORDER BY lender`, [clientId]
   )).rows;
 
+  /* withClients — run n callers at once, each on its own connection that is
+     ALREADY open before the work starts. Checking out the connections first is
+     what makes a concurrency test a concurrency test: otherwise the second and
+     third callers spend the whole race connecting. Every connection is released
+     even if a caller throws, so a failure here cannot drain the pool and take
+     the rest of the file down with it. */
+  const withClients = async (n, run) => {
+    const conns = [];
+    try {
+      for (let i = 0; i < n; i++) conns.push(await pool().connect());
+      const outs = await Promise.all(run(conns));
+      return { outs, rows: await ledgerRows() };
+    } finally {
+      for (const c of conns) c.release();
+    }
+  };
+
   const wipeLedger = async () => {
     await db.query(`DELETE FROM tradelines WHERE client_id = ANY($1)`, [[client, otherClient]]);
     // The immutability trigger is BEFORE UPDATE only; DELETE is deliberately
@@ -118,9 +136,44 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
       `INSERT INTO accounts (org_id, kind, email, name, status, client_id)
        VALUES ($1,'client','softpull_pg_test_acct@example.com','Softpull Pgtest Client','invited',$2)
        RETURNING id`, [org, client])).rows[0].id;
+
+    /* THE CONSENT PRECONDITION (rule 0, db/migrations/099_client_consents.sql).
+     *
+     * requestSoftPull() now refuses without a live consent for the client, so
+     * every scenario below that expects a request to be RECORDED needs one on
+     * file first. This is a real precondition of the product, not test
+     * scaffolding: with no consent the correct behaviour is a 403 and no row.
+     *
+     * Granted here in before() rather than per test because wipeLedger() clears
+     * soft_pull_requests and tradelines and deliberately leaves client_consents
+     * alone — consent outlives any one request, which is the point of it being
+     * a separate record rather than a field on the request.
+     *
+     * BOTH clients get one: `otherClient` is the bystander in the "two clients
+     * may each have an open request" and "a crs row for another client is
+     * refused" scenarios, and those must fail for the reason they are testing,
+     * not because the bystander never consented.
+     *
+     * The gate's own behaviour — refusal with none, expired, or revoked — is
+     * proven in src/consent/consent.pg.test.mjs against these same tables,
+     * rather than duplicated here. */
+    for (const c of [client, otherClient]) {
+      await captureConsent(db, {
+        orgId: org, clientId: c, kind: "soft_pull_consent",
+        consentText: "I authorize Fundhub to obtain my consumer credit report through a soft inquiry.",
+        consentVersion: "soft-pull-v1",
+        grantedBy: { kind: "staff", id: staffId },
+        captureMethod: "checkbox"
+      });
+    }
   });
 
-  after(async () => { await purge(); await close(); });
+  after(async () => {
+    // client_consents cascades from clients, so purge() takes it. Explicit here
+    // only so the next reader does not go looking for a missing cleanup.
+    await purge();
+    await close();
+  });
 
   // ── 1. an unattributed pull is refused, by the table itself ───────────────
 
@@ -409,6 +462,134 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
       });
       assert.equal(b.created, true, "a resolved request permanently blocked the client's next pull");
       assert.equal((await ledgerRows()).length, 2);
+    });
+
+    /* THE GUARD HAS TO HOLD WHEN THE TAPS ARRIVE TOGETHER, WHICH IS THE ONLY
+       WAY A DOUBLE TAP ACTUALLY ARRIVES.
+
+       The sequential test above proves the guard reads the table. It cannot
+       prove the guard is atomic: "SELECT, see nothing, INSERT" is two
+       statements, and two callers can both finish the SELECT before either
+       reaches the INSERT. Both then see an empty table and both write. That is
+       one question, two consumer-credit events and two charges.
+
+       EACH CALLER GETS ITS OWN, ALREADY-OPEN CONNECTION (withClients below).
+       Handing all three the shared pool handle does NOT reproduce this: the
+       first caller has a warm connection and finishes both of its statements
+       while the others are still completing a TCP connect and password
+       handshake, so they never actually overlap and the test passes on a broken
+       guard. A phone retrying a tap against a warm serverless pool has no such
+       head start. Asserting on the ROWS, not on the return values: the return
+       value is the module's account of what it did, and the row is what an
+       auditor and a bill will see. */
+    test("three taps at the same instant record ONE pull and bill it once", async () => {
+      await wipeLedger();
+      const { outs, rows } = await withClients(3, (conns) => conns.map((c) => requestSoftPull(c, {
+        orgId: org, clientId: client, requestedBy: { kind: "client", id: accountId },
+        reason: "portal button on a slow connection", costCents: 1500
+      })));
+
+      assert.equal(rows.length, 1,
+        `three simultaneous taps recorded ${rows.length} consumer-credit events`);
+      assert.equal(outs.filter((o) => o.created).length, 1,
+        "more than one caller was told it had started a pull");
+      assert.equal(new Set(outs.map((o) => o.request.id)).size, 1,
+        "the three taps were handed different requests");
+
+      const billed = rows.reduce((n, r) => n + Number(r.cost_cents), 0);
+      assert.equal(billed, 1500, `one question billed ${billed} cents`);
+    });
+
+    test("simultaneous replays of one idempotency key resolve to one row, without erroring", async () => {
+      await wipeLedger();
+      // Neither caller may see a raw unique-violation: losing the race is a
+      // normal outcome of a retry, not a 500 on somebody's screen.
+      const { outs, rows } = await withClients(2, (conns) => conns.map((c) => requestSoftPull(c, {
+        orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId },
+        reason: "the phone retried the same tap", idempotencyKey: "tap-race-1", costCents: 1500
+      })));
+
+      assert.equal(rows.length, 1, `a retried tap wrote ${rows.length} rows`);
+      assert.equal(rows[0].idempotency_key, "tap-race-1");
+      assert.equal(new Set(outs.map((o) => o.request.id)).size, 1,
+        "the two callers were handed different requests");
+      assert.equal(outs.filter((o) => o.created).length, 1);
+    });
+
+    /* THE RETRY KEY IS THE OTHER HALF OF RULE 2, AND IT IS THE HALF THE
+       DATABASE ADJUDICATES ON ITS OWN INDEX.
+
+       uq_soft_pull_requests_idem (077) is keyed (org_id, idempotency_key) —
+       the CLIENT is not in it. The test above races two taps that share a key
+       AND a client, so Postgres may settle it on either index and the retry
+       key's own behaviour is never isolated. These two do isolate it: same org,
+       same key, DIFFERENT clients, so uq_soft_pull_requests_idem is the only
+       index that can fire.
+
+       What must never happen, in either order:
+
+         * a caller asking about client Y is handed client X's request row.
+           That row says who asked for X's credit to be pulled, why, and what it
+           cost — another consumer's credit-pull record, returned to somebody who
+           asked about a different person.
+         * Y's request is silently dropped while the caller is told `ok`. The
+           screen then shows a pull in flight that no ledger row records.
+         * a raw Postgres unique violation (SQLSTATE 23505) escapes. The route
+           (api/finance/soft-pull.mjs) only converts SoftPullError and
+           CLIENT_DATA_ERRORS, so anything else reaches netlify/functions/api.mjs
+           and becomes a 500 on somebody's phone.
+
+       A refusal is a correct answer here. Handing back the wrong person's row
+       is not. */
+    const crossKeyOk = (outcome, askedAbout) => {
+      if (outcome.status === "rejected") {
+        const e = outcome.reason;
+        assert.ok(e instanceof SoftPullError,
+          `a reused retry key raised a raw database error (${e && e.code}: ${e && e.message})`);
+        assert.ok(e.status >= 400 && e.status < 500,
+          `a reused retry key answered ${e.status} — a 5xx is a broken screen`);
+        return;
+      }
+      assert.equal(String(outcome.value.request.client_id), String(askedAbout),
+        "a caller was handed a soft pull request belonging to a different client");
+    };
+
+    test("a retry key reused for a different client is refused, not answered with that client's row", async () => {
+      await wipeLedger();
+      const first = await requestSoftPull(db, {
+        orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId },
+        reason: "first client, keyed tap", idempotencyKey: "tap-cross-1", costCents: 1500
+      });
+      assert.equal(first.created, true);
+
+      const second = await Promise.allSettled([requestSoftPull(db, {
+        orgId: org, clientId: otherClient, requestedBy: { kind: "staff", id: staffId },
+        reason: "second client, same key by accident", idempotencyKey: "tap-cross-1", costCents: 1500
+      })]);
+      crossKeyOk(second[0], otherClient);
+    });
+
+    test("two clients tapping at the same instant under one retry key never cross", async () => {
+      await wipeLedger();
+      const conns = [];
+      let outs;
+      try {
+        for (let i = 0; i < 2; i++) conns.push(await pool().connect());
+        const asked = [client, otherClient];
+        outs = await Promise.allSettled(conns.map((c, i) => requestSoftPull(c, {
+          orgId: org, clientId: asked[i], requestedBy: { kind: "staff", id: staffId },
+          reason: "two files, one retry key", idempotencyKey: "tap-cross-2", costCents: 1500
+        })));
+        outs.forEach((o, i) => crossKeyOk(o, asked[i]));
+      } finally {
+        for (const c of conns) c.release();
+      }
+
+      // Whoever won wrote exactly one row, and it is theirs.
+      const written = (await db.query(
+        `SELECT client_id FROM soft_pull_requests WHERE idempotency_key = 'tap-cross-2'`
+      )).rows;
+      assert.equal(written.length, 1, `one retry key wrote ${written.length} rows`);
     });
   });
 

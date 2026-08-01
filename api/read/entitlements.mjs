@@ -16,7 +16,7 @@ import { readHandler, ROLE_SETS } from "../../src/http/read-api.mjs";
 const run = readHandler({
   roles: ROLE_SETS.STAFF,
   principals: new Set(["client"]),
-  fetch: (db, { limit, offset, query, principal }) => {
+  fetch: (db, { limit, offset, query, principal, staff }) => {
     /* The scope, stated here rather than applied invisibly by the wrapper.
        A client sees exactly their own row set; ?client_id= is ignored for them,
        so editing the URL cannot widen it. Staff see whatever they ask for. */
@@ -26,14 +26,29 @@ const run = readHandler({
     // A client principal with no client_id on the session can read nothing.
     if (isClient && !clientId) return Promise.resolve([]);
 
+    /* THE ORG COMES FROM THE SESSION AND IS REQUIRED FOR STAFF (audit C1).
+       Two principals read this endpoint and they are scoped differently:
+
+         a CLIENT is already pinned to their own client_id above — the guard
+         two lines up returns [] when the session carries none, so `client_id =
+         $3` is a complete scope on its own and no org clause is needed;
+
+         STAFF ask for whoever they name, so the company must be compared. A
+         staff session with no org binds NULL and matches no row: it fails
+         CLOSED, because the alternative turns a broken session into a read
+         over every company's entitlements. */
+    const isClientPrincipal = Boolean(isClient);
+    const orgId = isClientPrincipal ? null : ((staff && staff.org_id) || null);
+
     return db.query(
       `SELECT client_id, entitlement_code, entitlement_name, kind, sort_order,
               granted_at, expires_at, revoked_at, active, source_transaction_id
          FROM v_client_entitlements
         WHERE ($3::uuid IS NULL OR client_id = $3)
+          AND ($4::boolean OR org_id = $5::uuid)
         ORDER BY client_id, sort_order
         LIMIT $1 OFFSET $2`,
-      [limit + 1, offset, clientId]
+      [limit + 1, offset, clientId, isClientPrincipal, orgId]
     ).then((r) => r.rows);
   }
 });

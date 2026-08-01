@@ -11,10 +11,15 @@
 // for, and it is exactly the kind of endpoint that becomes a breach.
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
-import { ROLE_SETS, requireRole, isUuid, redact, unitFraction, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
+import { ROLE_SETS, requireRole, isUuid, redact, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { listTradelines } from "../../src/tradelines/store.mjs";
+import { requireClientInOrg } from "../../src/http/client-scope.mjs";
 import { toCalculatorCards, fromCents } from "../../src/tradelines/index.mjs";
-import { calcFunding } from "../../src/calculators/deal-funding.mjs";
+import {
+  calcFunding,
+  parseUtilizationThreshold,
+  UTILIZATION_THRESHOLD_REFUSALS
+} from "../../src/calculators/deal-funding.mjs";
 
 // THE ROLE GATE IS TWO CALLS, NOT ONE ARGUMENT. requireAuth's third parameter
 // is { db, env } — src/http/middleware/requireAuth.mjs passes it straight to
@@ -31,10 +36,30 @@ import { calcFunding } from "../../src/calculators/deal-funding.mjs";
 // This one is hand-rolled because it returns rows AND the calculator's output
 // rather than a page, so the gate has to be written out. The endpoint was
 // unrouted until now, which is the only reason this was never exploitable.
-export default async function handler(req, res) {
-  const staff = await requireAuth(req, res, { db });
+//
+// ── AND THE SCOPE IS THE SESSION'S ORG, WHICH IT WAS NOT ──
+// The role gate above was fixed; the TENANT check was still missing. `client_id`
+// arrives on the query string and went straight into a lookup that filtered on
+// client alone, so any authenticated staff session in any org could read any
+// client's credit limits and balances by knowing the uuid. A correct role gate
+// over an unscoped read is still an unscoped read.
+//
+// `staff.org_id` now scopes the query, listTradelines() REFUSES to run without
+// an org, and a session carrying no readable org is turned away here rather than
+// falling through to a query that would match nothing by luck.
+export default async function handler(req, res, deps = {}) {
+  const database = deps.db ?? db;
+
+  const staff = await requireAuth(req, res, { db: database });
   if (!staff) return;
   if (!requireRole(res, staff, ROLE_SETS.STAFF)) return;
+
+  // FAIL CLOSED. No org on the session means no scope, and no scope must be a
+  // refusal — never an unscoped read.
+  const orgId = staff.org_id;
+  if (!isUuid(orgId)) {
+    return res.status(403).json({ ok: false, error: "forbidden" });
+  }
 
   const query = req.query || {};
   const clientId = query.client_id;
@@ -42,28 +67,36 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: "client_id is required and must be a uuid" });
   }
 
-  // The guardrail ceiling arrives from the query string, and it used to reach
-  // calcFunding as a bare Number() with no bounds. `?utilization_threshold=999`
-  // set the ceiling to 99,900%, so no card could ever breach it; `=abc` passed
-  // NaN, and every comparison against NaN is false, which disables the guardrail
-  // just as completely but without looking wrong. Either way a caller could turn
-  // off the one control that stops a closer over-drawing a client, by editing a URL.
-  //
-  // The wire value is a FRACTION — public/app/closer-dashboard.html:1132 sends
-  // guard / 100 — so anything outside (0, 1] is not a threshold at all. Refused
-  // rather than clamped: silently substituting a different ceiling would answer a
-  // question the caller did not ask, which is how the guardrail got bypassed here
-  // in the first place.
-  const threshold = unitFraction(query.utilization_threshold);
-  if (!threshold.valid) {
-    return res.status(400).json({
-      ok: false,
-      error: "utilization_threshold must be a fraction greater than 0 and at most 1"
-    });
-  }
+  /* THE ORG BOUNDARY. Without this, ROLE_SETS.STAFF above was the only gate on a
+     named client's financial detail — and it answers "are you staff", never "are
+     they yours". Any employee of any company could read any client's credit
+     limits, balances and APRs given only an id. This endpoint has already had one
+     gate that looked like a control and was not (the `roles` key requireAuth
+     ignores); this is the second. See src/http/client-scope.mjs. */
+  // `database`, not `db` — this endpoint takes its handle from deps so the suite
+  // can drive it without Postgres. Reaching past that to the module singleton
+  // would make the ownership check the one query in the handler that ignores the
+  // injected handle, which reads as passing while never running under a stub.
+  if (!(await requireClientInOrg(res, database, staff, String(clientId).trim()))) return;
+
+  // The guardrail ceiling is validated below, inside the try, by
+  // parseUtilizationThreshold — the calculator's own parser. This endpoint used
+  // to run a second, local check here (unitFraction) that main and the audit
+  // branch added independently for the same finding. Keeping both would have
+  // meant the local one answering first with a generic message, so the parser's
+  // `reason` — the thing that tells a caller WHICH rule they broke — could never
+  // reach the wire. One validator, owned by the calculator that acts on the
+  // number, so this endpoint and /api/finance/model cannot drift.
 
   try {
-    const rows = await listTradelines(db, {
+    const rows = await listTradelines(database, {
+      // From the session. A client in another org matches nothing and the
+      // response is an empty card table — which leaks less than a 404, because
+      // a 404 would confirm the uuid names a real client somewhere. Written as
+      // `orgId: staff.org_id` rather than passing the validated local, because
+      // src/http/read-endpoints-org-scope.test.mjs on the audit branch proves
+      // delegation by matching that exact text.
+      orgId: staff.org_id,
       clientId,
       includeClosed: query.include_closed === "true"
     });
@@ -76,10 +109,44 @@ export default async function handler(req, res) {
       ? undefined
       : Number(query.requested_amount);
 
+    /* THE GUARDRAIL THRESHOLD IS VALIDATED, AND IT WAS NOT.
+       This line used to read
+           ...(query.utilization_threshold ? { utilizationThreshold: Number(query.utilization_threshold) } : {})
+       which put an unchecked query parameter straight into the only thing
+       standing between a closer and a draw that costs the client their next
+       funding round. `?utilization_threshold=0.99` parses, passes, and makes
+       calcFunding's hard stop unreachable — at a 99% line no draw a real card
+       can carry crosses it, so `guardrail.hardStop` is false for every deal and
+       the screen says "clear". Nothing recorded that the line had been moved.
+       `?utilization_threshold=abc` was worse still: Number("abc") is NaN, every
+       comparison against NaN is false, and the guardrail silently reported no
+       breach for the same reason while looking like it had run.
+
+       The band and the refusals live in the calculator that acts on the number —
+       src/calculators/deal-funding.mjs, parseUtilizationThreshold — so this
+       endpoint and /api/finance/model cannot drift apart on what a legal
+       threshold is. A bad one is a 400 naming the rule, never a clamp and never
+       a silent fall back to the default: a caller who asked for a different line
+       and quietly got the standard one has been answered about a deal they did
+       not ask about. Omitting the parameter is not an error — calcFunding's own
+       0.30 default applies, which is what every existing caller already gets. */
+    let utilizationThreshold;
+    if (query.utilization_threshold !== undefined && String(query.utilization_threshold).trim() !== "") {
+      const parsed = parseUtilizationThreshold(query.utilization_threshold);
+      if (!parsed.ok) {
+        return res.status(400).json({
+          ok: false,
+          error: UTILIZATION_THRESHOLD_REFUSALS[parsed.reason] || "utilization_threshold is not usable",
+          reason: parsed.reason
+        });
+      }
+      utilizationThreshold = parsed.value;
+    }
+
     const funding = calcFunding({
       cards,
       requestedAmount: Number.isFinite(requestedAmount) ? requestedAmount : undefined,
-      ...(threshold.present ? { utilizationThreshold: threshold.value } : {})
+      ...(utilizationThreshold === undefined ? {} : { utilizationThreshold })
     });
 
     return res.status(200).json({

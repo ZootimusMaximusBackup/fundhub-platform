@@ -69,7 +69,7 @@ export default async function handler(req, res) {
       if (!isUuid(q.client_id)) {
         return res.status(400).json({ ok: false, error: "client_id must be a uuid" });
       }
-      if (!ownsClient(principal, q.client_id)) {
+      if (!(await ownsClient(principal, q.client_id))) {
         return res.status(403).json({ ok: false, error: "forbidden" });
       }
       const requests = await listSoftPullRequests(db, {
@@ -84,7 +84,7 @@ export default async function handler(req, res) {
       if (!isUuid(body.client_id)) {
         return res.status(400).json({ ok: false, error: "client_id must be a uuid" });
       }
-      if (!ownsClient(principal, body.client_id)) {
+      if (!(await ownsClient(principal, body.client_id))) {
         return res.status(403).json({ ok: false, error: "forbidden" });
       }
 
@@ -129,10 +129,26 @@ export default async function handler(req, res) {
   }
 }
 
-/* ownsClient — a staff principal may act on any client in their org; a client
-   principal may act only on themself. accounts.client_id is the binding, and it
-   is the session's copy of it, not the body's. */
-function ownsClient(principal, clientId) {
-  if (principal.kind === "staff") return true;
+/* ownsClient — a staff principal may act on any client in their org, and the org
+   is CHECKED, not assumed; a client principal may act only on themself.
+   accounts.client_id is the binding, and it is the session's copy of it, not the
+   body's.
+
+   THE ORG CHECK IS THE POINT, NOT A FORMALITY. The write stamps the CALLER's
+   org onto the row. Without this comparison, an employee at org A naming org B's
+   consumer gets a credit pull filed in org A's compliance ledger against a
+   person org A has no relationship with, while org B — the company that consumer
+   actually signed with — has no record of it at all. A clients row that does not
+   match the caller's org is refused rather than filed under the wrong one, the
+   same instinct as the "org_id is required" refusal above. */
+async function ownsClient(principal, clientId) {
+  if (principal.kind === "staff") {
+    if (!principal.orgId) return false;
+    const r = await db.query(
+      `SELECT 1 FROM clients WHERE id = $1 AND org_id = $2`,
+      [String(clientId).trim(), principal.orgId]
+    );
+    return r.rows.length > 0;
+  }
   return !!principal.clientId && String(principal.clientId) === String(clientId).trim();
 }

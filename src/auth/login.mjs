@@ -15,6 +15,7 @@
 import { verifyPassword, verifyDecoy, needsRehash, hashPassword } from "./hash.mjs";
 import { createSession, normalizeIp } from "./session.mjs";
 import { resolveDefaultOrg } from "./org.mjs";
+import { demoLoginRefusal } from "./demo-logins.mjs";
 
 // Failures are counted only since that identity's last SUCCESSFUL login, so a
 // clean login resets the counter for the person who owns the account.
@@ -90,9 +91,14 @@ export async function login(db, { email, password, ip, userAgent, orgId, env = p
     return { ok: false, status: 429, error: "too_many_attempts", retryAfterMinutes: rate.retryAfterMinutes };
   }
 
+  // is_demo is read through to_jsonb for the same reason active_flag is: the
+  // column arrives with db/migrations/094_demo_logins.sql, and this query has to
+  // keep working against a database that has not applied it yet. A missing
+  // column reads as NULL rather than aborting the statement.
   const found = await db.query(
     `SELECT id, org_id, role, email, name, status, password_hash,
-            (to_jsonb(s) ->> 'active') AS active_flag
+            (to_jsonb(s) ->> 'active')  AS active_flag,
+            (to_jsonb(s) ->> 'is_demo') AS is_demo_flag
        FROM staff s
       WHERE org_id = $1 AND lower(email) = $2
       LIMIT 1`,
@@ -120,6 +126,24 @@ export async function login(db, { email, password, ip, userAgent, orgId, env = p
   if (staff.status !== "active" || staff.active_flag === "false") {
     await recordAttempt(db, { orgId: org, email: normEmail, ip, successful: false });
     return { ok: false, status: 403, error: `account_${staff.status === "active" ? "inactive" : staff.status}` };
+  }
+
+  // A seeded demo row, on a deploy where demo logins are switched off.
+  //
+  // DELIBERATELY HERE, AFTER verifyPassword — not before it. This is a refusal
+  // stacked on top of the real credential check, never a substitute for one, so
+  // there is no path through this file where a demo row authenticates without a
+  // correct password. It sits next to the status check because it is the same
+  // kind of decision: the credential was right, the account may not be used.
+  //
+  // Costs a real account nothing: demoLoginRefusal returns null immediately for
+  // any row that is not flagged is_demo and is not on demo.fundhub.local, so
+  // chris@fundhub.ai behaves identically whether the flag is set or not.
+  const demoRefusal = demoLoginRefusal(
+    { email: staff.email, is_demo: staff.is_demo_flag }, env);
+  if (demoRefusal) {
+    await recordAttempt(db, { orgId: org, email: normEmail, ip, successful: false });
+    return demoRefusal;
   }
 
   // Transparent upgrade if PARAMS moved since this hash was written.

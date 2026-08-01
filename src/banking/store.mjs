@@ -56,19 +56,25 @@
 // answerable question rather than a silent absence. Pass
 // `includeCandidates: false` if a caller genuinely wants only the confident set.
 
+import { db as sharedDb, pool } from "../db.mjs";
+
 /* ------------------------------------------------------------------------- *
  * Transaction helper
  *
- * Same shape as withTransaction() in src/inquiries/work.mjs, including the
- * fallback for a handle with no connect() — matching the existing pattern
- * rather than inventing a second one. The fallback matters for the same reason
- * it does there: the transactional path must be exercisable by something other
- * than a real database.
+ * A real transaction, which took catching to get right. The broken probe
+ * `if (typeof db.connect !== "function")` was always true for the shared handle
+ * (db = { query }, no connect), so writes ran unprotected with autocommit in
+ * production. Fixed by checking db.connect directly, reaching for pool() if db
+ * is the shared singleton, and only then falling back to inline execution for a
+ * plain fake in a unit test. See src/finance/soft-pulls.mjs:502.
  * ------------------------------------------------------------------------- */
 
 async function withTransaction(db, fn) {
-  if (typeof db.connect !== "function") return fn(db);
-  const client = await db.connect();
+  const acquire = typeof db?.connect === "function"
+    ? () => db.connect()
+    : (db === sharedDb ? () => pool().connect() : null);
+  if (!acquire) return fn(db);
+  const client = await acquire();
   try {
     await client.query("BEGIN");
     const out = await fn(client);
@@ -82,7 +88,7 @@ async function withTransaction(db, fn) {
   }
 }
 
-import { toBillRow } from "./recurring.mjs";
+import { toBillRow, fromBillRow } from "./recurring.mjs";
 
 /* ------------------------------------------------------------------------- *
  * Writes
@@ -228,12 +234,34 @@ export async function saveDetection(db, result, { orgId, includeCandidates = tru
  * Ordered by typical_amount_cents ASC — the amounts are negative, so ascending
  * is largest outflow first, which is the order a person reading a list of their
  * own bills wants.
+ *
+ * BOUNDED. `limit` defaults to 500 and is capped at 2000. The result has no
+ * natural bound — one row per account × merchant × cadence across every client —
+ * so a company with 3,000 clients averaging 12 bills each is 36,000 rows read,
+ * sorted and serialised inside a 10-second function budget. An unbounded read
+ * with no page size is not a read anybody can turn down.
+ *
+ * AND INDEXED. `idx_recurring_bills_org_amount` (db/migrations/093) is
+ * (org_id, typical_amount_cents, merchant_key) — the always-present filter
+ * followed by this ORDER BY, so the LIMIT bounds what is READ and not just what
+ * is sent back. None of 086's three indexes leads with org_id and two of them
+ * are partial on predicates this read does not carry, so before 093 every call
+ * scanned the whole table and sorted it in memory. If the WHERE or the ORDER BY
+ * below changes, that index has to change with it — src/banking/
+ * recurring-bills-index.test.mjs fails if they drift apart.
+ *
+ * RETURNS RAW DATABASE ROWS, in snake_case. Anything feeding the cash-flow
+ * projector wants listRecurringBillsFor() below instead — the two vocabularies
+ * are not interchangeable and mixing them fails silently. See fromBillRow().
  */
 export async function listRecurringBills(
   db,
-  { orgId, bankAccountId = null, clientId = null, presentableOnly = true } = {}
+  { orgId, bankAccountId = null, clientId = null, presentableOnly = true, limit = 500 } = {}
 ) {
   if (!orgId) throw new TypeError("listRecurringBills: orgId is required");
+
+  const n = Number.parseInt(limit, 10);
+  const capped = !Number.isFinite(n) || n <= 0 ? 500 : Math.min(n, 2000);
 
   const res = await db.query(
     `SELECT * FROM recurring_bills
@@ -241,10 +269,28 @@ export async function listRecurringBills(
         AND ($2::uuid IS NULL OR bank_account_id = $2)
         AND ($3::uuid IS NULL OR client_id = $3)
         AND ($4 = false OR confidence_label IN ('medium', 'high'))
-      ORDER BY typical_amount_cents ASC, merchant_key ASC`,
-    [orgId, bankAccountId, clientId, presentableOnly]
+      ORDER BY typical_amount_cents ASC, merchant_key ASC
+      LIMIT $5`,
+    [orgId, bankAccountId, clientId, presentableOnly, capped]
   );
   return res.rows;
+}
+
+/**
+ * The same read, in the vocabulary every consumer of a bill actually speaks.
+ *
+ * THIS IS THE ONE THAT CROSSES THE STORE/SEAM LINE. listRecurringBills() hands
+ * back raw snake_case rows; src/banking/cashflow-seam.mjs reads camelCase and
+ * one field is renamed outright (`next_expected_on` -> `nextExpectedDate`).
+ * Feeding raw rows to the projector threw nothing and produced a client with no
+ * bills at all — see fromBillRow() for the full account.
+ *
+ * Takes the same options, returns the same rows, mapped once through the one
+ * place the mapping is written.
+ */
+export async function listRecurringBillsFor(db, opts = {}) {
+  const rows = await listRecurringBills(db, opts);
+  return rows.map(fromBillRow);
 }
 
 /**

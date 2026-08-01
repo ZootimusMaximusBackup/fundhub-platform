@@ -952,6 +952,7 @@ test("toBillRow produces exactly the columns migration 086 declares", () => {
   const shaped = toBillRow(bill, { orgId: ORG });
 
   assert.deepEqual(Object.keys(shaped).sort(), [
+    "anchor_day_of_month",
     "bank_account_id", "cadence", "client_id", "confidence_label", "confidence_pct",
     "detected_as_of", "first_seen_on", "is_business", "last_seen_on", "merchant_display",
     "merchant_key", "next_expected_on", "next_expected_unknown_reason", "occurrence_count",
@@ -964,6 +965,26 @@ test("toBillRow produces exactly the columns migration 086 declares", () => {
   assert.equal(shaped.next_expected_on, "2026-04-15");
   assert.equal(shaped.next_expected_unknown_reason, null);
   assert.equal(shaped.is_business, null);
+  // THE FIELD THIS TEST USED TO LOCK OUT. The detector works the real billing
+  // day out and it cannot be recovered from next_expected_on, which clamps in
+  // short months. Asserting the exact key set is what kept it unstored.
+  assert.equal(shaped.anchor_day_of_month, 15);
+});
+
+/* A bill charged on the 31st is the case the anchor exists for: its predicted
+   date clamps to the 30th in a short month, and without the anchor a reader
+   carrying that prediction forward pins the bill to the 30th permanently. */
+test("toBillRow keeps the true billing day when the predicted date is clamped", () => {
+  const rows = [
+    tx("2026-01-31", -5000), tx("2026-02-28", -5000),
+    tx("2026-03-31", -5000), tx("2026-05-31", -5000)
+  ];
+  const bill = only(detectRecurringBills(rows, { now: "2026-06-02" }).bills);
+
+  const shaped = toBillRow(bill, { orgId: ORG });
+
+  assert.equal(shaped.anchor_day_of_month, 31, "the real billing day survives storage");
+  assert.equal(shaped.next_expected_on, "2026-06-30", "June has 30 days, so the prediction clamps");
 });
 
 test("toBillRow refuses an org-less write and refuses a bill that is not an outflow", () => {

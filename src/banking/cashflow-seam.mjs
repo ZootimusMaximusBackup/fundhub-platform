@@ -197,6 +197,25 @@ export function toCashflowBill(bill, { from, to, maxOccurrences } = {}) {
 
   return {
     billId: `${bill.bankAccountId}:${bill.merchantKey}:${bill.cadence}`,
+    /* THE STORED ROW'S OWN uuid, CARRIED SEPARATELY FROM billId.
+       billId is a COMPOSITE STRING and must stay one: the projector uses it to
+       identify a stream of occurrences, and its three parts are exactly the
+       upsert key migration 086 declares, so a bill keeps its identity across
+       re-detection. It is not, and cannot be, a database key.
+
+       Anything that needs to WRITE a row pointing at this bill needs the real
+       uuid instead. cashflow_reminders.subject_id is a `uuid` column (087:113),
+       and passing the composite there raises Postgres 22P02 —
+       `invalid input syntax for type uuid:
+        "fd844942-...:BIG RENT LLC:monthly"` — which the handler maps to a flat
+       400 "invalid_parameter" that tells the reader nothing. That fired on the
+       headline case this whole screen exists for: any client whose projected
+       balance goes negative BECAUSE OF a detected bill.
+
+       NULL when the bill did not come from the store — a hand-built bill in a
+       unit test has no row and therefore no id, and inventing one would be
+       worse than the absence. A caller that needs to write must check. */
+    subjectId: bill.id ?? null,
     label: bill.merchantDisplay || bill.merchantKey,
     // 0-1, because that is what W8 validates. Integer percent stays authoritative.
     confidence: bill.confidencePct / 100,
