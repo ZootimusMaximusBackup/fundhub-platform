@@ -14,12 +14,19 @@ editing anyone else's.
 | # | Task | Owner | Status |
 |---|---|---|---|
 | W1 | Foundation — migration 110 + the compliance gate | W1 | `done` |
-| W2 | Provider: email (mailgun) | unclaimed | `pending` |
-| W3 | Provider: SMS (ghl_relay) | unclaimed | `pending` |
-| W4 | The dispatcher loop itself | unclaimed | `pending` |
+| W2 | Provider: email (mailgun) | W1 | `done` |
+| W3 | Provider: SMS (ghl_relay) | W1 | `done` |
+| W4 | The dispatcher loop itself | W1 | `done` |
+| W5 | Turning sending on — scheduler, env vars, cutover | unclaimed | `blocked` |
 
-W2, W3 and W4 were blocked on W1's brief. **They are now unblocked.** The
-contracts below are what they build against.
+The whole batch was run in one thread at the owner's instruction, so W1 owns
+every row. **W5 is blocked and is deliberately not started** — see "What is NOT
+switched on" at the end of this file.
+
+**Contract amendment (W2/W3):** providers now also export `ADDRESS_FIELD`. The
+original contract said `to` was "an address or E.164 phone number", which is
+wrong for GHL — it addresses a *contact id*, not a number. Recorded here first,
+per the batch rule, before either provider was written.
 
 ---
 
@@ -204,6 +211,10 @@ export const PROVIDER = "mailgun";
 /** Channels this provider can carry. The dispatcher refuses a mismatch. */
 export const CHANNELS = new Set(["email"]);
 
+/** Which column of the client record addresses this provider.
+    One of: 'email' | 'phone' | 'ghl_contact_id'. The dispatcher resolves it. */
+export const ADDRESS_FIELD = "email";
+
 /**
  * Hand one message to the outside service.
  * @param {OutboundMessage} message
@@ -221,7 +232,7 @@ export async function send(message, options) { /* ... */ }
 | `orgId` | `uuid` | |
 | `clientId` | `uuid \| null` | |
 | `channel` | `"sms" \| "email"` | |
-| `to` | `string` | Destination address or E.164 phone number. Already resolved — a provider does not look up the client. |
+| `to` | `string` | The destination, already resolved — a provider never looks up the client. **Which value this is depends on the provider, not the channel:** an email address for Mailgun, a GHL contact id for the relay. Each provider declares which client column it needs via `ADDRESS_FIELD`. |
 | `subject` | `string \| null` | Email only. |
 | `body` | `string` | The rendered text. Send it **as given**. |
 | `providerRef` | `string` | Our idempotency key. Pass it to the provider as their idempotency key if they support one. |
@@ -360,3 +371,139 @@ role gates, neither of which this change adds.
    else, and fixing restricted wording is operational work. If the owner wants
    a different role, it is the `GATE_TASK_ROLE` constant in
    `src/messaging/gate.mjs` and nothing else.
+
+---
+
+## W2 + W3 — the providers
+
+**Task:** email via Mailgun, SMS via the GHL relay. `status: done`
+
+**What changed in plain language:** these are the two pieces that actually hand
+a message to an outside company. Before this, nothing in the system could send
+anything anywhere. Now it can — but only for a message the gate has already
+approved, and only once someone turns it on.
+
+### Files
+
+| File | What it is |
+|---|---|
+| `src/messaging/providers/http.mjs` | Shared plumbing: one POST with a hard timeout, credential stripping, and the retry/permanent classification both providers use. |
+| `src/messaging/providers/mailgun.mjs` | Email. |
+| `src/messaging/providers/ghl-relay.mjs` | SMS. |
+| `src/messaging/providers/index.mjs` | The registry that turns a routing row's provider name into code. |
+| `src/messaging/providers/providers.test.mjs` | 46 tests. No network is touched. |
+
+### Environment variables — NOT SET, someone with access must set them
+
+I could not set these myself: the Netlify CLI is not installed in this
+environment and `api.netlify.com` is unreachable from it (connection fails
+outright), which CLAUDE.md §11 records as an org network-policy denial. Names
+only, no values:
+
+| Variable | For |
+|---|---|
+| `MAILGUN_SEND_API_KEY` | Mailgun private API key. **Secret.** |
+| `MAILGUN_SEND_DOMAIN` | Sending domain, e.g. `mg.example.com`. |
+| `MAILGUN_SEND_FROM` | The From header. |
+| `MAILGUN_SEND_BASE_URL` | Optional. Only for EU-hosted domains. |
+| `GHL_RELAY_API_KEY` | GoHighLevel private API key. **Secret.** |
+| `GHL_RELAY_BASE_URL` | Optional. Only if "relay" means an intermediary rather than GHL directly. |
+| `GHL_RELAY_VERSION` | Optional. Defaults to `2021-07-28`. |
+
+The `MAILGUN_SEND_*` prefix is deliberate: `src/adapters/mailgun.mjs` already
+consumes a Mailgun signing key for **inbound** webhooks. One variable serving
+both directions would mean rotating the webhook key silently breaks sending.
+
+Until these are set, every queued message fails **retryably** with a readable
+reason — nothing is lost, and the backlog goes out once the keys land.
+
+### Decisions worth knowing
+
+- **An auth failure retries.** A 401 means the credential is wrong, not the
+  message. Marking it permanent would leave the whole backlog dead even after
+  someone fixed the key.
+- **A 2xx with no provider id is not treated as sent.** No id means no way to
+  match a later bounce to the message, so recording it as delivered would be
+  recording something we cannot prove.
+- **Errors are stripped of anything credential-shaped** before they reach
+  `messages.last_error`, which operators read and paste into support threads.
+
+---
+
+## W4 — the dispatcher
+
+**Task:** claim due messages, gate them, send the survivors. `status: done`
+
+### Files
+
+| File | What it is |
+|---|---|
+| `src/messaging/dispatch.mjs` | `dispatchDue`, `dispatchOne`, `claimDue`. |
+| `src/messaging/dispatch.test.mjs` | 30 tests. |
+| `src/messaging/dispatch.pg.test.mjs` | 9 tests against a real Postgres. Skips without `DATABASE_URL`. |
+
+### The order, which is the whole design
+
+**gate → route → send.** Every block happens *before* the provider module is
+resolved, so a bug in the routing code cannot produce a send — the provider has
+not been loaded yet at the moment any block is decided. A test asserts the
+routing table is not even read for a blocked message.
+
+### Outcomes
+
+`sent`, `blocked`, `no_route`, `unknown_provider`, `channel_mismatch`,
+`no_address`, `rejected`, `retry`, `gave_up`.
+
+A **hold** (`no_route`, `unknown_provider`, `channel_mismatch`) gives the
+attempt back, because it is a configuration problem rather than a bad message —
+otherwise a weekend of missing routing burns the retry budget and the backlog is
+dead before anyone notices. A **permanent** outcome (`rejected`, `no_address`,
+`gave_up`) stops. Retries cap at `MAX_ATTEMPTS` (5).
+
+### Verified
+
+- 76 new unit tests, plus 9 against a real Postgres 16.13.
+- **Seven deliberate mutations, each caught:** gate result ignored (4 failures),
+  unknown provider falling back to a default (1), disabled channel treated as
+  enabled (1), `SKIP LOCKED` removed (1), plus W1's three.
+- Full suite, no database: **3878 pass, 0 fail, 452 skipped.**
+- Full suite against real Postgres: the failing-test list is **identical by name
+  to baseline `b822675`**. The one extra line seen in a single run was
+  `RateLimiter: enforces a floor between requests`, which passes 4/4 in
+  isolation and on the unmodified tree — the pre-existing flake already noted in
+  Findings.
+
+---
+
+## What is NOT switched on — read before assuming this sends anything
+
+**Nothing sends today.** The dispatcher exports functions and nothing calls
+them. There is no cron, no timer, no Inngest registration, and no route or
+workflow imports `dispatch.mjs`. A test asserts the dispatcher registers no
+scheduler of its own, so this stays true unless someone deliberately changes it.
+
+Turning it on (W5) needs all of these, and none were done:
+
+1. The environment variables above, set by someone with Netlify access.
+2. Migration 110 applied to production. It has **not** been — `api.supabase.com`
+   is blocked from this environment too.
+3. A caller — a scheduled job that invokes `dispatchDue`. Note `INNGEST_EVENT_KEY`
+   is one of the three things CLAUDE.md §11 says to ask the owner about first,
+   because it makes 47 workflow functions go live at once.
+4. A decision about which orgs go first. The routing table is per-org, so the
+   cutover can be one org at a time, and `enabled = false` is the kill switch.
+
+### One repo invariant changed — say so out loud
+
+CLAUDE.md §12 records **"Nothing transmits — there is no outbound `fetch` in
+`src/adapters/` or `src/lib/`."** That sentence is still literally true: both
+existing adapters are inbound webhook receivers, and nothing in those two
+directories changed.
+
+But `src/messaging/providers/` now contains the **first outbound `fetch` in this
+codebase**. The existing "nothing transmits" tests are scoped to specific
+modules (`src/alerts/store.mjs`, `src/banking/plaid.mjs`,
+`src/http/bank-accounts*.mjs`, `src/finance/soft-pulls.mjs`) and none of them
+sweep this directory, so none of them broke — which is exactly why this is
+written down rather than left for someone to discover. §12 should be updated
+when W5 lands.
