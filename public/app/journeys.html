@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fundhub — Journeys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
+<style>
+:root{
+  --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
+  --paper:#FCFCFC; --ink:#0A0A0A; --ink2:#18181B;
+  --gray:#52525B; --gray2:#A1A1AA;
+  --line:#E4E4E7; --soft:#F4F4F5;
+  --card:#111113; --cardline:#26262B; --cardtext:#E4E4E7;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --ok:#A8D8B0; --warn:#F5CE8F; --alert:#F2A69B; --info:#A9C6E8; --accent:#C4B3E5;
+  --wire:#C9C9CF; --gap:36px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:3px}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gray2);display:flex;align-items:center;gap:9px}
+.eyebrow::before{content:"";width:16px;height:2px;background:var(--spectrum);border-radius:1px;flex:0 0 auto}
+
+/* ══ SHARED CHROME — identical across every internal surface (public/app/*.html) ══ */
+.app{display:flex;height:100vh;overflow:hidden}
+.side{width:230px;flex:0 0 230px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
+.side::after{content:"";position:absolute;top:0;right:0;width:2px;height:100%;background:var(--spectrum);opacity:.9}
+.side.mini{width:60px;flex:0 0 60px}
+.side-top{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--cardline)}
+.side.mini .side-top{padding:0 12px}.side.mini .logo{display:none}
+.burger{margin-left:auto;width:26px;height:26px;flex:0 0 26px;border:1px solid var(--cardline);background:transparent;color:var(--gray2);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+.burger:hover{border-color:#3F3F46;color:var(--paper)}.side.mini .burger{margin:0 auto}
+.side-scroll{flex:1;overflow-y:auto;padding:12px 0 8px}
+.side-scroll::-webkit-scrollbar{width:6px}.side-scroll::-webkit-scrollbar-thumb{background:#27272A;border-radius:3px}
+.navgroup{margin-bottom:3px}
+.navhead{width:100%;background:transparent;border:0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;padding:9px 18px 6px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#71717A}
+.navhead:hover{color:var(--gray2)}
+.navhead .chev{margin-left:auto;font-size:9px;transition:transform .16s;color:#52525B}
+.navgroup.closed .chev{transform:rotate(-90deg)}.navgroup.closed .navlist{display:none}
+.side.mini .navhead{justify-content:center;padding:10px 0 6px;font-size:0;letter-spacing:0}
+.side.mini .navhead::after{content:"";display:block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;opacity:.5}
+.side.mini .navhead .chev{display:none}
+.navlist{display:flex;flex-direction:column}
+.navitem{display:flex;align-items:center;gap:11px;padding:7px 18px;font-size:12.5px;color:var(--gray2);position:relative;transition:color .12s,background .12s}
+.navitem:hover{color:var(--paper);background:#161619}
+.navitem .ico{font-family:var(--mono);font-size:12px;width:16px;flex:0 0 16px;text-align:center;opacity:.75}
+.navitem.on{color:var(--paper);background:#161619;font-weight:500}
+.navitem.on::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--spectrum);border-radius:0 2px 2px 0}
+.navitem.on .ico{opacity:1}
+.side.mini .navitem{justify-content:center;padding:9px 0}.side.mini .navitem .lbl{display:none}
+.side-foot{padding:12px 16px;border-top:1px solid var(--cardline);font-family:var(--mono);font-size:10px;color:#52525B;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
+.side.mini .side-foot .who{display:none}.side.mini .side-foot{justify-content:center;padding:12px 0}
+.shell{height:100vh;display:flex;flex-direction:column;flex:1;min-width:0;overflow:hidden}
+
+header{flex:0 0 auto;padding:13px 22px;display:flex;align-items:center;justify-content:space-between;
+  gap:20px;position:relative;background:var(--paper);z-index:14}
+header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--spectrum);opacity:.55}
+.brand{display:flex;align-items:baseline;gap:11px}
+.brand b{font-size:15px;font-weight:600;letter-spacing:-.02em}
+.brand span{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray2)}
+.hactions{display:flex;align-items:center;gap:10px}
+.dirty{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--gray2)}
+.dirty.on{color:#8A6A1E}
+.hbtn{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid var(--line);border-radius:20px;padding:7px 14px;color:var(--gray);transition:border-color .15s,color .15s}
+.hbtn:hover{border-color:var(--ink);color:var(--ink)}
+.hbtn.p{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.hbtn.p:hover{opacity:.86}
+.hbtn:disabled{opacity:.35;cursor:default}
+.hbtn:disabled:hover{border-color:var(--line);color:var(--gray)}
+
+.workspace{flex:1 1 auto;display:flex;min-height:0}
+#jlist{flex:0 0 190px;border-right:1px solid var(--line);padding:19px 0;overflow-y:auto}
+#jlist .eyebrow{padding:0 20px 12px}
+.jrow{width:100%;text-align:left;padding:9px 20px;display:flex;align-items:center;gap:9px;position:relative;transition:background .13s}
+.jrow:hover{background:var(--soft)}
+.jrow .nm{font-size:13.5px;flex:1 1 auto}
+.jrow .ct{font-family:var(--mono);font-size:10px;color:var(--gray2)}
+.jrow[aria-selected="true"]{background:var(--soft)}
+.jrow[aria-selected="true"]::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:2px;background:var(--ink)}
+.jrow[aria-selected="true"] .nm{font-weight:600}
+.jrow .edited{width:5px;height:5px;border-radius:50%;background:var(--warn)}
+
+.canvas{flex:1 1 auto;overflow-y:auto;padding:24px 24px 130px;min-width:0;position:relative;
+  background-image:radial-gradient(var(--line) .9px,transparent .9px);background-size:22px 22px;background-position:-1px -1px}
+.chead{max-width:700px;margin:0 auto 16px}
+.chead h1{font-size:22px;font-weight:600;letter-spacing:-.03em;margin:7px 0 3px}
+.chead p{font-size:13px;color:var(--gray);max-width:58ch}
+.rail{max-width:700px;margin:0 auto}
+
+.ask{max-width:700px;margin:0 auto 26px}
+.askbox{border:1px solid var(--line);border-radius:12px;background:var(--paper);overflow:hidden;position:relative;transition:border-color .15s}
+.askbox::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--spectrum);opacity:0;transition:opacity .2s}
+.askbox:focus-within{border-color:var(--ink)}
+.askbox:focus-within::before{opacity:1}
+.askbox textarea{width:100%;border:none;outline:none;resize:none;font-family:var(--sans);font-size:14px;
+  padding:14px 15px 4px;background:transparent;color:var(--ink);min-height:52px;line-height:1.5}
+.askbox textarea::placeholder{color:var(--gray2)}
+.askrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 10px 10px 15px}
+.askrow .lbl{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
+.sendbtn{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  background:var(--ink);color:var(--paper);border-radius:8px;padding:9px 16px;transition:opacity .15s}
+.sendbtn:hover{opacity:.86}
+.egs{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.eg{font-size:12px;color:var(--gray);border:1px solid var(--line);border-radius:20px;padding:5px 12px;transition:border-color .13s,color .13s}
+.eg:hover{border-color:var(--ink);color:var(--ink)}
+.thinking{display:flex;align-items:center;gap:10px;padding:13px 15px;font-size:13px;color:var(--gray)}
+.sp{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--line);border-top-color:var(--ink);
+  animation:spin .7s linear infinite;flex:0 0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.askerr{padding:11px 15px;font-size:12.5px;color:#8A4A42;background:#F2A69B1F;border-top:1px solid #F2A69B4D}
+
+.cap{display:flex;justify-content:center}
+.cap .pill{border:1px solid var(--line);background:var(--paper);border-radius:22px;padding:9px 18px;
+  display:flex;align-items:center;gap:10px;max-width:420px;transition:border-color .2s}
+.cap .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--ink);flex:0 0 auto}
+.cap.end .pill .dot{background:transparent;border:1.5px solid var(--gray2)}
+.cap .pill .lb{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);display:block}
+.cap .pill .tt{font-size:13px;font-weight:500;letter-spacing:-.01em}
+
+.wire{position:relative;height:34px}
+.wire::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:var(--wire);transform:translateX(-.75px)}
+.wire::after{content:"";position:absolute;left:50%;bottom:0;width:6px;height:6px;
+  border-right:1.5px solid var(--wire);border-bottom:1.5px solid var(--wire);transform:translate(-50%,2px) rotate(45deg)}
+.wire.plain::after{display:none}
+.wire .add{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:21px;height:21px;
+  border-radius:50%;border:1px solid var(--line);background:var(--paper);display:grid;place-items:center;
+  font-size:14px;line-height:1;color:var(--gray2);opacity:0;transition:opacity .13s,border-color .13s,color .13s;z-index:3}
+.rail:hover .add,.wire .add:focus-visible{opacity:1}
+.wire .add:hover{border-color:var(--ink);color:var(--ink)}
+.wire.open .add{opacity:1;border-color:var(--ink);color:var(--ink)}
+body.running .wire .add{display:none}
+
+.nrow{display:flex;justify-content:center;position:relative}
+.node{width:340px;max-width:100%;border:1px solid var(--line);border-radius:10px;background:var(--paper);
+  text-align:left;position:relative;overflow:hidden;transition:border-color .16s,box-shadow .16s,opacity .2s}
+.node::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gray2)}
+.node.g-msg::before{background:var(--warn)}
+.node.g-time::before{background:var(--info)}
+.node.g-act::before{background:var(--accent)}
+.node.g-pipe::before{background:var(--ok)}
+.node:hover{border-color:var(--gray2)}
+.nrow[aria-selected="true"] .node{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.nin{padding:12px 15px 12px 17px}
+.ntop{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:4px}
+.ntop b{font-size:13.5px;font-weight:500;letter-spacing:-.01em}
+.ntop .ty{font-family:var(--mono);font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--gray2);white-space:nowrap;flex:0 0 auto}
+.nsub{font-size:12.5px;color:var(--gray);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.nsub.q{color:var(--gray2);font-style:italic}
+.node.ask-n{border-style:dashed}
+.node.ask-n .ntop b::after{content:"?";margin-left:1px}
+.node.prop{border-color:#C4B3E5;background:#C4B3E50F}
+.node.prop::before{background:var(--spectrum)}
+.node.edited-n{border-color:#F5CE8F;background:#F5CE8F14}
+.tagpill{position:absolute;top:-8px;left:50%;transform:translateX(-180px);font-family:var(--mono);font-size:8.5px;
+  letter-spacing:.12em;text-transform:uppercase;background:var(--paper);border-radius:11px;padding:2px 8px;z-index:2}
+.tagpill.n{color:#5B4B8A;border:1px solid #C4B3E5}
+.tagpill.c{color:#8A6A1E;border:1px solid #F5CE8F}
+
+/* simulation states */
+body.running .node{opacity:.45}
+body.running .nrow.fired .node{opacity:1}
+body.running .nrow.now .node{opacity:1;border-color:var(--ink);box-shadow:0 0 0 3px #A8D8B066}
+body.running .nrow.skipped .node{opacity:.2}
+.nrow.fired .node::before{background:var(--ok)!important}
+.firedtick{position:absolute;top:-8px;left:50%;transform:translateX(-180px);font-family:var(--mono);font-size:8.5px;
+  letter-spacing:.12em;text-transform:uppercase;background:var(--paper);border:1px solid var(--ok);
+  color:#3F6B4C;border-radius:11px;padding:2px 8px;z-index:2}
+
+.fork{position:relative;height:40px}
+.fork .stem{position:absolute;left:50%;top:0;height:18px;width:1.5px;background:var(--wire);transform:translateX(-.75px)}
+.fork .cross{position:absolute;top:18px;height:1.5px;background:var(--wire);left:calc((100% - var(--gap))/4);right:calc((100% - var(--gap))/4)}
+.fork .dl,.fork .dr{position:absolute;top:18px;height:22px;width:1.5px;background:var(--wire)}
+.fork .dl{left:calc((100% - var(--gap))/4)}
+.fork .dr{right:calc((100% - var(--gap))/4)}
+.fork .tag{position:absolute;top:22px;font-family:var(--mono);font-size:9px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--gray);background:var(--paper);padding:0 6px}
+.fork .tag.l{left:calc((100% - var(--gap))/4);transform:translateX(9px)}
+.fork .tag.r{right:calc((100% - var(--gap))/4);transform:translateX(-9px)}
+.lanes{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);align-items:start}
+.lane{min-width:0;transition:opacity .2s}
+.lane .node{width:100%}
+body.running .lane.notaken{opacity:.25}
+.merge{position:relative;height:40px}
+.merge .cross{position:absolute;top:22px;height:1.5px;background:var(--wire);left:calc((100% - var(--gap))/4);right:calc((100% - var(--gap))/4)}
+.merge .ul,.merge .ur{position:absolute;top:0;height:22px;width:1.5px;background:var(--wire)}
+.merge .ul{left:calc((100% - var(--gap))/4)}
+.merge .ur{right:calc((100% - var(--gap))/4)}
+.merge .stem{position:absolute;left:50%;top:22px;height:18px;width:1.5px;background:var(--wire);transform:translateX(-.75px)}
+.emptylane{border:1px dashed var(--line);border-radius:9px;padding:15px;text-align:center;font-size:12px;color:var(--gray2)}
+
+.menu{position:fixed;z-index:40;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:5px;
+  min-width:214px;box-shadow:0 10px 30px rgba(10,10,10,.11)}
+.menu .mh{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);padding:9px 10px 6px}
+.mi{width:100%;text-align:left;padding:8px 10px;border-radius:6px;display:flex;align-items:center;gap:10px;transition:background .1s}
+.mi:hover{background:var(--soft)}
+.mi .sw{width:3px;height:15px;border-radius:2px;flex:0 0 auto}
+.mi .l{font-size:13px;flex:1 1 auto}
+.mi .d{font-size:11.5px;color:var(--gray2)}
+
+/* panel */
+.panel{flex:0 0 348px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.ptabs{flex:0 0 auto;display:flex;border-bottom:1px solid var(--line);padding:0 12px}
+.ptab{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:14px 11px;
+  color:var(--gray2);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .13s,border-color .13s}
+.ptab:hover{color:var(--ink)}
+.ptab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.pbody{flex:1 1 auto;overflow-y:auto;padding:18px 20px 90px;min-height:0}
+.ptitle{font-size:16px;font-weight:600;letter-spacing:-.02em;margin-bottom:3px}
+.pmeta{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--gray2);margin-bottom:16px}
+.fld{margin-bottom:14px}
+.fld label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);margin-bottom:6px}
+.fld input,.fld textarea,.fld select{width:100%;font-family:var(--sans);font-size:12.5px;padding:9px 11px;
+  border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);transition:border-color .13s}
+.fld textarea{min-height:80px;resize:vertical;line-height:1.55}
+.fld input:focus,.fld textarea:focus,.fld select:focus{outline:none;border-color:var(--ink)}
+.fld .hint{font-size:11.5px;color:var(--gray2);margin-top:5px;line-height:1.45}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.pactions{display:flex;gap:7px;margin-top:16px;padding-top:15px;border-top:1px solid var(--line)}
+.pa{flex:1 1 auto;text-align:center;font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+  padding:9px 6px;border:1px solid var(--line);border-radius:7px;color:var(--gray);transition:border-color .13s,color .13s}
+.pa:hover{border-color:var(--ink);color:var(--ink)}
+.pa.del:hover{border-color:#C4514A;color:#C4514A}
+.touch{margin-top:16px;padding-top:15px;border-top:1px solid var(--line)}
+.touch .th{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);margin-bottom:9px}
+.ti{display:flex;gap:9px;align-items:flex-start;padding:7px 0;font-size:12.5px;border-bottom:1px solid var(--line)}
+.ti:last-child{border-bottom:none}
+.ti .k{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray2);flex:0 0 58px;padding-top:2px}
+.ti .v{flex:1 1 auto;color:var(--ink2)}
+.touch .none{font-size:12.5px;color:var(--gray2)}
+.stepask{margin-top:16px;padding-top:15px;border-top:1px solid var(--line)}
+.stepask textarea{min-height:52px}
+.gobtn{width:100%;text-align:center;font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+  padding:9px;border-radius:7px;background:var(--ink);color:var(--paper);margin-top:8px}
+.gobtn:hover{opacity:.86}
+.gobtn:disabled{opacity:.35;cursor:default}
+.empty{color:var(--gray2);font-size:12.5px;line-height:1.65}
+
+/* simulate tab */
+.testbanner{border:1px solid var(--ok);background:#A8D8B01F;border-radius:9px;padding:11px 13px;
+  font-size:12px;color:#31573D;line-height:1.5;margin-bottom:16px}
+.testbanner b{font-weight:500}
+.runctl{display:flex;gap:8px;margin-top:6px}
+.runctl .gobtn{margin-top:0}
+.runstat{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--gray2);
+  margin:16px 0 10px;display:flex;align-items:center;gap:9px}
+.feed{display:flex;flex-direction:column;gap:10px}
+.msg{border-radius:12px;padding:10px 13px;font-size:12.5px;line-height:1.5;max-width:100%;
+  animation:pop .24s cubic-bezier(.2,.7,.3,1) backwards}
+@keyframes pop{from{opacity:0;transform:translateY(7px)}}
+.msg.sms{background:var(--soft);border:1px solid var(--line)}
+.msg.email{background:var(--paper);border:1px solid var(--line)}
+.msg .mh2{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:8.5px;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--gray2);margin-bottom:6px}
+.msg .subj{font-weight:500;font-size:12.5px;margin-bottom:4px}
+.msg .to{font-family:var(--mono);font-size:9px;color:var(--gray2);margin-top:7px}
+.evt{font-size:12px;color:var(--gray);display:flex;gap:9px;align-items:baseline;padding:2px 0}
+.evt .t{font-family:var(--mono);font-size:9px;color:var(--gray2);flex:0 0 40px}
+.evt.skip{color:var(--gray2);font-style:italic}
+.report{border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:16px}
+.report .rh{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);margin-bottom:10px}
+.rrow{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--line)}
+.rrow:last-child{border-bottom:none}
+.rrow .v{font-family:var(--mono);font-size:12px}
+
+/* history tab */
+.sect{margin-bottom:22px}
+.sect .sh{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);margin-bottom:10px}
+.li{border:1px solid var(--line);border-radius:9px;padding:11px 13px;margin-bottom:8px}
+.li .lt{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin-bottom:3px}
+.li .who{font-family:var(--mono);font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--gray2)}
+.li .who.ai{color:#5B4B8A}
+.li .when{font-family:var(--mono);font-size:9px;color:var(--gray2)}
+.li .wt{font-size:12.5px;line-height:1.45}
+.li .rv{font-family:var(--mono);font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--gray);
+  border:1px solid var(--line);border-radius:14px;padding:4px 10px;margin-top:8px;transition:border-color .13s,color .13s}
+.li .rv:hover{border-color:var(--ink);color:var(--ink)}
+.li .rv:disabled{opacity:.4;cursor:default}
+.li.reverted{opacity:.55}
+
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);color:var(--cardtext);
+  border-top:1px solid var(--cardline);z-index:20;animation:up .22s cubic-bezier(.2,.7,.3,1) backwards}
+@keyframes up{from{transform:translateY(100%)}}
+.bartop{padding:13px 26px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.bartop .what{font-size:12.5px;color:#A1A1AA;min-width:0}
+.bartop .what b{color:#fff;font-weight:500}
+.bartop .btns{display:flex;gap:8px;flex:0 0 auto}
+.ab{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;padding:9px 15px;
+  border-radius:7px;border:1px solid var(--cardline);color:var(--cardtext);transition:border-color .13s}
+.ab:hover{border-color:var(--gray)}
+.ab.p{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+.ab.p:hover{opacity:.88}
+.impact{border-top:1px solid var(--cardline);padding:11px 26px 13px;display:flex;gap:26px;flex-wrap:wrap}
+.impact .ii{font-size:12px;color:#A1A1AA}
+.impact .ii b{font-weight:500;display:block;font-family:var(--mono);font-size:9px;letter-spacing:.11em;
+  text-transform:uppercase;color:#71717A;margin-bottom:3px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:50;background:var(--card);
+  color:var(--cardtext);border:1px solid var(--cardline);border-radius:10px;padding:13px 17px;max-width:470px;
+  font-size:12.5px;line-height:1.55;animation:up2 .26s cubic-bezier(.2,.7,.3,1) backwards}
+@keyframes up2{from{opacity:0;transform:translate(-50%,10px)}}
+.toast b{color:#fff;font-weight:500}
+.toast .pb{height:2px;border-radius:1px;background:var(--spectrum);margin-top:10px;transform-origin:left;animation:fill 4.4s linear forwards}
+@keyframes fill{from{transform:scaleX(0)}}
+
+@media (max-width:1140px){.panel{flex:0 0 308px}}
+@media (max-width:920px){
+  .side{display:none}
+  .workspace{flex-direction:column;overflow-y:auto}
+  #jlist{flex:0 0 auto;border-right:none;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;padding:10px 0}
+  #jlist .eyebrow{display:none}
+  .jrow{width:auto;flex:0 0 auto;padding:7px 14px;white-space:nowrap}
+  .jrow .ct{display:none}
+  .jrow[aria-selected="true"]::before{top:auto;bottom:-10px;left:14px;right:14px;width:auto;height:2px}
+  .canvas{padding:18px 12px 40px}
+  .panel{flex:0 0 auto;border-left:none;border-top:1px solid var(--line);max-height:none}
+  .pbody{overflow:visible}
+  .wire .add{opacity:1}
+  :root{--gap:16px}
+  .tagpill,.firedtick{transform:translateX(-50%);top:-9px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+<script src="shell.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══ SIDEBAR — identical across every wireframe ══ -->
+  <aside class="side" id="side">
+    <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
+    <nav class="side-scroll">
+      <div class="navgroup"><button class="navhead">Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Finance<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="money-map.html"><span class="ico">◪</span><span class="lbl">Money Map</span></a>
+        <a class="navitem" href="finance-os.html"><span class="ico">▩</span><span class="lbl">Finance OS</span></a>
+        <a class="navitem" href="banking-surface.html"><span class="ico">◧</span><span class="lbl">Banking</span></a>
+        <a class="navitem" href="subscriptions.html"><span class="ico">◍</span><span class="lbl">Subscriptions</span></a>
+        <a class="navitem" href="card-stack.html"><span class="ico">▥</span><span class="lbl">Card Stack</span></a>
+        <a class="navitem" href="bank-accounts.html"><span class="ico">⊞</span><span class="lbl">Bank Accounts</span></a>
+        <a class="navitem" href="bills-cashflow.html"><span class="ico">∿</span><span class="lbl">Bills &amp; Cash Flow</span></a>
+        <a class="navitem" href="alerts.html"><span class="ico">⚠</span><span class="lbl">Alerts</span></a>
+        <a class="navitem" href="deal-model.html"><span class="ico">⌁</span><span class="lbl">Deal Model</span></a>
+        <a class="navitem" href="banking-entry.html"><span class="ico">✚</span><span class="lbl">Add Accounts</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
+        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Automation<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+        <a class="navitem on" href="journeys.html"><span class="ico">⇝</span><span class="lbl">Journeys</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Marketing<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
+        <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
+        <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Setup<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
+        <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
+        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
+        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Client<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+      </div></div>
+    </nav>
+
+    <div class="side-foot"><span class="pulse"></span><span class="who">journeys editor</span></div>
+  </aside>
+
+  <div class="shell">
+
+  <header>
+    <div class="brand"><b>fundhub</b><span>journeys</span></div>
+    <div class="hactions">
+      <span class="dirty" id="dirty"></span>
+      <button class="hbtn" id="undo">Undo</button>
+      <button class="hbtn" id="savever">Save version</button>
+      <button class="hbtn p" id="apply">Apply to code</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside id="jlist" role="tablist" aria-label="Journeys"></aside>
+    <div class="canvas" id="canvas"></div>
+    <div class="panel">
+      <div class="ptabs" role="tablist" aria-label="Panel">
+        <button class="ptab" data-tab="step" role="tab">Step</button>
+        <button class="ptab" data-tab="sim" role="tab">Simulate</button>
+        <button class="ptab" data-tab="hist" role="tab">History</button>
+      </div>
+      <div class="pbody" id="pbody"></div>
+    </div>
+  </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var side=document.getElementById('side'),b=document.getElementById('burger');
+  b.addEventListener('click',function(){side.classList.toggle('mini');b.textContent=side.classList.contains('mini')?'››':'‹‹';});
+  document.querySelectorAll('.navhead').forEach(function(h){
+    h.addEventListener('click',function(){if(side.classList.contains('mini'))return;h.parentElement.classList.toggle('closed');});
+  });
+})();
+</script>
+
+<script>
+const TYPES={
+  sms:{k:'Send a text',g:'msg',grp:'Message',d:'SMS to the client'},
+  email:{k:'Send an email',g:'msg',grp:'Message',d:'Email to the client'},
+  wait:{k:'Wait',g:'time',grp:'Timing',d:'Pause before the next step'},
+  condition:{k:'Ask a question',g:'time',grp:'Timing',d:'Split into two paths'},
+  stage:{k:'Move the card',g:'pipe',grp:'Pipeline',d:'Advance a pipeline stage'},
+  assign:{k:'Assign to',g:'pipe',grp:'Pipeline',d:'Give it to a role'},
+  handoff:{k:'Hand off',g:'pipe',grp:'Pipeline',d:'Another journey picks up'},
+  agent:{k:'Run an agent',g:'act',grp:'Action',d:'AI does something'},
+  payment:{k:'Take payment',g:'act',grp:'Action',d:'Charge the client'},
+  record:{k:'Save something',g:'act',grp:'Action',d:'Write to their file'}
+};
+const ROLES=['Client','Setter','Closer','Funding Advisor','Inquiry Specialist','Owner','Affiliate','Partner'];
+const STAGES=['New Lead','Survey Complete','Booked','Confirmed','Showed','Diagnostic Paid','Decision Rendered',
+  'Closed Won (deposit)','Downsell','Lost','Apply Now','Round Submitted','Approved','Funded','Closed'];
+const PIPES=['Sales','Funding: Card Stacking','Funding: Alt-Fin (Lendflow)','Optimization (Repair) Rounds',
+  'Inquiry Removal','AR / Collections','Affiliates + Hiring'];
+const DELAYS=['instant','after 15 minutes','after 2 hours','after 1 day','after 2 days','24h before','2h before'];
+
+let uid=1; const nid=()=>'n'+(uid++);
+const N=(type,title,cfg,touches,branches)=>({id:nid(),type,title,cfg,touches:touches||[],branches});
+
+function seed(){return{
+ client:{name:'Client',start:'Someone submits the funding form',end:'They have their diagnostic — funding takes over',
+  desc:'What a business owner goes through, from filling out the form to getting their result.',
+  nodes:[
+   N('sms','Text them the survey link',{body:"Hi {first_name} — Chris from Fundhub. Got your request. Quick 2-min survey so I can see what you'd qualify for: {survey_link}  Reply STOP to opt out.",delay:'instant'},
+     [['Template','S-01'],['Agent','Setter Josh picks up the reply thread'],['Rule','A2P opt-out language required']]),
+   N('assign','Give the lead to a setter',{role:'Setter'},
+     [['Journey','Setter journey starts'],['Agent','Setter Josh dials within 5 minutes'],['Screen','Setter queue']]),
+   N('wait','Wait two days for the survey',{amount:'2',unit:'days'},[]),
+   N('condition','Did they finish the survey',{field:'survey_complete',op:'is true'},[],[
+     {label:'Yes',nodes:[
+       N('stage','Move them to Survey Complete',{stage:'Survey Complete',pipeline:'Sales'},[['Screen','Sales board']]),
+       N('sms','Text them the booking link',{body:"Thanks {first_name}. Based on what you shared there's a path here. Grab a time and I'll walk you through it: {booking_link}  Reply STOP to opt out.",delay:'instant'},[['Template','S-02'],['Screen','Closer calendar']])]},
+     {label:'No',nodes:[
+       N('sms','Nudge them once more',{body:"{first_name} — still need those 2 minutes to see what you qualify for: {survey_link}  Reply STOP to opt out.",delay:'instant'},[['Template','S-02b']])]}
+   ]),
+   N('stage','Move them to Booked',{stage:'Booked',pipeline:'Sales'},[['Screen','Sales board']]),
+   N('sms','Remind them the day before',{body:"{first_name} — we're on for tomorrow at {time}. Bring your entity info and I'll map out what's available. Reply STOP to opt out.",delay:'24h before'},[['Template','S-03']]),
+   N('handoff','Hand the call to a closer',{role:'Closer',stage:'Call Assigned'},
+     [['Journey','Closer journey starts'],['Screen','Pre-call panel'],['Rule','Only clocked-in closers get bookings']]),
+   N('payment','Take the $32 diagnostic',{amount:'32.00',product:'Business Financial Assessment'},
+     [['Rule','Refused unless consent was recorded'],['Rail','Commas / Payva']]),
+   N('agent','Run UnderwriteIQ',{agent:'UnderwriteIQ',note:'Soft pull, then score the file and pick a route.'},
+     [['Agent','UnderwriteIQ engine'],['Rule','FCRA soft-pull consent gate'],['Screen','Closer result screen']]),
+   N('email','Email the results',{subject:'Your Fundhub diagnostic is ready',
+     body:"{first_name} — your report is in the portal: {portal_link}. Your advisor will call to walk through it.",delay:'instant'},
+     [['Screen','portal.fundhub.ai'],['Journey','Funding Advisor can start']])
+  ]},
+ setter:{name:'Setter',start:'A new lead lands in the queue',end:'Call is booked and handed to a closer',
+  desc:'The first contact. Owns the gap between a form fill and a slot on someone’s calendar.',
+  nodes:[
+   N('agent','Voice agent calls them',{agent:'Setter Josh',note:'Three attempts across the first hour.'},
+     [['Agent','Setter Josh (Bland)'],['Rule','Stops at three attempts']]),
+   N('condition','Did they pick up',{field:'call_answered',op:'is true'},[],[
+     {label:'Yes',nodes:[N('sms','Send the survey link',{body:"Here's the 2-minute survey, {first_name}: {survey_link}  Reply STOP to opt out.",delay:'instant'},[['Template','N-03']])]},
+     {label:'No',nodes:[N('sms','Text after the missed call',{body:"Tried you just now, {first_name} — Chris from Fundhub. Easier to text? Tell me what you're trying to fund. Reply STOP to opt out.",delay:'instant'},[['Template','N-02']])]}
+   ]),
+   N('stage','Move them to Booked',{stage:'Booked',pipeline:'Sales'},[['Screen','Sales board']]),
+   N('handoff','Hand off to a closer',{role:'Closer',stage:'Call Assigned'},[['Journey','Closer journey'],['Rule','Setter credited for commission']])
+  ]},
+ closer:{name:'Closer',start:'A booked call is assigned to you',end:'Client is routed to funding or repair',
+  desc:'Owns the call. Takes the payment, reads the result live, and picks which way the client goes.',
+  nodes:[
+   N('record','Load the pre-call panel',{note:'Survey answers, past conversations, any earlier rounds.'},[['Screen','Pre-call panel'],['Rule','Only clients from your company']]),
+   N('payment','Take the $32 on the call',{amount:'32.00',product:'Business Financial Assessment'},[['Rule','Consent captured first'],['Rail','Commas / Payva']]),
+   N('agent','Run UnderwriteIQ',{agent:'UnderwriteIQ',note:'Result renders while the client is still on the phone.'},[['Agent','UnderwriteIQ engine'],['Rule','Blank fields show as unknown, never zero']]),
+   N('condition','Do they qualify for funding',{field:'underwrite_route',op:'= funding'},[],[
+     {label:'Qualified',nodes:[
+       N('stage','Close them to deposit',{stage:'Closed Won (deposit)',pipeline:'Sales'},[['Rule','Commission splits read from the table']]),
+       N('sms','Text the good news',{body:"{first_name} — you're approved to move forward. {lender} came back at {amount}. Your advisor will call today. Reply STOP to opt out.",delay:'instant'},[['Template','F-03']]),
+       N('handoff','Hand to a funding advisor',{role:'Funding Advisor',stage:'File Received'},[['Journey','Funding Advisor journey']])]},
+     {label:'Not yet',nodes:[
+       N('stage','Move them to Downsell',{stage:'Downsell',pipeline:'Sales'},[]),
+       N('record','Attach the dispute letters',{note:'DS-02 pack. Repair path only.'},[['Rule','Never on the funding route'],['Journey','Optimization rounds']])]}
+   ])
+  ]},
+ advisor:{name:'Funding Advisor',start:'A qualified file lands on your desk',end:'Round is funded',
+  desc:'Runs the actual capital rounds — picks the lenders, submits, chases the missing documents.',
+  nodes:[
+   N('record','Open a funding round',{note:'Lender set comes from the Bank and Lender Match List.'},[['Screen','Advisor dashboard'],['Rule','Round scoped to one company']]),
+   N('stage','Submit the round',{stage:'Round Submitted',pipeline:'Funding: Card Stacking'},[['Rule','Alt-fin moves only on Lendflow webhooks']]),
+   N('sms','Tell them it went out',{body:"Round submitted, {first_name}. Decisions usually land in 24-72 hours. I'll text as they come in. Reply STOP to opt out.",delay:'instant'},[['Template','F-02']]),
+   N('wait','Wait on lender decisions',{amount:'3',unit:'days'},[]),
+   N('stage','Mark it funded',{stage:'Funded',pipeline:'Funding: Card Stacking'},[['Screen','Client finance dashboard'],['Journey','Owner revenue roll-up']])
+  ]},
+ affiliate:{name:'Affiliate',start:'An affiliate is approved',end:'Referral is credited',
+  desc:'Sends leads under a tracked link and gets paid when one closes.',
+  nodes:[
+   N('record','Create the affiliate record',{note:'Commission rate is read from the compensation table.'},[['Rule','Rate is never hardcoded']]),
+   N('email','Send their link',{subject:'Your Fundhub referral link',body:'Your tracked link, QR code, and how payouts work.',delay:'instant'},[['Screen','Affiliate portal — not built yet']]),
+   N('handoff','Send the referral to a setter',{role:'Setter',stage:'Lead Assigned'},[['Journey','Setter journey'],['Rule','Referral stamped at click time']])
+  ]},
+ partner:{name:'White-Label Partner',start:'A partner signs the agreement',end:'Partner is operating',
+  desc:'Runs Fundhub under their own brand, inside their own walled-off scope.',
+  nodes:[
+   N('record','Create the partner company',{note:'Isolated scope. Partner A can never read partner B.'},[['Rule','Row-level security, enforced']]),
+   N('agent','Apply their brand',{agent:'Brand Studio',note:'Colors, typefaces, entity name, domain.'},[['Screen','Brand Studio'],['Rule','Writes gated to owner and admin']]),
+   N('email','Invite their team',{subject:'Your Fundhub seat is ready',body:'Role-scoped access for each team member.',delay:'instant'},[['Journey','Every staff journey, in partner scope']])
+  ]}
+};}
+
+let J=seed();
+/* SAVED — last-known-good state per journey: the server's row once it loads,
+   the seed example until then. "Discard" reverts here, not to the hardcoded
+   seed, so discarding new edits on a journey that already has real saved
+   content cannot wipe that content back to the mock example. */
+let SAVED=JSON.parse(JSON.stringify(J));
+const ORDER=['client','setter','closer','advisor','affiliate','partner'];
+let active='client', selId=null, dirty=0, touched={}, undoStack=[], tab='step';
+let pending=null, busy=false, askErr='', askText='';
+let log=[], versions=[];
+let sim={running:false,done:false,feed:[],report:null,timer:null,
+  phone:'+1 (480) 555-0142',email:'chris@fundhub.ai',mode:'first'};
+
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const now=()=>new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+
+function listAt(path){ if(!path||!path.length) return J[active].nodes;
+  const c=J[active].nodes.find(n=>n.id===path[0]); return c?c.branches[path[1]].nodes:J[active].nodes; }
+function findNode(id,nodes=J[active].nodes,path=[]){
+  for(let i=0;i<nodes.length;i++){ const n=nodes[i];
+    if(n.id===id) return {node:n,list:nodes,idx:i,path};
+    if(n.branches) for(let b=0;b<n.branches.length;b++){
+      const r=findNode(id,n.branches[b].nodes,[n.id,b]); if(r) return r; } }
+  return null;
+}
+function countNodes(k){let n=0;const w=l=>l.forEach(x=>{n++;if(x.branches)x.branches.forEach(b=>w(b.nodes))});w(J[k].nodes);return n}
+
+/* ── change log: mirrors the action_log table (actor, target, before, after, undo) ── */
+function record(actor,what,before){
+  log.unshift({id:'l'+Date.now()+Math.random().toString(36).slice(2,6),actor,what,
+    journey:active,ts:now(),before,reverted:false});
+  if(log.length>60) log.pop();
+}
+function revert(entryId){
+  const e=log.find(x=>x.id===entryId); if(!e||e.reverted) return;
+  const cur=JSON.stringify(J[e.journey]);
+  J[e.journey]=JSON.parse(e.before);
+  e.reverted=true;
+  record('you','Reverted: '+e.what,cur);
+  log[0].reverted=true;
+  selId=null; pending=null; bump(); render();
+  toast('<b>Reverted.</b> ' + esc(e.what) + ' — put back the way it was.');
+}
+function bump(){dirty++;touched[active]=true}
+function pushUndo(){undoStack.push(JSON.stringify(J[active]));if(undoStack.length>40)undoStack.shift()}
+function commit(what){bump();record('you',what,undoStack[undoStack.length-1]);render()}
+
+function defaults(t){return{sms:{body:'Reply STOP to opt out.',delay:'instant'},email:{subject:'',body:'',delay:'instant'},
+  wait:{amount:'1',unit:'days'},stage:{stage:'New Lead',pipeline:'Sales'},assign:{role:'Setter'},
+  handoff:{role:'Closer',stage:''},agent:{agent:'UnderwriteIQ',note:''},payment:{amount:'',product:''},
+  record:{note:''},condition:{field:'',op:'is true'}}[t]||{}}
+function addNode(path,idx,type){ pushUndo();
+  const n=N(type,TYPES[type].k,defaults(type),[]);
+  if(type==='condition'){n.title='New question';n.branches=[{label:'Yes',nodes:[]},{label:'No',nodes:[]}]}
+  listAt(path).splice(idx,0,n); selId=n.id; tab='step'; closeMenu(); commit('Added a step: '+n.title); }
+function delNode(id){const f=findNode(id);if(!f)return;const t=f.node.title;pushUndo();
+  f.list.splice(f.idx,1);selId=null;commit('Deleted a step: '+t)}
+function moveNode(id,d){const f=findNode(id);if(!f)return;const j=f.idx+d;
+  if(j<0||j>=f.list.length)return;pushUndo();
+  [f.list[f.idx],f.list[j]]=[f.list[j],f.list[f.idx]];commit('Moved '+f.node.title+(d<0?' up':' down'))}
+let editTimer=null, editBefore=null;
+function setCfg(id,k,v){const f=findNode(id);if(!f)return;
+  if(!editBefore) editBefore=JSON.stringify(J[active]);
+  if(k==='title')f.node.title=v;else f.node.cfg[k]=v;
+  bump();syncHeader();renderCanvas();
+  clearTimeout(editTimer);
+  editTimer=setTimeout(()=>{ undoStack.push(editBefore);
+    record('you','Edited '+f.node.title,editBefore); editBefore=null; renderPanel(); },900);
+}
+function undo(){if(!undoStack.length)return;J[active]=JSON.parse(undoStack.pop());
+  dirty=Math.max(0,dirty-1);selId=null;pending=null;render()}
+
+/* ── versions ── */
+function saveVersion(){
+  const name=prompt('Name this version','Journey as of '+new Date().toLocaleDateString());
+  if(!name) return;
+  versions.unshift({id:'v'+Date.now(),name,journey:active,ts:new Date().toLocaleString(),
+    snap:JSON.stringify(J[active]),steps:countNodes(active)});
+  toast('<b>Saved.</b> You can come back to “'+esc(name)+'” at any point.');
+  tab='hist'; render();
+}
+function restoreVersion(id){
+  const v=versions.find(x=>x.id===id); if(!v) return;
+  const before=JSON.stringify(J[v.journey]);
+  pushUndo(); J[v.journey]=JSON.parse(v.snap); active=v.journey; selId=null; pending=null;
+  bump(); record('you','Rolled back to “'+v.name+'”',before); render();
+  toast('<b>Rolled back.</b> This journey is the way it was at “'+esc(v.name)+'”.');
+}
+
+/* ── Claude — real server call via /api/journeys/ask, which holds the key ── */
+function compact(nodes){return nodes.map(n=>{const o={id:n.id,type:n.type,title:n.title,cfg:n.cfg};
+  if(n.branches)o.branches=n.branches.map(b=>({label:b.label,nodes:compact(b.nodes)}));return o})}
+function sysPrompt(){return `You edit workflow journeys for Fundhub, a business-funding company. Return ONLY JSON.
+
+STEP TYPES and exact cfg shape:
+sms      {body, delay}          delay: ${DELAYS.join(' | ')}
+email    {subject, body, delay}
+wait     {amount, unit}         unit: minutes | hours | days
+condition{field, op}            op: is true | is false | is set | is empty | = funding | = optimization
+                                 MUST also carry "branches": [{label,nodes:[]},{label,nodes:[]}]
+stage    {stage, pipeline}      stage: ${STAGES.join(' | ')}
+                                 pipeline: ${PIPES.join(' | ')}
+assign   {role}                 role: ${ROLES.join(' | ')}
+handoff  {role, stage}
+agent    {agent, note}          agent: UnderwriteIQ | Setter Josh | Brand Studio | Inquiry Voice | Alerts Engine
+payment  {amount, product}
+record   {note}
+
+RETURN:
+{"summary":"one plain past-tense sentence",
+ "ops":[{"op":"insert","after":"<id>|start","path":[],"node":{...}},
+        {"op":"update","id":"<id>","title":"...","cfg":{...}},
+        {"op":"delete","id":"<id>"}]}
+
+RULES:
+1. FILL EVERYTHING IN. Never a placeholder, TODO, empty string, or unfilled {{variable}}. Write the real SMS
+   copy. Pick the real delay. Name the real field. A half-finished step is worse than none — this is the point.
+2. Match the existing SMS voice: first person from Chris, short, casual, one clear ask, {first_name} and
+   links like {booking_link}. Every SMS body MUST end "Reply STOP to opt out."
+3. "path":["conditionId",0] targets the first lane, 1 the second. [] or omitted = main line.
+4. "after" is the id the new step goes below, or "start" for the top of that line.
+5. Every inserted node needs type, title (plain English, verb first), cfg. Conditions need two labelled lanes.
+6. Smallest change that does the job. Do not restructure what the user did not mention.`}
+
+async function askClaude(text,scopeId){
+  busy=true; askErr=''; renderCanvas();
+  const j=J[active];
+  const user=`Current journey:\n${JSON.stringify({journey:j.name,startsWhen:j.start,endsWhen:j.end,steps:compact(j.nodes)})}\n\nChange requested:\n${text}`+
+    (scopeId?`\n\nThe user is looking at step "${scopeId}". Scope the change there unless they say otherwise.`:'')+
+    `\n\nReturn only the JSON object.`;
+  try{
+    const res=await fetch("/api/journeys/ask",{method:"POST",credentials:"include",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({system:sysPrompt(),user})});
+    const data=await res.json();
+    if(!res.ok||!data.ok) throw new Error(data.error||('HTTP '+res.status));
+    const raw=String(data.text||'').trim();
+    const patch=JSON.parse(raw.replace(/^```(?:json)?/,'').replace(/```$/,'').trim());
+    if(!patch.ops||!patch.ops.length) throw new Error('empty');
+    stagePatch(patch,text);
+  }catch(err){
+    if(err&&err.message==='anthropic_api_key_not_configured'){
+      const l=localPatch(text,scopeId);
+      if(l){stagePatch(l,text);askErr='ANTHROPIC_API_KEY is not set on this deployment, so this is a worked example instead of a real Claude answer. Set it and this writes the real change.'}
+      else askErr='ANTHROPIC_API_KEY is not set on this deployment. Add the step by hand with + until it is.';
+    } else {
+      const l=localPatch(text,scopeId);
+      if(l){stagePatch(l,text);askErr='Could not reach Claude, so this is a worked example. Try again in a moment for the real answer.'}
+      else askErr='Could not reach Claude just now. Try again, or add the step by hand with +.';
+    }
+  }
+  busy=false; render();
+}
+function localPatch(text,scopeId){
+  const t=text.toLowerCase(); const last=J[active].nodes[J[active].nodes.length-1];
+  const after=scopeId||(last&&last.id)||'start';
+  if(/confirm|no.?show|remind|follow.?up|again|chase|nudge|quiet/.test(t)) return {summary:'Added a wait and a follow-up text.',ops:[
+    {op:'insert',after,path:[],node:{type:'wait',title:'Give them a couple of hours',cfg:{amount:'2',unit:'hours'}}},
+    {op:'insert',after,path:[],node:{type:'sms',title:'Follow up if they went quiet',
+      cfg:{body:"{first_name} — haven't heard back. Still want me to look at what you'd qualify for? Reply STOP to opt out.",delay:'after 2 hours'}}}]};
+  if(/email/.test(t)) return {summary:'Added an email step.',ops:[{op:'insert',after,path:[],
+    node:{type:'email',title:'Email them a recap',cfg:{subject:'What we covered',body:'A short recap of the call and what happens next.',delay:'instant'}}}]};
+  if(/wait|delay|hold/.test(t)) return {summary:'Added a one-day wait.',ops:[{op:'insert',after,path:[],
+    node:{type:'wait',title:'Wait a day',cfg:{amount:'1',unit:'days'}}}]};
+  return {summary:'Added a text step.',ops:[{op:'insert',after,path:[],
+    node:{type:'sms',title:'Reach out',cfg:{body:"{first_name} — quick one from Fundhub. Reply STOP to opt out.",delay:'instant'}}}]};
+}
+function stagePatch(patch,askedFor){
+  pushUndo();
+  const added=[],changed=[];
+  (patch.ops||[]).forEach(op=>{ try{
+    if(op.op==='delete'){const f=findNode(op.id);if(f)f.list.splice(f.idx,1);return}
+    if(op.op==='update'){const f=findNode(op.id);if(!f)return;
+      if(op.title)f.node.title=op.title; if(op.cfg)Object.assign(f.node.cfg,op.cfg);
+      f.node._chg=true;changed.push(f.node.id);return}
+    if(op.op==='insert'){
+      const s=op.node||{}; if(!TYPES[s.type])return;
+      const n=N(s.type,s.title||TYPES[s.type].k,Object.assign(defaults(s.type),s.cfg||{}),[]);
+      if(s.type==='condition'){
+        n.branches=(s.branches&&s.branches.length===2?s.branches:[{label:'Yes',nodes:[]},{label:'No',nodes:[]}])
+          .map(b=>({label:b.label||'—',nodes:(b.nodes||[]).map(cn=>N(cn.type,cn.title,Object.assign(defaults(cn.type),cn.cfg||{}),[]))}));
+        n.branches.forEach(b=>b.nodes.forEach(x=>{x._new=true;added.push(x.id)}));
+      }
+      n._new=true; added.push(n.id);
+      const list=listAt(op.path||[]); let at=list.length;
+      if(op.after==='start') at=0;
+      else if(op.after){const f=findNode(op.after); if(f&&f.list===list) at=f.idx+1}
+      list.splice(at,0,n);
+    }}catch(e){} });
+  if(!added.length&&!changed.length){undoStack.pop();askErr='That came back empty. Try saying it a different way.';return}
+  pending={summary:patch.summary||'Change ready to review.',asked:askedFor,added,changed};
+  selId=added[0]||changed[0]||null; tab='step'; askText='';
+}
+function acceptPending(){
+  const w=n=>{delete n._new;delete n._chg;if(n.branches)n.branches.forEach(b=>b.nodes.forEach(w))};
+  J[active].nodes.forEach(w);
+  const n=pending.added.length+pending.changed.length, s=pending.summary;
+  record('claude',s,undoStack[undoStack.length-1]);
+  pending=null; bump(); render();
+  toast('<b>Kept it.</b> '+n+' step'+(n>1?'s':'')+' now part of this journey. Not in the code until you press Apply.');
+}
+function rejectPending(){ if(undoStack.length) J[active]=JSON.parse(undoStack.pop());
+  pending=null; selId=null; render(); }
+
+/* ══════════════════════════════════════════════
+   The simulator
+   ══════════════════════════════════════════════ */
+const FAKE={first_name:'Dana',last_name:'Reyes',company:'Reyes Fabrication LLC',
+  survey_link:'fundhub.ai/s/dq8f2',booking_link:'fundhub.ai/b/dq8f2',portal_link:'portal.fundhub.ai/c/dq8f2',
+  time:'2:30pm',lender:'Chase Ink',amount:'$18,000'};
+function fill(s){return String(s||'').replace(/\{(\w+)\}/g,(m,k)=>FAKE[k]!==undefined?FAKE[k]:m)}
+
+function plan(nodes){
+  const out=[];
+  nodes.forEach(n=>{
+    out.push({node:n});
+    if(n.branches){
+      if(sim.mode==='both'){
+        n.branches.forEach((b,i)=>{ out.push({lane:{cond:n.id,i,label:b.label}}); out.push(...plan(b.nodes)); });
+      }else{
+        const i=sim.mode==='second'?1:0;
+        out.push({lane:{cond:n.id,i,label:n.branches[i].label,skip:1-i}});
+        out.push(...plan(n.branches[i].nodes));
+      }
+    }
+  });
+  return out;
+}
+function startSim(fromId){
+  stopSim();
+  sim.running=true; sim.done=false; sim.feed=[]; sim.report=null;
+  document.body.classList.add('running');
+  let steps=plan(J[active].nodes);
+  if(fromId){ const at=steps.findIndex(s=>s.node&&s.node.id===fromId); if(at>0) steps=steps.slice(at); }
+  document.querySelectorAll('.nrow').forEach(r=>r.classList.remove('fired','now','skipped'));
+  document.querySelectorAll('.lane').forEach(l=>l.classList.remove('notaken'));
+  sim.feed.push({t:'evt',time:now(),text:'Started as '+FAKE.first_name+' '+FAKE.last_name+' — '+FAKE.company});
+  renderPanel();
+  let i=0, sent=0, fired=0;
+  const tick=()=>{
+    if(i>=steps.length){ finish(); return; }
+    const s=steps[i++];
+    if(s.lane){
+      const el=document.querySelector('.nrow[data-id="'+s.lane.cond+'"]');
+      if(el){
+        const lanes=el.parentElement.querySelector('.lanes')||
+          (el.nextElementSibling&&el.nextElementSibling.nextElementSibling);
+        const set=document.querySelectorAll('.lanes');
+        set.forEach(g=>{ if(g.previousElementSibling&&g.previousElementSibling.previousElementSibling===el){
+          [...g.children].forEach((L,li)=>{ if(s.lane.skip!==undefined&&li===s.lane.skip) L.classList.add('notaken'); }); } });
+      }
+      sim.feed.push({t:'evt',time:now(),text:'Took the “'+s.lane.label+'” path'});
+      renderPanel(); sim.timer=setTimeout(tick,380); return;
+    }
+    const n=s.node;
+    document.querySelectorAll('.nrow.now').forEach(r=>{r.classList.remove('now');r.classList.add('fired')});
+    const row=document.querySelector('.nrow[data-id="'+n.id+'"]');
+    if(row){ row.classList.add('now'); row.scrollIntoView({block:'center',behavior:'smooth'}); }
+    fired++;
+    if(n.type==='sms'){ sent++;
+      sim.feed.push({t:'sms',time:now(),body:fill(n.cfg.body),to:sim.phone,step:n.title}); }
+    else if(n.type==='email'){ sent++;
+      sim.feed.push({t:'email',time:now(),subj:fill(n.cfg.subject),body:fill(n.cfg.body),to:sim.email,step:n.title}); }
+    else if(n.type==='wait'){
+      sim.feed.push({t:'evt',time:now(),text:'Waited '+n.cfg.amount+' '+n.cfg.unit+' (skipped ahead)'}); }
+    else if(n.type==='condition'){
+      sim.feed.push({t:'evt',time:now(),text:'Checked: '+(n.cfg.field||'field')+' '+n.cfg.op}); }
+    else sim.feed.push({t:'evt',time:now(),text:n.title});
+    renderPanel();
+    sim.timer=setTimeout(tick, n.type==='sms'||n.type==='email'?900:520);
+  };
+  const finish=()=>{
+    document.querySelectorAll('.nrow.now').forEach(r=>{r.classList.remove('now');r.classList.add('fired')});
+    sim.running=false; sim.done=true;
+    sim.report={steps:fired,messages:sent,
+      unreached:countNodes(active)-fired,
+      to:sim.phone+' / '+sim.email};
+    renderPanel();
+  };
+  sim.timer=setTimeout(tick,420);
+}
+function stopSim(){
+  clearTimeout(sim.timer); sim.running=false;
+  document.body.classList.remove('running');
+  document.querySelectorAll('.nrow').forEach(r=>r.classList.remove('fired','now','skipped'));
+  document.querySelectorAll('.lane').forEach(l=>l.classList.remove('notaken'));
+}
+
+/* ── rendering ── */
+function summary(n){
+  const c=n.cfg||{};
+  switch(n.type){
+    case 'sms': return c.body||'Nothing written yet';
+    case 'email': return c.subject? c.subject+' — '+(c.body||'') : (c.body||'No subject yet');
+    case 'wait': return 'Nothing happens for '+c.amount+' '+c.unit;
+    case 'stage': return 'Their card moves to '+c.stage+' in '+c.pipeline;
+    case 'assign': return 'Goes to whichever '+c.role+' is available';
+    case 'handoff': return 'The '+c.role+' journey picks up'+(c.stage?' at '+c.stage:'');
+    case 'agent': return c.note||c.agent;
+    case 'payment': return c.amount? 'Charge $'+c.amount+(c.product?' for '+c.product:'') : 'No amount set yet';
+    case 'record': return c.note||'Nothing written yet';
+    case 'condition': return 'Two paths below, depending on the answer';
+  } return '';
+}
+function wireHTML(path,idx,plain){return '<div class="wire'+(plain?' plain':'')+'" data-path=\''+JSON.stringify(path)+
+  '\' data-idx="'+idx+'"><button class="add" aria-label="Add a step here">+</button></div>'}
+function nodeHTML(n){
+  const s=summary(n), quiet=/^N(o|othing) /.test(s);
+  const nc=n._new?' prop':(n._chg?' edited-n':'');
+  const tag=n._new?'<span class="tagpill n">New</span>':(n._chg?'<span class="tagpill c">Changed</span>':'');
+  return '<div class="nrow" aria-selected="'+(n.id===selId)+'" data-id="'+n.id+'">'+tag+
+    '<button class="node g-'+TYPES[n.type].g+(n.branches?' ask-n':'')+nc+'"><div class="nin">'+
+    '<div class="ntop"><b>'+esc(n.title)+'</b><span class="ty">'+esc(TYPES[n.type].k)+'</span></div>'+
+    '<div class="nsub'+(quiet?' q':'')+'">'+esc(s)+'</div></div></button></div>';
+}
+function chainHTML(nodes,path){
+  let h='';
+  nodes.forEach((n,i)=>{
+    h+=wireHTML(path,i)+nodeHTML(n);
+    if(n.branches){
+      h+='<div class="fork"><span class="stem"></span><span class="cross"></span><span class="dl"></span><span class="dr"></span>'+
+        '<span class="tag l">'+esc(n.branches[0].label)+'</span><span class="tag r">'+esc(n.branches[1].label)+'</span></div>'+
+        '<div class="lanes">'+n.branches.map((b,bi)=>'<div class="lane">'+
+          (b.nodes.length? chainHTML(b.nodes,[n.id,bi])+wireHTML([n.id,bi],b.nodes.length,true)
+            : wireHTML([n.id,bi],0,true)+'<div class="emptylane">Nothing on this path yet</div>')+'</div>').join('')+
+        '</div><div class="merge"><span class="ul"></span><span class="ur"></span><span class="cross"></span><span class="stem"></span></div>';
+    }
+  });
+  return h+wireHTML(path,nodes.length);
+}
+function askHTML(){
+  if(busy) return '<div class="ask"><div class="askbox"><div class="thinking"><span class="sp"></span>'+
+    '<span>Working out the change, writing the copy, wiring it in…</span></div></div></div>';
+  const egs=['If they don’t confirm by 6pm, text them again at 8am','Add a 3-day check-in after the call',
+    'Email a recap once the diagnostic is done'];
+  return '<div class="ask"><div class="askbox">'+
+    '<textarea id="askin" rows="2" placeholder="Describe the change — &ldquo;if they go quiet for two days, send one more text&rdquo;">'+esc(askText)+'</textarea>'+
+    '<div class="askrow"><span class="lbl">Changes this journey</span>'+
+    '<button class="sendbtn" id="asksend">Make the change</button></div>'+
+    (askErr?'<div class="askerr">'+esc(askErr)+'</div>':'')+'</div>'+
+    '<div class="egs">'+egs.map(e=>'<button class="eg">'+esc(e)+'</button>').join('')+'</div></div>';
+}
+function renderCanvas(){
+  const j=J[active];
+  let h='<div class="chead"><div class="eyebrow">Journey</div><h1>'+esc(j.name)+'</h1><p>'+esc(j.desc)+'</p></div>'+
+    (sim.running?'':askHTML())+
+    '<div class="rail"><div class="cap"><div class="pill"><span class="dot"></span><span class="tx">'+
+    '<span class="lb">Starts when</span><span class="tt">'+esc(j.start)+'</span></span></div></div>'+
+    chainHTML(j.nodes,[])+
+    '<div class="cap end"><div class="pill"><span class="dot"></span><span class="tx">'+
+    '<span class="lb">Ends when</span><span class="tt">'+esc(j.end)+'</span></span></div></div></div>';
+  if(pending){
+    const c=pending.added.length,u=pending.changed.length;
+    h+='<div class="bar"><div class="bartop"><span class="what"><b>'+esc(pending.summary)+'</b> '+
+      (c?c+' new step'+(c>1?'s':''):'')+(c&&u?', ':'')+(u?u+' changed':'')+
+      ' — highlighted above. Nothing is saved until you keep it.</span>'+
+      '<span class="btns"><button class="ab" id="reject">Throw it away</button>'+
+      '<button class="ab p" id="accept">Keep it</button></span></div></div>';
+  } else if(dirty&&!sim.running){
+    const imp=impact();
+    h+='<div class="bar"><div class="bartop"><span class="what"><b>'+dirty+' change'+(dirty>1?'s':'')+
+      ' not applied.</b> Applying writes them into the code and updates everything downstream.</span>'+
+      '<span class="btns"><button class="ab" id="discard">Discard</button>'+
+      '<button class="ab p" id="applybar">Apply to code</button></span></div>'+
+      (imp.length?'<div class="impact">'+imp.map(g=>'<span class="ii"><b>'+esc(g[0])+'</b>'+esc(g[1])+'</span>').join('')+'</div>':'')+'</div>';
+  }
+  document.getElementById('canvas').innerHTML=h;
+  wireCanvas();
+}
+function impact(){
+  const seen={};
+  const walk=l=>l.forEach(n=>{(n.touches||[]).forEach(([k,v])=>{(seen[k]=seen[k]||new Set()).add(v)});
+    if(n.branches)n.branches.forEach(b=>walk(b.nodes))});
+  walk(J[active].nodes);
+  return Object.entries(seen).map(([k,v])=>[k+'s touched',[...v].slice(0,2).join(', ')+(v.size>2?' +'+(v.size-2)+' more':'')]);
+}
+const F={
+  txt:(l,k,v,h)=>'<div class="fld"><label>'+l+'</label><input value="'+esc(v)+'" data-k="'+k+'">'+(h?'<div class="hint">'+h+'</div>':'')+'</div>',
+  area:(l,k,v,h)=>'<div class="fld"><label>'+l+'</label><textarea data-k="'+k+'">'+esc(v)+'</textarea>'+(h?'<div class="hint">'+h+'</div>':'')+'</div>',
+  sel:(l,k,v,o,h)=>'<div class="fld"><label>'+l+'</label><select data-k="'+k+'">'+
+    o.map(x=>'<option'+(x===v?' selected':'')+'>'+esc(x)+'</option>').join('')+'</select>'+(h?'<div class="hint">'+h+'</div>':'')+'</div>'
+};
+function stepHTML(){
+  if(!selId||!findNode(selId)) return '<div class="eyebrow">Nothing selected</div><div class="empty">'+
+    'Type what you want changed in the box on the canvas and it gets built — copy written, timing set, wired in.<br><br>'+
+    'Or click any step to change it by hand, and use <b>+</b> on the line between steps to add one.</div>';
+  const n=findNode(selId).node,c=n.cfg||{};
+  let body='';
+  switch(n.type){
+    case 'sms': body=F.area('What it says','body',c.body,'Braces fill in from their file. The opt-out line has to stay.')+
+      F.sel('When it goes out','delay',c.delay,DELAYS); break;
+    case 'email': body=F.txt('Subject','subject',c.subject)+F.area('What it says','body',c.body)+
+      F.sel('When it goes out','delay',c.delay,['instant','after 1 hour','after 1 day','after 2 days']); break;
+    case 'wait': body='<div class="two">'+F.txt('How long','amount',c.amount)+F.sel('Unit','unit',c.unit,['minutes','hours','days'])+'</div>'+
+      '<div class="fld"><div class="hint">Nothing moves until this runs out. A reply can still push them forward early.</div></div>'; break;
+    case 'stage': body=F.sel('Move to','stage',c.stage,STAGES)+F.sel('In which pipeline','pipeline',c.pipeline,PIPES); break;
+    case 'assign': body=F.sel('Which role','role',c.role,ROLES,'Goes to whoever on that role is clocked in.'); break;
+    case 'handoff': body=F.sel('Who picks up','role',c.role,ROLES)+F.txt('Where they pick up','stage',c.stage); break;
+    case 'agent': body=F.sel('Which agent','agent',c.agent,['UnderwriteIQ','Setter Josh','Brand Studio','Inquiry Voice','Alerts Engine'])+
+      F.area('What it does','note',c.note); break;
+    case 'payment': body=F.txt('Amount','amount',c.amount)+F.txt('What for','product',c.product,'Consent is always captured before a charge.'); break;
+    case 'record': body=F.area('What gets saved','note',c.note); break;
+    case 'condition': body=F.txt('What to check','field',c.field)+
+      F.sel('Test','op',c.op,['is true','is false','is set','is empty','= funding','= optimization'])+
+      '<div class="fld"><div class="hint">Two paths open below this step. Add steps to either one.</div></div>'; break;
+  }
+  const t=n.touches||[];
+  return '<div class="eyebrow">Step</div><div class="ptitle">'+esc(n.title)+'</div>'+
+    '<div class="pmeta">'+esc(TYPES[n.type].k)+'</div>'+F.txt('Step name','title',n.title)+body+
+    '<div class="pactions"><button class="pa" data-mv="-1">Move up</button>'+
+      '<button class="pa" data-mv="1">Move down</button><button class="pa del" data-del="1">Delete</button></div>'+
+    '<div class="touch"><div class="th">Changing this also affects</div>'+
+      (t.length? t.map(([k,v])=>'<div class="ti"><span class="k">'+esc(k)+'</span><span class="v">'+esc(v)+'</span></div>').join('')
+        : '<div class="none">Nothing else depends on this step.</div>')+'</div>'+
+    '<div class="stepask"><div class="fld"><label>Change just this step</label>'+
+      '<textarea id="sprompt" placeholder="Make it shorter and move it two hours later"></textarea></div>'+
+      '<button class="gobtn" id="sgo">Make the change</button>'+
+      '<button class="gobtn" id="runhere" style="background:transparent;color:var(--gray);border:1px solid var(--line)">Run from here</button></div>';
+}
+function simHTML(){
+  let h='<div class="eyebrow">Simulate</div>'+
+    '<div class="testbanner"><b>Test mode.</b> Everything goes to the two destinations below and nowhere else. '+
+    'A simulated run can never reach a real client record.</div>'+
+    '<div class="fld"><label>Texts go to</label><input value="'+esc(sim.phone)+'" data-sim="phone"></div>'+
+    '<div class="fld"><label>Emails go to</label><input value="'+esc(sim.email)+'" data-sim="email"></div>'+
+    '<div class="fld"><label>At a question</label><select data-sim="mode">'+
+      [['first','Take the first path'],['second','Take the second path'],['both','Run both paths']]
+        .map(([v,l])=>'<option value="'+v+'"'+(sim.mode===v?' selected':'')+'>'+l+'</option>').join('')+
+      '</select><div class="hint">Fake client: '+esc(FAKE.first_name+' '+FAKE.last_name+', '+FAKE.company)+'</div></div>'+
+    '<div class="runctl">'+
+      (sim.running? '<button class="gobtn" id="simstop" style="background:transparent;color:var(--gray);border:1px solid var(--line)">Stop</button>'
+        : '<button class="gobtn" id="simstart">Run the journey</button>')+
+    '</div>';
+  if(sim.feed.length){
+    h+='<div class="runstat">'+(sim.running?'<span class="sp"></span>Running':'Run finished')+'</div><div class="feed">';
+    sim.feed.forEach(m=>{
+      if(m.t==='sms') h+='<div class="msg sms"><div class="mh2"><span>Text</span><span>'+m.time+'</span></div>'+
+        esc(m.body)+'<div class="to">to '+esc(m.to)+' · '+esc(m.step)+'</div></div>';
+      else if(m.t==='email') h+='<div class="msg email"><div class="mh2"><span>Email</span><span>'+m.time+'</span></div>'+
+        '<div class="subj">'+esc(m.subj)+'</div>'+esc(m.body)+'<div class="to">to '+esc(m.to)+' · '+esc(m.step)+'</div></div>';
+      else h+='<div class="evt"><span class="t">'+m.time+'</span><span>'+esc(m.text)+'</span></div>';
+    });
+    h+='</div>';
+  }
+  if(sim.report){
+    h+='<div class="report"><div class="rh">Run report</div>'+
+      '<div class="rrow"><span>Steps that fired</span><span class="v">'+sim.report.steps+'</span></div>'+
+      '<div class="rrow"><span>Messages sent</span><span class="v">'+sim.report.messages+'</span></div>'+
+      '<div class="rrow"><span>Steps not reached</span><span class="v">'+sim.report.unreached+'</span></div>'+
+      '<div class="rrow"><span>Everything went to</span><span class="v">'+esc(sim.phone)+'</span></div></div>';
+  }
+  return h;
+}
+function histHTML(){
+  let h='<div class="eyebrow">History</div>';
+  h+='<div class="sect"><div class="sh">Saved versions</div>';
+  if(!versions.length) h+='<div class="empty">No versions yet. Press <b>Save version</b> up top to keep a named copy '+
+    'of this journey you can come back to.</div>';
+  else versions.forEach(v=>{ h+='<div class="li"><div class="lt"><span class="wt" style="font-weight:500">'+esc(v.name)+'</span>'+
+    '<span class="when">'+esc(v.ts)+'</span></div>'+
+    '<div class="wt" style="color:var(--gray)">'+esc(J[v.journey].name)+' · '+v.steps+' steps</div>'+
+    '<button class="rv" data-ver="'+v.id+'">Roll back to this</button></div>'; });
+  h+='</div>';
+  h+='<div class="sect"><div class="sh">Every change</div>';
+  if(!log.length) h+='<div class="empty">Nothing changed yet.</div>';
+  else log.forEach(e=>{ h+='<div class="li'+(e.reverted?' reverted':'')+'"><div class="lt">'+
+    '<span class="who'+(e.actor==='claude'?' ai':'')+'">'+(e.actor==='claude'?'Claude':'You')+' · '+esc(J[e.journey].name)+'</span>'+
+    '<span class="when">'+esc(e.ts)+'</span></div><div class="wt">'+esc(e.what)+'</div>'+
+    (e.reverted?'<button class="rv" disabled>Reverted</button>':'<button class="rv" data-rev="'+e.id+'">Put it back</button>')+
+    '</div>'; });
+  h+='</div>';
+  return h;
+}
+function renderPanel(){
+  document.querySelectorAll('.ptab').forEach(t=>t.setAttribute('aria-selected',t.dataset.tab===tab));
+  const el=document.getElementById('pbody');
+  el.innerHTML = tab==='step'? stepHTML() : tab==='sim'? simHTML() : histHTML();
+  if(tab==='step'&&selId&&findNode(selId)){
+    el.querySelectorAll('[data-k]').forEach(i=>i.oninput=()=>setCfg(selId,i.dataset.k,i.value));
+    el.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>moveNode(selId,+b.dataset.mv));
+    const d=el.querySelector('[data-del]'); if(d) d.onclick=()=>delNode(selId);
+    const g=el.querySelector('#sgo'); if(g) g.onclick=()=>{
+      const v=el.querySelector('#sprompt').value.trim(); if(v&&!busy) askClaude(v,selId); };
+    const r=el.querySelector('#runhere'); if(r) r.onclick=()=>{ tab='sim'; renderPanel(); startSim(selId); };
+  }
+  if(tab==='sim'){
+    el.querySelectorAll('[data-sim]').forEach(i=>i.onchange=i.oninput=()=>{sim[i.dataset.sim]=i.value});
+    const s=el.querySelector('#simstart'); if(s) s.onclick=()=>startSim(null);
+    const st=el.querySelector('#simstop'); if(st) st.onclick=()=>{stopSim();sim.done=false;renderPanel()};
+  }
+  if(tab==='hist'){
+    el.querySelectorAll('[data-rev]').forEach(b=>b.onclick=()=>revert(b.dataset.rev));
+    el.querySelectorAll('[data-ver]').forEach(b=>b.onclick=()=>restoreVersion(b.dataset.ver));
+  }
+}
+function renderJList(){
+  const el=document.getElementById('jlist');
+  el.innerHTML='<div class="eyebrow">Journeys</div>';
+  ORDER.forEach(k=>{
+    const b=document.createElement('button');
+    b.className='jrow'; b.setAttribute('role','tab'); b.setAttribute('aria-selected',k===active);
+    b.innerHTML=(touched[k]?'<span class="edited"></span>':'')+'<span class="nm">'+J[k].name+'</span>'+
+      '<span class="ct">'+countNodes(k)+'</span>';
+    b.onclick=()=>{ if(pending)return; stopSim(); sim.feed=[]; sim.report=null;
+      active=k; selId=null; undoStack=[]; askErr=''; render(); };
+    el.appendChild(b);
+  });
+}
+function closeMenu(){document.querySelectorAll('.menu').forEach(m=>m.remove());
+  document.querySelectorAll('.wire.open').forEach(w=>w.classList.remove('open'))}
+function openMenu(btn,path,idx){
+  closeMenu(); btn.parentElement.classList.add('open');
+  const groups={};
+  Object.entries(TYPES).forEach(([t,d])=>{(groups[d.grp]=groups[d.grp]||[]).push([t,d])});
+  const m=document.createElement('div'); m.className='menu';
+  m.innerHTML=Object.entries(groups).map(([g,items])=>'<div class="mh">'+g+'</div>'+
+    items.map(([t,d])=>'<button class="mi" data-t="'+t+'"><span class="sw" style="background:var(--'+
+      ({msg:'warn',time:'info',act:'accent',pipe:'ok'})[d.g]+')"></span><span class="l">'+d.k+
+      '</span><span class="d">'+d.d+'</span></button>').join('')).join('');
+  document.body.appendChild(m);
+  const r=btn.getBoundingClientRect();
+  m.style.left=Math.min(r.left-6,window.innerWidth-m.offsetWidth-14)+'px';
+  m.style.top=Math.min(r.bottom+7,window.innerHeight-m.offsetHeight-14)+'px';
+  m.querySelectorAll('.mi').forEach(b=>b.onclick=()=>addNode(path,idx,b.dataset.t));
+}
+function wireCanvas(){
+  const inp=document.getElementById('askin');
+  if(inp){ inp.oninput=()=>{askText=inp.value};
+    inp.onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();fire()}} }
+  const send=document.getElementById('asksend'); if(send) send.onclick=fire;
+  document.querySelectorAll('.eg').forEach(b=>b.onclick=()=>{askText=b.textContent;askClaude(askText,null)});
+  function fire(){const v=(document.getElementById('askin')||{}).value;
+    if(!v||!v.trim()||busy)return; askText=v.trim(); askClaude(askText,null)}
+  document.querySelectorAll('.nrow').forEach(r=>{
+    r.querySelector('.node').onclick=()=>{ if(sim.running)return;
+      selId=r.dataset.id; tab='step';
+      document.querySelectorAll('.nrow').forEach(x=>x.setAttribute('aria-selected',x.dataset.id===selId));
+      renderPanel(); };
+  });
+  document.querySelectorAll('.wire').forEach(w=>{
+    w.querySelector('.add').onclick=e=>{e.stopPropagation();
+      openMenu(e.currentTarget,JSON.parse(w.dataset.path),+w.dataset.idx)};
+  });
+  const d=document.getElementById('discard');
+  if(d) d.onclick=()=>{pushUndo();J[active]=JSON.parse(JSON.stringify(SAVED[active]));dirty=0;delete touched[active];selId=null;
+    record('you','Discarded every unapplied change',undoStack[undoStack.length-1]);render()};
+  const a=document.getElementById('applybar'); if(a) a.onclick=applyAll;
+  const ac=document.getElementById('accept'); if(ac) ac.onclick=acceptPending;
+  const rj=document.getElementById('reject'); if(rj) rj.onclick=rejectPending;
+}
+function toast(html){
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const d=document.createElement('div'); d.className='toast';
+  d.innerHTML=html+'<div class="pb"></div>';
+  document.body.appendChild(d); setTimeout(()=>d.remove(),4500);
+}
+/* applyAll — saves every touched journey to the database via PUT /api/journeys.
+   One request per touched journey; on any failure nothing is cleared, so a
+   half-saved batch always shows up as still dirty rather than looking applied. */
+async function applyAll(){
+  if(!dirty){toast('<b>Nothing to apply.</b> Change a step first.');return}
+  const keys=Object.keys(touched);
+  const n=dirty, imp=impact();
+  const btn=document.getElementById('apply'); if(btn) btn.disabled=true;
+  try{
+    for(const k of keys){
+      const j=J[k];
+      const res=await fetch('/api/journeys',{method:'PUT',credentials:'include',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({key:k,name:j.name,start:j.start,end:j.end,desc:j.desc,nodes:j.nodes})});
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok||!data.ok) throw new Error((data&&data.error)||('HTTP '+res.status));
+    }
+    keys.forEach(k=>{ SAVED[k]=JSON.parse(JSON.stringify(J[k])); });
+    dirty=0; touched={}; undoStack=[];
+    toast('<b>Applied '+n+' change'+(n>1?'s':'')+'.</b> Saved to the database — '+
+      (imp.length?imp.length+' connected area'+(imp.length>1?'s':'')+' brought in line, ':'')+
+      'this is what loads next time the editor opens. Nothing is live until you deploy.');
+  }catch(err){
+    toast('<b>Could not save.</b> '+esc((err&&err.message)||'Try again in a moment.')+' Nothing was applied.');
+  }
+  if(btn) btn.disabled=false;
+  render();
+}
+
+/* loadJourneys — the real starting state, once it arrives. seed() paints
+   instantly so the editor is never blank; whatever the server has for a
+   journey key replaces the local example the moment it lands. A journey the
+   server has nothing for (migration not applied yet, or never saved) keeps
+   its seed example — which is exactly the "worked example" behavior the ask
+   box already uses when the AI key isn't configured either. */
+async function loadJourneys(){
+  try{
+    const res=await fetch('/api/journeys',{credentials:'include'});
+    if(!res.ok) return;
+    const data=await res.json();
+    if(!data.ok||!data.journeys) return;
+    let maxUid=0;
+    const bumpPast=nodes=>nodes.forEach(n=>{
+      const m=/^n(\d+)$/.exec(n.id); if(m) maxUid=Math.max(maxUid,+m[1]);
+      if(n.branches) n.branches.forEach(b=>bumpPast(b.nodes));
+    });
+    ORDER.forEach(k=>{
+      const r=data.journeys[k];
+      if(r && Array.isArray(r.nodes) && r.nodes.length){
+        J[k]={name:r.name||J[k].name,start:r.start||J[k].start,end:r.end||J[k].end,
+          desc:r.desc||J[k].desc,nodes:r.nodes};
+        SAVED[k]=JSON.parse(JSON.stringify(J[k]));
+        bumpPast(r.nodes);
+      }
+    });
+    uid=Math.max(uid,maxUid+1);
+    render();
+  }catch(err){ /* offline, or the journeys table migration hasn't run yet — the seed examples stay on screen */ }
+}
+function syncHeader(){
+  const d=document.getElementById('dirty');
+  d.textContent=dirty?dirty+' unsaved':''; d.className='dirty'+(dirty?' on':'');
+  document.getElementById('undo').disabled=!undoStack.length;
+}
+function render(){syncHeader();renderJList();renderCanvas();renderPanel()}
+
+document.querySelectorAll('.ptab').forEach(t=>t.onclick=()=>{tab=t.dataset.tab;renderPanel()});
+document.getElementById('undo').onclick=undo;
+document.getElementById('apply').onclick=applyAll;
+document.getElementById('savever').onclick=saveVersion;
+document.addEventListener('click',e=>{if(!e.target.closest('.menu')&&!e.target.closest('.add'))closeMenu()});
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='z'){e.preventDefault();undo()}
+  if(e.key==='Escape'){closeMenu();if(sim.running){stopSim();renderPanel()}}
+});
+window.addEventListener('resize',closeMenu);
+render();
+loadJourneys();
+</script>
+</body>
+</html>

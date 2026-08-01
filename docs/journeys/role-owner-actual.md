@@ -25,15 +25,16 @@ flowchart TD
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 9 routes]
     CAN --> A_hiring[Hiring — 6 routes]
+    CAN --> A_journeys[journeys — 1 route]
     CAN --> A_privacy[privacy — 1 route]
     CAN --> A_read[Reading data — 19 routes]
-    CAN --> A_top_level[Everything else — 8 routes]
+    CAN --> A_top_level[Everything else — 9 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
 ```
 
 ## What they can reach
 
-**68 of 68 routes.**
+**70 of 70 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -80,6 +81,8 @@ flowchart TD
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/inquiries` | GET, POST | staff |
 | `/api/inquiry` | — | inquiry_specialist, admin, owner |
+| `/api/journeys` | GET, PUT | owner, admin |
+| `/api/journeys/ask` | POST | owner, admin |
 | `/api/partner-brand` | GET, PUT | owner, admin |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/privacy/erasure` | GET, POST | owner, admin |
@@ -114,7 +117,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**0 of 68 routes.**
+**0 of 70 routes.**
 
 _None._
 
