@@ -17,11 +17,17 @@ editing anyone else's.
 | W2 | Provider: email (mailgun) | W1 | `done` |
 | W3 | Provider: SMS (ghl_relay) | W1 | `done` |
 | W4 | The dispatcher loop itself | W1 | `done` |
+| W6 | Provider: SMS (twilio) — built, ships disabled | W6 | `done` |
 | W5 | Turning sending on — scheduler, env vars, cutover | unclaimed | `blocked` |
 
 The whole batch was run in one thread at the owner's instruction, so W1 owns
 every row. **W5 is blocked and is deliberately not started** — see "What is NOT
 switched on" at the end of this file.
+
+**Contract amendment (W6):** providers now also export `ENABLED`, a boolean. It
+records which provider migration 110's seed routes each channel to. It is a
+declaration checked by a test, **not a switch** — `resolve()` deliberately does
+not filter on it. See the W6 manifest for why.
 
 **Contract amendment (W2/W3):** providers now also export `ADDRESS_FIELD`. The
 original contract said `to` was "an address or E.164 phone number", which is
@@ -472,6 +478,137 @@ dead before anyone notices. A **permanent** outcome (`rejected`, `no_address`,
   `RateLimiter: enforces a floor between requests`, which passes 4/4 in
   isolation and on the unmodified tree — the pre-existing flake already noted in
   Findings.
+
+---
+
+## W6 — the Twilio provider
+
+**Task:** the SMS provider that replaces the GHL relay once A2P 10DLC clears.
+`status: done`
+
+**What changed in plain language:** there is now a second way to send a text
+message — through Twilio directly, instead of through the old GoHighLevel
+account. It is built, tested, and switched off. Nothing sends through it. Texts
+still go through GoHighLevel exactly as before. On the day the phone-number
+registration clears, turning it on is changing one row in a table — not writing
+code.
+
+**Why it was built before anything needed it:** the registration clears on a
+date nobody here sets. Writing a brand-new way to send messages *on that day*
+means writing untested code, in a hurry, against real client traffic.
+
+### Files
+
+| File | Change |
+|---|---|
+| `src/messaging/providers/twilio.mjs` | New. |
+| `src/messaging/providers/index.mjs` | Twilio registered; registry now requires `ENABLED`. |
+| `src/messaging/providers/mailgun.mjs` | `ENABLED = true` added. No behaviour change. |
+| `src/messaging/providers/ghl-relay.mjs` | `ENABLED = true` added. No behaviour change. |
+| `src/messaging/providers/providers.test.mjs` | 69 tests, was 46. |
+
+### Function signatures
+
+Identical to every other provider — the contract was not bent to fit this one:
+
+```js
+export const PROVIDER = "twilio";
+export const CHANNELS = new Set(["sms"]);
+export const ADDRESS_FIELD = "phone";   // clients.phone, 001_init.sql:53
+export const ENABLED = false;           // migration 110 seeds sms to ghl_relay
+export async function send(message, options) -> Promise<SendResult>
+```
+
+### Environment variables — NOT SET, someone with access must set them
+
+Same constraint W2/W3 recorded: the Netlify CLI is not installed here and
+`api.netlify.com` is unreachable from this environment, which CLAUDE.md §11
+records as an org network-policy denial. Names only, no values.
+
+| Variable | For |
+|---|---|
+| `TWILIO_SEND_ACCOUNT_SID` | The account SID (the `AC…` id). |
+| `TWILIO_SEND_AUTH_TOKEN` | The auth token. **Secret.** |
+| `TWILIO_SEND_FROM` | Either an E.164 number or a Messaging Service SID (`MG…`). |
+| `TWILIO_SEND_BASE_URL` | Optional. Only for a non-default Twilio host. |
+
+**The `SEND_` prefix is load-bearing.** `src/http/router.mjs:42` already reads
+`TWILIO_AUTH_TOKEN` to verify **inbound** webhook signatures. One variable
+serving both directions would mean rotating the webhook token silently breaks
+sending — the same collision `mailgun.mjs` avoids the same way.
+
+None of these are needed until the day Twilio is switched on. Until then the
+provider is never called.
+
+### Deviation from the contract — one, and it is an addition
+
+**Providers now export `ENABLED`.** W1's contract listed `PROVIDER`, `CHANNELS`
+and `send`; W2/W3 added `ADDRESS_FIELD`; this adds a fourth. The registry
+rejects a provider that does not declare it as a boolean — undeclared would read
+as `undefined`, which behaves like "not routed", and a provider nobody thought
+about should fail loudly rather than default quietly.
+
+**`ENABLED` is a declaration, not a switch, and `resolve()` does not filter on
+it.** This is the design decision worth arguing with, so here is the reasoning
+in full. If `resolve()` refused a disabled provider, cutover day would need a
+routing-row flip **and** a code edit **and** a deploy — which is exactly the
+trap building Twilio early was meant to avoid. It would also mean two switches
+disagreeing about what sends, when W1 built `message_channel_routing` to be the
+single answer. So the routing table remains the only thing that decides, and a
+test locks `resolve()` against being "made safer" later.
+
+### The rewritten test — flagged, per the owner's instruction
+
+One existing test was changed. It read:
+
+> the two channels in the routing seed are each carried by exactly one provider
+
+That made a second SMS provider impossible, which is the exact thing this
+workflow needed. But the guard's real job is catching texts wired through the
+wrong company — a question about which provider is **live**, not how many exist.
+So it was narrowed rather than removed:
+
+> each seeded channel has exactly one **ENABLED** provider
+
+and then strengthened with a second test that reads migration 110's seed block
+off disk and asserts the enabled provider **is** the seeded one. The replacement
+is a stronger guard than the original: the old test could not have caught the
+code's idea of the default drifting from the database's, and the new one does.
+
+**Honest limit:** this compares code against the *migration seed*, which is the
+shipped default. It cannot see live per-org routing, because that is data. On
+real cutover day the row changes and the seed does not, so `ENABLED` will be
+stale until someone moves it. That is a documentation flag going out of date,
+not a send going to the wrong place.
+
+### How it was verified
+
+- `npm run lint` — 674 files parse clean.
+- 69 provider tests pass, up from 46. No test was skipped, deleted or weakened.
+- **Three deliberate mutations, each caught:** Twilio shipped enabled (2
+  failures), `resolve()` filtering on `ENABLED` (1), migration 110's seed
+  repointed to twilio without moving the flag (2).
+- Full suite, no database, **in this hosted agent environment**: 185 failing
+  test names, and the list is **byte-identical** to the same run on the tree
+  before this change. Zero failures added.
+
+  Recording the environment per §12, because this number does not match the one
+  above it: W2/W3 recorded 0 failures with no database, and this environment
+  produces 185 on the **unmodified** tree. The failures are in
+  `docs/diagrams`-sync and similar generated-artifact checks, not in messaging.
+  §12's warning that the environment moves the count holds; treat 185 as a
+  property of this container, not of the branch.
+- `npx tsc --noEmit` — still the no-op W1 recorded. No `tsconfig.json` exists
+  and there is no TypeScript in the repo; the command prints its help text. Run,
+  and it proves nothing.
+
+### What did NOT change
+
+- `message_channel_routing` still seeds `sms` → `ghl_relay`. No migration was
+  added, edited or applied.
+- The dispatcher was not touched. It resolves providers by name from the routing
+  table and needed no change to reach a new one.
+- Nothing sends. Everything in "What is NOT switched on" below is still true.
 
 ---
 
