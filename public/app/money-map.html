@@ -475,6 +475,21 @@ tr.is-overdue td{ background:#FDF6F5; }
         "<p>Nothing is being made up to fill the page.</p></div>";
     }
 
+    /* NOT REAL MONEY, SAID FIRST AND SAID LOUD. The mock provider exists so the
+       account writer could be built before Plaid is turned on, and its rows land
+       in the same table a real bank read would. A made-up balance that a reader
+       cannot tell apart from a real one is the single worst thing that could
+       appear on this page, so this goes above everything it affects. */
+    if (d.not_real && d.not_real.any) {
+      html += '<div class="mm-flag"><h3>Some of this is not real money</h3>' +
+        "<p>" + esc(d.not_real.note) + "</p>" +
+        (d.not_real.labels && d.not_real.labels.length
+          ? "<ul>" + d.not_real.labels.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul>"
+          : "") +
+        "<p>These came from a stand-in provider that was switched on for testing. " +
+        "Do not make a funding decision on anything below until they are gone.</p></div>";
+    }
+
     html += notesBlock(d);
     html += alertsBlock(d);
     html += cardsBlock(d);

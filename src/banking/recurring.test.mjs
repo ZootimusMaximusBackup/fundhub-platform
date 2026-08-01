@@ -945,13 +945,14 @@ test("a month-end anchor still clamps down for a genuinely shorter month", () =>
  * toBillRow — the mapping to migration 086's columns
  * ========================================================================= */
 
-test("toBillRow produces exactly the columns migration 086 declares", () => {
+test("toBillRow produces exactly the columns migrations 086 + 090 declare", () => {
   const rows = monthlyOn15th(["2026-01", "2026-02", "2026-03"]);
   const bill = only(detectRecurringBills(rows, { now: "2026-03-20" }).bills);
 
   const shaped = toBillRow(bill, { orgId: ORG });
 
   assert.deepEqual(Object.keys(shaped).sort(), [
+    "anchor_day_of_month",
     "bank_account_id", "cadence", "client_id", "confidence_label", "confidence_pct",
     "detected_as_of", "first_seen_on", "is_business", "last_seen_on", "merchant_display",
     "merchant_key", "next_expected_on", "next_expected_unknown_reason", "occurrence_count",
@@ -964,6 +965,37 @@ test("toBillRow produces exactly the columns migration 086 declares", () => {
   assert.equal(shaped.next_expected_on, "2026-04-15");
   assert.equal(shaped.next_expected_unknown_reason, null);
   assert.equal(shaped.is_business, null);
+  assert.equal(shaped.anchor_day_of_month, 15);
+});
+
+/* MIGRATION 090. The detector has always worked out the true billing day; until
+   090 there was no column to put it in, so toBillRow dropped it and everything
+   downstream re-derived it from `next_expected_on` — which is CLAMPED in a short
+   month. A bill due on the 31st therefore came back out of the database pinned
+   to the 30th, forever, with nothing saying it was an estimate. */
+test("toBillRow carries the TRUE billing day, not the clamped one", () => {
+  const rows = [
+    tx("2026-01-31", -5000), tx("2026-02-28", -5000),
+    tx("2026-03-31", -5000), tx("2026-05-31", -5000)
+  ];
+  const bill = only(detectRecurringBills(rows, { now: "2026-06-02" }).bills);
+  const shaped = toBillRow(bill, { orgId: ORG });
+
+  assert.equal(shaped.next_expected_on, "2026-06-30", "June has 30 days, so the prediction clamps");
+  assert.equal(shaped.anchor_day_of_month, 31, "the stored anchor must be the real billing day");
+});
+
+/* 090's second CHECK: a day-of-month on a weekly or biweekly bill is meaningless
+   and the seam would read it as an anchor it must honour. The detector never
+   emits one. */
+test("toBillRow writes no day-of-month for a bill that does not have one", () => {
+  const weekly = ["2026-01-05", "2026-01-12", "2026-01-19", "2026-01-26", "2026-02-02"]
+    .map((d) => tx(d, -1200));
+  const bill = only(detectRecurringBills(weekly, { now: "2026-02-04" }).bills);
+  const shaped = toBillRow(bill, { orgId: ORG });
+
+  assert.equal(shaped.cadence, "weekly");
+  assert.equal(shaped.anchor_day_of_month, null);
 });
 
 test("toBillRow refuses an org-less write and refuses a bill that is not an outflow", () => {

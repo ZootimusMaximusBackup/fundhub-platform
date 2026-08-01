@@ -9,6 +9,15 @@ anyone else's.
 | # | unit | owner | status |
 |---|---|---|---|
 | W-MM | Money Map — one owner screen: card due dates, recurring bills, cash flow, utilization, alerts, funding | claude/finance-os-dashboard-311v7j | **done** |
+| W-BA | Bank accounts writer — the first writer `bank_accounts` has ever had, plus a mock provider behind the Plaid seam | claude/finance-os-dashboard-311v7j | **done** |
+| W-090 | Migration 090 — `recurring_bills.anchor_day_of_month`, the month-end drift fix | claude/finance-os-dashboard-311v7j | **done** |
+
+### Claimed elsewhere — DO NOT DOUBLE-FIX
+
+| what | who has it |
+|---|---|
+| Org scoping on `api/read/tradelines.mjs` and `api/read/finance-os.mjs` (see finding 9) | the **underwrite thread**. Same defect class, already in hand. This workflow left both files untouched. |
+| Generating `-actual.md` journey files | **W2**. `docs/journeys/role-owner-actual.md` here was written before that started and may be superseded by the generated one. Intended journeys are Phase 2 and come from the owner. |
 
 ---
 
@@ -205,6 +214,153 @@ fetched. Every new test here is deliberately database-free for that reason.
 script, no TypeScript, and no Playwright. CLAUDE.md §6 lists all three as gates.
 They cannot pass and are not claimed.
 
+---
+
+## W-BA — the bank accounts writer, and migrations 090 + 091
+
+**Owner:** `claude/finance-os-dashboard-311v7j`
+**Status:** done
+**Migrations owned:** 090, 091. Both authorised by the owner after W-MM reported
+the gaps. **Neither has been applied** — see Verification.
+
+### Why this exists
+
+W-MM's finding 8: four of the five tables the Money Map reads had no writer.
+`bank_accounts` was the worst of them — it had no store module at all, and the
+only `INSERT INTO bank_accounts` in the repository was inside
+`src/banking/plaid.pg.test.mjs`. Three sections of the screen depend on it.
+
+`src/banking/plaid.mjs`'s `getAccounts()` names "a separate store module" that
+was never written. This is that module.
+
+### Files added
+
+| file | what it is |
+|---|---|
+| `db/migrations/090_recurring_bill_anchor_dom.sql` | `recurring_bills.anchor_day_of_month`. Closes the month-end drift. |
+| `db/migrations/091_bank_account_provider.sql` | `bank_accounts.provider` + `provider_account_id` + a non-Plaid unique index. |
+| `src/banking/accounts-store.mjs` | The writer. Database half only — no provider, no clock, no fetch. |
+| `src/banking/accounts-store.test.mjs` | 27 tests, stubbed db. |
+| `src/banking/providers/mock.mjs` | A stand-in provider matching the Plaid seam's exact shape. |
+| `src/banking/accounts-sync.mjs` | Provider → store. Closed registry, no default provider. |
+| `src/banking/accounts-sync.test.mjs` | 18 tests, no db and no network. |
+| `api/banking/sync-accounts.mjs` | `POST /api/banking/sync-accounts`. |
+| `src/http/sync-accounts.test.mjs` | 26 tests, stubbed db and auth. |
+
+### Files changed
+
+| file | change |
+|---|---|
+| `netlify/functions/api.mjs` | `"banking/sync-accounts"` added to `ROUTES`. |
+| `src/banking/recurring.mjs` | `toBillRow()` now carries `anchor_day_of_month`. One line plus its comment; nothing else in that file was touched. |
+| `src/banking/recurring.test.mjs` | The exact-columns assertion updated for 090, plus two new tests for the drift. |
+| `src/finance/money-map.mjs` | Reads the stored anchor day; takes the org's `thresholds`; counts and names mock accounts. |
+| `api/read/money-map.mjs` | Loads `cashflow_settings` through `loadThresholds()`; selects `provider` and `anchor_day_of_month`. |
+| `public/app/money-map.html` | Prints a NOT REAL MONEY banner above everything when any account is a mock. |
+
+### THE SEAM IS STILL OPEN. NOTHING TRANSMITS.
+
+`linkAccount()` in `src/banking/plaid.mjs` is untouched. Its header says an agent
+must not close it and names three gates that are not code — a SOC 2 review of
+storing bank credentials, a compliance-signed consent flow, and a human
+decision. The owner's decision covers the third; the other two are not theirs to
+wave and are not waved here.
+
+The `plaid` provider in the registry calls the existing `getAccounts()` seam and
+carries its refusal out unchanged. **The mock path reads a fixture in this
+repository.** There is no outbound `fetch` in anything this unit added.
+
+### Why a `provider` column, and why it is the whole safety argument
+
+The mock writes into the same table a real bank read would, and 081's scheme
+gave it no way to be told apart: a mock row has a NULL `plaid_item_id` for the
+same reason a hand-typed one does.
+
+A made-up balance a screen cannot distinguish from a bank read, on a funding
+screen, is the worst thing that could exist in this repository. So:
+
+* `provider` is NOT NULL with a CHECK — a row cannot lose it;
+* a CHECK ties `plaid_item_id` to `provider = 'plaid'` in both directions;
+* `uq_bank_accounts_provider_ref` keys on it, so a mock and a real account can
+  never collide into one row;
+* the read endpoint returns it and **the screen prints a red banner above every
+  figure it affects.**
+
+### Two switches, and neither is a typo
+
+The mock cannot run by accident:
+
+1. `provider` is a **required** parameter on the endpoint. No default, because a
+   default is how a mock ends up in production. An unknown name is a 400.
+2. `BANKING_MOCK_PROVIDER` must be the exact string `"1"`. Not `true`, not
+   `yes`, not "any non-empty value" — `isMockEnabled()` tests for `=== "1"` and
+   there is a test asserting each of those spellings is refused.
+
+### Gated harder than the reads next door
+
+`ROLE_SETS.FINANCE` — `{owner, admin}` — not `ROLE_SETS.STAFF`. The read
+endpoints serve six roles because a closer working a file needs to see it. This
+one CREATES the rows those screens total. Reading a balance and conjuring one
+are different powers.
+
+Org scoping from the session, fails closed, identical to `read/money-map`.
+
+### Nothing is deleted, ever
+
+An account that stops appearing in a provider's list is reported in `vanished`
+and left exactly as it was. An absence from one read is not evidence an account
+was closed — marking `closed_at` on it would be a claim about a real person's
+finances derived from a missing row. A test asserts no `DELETE` is issued.
+
+### A bug W-MM shipped, found while doing this and fixed
+
+`src/finance/money-map.mjs` passed cashflow-seam's `PRESENTABLE_CONFIDENCE_FLOOR`
+(0.55) as `project()`'s `thresholds.confidenceFloor`. Migration 089 spells out
+at length that those are two different questions: 0.55 asks *"safe to SHOW a
+person as a bill"*, and `cashflow_settings.confidence_floor` (089 set it to
+0.750) asks *"certain enough to treat as MONEY DEFINITELY LEAVING"*.
+
+Using the lower number put every `medium` bill in the committed track and
+overstated what is going out. The endpoint now reads the org's own value through
+`loadThresholds()`, and an org with no row gets its gap reported instead of a
+number nobody chose. Two tests pin the difference.
+
+### Decisions made (recorded, not asked)
+
+1. **The mock fixture is shaped to prove the screen tells the truth, not to make
+   it look full.** It deliberately includes a credit line with $9,000 of
+   headroom (which must NOT be counted as cash) and a depository account the
+   bank reported with no balance (which must refuse the whole projection with a
+   stated reason). A fixture of four tidy chequing accounts would exercise none
+   of the rules that matter.
+2. **No backfill on 090.** The true anchor cannot be recovered from a clamped
+   date — that is the guess the migration exists to stop. Old rows keep the
+   behaviour they already had and correct themselves the next time the detector
+   runs.
+3. **`provider_account_id` rather than reusing `plaid_account_id`.** Storing a
+   mock id in a column named after one vendor is how a schema stops meaning what
+   it says. `plaid_account_id` and 081's own unique index are untouched.
+
+### Verification actually run
+
+| what | result |
+|---|---|
+| `src/banking/accounts-store.test.mjs` | 27 pass, 0 fail |
+| `src/banking/accounts-sync.test.mjs` | 18 pass, 0 fail |
+| `src/http/sync-accounts.test.mjs` | 26 pass, 0 fail |
+| `src/finance/money-map.test.mjs` | 43 pass (was 37) |
+| `npm test` (whole suite, `DATABASE_URL` unset) | **2383 pass, 0 fail, 321 skipped** |
+
+**MIGRATIONS 090 AND 091 HAVE NOT BEEN APPLIED.** CLAUDE.md §11 says applying
+new SQL is mine to do without asking — but the command needs `netlify env:get`,
+and `api.netlify.com` is blocked by the network policy in this environment (403
+at CONNECT, an org policy denial). Same for `BANKING_MOCK_PROVIDER`, which is a
+plain feature flag and not a credential. Both are in the owner's hands and the
+exact commands are in the task report.
+
+Until 090 and 091 are applied, `read/money-map` will error on the missing
+columns. **Apply the migrations before opening the screen again.**
+
 ### FINDINGS — reported, not filled in
 
 1. **`docs/workflows/fundhub-beta-buildout.md` did not exist**, and neither did
@@ -216,13 +372,17 @@ They cannot pass and are not claimed.
    report one.
 4. **`src/http/app-nav-reachability.test.mjs` did not exist.** The brief said it
    fails if a screen has no way in. It was not there. It is now.
-5. **No intended journey exists for any of the eight journeys CLAUDE.md tracks.**
+5. **Journeys are owned elsewhere.** W2 is generating `-actual.md` files and
+   intended journeys come from the owner in Phase 2. Noted here so nobody
+   re-raises it; `docs/journeys/role-owner-actual.md` in this branch predates
+   W2 and may be superseded by the generated one.
 6. **`calcFunding()` reads an unknown card balance as zero**, overstating
    headroom. Surfaced as a caveat; not fixed, because changing
    `toCalculatorCards()` would move a number the closer dashboard already says
    out loud, and that is not this unit's call.
-7. **`recurring_bills` has no `anchor_day_of_month` column**, so month-end bills
-   drift. Needs a migration; this unit owns none.
+7. ~~**`recurring_bills` has no `anchor_day_of_month` column**, so month-end
+   bills drift.~~ **FIXED** by migration 090 — see W-BA above. Authorised by the
+   owner after this was reported.
 8. **FOUR OF THE FIVE TABLES THIS SCREEN READS HAVE NO LIVE WRITER.** Traced by
    following imports, not assumed. This is the single most important thing on
    this board, because it decides what the screen actually shows on day one:
@@ -232,7 +392,7 @@ They cannot pass and are not claimed.
    | `tradelines` | `src/tradelines/store.mjs` `ingestCrsResult()` | **YES** — `src/finance/soft-pulls.mjs`, reached by the routed `POST /api/finance/soft-pull`. |
    | `card_liabilities` | `src/liabilities/store.mjs` `ingestCrsLiabilities()` | **NO.** Nothing in `src/` or `api/` imports that module. |
    | `recurring_bills` | `src/banking/store.mjs` `saveDetection()` | **NO.** Nothing imports it. |
-   | `bank_accounts` | none | **NO STORE MODULE EXISTS.** The only `INSERT INTO bank_accounts` in the repository is inside `src/banking/plaid.pg.test.mjs`. `plaid.mjs` says the rows are "upserted by a separate store module" — that module was never written. |
+   | `bank_accounts` | ~~none~~ **`src/banking/accounts-store.mjs` — WRITTEN, see W-BA above** | **YES, now** — `POST /api/banking/sync-accounts`. Was: no store module at all, the only INSERT was in a pg test. |
    | `cashflow_reminders` | `src/banking/reminders.mjs` `createReminder()` | **NO.** Nothing imports it, and nothing calls `recordReminders()` either. |
 
    Consequence, stated plainly: after a soft pull this screen shows real cards,
@@ -247,6 +407,6 @@ They cannot pass and are not claimed.
 9. **`api/read/finance-os.mjs` and `api/read/banking-surface.mjs` do not
    org-scope their queries.** They gate on a valid staff session and a
    `client_id`, and then read that client's rows without checking the client is
-   in the caller's org. The new endpoint does check. The two existing ones were
-   left alone — changing another unit's endpoints is out of scope — but this is
-   a real cross-org read on a multi-tenant table and somebody should own it.
+   in the caller's org. Both new endpoints in this branch do check.
+   **CLAIMED BY THE UNDERWRITE THREAD** — same defect class as
+   `read/tradelines`. Left untouched here on purpose. Do not double-fix.

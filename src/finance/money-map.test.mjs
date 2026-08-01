@@ -323,11 +323,27 @@ test("money in is zero by construction and the screen is told to say so", () => 
 });
 
 test("a bill inside the window moves the closing balance by exactly its amount", () => {
-  const out = run({ bankAccounts: [account()], recurringBills: [bill()] });
+  const out = run({
+    bankAccounts: [account()], recurringBills: [bill()],
+    // 089's configured floor. The bill is 90% confident, so it is committed.
+    thresholds: { confidenceFloor: 0.75 }
+  });
   assert.equal(out.cashflow.opening.cents, 240000);
   assert.equal(out.cashflow.total_out_committed.cents, 1599);
   assert.equal(out.cashflow.closing.cents, 240000 - 1599);
   assert.equal(out.cashflow.closing.display, "2384.01");
+});
+
+/* With NO configured floor there is nothing to compare a confidence against, so
+   project() carries every bill as unconfirmed and reports the gap. The money
+   still leaves in the worst-case track — it is the optimistic figure that
+   refuses to bank on it. */
+test("with no configured floor, a bill is carried as not-certain rather than assumed", () => {
+  const out = run({ bankAccounts: [account()], recurringBills: [bill()] });
+  assert.equal(out.cashflow.total_out_committed.cents, 0);
+  assert.equal(out.cashflow.total_out_unconfirmed.cents, 1599);
+  assert.equal(out.cashflow.closing.cents, 240000);
+  assert.equal(out.cashflow.worst_case_lowest.cents, 240000 - 1599);
 });
 
 test("a card with a due date and no minimum is a blind spot, not a zero", () => {
@@ -478,11 +494,108 @@ test("an account reference is masked to the last four digits", () => {
   assert.equal(out.cards.rows[0].ref_mask, "••7777");
 });
 
-test("billRowToDetected keeps the sign and does not invent an anchor day", () => {
-  const b = billRowToDetected(bill());
+test("billRowToDetected keeps the sign and carries the stored anchor day", () => {
+  const b = billRowToDetected(bill({ anchor_day_of_month: 31 }));
   assert.equal(b.typicalAmountCents, -1599);
   assert.equal(b.nextExpectedDate, "2026-08-04");
-  assert.equal(b.anchorDayOfMonth, undefined);
+  assert.equal(b.anchorDayOfMonth, 31);
+  // A row written before migration 090 has none, and null is the right answer —
+  // the seam then falls back to the day in next_expected_on, exactly as before.
+  assert.equal(billRowToDetected(bill()).anchorDayOfMonth, null);
+});
+
+/* THE MONTH-END DRIFT MIGRATION 090 EXISTS TO STOP. A bill charged on the 31st
+   has its next date CLAMPED to the 30th in a short month. Anchoring the series
+   on that clamped value pins the bill to the 30th forever — one day early, every
+   month, with nothing on the screen saying it is an estimate. */
+test("a month-end bill keeps its 31st when the anchor day is stored", () => {
+  const withAnchor = moneyMap({
+    asOf: "2026-09-01", horizonDays: 150,   // through to 2027-01-28
+    bankAccounts: [account()],
+    recurringBills: [bill({
+      merchant_key: "rent", merchant_display: "RENT",
+      typical_amount_cents: "-180000",
+      // September has 30 days, so the detector's prediction is already clamped.
+      next_expected_on: "2026-09-30",
+      anchor_day_of_month: 31
+    })]
+  });
+  const dates = withAnchor.bills.rows[0].in_window_dates;
+  assert.ok(dates.includes("2026-10-31"), `October should land on the 31st, got ${dates.join(", ")}`);
+  assert.ok(dates.includes("2026-12-31"), `December should land on the 31st, got ${dates.join(", ")}`);
+
+  const without = moneyMap({
+    asOf: "2026-09-01", horizonDays: 120,
+    bankAccounts: [account()],
+    recurringBills: [bill({
+      merchant_key: "rent", merchant_display: "RENT",
+      typical_amount_cents: "-180000",
+      next_expected_on: "2026-09-30",
+      anchor_day_of_month: null
+    })]
+  });
+  // Unchanged behaviour for a pre-090 row: still pinned to the 30th. Documented,
+  // not fixed by a guess — the anchor cannot be recovered from a clamped date.
+  assert.ok(without.bills.rows[0].in_window_dates.includes("2026-10-30"));
+});
+
+/* ── not-real money ────────────────────────────────────────────────────── */
+
+/* The mock provider writes into the same table a real bank read would. A
+   made-up balance a screen cannot tell apart from a real one is the worst thing
+   that could reach this page, so the count travels with the payload. */
+test("mock accounts are counted and named so the screen can warn", () => {
+  const clean = run({ bankAccounts: [account()] });
+  assert.equal(clean.not_real.any, false);
+  assert.equal(clean.not_real.accounts, 0);
+  assert.equal(clean.not_real.note, null);
+
+  const dirty = run({
+    bankAccounts: [
+      account({ provider: "plaid" }),
+      account({ id: "b2", name: "Made Up Savings", provider: "mock" })
+    ]
+  });
+  assert.equal(dirty.not_real.any, true);
+  assert.equal(dirty.not_real.accounts, 1);
+  assert.deepEqual(dirty.not_real.labels, ["Made Up Savings"]);
+  assert.match(dirty.not_real.note, /NOT REAL/);
+});
+
+test("a row from a database older than migration 091 reads as manual, not unknown", () => {
+  const out = run({ bankAccounts: [account({ provider: undefined })] });
+  assert.equal(out.cashflow.accounts_used[0].provider, "manual");
+  assert.equal(out.not_real.any, false);
+});
+
+/* ── the org's configured thresholds ───────────────────────────────────── */
+
+/* Migration 089 is explicit that these are two different questions:
+   cashflow-seam's 0.55 asks "safe to SHOW a person as a bill", and
+   cashflow_settings.confidence_floor asks "certain enough to treat as money
+   DEFINITELY LEAVING". Using the lower number puts every `medium` bill in the
+   committed track and overstates what is going out. */
+test("a medium-confidence bill is committed under 0.55 and not under 0.75", () => {
+  const medium = bill({ confidence_pct: 60, confidence_label: "medium" });
+
+  const loose = run({ bankAccounts: [account()], recurringBills: [medium],
+                      thresholds: { confidenceFloor: 0.55 } });
+  assert.equal(loose.cashflow.total_out_committed.cents, 1599);
+  assert.equal(loose.cashflow.total_out_unconfirmed.cents, 0);
+
+  const strict = run({ bankAccounts: [account()], recurringBills: [medium],
+                       thresholds: { confidenceFloor: 0.75 } });
+  assert.equal(strict.cashflow.total_out_committed.cents, 0);
+  assert.equal(strict.cashflow.total_out_unconfirmed.cents, 1599);
+});
+
+test("an unset threshold is reported as a gap, never replaced with a guess", () => {
+  const out = run({ bankAccounts: [account()], recurringBills: [bill()], thresholds: {} });
+  const names = out.cashflow.threshold_gaps.map((g) => g.name);
+  assert.ok(names.includes("confidenceFloor"),
+    "an org that has decided nothing was not told so");
+  const gap = out.cashflow.threshold_gaps.find((g) => g.name === "confidenceFloor");
+  assert.match(gap.note, /operator policy and needs a row/);
 });
 
 test("ENGINES is frozen and every id carries a module path a reader can open", () => {

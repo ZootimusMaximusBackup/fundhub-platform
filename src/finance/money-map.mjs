@@ -77,7 +77,7 @@ import { evaluateUtilization, DEFAULT_UTILIZATION_THRESHOLD } from "../alerts/ev
 import { toCalculatorCards } from "../tradelines/index.mjs";
 import { calcFunding } from "../calculators/deal-funding.mjs";
 import { project } from "../banking/cashflow.mjs";
-import { toCashflowBills, PRESENTABLE_CONFIDENCE_FLOOR } from "../banking/cashflow-seam.mjs";
+import { toCashflowBills } from "../banking/cashflow-seam.mjs";
 import { readDate } from "../liabilities/index.mjs";
 
 /* Which engine said what. The screen prints these strings verbatim next to the
@@ -177,11 +177,17 @@ export const DEPOSITORY = (a) => a?.account_type === "depository";
  * returns raw rows. Building the object inline at the call site would put the
  * field mapping in a place no test could reach.
  *
- * `anchorDayOfMonth` IS DELIBERATELY ABSENT, because migration 086 has no column
- * for it. The seam then falls back to the day-of-month of `next_expected_on`,
- * which for a bill charged on the 31st may itself be a clamped 30th — so that
- * bill stays pinned to the 30th across the window. That is a stored-data gap,
- * reported on the shared board, and it is NOT patched here with a guess.
+ * `anchorDayOfMonth` IS THE ONE FIELD THAT MATTERS MOST HERE. Migration 090 added
+ * the column the detector's value had nowhere to go; before it, this mapper had
+ * to leave the key absent and the seam fell back to the day-of-month of
+ * `next_expected_on` — which for a bill charged on the 31st is itself a clamped
+ * 30th, pinning that bill to the 30th forever.
+ *
+ * It is passed through as `null` when the column is null rather than omitted, and
+ * the seam's `?? first.d` fallback then does exactly what it did before. That is
+ * correct for the two cases where null is the right answer: a weekly or biweekly
+ * bill has no day-of-month, and a row written before 090 has not been re-detected
+ * yet. Neither is made worse; a monthly bill written since 090 is made right.
  */
 export function billRowToDetected(row) {
   return {
@@ -193,6 +199,7 @@ export function billRowToDetected(row) {
     typicalAmountCents: cents(row?.typical_amount_cents),
     nextExpectedDate: readDate(row?.next_expected_on),
     nextExpectedUnknownReason: text(row?.next_expected_unknown_reason),
+    anchorDayOfMonth: int(row?.anchor_day_of_month),
     confidencePct: int(row?.confidence_pct),
     confidenceLabel: text(row?.confidence_label),
     isBusiness: row?.is_business === null || row?.is_business === undefined ? null : Boolean(row.is_business),
@@ -411,6 +418,9 @@ function cashflowSection(projection, used, skipped, asOf, horizonDays) {
       id: a.id,
       label: a.label,
       entity_kind: a.entity_kind,
+      /* Carried per account, not just as a count, so a reader can see WHICH of
+         the balances in this projection is not a real bank read. */
+      provider: a.provider,
       balance: amount(a.balanceCents)
     })),
     accounts_skipped: skipped,
@@ -798,6 +808,11 @@ function fundingSection(tradelines, requestedAmount, threshold, grid) {
  *                                          alerts engine's default; pass null for
  *                                          "configured but unset", which yields UNKNOWN.
  * @param {number|null} [input.requestedAmount] dollars, for the funding waterfall. Omit for none.
+ * @param {object}   [input.thresholds]   the org's `cashflow_settings`, as
+ *                                        src/banking/settings.mjs loadThresholds()
+ *                                        returns it. An ABSENT key means unset, and
+ *                                        project() reports it as a gap rather than
+ *                                        substituting a number nobody chose.
  *
  * @returns {object} the payload public/app/money-map.html renders.
  */
@@ -810,7 +825,8 @@ export function moneyMap({
   recurringBills = [],
   reminders = [],
   utilizationThreshold,
-  requestedAmount = null
+  requestedAmount = null,
+  thresholds = {}
 } = {}) {
   if (typeof asOf !== "string" || dayNumber(asOf) === null) {
     throw new TypeError(`moneyMap: asOf must be a 'YYYY-MM-DD' date, got ${JSON.stringify(asOf)}`);
@@ -858,8 +874,20 @@ export function moneyMap({
     id: text(a.id),
     label: text(a.name) || text(a.official_name) || "Unnamed account",
     entity_kind: a.entity_kind === "personal" || a.entity_kind === "business" ? a.entity_kind : "unknown",
+    /* WHERE THE FIGURE CAME FROM. 091 makes this NOT NULL with a CHECK, so a row
+       cannot lose it. A pre-091 database has no column and every row reads as
+       'manual', which is what those rows are. */
+    provider: text(a.provider) || "manual",
     balanceCents: cents(a.current_balance_cents)
   }));
+
+  /* NOT-REAL MONEY, COUNTED AND NAMED. The mock provider exists so the account
+     writer could be built before Plaid is turned on, and its rows land in the
+     same table a real read would. A made-up balance a screen cannot tell apart
+     from a bank read is the worst thing that could be on this page, so the count
+     travels with the payload and the screen prints a warning whenever it is
+     above zero. */
+  const mockAccounts = ba.filter((a) => text(a.provider) === "mock");
 
   /* Bills → dated occurrences, through the seam that owns the sign flip, the
      confidence rescale and the recurrence expansion. Candidates (low confidence)
@@ -921,7 +949,20 @@ export function moneyMap({
         cardLiabilities,
         now: asOf,
         horizonDays,
-        thresholds: { confidenceFloor: PRESENTABLE_CONFIDENCE_FLOOR }
+        /* THE ORG'S CONFIGURED THRESHOLDS, NOT A NUMBER THIS FILE PICKED.
+           An earlier version passed cashflow-seam's PRESENTABLE_CONFIDENCE_FLOOR
+           (0.55) here, and that was wrong in a way migration 089 spells out at
+           length: 0.55 answers "is this safe to SHOW a person as a bill", and
+           project()'s confidenceFloor answers the stronger "is this certain
+           enough to treat as MONEY THAT IS DEFINITELY LEAVING". Using the lower
+           number put every `medium` bill in the committed track, overstating
+           what is going out. The configured value (089 set it to 0.750, the
+           detector's own `high` band) is the one that answers this question.
+
+           An ABSENT confidenceFloor is passed through absent, NOT replaced:
+           project() then reports it as a threshold gap, which is what an org
+           that has decided nothing deserves to be told. */
+        thresholds
       });
     } catch (e) {
       projectionError = { message: e.message };
@@ -1007,6 +1048,16 @@ export function moneyMap({
       reminders: rm.length
     },
     empty,
+    /* Printed at the top of the screen, above every figure it affects. */
+    not_real: {
+      accounts: mockAccounts.length,
+      any: mockAccounts.length > 0,
+      note:
+        mockAccounts.length > 0
+          ? `${mockAccounts.length} of this client's bank account(s) are NOT REAL. They came from the stand-in provider, not from a bank. Every cash figure on this screen includes them.`
+          : null,
+      labels: mockAccounts.map((a) => text(a.name) || text(a.official_name) || "Unnamed account")
+    },
     cards,
     bills,
     cashflow,

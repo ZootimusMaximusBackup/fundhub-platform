@@ -39,13 +39,14 @@ const CLIENT_ROW = { id: "c1", first_name: "Dana", last_name: "Reyes" };
    makes is recorded so a test can assert on the PARAMETERS — which is the only
    way to prove the org id actually reached the WHERE clause rather than being
    read and dropped. */
-function makeDb(tables = {}, { clientRows = [CLIENT_ROW] } = {}) {
+function makeDb(tables = {}, { clientRows = [CLIENT_ROW], settingsRows = [] } = {}) {
   const calls = [];
   return {
     calls,
     query(sql, params) {
       calls.push({ sql, params });
       const from = (t) => sql.includes(`FROM ${t}`);
+      if (from("cashflow_settings")) return Promise.resolve({ rows: settingsRows });
       if (from("clients")) return Promise.resolve({ rows: clientRows });
       if (from("tradelines")) return Promise.resolve({ rows: tables.tradelines ?? [] });
       if (from("card_liabilities")) return Promise.resolve({ rows: tables.liabilities ?? [] });
@@ -154,13 +155,35 @@ test("a client in another org reads as not found, not as forbidden", async () =>
   assert.match(db.calls[0].sql, /FROM clients/);
 });
 
-test("every data query filters on org_id as well as client_id", async () => {
+test("every per-client query filters on org_id as well as client_id", async () => {
   const { db } = await call();
-  const dataQueries = db.calls.filter((c) => !/FROM clients/.test(c.sql));
-  assert.equal(dataQueries.length, 5, "expected five data reads");
-  for (const c of dataQueries) {
+  const perClient = db.calls.filter(
+    (c) => !/FROM clients/.test(c.sql) && !/FROM cashflow_settings/.test(c.sql)
+  );
+  assert.equal(perClient.length, 5, "expected five per-client reads");
+  for (const c of perClient) {
     assert.match(c.sql, /org_id = \$2/, "a data query is not org-scoped: " + c.sql);
     assert.deepEqual(c.params, [CLIENT_ID, "org-1"]);
+  }
+});
+
+/* The org's thresholds are a property of the ORG, not of one client, so this
+   one is scoped by org alone — and it must never be scoped by anything the
+   caller supplied. */
+test("the settings read is org-scoped and carries no caller input", async () => {
+  const { db } = await call({ query: { org_id: "org-2" } });
+  const settings = db.calls.find((c) => /FROM cashflow_settings/.test(c.sql));
+  assert.ok(settings, "the org's cash-flow thresholds were never read");
+  assert.match(settings.sql, /WHERE org_id = \$1/);
+  assert.deepEqual(settings.params, ["org-1"]);
+});
+
+/* loadThresholds must not create a row. A read that wrote a default would bake
+   "somebody decided zero" into the database on first open of the screen. */
+test("reading the thresholds writes nothing", async () => {
+  const { db } = await call();
+  for (const c of db.calls) {
+    assert.ok(!/INSERT|UPDATE|DELETE/i.test(c.sql), "a read endpoint wrote to the database: " + c.sql);
   }
 });
 

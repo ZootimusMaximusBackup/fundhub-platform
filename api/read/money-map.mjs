@@ -63,6 +63,7 @@ import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { moneyMap } from "../../src/finance/money-map.mjs";
+import { loadThresholds } from "../../src/banking/settings.mjs";
 
 /* The window. 30 days is the horizon a monthly billing cycle needs to be fully
    visible; it is a DEFAULT and the caller can move it, not a rule. The cap
@@ -85,6 +86,7 @@ const LIABILITY_COLUMNS = `
 
 const BANK_ACCOUNT_COLUMNS = `
   id, client_id, name, official_name, mask,
+  provider,
   account_type, account_subtype, currency_code,
   available_balance_cents, current_balance_cents, credit_limit_cents,
   balance_as_of, entity_kind, entity_kind_source, entity_kind_set_at, closed_at`;
@@ -93,6 +95,7 @@ const BILL_COLUMNS = `
   id, org_id, bank_account_id, client_id,
   merchant_key, merchant_display, cadence, typical_amount_cents,
   next_expected_on::text AS next_expected_on, next_expected_unknown_reason,
+  anchor_day_of_month,
   confidence_pct, confidence_label, is_business, occurrence_count,
   first_seen_on::text AS first_seen_on, last_seen_on::text AS last_seen_on,
   detected_as_of`;
@@ -186,7 +189,14 @@ export default async function handler(req, res, deps = {}) {
        client has four cards", and the modules downstream are what decide that a
        closed line has no headroom and a closed account's last balance is not
        money anybody can reach. */
-    const [tradelines, liabilities, bankAccounts, recurringBills, reminders] = await Promise.all([
+    /* THE ORG'S OWN THRESHOLDS, read through the module that owns them rather
+       than as a sixth hand-written SELECT. An org with no row gets `{}` and
+       loadThresholds deliberately creates nothing — a read that wrote a default
+       row would bake "somebody decided zero" into the database on first read.
+       project() then reports each unset threshold as a gap, which the screen
+       prints under "Read this first". */
+    const [thresholds, tradelines, liabilities, bankAccounts, recurringBills, reminders] = await Promise.all([
+      loadThresholds(database, { orgId }),
       database.query(
         `SELECT ${TRADELINE_COLUMNS} FROM tradelines
           WHERE client_id = $1 AND org_id = $2
@@ -236,7 +246,8 @@ export default async function handler(req, res, deps = {}) {
       bankAccounts: bankAccounts.rows,
       recurringBills: recurringBills.rows,
       reminders: reminders.rows,
-      requestedAmount: a.amount
+      requestedAmount: a.amount,
+      thresholds
     });
 
     const row = client.rows[0];
