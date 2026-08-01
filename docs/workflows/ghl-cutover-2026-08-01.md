@@ -371,9 +371,18 @@ role gates, neither of which this change adds.
    runs and passes in isolation. Not caused by this change, and worth knowing
    before anyone chases it.
 
-7. **Migration `106` is used twice** — `106_entities.sql` and
-   `106_journeys.sql`. Both are already applied so neither can be renamed.
-   Noted, not touched; out of scope for W1.
+7. **Migration `106` was used twice** — `106_entities.sql` and
+   `106_journeys.sql`. W1 recorded it and left it alone. **Resolved at the
+   five-branch merge on the owner's instruction:** `106_journeys.sql` is now
+   `113_journeys.sql`. `106_entities.sql` keeps its number because ten files
+   name it in comments and only two named the journeys one.
+
+   **This changes the recorded key.** `migrate.mjs` keys `schema_migrations` on
+   `<dir>/<file>`, so a database that already applied `migrations/106_journeys.sql`
+   will apply `migrations/113_journeys.sql` as if it were new. The file is
+   idempotent (`CREATE TABLE IF NOT EXISTS`, `ON CONFLICT DO NOTHING`), so the
+   re-run is a no-op — but the old key stays in the table forever and the
+   health check no longer expects it.
 
 8. **The gate has no caller yet.** Nothing imports it. It changes no behaviour
    until W4's dispatcher calls `gateAndRecord`. Adding the gate did not turn

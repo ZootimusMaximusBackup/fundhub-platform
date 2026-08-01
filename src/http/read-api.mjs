@@ -120,10 +120,23 @@ export function page(rows, { limit, offset }) {
 /* ROLE GATING. Deny by default: an endpoint that does not list roles admits
    nobody, so forgetting to configure one fails closed rather than open. */
 export const ROLE_SETS = {
-  // Money and people. Commission rates, invoices, staff records, payouts.
-  FINANCE: new Set(["owner", "admin"]),
+  /* Money and people. Commission rates, invoices, staff records, payouts.
+
+     sales_manager is here by an explicit owner decision (H-6 in Ticket 8,
+     answered 2026-08-01), NOT by an agent's judgement — the ticket names this
+     as a call an agent must not make on its own. The decision was company-wide
+     commission visibility rather than own-team-only, and the reasoning
+     recorded with it is that closers are the only commissioned staff, so the
+     two scopes are the same set of people today.
+
+     Worth knowing when that stops being true: FINANCE is broader than
+     commissions. It also gates invoices, staff records and payouts, and this
+     set has no notion of "their own team" to narrow to. If a second
+     commissioned role ever appears, this is the line to revisit. Decided, not
+     open — logged here so nobody re-derives it, not so it gets re-argued. */
+  FINANCE: new Set(["owner", "admin", "sales_manager"]),
   // Operational reads any employee needs to do their job.
-  STAFF: new Set(["owner", "admin", "funding_advisor", "closer", "inquiry_specialist", "setter"]),
+  STAFF: new Set(["owner", "admin", "funding_advisor", "closer", "inquiry_specialist", "setter", "sales_manager"]),
   // Platform health. Failed events name handlers and payload shapes.
   OPS: new Set(["owner", "admin"]),
   // Recruiting. Deliberately NOT the STAFF set: these reads carry job-applicant

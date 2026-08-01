@@ -51,6 +51,11 @@ export const ADDRESS_FIELD = "ghl_contact_id";
     at which point this file is deleted and that flag moves. See index.mjs. */
 export const ENABLED = true;
 
+/** True: this provider makes a real outbound HTTP request. Read by
+    src/messaging/live-fence.mjs, which refuses to let a journey run reach a
+    provider that can leave the building. */
+export const TRANSMITS = true;
+
 const DEFAULT_BASE_URL = "https://services.leadconnectorhq.com";
 // The same version scripts/gen-custom-field-migration.mjs pins. GHL requires the
 // header and rejects the request without it.

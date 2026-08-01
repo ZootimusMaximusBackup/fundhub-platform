@@ -18,11 +18,21 @@
 // cutover would need a row flip AND a code edit AND a deploy, and the routing
 // table would no longer be the single answer to "what sends". One switch.
 
+// MERGE NOTE (2026-08-01, five-branch merge). `internal` and `memory` arrived
+// with the journey-runner branch, which carried its own smaller registry
+// (`key`/`transmits`/`resolve(db,{orgId,channel})`). That registry is gone; the
+// two providers were rewritten onto this contract and registered here, so there
+// is one seam rather than two. Neither is ENABLED, so neither can become a
+// channel's default by accident — a run reaches `memory` only by the routing
+// flip in api/journeys/run.mjs, inside a transaction that is rolled back.
+
 import * as mailgun from "./mailgun.mjs";
 import * as ghlRelay from "./ghl-relay.mjs";
 import * as twilio from "./twilio.mjs";
+import * as internal from "./internal.mjs";
+import * as memory from "./memory.mjs";
 
-const REGISTERED = [mailgun, ghlRelay, twilio];
+const REGISTERED = [mailgun, ghlRelay, twilio, internal, memory];
 
 /* Every provider must expose the same three things. Checked here, once, at
    import time: a provider missing `send` would otherwise fail at the moment of
@@ -46,6 +56,20 @@ for (const p of REGISTERED) {
   if (typeof p.ENABLED !== "boolean") {
     throw new Error(`provider registry: ${p.PROVIDER} does not declare ENABLED`);
   }
+  /* TRANSMITS — can this provider reach the outside world? Boolean, and
+     required, for the same reason ENABLED is: undeclared reads as `undefined`,
+     which src/messaging/live-fence.mjs would treat as "cannot transmit", and a
+     provider that quietly claims it is harmless is the one thing the fence
+     exists to prevent. Declaring it is a deliberate, visible act. */
+  if (typeof p.TRANSMITS !== "boolean") {
+    throw new Error(`provider registry: ${p.PROVIDER} does not declare TRANSMITS`);
+  }
+}
+
+/** Every provider this build knows about. For the runner's report and for the
+    tests that assert the transmit posture of the whole set. */
+export function all() {
+  return [...REGISTERED];
 }
 
 export const PROVIDERS = Object.freeze(

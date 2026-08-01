@@ -26,7 +26,12 @@
 // below is an early out, not the guarantee.
 
 const EMPLOYEE_ROLES = new Set([
-  "owner", "admin", "funding_advisor", "closer", "inquiry_specialist", "setter"
+  "owner", "admin", "funding_advisor", "closer", "inquiry_specialist", "setter",
+  // Owns the Sales pipeline and the closers under it, so it owns their tasks.
+  // db/migrations/112_sales_manager_role.sql widens the matching CHECK on
+  // tasks.assignee_role — this set and that constraint must stay in step, or a
+  // task passes here and is rejected by the database.
+  "sales_manager"
 ]);
 
 export const TASK_ROLES = EMPLOYEE_ROLES;

@@ -45,6 +45,11 @@ export const ADDRESS_FIELD = "email";
     A declaration of what routing ships as, not a switch — see index.mjs. */
 export const ENABLED = true;
 
+/** True: this provider makes a real outbound HTTP request. Read by
+    src/messaging/live-fence.mjs, which refuses to let a journey run reach a
+    provider that can leave the building. */
+export const TRANSMITS = true;
+
 const DEFAULT_BASE_URL = "https://api.mailgun.net";
 
 /* config — read the environment, or say precisely what is missing.

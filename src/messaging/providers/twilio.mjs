@@ -50,6 +50,11 @@ export const ADDRESS_FIELD = "phone";
     A declaration of the shipped default, not an enforcement point — see header. */
 export const ENABLED = false;
 
+/** True: this provider makes a real outbound HTTP request. Read by
+    src/messaging/live-fence.mjs, which refuses to let a journey run reach a
+    provider that can leave the building. */
+export const TRANSMITS = true;
+
 const DEFAULT_BASE_URL = "https://api.twilio.com";
 
 /* A Messaging Service SID and an account SID are both 34 characters and differ

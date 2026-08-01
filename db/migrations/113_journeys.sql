@@ -1,4 +1,4 @@
--- 106_journeys.sql — persistent storage for the Journeys editor
+-- 113_journeys.sql — persistent storage for the Journeys editor
 -- (public/app/journeys.html): the SMS/email/pipeline automation the client,
 -- setter, closer, funding advisor, affiliate and white-label onboarding
 -- flows follow.
@@ -15,7 +15,13 @@
 -- this is internal operating automation, not partner-branded content, so it
 -- does not carry partner_id or the partner-isolation RLS from 045.
 
-CREATE TABLE journeys (
+-- RENUMBERED FROM 106_journeys.sql at the five-branch merge, 2026-08-01, on the
+-- owner's instruction: `106` was carried by two files. `migrate.mjs` keys
+-- schema_migrations on `<dir>/<file>`, so any database that already applied
+-- `migrations/106_journeys.sql` sees this as a brand-new file and runs it again.
+-- That is why the CREATE below is `IF NOT EXISTS` — the re-run has to be a
+-- no-op, not a "relation already exists" error that aborts the whole run.
+CREATE TABLE IF NOT EXISTS journeys (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id      uuid NOT NULL REFERENCES orgs(id),
   key         text NOT NULL,          -- client | setter | closer | advisor | affiliate | partner

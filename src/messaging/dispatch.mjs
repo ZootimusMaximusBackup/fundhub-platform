@@ -199,9 +199,25 @@ const ADDRESS_COLUMNS = new Set(["email", "phone", "ghl_contact_id"]);
    messages.to_address. */
 const NATURAL_COLUMN = { email: "email", sms: "phone", voice: "phone" };
 
+/* A provider that carries every channel cannot name one column, so it declares
+   ADDRESS_FIELD = "natural" and gets the channel's own column instead. Added at
+   the five-branch merge for `internal` and `memory`; every vendor provider still
+   names its column outright, because Mailgun wanting an email address and the
+   GHL relay wanting a contact id is exactly the thing ADDRESS_FIELD records. */
+const NATURAL = "natural";
+
+/** The client column this provider reads for this channel, or null if there
+    isn't one. Exported shape of the "natural" indirection, so the no-address
+    error names a real column instead of the word "natural". */
+function addressColumnFor(providerName, channel) {
+  const declared = addressFieldFor(providerName);
+  const field = declared === NATURAL ? NATURAL_COLUMN[channel] : declared;
+  return field && ADDRESS_COLUMNS.has(field) ? field : null;
+}
+
 async function addressFor(db, message, providerName) {
-  const field = addressFieldFor(providerName);
-  if (!field || !ADDRESS_COLUMNS.has(field)) return null;
+  const field = addressColumnFor(providerName, message.channel);
+  if (!field) return null;
 
   /* PREFER THE ADDRESS RECORDED WHEN THE MESSAGE WAS QUEUED (111).
      A message that has been waiting should go where it was written to go, not
@@ -318,7 +334,7 @@ export async function dispatchOne(db, message, options = {}) {
       // Permanent for this message: no retry produces an address the client
       // record does not have.
       return await finalise(db, message, "failed", OUTCOME.NO_ADDRESS,
-        `the client has no ${addressFieldFor(route.provider)} to send to`, route.provider);
+        `the client has no ${addressColumnFor(route.provider, message.channel)} to send to`, route.provider);
     }
 
     // ---- 3. Send -----------------------------------------------------------

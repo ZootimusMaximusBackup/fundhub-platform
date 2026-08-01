@@ -362,8 +362,10 @@ function readme(data) {
       (counts.unverified === 0 ? " Every gate resolved to its source." : " Each is marked UNVERIFIED on the pages that touch it."),
     `- **${counts.open} route${counts.open === 1 ? " is" : "s are"} genuinely open** (signing in, signing out, "who am I", and the health check).`,
     `- **${counts.verifiedOther} route${counts.verifiedOther === 1 ? " needs" : "s need"} no sign-in but ${counts.verifiedOther === 1 ? "is" : "are"} not open** — a signed link, a provider signature, and Inngest's own request signing. Anyone may call them; the wrong signature is refused.`,
-    "- **`role-sales-manager` has nothing behind it.** `CLAUDE.md` §4 tracks the journey; no",
-    "  such role exists in the code. See its page.",
+    "- **`role-sales-manager` is built.** It was tracked in `CLAUDE.md` §4 with nothing behind",
+    "  it until 2026-08-01, when the owner directed the build (Ticket 8). The role now carries a",
+    "  catalog row, a task-routing CHECK, a demo login, and membership of `ROLE_SETS.STAFF` and",
+    "  `ROLE_SETS.FINANCE`. See its page.",
     ...deadEnds.map((j) =>
       `- **Nothing admits ${an(j.subject)} \`${j.subject}\`.** They can sign in and then reach no endpoint at all. ` +
       `See [${j.name}](./${j.name}-actual.md).`),

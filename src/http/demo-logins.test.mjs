@@ -39,6 +39,9 @@ import loginHandler from "../../api/auth/login.mjs";
 
 const ROOT = process.cwd();
 const MIGRATION = path.join(ROOT, "db/migrations/094_demo_logins.sql");
+/* The seventh staff login. 094 was already applied when sales_manager was
+   built, and an edit to an applied migration never runs — see the roster test. */
+const SALES_MANAGER_MIGRATION = path.join(ROOT, "db/migrations/112_sales_manager_role.sql");
 const LOGIN_PAGE = path.join(ROOT, "public/login.html");
 const SHELL = path.join(ROOT, "public/app/shell.js");
 
@@ -199,12 +202,14 @@ describe("the gate is actually wired into both login paths", () => {
 /* ------------------------------------------------------------------------ */
 describe("the roster is the same in all four places", () => {
 
-  test("nine logins, one per role", () => {
-    assert.equal(DEMO_LOGINS.length, 9);
-    assert.equal(DEMO_STAFF.length, 6);
+  test("ten logins, one per role", () => {
+    // Seven staff since sales_manager was built on 2026-08-01
+    // (db/migrations/112_sales_manager_role.sql), plus the three principals.
+    assert.equal(DEMO_LOGINS.length, 10);
+    assert.equal(DEMO_STAFF.length, 7);
     assert.equal(DEMO_ACCOUNTS.length, 3);
     const roles = DEMO_LOGINS.map((d) => d.role);
-    assert.equal(new Set(roles).size, 9, `duplicate role in the roster: ${roles}`);
+    assert.equal(new Set(roles).size, 10, `duplicate role in the roster: ${roles}`);
   });
 
   test("every role is one public/app/shell.js grants tabs to", () => {
@@ -229,7 +234,7 @@ describe("the roster is the same in all four places", () => {
     for (const d of DEMO_LOGINS) {
       assert.ok(isDemoEmail(d.email), `${d.email} is not on ${DEMO_EMAIL_DOMAIN}`);
     }
-    assert.equal(new Set(DEMO_LOGINS.map((d) => d.email)).size, 9, "duplicate demo address");
+    assert.equal(new Set(DEMO_LOGINS.map((d) => d.email)).size, 10, "duplicate demo address");
   });
 
   test("every name reads as a demo account", () => {
@@ -248,14 +253,19 @@ describe("the roster is the same in all four places", () => {
   });
 
   test("the migration seeds exactly this roster", () => {
-    const sql = read(MIGRATION);
+    /* Two files now, not one. 094_demo_logins.sql was already applied when the
+       sales_manager role was built on 2026-08-01, and migrate.mjs keys
+       schema_migrations on <dir>/<file> — editing an applied migration is a
+       silent no-op. So 112_sales_manager_role.sql carries that one login, and
+       the roster is checked against both rather than against 094 alone. */
+    const sql = read(MIGRATION) + "\n" + read(SALES_MANAGER_MIGRATION);
     for (const d of DEMO_LOGINS) {
       assert.ok(sql.includes(`'${d.email}'`),
-        `094_demo_logins.sql never mentions ${d.email}`);
+        `no demo-login migration mentions ${d.email}`);
     }
     for (const s of DEMO_STAFF) {
       assert.ok(sql.includes(`'${s.role}'`),
-        `094_demo_logins.sql never seeds the role ${s.role}`);
+        `no demo-login migration seeds the role ${s.role}`);
     }
     for (const a of DEMO_ACCOUNTS) {
       assert.ok(sql.includes(`'${a.kind}', '${a.email}'`),
@@ -457,20 +467,20 @@ describe("GET /api/auth/login — the switcher's roster, gated server-side", () 
     }
   });
 
-  test("switch on: all nine, each with the label, the portal and a home", async () => {
+  test("switch on: all ten, each with the label, the portal and a home", async () => {
     const res = await getOptions("1");
     assert.equal(res.code, 200);
     assert.equal(res.body.demo.enabled, true);
     assert.equal(res.body.demo.password, DEMO_PASSWORD);
     const logins = res.body.demo.logins;
-    assert.equal(logins.length, 9);
+    assert.equal(logins.length, 10);
     for (const d of logins) {
       for (const k of ["role", "email", "name", "label", "portal", "home"]) {
         assert.ok(d[k] && String(d[k]).trim(), `demo login ${d.role} has no ${k}`);
       }
       assert.ok(isDemoEmail(d.email), `${d.email} is not on the demo domain`);
     }
-    assert.equal(new Set(logins.map((d) => d.role)).size, 9, "duplicate role in the switcher");
+    assert.equal(new Set(logins.map((d) => d.role)).size, 10, "duplicate role in the switcher");
   });
 
   test("the reply carries nothing the page does not render", async () => {
