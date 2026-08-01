@@ -3,10 +3,33 @@ import pg from "pg";
 
 let _pool = null;
 
+// dbTarget() — "<host>/<database>" from DATABASE_URL, or a short reason it
+// couldn't be read. NEVER the password, NEVER the full connection string —
+// this is for server-side logs only (console.error is private to whoever
+// operates the deploy), never for an HTTP response body. See
+// src/http/health.mjs:safeError for why a host must never reach a caller.
+//
+// Exists because "the seed script wrote to database A, the live site reads
+// from database B" is invisible from inside either process alone — this is
+// the one line that lets an operator diff their own terminal's DATABASE_URL
+// against what a server log says the deployed function actually resolved.
+export function dbTarget(connectionString = process.env.DATABASE_URL) {
+  if (!connectionString) return "(DATABASE_URL not set)";
+  try {
+    const u = new URL(connectionString);
+    return `${u.hostname}${u.port ? ":" + u.port : ""}${u.pathname}`;
+  } catch {
+    return "(DATABASE_URL set but not a parseable URL)";
+  }
+}
+
 export function pool() {
   if (!_pool) {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) throw new Error("DATABASE_URL not set");
+    // Logged once, here, on first use — the earliest point a cold function
+    // instance knows what it is actually connected to. Server log only.
+    console.log(`db: connecting to ${dbTarget(connectionString)}`);
     /* TIMEOUTS. With none set, pg waits on the OS TCP timeout — a host that
        drops packets rather than refusing them left /api/health hanging for
        ~135 seconds. On a serverless platform the function is killed long before

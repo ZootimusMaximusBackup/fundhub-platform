@@ -173,7 +173,22 @@ function currentDemoRole() {
       "invalid_credentials". So the page told people their password was wrong
       when it was right. Going straight to fetch() here keeps the real answer.
 
-   fh.js is another workflow's file in this tree and is not edited from here.
+   3. THIS FILE REPEATED BUG (2) FOR STATUS >= 500, AND THAT IS THE ONE THAT
+      ACTUALLY BROKE CHRIS'S LOGIN. The line that used to be here —
+      `if (data && r.status < 500) return {...}` — meant a genuine 500 WITH A
+      REAL, PARSED JSON BODY still fell through to the offline mock below,
+      exactly the failure mode (2) already names and fixes for every OTHER
+      status code. netlify/functions/api.mjs:501 catches any thrown error
+      (a missing GRANT, a database that doesn't exist, anything) and answers a
+      clean, scrubbed `{ok:false, error:"internal_error", message:...}` — but
+      this function threw that answer away and asked the OFFLINE MOCK instead,
+      which does not recognise a real @fundhub.ai address and answers its own
+      fabricated "invalid_credentials". The result: any server-side fault,
+      including one serious enough to be the actual outage, rendered on screen
+      as indistinguishable from a mistyped password. Fixed by returning
+      whatever the backend actually said whenever it said anything parseable —
+      including 500 — and only falling through to the offline mock when
+      fetch() itself could not reach anything at all.
    ─────────────────────────────────────────────────────────────────────────── */
 async function signIn(body) {
   // See (1). Do this BEFORE anything else, or FH.api below never leaves the box.
@@ -188,10 +203,11 @@ async function signIn(body) {
     });
     let data = null;
     try { data = await r.json(); } catch (e) { data = null; }
-    // A 5xx or a non-JSON body means the backend is there but broken, which is
-    // the case fh.js's fallback exists for. Anything else is a real answer and
-    // is reported as given — including 403 and 429.
-    if (data && r.status < 500) return { ok: r.ok && data.ok === true, status: r.status, data };
+    // See (3). ANY parseable JSON body is a real answer from a real backend —
+    // status included, 500 included — and is reported as given. Only a body
+    // that will not parse at all falls through, because there is nothing
+    // useful to show for it.
+    if (data) return { ok: r.ok && data.ok === true, status: r.status, data };
   } catch (e) { /* no backend at all — fall through to the offline mock */ }
 
   return FH.api("/api/auth/login", { method: "POST", body });
@@ -234,6 +250,17 @@ function failureText(status, data) {
     return "Demo logins are switched off on this deploy. Set DEMO_LOGINS_ENABLED=1 and redeploy.";
   }
   if (status === 403) return "Account not active — ask an admin.";
+  // A genuine server fault (missing DB grant, wrong database, connection
+  // refused — see netlify/functions/api.mjs:501) must never read the same as
+  // a mistyped password. It was hitting exactly this branch before signIn()
+  // stopped discarding 5xx responses — see (3) above. `message` is
+  // safeError()'d server-side (src/http/health.mjs) — never a password, host
+  // or DSN, but everything else about the failure survives.
+  if (status === 0 || status >= 500 || (data && data.error === "internal_error")) {
+    return "Server error, not a wrong password — " +
+      ((data && data.message) || "no detail returned") +
+      ". Check Netlify function logs for /api/auth/login.";
+  }
   return "Wrong email or password.";
 }
 

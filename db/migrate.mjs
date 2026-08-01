@@ -69,6 +69,14 @@ async function main() {
     if (applied.has(f.key)) { console.log(`· skip ${f.key} (already applied)`); continue; }
     const sql = fs.readFileSync(f.path, "utf8");
     const client = await p.connect();
+    // Postgres NOTICE messages (RAISE NOTICE inside a migration's own DO
+    // blocks — 090/104/105 all use this to report what they verified) were
+    // never surfaced anywhere: node-postgres emits them as a 'notice' event
+    // on the client, and nothing here was listening. A migration could report
+    // success on stdout while its own RAISE NOTICE, containing the actual
+    // finding, went straight to /dev/null. Print it, prefixed so it reads as
+    // coming from inside the file rather than from this runner.
+    client.on("notice", (msg) => console.log(`  [${f.key}] ${msg.message}`));
     try {
       await client.query("BEGIN");
       await client.query(sql);

@@ -9,11 +9,12 @@
 // Thin mount over src/auth/login.mjs — all rate limiting, decoy hashing, and
 // session minting live there. This file only speaks HTTP.
 
-import { db } from "../../src/db.mjs";
+import { db, dbTarget } from "../../src/db.mjs";
 import { login } from "../../src/auth/login.mjs";
 import { loginAccount } from "../../src/auth/account-session.mjs";
 import { demoLoginsEnabled, DEMO_ENV_VAR } from "../../src/auth/demo-logins.mjs";
 import { demoSwitcherOptions, DEMO_PASSWORD } from "../../src/auth/demo-roster.mjs";
+import { safeError } from "../../src/http/health.mjs";
 
 function clientIp(req) {
   const xf = req.headers?.["x-forwarded-for"];
@@ -80,7 +81,27 @@ export default async function handler(req, res) {
   const ip = clientIp(req);
   const userAgent = req.headers?.["user-agent"] || null;
 
-  const out = await login(db, { email, password, ip, userAgent });
+  /* LOG THE REAL CAUSE BEFORE IT BECOMES A GENERIC 500.
+     netlify/functions/api.mjs:501 already catches any thrown error here,
+     scrubs it (safeError — never a host, DSN or password) and answers a
+     clean internal_error to the caller. What it does NOT do is put the cause
+     anywhere an operator can find it — nothing in this repo has metrics or
+     error reporting (CLAUDE.md §12), so a thrown error was previously visible
+     nowhere at all. This try/catch adds exactly that, to Netlify's function
+     logs only, and then RE-THROWS unchanged so the dispatcher's existing
+     scrub-and-500 behaviour is the one and only thing that decides what the
+     caller sees. Nothing about the HTTP response changes here. */
+  let out;
+  try {
+    out = await login(db, { email, password, ip, userAgent });
+  } catch (err) {
+    console.error(
+      `auth/login: staff lookup failed — ${safeError(err)}` +
+      (err && err.code ? ` (code ${err.code})` : "") +
+      ` — connected to ${dbTarget()}`
+    );
+    throw err;
+  }
 
   // Not a staff member? Try the accounts table. Client, affiliate and partner
   // principals sign in through the SAME endpoint so the frontend has one form,
@@ -90,7 +111,17 @@ export default async function handler(req, res) {
   // separate tables. A 429 is NOT retried against accounts — a rate limit that
   // can be sidestepped by having the second lookup answer is not a rate limit.
   if (!out.ok && out.status !== 429) {
-    const acct = await loginAccount(db, { email, password, ip, userAgent });
+    let acct;
+    try {
+      acct = await loginAccount(db, { email, password, ip, userAgent });
+    } catch (err) {
+      console.error(
+        `auth/login: account lookup failed — ${safeError(err)}` +
+        (err && err.code ? ` (code ${err.code})` : "") +
+        ` — connected to ${dbTarget()}`
+      );
+      throw err;
+    }
     if (acct.ok) {
       return res.status(200).json({
         ok: true,
