@@ -507,12 +507,23 @@ button,input,select,textarea{font:inherit;color:inherit}
   /* ── loading everything ───────────────────────────────────────────────── */
   function loadAll() {
     $("fosWrap").innerHTML = '<div class="fh-empty">Reading this client’s file…</div>';
-    var mmQ = qs({ client_id: clientId, entity_id: entityId || undefined, days: S.days });
-    var ccQ = qs({ client_id: clientId, entity_id: entityId || undefined, days: S.days });
+    // FHData.read(resource, params) does its own serialization — for (var k
+    // in params) over whatever is passed. A pre-built query STRING handed to
+    // that loop iterates the string's own character indices ("0","1","2"…)
+    // rather than its content, producing a garbled request like
+    // "?0=c&1=l&2=i…". money-map requires and validates client_id, so that
+    // request 400'd on every load. finance-command treats client_id as
+    // OPTIONAL and falls back to an org-wide roll-up when it is absent — so
+    // the same bug there didn't fail loudly, it silently returned every
+    // client in the org totalled together on what looked like a one-client
+    // screen. Passing the plain params object here, not a string, is the fix
+    // for both — apiGet() below is a different helper that DOES want a
+    // pre-built query string, so txQ is unaffected.
+    var mmParams = { client_id: clientId, entity_id: entityId || undefined, days: S.days };
     var txQ = qs({ client_id: clientId, entity_id: entityId || undefined, days: S.days, limit: 60 });
     return Promise.all([
-      FHData.read("money-map", mmQ),
-      FHData.read("finance-command", ccQ),
+      FHData.read("money-map", mmParams),
+      FHData.read("finance-command", mmParams),
       apiGet("/api/read/underwrite?client_id=" + encodeURIComponent(clientId)),
       apiGet("/api/read/transactions?" + txQ),
       apiGet("/api/finance/alerts?" + qs({ client_id: clientId })),
