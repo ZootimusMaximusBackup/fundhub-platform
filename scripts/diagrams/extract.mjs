@@ -133,7 +133,19 @@ export function extractAdapters(canonicalEvents, dir = "src/adapters") {
     const events = canonicalEvents.filter((e) =>
       new RegExp(`"${e.replace(/\./g, "\\.")}"`).test(src));
 
-    const verifiers = [...src.matchAll(/export function (verify\w*Signature)/g)].map((m) => m[1]);
+    /* A verifier counts whether this file DEFINES it or IMPORTS it.
+
+       Only the `export function` half existed, so an adapter that reuses another
+       adapter's verifier — twilio-status.mjs imports twilio.mjs's, because the
+       inbound and delivery webhooks are signed identically and two copies of one
+       signature check is two places for one of them to rot — was drawn as
+       "no signature / direct call". That is the single most misleading thing
+       this diagram can say: it is read to answer "which adapters fail closed",
+       and it was answering "no" for one that does. */
+    const verifiers = [
+      ...[...src.matchAll(/export function (verify\w*Signature)/g)].map((m) => m[1]),
+      ...[...src.matchAll(/import\s*\{[^}]*?\b(verify\w*Signature)\b[^}]*?\}\s*from/g)].map((m) => m[1])
+    ];
     const scheme =
       /HMAC-SHA256/.test(src) ? "HMAC-SHA256" :
       /HMAC-SHA1/.test(src) ? "HMAC-SHA1" : null;
