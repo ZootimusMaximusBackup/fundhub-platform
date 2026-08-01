@@ -212,17 +212,18 @@ async function purge() {
   const r = await db.query(`SELECT id FROM orgs WHERE slug = $1`, [ORG_SLUG]);
   const id = r.rows[0]?.id;
   if (!id) return;
+  await db.query(`DELETE FROM tasks WHERE org_id = $1`, [id]);
   await db.query(`DELETE FROM opt_outs WHERE org_id = $1`, [id]);
   await db.query(`DELETE FROM messages WHERE org_id = $1`, [id]);
   await db.query(`DELETE FROM clients WHERE org_id = $1`, [id]);
   await db.query(`DELETE FROM orgs WHERE id = $1`, [id]);
 }
 
-const insertMessage = async (channel, providerMessageId, clientId) => (await db.query(
-  `INSERT INTO messages (org_id, client_id, direction, channel, status, provider, provider_ref, provider_message_id)
-   VALUES ($1,$2,'outbound',$3,'sent',$4,$5,$6) RETURNING id`,
+const insertMessage = async (channel, providerMessageId, clientId, templateKey = null) => (await db.query(
+  `INSERT INTO messages (org_id, client_id, direction, channel, status, provider, provider_ref, provider_message_id, template_key)
+   VALUES ($1,$2,'outbound',$3,'sent',$4,$5,$6,$7) RETURNING id`,
   [org, clientId, channel, channel === "sms" ? "ghl_relay" : "mailgun",
-   `workflow:test:${providerMessageId}`, providerMessageId]
+   `workflow:test:${providerMessageId}`, providerMessageId, templateKey]
 )).rows[0].id;
 
 const statusOf = async (id) => (await db.query(`SELECT status FROM messages WHERE id = $1`, [id])).rows[0].status;
@@ -241,7 +242,7 @@ before(async () => {
 
   smsTarget = await insertMessage("sms", "SM00000000000000000000000000000001", client);
   smsBystander = await insertMessage("sms", "SM00000000000000000000000000000002", otherClient);
-  emailTarget = await insertMessage("email", "20260801.1.aaaa@mg.fundhub.test", client);
+  emailTarget = await insertMessage("email", "20260801.1.aaaa@mg.fundhub.test", client, "n-03-hot-nurture-1");
   emailBystander = await insertMessage("email", "20260801.2.bbbb@mg.fundhub.test", otherClient);
 });
 
@@ -330,6 +331,41 @@ test("mailgun-events: a complained event writes an opt-out for that client on th
 
     assert.equal(await statusOf(emailTarget), "complained");
     assert.notEqual(await statusOf(emailBystander), "complained", "no other client is opted out by this");
+  });
+
+test("mailgun-events: a complaint raises a task naming the template that drew it",
+  { skip: !HAS_DB }, async () => {
+    /* A complaint is a signal about the COPY, not only about one recipient.
+       Opting the person out and telling nobody treats it as a lost contact,
+       when the same template is about to be sent to the next hundred people.
+       The task is the part a human ever sees. */
+    const rows = (await db.query(
+      `SELECT title, assignee_role, source_workflow, body FROM tasks WHERE org_id = $1`, [org])).rows;
+
+    assert.equal(rows.length, 1, "one complaint, one task");
+    assert.match(rows[0].title, /spam complaint/i);
+    assert.equal(rows[0].assignee_role, "admin", "a task with no owning role reaches nobody");
+    assert.equal(rows[0].source_workflow, "mailgun-complaint");
+    assert.match(rows[0].body, /20260801\.1\.aaaa@mg\.fundhub\.test/,
+      "the dedupe key is the provider message id, so a retry cannot double-file");
+  });
+
+test("mailgun-events: Mailgun retrying the same complaint files one task, not two",
+  { skip: !HAS_DB }, async () => {
+    // Providers retry until they get a 200. A second identical complaint must
+    // not produce a second task, or one bad template becomes an inbox flood.
+    const rawBody = mailgunBody({
+      event: "complained",
+      recipient: "status.subject@example.com",
+      message: { headers: { "message-id": "<20260801.1.aaaa@mg.fundhub.test>" } }
+    });
+    await handleWebhook({ db, provider: "mailgun-events", rawBody, headers: {}, env: ENV });
+
+    const n = (await db.query(`SELECT count(*)::int AS c FROM tasks WHERE org_id = $1`, [org])).rows[0].c;
+    assert.equal(n, 1, "a retried complaint must dedupe to the one task");
+
+    const outs = (await db.query(`SELECT count(*)::int AS c FROM opt_outs WHERE org_id = $1`, [org])).rows[0].c;
+    assert.equal(outs, 1, "and must not stack opt-out rows either");
   });
 
 test("mailgun-events: the angle brackets on a message id do not stop it matching",

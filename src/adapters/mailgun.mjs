@@ -15,6 +15,7 @@
 import crypto from "node:crypto";
 import { emit } from "../events/bus.mjs";
 import { recordOptOut } from "../lib/opt-out.mjs";
+import { createTask } from "../lib/create-task.mjs";
 
 // ---------------------------------------------------------------------------
 // 1. Signature verification (fail-closed)
@@ -267,6 +268,12 @@ export const DELIVERY_STATUS_MAP = {
   failed: null // resolved by severity below — permanent vs temporary
 };
 
+/* Who picks up a spam complaint, and under what source name. `admin` matches
+   GATE_TASK_ROLE in src/messaging/gate.mjs: reviewing message copy is the same
+   operational job whether the gate caught the wording or a recipient did. */
+export const COMPLAINT_TASK_ROLE = "admin";
+export const COMPLAINT_SOURCE = "mailgun-complaint";
+
 export const IGNORED_DELIVERY_EVENTS = new Set([
   "accepted", "opened", "clicked", "unsubscribed", "stored", "delivered_ip"
 ]);
@@ -348,7 +355,7 @@ export async function handleMailgunDeliveryEvent({ db, body, signingKey }) {
   // Matched on THEIR id, both sides stripped of angle brackets. Guarded to
   // outbound email so a colliding id cannot move a row on another channel.
   const found = await db.query(
-    `SELECT id, org_id, client_id
+    `SELECT id, org_id, client_id, template_key
        FROM messages
       WHERE btrim(provider_message_id, '<>') = $1
         AND direction = 'outbound'
@@ -366,6 +373,7 @@ export async function handleMailgunDeliveryEvent({ db, body, signingKey }) {
      ones. Written through src/lib/opt-out.mjs, the only sanctioned writer, so
      the send-path guard reads it without a second implementation to diverge. */
   let optedOut = false;
+  let taskRaised = false;
   if (evt.event === "complained") {
     const target = row && row.client_id
       ? { clientId: row.client_id, orgId: row.org_id }
@@ -373,6 +381,7 @@ export async function handleMailgunDeliveryEvent({ db, body, signingKey }) {
     if (target) {
       await recordOptOut(db, target.clientId, target.orgId, "email", "provider_complaint");
       optedOut = true;
+      taskRaised = await raiseComplaintTask(db, target, row, evt);
     }
   }
 
@@ -382,7 +391,7 @@ export async function handleMailgunDeliveryEvent({ db, body, signingKey }) {
        provider_message_id, and a bare 200 would hide that indefinitely.
        A complaint may still have opted the recipient out via the email
        fallback above, so that outcome is reported separately from this one. */
-    return { ok: true, status: 200, reason: "unmatched", updated: 0, event: evt.event, optedOut };
+    return { ok: true, status: 200, reason: "unmatched", updated: 0, event: evt.event, optedOut, taskRaised };
   }
 
   const upd = await db.query(
@@ -394,7 +403,49 @@ export async function handleMailgunDeliveryEvent({ db, body, signingKey }) {
     [row.id, mapped, evt.errorText]
   );
 
-  return { ok: true, status: 200, updated: upd.rowCount ?? 0, event: evt.event, optedOut };
+  return { ok: true, status: 200, updated: upd.rowCount ?? 0, event: evt.event, optedOut, taskRaised };
+}
+
+/* A complaint is a signal about a TEMPLATE, not only about one recipient.
+
+   Opting the person out and telling nobody treats it as a single lost contact.
+   It is usually the copy: if a template draws complaints, the next hundred sends
+   of it will draw more, and nobody finds that out from an opt_outs row. So the
+   complaint raises work for a person, the same way the compliance gate raises
+   work when a message uses restricted wording.
+
+   Built through createTask, which is the only sanctioned writer to the tasks
+   table (src/lib/create-task.mjs) — src/workflows/task-routing.test.mjs fails
+   the build on a raw insert into it anywhere under src/, because a task with no
+   owning role is work that reaches nobody. That test greps the file text, so
+   this comment says it in words rather than showing the statement.
+
+   THE DEDUPE KEY IS `body`. 006_tasks_idempotency.sql keys on
+   (client_id, source_workflow, body), so it must be identical when Mailgun
+   retries the same complaint and different for a genuinely new one. The
+   provider's message id is exactly that. When the receipt matched no message
+   row, the recipient address stands in — one task per complaining address
+   rather than one per retry.
+
+   NO MESSAGE COPY IN THE TASK. Same reasoning as the gate: a task list is an
+   index over work, not a second outbox holding client-facing text. The template
+   key is named instead, because that is the thing to go and read. */
+async function raiseComplaintTask(db, target, row, evt) {
+  const res = await createTask(db, {
+    orgId: target.orgId,
+    clientId: target.clientId,
+    title: "Spam complaint — review the template that sent this",
+    sourceWorkflow: COMPLAINT_SOURCE,
+    assigneeRole: COMPLAINT_TASK_ROLE,
+    body: `mailgun-complaint:${evt.providerMessageId || evt.recipient || "unattributed"}`,
+    detail: [
+      row?.template_key
+        ? `Template: ${row.template_key}`
+        : "Template unknown — the complaint matched no message row.",
+      "The recipient has been opted out of email automatically."
+    ]
+  });
+  return !!res?.created;
 }
 
 /* Last resort for a complaint we cannot tie to a message row. A complaint that
