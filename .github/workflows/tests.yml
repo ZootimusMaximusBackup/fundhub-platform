@@ -10,12 +10,17 @@
 #
 # THREE OF THE SIX GATES IN CLAUDE.md SECTION 6 CANNOT RUN HERE, and this file does
 # not pretend otherwise:
-#   * `npm run lint`   — package.json has no `lint` script
-#   * `npx tsc --noEmit` — there is no TypeScript in this repository
+#   * `npx tsc --noEmit` — there is no TypeScript in this repository. `tsc` with no
+#                          tsconfig and no inputs prints its help text and exits 0,
+#                          which is the exact "green that never ran" this file
+#                          refuses to add.
 #   * Playwright        — there is no Playwright config and no .spec file anywhere
 # Adding a step that silently passes because the tool is absent would be worse than
 # having no step: it would report a gate as green that was never run. When those
 # tools land, add them here.
+#
+# `npm run lint` HAS since landed (scripts/lint.mjs, 644 files parse-checked) and is
+# wired into the blocking job below — one of the three is no longer missing.
 #
 #
 # *** WHY THERE ARE TWO TEST JOBS AND ONLY ONE OF THEM BLOCKS. ***
@@ -24,29 +29,43 @@
 # reachable, and collapsing that into one number is how the most serious finding in
 # this codebase stayed hidden for eleven commits.
 #
-#   WITHOUT a DATABASE_URL, ~358 `.pg.test.mjs` tests SKIP and the suite reports
-#   3083 passing, 0 failing. That is a real, meaningful green: it covers every pure
-#   module, every handler against a stubbed database, and every source-level guard.
-#   It is fast, it is deterministic, and it must never go red. THIS JOB BLOCKS.
+#   WITHOUT a DATABASE_URL, 442 `.pg.test.mjs` tests SKIP and the suite reports
+#   3730 passing, 0 failing (measured 2026-08-01 on the merge of PR #61; it was
+#   358 / 3083 when this file was written). That is a real, meaningful green: it
+#   covers every pure module, every handler against a stubbed database, and every
+#   source-level guard. It is fast, it is deterministic, and it must never go red.
+#   THIS JOB BLOCKS.
 #
-#   WITH a real Postgres, the same suite currently reports ~24 pre-existing failures
-#   that predate all of this work. They are NOT noise. Every one of them is a
-#   multi-tenant isolation test — two named literally "THE LEAK TEST", fourteen more
-#   saying "returns nothing for a partner who owns none of it" — and they fail
-#   because the connection role is a Postgres superuser, and a superuser bypasses
-#   row-level security entirely. The policies are written correctly; they are simply
-#   not being applied to that connection. A fix is in flight on
-#   `claude/postgres-superuser-migration-lzm6xt`.
+#   WITH a real Postgres, the same suite reports pre-existing failures. They are NOT
+#   noise. Every one is a multi-tenant isolation test — two named literally "THE LEAK
+#   TEST", fourteen more saying "returns nothing for a partner who owns none of it" —
+#   and they fail because the connection role is a Postgres superuser, and a superuser
+#   bypasses row-level security entirely. The policies are written correctly; they are
+#   simply not being applied to that connection.
 #
-# So the database job runs, and REPORTS, and does not block — for now. Making it
-# blocking today would paint every pull request red for a defect nobody can fix in
-# their own branch, and a permanently-red check is one people learn to ignore. That
-# is exactly how those 24 came to be waved past for eleven commits, with CLAUDE.md's
-# own trap note making it official.
 #
-# *** WHEN THE SUPERUSER FIX LANDS, DELETE `continue-on-error` FROM THAT JOB. ***
-# That is the whole remaining task, and it is the single highest-value line in this
-# file. A test that is allowed to fail forever is not a test.
+# *** THE SUPERUSER FIX HAS NOW LANDED. WHAT THAT DID AND DID NOT CHANGE. ***
+#
+# db/migrations/104_app_role.sql creates `fundhub_app`: NOSUPERUSER, NOBYPASSRLS, no
+# TRUNCATE, no CREATE on schema public. Production now connects as it, migrations run
+# separately as the owner via MIGRATION_DATABASE_URL, and
+# src/security/superuser-guard.test.mjs gates the Netlify build against regressing.
+#
+# THE `continue-on-error` BELOW IS STILL HERE, ON PURPOSE, AND HERE IS THE HONEST
+# REASON. The person who merged the fix could not start a Postgres in their
+# environment (`su` and `useradd` both denied), so the claim "the isolation tests go
+# green once the suite connects as fundhub_app" is REASONED, NOT MEASURED. Deleting
+# the line on the strength of an unverified claim would be the same move that let the
+# original 24 hide for eleven commits — asserting a green nobody watched.
+#
+# So this job now DOES the switch and REPORTS the result, without betting the branch
+# on it. It creates fundhub_app, then runs the isolation tests as that role in a step
+# of their own. The first CI run after this merge is the measurement that was missing.
+#
+# *** WHEN THAT STEP IS OBSERVED GREEN, DELETE `continue-on-error` FROM THIS JOB. ***
+# One run is enough. That is the whole remaining task, and it is the single
+# highest-value line in this file. A test that is allowed to fail forever is not a
+# test.
 
 name: tests
 
@@ -90,7 +109,18 @@ jobs:
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
+      # CLAUDE.md §6 gate 1. Landed after this file was written; see the header.
+      - name: Lint
+        run: npm run lint
+
       # DATABASE_URL is deliberately NOT set. See the header: this is the fast green.
+      #
+      # Note that src/security/superuser-guard.test.mjs runs HERE too (it is a plain
+      # .test.mjs, not .pg.test.mjs, precisely so it cannot skip itself unnoticed).
+      # With no DATABASE_URL and no Netlify variables set, it correctly reads this as
+      # a non-deployed context and skips only its live-connection assertion. If it
+      # ever fails this job, read its message rather than setting DATABASE_URL here —
+      # the real check is the fundhub_app step in the Postgres job below.
       - name: Run the suite
         run: npm test
 
@@ -109,14 +139,17 @@ jobs:
             src/http/health-migrations.test.mjs
 
   # ---------------------------------------------------------------------------
-  # THE REPORTING JOB. Runs the ~358 tests the job above skips, against a real
+  # THE REPORTING JOB. Runs the 442 tests the job above skips, against a real
   # Postgres. Does not block — yet. See the header for exactly when to change that.
   # ---------------------------------------------------------------------------
   postgres:
     name: suite (real Postgres — reports, does not block)
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    continue-on-error: true   # <-- DELETE THIS when the superuser fix lands.
+    # <-- DELETE THIS once "Partner isolation, as the unprivileged app role" below
+    #     has been observed green on one run. See the header for why it survived the
+    #     superuser fix instead of going with it.
+    continue-on-error: true
 
     services:
       postgres:
@@ -133,7 +166,24 @@ jobs:
           --health-retries 20
 
     env:
+      # The OWNER connection. Two things need it and neither is the app:
+      #   * migrations (CREATE/ALTER TABLE), via MIGRATION_DATABASE_URL
+      #   * ~14 suites that run ALTER TABLE … DISABLE TRIGGER to prove the
+      #     archive-only guards hold, which requires table ownership
+      # `fundhub_app` deliberately cannot do either. That is the point of it.
       DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/fundhub_ci
+      MIGRATION_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/fundhub_ci
+
+      # The APP connection — same database, unprivileged role. Not named
+      # DATABASE_URL because most steps here want the owner; the steps that want
+      # the real runtime identity name this one explicitly.
+      APP_DATABASE_URL: postgres://fundhub_app:ci_not_a_secret@127.0.0.1:5432/fundhub_ci
+
+      # This is a CI container, not a laptop, but the reason the opt-out exists
+      # applies identically: the suite below runs as the owner because it tests
+      # ownership-requiring behaviour. Naming it out loud is the whole design of
+      # the flag — see src/security/superuser-guard.test.mjs.
+      ALLOW_SUPERUSER_DB: "1"
 
     steps:
       - uses: actions/checkout@v4
@@ -151,8 +201,14 @@ jobs:
       # then db/migrations, then db/seed, recording each file in `schema_migrations`
       # keyed `<dir>/<file>`. If a new migration does not apply to an empty database,
       # this step fails here rather than on somebody's production deploy — and note
-      # that the Netlify build command is an echo, so NOTHING ELSE runs migrations
-      # automatically. This is the only automated proof they still apply.
+      # that the Netlify build command runs the privilege guard, not migrations, so
+      # NOTHING ELSE runs them automatically. This is the only automated proof they
+      # still apply.
+      #
+      # This now also exercises 104_app_role.sql, whose final section refuses to
+      # commit if the role it just created can still reach SUPERUSER, BYPASSRLS,
+      # CREATEROLE, CREATEDB, REPLICATION or CREATE-on-public. A green step here is
+      # already a real assertion about the role, before any test runs.
       - name: Apply every migration to an empty database
         run: node db/migrate.mjs
 
@@ -167,13 +223,53 @@ jobs:
             exit 1
           fi
 
+      # 104_app_role.sql creates fundhub_app NOLOGIN with no password, on purpose:
+      # no credential is ever committed to this repository, and a human sets one
+      # out-of-band per environment (docs/runbooks/postgres-least-privilege.md).
+      #
+      # CI is the one place that rule can be relaxed, because this password grants
+      # access to a container that is destroyed minutes from now and is reachable
+      # only from inside this runner. It is written in the clear deliberately: a
+      # GitHub secret here would imply it protects something, and it does not.
+      # NEVER copy this pattern to an environment that outlives the job.
+      - name: Give fundhub_app a login for this run only
+        run: |
+          psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 \
+            -c "ALTER ROLE fundhub_app LOGIN PASSWORD 'ci_not_a_secret';"
+
       - name: Run the suite against Postgres
         run: npm test
 
-      # Runs even when the suite above fails, because when it fails THIS is the
-      # question worth answering first.
-      - name: Is this connection able to bypass row-level security?
+      # ── The measurement the header is waiting on ──────────────────────────
+      #
+      # Everything above connects as the OWNER. These two steps are the only ones
+      # that connect the way production now does, and they are the reason this job
+      # is worth keeping once `continue-on-error` goes.
+      #
+      # `if: always()` on both: when the suite above fails, THIS is the question
+      # worth answering first, and a skipped diagnostic is a wasted CI run.
+
+      # Does the role the app connects as actually hold nothing? This asks the
+      # catalog directly and does not depend on any application table.
+      - name: The app role holds no superuser-level privilege
         if: always()
+        env:
+          DATABASE_URL: ${{ env.APP_DATABASE_URL }}
+          ALLOW_SUPERUSER_DB: ""   # no opt-out here — this step exists to fail
+        run: npm run guard:db
+
+      # And does that translate into the policies actually applying? This is the
+      # step whose result decides whether `continue-on-error` can be deleted.
+      # Isolation suites only — not the whole suite, which needs ownership.
+      - name: Partner isolation, as the unprivileged app role
+        if: always()
+        env:
+          DATABASE_URL: ${{ env.APP_DATABASE_URL }}
         run: |
-          node --test src/compliance/rls-bypass.pg.test.mjs || true
-          echo "::notice::A failure here means the connection role bypasses every partner-isolation policy. On CI that is expected — the service container connects as the postgres superuser. It is only a finding when it describes PRODUCTION."
+          node --test \
+            src/compliance/rls-bypass.pg.test.mjs \
+            src/compliance/invariants.pg.test.mjs \
+            src/http/creative-endpoints.pg.test.mjs \
+            src/creative/generate.pg.test.mjs \
+            src/social/social.pg.test.mjs
+          echo "::notice::These are the ~24 'pre-existing failures' from CLAUDE.md §12, run as fundhub_app instead of the postgres superuser. If this step is GREEN, the superuser fix is confirmed and 'continue-on-error' should be deleted from this job. If it is RED, the remaining failures are NOT superuser-related and need reading on their own terms."

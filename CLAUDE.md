@@ -283,7 +283,13 @@ Config lives in Netlify env vars. Schema lives in `db/schema`, `db/migrations`, 
 These have already cost time. Read them before you trust a green result.
 
 * **`npm test`'s glob is `src/**` and `scripts/**` only.** A test placed under `api/` silently never runs. Endpoint tests live at `src/http/<name>.pg.test.mjs` and import the `api/` handler.
-* **The suite is not as green as it looks.** With `DATABASE_URL` unset, ~193 `.pg.test.mjs` tests skip and the suite reports 0 failures. Against a real Postgres there are ~24 pre-existing failures — 29 on a virgin database, because five `inquiries` suites are order-dependent and pass on a second run. Verify with `DATABASE_URL` set, and diff against the baseline commit before concluding you broke something.
+* **The suite is not as green as it looks.** With `DATABASE_URL` unset, **442** `.pg.test.mjs` tests skip and the suite reports **3730 passing, 0 failing** — measured 2026-08-01 on this branch. That number is real but partial: it proves nothing about anything that needs a database.
+
+  Against a real Postgres there are pre-existing failures, and **the recorded count has never been stable**: 24 and 29 were recorded against one environment, 45 against a local Postgres 16.13 on `main` at `e67e2db` (2026-07-31). Do not trust any of these three as *the* number. Measure it yourself, and **record where you ran it** — the environment demonstrably moves the count.
+
+  What changed on 2026-08-01: the bulk of those failures are multi-tenant isolation tests, and they were failing because the connection role was a Postgres superuser, which bypasses row-level security entirely. `db/migrations/104_app_role.sql` fixes that by giving the app an unprivileged `fundhub_app` role. **So the historic counts above are now expected to be wrong in the good direction, and nobody has yet measured the new one.** The measurement runs on every push — see the "Partner isolation, as the unprivileged app role" step in `.github/workflows/tests.yml`. Read that step's result before quoting any failure count in this file.
+
+  Either way: diff against the baseline commit before concluding you broke something.
 * **A handler file is not a route.** `netlify/functions/api.mjs` holds a hardcoded `ROUTES` map; a handler absent from it 404s locally and deployed. This has shipped twice. `src/http/routes.test.mjs` now fails if a handler is neither routed nor on an explicit allow-list — keep it passing.
 * **`requireAuth` ignores a `roles` key.** It forwards `opts` to `authenticate()`, which reads only `db` and `env`. Gate with `requireRole` after it. `src/http/auth-gate.test.mjs` fails on the broken shape.
 * **Editing an applied migration is a silent no-op.** `migrate.mjs` records each file in `schema_migrations` keyed `<dir>/<file>`. Supersede it with a new file instead.
