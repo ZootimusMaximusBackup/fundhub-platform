@@ -26,7 +26,9 @@
 //      duplicate.
 // A plain SELECT-then-UPDATE would satisfy none of them.
 
-import { gateAndRecord } from "./gate.mjs";
+import {
+  gateAndRecord, inQuietHours, QUIET_HOURS_CHANNELS, QUIET_END_HOUR, QUIET_HOURS_TZ
+} from "./gate.mjs";
 import { resolve, addressFieldFor } from "./providers/index.mjs";
 
 /** How many times a message is retried before it is given up on. */
@@ -48,8 +50,79 @@ export const OUTCOME = Object.freeze({
   NO_ADDRESS: "no_address",
   REJECTED: "rejected",         // provider says never retry
   RETRY: "retry",               // provider says try again
-  GAVE_UP: "gave_up"            // out of attempts
+  GAVE_UP: "gave_up",           // out of attempts
+  DEFERRED: "deferred"          // inside quiet hours; due again when it opens
 });
+
+/* ── QUIET HOURS ARE A DEFERRAL, NOT A BLOCK ────────────────────────────────
+   This is the one place the dispatcher deliberately decides something BEFORE
+   the gate, and the reason is a conflict between two of W1's own rules.
+
+   gateAndRecord() persists ANY non-allowed verdict as status='blocked' plus a
+   blocked_reason, and 110_messages_outbound.sql states — correctly — that a
+   block is an audit record which nothing may clear. Quiet hours are the one
+   gate reason that is meant to lapse on its own: the gate marks it
+   `retryable: true` and its own message says the text "is being held until the
+   window opens".
+
+   Put those together and a text queued at 11pm is blocked permanently and never
+   goes out at 11am. The acceptance criterion for this ticket says the opposite,
+   and the gate's own wording says the opposite.
+
+   So a text inside the window is never gated at all. It is put back on the queue
+   with its due time moved to the next 11:00 Eastern, no verdict is recorded, and
+   it is gated fresh when it wakes — which is what the gate's header asks for
+   anyway, since opt-out state must be read at the instant of sending and not
+   eleven hours earlier.
+
+   This costs nothing in safety. The deferral is strictly narrower than the
+   block: it uses W1's own exported window (inQuietHours / QUIET_HOURS_CHANNELS),
+   it cannot send, and every other gate reason still runs through gateAndRecord
+   unchanged. It is not an override — there is no way to reach a provider from
+   here, and no flag makes the window shorter.
+
+   Recorded on the board as a correction to W4, not a silent divergence. */
+
+/* tzOffsetMs — how far the named zone is from UTC at this instant.
+   Read out of Intl rather than hardcoded, so daylight saving is the operating
+   system's timezone database's problem and not this file's. */
+function tzOffsetMs(date, timeZone) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone, hour12: false,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit"
+  }).formatToParts(date);
+  const p = Object.fromEntries(parts.map((x) => [x.type, x.value]));
+  const asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second);
+  return asUtc - date.getTime();
+}
+
+/* nextQuietHoursEnd — the next instant at which QUIET_END_HOUR strikes in the
+   quiet-hours zone.
+
+   Built by reading the wall clock in that zone, choosing today or tomorrow, and
+   converting back. The offset is applied twice because the offset at the target
+   instant is not always the offset now — on the two daylight-saving nights a
+   year they differ by an hour, and a single pass would land at 10:00 or 12:00.
+
+   Exported so the transition dates can be asserted directly. */
+export function nextQuietHoursEnd(from, timeZone = QUIET_HOURS_TZ) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone, hour12: false,
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit"
+  }).formatToParts(from);
+  const p = Object.fromEntries(parts.map((x) => [x.type, x.value]));
+  const hour = +p.hour % 24;
+
+  // Before the window opens today → today. Otherwise (we are at or past the
+  // 23:00 start) → tomorrow. Date.UTC normalises a day past the month's end.
+  const dayShift = hour < QUIET_END_HOUR ? 0 : 1;
+  const wall = Date.UTC(+p.year, +p.month - 1, +p.day + dayShift, QUIET_END_HOUR, 0, 0);
+
+  let ts = wall;
+  for (let i = 0; i < 2; i += 1) ts = wall - tzOffsetMs(new Date(ts), timeZone);
+  return new Date(ts);
+}
 
 /* claimDue — take up to `limit` due messages and mark them 'sending' atomically.
 
@@ -150,6 +223,25 @@ export async function dispatchOne(db, message, options = {}) {
   const { fetchImpl, timeoutMs, signal, env, now } = options;
 
   try {
+    // ---- 0. Quiet hours: defer, do not gate --------------------------------
+    // See the long note at the top of this file. This is the only decision made
+    // ahead of the gate, it can only ever hold a message back, and it exists so
+    // an overnight text is still sendable in the morning instead of being
+    // recorded as a permanent block.
+    const clock = typeof now === "function" ? now : () => new Date();
+    if (QUIET_HOURS_CHANNELS.has(message.channel) && inQuietHours(clock(), QUIET_HOURS_TZ)) {
+      const due = nextQuietHoursEnd(clock(), QUIET_HOURS_TZ);
+      await db.query(
+        // The attempt is given back: an unopened window is not a failed
+        // delivery, and charging it would burn the retry budget overnight.
+        `UPDATE messages
+            SET status = 'queued', scheduled_at = $2, attempts = GREATEST(attempts - 1, 0)
+          WHERE id = $1`,
+        [message.id, due.toISOString()]
+      );
+      return { id: message.id, outcome: OUTCOME.DEFERRED, detail: due.toISOString() };
+    }
+
     // ---- 1. THE GATE, FIRST, ALWAYS ---------------------------------------
     // gateAndRecord writes blocked_reason/blocked_at and files the task. Note
     // this runs before any provider is resolved, so no code path here can reach

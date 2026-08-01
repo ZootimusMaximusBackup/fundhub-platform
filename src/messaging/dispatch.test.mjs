@@ -15,8 +15,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { dispatchOne, dispatchDue, claimDue, OUTCOME, MAX_ATTEMPTS } from "./dispatch.mjs";
+import {
+  dispatchOne, dispatchDue, claimDue, OUTCOME, MAX_ATTEMPTS, nextQuietHoursEnd
+} from "./dispatch.mjs";
 import { clearRuleCache } from "../compliance/screen.mjs";
+import { inQuietHours } from "./gate.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
@@ -113,8 +116,44 @@ describe("nothing reaches a provider without the gate allowing it", () => {
       fetchImpl: f, env: ENV, now: () => new Date("2026-08-01T07:00:00Z") // 3am Eastern
     });
 
-    assert.strictEqual(res.outcome, OUTCOME.BLOCKED);
+    assert.strictEqual(res.outcome, OUTCOME.DEFERRED);
     assert.strictEqual(f.calls.length, 0, "A TEXT WAS SENT AT 3AM");
+  });
+
+  /* THE HALF THE ORIGINAL TEST DID NOT CHECK.
+     "Never sent" was true of the old behaviour too — it was blocked, and a
+     blocked message is never sent again either. These assert that the text is
+     merely waiting: still queued, no permanent block written, and a due time
+     that lands exactly on the hour the window opens. */
+  test("a text inside quiet hours stays queued rather than being blocked", async () => {
+    const db = fakeDb();
+    await dispatchOne(db, claimed({ channel: "sms" }), {
+      fetchImpl: spy(), env: ENV, now: () => new Date("2026-08-01T07:00:00Z")
+    });
+
+    const wrote = db.updates.map((u) => u.sql).join(" ");
+    assert.ok(/status = 'queued'/.test(wrote), "the text must go back on the queue");
+    assert.ok(!/blocked_reason/.test(wrote),
+      "A DEFERRED TEXT WAS RECORDED AS A PERMANENT BLOCK — it will never send");
+    assert.ok(!/status = 'blocked'/.test(wrote), "quiet hours must not set status='blocked'");
+  });
+
+  test("a text deferred overnight does not spend a delivery attempt", async () => {
+    const db = fakeDb();
+    await dispatchOne(db, claimed({ channel: "sms", attempts: 1 }), {
+      fetchImpl: spy(), env: ENV, now: () => new Date("2026-08-01T07:00:00Z")
+    });
+    assert.ok(db.updates.some((u) => /attempts = GREATEST\(attempts - 1, 0\)/.test(u.sql)),
+      "an unopened window is not a failed delivery and must not burn the retry budget");
+  });
+
+  test("email is not held overnight — quiet hours are a text rule", async () => {
+    const f = spy();
+    const res = await dispatchOne(fakeDb(), claimed({ channel: "email" }), {
+      fetchImpl: f, env: ENV, now: () => new Date("2026-08-01T07:00:00Z")
+    });
+    assert.strictEqual(res.outcome, OUTCOME.SENT);
+    assert.strictEqual(f.calls.length, 1);
   });
 
   test("restricted wording is never sent", async () => {
@@ -392,5 +431,52 @@ describe("the dispatcher, structurally", () => {
     // The column name is interpolated into SQL, so it must be allow-listed.
     assert.match(code, /ADDRESS_COLUMNS\.has\(field\)/,
       "the interpolated column must be checked against the allow-list");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// THE OVERNIGHT WINDOW'S ARITHMETIC
+//
+// nextQuietHoursEnd decides when a held text wakes up. If it is wrong the text
+// either goes out during quiet hours or sits for an extra day, so the window
+// edges and both daylight-saving nights are asserted directly rather than
+// trusted.
+// ---------------------------------------------------------------------------
+
+describe("nextQuietHoursEnd", () => {
+  const etHour = (d) => Number(new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York", hour: "numeric", hour12: false
+  }).formatToParts(d).find((p) => p.type === "hour").value) % 24;
+
+  test("11pm Eastern wakes at 11am the next morning", () => {
+    // 2026-08-01 23:00 Eastern is 2026-08-02 03:00 UTC (EDT, UTC-4).
+    const due = nextQuietHoursEnd(new Date("2026-08-02T03:00:00Z"));
+    assert.strictEqual(etHour(due), 11);
+    assert.strictEqual(due.toISOString(), "2026-08-02T15:00:00.000Z");
+  });
+
+  test("3am Eastern wakes the same morning, not the next day", () => {
+    const due = nextQuietHoursEnd(new Date("2026-08-01T07:00:00Z"));
+    assert.strictEqual(due.toISOString(), "2026-08-01T15:00:00.000Z");
+  });
+
+  test("the wake time is always 11am Eastern, on every day of the year", () => {
+    // Every day of 2026 at 2am Eastern-ish, including both DST transitions.
+    for (let day = 0; day < 365; day += 1) {
+      const from = new Date(Date.UTC(2026, 0, 1, 7, 0, 0) + day * 86400000);
+      const due = nextQuietHoursEnd(from);
+      assert.strictEqual(etHour(due), 11,
+        `woke at ${etHour(due)}:00 Eastern, not 11:00, starting from ${from.toISOString()}`);
+      assert.ok(due > from, "the wake time must be in the future");
+      assert.ok(due - from < 36 * 3600 * 1000, "the wake time must be within a day and a half");
+    }
+  });
+
+  test("a text is never woken into the window it was held by", () => {
+    for (let hour = 0; hour < 24; hour += 1) {
+      const from = new Date(Date.UTC(2026, 2, 8, hour, 0, 0)); // DST starts in the US
+      const due = nextQuietHoursEnd(from);
+      assert.ok(!inQuietHours(due), `woken back inside quiet hours from ${from.toISOString()}`);
+    }
   });
 });
