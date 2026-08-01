@@ -13,6 +13,7 @@ import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid, redact, unitFraction, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { listTradelines } from "../../src/tradelines/store.mjs";
+import { requireClientInOrg } from "../../src/http/client-scope.mjs";
 import { toCalculatorCards, fromCents } from "../../src/tradelines/index.mjs";
 import { calcFunding } from "../../src/calculators/deal-funding.mjs";
 
@@ -41,6 +42,14 @@ export default async function handler(req, res) {
   if (!isUuid(clientId)) {
     return res.status(400).json({ ok: false, error: "client_id is required and must be a uuid" });
   }
+
+  /* THE ORG BOUNDARY. Without this, ROLE_SETS.STAFF above was the only gate on a
+     named client's financial detail — and it answers "are you staff", never "are
+     they yours". Any employee of any company could read any client's credit
+     limits, balances and APRs given only an id. This endpoint has already had one
+     gate that looked like a control and was not (the `roles` key requireAuth
+     ignores); this is the second. See src/http/client-scope.mjs. */
+  if (!(await requireClientInOrg(res, db, staff, String(clientId).trim()))) return;
 
   // The guardrail ceiling arrives from the query string, and it used to reach
   // calcFunding as a bare Number() with no bounds. `?utilization_threshold=999`
