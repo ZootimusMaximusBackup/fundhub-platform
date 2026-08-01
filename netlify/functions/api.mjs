@@ -56,6 +56,7 @@ import readConversations from "../../api/read/conversations.mjs";
 import readTradelines from "../../api/read/tradelines.mjs";
 import readFinanceOs from "../../api/read/finance-os.mjs";
 import readBankingSurface from "../../api/read/banking-surface.mjs";
+import readUnderwrite from "../../api/read/underwrite.mjs";
 import inquiries from "../../api/inquiries.mjs";
 import pii from "../../api/pii.mjs";
 import shifts from "../../api/shifts.mjs";
@@ -149,6 +150,18 @@ export const ROUTES = {
   // while working the same file. Routed in the same commit as the handler and
   // the screen.
   "read/banking-surface": readBankingSurface,
+
+  // read/underwrite runs the vendored UnderwriteIQ Lite engine over the same
+  // tradeline rows read/tradelines and read/finance-os already serve to
+  // ROLE_SETS.STAFF, so it carries that same gate. Routed in the same commit as
+  // the handler — an endpoint that 404s on the deploy target is the exact failure
+  // this map exists to prevent, and it has shipped twice.
+  //
+  // Unlike its two neighbours, this handler scopes every query by the SESSION's
+  // org_id and refuses a session without one. Those two filter on client_id
+  // alone; that gap is recorded in the handler's header and is not this change's
+  // to close.
+  "read/underwrite": readUnderwrite,
 
   // Write endpoints. Hand-rolled rather than readHandler-based, so each one owns
   // its own method switch, its 405 + allow header, and its domain-error mapping.

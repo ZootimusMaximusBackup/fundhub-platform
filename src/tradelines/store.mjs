@@ -79,14 +79,42 @@ export async function ingestCrsResult(db, crsRow) {
 /** listTradelines — open lines for one client, cheapest money first (the
  *  waterfall's own order, so the screen and the calculator agree).
  *
- *  orgId IS REQUIRED AND THROWS WHEN ABSENT. Every row records its owning org
- *  and every authenticated request knows the caller's, but this read compared
- *  only client_id — so a client id belonging to another org returned that
- *  consumer's limits, balances and APRs to any signed-in staff member. A
- *  default or an optional filter would put the next caller straight back there;
- *  throwing makes an unscoped read impossible to write by omission. */
-export async function listTradelines(db, { orgId, clientId, includeClosed = false }) {
-  if (!orgId) throw new TypeError("listTradelines: orgId is required");
+ * ⚠️ `orgId` IS REQUIRED AND IT IS A SECURITY BOUNDARY, NOT A FILTER.
+ *
+ * This function used to take `clientId` alone. Both callers —
+ * api/read/tradelines.mjs and api/read/finance-os.mjs — passed the client id
+ * straight off the query string, so ANY authenticated staff session could read
+ * ANY client's credit limits and balances in ANY org, just by knowing the uuid.
+ * The role gate was correct on both; there was simply no tenant check anywhere
+ * between the request and the rows.
+ *
+ * This is the same defect class 054's own header warns about and the same one
+ * the `roles`-key hole was (src/http/auth-gate.test.mjs): a guard that reads like
+ * it is doing something and is not. It is fixed the way that one was — by making
+ * the missing thing IMPOSSIBLE TO OMIT rather than by remembering to pass it.
+ *
+ * So this THROWS on a missing org rather than defaulting to unscoped. A caller
+ * that cannot name an org has no business reading a client's balances, and a
+ * silent fallback is exactly how the hole lasted this long. The org must come
+ * from the SESSION (`staff.org_id`), never from user input — a caller-supplied
+ * org is not a scope, it is a request to be trusted.
+ */
+export async function listTradelines(db, { clientId, orgId, includeClosed = false }) {
+  if (!clientId) throw new TypeError("listTradelines: clientId is required");
+  if (!orgId) {
+    throw new TypeError(
+      "listTradelines: orgId is required and must come from the session (staff.org_id). " +
+      "Reading tradelines without an org scope exposes every org's credit data."
+    );
+  }
+  /* THE ORG IS BOUND FIRST, AND THE ORDER IS LOAD-BEARING.
+     Two branches wrote this guard independently and bound the parameters in
+     opposite orders. src/http/deal-model-endpoints.test.mjs — "the tradelines
+     read is org-scoped too, both bound" — reads params[0] and asserts it is the
+     SESSION's org, which is the only way a stubbed db can prove the scope was
+     applied rather than merely computed. Swapping the two makes that check read
+     the client id and report "the org id bound was not the session's" on code
+     that is in fact correctly scoped. Keep org first. */
   const res = await db.query(
     `SELECT * FROM tradelines
       WHERE org_id = $1

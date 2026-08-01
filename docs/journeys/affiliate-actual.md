@@ -34,7 +34,7 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| NONE[Nothing admits this one — every endpoint refuses them]
     NONE --> OPENONLY[Only the routes anyone can reach without signing in]
-    WHO -->|Yes| CANT[Blocked — 56 routes]
+    WHO -->|Yes| CANT[Blocked — 57 routes]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_campaigns[Campaigns — 6 blocked]
     CANT --> B_consent[consent — 1 blocked]
@@ -43,13 +43,13 @@ flowchart TD
     CANT --> B_finance[Finance — 9 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
-    CANT --> B_read[Reading data — 17 blocked]
+    CANT --> B_read[Reading data — 18 blocked]
     CANT --> B_top_level[Everything else — 6 blocked]
 ```
 
 ## What they can reach
 
-**7 of 63 routes.**
+**7 of 64 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -69,7 +69,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**56 of 63 routes.**
+**57 of 64 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -127,6 +127,7 @@ flowchart TD
 | `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/staff` | GET | owner, admin |
 | `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/shifts` | GET, POST | staff |
 | `/api/tasks` | GET, PATCH | staff |
 
