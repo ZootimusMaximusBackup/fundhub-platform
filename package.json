@@ -8,6 +8,7 @@
     "node": "22.x"
   },
   "scripts": {
+    "lint": "node scripts/lint.mjs",
     "migrate": "node db/migrate.mjs",
     "migrations:manifest": "node scripts/db/expected-migrations.mjs",
     "artifact": "node scripts/build-artifact.mjs",
