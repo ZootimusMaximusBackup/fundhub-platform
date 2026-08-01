@@ -41,7 +41,7 @@
 // under a superuser connection (which bypasses RLS regardless of policy count)
 // and became real the moment 104_app_role.sql switched the app to an ordinary
 // role. Fixed by hand in Supabase, then made permanent by
-// db/migrations/107_no_bare_rls.sql, which runs the IDENTICAL query below to
+// db/migrations/109_no_bare_rls.sql, which runs the IDENTICAL query below to
 // decide what to patch. This test is what stops that state from coming back
 // silently — from a future migration or from another out-of-band dashboard
 // change — whether or not anyone remembers this incident happened.
@@ -102,10 +102,10 @@ test("every partner-scoped table has row security enabled AND forced", opts, asy
 
 /* The opposite failure. RLS ENABLED with ZERO POLICIES denies every row to
    every role but the table's owner — this is what actually took login down
-   on 2026-08-01 (see the file header and db/migrations/107_no_bare_rls.sql).
+   on 2026-08-01 (see the file header and db/migrations/109_no_bare_rls.sql).
    It is invisible under a superuser connection and real under any other, so a
    table can sit in this state for a long time before anything notices —
-   exactly what happened here. Same query 107 runs to decide what to patch;
+   exactly what happened here. Same query 109 runs to decide what to patch;
    kept identical on purpose so the migration and this test can never silently
    drift onto two different definitions of "bare". */
 test("no table has row security enabled with zero policies", opts, async () => {
@@ -131,6 +131,6 @@ test("no table has row security enabled with zero policies", opts, async () => {
     "connects. This is the exact bug that broke login on 2026-08-01. Fix by giving the " +
     "table a real policy if it needs partner isolation (see fundhub_apply_partner_rls() " +
     "in 045_creative_factory.sql), or a permissive one if it does not (see " +
-    "db/migrations/107_no_bare_rls.sql) — never leave it enabled with nothing attached."
+    "db/migrations/109_no_bare_rls.sql) — never leave it enabled with nothing attached."
   );
 });

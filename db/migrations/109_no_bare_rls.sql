@@ -1,4 +1,4 @@
--- 107_no_bare_rls.sql — closes the bug that actually took login down.
+-- 109_no_bare_rls.sql — closes the bug that actually took login down.
 --
 -- ═══════════════════════════════════════════════════════════════════════════
 -- WHAT ACTUALLY HAPPENED (confirmed by the owner, not reasoned from the code)

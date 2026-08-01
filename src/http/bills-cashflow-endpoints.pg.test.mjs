@@ -296,4 +296,73 @@ describe("bills + cashflow endpoints against real Postgres", { skip: !HAS_DB && 
     assert.ok(r.body.gaps.some((g) => /min_buffer_cents/.test(g.setting)),
       "an unset threshold is not being reported as a gap");
   });
+
+  /* add_manual — 107_recurring_bills_manual.sql. A person declares a bill
+     directly, for an account with no transaction history to detect one from. */
+  test("add_manual writes a bill with no detection-only columns filled in", async () => {
+    const r = await call(bills, {
+      method: "POST",
+      body: {
+        client_id: client, action: "add_manual", bank_account_id: account,
+        merchant_display: "Acme Rent LLC", cadence: "monthly",
+        typical_amount: 1800, next_expected_on: "2026-09-01"
+      }
+    });
+    assert.equal(r.statusCode, 200);
+    assert.equal(r.body.bill.source, "manual");
+    assert.equal(r.body.bill.typical_amount_cents, -180000, "a bill is stored as an outflow");
+    assert.equal(r.body.bill.confidence_label, "high");
+    assert.equal(r.body.bill.confidence_pct, 100);
+
+    const row = (await db.query(`SELECT * FROM recurring_bills WHERE id = $1`, [r.body.bill.id])).rows[0];
+    assert.equal(row.occurrence_count, null);
+    assert.equal(row.first_seen_on, null);
+    assert.equal(row.last_seen_on, null);
+    assert.equal(row.detected_as_of, null);
+  });
+
+  test("add_manual requires either a next date or a stated reason, never neither", async () => {
+    const r = await call(bills, {
+      method: "POST",
+      body: {
+        client_id: client, action: "add_manual", bank_account_id: account,
+        merchant_display: "No Date Co", cadence: "monthly", typical_amount: 50
+      }
+    });
+    assert.equal(r.statusCode, 400);
+  });
+
+  test("add_manual is idempotent on (account, merchant, cadence) — resubmitting updates, not duplicates", async () => {
+    const body = {
+      client_id: client, action: "add_manual", bank_account_id: account,
+      merchant_display: "Repeat Co", cadence: "monthly",
+      typical_amount: 20, next_expected_on: "2026-09-15"
+    };
+    const first = await call(bills, { method: "POST", body });
+    const second = await call(bills, { method: "POST", body: { ...body, typical_amount: 25 } });
+    assert.equal(first.body.bill.id, second.body.bill.id);
+    assert.equal(second.body.bill.typical_amount_cents, -2500);
+  });
+
+  test("add_manual refuses a bank account that is not this client's", async () => {
+    const otherClient = (await db.query(
+      `INSERT INTO clients (org_id, first_name, email) VALUES ($1,'Other',$2) RETURNING id`,
+      [org, "bcf.http.test.other@example.com"]
+    )).rows[0].id;
+    const otherAccount = (await db.query(
+      `INSERT INTO bank_accounts (org_id, client_id, name, account_type) VALUES ($1,$2,'Other Acct','depository') RETURNING id`,
+      [org, otherClient]
+    )).rows[0].id;
+    const r = await call(bills, {
+      method: "POST",
+      body: {
+        client_id: client, action: "add_manual", bank_account_id: otherAccount,
+        merchant_display: "Wrong Account Co", cadence: "monthly",
+        typical_amount: 10, next_expected_on: "2026-09-01"
+      }
+    });
+    assert.equal(r.statusCode, 403);
+    await db.query(`DELETE FROM bank_accounts WHERE id = $1`, [otherAccount]);
+    await db.query(`DELETE FROM clients WHERE id = $1`, [otherClient]);
+  });
 });

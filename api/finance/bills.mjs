@@ -61,8 +61,8 @@ import {
   getBillEvidence,
   saveDetection
 } from "../../src/banking/store.mjs";
-import { detectRecurringBills, PRESENTABLE_LABELS } from "../../src/banking/recurring.mjs";
-import { fromCents } from "../../src/commissions/money.mjs";
+import { detectRecurringBills, PRESENTABLE_LABELS, normaliseMerchant, CADENCE_NAMES } from "../../src/banking/recurring.mjs";
+import { fromCents, toCents } from "../../src/commissions/money.mjs";
 
 /* ROLE_SETS.FINANCE — {owner, admin}. These rows are derived from bank
    transactions and are exactly as sensitive as the balances
@@ -383,6 +383,91 @@ export default async function handler(req, res) {
             rejected_reasons: tally(result.rejected, (r) => r.reason),
             excluded_reasons: tally(result.excluded, (r) => r.reason)
           });
+        }
+        /* add_manual — a person declares a recurring bill directly, for an
+           account too new to have three months of transaction history behind
+           it. 107_recurring_bills_manual.sql adds `source` and relaxes the
+           four detection-only columns (occurrence_count, first/last_seen_on,
+           detected_as_of) to NULL for this path rather than faking a
+           detection that never ran. confidence_pct = 100 / 'high' is not a
+           guess being dressed up — a human stating a fact IS the highest
+           confidence this table has room to record, and 086's own header
+           reserves exactly that value for something other than the detector's
+           95% clamp. */
+        case "add_manual": {
+          if (!isUuid(body.bank_account_id)) {
+            return res.status(400).json({ ok: false, error: "bank_account_id must be a uuid" });
+          }
+          const accounts = await listAccounts(orgId, clientId);
+          const account = accounts.find((a) => String(a.id) === String(body.bank_account_id).trim());
+          if (!account) return res.status(403).json({ ok: false, error: "forbidden" });
+
+          const merchantDisplay = String(body.merchant_display || "").trim();
+          if (!merchantDisplay) return res.status(400).json({ ok: false, error: "merchant_display is required" });
+          const merchantKey = normaliseMerchant(merchantDisplay);
+          if (!merchantKey) {
+            return res.status(400).json({ ok: false, error: "merchant_display did not normalise to a usable key" });
+          }
+
+          const cadence = String(body.cadence || "").trim().toLowerCase();
+          if (!CADENCE_NAMES.includes(cadence)) {
+            return res.status(400).json({ ok: false, error: `cadence must be one of ${CADENCE_NAMES.join(", ")}` });
+          }
+
+          let amountCents;
+          try {
+            const raw = body.typical_amount;
+            if (raw === undefined || raw === null || raw === "") {
+              return res.status(400).json({ ok: false, error: "typical_amount is required" });
+            }
+            const dollars = typeof raw === "number" ? raw : String(raw).trim().replace(/,/g, "");
+            const cents = toCents(dollars);
+            // A bill is an outflow — recurring_bills_outflow_ck requires it
+            // negative. A person types a positive dollar amount; the sign is
+            // applied here, once, rather than asked of them.
+            amountCents = -Math.abs(cents);
+          } catch (e) {
+            return res.status(400).json({ ok: false, error: "typical_amount: " + String(e.message).slice(0, 150) });
+          }
+
+          const nextExpectedOn = body.next_expected_on ? String(body.next_expected_on).trim() : null;
+          const unknownReason = body.next_expected_unknown_reason ? String(body.next_expected_unknown_reason).trim() : null;
+          if (!nextExpectedOn && !unknownReason) {
+            return res.status(400).json({
+              ok: false,
+              error: "either next_expected_on or next_expected_unknown_reason is required",
+              message: "state the next date this bill is due, or say why that cannot be known yet — one of the two, never neither"
+            });
+          }
+          if (nextExpectedOn && unknownReason) {
+            return res.status(400).json({ ok: false, error: "send next_expected_on or next_expected_unknown_reason, not both" });
+          }
+
+          let isBusiness = null;
+          if (body.is_business === true) isBusiness = true;
+          else if (body.is_business === false) isBusiness = false;
+          // Anything else (undefined, null) stays NULL — unknown, per 086 §6.
+
+          const saved = (await db.query(
+            `INSERT INTO recurring_bills
+               (org_id, bank_account_id, client_id, merchant_key, merchant_display,
+                cadence, typical_amount_cents, next_expected_on, next_expected_unknown_reason,
+                confidence_pct, confidence_label, is_business, source)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,100,'high',$10,'manual')
+             ON CONFLICT (bank_account_id, merchant_key, cadence) DO UPDATE SET
+               merchant_display = EXCLUDED.merchant_display,
+               typical_amount_cents = EXCLUDED.typical_amount_cents,
+               next_expected_on = EXCLUDED.next_expected_on,
+               next_expected_unknown_reason = EXCLUDED.next_expected_unknown_reason,
+               is_business = EXCLUDED.is_business,
+               source = 'manual',
+               updated_at = now()
+             RETURNING *`,
+            [orgId, account.id, clientId, merchantKey, merchantDisplay, cadence, amountCents,
+             nextExpectedOn, unknownReason, isBusiness]
+          )).rows[0];
+
+          return res.status(200).json({ ok: true, action: "add_manual", bill: withAmount(saved) });
         }
         default:
           return res.status(400).json({ ok: false, error: "invalid_action" });

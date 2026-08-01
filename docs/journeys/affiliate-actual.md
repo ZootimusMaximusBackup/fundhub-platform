@@ -34,24 +34,24 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| NONE[Nothing admits this one — every endpoint refuses them]
     NONE --> OPENONLY[Only the routes anyone can reach without signing in]
-    WHO -->|Yes| CANT[Blocked — 62 routes]
+    WHO -->|Yes| CANT[Blocked — 65 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_campaigns[Campaigns — 6 blocked]
     CANT --> B_consent[consent — 1 blocked]
     CANT --> B_creative[Creative Factory — 4 blocked]
     CANT --> B_dashboard[The dashboard — 4 blocked]
-    CANT --> B_finance[Finance — 9 blocked]
+    CANT --> B_finance[Finance — 10 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_journeys[journeys — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
-    CANT --> B_read[Reading data — 19 blocked]
+    CANT --> B_read[Reading data — 21 blocked]
     CANT --> B_top_level[Everything else — 7 blocked]
 ```
 
 ## What they can reach
 
-**8 of 70 routes.**
+**8 of 73 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -72,7 +72,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**62 of 70 routes.**
+**65 of 73 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -100,6 +100,7 @@ flowchart TD
 | `/api/finance/bills` | GET, POST | owner, admin |
 | `/api/finance/cards` | GET, POST | owner, admin |
 | `/api/finance/cashflow` | GET, POST | owner, admin |
+| `/api/finance/entities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/liabilities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/model` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
@@ -125,6 +126,8 @@ flowchart TD
 | `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter<br>plus: client |
 | `/api/read/failed-events` | GET | owner, admin |
+| `/api/read/finance-ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/read/finance-command` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/finance-os` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/funding-rounds` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/inquiries` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |

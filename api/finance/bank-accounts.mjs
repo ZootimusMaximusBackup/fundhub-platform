@@ -77,7 +77,7 @@ const COLUMNS = `
   account_type, account_subtype, currency_code,
   available_balance_cents, current_balance_cents, credit_limit_cents,
   balance_as_of, entity_kind, entity_kind_source, entity_kind_set_at,
-  closed_at, created_at, updated_at`;
+  entity_id, closed_at, created_at, updated_at`;
 
 /* 081:70-75. NULL is a fourth answer and it is not in this list: it means the
    bank told us NOTHING about the type, which is different from 'other' (it told
@@ -176,6 +176,28 @@ export default async function handler(req, res) {
           const balanceAsOf = readWhen(body.balance_as_of, "balance_as_of");
           const entity = readEntity(body, { where: "add" });
 
+          /* entity_id (106_entities.sql) — which wallet this account belongs
+             to, distinct from entity_kind above (personal/business/unknown
+             classification with no grouping). Optional: an account can be
+             added before its wallet exists, matching entity_kind's own
+             "unknown by default" rule. Ownership is checked here rather than
+             left to the FK, so a caller pointing at someone else's entity gets
+             a 400 naming the field instead of a constraint violation. */
+          let entityId = null;
+          if (body.entity_id !== undefined && body.entity_id !== null && body.entity_id !== "") {
+            if (!isUuid(body.entity_id)) {
+              return res.status(400).json({ ok: false, error: "entity_id must be a uuid" });
+            }
+            const owns = await db.query(
+              `SELECT 1 FROM entities WHERE id = $1 AND org_id = $2 AND client_id = $3`,
+              [String(body.entity_id).trim(), orgId, clientId]
+            );
+            if (owns.rows.length === 0) {
+              return res.status(400).json({ ok: false, error: "entity_id does not belong to this client" });
+            }
+            entityId = String(body.entity_id).trim();
+          }
+
           /* 081:87 — the limit column is "the credit line, NULL and meaningless
              on a deposit account". A credit limit typed against a chequing
              account is somebody having picked the wrong type or the wrong box,
@@ -202,15 +224,15 @@ export default async function handler(req, res) {
                (org_id, client_id, name, official_name, mask,
                 account_type, account_subtype, currency_code,
                 available_balance_cents, current_balance_cents, credit_limit_cents,
-                balance_as_of, entity_kind, entity_kind_source, entity_kind_set_at, raw)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+                balance_as_of, entity_kind, entity_kind_source, entity_kind_set_at, entity_id, raw)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
              RETURNING id`,
             [
               orgId, clientId,
               readText(body.name), readText(body.official_name), mask,
               accountType, readText(body.account_subtype ?? body.subtype), currency,
               orNull(available), orNull(current), orNull(creditLimit),
-              balanceAsOf, entity.kind, entity.source, entity.setAt,
+              balanceAsOf, entity.kind, entity.source, entity.setAt, entityId,
               JSON.stringify({
                 entry: "manual",
                 entered_by_staff_id: staff.id ?? null,

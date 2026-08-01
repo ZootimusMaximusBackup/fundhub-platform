@@ -45,6 +45,19 @@
        serve. Same treatment as banking-entry above: in ALL, and therefore in
        every sidebar. */
     "money-map.html",
+    /* finance-command.html is the roll-up dashboard (106_entities.sql +
+       api/read/finance-command.mjs) — every client's cash, credit, and
+       investment balances folded into one screen, same STAFF read gate as
+       money-map.html, which already reads bank_accounts at this level (write
+       stays FINANCE-only, matching bank-accounts.html above). */
+    "finance-command.html",
+    /* finance-add.html is the one add-anything flow. Its FORM ACTIONS write to
+       a mix of gates — entities and card_liabilities are STAFF, bank accounts
+       and subscriptions are FINANCE — so the SCREEN is placed in
+       OWNER_ADMIN_ONLY below, matching its most restrictive action. Offering
+       it more broadly would put a form on screen whose bank-account/
+       subscription actions 403 for the person looking at it. */
+    "finance-add.html",
     /* journeys.html is the SMS/email/pipeline automation editor — it writes
        live message copy and stage wiring, so it is owner/admin only (see
        OWNER_ADMIN_ONLY below). Same treatment as every other addition on
@@ -95,6 +108,7 @@
   var OWNER_ADMIN_ONLY = [
     "banking-surface.html",
     "subscriptions.html", "bank-accounts.html", "bills-cashflow.html",
+    "finance-add.html",
     /* journeys.html — api/journeys/ask.mjs and api/journeys/store.mjs both
        gate on requireRole("owner", "admin"); the nav row matches. */
     "journeys.html"
@@ -275,10 +289,37 @@
     "deal-model.html":           "client_id",
     "banking-surface.html":      "client_id",
     "closer-dashboard.html":     "client_id",
-    "client-control-panel.html": "id"
+    "client-control-panel.html": "id",
+    // money-map.html and banking-entry.html always read client_id off the URL
+    // (money-map.html:358, banking-entry.html:416) but were missing from this
+    // map, so gateLinks() never carried a client onto their sidebar links and
+    // both landed on a "no client — paste one into the address bar" screen.
+    // finance-command.html (roll-up dashboard) and finance-add.html (the one
+    // add-anything flow) are new and carry client_id the same way from birth.
+    "money-map.html":            "client_id",
+    "banking-entry.html":        "client_id",
+    "finance-command.html":      "client_id",
+    "finance-add.html":          "client_id"
+  };
+
+  /* ENTITY_SCREENS — which screens additionally read an entity (personal vs. a
+     business, 106_entities.sql) off the URL, and under what key. Same shape and
+     same reasoning as CLIENT_SCREENS one block up: keep it here, once, rather
+     than duplicated per screen. A screen absent from this map does not filter
+     by entity even if a client is carried. */
+  var ENTITY_SCREENS = {
+    "finance-os.html":      "entity_id",
+    "money-map.html":       "entity_id",
+    "banking-entry.html":   "entity_id",
+    "card-stack.html":      "entity_id",
+    "bank-accounts.html":   "entity_id",
+    "bills-cashflow.html":  "entity_id",
+    "finance-command.html": "entity_id",
+    "finance-add.html":     "entity_id"
   };
 
   var CLIENT_KEY = "fh_client";
+  var ENTITY_KEY = "fh_entity";
   var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   /* urlClient — the client this page was opened on, if it is a real id.
@@ -334,6 +375,46 @@
     return h + (h.indexOf("?") === -1 ? "?" : "&") +
            key + "=" + encodeURIComponent(cid) + hash;
   }
+
+  /* urlEntity/currentEntity/withEntity — the entity (personal vs. a business)
+     equivalent of urlClient/currentClient/withClient directly above. Same
+     rules: a junk value is no entity at all, the address bar wins and is
+     remembered, and a link naming its own entity already answered the
+     question. Kept as a genuinely separate id/key pair rather than folded into
+     "client" — a client can have several entities open in different tabs, and
+     conflating the two would make switching entities silently switch clients. */
+  function urlEntity() {
+    try {
+      var q = new URLSearchParams(location.search);
+      var v = String(q.get("entity_id") || "").trim();
+      return UUID_RE.test(v) ? v : "";
+    } catch (e) { return ""; }
+  }
+
+  function currentEntity() {
+    var fromUrl = urlEntity();
+    if (fromUrl) {
+      try { localStorage.setItem(ENTITY_KEY, fromUrl); } catch (e) {}
+      return fromUrl;
+    }
+    try {
+      var v = String(localStorage.getItem(ENTITY_KEY) || "").trim();
+      return UUID_RE.test(v) ? v : "";
+    } catch (e) { return ""; }
+  }
+
+  function withEntity(href, eid) {
+    var key = ENTITY_SCREENS[screenOf(href)];
+    if (!eid || !key) return href;
+    var h = String(href);
+    var hash = "";
+    var i = h.indexOf("#");
+    if (i !== -1) { hash = h.slice(i); h = h.slice(0, i); }
+    if (new RegExp("[?&]" + key + "=").test(h)) return href;
+    return h + (h.indexOf("?") === -1 ? "?" : "&") +
+           key + "=" + encodeURIComponent(eid) + hash;
+  }
+
 
   /* normRole — the one place a role string is folded to a map key. Matching
      020_auth.sql, which keys its catalog on lower(btrim(staff.role)): the
@@ -518,6 +599,7 @@
         // name of a real person's file and the next person to sign in at a
         // shared machine must not be handed it on every link.
         localStorage.removeItem(CLIENT_KEY);
+        localStorage.removeItem(ENTITY_KEY);
       } catch (e) { /* private mode — the redirect still happens */ }
       writeCachedRole("");
       location.href = "/login.html";
@@ -552,6 +634,7 @@
        bar's client back to localStorage, and doing that inside the loop would
        repeat the same write for every anchor on the page. */
     var cid = currentClient();
+    var eid = currentEntity();
     var links = document.querySelectorAll("a[href]");
     for (var i = 0; i < links.length; i++) {
       var a = links[i];
@@ -573,8 +656,10 @@
         continue;
       }
       // THE CLIENT RIDES ALONG. Only on links this role may follow, and only to
-      // screens that read a client — see CLIENT_SCREENS.
-      if (allowed) a.setAttribute("href", withClient(h, cid));
+      // screens that read a client — see CLIENT_SCREENS. The entity rides the
+      // same way, one step later, so a link ends up with both query params
+      // when the target screen reads both.
+      if (allowed) a.setAttribute("href", withEntity(withClient(h, cid), eid));
       var box = a.closest("li") || a.closest(".card") || a;
       if (!allowed) {
         box.style.display = "none";

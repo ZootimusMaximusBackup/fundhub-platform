@@ -287,6 +287,20 @@ export default async function handler(req, res) {
             throw e;
           }
 
+          /* QUEUE THE OWNER A TEXT FOR EVERY GENUINELY NEW ALERT — never on a
+             dry run, and never for a dedupe hit (out.created === false), or
+             re-running "evaluate" on an alert that is still open would queue a
+             second text for the same fact. 108_owner_notifications.sql is a
+             queue, matching every other outbound channel in this codebase —
+             nothing here sends anything; sent_at stays NULL until a real
+             provider is wired in and turned on deliberately. */
+          if (!dryRun) {
+            for (const r of outcome.raised) {
+              if (r.created !== true) continue;
+              await queueOwnerNotification(db, { orgId, clientId, alert: r.alert });
+            }
+          }
+
           const triggers = await listTriggers(db, { orgId });
 
           return res.status(200).json({
@@ -579,6 +593,23 @@ async function readScore(orgId, clientId) {
  * and a store change, neither of which is this endpoint's file. Written up as a
  * finding.
  */
+/* queueOwnerNotification — one row in owner_notifications per newly-raised
+   alert. title/body reuse the alert's own arithmetic-only title
+   (src/alerts/store.mjs's "nothing this file writes is customer-facing" rule
+   applies here unchanged — the reader is staff, not the client, but a
+   fabricated adjective is still a fabricated adjective). ON CONFLICT DO
+   NOTHING: 108's unique index on alert_id is the actual guard against a
+   duplicate text; this is belt and braces against a caller that skipped the
+   `created` check above. */
+async function queueOwnerNotification(db, { orgId, clientId, alert }) {
+  await db.query(
+    `INSERT INTO owner_notifications (org_id, alert_id, client_id, channel, title, body)
+     VALUES ($1, $2, $3, 'sms', $4, $4)
+     ON CONFLICT (alert_id) WHERE alert_id IS NOT NULL DO NOTHING`,
+    [orgId, alert.id, clientId, alert.title]
+  );
+}
+
 function asOfFor(tradelines) {
   if (!tradelines.length) return null;
   let oldest = null;
