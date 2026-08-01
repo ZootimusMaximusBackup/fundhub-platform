@@ -151,7 +151,7 @@ export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = 
        ) due
       WHERE m.id = due.id
   RETURNING m.id, m.org_id, m.client_id, m.channel, m.rendered_body,
-            m.template_key, m.provider_ref, m.attempts`,
+            m.template_key, m.provider_ref, m.attempts, m.to_address, m.subject`,
     [orgId, limit, now, MAX_ATTEMPTS]
   );
   return rows;
@@ -183,12 +183,31 @@ async function routeFor(db, orgId, channel) {
    name must never be interpolated on trust. */
 const ADDRESS_COLUMNS = new Set(["email", "phone", "ghl_contact_id"]);
 
-async function addressFor(db, clientId, providerName) {
+/* Which client column is the natural destination for a channel. Kept in step
+   with ADDRESS_BY_CHANNEL in src/workflows/messaging.mjs, which is what writes
+   messages.to_address. */
+const NATURAL_COLUMN = { email: "email", sms: "phone", voice: "phone" };
+
+async function addressFor(db, message, providerName) {
   const field = addressFieldFor(providerName);
   if (!field || !ADDRESS_COLUMNS.has(field)) return null;
+
+  /* PREFER THE ADDRESS RECORDED WHEN THE MESSAGE WAS QUEUED (111).
+     A message that has been waiting should go where it was written to go, not
+     wherever the client record points now.
+
+     Only when the provider addresses by the channel's natural column, though.
+     The GHL relay addresses a contact id, which is not a destination the queue
+     could have recorded in channel terms, so that resolves live. And rows queued
+     before 111 have no recorded address at all — they fall through to the same
+     lookup the dispatcher did before this column existed. */
+  if (message.to_address && field === NATURAL_COLUMN[message.channel]) {
+    return message.to_address;
+  }
+
   const { rows } = await db.query(
     `SELECT ${field} AS address FROM clients WHERE id = $1 LIMIT 1`,
-    [clientId]
+    [message.client_id]
   );
   return rows[0]?.address || null;
 }
@@ -204,7 +223,14 @@ async function addressFor(db, clientId, providerName) {
    message without one, and inventing a subject would be putting unreviewed copy
    in front of a client, which is exactly what the gate exists to stop. */
 async function subjectFor(db, message) {
-  if (message.channel !== "email" || !message.template_key) return null;
+  if (message.channel !== "email") return null;
+
+  // Recorded at queue time by 111, already rendered. Preferred over the template
+  // lookup because the template's raw text still carries unrendered merge tags —
+  // reading it here would put "Hi {{contact.first_name}}" in a subject line.
+  if (message.subject) return message.subject;
+
+  if (!message.template_key) return null;
   const { rows } = await db.query(
     `SELECT subject FROM message_templates
       WHERE org_id = $1 AND template_key = $2 LIMIT 1`,
@@ -276,7 +302,7 @@ export async function dispatchOne(db, message, options = {}) {
         `${route.provider} does not carry ${message.channel}`);
     }
 
-    const address = await addressFor(db, message.client_id, route.provider);
+    const address = await addressFor(db, message, route.provider);
     if (!address) {
       // Permanent for this message: no retry produces an address the client
       // record does not have.

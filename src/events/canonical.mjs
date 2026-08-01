@@ -24,6 +24,15 @@ export const CANONICAL_EVENTS = [
   "letter.generated",
   "message.inbound",
   "mail.response",
+  // outbound messaging (GHL cutover, Ticket 1). `message.queued` is emitted by
+  // sendTemplated when a row is really written — a replayed event dedupes into
+  // no row and so emits nothing. The other three are the dispatcher's terminal
+  // outcomes. Nothing emits them yet; the dispatcher records to the messages
+  // row and has no bus writes, so these are the names reserved for when it does.
+  "message.queued",
+  "message.sent",
+  "message.failed",
+  "message.blocked",
   // commission + billing (proposed in src/commissions/PROPOSED-EVENTS.md)
   "commission.earned",
   "commission.approved",
