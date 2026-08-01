@@ -8,15 +8,42 @@ Two follow-ups from the banking compliance batch. Independent: no shared files.
 
 | # | Task | Owner | Branch | Status |
 |---|------|-------|--------|--------|
-| W1 | Fix the SSN reveal log — `revealSsn()` runs with autocommit | claude | `claude/pii-ssn-reveal-log` | **claimed** — PR #59 merged, unblocked |
+| W1 | Fix the SSN reveal log — `revealSsn()` runs with autocommit | claude | `claude/pii-ssn-reveal-log` | **done** |
 | W2 | `docs/journeys/`, actual files only, generated from code | claude | `claude/journeys-actual-generated` | **done** — merged to main |
 | W3 | Gate `/api/partner-brand` to owner and admin | claude | `claude/partner-brand-role-gate` | **done** |
 | W4 | Endpoints an affiliate can actually reach | unclaimed | not cut | **scoped, not started** — buildout finishes first (owner) |
 
-### W1 is unblocked
+### W1 — done
 
-PR #59 merged on 2026-07-31, so `src/db/with-transaction.mjs` is on `main`. W1 imports it
-and deletes the broken local copy in `src/pii/index.mjs` — no third copy of the helper.
+`src/pii/index.mjs` now imports `src/db/with-transaction.mjs`; its local copy is **deleted**,
+not patched. No third copy of the helper.
+
+**What was actually wrong.** The ordering in `revealSsn()` was always right — insert the
+access-log row, then decrypt. But it ran under **autocommit**, so "the same transaction"
+was not a transaction at all. The local helper probed
+`typeof db.connect !== "function"` and ran the callback inline when there was none, and
+`src/db.mjs` exports `db` as `{ query }` with no `connect()` — so on the one handle every
+production caller passes, it took the no-transaction branch every time.
+
+**The test that proves it had to be chosen carefully.** The obvious one — make the log
+INSERT fail, check no row is left — *cannot* tell the two apart: under autocommit a failed
+INSERT also leaves no row. The distinguishing case is the opposite one, and it is in
+`src/pii/reveal-transaction.pg.test.mjs`:
+
+> the log write **succeeds**, and the decrypt afterwards **fails** (no key in the
+> environment — a real failure mode, not a contrivance).
+>
+> * with a real transaction: ROLLBACK, no log row.
+> * under autocommit: the row is already committed and **stays**.
+
+That leftover row is the point. It is the audit trail asserting a named employee viewed a
+client's social security number at a given moment, when no number was ever disclosed. A
+false entry in the one record that answers "who saw this person's SSN" is worse than a
+missing one — somebody would defend it under oath.
+
+Verified against a real PostgreSQL 16: 5 pg tests pass on the fix and **fail on the old
+code** with exactly that message. 72 of this workflow's tests pass against a real database,
+0 fail.
 
 ### W4 — what it needs to cover
 
