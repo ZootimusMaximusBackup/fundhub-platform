@@ -13,6 +13,7 @@ import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid, redact, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { listTradelines } from "../../src/tradelines/store.mjs";
+import { requireClientInOrg } from "../../src/http/client-scope.mjs";
 import { toCalculatorCards, fromCents } from "../../src/tradelines/index.mjs";
 import {
   calcFunding,
@@ -65,6 +66,18 @@ export default async function handler(req, res, deps = {}) {
   if (!isUuid(clientId)) {
     return res.status(400).json({ ok: false, error: "client_id is required and must be a uuid" });
   }
+
+  /* THE ORG BOUNDARY. Without this, ROLE_SETS.STAFF above was the only gate on a
+     named client's financial detail — and it answers "are you staff", never "are
+     they yours". Any employee of any company could read any client's credit
+     limits, balances and APRs given only an id. This endpoint has already had one
+     gate that looked like a control and was not (the `roles` key requireAuth
+     ignores); this is the second. See src/http/client-scope.mjs. */
+  // `database`, not `db` — this endpoint takes its handle from deps so the suite
+  // can drive it without Postgres. Reaching past that to the module singleton
+  // would make the ownership check the one query in the handler that ignores the
+  // injected handle, which reads as passing while never running under a stub.
+  if (!(await requireClientInOrg(res, database, staff, String(clientId).trim()))) return;
 
   // The guardrail ceiling is validated below, inside the try, by
   // parseUtilizationThreshold — the calculator's own parser. This endpoint used

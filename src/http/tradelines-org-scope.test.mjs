@@ -89,6 +89,17 @@ function makeDb({ session = {} } = {}) {
           }]
         };
       }
+      /* THE OWNERSHIP PROBE. requireClientInOrg (src/http/client-scope.mjs)
+         asks `SELECT 1 FROM clients WHERE id = $1 AND org_id = $2` before either
+         endpoint reads a card, and it arrived after this stub was written — so
+         every case here died on "unexpected query" rather than on anything it
+         asserts. Answered the way the real table would: the client belongs to
+         ORG and to nobody else, so a session in another org gets no row and the
+         handler refuses before the read. */
+      if (sql.includes("FROM clients")) {
+        const [clientId, orgId] = params;
+        return { rows: clientId === CLIENT && orgId === ORG ? [{ "?column?": 1 }] : [] };
+      }
       if (sql.includes("FROM tradelines")) {
         // Positions read out of the SQL, not assumed — see bindIndex above.
         const clientId = params[bindIndex(sql, "client_id")];
@@ -162,9 +173,16 @@ for (const { name, handler } of ENDPOINTS) {
     test("THE HOLE: a session in another org gets no rows", async () => {
       const res = makeRes();
       await handler(req(), res, { db: makeDb({ session: { org_id: OTHER_ORG } }) });
-      assert.equal(res.statusCode, 200);
-      // No credit data crosses the boundary. Empty rather than 404 on purpose:
-      // a 404 would confirm the uuid names a real client somewhere.
+      /* 404 NOW, NOT AN EMPTY 200 — AND IT STILL DOES NOT CONFIRM ANYTHING.
+         This case was written when the only defence was the org filter in the
+         WHERE clause, so a foreign client produced a legitimate empty list. The
+         endpoints now run requireClientInOrg BEFORE the read and refuse outright.
+         The old comment's worry — that a 404 confirms the uuid names a real
+         client somewhere — does not apply to this one: src/http/client-scope.mjs
+         answers 404 for "not yours" AND for "no such id", so the two are
+         indistinguishable from outside. What matters to this case is unchanged
+         and still asserted below: no credit data crosses the boundary. */
+      assert.equal(res.statusCode, 404);
       const body = JSON.stringify(res.body);
       assert.ok(!body.includes("Chase"), `${name} leaked another org's lender`);
       assert.ok(!body.includes("2000000") && !body.includes("20000.00"),

@@ -154,6 +154,15 @@ button,input,select,textarea{font:inherit;color:inherit}
 .be-note{margin-top:18px;font-size:12px;color:var(--gray2);max-width:70ch;line-height:1.65}
 .be-note code{font-family:var(--mono);font-size:11px}
 .be-link{text-decoration:underline;text-underline-offset:2px}
+.be-f-inline{max-width:320px;margin-bottom:14px}
+.be-btn-ghost{background:transparent;color:var(--ink);margin-right:8px}
+.be-htable{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.be-hrow{display:grid;grid-template-columns:90px 1fr 100px 120px 120px auto;gap:8px;align-items:center}
+.be-hrow .be-in{padding:6px 8px;font-size:12px}
+.be-hhead{display:grid;grid-template-columns:90px 1fr 100px 120px 120px auto;gap:8px;font-size:10.5px;font-weight:600;color:var(--gray2);text-transform:uppercase;letter-spacing:.06em}
+.be-hx{border:1px solid var(--line);background:transparent;color:var(--gray2);border-radius:5px;padding:5px 9px;font-size:11px;cursor:pointer}
+.be-hx:hover{border-color:#F2A69B;color:#7A241A}
+@media (max-width:760px){.be-hrow,.be-hhead{grid-template-columns:1fr}.be-hhead{display:none}}
 @media (max-width:520px){.be-row{grid-template-columns:1fr}.be-rbal{text-align:left}}
 </style>
 <script src="shell.js"></script>
@@ -323,6 +332,35 @@ button,input,select,textarea{font:inherit;color:inherit}
             <button class="be-btn" type="submit" id="beSaveBtn">Save this account</button>
             <span class="be-hint" id="beFormHint"></span>
           </form>
+        </section>
+
+        <!-- ══ INVESTMENTS ══════════════════════════════════════════════ -->
+        <!-- SHOWN ONLY WHEN AN INVESTMENT ACCOUNT EXISTS. There is nowhere to
+             put a holding otherwise, and a form that cannot succeed should not
+             be on screen.
+
+             THE WHOLE LIST IS EDITED AND SAVED AT ONCE, on purpose. The server
+             action is replace_holdings — it deletes and rewrites the set,
+             because a portfolio read states what is held NOW and merging would
+             leave a position sold last month in the owner's net worth forever.
+             A form that sent one new holding would therefore WIPE the rest. So
+             the screen loads every existing row into the table, and Save sends
+             all of them back. -->
+        <section class="be-card" id="beHoldCard" hidden>
+          <h3 class="be-h3">Investments</h3>
+          <p class="be-p">
+            What is held inside an investment account. Everything you see here is saved together —
+            edit a row, add one, or press <strong>remove</strong>, then press Save.
+            Anything you remove here is gone from the account.
+          </p>
+          <label class="be-f be-f-inline"><span class="be-lbl">Which account</span>
+            <select class="be-in" id="beHoldAccount"></select></label>
+
+          <div class="be-htable" id="beHoldRows"></div>
+
+          <button class="be-btn be-btn-ghost" type="button" id="beHoldAdd">Add a holding</button>
+          <button class="be-btn" type="button" id="beHoldSave">Save investments</button>
+          <span class="be-hint" id="beHoldHint"></span>
         </section>
 
         <!-- ══ WHAT IS ON FILE ══════════════════════════════════════════ -->
@@ -541,6 +579,90 @@ button,input,select,textarea{font:inherit;color:inherit}
     }
 
     show("beListCard", true);
+    paintHoldingsEditor(data);
+  }
+
+  /* ------------------------------------------------------- holdings editor */
+
+  /* The editor's working copy. It is seeded from the server on every load and is
+     the ONLY thing Save sends — see the section comment in the markup for why
+     the whole list travels together. */
+  var holdRows = [];
+  var holdAccounts = [];
+
+  function holdRowHtml(r, i) {
+    return '<div class="be-hrow" data-i="' + i + '">' +
+      '<input class="be-in" data-f="symbol" value="' + esc(r.symbol) + '" placeholder="VTI">' +
+      '<input class="be-in" data-f="description" value="' + esc(r.description) + '" placeholder="what it is (optional)">' +
+      '<input class="be-in" data-f="quantity" value="' + esc(r.quantity) + '" placeholder="units" inputmode="decimal">' +
+      '<input class="be-in" data-f="cost_basis" value="' + esc(r.cost_basis) + '" placeholder="paid ($)" inputmode="decimal">' +
+      '<input class="be-in" data-f="current_value" value="' + esc(r.current_value) + '" placeholder="worth now ($)" inputmode="decimal">' +
+      '<button class="be-hx" type="button" data-remove="' + i + '">remove</button>' +
+      "</div>";
+  }
+
+  function renderHoldRows() {
+    var head = '<div class="be-hhead"><span>Symbol</span><span>What it is</span><span>Units</span>' +
+               "<span>Paid ($)</span><span>Worth now ($)</span><span></span></div>";
+    el("beHoldRows").innerHTML = holdRows.length
+      ? head + holdRows.map(holdRowHtml).join("")
+      : '<p class="be-empty">Nothing in this account yet. Press <strong>Add a holding</strong>.</p>';
+  }
+
+  /** Read the boxes back into the working copy, so a click on remove or add does
+   *  not throw away what was typed into the other rows. */
+  function harvestHoldRows() {
+    var out = [];
+    el("beHoldRows").querySelectorAll(".be-hrow").forEach(function (row) {
+      var r = {};
+      row.querySelectorAll("[data-f]").forEach(function (inp) {
+        r[inp.getAttribute("data-f")] = inp.value.trim();
+      });
+      out.push(r);
+    });
+    holdRows = out;
+  }
+
+  /* Cents from the server → the dollars a person types. NULL stays EMPTY, never
+     "0" — an empty box round-trips back to unknown instead of quietly becoming a
+     real zero the next time Save is pressed. */
+  function centsToInput(cents) {
+    if (cents === null || cents === undefined || cents === "") return "";
+    var n = Number(cents);
+    if (!isFinite(n)) return "";
+    return (n / 100).toFixed(2);
+  }
+
+  function paintHoldingsEditor(data) {
+    holdAccounts = (data.accounts || []).filter(function (a) { return a.account_type === "investment"; });
+    if (!holdAccounts.length) {
+      // Nowhere to put a holding. A form that cannot succeed stays off screen.
+      show("beHoldCard", false);
+      return;
+    }
+
+    var sel = el("beHoldAccount");
+    var previous = sel.value;
+    sel.innerHTML = holdAccounts.map(function (a) {
+      return '<option value="' + esc(a.id) + '">' + esc(a.name || "Unnamed account") + "</option>";
+    }).join("");
+    if (previous && holdAccounts.some(function (a) { return a.id === previous; })) sel.value = previous;
+
+    var accountId = sel.value;
+    holdRows = (data.holdings || [])
+      .filter(function (h) { return h.bank_account_id === accountId; })
+      .map(function (h) {
+        return {
+          symbol: h.symbol || "",
+          description: h.description || "",
+          quantity: h.quantity === null || h.quantity === undefined ? "" : String(h.quantity),
+          cost_basis: centsToInput(h.cost_basis_cents),
+          current_value: centsToInput(h.current_value_cents)
+        };
+      });
+
+    renderHoldRows();
+    show("beHoldCard", true);
   }
 
   function load() {
@@ -595,6 +717,70 @@ button,input,select,textarea{font:inherit;color:inherit}
       el("beImportHint").textContent =
         "added " + d.accounts + " accounts, " + d.transactions + " transactions, " +
         d.statementCycles + " card billing records, " + d.holdings + " investments";
+      load();
+    });
+  });
+
+  /* --------------------------------------------------- holdings wiring --- */
+
+  el("beHoldAccount").addEventListener("change", function () { load(); });
+
+  el("beHoldAdd").addEventListener("click", function () {
+    harvestHoldRows();
+    holdRows.push({ symbol: "", description: "", quantity: "", cost_basis: "", current_value: "" });
+    renderHoldRows();
+  });
+
+  // Delegated, because the rows are rebuilt on every render and a listener bound
+  // to a button that no longer exists is a button that stops working.
+  el("beHoldRows").addEventListener("click", function (ev) {
+    var btn = ev.target.closest("[data-remove]");
+    if (!btn) return;
+    harvestHoldRows();
+    holdRows.splice(Number(btn.getAttribute("data-remove")), 1);
+    renderHoldRows();
+  });
+
+  el("beHoldSave").addEventListener("click", function () {
+    harvestHoldRows();
+
+    var accountId = el("beHoldAccount").value;
+    var rows = holdRows.filter(function (r) { return r.symbol; });
+
+    // A row with no symbol is not a holding. Dropping it silently would be
+    // wrong, so say so rather than letting the server refuse the whole batch.
+    if (rows.length !== holdRows.length) {
+      alert("bad", "Every holding needs a symbol. Fill it in, or press remove on that row.");
+      return;
+    }
+
+    var btn = this;
+    btn.disabled = true;
+    el("beHoldHint").textContent = "saving…";
+
+    api("POST", {
+      client_id: clientId,
+      action: "replace_holdings",
+      bank_account_id: accountId,
+      // Empty stays empty all the way down. The server turns "" into NULL, so an
+      // unpriced holding stays unpriced instead of becoming worth nothing.
+      holdings: rows.map(function (r) {
+        return {
+          symbol: r.symbol,
+          description: r.description || null,
+          quantity: r.quantity || null,
+          cost_basis: r.cost_basis,
+          current_value: r.current_value
+        };
+      })
+    }).then(function (d) {
+      btn.disabled = false;
+      if (!d.ok) {
+        el("beHoldHint").textContent = "";
+        alert("bad", "Could not save the investments: " + esc(d.error || "unknown problem"));
+        return;
+      }
+      el("beHoldHint").textContent = "saved " + d.replaced + " holding(s)";
       load();
     });
   });

@@ -51,13 +51,11 @@ before(async () => {
   orgId = (await db.query(`SELECT id FROM orgs WHERE is_default LIMIT 1`)).rows[0]?.id;
   assert.ok(orgId, "the default org must exist — run the migrations");
 
-  // slug is NOT NULL. It was nullable when this branch forked and is not any
-  // more, so the insert has to name it — every other pg suite already does.
-  // Without it the whole before() hook throws and all eight cases below report
-  // as failures that have nothing to do with what they test.
+  // `slug` is NOT NULL and UNIQUE on orgs — a scratch org needs both columns.
   otherOrgId = (await db.query(
-    `INSERT INTO orgs (slug, name) VALUES ($1,'w1-scratch-other-org') RETURNING id`,
-    ["w1-scratch-other-org"])).rows[0].id;
+    `INSERT INTO orgs (slug, name) VALUES ('w1-scratch-other', 'W1 Scratch Other Org')
+     ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
+     RETURNING id`)).rows[0].id;
 
   clientId = (await db.query(
     `INSERT INTO clients (org_id, first_name, last_name)
@@ -152,32 +150,32 @@ test("097 REFUSES an APR in percent units at the database", { skip: !HAS_DB }, a
   const card = await createManualBankAccount(db,
     { name: "Constraint Card", account_type: "credit" }, { orgId, clientId });
 
-  /* TWO REFUSALS, NOT ONE, AND THE COLUMN DECIDES WHICH.
-     `apr` is numeric(6,5) CHECK (apr IS NULL OR (apr BETWEEN 0 AND 1)). Anything
-     from 10 upwards never reaches the CHECK — the type refuses it first with
-     22003 numeric_field_overflow — so 24.99 raises 22003 and not the 23514 this
-     case originally demanded. It asserted a code the database cannot produce for
-     the value it passes, and only ever ran where DATABASE_URL was set, which is
-     why it read green (CLAUDE.md §12: the pg suites skip silently without one).
+  /* Straight past the writer's readApr(), to prove the database refuses this on
+     its own and not just because the conversion was polite.
 
-     Both codes are the database refusing percent units, which is what this case
-     is about, so both are accepted — and a second value inside the type's range
-     is added so the CHECK itself is still proven rather than assumed. */
+     IT IS THE COLUMN TYPE THAT BITES FIRST, NOT THE CHECK. numeric(6,5) is
+     precision 6 with scale 5, so the largest value it can hold is 9.99999 and
+     24.99 raises 22003 (numeric_value_out_of_range) before the CHECK is ever
+     evaluated. This test originally asserted 23514 and failed — which is the
+     finding: the `apr <= 1` CHECK is a SECOND line of defence for the 1..9.99999
+     band, not the first. Both are real; the type is simply narrower than the
+     CHECK for the case that actually happens. */
   await assert.rejects(
     () => db.query(
       `INSERT INTO account_statement_cycles (org_id, client_id, bank_account_id, apr)
        VALUES ($1,$2,$3,$4)`, [orgId, clientId, card.id, 24.99]),
-    (e) => e.code === "22003" || e.code === "23514",
+    (e) => e.code === "22003",
     "an APR of 24.99 must be rejected — as a fraction that is 2499%"
   );
 
-  // 2.5 fits numeric(6,5), so this one can only be stopped by the CHECK.
+  // And the band the CHECK owns alone: a value the TYPE accepts but the rule
+  // does not. 2.5 fits numeric(6,5) comfortably and is still a 250% rate.
   await assert.rejects(
     () => db.query(
       `INSERT INTO account_statement_cycles (org_id, client_id, bank_account_id, apr)
        VALUES ($1,$2,$3,$4)`, [orgId, clientId, card.id, 2.5]),
     (e) => e.code === "23514",
-    "an APR of 2.5 is 250% and must be refused by the CHECK, not by the type"
+    "the CHECK is what stops a rate between 1 and 9.99999"
   );
 });
 

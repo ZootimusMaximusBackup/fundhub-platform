@@ -198,15 +198,17 @@ export async function importAccounts(db, { orgId, clientId, env = process.env, t
         .filter((c) => !["org_id", "client_id", "plaid_item_id", "plaid_account_id"].includes(c))
         .map((c) => `${c} = EXCLUDED.${c}`);
 
-      /* THE WHERE CLAUSE ON ON CONFLICT IS REQUIRED, NOT DECORATION.
-         uq_bank_accounts_plaid (081:123) is a PARTIAL index — it carries
-         `WHERE plaid_item_id IS NOT NULL AND plaid_account_id IS NOT NULL`
+      /* THE `WHERE` ON THIS ON CONFLICT IS NOT OPTIONAL.
+         `uq_bank_accounts_plaid` is a PARTIAL unique index — 081 declares it
+         `WHERE plaid_item_id IS NOT NULL AND plaid_account_id IS NOT NULL`,
          because both columns are NULL on every hand-entered row and NULLs do not
-         collide. Postgres will not infer a partial index for ON CONFLICT unless
-         the statement repeats its predicate, so without this line every import
-         fails outright with "there is no unique or exclusion constraint matching
-         the ON CONFLICT specification". Both columns are non-null on this path,
-         so the predicate is always satisfied and only the inference needed it. */
+         collide, so an unpartitioned index would block legitimate manual entry.
+
+         Postgres will only match a partial index if the ON CONFLICT clause
+         repeats its predicate. Without this line every import fails outright
+         with "there is no unique or exclusion constraint matching the ON CONFLICT
+         specification" — not on an edge case, on the FIRST row, every time.
+         A stubbed test cannot catch it; only a real database can. */
       const saved = await tx.query(
         `INSERT INTO bank_accounts (${ACCOUNT_COLS.join(", ")})
          VALUES (${ACCOUNT_COLS.map((_, i) => `$${i + 1}`).join(", ")})

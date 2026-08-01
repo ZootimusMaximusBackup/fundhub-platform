@@ -49,6 +49,7 @@ import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { bankingSurface } from "../../src/finance/banking-surface.mjs";
 import { isPlaidEnabled } from "../../src/banking/plaid.mjs";
+import { requireClientInOrg } from "../../src/http/client-scope.mjs";
 
 const COLUMNS = `
   id, client_id, name, official_name, mask,
@@ -75,6 +76,12 @@ export default async function handler(req, res) {
   if (!isUuid(query.client_id)) {
     return res.status(400).json({ ok: false, error: "client_id is required and must be a uuid" });
   }
+
+  /* THE ORG BOUNDARY. Without this, ROLE_SETS.STAFF above was the only gate on a
+     named client's financial detail — and it answers "are you staff", never "are
+     they yours". Any employee of any company could read any client's figures
+     given only an id. See src/http/client-scope.mjs. */
+  if (!(await requireClientInOrg(res, db, staff, String(query.client_id).trim()))) return;
 
   try {
     /* Closed accounts are fetched, not filtered out here. "This client had six
