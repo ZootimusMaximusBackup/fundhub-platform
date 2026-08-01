@@ -32,7 +32,14 @@
        no way in, and src/http/app-nav-reachability.test.mjs fails when that
        happens (audit M20). */
     "subscriptions.html", "card-stack.html", "bank-accounts.html",
-    "bills-cashflow.html", "alerts.html", "deal-model.html"
+    "bills-cashflow.html", "alerts.html", "deal-model.html",
+    /* banking-entry.html is W1's manual-entry screen. It arrived in ALL on its
+       own branch with no sidebar row anywhere, which was invisible there because
+       app-nav-reachability.test.mjs did not exist yet — it came from the audit
+       branch. On main that combination is a failing test and, more to the point,
+       a screen with no way in. Added to the Finance group in every sidebar in
+       the same commit. */
+    "banking-entry.html"
   ];
 
   /* partner-galaxy.html is the white-label partner's own Galaxy — scoped to

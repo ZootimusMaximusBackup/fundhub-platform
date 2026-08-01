@@ -218,6 +218,27 @@ export function gateFor(file, { sets, wrappers }) {
       const target = resolveSet(alias[1]);
       if (target) return { roles: target.roles, label: `${expr} (${target.label})` };
     }
+    /* A GATE THAT CHANGES WITH THE METHOD:
+         const gate = method === "GET" ? ROLE_SETS.STAFF : ROLE_SETS.FINANCE
+       api/banking/accounts.mjs reads with one set and writes with a narrower one
+       from a single handler. Reported as the UNION, because the question a
+       journey answers is "who can reach this route at all" and the answer is
+       everyone in either arm — reporting only the write set would draw the
+       endpoint as closed to the roles that can in fact read it. The label names
+       both sets so the narrower arm is not lost to a reader. */
+    const byMethod = new RegExp(
+      `const\\s+${expr}\\s*=\\s*[^;]*?\\?\\s*(ROLE_SETS\\.\\w+)\\s*:\\s*(ROLE_SETS\\.\\w+)\\s*;`
+    ).exec(src);
+    if (byMethod) {
+      const a = resolveSet(byMethod[1]);
+      const b = resolveSet(byMethod[2]);
+      if (a && b) {
+        return {
+          roles: [...new Set([...a.roles, ...b.roles])],
+          label: `${expr} — ${a.label} or ${b.label}, by method`
+        };
+      }
+    }
     return null;
   };
 

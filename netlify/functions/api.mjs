@@ -86,6 +86,7 @@ import financeBills from "../../api/finance/bills.mjs";
 import financeCashflow from "../../api/finance/cashflow.mjs";
 import financeAlerts from "../../api/finance/alerts.mjs";
 import financeModel from "../../api/finance/model.mjs";
+import bankingAccounts from "../../api/banking/accounts.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
 
@@ -271,7 +272,23 @@ export const ROUTES = {
   "finance/bills": financeBills,
   "finance/cashflow": financeCashflow,
   "finance/alerts": financeAlerts,
-  "finance/model": financeModel
+  "finance/model": financeModel,
+
+  // Banking manual entry. The first thing in this repository that writes
+  // bank_accounts — the table has existed since 080/081 with a read endpoint, a
+  // grouping module and a screen in front of it and no INSERT anywhere, which is
+  // why the Banking Surface screen has always been empty.
+  //
+  // Routed in the same commit as the handler, deliberately. This is the fourth
+  // feature in this repo to be finished end to end, and the three before it each
+  // shipped unreachable because nobody added the line here.
+  //
+  // The gate differs by method and is spelled out in the handler: reads are
+  // ROLE_SETS.STAFF, matching read/banking-surface which already serves the same
+  // rows; writes are ROLE_SETS.FINANCE, because replacing a person's financial
+  // records is a narrower act than reading them. Nothing behind it transmits —
+  // the mock provider invents its data and makes no network call.
+  "banking/accounts": bankingAccounts
 
   /* NOT ROUTED, ON PURPOSE — see ALLOWED_UNROUTED in src/http/routes.test.mjs
      for the current list and the reason attached to each entry. That list is
