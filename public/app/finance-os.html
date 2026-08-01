@@ -432,7 +432,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   }
 
   /* ── state ─────────────────────────────────────────────────────────────── */
-  var S = { mm: null, cc: null, uw: null, tx: null, alerts: null, entities: [], days: 30, busy: false };
+  var S = { mm: null, cc: null, uw: null, tx: null, alerts: null, triggers: null, entities: [], days: 30, busy: false };
 
   function toast(h) {
     document.querySelectorAll(".fos-toast").forEach(function (t) { t.remove(); });
@@ -488,7 +488,13 @@ button,input,select,textarea{font:inherit;color:inherit}
       FHData.read("finance-command", ccQ),
       apiGet("/api/read/underwrite?client_id=" + encodeURIComponent(clientId)),
       apiGet("/api/read/transactions?" + txQ),
-      apiGet("/api/finance/alerts?" + qs({ client_id: clientId }))
+      apiGet("/api/finance/alerts?" + qs({ client_id: clientId })),
+      // The trigger list is a SEPARATE view of the same endpoint — GET
+      // /api/finance/alerts?client_id= answers the open queue only, and
+      // ?view=triggers is what returns the rule configuration this panel
+      // renders. Calling only the first left "Text me when" reporting a read
+      // failure that never happened; it had simply never asked.
+      apiGet("/api/finance/alerts?" + qs({ view: "triggers" }))
     ]).then(function (results) {
       S.mm = results[0] && results[0].ok ? results[0].data : null;
       S.mmRes = results[0];
@@ -498,6 +504,8 @@ button,input,select,textarea{font:inherit;color:inherit}
       S.uwRes = results[2];
       S.tx = results[3] && results[3].ok ? results[3].data : null;
       S.alerts = results[4] && results[4].ok ? results[4].data : null;
+      S.triggers = results[5] && results[5].ok ? results[5].data : null;
+      S.triggersRes = results[5];
       render();
     });
   }
@@ -757,16 +765,24 @@ button,input,select,textarea{font:inherit;color:inherit}
 
   function renderAlerts() {
     var a = S.alerts;
-    var triggers = (a && a.triggers) || [];
-    var rows = triggers.map(function (t) {
-      var on = !!t.enabled;
+    var t = S.triggers;
+    var triggers = (t && t.triggers) || [];
+    var rows = triggers.map(function (rule) {
+      var on = !!rule.enabled;
       return '<div class="fos-al' + (isFinance ? "" : " [disabled]") + '"><div class="top">' +
-        '<button class="fos-sw" role="switch" aria-checked="' + on + '" data-rule="' + esc(t.rule) + '" data-enabled="' + on + '"' + (isFinance ? "" : " disabled") + '></button>' +
-        '<div><div class="t">' + esc(t.rule.replace(/_/g, " ")) + '</div>' +
-        '<div class="b">' + (t.reason ? esc(t.reason) : (on ? "on" : "off")) + '</div></div></div></div>';
+        '<button class="fos-sw" role="switch" aria-checked="' + on + '" data-rule="' + esc(rule.rule) + '" data-enabled="' + on + '"' + (isFinance ? "" : " disabled") + '></button>' +
+        '<div><div class="t">' + esc(rule.rule.replace(/_/g, " ")) + '</div>' +
+        '<div class="b">' + (rule.measures ? esc(rule.measures) : (on ? "on" : "off")) + '</div></div></div></div>';
     }).join("");
+    // "Could not read" is reserved for an actual failed read (S.triggers is
+    // null). A successful read that simply found no configured triggers is a
+    // different, honest state and must not be reported as a fault.
+    var empty = t
+      ? '<div class="fh-empty">No alert rules configured for this org yet.</div>'
+      : '<div class="fh-empty">Could not read alert rules — ' +
+        esc((S.triggersRes && S.triggersRes.error) || "unknown error") + '.</div>';
     return '<div class="fos-panel"><div class="fos-ph"><h2>Text me when</h2><span class="sub">' + (a ? a.alerts.length + ' open' : "—") + '</span></div>' +
-      (rows || '<div class="fh-empty">Could not read alert rules for this client.</div>') + '</div>';
+      (rows || empty) + '</div>';
   }
 
   function renderDeal() {
