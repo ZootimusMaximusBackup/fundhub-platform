@@ -159,3 +159,34 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
     assert.deepEqual([...visible].sort(), [...STAFF_TABS].sort());
   });
 });
+
+/* ── ported from the second copy of this file ─────────────────────────────────
+   claude/finance-os-dashboard-311v7j wrote its own app-nav-reachability.test.mjs
+   without seeing this one — an add/add conflict on merge, two files with the
+   same path and different assertions. Most of its cases restate what is above.
+   These two do not, so they are carried over rather than lost with the file:
+   a link whose TARGET does not exist (this file only ever looked at links to
+   screens the shell already knows, so a typo'd href was invisible to it), and
+   the Money Map's own reachability, which is what that branch was for. */
+
+describe("app shell — every link points at a file that is really there", () => {
+  test("no screen links to an .html file that does not exist", () => {
+    const broken = [];
+    for (const f of FILES) {
+      const hrefs = [...HTML.get(f).matchAll(/href="\.?\/?([a-z0-9-]+\.html)"/gi)].map((m) => m[1]);
+      for (const to of new Set(hrefs)) {
+        if (!FILES.includes(to)) broken.push(`${f} -> ${to}`);
+      }
+    }
+    assert.deepEqual(broken, [], "these links go nowhere:\n  " + broken.join("\n  "));
+  });
+
+  test("the Money Map is in ALL, on disk, and offered by every sidebar", () => {
+    assert.ok(ALL.includes("money-map.html"), "money-map.html is not in shell.js ALL");
+    assert.ok(FILES.includes("money-map.html"), "public/app/money-map.html is missing");
+    const offering = WITH_SIDEBAR.filter((f) => navHrefs(HTML.get(f)).includes("money-map.html"));
+    assert.equal(offering.length, WITH_SIDEBAR.length,
+      `money-map.html is offered by ${offering.length} of ${WITH_SIDEBAR.length} sidebars — ` +
+      "a screen in ALL that some sidebars do not carry is a screen that vanishes as you walk around");
+  });
+});

@@ -57,6 +57,7 @@ import readTradelines from "../../api/read/tradelines.mjs";
 import readFinanceOs from "../../api/read/finance-os.mjs";
 import readBankingSurface from "../../api/read/banking-surface.mjs";
 import readUnderwrite from "../../api/read/underwrite.mjs";
+import readMoneyMap from "../../api/read/money-map.mjs";
 import inquiries from "../../api/inquiries.mjs";
 import pii from "../../api/pii.mjs";
 import shifts from "../../api/shifts.mjs";
@@ -162,6 +163,19 @@ export const ROUTES = {
   // alone; that gap is recorded in the handler's header and is not this change's
   // to close.
   "read/underwrite": readUnderwrite,
+
+  // read/money-map gathers what read/finance-os, read/banking-surface and
+  // read/tradelines already serve, plus card_liabilities, recurring_bills and
+  // cashflow_reminders, into the one screen an owner opens for a client. Same
+  // ROLE_SETS.STAFF gate as its three neighbours — it exposes nothing they do
+  // not, and splitting the gate would leave a closer able to read the parts but
+  // not the summary of the file they are working.
+  //
+  // It is the only one of the four that also scopes on the SESSION'S org and
+  // refuses a session with no org at all. Routed in the same commit as the
+  // handler and the screen: a screen whose endpoint 404s is the exact failure
+  // this map exists to prevent, and it has shipped twice.
+  "read/money-map": readMoneyMap,
 
   // Write endpoints. Hand-rolled rather than readHandler-based, so each one owns
   // its own method switch, its 405 + allow header, and its domain-error mapping.

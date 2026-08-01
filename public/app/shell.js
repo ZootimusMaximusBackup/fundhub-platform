@@ -39,7 +39,12 @@
        branch. On main that combination is a failing test and, more to the point,
        a screen with no way in. Added to the Finance group in every sidebar in
        the same commit. */
-    "banking-entry.html"
+    "banking-entry.html",
+    /* money-map.html is W6 — the one screen an owner opens for a client, over
+       what read/finance-os, read/banking-surface and read/tradelines already
+       serve. Same treatment as banking-entry above: in ALL, and therefore in
+       every sidebar. */
+    "money-map.html"
   ];
 
   /* partner-galaxy.html is the white-label partner's own Galaxy — scoped to

@@ -26,14 +26,14 @@ flowchart TD
     CAN --> A_finance[Finance — 9 routes]
     CAN --> A_hiring[Hiring — 6 routes]
     CAN --> A_privacy[privacy — 1 route]
-    CAN --> A_read[Reading data — 18 routes]
+    CAN --> A_read[Reading data — 19 routes]
     CAN --> A_top_level[Everything else — 8 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
 ```
 
 ## What they can reach
 
-**64 of 64 routes.**
+**65 of 65 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -93,6 +93,7 @@ flowchart TD
 | `/api/read/inquiries` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/invoices` | GET | owner, admin |
 | `/api/read/message-templates` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/partners` | GET | employees: owner, admin<br>plus: partner |
 | `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/staff` | GET | owner, admin |
@@ -110,7 +111,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**0 of 64 routes.**
+**0 of 65 routes.**
 
 _None._
 
