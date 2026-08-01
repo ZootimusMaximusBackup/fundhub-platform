@@ -677,13 +677,26 @@ scheduled it.
 * Local Postgres 16.13 (this session's container, `initdb` at `/tmp/pg16data`,
   connected as the `postgres` superuser), all 89 migrations applied clean.
 * `npm run lint` — 676 files parse clean.
-* `npm run journeys:check` — up to date.
+* `npm run journeys:check` — up to date (9 files).
+* `npm run diagrams:check` — in sync.
 * `npx tsc --noEmit` — still a no-op in this repo, as W1 found. No
   `tsconfig.json`, no TypeScript. It prints its help text. Ticked, proves
   nothing.
-* Four deliberate mutations each fail the acceptance suite: the quiet-hours
+* `npm test` with **no** database: **3894 pass, 0 fail, 460 skipped.**
+* `npm test` against that Postgres: **4967 pass, 28 fail, 8 skipped.**
+  The baseline at `fa0ee7d`, measured in the same container before any of this
+  work, was **4942 pass, 29 fail**. **The failing set after this work is a strict
+  subset of the baseline's** — nothing new fails. Two baseline failures
+  (`hiring pipeline`, `scores cannot be deleted`) pass in the later run and are
+  order-dependent, not fixed by anything here.
+
+  **§12's warning holds and this is another data point for it: the number moved
+  between two runs of the same commit in the same container.** Compare the
+  failing set by name, never the count.
+* Six deliberate mutations each fail the acceptance suite: the quiet-hours
   deferral removed, the gate verdict ignored, the claim no longer requiring
-  `status='queued'`, and the subject stored unrendered.
+  `status='queued'`, the `claimDue` clock fix reverted, the subject stored
+  unrendered, and `to_address` not recorded.
 
 ### Findings
 
@@ -700,3 +713,14 @@ scheduled it.
 3. **`compliance_rules` has no phrase rules with an empty platform scope** in
    the seeded set — they are all `regex` or `required`. Worth knowing before
    writing a test that assumes a literal phrase match.
+4. **Emitting a client-scoped event breaks any teardown that deletes clients
+   without deleting events first.** `events.client_id` is a foreign key to
+   `clients`, so adding `message.queued` took all four tests in
+   `src/workflows/invoice-workflows.pg.test.mjs` down at once — the teardown
+   failed, not the tests. Every other `.pg.test.mjs` that deletes clients was
+   checked; that was the only one exposed. Worth knowing before adding the next
+   event.
+5. **`scripts/diagrams/generate.mjs` reads a group's section name from the
+   comment line directly above it** in `src/events/canonical.mjs`. A multi-line
+   comment puts its LAST line in the table as the section label — four times, in
+   this case. Keep the line immediately above a group short.
