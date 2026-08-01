@@ -935,7 +935,16 @@ button,input,select,textarea{font:inherit;color:inherit}
       });
     var cardsDone = FHData.write("/api/finance/liabilities", {
       action: "add_card", client_id: clientId, lender: "Sample Card (mock)",
-      credit_limit: "10000", balance: "2500", apr: "0.2199"
+      // api/finance/liabilities.mjs's add_card is the one apr boundary in this
+      // app that wants a PERCENTAGE ("21.99") and rejects anything <= 1 as
+      // ambiguous. Everywhere else apr is a FRACTION (0.10 = 10%) — the
+      // tradelines.apr column stores a fraction, api/read/money-map.mjs and
+      // src/tradelines/index.mjs read it back unconverted, and
+      // api/finance/model.mjs's fractionIn() takes 0.10 for the same reason.
+      // add_card is the outlier, not this call site or model.mjs — flagged in
+      // the commit that fixed this, not changed here, since other callers may
+      // already depend on liabilities.mjs's stricter behaviour.
+      credit_limit: "10000", balance: "2500", apr: "21.99"
     }).then(function (res) {
       return { ok: res.ok, error: res.ok ? null : (res.error || res.source) };
     });
