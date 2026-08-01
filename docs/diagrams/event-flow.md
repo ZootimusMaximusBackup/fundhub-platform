@@ -118,6 +118,10 @@ flowchart LR
 | `letter.generated` | side events | — | 0 |
 | `message.inbound` | side events | `onMessageInbound` | 1 |
 | `mail.response` | side events | `onMailResponse` | 3 |
+| `message.queued` | outbound messaging | — | 0 |
+| `message.sent` | outbound messaging | — | 0 |
+| `message.failed` | outbound messaging | — | 0 |
+| `message.blocked` | outbound messaging | — | 0 |
 | `commission.earned` | commission + billing | — | 0 |
 | `commission.approved` | commission + billing | — | 0 |
 | `commission.paid` | commission + billing | — | 0 |

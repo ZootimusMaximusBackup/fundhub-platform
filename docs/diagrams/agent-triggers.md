@@ -110,6 +110,10 @@ Declared in `canonical.mjs`, emitted or emittable, with no Inngest function list
 - `file.finalized`
 - `payment.failed`
 - `letter.generated`
+- `message.queued`
+- `message.sent`
+- `message.failed`
+- `message.blocked`
 - `commission.earned`
 - `commission.approved`
 - `commission.paid`
