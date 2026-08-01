@@ -86,6 +86,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/101_bank_transaction_subject_anchor.sql",
   "migrations/102_erasure_requests.sql",
   "migrations/103_bank_account_provider.sql",
+  "migrations/104_app_role.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql"
 ]);

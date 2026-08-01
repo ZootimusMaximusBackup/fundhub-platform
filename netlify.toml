@@ -4,7 +4,29 @@
 
 [build]
   publish = "public"
-  command = "echo 'no build step — static public/ + bundled functions'"
+  # Still no build step — public/ is static and the functions are bundled by
+  # Netlify. The command runs the database privilege guard instead.
+  #
+  # This is no longer the ONLY gate in the repo — .github/workflows/tests.yml
+  # now runs the suite on every push — but it is still the only one that sees a
+  # REAL DATABASE_URL. CI points at a throwaway container; this build is the
+  # single place the question "is the connection the live site uses actually
+  # unprivileged?" can be asked and answered. Keep it.
+  #
+  # `npm run guard:db` runs ONE test file, deliberately not `npm test`. The
+  # full suite has known pre-existing failures against a real database
+  # (CLAUDE.md §12), so gating deploys on it would block every deploy on day
+  # one and the gate would be removed within a week. A guard nobody can afford
+  # to keep is not a guard.
+  #
+  # What it does: refuses the deploy if DATABASE_URL for this context points at
+  # a superuser, or a role that can bypass Row Level Security, or is missing
+  # from the build scope entirely. It runs per context, so production,
+  # deploy-preview and branch-deploy are each checked with their own value.
+  #
+  # If this ever blocks a deploy you need to make, the escape is to revert this
+  # line to the old `echo` — not to weaken src/security/superuser-guard.test.mjs.
+  command = "npm run guard:db"
 
 [build.environment]
   NODE_VERSION = "22"

@@ -16,7 +16,8 @@
     "diagrams:check": "node scripts/diagrams/generate.mjs --check",
     "journeys": "node scripts/journeys/generate.mjs",
     "journeys:check": "node scripts/journeys/generate.mjs --check",
-    "test": "node --test \"src/**/*.test.mjs\" \"scripts/**/*.test.mjs\""
+    "test": "node --test \"src/**/*.test.mjs\" \"scripts/**/*.test.mjs\"",
+    "guard:db": "node --test src/security/superuser-guard.test.mjs"
   },
   "dependencies": {
     "inngest": "^3.21.2",

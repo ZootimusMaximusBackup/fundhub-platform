@@ -1,132 +1,67 @@
-// THE CONNECTION ROLE IS PART OF THE SECURITY MODEL, AND NOTHING CHECKED IT.
+// THE SCHEMA HALF OF THE ROW-LEVEL-SECURITY ARRANGEMENT.
 //
-// *** WHAT THIS FILE EXISTS TO CATCH. ***
+// *** READ THIS FIRST: THIS FILE USED TO DO TWO JOBS, AND NOW DOES ONE. ***
 //
-// src/partners/rls.mjs relies on Postgres row-level security to keep one
-// white-label partner out of another's data. The policies are real, they are
-// correct, and eighteen tables carry one:
+// Partner isolation in this system needs two independent things to be true, and
+// either one being false leaks the same data:
+//
+//   1. THE CONNECTION ROLE must not be able to bypass row security. A Postgres
+//      superuser — and any role holding BYPASSRLS — ignores every policy in the
+//      catalog. FORCE ROW LEVEL SECURITY does not change that: FORCE closes the
+//      OWNER loophole, not the SUPERUSER one.
+//
+//   2. THE SCHEMA must actually have row security switched on, and forced, on
+//      every table that carries a policy. A policy on a table without ENABLE
+//      does nothing at all. A policy without FORCE does nothing for the table's
+//      owner — which is the role that ran the migrations.
+//
+// This file originally asserted both. Item 1 is now owned, in much more depth,
+// by src/security/superuser-guard.test.mjs — which arrived with the migration
+// that created the unprivileged `fundhub_app` role
+// (db/migrations/104_app_role.sql). That guard checks role MEMBERSHIP rather
+// than just current_user's own catalog row, covers pg_read_all_data /
+// pg_write_all_data and CREATE-on-public as well as rolsuper/rolbypassrls, runs
+// as a Netlify build gate rather than only inside the suite, and deliberately
+// does NOT skip itself when DATABASE_URL is unset in a deployed context.
+//
+// Keeping a weaker copy of that assertion here would mean two files failing for
+// one cause, with the thinner message the more likely one to be read first. So
+// the role check was removed from this file rather than duplicated. THE CHECK
+// WAS NOT DROPPED — it moved, and it got stronger. Run `npm run guard:db`.
+//
+// What remains here is item 2, which the guard does not cover and never did:
+// the guard interrogates the connection, this interrogates the schema. A
+// correct role against a schema that forgot to FORCE fails just as open as the
+// reverse.
+//
+//
+// *** WHY THE SCHEMA HALF STILL NEEDS ITS OWN TEST. ***
+//
+// src/partners/rls.mjs stamps fundhub.partner_id onto each transaction and
+// eighteen tables carry the policy that reads it back:
 //
 //   ((partner_id = fundhub_current_partner()) OR fundhub_is_staff())
 //
-// Every one of those tables also has RLS both ENABLED and FORCED, which is the
-// stronger setting and the one that closes the table-owner loophole.
+// Those tables are installed across 045, 046, 047, 049 and 050. Nothing stops a
+// nineteenth table from being added later with a policy and without the two
+// ALTER TABLE lines that make the policy mean anything — and in a casual `\d`
+// listing, that table looks exactly like the other eighteen. This test is what
+// notices.
 //
-// None of that matters if the application connects as a superuser.
-//
-// A Postgres superuser — and any role holding BYPASSRLS — ignores row security
-// entirely. FORCE ROW LEVEL SECURITY does not change that; FORCE closes the
-// OWNER loophole, not the SUPERUSER one. There is no policy, no constraint and
-// no grant that can restrain a superuser, because bypassing them is what the
-// attribute means.
-//
-// Demonstrated against a real database while writing this file. One row of
-// partner A's brand_kits, two sessions, both setting app.partner_id to a
-// DIFFERENT partner, the same SELECT:
-//
-//   connected as a superuser      -> 1 row   (partner A's row, handed to B)
-//   connected as a normal role    -> 0 rows  (the policy applied)
-//
-// So the isolation this system documents is a property of the CONNECTION
-// STRING, not of the schema. Point DATABASE_URL at the `postgres` role and
-// every partner boundary in the product silently disappears, with the policies
-// still sitting in the catalog looking correct.
-//
-//
-// *** WHY THIS WENT UNNOTICED FOR SO LONG. ***
-//
-// It did not go unnoticed. It was misfiled.
-//
-// Twenty-four tests fail against a real database on this branch, and they
-// failed identically on the baseline commit eleven commits earlier, so the
-// W1-W10 audit correctly classified them as "pre-existing, not a regression"
-// and moved on. But every one of those twenty-four is an isolation test:
-//
-//   src/compliance/invariants.pg.test.mjs  - "an unscoped session reads zero
-//                                             rows from every module table"
-//                                          - "partner B reads zero rows of
-//                                             partner A's data"
-//   src/http/creative-endpoints.pg.test.mjs - fourteen "returns nothing for a
-//                                             partner who owns none of it"
-//   src/creative/generate.pg.test.mjs      - three partner-scoping cases
-//   src/social/social.pg.test.mjs          - "usage events are partner-isolated"
-//
-// They were not failing because they are flaky, or slow, or badly written. They
-// were failing because they are correct and the thing they test was broken —
-// under the superuser connection the suite itself runs on. A long-standing red
-// test that everyone has agreed to ignore is the best hiding place a security
-// defect has, and CLAUDE.md's own trap note ("the suite is not as green as it
-// looks... ~24 pre-existing failures") had made ignoring them official.
-//
-//
-// *** WHAT THIS TEST DOES, AND WHAT IT DELIBERATELY DOES NOT DO. ***
-//
-// It asks one question of whatever DATABASE_URL points at: can the role we
-// connected as bypass row security? It does not try to fix anything, it does
-// not create a role, and it does not read or write a single application row.
-//
-// It CANNOT tell you about production from here. api.netlify.com is blocked by
-// network policy in the agent environment, so nobody in this repository can
-// read production's DATABASE_URL. This test answers the question for whichever
-// database it is pointed at, which is exactly why it belongs in the suite: run
-// it in CI against the deployment target and the answer stops being a guess.
-//
-// SKIPPED, NOT PASSED, WITH NO DATABASE. Reporting green here without a
-// connection would be the same failure mode as the twenty-four above.
+// SKIPPED, NOT PASSED, WITH NO DATABASE. It asks a live catalog a question it
+// cannot answer offline. Reporting green without a connection would be the same
+// failure mode this whole area of the codebase exists to prevent.
 
-import { test, before, after } from "node:test";
+import { test, after } from "node:test";
 import assert from "node:assert";
 
 import { db, close } from "../db.mjs";
 
 const HAS_DB = Boolean(process.env.DATABASE_URL);
-const opts = HAS_DB ? {} : { skip: "DATABASE_URL is not set — this asks a live database about its own role" };
+const opts = HAS_DB ? {} : { skip: "DATABASE_URL is not set — this asks a live database about its own schema" };
 
 after(async () => { if (HAS_DB) await close(); });
 
-test("the role the application connects as cannot bypass row-level security", opts, async () => {
-  const res = await db.query(
-    `SELECT current_user AS role,
-            rolsuper     AS is_superuser,
-            rolbypassrls AS has_bypassrls
-       FROM pg_roles
-      WHERE rolname = current_user`
-  );
-
-  const row = res.rows[0];
-  assert.ok(row, "could not read the current role from pg_roles");
-
-  /* Two separate attributes, either of which defeats every policy in the
-     catalog. They are asserted separately so the failure names which one is
-     set — the remedies differ (stop using the superuser vs. revoke BYPASSRLS)
-     and a combined assertion would send somebody down the wrong path. */
-
-  assert.equal(
-    row.is_superuser, false,
-    `DATABASE_URL connects as "${row.role}", which is a SUPERUSER. Superusers ignore ` +
-    "row-level security completely — FORCE ROW LEVEL SECURITY does not apply to them. " +
-    "Every partner-isolation policy in src/partners/rls.mjs is inert on this connection: " +
-    "one partner can read another partner's brand kits, campaigns, creative assets, ad " +
-    "spend and usage events. Connect as a dedicated non-superuser application role that " +
-    "owns nothing and holds only the grants it needs."
-  );
-
-  assert.equal(
-    row.has_bypassrls, false,
-    `DATABASE_URL connects as "${row.role}", which holds BYPASSRLS. That attribute does ` +
-    "exactly what its name says and defeats every partner-isolation policy. " +
-    "Run: ALTER ROLE " + row.role + " NOBYPASSRLS;"
-  );
-});
-
-/* A companion assertion, because a correct role with a broken schema fails just
-   as open as the reverse. This is cheap and it pins the OTHER half of the
-   arrangement: every table src/partners/rls.mjs reads must have row security
-   both enabled AND forced.
-
-   FORCE matters on its own. Without it the policies do not apply to the table's
-   OWNER, and an application connecting as the role that ran the migrations is
-   the owner. Enabled-but-not-forced is the second way this leaks, and it looks
-   identical in a casual `\d` listing. */
 test("every partner-scoped table has row security enabled AND forced", opts, async () => {
   const res = await db.query(
     `SELECT c.relname            AS table_name,
