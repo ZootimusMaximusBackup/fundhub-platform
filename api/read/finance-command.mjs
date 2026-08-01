@@ -186,7 +186,8 @@ export default async function handler(req, res, deps = {}) {
       cards: cards.rows,
       investments: investments.rows,
       cashflowByDay: cashflowByDay.rows,
-      marketingByDay: marketingByDay.rows
+      marketingByDay: marketingByDay.rows,
+      scopedToClient: !!clientId
     });
 
     return res.status(200).json({

@@ -72,6 +72,7 @@ describe("/api/finance/alerts (real postgres)", { skip: !HAVE_DB ? "no DATABASE_
     if (orgs.length) {
       // Explicit, table by table, so a failure names where it happened rather
       // than arriving as a cascade nobody can read.
+      await db.query(`DELETE FROM owner_notifications WHERE org_id = ANY($1)`, [orgs]);
       await db.query(`DELETE FROM alerts WHERE org_id = ANY($1)`, [orgs]);
       await db.query(`DELETE FROM upsell_triggers WHERE org_id = ANY($1)`, [orgs]);
       await db.query(`DELETE FROM snapshots WHERE org_id = ANY($1)`, [orgs]);
@@ -245,6 +246,29 @@ describe("/api/finance/alerts (real postgres)", { skip: !HAVE_DB ? "no DATABASE_
     const n = Number((await db.query(
       `SELECT count(*)::int AS n FROM alerts WHERE org_id = $1 AND client_id = $2`, [org, client])).rows[0].n);
     assert.equal(n, 1);
+  });
+
+  test("a real run queues the owner exactly one notification, and it stays queued (nothing sends)", async () => {
+    const rows = (await db.query(
+      `SELECT * FROM owner_notifications WHERE org_id = $1 AND client_id = $2`, [org, client])).rows;
+    assert.equal(rows.length, 1, "expected one owner_notifications row for the one open alert");
+    assert.equal(rows[0].status, "queued");
+    assert.equal(rows[0].sent_at, null);
+    assert.match(rows[0].title, /^Total utilization is 80%/);
+
+    // Re-running "evaluate" above did not create a second alert (dedupe), so it
+    // must not have queued a second text either.
+    await call("POST", { token: owner.token, body: { action: "evaluate", client_id: client } });
+    const again = (await db.query(
+      `SELECT count(*)::int AS n FROM owner_notifications WHERE org_id = $1 AND client_id = $2`, [org, client])).rows[0].n;
+    assert.equal(Number(again), 1);
+  });
+
+  test("a dry run queues nothing", async () => {
+    const before = Number((await db.query(`SELECT count(*)::int AS n FROM owner_notifications WHERE org_id = $1`, [org])).rows[0].n);
+    await call("POST", { token: owner.token, body: { action: "evaluate", client_id: client, dry_run: true } });
+    const after = Number((await db.query(`SELECT count(*)::int AS n FROM owner_notifications WHERE org_id = $1`, [org])).rows[0].n);
+    assert.equal(after, before);
   });
 
   test("the queue read returns it with the client's name and the numbers behind it", async () => {

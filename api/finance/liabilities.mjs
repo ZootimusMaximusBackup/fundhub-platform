@@ -161,6 +161,32 @@ export default async function handler(req, res) {
         case "add_card":  return await addCard(res, { orgId, clientId, body });
         case "edit_card": return await editCard(res, { orgId, clientId, card, body });
         case "upsert":    return await upsertPosition(res, { orgId, clientId, card, body });
+        /* assign_entity — which wallet (106_entities.sql) this card belongs
+           to. entity_id or null (unassign); an entity from a different client
+           is refused by name rather than silently ignored, same discipline as
+           the tradeline-ownership check three lines up. */
+        case "assign_entity": {
+          let entityId = null;
+          if (body.entity_id !== undefined && body.entity_id !== null && body.entity_id !== "") {
+            if (!isUuid(body.entity_id)) {
+              return res.status(400).json({ ok: false, error: "entity_id must be a uuid" });
+            }
+            const owns = await db.query(
+              `SELECT 1 FROM entities WHERE id = $1 AND org_id = $2 AND client_id = $3`,
+              [String(body.entity_id).trim(), orgId, clientId]
+            );
+            if (owns.rows.length === 0) {
+              return res.status(400).json({ ok: false, error: "entity_id does not belong to this client" });
+            }
+            entityId = String(body.entity_id).trim();
+          }
+          const updated = (await db.query(
+            `UPDATE tradelines SET entity_id = $3, updated_at = now()
+              WHERE id = $1 AND org_id = $2 RETURNING id`,
+            [card.id, orgId, entityId]
+          )).rows[0];
+          return res.status(200).json({ ok: true, action: "assign_entity", tradeline_id: updated.id, entity_id: entityId });
+        }
         default:
           return res.status(400).json({ ok: false, error: "invalid_action" });
       }

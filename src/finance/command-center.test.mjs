@@ -66,6 +66,27 @@ describe("commandCenter", () => {
     assert.equal(out.cashflow_series[0].outflow_cents, 40000, "marketing spend must not be folded into outflow_cents");
   });
 
+  test("combined_series folds marketing spend into cash-out when scoped business-wide", () => {
+    const out = commandCenter({
+      cashflowByDay: [{ day: "2026-07-01", inflow_cents: 100000, outflow_cents: 40000 }],
+      marketingByDay: [{ day: "2026-07-01", spend_cents: 5000 }],
+      scopedToClient: false
+    });
+    assert.equal(out.combined_series[0].outflow_cents, 45000);
+    assert.equal(out.combined_series[0].net_cents, 55000);
+    assert.equal(out.combined_series_unavailable_reason, null);
+  });
+
+  test("combined_series is null with a named reason when scoped to one client", () => {
+    const out = commandCenter({
+      cashflowByDay: [{ day: "2026-07-01", inflow_cents: 100000, outflow_cents: 40000 }],
+      marketingByDay: [{ day: "2026-07-01", spend_cents: 5000 }],
+      scopedToClient: true
+    });
+    assert.equal(out.combined_series, null);
+    assert.match(out.combined_series_unavailable_reason, /cannot be attributed to one client/);
+  });
+
   test("net worth trend is explicitly reported as unavailable, not faked", () => {
     const out = commandCenter({});
     assert.equal(out.net_worth_trend_available, false);

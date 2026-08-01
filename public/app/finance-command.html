@@ -226,6 +226,11 @@ svg.fc-chart .lbl{ font:700 10px 'JetBrains Mono',ui-monospace,monospace; fill:v
       </div>
 
       <div class="fc-section">
+        <h2>Cash out, including marketing spend</h2>
+        <div class="fc-panel"><div id="fcCombinedChart"></div></div>
+      </div>
+
+      <div class="fc-section">
         <h2>Utilization per card</h2>
         <div class="fc-panel"><div id="fcCardTable"></div></div>
       </div>
@@ -382,6 +387,13 @@ svg.fc-chart .lbl{ font:700 10px 'JetBrains Mono',ui-monospace,monospace; fill:v
     document.getElementById("fcMarketingChart").innerHTML =
       chartSVG(d.marketing_series, "spend_cents", { color: "#E3A0A0" }) +
       '<p class="fc-hint" style="margin-top:8px;">Ad spend across every campaign in this business, per day. Campaigns are not attributable to one client, so this never narrows with the client filter above.</p>';
+    var combinedEl = document.getElementById("fcCombinedChart");
+    if (d.combined_series) {
+      combinedEl.innerHTML = chartSVG(d.combined_series, "net_cents", { color: "#C9A96E" }) +
+        '<p class="fc-hint" style="margin-top:8px;">Net cash movement per day, with marketing spend added into the outflow side.</p>';
+    } else {
+      combinedEl.innerHTML = '<p class="fc-empty">' + esc(d.combined_series_unavailable_reason || "Not available in this scope.") + '</p>';
+    }
     renderCardTable(d.per_card);
   }
 

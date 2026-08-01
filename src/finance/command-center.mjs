@@ -37,7 +37,7 @@ const money = (c) => (c === null ? null : fromCents(c));
  *                        api/read/finance-command.mjs.
  */
 export function commandCenter({ bankAccounts = [], cards = [], investments = [],
-                                 cashflowByDay = [], marketingByDay = [] } = {}) {
+                                 cashflowByDay = [], marketingByDay = [], scopedToClient = false } = {}) {
   const openAccounts = bankAccounts.filter((a) => !a.closed_at);
   const cashRows = openAccounts.filter((a) => a.account_type !== "credit" && a.account_type !== "investment");
   const cash = sumKnown(cashRows.map((a) => cents(a.current_balance_cents)));
@@ -87,6 +87,32 @@ export function commandCenter({ bankAccounts = [], cards = [], investments = [],
     return { date: r.day, spend_cents: spend, spend_display: money(spend) };
   });
 
+  /* combined_series — cash-out INCLUDING marketing spend, as one line. Only
+     computed when the view is business-wide (scopedToClient === false):
+     marketing spend cannot be attributed to one client (campaigns are scoped
+     to a partner, not a client — see the header note in
+     api/read/finance-command.mjs), so combining it into a single client's cash
+     flow would misattribute somebody else's ad cost onto their file. When a
+     client filter is applied, this is null WITH A NAMED REASON — never
+     silently omitted, and never combined anyway "close enough". */
+  let combinedSeries = null;
+  let combinedUnavailableReason = null;
+  if (scopedToClient) {
+    combinedUnavailableReason = "marketing spend cannot be attributed to one client — see marketing_series, shown separately";
+  } else {
+    const marketingByDate = new Map(marketingSeries.map((r) => [r.date, r.spend_cents]));
+    const dates = new Set([...cashflowSeries.map((r) => r.date), ...marketingSeries.map((r) => r.date)]);
+    combinedSeries = [...dates].sort().map((date) => {
+      const cf = cashflowSeries.find((r) => r.date === date);
+      const inflow = cf ? cf.inflow_cents : 0;
+      const outflow = (cf ? cf.outflow_cents : 0) + (marketingByDate.get(date) || 0);
+      return {
+        date, inflow_cents: inflow, outflow_cents: outflow,
+        net_cents: inflow - outflow, net_display: money(inflow - outflow)
+      };
+    });
+  }
+
   return {
     totals: {
       cash_cents: cash.total,
@@ -115,6 +141,8 @@ export function commandCenter({ bankAccounts = [], cards = [], investments = [],
        "cash out including marketing" adds the two series rather than this
        module inventing a third number nobody asked for. */
     marketing_series: marketingSeries,
+    combined_series: combinedSeries,
+    combined_series_unavailable_reason: combinedUnavailableReason,
     /* No history table exists for account balances (098_investment_holdings.sql
        is explicitly "current position only, no history table" — see the Finance
        OS audit). A net-worth TREND therefore cannot be computed from anything
