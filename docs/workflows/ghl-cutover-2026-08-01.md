@@ -17,7 +17,7 @@ editing anyone else's.
 | W2 | Provider: email (mailgun) | unclaimed | `pending` |
 | W3 | Provider: SMS (ghl_relay) | unclaimed | `pending` |
 | W4 | The dispatcher loop itself | unclaimed | `pending` |
-| T2 | Ticket 2 — delivery status webhooks (Twilio + Mailgun callbacks) | T2 | `claimed` |
+| T2 | Ticket 2 — delivery status webhooks (Twilio + Mailgun callbacks) | T2 | `done` |
 
 T2 is **Ticket 2**, not a fifth lane of Ticket 1. It is the return path: what the
 providers tell us *after* a message left. It depends on W1's schema (it writes
@@ -366,3 +366,184 @@ role gates, neither of which this change adds.
    else, and fixing restricted wording is operational work. If the owner wants
    a different role, it is the `GATE_TASK_ROLE` constant in
    `src/messaging/gate.mjs` and nothing else.
+
+---
+
+## T2 — Delivery status webhooks
+
+**Task:** Twilio + Mailgun delivery callbacks, and the Mailgun fail-open bug.
+`status: done`
+
+**COMPLIANCE REVIEW REQUIRED** — a spam complaint now writes an opt-out, which
+is consent capture.
+
+**What changed in plain language:** when a text or email we sent actually
+arrives, bounces, or gets reported as spam, the provider tells us and we now
+record it against that exact message. A spam complaint also stops us emailing
+that person again. Before this, none of that was recorded at all.
+
+### CONTRACT — the two endpoints
+
+| URL | Provider id | Signature | Secret |
+|---|---|---|---|
+| `POST /api/webhooks/twilio-status` | `twilio-status` | HMAC-SHA1 over URL + sorted params | `TWILIO_AUTH_TOKEN` |
+| `POST /api/webhooks/mailgun-events` | `mailgun-events` | HMAC-SHA256 over `timestamp + token` | `MAILGUN_SIGNING_KEY` |
+
+**No new environment variable.** Both reuse the secret their inbound twin
+already uses. Ticket 2 as written named `MAILGUN_WEBHOOK_SIGNING_KEY`; that
+name exists nowhere in this repo and adding it would have meant one secret
+under two names, with one of them destined to be left unset. Owner agreed.
+
+**Both fail closed, including when the key is unset.** An unsigned request is
+401 and never reaches the database.
+
+#### Status vocabulary written to `messages.status`
+
+| Provider event | `messages.status` |
+|---|---|
+| Twilio `delivered` | `delivered` |
+| Twilio `undelivered` / `failed` | `failed` |
+| Twilio `sent` | `sent` |
+| Twilio `queued` / `sending` / `accepted` | *(no change — in flight)* |
+| Mailgun `delivered` | `delivered` |
+| Mailgun `failed`, severity `permanent` | `bounced` |
+| Mailgun `failed`, severity `temporary` (or absent) | `failed` |
+| Mailgun `complained` | `complained` **+ opt-out row** |
+| Mailgun `rejected` | `rejected` |
+| Mailgun `opened` / `clicked` / `accepted` / `unsubscribed` / `stored` | *(no change)* |
+
+**W4 take note:** `bounced` and `failed` are not interchangeable. `bounced` is
+permanent and must never be retried; `failed` should be. An unknown provider
+status is never treated as a failure — guessing there would let a vocabulary
+change at the provider mark live messages dead.
+
+#### Matching a receipt to a row
+
+On `provider_message_id` — **theirs** — never on `provider_ref`, which is ours
+and which no provider has ever seen. Mailgun ids are compared with angle
+brackets stripped from both sides, because Mailgun returns `<id@domain>` on send
+and bare `id@domain` in the event payload.
+
+Every update is guarded to `direction = 'outbound'` and the matching `channel`.
+`provider_message_id` carries no unique index, so without those guards a
+colliding id could move a row the callback has no business touching.
+
+`attempts`, `blocked_reason` and `blocked_at` are never written or cleared here.
+A delivery receipt is not an attempt, and 110's own comment says the block
+columns are written once and never cleared.
+
+#### The complaint path
+
+A `complained` event writes an opt-out on the `email` channel via
+`recordOptOut` in `src/lib/opt-out.mjs` — the only sanctioned writer, so the
+send-path guard reads it with no second implementation to diverge from.
+`source` is `provider_complaint`.
+
+The opt-out is written **before** the message status update. If the update
+fails, the opt-out has already landed. The other order risks continuing to email
+somebody who reported us, which is the failure with legal weight rather than
+operational weight.
+
+If the message id matches no row, the client is resolved by the recipient email
+address instead. Only if that also fails is no opt-out recorded — see Findings.
+
+### Files touched
+
+| File | Change |
+|---|---|
+| `src/adapters/twilio-status.mjs` | New. The Twilio delivery-receipt adapter. Imports `verifyTwilioSignature` from `twilio.mjs` rather than keeping a second copy. |
+| `src/adapters/mailgun.mjs` | Outbound event routing: `isDeliveryEvent`, `normalizeDeliveryEvent`, `handleMailgunDeliveryEvent`, `normalizeMessageId`, and a fork at the top of `handleMailgunWebhook`. |
+| `src/http/router.mjs` | Two provider ids registered: `twilio-status`, `mailgun-events`. |
+| `src/http/webhooks-status.pg.test.mjs` | New. 18 tests. |
+| `scripts/diagrams/extract.mjs` | A verifier now counts whether it is defined **or imported**. |
+| `scripts/diagrams/render.mjs` | The bus arrow is drawn only for adapters that emit. |
+| `scripts/diagrams/generate.test.mjs` | Adapter count 8 → 9. |
+| `docs/diagrams/*` | Regenerated. |
+
+### Exports added
+
+- `src/adapters/twilio-status.mjs` — `handleTwilioStatusWebhook`,
+  `normalizeStatusEvent`, `STATUS_MAP`, `IGNORED_STATUSES`.
+- `src/adapters/mailgun.mjs` — `handleMailgunDeliveryEvent`, `isDeliveryEvent`,
+  `normalizeDeliveryEvent`, `normalizeMessageId`, `DELIVERY_STATUS_MAP`,
+  `IGNORED_DELIVERY_EVENTS`. Nothing renamed, nothing removed.
+
+**Routes affected:** none in the `ROUTES` map — see below. **Journeys
+affected:** none; `npm run journeys:check` reports up to date.
+
+### Why no new ROUTES entries
+
+`netlify/functions/api.mjs` looks up exact `ROUTES` keys **before** the
+`webhooks/` prefix branch, so `"webhooks/twilio-status"` as an exact key would
+work — and `src/http/routes.test.mjs` has a test asserting nobody adds one,
+because it works only for as long as those two lookups stay in that order.
+
+These two go through the same prefix door every other provider webhook uses.
+No `ROUTES` change, no `routes.test.mjs` change, no ordering dependency. Owner
+chose this over amending the guard test.
+
+**Consequence, stated plainly:** there are no files at
+`api/webhooks/twilio-status.mjs` or `api/webhooks/mailgun-events.mjs`. Ticket 2
+named those paths, but any file under `api/` that is not `[provider].mjs`
+requires an entry in `routes.test.mjs` to stay green, which is the change the
+owner ruled out. The logic lives in `src/adapters/` with every other adapter.
+
+### How it was verified
+
+- Local Postgres 16.13, connected as the `postgres` superuser, migrations
+  applied clean through `db/migrate.mjs` (88 migrations, including W1's 110).
+- `npm run lint` — 667 files parse clean.
+- `npm test` with no database: **3811 pass, 0 fail, 452 skipped**. W1's
+  baseline was 3802 / 0 / 443; the difference is exactly this ticket's 18 tests,
+  9 of which need a database and skip.
+- `npm test` against the local Postgres: **28 failures**, and the failing test
+  **names are identical** to the same run at W1's tip `32ec92e` on the same
+  database. Only their sequence numbers shifted, because this ticket's tests
+  are added earlier in the ordering. Zero failures added.
+- `npm run journeys:check` — up to date.
+- Three deliberate mutations, each caught:
+  - Mailgun signature check re-wrapped in `if (signingKey)` — 1 failure.
+  - The `WHERE` guards dropped from the Twilio update — 4 failures.
+  - A complaint stops writing its opt-out — 1 failure.
+
+### Findings — read these
+
+1. **The Mailgun fail-open bug was already fixed before this ticket started.**
+   `handleMailgunWebhook` already verified unconditionally. What was missing was
+   any test proving it, so it could have been undone silently. That test now
+   exists.
+
+2. **The obvious version of that test does not catch the bug.** Asserting "with
+   a key set, an unsigned request is rejected" passes against the *buggy*
+   `if (signingKey)` code too, because the key being set is what makes that
+   branch verify. The bug only opens when the key is **unset** — which was the
+   shipped configuration, since `.env.example` ships it blank and `DEPLOY.md`
+   lists it as "add later". Found by mutation, not by reading. The file now
+   asserts both cases and names why.
+
+3. **Delivery events posted at the inbound Mailgun URL used to be emitted as
+   bank mail.** A receipt has no subject and no body, so the classifier scored
+   it `NOISE` and put it on the canonical event bus as a real `mail.response`.
+   Spam complaints were the quietest casualty, because `NOISE` is the
+   classification nothing reacts to. Both URLs now route correctly, so a
+   misconfigured Mailgun webhook is no longer silently wrong.
+
+4. **A complaint we cannot attribute records nothing.** If the message id
+   matches no row *and* the recipient address matches no client, there is no
+   client to opt out and none is invented. The response says so
+   (`optedOut: false`), but nothing raises a task about it. If an unattributable
+   complaint should reach a human, that is a small follow-up and it is not built.
+
+5. **The diagram generator understated an adapter's security posture.** It only
+   counted a verifier an adapter *defines*, so importing one read as "no
+   signature / direct call" — on the diagram whose whole job is to show which
+   adapters fail closed. Fixed for all adapters, not just this one.
+
+6. **`npx tsc --noEmit` still proves nothing here**, exactly as W1 found. There
+   is no `tsconfig.json` and no TypeScript in the repo; the command prints its
+   help text and exits non-zero. Run, and disregarded.
+
+7. **Nothing sends yet.** These endpoints only *receive*. Until W4's dispatcher
+   runs and stores `provider_message_id` on send, every real callback would find
+   no row and answer `unmatched`. That is the correct behaviour, and it means
+   this ticket turns nothing on by itself.
