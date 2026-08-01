@@ -925,7 +925,10 @@ button,input,select,textarea{font:inherit;color:inherit}
         // button still does something real rather than silently failing.
         return FHData.write("/api/finance/bank-accounts", {
           action: "add", client_id: clientId, name: "Sample Checking (mock)",
-          account_type: "checking", mask: "0000", current: "5000"
+          // api/finance/bank-accounts.mjs's account_type accepts depository,
+          // credit, loan, investment, other — never "checking", which is an
+          // account_subtype elsewhere in this app, not a type here.
+          account_type: "depository", mask: "0000", current: "5000"
         }).then(function (res2) {
           return { ok: res2.ok, error: res2.ok ? null : (res2.error || res2.source) };
         });
