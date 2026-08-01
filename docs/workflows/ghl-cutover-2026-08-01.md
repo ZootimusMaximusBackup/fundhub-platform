@@ -415,6 +415,21 @@ only, no values:
 | `GHL_RELAY_API_KEY` | GoHighLevel private API key. **Secret.** |
 | `GHL_RELAY_BASE_URL` | Optional. Only if "relay" means an intermediary rather than GHL directly. |
 | `GHL_RELAY_VERSION` | Optional. Defaults to `2021-07-28`. |
+| `TWILIO_SEND_ACCOUNT_SID` | Twilio account SID (the `AC…` id). **Not needed until Twilio cutover day.** |
+| `TWILIO_SEND_AUTH_TOKEN` | Twilio auth token. **Secret. Not needed until Twilio cutover day.** |
+| `TWILIO_SEND_FROM` | E.164 number, or a Messaging Service SID (`MG…`). **Not needed until Twilio cutover day.** |
+| `TWILIO_SEND_BASE_URL` | Optional; non-default Twilio host. **Not needed until Twilio cutover day.** |
+
+The four `TWILIO_SEND_*` rows were added to this W2/W3 table by W6 at the
+owner's instruction, so all eleven variables read as one list. Twilio itself is
+documented in the W6 manifest below. **Names only — none of these are set, and
+none can be set from this container: `api.netlify.com` is blocked by the org
+network policy.** This table is documentation, not configuration.
+
+`TWILIO_SEND_*` and not `TWILIO_*`: `src/http/router.mjs:42` already reads
+`TWILIO_AUTH_TOKEN` for **inbound** webhook signatures. One variable serving
+both directions would mean rotating the webhook token silently breaks sending —
+the same collision the `MAILGUN_SEND_*` prefix avoids.
 
 The `MAILGUN_SEND_*` prefix is deliberate: `src/adapters/mailgun.mjs` already
 consumes a Mailgun signing key for **inbound** webhooks. One variable serving
