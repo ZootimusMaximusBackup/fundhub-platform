@@ -17,10 +17,37 @@
 // GOOGLE FONTS ONLY. Enforced by CHECK in 043 and again here so the caller gets
 // a readable error rather than a constraint name.
 
+// THE READ WAS NOT GATED, AND THAT WAS THE HOLE. requireAuth alone admits ANY
+// signed-in employee of ANY role, so a setter could pass any partner_id and read
+// that partner's trading name, registered address, support email, domain and
+// brand tokens. The WRITE was gated the whole time — canWrite() below — which is
+// what made this easy to miss: the file looks gated, and half of it was.
+//
+// Found by docs/journeys/, which reports the gate at the handler's ENTRY. That
+// is the honest thing for it to report, and it is why this read went unnoticed:
+// an inner per-method check does not protect the method without one.
+//
+// NOW OWNER AND ADMIN, on both methods. Two calls, because requireAuth forwards
+// its third argument to authenticate(), which reads only { db, env } — a `roles`
+// key there is silently dropped, which is the bug src/http/auth-gate.test.mjs
+// exists to catch and the one api/read/tradelines.mjs shipped.
+//
+// THIS BREAKS NO SCREEN. public/app/shell.js applyBrand() returns early unless
+// staff.partner_id is set; `staff` has no partner_id column (001_init, 020_auth)
+// and verifySession does not select one, so it is always undefined and the GET
+// is never called from a staff session today. Checked before narrowing, not
+// after.
+
 import { db } from "../src/db.mjs";
 import { requireAuth } from "../src/http/middleware/requireAuth.mjs";
-import { redact, isUuid, CLIENT_DATA_ERRORS } from "../src/http/read-api.mjs";
+import { redact, isUuid, requireRole, CLIENT_DATA_ERRORS } from "../src/http/read-api.mjs";
 import { safeError } from "../src/http/health.mjs";
+
+/* Spelled out here rather than inherited from ROLE_SETS. This endpoint carries
+   another company's registered address and trading identity; widening it should
+   cost somebody an edit to this line and a sentence saying why. Narrower than
+   ROLE_SETS.STAFF, deliberately — the same call api/finance/soft-pull.mjs makes. */
+const PARTNER_BRAND_ROLES = new Set(["owner", "admin"]);
 
 // Fields a partner may set. Anything else in the body is ignored rather than
 // rejected, so a screen sending extra state does not 400 — but it also cannot
@@ -83,8 +110,17 @@ function validate(body) {
   return bad;
 }
 
-// canWrite — the owning partner, or an admin. Written against a principal so it
-// survives Unit 12 unchanged.
+/* canWrite — the owning partner, or an admin. Kept as defence in depth behind
+   the entry gate above, which already limits this handler to owner and admin.
+   It is not redundant paranoia: it is the check that has to widen, not narrow,
+   when partner sessions land.
+
+   ITS `partner` BRANCH IS UNREACHABLE TODAY. `staff` comes from requireAuth,
+   which returns a row from `staff` — a table with no partner_id column, and
+   verifySession does not select one. So staff.partner_id is always undefined and
+   that branch never fires. It is left in place because it is the correct rule
+   for Unit 12; whoever lands partner sessions must widen PARTNER_BRAND_ROLES or
+   move the entry gate to requirePrincipal, or this branch stays dead. */
 function canWrite(staff, partnerId) {
   const role = String(staff && staff.role || "").trim().toLowerCase();
   if (role === "owner" || role === "admin") return true;
@@ -95,6 +131,10 @@ function canWrite(staff, partnerId) {
 export default async function handler(req, res) {
   const staff = await requireAuth(req, res, { db });
   if (!staff) return;
+
+  // THE SECOND CALL. This is the one that gates, and it covers BOTH methods —
+  // the read included, which is what was missing.
+  if (!requireRole(res, staff, PARTNER_BRAND_ROLES)) return;
 
   if (req.method === "GET") {
     const partnerId = (req.query || {}).partner_id;
