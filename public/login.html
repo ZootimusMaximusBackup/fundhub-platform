@@ -59,6 +59,22 @@
     </form>
     <p class="note" style="margin-top:14px">Your own account is <b>chris@fundhub.ai</b>. Type your password.</p>
 
+    <!-- Forgot password. This system sends no outbound email (CLAUDE.md §12 —
+         src/mail/ is deliberately inert), so this cannot deliver a reset link
+         to an inbox. What it does today: create a reset token server-side and
+         say so, honestly, without pretending an email is on its way. The
+         working reset path right now is an owner or admin resetting a person
+         from the Staff screen, which hands back a real link to relay by hand —
+         see api/auth/reset.mjs. -->
+    <p class="note" id="fh-forgot-note" style="margin-top:6px">
+      <a href="#" id="fh-forgot-link" style="text-decoration:underline">Forgot your password?</a>
+    </p>
+    <div id="fh-forgot-box" style="display:none;margin-top:8px">
+      <input id="fh-forgot-email" type="email" placeholder="your email" autocomplete="username">
+      <button class="btn" id="fh-forgot-go" type="button">Send reset request</button>
+      <p class="note" id="fh-forgot-msg"></p>
+    </div>
+
     <!-- THE DEMO SWITCHER MOUNTS HERE, OR IT DOES NOT MOUNT AT ALL.
          ═══════════════════════════════════════════════════════════════════════
          THIS ELEMENT IS EMPTY IN THE SERVED FILE ON PURPOSE, AND MUST STAY EMPTY.
@@ -238,6 +254,33 @@ document.getElementById("f").addEventListener("submit", async (e) => {
   storeSession(data, null);   // typed by hand — not a demo switch, clear the marker
   const next = new URLSearchParams(location.search).get("next");
   location.href = next && next.startsWith("/") ? next : "/app/";
+});
+
+document.getElementById("fh-forgot-link").addEventListener("click", function (e) {
+  e.preventDefault();
+  document.getElementById("fh-forgot-box").style.display = "block";
+  document.getElementById("fh-forgot-note").style.display = "none";
+  document.getElementById("fh-forgot-email").value = document.getElementById("email").value;
+  document.getElementById("fh-forgot-email").focus();
+});
+
+document.getElementById("fh-forgot-go").addEventListener("click", async function () {
+  const email = document.getElementById("fh-forgot-email").value.trim();
+  const msg = document.getElementById("fh-forgot-msg");
+  const btn = this;
+  if (!email) { msg.textContent = "Enter your email first."; return; }
+  btn.disabled = true; btn.textContent = "Sending…";
+  try {
+    await fetch("/api/auth/reset", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "request", email: email })
+    });
+  } catch (e) { /* the message below is accurate either way — never reveal a backend detail */ }
+  btn.disabled = false; btn.textContent = "Send reset request";
+  msg.textContent = "If that's a real staff account, a reset request was created. " +
+    "This system does not send email — ask an owner or admin to reset your password " +
+    "from the Staff screen.";
 });
 
 /* ───────────────────────────────────────────────────────────────────────────

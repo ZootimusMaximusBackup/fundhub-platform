@@ -349,6 +349,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
   <div class="editor-ft">
     <button class="btn dark mono" id="edSave">Save</button>
     <button class="btn mono" id="edCancel">Cancel</button>
+    <button class="btn mono" id="edReset" style="display:none">Reset password</button>
     <div class="spacer"></div>
     <button class="btn mono danger" id="edDeact">Deactivate</button>
   </div>
@@ -572,6 +573,7 @@ function openEditor(id){
   document.getElementById('ed_start').value=p.start;
   setSw('ed_active',p.active); setSw('ed_consent',p.consent); setSw('ed_clock',p.clock);
   fillPerms(p);
+  document.getElementById('edReset').style.display = p.email ? '' : 'none';
   document.getElementById('editor').classList.add('open');
   document.getElementById('scrim').classList.add('on');
   renderRoster();
@@ -587,6 +589,7 @@ function openNew(){
   document.getElementById('ed_start').value='2026-07-27';
   setSw('ed_active',false); setSw('ed_consent',false); setSw('ed_clock',false);
   fillPerms({role:'Closer'});
+  document.getElementById('edReset').style.display='none';   // no account exists yet
   document.getElementById('editor').classList.add('open');
   document.getElementById('scrim').classList.add('on');
 }
@@ -631,6 +634,29 @@ document.getElementById('edDeact').addEventListener('click',function(){
   if(p.role==='Owner'){alert('The Owner account cannot be deactivated.');return}
   p.active=false; p.clock=false; p.since='—';
   closeEditor(); renderAll();
+});
+/* Reset password — owner/admin only, enforced server-side on the whole route
+   (api/auth/admin-reset.mjs). Nothing in this system sends outbound email, so
+   the response hands back a real link for the admin to copy and relay by
+   hand — same pattern src/auth/invite.mjs already uses for staff invites.
+   Requires window.FHData from data.js, loaded further down this page; by the
+   time a click is possible, script loading has long finished. */
+document.getElementById('edReset').addEventListener('click', async function(){
+  if(!selId){return}
+  var p=PEOPLE.filter(function(x){return x.id===selId})[0];
+  if(!p || !p.email){alert('This person has no email on file.');return}
+  if(typeof FHData === 'undefined' || !FHData.write){alert('Not available — the data layer has not loaded.');return}
+  if(!confirm('Create a password reset link for '+p.first+' '+p.last+' ('+p.email+')?')) return;
+  var btn=this; btn.disabled=true; btn.textContent='Working…';
+  var res = await FHData.write('/api/auth/admin-reset', {email:p.email});
+  btn.disabled=false; btn.textContent='Reset password';
+  if(!res.ok){
+    alert('Could not create a reset link: '+(res.error||'unknown error')+
+      (res.source==='unauthorized' ? ' — you may need to be signed in as owner or admin.' : ''));
+    return;
+  }
+  var link = location.origin + res.data.resetPath;
+  prompt('Reset link for '+p.email+' — copy this and send it to them (expires in 1 hour):', link);
 });
 document.getElementById('roleFilter').addEventListener('change',renderRoster);
 document.getElementById('qFilter').addEventListener('input',renderRoster);

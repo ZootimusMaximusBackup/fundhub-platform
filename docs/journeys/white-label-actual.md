@@ -16,14 +16,15 @@ flowchart TD
     AUTH -->|Yes| WHO{Recognised as partner?}
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| CAN[Can reach]
-    CAN --> A_auth[Signing in and out — 3 routes]
+    CAN --> A_auth[Signing in and out — 4 routes]
     CAN --> A_campaigns[Campaigns — 6 routes]
     CAN --> A_creative[Creative Factory — 4 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_read[Reading data — 1 route]
     CAN --> A_top_level[Everything else — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 48 routes]
+    WHO -->|Yes| CANT[Blocked — 49 routes]
+    CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_consent[consent — 1 blocked]
     CANT --> B_dashboard[The dashboard — 4 blocked]
@@ -36,12 +37,13 @@ flowchart TD
 
 ## What they can reach
 
-**18 of 66 routes.**
+**19 of 68 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/auth/login` | GET | anyone |
 | `/api/auth/logout` | — | anyone |
+| `/api/auth/reset` | POST | anyone |
 | `/api/auth/session` | — | anyone |
 | `/api/campaigns/action-log` | GET | partner, staff |
 | `/api/campaigns/connections` | GET | partner, staff |
@@ -61,15 +63,16 @@ flowchart TD
 
 ### Worth knowing
 
-- **4 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/session`, `/api/health`. These are the sign-in routes and the health check.
+- **5 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/reset`, `/api/auth/session`, `/api/health`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**48 of 66 routes.**
+**49 of 68 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
+| `/api/auth/admin-reset` | POST | owner, admin |
 | `/api/banking/accounts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/banking/sync-accounts` | POST | owner, admin |

@@ -30,6 +30,8 @@ import { safeError } from "../../src/http/health.mjs";
 import authLogin from "../../api/auth/login.mjs";
 import authLogout from "../../api/auth/logout.mjs";
 import authSession from "../../api/auth/session.mjs";
+import authReset from "../../api/auth/reset.mjs";
+import authAdminReset from "../../api/auth/admin-reset.mjs";
 import tasks from "../../api/tasks.mjs";
 import inquiry from "../../api/inquiry.mjs";
 import dashClients from "../../api/dashboard/clients.mjs";
@@ -103,6 +105,8 @@ export const ROUTES = {
   "auth/login": authLogin,
   "auth/logout": authLogout,
   "auth/session": authSession,
+  "auth/reset": authReset,
+  "auth/admin-reset": authAdminReset,
   "tasks": tasks,
   "inquiry": inquiry,
   "dashboard/clients": dashClients,

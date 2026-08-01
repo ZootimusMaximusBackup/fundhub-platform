@@ -34,7 +34,8 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| NONE[Nothing admits this one — every endpoint refuses them]
     NONE --> OPENONLY[Only the routes anyone can reach without signing in]
-    WHO -->|Yes| CANT[Blocked — 59 routes]
+    WHO -->|Yes| CANT[Blocked — 60 routes]
+    CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_campaigns[Campaigns — 6 blocked]
     CANT --> B_consent[consent — 1 blocked]
@@ -49,12 +50,13 @@ flowchart TD
 
 ## What they can reach
 
-**7 of 66 routes.**
+**8 of 68 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/auth/login` | GET | anyone |
 | `/api/auth/logout` | — | anyone |
+| `/api/auth/reset` | POST | anyone |
 | `/api/auth/session` | — | anyone |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
 | `/api/health` | — | anyone |
@@ -64,15 +66,16 @@ flowchart TD
 ### Worth knowing
 
 - **Nothing admits an `affiliate` specifically** — see the finding above. Every route listed below is one anybody reaches without signing in.
-- **4 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/session`, `/api/health`. These are the sign-in routes and the health check.
+- **5 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/reset`, `/api/auth/session`, `/api/health`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**59 of 66 routes.**
+**60 of 68 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
+| `/api/auth/admin-reset` | POST | owner, admin |
 | `/api/banking/accounts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/banking/sync-accounts` | POST | owner, admin |
