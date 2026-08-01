@@ -45,6 +45,11 @@ describe("invoice-writing workflows against real Postgres",
     }
     await db.query(`DELETE FROM tasks WHERE client_id = ANY($1)`, [ids]);
     await db.query(`DELETE FROM messages WHERE client_id = ANY($1)`, [ids]);
+    // Queueing a message now emits message.queued, and events.client_id has a
+    // foreign key to clients — so the event rows have to go before the client
+    // does, or the delete below fails and takes the whole file's teardown with
+    // it.
+    await db.query(`DELETE FROM events WHERE client_id = ANY($1)`, [ids]);
     await db.query(`DELETE FROM clients WHERE id = ANY($1)`, [ids]);
   }
 

@@ -17,6 +17,7 @@ editing anyone else's.
 | W2 | Provider: email (mailgun) | W1 | `done` |
 | W3 | Provider: SMS (ghl_relay) | W1 | `done` |
 | W4 | The dispatcher loop itself | W1 | `done` |
+| W4b | Dispatcher corrections + sweeper + queue-time address/subject | W4b | `done` |
 | W6 | Provider: SMS (twilio) — built, ships disabled | W6 | `done` |
 | W5 | Turning sending on — scheduler, env vars, cutover | unclaimed | `blocked` |
 
@@ -659,3 +660,219 @@ modules (`src/alerts/store.mjs`, `src/banking/plaid.mjs`,
 sweep this directory, so none of them broke — which is exactly why this is
 written down rather than left for someone to discover. §12 should be updated
 when W5 lands.
+
+---
+
+## W4b — dispatcher corrections, the sweeper, and queue-time addressing
+
+**Task:** the follow-up row on W4. `status: done`
+
+**What changed in plain language:** a text message held overnight used to be
+killed rather than delayed — it was marked "blocked" forever and would never go
+out in the morning. It now waits and goes out at 11am. Messages also now record
+where they were being sent and what the subject line said at the moment they
+were written, instead of looking that up later. And there is now a scheduled job
+written for the thing that would drain the queue — written, and deliberately not
+switched on.
+
+### CORRECTION 1 — quiet hours are a deferral, not a block
+
+**This is a change to W4's behaviour. Read it before building on the dispatcher.**
+
+Two of W1's own rules pulled against each other:
+
+* `gateAndRecord` persists **any** non-allowed verdict as `status='blocked'` plus
+  a `blocked_reason`.
+* `110_messages_outbound.sql` says — correctly — that a block is an audit record
+  and nothing may clear it.
+* But the gate marks `quiet_hours` as `retryable: true`, and its own message
+  text says the text "is being held until the window opens".
+
+Put together, a text queued at 11pm was blocked permanently and never went out
+at 11am. W4's test asserted only that nothing was sent, which the broken
+behaviour also satisfied.
+
+**Now:** a text inside the window is not gated at all. It goes back on the queue
+with `scheduled_at` moved to the next 11:00 Eastern, no verdict is recorded, and
+it is gated fresh when it wakes. That last part is what the gate's own header
+asks for — opt-out state must be read at the instant of sending, not eleven
+hours earlier.
+
+The deferral is strictly narrower than the block. It uses W1's exported
+`inQuietHours` / `QUIET_HOURS_CHANNELS`, it cannot reach a provider, every other
+gate reason still runs through `gateAndRecord` unchanged, and no flag shortens
+it. New outcome code: `OUTCOME.DEFERRED`.
+
+### CORRECTION 2 — `claimDue` and `dispatchOne` disagreed about `now`
+
+`claimDue` took `now` as a bare timestamp; `dispatchOne` takes it as a clock
+function and forwards it to the gate. `dispatchDue` hands the same options
+object to both, so **`dispatchDue` could not be driven with a fixed clock at
+all** — the function was passed into a `timestamptz` parameter and Postgres
+rejected it. Neither existing test caught it because each function was only ever
+driven on its own.
+
+`claimDue` now accepts either shape. `now` as a clock function is the convention
+across this feature.
+
+### CONTRACT 4 — `to_address` and `subject` (migration 111)
+
+Two columns added to `messages`, both nullable, no backfill:
+
+| Column | Type | Meaning |
+|---|---|---|
+| `to_address` | `text` | The destination as it stood when the message was queued. |
+| `subject` | `text` | The **rendered** subject line. Email only; NULL otherwise. |
+
+W1's provider contract says the dispatcher hands a provider an already-resolved
+`to`. W4 read it off `clients` at send time, so a message that waited in the
+queue went wherever the record pointed at the moment of sending rather than
+where it was written to go.
+
+**`to_address` is recorded in the terms of the CHANNEL, not the provider** —
+`email` → `clients.email`, `sms` → `clients.phone`. Routing can change between
+queueing and sending, and the GHL relay addresses a contact id, which is not a
+destination the queue could record in channel terms. So a provider whose
+`ADDRESS_FIELD` is not the channel's natural column still resolves live, and so
+do the rows queued before 111, which have no recorded address and get no
+invented one.
+
+**The subject is stored rendered.** It carries the same `{{contact.*}}` merge
+tags the body does; the template's raw text in a subject line reads
+`Hi {{contact.first_name}}` to the client before they open the message. The
+dispatcher prefers the stored subject over the template lookup for that reason.
+
+**Only the address is pinned. Consent is not.** Opt-out state is still read
+fresh by the gate at the instant of sending.
+
+### CONTRACT 5 — event names
+
+`message.queued`, `message.sent`, `message.failed`, `message.blocked` added to
+`src/events/canonical.mjs`.
+
+Only `message.queued` has an emitter: `sendTemplated`, and **only when a row was
+really written**. A replayed event conflicts into `DO NOTHING`, returns no row,
+and emits nothing — so replaying the log does not grow the log. Keyed on
+`provider_ref` so the event is idempotent in the bus too. Emission is non-fatal:
+the message row is already committed, and an unavailable bus must not turn a
+queued message into a failed send.
+
+The other three are **reserved names with no emitter**. The dispatcher records
+outcomes on the message row and makes no bus writes. Do not assume they fire.
+
+`contract.*` events were in this workflow's brief and were **deliberately not
+added** — nothing called a contract exists anywhere in this repo, and the owner
+confirmed it is a later e-signature ticket. Inventing four names for it would
+have been guessing.
+
+### The sweeper
+
+`src/workflows/message-dispatch-sweeper.mjs` — `sweep(db, options)` plus an
+Inngest cron definition at `*/5 * * * *`.
+
+**It is NOT in `src/workflows/index.mjs`**, which is what
+`netlify/functions/inngest.mjs` serves, so it is registered with nothing and
+invoked by nothing. A test asserts it stays absent and names W5 as the act that
+changes that. Adding that export is what turns outbound sending on.
+
+Why a sweeper and not a handler on `message.queued`: a message with a future due
+time, a text deferred overnight, and a retryable provider failure all end up
+queued with no event attached. One clock handles all three. A pass is one
+bounded batch, not a drain to empty.
+
+### Files touched
+
+| File | Change |
+|---|---|
+| `src/messaging/dispatch.mjs` | Quiet-hours deferral, `nextQuietHoursEnd`, `claimDue` clock fix, prefers `to_address` / `subject`. |
+| `src/messaging/dispatch.test.mjs` | Quiet-hours tests strengthened; window arithmetic asserted across every day of 2026 and both daylight-saving nights. |
+| `src/messaging/cutover-acceptance.pg.test.mjs` | New. The ticket's acceptance bar, end to end against Postgres. |
+| `src/workflows/message-dispatch-sweeper.mjs` + `.test.mjs` | New. |
+| `src/workflows/messaging.mjs` | Persists `to_address` and rendered `subject`; emits `message.queued`. |
+| `src/events/canonical.mjs` | Four `message.*` names. |
+| `db/migrations/111_messages_address.sql` | New. Two columns. |
+| `db/expected-migrations.mjs` | Regenerated. 89 migrations. |
+| `CLAUDE.md` | §12 "nothing transmits" rewritten — see below. |
+
+**Exports added:** `nextQuietHoursEnd`, `OUTCOME.DEFERRED` (dispatch.mjs);
+`sweep`, `messageDispatchSweeper`, `SWEEP_CRON`, `SOURCE_WORKFLOW`
+(message-dispatch-sweeper.mjs).
+
+**Routes affected:** none. **Journeys affected:** none —
+`npm run journeys:check` reports up to date (9 files).
+
+### CLAUDE.md §12 — the rewrite does not say what it was asked to say
+
+The instruction was to replace the "nothing transmits" line with wording
+asserting that `src/adapters/`, `src/lib/`, `src/handlers/`, `src/workflows/`
+and `src/mail/` "contain no outbound fetch, and none may be added."
+
+**That is false, and it was false before this batch started.** Three call sites
+already transmit:
+
+* `src/adapters/lendflow.mjs` — submits an application.
+* `src/workflows/ds-02-diy-letters.mjs` — POSTs to a letter-delivery URL.
+* `src/workflows/c-06-crs-results-router.mjs` — POSTs to the same URL.
+
+Writing the sentence as given would have put a false invariant into the file
+agents are told to trust. The line as written keeps the intent — `providers/*`
+is the only place new outbound `fetch` may be added — and names those three as
+pre-existing exceptions rather than pretending they do not exist. `src/lib/`,
+`src/handlers/` and `src/mail/` genuinely contain none, and the line says so.
+
+**This needs the owner's eye.** If the intent was that those three should be
+migrated behind provider modules, that is a real piece of work and nobody has
+scheduled it.
+
+### Verified
+
+* Local Postgres 16.13 (this session's container, `initdb` at `/tmp/pg16data`,
+  connected as the `postgres` superuser), all 89 migrations applied clean.
+* `npm run lint` — 676 files parse clean.
+* `npm run journeys:check` — up to date (9 files).
+* `npm run diagrams:check` — in sync.
+* `npx tsc --noEmit` — still a no-op in this repo, as W1 found. No
+  `tsconfig.json`, no TypeScript. It prints its help text. Ticked, proves
+  nothing.
+* `npm test` with **no** database: **3894 pass, 0 fail, 460 skipped.**
+* `npm test` against that Postgres: **4967 pass, 28 fail, 8 skipped.**
+  The baseline at `fa0ee7d`, measured in the same container before any of this
+  work, was **4942 pass, 29 fail**. **The failing set after this work is a strict
+  subset of the baseline's** — nothing new fails. Two baseline failures
+  (`hiring pipeline`, `scores cannot be deleted`) pass in the later run and are
+  order-dependent, not fixed by anything here.
+
+  **§12's warning holds and this is another data point for it: the number moved
+  between two runs of the same commit in the same container.** Compare the
+  failing set by name, never the count.
+* Six deliberate mutations each fail the acceptance suite: the quiet-hours
+  deferral removed, the gate verdict ignored, the claim no longer requiring
+  `status='queued'`, the `claimDue` clock fix reverted, the subject stored
+  unrendered, and `to_address` not recorded.
+
+### Findings
+
+1. **The n-06 acceptance test could have passed vacuously** and did, in its
+   first draft: it looped over queued rows asserting each was blocked, and there
+   were no rows because the templates it needed were not seeded. It now asserts
+   at least one message was queued before asserting none of them went out. Worth
+   copying — a "nothing was sent" test that queues nothing is a test that always
+   passes.
+2. **`sendTemplated`'s own opt-out guard only covers SMS.** Email relies
+   entirely on the gate. That is fine now the dispatcher gates everything, but
+   it means the pre-dispatcher code path could always have queued an email to an
+   opted-out client. Nothing sent it, because nothing sent anything.
+3. **`compliance_rules` has no phrase rules with an empty platform scope** in
+   the seeded set — they are all `regex` or `required`. Worth knowing before
+   writing a test that assumes a literal phrase match.
+4. **Emitting a client-scoped event breaks any teardown that deletes clients
+   without deleting events first.** `events.client_id` is a foreign key to
+   `clients`, so adding `message.queued` took all four tests in
+   `src/workflows/invoice-workflows.pg.test.mjs` down at once — the teardown
+   failed, not the tests. Every other `.pg.test.mjs` that deletes clients was
+   checked; that was the only one exposed. Worth knowing before adding the next
+   event.
+5. **`scripts/diagrams/generate.mjs` reads a group's section name from the
+   comment line directly above it** in `src/events/canonical.mjs`. A multi-line
+   comment puts its LAST line in the table as the section label — four times, in
+   this case. Keep the line immediately above a group short.

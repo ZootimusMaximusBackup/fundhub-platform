@@ -26,7 +26,9 @@
 //      duplicate.
 // A plain SELECT-then-UPDATE would satisfy none of them.
 
-import { gateAndRecord } from "./gate.mjs";
+import {
+  gateAndRecord, inQuietHours, QUIET_HOURS_CHANNELS, QUIET_END_HOUR, QUIET_HOURS_TZ
+} from "./gate.mjs";
 import { resolve, addressFieldFor } from "./providers/index.mjs";
 
 /** How many times a message is retried before it is given up on. */
@@ -48,8 +50,79 @@ export const OUTCOME = Object.freeze({
   NO_ADDRESS: "no_address",
   REJECTED: "rejected",         // provider says never retry
   RETRY: "retry",               // provider says try again
-  GAVE_UP: "gave_up"            // out of attempts
+  GAVE_UP: "gave_up",           // out of attempts
+  DEFERRED: "deferred"          // inside quiet hours; due again when it opens
 });
+
+/* ── QUIET HOURS ARE A DEFERRAL, NOT A BLOCK ────────────────────────────────
+   This is the one place the dispatcher deliberately decides something BEFORE
+   the gate, and the reason is a conflict between two of W1's own rules.
+
+   gateAndRecord() persists ANY non-allowed verdict as status='blocked' plus a
+   blocked_reason, and 110_messages_outbound.sql states — correctly — that a
+   block is an audit record which nothing may clear. Quiet hours are the one
+   gate reason that is meant to lapse on its own: the gate marks it
+   `retryable: true` and its own message says the text "is being held until the
+   window opens".
+
+   Put those together and a text queued at 11pm is blocked permanently and never
+   goes out at 11am. The acceptance criterion for this ticket says the opposite,
+   and the gate's own wording says the opposite.
+
+   So a text inside the window is never gated at all. It is put back on the queue
+   with its due time moved to the next 11:00 Eastern, no verdict is recorded, and
+   it is gated fresh when it wakes — which is what the gate's header asks for
+   anyway, since opt-out state must be read at the instant of sending and not
+   eleven hours earlier.
+
+   This costs nothing in safety. The deferral is strictly narrower than the
+   block: it uses W1's own exported window (inQuietHours / QUIET_HOURS_CHANNELS),
+   it cannot send, and every other gate reason still runs through gateAndRecord
+   unchanged. It is not an override — there is no way to reach a provider from
+   here, and no flag makes the window shorter.
+
+   Recorded on the board as a correction to W4, not a silent divergence. */
+
+/* tzOffsetMs — how far the named zone is from UTC at this instant.
+   Read out of Intl rather than hardcoded, so daylight saving is the operating
+   system's timezone database's problem and not this file's. */
+function tzOffsetMs(date, timeZone) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone, hour12: false,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit"
+  }).formatToParts(date);
+  const p = Object.fromEntries(parts.map((x) => [x.type, x.value]));
+  const asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second);
+  return asUtc - date.getTime();
+}
+
+/* nextQuietHoursEnd — the next instant at which QUIET_END_HOUR strikes in the
+   quiet-hours zone.
+
+   Built by reading the wall clock in that zone, choosing today or tomorrow, and
+   converting back. The offset is applied twice because the offset at the target
+   instant is not always the offset now — on the two daylight-saving nights a
+   year they differ by an hour, and a single pass would land at 10:00 or 12:00.
+
+   Exported so the transition dates can be asserted directly. */
+export function nextQuietHoursEnd(from, timeZone = QUIET_HOURS_TZ) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone, hour12: false,
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit"
+  }).formatToParts(from);
+  const p = Object.fromEntries(parts.map((x) => [x.type, x.value]));
+  const hour = +p.hour % 24;
+
+  // Before the window opens today → today. Otherwise (we are at or past the
+  // 23:00 start) → tomorrow. Date.UTC normalises a day past the month's end.
+  const dayShift = hour < QUIET_END_HOUR ? 0 : 1;
+  const wall = Date.UTC(+p.year, +p.month - 1, +p.day + dayShift, QUIET_END_HOUR, 0, 0);
+
+  let ts = wall;
+  for (let i = 0; i < 2; i += 1) ts = wall - tzOffsetMs(new Date(ts), timeZone);
+  return new Date(ts);
+}
 
 /* claimDue — take up to `limit` due messages and mark them 'sending' atomically.
 
@@ -62,6 +135,17 @@ export const OUTCOME = Object.freeze({
    scheduled_at IS NULL means due immediately — the shape every row queued by
    src/workflows/messaging.mjs is already in. */
 export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = null } = {}) {
+  /* `now` IS A CLOCK FUNCTION EVERYWHERE ELSE IN THIS FEATURE. The gate takes
+     one, dispatchOne forwards one, and dispatchDue hands the same options
+     object to both — so this has to accept the same shape. It previously took
+     only a bare timestamp, which meant dispatchDue could not be driven with a
+     fixed clock at all: the function itself went into a timestamptz parameter
+     and Postgres rejected it. Neither existing test caught that, because each
+     function was only ever driven on its own.
+
+     Both shapes are accepted. null means the database's own clock. */
+  const at = typeof now === "function" ? now() : now;
+
   const { rows } = await db.query(
     `UPDATE messages m
         SET status = 'sending', last_attempt_at = now(), attempts = m.attempts + 1
@@ -78,8 +162,8 @@ export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = 
        ) due
       WHERE m.id = due.id
   RETURNING m.id, m.org_id, m.client_id, m.channel, m.rendered_body,
-            m.template_key, m.provider_ref, m.attempts`,
-    [orgId, limit, now, MAX_ATTEMPTS]
+            m.template_key, m.provider_ref, m.attempts, m.to_address, m.subject`,
+    [orgId, limit, at, MAX_ATTEMPTS]
   );
   return rows;
 }
@@ -110,12 +194,31 @@ async function routeFor(db, orgId, channel) {
    name must never be interpolated on trust. */
 const ADDRESS_COLUMNS = new Set(["email", "phone", "ghl_contact_id"]);
 
-async function addressFor(db, clientId, providerName) {
+/* Which client column is the natural destination for a channel. Kept in step
+   with ADDRESS_BY_CHANNEL in src/workflows/messaging.mjs, which is what writes
+   messages.to_address. */
+const NATURAL_COLUMN = { email: "email", sms: "phone", voice: "phone" };
+
+async function addressFor(db, message, providerName) {
   const field = addressFieldFor(providerName);
   if (!field || !ADDRESS_COLUMNS.has(field)) return null;
+
+  /* PREFER THE ADDRESS RECORDED WHEN THE MESSAGE WAS QUEUED (111).
+     A message that has been waiting should go where it was written to go, not
+     wherever the client record points now.
+
+     Only when the provider addresses by the channel's natural column, though.
+     The GHL relay addresses a contact id, which is not a destination the queue
+     could have recorded in channel terms, so that resolves live. And rows queued
+     before 111 have no recorded address at all — they fall through to the same
+     lookup the dispatcher did before this column existed. */
+  if (message.to_address && field === NATURAL_COLUMN[message.channel]) {
+    return message.to_address;
+  }
+
   const { rows } = await db.query(
     `SELECT ${field} AS address FROM clients WHERE id = $1 LIMIT 1`,
-    [clientId]
+    [message.client_id]
   );
   return rows[0]?.address || null;
 }
@@ -131,7 +234,14 @@ async function addressFor(db, clientId, providerName) {
    message without one, and inventing a subject would be putting unreviewed copy
    in front of a client, which is exactly what the gate exists to stop. */
 async function subjectFor(db, message) {
-  if (message.channel !== "email" || !message.template_key) return null;
+  if (message.channel !== "email") return null;
+
+  // Recorded at queue time by 111, already rendered. Preferred over the template
+  // lookup because the template's raw text still carries unrendered merge tags —
+  // reading it here would put "Hi {{contact.first_name}}" in a subject line.
+  if (message.subject) return message.subject;
+
+  if (!message.template_key) return null;
   const { rows } = await db.query(
     `SELECT subject FROM message_templates
       WHERE org_id = $1 AND template_key = $2 LIMIT 1`,
@@ -150,6 +260,25 @@ export async function dispatchOne(db, message, options = {}) {
   const { fetchImpl, timeoutMs, signal, env, now } = options;
 
   try {
+    // ---- 0. Quiet hours: defer, do not gate --------------------------------
+    // See the long note at the top of this file. This is the only decision made
+    // ahead of the gate, it can only ever hold a message back, and it exists so
+    // an overnight text is still sendable in the morning instead of being
+    // recorded as a permanent block.
+    const clock = typeof now === "function" ? now : () => new Date();
+    if (QUIET_HOURS_CHANNELS.has(message.channel) && inQuietHours(clock(), QUIET_HOURS_TZ)) {
+      const due = nextQuietHoursEnd(clock(), QUIET_HOURS_TZ);
+      await db.query(
+        // The attempt is given back: an unopened window is not a failed
+        // delivery, and charging it would burn the retry budget overnight.
+        `UPDATE messages
+            SET status = 'queued', scheduled_at = $2, attempts = GREATEST(attempts - 1, 0)
+          WHERE id = $1`,
+        [message.id, due.toISOString()]
+      );
+      return { id: message.id, outcome: OUTCOME.DEFERRED, detail: due.toISOString() };
+    }
+
     // ---- 1. THE GATE, FIRST, ALWAYS ---------------------------------------
     // gateAndRecord writes blocked_reason/blocked_at and files the task. Note
     // this runs before any provider is resolved, so no code path here can reach
@@ -184,7 +313,7 @@ export async function dispatchOne(db, message, options = {}) {
         `${route.provider} does not carry ${message.channel}`);
     }
 
-    const address = await addressFor(db, message.client_id, route.provider);
+    const address = await addressFor(db, message, route.provider);
     if (!address) {
       // Permanent for this message: no retry produces an address the client
       // record does not have.

@@ -294,5 +294,9 @@ These have already cost time. Read them before you trust a green result.
 * **`requireAuth` ignores a `roles` key.** It forwards `opts` to `authenticate()`, which reads only `db` and `env`. Gate with `requireRole` after it. `src/http/auth-gate.test.mjs` fails on the broken shape.
 * **Editing an applied migration is a silent no-op.** `migrate.mjs` records each file in `schema_migrations` keyed `<dir>/<file>`. Supersede it with a new file instead.
 * **Money is integer cents** via `src/commissions/money.mjs`. `fromCents` returns a string; `percentOf` takes percent units (`10` = 10%). NULL means unknown and must survive — never default it to 0.
-* **Nothing transmits.** There is no outbound `fetch` in `src/adapters/` or `src/lib/`; `sendTemplated` writes `messages` rows with `status='queued'`.
+* **Outbound transmission is permitted in `src/messaging/providers/*` and nowhere else.** That directory is the only place new outbound `fetch` may be added. `src/lib/`, `src/handlers/` and `src/mail/` contain none, and none may be added to them.
+
+  Three call sites predate this rule and are exceptions, not precedent — do not cite them to justify a fourth: `src/adapters/lendflow.mjs` (submits an application), and `src/workflows/ds-02-diy-letters.mjs` plus `src/workflows/c-06-crs-results-router.mjs` (both POST to the same letter-delivery URL). Anything new that transmits belongs behind a provider module.
+
+  `sendTemplated` still only writes `messages` rows with `status='queued'`. Handing those rows to a provider is the dispatcher's job (`src/messaging/dispatch.mjs`), and nothing schedules the dispatcher yet — see `src/workflows/message-dispatch-sweeper.mjs`, which is defined and deliberately not registered.
 * **`src/mail/` mails nothing, deliberately.** No scheduler, no send path, no activation flag. Prescreen data needs a firm offer of credit under FCRA; nothing drops until the FCRA report is in, Deluxe compliance reviews the piece, and a lawyer signs off on the broker/lender-of-record structure. The build is not gated — the drop is.

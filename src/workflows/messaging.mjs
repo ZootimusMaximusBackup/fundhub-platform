@@ -24,6 +24,15 @@ import { isOptedOut } from "../lib/opt-out.mjs";
 import { renderTemplate } from "../lib/render-template.mjs";
 import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
+import { emit } from "../events/bus.mjs";
+
+/* Which column on the client record is the destination for a channel.
+   The destination is recorded in the terms of the CHANNEL, not of whichever
+   provider happens to carry it — routing can change between queueing and
+   sending, and a provider that addresses by something else (the GHL relay
+   addresses a contact id) resolves it live at dispatch. See 111_messages_address
+   and addressFor() in src/messaging/dispatch.mjs. */
+const ADDRESS_BY_CHANNEL = { email: "email", sms: "phone", voice: "phone" };
 
 // Merge-tag context for the ported GHL copy, which merges `{{contact.*}}` — first name,
 // business name, the pre-approval amount. Every call site in src/workflows passes no
@@ -76,23 +85,59 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
   // Loaded only once a real template exists — a template_pending no-op costs no query.
   // An explicitly-passed `context` wins over the record, so a caller can still override.
   const base = await clientContext(db, clientId);
-  const rendered = renderTemplate(row.body, {
+  const mergeContext = {
     ...base,
     ...context,
     contact: { ...(base.contact || {}), ...(context.contact || {}) }
-  });
+  };
+  const rendered = renderTemplate(row.body, mergeContext);
+
+  // THE SUBJECT IS RENDERED, NOT COPIED. It carries the same {{contact.*}} tags
+  // the body does, and an unrendered subject line is the one part of a message
+  // a client sees before they open it. Templates for SMS have no subject and the
+  // column stays NULL. renderTemplate on null would produce the string "null",
+  // so the guard is on the value rather than the channel.
+  const subject = row.subject ? renderTemplate(row.subject, mergeContext) : null;
+
+  // Where this is addressed, as of now. Recorded rather than resolved at send
+  // time so a message that waits in the queue still goes where it was written
+  // to go. This pins the ADDRESS ONLY — opt-out state is still read fresh by the
+  // gate at the instant of sending, which is the whole point of the gate.
+  const toAddress = base.contact?.[ADDRESS_BY_CHANNEL[channel]] ?? null;
+
   const providerRef = `workflow:${templateKey}:${eventId}`;
   // RETURNING id so a deduped replay can be told from a real queue. It changes
   // nothing about what is written — ON CONFLICT DO NOTHING returns no row — and
   // the return value below is deliberately unchanged, because every existing
   // caller reads `sent` and a replay has always reported sent:true.
   const ins = await db.query(
-    `INSERT INTO messages (org_id, client_id, direction, channel, template_key, rendered_body, provider, provider_ref, status, compliance_check_passed)
-     VALUES ($1,$2,'outbound',$3,$4,$5,'internal',$6,'queued',true)
+    `INSERT INTO messages (org_id, client_id, direction, channel, template_key, rendered_body, provider, provider_ref, status, compliance_check_passed, to_address, subject)
+     VALUES ($1,$2,'outbound',$3,$4,$5,'internal',$6,'queued',true,$7,$8)
      ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING
      RETURNING id`,
-    [orgId, clientId, channel, templateKey, rendered, providerRef]
+    [orgId, clientId, channel, templateKey, rendered, providerRef, toAddress, subject]
   );
+
+  /* message.queued — announced only when a row was really written.
+     A replayed event conflicts into DO NOTHING and returns no row, so a replay
+     emits nothing and the event log does not grow on every replay. That is the
+     same condition the staff-telemetry seam below uses, for the same reason.
+
+     Keyed on provider_ref so the event itself is idempotent too: if this line is
+     ever reached twice for one message the second emit dedupes in the bus rather
+     than filing a second event.
+
+     Non-fatal. The message row is already committed by the time this runs, and a
+     bus that is unavailable must not turn a queued message into a failed send. */
+  if (ins?.rows?.[0]) {
+    try {
+      await emit(db, "message.queued", {
+        message_id: ins.rows[0].id, channel, template_key: templateKey, provider_ref: providerRef
+      }, { orgId, clientId: clientId || null, idempotencyKey: `message.queued:${providerRef}` });
+    } catch (err) {
+      console.warn(`[sendTemplated] message.queued not emitted: ${String(err?.message || err)}`);
+    }
+  }
 
   /* THE SEAM. Inert until a staff-initiated send exists — see the header.
      Three conditions, all necessary:
