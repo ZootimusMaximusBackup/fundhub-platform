@@ -17,6 +17,7 @@ editing anyone else's.
 | W2 | Provider: email (mailgun) | W1 | `done` |
 | W3 | Provider: SMS (ghl_relay) | W1 | `done` |
 | W4 | The dispatcher loop itself | W1 | `done` |
+| W4b | Dispatcher corrections + sweeper + queue-time address/subject | W4b | `claimed` |
 | W5 | Turning sending on — scheduler, env vars, cutover | unclaimed | `blocked` |
 
 The whole batch was run in one thread at the owner's instruction, so W1 owns
