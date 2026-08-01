@@ -28,6 +28,7 @@ import {
   listRecurringBills,
   getBillEvidence
 } from "./store.mjs";
+import { db as sharedDb, close as closeDb } from "../db.mjs";
 
 const ORG = "44444444-4444-4444-8444-444444444444";
 const ACCOUNT = "11111111-1111-4111-8111-111111111111";
@@ -272,6 +273,47 @@ test("a handle with no connect() still runs, so the path is not database-only", 
   assert.ok(!calls.some((c) => c.sql === "BEGIN"));
 });
 
+/* THE HANDLE PRODUCTION ACTUALLY PASSES. The fallback above is for a plain fake
+   in a unit test. Every real caller passes `db` from src/db.mjs, which is
+   `{ query }` and nothing else — so a probe of the form "no connect(), run it
+   inline" sends the LIVE path down the fallback, and saveDetection deletes a
+   bill's supporting charges and re-inserts them with no transaction around the
+   pair. A failure in between leaves a bill asserting a monthly charge with
+   nothing behind it.
+
+   No database is needed to ask this. DATABASE_URL points at a port nothing
+   listens on, so acquiring a dedicated connection must fail — and the write must
+   fail with it, rather than quietly running through the shared handle. */
+test("saveDetection given the shared production handle never writes through it", async () => {
+  process.env.DATABASE_URL = "postgres://nobody:nothing@127.0.0.1:1/unreachable";
+  process.env.PG_CONNECT_TIMEOUT_MS = "1000";
+
+  const issued = [];
+  const original = sharedDb.query;
+  sharedDb.query = async (sql) => {
+    issued.push(String(sql).replace(/\s+/g, " ").trim());
+    return { rows: [{ id: "bill-1" }] };
+  };
+
+  let error = null;
+  try {
+    await saveDetection(sharedDb,
+      { bills: [bill()], candidates: [], rejected: [], excluded: [] }, { orgId: ORG });
+  } catch (e) {
+    error = e;
+  } finally {
+    sharedDb.query = original;
+    await closeDb();
+  }
+
+  assert.deepEqual(issued, [],
+    "the bill upsert and the evidence swap were issued straight through the shared " +
+    "handle, which autocommits each statement separately");
+  assert.ok(error,
+    "with no connection obtainable the write must fail; a success here means it ran " +
+    "unprotected");
+});
+
 /* ========================================================================= *
  * Reads
  * ========================================================================= */
@@ -293,10 +335,17 @@ test("listRecurringBills filters are optional and are passed as parameters, neve
     const { handle, calls } = recorder({ transactional: false });
     await listRecurringBills(handle, { orgId: ORG, bankAccountId: ACCOUNT, clientId: "c-1" });
 
-    assert.deepEqual(calls[0].params, [ORG, ACCOUNT, "c-1", true]);
+    assert.deepEqual(calls[0].params, [ORG, ACCOUNT, "c-1", true, 500]);
     assert.ok(!calls[0].sql.includes(ORG), "no value is interpolated into the SQL");
     assert.ok(calls[0].sql.includes("ORDER BY typical_amount_cents ASC"),
       "amounts are negative, so ASC is largest outflow first");
+
+    // BOUNDED. The result has no natural bound — one row per account x merchant
+    // x cadence across every client — and there was no LIMIT and no page size to
+    // turn down. A company with 3,000 clients averaging 12 bills each is 36,000
+    // rows read, sorted and serialised inside a 10-second function budget.
+    assert.ok(calls[0].sql.includes("LIMIT $5"),
+      "*** the read is bounded and the bound is a parameter, not interpolated ***");
 
     // MUTATION-CHECKED. Asserting the PARAMETERS alone survived replacing
     // `WHERE org_id = $1` with a no-op predicate that still bound $1 — the

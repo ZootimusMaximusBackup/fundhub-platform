@@ -94,7 +94,8 @@ export const CLOSED_BY = Object.freeze({
   SWEEP_IDLE: "sweep_idle",
   /** The sweep closed it and there was NO recorded activity at all, so ended_at
    *  fell back to started_at and the shift reads as zero length. Not a timesheet
-   *  fact. src/shifts/timesheet.mjs refuses to total it. */
+   *  fact. src/shifts/timesheet.mjs never counts it at face value: it estimates
+   *  the span from that person's own shifts and flags the row for a human. */
   SWEEP_NO_EVIDENCE: "sweep_no_evidence"
 });
 

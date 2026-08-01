@@ -1151,6 +1151,7 @@ export function toBillRow(bill, { orgId }) {
     merchant_display: bill.merchantDisplay ?? null,
     cadence: bill.cadence,
     typical_amount_cents: bill.typicalAmountCents,
+    anchor_day_of_month: bill.anchorDayOfMonth ?? null,
     next_expected_on: bill.nextExpectedDate,
     next_expected_unknown_reason: bill.nextExpectedUnknownReason,
     confidence_pct: bill.confidencePct,
@@ -1160,5 +1161,70 @@ export function toBillRow(bill, { orgId }) {
     first_seen_on: bill.firstSeenOn,
     last_seen_on: bill.lastSeenOn,
     detected_as_of: bill.detectedAsOf
+  };
+}
+
+/**
+ * A STORED recurring_bills row -> the shape every consumer of a bill expects.
+ *
+ * THE EXACT INVERSE OF toBillRow(), AND IT LIVES HERE FOR THE SAME REASON.
+ * The store returns raw database rows in snake_case; src/banking/cashflow-seam.mjs
+ * reads camelCase, and one field is not merely re-cased but RENAMED — the column
+ * is `next_expected_on`, the reader wants `nextExpectedDate`. `cadence` was the
+ * only name that matched on both sides.
+ *
+ * Nothing threw. Feeding a stored row straight to the projector returned "no
+ * confident date" for every bill, rendered every id as
+ * `undefined:undefined:monthly`, and produced NaN for every confidence — so the
+ * screen would show a client with NO BILLS AT ALL, which reads as "you are fine"
+ * rather than "we could not read your bills". No test crossed the line between
+ * the store and the seam, which is why it never fired.
+ *
+ * bigint columns arrive from node-postgres as STRINGS. typical_amount_cents is
+ * coerced to a number here, once, rather than left for each caller's arithmetic
+ * to coerce by accident.
+ *
+ * `date` columns arrive as Date OBJECTS, decoded to LOCAL midnight, and they are
+ * put back to the `YYYY-MM-DD` strings the detector emits — here, once. A Date
+ * left in place is not the inverse of what was written: it compares unequal to
+ * the string that went in, it serialises into a JSON response as
+ * "2026-07-15T00:00:00.000Z", and east of Greenwich it serialises as THE DAY
+ * BEFORE, because local midnight is the previous day in UTC. parseDay/formatDay
+ * read the local parts, which is the only reading that recovers the stored day.
+ */
+export function fromBillRow(row) {
+  if (!row) return null;
+  const cents = row.typical_amount_cents;
+  const day = (value) => {
+    const parsed = parseDay(value);
+    return parsed ? formatDay(parsed) : null;
+  };
+  const instant = (value) => {
+    if (value === null || value === undefined) return null;
+    if (!(value instanceof Date)) return String(value);
+    return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  };
+  return {
+    id: row.id ?? null,
+    orgId: row.org_id ?? null,
+    bankAccountId: row.bank_account_id ?? null,
+    clientId: row.client_id ?? null,
+    merchantKey: row.merchant_key ?? null,
+    merchantDisplay: row.merchant_display ?? null,
+    cadence: row.cadence ?? null,
+    typicalAmountCents: cents === null || cents === undefined ? null : Number(cents),
+    // The renamed field. See the docblock.
+    nextExpectedDate: day(row.next_expected_on),
+    nextExpectedUnknownReason: row.next_expected_unknown_reason ?? null,
+    // NULL is correct for a row written before 091 and for weekly/biweekly
+    // cadences. The seam falls back to the day in nextExpectedDate.
+    anchorDayOfMonth: row.anchor_day_of_month ?? null,
+    confidencePct: row.confidence_pct ?? null,
+    confidenceLabel: row.confidence_label ?? null,
+    isBusiness: row.is_business ?? null,
+    occurrenceCount: row.occurrence_count ?? null,
+    firstSeenOn: day(row.first_seen_on),
+    lastSeenOn: day(row.last_seen_on),
+    detectedAsOf: instant(row.detected_as_of)
   };
 }

@@ -11,10 +11,14 @@
 // for, and it is exactly the kind of endpoint that becomes a breach.
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
-import { ROLE_SETS, requireRole, isUuid, redact, unitFraction, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
+import { ROLE_SETS, requireRole, isUuid, redact, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { listTradelines } from "../../src/tradelines/store.mjs";
 import { toCalculatorCards, fromCents } from "../../src/tradelines/index.mjs";
-import { calcFunding } from "../../src/calculators/deal-funding.mjs";
+import {
+  calcFunding,
+  parseUtilizationThreshold,
+  UTILIZATION_THRESHOLD_REFUSALS
+} from "../../src/calculators/deal-funding.mjs";
 
 // THE ROLE GATE IS TWO CALLS, NOT ONE ARGUMENT. requireAuth's third parameter
 // is { db, env } — src/http/middleware/requireAuth.mjs passes it straight to
@@ -42,28 +46,20 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: "client_id is required and must be a uuid" });
   }
 
-  // The guardrail ceiling arrives from the query string, and it used to reach
-  // calcFunding as a bare Number() with no bounds. `?utilization_threshold=999`
-  // set the ceiling to 99,900%, so no card could ever breach it; `=abc` passed
-  // NaN, and every comparison against NaN is false, which disables the guardrail
-  // just as completely but without looking wrong. Either way a caller could turn
-  // off the one control that stops a closer over-drawing a client, by editing a URL.
-  //
-  // The wire value is a FRACTION — public/app/closer-dashboard.html:1132 sends
-  // guard / 100 — so anything outside (0, 1] is not a threshold at all. Refused
-  // rather than clamped: silently substituting a different ceiling would answer a
-  // question the caller did not ask, which is how the guardrail got bypassed here
-  // in the first place.
-  const threshold = unitFraction(query.utilization_threshold);
-  if (!threshold.valid) {
-    return res.status(400).json({
-      ok: false,
-      error: "utilization_threshold must be a fraction greater than 0 and at most 1"
-    });
-  }
+  // The guardrail ceiling is validated below, inside the try, by
+  // parseUtilizationThreshold — the calculator's own parser. This endpoint used
+  // to run a second, local check here (unitFraction) that main and the audit
+  // branch added independently for the same finding. Keeping both would have
+  // meant the local one answering first with a generic message, so the parser's
+  // `reason` — the thing that tells a caller WHICH rule they broke — could never
+  // reach the wire. One validator, owned by the calculator that acts on the
+  // number, so this endpoint and /api/finance/model cannot drift.
 
   try {
     const rows = await listTradelines(db, {
+      // The session's org, not the caller's parameter: a client id from
+      // another org must return nothing rather than that consumer's cards.
+      orgId: staff.org_id,
       clientId,
       includeClosed: query.include_closed === "true"
     });
@@ -76,10 +72,44 @@ export default async function handler(req, res) {
       ? undefined
       : Number(query.requested_amount);
 
+    /* THE GUARDRAIL THRESHOLD IS VALIDATED, AND IT WAS NOT.
+       This line used to read
+           ...(query.utilization_threshold ? { utilizationThreshold: Number(query.utilization_threshold) } : {})
+       which put an unchecked query parameter straight into the only thing
+       standing between a closer and a draw that costs the client their next
+       funding round. `?utilization_threshold=0.99` parses, passes, and makes
+       calcFunding's hard stop unreachable — at a 99% line no draw a real card
+       can carry crosses it, so `guardrail.hardStop` is false for every deal and
+       the screen says "clear". Nothing recorded that the line had been moved.
+       `?utilization_threshold=abc` was worse still: Number("abc") is NaN, every
+       comparison against NaN is false, and the guardrail silently reported no
+       breach for the same reason while looking like it had run.
+
+       The band and the refusals live in the calculator that acts on the number —
+       src/calculators/deal-funding.mjs, parseUtilizationThreshold — so this
+       endpoint and /api/finance/model cannot drift apart on what a legal
+       threshold is. A bad one is a 400 naming the rule, never a clamp and never
+       a silent fall back to the default: a caller who asked for a different line
+       and quietly got the standard one has been answered about a deal they did
+       not ask about. Omitting the parameter is not an error — calcFunding's own
+       0.30 default applies, which is what every existing caller already gets. */
+    let utilizationThreshold;
+    if (query.utilization_threshold !== undefined && String(query.utilization_threshold).trim() !== "") {
+      const parsed = parseUtilizationThreshold(query.utilization_threshold);
+      if (!parsed.ok) {
+        return res.status(400).json({
+          ok: false,
+          error: UTILIZATION_THRESHOLD_REFUSALS[parsed.reason] || "utilization_threshold is not usable",
+          reason: parsed.reason
+        });
+      }
+      utilizationThreshold = parsed.value;
+    }
+
     const funding = calcFunding({
       cards,
       requestedAmount: Number.isFinite(requestedAmount) ? requestedAmount : undefined,
-      ...(threshold.present ? { utilizationThreshold: threshold.value } : {})
+      ...(utilizationThreshold === undefined ? {} : { utilizationThreshold })
     });
 
     return res.status(200).json({

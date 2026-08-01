@@ -7,17 +7,27 @@ import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { readHandler, ROLE_SETS } from "../../src/http/read-api.mjs";
 
+/* THE ORG COMES FROM THE SESSION AND IS REQUIRED (audit C1).
+   A session with no org binds NULL, and `org_id = NULL::uuid` matches no row —
+   it fails CLOSED. That is deliberate: the alternative, omitting the clause when
+   the org is unknown, turns a broken session into a firehose over every
+   company's rows. See src/http/read-api.mjs:150-153, which records the decision
+   to leave scoping to each endpoint's own SQL — a decision that then went
+   unimplemented in ten endpoints while the comment stayed. */
+const orgOf = (staff) => (staff && staff.org_id) || null;
+
 const run = readHandler({
   roles: ROLE_SETS.FINANCE,
-  fetch: (db, { limit, offset, query }) =>
+  fetch: (db, { limit, offset, query, staff }) =>
     db.query(`SELECT s.id, s.name, s.email, s.role, s.status, s.assignment_order,
            s.last_assigned_at, s.created_at,
            (SELECT count(*)::int FROM tasks t
              WHERE t.assignee_staff_id = s.id AND t.done = false) AS open_tasks
       FROM staff s
-     WHERE ($3::text IS NULL OR s.role = $3)
+     WHERE s.org_id = $4::uuid
+       AND ($3::text IS NULL OR s.role = $3)
      ORDER BY s.name
-     LIMIT $1 OFFSET $2`, [limit + 1, offset, query.role || null]).then((r) => r.rows)
+     LIMIT $1 OFFSET $2`, [limit + 1, offset, query.role || null, orgOf(staff)]).then((r) => r.rows)
 });
 
 export default (req, res) => run(req, res, { db, requireAuth });

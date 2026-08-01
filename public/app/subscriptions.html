@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fundhub — Subscriptions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
+<!-- The shared Finance OS frame. It carries .is-unknown and .is-partial, which
+     are the two rules this product cannot get wrong: an unknown renders as an em
+     dash and never as 0.00, and a total over a set with holes in it carries a
+     "+" because it is a floor rather than a figure. Written once there rather
+     than an eighth time here. -->
+<link rel="stylesheet" href="finance-os.css">
+<script src="shell.js"></script>
+<style>
+  /* Only what the shared sheet does not already carry. Everything structural —
+     .fh-wrap, .fh-panel, .fh-row, .fh-num, .fh-form, .fh-btn, .fh-empty, .fh-msg
+     — comes from finance-os.css, so this screen cannot drift from the other
+     five Finance OS screens. */
+
+  .fh-section{ margin-top:26px; }
+  .fh-section h2{ font:700 14px/1.3 'Inter',system-ui,sans-serif; color:var(--text);
+                  margin:0 0 9px; letter-spacing:-.005em; }
+  .fh-section .hint{ font:400 12px/1.55 'Inter',system-ui,sans-serif; color:var(--text-dim);
+                     margin:0 0 10px; max-width:72ch; }
+
+  /* The version chain. A table, because the question it answers is "what was
+     this client paying, and when" — read across a row, compared down a column. */
+  .fh-table{ width:100%; border-collapse:collapse; }
+  .fh-table th{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.07em;
+                text-transform:uppercase; color:var(--text-faint); text-align:left;
+                padding:11px 14px; border-bottom:1px solid var(--soft); white-space:nowrap; }
+  .fh-table td{ font:500 12px/1.45 'Inter',system-ui,sans-serif; color:var(--text);
+                padding:11px 14px; border-bottom:1px solid var(--soft); vertical-align:top; }
+  .fh-table tr:last-child td{ border-bottom:0; }
+  .fh-table td.num{ font:600 12px/1.45 'JetBrains Mono',ui-monospace,monospace; text-align:right;
+                    white-space:nowrap; }
+  /* The em-dash rule again, on a table cell this time. Same weight and colour as
+     .fh-num.is-unknown in finance-os.css — the rule is one rule and it has to
+     look identical wherever an unknown lands. */
+  .fh-table td.num.is-unknown{ color:var(--text-faint); font-weight:500; }
+  .fh-table tr.is-live td{ background:rgba(0,0,0,.025); }
+  .fh-table tr.is-closed td{ color:var(--text-dim); }
+  .fh-scroll{ overflow-x:auto; }
+
+  .fh-tag{ display:inline-block; font:600 9px/1 'JetBrains Mono',ui-monospace,monospace;
+           letter-spacing:.07em; text-transform:uppercase; border:1px solid currentColor;
+           border-radius:3px; padding:3px 5px; color:var(--text-faint); }
+  .fh-tag.live{ color:var(--green,#2C5138); }
+  .fh-tag.gone{ color:var(--text-faint); }
+
+  /* A card on file. The brand and last four identify it to a person; the row id
+     identifies it to the endpoint. The token identifies it to a processor and is
+     not on this page — the server does not send it. */
+  .fh-card-row{ display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+                padding:13px 18px; border-bottom:1px solid var(--soft); }
+  .fh-card-row:last-child{ border-bottom:0; }
+  .fh-card-face{ font:600 13px/1.3 'JetBrains Mono',ui-monospace,monospace; color:var(--text); }
+  .fh-card-meta{ font:400 11px/1.4 'Inter',system-ui,sans-serif; color:var(--text-dim); }
+  .fh-card-row.removed .fh-card-face,
+  .fh-card-row.removed .fh-card-meta{ color:var(--text-faint); }
+  .fh-spacer{ flex:1 1 auto; }
+
+  /* The sentence that has to be on this screen and not only in the code:
+     nothing here charges anybody, and a card here is a reference to a card held
+     somewhere else. */
+  .fh-standing{ border:1px solid var(--soft); border-left:3px solid var(--text-faint);
+                border-radius:6px; padding:12px 15px; margin:0 0 18px;
+                font:400 12px/1.6 'Inter',system-ui,sans-serif; color:var(--text-dim);
+                max-width:78ch; background:var(--surface); }
+  .fh-standing strong{ color:var(--text); font-weight:700; }
+</style>
+</head>
+<body>
+
+<!-- ===========================================================================
+     Subscriptions — what plan a client is on, and what pays for it.
+
+     Reads and writes /api/finance/subscriptions and /api/finance/cards.
+     Open it as subscriptions.html?client_id=<uuid>.
+
+     THE RULES THIS SCREEN IS HELD TO.
+
+     • ESCAPE EVERYTHING. A tier name, a note and a card brand are RECORD DATA
+       typed by a person. Every interpolated value below goes through esc().
+       There are 252 innerHTML sites across public/app and this is how each of
+       them stays safe.
+
+     • NEVER SHOW A NUMBER THE SERVER DID NOT SEND. This file ships with no
+       sample figures at all. Where there is nothing to show it says so in words
+       (.fh-empty). Leaving sample markup on screen under a real client's name is
+       audit finding M8 and it shipped once already.
+
+     • UNKNOWN IS AN EM DASH. `price_display` arrives null when nobody has
+       recorded what the tier costs, and it renders as "—". It must never render
+       as "0.00": "we do not know" and "it is free" are different facts about
+       somebody's money and only one of them is a claim.
+
+     • NOTHING HERE CHARGES ANYBODY. Starting, changing and cancelling RECORD
+       what a client is on. src/subscriptions/store.mjs has no processor call, no
+       scheduler and no next-charge column, and a billing run is a payment-rail
+       change that needs compliance review before a line of it exists. The
+       standing note at the top of the page says so to the person using it,
+       because a button labelled "Start plan" implies money otherwise.
+
+     • A CARD HERE IS A REFERENCE, NOT A CARD. The add form takes a processor
+       TOKEN plus brand / last four / expiry. It does not take a card number and
+       it does not take a security code — normalizeCardMeta throws on both, at
+       the boundary, before storage, and migration 076 repeats the check in SQL.
+
+     • THERE IS NO BROWSER AND NO PLAYWRIGHT IN THIS ENVIRONMENT, so nobody has
+       looked at this rendering. A human has to open it; the steps are in the
+       track report.
+     =========================================================================== -->
+
+<div class="fh-wrap">
+  <!-- A REAL HREF, NOT history.back(). This screen carries no sidebar, so this
+       is the only way off it, and back() does nothing at all when the page was
+       opened from a pasted or bookmarked URL (audit M20). -->
+  <!-- TWO WAYS OUT, AND THE SECOND ONE IS THE POINT OF THE HUB PASS.
+       "← Command Center" leaves the client behind, because the Command
+       Center is not about one client. "Client hub" goes back to
+       finance-os.html still holding whoever you were looking at — shell.js
+       appends ?client_id= to this link for every screen in CLIENT_SCREENS,
+       so it is deliberately written bare here rather than built by hand in
+       two places. Without it, walking Plan → Cards → Bank accounts meant
+       typing the uuid back in three times. -->
+  <div class="fh-back"><a href="command-center.html">← Command Center</a>
+    <span aria-hidden="true"> · </span>
+    <a href="finance-os.html">← Client hub</a></div>
+
+  <div class="fh-head">
+    <h1 class="fh-title">Subscriptions</h1>
+    <span class="fh-source" id="subsMountSource">no client</span>
+  </div>
+  <p class="fh-sub">The plan this client is on, the price, and the card on file for it.</p>
+
+  <p class="fh-standing">
+    <strong>Nothing on this page charges anybody.</strong>
+    Starting, changing or cancelling a plan here writes down what the client is on.
+    There is no card processor connected to this system, so no money moves and no
+    invoice is raised. A card below is a <strong>reference to a card held by a
+    processor</strong> — a token, plus the brand, last four digits and expiry so a
+    person can tell one card from another. The card number itself is not here, is
+    not asked for, and is refused if it is sent.
+  </p>
+
+  <!-- Filled by the script. Empty on purpose: an empty container reads as
+       "nothing here yet"; sample rows read as this client's real figures. -->
+  <div id="subsMount"></div>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (!window.FHData) return;
+
+  var mount = document.getElementById("subsMount");
+  var sourceBadge = document.getElementById("subsMountSource");
+  var clientId = FHData.param("client_id");
+
+  /* ── the two rules every string on this page goes through ───────────────── */
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* Thousands separators for display only. The value on the wire is untouched,
+     and the FORMATTING is not done here: price_display arrives from the server
+     already run through money.fromCents(), because 19.90 as a JavaScript float
+     is not 19.90 and a screen that formats money is a second answer to how money
+     looks. This only groups the digits the server already sent. */
+  function group(s) {
+    if (s == null) return null;
+    var parts = String(s).split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
+  }
+
+  /* money — the em-dash rule, in one place.
+     null → an em dash in the dimmer .is-unknown weight. Never "0.00". */
+  function money(display, currency) {
+    if (display == null) return '<span class="fh-num is-unknown">—</span>';
+    return '<span class="fh-num">' + esc(group(display)) +
+           (currency ? ' <span class="fh-card-meta">' + esc(currency) + "</span>" : "") + "</span>";
+  }
+
+  /* day — the date part of a timestamp.
+     Deliberately NOT toLocaleDateString: this is a record date somebody may have
+     to quote back during a dispute, and "31/07/2026" versus "07/31/2026" depends
+     on the reader's machine. The ISO date reads the same everywhere. */
+  function day(v) {
+    if (v == null || v === "") return "";
+    var s = String(v);
+    return s.length >= 10 ? s.slice(0, 10) : s;
+  }
+
+  /* An absent date is an unknown, not a blank cell: the em dash says "we do not
+     have this", an empty cell says nothing at all. */
+  function dayCell(v) {
+    return v == null || v === ""
+      ? '<span class="fh-num is-unknown">—</span>'
+      : esc(day(v));
+  }
+
+  /* ── the reader ──────────────────────────────────────────────────────────
+     data.js's get() is PRIVATE to its IIFE and is not on the returned object —
+     FHData.get() throws "not a function", which is how finance-os.html failed
+     the first time its smoke test ran. FHData.read() exists but hard-codes the
+     /api/read/ prefix, and these two endpoints live under /api/finance/.
+
+     So this screen carries its own GET. It is deliberately the SAME
+     classification data.js uses, including the two distinctions that were got
+     wrong before (audit m17): a 501 is "not built yet" and not an outage, and a
+     crashed handler is our code and not the database. The result is handed to
+     FHData.explain(), so the WORDING a reader sees for a failed read still comes
+     from one place even though the fetch does not.
+
+     This should be a named reader in data.js — FHData.finance(resource, params)
+     — and it is not, because data.js is a shared file that five other workflows
+     are editing in this same batch, and a collision there breaks every screen at
+     once. It is named in the track report as the thing to hoist. */
+  function apiGet(path) {
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+    function fail(source, error) { return { ok: false, source: source, data: null, error: error }; }
+    var started;
+    try {
+      started = fetch(path, {
+        headers: t ? { accept: "application/json", authorization: "Bearer " + t }
+                   : { accept: "application/json" }
+      });
+    } catch (e) {
+      return Promise.resolve(fail("offline", (e && e.message) || "fetch unavailable"));
+    }
+    return Promise.resolve(started).then(function (r) {
+      if (r.status === 401 || r.status === 403) return fail("unauthorized", "not signed in, or not allowed");
+      if (r.status === 501) return fail("unbuilt", "not_implemented");
+      return r.json().then(function (d) {
+        if (r.status === 404) {
+          return (d && d.error === "not_found" && typeof d.path === "string")
+            ? fail("offline", "/api/* not deployed")
+            : fail("notfound", (d && d.error) || "no such record");
+        }
+        if (r.status === 400) return fail("badrequest", (d && d.error) || "bad request");
+        if (r.status === 503 || (d && d.db === "down")) return fail("nodb", (d && d.error) || "database unreachable");
+        if (!d || d.ok !== true) return fail("server", "HTTP " + r.status + " " + ((d && d.error) || "request failed"));
+        return { ok: true, source: "api", data: d, error: null };
+      }).catch(function () { return fail("offline", "response was not JSON"); });
+    }).catch(function (e) {
+      return fail("offline", (e && e.message) || "network error");
+    });
+  }
+
+  /* ── state ───────────────────────────────────────────────────────────────
+     Held so two reads can render one page. Nothing here is invented: both start
+     null, and a panel whose read has not answered says it is reading rather than
+     showing a shape with nothing in it. */
+  /* `flash` survives the re-read that follows a successful write. Everything
+     else on this page is rebuilt from the server's answer, and the confirmation
+     — "Plan recorded. Nothing was charged." — would be rebuilt away with it,
+     leaving somebody who just pressed a button with no idea whether it worked.
+     The panel it lands in is drawn on every render, so it cannot be attached to
+     a form that the write itself made disappear. */
+  var state = { sub: null, cards: null, subRead: false, cardRead: false, flash: null };
+
+  /* ── the page ────────────────────────────────────────────────────────────── */
+
+  function row(label, valueHtml) {
+    return '<div class="fh-row"><div class="fh-label">' + esc(label) + "</div>" +
+           "<div>" + valueHtml + "</div></div>";
+  }
+
+  function cardFace(c) {
+    return (c.brand || "card") + " ····" + (c.last4 || "????");
+  }
+
+  function cardById(id) {
+    if (!id || !state.cards) return null;
+    for (var i = 0; i < state.cards.length; i++) {
+      if (String(state.cards[i].id) === String(id)) return state.cards[i];
+    }
+    return null;
+  }
+
+  function expiry(c) {
+    if (c.exp_month == null || c.exp_year == null) return "expiry not recorded";
+    return "expires " + String(c.exp_month).replace(/^(\d)$/, "0$1") + "/" + String(c.exp_year);
+  }
+
+  function planPanel() {
+    if (!state.subRead) {
+      return '<div class="fh-panel"><div class="fh-empty">Reading this client\'s plan…</div></div>';
+    }
+    var cur = state.sub && state.sub.current;
+    if (!cur) {
+      return '<div class="fh-panel"><div class="fh-empty">' +
+             "No plan on file for this client. Nobody has recorded one yet — which is not the " +
+             "same as the client having cancelled. A cancelled plan appears in the history below " +
+             "with the date it stopped." +
+             "</div></div>";
+    }
+
+    var card = cardById(cur.card_id);
+    var cardLine;
+    if (!cur.card_id) {
+      cardLine = '<span class="fh-num is-unknown">—</span>';
+    } else if (card) {
+      cardLine = '<span class="fh-card-face">' + esc(cardFace(card)) + "</span>" +
+        (card.removed_at ? ' <span class="fh-tag gone">off file ' + esc(day(card.removed_at)) + "</span>" : "");
+    } else {
+      /* The plan names a card the card read did not return — a removed card
+         while the cards read failed, or a card belonging to another client.
+         SAY THAT. Printing nothing here would read as "no card on file", which
+         is a different and wrong statement about what is paying for this plan. */
+      cardLine = '<span class="fh-card-meta">a card this read did not return (id ' +
+                 esc(String(cur.card_id).slice(0, 8)) + "…)</span>";
+    }
+
+    return '<div class="fh-panel">' +
+      row("Tier", '<span class="fh-num">' + esc(cur.tier) + "</span>") +
+      row("Price", money(cur.price_display, cur.currency)) +
+      row("Status", '<span class="fh-tag ' + (cur.effective_to ? "gone" : "live") + '">' +
+                    esc(cur.status || "unknown") + "</span>") +
+      row("Started", dayCell(cur.effective_from)) +
+      row("Runs until", cur.effective_to
+            ? dayCell(cur.effective_to)
+            : '<span class="fh-card-meta">open — no end date recorded</span>') +
+      row("Cancellation asked for", dayCell(cur.cancelled_at)) +
+      row("Card that pays for it", cardLine) +
+      "</div>";
+  }
+
+  function historyPanel() {
+    if (!state.subRead) return "";
+    var rows = (state.sub && state.sub.history) || [];
+    if (!rows.length) {
+      return '<div class="fh-panel"><div class="fh-empty">' +
+             "No versions recorded. Once a plan is started, every price and tier it has ever had " +
+             "appears here with the dates it applied, so a change can be explained later." +
+             "</div></div>";
+    }
+    var live = (state.sub && state.sub.current && state.sub.current.id) || null;
+    return '<div class="fh-panel"><div class="fh-scroll"><table class="fh-table">' +
+      "<thead><tr><th>Tier</th><th>Price</th><th>Status</th><th>From</th><th>Until</th><th>Note</th></tr></thead>" +
+      "<tbody>" + rows.map(function (s) {
+        var isLive = live && String(s.id) === String(live);
+        var unknown = s.price_display == null;
+        return '<tr class="' + (isLive ? "is-live" : "is-closed") + '">' +
+          "<td>" + esc(s.tier) + (isLive ? ' <span class="fh-tag live">live</span>' : "") + "</td>" +
+          '<td class="num' + (unknown ? " is-unknown" : "") + '">' +
+            (unknown ? "—" : esc(group(s.price_display)) + " " + esc(s.currency || "")) + "</td>" +
+          "<td>" + esc(s.status || "") + "</td>" +
+          "<td>" + esc(day(s.effective_from)) + "</td>" +
+          "<td>" + esc(s.effective_to ? day(s.effective_to) : "open") + "</td>" +
+          "<td>" + esc(s.notes || "") + "</td>" +
+        "</tr>";
+      }).join("") + "</tbody></table></div></div>";
+  }
+
+  function field(idSuffix, label, control) {
+    return '<div class="fh-field"><label for="card' + esc(idSuffix) + '">' + esc(label) + "</label>" +
+           control + "</div>";
+  }
+
+  function cardsPanel() {
+    if (!state.cardRead) {
+      return '<div class="fh-panel"><div class="fh-empty">Reading the cards on file…</div></div>';
+    }
+    var cards = state.cards || [];
+    var live = state.sub && state.sub.current;
+    var attachedId = live ? live.card_id : null;
+
+    var body = cards.length
+      ? cards.map(function (c) {
+          var isAttached = attachedId && String(c.id) === String(attachedId);
+          return '<div class="fh-card-row' + (c.removed_at ? " removed" : "") + '">' +
+            '<div><div class="fh-card-face">' + esc(cardFace(c)) + "</div>" +
+              '<div class="fh-card-meta">' + esc(expiry(c)) + " · " + esc(c.provider || "") +
+              (c.token_present ? " · token on file" : " · no token on file") +
+              (c.removed_at ? " · taken off file " + esc(day(c.removed_at)) : "") +
+              "</div></div>" +
+            '<div class="fh-spacer"></div>' +
+            (isAttached ? '<span class="fh-tag live">pays for the plan</span>' : "") +
+            (c.removed_at || isAttached ? "" :
+              '<button type="button" class="fh-btn secondary" data-act="attach" data-card="' +
+              esc(c.id) + '">Use for this plan</button>') +
+            (c.removed_at ? "" :
+              '<button type="button" class="fh-btn secondary" data-act="remove" data-card="' +
+              esc(c.id) + '">Take off file</button>') +
+          "</div>";
+        }).join("")
+      : '<div class="fh-empty">No cards on file for this client.</div>';
+
+    /* THE ADD FORM. Six boxes, and the two that are NOT here are the point:
+       there is no card-number box and no security-code box. The token is what a
+       processor already holds; the brand, last four and expiry are so a person
+       can tell one card from another on this screen. Typing a card number into
+       any of these is refused by the endpoint before anything is stored. */
+    var form =
+      '<form class="fh-form" id="addCardForm">' +
+        field("Brand", "Brand", '<input id="cardBrand" name="brand" type="text" placeholder="card brand" autocomplete="off">') +
+        field("Last4", "Last four", '<input id="cardLast4" name="last4" type="text" inputmode="numeric" maxlength="4" placeholder="last four" autocomplete="off">') +
+        field("ExpMonth", "Exp month", '<input id="cardExpMonth" name="exp_month" type="text" inputmode="numeric" maxlength="2" placeholder="MM" autocomplete="off">') +
+        field("ExpYear", "Exp year", '<input id="cardExpYear" name="exp_year" type="text" inputmode="numeric" maxlength="4" placeholder="YYYY" autocomplete="off">') +
+        field("Provider", "Processor", '<input id="cardProvider" name="provider" type="text" placeholder="processor name" autocomplete="off">') +
+        field("Token", "Processor token", '<input id="cardToken" name="provider_token" type="text" placeholder="tok_…" autocomplete="off" size="24" required>') +
+        '<button type="submit" class="fh-btn">Put this card on file</button>' +
+      "</form>" +
+      '<p class="fh-msg" id="addCardMsg"></p>' +
+      '<div class="fh-empty">The token is the reference a processor gave you for this card. ' +
+        "It is not the card number, and a card number typed here is refused — not trimmed, not " +
+        "stored. Saving a token that is already on file updates the brand, last four and expiry " +
+        "and nothing else; it does not put a card that was taken off file back on it.</div>";
+
+    return '<div class="fh-panel">' + body + form + "</div>";
+  }
+
+  /* The write forms for the plan itself. Which ones appear depends on whether
+     there IS a plan: you cannot change or cancel what does not exist, and
+     offering the control anyway produces a refusal the person cannot act on. */
+  function planFormsPanel() {
+    if (!state.subRead) return "";
+    var cur = state.sub && state.sub.current;
+
+    if (!cur) {
+      return '<div class="fh-panel">' +
+        '<form class="fh-form" id="startForm">' +
+          '<div class="fh-field"><label for="startTier">Tier</label>' +
+            '<input id="startTier" name="tier" type="text" placeholder="tier name" autocomplete="off" required></div>' +
+          '<div class="fh-field"><label for="startPrice">Price (dollars)</label>' +
+            '<input id="startPrice" name="price" type="text" inputmode="decimal" placeholder="amount in dollars" autocomplete="off"></div>' +
+          '<div class="fh-field"><label for="startCurrency">Currency</label>' +
+            '<input id="startCurrency" name="currency" type="text" placeholder="currency code" maxlength="8" autocomplete="off"></div>' +
+          '<button type="submit" class="fh-btn">Record this plan</button>' +
+        "</form>" +
+        '<p class="fh-msg" id="startMsg"></p>' +
+        '<div class="fh-empty">Leave the price empty if nobody has decided it yet. It is recorded ' +
+          "as unknown and shown as an em dash — not as zero, which would say the plan is free.</div>" +
+      "</div>";
+    }
+
+    return '<div class="fh-panel">' +
+      '<form class="fh-form" id="changeForm">' +
+        '<div class="fh-field"><label for="changeTier">New tier</label>' +
+          '<input id="changeTier" name="tier" type="text" placeholder="' + esc(cur.tier) + '" autocomplete="off"></div>' +
+        '<div class="fh-field"><label for="changePrice">New price (dollars)</label>' +
+          '<input id="changePrice" name="price" type="text" inputmode="decimal" placeholder="' +
+            esc(cur.price_display == null ? "not recorded" : cur.price_display) + '" autocomplete="off"></div>' +
+        '<button type="submit" class="fh-btn">Record a plan change</button>' +
+      "</form>" +
+      '<p class="fh-msg" id="changeMsg"></p>' +
+      '<div class="fh-empty">A change closes the version above and opens a new one at the same ' +
+        "instant, so the client is never on two plans and never on none. The closed row stays in " +
+        "the history below with the dates it applied. Leave a box empty to keep what is there now. " +
+        "A change has to change something — the same tier at the same price is refused, because a " +
+        "new version of nothing puts a date on an event that did not happen.</div>" +
+
+      '<form class="fh-form" id="cancelForm">' +
+        '<div class="fh-field"><label for="cancelEndsAt">Runs until (optional)</label>' +
+          '<input id="cancelEndsAt" name="ends_at" type="date" autocomplete="off"></div>' +
+        '<button type="submit" class="fh-btn secondary">Record a cancellation</button>' +
+      "</form>" +
+      '<p class="fh-msg" id="cancelMsg"></p>' +
+      '<div class="fh-empty">This records that the client ended it. Today is stored as the date ' +
+        "they asked. If they have paid through a later date, put that date in the box — the plan " +
+        "stays in force until then and still explains the charge they already made. Nothing is " +
+        "refunded and nothing is charged by this. Once cancelled, the client can be started on a " +
+        "new plan from the end date onwards.</div>" +
+    "</div>";
+  }
+
+  function render() {
+    mount.innerHTML =
+      '<p class="fh-msg" id="flashMsg"></p>' +
+      '<div class="fh-section"><h2>Current plan</h2>' + planPanel() + "</div>" +
+      '<div class="fh-section"><h2>' +
+        (state.sub && state.sub.current ? "Change or cancel" : "Start a plan") + "</h2>" +
+        planFormsPanel() + "</div>" +
+      '<div class="fh-section"><h2>Version history</h2>' +
+        '<p class="hint">Newest first. Every tier and price this client has been on, and the dates ' +
+        "each one applied.</p>" + historyPanel() + "</div>" +
+      '<div class="fh-section"><h2>Cards on file</h2>' +
+        '<p class="hint">A reference to a card held by a processor — never the card number. Taking ' +
+        "a card off file does not delete it: a card that paid for something has to stay resolvable " +
+        "from the plan that used it.</p>" + cardsPanel() + "</div>";
+    if (state.flash) say("flashMsg", "ok", state.flash);
+    bind();
+  }
+
+  /* ── writes ─────────────────────────────────────────────────────────────── */
+
+  function say(id, cls, text) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.className = "fh-msg " + cls;
+    el.textContent = text;   // textContent, not innerHTML: this string carries a
+                             // server message, and a server message is data.
+  }
+
+  function val(id) {
+    var el = document.getElementById(id);
+    return el ? String(el.value || "").trim() : "";
+  }
+
+  /* send — one path for every write on this page.
+
+     FHData.write() does the token header, the JSON and the status
+     classification, including the 501 branch that reads as "not built yet"
+     rather than as an outage. A failed write says so ON the control that failed:
+     the bottom banner is shared by every source on the page, and a save failure
+     that only appears down there scrolls out of the reader's attention.
+
+     The message shown for a 400 or a 409 is THE SERVER'S OWN SENTENCE. Both
+     endpoints answer with the store's wording — "this client already has a
+     subscription covering that date", "that token is already on file for a
+     different client" — and those sentences are the whole reason the store
+     writes them. Replacing them with "save failed" here would throw away the
+     only part of the answer a person can act on. */
+  function send(path, payload, msgId, workingText, doneText) {
+    state.flash = null;
+    say(msgId, "", workingText);
+    return FHData.write("/api/finance/" + path, payload).then(function (res) {
+      if (res && res.ok) {
+        // The confirmation goes into state, not into this control: load() is
+        // about to rebuild the page from the server's answer and would take the
+        // control with it. See the note on state.flash.
+        state.flash = doneText;
+        say(msgId, "ok", doneText);
+        return load();
+      }
+      var detail = (res && res.error) || "no detail";
+      var source = res && res.source;
+      if (source === "unauthorized") {
+        say(msgId, "bad", "Not saved — you are not signed in, or your role cannot change plans.");
+      } else if (source === "unbuilt") {
+        say(msgId, "bad", "Not saved — this part is not built yet (" + detail + ").");
+      } else if (source === "nodb") {
+        say(msgId, "bad", "Not saved — the database is not answering (" + detail + ").");
+      } else if (source === "demo") {
+        say(msgId, "bad", "Not saved — this is a demo session and it does not write anything.");
+      } else if (source === "offline") {
+        say(msgId, "bad", "Not saved — we could not reach the server (" + detail + ").");
+      } else if (source === "server") {
+        say(msgId, "bad", "Not saved — something went wrong on our side. The database did not " +
+                          "report a problem. (" + detail + ")");
+      } else {
+        // badrequest (400 and 409) and notfound: the backend is fine and the
+        // answer is a sentence. Show it.
+        say(msgId, "bad", "Not saved — " + detail);
+      }
+      return null;
+    });
+  }
+
+  function bind() {
+    var startForm = document.getElementById("startForm");
+    if (startForm) startForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var payload = { action: "start", client_id: clientId, tier: val("startTier") };
+      /* An empty price box means UNKNOWN and is sent as an empty string, which
+         the endpoint records as NULL. It is not omitted and it is not zero. */
+      payload.price = val("startPrice");
+      var cur = val("startCurrency");
+      if (cur) payload.currency = cur;
+      send("subscriptions", payload, "startMsg",
+        "Recording…", "Plan recorded. Nothing was charged.");
+    });
+
+    var changeForm = document.getElementById("changeForm");
+    if (changeForm) changeForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var payload = { action: "change", client_id: clientId };
+      var tier = val("changeTier");
+      if (tier) payload.tier = tier;
+      var price = val("changePrice");
+      /* OMITTED means "keep the price that is there", and that is why an empty
+         box sends NOTHING rather than an empty string. The endpoint refuses an
+         explicit null on a change — a change cannot record an unknown price —
+         so sending "" here would turn "leave it alone" into a rejection. */
+      if (price) payload.price = price;
+      send("subscriptions", payload, "changeMsg",
+        "Recording…", "Change recorded. The old version is closed and is in the history below.");
+    });
+
+    var cancelForm = document.getElementById("cancelForm");
+    if (cancelForm) cancelForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var payload = { action: "cancel", client_id: clientId };
+      var ends = val("cancelEndsAt");
+      if (ends) payload.ends_at = ends;
+      send("subscriptions", payload, "cancelMsg", "Recording…", "Cancellation recorded.");
+    });
+
+    var addForm = document.getElementById("addCardForm");
+    if (addForm) addForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var payload = { action: "add", client_id: clientId, provider_token: val("cardToken") };
+      var b = val("cardBrand"); if (b) payload.brand = b;
+      var l = val("cardLast4"); if (l) payload.last4 = l;
+      var m = val("cardExpMonth"); if (m) payload.exp_month = m;
+      var y = val("cardExpYear"); if (y) payload.exp_year = y;
+      var p = val("cardProvider"); if (p) payload.provider = p;
+      send("cards", payload, "addCardMsg",
+        "Saving…", "Card reference saved. No card number was stored and nothing was charged.");
+    });
+
+    Array.prototype.forEach.call(mount.querySelectorAll("button[data-act]"), function (btn) {
+      var act = btn.getAttribute("data-act");
+      if (act !== "attach" && act !== "remove") return;
+      btn.addEventListener("click", function () {
+        send("cards",
+          { action: act, client_id: clientId, card_id: btn.getAttribute("data-card") },
+          "addCardMsg",
+          act === "attach" ? "Attaching…" : "Taking off file…",
+          act === "attach"
+            ? "This card is now the one recorded against the live plan."
+            : "Card taken off file. It stays on the record for any plan that used it.");
+      });
+    });
+  }
+
+  /* ── load ────────────────────────────────────────────────────────────────
+     Two reads, one page. Each reports its own banner part, so a cards read that
+     fails cannot be hidden behind a subscription read that worked — data.js
+     keeps the worst tone of the two. */
+  function load() {
+    var a = apiGet("/api/finance/subscriptions?client_id=" + encodeURIComponent(clientId))
+      .then(function (res) {
+        state.subRead = true;
+        if (res.ok) {
+          state.sub = res.data;
+          var n = (res.data.history || []).length;
+          FHData.banner("real",
+            res.data.current
+              ? "live plan · " + n + " version(s) on record"
+              : "live read · no plan recorded for this client",
+            "subscription");
+        } else {
+          state.sub = null;
+          FHData.explain(res, "subscription");
+        }
+      });
+
+    var b = apiGet("/api/finance/cards?client_id=" + encodeURIComponent(clientId) + "&include_removed=1")
+      .then(function (res) {
+        state.cardRead = true;
+        if (res.ok) {
+          state.cards = res.data.cards || [];
+          FHData.banner("real", state.cards.length + " card(s) on file", "cards");
+        } else {
+          state.cards = null;
+          FHData.explain(res, "cards");
+        }
+      });
+
+    return Promise.all([a, b]).then(render, render);
+  }
+
+  if (!clientId) {
+    /* No client named. NOT a backend failure, and nothing is invented to fill
+       the space — the page says what is missing and how to fix it. */
+    sourceBadge.textContent = "no client";
+    mount.innerHTML = '<div class="fh-panel"><div class="fh-empty">' +
+      "Open this screen with a client in the address bar — " +
+      "<code>subscriptions.html?client_id=&lt;id&gt;</code>. Nothing is shown without one, " +
+      "because a plan and a card belong to a named person." +
+      "</div></div>";
+    FHData.banner("sample", "no client named — open with ?client_id=<id>", "subscription");
+    return;
+  }
+
+  sourceBadge.textContent = "subscriptions";
+  render();   // paints the "reading…" state, so the page is never blank
+  load();
+})();
+</script>
+</body>
+</html>

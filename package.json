@@ -9,6 +9,7 @@
   },
   "scripts": {
     "migrate": "node db/migrate.mjs",
+    "migrations:manifest": "node scripts/db/expected-migrations.mjs",
     "artifact": "node scripts/build-artifact.mjs",
     "diagrams": "node scripts/diagrams/generate.mjs",
     "diagrams:check": "node scripts/diagrams/generate.mjs --check",

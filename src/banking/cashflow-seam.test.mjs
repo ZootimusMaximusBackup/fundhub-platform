@@ -334,10 +334,20 @@ test("the emitted entry matches W8's documented recurringBills shape", () => {
   );
 
   const entry = recurringBills[0];
-  assert.deepEqual(Object.keys(entry).sort(), ["billId", "confidence", "label", "occurrences"]);
+  /* `subjectId` joined this shape deliberately. billId is the COMPOSITE stream
+     identity and cannot be written to a uuid column; cashflow_reminders
+     .subject_id is one (087:113), and passing billId there raised Postgres
+     22P02 on the exact case the cash-flow screen exists for. subjectId carries
+     the stored row's own uuid, and is NULL for a bill built by hand — as it is
+     here, where the input is a detector result that was never stored. */
+  assert.deepEqual(
+    Object.keys(entry).sort(),
+    ["billId", "confidence", "label", "occurrences", "subjectId"]
+  );
   assert.equal(typeof entry.billId, "string");
   assert.equal(typeof entry.label, "string");
   assert.ok(Array.isArray(entry.occurrences));
+  assert.equal(entry.subjectId, null, "a bill that was never stored has no row id to point at");
   for (const o of entry.occurrences) {
     assert.deepEqual(Object.keys(o).sort(), ["amountCents", "date"]);
     assert.match(o.date, /^\d{4}-\d{2}-\d{2}$/);

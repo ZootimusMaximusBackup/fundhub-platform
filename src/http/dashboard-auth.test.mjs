@@ -37,8 +37,16 @@ test("secret set: denies missing/wrong key", () => {
   assert.equal(checkDashboardAuth(req({ query: { key: "close-but-no" } }), env), false);
 });
 
-test("secret set: accepts correct key via header or query", () => {
+/* This assertion used to read `checkDashboardAuth(req({ query: { key: "s3cret" } })) === true`
+   — i.e. it required the master secret to be accepted from the URL, which is
+   the defect audit M2 found. Same story as the NODE_ENV test above: the test was
+   encoding the bug, so the assertion is inverted rather than removed, and the
+   coverage it was carrying (the header carrier still works) is kept intact.
+   The reasoning lives in src/http/dashboard-secret-in-url.test.mjs. */
+test("secret set: accepts correct key via header only, never via the URL", () => {
   const env = { DASHBOARD_SECRET: "s3cret" };
   assert.equal(checkDashboardAuth(req({ headers: { "x-dashboard-key": "s3cret" } }), env), true);
-  assert.equal(checkDashboardAuth(req({ query: { key: "s3cret" } }), env), true);
+  assert.equal(checkDashboardAuth(req({ query: { key: "s3cret" } }), env), false,
+    "the master secret was accepted from the query string, where it lands in " +
+    "browser history, bookmarks and Referer headers");
 });

@@ -22,7 +22,7 @@ flowchart TD
     CAN --> A_creative[Creative Factory — 4 routes]
     CAN --> A_dashboard[The dashboard — 4 routes]
     CAN --> A_documents[Documents — 1 route]
-    CAN --> A_finance[Finance — 1 route]
+    CAN --> A_finance[Finance — 9 routes]
     CAN --> A_hiring[Hiring — 6 routes]
     CAN --> A_privacy[privacy — 1 route]
     CAN --> A_read[Reading data — 17 routes]
@@ -32,11 +32,11 @@ flowchart TD
 
 ## What they can reach
 
-**53 of 53 routes.**
+**61 of 61 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
-| `/api/auth/login` | — | anyone |
+| `/api/auth/login` | GET | anyone |
 | `/api/auth/logout` | — | anyone |
 | `/api/auth/session` | — | anyone |
 | `/api/banking/revoke` | GET, POST | owner, admin |
@@ -55,7 +55,15 @@ flowchart TD
 | `/api/dashboard/pipeline` | — | staff |
 | `/api/dashboard/seed` | — | staff |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
+| `/api/finance/alerts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/finance/bank-accounts` | GET, POST | owner, admin |
+| `/api/finance/bills` | GET, POST | owner, admin |
+| `/api/finance/cards` | GET, POST | owner, admin |
+| `/api/finance/cashflow` | GET, POST | owner, admin |
+| `/api/finance/liabilities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/finance/model` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
+| `/api/finance/subscriptions` | GET, POST | owner, admin |
 | `/api/health` | — | anyone |
 | `/api/hiring/application` | GET | owner, admin |
 | `/api/hiring/bench` | GET | owner, admin |
@@ -71,7 +79,7 @@ flowchart TD
 | `/api/privacy/erasure` | GET, POST | owner, admin |
 | `/api/read/affiliates` | GET | owner, admin |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/banking-surface` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/read/banking-surface` | GET | owner, admin |
 | `/api/read/commissions` | GET | owner, admin |
 | `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
@@ -98,7 +106,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**0 of 53 routes.**
+**0 of 61 routes.**
 
 _None._
 

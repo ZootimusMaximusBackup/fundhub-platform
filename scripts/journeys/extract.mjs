@@ -205,6 +205,19 @@ export function gateFor(file, { sets, wrappers }) {
     // A hand-written const in the same file: const X_ROLES = new Set([...]).
     const local = new RegExp(`const\\s+${expr}\\s*=\\s*new Set\\(\\[([^\\]]*)\\]\\)`).exec(src);
     if (local) return { roles: [...local[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]), label: expr };
+    /* A LOCAL NAME FOR A SHARED SET: const CARD_ROLES = ROLE_SETS.FINANCE.
+       The eight api/finance/* handlers all gate this way — they alias the shared
+       set to a name that says what the endpoint is, then gate on the alias. Both
+       halves were already resolvable on their own and the alias between them was
+       not, so every one of those endpoints extracted as "unverified" and the
+       journey drew a gate it could not see. Resolved by following the alias to
+       the set it names, so the diagram reports the roles that actually apply
+       rather than an honest shrug. */
+    const alias = new RegExp(`const\\s+${expr}\\s*=\\s*(ROLE_SETS\\.\\w+)\\s*;`).exec(src);
+    if (alias) {
+      const target = resolveSet(alias[1]);
+      if (target) return { roles: target.roles, label: `${expr} (${target.label})` };
+    }
     return null;
   };
 

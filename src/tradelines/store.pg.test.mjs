@@ -50,7 +50,7 @@ test("upsert stores a line and re-running updates rather than duplicating", { sk
   await upsertTradelines(db, { orgId, clientId, rows: [row] });
   await upsertTradelines(db, { orgId, clientId, rows: [{ ...row, balance_cents: 900000 }] });
 
-  const rows = await listTradelines(db, { clientId });
+  const rows = await listTradelines(db, { orgId, clientId });
   assert.equal(rows.length, 1, "same account_ref must update, not insert a second card");
   assert.equal(Number(rows[0].balance_cents), 900000, "the newer balance wins");
 });
@@ -76,7 +76,7 @@ test("a line with no account_ref inserts rather than merging into another card",
   await upsertTradelines(db, { orgId, clientId, rows: [manual] });
   await upsertTradelines(db, { orgId, clientId, rows: [manual] });
 
-  const rows = await listTradelines(db, { clientId });
+  const rows = await listTradelines(db, { orgId, clientId });
   const unmatched = rows.filter((r) => r.account_ref === null);
   assert.equal(unmatched.length, 2, "unmatchable lines stay visible instead of being averaged away");
 });

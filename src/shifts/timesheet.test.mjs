@@ -173,12 +173,55 @@ test("needsReview is true only for the no-evidence auto-close", () => {
   assert.equal(needsReview(null), false);
 });
 
-test("totalling an unreconstructable shift throws instead of reporting zero", () => {
+test("one unreconstructable shift, on its own, throws instead of reporting zero", () => {
   // The whole point. Zero looks like an answer. This file already refuses a
   // shift that ends before it starts for the same reason.
+  //
+  // shiftSeconds is handed ONE row and nothing else, so it has no other shift of
+  // that person's to infer from and refusing is the only honest answer. The
+  // totals below (secondsWorked, hoursWorked, timesheet) do have the rest of the
+  // list, so they estimate the row instead of throwing — see M14.
   assert.throws(() => shiftSeconds(sweptBlind), RangeError);
-  assert.throws(() => secondsWorked([humanShift(8), sweptBlind]), /unknowable, not zero/);
-  assert.throws(() => secondsWorked([sweptBlind]), /sh-blind/, "the error must name the row a human has to go and look at");
+  assert.throws(() => shiftSeconds(sweptBlind), /unknowable, not zero/);
+  assert.throws(() => shiftSeconds(sweptBlind), /sh-blind/,
+    "the error must name the row a human has to go and look at");
+});
+
+// --- M14: a raw list from the shifts table must total to a number -------------
+
+test("secondsWorked totals a raw mixed list instead of crashing on the unvouchable row", () => {
+  // The shifts table hands back whatever is in it. One forgotten clock-out used
+  // to turn the whole total into an exception, so a payroll screen showed an
+  // error page instead of a week's hours.
+  const week = [humanShift(8), humanShift(8), sweptBlind];
+  assert.equal(secondsWorked(week), 24 * 3600,
+    "16 confirmed hours, plus 8 inferred from that person's own two 8-hour days");
+  assert.equal(hoursWorked(week), 24);
+});
+
+test("secondsWorked and hoursWorked are the same fact as timesheet() — never a second answer", () => {
+  // Two totals of one week that disagree is the defect this file was cleared of
+  // once already. hoursWorked is secondsWorked in hours, and both are the
+  // payable total timesheet() reports.
+  const week = [humanShift(8), sweptWithEvidence, sweptBlind];
+  assert.equal(hoursWorked(week), secondsWorked(week) / SECONDS_PER_HOUR);
+  assert.equal(secondsWorked(week), buildTimesheet(week).payableSeconds);
+  assert.equal(hoursWorked(week), buildTimesheet(week).payableHours);
+});
+
+test("secondsWorked never totals an unvouchable shift as zero", () => {
+  // The one answer that is not available. A raw total must not be the way the
+  // employer keeps the benefit of its own missing record.
+  assert.ok(secondsWorked([humanShift(8), sweptBlind]) > secondsWorked([humanShift(8)]),
+    "the forgotten shift has to add something to the week");
+});
+
+test("a broken row still stops a raw total — only the unvouchable case is inferred", () => {
+  // Corruption is still loud. This is not a licence to total garbage.
+  assert.throws(() => secondsWorked([humanShift(8), {
+    started_at: "2026-07-30T17:00:00Z", ended_at: "2026-07-30T09:00:00Z"
+  }]), RangeError);
+  assert.throws(() => secondsWorked([humanShift(8), { startedAt: "2026-07-30T09:00:00Z" }]), TypeError);
 });
 
 test("timesheet() counts what is known and hands back what is not", () => {

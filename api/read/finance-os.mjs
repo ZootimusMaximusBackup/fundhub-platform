@@ -50,7 +50,12 @@ export default async function handler(req, res) {
     // grid's own DRAWABLE filter. Belt and braces on purpose: the grid is the
     // thing under test, and it must be correct for any row set handed to it,
     // not only for the one this endpoint happens to fetch.
-    const rows = await listTradelines(db, { clientId: String(query.client_id).trim() });
+    // orgId comes from the session, never the query: this endpoint summarises
+    // the same rows as api/read/tradelines.mjs and must be scoped the same way.
+    const rows = await listTradelines(db, {
+      orgId: staff.org_id,
+      clientId: String(query.client_id).trim()
+    });
     return res.status(200).json({ ok: true, ...financeOsGrid(rows) });
   } catch (e) {
     if (CLIENT_DATA_ERRORS.has(e.code)) {

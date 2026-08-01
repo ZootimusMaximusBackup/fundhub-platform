@@ -1,8 +1,8 @@
 // Shared-secret gate for the dashboard endpoints. The dashboard exposes client
 // PII (names/emails/phones/messages), so the endpoints must not be open.
-// A single DASHBOARD_SECRET protects them: the browser opens
-// /dashboard.html?key=<secret> and the page sends it as the x-dashboard-key
-// header (or ?key=). Fail-CLOSED in production when the secret isn't configured.
+// A single DASHBOARD_SECRET protects them, and it is accepted ONLY as the
+// x-dashboard-key request header — never from the URL. Fail-CLOSED when the
+// secret isn't configured.
 
 import crypto from "node:crypto";
 
@@ -24,7 +24,16 @@ export function checkDashboardAuth(req, env = process.env) {
        client PII with no credential at all. */
     return false;
   }
-  const provided = req?.headers?.["x-dashboard-key"] || req?.query?.key || "";
+  /* HEADER ONLY. The secret used to be accepted from `req.query.key` as well,
+     so the whole client book could be unlocked by a URL. DASHBOARD_SECRET is a
+     single never-expiring, non-revocable, non-attributable credential, and a
+     query string is the worst carrier there is for one: it is written to
+     browser history, saved into bookmarks and shared links, forwarded to third
+     parties in the Referer header, and logged verbatim by every proxy, CDN and
+     server in the path. requireAuth.mjs:22-23 already forbids exactly this for
+     session tokens; the master key cannot be held to a weaker standard.
+     src/http/dashboard-secret-in-url.test.mjs fails if the query door reopens. */
+  const provided = req?.headers?.["x-dashboard-key"] || "";
   if (!provided) return false;
   const a = Buffer.from(String(provided));
   const b = Buffer.from(String(secret));

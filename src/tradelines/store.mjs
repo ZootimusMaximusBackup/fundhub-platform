@@ -77,14 +77,23 @@ export async function ingestCrsResult(db, crsRow) {
 }
 
 /** listTradelines — open lines for one client, cheapest money first (the
- *  waterfall's own order, so the screen and the calculator agree). */
-export async function listTradelines(db, { clientId, includeClosed = false }) {
+ *  waterfall's own order, so the screen and the calculator agree).
+ *
+ *  orgId IS REQUIRED AND THROWS WHEN ABSENT. Every row records its owning org
+ *  and every authenticated request knows the caller's, but this read compared
+ *  only client_id — so a client id belonging to another org returned that
+ *  consumer's limits, balances and APRs to any signed-in staff member. A
+ *  default or an optional filter would put the next caller straight back there;
+ *  throwing makes an unscoped read impossible to write by omission. */
+export async function listTradelines(db, { orgId, clientId, includeClosed = false }) {
+  if (!orgId) throw new TypeError("listTradelines: orgId is required");
   const res = await db.query(
     `SELECT * FROM tradelines
-      WHERE client_id = $1
-        AND ($2::boolean OR closed_at IS NULL)
+      WHERE org_id = $1
+        AND client_id = $2
+        AND ($3::boolean OR closed_at IS NULL)
       ORDER BY apr ASC NULLS LAST, lender ASC`,
-    [clientId, includeClosed]
+    [orgId, clientId, includeClosed]
   );
   return res.rows;
 }

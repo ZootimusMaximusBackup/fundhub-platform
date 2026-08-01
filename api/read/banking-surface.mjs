@@ -26,10 +26,19 @@
 // rule became "any authenticated staff session, any role" on an endpoint serving
 // a named client's balances.
 //
-// ROLE_SETS.STAFF, matching the finance-os and tradelines endpoints. Bank
-// balances are not more sensitive than the credit limits and balances those
-// already serve to the same set, and splitting the gate would leave a closer
-// able to see the client's cards but not their cash while working the same file.
+// ROLE_SETS.FINANCE, NOT STAFF — AND THAT IS THE SECOND APPROVAL (audit M9).
+// This endpoint used to admit the whole staff set, on the argument that bank
+// balances are no more sensitive than the credit limits finance-os and
+// tradelines already serve to that set. The difference is where the data comes
+// from. Those read what this system was told; this reads a bank connection, and
+// bank connections are not approved: src/banking/plaid.mjs is two empty seams
+// waiting on a SOC 2 review of storing bank credentials and a consent-capture
+// flow compliance has signed off (docs/workflows/finish-the-build/W5.md, still
+// open). isPlaidEnabled() below asks whether the credentials exist; it cannot
+// ask whether anyone agreed to this. So setting three environment variables for
+// one test client must not put that person's real balances on every employee's
+// desk — configuration is not consent and it is not an approval. Owner/admin
+// only until a human widens it deliberately, which is a one-word edit here.
 //
 // SELECTED COLUMNS, NOT `SELECT *`. `plaid_items.encrypted_access_token` lives
 // one join away and there is no reason for a read endpoint to be one typo from
@@ -39,6 +48,7 @@ import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { bankingSurface } from "../../src/finance/banking-surface.mjs";
+import { isPlaidEnabled } from "../../src/banking/plaid.mjs";
 
 const COLUMNS = `
   id, client_id, name, official_name, mask,
@@ -55,7 +65,11 @@ export default async function handler(req, res) {
 
   const staff = await requireAuth(req, res, { db });
   if (!staff) return;
-  if (!requireRole(res, staff, ROLE_SETS.STAFF)) return;
+  if (!requireRole(res, staff, ROLE_SETS.FINANCE)) return;
+
+  if (!isPlaidEnabled()) {
+    return res.status(403).json({ ok: false, error: "banking surface requires plaid configuration" });
+  }
 
   const query = req.query || {};
   if (!isUuid(query.client_id)) {
@@ -67,11 +81,20 @@ export default async function handler(req, res) {
        accounts and two are closed" is a different fact from "this client has
        four accounts", and the grouping module is what decides that a closed
        account's last known balance is not reachable money. */
+    /* org_id COMES FROM THE SESSION, NEVER THE QUERY — and it is not optional.
+       This read filtered on client_id alone. bank_accounts.org_id is
+       `uuid NOT NULL` (db/migrations/081) and every request knows the caller's
+       org, but the two were never compared, so a staff member of org A who knew
+       a client id belonging to org B received that consumer's bank balances.
+       Identical to the hole found on the tradeline path and closed in
+       src/tradelines/store.mjs listTradelines(), which now refuses to run
+       without an org id. finance-os inherits that guard by going through the
+       store; this endpoint owns its SQL and had to say it itself. */
     const rows = (await db.query(
       `SELECT ${COLUMNS} FROM bank_accounts
-        WHERE client_id = $1
+        WHERE org_id = $1 AND client_id = $2
         ORDER BY entity_kind, name NULLS LAST, id`,
-      [String(query.client_id).trim()]
+      [staff.org_id, String(query.client_id).trim()]
     )).rows;
 
     return res.status(200).json({ ok: true, ...bankingSurface(rows) });

@@ -17,7 +17,7 @@ import { scopeFor } from "../../src/partners/scope.mjs";
 const run = readHandler({
   roles: ROLE_SETS.FINANCE,
   principals: new Set(["partner"]),
-  fetch: (db, { limit, offset, query, principal }) => {
+  fetch: (db, { limit, offset, query, principal, staff }) => {
     // alias "v" — the view exposes partner_id directly.
     // startIndex is the number of placeholders ALREADY used ($1 limit, $2 offset),
     // so the scope predicate lands on $3.
@@ -26,11 +26,33 @@ const run = readHandler({
     const statusHole = `$${params.length + 1}`;
     params.push(query.status || null);
 
+    /* THE ORG IS THE CALLER'S, NOT THE DEFAULT ONE (audit M3, and C1).
+       This read filtered on `org_id = (SELECT id FROM orgs WHERE is_default
+       LIMIT 1)` — a hardcoded lookup of whichever company is flagged default.
+       That is worse than no filter in one respect: it READS as scoped. The
+       moment a second company exists, its staff see the default company's
+       partner roster and none of their own, which surfaces as "my list is
+       empty" rather than as a leak — the wrong symptom to go chasing.
+
+       Two principals reach this endpoint and they are scoped differently:
+
+         a PARTNER is already pinned to their own partner_id by scope.sql
+         above, which is a complete scope on its own;
+
+         STAFF get the company off their session. A staff session with no org
+         binds NULL and matches no row: it fails CLOSED, because the
+         alternative hands a broken session every company's partner roster. */
+    const isPartner = Boolean(principal && principal.kind === "partner");
+    const orgHole = `$${params.length + 1}`;
+    params.push(isPartner);
+    const orgIdHole = `$${params.length + 1}`;
+    params.push(isPartner ? null : ((staff && staff.org_id) || null));
+
     return db.query(
       `SELECT v.partner_id AS id, v.slug, v.name, v.status, v.revenue_share_pct,
               v.agreement_signed, v.balance_accrued, v.total_paid, v.open_accruals
          FROM v_partner_balance v
-        WHERE v.org_id = (SELECT id FROM orgs WHERE is_default LIMIT 1)
+        WHERE (${orgHole}::boolean OR v.org_id = ${orgIdHole}::uuid)
           AND ${scope.sql}
           AND (${statusHole}::text IS NULL OR v.status = ${statusHole})
         ORDER BY v.name

@@ -33,8 +33,23 @@ function req(overrides = {}) {
   };
 }
 
+/* A bill fixture carries BOTH identities, because production does.
+
+   `billId` is the composite stream identity toCashflowBill() builds from
+   bankAccountId:merchantKey:cadence — it survives re-detection and is NOT a
+   database key. `subjectId` is the stored recurring_bills uuid, and it is what
+   cashflow_reminders.subject_id (a `uuid` column, 087:113) actually takes.
+
+   Writing billId there raised Postgres 22P02 and surfaced as a flat 400 on the
+   one case this screen exists for. These fixtures previously carried only
+   billId, so every in-memory assertion passed while the real write could not.
+   Pass `subjectId: null` explicitly to exercise a bill that was never stored. */
+const billUuid = (n) => `b111${String(n).padStart(4, "0")}-0000-4000-8000-000000000001`;
+let billSeq = 0;
+
 const bill = (billId, date, amountCents, extra = {}) => ({
   billId,
+  subjectId: billUuid(++billSeq),
   label: billId,
   occurrences: [{ date, amountCents }],
   ...extra
@@ -1234,8 +1249,17 @@ test("paymentWindow: every candidate date carries its own working", () => {
 // nothing. The rows are handed to src/banking/reminders.mjs to be stored.
 // ═══════════════════════════════════════════════════════════════════════════
 
+/* A REAL uuid, because the column that stores it is one.
+   cashflow_reminders.subject_id is `uuid` (087:113). This fixture used the
+   string "amex", which every in-memory assertion accepted and Postgres would
+   have rejected with 22P02 — the same shape of blind spot as the stubbed-db
+   test that let the composite bill id through. recordReminders() now refuses to
+   emit a reminder whose subject has no real key, so a fixture that does not
+   look like production no longer passes for the wrong reason. */
+const AMEX_ID = "a1e50000-0000-4000-8000-000000000001";
+
 const card = (over = {}) => ({
-  liabilityId: "amex",
+  liabilityId: AMEX_ID,
   label: "Amex Blue Business",
   dueDate: "2026-08-20",
   minimumPaymentCents: 3_500,
@@ -1264,7 +1288,7 @@ test("recordReminders: a blind spot becomes an input_missing row against that ca
   const r = out.reminders[0];
   assert.equal(r.reminderKind, "input_missing");
   assert.equal(r.subjectKind, "card_liability");
-  assert.equal(r.subjectId, "amex");
+  assert.equal(r.subjectId, AMEX_ID);
   assert.equal(r.subjectLabel, "Amex Blue Business");
   assert.equal(r.orgId, "o");
   assert.equal(r.clientId, "c");
@@ -1287,7 +1311,8 @@ test("recordReminders: a projected shortfall is attributed to the largest outflo
   const short = out.reminders.find((r) => r.reminderKind === "projected_shortfall");
   assert.ok(short, "a below-zero projection must produce a shortfall reminder");
   assert.equal(short.subjectKind, "recurring_bill");
-  assert.equal(short.subjectId, "rent", "the biggest outflow, not the first one");
+  assert.equal(short.subjectLabel, "rent", "the biggest outflow, not the first one");
+  assert.match(short.subjectId, /^[0-9a-f-]{36}$/i, "a real row id, never the composite billId");
   assert.match(short.body, /-420\.00/);
   assert.match(short.body, /estimate/i);
 });

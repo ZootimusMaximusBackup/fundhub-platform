@@ -32,6 +32,7 @@
 // work.test.mjs injects a database error at the staff_events INSERT to prove
 // this function still returns the updated inquiry when telemetry is broken.
 
+import { db as sharedDb, pool } from "../db.mjs";
 import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
 
@@ -207,12 +208,19 @@ export async function listAttempts(db, { inquiryId }) {
 }
 
 /* withTransaction — BEGIN/COMMIT around a callback, using a dedicated
-   connection. Falls back to running the callback directly when the handle has no
-   connect() (the in-memory fake used by the unit tests), so the transactional
-   path is not something only a real database can exercise. */
+   connection. A real transaction, which took catching to get right.
+
+   The broken probe `if (typeof db.connect !== "function")` was always true for
+   the shared handle (db = { query }, no connect), so writes ran unprotected with
+   autocommit in production. Fixed by checking db.connect directly, reaching for
+   pool() if db is the shared singleton, and only then falling back to inline
+   execution for a plain fake in a unit test. See src/finance/soft-pulls.mjs:502. */
 async function withTransaction(db, fn) {
-  if (typeof db.connect !== "function") return fn(db);
-  const client = await db.connect();
+  const acquire = typeof db?.connect === "function"
+    ? () => db.connect()
+    : (db === sharedDb ? () => pool().connect() : null);
+  if (!acquire) return fn(db);
+  const client = await acquire();
   try {
     await client.query("BEGIN");
     const out = await fn(client);

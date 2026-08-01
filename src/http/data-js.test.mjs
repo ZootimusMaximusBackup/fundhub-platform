@@ -140,6 +140,55 @@ describe("public/app/data.js — result classification", () => {
     assert.equal((await b.FH.clients()).source, "nodb");
   });
 
+  // ── audit m17: a crashed handler is not a database outage ──────────────────
+
+  test("a 500 from a handler that THREW is 'server', not 'nodb'", async () => {
+    // netlify/functions/api.mjs:334 — every error a handler throws is wrapped
+    // into exactly this. It used to arrive as source "nodb", so the screen told
+    // the user the database was unreachable for a fault in our own code.
+    const { FH } = load(() => ({
+      status: 500, body: { ok: false, error: "internal_error", message: "x is not a function" }
+    }));
+    const r = await FH.clients();
+    assert.equal(r.ok, false);
+    assert.equal(r.source, "server",
+      "a crashed handler must not be reported as a database outage");
+    assert.match(r.error, /500/, "the status belongs in the detail so it is diagnosable");
+  });
+
+  test("a 500 from a handler that never answered is 'server' too", async () => {
+    // netlify/functions/api.mjs:327 — returned without writing a response.
+    const { FH } = load(() => ({ status: 500, body: { ok: false, error: "handler_no_response" } }));
+    assert.equal((await FH.clients()).source, "server");
+  });
+
+  test("a 200 body that simply is not ok is 'server', not 'nodb'", async () => {
+    const { FH } = load(() => ({ status: 200, body: { ok: false, error: "request failed" } }));
+    assert.equal((await FH.clients()).source, "server");
+  });
+
+  test("the database outage and the server crash are distinguishable", async () => {
+    // The whole point of the finding. If these two ever collapse back into one
+    // source, the banner starts naming the wrong system again.
+    const db = load(() => ({ status: 503, body: { ok: false, error: "database unreachable" } }));
+    const crash = load(() => ({ status: 500, body: { ok: false, error: "internal_error" } }));
+    const gone = load(() => { throw new Error("network error"); });
+    const sources = [
+      (await db.FH.clients()).source,
+      (await crash.FH.clients()).source,
+      (await gone.FH.clients()).source
+    ];
+    assert.deepEqual(sources, ["nodb", "server", "offline"],
+      "three different faults with three different owners must not share a source");
+  });
+
+  test("db:'down' still wins over the status — the database gets to speak first", async () => {
+    // A 500 whose body says db:"down" IS the database. The order of the two
+    // checks in get() is what makes that true; this pins it.
+    const { FH } = load(() => ({ status: 500, body: { ok: false, db: "down", error: "no connection" } }));
+    assert.equal((await FH.clients()).source, "nodb");
+  });
+
   test("a transport failure is 'offline'", async () => {
     const { FH } = load(() => { throw new Error("network error"); });
     const r = await FH.clients();
@@ -219,6 +268,67 @@ describe("public/app/data.js — explain() tone", () => {
     assert.equal(painted[0].tone, "error");
     FH.explain({ ok: false, source: "nodb", error: "database unreachable" }, "documents");
     assert.equal(painted[1].tone, "error");
+    FH.explain({ ok: false, source: "server", error: "HTTP 500 internal_error" }, "documents");
+    assert.equal(painted[2].tone, "error");
+  });
+
+  /* ── audit m17: the words a human reads have to name the right system ──────
+     These assert wording, which normally is not worth pinning. It is here,
+     because the wording IS the defect: the banner fired correctly and named the
+     wrong system, and the cost was somebody spending an outage in the database
+     while the fault sat in the function logs. */
+
+  test("only a database outage is allowed to say 'database is not answering'", () => {
+    FH.explain({ ok: false, source: "nodb", error: "database unreachable" }, "documents");
+    assert.match(painted[0].text, /the database is not answering/);
+  });
+
+  test("a crashed handler blames our side, and does not name the database as the cause", () => {
+    FH.explain({ ok: false, source: "server", error: "HTTP 500 internal_error" }, "documents");
+    const text = painted[0].text;
+    assert.match(text, /something went wrong on our side/,
+      "the reader has to be sent to the server, not to the database");
+    assert.doesNotMatch(text, /the database is not answering/,
+      "a server crash must not be worded as a database outage");
+    assert.match(text, /did not report a problem/,
+      "it must say what is known — not report — rather than claiming the database is fine");
+    assert.match(text, /HTTP 500 internal_error/, "the detail has to survive for whoever debugs it");
+  });
+
+  test("no failure message uses words a non-engineer has to look up", () => {
+    // CLAUDE.md §10 — this screen text is read by the person deciding who to
+    // call. "backend", "handler" and "5xx" all tell them nothing.
+    const cases = [
+      { ok: false, source: "nodb", error: "database unreachable" },
+      { ok: false, source: "server", error: "HTTP 500 internal_error" },
+      { ok: false, source: "offline", error: "network error" },
+      { ok: false, source: "weird-new-thing", error: "no detail" }
+    ];
+    for (const res of cases) {
+      painted.length = 0;
+      FH._parts = {};
+      FH.explain(res, "documents");
+      for (const word of ["backend", "handler", "5xx", "endpoint", "null"]) {
+        assert.doesNotMatch(painted[0].text, new RegExp(word, "i"),
+          `source "${res.source}" says "${word}" to a reader who does not know what it means: ` +
+          painted[0].text);
+      }
+    }
+  });
+
+  test("an unrecognised source admits it does not know, instead of guessing", () => {
+    // The old fallback asserted "backend unavailable" for anything it had not
+    // seen before. A confident wrong cause is worse than an honest vague one.
+    FH.explain({ ok: false, source: "weird-new-thing", error: "no detail" }, "documents");
+    assert.match(painted[0].text, /cannot tell why/);
+    assert.match(painted[0].text, /weird-new-thing/, "the raw source still has to be printed");
+  });
+
+  test("nothing came back at all reads differently from an answer that was bad", () => {
+    FH.explain({ ok: false, source: "offline", error: "network error" }, "documents");
+    FH.explain({ ok: false, source: "server", error: "HTTP 500 internal_error" }, "d2");
+    assert.match(painted[0].text, /could not reach the server/);
+    assert.notEqual(painted[0].text, painted[1].text);
   });
 
   test("being signed out is an error the user can act on", () => {

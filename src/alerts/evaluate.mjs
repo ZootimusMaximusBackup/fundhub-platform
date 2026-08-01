@@ -64,7 +64,10 @@
 //     to them, and that is a claim about a credit outcome in a regulated
 //     consumer-finance product. Compliance sign-off, not a default parameter.
 
-import { toCents } from "../tradelines/index.mjs";
+// readApr comes from the same module as toCents on purpose: APR is normalised
+// once in this repo, by the function that writes the column. See readLine below
+// for what a bare Number() did to the saving figure before this import existed.
+import { toCents, readApr } from "../tradelines/index.mjs";
 import { roundHalfUp } from "../commissions/money.mjs";
 import { FICO_BANDS, PASSING_FICO_BANDS } from "../config/survey-qualification.mjs";
 
@@ -159,8 +162,43 @@ export function readLine(line) {
   if (limitCents === null) limitCents = toCents(firstPresent(line, ["creditLimit"]));
   if (balanceCents === null) balanceCents = toCents(firstPresent(line, ["currentBalance"]));
 
-  const aprRaw = line.apr;
-  const apr = aprRaw === null || aprRaw === undefined || aprRaw === "" ? null : Number(aprRaw);
+  /* APR is a decimal FRACTION here — 0.2499 is 24.99% — and it is read by
+     readApr() from src/tradelines/index.mjs, the same function that writes the
+     `tradelines.apr` column.
+
+     WHAT THIS LINE USED TO BE, AND WHY IT WAS A HUNDRED-FOLD ERROR. It was a
+     bare `Number(aprRaw)` with no unit normalisation. Every store in this repo
+     holds APR as a fraction — db/migrations bounds `apr` to 0..1 with a CHECK on
+     both card tables — but readLine is fed by callers, not only by the database,
+     and a bureau or vendor payload states the same quantity as `24.99` about as
+     often as it states `0.2499`. A percent-unit value sailed straight through
+     unconverted and stayed 100x too large for the whole of the calculation.
+
+     The damage landed downstream at the HIGH_APR_BALANCE case (see :546 below),
+     where the rate difference multiplies a balance in cents: a real $960-a-year
+     saving was reported as $96,000. That number is not an internal statistic. It
+     is the dollar figure inside a sentence about a person's credit, in a
+     regulated consumer-finance product, so a wrong one is a compliance problem
+     and not just a display bug.
+
+     A rate above 100% was likewise kept and acted on; it now reads as null.
+
+     WHY readApr AND NOT A LOCAL CONVERSION. The ambiguity is genuinely hard —
+     see the comment at src/tradelines/index.mjs:35 for the >1-is-percent rule,
+     the refusal above 100%, and the numeric(6,5) rounding — and it is already
+     solved once. A second normaliser is the exact defect class CLAUDE.md §8
+     names ("reuse before you build"): two functions answering the same question
+     drift apart quietly and the disagreement surfaces months later. This file
+     already imports toCents from that module, so the seam is proven.
+
+     NULL SURVIVES AS NULL. readApr returns null for absent, unreadable,
+     negative, and out-of-range rates. Nothing here substitutes 0 for any of
+     them. A 0% APR is not "we don't know" — it is a specific, checkable claim
+     about somebody's card, and it would also become the client's cheapest rate
+     and therefore the baseline every saving figure is measured against. The
+     null is carried into `linesMissingApr` and keeps the line out of `priced`,
+     which is how "cannot tell" stays distinct from "no case" at :539 below. */
+  const apr = readApr(line.apr);
 
   return {
     id: line.id ?? null,
@@ -170,7 +208,7 @@ export function readLine(line) {
     closed: Boolean(line.closed_at ?? line.closedAt ?? false),
     limitCents,
     balanceCents,
-    apr: Number.isFinite(apr) && apr >= 0 ? apr : null
+    apr
   };
 }
 
@@ -546,6 +584,14 @@ export function suggestCardUpgrade(input, opts = {}) {
       // other money figure in the repo rounds. Floating-point money is a live
       // defect here (src/affiliates/economics.mjs lands a cent short) and this is
       // not going to be the second one.
+      //
+      // THE UNITS THIS MULTIPLICATION DEPENDS ON. `l.apr - bestApr` must be a
+      // difference of FRACTIONS (0.25 - 0.10 = 0.15), because it is multiplied
+      // straight into a balance in cents. If an APR ever reaches here in percent
+      // units (25 - 10 = 15) the answer is a hundred times too big and reads as
+      // a plausible dollar amount — $96,000 instead of $960. That is guaranteed
+      // upstream by readApr() in readLine, not re-checked here; if this figure
+      // ever looks wrong by a factor of 100, that is the line to look at.
       const savingCents = dearer.reduce((s, l) => s + roundHalfUp(l.balanceCents * (l.apr - bestApr)), 0);
       result.estimatedAnnualSavingCents = savingCents;
       result.reasons.push({

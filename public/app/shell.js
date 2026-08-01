@@ -21,7 +21,18 @@
     "staff-teams.html", "content-admin.html", "sample-data.html",
     "inquiry-remover.html", "affiliate.html", "client-portal.html", "partner-galaxy.html", "brand-studio.html",
     "campaign-manager.html", "social-studio.html", "creative-factory.html", "hiring.html",
-    "finance-os.html", "banking-surface.html"
+    "finance-os.html", "banking-surface.html",
+    /* The Finance OS write surface. Twelve tested modules — subscriptions,
+       liabilities, bank accounts, recurring bills, the cash-flow projection,
+       alerts and the two deal calculators — had no screen and no route, so the
+       owner opened the app and saw a seven-row read-only grid. These six screens
+       and the eight /api/finance/* routes registered in
+       netlify/functions/api.mjs are the way in. Added to the sidebar in the same
+       pass, in every file that carries one: a screen in ALL and nowhere else has
+       no way in, and src/http/app-nav-reachability.test.mjs fails when that
+       happens (audit M20). */
+    "subscriptions.html", "card-stack.html", "bank-accounts.html",
+    "bills-cashflow.html", "alerts.html", "deal-model.html"
   ];
 
   /* partner-galaxy.html is the white-label partner's own Galaxy — scoped to
@@ -30,10 +41,57 @@
      instead, so it stays out of the staff surface. */
   var PRINCIPAL_ONLY = ["partner-galaxy.html"];
 
-  // staffTabs — every screen the sidebar links to, which is every screen a
-  // signed-in employee can reach from the chrome they are already looking at.
+  /* NOT PART OF THE SHARED STAFF SURFACE — waiting on a human approval, not on
+     a nav decision. banking-surface.html shows a named client's bank balances,
+     read from a bank connection. Bank connections are not approved in this
+     product: the SOC 2 review of storing bank credentials and the consent
+     flow are both open (src/banking/plaid.mjs, docs/workflows/finish-the-build/
+     W5.md). api/read/banking-surface.mjs answers this screen only for
+     ROLE_SETS.FINANCE for that reason, so leaving it in the shared surface
+     would have offered every employee a screen the data behind it refuses.
+     Owner and admin have "*" and keep it. Widening this is a decision somebody
+     makes after the sign-off, not a tidy-up.
+
+     THE THREE FINANCE OS SCREENS BELOW ARE HERE FOR THE SAME REASON, AND THE
+     RULE IS THE ONE THIS LIST ALREADY ENFORCES: the nav must not offer a screen
+     whose data refuses the person clicking it.
+
+       subscriptions.html   /api/finance/subscriptions and /api/finance/cards
+                            both gate on ROLE_SETS.FINANCE. A subscription row
+                            carries a price and a payment instrument, which is
+                            the narrowest thing this API serves.
+       bank-accounts.html   /api/finance/bank-accounts gates on FINANCE, matching
+                            api/read/banking-surface.mjs over the same rows.
+       bills-cashflow.html  /api/finance/bills and /api/finance/cashflow gate on
+                            FINANCE — both are bank-derived, and the cash-flow
+                            thresholds are an operator policy.
+
+     The other three stay in the shared staff surface because their endpoints
+     do: card-stack.html reads liabilities (ROLE_SETS.STAFF, the same gate
+     api/read/tradelines.mjs carries over the same cards), alerts.html reads the
+     queue (STAFF, with trigger CONFIGURATION narrowed to FINANCE inside the
+     handler), and deal-model.html is a calculator closers use to do their job.
+
+     MOVE A GATE AND MOVE ITS ROW. If a build agent widens or narrows a role set
+     in api/finance/*, this list has to follow in the same commit, or the app
+     goes back to offering screens that 403. */
+  var OWNER_ADMIN_ONLY = [
+    "banking-surface.html",
+    "subscriptions.html", "bank-accounts.html", "bills-cashflow.html"
+  ];
+
+  /* staffTabs — every screen a signed-in employee may open, which is every row
+     the shared sidebar leaves them looking at.
+
+     The sidebar markup itself carries one row more than this: banking-surface
+     .html is in it so owner and admin can reach it, and gateLinks() hides that
+     row for everybody else. partner-galaxy.html is in no sidebar at all, per
+     the note above. Adding a screen to ALL and to nothing else gives it no way
+     in — src/http/app-nav-reachability.test.mjs fails when that happens. */
   function staffTabs() {
-    return ALL.filter(function (s) { return PRINCIPAL_ONLY.indexOf(s) === -1; });
+    return ALL.filter(function (s) {
+      return PRINCIPAL_ONLY.indexOf(s) === -1 && OWNER_ADMIN_ONLY.indexOf(s) === -1;
+    });
   }
 
   /* "staff" = the full employee surface; "*" = that plus the partner screen.
@@ -124,8 +182,137 @@
     return h && ok.indexOf(h) !== -1 ? h : ok[0];
   }
 
+  /* screenOf — the screen file a link points at, or "" if it does not point at
+     one. It STRIPS A QUERY STRING AND A HASH, and that is a fix, not tidying.
+
+     The old isScreen() tested the whole href against /^[a-z0-9-]+\.html$/, so
+     "card-stack.html?client_id=..." was not a screen as far as this file was
+     concerned. Two things followed from that, both live on the deployed app:
+
+       1. THE GATE HAD A HOLE. Every link a screen builds in JavaScript carries a
+          query — card-stack.html builds finance-os.html?client_id=, deal-model
+          builds card-stack.html?client_id=, alerts builds alerts.html?client_id=
+          — so the click interceptor below skipped all of them and gateLinks()
+          never hid one. A role that may not open a screen could still be handed
+          a working link to it by another screen, click it, and be bounced back
+          out by pass 2. That bounce is the exact behaviour the header of this
+          file says the gate exists to have fixed.
+       2. THE CLIENT COULD NOT BE CARRIED. Appending ?client_id= to a sidebar row
+          would have taken that row out of the gate entirely, for the same
+          reason. Carrying the client safely required fixing this first. */
+  function screenOf(href) {
+    var h = String(href == null ? "" : href).replace(/^\.\//, "");
+    h = h.split("#")[0].split("?")[0];
+    /* A LEADING PATH IS STRIPPED TOO, and that is not cosmetic. The redirect
+       targets this file builds are absolute — "/app/" + homeFor(...) — so
+       without this, withClient() looked at "/app/closer-dashboard.html", failed
+       to recognise a screen in it, and silently carried nothing. The bounce-home
+       path is exactly where losing the client hurts most: you were sent
+       somewhere you did not ask to go, and arriving with nobody open makes it
+       look like the app forgot what you were doing. No markup in public/app uses
+       an absolute href today, so nothing else changes shape. */
+    h = h.slice(h.lastIndexOf("/") + 1);
+    return /^[a-z0-9-]+\.html$/i.test(h) ? h : "";
+  }
+
   function isScreen(href) {
-    return /^[a-z0-9-]+\.html$/i.test(href);
+    return screenOf(href) !== "";
+  }
+
+  /* ── carrying the client from screen to screen ────────────────────────────
+
+     THE PROBLEM THIS SOLVES. Seven screens in this app are about ONE named
+     client and every one of them takes that client from the address bar. Until
+     this pass nothing put it there: you typed a uuid by hand, and the moment you
+     used the sidebar to walk to the next screen it was gone and you typed it
+     again. That is what made a finished product feel like a pile of separate
+     pages rather than one thing.
+
+     WHAT THIS DOES. gateLinks() appends the current client to every link that
+     points at a screen which actually reads one. It never guesses: the id has to
+     be a uuid, and a link that already names its own client is left exactly as
+     it is, so a "see this other client's alert" link still goes where it says.
+
+     WHAT IT DELIBERATELY DOES NOT DO. It does not decide what any screen SHOWS.
+     Screens read their own address bar and nothing else; this only changes where
+     links point. And it touches nothing but the screens listed below — putting
+     ?client_id= on a link to Hiring or Brand Studio would be noise on a URL that
+     means nothing to the page receiving it.
+
+     THE ONE ODD ENTRY. client-control-panel.html calls the same thing `id`, not
+     `client_id` (its wiring reads FHData.param("id")). Renaming its parameter
+     would break every link and bookmark anybody has to it, so the mapping is
+     written here instead — once, where every link in the app is already being
+     rewritten — and reported as an inconsistency rather than hidden.
+     closer-dashboard.html already accepts either spelling and takes client_id. */
+  var CLIENT_SCREENS = {
+    "finance-os.html":           "client_id",
+    "subscriptions.html":        "client_id",
+    "card-stack.html":           "client_id",
+    "bank-accounts.html":        "client_id",
+    "bills-cashflow.html":       "client_id",
+    "alerts.html":               "client_id",
+    "deal-model.html":           "client_id",
+    "banking-surface.html":      "client_id",
+    "closer-dashboard.html":     "client_id",
+    "client-control-panel.html": "id"
+  };
+
+  var CLIENT_KEY = "fh_client";
+  var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  /* urlClient — the client this page was opened on, if it is a real id.
+
+     A junk value is treated as no client at all rather than propagated: spraying
+     a typo across ten links turns one 400 into ten. `id` is read ONLY on the
+     control panel, where `id` IS the client — on agent-editor.html or
+     brand-studio.html `id` means something else entirely, and remembering an
+     agent's id as a client would send the next click to the wrong record. */
+  function urlClient() {
+    try {
+      var q = new URLSearchParams(location.search);
+      var v = q.get("client_id");
+      if (!v && CLIENT_SCREENS[PAGE] === "id") v = q.get("id");
+      v = String(v == null ? "" : v).trim();
+      return UUID_RE.test(v) ? v : "";
+    } catch (e) { return ""; }
+  }
+
+  /* currentClient — the client to point links at.
+
+     The address bar wins and is remembered; the memory is the fallback so that a
+     detour through a screen with no client on it (Command Center, Documents)
+     does not lose the person you were working on. The memory NEVER decides what
+     a screen displays — only where a link goes — so the worst a stale value can
+     do is offer a link to the client you had open last, which is visible in the
+     link and in the hub's own "currently open" line. It is cleared on sign-out,
+     because the next person at a shared machine must not inherit it. */
+  function currentClient() {
+    var fromUrl = urlClient();
+    if (fromUrl) {
+      try { localStorage.setItem(CLIENT_KEY, fromUrl); } catch (e) {}
+      return fromUrl;
+    }
+    try {
+      var v = String(localStorage.getItem(CLIENT_KEY) || "").trim();
+      return UUID_RE.test(v) ? v : "";
+    } catch (e) { return ""; }
+  }
+
+  /* withClient — one href, with the client on it if that screen reads one. */
+  function withClient(href, cid) {
+    var key = CLIENT_SCREENS[screenOf(href)];
+    if (!cid || !key) return href;
+    var h = String(href);
+    var hash = "";
+    var i = h.indexOf("#");
+    if (i !== -1) { hash = h.slice(i); h = h.slice(0, i); }
+    // A link that names its own client already answered this question. The hub
+    // builds its cards that way, and an alert row links to the client the alert
+    // is about — neither must be rewritten to whoever is "current".
+    if (new RegExp("[?&]" + key + "=").test(h)) return href;
+    return h + (h.indexOf("?") === -1 ? "?" : "&") +
+           key + "=" + encodeURIComponent(cid) + hash;
   }
 
   /* normRole — the one place a role string is folded to a map key. Matching
@@ -170,7 +357,10 @@
     var ok = allowedFor(role);
     if (!ok.length) return null;
     if (ok.indexOf(PAGE) !== -1) return null;
-    return "/app/" + homeFor(role, ok);
+    // Bounced off a screen you may not open — but you were working on somebody,
+    // and arriving home having silently lost them is the loss this pass exists
+    // to stop. currentClient() reads the bar of the page being left.
+    return withClient("/app/" + homeFor(role, ok), currentClient());
   }
 
   /* allowedNow is null until we know the role. Every click on a screen link is
@@ -186,22 +376,26 @@
     var a = t && t.closest ? t.closest("a[href]") : null;
     if (!a || a.target === "_blank") return;
     var h = (a.getAttribute("href") || "").replace(/^\.\//, "");
-    if (!isScreen(h)) return;
+    // screenOf(), not isScreen() on the raw href: a link carrying ?client_id=
+    // is still a link to a screen and still has to be gated. See screenOf().
+    var file = screenOf(h);
+    if (!file) return;
     if (allowedNow === null) {
       // Session still in flight: remember where they wanted to go and take
-      // them there the moment we know they may.
+      // them there the moment we know they may. The WHOLE href is remembered,
+      // query and all, so the client on it survives the wait.
       e.preventDefault();
       pendingHref = h;
       return;
     }
-    if (allowedNow.indexOf(h) === -1) e.preventDefault();
+    if (allowedNow.indexOf(file) === -1) e.preventDefault();
   }, true);
 
   function settleClicks(ok) {
     allowedNow = ok;
     var want = pendingHref;
     pendingHref = null;
-    if (want && ok.indexOf(want) !== -1) location.href = want;
+    if (want && ok.indexOf(screenOf(want)) !== -1) location.href = want;
   }
 
   /* Without a hint the gate cannot answer before paint, so hold the screen
@@ -300,6 +494,10 @@
         localStorage.removeItem("fh_token");
         localStorage.removeItem("fh_demo");
         localStorage.removeItem("fh_demo_staff");
+        // The remembered client goes too. It is not a credential, but it is the
+        // name of a real person's file and the next person to sign in at a
+        // shared machine must not be handed it on every link.
+        localStorage.removeItem(CLIENT_KEY);
       } catch (e) { /* private mode — the redirect still happens */ }
       writeCachedRole("");
       location.href = "/login.html";
@@ -330,22 +528,33 @@
      on the element the first time through, because the logo's is rewritten. */
   function gateLinks(ok, role) {
     var home = "/app/" + homeFor(role, ok);
+    /* Read ONCE per pass, not once per link: currentClient() writes the address
+       bar's client back to localStorage, and doing that inside the loop would
+       repeat the same write for every anchor on the page. */
+    var cid = currentClient();
     var links = document.querySelectorAll("a[href]");
     for (var i = 0; i < links.length; i++) {
       var a = links[i];
       if (!a.hasAttribute("data-fh-href")) {
         a.setAttribute("data-fh-href", a.getAttribute("href") || "");
       }
+      /* EVERY REWRITE BELOW STARTS FROM data-fh-href, THE ORIGINAL. That is what
+         makes this idempotent across the two passes — the hint pass and the
+         session pass — and it is what stops the client being appended twice. */
       var h = a.getAttribute("data-fh-href").replace(/^\.\//, "");
-      if (!isScreen(h)) continue;
-      var allowed = ok.indexOf(h) !== -1;
+      var file = screenOf(h);
+      if (!file) continue;
+      var allowed = ok.indexOf(file) !== -1;
       // The sidebar logo is chrome, not a tab. Every screen points it at
       // command-center.html, which five of the nine roles may not open, so
       // hiding it took the logo off the page for them. Send it home instead.
       if (a.classList.contains("logo")) {
-        a.setAttribute("href", allowed ? h : home);
+        a.setAttribute("href", withClient(allowed ? h : home, cid));
         continue;
       }
+      // THE CLIENT RIDES ALONG. Only on links this role may follow, and only to
+      // screens that read a client — see CLIENT_SCREENS.
+      if (allowed) a.setAttribute("href", withClient(h, cid));
       var box = a.closest("li") || a.closest(".card") || a;
       if (!allowed) {
         box.style.display = "none";
@@ -483,8 +692,9 @@
     if (!ok.length) { signOut(); return; }
     if (ok.indexOf(PAGE) === -1) {
       // replace(), not href: the router page must not sit in history, or
-      // Back from a screen bounces straight forward again.
-      location.replace("/app/" + homeFor(role, ok));
+      // Back from a screen bounces straight forward again. The client rides
+      // along for the same reason routeAway() carries it.
+      location.replace(withClient("/app/" + homeFor(role, ok), currentClient()));
       return;
     }
     settleClicks(ok);

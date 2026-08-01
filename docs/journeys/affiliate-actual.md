@@ -34,12 +34,12 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| NONE[Nothing admits this one — every endpoint refuses them]
     NONE --> OPENONLY[Only the routes anyone can reach without signing in]
-    WHO -->|Yes| CANT[Blocked — 46 routes]
+    WHO -->|Yes| CANT[Blocked — 54 routes]
     CANT --> B_banking[banking — 1 blocked]
     CANT --> B_campaigns[Campaigns — 6 blocked]
     CANT --> B_creative[Creative Factory — 4 blocked]
     CANT --> B_dashboard[The dashboard — 4 blocked]
-    CANT --> B_finance[Finance — 1 blocked]
+    CANT --> B_finance[Finance — 9 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_read[Reading data — 17 blocked]
@@ -48,11 +48,11 @@ flowchart TD
 
 ## What they can reach
 
-**7 of 53 routes.**
+**7 of 61 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
-| `/api/auth/login` | — | anyone |
+| `/api/auth/login` | GET | anyone |
 | `/api/auth/logout` | — | anyone |
 | `/api/auth/session` | — | anyone |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
@@ -68,7 +68,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**46 of 53 routes.**
+**54 of 61 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -87,7 +87,15 @@ flowchart TD
 | `/api/dashboard/clients` | — | staff |
 | `/api/dashboard/pipeline` | — | staff |
 | `/api/dashboard/seed` | — | staff |
+| `/api/finance/alerts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/finance/bank-accounts` | GET, POST | owner, admin |
+| `/api/finance/bills` | GET, POST | owner, admin |
+| `/api/finance/cards` | GET, POST | owner, admin |
+| `/api/finance/cashflow` | GET, POST | owner, admin |
+| `/api/finance/liabilities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/finance/model` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
+| `/api/finance/subscriptions` | GET, POST | owner, admin |
 | `/api/hiring/application` | GET | owner, admin |
 | `/api/hiring/bench` | GET | owner, admin |
 | `/api/hiring/candidates` | GET | owner, admin |
@@ -101,7 +109,7 @@ flowchart TD
 | `/api/privacy/erasure` | GET, POST | owner, admin |
 | `/api/read/affiliates` | GET | owner, admin |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/banking-surface` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/read/banking-surface` | GET | owner, admin |
 | `/api/read/commissions` | GET | owner, admin |
 | `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
