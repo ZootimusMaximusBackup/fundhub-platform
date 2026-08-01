@@ -33,6 +33,7 @@ import authSession from "../../api/auth/session.mjs";
 import authReset from "../../api/auth/reset.mjs";
 import authAdminReset from "../../api/auth/admin-reset.mjs";
 import journeysAsk from "../../api/journeys/ask.mjs";
+import journeysStore from "../../api/journeys.mjs";
 import tasks from "../../api/tasks.mjs";
 import inquiry from "../../api/inquiry.mjs";
 import dashClients from "../../api/dashboard/clients.mjs";
@@ -109,6 +110,7 @@ export const ROUTES = {
   "auth/reset": authReset,
   "auth/admin-reset": authAdminReset,
   "journeys/ask": journeysAsk,
+  "journeys": journeysStore,
   "tasks": tasks,
   "inquiry": inquiry,
   "dashboard/clients": dashClients,

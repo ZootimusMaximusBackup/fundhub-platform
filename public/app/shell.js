@@ -44,7 +44,12 @@
        what read/finance-os, read/banking-surface and read/tradelines already
        serve. Same treatment as banking-entry above: in ALL, and therefore in
        every sidebar. */
-    "money-map.html"
+    "money-map.html",
+    /* journeys.html is the SMS/email/pipeline automation editor — it writes
+       live message copy and stage wiring, so it is owner/admin only (see
+       OWNER_ADMIN_ONLY below). Same treatment as every other addition on
+       this list: in ALL, and therefore in every sidebar. */
+    "journeys.html"
   ];
 
   /* partner-galaxy.html is the white-label partner's own Galaxy — scoped to
@@ -89,7 +94,10 @@
      goes back to offering screens that 403. */
   var OWNER_ADMIN_ONLY = [
     "banking-surface.html",
-    "subscriptions.html", "bank-accounts.html", "bills-cashflow.html"
+    "subscriptions.html", "bank-accounts.html", "bills-cashflow.html",
+    /* journeys.html — api/journeys/ask.mjs and api/journeys/store.mjs both
+       gate on requireRole("owner", "admin"); the nav row matches. */
+    "journeys.html"
   ];
 
   /* staffTabs — every screen a signed-in employee may open, which is every row

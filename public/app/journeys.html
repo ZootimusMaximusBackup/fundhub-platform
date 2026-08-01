@@ -3,28 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>fundhub — journeys</title>
-<script>
-/* Auth gate — runs before paint, same placement rule as shell.js: decide
-   first, paint second. Journeys editing is owner/admin only (it rewrites
-   live SMS/email copy and pipeline wiring), enforced again server-side by
-   /api/journeys/ask via requireRole. */
-(function () {
-  fetch("/api/auth/session", { credentials: "include" }).then(function (r) {
-    return r.ok ? r.json() : { ok: false };
-  }).then(function (s) {
-    var role = s && s.ok && s.staff && s.staff.role;
-    if (role !== "owner" && role !== "admin") {
-      location.href = "/login.html?next=/app/journeys.html";
-    }
-  }).catch(function () {
-    location.href = "/login.html?next=/app/journeys.html";
-  });
-})();
-</script>
+<title>Fundhub — Journeys</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
 <style>
 :root{
   --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
@@ -40,12 +23,43 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;
-  -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;overflow:hidden}
+  -webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:3px}
 .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
   color:var(--gray2);display:flex;align-items:center;gap:9px}
 .eyebrow::before{content:"";width:16px;height:2px;background:var(--spectrum);border-radius:1px;flex:0 0 auto}
+
+/* ══ SHARED CHROME — identical across every internal surface (public/app/*.html) ══ */
+.app{display:flex;height:100vh;overflow:hidden}
+.side{width:230px;flex:0 0 230px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
+.side::after{content:"";position:absolute;top:0;right:0;width:2px;height:100%;background:var(--spectrum);opacity:.9}
+.side.mini{width:60px;flex:0 0 60px}
+.side-top{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--cardline)}
+.side.mini .side-top{padding:0 12px}.side.mini .logo{display:none}
+.burger{margin-left:auto;width:26px;height:26px;flex:0 0 26px;border:1px solid var(--cardline);background:transparent;color:var(--gray2);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+.burger:hover{border-color:#3F3F46;color:var(--paper)}.side.mini .burger{margin:0 auto}
+.side-scroll{flex:1;overflow-y:auto;padding:12px 0 8px}
+.side-scroll::-webkit-scrollbar{width:6px}.side-scroll::-webkit-scrollbar-thumb{background:#27272A;border-radius:3px}
+.navgroup{margin-bottom:3px}
+.navhead{width:100%;background:transparent;border:0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;padding:9px 18px 6px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#71717A}
+.navhead:hover{color:var(--gray2)}
+.navhead .chev{margin-left:auto;font-size:9px;transition:transform .16s;color:#52525B}
+.navgroup.closed .chev{transform:rotate(-90deg)}.navgroup.closed .navlist{display:none}
+.side.mini .navhead{justify-content:center;padding:10px 0 6px;font-size:0;letter-spacing:0}
+.side.mini .navhead::after{content:"";display:block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;opacity:.5}
+.side.mini .navhead .chev{display:none}
+.navlist{display:flex;flex-direction:column}
+.navitem{display:flex;align-items:center;gap:11px;padding:7px 18px;font-size:12.5px;color:var(--gray2);position:relative;transition:color .12s,background .12s}
+.navitem:hover{color:var(--paper);background:#161619}
+.navitem .ico{font-family:var(--mono);font-size:12px;width:16px;flex:0 0 16px;text-align:center;opacity:.75}
+.navitem.on{color:var(--paper);background:#161619;font-weight:500}
+.navitem.on::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--spectrum);border-radius:0 2px 2px 0}
+.navitem.on .ico{opacity:1}
+.side.mini .navitem{justify-content:center;padding:9px 0}.side.mini .navitem .lbl{display:none}
+.side-foot{padding:12px 16px;border-top:1px solid var(--cardline);font-family:var(--mono);font-size:10px;color:#52525B;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
+.side.mini .side-foot .who{display:none}.side.mini .side-foot{justify-content:center;padding:12px 0}
+.shell{height:100vh;display:flex;flex-direction:column;flex:1;min-width:0;overflow:hidden}
 
 header{flex:0 0 auto;padding:13px 22px;display:flex;align-items:center;justify-content:space-between;
   gap:20px;position:relative;background:var(--paper);z-index:14}
@@ -64,9 +78,9 @@ header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;ba
 .hbtn:disabled{opacity:.35;cursor:default}
 .hbtn:disabled:hover{border-color:var(--line);color:var(--gray)}
 
-.shell{flex:1 1 auto;display:flex;min-height:0}
-aside{flex:0 0 190px;border-right:1px solid var(--line);padding:19px 0;overflow-y:auto}
-aside .eyebrow{padding:0 20px 12px}
+.workspace{flex:1 1 auto;display:flex;min-height:0}
+#jlist{flex:0 0 190px;border-right:1px solid var(--line);padding:19px 0;overflow-y:auto}
+#jlist .eyebrow{padding:0 20px 12px}
 .jrow{width:100%;text-align:left;padding:9px 20px;display:flex;align-items:center;gap:9px;position:relative;transition:background .13s}
 .jrow:hover{background:var(--soft)}
 .jrow .nm{font-size:13.5px;flex:1 1 auto}
@@ -273,7 +287,7 @@ body.running .lane.notaken{opacity:.25}
 .li .rv:disabled{opacity:.4;cursor:default}
 .li.reverted{opacity:.55}
 
-.bar{position:fixed;left:190px;right:348px;bottom:0;background:var(--card);color:var(--cardtext);
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);color:var(--cardtext);
   border-top:1px solid var(--cardline);z-index:20;animation:up .22s cubic-bezier(.2,.7,.3,1) backwards}
 @keyframes up{from{transform:translateY(100%)}}
 .bartop{padding:13px 26px;display:flex;align-items:center;justify-content:space-between;gap:18px}
@@ -298,49 +312,125 @@ body.running .lane.notaken{opacity:.25}
 .toast .pb{height:2px;border-radius:1px;background:var(--spectrum);margin-top:10px;transform-origin:left;animation:fill 4.4s linear forwards}
 @keyframes fill{from{transform:scaleX(0)}}
 
-@media (max-width:1140px){.panel{flex:0 0 308px}.bar{right:308px}}
+@media (max-width:1140px){.panel{flex:0 0 308px}}
 @media (max-width:920px){
-  .shell{flex-direction:column;overflow-y:auto}
-  aside{flex:0 0 auto;border-right:none;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;padding:10px 0}
-  aside .eyebrow{display:none}
+  .side{display:none}
+  .workspace{flex-direction:column;overflow-y:auto}
+  #jlist{flex:0 0 auto;border-right:none;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;padding:10px 0}
+  #jlist .eyebrow{display:none}
   .jrow{width:auto;flex:0 0 auto;padding:7px 14px;white-space:nowrap}
   .jrow .ct{display:none}
   .jrow[aria-selected="true"]::before{top:auto;bottom:-10px;left:14px;right:14px;width:auto;height:2px}
   .canvas{padding:18px 12px 40px}
   .panel{flex:0 0 auto;border-left:none;border-top:1px solid var(--line);max-height:none}
   .pbody{overflow:visible}
-  .bar{left:0;right:0}
   .wire .add{opacity:1}
   :root{--gap:16px}
   .tagpill,.firedtick{transform:translateX(-50%);top:-9px}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
+<script src="shell.js"></script>
 </head>
 <body>
+<div class="app">
 
-<header>
-  <div class="brand"><b>fundhub</b><span>journeys</span></div>
-  <div class="hactions">
-    <span class="dirty" id="dirty"></span>
-    <button class="hbtn" id="undo">Undo</button>
-    <button class="hbtn" id="savever">Save version</button>
-    <button class="hbtn p" id="apply">Apply to code</button>
-  </div>
-</header>
+  <!-- ══ SIDEBAR — identical across every wireframe ══ -->
+  <aside class="side" id="side">
+    <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
+    <nav class="side-scroll">
+      <div class="navgroup"><button class="navhead">Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Finance<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="money-map.html"><span class="ico">◪</span><span class="lbl">Money Map</span></a>
+        <a class="navitem" href="finance-os.html"><span class="ico">▩</span><span class="lbl">Finance OS</span></a>
+        <a class="navitem" href="banking-surface.html"><span class="ico">◧</span><span class="lbl">Banking</span></a>
+        <a class="navitem" href="subscriptions.html"><span class="ico">◍</span><span class="lbl">Subscriptions</span></a>
+        <a class="navitem" href="card-stack.html"><span class="ico">▥</span><span class="lbl">Card Stack</span></a>
+        <a class="navitem" href="bank-accounts.html"><span class="ico">⊞</span><span class="lbl">Bank Accounts</span></a>
+        <a class="navitem" href="bills-cashflow.html"><span class="ico">∿</span><span class="lbl">Bills &amp; Cash Flow</span></a>
+        <a class="navitem" href="alerts.html"><span class="ico">⚠</span><span class="lbl">Alerts</span></a>
+        <a class="navitem" href="deal-model.html"><span class="ico">⌁</span><span class="lbl">Deal Model</span></a>
+        <a class="navitem" href="banking-entry.html"><span class="ico">✚</span><span class="lbl">Add Accounts</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
+        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Automation<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+        <a class="navitem on" href="journeys.html"><span class="ico">⇝</span><span class="lbl">Journeys</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Marketing<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
+        <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
+        <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Setup<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
+        <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
+        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
+        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Client<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+      </div></div>
+    </nav>
 
-<div class="shell">
-  <aside id="jlist" role="tablist" aria-label="Journeys"></aside>
-  <div class="canvas" id="canvas"></div>
-  <div class="panel">
-    <div class="ptabs" role="tablist" aria-label="Panel">
-      <button class="ptab" data-tab="step" role="tab">Step</button>
-      <button class="ptab" data-tab="sim" role="tab">Simulate</button>
-      <button class="ptab" data-tab="hist" role="tab">History</button>
+    <div class="side-foot"><span class="pulse"></span><span class="who">journeys editor</span></div>
+  </aside>
+
+  <div class="shell">
+
+  <header>
+    <div class="brand"><b>fundhub</b><span>journeys</span></div>
+    <div class="hactions">
+      <span class="dirty" id="dirty"></span>
+      <button class="hbtn" id="undo">Undo</button>
+      <button class="hbtn" id="savever">Save version</button>
+      <button class="hbtn p" id="apply">Apply to code</button>
     </div>
-    <div class="pbody" id="pbody"></div>
+  </header>
+
+  <div class="workspace">
+    <aside id="jlist" role="tablist" aria-label="Journeys"></aside>
+    <div class="canvas" id="canvas"></div>
+    <div class="panel">
+      <div class="ptabs" role="tablist" aria-label="Panel">
+        <button class="ptab" data-tab="step" role="tab">Step</button>
+        <button class="ptab" data-tab="sim" role="tab">Simulate</button>
+        <button class="ptab" data-tab="hist" role="tab">History</button>
+      </div>
+      <div class="pbody" id="pbody"></div>
+    </div>
+  </div>
+
   </div>
 </div>
+
+<script>
+(function(){
+  var side=document.getElementById('side'),b=document.getElementById('burger');
+  b.addEventListener('click',function(){side.classList.toggle('mini');b.textContent=side.classList.contains('mini')?'››':'‹‹';});
+  document.querySelectorAll('.navhead').forEach(function(h){
+    h.addEventListener('click',function(){if(side.classList.contains('mini'))return;h.parentElement.classList.toggle('closed');});
+  });
+})();
+</script>
 
 <script>
 const TYPES={
@@ -447,6 +537,11 @@ function seed(){return{
 };}
 
 let J=seed();
+/* SAVED — last-known-good state per journey: the server's row once it loads,
+   the seed example until then. "Discard" reverts here, not to the hardcoded
+   seed, so discarding new edits on a journey that already has real saved
+   content cannot wipe that content back to the mock example. */
+let SAVED=JSON.parse(JSON.stringify(J));
 const ORDER=['client','setter','closer','advisor','affiliate','partner'];
 let active='client', selId=null, dirty=0, touched={}, undoStack=[], tab='step';
 let pending=null, busy=false, askErr='', askText='';
@@ -985,7 +1080,7 @@ function wireCanvas(){
       openMenu(e.currentTarget,JSON.parse(w.dataset.path),+w.dataset.idx)};
   });
   const d=document.getElementById('discard');
-  if(d) d.onclick=()=>{pushUndo();J[active]=seed()[active];dirty=0;delete touched[active];selId=null;
+  if(d) d.onclick=()=>{pushUndo();J[active]=JSON.parse(JSON.stringify(SAVED[active]));dirty=0;delete touched[active];selId=null;
     record('you','Discarded every unapplied change',undoStack[undoStack.length-1]);render()};
   const a=document.getElementById('applybar'); if(a) a.onclick=applyAll;
   const ac=document.getElementById('accept'); if(ac) ac.onclick=acceptPending;
@@ -997,13 +1092,64 @@ function toast(html){
   d.innerHTML=html+'<div class="pb"></div>';
   document.body.appendChild(d); setTimeout(()=>d.remove(),4500);
 }
-function applyAll(){
+/* applyAll — saves every touched journey to the database via PUT /api/journeys.
+   One request per touched journey; on any failure nothing is cleared, so a
+   half-saved batch always shows up as still dirty rather than looking applied. */
+async function applyAll(){
   if(!dirty){toast('<b>Nothing to apply.</b> Change a step first.');return}
-  const n=dirty,imp=impact(); dirty=0; undoStack=[];
-  toast('<b>Applied '+n+' change'+(n>1?'s':'')+'.</b> Code updated, '+
-    (imp.length?imp.length+' connected area'+(imp.length>1?'s':'')+' brought in line, ':'')+
-    'map regenerated, checks rerun — all passing. Nothing is live until you deploy.');
+  const keys=Object.keys(touched);
+  const n=dirty, imp=impact();
+  const btn=document.getElementById('apply'); if(btn) btn.disabled=true;
+  try{
+    for(const k of keys){
+      const j=J[k];
+      const res=await fetch('/api/journeys',{method:'PUT',credentials:'include',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({key:k,name:j.name,start:j.start,end:j.end,desc:j.desc,nodes:j.nodes})});
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok||!data.ok) throw new Error((data&&data.error)||('HTTP '+res.status));
+    }
+    keys.forEach(k=>{ SAVED[k]=JSON.parse(JSON.stringify(J[k])); });
+    dirty=0; touched={}; undoStack=[];
+    toast('<b>Applied '+n+' change'+(n>1?'s':'')+'.</b> Saved to the database — '+
+      (imp.length?imp.length+' connected area'+(imp.length>1?'s':'')+' brought in line, ':'')+
+      'this is what loads next time the editor opens. Nothing is live until you deploy.');
+  }catch(err){
+    toast('<b>Could not save.</b> '+esc((err&&err.message)||'Try again in a moment.')+' Nothing was applied.');
+  }
+  if(btn) btn.disabled=false;
   render();
+}
+
+/* loadJourneys — the real starting state, once it arrives. seed() paints
+   instantly so the editor is never blank; whatever the server has for a
+   journey key replaces the local example the moment it lands. A journey the
+   server has nothing for (migration not applied yet, or never saved) keeps
+   its seed example — which is exactly the "worked example" behavior the ask
+   box already uses when the AI key isn't configured either. */
+async function loadJourneys(){
+  try{
+    const res=await fetch('/api/journeys',{credentials:'include'});
+    if(!res.ok) return;
+    const data=await res.json();
+    if(!data.ok||!data.journeys) return;
+    let maxUid=0;
+    const bumpPast=nodes=>nodes.forEach(n=>{
+      const m=/^n(\d+)$/.exec(n.id); if(m) maxUid=Math.max(maxUid,+m[1]);
+      if(n.branches) n.branches.forEach(b=>bumpPast(b.nodes));
+    });
+    ORDER.forEach(k=>{
+      const r=data.journeys[k];
+      if(r && Array.isArray(r.nodes) && r.nodes.length){
+        J[k]={name:r.name||J[k].name,start:r.start||J[k].start,end:r.end||J[k].end,
+          desc:r.desc||J[k].desc,nodes:r.nodes};
+        SAVED[k]=JSON.parse(JSON.stringify(J[k]));
+        bumpPast(r.nodes);
+      }
+    });
+    uid=Math.max(uid,maxUid+1);
+    render();
+  }catch(err){ /* offline, or the journeys table migration hasn't run yet — the seed examples stay on screen */ }
 }
 function syncHeader(){
   const d=document.getElementById('dirty');
@@ -1023,6 +1169,7 @@ document.addEventListener('keydown',e=>{
 });
 window.addEventListener('resize',closeMenu);
 render();
+loadJourneys();
 </script>
 </body>
 </html>
