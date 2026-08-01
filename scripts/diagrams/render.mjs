@@ -201,9 +201,15 @@ export function renderAdapterBoundary({ adapters }) {
     out.push(`    b_${id(a.name)}[${q(`${a.name}<br/>${gate}`)}]`);
   }
   out.push("  end", "  BUS[(canonical event bus)]", "");
+  /* An adapter reaches the bus only if it actually emits something. The arrow
+     used to be unconditional, which drew twilio-status.mjs — a delivery-receipt
+     handler that emits nothing and updates a message row instead — as a feeder
+     of the canonical event bus. A reader checking "what puts events on the bus"
+     would have counted a source that never does. */
   for (const a of adapters) {
     out.push(`  o_${id(a.name)} --> b_${id(a.name)}`);
-    out.push(`  b_${id(a.name)} --> BUS`);
+    if (a.events.length) out.push(`  b_${id(a.name)} --> BUS`);
+    else out.push(`  b_${id(a.name)} --> DB_${id(a.name)}[("messages<br/>status update")]`);
   }
   out.push("```", "");
 

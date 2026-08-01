@@ -14,6 +14,8 @@
 
 import crypto from "node:crypto";
 import { emit } from "../events/bus.mjs";
+import { recordOptOut } from "../lib/opt-out.mjs";
+import { createTask } from "../lib/create-task.mjs";
 
 // ---------------------------------------------------------------------------
 // 1. Signature verification (fail-closed)
@@ -231,11 +233,261 @@ export async function resolveClientFromRecipient(db, recipient) {
 }
 
 // ---------------------------------------------------------------------------
+// 5. Outbound delivery events — GHL cutover Ticket 2
+//
+// The return path: what Mailgun tells us about a message WE sent. A different
+// payload shape from the inbound bank email above, and it must never be
+// classified as one.
+//
+//   { "signature": { timestamp, token, signature },
+//     "event-data": { event, recipient, severity,
+//                     message: { headers: { "message-id": "..." } },
+//                     "delivery-status": { message, code, description } } }
+// ---------------------------------------------------------------------------
+
+/** True when this payload is a delivery event rather than a forwarded email. */
+export function isDeliveryEvent(body) {
+  const d = body && body["event-data"];
+  return !!(d && typeof d === "object" && typeof d.event === "string" && d.event);
+}
+
+/* Mailgun's event names → our `messages.status`.
+
+   `complained` is the one that matters most and it is NOT a delivery failure —
+   the mail arrived, was read, and the recipient pressed "this is spam". It is
+   recorded on the message so an operator can see which send drew it, and it
+   writes an opt-out, which is the part that has legal weight.
+
+   `opened` and `clicked` are absent deliberately. They are engagement tracking,
+   not delivery state, and letting an open overwrite `delivered` would lose the
+   only record that the message actually landed. */
+export const DELIVERY_STATUS_MAP = {
+  delivered: "delivered",
+  complained: "complained",
+  rejected: "rejected",
+  failed: null // resolved by severity below — permanent vs temporary
+};
+
+/* Who picks up a spam complaint, and under what source name. `admin` matches
+   GATE_TASK_ROLE in src/messaging/gate.mjs: reviewing message copy is the same
+   operational job whether the gate caught the wording or a recipient did. */
+export const COMPLAINT_TASK_ROLE = "admin";
+export const COMPLAINT_SOURCE = "mailgun-complaint";
+
+export const IGNORED_DELIVERY_EVENTS = new Set([
+  "accepted", "opened", "clicked", "unsubscribed", "stored", "delivered_ip"
+]);
+
+/* Mailgun writes the id with angle brackets on the send response and without
+   them in the event payload. Whichever form the dispatcher stored, the two must
+   still match, so both sides are stripped before comparison. */
+export function normalizeMessageId(id) {
+  const s = String(id || "").trim();
+  return s.replace(/^<+/, "").replace(/>+$/, "");
+}
+
+export function normalizeDeliveryEvent(body) {
+  const b = body || {};
+  const sig = b.signature || {};
+  const d = b["event-data"] || {};
+  const headers = (d.message && d.message.headers) || {};
+  const ds = d["delivery-status"] || {};
+
+  const errorParts = [];
+  if (ds.code) errorParts.push(`mailgun_${ds.code}`);
+  if (ds.message || ds.description) errorParts.push(String(ds.message || ds.description));
+  if (d.reason && errorParts.length === 0) errorParts.push(String(d.reason));
+
+  return {
+    timestamp: sig.timestamp || b.timestamp || "",
+    token: sig.token || b.token || "",
+    signature: sig.signature || b.signature_value || "",
+    event: String(d.event || "").trim().toLowerCase(),
+    severity: String(d.severity || "").trim().toLowerCase(),
+    recipient: d.recipient || null,
+    providerMessageId: normalizeMessageId(headers["message-id"] || d.id || ""),
+    // Operator-facing only. Truncated, and it never carries the message body.
+    errorText: errorParts.length ? errorParts.join(": ").slice(0, 300) : null
+  };
+}
+
+/**
+ * handleMailgunDeliveryEvent({ db, body, signingKey })
+ *   → { ok, status, updated, event?, optedOut?, reason? }
+ *
+ * Fail-closed on the signature, exactly like the inbound path. `updated` is the
+ * number of message rows moved; `optedOut` says whether a complaint produced an
+ * opt-out row, because "we recorded the complaint" and "we will stop emailing
+ * them" are two different claims and only the second one is the obligation.
+ */
+export async function handleMailgunDeliveryEvent({ db, body, signingKey }) {
+  const evt = normalizeDeliveryEvent(body);
+
+  /* FAIL CLOSED, UNCONDITIONALLY — no `if (signingKey)` guard, ever.
+
+     That guard is the exact shape of the bug this ticket was written to kill on
+     the inbound path: with the key unset, verification was skipped entirely and
+     any stranger could POST a forged payload. On THIS path a forged payload
+     opts a client out of email, or marks a live message dead. Passing no key
+     must therefore reject everything, which is what verifyMailgunSignature
+     already does — the bug was never calling it. */
+  if (!verifyMailgunSignature(evt.timestamp, evt.token, evt.signature, signingKey)) {
+    return { ok: false, status: 401, reason: "bad_signature", updated: 0 };
+  }
+
+  if (IGNORED_DELIVERY_EVENTS.has(evt.event)) {
+    return { ok: true, status: 200, reason: "not_delivery_state", updated: 0, event: evt.event };
+  }
+
+  let mapped = DELIVERY_STATUS_MAP[evt.event];
+  if (evt.event === "failed") {
+    // Mailgun splits hard bounces from transient ones by severity, and the two
+    // mean different things to a dispatcher: one must never be retried, the
+    // other should be. An absent severity is treated as temporary — the safe
+    // direction, because wrongly marking an address permanently dead loses a
+    // client's mail silently.
+    mapped = evt.severity === "permanent" ? "bounced" : "failed";
+  }
+  if (!mapped) {
+    return { ok: true, status: 200, reason: "unknown_event", updated: 0, event: evt.event };
+  }
+
+  // Matched on THEIR id, both sides stripped of angle brackets. Guarded to
+  // outbound email so a colliding id cannot move a row on another channel.
+  const found = await db.query(
+    `SELECT id, org_id, client_id, template_key
+       FROM messages
+      WHERE btrim(provider_message_id, '<>') = $1
+        AND direction = 'outbound'
+        AND channel = 'email'`,
+    [evt.providerMessageId]
+  );
+  const row = found.rows[0] || null;
+
+  /* THE OPT-OUT COMES FIRST, and it is the reason this endpoint exists.
+
+     A spam complaint is a withdrawal of consent. It is written before the status
+     update so that a failure updating the message row cannot cost us the
+     opt-out — the wrong order here means we keep emailing somebody who reported
+     us, which is the failure with legal consequences rather than operational
+     ones. Written through src/lib/opt-out.mjs, the only sanctioned writer, so
+     the send-path guard reads it without a second implementation to diverge. */
+  let optedOut = false;
+  let taskRaised = false;
+  if (evt.event === "complained") {
+    const target = row && row.client_id
+      ? { clientId: row.client_id, orgId: row.org_id }
+      : await resolveClientByEmail(db, evt.recipient);
+    if (target) {
+      await recordOptOut(db, target.clientId, target.orgId, "email", "provider_complaint");
+      optedOut = true;
+      taskRaised = await raiseComplaintTask(db, target, row, evt);
+    }
+  }
+
+  if (!row) {
+    /* No message row. Acknowledged so Mailgun stops retrying, but named — an
+       unmatched receipt usually means the dispatcher never stored
+       provider_message_id, and a bare 200 would hide that indefinitely.
+       A complaint may still have opted the recipient out via the email
+       fallback above, so that outcome is reported separately from this one. */
+    return { ok: true, status: 200, reason: "unmatched", updated: 0, event: evt.event, optedOut, taskRaised };
+  }
+
+  const upd = await db.query(
+    `UPDATE messages
+        SET status = $2,
+            last_error = COALESCE($3, last_error),
+            updated_at = now()
+      WHERE id = $1`,
+    [row.id, mapped, evt.errorText]
+  );
+
+  return { ok: true, status: 200, updated: upd.rowCount ?? 0, event: evt.event, optedOut, taskRaised };
+}
+
+/* A complaint is a signal about a TEMPLATE, not only about one recipient.
+
+   Opting the person out and telling nobody treats it as a single lost contact.
+   It is usually the copy: if a template draws complaints, the next hundred sends
+   of it will draw more, and nobody finds that out from an opt_outs row. So the
+   complaint raises work for a person, the same way the compliance gate raises
+   work when a message uses restricted wording.
+
+   Built through createTask, which is the only sanctioned writer to the tasks
+   table (src/lib/create-task.mjs) — src/workflows/task-routing.test.mjs fails
+   the build on a raw insert into it anywhere under src/, because a task with no
+   owning role is work that reaches nobody. That test greps the file text, so
+   this comment says it in words rather than showing the statement.
+
+   THE DEDUPE KEY IS `body`. 006_tasks_idempotency.sql keys on
+   (client_id, source_workflow, body), so it must be identical when Mailgun
+   retries the same complaint and different for a genuinely new one. The
+   provider's message id is exactly that. When the receipt matched no message
+   row, the recipient address stands in — one task per complaining address
+   rather than one per retry.
+
+   NO MESSAGE COPY IN THE TASK. Same reasoning as the gate: a task list is an
+   index over work, not a second outbox holding client-facing text. The template
+   key is named instead, because that is the thing to go and read. */
+async function raiseComplaintTask(db, target, row, evt) {
+  const res = await createTask(db, {
+    orgId: target.orgId,
+    clientId: target.clientId,
+    title: "Spam complaint — review the template that sent this",
+    sourceWorkflow: COMPLAINT_SOURCE,
+    assigneeRole: COMPLAINT_TASK_ROLE,
+    body: `mailgun-complaint:${evt.providerMessageId || evt.recipient || "unattributed"}`,
+    detail: [
+      row?.template_key
+        ? `Template: ${row.template_key}`
+        : "Template unknown — the complaint matched no message row.",
+      "The recipient has been opted out of email automatically."
+    ]
+  });
+  return !!res?.created;
+}
+
+/* Last resort for a complaint we cannot tie to a message row. A complaint that
+   names a recipient we know is still a withdrawal of consent; dropping it
+   because the message id did not match would be the system forgetting on a
+   technicality. Returns null when the address is unknown — there is no client to
+   opt out, and inventing one is worse than recording nothing. */
+async function resolveClientByEmail(db, recipient) {
+  const email = String(recipient || "").trim().toLowerCase();
+  if (!email) return null;
+  const r = await db.query(
+    `SELECT id, org_id FROM clients WHERE lower(email) = $1 LIMIT 1`,
+    [email]
+  );
+  const c = r.rows[0];
+  return c ? { clientId: c.id, orgId: c.org_id } : null;
+}
+
+// ---------------------------------------------------------------------------
 // Adapter entrypoint
 // handleMailgunWebhook({ db, body, signingKey })
 //   → { ok, status, emitted: [{name, id, deduped}], reason? }
 // ---------------------------------------------------------------------------
 export async function handleMailgunWebhook({ db, body, signingKey }) {
+  /* OUTBOUND EVENT ROUTING — GHL cutover Ticket 2.
+
+     Mailgun posts two completely different payloads and this adapter used to
+     assume every one of them was a forwarded bank email. A delivery receipt has
+     no subject and no body, so classifyFull() scored it NOISE and emitted it
+     onto the bus as a real `mail.response`. Delivery receipts, bounces and spam
+     complaints were therefore arriving as inbound bank mail — and the spam
+     complaints, which are the ones that legally have to stop future sending,
+     were the quietest of the three because NOISE is the classification nothing
+     reacts to.
+
+     Routed before verification because the delivery path verifies with the same
+     key and the same function; splitting first keeps one signature check per
+     path rather than one shared check and two shapes. */
+  if (isDeliveryEvent(body)) {
+    return handleMailgunDeliveryEvent({ db, body, signingKey });
+  }
+
   const evt = normalizeMailgunEvent(body);
 
   /* FAIL CLOSED, unconditionally — matching every other adapter.

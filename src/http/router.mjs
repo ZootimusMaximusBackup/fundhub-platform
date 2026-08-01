@@ -11,7 +11,8 @@ import { handleClickFunnelsWebhook } from "../adapters/clickfunnels.mjs";
 import { handleBlandWebhook } from "../adapters/bland.mjs";
 import { handleCalcomWebhook } from "../adapters/calcom.mjs";
 import { handleTwilioWebhook } from "../adapters/twilio.mjs";
-import { handleMailgunWebhook } from "../adapters/mailgun.mjs";
+import { handleMailgunWebhook, handleMailgunDeliveryEvent } from "../adapters/mailgun.mjs";
+import { handleTwilioStatusWebhook } from "../adapters/twilio-status.mjs";
 import { handleLendflowWebhook, SIGNATURE_HEADER as LENDFLOW_SIG } from "../adapters/lendflow.mjs";
 
 // Standard HMAC-body adapters: same {db, rawBody, signatureHeader, secret} shape.
@@ -41,6 +42,34 @@ export async function handleWebhook({ db, provider, rawBody, headers = {}, url, 
     return norm(await handleTwilioWebhook({
       db, rawBody, signatureHeader: h("x-twilio-signature"), secret: env.TWILIO_AUTH_TOKEN, url
     }));
+  }
+
+  /* DELIVERY STATUS CALLBACKS — GHL cutover Ticket 2.
+     /api/webhooks/twilio-status and /api/webhooks/mailgun-events.
+
+     Registered here rather than as their own entries in the ROUTES map in
+     netlify/functions/api.mjs, deliberately. That map's exact keys are looked up
+     before the `webhooks/` prefix branch, so a key there would work — and
+     src/http/routes.test.mjs asserts nobody adds one, because it would work only
+     for as long as those two lookups stay in that order. These reach the same
+     door every other provider webhook uses and depend on no ordering at all.
+
+     They are separate provider ids rather than a branch inside the inbound
+     handlers because the two directions verify the same signature over
+     different payloads and must not share a code path: an inbound bank email
+     and a bounce notice are not the same event, and the adapter that conflated
+     them is the bug Ticket 2 exists to fix. */
+  if (provider === "twilio-status") {
+    return norm(await handleTwilioStatusWebhook({
+      db, rawBody, signatureHeader: h("x-twilio-signature"), secret: env.TWILIO_AUTH_TOKEN, url
+    }));
+  }
+
+  if (provider === "mailgun-events") {
+    let body;
+    try { body = rawBody ? JSON.parse(rawBody) : {}; }
+    catch { return { status: 400, body: { ok: false, error: "invalid_json" } }; }
+    return norm(await handleMailgunDeliveryEvent({ db, body, signingKey: env.MAILGUN_SIGNING_KEY }));
   }
 
   // Mailgun: JSON body, signature fields live inside it, keyed by the signing key.
