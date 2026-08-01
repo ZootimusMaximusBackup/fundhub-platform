@@ -58,6 +58,7 @@ import readFinanceOs from "../../api/read/finance-os.mjs";
 import readBankingSurface from "../../api/read/banking-surface.mjs";
 import readUnderwrite from "../../api/read/underwrite.mjs";
 import readMoneyMap from "../../api/read/money-map.mjs";
+import bankingSyncAccounts from "../../api/banking/sync-accounts.mjs";
 import inquiries from "../../api/inquiries.mjs";
 import pii from "../../api/pii.mjs";
 import shifts from "../../api/shifts.mjs";
@@ -176,6 +177,23 @@ export const ROUTES = {
   // handler and the screen: a screen whose endpoint 404s is the exact failure
   // this map exists to prevent, and it has shipped twice.
   "read/money-map": readMoneyMap,
+
+  // banking/sync-accounts is the FIRST WRITER `bank_accounts` has ever had —
+  // until it, the only INSERT into that table in the whole repository was inside
+  // a pg test, and every bank-derived section of the Money Map was empty with no
+  // way to fill it.
+  //
+  // ROLE_SETS.FINANCE — {owner, admin} — NOT the STAFF set its read neighbours
+  // use, and deliberately narrower: this one creates the financial rows those
+  // screens total. Reading a balance and conjuring one are different powers.
+  //
+  // The provider is always named by the caller; there is no default, because a
+  // default is how a mock ends up running in production. The mock provider is
+  // additionally gated on BANKING_MOCK_PROVIDER=1 and every row it writes
+  // carries provider='mock' in a NOT NULL checked column. Nothing on either path
+  // transmits: the mock reads a fixture in this repository, and the Plaid seam
+  // is deliberately unclosed and returns its refusal unchanged.
+  "banking/sync-accounts": bankingSyncAccounts,
 
   // Write endpoints. Hand-rolled rather than readHandler-based, so each one owns
   // its own method switch, its 405 + allow header, and its domain-error mapping.

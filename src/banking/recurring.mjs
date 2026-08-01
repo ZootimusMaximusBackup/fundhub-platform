@@ -1154,6 +1154,15 @@ export function toBillRow(bill, { orgId }) {
     anchor_day_of_month: bill.anchorDayOfMonth ?? null,
     next_expected_on: bill.nextExpectedDate,
     next_expected_unknown_reason: bill.nextExpectedUnknownReason,
+    /* THE TRUE BILLING DAY, WHICH next_expected_on MAY HAVE CLAMPED. A bill due
+       on the 31st predicts the 30th whenever the next month is short, and
+       cashflow-seam.mjs's expectedOccurrences() anchors its whole series on
+       whatever day-of-month it is given. Before migration 090 this value was
+       computed here, dropped on the way into the table, and re-derived downstream
+       from the clamped date — which pinned a month-end bill to the 30th forever.
+       The detector is the only thing that knows the real anchor; this carries it.
+       NULL for weekly and biweekly, which have no day-of-month at all. */
+    anchor_day_of_month: bill.anchorDayOfMonth ?? null,
     confidence_pct: bill.confidencePct,
     confidence_label: bill.confidenceLabel,
     is_business: bill.isBusiness,

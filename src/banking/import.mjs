@@ -68,14 +68,20 @@ export class BankImportError extends Error {
  * Mapping
  * -------------------------------------------------------------------------- */
 
+/* `provider` IS WRITTEN HERE, AND IT HAS TO BE. 103 adds the column with a
+   DEFAULT of 'manual' and a CHECK that a 'manual' row carries no plaid_items
+   reference. Every row this file writes DOES carry one — ensureItem() creates it
+   for the mock as much as for Plaid — so leaving the column to its default makes
+   every import fail the constraint. It is the provider's own name, from
+   provider.mjs, so the row records which one answered rather than guessing. */
 const ACCOUNT_COLS = [
   "org_id", "client_id", "plaid_item_id", "plaid_account_id",
   "name", "official_name", "mask", "account_type", "account_subtype",
   "currency_code", "available_balance_cents", "current_balance_cents",
-  "credit_limit_cents", "balance_as_of", "raw"
+  "credit_limit_cents", "balance_as_of", "provider", "provider_account_id", "raw"
 ];
 
-function toAccountRow(a, { orgId, clientId, itemRowId }) {
+function toAccountRow(a, { orgId, clientId, itemRowId, providerName }) {
   return {
     org_id: orgId,
     client_id: clientId,
@@ -94,6 +100,12 @@ function toAccountRow(a, { orgId, clientId, itemRowId }) {
     current_balance_cents: a.current_balance_cents ?? null,
     credit_limit_cents: a.credit_limit_cents ?? null,
     balance_as_of: a.balance_as_of ?? null,
+    provider: providerName,
+    /* 103's bank_accounts_mock_needs_ref_ck: a 'mock' row must carry the
+       provider's own key. plaid_account_id is Plaid's column and stays Plaid's;
+       provider_account_id is the same identifier for every provider that is not
+       Plaid, which is what makes a mock row traceable back to what produced it. */
+    provider_account_id: providerName === "plaid" ? null : (a.provider_account_id ?? null),
     // The account record verbatim, minus the bulky child collections which get
     // their own tables. Never contains a credential.
     raw: JSON.stringify({ ...a, transactions: undefined, holdings: undefined, statement_cycle: undefined })
@@ -193,7 +205,7 @@ export async function importAccounts(db, { orgId, clientId, env = process.env, t
     const counts = { accounts: 0, statementCycles: 0, holdings: 0, transactions: 0, droppedTransactions: [] };
 
     for (const a of result.accounts) {
-      const row = toAccountRow(a, { orgId, clientId, itemRowId });
+      const row = toAccountRow(a, { orgId, clientId, itemRowId, providerName });
       const updates = ACCOUNT_COLS
         .filter((c) => !["org_id", "client_id", "plaid_item_id", "plaid_account_id"].includes(c))
         .map((c) => `${c} = EXCLUDED.${c}`);

@@ -17,7 +17,7 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| CAN[Can reach]
     CAN --> A_auth[Signing in and out — 3 routes]
-    CAN --> A_banking[banking — 2 routes]
+    CAN --> A_banking[banking — 3 routes]
     CAN --> A_campaigns[Campaigns — 6 routes]
     CAN --> A_consent[consent — 1 route]
     CAN --> A_creative[Creative Factory — 4 routes]
@@ -33,7 +33,7 @@ flowchart TD
 
 ## What they can reach
 
-**65 of 65 routes.**
+**66 of 66 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -42,6 +42,7 @@ flowchart TD
 | `/api/auth/session` | — | anyone |
 | `/api/banking/accounts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/banking/revoke` | GET, POST | owner, admin |
+| `/api/banking/sync-accounts` | POST | owner, admin |
 | `/api/campaigns/action-log` | GET | partner, staff |
 | `/api/campaigns/connections` | GET | partner, staff |
 | `/api/campaigns/detail` | GET | partner, staff |
@@ -111,7 +112,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**0 of 65 routes.**
+**0 of 66 routes.**
 
 _None._
 

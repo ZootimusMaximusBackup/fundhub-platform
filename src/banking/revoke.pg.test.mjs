@@ -60,8 +60,8 @@ async function seed() {
      VALUES ($1,$2,'Test Bank','active') RETURNING id`, [orgId, clientId])).rows[0].id;
 
   accountId = (await db.query(
-    `INSERT INTO bank_accounts (org_id, client_id, plaid_item_id, name)
-     VALUES ($1,$2,$3,'Checking') RETURNING id`, [orgId, clientId, itemId])).rows[0].id;
+    `INSERT INTO bank_accounts (org_id, client_id, plaid_item_id, provider, name)
+     VALUES ($1,$2,$3,'plaid','Checking') RETURNING id`, [orgId, clientId, itemId])).rows[0].id;
 
   // NOTE: subject_client_id is deliberately NOT named here. The trigger from
   // migration 101 must fill it — that is the assertion in the first test.

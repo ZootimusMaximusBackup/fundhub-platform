@@ -23,8 +23,8 @@ flowchart TD
     CAN --> A_read[Reading data — 1 route]
     CAN --> A_top_level[Everything else — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 55 routes]
-    CANT --> B_banking[banking — 2 blocked]
+    WHO -->|Yes| CANT[Blocked — 56 routes]
+    CANT --> B_banking[banking — 3 blocked]
     CANT --> B_campaigns[Campaigns — 6 blocked]
     CANT --> B_creative[Creative Factory — 4 blocked]
     CANT --> B_dashboard[The dashboard — 4 blocked]
@@ -37,7 +37,7 @@ flowchart TD
 
 ## What they can reach
 
-**10 of 65 routes.**
+**10 of 66 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -59,12 +59,13 @@ flowchart TD
 
 ## What they are blocked from
 
-**55 of 65 routes.**
+**56 of 66 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/banking/accounts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/banking/revoke` | GET, POST | owner, admin |
+| `/api/banking/sync-accounts` | POST | owner, admin |
 | `/api/campaigns/action-log` | GET | partner, staff |
 | `/api/campaigns/connections` | GET | partner, staff |
 | `/api/campaigns/detail` | GET | partner, staff |

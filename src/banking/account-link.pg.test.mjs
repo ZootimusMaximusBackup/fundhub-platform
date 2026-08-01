@@ -84,10 +84,13 @@ async function newLogin() {
 
 /** An account inside a login (or a hand-entered one when itemId is null). */
 async function newAccount(itemId = null) {
+  /* provider follows the item, because 103 ties them together: a row hanging off
+     a plaid_items row may not claim a person typed it, and a hand-entered row
+     (itemId null) must stay 'manual'. This helper is called both ways. */
   const r = await db.query(
-    `INSERT INTO bank_accounts (org_id, client_id, plaid_item_id, name)
-     VALUES ($1,$2,$3,'M17 Checking') RETURNING id`,
-    [orgId, clientId, itemId]
+    `INSERT INTO bank_accounts (org_id, client_id, plaid_item_id, provider, name)
+     VALUES ($1,$2,$3,$4,'M17 Checking') RETURNING id`,
+    [orgId, clientId, itemId, itemId ? "plaid" : "manual"]
   );
   return r.rows[0].id;
 }
