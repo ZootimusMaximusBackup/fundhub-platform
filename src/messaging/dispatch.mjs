@@ -135,6 +135,17 @@ export function nextQuietHoursEnd(from, timeZone = QUIET_HOURS_TZ) {
    scheduled_at IS NULL means due immediately — the shape every row queued by
    src/workflows/messaging.mjs is already in. */
 export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = null } = {}) {
+  /* `now` IS A CLOCK FUNCTION EVERYWHERE ELSE IN THIS FEATURE. The gate takes
+     one, dispatchOne forwards one, and dispatchDue hands the same options
+     object to both — so this has to accept the same shape. It previously took
+     only a bare timestamp, which meant dispatchDue could not be driven with a
+     fixed clock at all: the function itself went into a timestamptz parameter
+     and Postgres rejected it. Neither existing test caught that, because each
+     function was only ever driven on its own.
+
+     Both shapes are accepted. null means the database's own clock. */
+  const at = typeof now === "function" ? now() : now;
+
   const { rows } = await db.query(
     `UPDATE messages m
         SET status = 'sending', last_attempt_at = now(), attempts = m.attempts + 1
@@ -152,7 +163,7 @@ export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = 
       WHERE m.id = due.id
   RETURNING m.id, m.org_id, m.client_id, m.channel, m.rendered_body,
             m.template_key, m.provider_ref, m.attempts, m.to_address, m.subject`,
-    [orgId, limit, now, MAX_ATTEMPTS]
+    [orgId, limit, at, MAX_ATTEMPTS]
   );
   return rows;
 }
