@@ -12,10 +12,15 @@
  * second decision by a human.
  *
  * THE RULE UNDER TEST. Until bank connections are approved, the Banking Surface
- * is owner/admin only — ROLE_SETS.FINANCE, the set this repo already uses for
- * "money and people" — on BOTH surfaces: the endpoint that holds the data and
- * the shell that decides which screens a role may open. Configuring Plaid is not
- * an approval, and it must not widen the audience by itself.
+ * endpoint is owner/admin only — ROLE_SETS.FINANCE, the set this repo already
+ * uses for "money and people". Configuring Plaid is not an approval, and it
+ * must not widen the audience by itself.
+ *
+ * THE SCREEN THIS ENDPOINT USED TO SERVE IS GONE. banking-surface.html was one
+ * of eleven Finance screens Finance OS (finance-os.html) absorbed — an owner
+ * decision, not a regression. This endpoint stays routed and gated exactly as
+ * it was; nothing currently on the shared staff surface calls it any more, but
+ * its own role gate is still worth guarding on its own.
  *
  * WHY IT IS TESTED HERE. package.json's test glob only walks src/ and scripts/
  * (CLAUDE.md, traps). This file needs no database: src/db.mjs exports `db` as a
@@ -24,17 +29,9 @@
  */
 import { test, describe, beforeEach, afterEach } from "node:test";
 import assert from "node:assert";
-import fs from "node:fs";
-import path from "node:path";
-import vm from "node:vm";
-import { fileURLToPath } from "node:url";
 
 import { db } from "../db.mjs";
 import handler from "../../api/read/banking-surface.mjs";
-
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SHELL = path.resolve(HERE, "../../public/app/shell.js");
-const SHELL_SRC = fs.readFileSync(SHELL, "utf8");
 
 const CID = "f3263bdb-45da-4056-8d6c-7c999d944fee";
 
@@ -170,74 +167,12 @@ describe("GET /api/read/banking-surface — bank balances are not on every staff
 });
 
 /* ── the shell ────────────────────────────────────────────────────────────── */
-
-/**
- * runShell({ role, page }) — evaluate public/app/shell.js against a stub browser
- * with `role` already cached, sitting on `page`.
- *
- * The cached-role pass is synchronous and runs before anything paints, so a
- * screen the role may not open shows up as a location.replace() and the IIFE
- * returns without touching the network. That is exactly the signal wanted here.
- */
-function runShell({ role, page }) {
-  const replaced = [];
-  const stubEl = () => ({ id: "", textContent: "", style: {}, parentNode: null,
-                          setAttribute() {}, appendChild() {} });
-  const sandbox = {
-    console,
-    location: {
-      pathname: "/app/" + page,
-      href: "",
-      replace(u) { replaced.push(u); }
-    },
-    localStorage: {
-      getItem: (k) => (k === "fh_role" ? role : null),
-      setItem() {}, removeItem() {}
-    },
-    document: {
-      readyState: "complete",
-      documentElement: { style: {}, appendChild() {} },
-      head: { appendChild(el) { el.parentNode = { removeChild() {} }; } },
-      addEventListener() {},
-      createElement: stubEl,
-      querySelectorAll: () => [],
-      body: { appendChild() {} }
-    },
-    // Never fires: nothing in this test depends on a timer, and a live one would
-    // hold the process open for the four-second reveal.
-    setTimeout() { return 0; },
-    fetch: () => Promise.reject(new Error("the cached-role pass must not need the network"))
-  };
-  sandbox.window = sandbox;
-  sandbox.globalThis = sandbox;
-  vm.createContext(sandbox);
-  vm.runInContext(SHELL_SRC, sandbox, { filename: SHELL });
-  return { replaced, sandbox };
-}
-
-describe("public/app/shell.js — the Banking Surface is not part of the staff surface", () => {
-
-  for (const role of OTHER_STAFF) {
-    test(`a ${role} asking for banking-surface.html is sent home`, () => {
-      const r = runShell({ role, page: "banking-surface.html" });
-      assert.equal(r.replaced.length, 1,
-        `shell.js let a ${role} open the Banking Surface — the screen reads bank ` +
-        `balances from an integration nobody has approved`);
-      assert.doesNotMatch(r.replaced[0], /banking-surface\.html/);
-    });
-  }
-
-  for (const role of ["owner", "admin"]) {
-    test(`an ${role} may still open banking-surface.html`, () => {
-      const r = runShell({ role, page: "banking-surface.html" });
-      assert.deepEqual(r.replaced, [], `${role} was bounced off their own screen`);
-    });
-  }
-
-  test("narrowing this screen does not narrow the rest of the staff surface", () => {
-    // The guard against fixing one screen by breaking navigation, which is the
-    // bug shell.js exists to have fixed.
-    const r = runShell({ role: "closer", page: "pipeline.html" });
-    assert.deepEqual(r.replaced, []);
-  });
-});
+//
+// banking-surface.html itself is gone — Finance OS (finance-os.html) absorbed
+// it along with ten other Finance screens, an owner decision, not a
+// regression. The shell-level describe block that used to live here asserted
+// public/app/shell.js sent non-owner/admin roles home from that screen; there
+// is no longer a screen to be sent home from. What is still real and still
+// worth guarding is the endpoint gate above, which src/http/*-endpoints tests
+// and src/http/app-nav-reachability.test.mjs (sidebar consistency) now cover
+// between them.

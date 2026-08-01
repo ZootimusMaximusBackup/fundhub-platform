@@ -23,7 +23,7 @@ flowchart TD
     CAN --> A_read[Reading data — 1 route]
     CAN --> A_top_level[Everything else — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 62 routes]
+    WHO -->|Yes| CANT[Blocked — 63 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_campaigns[Campaigns — 6 blocked]
@@ -33,13 +33,13 @@ flowchart TD
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_journeys[journeys — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
-    CANT --> B_read[Reading data — 20 blocked]
+    CANT --> B_read[Reading data — 21 blocked]
     CANT --> B_top_level[Everything else — 7 blocked]
 ```
 
 ## What they can reach
 
-**11 of 73 routes.**
+**11 of 74 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -62,7 +62,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**62 of 73 routes.**
+**63 of 74 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -125,6 +125,7 @@ flowchart TD
 | `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/staff` | GET | owner, admin |
 | `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/read/transactions` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/shifts` | GET, POST | staff |
 | `/api/tasks` | GET, PATCH | staff |
