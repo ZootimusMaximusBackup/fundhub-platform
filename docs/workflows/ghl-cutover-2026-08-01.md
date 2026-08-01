@@ -439,6 +439,19 @@ A `complained` event writes an opt-out on the `email` channel via
 send-path guard reads it with no second implementation to diverge from.
 `source` is `provider_complaint`.
 
+**A complaint also raises a task.** Owner-set: a complaint is a signal about the
+*template*, not only about that recipient — opting the person out and telling
+nobody leaves the same copy going out to everyone else. Filed through
+`createTask` (the only sanctioned writer to the tasks table) with
+`assigneeRole: "admin"`, matching `GATE_TASK_ROLE` in `src/messaging/gate.mjs`,
+because reviewing message copy is the same job whether the gate caught the
+wording or a recipient did. `sourceWorkflow` is `mailgun-complaint`.
+
+The dedupe key is the provider message id, so a provider retrying the same
+complaint files one task rather than flooding an inbox. The task names the
+template key and carries no message copy — a task list is an index over work,
+not a second outbox.
+
 The opt-out is written **before** the message status update. If the update
 fails, the opt-out has already landed. The other order risks continuing to email
 somebody who reported us, which is the failure with legal weight rather than
@@ -454,7 +467,7 @@ address instead. Only if that also fails is no opt-out recorded — see Findings
 | `src/adapters/twilio-status.mjs` | New. The Twilio delivery-receipt adapter. Imports `verifyTwilioSignature` from `twilio.mjs` rather than keeping a second copy. |
 | `src/adapters/mailgun.mjs` | Outbound event routing: `isDeliveryEvent`, `normalizeDeliveryEvent`, `handleMailgunDeliveryEvent`, `normalizeMessageId`, and a fork at the top of `handleMailgunWebhook`. |
 | `src/http/router.mjs` | Two provider ids registered: `twilio-status`, `mailgun-events`. |
-| `src/http/webhooks-status.pg.test.mjs` | New. 18 tests. |
+| `src/http/webhooks-status.pg.test.mjs` | New. 20 tests. |
 | `scripts/diagrams/extract.mjs` | A verifier now counts whether it is defined **or imported**. |
 | `scripts/diagrams/render.mjs` | The bus arrow is drawn only for adapters that emit. |
 | `scripts/diagrams/generate.test.mjs` | Adapter count 8 → 9. |
@@ -466,7 +479,8 @@ address instead. Only if that also fails is no opt-out recorded — see Findings
   `normalizeStatusEvent`, `STATUS_MAP`, `IGNORED_STATUSES`.
 - `src/adapters/mailgun.mjs` — `handleMailgunDeliveryEvent`, `isDeliveryEvent`,
   `normalizeDeliveryEvent`, `normalizeMessageId`, `DELIVERY_STATUS_MAP`,
-  `IGNORED_DELIVERY_EVENTS`. Nothing renamed, nothing removed.
+  `IGNORED_DELIVERY_EVENTS`, `COMPLAINT_TASK_ROLE`, `COMPLAINT_SOURCE`.
+  Nothing renamed, nothing removed.
 
 **Routes affected:** none in the `ROUTES` map — see below. **Journeys
 affected:** none; `npm run journeys:check` reports up to date.
@@ -493,9 +507,9 @@ owner ruled out. The logic lives in `src/adapters/` with every other adapter.
 - Local Postgres 16.13, connected as the `postgres` superuser, migrations
   applied clean through `db/migrate.mjs` (88 migrations, including W1's 110).
 - `npm run lint` — 667 files parse clean.
-- `npm test` with no database: **3811 pass, 0 fail, 452 skipped**. W1's
-  baseline was 3802 / 0 / 443; the difference is exactly this ticket's 18 tests,
-  9 of which need a database and skip.
+- `npm test` with no database: **3811 pass, 0 fail, 454 skipped**. W1's
+  baseline was 3802 / 0 / 443; the difference is exactly this ticket's 20 tests,
+  11 of which need a database and skip.
 - `npm test` against the local Postgres: **28 failures**, and the failing test
   **names are identical** to the same run at W1's tip `32ec92e` on the same
   database. Only their sequence numbers shifted, because this ticket's tests
@@ -505,6 +519,8 @@ owner ruled out. The logic lives in `src/adapters/` with every other adapter.
   - Mailgun signature check re-wrapped in `if (signingKey)` — 1 failure.
   - The `WHERE` guards dropped from the Twilio update — 4 failures.
   - A complaint stops writing its opt-out — 1 failure.
+  - A complaint stops raising its task — 2 failures.
+  - The task dedupe key made unstable, so a retry double-files — 1 failure.
 
 ### Findings — read these
 
@@ -530,9 +546,10 @@ owner ruled out. The logic lives in `src/adapters/` with every other adapter.
 
 4. **A complaint we cannot attribute records nothing.** If the message id
    matches no row *and* the recipient address matches no client, there is no
-   client to opt out and none is invented. The response says so
-   (`optedOut: false`), but nothing raises a task about it. If an unattributable
-   complaint should reach a human, that is a small follow-up and it is not built.
+   client to opt out and none is invented — `createTask` requires a client, so
+   no task is filed either. The response says so (`optedOut: false`,
+   `taskRaised: false`). Everything downstream of a *known* recipient is
+   handled; only the genuinely unknown address falls through silently.
 
 5. **The diagram generator understated an adapter's security posture.** It only
    counted a verifier an adapter *defines*, so importing one read as "no
