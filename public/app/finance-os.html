@@ -346,8 +346,35 @@ button,input,select,textarea{font:inherit;color:inherit}
     });
   }
   function normRole(v) { return String(v == null ? "" : v).trim().toLowerCase(); }
-  var role = normRole((function () { try { return localStorage.getItem("fh_role"); } catch (e) { return ""; } })());
-  var isFinance = role === "owner" || role === "admin";
+
+  /* isFinance starts false — the safe, hidden-by-default state — and is only
+     set once the real session answers. Reading localStorage's "fh_role" here
+     synchronously used to race shell.js's own session check: shell.js writes
+     that value from an ASYNC /api/auth/session call, so on a session's first
+     page load nothing had written it yet and every owner/admin-only control
+     (Load sample data, Clear, the add/edit buttons, the alert-trigger
+     switches) stayed hidden until the page was reloaded once. resolveRole()
+     asks the same endpoint shell.js does, directly, with the same demo-session
+     fallback shell.js's own getSession() uses, rather than trusting a value
+     shell.js may not have written yet. */
+  var isFinance = false;
+  function resolveRole() {
+    var t;
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+    var real = fetch("/api/auth/session", { headers: t ? { authorization: "Bearer " + t } : {} })
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (d) { if (d && d.ok && d.staff) return d.staff.role; throw 0; });
+    return real.catch(function () {
+      try {
+        var s = JSON.parse((function () { try { return localStorage.getItem("fh_demo_staff"); } catch (e) { return null; } })() || "null");
+        if (s && s.role) return s.role;
+      } catch (e) {}
+      return "";
+    }).then(function (r) {
+      isFinance = normRole(r) === "owner" || normRole(r) === "admin";
+    });
+  }
+  var roleReady = resolveRole();
 
   var rawClient = FHData.param("client_id");
   var clientId = UUID.test(String(rawClient == null ? "" : rawClient).trim()) ? String(rawClient).trim() : "";
@@ -1037,6 +1064,16 @@ button,input,select,textarea{font:inherit;color:inherit}
   $("fosLoadSample").onclick = loadSampleData;
   $("fosClearSample").onclick = clearSampleData;
   loadAll();
+
+  // Runs in parallel with loadAll() rather than gating it — the data paints
+  // as fast as it always did. Once the real role is known, the buttons get
+  // their real visibility and, if the data already rendered with the safe
+  // "not finance" default, the render is redone so the account/card/bill add
+  // buttons and the alert-trigger switches catch up without a page reload.
+  roleReady.then(function () {
+    updateSampleButtons();
+    if (S.mm || S.cc) render();
+  });
 })();
 </script>
 </body>
