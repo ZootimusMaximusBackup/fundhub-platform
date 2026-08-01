@@ -24,13 +24,30 @@
 //      fails, the reveal fails. An access-logged system whose logging is
 //      best-effort is an unlogged system with paperwork.
 //
+//      THIS RULE DID NOT HOLD FOR THE WHOLE TIME IT WAS WRITTEN DOWN. The
+//      ordering below was always right — insert the log row, then decrypt — but
+//      it ran under AUTOCOMMIT, so "the same transaction" was not a transaction
+//      at all. The local withTransaction() probed
+//      `typeof db.connect !== "function"` and ran the callback inline when there
+//      was none; src/db.mjs exports `db` as `{ query }` with NO connect(), so on
+//      the one handle every production caller passes, the probe took the
+//      no-transaction branch every time. A failing log INSERT raised AFTER its
+//      own statement had already committed, and a reveal could complete with no
+//      log row behind it.
+//
+//      src/finance/soft-pulls.mjs found this same probe, wrote it up, and
+//      correctly refused to change a compliance path it did not own. It is fixed
+//      now: the local copy is DELETED and src/db/with-transaction.mjs is
+//      imported. src/pii/reveal-transaction.test.mjs proves the rule by making
+//      the log write fail and asserting no SSN comes back.
+//
 //   4. A REASON IS REQUIRED. Every reveal records who, what field, and — via the
 //      log's own row — when. "Alvin looked at a client's SSN at 14:32 while
 //      working inquiry X" is the answer an audit needs; "someone read the table"
 //      is not.
 
 import crypto from "node:crypto";
-import { db as sharedDb, pool } from "../db.mjs";
+import { withTransaction } from "../db/with-transaction.mjs";
 
 const ALGO = "aes-256-gcm";
 const IV_BYTES = 12;
@@ -197,21 +214,15 @@ export async function accessHistory(db, { clientId, limit = 100 }) {
   return res.rows;
 }
 
-async function withTransaction(db, fn) {
-  const acquire = typeof db?.connect === "function"
-    ? () => db.connect()
-    : (db === sharedDb ? () => pool().connect() : null);
-  if (!acquire) return fn(db);
-  const client = await acquire();
-  try {
-    await client.query("BEGIN");
-    const out = await fn(client);
-    await client.query("COMMIT");
-    return out;
-  } catch (e) {
-    await client.query("ROLLBACK");
-    throw e;
-  } finally {
-    client.release();
-  }
-}
+/* The local copy of withTransaction that used to live here has been DELETED, not
+   fixed in place. It probed `typeof db.connect !== "function"` and ran the
+   callback inline when there was none — and src/db.mjs exports `db` as
+   `{ query }` with NO connect(), so on the one handle every production caller
+   passes, that probe took the no-transaction branch and rule 3 above ran under
+   AUTOCOMMIT.
+
+   src/db/with-transaction.mjs is the corrected version and is now imported at the
+   top of this file. Deleting the copy rather than patching it is the point: three
+   near-identical helpers, one of them silently wrong, is how this survived —
+   src/finance/soft-pulls.mjs found the same bug, wrote it up, and correctly
+   declined to change a compliance path it did not own. */
