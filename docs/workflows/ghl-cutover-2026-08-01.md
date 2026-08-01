@@ -17,6 +17,12 @@ editing anyone else's.
 | W2 | Provider: email (mailgun) | unclaimed | `pending` |
 | W3 | Provider: SMS (ghl_relay) | unclaimed | `pending` |
 | W4 | The dispatcher loop itself | unclaimed | `pending` |
+| T2 | Ticket 2 — delivery status webhooks (Twilio + Mailgun callbacks) | T2 | `claimed` |
+
+T2 is **Ticket 2**, not a fifth lane of Ticket 1. It is the return path: what the
+providers tell us *after* a message left. It depends on W1's schema (it writes
+`messages.status` and reads `provider_message_id`) and on nothing else in this
+batch. It can run alongside W2/W3/W4.
 
 W2, W3 and W4 were blocked on W1's brief. **They are now unblocked.** The
 contracts below are what they build against.
