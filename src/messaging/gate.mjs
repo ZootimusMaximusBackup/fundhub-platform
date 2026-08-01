@@ -1,0 +1,340 @@
+// The outbound messaging gate — the single checkpoint every outbound message
+// passes through before any provider is contacted.
+//
+// This is the messaging sibling of src/compliance/screen.mjs, and it is written
+// to that file's posture on purpose. Read its header; the same three properties
+// hold here and each one is load-bearing:
+//
+// 1. DETERMINISTIC. Patterns, a clock and a database row. No model is asked
+//    whether a message is safe to send.
+//
+// 2. FAILS CLOSED ON ANY ERROR. A database that is down, a malformed regex, a
+//    message object missing its org — every one returns `blocked`, never
+//    `allowed`. The catch at the bottom of gate() is the rule, not tidiness.
+//
+// 3. THERE IS NO OVERRIDE. No `force`, no `skipCompliance`, no `override`, no
+//    `test_bypass`. Not as an argument, not as an option, not as an environment
+//    variable, and not "just for tests" — the tests below drive this with real
+//    inputs. assertNoBypass() actively rejects an options object carrying one,
+//    so an override added by a future caller fails loudly at the gate instead of
+//    quietly opening it. Do not add one. If a rule is wrong, fix the rule.
+//
+//
+// WHY THE CLOCK IS AN ARGUMENT.
+//
+// Quiet hours are a wall-clock question, and a gate that reads the system clock
+// directly can only be tested by running the suite at 11pm. `now` is injected so
+// every case below states the exact instant it is asserting about. The default
+// is the real clock; nothing in production passes one.
+//
+//
+// THE SLEEPING-WORKFLOW CASE, WHICH IS THE WHOLE POINT.
+//
+// An Inngest workflow can be scheduled on Monday, sleep, and wake on Thursday.
+// If the client opted out on Tuesday, that message must not go out — even
+// though every compliance check "passed" at the moment it was queued.
+//
+// The defence is structural rather than a special case: THIS FUNCTION NEVER
+// READS WHEN THE MESSAGE WAS CREATED OR SCHEDULED. There is no createdAt, no
+// scheduledAt, no queuedAt in the input it consults, so there is no value a
+// caller could pass that would make an opt-out recorded after queueing count
+// for less than one recorded before it. Opt-out state is read fresh, from the
+// database, at the instant of sending. There is no backdating exception because
+// there is nothing to backdate against.
+//
+//
+// RETURN SHAPE. { state, reasons[], task } — `state` is 'allowed' | 'blocked'.
+// There is no third state and no soft block: anything that is not exactly
+// 'allowed' must not reach a provider.
+
+import { isOptedOut } from "../lib/opt-out.mjs";
+import { loadRules, appliesTo, toRegex } from "../compliance/screen.mjs";
+import { createTask } from "../lib/create-task.mjs";
+
+/* Who owns a held message.
+   `admin` rather than a client-facing role: the fix is editing a template, which
+   is operational work, and src/lib/create-task.mjs rejects anything that is not
+   an employee role outright. Work with no owner reaches nobody, which is the
+   failure that helper exists to prevent. */
+export const GATE_TASK_ROLE = "admin";
+
+/* The source_workflow every task from this gate carries. Part of the dedupe key
+   in 006_tasks_idempotency.sql, so it must stay stable. */
+export const GATE_SOURCE = "messaging-gate";
+
+/** Channels this gate knows how to reason about. An unrecognised channel is a
+    block: we cannot apply quiet hours to a channel we have no rule for, and
+    guessing which rules apply is the failure this exists to prevent. */
+export const CHANNELS = new Set(["sms", "email", "voice"]);
+
+/** Quiet hours, US Eastern, inclusive start and exclusive end.
+    23:00 through 10:59 is closed; 11:00 through 22:59 is open. */
+export const QUIET_START_HOUR = 23;
+export const QUIET_END_HOUR = 11;
+
+/** The timezone quiet hours are measured in. A named zone, not an offset, so
+    the operating system's timezone database handles daylight saving. A
+    hardcoded -05:00 would be an hour wrong for eight months of the year and
+    would send at 10am Eastern every summer. */
+export const QUIET_HOURS_TZ = "America/New_York";
+
+/** Channels quiet hours apply to. Texts wake people up; email does not.
+    A Set rather than `channel === "sms"` so adding voice later is a one-word
+    change at the definition instead of a condition to find in the body. */
+export const QUIET_HOURS_CHANNELS = new Set(["sms"]);
+
+/* The only option keys gate() accepts. Anything else is rejected — see
+   assertNoBypass. Kept as an explicit allow-list rather than a deny-list of
+   known bypass names, because a deny-list only stops the override someone
+   already thought to name. */
+const ALLOWED_OPTIONS = new Set(["now", "timeZone"]);
+
+/* assertNoBypass — the structural half of "there is no override".
+
+   Property 3 in the header is only worth the words if something enforces it.
+   A future caller writing `gate(db, msg, { force: true })` gets an exception
+   here, which gate() turns into a BLOCK — so the attempt to bypass the gate
+   closes it rather than opening it. That direction is deliberate: the failure
+   mode of a typo'd option name must never be "sent unchecked". */
+function assertNoBypass(options) {
+  for (const key of Object.keys(options || {})) {
+    if (!ALLOWED_OPTIONS.has(key)) {
+      throw new Error(
+        `gate: unknown option ${JSON.stringify(key)}. This gate has no override, ` +
+        `force, or bypass of any kind and must not be given one.`
+      );
+    }
+  }
+}
+
+/* easternHour — the hour of the day at `date` in the given zone, 0-23.
+
+   Intl carries the timezone database, so daylight saving is handled without
+   this file knowing when the transitions are. formatToParts rather than a
+   formatted string because hour12:false renders midnight as "24" in some ICU
+   versions and as "00" in others; reading the part and taking it modulo 24
+   gives the same answer under both.
+
+   Exported because it is the whole of the quiet-hours decision and is worth
+   testing directly against the transition dates. */
+export function easternHour(date, timeZone = QUIET_HOURS_TZ) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone, hour: "numeric", hour12: false
+  }).formatToParts(date);
+  const raw = parts.find((p) => p.type === "hour")?.value;
+  const hour = Number(raw);
+  if (!Number.isInteger(hour)) {
+    // Unreadable clock. Throwing lands in gate()'s catch, which blocks — the
+    // correct direction when we cannot tell what time it is where the
+    // recipient's phone is.
+    throw new Error(`easternHour: could not read the hour in ${timeZone}`);
+  }
+  return hour % 24;
+}
+
+/* inQuietHours — true when `date` falls in the closed window.
+
+   The window wraps midnight, so this is an OR rather than the usual
+   start <= h < end. Getting that backwards yields a window that is never open,
+   which is why it is its own exported function with its own tests. */
+export function inQuietHours(date, timeZone = QUIET_HOURS_TZ) {
+  const hour = easternHour(date, timeZone);
+  return hour >= QUIET_START_HOUR || hour < QUIET_END_HOUR;
+}
+
+/* gate(db, message, options) → { state, reasons[], task }
+
+   message: {
+     orgId,     — required. Missing means we do not know whose rules apply.
+     clientId,  — required. Missing means opt-out state cannot be established.
+     channel,   — 'sms' | 'email' | 'voice'
+     body,      — the rendered text that would be sent
+     messageId  — optional; the messages.id row this decision is about, carried
+                  into the raised task so a human can find it.
+   }
+
+   options: { now, timeZone } and nothing else.
+
+   Every check runs; the reasons accumulate rather than short-circuiting, so an
+   operator looking at a held message sees all of what is wrong with it instead
+   of fixing one thing and rediscovering the next on the retry. */
+export async function gate(db, message = {}, options = {}) {
+  try {
+    assertNoBypass(options);
+    return await run(db, message, options);
+  } catch (err) {
+    // FAIL CLOSED. Every error becomes a block. `detail` carries the cause for
+    // the operator; the reason text stays generic.
+    return {
+      state: "blocked",
+      reasons: [{
+        code: "gate_error",
+        rule_set: "engine",
+        message: "The message could not be checked, so it was not sent.",
+        detail: String((err && err.message) || err).slice(0, 300)
+      }],
+      task: null
+    };
+  }
+}
+
+async function run(db, message, { now = () => new Date(), timeZone = QUIET_HOURS_TZ } = {}) {
+  const { orgId, clientId, channel, body = "", messageId = null } = message;
+
+  // NOTE WHAT IS NOT DESTRUCTURED ABOVE: createdAt, scheduledAt, queuedAt.
+  // They are absent on purpose — see the sleeping-workflow note in the header.
+  // Adding one here would reintroduce exactly the bug this gate exists to stop.
+
+  if (!orgId) throw new Error("gate: orgId is required");
+  if (!channel) throw new Error("gate: channel is required");
+  if (!CHANNELS.has(channel)) {
+    throw new Error(`gate: unknown channel ${JSON.stringify(channel)}`);
+  }
+
+  const reasons = [];
+  let task = null;
+
+  // ---- 1. Opt-out ----------------------------------------------------------
+  // Read now, from the database, per channel. A missing clientId is a block and
+  // not a pass: a message with nobody attached has no opt-out record to check,
+  // and "we could not find a record" must never resolve to "nobody objected".
+  if (!clientId) {
+    reasons.push(r("recipient_unknown", "consent",
+      "This message has no client attached, so we cannot check whether they asked us to stop. It was not sent."));
+  } else if (await isOptedOut(db, clientId, channel)) {
+    reasons.push(r("opted_out", "consent",
+      `This person asked us to stop contacting them on ${channel}. It was not sent.`,
+      { citation: "TCPA 47 U.S.C. 227" }));
+  }
+
+  // ---- 2. Quiet hours ------------------------------------------------------
+  // Texts only. Measured in Eastern at the moment of sending, which is also why
+  // a message held here is held rather than failed: it becomes sendable on its
+  // own at 11am without anyone editing it.
+  if (QUIET_HOURS_CHANNELS.has(channel) && inQuietHours(now(), timeZone)) {
+    reasons.push(r("quiet_hours", "tcpa",
+      `Text messages are not sent between ${QUIET_START_HOUR}:00 and ${QUIET_END_HOUR}:00 Eastern. This one is being held until the window opens.`,
+      { citation: "TCPA 47 C.F.R. 64.1200(c)(1)", retryable: true }));
+  }
+
+  // ---- 3. Restricted words -------------------------------------------------
+  // Matched against the SAME compliance_rules rows the ad screen uses
+  // (047_compliance_rules.sql) rather than a second list kept here. A phrase
+  // that cannot run in an ad cannot run in a text either, and two lists would
+  // eventually disagree about which is which.
+  //
+  // SCOPING, AND WHY IT IS WIDER THAN screen()'s. Ad copy is scoped by
+  // offer_type, because an ad declares what it is selling. A message to a
+  // client declares nothing, so there is no offer type to scope by — and
+  // picking one on the caller's behalf would choose which body of law to apply.
+  // So every rule whose platform scope is empty applies, regardless of its
+  // offer_types. That is the fail-closed direction: more rules, never fewer.
+  // It also excludes the TikTok row automatically, whose `.*` pattern matches
+  // everything and which is scoped to a platform no message is sent on.
+  const haystack = String(body || "");
+  const rules = await loadRules(db, orgId);
+
+  for (const rule of rules) {
+    // Presence rules ("this disclosure must appear") are an ad-funnel concept —
+    // they describe a landing page carrying the CROA disclosure, not a text
+    // message. Applying them here would block every message ever sent for not
+    // containing the disclosure, which is the unusable direction.
+    if (rule.match_type === "required") continue;
+    if (!appliesTo(rule.platforms, null)) continue;
+
+    const matched = rule.match_type === "phrase"
+      ? haystack.toLowerCase().includes(String(rule.pattern).toLowerCase())
+      : toRegex(rule.pattern).test(haystack);
+    if (!matched) continue;
+
+    reasons.push({
+      code: rule.rule_key,
+      rule_set: rule.rule_set,
+      message: rule.message,
+      citation: rule.citation || undefined,
+      severity: rule.severity
+    });
+  }
+
+  // A restricted-word hit is the one kind of block a human has to act on: the
+  // copy itself is wrong and will keep being wrong on every retry. The other
+  // two clear on their own — the person opts back in, or the clock reaches 11am.
+  // So this is the only branch that raises a task.
+  const restricted = reasons.filter((x) => x.rule_set !== "engine"
+    && x.rule_set !== "consent" && x.rule_set !== "tcpa");
+  if (restricted.length) {
+    // A createTask() spec, not a tasks row. createTask is the only sanctioned
+    // writer (src/lib/create-task.mjs) and src/workflows/task-routing.test.mjs
+    // fails the build on any raw insert into the tasks table anywhere in src/
+    // — because a task with no assignee_role is work that reaches nobody.
+    // (That test greps the file text, so this comment says it in words.)
+    //
+    // `body` IS THE DEDUPE KEY. 006_tasks_idempotency.sql keys on
+    // (client_id, source_workflow, body), so this must be stable across replays
+    // of the same held message and distinct between different ones. The message
+    // id plus the rule codes is both: re-gating the same message produces the
+    // identical string and dedupes, while a different message or a different
+    // rule produces a new task.
+    //
+    // The MESSAGE BODY IS DELIBERATELY NOT IN IT. That copy is client-facing
+    // text about a consumer's file; a task list is an index over work, not a
+    // second outbox — the same reasoning as the staff_events note in
+    // src/workflows/messaging.mjs.
+    task = {
+      orgId,
+      clientId: clientId || null,
+      title: "Held: outbound message uses restricted wording",
+      sourceWorkflow: GATE_SOURCE,
+      assigneeRole: GATE_TASK_ROLE,
+      body: `${messageId || "unrecorded"}:${restricted.map((x) => x.code).sort().join(",")}`,
+      // Not persisted — carried so a caller rendering this to a human has the
+      // readable reasons without re-deriving them from the codes.
+      detail: restricted.map((x) => `${x.message}${x.citation ? ` (${x.citation})` : ""}`)
+    };
+  }
+
+  // Warnings do not hold a message; anything else does.
+  const hard = reasons.filter((x) => x.severity !== "warn");
+  if (hard.length) return { state: "blocked", reasons, task };
+
+  return { state: "allowed", reasons, task: null };
+}
+
+/* gateAndRecord — gate, then persist the outcome.
+
+   Split from gate() for the same reason screenAndRecord is split from screen():
+   the decision stays a pure-ish function that tests can drive without a write,
+   and a caller previewing a message does not litter the audit trail. Every path
+   that actually dispatches must use this one.
+
+   Writes blocked_reason/blocked_at onto the message row (110_messages_outbound)
+   and inserts the task if one was raised. Note what it never does: it does not
+   clear blocked_reason on an allowed result. A block is an audit record, and
+   the way to send after one is a new message row that passes on its own. */
+export async function gateAndRecord(db, message = {}, options = {}) {
+  const result = await gate(db, message, options);
+
+  if (result.state === "blocked" && message.messageId) {
+    await db.query(
+      `UPDATE messages
+          SET blocked_reason = $2, blocked_at = now(), status = 'blocked'
+        WHERE id = $1`,
+      [message.messageId, result.reasons.map((x) => x.code).join(",")]
+    );
+  }
+
+  if (result.task) {
+    // Through createTask, never a raw INSERT — it is the only writer that
+    // attaches an owning role, and it carries the replay dedupe.
+    const { detail, ...spec } = result.task; // eslint-disable-line no-unused-vars
+    await createTask(db, spec);
+  }
+
+  return result;
+}
+
+// --- helpers ---------------------------------------------------------------
+
+const r = (code, rule_set, message, extra = {}) => ({ code, rule_set, message, ...extra });
+
+export default gate;
