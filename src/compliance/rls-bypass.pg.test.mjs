@@ -34,6 +34,18 @@
 // correct role against a schema that forgot to FORCE fails just as open as the
 // reverse.
 //
+// A THIRD SCHEMA PROPERTY WAS ADDED 2026-08-01, AND IT IS THE OPPOSITE FAILURE.
+// Login broke for every account, root-caused to one or more tables with RLS
+// ENABLED and ZERO POLICIES — which is not "no restriction", it is Postgres's
+// own default of DENY EVERYTHING to every role but the owner. It was invisible
+// under a superuser connection (which bypasses RLS regardless of policy count)
+// and became real the moment 104_app_role.sql switched the app to an ordinary
+// role. Fixed by hand in Supabase, then made permanent by
+// db/migrations/106_no_bare_rls.sql, which runs the IDENTICAL query below to
+// decide what to patch. This test is what stops that state from coming back
+// silently — from a future migration or from another out-of-band dashboard
+// change — whether or not anyone remembers this incident happened.
+//
 //
 // *** WHY THE SCHEMA HALF STILL NEEDS ITS OWN TEST. ***
 //
@@ -85,5 +97,40 @@ test("every partner-scoped table has row security enabled AND forced", opts, asy
     "that is not ENABLED does nothing; a policy that is not FORCED does nothing for the " +
     "table's owner, which is the role that ran the migrations. Fix with: " +
     "ALTER TABLE <name> ENABLE ROW LEVEL SECURITY; ALTER TABLE <name> FORCE ROW LEVEL SECURITY;"
+  );
+});
+
+/* The opposite failure. RLS ENABLED with ZERO POLICIES denies every row to
+   every role but the table's owner — this is what actually took login down
+   on 2026-08-01 (see the file header and db/migrations/106_no_bare_rls.sql).
+   It is invisible under a superuser connection and real under any other, so a
+   table can sit in this state for a long time before anything notices —
+   exactly what happened here. Same query 106 runs to decide what to patch;
+   kept identical on purpose so the migration and this test can never silently
+   drift onto two different definitions of "bare". */
+test("no table has row security enabled with zero policies", opts, async () => {
+  const res = await db.query(
+    `SELECT c.relname AS table_name
+       FROM pg_class c
+       JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public'
+        AND c.relkind = 'r'
+        AND c.relrowsecurity = true
+        AND NOT EXISTS (
+          SELECT 1 FROM pg_policies p
+           WHERE p.schemaname = 'public' AND p.tablename = c.relname
+        )
+      ORDER BY c.relname`
+  );
+
+  assert.deepEqual(
+    res.rows.map((r) => r.table_name), [],
+    "these tables have Row Level Security ENABLED with NO POLICY attached. In Postgres " +
+    "that is not 'unrestricted' — it is DENY EVERYTHING to every role but the table " +
+    "owner, invisible under a superuser connection and real the moment anything else " +
+    "connects. This is the exact bug that broke login on 2026-08-01. Fix by giving the " +
+    "table a real policy if it needs partner isolation (see fundhub_apply_partner_rls() " +
+    "in 045_creative_factory.sql), or a permissive one if it does not (see " +
+    "db/migrations/106_no_bare_rls.sql) — never leave it enabled with nothing attached."
   );
 });

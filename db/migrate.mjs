@@ -70,13 +70,25 @@ async function main() {
     const sql = fs.readFileSync(f.path, "utf8");
     const client = await p.connect();
     // Postgres NOTICE messages (RAISE NOTICE inside a migration's own DO
-    // blocks — 090/104/105 all use this to report what they verified) were
+    // blocks — 090/104/105/106 all use this to report what they verified) were
     // never surfaced anywhere: node-postgres emits them as a 'notice' event
     // on the client, and nothing here was listening. A migration could report
     // success on stdout while its own RAISE NOTICE, containing the actual
     // finding, went straight to /dev/null. Print it, prefixed so it reads as
     // coming from inside the file rather than from this runner.
-    client.on("notice", (msg) => console.log(`  [${f.key}] ${msg.message}`));
+    //
+    // MUST BE REMOVED BEFORE THE CLIENT GOES BACK TO THE POOL. `p.connect()`
+    // hands back a pooled Client that gets REUSED across later iterations of
+    // this same loop, not a fresh one per file. A bound closure that is never
+    // unbound accumulates on whichever underlying client this happens to be —
+    // confirmed while testing this exact change: by file ~91 of 106,
+    // node-postgres logs "MaxListenersExceededWarning: 11 notice listeners
+    // added to [Client]", and one real notice on a later file fires every
+    // stale listener still attached, each printing with the WRONG file's key.
+    // Keeping the handler in a named variable so `.off()` can find the exact
+    // one `.on()` just added, not any other file's.
+    const onNotice = (msg) => console.log(`  [${f.key}] ${msg.message}`);
+    client.on("notice", onNotice);
     try {
       await client.query("BEGIN");
       await client.query(sql);
@@ -89,6 +101,7 @@ async function main() {
       console.error(`✗ FAILED ${f.key}: ${e.message}`);
       throw e;
     } finally {
+      client.off("notice", onNotice);
       client.release();
     }
   }
