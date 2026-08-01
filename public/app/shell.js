@@ -44,7 +44,20 @@
        what read/finance-os, read/banking-surface and read/tradelines already
        serve. Same treatment as banking-entry above: in ALL, and therefore in
        every sidebar. */
-    "money-map.html"
+    "money-map.html",
+    /* finance-command.html is the roll-up dashboard (106_entities.sql +
+       api/read/finance-command.mjs) — every client's cash, credit, and
+       investment balances folded into one screen, same STAFF read gate as
+       money-map.html, which already reads bank_accounts at this level (write
+       stays FINANCE-only, matching bank-accounts.html above). */
+    "finance-command.html",
+    /* finance-add.html is the one add-anything flow. Its FORM ACTIONS write to
+       a mix of gates — entities and card_liabilities are STAFF, bank accounts
+       and subscriptions are FINANCE — so the SCREEN is placed in
+       OWNER_ADMIN_ONLY below, matching its most restrictive action. Offering
+       it more broadly would put a form on screen whose bank-account/
+       subscription actions 403 for the person looking at it. */
+    "finance-add.html"
   ];
 
   /* partner-galaxy.html is the white-label partner's own Galaxy — scoped to
@@ -89,7 +102,8 @@
      goes back to offering screens that 403. */
   var OWNER_ADMIN_ONLY = [
     "banking-surface.html",
-    "subscriptions.html", "bank-accounts.html", "bills-cashflow.html"
+    "subscriptions.html", "bank-accounts.html", "bills-cashflow.html",
+    "finance-add.html"
   ];
 
   /* staffTabs — every screen a signed-in employee may open, which is every row

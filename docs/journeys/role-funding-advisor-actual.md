@@ -24,7 +24,7 @@ flowchart TD
     CAN --> A_dashboard[The dashboard — 4 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 5 routes]
-    CAN --> A_read[Reading data — 12 routes]
+    CAN --> A_read[Reading data — 14 routes]
     CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 24 routes]
@@ -39,7 +39,7 @@ flowchart TD
 
 ## What they can reach
 
-**45 of 69 routes.**
+**47 of 71 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -77,6 +77,8 @@ flowchart TD
 | `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter<br>plus: client |
+| `/api/read/finance-ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/read/finance-command` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/finance-os` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/funding-rounds` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/inquiries` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
@@ -97,7 +99,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**24 of 69 routes.**
+**24 of 71 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

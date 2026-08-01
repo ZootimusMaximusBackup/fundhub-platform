@@ -60,6 +60,8 @@ import readFinanceOs from "../../api/read/finance-os.mjs";
 import readBankingSurface from "../../api/read/banking-surface.mjs";
 import readUnderwrite from "../../api/read/underwrite.mjs";
 import readMoneyMap from "../../api/read/money-map.mjs";
+import readFinanceCommand from "../../api/read/finance-command.mjs";
+import readFinanceAsk from "../../api/read/finance-ask.mjs";
 import bankingSyncAccounts from "../../api/banking/sync-accounts.mjs";
 import inquiries from "../../api/inquiries.mjs";
 import pii from "../../api/pii.mjs";
@@ -182,6 +184,21 @@ export const ROUTES = {
   // handler and the screen: a screen whose endpoint 404s is the exact failure
   // this map exists to prevent, and it has shipped twice.
   "read/money-map": readMoneyMap,
+
+  // read/finance-command is the roll-up: money-map answers "one client's whole
+  // picture", this answers "every client's, folded into one number, or narrowed
+  // to one client or one entity (106_entities.sql)". Same ROLE_SETS.STAFF gate,
+  // same org fail-closed rule, same reason — it exposes nothing the per-client
+  // screens do not, one level up.
+  "read/finance-command": readFinanceCommand,
+
+  // read/finance-ask answers a small fixed set of question shapes against the
+  // same numbers finance-command computes — never a language model, never a
+  // guess. A question it does not recognise, or whose numbers are unknown,
+  // comes back thin_data:true with a named reason, same discipline as
+  // api/finance/alerts.mjs's REASON_TEXT map. ROLE_SETS.STAFF, same as its
+  // neighbour above.
+  "read/finance-ask": readFinanceAsk,
 
   // banking/sync-accounts is the FIRST WRITER `bank_accounts` has ever had —
   // until it, the only INSERT into that table in the whole repository was inside

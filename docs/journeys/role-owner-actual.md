@@ -26,14 +26,14 @@ flowchart TD
     CAN --> A_finance[Finance — 10 routes]
     CAN --> A_hiring[Hiring — 6 routes]
     CAN --> A_privacy[privacy — 1 route]
-    CAN --> A_read[Reading data — 19 routes]
+    CAN --> A_read[Reading data — 21 routes]
     CAN --> A_top_level[Everything else — 8 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
 ```
 
 ## What they can reach
 
-**69 of 69 routes.**
+**71 of 71 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -92,6 +92,8 @@ flowchart TD
 | `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter<br>plus: client |
 | `/api/read/failed-events` | GET | owner, admin |
+| `/api/read/finance-ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/read/finance-command` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/finance-os` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/funding-rounds` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/inquiries` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
@@ -115,7 +117,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**0 of 69 routes.**
+**0 of 71 routes.**
 
 _None._
 

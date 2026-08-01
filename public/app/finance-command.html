@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fundhub — Finance Command</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
+<!-- Same shared frame finance-os.html takes — see that file's header for why. -->
+<link rel="stylesheet" href="finance-os.css">
+<style>
+/* ══ SHARED CHROME — identical across every internal surface ══════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--butter:#F2E39B}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+.logo{width:118px;height:24px;flex:0 0 118px}
+.app{display:flex;min-height:100vh}
+.side{width:230px;flex:0 0 230px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
+.side::after{content:"";position:absolute;top:0;right:0;width:2px;height:100%;background:var(--spectrum);opacity:.9}
+.side.mini{width:60px;flex:0 0 60px}
+.side-top{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--cardline)}
+.side.mini .side-top{padding:0 12px}
+.side.mini .logo{display:none}
+.burger{margin-left:auto;width:26px;height:26px;flex:0 0 26px;border:1px solid var(--cardline);background:transparent;color:var(--gray2);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+.burger:hover{border-color:#3F3F46;color:var(--paper)}
+.side.mini .burger{margin:0 auto}
+.side-scroll{flex:1;overflow-y:auto;padding:12px 0 8px}
+.navgroup{margin-bottom:3px}
+.navhead{width:100%;background:transparent;border:0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;padding:9px 18px 6px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#71717A}
+.navhead:hover{color:var(--gray2)}
+.navhead .chev{margin-left:auto;font-size:9px;transition:transform .16s;color:#52525B}
+.navgroup.closed .chev{transform:rotate(-90deg)}
+.navgroup.closed .navlist{display:none}
+.side.mini .navhead{justify-content:center;padding:10px 0 6px;font-size:0;letter-spacing:0}
+.side.mini .navhead::after{content:"";display:block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;opacity:.5}
+.side.mini .navhead .chev{display:none}
+.navlist{display:flex;flex-direction:column}
+.navitem{display:flex;align-items:center;gap:11px;padding:7px 18px;font-size:12.5px;color:var(--gray2);position:relative;transition:color .12s,background .12s}
+.navitem:hover{color:var(--paper);background:#161619}
+.navitem .ico{font-family:var(--mono);font-size:12px;width:16px;flex:0 0 16px;text-align:center;opacity:.75}
+.navitem.on{color:var(--paper);background:#161619;font-weight:500}
+.navitem.on::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--spectrum);border-radius:0 2px 2px 0}
+.navitem.on .ico{opacity:1}
+.side.mini .navitem{justify-content:center;padding:9px 0}
+.side.mini .navitem .lbl{display:none}
+.side-foot{padding:12px 16px;border-top:1px solid var(--cardline);font-family:var(--mono);font-size:10px;color:#52525B;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
+.side.mini .side-foot .who{display:none}
+.side.mini .side-foot{justify-content:center;padding:12px 0}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.spacer{flex:1}
+.content{padding:22px 24px 40px;flex:1}
+
+/* ══ SCREEN ══════════════════════════════════════════════════════════════ */
+:root{ --surface:#FFFFFF; --text:var(--ink2); --text-dim:var(--gray); --text-faint:var(--gray2); }
+
+.fc-tiles{ display:grid; gap:12px; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); margin-bottom:24px; }
+.fc-tile{ border:1px solid var(--soft); border-radius:8px; background:var(--surface); padding:14px 16px; }
+.fc-tile-label{ font:600 10px/1.3 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); }
+.fc-tile-value{ font:700 22px/1.3 'JetBrains Mono',ui-monospace,monospace; color:var(--text); margin-top:6px; }
+.fc-tile-value.is-unknown{ color:var(--text-faint); font-weight:500; font-size:15px; }
+.fc-tile-basis{ display:block; margin-top:4px; font:500 10px/1.4 'JetBrains Mono',ui-monospace,monospace; color:var(--text-faint); }
+
+.fc-section{ margin-top:26px; }
+.fc-section h2{ font:700 12px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); margin:0 0 10px; }
+.fc-panel{ border:1px solid var(--soft); border-radius:8px; background:var(--surface); padding:16px 18px; }
+.fc-hint{ font:400 12px/1.55 'Inter',system-ui,sans-serif; color:var(--text-dim); margin:0 0 12px; max-width:76ch; }
+
+.fc-filters{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:18px; }
+.fc-field{ display:flex; flex-direction:column; gap:5px; }
+.fc-field label{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); }
+.fc-field select,.fc-field input{ padding:8px 10px; border:1px solid var(--soft); border-radius:5px; background:var(--paper); min-width:180px; }
+
+svg.fc-chart{ width:100%; height:auto; display:block; }
+svg.fc-chart .gl{ stroke:var(--soft); stroke-width:1; }
+svg.fc-chart .ax{ font:500 9px 'JetBrains Mono',ui-monospace,monospace; fill:var(--text-faint); }
+svg.fc-chart .lbl{ font:700 10px 'JetBrains Mono',ui-monospace,monospace; fill:var(--text); }
+
+.fc-table{ width:100%; border-collapse:collapse; margin-top:10px; }
+.fc-table th{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); text-align:left; padding:9px 12px; border-bottom:1px solid var(--soft); }
+.fc-table td{ font:500 12px/1.4 'Inter',system-ui,sans-serif; padding:9px 12px; border-bottom:1px solid var(--soft); }
+.fc-table td.num{ font:600 12px/1.4 'JetBrains Mono',ui-monospace,monospace; text-align:right; }
+.fc-table tr.hot td{ background:rgba(242,166,155,.18); }
+
+.fc-empty{ padding:14px 16px; color:var(--text-dim); font:400 12px/1.5 'Inter',system-ui,sans-serif; }
+.fc-ask{ display:flex; gap:8px; margin-bottom:10px; }
+.fc-ask input{ flex:1; padding:10px 12px; border:1px solid var(--soft); border-radius:5px; }
+.fc-ask button{ padding:10px 16px; border:1px solid var(--ink); background:var(--ink); color:var(--paper); border-radius:5px; cursor:pointer; font-weight:600; }
+.fc-answer{ border-left:3px solid var(--text-faint); padding:12px 16px; margin-top:10px; font:400 13px/1.6 'Inter',system-ui,sans-serif; }
+.fc-answer.thin{ border-left-color:#6E2A22; }
+.fc-answer .figs{ margin-top:8px; font:500 11px/1.6 'JetBrains Mono',ui-monospace,monospace; color:var(--text-dim); }
+
+@media (max-width:520px){ .fc-tiles{ grid-template-columns:1fr 1fr; } }
+</style>
+<script src="shell.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
+    <nav class="side-scroll">
+      <div class="navgroup"><button class="navhead">Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Finance<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="money-map.html"><span class="ico">◪</span><span class="lbl">Money Map</span></a>
+        <a class="navitem" href="finance-os.html"><span class="ico">▩</span><span class="lbl">Finance OS</span></a>
+        <a class="navitem" href="banking-surface.html"><span class="ico">◧</span><span class="lbl">Banking</span></a>
+        <a class="navitem" href="subscriptions.html"><span class="ico">◍</span><span class="lbl">Subscriptions</span></a>
+        <a class="navitem" href="card-stack.html"><span class="ico">▥</span><span class="lbl">Card Stack</span></a>
+        <a class="navitem" href="bank-accounts.html"><span class="ico">⊞</span><span class="lbl">Bank Accounts</span></a>
+        <a class="navitem" href="bills-cashflow.html"><span class="ico">∿</span><span class="lbl">Bills &amp; Cash Flow</span></a>
+        <a class="navitem" href="alerts.html"><span class="ico">⚠</span><span class="lbl">Alerts</span></a>
+        <a class="navitem" href="deal-model.html"><span class="ico">⌁</span><span class="lbl">Deal Model</span></a>
+        <a class="navitem" href="banking-entry.html"><span class="ico">✚</span><span class="lbl">Add Accounts</span></a>
+        <a class="navitem on" href="finance-command.html"><span class="ico">Σ</span><span class="lbl">Finance Command</span></a>
+        <a class="navitem" href="finance-add.html"><span class="ico">+</span><span class="lbl">Add Anything</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
+        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Automation<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Marketing<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
+        <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
+        <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Setup<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
+        <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
+        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Specialist</span></a>
+        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Client<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+      </div></div>
+    </nav>
+    <div class="side-foot"><span class="pulse"></span><span class="who">CS · EMP-000001</span></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar"><span class="crumb">Finance</span><h1>Finance Command</h1><div class="spacer"></div></div>
+
+    <div class="content">
+      <p class="fc-hint">
+        Every client's cash, credit, and investments, folded into one screen. Pick a client below to
+        narrow it, and an entity (a business or a personal wallet, once you have added one on
+        <a href="finance-add.html" style="text-decoration:underline">Add Anything</a>) to narrow further.
+        Nothing here is a guess: a figure with no data behind it shows as an em dash, and a total over
+        rows with holes in it is marked <strong>+</strong>, meaning "at least this much".
+      </p>
+
+      <div class="fc-panel" style="margin-bottom:20px;">
+        <div class="fc-filters">
+          <div class="fc-field">
+            <label for="fcClient">Client</label>
+            <select id="fcClient"><option value="">All clients</option></select>
+          </div>
+          <div class="fc-field">
+            <label for="fcEntity">Entity</label>
+            <select id="fcEntity" disabled><option value="">All of this client's entities</option></select>
+          </div>
+          <div class="fc-field">
+            <label for="fcDays">Window (days)</label>
+            <input id="fcDays" type="number" min="1" max="365" value="30">
+          </div>
+          <button class="fc-tile" id="fcGo" style="cursor:pointer;">Update</button>
+        </div>
+        <div id="fcMsg"></div>
+      </div>
+
+      <div class="fc-tiles" id="fcTiles">
+        <div class="fc-tile"><div class="fc-tile-label">Cash</div><div class="fc-tile-value is-unknown" id="fcCash">Loading…</div></div>
+        <div class="fc-tile"><div class="fc-tile-label">Credit available</div><div class="fc-tile-value is-unknown" id="fcCreditAvail">Loading…</div></div>
+        <div class="fc-tile"><div class="fc-tile-label">Credit owed</div><div class="fc-tile-value is-unknown" id="fcCreditOwed">Loading…</div></div>
+        <div class="fc-tile"><div class="fc-tile-label">Utilization</div><div class="fc-tile-value is-unknown" id="fcUtil">Loading…</div></div>
+        <div class="fc-tile"><div class="fc-tile-label">Investments</div><div class="fc-tile-value is-unknown" id="fcInvest">Loading…</div></div>
+        <div class="fc-tile"><div class="fc-tile-label">Net worth (today)</div><div class="fc-tile-value is-unknown" id="fcNetWorth">Loading…</div></div>
+      </div>
+
+      <div class="fc-section">
+        <h2>Ask it</h2>
+        <div class="fc-panel">
+          <p class="fc-hint">Answers come from the numbers above and money-map's per-client figures — never a guess.
+             If the data is too thin to answer, it says so.</p>
+          <div class="fc-ask">
+            <input id="fcAskBox" type="text" placeholder="Can I afford this? Which card should I pay down first?">
+            <button id="fcAskGo">Ask</button>
+          </div>
+          <div id="fcAskOut"></div>
+        </div>
+      </div>
+
+      <div class="fc-section">
+        <h2>Cash in vs. cash out</h2>
+        <div class="fc-panel"><div id="fcCashflowChart"></div></div>
+      </div>
+
+      <div class="fc-section">
+        <h2>Marketing spend (business-wide — never filtered by client)</h2>
+        <div class="fc-panel"><div id="fcMarketingChart"></div></div>
+      </div>
+
+      <div class="fc-section">
+        <h2>Utilization per card</h2>
+        <div class="fc-panel"><div id="fcCardTable"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function pct(n) { return n === null || n === undefined ? null : (n * 100).toFixed(1) + "%"; }
+
+  function setTile(id, display, basis) {
+    var el = document.getElementById(id);
+    if (display === null || display === undefined) {
+      el.textContent = "—";
+      el.className = "fc-tile-value is-unknown";
+      return;
+    }
+    el.textContent = "$" + Number(display).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    el.className = "fc-tile-value" + (basis && basis.partial ? "" : "");
+    if (basis && basis.partial) el.textContent += "+";
+  }
+
+  /* A minimal bar/line chart, same shape as campaign-manager.html's chartSVG:
+     gridlines, one peak label, first/middle/last x labels, and a table always
+     printed underneath by the caller — the chart is never the only way to
+     read a number. */
+  function chartSVG(series, key, opts) {
+    opts = opts || {};
+    var vals = series.map(function (d) { return d[key] == null ? null : Number(d[key]) / 100; });
+    var known = vals.filter(function (v) { return v !== null; });
+    if (!known.length) return '<p class="fc-empty">No data in this window.</p>';
+    var max = Math.max.apply(null, known.concat([0]));
+    var min = Math.min.apply(null, known.concat([0]));
+    var span = Math.max(1, max - min);
+    var top = max + span * 0.1, bottom = min - span * 0.1;
+    var W = 720, H = 190, L = 56, R = 14, T = 14, B = 28;
+    var pw = W - L - R, ph = H - T - B;
+    var n = series.length;
+    var xb = function (i) { return L + pw * i / n; };
+    var y = function (v) { return T + ph - ((v - bottom) / (top - bottom)) * ph; };
+    var s = ['<svg class="fc-chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(key) + ' by day">'];
+    for (var g = 0; g <= 3; g++) {
+      var gv = bottom + (top - bottom) * g / 3, gy = y(gv);
+      s.push('<line class="gl" x1="' + L + '" y1="' + gy.toFixed(1) + '" x2="' + (W - R) + '" y2="' + gy.toFixed(1) + '"/>');
+      s.push('<text class="ax" x="' + (L - 7) + '" y="' + (gy + 3).toFixed(1) + '" text-anchor="end">' + esc(gv.toFixed(0)) + '</text>');
+    }
+    var bw = Math.max(1, pw / n - (n > 40 ? 1 : 2));
+    series.forEach(function (d, i) {
+      var v = vals[i]; if (v === null) return;
+      var yv = y(Math.max(v, 0)), y0 = y(0);
+      var top_ = Math.min(yv, y0), h = Math.max(1, Math.abs(y0 - yv));
+      s.push('<rect x="' + xb(i).toFixed(1) + '" y="' + top_.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) +
+             '" rx="2" fill="' + (opts.color || "#A9C6E8") + '"/>');
+    });
+    [0, Math.floor((n - 1) / 2), n - 1].filter(function (v, i, a) { return a.indexOf(v) === i && v >= 0; }).forEach(function (i) {
+      var px = xb(i) + (pw / n) / 2;
+      s.push('<text class="ax" x="' + px.toFixed(1) + '" y="' + (H - 9) + '" text-anchor="' +
+             (i === 0 ? "start" : i === n - 1 ? "end" : "middle") + '">' + esc(String(series[i].date).slice(5)) + '</text>');
+    });
+    s.push('</svg>');
+    return s.join("");
+  }
+
+  var state = { clients: [], entities: [], data: null };
+
+  function loadClients() {
+    FHData.clients(200).then(function (r) {
+      var sel = document.getElementById("fcClient");
+      if (!r.ok || !r.data || !Array.isArray(r.data.clients)) return;
+      state.clients = r.data.clients;
+      r.data.clients.forEach(function (c) {
+        var opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.id;
+        sel.appendChild(opt);
+      });
+      var urlClient = FHData.param("client_id");
+      if (urlClient) { sel.value = urlClient; loadEntities(urlClient); }
+    });
+  }
+
+  function loadEntities(clientId) {
+    var sel = document.getElementById("fcEntity");
+    sel.innerHTML = '<option value="">All of this client\'s entities</option>';
+    if (!clientId) { sel.disabled = true; return; }
+    sel.disabled = false;
+    fetchEntities(clientId, sel);
+  }
+
+  function fetchEntities(clientId, sel) {
+    var t = (function () { try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; } })();
+    fetch("/api/finance/entities?client_id=" + encodeURIComponent(clientId), {
+      headers: t ? { accept: "application/json", authorization: "Bearer " + t } : { accept: "application/json" }
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || d.ok !== true) return;
+      (d.entities || []).filter(function (e) { return !e.archived_at; }).forEach(function (e) {
+        var opt = document.createElement("option");
+        opt.value = e.id;
+        opt.textContent = e.name + " (" + e.kind + ")";
+        sel.appendChild(opt);
+      });
+      var urlEntity = FHData.param("entity_id");
+      if (urlEntity) sel.value = urlEntity;
+    }).catch(function () {});
+  }
+
+  function renderCardTable(perCard) {
+    var el = document.getElementById("fcCardTable");
+    if (!perCard || !perCard.length) { el.innerHTML = '<p class="fc-empty">No open cards in this scope.</p>'; return; }
+    var rows = perCard.slice().sort(function (a, b) {
+      var au = a.utilization === null ? -1 : a.utilization, bu = b.utilization === null ? -1 : b.utilization;
+      return bu - au;
+    });
+    var html = ['<table class="fc-table"><thead><tr><th>Card</th><th class="num">Limit</th><th class="num">Balance</th><th class="num">Utilization</th></tr></thead><tbody>'];
+    rows.forEach(function (c) {
+      var hot = c.utilization !== null && c.utilization >= 0.7;
+      html.push('<tr class="' + (hot ? "hot" : "") + '"><td>' + esc(c.lender || "—") + '</td>' +
+        '<td class="num">' + (c.limit_display === null ? "—" : "$" + c.limit_display) + '</td>' +
+        '<td class="num">' + (c.balance_display === null ? "—" : "$" + c.balance_display) + '</td>' +
+        '<td class="num">' + (c.utilization === null ? "—" : (c.utilization * 100).toFixed(1) + "%") + '</td></tr>');
+    });
+    html.push("</tbody></table>");
+    el.innerHTML = html.join("");
+  }
+
+  function render(d) {
+    state.data = d;
+    setTile("fcCash", d.totals.cash_display, d.totals.cash_basis);
+    setTile("fcCreditAvail", d.totals.credit_available_display, d.totals.credit_available_basis);
+    setTile("fcCreditOwed", d.totals.credit_owed_display, d.totals.credit_owed_basis);
+    document.getElementById("fcUtil").textContent = pct(d.totals.utilization_overall) || "—";
+    document.getElementById("fcUtil").className = "fc-tile-value" + (d.totals.utilization_overall === null ? " is-unknown" : "");
+    setTile("fcInvest", d.totals.investment_display, d.totals.investment_basis);
+    if (d.net_worth_today_cents === null) {
+      document.getElementById("fcNetWorth").textContent = "—";
+      document.getElementById("fcNetWorth").className = "fc-tile-value is-unknown";
+    } else {
+      document.getElementById("fcNetWorth").textContent = "$" + (d.net_worth_today_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById("fcNetWorth").className = "fc-tile-value";
+    }
+    document.getElementById("fcCashflowChart").innerHTML =
+      chartSVG(d.cashflow_series, "net_cents", { color: "#8FBF9F" }) +
+      '<p class="fc-hint" style="margin-top:8px;">Net cash movement per day (inflow minus outflow). No history line means no bank_transactions rows landed that day — not a zero.</p>';
+    document.getElementById("fcMarketingChart").innerHTML =
+      chartSVG(d.marketing_series, "spend_cents", { color: "#E3A0A0" }) +
+      '<p class="fc-hint" style="margin-top:8px;">Ad spend across every campaign in this business, per day. Campaigns are not attributable to one client, so this never narrows with the client filter above.</p>';
+    renderCardTable(d.per_card);
+  }
+
+  function load() {
+    var clientId = document.getElementById("fcClient").value;
+    var entityId = document.getElementById("fcEntity").value;
+    var days = document.getElementById("fcDays").value || 30;
+    var params = { days: days };
+    if (clientId) params.client_id = clientId;
+    if (entityId) params.entity_id = entityId;
+    var msg = document.getElementById("fcMsg");
+    msg.textContent = "Loading…";
+    FHData.read("finance-command", params).then(function (r) {
+      if (!r.ok) { msg.textContent = "Could not load: " + (r.error || r.source); return; }
+      msg.textContent = "";
+      render(r.data);
+    });
+  }
+
+  document.getElementById("fcClient").addEventListener("change", function () {
+    loadEntities(this.value);
+  });
+  document.getElementById("fcGo").addEventListener("click", function (e) { e.preventDefault(); load(); });
+
+  document.getElementById("fcAskGo").addEventListener("click", function () {
+    var q = document.getElementById("fcAskBox").value.trim();
+    var out = document.getElementById("fcAskOut");
+    if (!q) return;
+    if (!state.data) { out.innerHTML = '<div class="fc-answer thin">Load the numbers above first.</div>'; return; }
+    out.innerHTML = '<div class="fc-answer">Asking…</div>';
+    var clientId = document.getElementById("fcClient").value || null;
+    fetch("/api/read/finance-ask", {
+      method: "POST",
+      headers: (function () {
+        var t; try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+        var h = { "content-type": "application/json", accept: "application/json" };
+        if (t) h.authorization = "Bearer " + t;
+        return h;
+      })(),
+      body: JSON.stringify({ question: q, client_id: clientId })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || d.ok !== true) { out.innerHTML = '<div class="fc-answer thin">Could not answer: ' + esc((d && d.error) || "unknown error") + '</div>'; return; }
+      var cls = d.answer.thin_data ? "fc-answer thin" : "fc-answer";
+      var figs = (d.answer.figures || []).map(function (f) { return esc(f.label) + ": " + esc(f.value); }).join(" · ");
+      out.innerHTML = '<div class="' + cls + '"><div>' + esc(d.answer.text) + '</div>' +
+        (figs ? '<div class="figs">' + figs + '</div>' : "") + '</div>';
+    }).catch(function () {
+      out.innerHTML = '<div class="fc-answer thin">Could not reach the answer engine.</div>';
+    });
+  });
+
+  loadClients();
+  load();
+})();
+</script>
+</body>
+</html>

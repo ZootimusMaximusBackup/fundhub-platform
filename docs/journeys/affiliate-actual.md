@@ -34,7 +34,7 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| NONE[Nothing admits this one — every endpoint refuses them]
     NONE --> OPENONLY[Only the routes anyone can reach without signing in]
-    WHO -->|Yes| CANT[Blocked — 61 routes]
+    WHO -->|Yes| CANT[Blocked — 63 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_campaigns[Campaigns — 6 blocked]
@@ -44,13 +44,13 @@ flowchart TD
     CANT --> B_finance[Finance — 10 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
-    CANT --> B_read[Reading data — 19 blocked]
+    CANT --> B_read[Reading data — 21 blocked]
     CANT --> B_top_level[Everything else — 6 blocked]
 ```
 
 ## What they can reach
 
-**8 of 69 routes.**
+**8 of 71 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -71,7 +71,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**61 of 69 routes.**
+**63 of 71 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -123,6 +123,8 @@ flowchart TD
 | `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter<br>plus: client |
 | `/api/read/failed-events` | GET | owner, admin |
+| `/api/read/finance-ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/read/finance-command` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/finance-os` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/funding-rounds` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/read/inquiries` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |

@@ -53,9 +53,17 @@ CREATE INDEX IF NOT EXISTS idx_bank_accounts_entity ON bank_accounts(entity_id);
 ALTER TABLE recurring_bills ADD COLUMN IF NOT EXISTS entity_id uuid REFERENCES entities(id);
 CREATE INDEX IF NOT EXISTS idx_recurring_bills_entity ON recurring_bills(entity_id);
 
--- card_liabilities: confirm the table name/columns match before assuming —
--- this repo's card data lives in card_liabilities (per docs/finance);
--- entity_id added the same additive way.
+-- tradelines carries the LIVE card figures (credit_limit_cents, balance_cents —
+-- src/finance/os-grid.mjs computes the seven-row grid straight off this table)
+-- and is what api/finance/liabilities.mjs's add_card writes to. entity_id goes
+-- here, not on card_liabilities, which is a separate history/CRS-observation
+-- table money-map reads for statement dates and does not hold the figure a
+-- roll-up dashboard needs.
+ALTER TABLE tradelines ADD COLUMN IF NOT EXISTS entity_id uuid REFERENCES entities(id);
+CREATE INDEX IF NOT EXISTS idx_tradelines_entity ON tradelines(entity_id);
+
+-- card_liabilities gets it too, additively, so a screen reading a card's
+-- CRS-observed history (money-map.html) can filter by entity the same way.
 ALTER TABLE card_liabilities ADD COLUMN IF NOT EXISTS entity_id uuid REFERENCES entities(id);
 CREATE INDEX IF NOT EXISTS idx_card_liabilities_entity ON card_liabilities(entity_id);
 
