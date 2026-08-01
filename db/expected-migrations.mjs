@@ -89,6 +89,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/104_app_role.sql",
   "migrations/105_login_path_grants.sql",
   "migrations/106_entities.sql",
+  "migrations/106_journeys.sql",
   "migrations/107_recurring_bills_manual.sql",
   "migrations/108_owner_notifications.sql",
   "seed/002_pipelines.sql",

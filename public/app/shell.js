@@ -57,7 +57,12 @@
        OWNER_ADMIN_ONLY below, matching its most restrictive action. Offering
        it more broadly would put a form on screen whose bank-account/
        subscription actions 403 for the person looking at it. */
-    "finance-add.html"
+    "finance-add.html",
+    /* journeys.html is the SMS/email/pipeline automation editor — it writes
+       live message copy and stage wiring, so it is owner/admin only (see
+       OWNER_ADMIN_ONLY below). Same treatment as every other addition on
+       this list: in ALL, and therefore in every sidebar. */
+    "journeys.html"
   ];
 
   /* partner-galaxy.html is the white-label partner's own Galaxy — scoped to
@@ -103,7 +108,10 @@
   var OWNER_ADMIN_ONLY = [
     "banking-surface.html",
     "subscriptions.html", "bank-accounts.html", "bills-cashflow.html",
-    "finance-add.html"
+    "finance-add.html",
+    /* journeys.html — api/journeys/ask.mjs and api/journeys/store.mjs both
+       gate on requireRole("owner", "admin"); the nav row matches. */
+    "journeys.html"
   ];
 
   /* staffTabs — every screen a signed-in employee may open, which is every row
