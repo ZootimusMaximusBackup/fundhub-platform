@@ -912,25 +912,48 @@ button,input,select,textarea{font:inherit;color:inherit}
   function loadSampleData() {
     if (S.busy) return; S.busy = true;
     toast("Loading sample data through /api/banking/sync-accounts and /api/finance/liabilities…");
+    // Both writes below resolve to { ok, error } — never just "true" — so a
+    // failed write cannot be reported as loaded. Silently claiming success on
+    // a 400 is exactly the "screen shows a number the server did not send"
+    // class of bug this app's own code keeps calling out; unwritten sample
+    // rows are the same defect with the sign flipped.
     var accountsDone = FHData.write("/api/banking/sync-accounts", { client_id: clientId, provider: "mock" })
       .then(function (res) {
-        if (res.ok) return true;
+        if (res.ok) return { ok: true };
         // The mock provider needs BANKING_MOCK_PROVIDER=1 set — if that has
         // not been configured, fall back to a manual sample account so the
         // button still does something real rather than silently failing.
         return FHData.write("/api/finance/bank-accounts", {
           action: "add", client_id: clientId, name: "Sample Checking (mock)",
           account_type: "checking", mask: "0000", current: "5000"
-        }).then(function () { return true; });
+        }).then(function (res2) {
+          return { ok: res2.ok, error: res2.ok ? null : (res2.error || res2.source) };
+        });
       });
     var cardsDone = FHData.write("/api/finance/liabilities", {
       action: "add_card", client_id: clientId, lender: "Sample Card (mock)",
       credit_limit: "10000", balance: "2500", apr: "0.2199"
+    }).then(function (res) {
+      return { ok: res.ok, error: res.ok ? null : (res.error || res.source) };
     });
-    Promise.all([accountsDone, cardsDone]).then(function () {
-      markSample();
+    Promise.all([accountsDone, cardsDone]).then(function (results) {
+      var accountsOk = results[0].ok, cardsOk = results[1].ok;
       S.busy = false;
-      toast("<b>Sample data loaded.</b> Marked provider = mock everywhere it lands, and included in every total below.");
+      // The flag — and the Clear button it drives — must mean "there is
+      // something on file to clear", so it is only set when at least one
+      // write actually landed.
+      if (accountsOk || cardsOk) markSample();
+      if (accountsOk && cardsOk) {
+        toast("<b>Sample data loaded.</b> Marked provider = mock everywhere it lands, and included in every total below.");
+      } else if (accountsOk || cardsOk) {
+        var whichFailed = accountsOk ? "the sample card" : "the sample account";
+        var failure = accountsOk ? results[1] : results[0];
+        toast("<b>Partly loaded.</b> " + esc(whichFailed) + " was not saved — " +
+          esc(failure.error || "unknown error") + ".");
+      } else {
+        toast("<b>Not loaded.</b> Sample account: " + esc(results[0].error || "unknown error") +
+          " · Sample card: " + esc(results[1].error || "unknown error"));
+      }
       loadAll();
       updateSampleButtons();
     });
