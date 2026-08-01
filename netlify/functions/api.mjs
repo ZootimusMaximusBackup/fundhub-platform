@@ -33,6 +33,7 @@ import authSession from "../../api/auth/session.mjs";
 import authReset from "../../api/auth/reset.mjs";
 import authAdminReset from "../../api/auth/admin-reset.mjs";
 import journeysAsk from "../../api/journeys/ask.mjs";
+import journeysRun from "../../api/journeys/run.mjs";
 import journeysStore from "../../api/journeys.mjs";
 import tasks from "../../api/tasks.mjs";
 import inquiry from "../../api/inquiry.mjs";
@@ -113,6 +114,11 @@ export const ROUTES = {
   "auth/reset": authReset,
   "auth/admin-reset": authAdminReset,
   "journeys/ask": journeysAsk,
+  /* ROLE_SETS.FINANCE — {owner, admin}, the same gate as its two neighbours.
+     A run drives the real event bus into the real workflows, so it is not a
+     read. It writes inside a transaction that is always rolled back, which is
+     what keeps its synthetic clients off every dashboard. */
+  "journeys/run": journeysRun,
   "journeys": journeysStore,
   "tasks": tasks,
   "inquiry": inquiry,

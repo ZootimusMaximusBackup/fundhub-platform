@@ -182,7 +182,12 @@ describe("the extraction is faithful to the code", () => {
     const closer = JOURNEYS.find((j) => j.name === "role-closer");
     const financeOnly = data.endpoints.find((e) => e.key === "read/commissions");
     assert.ok(financeOnly, "read/commissions vanished");
-    assert.deepEqual(financeOnly.gate.roles, ["owner", "admin"]);
+    /* sales_manager joined ROLE_SETS.FINANCE on 2026-08-01 by owner decision
+       (H-6 in Ticket 8): company-wide commission visibility. The point of this
+       test is unchanged — a CLOSER must still not reach the commissions read —
+       so the expectation is widened, not the assertion below it weakened. */
+    assert.deepEqual(financeOnly.gate.roles, ["owner", "admin", "sales_manager"]);
+    assert.ok(!financeOnly.gate.roles.includes("closer"));
 
     const body = files["role-closer-actual.md"];
     const blockedSection = body.slice(body.indexOf("## What they are blocked from"));
@@ -193,46 +198,70 @@ describe("the extraction is faithful to the code", () => {
 
 describe("nothing is invented", () => {
 
-  test("*** role-sales-manager is reported as missing, not drawn ***", () => {
+  /* ═══════════════════════════════════════════════════════════════════════
+     THESE THREE TESTS WERE INVERTED ON 2026-08-01, AND WHY MATTERS.
+
+     They used to assert that sales_manager did NOT exist: no flowchart on the
+     page, the page saying "no such role", and a walk of src/, api/ and db/
+     failing if the string appeared anywhere. That was the right guard for the
+     owner's 2026-07-31 decision — the role was planned, not built, and no
+     agent was to create it ON ITS OWN INITIATIVE.
+
+     The owner directed the build in Ticket 8 on 2026-08-01, stating the
+     resolution explicitly: "The correct resolution is to build the role, not
+     to remove it from the editor." So the guard's premise is spent. It is
+     INVERTED RATHER THAN DELETED — the same three places are still checked,
+     but now for consistency instead of absence, so a half-finished job is
+     still caught. Deleting them would have removed the only thing watching
+     this role.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  test("*** role-sales-manager is now drawn, because the role exists ***", () => {
     const page = files["role-sales-manager-actual.md"];
     assert.ok(page, "the tracked journey has no page at all");
-    assert.ok(!page.includes("flowchart"),
-      "a diagram was drawn for a role that does not exist — that is inventing a journey");
-    assert.match(page, /no such role/i);
+    assert.ok(!/no such role/i.test(page),
+      "the role was built — the page must stop saying it does not exist");
+    assert.ok(page.includes("flowchart"),
+      "a real role gets a real diagram, same as every other role journey");
   });
 
-  test("the sales-manager page carries the owner's decision, so nobody re-opens it", () => {
-    // The page used to ask which of two things was true: planned-but-unbuilt, or
-    // renamed-and-should-be-dropped. The owner answered on 2026-07-31 — it is
-    // planned, it stays tracked, and it must NOT be built yet. That answer lives
-    // in the generator so the page stays generated rather than hand-edited, and
-    // this test stops a later pass quietly reverting to "which is it?".
+  test("the page records that the role was built, and on whose instruction", () => {
+    // The 2026-07-31 decision is superseded, not forgotten. Whoever reads this
+    // page next should be able to see that the reversal was directed, not an
+    // agent deciding for itself.
     const page = files["role-sales-manager-actual.md"];
-    assert.match(page, /FUTURE WORK/,
-      "the page must record that this is planned work, not a stale entry to clean up");
-    assert.match(page, /[Dd]o not build it yet/,
-      "the page must say plainly that no agent should create this role on its own initiative");
-    assert.ok(!/should stop listing it/.test(page),
-      "the page still suggests dropping it from CLAUDE.md — the owner decided it stays");
+    assert.ok(!/[Dd]o not build it yet/.test(page),
+      "the page still carries the superseded instruction not to build it");
+    assert.ok(!/FUTURE WORK/.test(page),
+      "the role is built — it is no longer future work");
   });
 
-  test("the missing role really is missing, checked against the source", () => {
-    // If somebody adds the role, this test fails and tells them to stop treating
-    // it as absent — the finding would be resolved and the page must change.
-    const hits = [];
-    const walk = (dir) => {
-      for (const entry of fs.readdirSync(path.join(REPO, dir), { withFileTypes: true })) {
-        const rel = path.join(dir, entry.name);
-        if (entry.isDirectory()) walk(rel);
-        else if (/\.(mjs|sql)$/.test(entry.name)) {
-          if (/sales_manager/.test(fs.readFileSync(path.join(REPO, rel), "utf8"))) hits.push(rel);
-        }
-      }
-    };
-    for (const d of ["src", "api", "db"]) walk(d);
-    assert.deepEqual(hits, [],
-      "a sales_manager role now exists in the code. role-sales-manager-actual.md still " +
-      "says it does not — regenerate and remove the `missing` flag in extract.mjs's JOURNEYS.");
+  test("the role is wired everywhere, not half-built", () => {
+    /* The inverse of the old guard. It used to fail if `sales_manager`
+       appeared anywhere under src/, api/ or db/; it now fails if any of the
+       places that MUST carry it does not. A partial job — the role set widened
+       but no catalog row, or a shell entry with no demo login — is exactly
+       what src/auth/role-catalog-drift.pg.test.mjs catches at run time, and
+       this catches the file-level half of it without needing a database. */
+    const must = [
+      ["src/http/read-api.mjs", "ROLE_SETS.STAFF and ROLE_SETS.FINANCE"],
+      ["src/lib/create-task.mjs", "the task-routing role set"],
+      ["src/auth/demo-roster.mjs", "the demo login roster"],
+      ["src/auth/seed-role-accounts.mjs", "the role-test roster"],
+      ["db/migrations/111_sales_manager_role.sql", "the catalog row and task CHECK"]
+    ];
+    const missing = must.filter(([rel]) =>
+      !/sales_manager/.test(fs.readFileSync(path.join(REPO, rel), "utf8")));
+    assert.deepEqual(missing.map(([rel, what]) => `${rel} (${what})`), [],
+      "sales_manager is built but not wired everywhere — a role missing from one of " +
+      "these is a role that silently does nothing in that layer");
+
+    // public/app/shell.js is not a .mjs under src/api/db, so it is checked here
+    // rather than by the walk: a role with no ROLE_TABS entry signs in and
+    // bounces to the shared staff tabs.
+    const shell = fs.readFileSync(path.join(REPO, "public/app/shell.js"), "utf8");
+    assert.match(shell, /sales_manager:\s*"staff"/, "shell.js ROLE_TABS has no sales_manager row");
+    assert.match(shell, /sales_manager:\s*"pipeline\.html"/, "shell.js HOME has no sales_manager landing screen");
   });
 
   test("every journey names the code that establishes what it maps to", () => {

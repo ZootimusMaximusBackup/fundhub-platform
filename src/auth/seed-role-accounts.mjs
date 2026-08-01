@@ -11,11 +11,13 @@
 // obviously-not-a-customer in every staff/client/affiliate/partner list, the
 // same discipline 094 applies with is_demo, without borrowing its gate.
 //
-// THE SALES-MANAGER ROLE IS DELIBERATELY ABSENT FROM THIS ROSTER.
-// docs/journeys/role-sales-manager-actual.md records an owner decision
-// (2026-07-31) that this role is planned, not yet built, and that no agent
-// should create it on its own initiative. Confirmed with the owner before
-// writing this file — skip it here too, do not invent it.
+// THE SALES-MANAGER ROLE IS NOW BUILT, AND IS IN THIS ROSTER.
+// It was deliberately absent while docs/journeys/role-sales-manager-actual.md
+// carried the owner's 2026-07-31 decision that the role was planned, not yet
+// built, and that no agent should create it on its own initiative. The owner
+// directed the build in Ticket 8 on 2026-08-01 — "the correct resolution is to
+// build the role, not to remove it from the editor" — so that decision is
+// superseded, not ignored. See db/migrations/111_sales_manager_role.sql.
 //
 // IDEMPOTENT, LIKE src/auth/seed-staff.mjs. An existing row has its password
 // left alone unless resetPasswords is asked for explicitly. Re-running this
@@ -32,7 +34,8 @@ export const ROLE_TEST_STAFF = [
   { email: "closer@fundhub.ai",  role: "closer",             name: "TEST — Closer Role" },
   { email: "advisor@fundhub.ai", role: "funding_advisor",    name: "TEST — Funding Advisor Role" },
   { email: "inquiry@fundhub.ai", role: "inquiry_specialist", name: "TEST — Inquiry Specialist Role" },
-  { email: "setter@fundhub.ai",  role: "setter",              name: "TEST — Setter Role" }
+  { email: "setter@fundhub.ai",  role: "setter",              name: "TEST — Setter Role" },
+  { email: "sales@fundhub.ai",   role: "sales_manager",       name: "TEST — Sales Manager Role" }
 ];
 
 export const ROLE_TEST_PRINCIPALS = [

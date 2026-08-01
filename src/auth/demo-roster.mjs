@@ -80,7 +80,8 @@ export const DEMO_STAFF = Object.freeze([
   { email: `advisor@${DEMO_EMAIL_DOMAIN}`, role: "funding_advisor",    name: "DEMO Funding Advisor",    lands: "command-center.html",   label: "Funding advisor",   portal: "Command Center" },
   { email: `closer@${DEMO_EMAIL_DOMAIN}`,  role: "closer",             name: "DEMO Closer",             lands: "closer-dashboard.html", label: "Closer",            portal: "Closer Dashboard" },
   { email: `inquiry@${DEMO_EMAIL_DOMAIN}`, role: "inquiry_specialist", name: "DEMO Inquiry Specialist", lands: "inquiry-remover.html",  label: "Inquiry specialist", portal: "Inquiry Remover" },
-  { email: `setter@${DEMO_EMAIL_DOMAIN}`,  role: "setter",             name: "DEMO Setter",             lands: "pipeline.html",         label: "Setter",            portal: "Pipeline" }
+  { email: `setter@${DEMO_EMAIL_DOMAIN}`,  role: "setter",             name: "DEMO Setter",             lands: "pipeline.html",         label: "Setter",            portal: "Pipeline" },
+  { email: `sales@${DEMO_EMAIL_DOMAIN}`,   role: "sales_manager",      name: "DEMO Sales Manager",      lands: "pipeline.html",         label: "Sales manager",     portal: "Pipeline" }
 ]);
 
 /** The three principals who are not employees. These live in `accounts`

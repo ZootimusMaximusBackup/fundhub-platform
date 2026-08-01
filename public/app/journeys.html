@@ -294,6 +294,30 @@ body.running .lane.notaken{opacity:.25}
 .bartop .what{font-size:12.5px;color:#A1A1AA;min-width:0}
 .bartop .what b{color:#fff;font-weight:500}
 .bartop .btns{display:flex;gap:8px;flex:0 0 auto}
+
+/* Test-against-the-code results. A full-height sheet rather than a toast: the
+   output is a list of findings someone reads through, not a status flash. */
+#runout{position:fixed;inset:0;background:rgba(20,20,20,.32);z-index:60;
+  display:flex;justify-content:flex-end}
+.rcard{background:var(--paper);width:min(680px,100%);height:100%;overflow-y:auto;
+  padding:22px 26px 60px;border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.10)}
+.rhead{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  position:sticky;top:-22px;background:var(--paper);padding:8px 0 12px;margin:-8px 0 0;
+  border-bottom:1px solid var(--line)}
+.rhead b{font-size:14px;letter-spacing:.01em}
+.rlead{font-size:14px;line-height:1.5;margin:16px 0 4px}
+.rstats{display:flex;flex-wrap:wrap;gap:10px 22px;margin:14px 0 10px;
+  padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.rstats span{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gray);display:flex;flex-direction:column;gap:3px}
+.rstats i{font-style:normal;font-size:19px;letter-spacing:0;color:var(--ink);
+  font-family:inherit;text-transform:none}
+.rcard h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--gray);margin:24px 0 8px}
+.rrow{font-size:13px;line-height:1.45;padding:8px 0;border-top:1px solid var(--line)}
+.rrow b{font-weight:600}
+.rrow span{display:block;color:var(--gray);margin-top:2px}
+.rmuted{font-size:12.5px;color:var(--gray);line-height:1.45;margin:6px 0}
 .ab{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;padding:9px 15px;
   border-radius:7px;border:1px solid var(--cardline);color:var(--cardtext);transition:border-color .13s}
 .ab:hover{border-color:var(--gray)}
@@ -404,6 +428,7 @@ body.running .lane.notaken{opacity:.25}
       <span class="dirty" id="dirty"></span>
       <button class="hbtn" id="undo">Undo</button>
       <button class="hbtn" id="savever">Save version</button>
+      <button class="hbtn" id="runreal">Test against the code</button>
       <button class="hbtn p" id="apply">Apply to code</button>
     </div>
   </header>
@@ -1123,6 +1148,77 @@ async function applyAll(){
   render();
 }
 
+/* ── Test against the code ────────────────────────────────────────────────
+   Posts to /api/journeys/run, which walks every branch of every journey with
+   a throwaway client per path, fires the real events into the real workflows,
+   and reports where the journey and the code disagree.
+
+   Nothing it does survives: the whole run happens inside a transaction the
+   server always rolls back, and messages go to a recording provider that
+   cannot send. Safe to press. */
+function runPanel(){
+  let el=document.getElementById('runout');
+  if(!el){ el=document.createElement('div'); el.id='runout'; document.body.appendChild(el); }
+  return el;
+}
+function closeRun(){ const e=document.getElementById('runout'); if(e) e.remove(); }
+function rowsHtml(list,empty){
+  if(!list.length) return '<p class="rmuted">'+empty+'</p>';
+  return list.map(f=>'<div class="rrow"><b>'+esc(f.journey||'')+'</b> · '+
+    esc(f.nodeTitle||f.category||'')+'<span>'+esc(f.summary||'')+'</span></div>').join('');
+}
+function paintRun(d){
+  const s=d.summary, el=runPanel();
+  const wf=s.workflows;
+  el.innerHTML='<div class="rcard">'+
+    '<div class="rhead"><b>Test against the code</b>'+
+      '<button class="hbtn" id="runclose">Close</button></div>'+
+    '<p class="rlead">'+esc(d.headline)+'</p>'+
+    '<div class="rstats">'+
+      '<span><i>'+s.walked.paths+'</i>paths walked</span>'+
+      '<span><i>'+s.walked.clients+'</i>test clients</span>'+
+      '<span><i>'+s.messages.wouldHaveGoneOut+'</i>messages that would send</span>'+
+      '<span><i>'+wf.fired.length+'/'+wf.registered+'</i>automations reached</span>'+
+    '</div>'+
+    '<p class="rmuted">Journeys read from: '+esc(d.journeySource)+
+      '. Nothing was saved — the run was undone when it finished.</p>'+
+    '<h4>The code does not do this the way the journey says ('+s.findings.broken.length+')</h4>'+
+    rowsHtml(s.findings.broken,'Nothing — which on a first run usually means the check itself is not working.')+
+    '<h4>Could not check ('+s.findings.couldNotCheck.length+')</h4>'+
+    rowsHtml(s.findings.couldNotCheck,'Everything could be checked.')+
+    '<h4>Automations no journey reaches ('+wf.neverFired.length+')</h4>'+
+    (wf.neverFired.length? '<p class="rmuted">Each one is either code nobody uses, or a journey nobody wrote.</p>'+
+      '<div class="rrow"><span>'+wf.neverFired.map(w=>esc(w.id)).join(', ')+'</span></div>'
+      : '<p class="rmuted">Every automation is reached by some journey.</p>')+
+    '<h4>Screens</h4>'+
+    '<div class="rrow"><span>'+s.screens.touchedAndWired.length+' touched by a journey and showing real data · '+
+      s.screens.touchedAndWireframe.length+' touched but still a mock-up · '+
+      s.screens.touchedByNoJourney.length+' touched by no journey</span></div>'+
+    (s.screens.touchedAndWireframe.length? '<div class="rrow"><span>Mock-ups a journey needs: '+
+      s.screens.touchedAndWireframe.map(x=>esc(x.file)).join(', ')+'</span></div>':'')+
+  '</div>';
+  document.getElementById('runclose').onclick=closeRun;
+}
+async function runAgainstCode(){
+  const btn=document.getElementById('runreal'); if(!btn||btn.disabled) return;
+  btn.disabled=true; const was=btn.textContent; btn.textContent='Testing…';
+  try{
+    const res=await fetch('/api/journeys/run',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok||!data.ok){
+      const why=(data&&data.error)||('HTTP '+res.status);
+      if(res.status===401||res.status===403) toast('<b>Not allowed.</b> Only an owner or admin can run this.');
+      else if(res.status===503) toast('<b>The database is not reachable.</b> Nothing was run.');
+      else toast('<b>Could not run.</b> '+esc(why));
+      return;
+    }
+    paintRun(data);
+  }catch(err){
+    toast('<b>Could not run.</b> '+esc((err&&err.message)||'Try again in a moment.'));
+  }finally{ btn.disabled=false; btn.textContent=was; }
+}
+
 /* loadJourneys — the real starting state, once it arrives. seed() paints
    instantly so the editor is never blank; whatever the server has for a
    journey key replaces the local example the moment it lands. A journey the
@@ -1163,6 +1259,7 @@ function render(){syncHeader();renderJList();renderCanvas();renderPanel()}
 document.querySelectorAll('.ptab').forEach(t=>t.onclick=()=>{tab=t.dataset.tab;renderPanel()});
 document.getElementById('undo').onclick=undo;
 document.getElementById('apply').onclick=applyAll;
+document.getElementById('runreal').onclick=runAgainstCode;
 document.getElementById('savever').onclick=saveVersion;
 document.addEventListener('click',e=>{if(!e.target.closest('.menu')&&!e.target.closest('.add'))closeMenu()});
 document.addEventListener('keydown',e=>{

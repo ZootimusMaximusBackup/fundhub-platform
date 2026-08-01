@@ -27,12 +27,12 @@ flowchart TD
     CAN --> A_read[Reading data — 14 routes]
     CAN --> A_top_level[Everything else — 5 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 27 routes]
+    WHO -->|Yes| CANT[Blocked — 28 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_finance[Finance — 5 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
-    CANT --> B_journeys[journeys — 1 blocked]
+    CANT --> B_journeys[journeys — 2 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_read[Reading data — 7 blocked]
     CANT --> B_top_level[Everything else — 4 blocked]
@@ -40,7 +40,7 @@ flowchart TD
 
 ## What they can reach
 
-**46 of 73 routes.**
+**46 of 74 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -48,7 +48,7 @@ flowchart TD
 | `/api/auth/logout` | — | anyone |
 | `/api/auth/reset` | POST | anyone |
 | `/api/auth/session` | — | anyone |
-| `/api/banking/accounts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/banking/accounts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/campaigns/action-log` | GET | partner, staff |
 | `/api/campaigns/connections` | GET | partner, staff |
 | `/api/campaigns/detail` | GET | partner, staff |
@@ -65,28 +65,28 @@ flowchart TD
 | `/api/dashboard/pipeline` | — | staff |
 | `/api/dashboard/seed` | — | staff |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
-| `/api/finance/alerts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/finance/entities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/finance/liabilities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/finance/model` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/finance/alerts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/finance/entities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/finance/liabilities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/finance/model` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/inquiries` | GET, POST | staff |
-| `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter<br>plus: client |
-| `/api/read/finance-ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/finance-command` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/finance-os` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/funding-rounds` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/inquiries` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/message-templates` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
-| `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager<br>plus: client |
+| `/api/read/finance-ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/finance-command` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/finance-os` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/funding-rounds` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/inquiries` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/message-templates` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
 | `/api/tasks` | GET, PATCH | staff |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
@@ -99,18 +99,18 @@ flowchart TD
 
 ## What they are blocked from
 
-**27 of 73 routes.**
+**28 of 74 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/auth/admin-reset` | POST | owner, admin |
 | `/api/banking/revoke` | GET, POST | owner, admin |
-| `/api/banking/sync-accounts` | POST | owner, admin |
-| `/api/finance/bank-accounts` | GET, POST | owner, admin |
-| `/api/finance/bills` | GET, POST | owner, admin |
-| `/api/finance/cards` | GET, POST | owner, admin |
-| `/api/finance/cashflow` | GET, POST | owner, admin |
-| `/api/finance/subscriptions` | GET, POST | owner, admin |
+| `/api/banking/sync-accounts` | POST | owner, admin, sales_manager |
+| `/api/finance/bank-accounts` | GET, POST | owner, admin, sales_manager |
+| `/api/finance/bills` | GET, POST | owner, admin, sales_manager |
+| `/api/finance/cards` | GET, POST | owner, admin, sales_manager |
+| `/api/finance/cashflow` | GET, POST | owner, admin, sales_manager |
+| `/api/finance/subscriptions` | GET, POST | owner, admin, sales_manager |
 | `/api/hiring/application` | GET | owner, admin |
 | `/api/hiring/bench` | GET | owner, admin |
 | `/api/hiring/candidates` | GET | owner, admin |
@@ -120,16 +120,17 @@ flowchart TD
 | `/api/inquiry` | — | inquiry_specialist, admin, owner |
 | `/api/journeys` | GET, PUT | owner, admin |
 | `/api/journeys/ask` | POST | owner, admin |
+| `/api/journeys/run` | POST | owner, admin, sales_manager |
 | `/api/partner-brand` | GET, PUT | owner, admin |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/privacy/erasure` | GET, POST | owner, admin |
-| `/api/read/affiliates` | GET | owner, admin |
-| `/api/read/banking-surface` | GET | owner, admin |
-| `/api/read/commissions` | GET | owner, admin |
+| `/api/read/affiliates` | GET | owner, admin, sales_manager |
+| `/api/read/banking-surface` | GET | owner, admin, sales_manager |
+| `/api/read/commissions` | GET | owner, admin, sales_manager |
 | `/api/read/failed-events` | GET | owner, admin |
-| `/api/read/invoices` | GET | owner, admin |
-| `/api/read/partners` | GET | employees: owner, admin<br>plus: partner |
-| `/api/read/staff` | GET | owner, admin |
+| `/api/read/invoices` | GET | owner, admin, sales_manager |
+| `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
+| `/api/read/staff` | GET | owner, admin, sales_manager |
 
 ## UNVERIFIED
 

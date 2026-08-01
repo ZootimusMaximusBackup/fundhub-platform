@@ -158,6 +158,12 @@
     closer: "staff",
     inquiry_specialist: "staff",
     setter: "staff",
+    /* Sales manager sees the staff surface. The commission screens
+       (products-commissions.html, staff-teams.html) are NOT in
+       OWNER_ADMIN_ONLY, so the staff surface already includes them — which
+       matches the owner decision putting sales_manager in ROLE_SETS.FINANCE.
+       Move that gate and move this row, per the rule above. */
+    sales_manager: "staff",
     /* Principal types, not staff roles — they are gated here on staff.role only
        because no principals table exists yet. 'partner' is seeded into the
        staff_roles catalog by db/migrations/036_partner_role.sql purely to make
@@ -179,6 +185,8 @@
     closer: "closer-dashboard.html",
     inquiry_specialist: "inquiry-remover.html",
     setter: "pipeline.html",
+    // The Sales pipeline is the thing they own, so it is where they land.
+    sales_manager: "pipeline.html",
     client: "client-portal.html",
     affiliate: "affiliate.html",
     partner: "partner-galaxy.html"

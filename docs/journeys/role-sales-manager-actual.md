@@ -2,32 +2,147 @@
 
 # role-sales-manager — actual
 
-## This journey has nothing behind it
+What the code **does** today for an employee whose `staff.role` is `sales_manager`.
+Generated from the routing table and the gate on each handler, not from a spec.
 
-**There is no such role in this system.** `CLAUDE.md` §4 lists `role-sales-manager`
-as a tracked journey, and nothing in `src/`, `api/` or `db/` defines a sales-manager
-role. It is not a role with no permissions — the name does not appear at all.
+> **Who this is, in the code:** src/http/read-api.mjs — ROLE_SETS.STAFF and ROLE_SETS.FINANCE both include 'sales_manager'; the catalog row, the task-routing CHECK and the demo login come from db/migrations/111_sales_manager_role.sql. Built 2026-08-01 on the owner's instruction in Ticket 8, which supersedes the 2026-07-31 decision to defer it that this entry used to carry.
 
-The staff roles that do exist:
+## In one picture
 
+```mermaid
+flowchart TD
+    START([role-sales-manager arrives]) --> AUTH{Signed in?}
+    AUTH -->|No| OUT[Refused — 401 not signed in]
+    AUTH -->|Yes| WHO{Recognised as sales_manager?}
+    WHO -->|No| DENY[Refused — 403 forbidden]
+    WHO -->|Yes| CAN[Can reach]
+    CAN --> A_auth[Signing in and out — 4 routes]
+    CAN --> A_banking[banking — 2 routes]
+    CAN --> A_campaigns[Campaigns — 6 routes]
+    CAN --> A_creative[Creative Factory — 4 routes]
+    CAN --> A_dashboard[The dashboard — 4 routes]
+    CAN --> A_documents[Documents — 1 route]
+    CAN --> A_finance[Finance — 9 routes]
+    CAN --> A_journeys[journeys — 1 route]
+    CAN --> A_read[Reading data — 20 routes]
+    CAN --> A_top_level[Everything else — 5 routes]
+    CAN --> A_webhooks[Incoming webhooks — 1 route]
+    WHO -->|Yes| CANT[Blocked — 17 routes]
+    CANT --> B_auth[Signing in and out — 1 blocked]
+    CANT --> B_banking[banking — 1 blocked]
+    CANT --> B_consent[consent — 1 blocked]
+    CANT --> B_finance[Finance — 1 blocked]
+    CANT --> B_hiring[Hiring — 6 blocked]
+    CANT --> B_journeys[journeys — 1 blocked]
+    CANT --> B_privacy[privacy — 1 blocked]
+    CANT --> B_read[Reading data — 1 blocked]
+    CANT --> B_top_level[Everything else — 4 blocked]
 ```
-owner, admin, funding_advisor, closer, inquiry_specialist, setter, partner
-```
 
-> Source: `src/http/read-api.mjs` (`ROLE_SETS`), `db/schema/001_init.sql` (`staff.role`),
-> `db/migrations/036_partner_role.sql`.
+## What they can reach
 
-No diagram is drawn here. Drawing one would mean inventing a journey, and a made-up
-picture of who can do what is worse than an empty page — somebody would plan against it.
+**57 of 74 routes.**
 
-## Owner decision, 2026-07-31 — this is FUTURE WORK
+| Route | Methods | Who the code lets in |
+|---|---|---|
+| `/api/auth/login` | GET | anyone |
+| `/api/auth/logout` | — | anyone |
+| `/api/auth/reset` | POST | anyone |
+| `/api/auth/session` | — | anyone |
+| `/api/banking/accounts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/banking/sync-accounts` | POST | owner, admin, sales_manager |
+| `/api/campaigns/action-log` | GET | partner, staff |
+| `/api/campaigns/connections` | GET | partner, staff |
+| `/api/campaigns/detail` | GET | partner, staff |
+| `/api/campaigns/fatigue` | GET | partner, staff |
+| `/api/campaigns/list` | GET | partner, staff |
+| `/api/campaigns/spend` | GET | partner, staff |
+| `/api/creative/approvals` | GET | partner, staff |
+| `/api/creative/brand-kits` | GET | partner, staff |
+| `/api/creative/jobs` | GET | partner, staff |
+| `/api/creative/library` | GET | partner, staff |
+| `/api/dashboard/client` | — | staff |
+| `/api/dashboard/clients` | — | staff |
+| `/api/dashboard/pipeline` | — | staff |
+| `/api/dashboard/seed` | — | staff |
+| `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
+| `/api/finance/alerts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/finance/bank-accounts` | GET, POST | owner, admin, sales_manager |
+| `/api/finance/bills` | GET, POST | owner, admin, sales_manager |
+| `/api/finance/cards` | GET, POST | owner, admin, sales_manager |
+| `/api/finance/cashflow` | GET, POST | owner, admin, sales_manager |
+| `/api/finance/entities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/finance/liabilities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/finance/model` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/finance/subscriptions` | GET, POST | owner, admin, sales_manager |
+| `/api/health` | — | anyone |
+| `/api/inngest` | — | **not a sign-in** — Inngest request signing |
+| `/api/inquiries` | GET, POST | staff |
+| `/api/journeys/run` | POST | owner, admin, sales_manager |
+| `/api/read/affiliates` | GET | owner, admin, sales_manager |
+| `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/banking-surface` | GET | owner, admin, sales_manager |
+| `/api/read/commissions` | GET | owner, admin, sales_manager |
+| `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager<br>plus: client |
+| `/api/read/finance-ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/finance-command` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/finance-os` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/funding-rounds` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/inquiries` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/invoices` | GET | owner, admin, sales_manager |
+| `/api/read/message-templates` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
+| `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/staff` | GET | owner, admin, sales_manager |
+| `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/shifts` | GET, POST | staff |
+| `/api/tasks` | GET, PATCH | staff |
+| `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
-**The role is planned, not dropped.** Sarah runs sales. `role-sales-manager` stays
-listed in `CLAUDE.md` §4 as a tracked journey, and the absence of the role in the code
-is a to-do rather than a stale entry to clean up.
+### Worth knowing
 
-**Do not build it yet.** No agent should create a `sales_manager` role, add it to a
-`ROLE_SETS` value, or write endpoints for it on its own initiative. When somebody does
-build it, this page starts drawing itself — nothing here needs editing by hand.
+- **4 routes also accept a shared secret instead of a sign-in** (`DASHBOARD_SECRET`), so a caller holding that value reaches them without being anybody in particular: `/api/dashboard/client`, `/api/dashboard/clients`, `/api/dashboard/pipeline`, `/api/dashboard/seed`.
+- **5 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/reset`, `/api/auth/session`, `/api/health`. These are the sign-in routes and the health check.
+- **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
-Recorded on the board at `docs/workflows/pii-and-journeys.md`.
+## What they are blocked from
+
+**17 of 74 routes.**
+
+| Route | Methods | Who the code lets in |
+|---|---|---|
+| `/api/auth/admin-reset` | POST | owner, admin |
+| `/api/banking/revoke` | GET, POST | owner, admin |
+| `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
+| `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
+| `/api/hiring/application` | GET | owner, admin |
+| `/api/hiring/bench` | GET | owner, admin |
+| `/api/hiring/candidates` | GET | owner, admin |
+| `/api/hiring/decisions` | GET | owner, admin |
+| `/api/hiring/funnel` | GET | owner, admin |
+| `/api/hiring/postings` | GET | owner, admin |
+| `/api/inquiry` | — | inquiry_specialist, admin, owner |
+| `/api/journeys` | GET, PUT | owner, admin |
+| `/api/journeys/ask` | POST | owner, admin |
+| `/api/partner-brand` | GET, PUT | owner, admin |
+| `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
+| `/api/privacy/erasure` | GET, POST | owner, admin |
+| `/api/read/failed-events` | GET | owner, admin |
+
+## UNVERIFIED
+
+_None — every route's gate was traced to its source._
+
+## How to check this yourself
+
+Every row above comes from two places, and you can open both:
+
+- **Which routes exist:** the `ROUTES` map in `netlify/functions/api.mjs`. A handler
+  missing from that map answers 404, so that map is the definition of what exists.
+- **Who each one lets in:** the gate written at the top of each `api/…` handler.
+
+Run `npm run journeys` to rebuild this file. `npm test` fails if it is out of date.

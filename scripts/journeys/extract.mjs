@@ -405,8 +405,12 @@ export const JOURNEYS = [
   { name: "role-owner", type: "role", subject: "owner",
     evidence: "db/schema/001_init.sql — staff.role comment lists 'owner'" },
 
-  { name: "role-sales-manager", type: "role", subject: "sales_manager", missing: true,
-    evidence: "NONE — no such role exists anywhere in src/, api/ or db/" },
+  { name: "role-sales-manager", type: "role", subject: "sales_manager",
+    evidence: "src/http/read-api.mjs — ROLE_SETS.STAFF and ROLE_SETS.FINANCE both include " +
+              "'sales_manager'; the catalog row, the task-routing CHECK and the demo login " +
+              "come from db/migrations/111_sales_manager_role.sql. Built 2026-08-01 on the " +
+              "owner's instruction in Ticket 8, which supersedes the 2026-07-31 decision to " +
+              "defer it that this entry used to carry." },
 
   { name: "role-closer", type: "role", subject: "closer",
     evidence: "src/http/read-api.mjs — ROLE_SETS.STAFF includes 'closer'" },
