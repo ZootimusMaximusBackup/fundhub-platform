@@ -261,8 +261,14 @@ const fromRule = (rule) => ({
 
 /* appliesTo — an empty scope array means "all", which is how a claims rule covers
    every offer type without enumerating them. jsonb arrives as a parsed array from
-   pg, but a string is tolerated so the function is usable against fixtures. */
-function appliesTo(scope, value) {
+   pg, but a string is tolerated so the function is usable against fixtures.
+
+   EXPORTED for src/messaging/gate.mjs, which screens outbound message bodies
+   against these same compliance_rules rows. Exporting rather than letting the
+   gate carry its own copy is deliberate: two implementations of "does this rule
+   apply" that drift apart would mean a phrase blocked in an ad and allowed in a
+   text message, and nothing would report the discrepancy. */
+export function appliesTo(scope, value) {
   const list = typeof scope === "string" ? JSON.parse(scope) : (scope || []);
   if (!Array.isArray(list) || list.length === 0) return true;
   return value !== null && list.includes(value);
@@ -271,9 +277,13 @@ function appliesTo(scope, value) {
 /* toRegex — compile with a cache. Throwing on a bad pattern is correct: run()'s
    caller turns it into a block, which is the fail-closed path. A rule we cannot
    compile is a rule we cannot enforce, and skipping it would silently reduce
-   coverage while still reporting a pass. */
+   coverage while still reporting a pass.
+
+   EXPORTED for src/messaging/gate.mjs — same reason as appliesTo above, and one
+   more: the boundary-escape trap documented in 047_compliance_rules.sql only
+   holds if every consumer compiles these patterns identically. */
 const _rx = new Map();
-function toRegex(pattern) {
+export function toRegex(pattern) {
   let rx = _rx.get(pattern);
   if (!rx) {
     rx = new RegExp(pattern, "i");
