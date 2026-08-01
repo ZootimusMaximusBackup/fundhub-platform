@@ -11,10 +11,18 @@
 // routing row silently sends a client's SMS through the email provider, or —
 // worse — sends production traffic through a provider nobody chose.
 
+// RESOLVE DOES NOT FILTER ON `ENABLED`, AND THAT IS THE POINT. A provider may
+// ship built but unrouted — twilio does, waiting on A2P 10DLC. `ENABLED` records
+// which provider the shipped default in migration 110 routes each channel to; it
+// is a declaration, checked by a test, not a switch. If resolve() honoured it,
+// cutover would need a row flip AND a code edit AND a deploy, and the routing
+// table would no longer be the single answer to "what sends". One switch.
+
 import * as mailgun from "./mailgun.mjs";
 import * as ghlRelay from "./ghl-relay.mjs";
+import * as twilio from "./twilio.mjs";
 
-const REGISTERED = [mailgun, ghlRelay];
+const REGISTERED = [mailgun, ghlRelay, twilio];
 
 /* Every provider must expose the same three things. Checked here, once, at
    import time: a provider missing `send` would otherwise fail at the moment of
@@ -31,6 +39,12 @@ for (const p of REGISTERED) {
   }
   if (typeof p.send !== "function") {
     throw new Error(`provider registry: ${p.PROVIDER} has no send()`);
+  }
+  /* Boolean, and required. Left undeclared it would default to undefined, which
+     reads as "not routed" — the quiet direction. A provider that forgot to say
+     is a provider nobody checked, so it fails here instead. */
+  if (typeof p.ENABLED !== "boolean") {
+    throw new Error(`provider registry: ${p.PROVIDER} does not declare ENABLED`);
   }
 }
 

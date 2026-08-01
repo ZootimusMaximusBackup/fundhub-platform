@@ -46,6 +46,11 @@ export const CHANNELS = new Set(["sms"]);
 /** GHL addresses by contact, so the dispatcher resolves clients.ghl_contact_id. */
 export const ADDRESS_FIELD = "ghl_contact_id";
 
+/** True: migration 110 seeds `sms` to ghl_relay, so this is the shipped default.
+    It stops being true the day A2P 10DLC clears and sms is repointed at twilio —
+    at which point this file is deleted and that flag moves. See index.mjs. */
+export const ENABLED = true;
+
 const DEFAULT_BASE_URL = "https://services.leadconnectorhq.com";
 // The same version scripts/gen-custom-field-migration.mjs pins. GHL requires the
 // header and rejects the request without it.

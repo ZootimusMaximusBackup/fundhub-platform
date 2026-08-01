@@ -41,6 +41,10 @@ export const CHANNELS = new Set(["email"]);
     resolves it; see the contract amendment on the batch board. */
 export const ADDRESS_FIELD = "email";
 
+/** True: migration 110 seeds `email` to mailgun, so this is the shipped default.
+    A declaration of what routing ships as, not a switch — see index.mjs. */
+export const ENABLED = true;
+
 const DEFAULT_BASE_URL = "https://api.mailgun.net";
 
 /* config — read the environment, or say precisely what is missing.
