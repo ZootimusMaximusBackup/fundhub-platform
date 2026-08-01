@@ -23,7 +23,7 @@ flowchart TD
     CAN --> A_creative[Creative Factory — 4 routes]
     CAN --> A_dashboard[The dashboard — 4 routes]
     CAN --> A_documents[Documents — 1 route]
-    CAN --> A_finance[Finance — 4 routes]
+    CAN --> A_finance[Finance — 5 routes]
     CAN --> A_read[Reading data — 12 routes]
     CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
@@ -39,7 +39,7 @@ flowchart TD
 
 ## What they can reach
 
-**44 of 68 routes.**
+**45 of 69 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -65,6 +65,7 @@ flowchart TD
 | `/api/dashboard/seed` | — | staff |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
 | `/api/finance/alerts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
+| `/api/finance/entities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/liabilities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/model` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
@@ -96,7 +97,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**24 of 68 routes.**
+**24 of 69 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

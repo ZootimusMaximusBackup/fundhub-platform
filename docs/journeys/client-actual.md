@@ -23,13 +23,13 @@ flowchart TD
     CAN --> A_read[Reading data — 1 route]
     CAN --> A_top_level[Everything else — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 57 routes]
+    WHO -->|Yes| CANT[Blocked — 58 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_campaigns[Campaigns — 6 blocked]
     CANT --> B_creative[Creative Factory — 4 blocked]
     CANT --> B_dashboard[The dashboard — 4 blocked]
-    CANT --> B_finance[Finance — 8 blocked]
+    CANT --> B_finance[Finance — 9 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_read[Reading data — 18 blocked]
@@ -38,7 +38,7 @@ flowchart TD
 
 ## What they can reach
 
-**11 of 68 routes.**
+**11 of 69 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -61,7 +61,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**57 of 68 routes.**
+**58 of 69 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -88,6 +88,7 @@ flowchart TD
 | `/api/finance/bills` | GET, POST | owner, admin |
 | `/api/finance/cards` | GET, POST | owner, admin |
 | `/api/finance/cashflow` | GET, POST | owner, admin |
+| `/api/finance/entities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/liabilities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/model` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/subscriptions` | GET, POST | owner, admin |

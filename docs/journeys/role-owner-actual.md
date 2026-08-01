@@ -23,7 +23,7 @@ flowchart TD
     CAN --> A_creative[Creative Factory — 4 routes]
     CAN --> A_dashboard[The dashboard — 4 routes]
     CAN --> A_documents[Documents — 1 route]
-    CAN --> A_finance[Finance — 9 routes]
+    CAN --> A_finance[Finance — 10 routes]
     CAN --> A_hiring[Hiring — 6 routes]
     CAN --> A_privacy[privacy — 1 route]
     CAN --> A_read[Reading data — 19 routes]
@@ -33,7 +33,7 @@ flowchart TD
 
 ## What they can reach
 
-**68 of 68 routes.**
+**69 of 69 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -66,6 +66,7 @@ flowchart TD
 | `/api/finance/bills` | GET, POST | owner, admin |
 | `/api/finance/cards` | GET, POST | owner, admin |
 | `/api/finance/cashflow` | GET, POST | owner, admin |
+| `/api/finance/entities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/liabilities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/model` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter |
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
@@ -114,7 +115,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**0 of 68 routes.**
+**0 of 69 routes.**
 
 _None._
 

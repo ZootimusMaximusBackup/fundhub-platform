@@ -87,6 +87,7 @@ import financeSubscriptions from "../../api/finance/subscriptions.mjs";
 import financeCards from "../../api/finance/cards.mjs";
 import financeLiabilities from "../../api/finance/liabilities.mjs";
 import financeBankAccounts from "../../api/finance/bank-accounts.mjs";
+import financeEntities from "../../api/finance/entities.mjs";
 import financeBills from "../../api/finance/bills.mjs";
 import financeCashflow from "../../api/finance/cashflow.mjs";
 import financeAlerts from "../../api/finance/alerts.mjs";
@@ -319,6 +320,11 @@ export const ROUTES = {
   "finance/cards": financeCards,
   "finance/liabilities": financeLiabilities,
   "finance/bank-accounts": financeBankAccounts,
+  // Entity grouping (106_entities.sql) — personal vs. business wallets under a
+  // client. Additive: bank_accounts/card_liabilities/recurring_bills all keep
+  // working with entity_id NULL. ROLE_SETS.STAFF, matching the read gate on the
+  // accounts/cards/bills it groups.
+  "finance/entities": financeEntities,
   "finance/bills": financeBills,
   "finance/cashflow": financeCashflow,
   "finance/alerts": financeAlerts,
