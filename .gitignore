@@ -7,3 +7,6 @@ node_modules/
 
 # Subagent worktrees — scratch checkouts, never part of a commit.
 .claude/worktrees/
+
+# Real credentials. Never committed, on purpose — see credentials/README.md.
+credentials/
