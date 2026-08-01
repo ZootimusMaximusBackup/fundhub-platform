@@ -12,7 +12,26 @@
 // a bureau anything".
 //
 //
-// THE FOUR RULES THIS MODULE ENFORCES, rather than trusting callers to remember:
+// THE FIVE RULES THIS MODULE ENFORCES, rather than trusting callers to remember:
+//
+//   0. NO CONSENT, NO REQUEST. Rule 1 records who asked. This one asks whether
+//      the CONSUMER ever agreed. They are different questions and the platform
+//      could previously only answer the first: consent lived in a CRM text
+//      column (clients.cf_crs_softpull_consent), which cannot say what the
+//      person was shown, how they said yes, or whether they have since said no.
+//      db/migrations/099_client_consents.sql makes it a real record and
+//      src/consent/index.mjs is the gate. requestSoftPull() refuses without a
+//      live consent, BEFORE the replay and open-request guards, and a revoked
+//      consent fails from the instant it is revoked — the check is a read at
+//      request time, not a flag copied onto anything.
+//
+//      THE GATE IS ON REQUEST ONLY. fulfilSoftPull(), recordPull() and the CRS
+//      ingest path are deliberately untouched: a pull that already happened is
+//      a fact, and refusing to store or normalise it because the paperwork is
+//      now wrong would lose the only copy of what a bureau said about a person
+//      — see recordPull()'s own note on why `requestId` is optional. Consent
+//      governs whether we may ASK. It does not govern whether we may write down
+//      an answer that already arrived.
 //
 //   1. NO ATTRIBUTION, NO PULL. A soft pull is a consumer-credit event. Every
 //      request records who initiated it and why, and a request that cannot say
@@ -53,12 +72,19 @@
 import { db as sharedDb, pool } from "../db.mjs";
 import { fromCents } from "../commissions/money.mjs";
 import { ingestCrsResult } from "../tradelines/store.mjs";
+import { consentStatus, CONSENT_REASONS } from "../consent/index.mjs";
 
 export class SoftPullError extends Error {
-  constructor(message, { status = 400 } = {}) {
+  constructor(message, { status = 400, code = null } = {}) {
     super(message);
     this.name = "SoftPullError";
     this.status = status;
+    // `code` is optional and defaults to null, so every existing throw site and
+    // every existing test keeps its shape. It exists so the consent refusal can
+    // be told apart from the other 4xx a screen might get back: the button needs
+    // to send the person to the consent screen, and matching on message text to
+    // decide that would break the first time somebody reworded the sentence.
+    this.code = code;
   }
 }
 
@@ -202,6 +228,32 @@ export async function openRequestFor(db, { clientId }) {
   return res.rows[0] ? decorate(res.rows[0]) : null;
 }
 
+/* consentRefusal — why the gate said no, in a sentence the person who tapped the
+   button can act on.
+ *
+ * The four cases lead somewhere different, which is the whole reason they are
+ * not one message: "none on file" and "expired" mean go and capture consent,
+ * "revoked" means stop and do not ask again, and a scope failure is ours rather
+ * than theirs. A single "consent required" string would send a closer to the
+ * capture screen to re-collect a consent the client deliberately withdrew.
+ *
+ * Exported for the tests, which assert on the distinction rather than on the
+ * wording — the strings are allowed to be reworded, the branches are not. */
+export function consentRefusal(reason) {
+  switch (reason) {
+    case CONSENT_REASONS.REVOKED:
+      return "this client has revoked their soft-pull consent — do not request a pull; a new consent must be captured before asking again";
+    case CONSENT_REASONS.EXPIRED:
+      return "this client's soft-pull consent has expired — capture a new consent before requesting a pull";
+    case CONSENT_REASONS.NOT_YET:
+      return "this client's soft-pull consent is not effective yet";
+    case CONSENT_REASONS.NO_ORG:
+      return "no organisation on this session — a soft pull cannot be scoped and is refused";
+    default:
+      return "no soft-pull consent on file for this client — capture consent before requesting a pull";
+  }
+}
+
 /**
  * requestSoftPull — record that somebody asked for a pull. THE ONE-TAP PATH.
  *
@@ -232,6 +284,34 @@ export async function requestSoftPull(db, {
   const idem = typeof idempotencyKey === "string" && idempotencyKey.trim()
     ? idempotencyKey.trim()
     : null;
+
+  /* GUARD 0 — THE CONSENT GATE. Rule 0 in the header.
+   *
+   * FIRST, before the replay guard and before the open-request guard. Those two
+   * exist to avoid recording a SECOND consumer-credit event; this one decides
+   * whether we may record a first. Ordering it after them would mean a replayed
+   * tap, or a tap while an older request sat open, returned a cheerful
+   * `created: false` to somebody who has revoked their consent — the request
+   * would not be new, but the answer would still be "yes, that's in hand", and
+   * the person asking would reasonably read it as permission still standing.
+   *
+   * READ AT REQUEST TIME, EVERY TIME. Nothing caches this and nothing copies a
+   * consent decision onto the request row, because a revocation has to bite
+   * immediately and a copied flag is a decision frozen at the wrong moment.
+   *
+   * SCOPED BY orgId, WHICH CAME FROM THE SESSION. api/finance/soft-pull.mjs
+   * takes it from principal.orgId and refuses when it is absent; consentStatus()
+   * fails closed on a blank org besides, so an unscoped call cannot open the
+   * gate by omission. */
+  const consent = await consentStatus(db, {
+    orgId, clientId, kind: "soft_pull_consent"
+  });
+  if (!consent.valid) {
+    throw new SoftPullError(consentRefusal(consent.reason), {
+      status: 403,
+      code: "consent_required"
+    });
+  }
 
   // GUARD 1 — the same tap, replayed. Checked before the open-request guard so
   // a retry gets back the row it made rather than somebody else's older one.

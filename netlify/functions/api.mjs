@@ -87,6 +87,7 @@ import financeCashflow from "../../api/finance/cashflow.mjs";
 import financeAlerts from "../../api/finance/alerts.mjs";
 import financeModel from "../../api/finance/model.mjs";
 import bankingAccounts from "../../api/banking/accounts.mjs";
+import consentCapture from "../../api/consent/capture.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
 
@@ -288,7 +289,20 @@ export const ROUTES = {
   // rows; writes are ROLE_SETS.FINANCE, because replacing a person's financial
   // records is a narrower act than reading them. Nothing behind it transmits —
   // the mock provider invents its data and makes no network call.
-  "banking/accounts": bankingAccounts
+  "banking/accounts": bankingAccounts,
+
+  // Consent capture — the gate in front of the route directly above. Routed in
+  // the same commit as the handler, the migration and the screen, because an
+  // unreachable consent endpoint is worse here than anywhere else in this map:
+  // requestSoftPull() now REFUSES without a live consent row, so a 404 on this
+  // path does not degrade the feature, it disables soft pulls entirely and the
+  // only visible symptom is a 403 from a different endpoint.
+  //
+  // Serves staff AND client principals: the consumer captures their own consent
+  // in the portal, and an employee may record one given on a call. Its role gate
+  // is the same narrow set as finance/soft-pull and is spelled out in
+  // api/consent/capture.mjs. Nothing behind it transmits.
+  "consent/capture": consentCapture
 
   /* NOT ROUTED, ON PURPOSE — see ALLOWED_UNROUTED in src/http/routes.test.mjs
      for the current list and the reason attached to each entry. That list is

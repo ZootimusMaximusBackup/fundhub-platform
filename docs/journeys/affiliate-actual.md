@@ -34,9 +34,10 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| NONE[Nothing admits this one — every endpoint refuses them]
     NONE --> OPENONLY[Only the routes anyone can reach without signing in]
-    WHO -->|Yes| CANT[Blocked — 55 routes]
+    WHO -->|Yes| CANT[Blocked — 56 routes]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_campaigns[Campaigns — 6 blocked]
+    CANT --> B_consent[consent — 1 blocked]
     CANT --> B_creative[Creative Factory — 4 blocked]
     CANT --> B_dashboard[The dashboard — 4 blocked]
     CANT --> B_finance[Finance — 9 blocked]
@@ -48,7 +49,7 @@ flowchart TD
 
 ## What they can reach
 
-**7 of 62 routes.**
+**7 of 63 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -68,7 +69,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**55 of 62 routes.**
+**56 of 63 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -80,6 +81,7 @@ flowchart TD
 | `/api/campaigns/fatigue` | GET | partner, staff |
 | `/api/campaigns/list` | GET | partner, staff |
 | `/api/campaigns/spend` | GET | partner, staff |
+| `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/creative/approvals` | GET | partner, staff |
 | `/api/creative/brand-kits` | GET | partner, staff |
 | `/api/creative/jobs` | GET | partner, staff |

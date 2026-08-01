@@ -17,6 +17,7 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| CAN[Can reach]
     CAN --> A_auth[Signing in and out — 3 routes]
+    CAN --> A_consent[consent — 1 route]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 1 route]
     CAN --> A_read[Reading data — 1 route]
@@ -36,13 +37,14 @@ flowchart TD
 
 ## What they can reach
 
-**9 of 62 routes.**
+**10 of 63 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/auth/login` | GET | anyone |
 | `/api/auth/logout` | — | anyone |
 | `/api/auth/session` | — | anyone |
+| `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/health` | — | anyone |
@@ -57,7 +59,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**53 of 62 routes.**
+**53 of 63 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

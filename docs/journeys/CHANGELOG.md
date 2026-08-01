@@ -25,3 +25,4 @@ this file is not, because "what changed and why" is a judgement nobody can gener
 2026-07-31 | role-owner | First actual journey for `owner` | As above | (this commit)
 2026-07-31 | client | First actual journey: the `client` kind reaches 9 of 51 routes, of which 7 are open or signature-verified rather than client-specific | Generated from the routing table and each handler's gate | (this commit)
 2026-07-31 | role-owner | First traced flow: adding bank accounts and cards by hand, plus the mock import | `docs/journeys/` did not exist; W1 built the first writer for `bank_accounts` and traced what it does | (this commit)
+2026-07-31 | client | Added the soft-pull consent segment to a NEW client-actual.md — capture, revoke, and the gate on requestSoftPull | Migration 099 made consent a real record instead of a CRM text field; the flow had no diagram because docs/journeys/ did not exist | (this commit)

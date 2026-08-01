@@ -19,6 +19,7 @@ flowchart TD
     CAN --> A_auth[Signing in and out — 3 routes]
     CAN --> A_banking[banking — 1 route]
     CAN --> A_campaigns[Campaigns — 6 routes]
+    CAN --> A_consent[consent — 1 route]
     CAN --> A_creative[Creative Factory — 4 routes]
     CAN --> A_dashboard[The dashboard — 4 routes]
     CAN --> A_documents[Documents — 1 route]
@@ -37,7 +38,7 @@ flowchart TD
 
 ## What they can reach
 
-**40 of 62 routes.**
+**41 of 63 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -51,6 +52,7 @@ flowchart TD
 | `/api/campaigns/fatigue` | GET | partner, staff |
 | `/api/campaigns/list` | GET | partner, staff |
 | `/api/campaigns/spend` | GET | partner, staff |
+| `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/creative/approvals` | GET | partner, staff |
 | `/api/creative/brand-kits` | GET | partner, staff |
 | `/api/creative/jobs` | GET | partner, staff |
@@ -90,7 +92,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**22 of 62 routes.**
+**22 of 63 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

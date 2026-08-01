@@ -307,9 +307,13 @@ these rows, so the volume is about to grow.
 reports **132 failures** that are entirely `Cannot find package 'inngest'`. That is not a
 broken suite. Install, then measure.
 
-### W2 — Consent capture
+### W2 — Consent capture — `done`
 
-*pending*
+Migration 099 (`client_consents`), the capture handler at `api/consent/capture.mjs`
+routed as `consent/capture`, the soft-pull request gate, and
+`public/app/consent-capture.html`.
+
+**Open on merge:** the screen has no inbound link — see F7.
 
 ### W3 — Retention and purge
 
@@ -435,6 +439,7 @@ these; they need their own scoped task.
 | F3 | The org-scope and nav-reachability tests the brief relies on do not exist. Nothing enforces either rule today. | W1 | medium |
 | F4 | `src/pii/index.mjs` `revealSsn()` has the same broken transaction probe, so its rule "the access log is written in the same transaction as the reveal" does not hold as shipped. Noted in `soft-pulls.mjs` and still open. | W1 (confirming an existing note) | high — compliance |
 | F5 | `bank_transactions.bank_account_id` has NO foreign key, and its column comment claims `bank_accounts` does not exist in this repo — 081 created it. With `client_id ON DELETE SET NULL`, transactions orphan on both axes. **CLOSED by W4** — migration 101 adds the durable `subject_client_id` anchor, and 092 (audit branch) makes the foreign key `ON DELETE SET NULL` so the ledger survives. | W1 | high |
+| F7 | `public/app/consent-capture.html` (W2) is finished and has no way in: it is not in shell.js `ALL`, and no screen links to it. app-nav-reachability only enforces reachability for screens in `ALL`, so nothing fails — this is the same "built and unreachable" pattern audit M20 fixed for Finance OS and Banking Surface, found again. Its sidebar was canonicalised on merge so the nav does not change under the reader; where the inbound link belongs is a product decision and was not invented here. | integration merge | medium |
 | F6 | A fresh clone has no `node_modules` and `npm test` reports 132 failures that are entirely missing packages. Nothing in the repo says to run `npm install` first, and the failure text does not obviously say "missing dependency". | W1 | low — but it cost real time |
 
 ---
