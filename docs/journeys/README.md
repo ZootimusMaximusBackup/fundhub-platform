@@ -19,18 +19,18 @@ against what it was *meant* to do. These pages are a mirror, not a test.
 
 | Journey | Who that is in the code | Reach |
 |---|---|---|
-| [client](./client-actual.md) | `client` | reaches 11 of 74 routes |
-| [role-owner](./role-owner-actual.md) | `owner` | reaches 74 of 74 routes |
-| [role-sales-manager](./role-sales-manager-actual.md) | `sales_manager` | reaches 57 of 74 routes |
-| [role-closer](./role-closer-actual.md) | `closer` | reaches 46 of 74 routes |
-| [role-funding-advisor](./role-funding-advisor-actual.md) | `funding_advisor` | reaches 47 of 74 routes |
-| [role-inquiry-remover](./role-inquiry-remover-actual.md) | `inquiry_specialist` | reaches 46 of 74 routes |
-| [affiliate](./affiliate-actual.md) | `affiliate` | reaches 8 of 74 routes |
-| [white-label](./white-label-actual.md) | `partner` | reaches 19 of 74 routes |
+| [client](./client-actual.md) | `client` | reaches 11 of 75 routes |
+| [role-owner](./role-owner-actual.md) | `owner` | reaches 75 of 75 routes |
+| [role-sales-manager](./role-sales-manager-actual.md) | `sales_manager` | reaches 58 of 75 routes |
+| [role-closer](./role-closer-actual.md) | `closer` | reaches 47 of 75 routes |
+| [role-funding-advisor](./role-funding-advisor-actual.md) | `funding_advisor` | reaches 48 of 75 routes |
+| [role-inquiry-remover](./role-inquiry-remover-actual.md) | `inquiry_specialist` | reaches 47 of 75 routes |
+| [affiliate](./affiliate-actual.md) | `affiliate` | reaches 8 of 75 routes |
+| [white-label](./white-label-actual.md) | `partner` | reaches 19 of 75 routes |
 
 ## What was found while generating these
 
-- **74 routes** are reachable in total.
+- **75 routes** are reachable in total.
 - **0 routes have gates that could not be traced.** Every gate resolved to its source.
 - **5 routes are genuinely open** (signing in, signing out, "who am I", and the health check).
 - **3 routes need no sign-in but are not open** — a signed link, a provider signature, and Inngest's own request signing. Anyone may call them; the wrong signature is refused.

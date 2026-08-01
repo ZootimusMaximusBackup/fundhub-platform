@@ -4,6 +4,19 @@
  * keeps whatever it already rendered, so a backend outage degrades to the
  * built-in sample markup rather than to a blank page.
  *
+ * ONE NAMED EXCEPTION: read()'s `params` argument. That is not a runtime
+ * condition — a backend being down, a record not existing — it is the
+ * calling screen's own code being wrong, and this file's history says a
+ * silent one is worse than a crash. finance-os.html once passed a pre-built
+ * query STRING where read() wanted a params OBJECT; `for (var k in params)`
+ * iterated the string's characters instead of throwing, and the result was a
+ * malformed request that still came back looking like an answer — 400 on an
+ * endpoint that validates its parameters, and a silently wrong org-wide
+ * roll-up on one that does not. See read() below: a non-object, non-undefined
+ * `params` throws synchronously, on purpose, rather than being handed to the
+ * loop that produced that bug.
+ *
+
  * The return shape is always { ok, source, data, error }:
  *   ok:false source:"unauthorized" — signed out, or the session is stale
  *   ok:false source:"nodb"         — the DATABASE said it was down (503, or
@@ -160,6 +173,21 @@ window.FHData = (function () {
        offset, hasMore } — read() unwraps to the same { ok, source, data }
        shape as everything else so a screen branches once. */
     read: function (resource, params) {
+      // A pre-built query string, or any other non-object, is refused rather
+      // than iterated. `for (var k in o)` over a string walks its character
+      // indices ("0","1","2"…) rather than throwing, which is what let a
+      // malformed request stand in for a real one — see the file header.
+      // Arrays are excluded too: typeof [] === "object", but iterating one
+      // the same way produces the identical index-key shape as a string.
+      if (params !== undefined && params !== null &&
+          (typeof params !== "object" || Array.isArray(params))) {
+        throw new TypeError(
+          'FHData.read("' + resource + '", params) — params must be an object ' +
+          "or omitted, not " + (Array.isArray(params) ? "an array" : typeof params) +
+          ". A pre-built query string here silently corrupts the request instead " +
+          "of failing loudly — build the query with an object, not with qs()."
+        );
+      }
       var q = [];
       var o = params || {};
       for (var k in o) {

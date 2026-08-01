@@ -65,6 +65,7 @@ import readUnderwrite from "../../api/read/underwrite.mjs";
 import readMoneyMap from "../../api/read/money-map.mjs";
 import readFinanceCommand from "../../api/read/finance-command.mjs";
 import readFinanceAsk from "../../api/read/finance-ask.mjs";
+import readTransactions from "../../api/read/transactions.mjs";
 import bankingSyncAccounts from "../../api/banking/sync-accounts.mjs";
 import inquiries from "../../api/inquiries.mjs";
 import pii from "../../api/pii.mjs";
@@ -209,6 +210,15 @@ export const ROUTES = {
   // api/finance/alerts.mjs's REASON_TEXT map. ROLE_SETS.STAFF, same as its
   // neighbour above.
   "read/finance-ask": readFinanceAsk,
+
+  // read/transactions is the missing reader for bank_transactions (085) — the
+  // table has had a real writer (src/banking/import.mjs) since the mock
+  // banking provider landed, and until this endpoint nothing exposed a row of
+  // it anywhere. Finance OS needs a transaction list and a spending-by-
+  // category breakdown; both come from here rather than being invented on the
+  // screen. Same ROLE_SETS.STAFF gate and same org-scoped-from-the-session
+  // rule as its neighbours above — it serves nothing they do not already.
+  "read/transactions": readTransactions,
 
   // banking/sync-accounts is the FIRST WRITER `bank_accounts` has ever had —
   // until it, the only INSERT into that table in the whole repository was inside

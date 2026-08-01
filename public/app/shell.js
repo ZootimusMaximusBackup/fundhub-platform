@@ -21,43 +21,25 @@
     "staff-teams.html", "content-admin.html", "sample-data.html",
     "inquiry-remover.html", "affiliate.html", "client-portal.html", "partner-galaxy.html", "brand-studio.html",
     "campaign-manager.html", "social-studio.html", "creative-factory.html", "hiring.html",
-    "finance-os.html", "banking-surface.html",
-    /* The Finance OS write surface. Twelve tested modules — subscriptions,
-       liabilities, bank accounts, recurring bills, the cash-flow projection,
-       alerts and the two deal calculators — had no screen and no route, so the
-       owner opened the app and saw a seven-row read-only grid. These six screens
-       and the eight /api/finance/* routes registered in
-       netlify/functions/api.mjs are the way in. Added to the sidebar in the same
-       pass, in every file that carries one: a screen in ALL and nowhere else has
-       no way in, and src/http/app-nav-reachability.test.mjs fails when that
-       happens (audit M20). */
-    "subscriptions.html", "card-stack.html", "bank-accounts.html",
-    "bills-cashflow.html", "alerts.html", "deal-model.html",
-    /* banking-entry.html is W1's manual-entry screen. It arrived in ALL on its
-       own branch with no sidebar row anywhere, which was invisible there because
-       app-nav-reachability.test.mjs did not exist yet — it came from the audit
-       branch. On main that combination is a failing test and, more to the point,
-       a screen with no way in. Added to the Finance group in every sidebar in
-       the same commit. */
-    "banking-entry.html",
-    /* money-map.html is W6 — the one screen an owner opens for a client, over
-       what read/finance-os, read/banking-surface and read/tradelines already
-       serve. Same treatment as banking-entry above: in ALL, and therefore in
-       every sidebar. */
-    "money-map.html",
-    /* finance-command.html is the roll-up dashboard (106_entities.sql +
-       api/read/finance-command.mjs) — every client's cash, credit, and
-       investment balances folded into one screen, same STAFF read gate as
-       money-map.html, which already reads bank_accounts at this level (write
-       stays FINANCE-only, matching bank-accounts.html above). */
-    "finance-command.html",
-    /* finance-add.html is the one add-anything flow. Its FORM ACTIONS write to
-       a mix of gates — entities and card_liabilities are STAFF, bank accounts
-       and subscriptions are FINANCE — so the SCREEN is placed in
-       OWNER_ADMIN_ONLY below, matching its most restrictive action. Offering
-       it more broadly would put a form on screen whose bank-account/
-       subscription actions 403 for the person looking at it. */
-    "finance-add.html",
+    /* Finance OS is one screen now, not twelve. money-map.html,
+       banking-surface.html, card-stack.html, bank-accounts.html,
+       bills-cashflow.html, banking-entry.html, finance-command.html and
+       finance-add.html — the six-screen write surface plus the two read-only
+       roll-ups that came after it — are gone. finance-os.html absorbed all of
+       it: one client's whole money picture, read from
+       read/money-map, read/underwrite and finance/alerts live, with the same
+       /api/finance/* writes those six screens used wired directly into it.
+       An owner decision, not a regression — src/http/app-nav-reachability
+       .test.mjs no longer has eleven Finance rows to account for, it has one. */
+    "finance-os.html",
+    /* subscriptions.html is the one Finance-adjacent screen that survived the
+       consolidation, because it isn't the client's money — it's Fundhub
+       billing THE CLIENT for the service, same kind of thing as
+       products-commissions.html one row down in Setup. Moved there instead of
+       folded into Finance OS or deleted. Its own role gate (FINANCE, in
+       OWNER_ADMIN_ONLY below) did not change, only which sidebar group it
+       renders in. */
+    "subscriptions.html",
     /* journeys.html is the SMS/email/pipeline automation editor — it writes
        live message copy and stage wiring, so it is owner/admin only (see
        OWNER_ADMIN_ONLY below). Same treatment as every other addition on
@@ -72,43 +54,34 @@
   var PRINCIPAL_ONLY = ["partner-galaxy.html"];
 
   /* NOT PART OF THE SHARED STAFF SURFACE — waiting on a human approval, not on
-     a nav decision. banking-surface.html shows a named client's bank balances,
-     read from a bank connection. Bank connections are not approved in this
-     product: the SOC 2 review of storing bank credentials and the consent
-     flow are both open (src/banking/plaid.mjs, docs/workflows/finish-the-build/
-     W5.md). api/read/banking-surface.mjs answers this screen only for
-     ROLE_SETS.FINANCE for that reason, so leaving it in the shared surface
-     would have offered every employee a screen the data behind it refuses.
-     Owner and admin have "*" and keep it. Widening this is a decision somebody
-     makes after the sign-off, not a tidy-up.
+     a nav decision, or gated narrower than STAFF at the API itself.
 
-     THE THREE FINANCE OS SCREENS BELOW ARE HERE FOR THE SAME REASON, AND THE
-     RULE IS THE ONE THIS LIST ALREADY ENFORCES: the nav must not offer a screen
-     whose data refuses the person clicking it.
+     finance-os.html is DELIBERATELY NOT in this list, even though it now reads
+     and writes several things that individually gate on ROLE_SETS.FINANCE
+     (adding a bank account, editing a bill, saving cash-flow thresholds,
+     changing an alert trigger). Most of what it shows — read/money-map,
+     read/underwrite, finance/liabilities, finance/alerts' queue, finance/model —
+     is ROLE_SETS.STAFF, the same set that already reads a client's tradelines
+     everywhere else in this app, so the SCREEN stays on the shared staff
+     surface and the finance-os.html wiring itself hides the FINANCE-only
+     controls (Load sample data, add/edit an account, edit a bill, save cash-
+     flow settings, change a trigger) from anyone who is not owner or admin —
+     matching this list's own rule one level down, inside a single screen
+     instead of across several.
 
-       subscriptions.html   /api/finance/subscriptions and /api/finance/cards
-                            both gate on ROLE_SETS.FINANCE. A subscription row
-                            carries a price and a payment instrument, which is
-                            the narrowest thing this API serves.
-       bank-accounts.html   /api/finance/bank-accounts gates on FINANCE, matching
-                            api/read/banking-surface.mjs over the same rows.
-       bills-cashflow.html  /api/finance/bills and /api/finance/cashflow gate on
-                            FINANCE — both are bank-derived, and the cash-flow
-                            thresholds are an operator policy.
-
-     The other three stay in the shared staff surface because their endpoints
-     do: card-stack.html reads liabilities (ROLE_SETS.STAFF, the same gate
-     api/read/tradelines.mjs carries over the same cards), alerts.html reads the
-     queue (STAFF, with trigger CONFIGURATION narrowed to FINANCE inside the
-     handler), and deal-model.html is a calculator closers use to do their job.
+     subscriptions.html IS here, unchanged by the Finance OS consolidation.
+     /api/finance/subscriptions and /api/finance/cards both gate on
+     ROLE_SETS.FINANCE — a subscription row carries a price and a payment
+     instrument, which is the narrowest thing that API serves. It moved to the
+     Setup group in the sidebar (next to products-commissions.html, since this
+     is Fundhub billing the client rather than the client's own money), but the
+     role gate that put it here never changed.
 
      MOVE A GATE AND MOVE ITS ROW. If a build agent widens or narrows a role set
      in api/finance/*, this list has to follow in the same commit, or the app
      goes back to offering screens that 403. */
   var OWNER_ADMIN_ONLY = [
-    "banking-surface.html",
-    "subscriptions.html", "bank-accounts.html", "bills-cashflow.html",
-    "finance-add.html",
+    "subscriptions.html",
     /* journeys.html — api/journeys/ask.mjs and api/journeys/store.mjs both
        gate on requireRole("owner", "admin"); the nav row matches. */
     "journeys.html"
@@ -117,7 +90,7 @@
   /* staffTabs — every screen a signed-in employee may open, which is every row
      the shared sidebar leaves them looking at.
 
-     The sidebar markup itself carries one row more than this: banking-surface
+     The sidebar markup itself carries one row more than this: subscriptions
      .html is in it so owner and admin can reach it, and gateLinks() hides that
      row for everybody else. partner-galaxy.html is in no sidebar at all, per
      the note above. Adding a screen to ALL and to nothing else gives it no way
@@ -290,24 +263,8 @@
   var CLIENT_SCREENS = {
     "finance-os.html":           "client_id",
     "subscriptions.html":        "client_id",
-    "card-stack.html":           "client_id",
-    "bank-accounts.html":        "client_id",
-    "bills-cashflow.html":       "client_id",
-    "alerts.html":               "client_id",
-    "deal-model.html":           "client_id",
-    "banking-surface.html":      "client_id",
     "closer-dashboard.html":     "client_id",
-    "client-control-panel.html": "id",
-    // money-map.html and banking-entry.html always read client_id off the URL
-    // (money-map.html:358, banking-entry.html:416) but were missing from this
-    // map, so gateLinks() never carried a client onto their sidebar links and
-    // both landed on a "no client — paste one into the address bar" screen.
-    // finance-command.html (roll-up dashboard) and finance-add.html (the one
-    // add-anything flow) are new and carry client_id the same way from birth.
-    "money-map.html":            "client_id",
-    "banking-entry.html":        "client_id",
-    "finance-command.html":      "client_id",
-    "finance-add.html":          "client_id"
+    "client-control-panel.html": "id"
   };
 
   /* ENTITY_SCREENS — which screens additionally read an entity (personal vs. a
@@ -316,14 +273,7 @@
      than duplicated per screen. A screen absent from this map does not filter
      by entity even if a client is carried. */
   var ENTITY_SCREENS = {
-    "finance-os.html":      "entity_id",
-    "money-map.html":       "entity_id",
-    "banking-entry.html":   "entity_id",
-    "card-stack.html":      "entity_id",
-    "bank-accounts.html":   "entity_id",
-    "bills-cashflow.html":  "entity_id",
-    "finance-command.html": "entity_id",
-    "finance-add.html":     "entity_id"
+    "finance-os.html": "entity_id"
   };
 
   var CLIENT_KEY = "fh_client";

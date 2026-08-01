@@ -1089,3 +1089,126 @@ owner ruled out. The logic lives in `src/adapters/` with every other adapter.
    runs and stores `provider_message_id` on send, every real callback would find
    no row and answer `unmatched`. That is the correct behaviour, and it means
    this ticket turns nothing on by itself.
+
+---
+
+## MERGE — five branches into main, 2026-08-01
+
+**Task:** merge the five pushed branches into one line of history, in the order
+the owner set. `status: done`
+
+**What changed in plain language:** five separate pieces of work that were each
+built on a slightly different copy of the code are now one copy. Most of it fit
+together on its own. One piece did not: two different versions of the part that
+actually sends a message existed, and one of them would have silently killed
+every text queued overnight. That one is gone. Nothing new was switched on.
+
+### The one that mattered — two dispatchers
+
+Both the messaging-foundation branch and the dispatcher branch shipped
+`src/messaging/dispatch.mjs`. The foundation's version sent a text queued during
+quiet hours (11pm–11am Eastern) through the compliance gate, which recorded it
+as `status='blocked'` — and a block is an audit record that nothing may clear.
+Every overnight text would have died there, permanently, and looked deliberate.
+
+The dispatcher branch's version treats quiet hours as a **deferral**: the row
+goes back to `queued` with `scheduled_at` set to the next 11:00, and the attempt
+is handed back so an unopened window does not burn the retry budget. That is the
+version that ships, whole — requeue on quiet hours, five-attempt ceiling,
+migration 111, and the CLAUDE.md §12 rewrite with its three named exceptions
+(`src/adapters/lendflow.mjs`, `src/workflows/ds-02-diy-letters.mjs`,
+`src/workflows/c-06-crs-results-router.mjs`). The foundation's dispatcher is
+deleted. Everything else from that branch is kept: migration 110, the compliance
+gate, the mailgun provider, the ghl-relay provider, the twilio provider, and this
+board.
+
+### The one nobody flagged — a THIRD dispatcher
+
+The journey-runner branch also carried `src/messaging/dispatch.mjs`, its own
+provider registry, and its own `db/migrations/110_message_channel_routing.sql`.
+It was written against a tree where **nothing transmitted**, and its provider
+contract (`key` / `transmits` / `resolve(db, {orgId, channel})`) is not the
+cutover contract (`PROVIDER` / `CHANNELS` / `ADDRESS_FIELD` / `ENABLED` /
+`send`). Reconciled onto the cutover seam:
+
+| Thing | What happened |
+|---|---|
+| the runner's `dispatch.mjs` | deleted; the runner drains through `dispatchDue()` |
+| the runner's `providers/index.mjs` | deleted; its two providers registered in the cutover registry |
+| `providers/internal.mjs`, `providers/memory.mjs` | rewritten onto the cutover contract, `ENABLED = false` both, `recorded()`/`reset()` unchanged |
+| every provider | now declares `TRANSMITS`, a required boolean, checked at import |
+| `dispatch.mjs` | understands `ADDRESS_FIELD = "natural"` so a provider carrying every channel uses the channel's own client column |
+| `110_message_channel_routing.sql` | **deleted** — `110_messages_outbound.sql` already creates that table, and seeds mailgun/ghl_relay rather than internal |
+| `111_sales_manager_role.sql` | renumbered to `112_` behind `111_messages_address.sql`; every reference updated, including the two tests that read the path |
+| the runner's `dispatch.test.mjs` | dropped with its dispatcher; the tests that belonged to the FENCE moved to `src/messaging/live-fence.test.mjs` |
+
+### OPEN QUESTION FOR THE OWNER — the live-mode fence
+
+`src/messaging/live-fence.mjs` came from the journey-runner branch. Its rule was:
+**if the provider can reach the outside world, refuse any client not marked
+synthetic**, checked inside the dispatcher on every message.
+
+On the tree it was written for, that was airtight, because nothing transmitted.
+On the merged tree it is a landmine: mailgun, ghl_relay and twilio all transmit,
+and they are the production path for real clients who are correctly *not* marked
+synthetic. Left where it was, **the day W5 turns sending on, every real message
+would be refused.**
+
+So it is not called from the dispatcher any more. It is a pre-flight on the
+journey runner: `preflight()` refuses a whole run before a single message is
+claimed if the org's routing names a provider that can transmit. That keeps the
+runner from ever texting a real person, costs nothing in production, and invents
+no new rule.
+
+**What that leaves undecided, and it is an owner call:** when W5 plugs sending
+in, what is the per-message safety rule for a REAL client? The fence's answer
+("must be marked synthetic") cannot be it. Nobody has written the replacement
+and nobody should guess one. Flagged here rather than reconciled.
+
+### Migration 106 — resolved
+
+`106_entities.sql` and `106_journeys.sql` both carried `106`. On the owner's
+instruction the journeys one is now **`113_journeys.sql`** — chosen because ten
+files name `106_entities.sql` in comments and only two named the journeys one.
+
+`migrate.mjs` keys `schema_migrations` on `<dir>/<file>`, so a database that
+already applied `migrations/106_journeys.sql` sees `migrations/113_journeys.sql`
+as new and runs it again. Its `CREATE TABLE` was **not** idempotent and would
+have aborted the whole run with "relation journeys already exists", so it is now
+`CREATE TABLE IF NOT EXISTS` and the re-run is a no-op. The old key stays in
+`schema_migrations` forever; the health check no longer expects it.
+
+### Files touched by the merge itself
+
+| File | Change |
+|---|---|
+| `src/messaging/dispatch.mjs` | the dispatcher branch's, plus the `"natural"` address-field indirection |
+| `src/messaging/providers/index.mjs` | registers `internal` and `memory`; requires `TRANSMITS`; exports `all()` |
+| `src/messaging/providers/{internal,memory}.mjs` | rewritten onto the cutover contract |
+| `src/messaging/providers/{mailgun,ghl-relay,twilio}.mjs` | `TRANSMITS = true` added |
+| `src/messaging/live-fence.mjs` | `TRANSMITS` instead of `transmits`; `preflight()` added; header rewritten to say what moved and why |
+| `src/messaging/live-fence.test.mjs` | new — 17 tests carried over from the dropped dispatcher's file |
+| `src/journeys/runner/index.mjs` | drains through `dispatchDue()`; fence pre-flight before any claim |
+| `src/journeys/runner/report.mjs` | fence refusals are per-path now, not per-message; gate blocks counted separately |
+| `src/journeys/runner/diff.test.mjs` | the real-screen-inventory floor lowered 30 → 20; Finance OS folded eleven screens into one |
+| `db/migrations/113_journeys.sql` | renamed from `106_`; `IF NOT EXISTS` added |
+| `db/migrations/112_sales_manager_role.sql` | renamed from `111_` |
+| `db/expected-migrations.mjs` | regenerated |
+| `docs/journeys/*-actual.md`, `README.md` | regenerated from code |
+
+### Verified
+
+* `npm run lint` — clean, 677 files.
+* `npm test` — **3782 passing, 0 failing, 471 skipped.** The skips are the
+  `.pg.test.mjs` files with `DATABASE_URL` unset; per CLAUDE.md §12 that number
+  proves nothing about anything needing a database, and nobody has yet measured
+  the post-`104_app_role.sql` failure count against real Postgres.
+* `npx tsc --noEmit` — still prints its help text, as W1 and T2 both recorded.
+* **W5 is still unplugged.** `src/workflows/message-dispatch-sweeper.test.mjs`
+  → "the sweeper is not registered with Inngest" passes. The sweeper is defined
+  and absent from `src/workflows/index.mjs`.
+* The other W5 fence, `src/banking/plaid.test.mjs` → "nothing transmits", also
+  still passes: the Plaid adapter has no outbound call and no non-builtin import.
+* SMS is still routed to `ghl_relay` and twilio still ships `ENABLED = false`,
+  asserted by `src/messaging/providers/providers.test.mjs` against migration
+  110's seed text.

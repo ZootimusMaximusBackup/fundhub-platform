@@ -23,7 +23,7 @@ flowchart TD
     CAN --> A_dashboard[The dashboard — 4 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 4 routes]
-    CAN --> A_read[Reading data — 14 routes]
+    CAN --> A_read[Reading data — 15 routes]
     CAN --> A_top_level[Everything else — 7 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 28 routes]
@@ -40,7 +40,7 @@ flowchart TD
 
 ## What they can reach
 
-**46 of 74 routes.**
+**47 of 75 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -86,6 +86,7 @@ flowchart TD
 | `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/transactions` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
 | `/api/tasks` | GET, PATCH | staff |
@@ -99,7 +100,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**28 of 74 routes.**
+**28 of 75 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

@@ -265,7 +265,16 @@ test("REAL public/app: every screen on disk is classified", () => {
   // Against the real filesystem, not the fixture — this is the acceptance
   // criterion "every screen in public/app/ is classified".
   const screens = gatherScreens();
-  assert.ok(screens.length >= 30, `expected the real screen inventory, got ${screens.length}`);
+  /* A floor, not a count. It exists to prove this read the real public/app
+     directory rather than the 3-screen fixture above, so it must not be a
+     number that moves whenever a screen is added or removed.
+
+     It was 30, and the Finance OS consolidation took the inventory to 29 by
+     folding eleven finance screens into finance-os.html. Lowered to 20 and
+     given this note so the next consolidation does not read as a regression.
+     The assertion that actually matters is the one below: EVERY screen found
+     is classified, exactly, with none left out. */
+  assert.ok(screens.length >= 20, `expected the real screen inventory, got ${screens.length}`);
   const { screenCoverage } = diff(SEED_JOURNEYS, facts({ screens }));
   assert.equal(screenCoverage.length, screens.length, "no screen may be left out of the classification");
   const unclassified = screenCoverage.filter((s) => !s.classification);
