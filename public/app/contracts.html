@@ -299,6 +299,7 @@ tr.sel td{background:rgba(169,198,232,.13)}
         <div>
           <div class="card">
             <div class="card-hd"><h2>Contracts</h2><div class="spacer"></div>
+              <button class="btn sm" id="btnRemind" title="Email everyone who has not signed yet, and put it on the follow-up list">Send reminders</button>
               <select id="selStatus" style="border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:12px">
                 <option value="">All</option><option value="draft">Draft</option>
                 <option value="sent">Sent</option><option value="viewed">Opened</option>
@@ -1335,6 +1336,21 @@ window.dispatchEvent(new Event("pdfjs-ready"));
   $("ncSave").onclick = addContact;
   $("ncCancel").onclick = function () { $("newContact").style.display = "none"; };
   $("selStatus").addEventListener("change", renderList);
+  /* Chasing runs on a schedule too (src/workflows/contract-chaser.mjs), but
+     Inngest is not switched on, so this button is how it happens today. Same
+     function either way. */
+  $("btnRemind").onclick = function () {
+    $("btnRemind").disabled = true;
+    $("btnRemind").textContent = "sending…";
+    FHData.write("/api/contracts", { action: "run_reminders" }).then(function (res) {
+      $("btnRemind").disabled = false;
+      $("btnRemind").textContent = "Send reminders";
+      FHData.banner(res.ok ? "real" : "error",
+        res.ok ? (res.data && res.data.message) || "Reminders sent."
+               : "could not send reminders — " + (res.error || "unknown"), "reminders");
+      if (res.ok) loadContracts();
+    });
+  };
   $("btnPreview").onclick = doPreview;
   $("btnSend").onclick = doSend;
   $("btnCopy").onclick = function () {

@@ -5,6 +5,7 @@ import { at01FirstTouchCapture } from './at-01-first-touch-capture.mjs';
 import { bc01CustomerResponsiveness } from './bc-01-customer-responsiveness.mjs';
 import { bc02CustomerFriction } from './bc-02-customer-friction.mjs';
 import { bs01PrecallLauncher } from './bs-01-precall-launcher.mjs';
+import { contractChaser } from './contract-chaser.mjs';
 import { c00CrsSoftPullRequest } from './c-00-crs-soft-pull-request.mjs';
 import { c02InquiryCreated } from './c-02-inquiry-created.mjs';
 import { c02bInquiryRemovalRequested } from './c-02b-inquiry-removal-requested.mjs';
@@ -54,6 +55,22 @@ export const functions = [
   bc01CustomerResponsiveness,
   bc02CustomerFriction,
   bs01PrecallLauncher,
+  /* Contracts — chase unsigned, daily.
+
+     REGISTERING IT DOES NOT SWITCH SENDING ON. Inngest invokes nothing until
+     INNGEST_EVENT_KEY is set, which CLAUDE.md §11 reserves to the owner. This
+     array is a declaration of what exists.
+
+     It is deliberately NOT the same decision as the message dispatch sweeper,
+     which stays out of this array on purpose and has its own test asserting so:
+     that one drains the whole outbound queue for every workflow, and this one
+     touches contracts and nothing else. Different blast radius. (Its guard test
+     greps this file for its own name, so it is described here rather than
+     named — the guard is right to be that blunt.)
+
+     The chaser also runs today WITHOUT Inngest, through
+     /api/contracts { action: "run_reminders" } — see its header. */
+  contractChaser,
   c00CrsSoftPullRequest,
   c02InquiryCreated,
   c02bInquiryRemovalRequested,

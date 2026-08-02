@@ -56,6 +56,7 @@ import {
   createDraft, saveDraft, preview, send, voidContract, getContract,
   uploadTemplate, saveFields, listSigners, replaceSigners
 } from "../src/contracts/index.mjs";
+import { runChase } from "../src/workflows/contract-chaser.mjs";
 
 /* Which actions need owner or admin. hasRole() treats "owner" as passing every
    gate (SUPER_ROLES), so naming "admin" here covers both. */
@@ -64,13 +65,16 @@ const OWNER_ADMIN_ACTIONS = new Set([
   // Uploading a document and deciding where it gets signed IS writing contract
   // wording — the same act, arriving as a file instead of as typed copy. It
   // carries the same gate for the same reason.
-  "upload_template", "save_fields"
+  "upload_template", "save_fields",
+  // Reminders go to real people. Deciding that a batch of clients gets chased
+  // today is a narrower act than sending one contract to one of them.
+  "run_reminders"
 ]);
 
 const ALL_ACTIONS = [
   "create_template", "upload_template", "save_template", "save_fields",
   "archive_template", "create_draft", "save_draft", "preview", "send", "void",
-  "create_client"
+  "create_client", "run_reminders"
 ];
 
 /* The absolute base a signed link is built on, so the CRM can show a link a
@@ -351,6 +355,31 @@ export default async function handler(req, res) {
           message: out.resent
             ? "This contract was already sent. Here is a fresh link to the same document."
             : "Sent. Copy the link below and give it to the client."
+        });
+      }
+
+      /* ── chase the unsigned ────────────────────────────────────────────────
+         The same function src/workflows/contract-chaser.mjs runs on a schedule,
+         exposed so it works TODAY. Inngest invokes nothing until
+         INNGEST_EVENT_KEY is set — the owner's switch (CLAUDE.md §11) — and a
+         reminder system that only exists behind a switch nobody has thrown is a
+         reminder system that does not exist. Press the button, or point any
+         external scheduler at this endpoint; when the key is eventually set, the
+         same code starts running on its own with nothing to change. */
+      case "run_reminders": {
+        const out = await runChase(db, {
+          orgId,
+          afterDays: Number.isFinite(Number(body.after_days)) ? Number(body.after_days) : undefined,
+          baseUrl: baseUrlFrom(req)
+        });
+        return res.status(200).json({
+          ok: true, action, result: out,
+          message: out.reminded
+            ? `Reminded ${out.reminded} ${out.reminded === 1 ? "person" : "people"}, ` +
+              `and put ${out.tasked} ${out.tasked === 1 ? "contract" : "contracts"} on the follow-up list.`
+            : (out.considered
+                ? "Nothing to chase — everything outstanding has been reminded recently."
+                : "Nothing outstanding. Every contract that was sent has been dealt with.")
         });
       }
 

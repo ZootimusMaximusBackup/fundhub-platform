@@ -65,6 +65,10 @@ describe("contracts — uploaded PDFs, fields and several signers",
             `DELETE FROM document_versions WHERE document_id IN (SELECT id FROM documents WHERE client_id = ANY($1))`, [ids]);
           await db.query(`DELETE FROM documents WHERE client_id = ANY($1)`, [ids]);
         }));
+      /* Sending a contract now queues a message per signer, so these have to go
+         before the client they reference. */
+      await db.query(`DELETE FROM messages WHERE client_id = ANY($1)`, [ids]);
+      await db.query(`DELETE FROM tasks WHERE client_id = ANY($1)`, [ids]);
       await db.query(`DELETE FROM events WHERE client_id = ANY($1)`, [ids]);
       await db.query(`DELETE FROM clients WHERE id = ANY($1)`, [ids]);
     }

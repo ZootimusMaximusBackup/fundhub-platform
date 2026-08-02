@@ -121,6 +121,10 @@ describe("/api/contracts endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : fals
             `DELETE FROM document_versions WHERE document_id IN (SELECT id FROM documents WHERE client_id = ANY($1))`, [ids]);
           await db.query(`DELETE FROM documents WHERE client_id = ANY($1)`, [ids]);
         }));
+      /* Sending a contract now queues a message per signer, so these have to go
+         before the client they reference. */
+      await db.query(`DELETE FROM messages WHERE client_id = ANY($1)`, [ids]);
+      await db.query(`DELETE FROM tasks WHERE client_id = ANY($1)`, [ids]);
       await db.query(`DELETE FROM events WHERE client_id = ANY($1)`, [ids]);
       await db.query(`DELETE FROM clients WHERE id = ANY($1)`, [ids]);
     }
@@ -749,6 +753,37 @@ describe("/api/contracts endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : fals
       assert.equal(r.code, 200);
       const row = (await db.query(`SELECT org_id FROM clients WHERE id = $1`, [r.body.client.id])).rows[0];
       assert.equal(row.org_id, foreignOrg);
+    });
+  });
+
+  describe("running the reminder sweep from the CRM", () => {
+    /* Chasing also runs on a schedule (src/workflows/contract-chaser.mjs), but
+       Inngest is switched off, so this endpoint is how it happens today. A
+       reminder system that only exists behind a switch nobody has thrown is a
+       reminder system that does not exist. */
+    test("owner and admin may run it", async () => {
+      for (const role of ["owner", "admin"]) {
+        const r = await post({ action: "run_reminders" }, staff[role].token);
+        assert.equal(r.code, 200, `${role} was refused: ${JSON.stringify(r.body)}`);
+        assert.ok(r.body.result);
+        assert.ok(typeof r.body.message === "string" && r.body.message.length);
+      }
+    });
+
+    test("A SETTER MAY NOT — reminders go to real people, in bulk", async () => {
+      const r = await post({ action: "run_reminders" }, staff.setter.token);
+      assert.equal(r.code, 403);
+      assert.deepEqual(r.body.required, ["owner", "admin"]);
+    });
+
+    test("it only ever sweeps the caller's own company", async () => {
+      // A freshly sent contract is not yet old enough to chase, so a sweep for
+      // this org finds nothing — and a sweep by the other company must also
+      // never see it, whatever its age.
+      await sentContract();
+      const foreign = await post({ action: "run_reminders" }, staff.foreign.token);
+      assert.equal(foreign.code, 200);
+      assert.equal(foreign.body.result.considered, 0);
     });
   });
 });

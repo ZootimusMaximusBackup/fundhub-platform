@@ -103,7 +103,8 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/118_contract_esign.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
-  "seed/007_contract_templates.sql"
+  "seed/007_contract_templates.sql",
+  "seed/008_contract_messages.sql"
 ]);
 
 export default EXPECTED_MIGRATIONS;

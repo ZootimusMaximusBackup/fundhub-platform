@@ -55,6 +55,10 @@ describe("contracts — the full lifecycle", { skip: !HAVE_DB ? "no DATABASE_URL
       await db.query(`DELETE FROM documents WHERE client_id = ANY($1)`, [ids]);
       await db.query(`ALTER TABLE documents ENABLE TRIGGER trg_documents_no_delete`);
       await db.query(`ALTER TABLE document_versions ENABLE TRIGGER trg_document_versions_no_delete`);
+      /* Sending a contract now queues a message per signer, so these have to go
+         before the client they reference. */
+      await db.query(`DELETE FROM messages WHERE client_id = ANY($1)`, [ids]);
+      await db.query(`DELETE FROM tasks WHERE client_id = ANY($1)`, [ids]);
       await db.query(`DELETE FROM events WHERE client_id = ANY($1)`, [ids]);
       await db.query(`DELETE FROM clients WHERE id = ANY($1)`, [ids]);
     }

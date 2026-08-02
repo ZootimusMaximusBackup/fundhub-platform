@@ -761,3 +761,173 @@ lists both signers with their times, addresses and devices.
 * **No field-level audit of who moved a box, and when.** Template edits record
   `updated_by` only.
 * **Initials are derived from the typed name**, not drawn separately.
+
+---
+
+# Part 3 — it sends, and it chases
+
+Owner, on being handed part 2: *"So you can't… so it doesn't actually send
+contracts or what?… if there is chasing, you set up workflows for that. It's not
+that hard."*
+
+Both fair. This part closes it.
+
+## 25. Why it didn't send, and what was actually missing
+
+Nothing to do with contracts. **Nothing in this platform sent anything.** Every
+piece of the outbound path was built and tested — the `messages` queue, the
+compliance gate, quiet hours, retries, and four real providers including
+Mailgun — and `src/messaging/dispatch.mjs` says so in its own header:
+
+> "NOTHING IS SCHEDULED… dispatchDue() runs when something calls it, and today
+> nothing does."
+
+So the missing piece was a **caller**. `src/contracts/notify.mjs` is it.
+
+## 26. What happens now when somebody presses Send
+
+1. The contract is frozen and the per-signer links are minted (unchanged).
+2. One `messages` row is written per signer, carrying **that person's own link**,
+   rendered from an editable template.
+3. Those rows — **and only those rows** — are handed to the dispatcher, which
+   runs the gate, resolves the org's provider and sends.
+4. The link is still returned and still shown in the CRM.
+
+### Why it dispatches by id instead of calling `dispatchDue()`
+
+`dispatchDue(db, { orgId })` claims *every* message due for the org. Correct for
+a sweeper on a schedule; wrong here — pressing "send this contract" would also
+flush anything else sitting in the queue. That is an unbounded blast radius and
+exactly what CLAUDE.md §11 reserves to the owner ("that switch makes 47 workflow
+functions go live").
+
+**Sending a contract sends that contract.** The global switch stays off and stays
+yours to throw.
+
+### It degrades; it never fails the send
+
+No provider configured, no routing row, gate holds the message, template
+unapproved — the contract is still sent, the links are still minted and shown,
+and the reason is recorded on the row. A contract that is legally sent must never
+be reported as failed because an email did not go. Asserted directly:
+*"WITH NO EMAIL ROUTE AT ALL, THE CONTRACT STILL SENDS"*.
+
+### Only the person whose turn it is
+
+Under a sequential contract, emailing everybody at once would tell the second
+party the document exists before the first has agreed to it — which defeats the
+point of having an order. Skipped signers are reported by name and reason, never
+silently dropped.
+
+### Sending twice
+
+`provider_ref` is `contract:<contract>:<signer>:<purpose>`, and migration 004's
+unique index is what actually enforces it. The same purpose cannot produce two
+emails; a **deliberate resend** carries `resend1`, `resend2`… so pressing Send
+again for a client who lost the first one really does re-send.
+
+## 27. Chasing
+
+`src/workflows/contract-chaser.mjs`. Finds contracts that were sent, are still
+unsigned, and have had no activity for **3 days**; then every 3 days; **4 times,
+then it stops**. A system that emails somebody forever is a system people filter,
+and the filter costs more than the deal.
+
+Each pass does two things:
+
+* **Reminds** whoever is holding it up, with a **freshly minted link** — a
+  reminder carrying a link that is about to expire is worse than no reminder.
+* **Raises a task** for the staff member who sent it. This is the half that is
+  easy to leave out and matters most: an automated nudge nobody on the team ever
+  sees is how a deal quietly dies. The task is what eventually puts a person on
+  the phone.
+
+The clock runs from the **last thing that happened**, not from the send — a
+client who opened it yesterday does not get chased today.
+
+### It is registered, and that is not the same as switching sending on
+
+`contractChaser` is in `src/workflows/index.mjs` (47 → 48). Registering does
+**not** make it run: Inngest invokes nothing until `INNGEST_EVENT_KEY` is set,
+which stays your call.
+
+The message-dispatch sweeper deliberately stays **out** of that array and has a
+test guarding its absence. The difference is blast radius: the sweeper drains the
+whole queue for every workflow; the chaser touches contracts and nothing else.
+
+### And it works today, without Inngest
+
+`runChase()` is a plain function. `POST /api/contracts { action: "run_reminders" }`
+calls it, and there is a **"Send reminders" button** on the Contracts screen.
+Point any external scheduler at that endpoint if you want it automatic before the
+Inngest key is set; when it is set, the same function starts running on its own
+with nothing to change.
+
+The action is **owner/admin** — a bulk send to real people is a narrower act than
+sending one contract to one of them.
+
+## 28. What to set to make real email leave the building
+
+Three things, all yours; none of them are code:
+
+1. **Route the channel.** Migration 110 already seeds `email → mailgun` for the
+   default org. Confirm it in `message_channel_routing`.
+2. **Mailgun credentials**: `MAILGUN_SEND_API_KEY`, `MAILGUN_SEND_DOMAIN`,
+   `MAILGUN_SEND_FROM`. Until these exist the message queues, the dispatcher
+   records "no route" or a provider failure, and the link still works.
+3. Optionally `INNGEST_EVENT_KEY`, to make the daily chase automatic instead of
+   button-driven. **Still not touched here** — CLAUDE.md §11.
+
+Nothing above was set from this environment: `api.netlify.com` is blocked by the
+network policy.
+
+## 29. Decisions taken without asking, part 3
+
+1. Dispatch **by id**, never `dispatchDue()`. (§26)
+2. Email failure **never** fails the contract send.
+3. Sequential contracts email **only the current signer**.
+4. Chase after **3 days**, every **3 days**, **4 times**, then stop.
+5. The chase raises a task assigned to the **sender**, falling back to the closer
+   queue.
+6. Reminders carry a **re-minted** link.
+7. Two seeded, editable templates (`CONTRACT-SEND-EMAIL`, `CONTRACT-REMIND-EMAIL`)
+   rather than strings in code — changing the wording must never need a
+   developer, same rule as every other piece of copy here.
+8. A **counterparty's** email is never filed against the client's record. They
+   are nobody's client, and filing it there would put another company's
+   correspondence on a consumer's file.
+9. `run_reminders` is **owner/admin**; adding a contact stays STAFF.
+10. The chaser's tests use **their own org**, because pointing a channel at the
+    memory provider on the shared org overwrote seeded routing that other tests
+    assert against. Tests that share global state fail in whichever order the
+    runner picks.
+
+## 30. Measured, part 3
+
+Same environment and method as §10a and §23 — local PostgreSQL 16.13, connected
+as the database owner, freshly migrated database.
+
+| | tests | pass | fail | skipped |
+|---|---|---|---|---|
+| no `DATABASE_URL` | 4487 | 4006 | **0** | 481 |
+| real Postgres | 5276 | 5226 | 34 | 9 |
+
+The 34 are the same failures, name for name, as the baseline at `fca108c` —
+diffed, not eyeballed. Sending and chasing are covered by 19 database-backed
+tests that drive the **real** dispatcher, gate and provider path, using the
+`memory` provider so nothing can leave the building.
+
+Two fixture bugs of my own were caught by that run and fixed rather than worked
+around: contract teardown had to clear `messages` before the clients they
+reference, and the notify tests had to stop mutating the shared org's routing.
+
+## 31. Still not done
+
+* **No SMS.** Email only. The Twilio provider exists and the same queue carries
+  both; it needs a template and a channel choice per signer.
+* **No delivery receipts.** Mailgun's webhooks land in `src/adapters/mailgun.mjs`
+  for the inbound direction; nothing yet maps a bounce back onto a contract, so
+  "sent" means the provider accepted it, not that a human read it.
+* **The chase is time-based only.** It does not notice that a client opened the
+  document three times and stopped — which is the moment a person should call.
+* **No per-org chase settings.** 3/3/4 is the same for everybody.

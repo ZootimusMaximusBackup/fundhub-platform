@@ -44,6 +44,7 @@ import { PDF_MIME } from "./pdf.mjs";
 import { normaliseFields, applyAutoFill, assertSignable } from "./fields.mjs";
 import { replaceSigners, listSigners, normaliseSigners } from "./signers.mjs";
 import { loadTemplatePdf } from "./upload.mjs";
+import { notifySigners } from "./notify.mjs";
 
 export const CONTRACT_MIME = "text/html";
 
@@ -257,7 +258,19 @@ export async function send(db, {
     const out = await mintLinks(db, {
       orgId, contract: current, ttlSeconds, baseUrl, secret, now
     });
-    return { contract: await getContract(db, { orgId, id }), ...out, resent: true };
+    /* A RESEND REALLY RE-SENDS. `purpose` carries a counter, so the unique index
+       on (org_id, provider_ref) lets a deliberate second email through while
+       still refusing an accidental duplicate of the same one. The commonest
+       reason somebody presses Send twice is that the client lost the first. */
+    const already = (await db.query(
+      `SELECT count(*)::int AS n FROM messages
+        WHERE org_id = $1::uuid AND provider_ref LIKE $2`,
+      [orgId, `contract:${current.id}:%:resend%`])).rows[0].n;
+    const notified = await notifySigners(db, {
+      orgId, contract: current, signers: await listSigners(db, current.id), links: out.links,
+      purpose: `resend${already + 1}`, staffName: await staffNameOf(db, staffId)
+    }).catch(() => null);
+    return { contract: await getContract(db, { orgId, id }), ...out, notified, resent: true };
   }
 
   const template = await getTemplate(db, { orgId, id: current.template_id });
@@ -363,8 +376,27 @@ export async function send(db, {
     }).catch(() => { /* the contract is sent; a delivery-status write is not worth losing it over */ });
   }
 
+  const notified = await notifySigners(db, {
+    orgId, contract, signers: await listSigners(db, contract.id), links,
+    purpose: "send", staffName: await staffNameOf(db, staffId)
+  }).catch((err) => {
+    // A contract that is legally sent must never be reported as failed because
+    // an email did not go. The link is in the response either way.
+    console.warn(`[contracts] could not notify signers of ${contract.id}: ${err.message}`);
+    return null;
+  });
+
   await emitContractEvent(db, "contract.sent", contract);
-  return { contract, link, links, resent: false, document: registered.document || null };
+  return { contract, link, links, resent: false, notified, document: registered.document || null };
+}
+
+/** The sender's name, for the email. Best effort — the copy falls back without it. */
+async function staffNameOf(db, staffId) {
+  if (!staffId) return null;
+  try {
+    const { rows } = await db.query(`SELECT name FROM staff WHERE id = $1::uuid LIMIT 1`, [staffId]);
+    return rows[0]?.name || null;
+  } catch { return null; }
 }
 
 /**
@@ -673,6 +705,14 @@ async function sendPdf(db, {
     }).catch(() => { /* the contract is sent; a delivery-status write is not worth losing it over */ });
   }
 
+  const notified = await notifySigners(db, {
+    orgId, contract: sent, signers: await listSigners(db, sent.id), links,
+    purpose: "send", staffName: await staffNameOf(db, staffId)
+  }).catch((err) => {
+    console.warn(`[contracts] could not notify signers of ${sent.id}: ${err.message}`);
+    return null;
+  });
+
   await emitContractEvent(db, "contract.sent", sent);
-  return { contract: sent, link, links, resent: false, document: registered.document || null };
+  return { contract: sent, link, links, resent: false, notified, document: registered.document || null };
 }
