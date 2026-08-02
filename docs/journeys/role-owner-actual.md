@@ -28,14 +28,14 @@ flowchart TD
     CAN --> A_hiring[Hiring — 6 routes]
     CAN --> A_journeys[journeys — 2 routes]
     CAN --> A_privacy[privacy — 1 route]
-    CAN --> A_read[Reading data — 26 routes]
+    CAN --> A_read[Reading data — 27 routes]
     CAN --> A_top_level[Everything else — 15 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
 ```
 
 ## What they can reach
 
-**88 of 88 routes.**
+**89 of 89 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -119,6 +119,7 @@ flowchart TD
 | `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
 | `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/search` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/staff` | GET | owner, admin, sales_manager |
 | `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/transactions` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -136,7 +137,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**0 of 88 routes.**
+**0 of 89 routes.**
 
 _None._
 

@@ -228,6 +228,14 @@ window.FHData = (function () {
       return this.read("messages", { conversation_id: conversationId, limit: limit || 200 });
     },
 
+    /* GET /api/read/search?q= — the global CRM search. Groups clients,
+       contracts, documents, conversations and pipeline cards. An empty `q`
+       is a real empty answer from the endpoint, not a client-side skip. */
+    search: function (p) {
+      var o = p || {};
+      return this.read("search", { q: o.q, limit: o.limit });
+    },
+
     /* sendMessage — a staff member's reply. POST /api/messages.
 
        Goes through write(), so a demo session refuses rather than attempting it,

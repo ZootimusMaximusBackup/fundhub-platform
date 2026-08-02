@@ -677,6 +677,257 @@
     "@media (max-width:480px){#fh-shell-chip{top:135px !important;left:10px !important;right:10px !important;" +
     "flex-wrap:wrap;gap:6px !important;padding:6px 9px !important;font-size:10px !important}}";
 
+  /* External principals stay on their own surface — search is staff CRM chrome. */
+  var SEARCH_SKIP_ROLES = { client: 1, affiliate: 1, partner: 1 };
+
+  /* FH-SEARCH-BEGIN */
+  /* Pure helpers for the global search overlay. Extracted so src/http/search-
+     screen.test.mjs can drive them without a browser. */
+  function searchGroupLabels() {
+    return {
+      clients: "Clients",
+      contracts: "Contracts",
+      documents: "Documents",
+      conversations: "Conversations",
+      cards: "Pipeline"
+    };
+  }
+
+  function searchGroupOrder() {
+    return ["clients", "contracts", "documents", "conversations", "cards"];
+  }
+
+  function searchEmptyCopy(q) {
+    var term = String(q == null ? "" : q).trim();
+    if (!term) return "Type a name, email, phone, or anything else you remember.";
+    return "No matches for \u201c" + term + "\u201d.";
+  }
+
+  function searchTotal(groups) {
+    var g = groups || {};
+    var n = 0;
+    var order = searchGroupOrder();
+    for (var i = 0; i < order.length; i++) {
+      var rows = g[order[i]];
+      if (Array.isArray(rows)) n += rows.length;
+    }
+    return n;
+  }
+
+  function searchRenderGroups(groups, escFn) {
+    var g = groups || {};
+    var labels = searchGroupLabels();
+    var order = searchGroupOrder();
+    var html = "";
+    var total = 0;
+    for (var i = 0; i < order.length; i++) {
+      var key = order[i];
+      var rows = Array.isArray(g[key]) ? g[key] : [];
+      if (!rows.length) continue;
+      total += rows.length;
+      html += '<div class="fh-search-group" data-group="' + escFn(key) + '">' +
+        '<div class="fh-search-ghead">' + escFn(labels[key] || key) +
+        ' <span class="fh-search-n">' + rows.length + "</span></div>";
+      for (var j = 0; j < rows.length; j++) {
+        var row = rows[j] || {};
+        html += '<a class="fh-search-hit" href="' + escFn(row.href || "#") + '">' +
+          '<span class="fh-search-title">' + escFn(row.title || "Untitled") + "</span>" +
+          '<span class="fh-search-sub">' + escFn(row.subtitle || "") + "</span>" +
+          "</a>";
+      }
+      html += "</div>";
+    }
+    return { html: html, total: total };
+  }
+
+  if (typeof window !== "undefined") {
+    window.FHSearch = {
+      groupLabels: searchGroupLabels,
+      groupOrder: searchGroupOrder,
+      emptyCopy: searchEmptyCopy,
+      total: searchTotal,
+      renderGroups: searchRenderGroups
+    };
+  }
+  /* FH-SEARCH-END */
+
+  function mountSearch(staff, demo) {
+    var role = normRole(staff && staff.role);
+    if (SEARCH_SKIP_ROLES[role]) return;
+
+    var style = document.createElement("style");
+    style.id = "fh-shell-search-style";
+    style.textContent =
+      "#fh-shell-search-btn{position:fixed;top:12px;right:360px;z-index:2147483000;" +
+      "display:flex;align-items:center;gap:8px;background:#fff;color:#0A0A0A;" +
+      "border:1px solid #E4E4E7;border-radius:10px;padding:8px 12px;" +
+      "font:500 12px/1 Inter,system-ui,sans-serif;cursor:pointer;" +
+      "box-shadow:0 8px 24px rgba(0,0,0,.12)}" +
+      "#fh-shell-search-btn .fh-k{font:600 10px/1 'JetBrains Mono',monospace;" +
+      "letter-spacing:.04em;color:#71717A;border:1px solid #E4E4E7;border-radius:5px;" +
+      "padding:3px 5px;background:#FAFAFA}" +
+      "#fh-shell-search-overlay{position:fixed;inset:0;z-index:2147483600;" +
+      "background:rgba(10,10,10,.45);display:none;align-items:flex-start;" +
+      "justify-content:center;padding:12vh 16px 24px}" +
+      "#fh-shell-search-overlay.open{display:flex}" +
+      "#fh-shell-search-panel{width:min(560px,100%);background:#fff;color:#0A0A0A;" +
+      "border:1px solid #E4E4E7;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.28);" +
+      "overflow:hidden}" +
+      "#fh-shell-search-panel .fh-search-bar{display:flex;align-items:center;gap:10px;" +
+      "padding:14px 16px;border-bottom:1px solid #E4E4E7}" +
+      "#fh-shell-search-panel input{flex:1;border:0;outline:0;background:transparent;" +
+      "font:500 16px/1.3 Inter,system-ui,sans-serif;color:#0A0A0A}" +
+      "#fh-shell-search-panel .fh-search-body{max-height:min(52vh,420px);overflow:auto}" +
+      "#fh-shell-search-panel .fh-search-empty{padding:28px 18px;color:#71717A;" +
+      "font:500 13px/1.45 Inter,system-ui,sans-serif;text-align:center}" +
+      "#fh-shell-search-panel .fh-search-group{padding:8px 0 4px;" +
+      "border-bottom:1px solid #F4F4F5}" +
+      "#fh-shell-search-panel .fh-search-ghead{padding:6px 16px 4px;" +
+      "font:600 10px/1 'JetBrains Mono',monospace;letter-spacing:.12em;" +
+      "text-transform:uppercase;color:#71717A}" +
+      "#fh-shell-search-panel .fh-search-n{opacity:.7}" +
+      "#fh-shell-search-panel .fh-search-hit{display:block;padding:9px 16px;" +
+      "text-decoration:none;color:inherit}" +
+      "#fh-shell-search-panel .fh-search-hit:hover," +
+      "#fh-shell-search-panel .fh-search-hit:focus{background:#F4F4F5;outline:0}" +
+      "#fh-shell-search-panel .fh-search-title{display:block;font:600 13.5px/1.3 Inter,system-ui,sans-serif}" +
+      "#fh-shell-search-panel .fh-search-sub{display:block;margin-top:2px;" +
+      "font:500 11.5px/1.35 Inter,system-ui,sans-serif;color:#71717A}" +
+      "@media (max-width:1200px){#fh-shell-search-btn{top:66px;right:10px}}" +
+      "@media (max-width:480px){#fh-shell-search-btn{top:180px;left:10px;right:auto}}";
+    (document.head || document.documentElement).appendChild(style);
+
+    var mac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || "");
+    var chord = mac ? "\u2318K" : "Ctrl K";
+
+    var btn = document.createElement("button");
+    btn.id = "fh-shell-search-btn";
+    btn.type = "button";
+    btn.setAttribute("aria-label", "Search the CRM");
+    btn.innerHTML = "<span>Search</span><span class=\"fh-k\">" + esc(chord) + "</span>";
+    document.body.appendChild(btn);
+
+    var overlay = document.createElement("div");
+    overlay.id = "fh-shell-search-overlay";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-label", "Search");
+    overlay.innerHTML =
+      '<div id="fh-shell-search-panel">' +
+        '<div class="fh-search-bar">' +
+          '<span aria-hidden="true">\u2315</span>' +
+          '<input id="fh-shell-search-input" type="search" autocomplete="off" ' +
+            'spellcheck="false" placeholder="Search clients, contracts, messages\u2026">' +
+        "</div>" +
+        '<div class="fh-search-body" id="fh-shell-search-results">' +
+          '<div class="fh-search-empty">' + esc(searchEmptyCopy("")) + "</div>" +
+        "</div>" +
+      "</div>";
+    document.body.appendChild(overlay);
+
+    var input = document.getElementById("fh-shell-search-input");
+    var results = document.getElementById("fh-shell-search-results");
+    var timer = null;
+    var seq = 0;
+
+    function openSearch() {
+      overlay.classList.add("open");
+      if (input && input.focus) input.focus();
+      if (input && input.select) input.select();
+    }
+    function closeSearch() {
+      overlay.classList.remove("open");
+    }
+
+    function paintEmpty(q, note) {
+      results.innerHTML = '<div class="fh-search-empty">' +
+        esc(note || searchEmptyCopy(q)) + "</div>";
+    }
+
+    function runSearch(q) {
+      var term = String(q || "").trim();
+      if (!term) {
+        paintEmpty("");
+        return;
+      }
+      var my = ++seq;
+      results.innerHTML = '<div class="fh-search-empty">Searching\u2026</div>';
+
+      function done(res) {
+        if (my !== seq) return;
+        if (!res || !res.ok) {
+          var why = (res && res.source === "demo")
+            ? "Demo session — search needs a real sign-in."
+            : (res && res.source === "unauthorized")
+              ? "Not signed in — search needs a real session."
+              : "Search could not run. Try again in a moment.";
+          paintEmpty(term, why);
+          return;
+        }
+        var groups = (res.data && res.data.groups) || {};
+        var painted = searchRenderGroups(groups, esc);
+        if (!painted.total) {
+          paintEmpty(term);
+          return;
+        }
+        results.innerHTML = painted.html;
+      }
+
+      if (window.FHData && typeof window.FHData.search === "function") {
+        window.FHData.search({ q: term }).then(done);
+        return;
+      }
+      var t = "";
+      try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+      if (demo || t === "demo") {
+        done({ ok: false, source: "demo" });
+        return;
+      }
+      fetch("/api/read/search?q=" + encodeURIComponent(term), {
+        headers: t
+          ? { accept: "application/json", authorization: "Bearer " + t }
+          : { accept: "application/json" }
+      }).then(function (r) {
+        return r.json().then(function (d) {
+          if (r.status === 401 || r.status === 403) {
+            return { ok: false, source: "unauthorized" };
+          }
+          if (!d || d.ok !== true) return { ok: false, source: "server", error: d && d.error };
+          return { ok: true, source: "api", data: d };
+        });
+      }).then(done).catch(function () {
+        done({ ok: false, source: "offline" });
+      });
+    }
+
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      openSearch();
+    });
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) closeSearch();
+    });
+    input.addEventListener("input", function () {
+      var q = input.value;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(function () { runSearch(q); }, 180);
+    });
+
+    document.addEventListener("keydown", function (e) {
+      var key = e.key || "";
+      if ((e.metaKey || e.ctrlKey) && (key === "k" || key === "K")) {
+        e.preventDefault();
+        if (overlay.classList.contains("open")) closeSearch();
+        else openSearch();
+        return;
+      }
+      if (key === "Escape" && overlay.classList.contains("open")) {
+        e.preventDefault();
+        closeSearch();
+      }
+    });
+  }
+
   function mountChip(staff, demo) {
     var style = document.createElement("style");
     style.id = "fh-shell-chip-style";
@@ -815,6 +1066,7 @@
     onReady(function () {
       gateLinks(ok, role);
       mountChip(sess.staff, sess.demo);
+      mountSearch(sess.staff, sess.demo);
       applyBrand(sess.staff);
       reveal();
     });

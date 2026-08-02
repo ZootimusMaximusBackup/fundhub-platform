@@ -1249,7 +1249,28 @@
   }, 60000);
 
   clearThread();
-  loadList();
+  loadList().then(function () {
+    /* Deep link from global search: ?conversation_id=<uuid> opens that thread.
+       If it is not in the loaded page (older than the newest 200), open a
+       stub row so the thread endpoint still runs — the list stays honest. */
+    var deepId = FHData.param("conversation_id");
+    if (!deepId) return;
+    var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_RE.test(String(deepId).trim())) return;
+    var found = state.rows.filter(function (r) { return r.id === deepId; })[0];
+    if (found) {
+      openThread(found);
+      return;
+    }
+    openThread({
+      id: deepId,
+      client_id: null,
+      channel: "",
+      first_name: null,
+      last_name: null,
+      needs_reply: false
+    });
+  });
 })();
 </script>
 </body>

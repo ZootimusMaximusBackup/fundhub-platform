@@ -64,6 +64,7 @@ import readProducts from "../../api/read/products.mjs";
 import readConversations from "../../api/read/conversations.mjs";
 import readInbox from "../../api/read/inbox.mjs";
 import readMessages from "../../api/read/messages.mjs";
+import readSearch from "../../api/read/search.mjs";
 import readTradelines from "../../api/read/tradelines.mjs";
 import readFinanceOs from "../../api/read/finance-os.mjs";
 import readBankingSurface from "../../api/read/banking-surface.mjs";
@@ -197,6 +198,12 @@ export const ROUTES = {
      rather than relaxed. "read/messages" reads inside one thread. */
   "read/inbox": readInbox,
   "read/messages": readMessages,
+
+  /* Global CRM search. ROLE_SETS.STAFF, org from the session — same gate and
+     tenancy rule as the inbox and documents list. One query string (`q`), five
+     named groups. Routed in the same commit as the handler and the shell UI:
+     a search box whose endpoint 404s is the failure this map exists to stop. */
+  "read/search": readSearch,
 
   // read/tradelines was held out of this map by the routing pass because
   // api/read/tradelines.mjs declared a role gate it did not get: it passed
