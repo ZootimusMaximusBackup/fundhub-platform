@@ -519,9 +519,9 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
               <div style="display:flex;gap:9px;margin-top:14px;align-items:center;flex-wrap:wrap">
                 <button class="btn dark mono" id="runScreen">Run guardrail preview</button>
                 <button class="btn mono" id="queueBtn" disabled
-                  title="No endpoint exists. schedule() is only reachable from src/social/scheduler.mjs.">Queue post</button>
+                  title="Not available yet — no HTTP schedule endpoint. Needs POST that calls schedule() in src/social/scheduler.mjs, plus a cron that runs publishDue.">Queue post (not available yet)</button>
                 <button class="btn mono" id="clearComposer">Clear</button>
-                <span class="hint mono" style="font-size:10.5px;color:var(--gray2)">nothing is written — there is no social API</span>
+                <span class="hint mono" style="font-size:10.5px;color:var(--gray2)">not available yet — needs schedule API + publishDue scheduler</span>
               </div>
             </div>
           </div>

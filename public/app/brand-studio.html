@@ -501,6 +501,24 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
   </div>
 </div>
 <script>
+/* Sidebar chrome — burger + nav group headers (same pattern as documents.html). */
+(function(){
+  var side=document.getElementById('side'),b=document.getElementById('burger');
+  if(b&&side){
+    b.addEventListener('click',function(){
+      side.classList.toggle('mini');
+      b.textContent=side.classList.contains('mini')?'››':'‹‹';
+    });
+  }
+  document.querySelectorAll('.navhead').forEach(function(h){
+    h.addEventListener('click',function(){
+      if(side&&side.classList.contains('mini'))return;
+      h.parentElement.classList.toggle('closed');
+    });
+  });
+})();
+</script>
+<script>
 (function(){
   var KEY = "fh_partner_brand";
   var FONT_LINK = document.getElementById("fontLink");
@@ -660,15 +678,10 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     D.domain = $("bDomain").value.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"");
     D.verified = false; paint();
   });
-  $("verifyBtn").addEventListener("click", function(){
-    if(!D.domain){ $("saveMsg").textContent="Enter a domain first."; return; }
-    $("verifyBtn").disabled = true; $("verifyBtn").textContent = "Checking…";
-    setTimeout(function(){
-      D.verified = true; save(); paint();
-      $("verifyBtn").disabled = false; $("verifyBtn").textContent = "Verify";
-      $("saveMsg").textContent = "DNS resolved. SSL issued for "+D.domain+".";
-    }, 900);
-  });
+  /* DNS verify cannot write domain_verified — the API forbids that field. */
+  $("verifyBtn").disabled = true;
+  $("verifyBtn").title = "Not available yet — domain_verified is not writable through /api/partner-brand; needs a DNS verify endpoint.";
+  $("verifyBtn").textContent = "Verify (not available yet)";
 
   Array.prototype.forEach.call(document.querySelectorAll(".copyb"), function(b){
     b.addEventListener("click", function(){
@@ -678,35 +691,84 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     });
   });
 
+  /* Expose draft + helpers so the persistence script can PUT real fields.
+     The old wrap looked for window.save and never found it (save lived only
+     inside this IIFE), so nothing ever reached the server. */
+  window.BrandStudio = {
+    getD: function () { return D; },
+    saveLocal: save,
+    applyTokens: applyTokens,
+    paint: paint,
+    hydrate: hydrate,
+    loadFonts: loadFonts,
+    renderFunnels: renderFunnels,
+    hydrateFromServer: function (b) {
+      if (!b) return;
+      if (b.entity_name != null) D.entity = String(b.entity_name);
+      if (b.entity_address != null) D.addr = String(b.entity_address);
+      if (b.support_email != null) D.email = String(b.support_email);
+      if (b.domain != null) D.domain = String(b.domain);
+      if (b.wordmark_url != null) D.logo = String(b.wordmark_url || "");
+      if (b.ink) D.ink = b.ink;
+      if (b.paper) D.paper = b.paper;
+      if (Array.isArray(b.ramp) && b.ramp.length === 6) D.ramp = b.ramp.slice();
+      if (b.display_face) D.display = b.display_face;
+      if (b.mono_face) D.mono = b.mono_face;
+      if (b.voice != null) D.voice = b.voice;
+      if (Array.isArray(b.selected_funnels)) D.funnels = b.selected_funnels.slice();
+      D.verified = !!b.domain_verified;
+      D.status = b.approval_status || D.status;
+      if (!D.name && D.entity) D.name = D.entity;
+      hydrate(); loadFonts(); applyTokens(); paint(); renderFunnels();
+      save();
+    },
+    putBody: function (partnerId) {
+      return {
+        partner_id: partnerId,
+        ink: D.ink,
+        paper: D.paper,
+        ramp: D.ramp.slice(),
+        display_face: D.display,
+        mono_face: D.mono,
+        voice: D.voice,
+        entity_name: D.entity,
+        entity_address: D.addr || null,
+        support_email: D.email || null,
+        domain: D.domain || null,
+        wordmark_url: D.logo || null,
+        selected_funnels: D.funnels.slice()
+      };
+    }
+  };
+
   $("saveBtn").addEventListener("click", function(){
     if(!D.entity){ $("saveMsg").textContent="Legal entity is required — it goes into every disclosure."; return; }
     save(); applyTokens();
-    $("saveMsg").textContent = "Saved. Tokens applied to your CRM, site, and PDFs.";
+    if (typeof window.BrandStudioPersist === "function") {
+      window.BrandStudioPersist("save");
+    } else {
+      $("saveMsg").textContent = "Saved locally only — open with ?partner_id=<id> as owner/admin to persist.";
+    }
   });
-  $("submitBtn").addEventListener("click", function(){
-    if(!D.name || !D.entity){ $("saveMsg").textContent="Brand name and legal entity are required before review."; return; }
-    D.status = "submitted"; save(); paint();
-    $("saveMsg").textContent = "Submitted. Brands go live after an internal compliance review.";
-  });
+  /* approval_status is not writable through this endpoint. */
+  $("submitBtn").disabled = true;
+  $("submitBtn").title = "Not available yet — approval_status is not writable through /api/partner-brand; needs an admin approval path.";
+  $("submitBtn").textContent = "Submit (not available yet)";
   $("resetBtn").addEventListener("click", function(){
     if(!confirm("Reset brand to fundhub defaults?")) return;
     localStorage.removeItem(KEY);
-    location.reload();
+    if (typeof window.BrandStudioPersist === "function") {
+      window.BrandStudioPersist("reset");
+    } else {
+      location.reload();
+    }
   });
 })();
 </script>
 <script src="data.js"></script>
 <script>
 
-/* Brand Studio — persistence moves from localStorage to /api/partner-brand.
-
-   The screen's own save() still writes localStorage; that is left alone as the
-   local draft cache so nothing in the editing flow changes. This ADDS the
-   server round-trip: load the stored brand on open, and push on save.
-
-   Only a PARTNER principal has a brand. A staff member opening this screen sees
-   the sample palette and a banner saying so — the endpoint would 400 without a
-   partner_id, and inventing one would write another partner's row. */
+/* Brand Studio — PUT /api/partner-brand. Local draft stays in localStorage. */
 (function () {
   "use strict";
   var partnerId = FHData.param("partner_id");
@@ -721,53 +783,64 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     return;
   }
 
-  var HEX = /^#[0-9a-fA-F]{6}$/;
+  if (!window.BrandStudio) {
+    FHData.banner("error", "brand editor failed to load", "brand");
+    return;
+  }
+
+  function putBrand(body) {
+    return fetch("/api/partner-brand", {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer " + (localStorage.getItem("fh_token") || "")
+      },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      return r.json().then(function (d) { return { status: r.status, d: d }; });
+    });
+  }
+
+  window.BrandStudioPersist = function (mode) {
+    var msg = document.getElementById("saveMsg");
+    if (mode === "reset") {
+      FHData.brand(partnerId).then(function (res) {
+        if (res.ok && res.data && res.data.brand) {
+          window.BrandStudio.hydrateFromServer(res.data.brand);
+          if (msg) msg.textContent = "Reset to the brand stored on the server.";
+          FHData.banner("real", "reloaded brand from server", "brand");
+        } else {
+          location.reload();
+        }
+      });
+      return;
+    }
+    window.BrandStudio.saveLocal();
+    window.BrandStudio.applyTokens();
+    putBrand(window.BrandStudio.putBody(partnerId)).then(function (out) {
+      if (out.d && out.d.ok) {
+        if (msg) msg.textContent = "Saved to the server. Tokens are live for this partner.";
+        FHData.banner("real", "saved to the server", "brand");
+      } else {
+        var err = (out.d && out.d.problems && out.d.problems.join("; ")) ||
+                  (out.d && (out.d.message || out.d.error)) || ("HTTP " + out.status);
+        if (msg) msg.textContent = "Saved locally only — server refused: " + err;
+        FHData.banner("error", "saved LOCALLY only — " + err, "brand");
+      }
+    }).catch(function () {
+      if (msg) msg.textContent = "Saved locally only — server unreachable.";
+      FHData.banner("error", "saved LOCALLY only — server unreachable", "brand");
+    });
+  };
 
   FHData.wire(
     FHData.brand(partnerId),
     "brand", function (data) {
       var b = data.brand;
       if (!b) return null;
-      // Apply what the server has to the live preview, without touching layout.
-      var root = document.documentElement;
-      if (HEX.test(String(b.ink || ""))) root.style.setProperty("--ink", b.ink);
-      if (HEX.test(String(b.paper || ""))) root.style.setProperty("--paper", b.paper);
-      if (Array.isArray(b.ramp) && b.ramp.length === 6) {
-        b.ramp.forEach(function (stop, i) {
-          if (HEX.test(String(stop))) root.style.setProperty("--brand-" + (i + 1), stop);
-        });
-      }
+      window.BrandStudio.hydrateFromServer(b);
       return "live brand · " + (b.entity_name || "unnamed") + " · " + b.approval_status;
     });
-
-  /* Push on save. Wraps the screen's own save() rather than replacing it, so a
-     failed write leaves the local draft intact and says so. */
-  if (typeof window.save === "function") {
-    var localSave = window.save;
-    window.save = function () {
-      localSave.apply(this, arguments);
-      var D = window.D || {};
-      var body = { partner_id: partnerId };
-      ["ink", "paper", "ramp", "display_face", "mono_face", "voice",
-       "entity_name", "support_email", "domain"].forEach(function (k) {
-        if (D[k] !== undefined) body[k] = D[k];
-      });
-      fetch("/api/partner-brand", {
-        method: "PUT",
-        headers: {
-          "content-type": "application/json",
-          authorization: "Bearer " + (localStorage.getItem("fh_token") || "")
-        },
-        body: JSON.stringify(body)
-      }).then(function (r) { return r.json(); }).then(function (d) {
-        if (d && d.ok) FHData.banner("real", "saved to the server", "brand");
-        else FHData.banner("error", "saved LOCALLY only — " +
-          ((d && d.problems ? d.problems.join("; ") : d && d.error) || "write failed"), "brand");
-      }).catch(function () {
-        FHData.banner("error", "saved LOCALLY only — server unreachable", "brand");
-      });
-    };
-  }
 })();
 </script>
 </body>

@@ -421,6 +421,24 @@ window.__pdfjs = pdfjsLib;
 window.dispatchEvent(new Event("pdfjs-ready"));
 </script>
 <script>
+/* Sidebar chrome — burger + nav group headers (same pattern as documents.html). */
+(function(){
+  var side=document.getElementById('side'),b=document.getElementById('burger');
+  if(b&&side){
+    b.addEventListener('click',function(){
+      side.classList.toggle('mini');
+      b.textContent=side.classList.contains('mini')?'››':'‹‹';
+    });
+  }
+  document.querySelectorAll('.navhead').forEach(function(h){
+    h.addEventListener('click',function(){
+      if(side&&side.classList.contains('mini'))return;
+      h.parentElement.classList.toggle('closed');
+    });
+  });
+})();
+</script>
+<script>
 (function () {
   "use strict";
   function $(id) { return document.getElementById(id); }

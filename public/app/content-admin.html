@@ -273,7 +273,7 @@ table.grid tr:last-child td{border-bottom:0}
       <span class="crumb">Setup</span><h1>Content</h1>
       <div class="spacer"></div>
       <span class="chip on" id="liveChip"><span class="cd"></span><span id="liveTxt">3 tiles live</span></span>
-      <button class="btn dark mono" id="uploadTop">+ Upload video</button>
+      <button class="btn dark mono" id="uploadTop" disabled title="Not available yet — no api/content/* route or storage upload path.">+ Upload video (not available yet)</button>
     </div>
 
     <div class="content">
@@ -307,14 +307,14 @@ table.grid tr:last-child td{border-bottom:0}
               <span class="badge b-gray mono" id="libCount">5 videos</span>
             </div>
             <div class="card-bd">
-              <div class="drop" id="drop">
+              <div class="drop" id="drop" style="opacity:.55;pointer-events:none" title="Not available yet — no api/content/* or storage upload.">
                 <div class="di">▶</div>
                 <div class="dt">
-                  <div class="n">Upload a welcome video</div>
-                  <div class="d">Drop an MP4 or MOV here, or choose a file. Max 500 MB.</div>
+                  <div class="n">Upload not available yet</div>
+                  <div class="d">Needs api/content/* handler, content_videos table, and a signed-URL storage path (like documents.html).</div>
                 </div>
-                <button class="btn mono" id="chooseBtn">Choose file</button>
-                <input type="file" id="vfile" hidden accept="video/mp4,video/quicktime,.mp4,.mov,.m4v">
+                <button class="btn mono" id="chooseBtn" disabled title="Not available yet — no upload backend.">Choose file (not available yet)</button>
+                <input type="file" id="vfile" hidden accept="video/mp4,video/quicktime,.mp4,.mov,.m4v" disabled>
               </div>
 
               <div class="picked" id="picked"></div>
@@ -327,7 +327,7 @@ table.grid tr:last-child td{border-bottom:0}
               </div>
               <div class="upbar" id="upbar"><i></i></div>
               <div style="display:flex;gap:9px;margin-top:12px;align-items:center">
-                <button class="btn dark mono" id="doUpload" disabled>Upload</button>
+                <button class="btn dark mono" id="doUpload" disabled title="Not available yet — no api/content/* or storage upload path.">Upload (not available yet)</button>
                 <button class="btn mono" id="clearUpload" hidden>Clear</button>
                 <span class="hint mono" id="upHint" style="font-size:11px;color:var(--gray2)"></span>
               </div>
@@ -642,133 +642,23 @@ function renderStats(){
   }
 }
 
-/* ══ UPLOAD ══════════════════════════════════════════════════════════════ */
+/* ══ UPLOAD — honest disable (no backend) ══════════════════════════════════
+   There is no api/content/* route and no storage signed-URL path for videos.
+   The old handler faked a progress bar and pushed into an in-memory VIDEOS[]
+   array — that looked like an upload and lost everything on reload. Do not
+   invent an endpoint here; leave controls disabled until those pieces exist. */
 (function(){
-  var drop   = document.getElementById('drop'),
-      choose = document.getElementById('chooseBtn'),
-      top    = document.getElementById('uploadTop'),
-      input  = document.getElementById('vfile'),
-      picked = document.getElementById('picked'),
-      meta   = document.getElementById('upmeta'),
-      bar    = document.getElementById('upbar'),
-      go     = document.getElementById('doUpload'),
-      clear  = document.getElementById('clearUpload'),
-      hint   = document.getElementById('upHint'),
-      tierSel= document.getElementById('upTier'),
-      file   = null;
-
-  tierSel.innerHTML = '<option value="">— assign later —</option>' + TIERS.map(function(t){
-    return '<option value="' + t.id + '">' + esc(t.name) + '</option>';
-  }).join('');
-
-  function size(b){
-    if(b < 1024) return b + ' B';
-    if(b < 1024*1024) return (b/1024).toFixed(0) + ' KB';
-    return (b/1024/1024).toFixed(1) + ' MB';
-  }
-  function titleFrom(name){
-    return name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
-  }
-
-  function paint(){
-    if(!file){
-      picked.classList.remove('on'); picked.innerHTML = '';
-      meta.classList.remove('on');
-      go.disabled = true; clear.hidden = true; hint.textContent = '';
-      return;
-    }
-    picked.classList.add('on');
-    picked.innerHTML = '';
-    var row = document.createElement('div');
-    row.className = 'pfile';
-    var pi = document.createElement('span'); pi.className='pi'; pi.textContent='🎬';
-    var pn = document.createElement('span'); pn.className='pn'; pn.textContent=file.name;
-    var ps = document.createElement('span'); ps.className='ps'; ps.textContent=size(file.size);
-    var px = document.createElement('button');
-    px.type='button'; px.className='px'; px.textContent='✕';
-    px.setAttribute('aria-label','Remove ' + file.name);
-    px.addEventListener('click', function(){ file=null; input.value=''; paint(); });
-    row.appendChild(pi); row.appendChild(pn); row.appendChild(ps); row.appendChild(px);
-    picked.appendChild(row);
-
-    meta.classList.add('on');
-    go.disabled = false; clear.hidden = false;
-    hint.textContent = 'nothing is stored — wireframe';
-  }
-
-  function take(f){
-    if(!f) return;
-    file = f;
-    document.getElementById('upTitle').value = titleFrom(f.name);
-    document.getElementById('upDur').value = '';
-    paint();
-    document.getElementById('upTitle').focus();
-  }
-
-  choose.addEventListener('click', function(){ input.click(); });
-  top.addEventListener('click', function(){
-    input.click();
-    drop.scrollIntoView({behavior:'smooth', block:'center'});
-  });
-  input.addEventListener('change', function(){ take(input.files[0]); });
-
-  ['dragenter','dragover'].forEach(function(ev){
-    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add('hot'); });
-  });
-  ['dragleave','drop'].forEach(function(ev){
-    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove('hot'); });
-  });
-  drop.addEventListener('drop', function(e){
-    if(e.dataTransfer && e.dataTransfer.files.length) take(e.dataTransfer.files[0]);
-  });
-
-  clear.addEventListener('click', function(){ file=null; input.value=''; paint(); });
-
-  go.addEventListener('click', function(){
-    if(!file) return;
-    go.disabled = true; clear.hidden = true;
-    go.textContent = 'Uploading…';
-    bar.classList.add('on');
-    var fill = bar.querySelector('i'), pct = 0;
-
-    var tick = setInterval(function(){
-      pct = Math.min(100, pct + 18 + Math.random()*16);
-      fill.style.width = pct + '%';
-      if(pct < 100) return;
-
-      clearInterval(tick);
-      setTimeout(function(){
-        bar.classList.remove('on'); fill.style.width = '0';
-
-        var title = document.getElementById('upTitle').value.trim() || titleFrom(file.name),
-            dur   = document.getElementById('upDur').value.trim() || '0:00',
-            tier  = tierSel.value;
-
-        var n = VIDEOS.length + 1;
-        var rec = {
-          id:'V-' + (n < 10 ? '0' : '') + n,
-          title:title, dur:dur, up:'Jul 27, 2026', by:'Chris Stanbridge'
-        };
-        VIDEOS.unshift(rec);
-        if(tier) MAP[tier] = rec.id;
-
-        /* show it landed, then hand the control back clean */
-        picked.querySelector('.pfile').classList.add('done');
-        picked.querySelector('.pi').textContent = '✓';
-        picked.querySelector('.ps').textContent = 'uploaded';
-
-        renderVideos(); renderTiers(); renderSwitch(); renderPreview(); renderStats();
-
-        setTimeout(function(){
-          file = null; input.value = '';
-          go.textContent = 'Upload';
-          paint();
-        }, 1100);
-      }, 240);
-    }, 200);
-  });
-
-  paint();
+  var choose = document.getElementById('chooseBtn');
+  var top = document.getElementById('uploadTop');
+  var go = document.getElementById('doUpload');
+  var hint = document.getElementById('upHint');
+  var input = document.getElementById('vfile');
+  if (choose) { choose.disabled = true; choose.title = 'Not available yet — no api/content/* or storage upload path.'; }
+  if (top) { top.disabled = true; top.title = 'Not available yet — no api/content/* or storage upload path.'; }
+  if (go) { go.disabled = true; go.textContent = 'Upload (not available yet)'; go.title = 'Not available yet — no api/content/* or storage upload path.'; }
+  if (input) { input.disabled = true; }
+  if (hint) hint.textContent = 'not available yet — needs api/content/* + storage upload';
+  // No file pickers, no drop handlers, no fake progress.
 })();
 
 /* ══ BOOT ════════════════════════════════════════════════════════════════ */
