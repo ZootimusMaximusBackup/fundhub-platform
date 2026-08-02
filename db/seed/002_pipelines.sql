@@ -1,5 +1,10 @@
--- Seed the 7 pipelines + stages exactly from Master Rebuild Spec § 5
+-- Seed the 6 original pipelines + stages from Master Rebuild Spec § 5
 -- (current GHL stages + the May 4 advisor logic doc). Default org = fundhub.
+--
+-- 'affiliates_hiring' (R-07) is RETIRED — see migrations/051_hiring.sql,
+-- migrations/115_affiliates_white_label.sql, and
+-- migrations/127_retire_affiliates_hiring.sql. Hiring and Affiliates + White
+-- Label are their own rails, added by those migrations, not this seed.
 
 WITH org AS (SELECT id FROM orgs WHERE slug = 'fundhub')
 INSERT INTO pipelines (org_id, key, name)
@@ -9,8 +14,7 @@ SELECT org.id, k, n FROM org, (VALUES
   ('funding_altfin',        'Funding: Alt-Fin (Lendflow)'),
   ('optimization',          'Optimization (Repair) Rounds'),
   ('inquiry_removal',       'Inquiry Removal'),
-  ('ar_collections',        'AR / Collections'),
-  ('affiliates_hiring',     'Affiliates + Hiring')
+  ('ar_collections',        'AR / Collections')
 ) AS v(k, n)
 ON CONFLICT (org_id, key) DO NOTHING;
 
@@ -44,9 +48,6 @@ JOIN (VALUES
   ('inquiry_removal','resume_funding','Resume Funding',4),('inquiry_removal','hold','Hold',5),
   -- AR / Collections (AR series + voice agent)
   ('ar_collections','invoice_sent','Invoice Sent',0),('ar_collections','reminder','Reminder',1),
-  ('ar_collections','escalation','Escalation',2),('ar_collections','paid','Paid',3),('ar_collections','written_off','Written Off',4),
-  -- Affiliates + Hiring (AF series + Closer Hiring)
-  ('affiliates_hiring','interview_booked','Interview Booked',0),('affiliates_hiring','group_interview','Group Interview',1),
-  ('affiliates_hiring','offer','Offer',2)
+  ('ar_collections','escalation','Escalation',2),('ar_collections','paid','Paid',3),('ar_collections','written_off','Written Off',4)
 ) AS s(pkey, key, name, ord) ON s.pkey = p.key
 ON CONFLICT (pipeline_id, key) DO NOTHING;

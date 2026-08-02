@@ -35,14 +35,14 @@ test("generation is deterministic — two runs produce identical bytes", async (
 test("one file per rail, plus the four top-level diagrams", async () => {
   const files = await build();
   const { pipelines } = await extractAll();
-  assert.equal(pipelines.length, 7, "the spec seeds 7 rails");
+  assert.equal(pipelines.length, 6, "the seed defines 6 rails (hiring + affiliates_white_label come from later migrations)");
   for (const p of pipelines) {
     assert.ok(files[`rails/${p.key}.md`], `missing a state machine for rail ${p.key}`);
   }
   for (const f of ["README.md", "event-flow.md", "adapter-boundary.md", "agent-triggers.md", "rails/README.md"]) {
     assert.ok(files[f], `missing ${f}`);
   }
-  assert.equal(Object.keys(files).length, 7 + 5);
+  assert.equal(Object.keys(files).length, 6 + 5);
 });
 
 test("mermaid fences are balanced and non-empty in every file", async () => {
@@ -59,7 +59,7 @@ test("mermaid fences are balanced and non-empty in every file", async () => {
     }
     assert.equal(opens, [...contents.matchAll(/```mermaid\n/g)].length, `${rel} fence mismatch`);
   }
-  assert.ok(blocks >= 11, `expected at least 11 diagrams, got ${blocks}`);
+  assert.ok(blocks >= 10, `expected at least 11 diagrams, got ${blocks}`);
 });
 
 // --- extraction -------------------------------------------------------------

@@ -409,9 +409,8 @@
     <div class="rail-tab" data-rail="R-04"><span class="rt-code">R-04</span>Optimization (Repair) Rounds <span class="rt-count">—</span></div>
     <div class="rail-tab" data-rail="R-05"><span class="rt-code">R-05</span>Inquiry Removal <span class="rt-count">—</span></div>
     <div class="rail-tab" data-rail="R-06"><span class="rt-code">R-06</span>AR / Collections <span class="rt-count">—</span></div>
-    <div class="rail-tab" data-rail="R-07"><span class="rt-code">R-07</span>Affiliates + Hiring <span class="rt-count">—</span></div>
-    <div class="rail-tab empty" data-rail="R-08"><span class="rt-code">R-08</span>Affiliates + White Label <span class="rt-count">0</span></div>
-    <div class="rail-tab empty" data-rail="R-09"><span class="rt-code">R-09</span>Hiring <span class="rt-count">0</span></div>
+    <div class="rail-tab" data-rail="R-08"><span class="rt-code">R-08</span>Affiliates + White Label <span class="rt-count">—</span></div>
+    <div class="rail-tab" data-rail="R-09"><span class="rt-code">R-09</span>Hiring <span class="rt-count">—</span></div>
   </nav>
 
   <!-- FILTERS — one control; active filters surface as chips -->
@@ -901,7 +900,7 @@
 
       <div class="demo-item">
         <div class="demo-cap">Empty rail — no cards on the board</div>
-        <div class="empty-rail-note" style="margin:0;">R-07 · Affiliates + Hiring, R-08 · Affiliates + White Label, R-09 · Hiring — no board yet. Sales is the only pipeline wired so far.</div>
+        <div class="empty-rail-note" style="margin:0;">Sample empty-rail note — a rail with no cards yet shows this instead of a blank board.</div>
       </div>
 
     </div>
@@ -1265,12 +1264,14 @@ dTog.addEventListener('click',function(){
 });
 
 /* ---------- rail tabs ----------
-   Every rail is wired: data-rail (R-01..R-07) maps to the pipeline `key` the
-   backend knows it by (see db/seed/002_pipelines.sql), and a click asks the
-   live board (below) to load that pipeline for real. This used to special-case
-   Sales and print a static "no board yet" note for the other six regardless of
-   what the API had — the note is now only shown for a genuine fetch problem,
-   not a name check. */
+   Every rail is wired: data-rail (R-01..R-06, R-08, R-09) maps to the pipeline
+   `key` the backend knows it by (see db/seed/002_pipelines.sql plus
+   migrations/051_hiring.sql and migrations/115_affiliates_white_label.sql),
+   and a click asks the live board (below) to load that pipeline for real.
+   R-07 ('affiliates_hiring') is retired — hiring and affiliates + white label
+   are their own rails. This used to special-case Sales and print a static
+   "no board yet" note for the other rails regardless of what the API had —
+   the note is now only shown for a genuine fetch problem, not a name check. */
 var tabs=[].slice.call(document.querySelectorAll('.rail-tab'));
 var railLabel=document.getElementById('railLabel');
 tabs.forEach(function(t){
@@ -1296,8 +1297,8 @@ restore();
 <!-- ══ LIVE BOARD ════════════════════════════════════════════════════════════
      Replaces the sample cards with the real board from
      /api/dashboard/pipeline?key=<pipeline> — the client's actual position,
-     read from cards.stage_id, not inferred from payment flags. All seven
-     pipelines go through this, not just Sales: the backend endpoint was
+     read from cards.stage_id, not inferred from payment flags. Every wired
+     rail goes through this, not just Sales: the backend endpoint was
      always generic per `key`, and every column here is now built FROM the
      stages the API returns rather than matched against a fixed set of
      Sales-shaped columns, so a pipeline with 4 stages or 7 renders exactly
@@ -1499,9 +1500,10 @@ restore();
     return { shown: shown, stageCount: stages.length };
   }
 
-  // R-01..R-07 match the rail tabs in document order; the pipeline `key` is
-  // what the database and the API actually know each one by (see
-  // db/seed/002_pipelines.sql). All seven exist there today.
+  // Rail codes match the tabs in document order; the pipeline `key` is what
+  // the database and the API actually know each one by. R-01..R-06 come from
+  // db/seed/002_pipelines.sql; R-08 and R-09 from migrations 115 and 051.
+  // R-07 ('affiliates_hiring') is retired — see migration 127.
   var PIPELINE_KEYS = {
     "R-01": "sales",
     "R-02": "funding_card_stacking",
@@ -1509,7 +1511,8 @@ restore();
     "R-04": "optimization",
     "R-05": "inquiry_removal",
     "R-06": "ar_collections",
-    "R-07": "affiliates_hiring"
+    "R-08": "affiliates_white_label",
+    "R-09": "hiring"
   };
 
   var cache = {}; // pipeline key -> last-fetched stages[], so re-clicking a rail doesn't refetch

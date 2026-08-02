@@ -141,8 +141,8 @@ describe("public/app/pipeline.html — rail tab counts", () => {
 
   test("a real zero is written the same way as any other count", () => {
     const { setRailCount, spans } = loadRailCountFn();
-    setRailCount("R-07", 0);
-    assert.equal(spans["R-07"].textContent, "0");
+    setRailCount("R-08", 0);
+    assert.equal(spans["R-08"].textContent, "0");
   });
 
   test("the hardcoded sample rail counts (82/33/15/44/27/75) are gone from the markup", () => {
@@ -153,21 +153,27 @@ describe("public/app/pipeline.html — rail tab counts", () => {
   });
 
   test("every rail tab count starts as an honest dash, not an invented number", () => {
-    const counts = [...HTML.matchAll(/data-rail="(R-0[1-7])"[^>]*>[\s\S]*?<span class="rt-count">([^<]*)<\/span>/g)];
-    assert.equal(counts.length, 7, "expected all seven real-pipeline rail tabs");
+    const counts = [...HTML.matchAll(/data-rail="(R-0[1-9])"[^>]*>[\s\S]*?<span class="rt-count">([^<]*)<\/span>/g)];
+    assert.equal(counts.length, 8, "expected eight real-pipeline rail tabs (R-01..R-06, R-08, R-09)");
     for (const [, rail, text] of counts) {
       assert.equal(text, "—", rail + " should start at — until the API answers");
     }
   });
 
-  test("R-07 (affiliates_hiring) is a real pipeline and is no longer styled as permanently empty", () => {
-    assert.ok(!/rail-tab empty" data-rail="R-07"/.test(HTML),
-      "R-07 has a real backend pipeline (see PIPELINE_KEYS) and should not carry the empty styling reserved for rails with no pipeline at all");
+  test("R-07 (affiliates_hiring) is retired and gone from the rail bar", () => {
+    assert.ok(!/data-rail="R-07"/.test(HTML),
+      "R-07 affiliates_hiring is retired; Hiring (R-09) and Affiliates + White Label (R-08) replace it");
+    assert.ok(!/"R-0[0-9]":\s*"affiliates_hiring"/.test(HTML),
+      "PIPELINE_KEYS must not still map any rail code to affiliates_hiring");
   });
 
-  test("R-08 and R-09 have no backend pipeline and stay honestly empty", () => {
-    assert.match(HTML, /rail-tab empty" data-rail="R-08"/);
-    assert.match(HTML, /rail-tab empty" data-rail="R-09"/);
+  test("R-08 and R-09 are real pipelines, not permanently-empty stubs", () => {
+    assert.ok(!/rail-tab empty" data-rail="R-08"/.test(HTML),
+      "R-08 maps to affiliates_white_label and should not carry empty styling");
+    assert.ok(!/rail-tab empty" data-rail="R-09"/.test(HTML),
+      "R-09 maps to hiring and should not carry empty styling");
+    assert.match(HTML, /"R-08":\s*"affiliates_white_label"/);
+    assert.match(HTML, /"R-09":\s*"hiring"/);
   });
 
   test("both the cache-hit path and the fresh-fetch path update the rail tab's own count", () => {

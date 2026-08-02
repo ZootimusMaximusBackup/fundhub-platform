@@ -125,8 +125,9 @@ docs contradict each other the newer one wins and the conflict is recorded in th
 **Funnel** (doc 10 + doc 11): Applied → Screening → Group Interview → 1:1 → Offer →
 Hired → Onboarding → Ramp (60-day trial) → Performing.
 
-- **Split from affiliates.** 002 seeded one rail for both (R-07). A referral and a candidate
-  share nothing but a screen, so `hiring` is now its own pipeline; R-07 keeps its three stages.
+- **Split from affiliates.** 002 originally seeded one rail for both (R-07). A referral and a
+  candidate share nothing but a screen, so `hiring` is its own pipeline (051) and
+  `affiliates_white_label` is its own (115). R-07 (`affiliates_hiring`) is retired (127).
 - **Not `cards`.** `cards.client_id` is `NOT NULL` — making a client to satisfy a foreign key
   would put candidates in the closer queue and every client count. Applications carry their own
   `stage_id` into the shared `pipeline_stages`.

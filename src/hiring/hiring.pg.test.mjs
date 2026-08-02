@@ -50,11 +50,18 @@ describe("hiring pipeline", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =
       "applied", "screening", "group_interview", "one_on_one", "offer",
       "hired", "onboarding", "ramp", "performing", "rejected", "withdrawn"]);
 
-    // R-07 keeps its own stages; hiring no longer shares them.
-    const affiliates = (await db.query(
-      `SELECT count(*)::int AS n FROM pipeline_stages s JOIN pipelines p ON p.id = s.pipeline_id
-        WHERE p.org_id = $1 AND p.key = 'affiliates_hiring'`, [org])).rows[0].n;
-    assert.strictEqual(affiliates, 3, "the old rail must be left intact");
+    // R-07 (affiliates_hiring) is retired — partners live on affiliates_white_label.
+    const retired = (await db.query(
+      `SELECT count(*)::int AS n FROM pipelines
+        WHERE org_id = $1 AND key = 'affiliates_hiring'`, [org])).rows[0].n;
+    assert.strictEqual(retired, 0, "affiliates_hiring must be retired (migration 127)");
+
+    const awl = (await db.query(
+      `SELECT s.key FROM pipeline_stages s JOIN pipelines p ON p.id = s.pipeline_id
+        WHERE p.org_id = $1 AND p.key = 'affiliates_white_label' ORDER BY s.sort_order`, [org]))
+      .rows.map((r) => r.key);
+    assert.deepStrictEqual(awl, [
+      "recruiting", "invited", "agreement_signed", "active", "paused"]);
   });
 
   test("mock_call is NOT a seeded stage — doc 9 retires it", async () => {

@@ -1,11 +1,14 @@
-// api/dashboard/pipeline.mjs is one generic handler for all seven pipelines —
+// api/dashboard/pipeline.mjs is one generic handler for every pipeline key —
 // it looks up whatever `key` the caller asks for against the `pipelines`
 // table and was never special-cased to "sales". The frontend (pipeline.html)
 // used to call it only for Sales and hardcode "no board yet" for the other
-// six rails without ever asking the backend, which made the endpoint look
-// pipeline-specific when it never was. This proves the six non-Sales keys
-// answer with real stages and cards through the exact same code path Sales
-// already used — same auth, same org scoping, same shape.
+// rails without ever asking the backend, which made the endpoint look
+// pipeline-specific when it never was. This proves the non-Sales keys answer
+// with real stages and cards through the exact same code path Sales already
+// used — same auth, same org scoping, same shape.
+//
+// affiliates_hiring (R-07) is retired; affiliates_white_label and hiring are
+// the replacement rails (migrations 115 and 051).
 //
 // SKIPS unless DATABASE_URL is set. It does NOT pass quietly.
 
@@ -42,7 +45,8 @@ const PIPELINES = [
   { key: "optimization",          name: "Optimization Test",          stages: ["round_sent", "bureau_processing", "portal_updated"] },
   { key: "inquiry_removal",       name: "Inquiry Removal Test",       stages: ["requested", "specialist_assigned", "calls_in_progress"] },
   { key: "ar_collections",        name: "AR Collections Test",        stages: ["invoice_sent", "reminder", "escalation"] },
-  { key: "affiliates_hiring",     name: "Affiliates Hiring Test",     stages: ["interview_booked", "group_interview", "offer"] }
+  { key: "affiliates_white_label", name: "Affiliates White Label Test", stages: ["recruiting", "invited", "agreement_signed"] },
+  { key: "hiring",                name: "Hiring Test",                stages: ["applied", "screening", "group_interview"] }
 ];
 
 let orgId = null;

@@ -76,7 +76,7 @@ export async function extractWorkflows() {
 }
 
 /**
- * The 7 rails and their stages, from the seed that defines them.
+ * The rails and their stages, from the seed that defines them.
  * Stage order is the seeded sort_order, not the order they happen to appear.
  */
 export function extractPipelines(sql = read("db/seed/002_pipelines.sql")) {

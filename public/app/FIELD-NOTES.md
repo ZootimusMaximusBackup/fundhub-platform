@@ -14,7 +14,7 @@ inquiry-removal-ai Airtable). Layouts untouched.
   Deposit $3,000).
 - **pipeline.html** — rail names now the seven seeded pipelines verbatim:
   Sales / Funding: Card Stacking / Funding: Alt-Fin (Lendflow) / Optimization
-  (Repair) Rounds / Inquiry Removal / AR / Collections / Affiliates + Hiring.
+  (Repair) Rounds / Inquiry Removal / AR / Collections / Affiliates + White Label / Hiring.
   "Survey Completed" → "Survey Complete" (seed spelling).
 - **automations.html** — every row now carries its real workflow id
   (s-01, c-00, s-02, s-06, f-03, f-04, f-08, ds-01, u-04, c-03, dpc-05, af-02)

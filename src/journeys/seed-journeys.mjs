@@ -84,7 +84,8 @@ export const EDITOR_PIPELINES = [
   "Optimization (Repair) Rounds",
   "Inquiry Removal",
   "AR / Collections",
-  "Affiliates + Hiring"
+  "Affiliates + White Label",
+  "Hiring"
 ];
 
 export const EDITOR_DELAYS = [
