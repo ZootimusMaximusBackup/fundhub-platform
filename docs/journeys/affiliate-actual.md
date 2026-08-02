@@ -34,7 +34,7 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| NONE[Nothing admits this one — every endpoint refuses them]
     NONE --> OPENONLY[Only the routes anyone can reach without signing in]
-    WHO -->|Yes| CANT[Blocked — 77 routes]
+    WHO -->|Yes| CANT[Blocked — 80 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_campaigns[Campaigns — 6 blocked]
@@ -46,12 +46,12 @@ flowchart TD
     CANT --> B_journeys[journeys — 2 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_read[Reading data — 26 blocked]
-    CANT --> B_top_level[Everything else — 13 blocked]
+    CANT --> B_top_level[Everything else — 16 blocked]
 ```
 
 ## What they can reach
 
-**11 of 88 routes.**
+**11 of 91 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -75,10 +75,11 @@ flowchart TD
 
 ## What they are blocked from
 
-**77 of 88 routes.**
+**80 of 91 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
+| `/api/agents` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/auth/admin-reset` | POST | owner, admin |
 | `/api/banking/accounts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/banking/revoke` | GET, POST | owner, admin |
@@ -127,7 +128,9 @@ flowchart TD
 | `/api/partner-brand` | GET, PUT | owner, admin |
 | `/api/payment-links` | GET, POST | owner, admin, sales_manager |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
+| `/api/pipeline-cards` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/privacy/erasure` | GET, POST | owner, admin |
+| `/api/products` | POST | owner, admin, sales_manager |
 | `/api/read/affiliates` | GET | owner, admin, sales_manager |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/banking-surface` | GET | owner, admin, sales_manager |

@@ -63,6 +63,9 @@ button,input,select,textarea{font:inherit;color:inherit}
   }
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+/* shell.js mounts #fh-shell-chip fixed top-right (~337px). Without this
+   padding, "+ New agent" sits under Sign out and a click signs you out. */
+@media (min-width:1200px){ .topbar{padding-right:352px} }
 .topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
 .topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
@@ -504,7 +507,7 @@ function renderList(){
       /* name, mode and trigger count — the three facts you scan the list for.
          The agent code moves to the row's hover title; it is on the Identity
          card inside the config. */
-      var n=a.triggers.length;
+      var n=(a.triggers||[]).length;
       return '<div class="aitem '+(cur&&a.id===cur.id?'on':'')+'" data-a="'+a.id+'" title="'+a.id+'">'+
         '<span class="dot" style="background:'+modeDot(a.mode)+'"></span>'+
         '<span class="an">'+esc(a.name)+'</span>'+
@@ -552,7 +555,7 @@ function renderLog(){
 /* promotion gate — a real checklist that blocks */
 function gateChecks(){
   var checks=[
-    {t:'Has at least one trigger event',      ok:cur.triggers.length>0, v:cur.triggers.length+' selected'},
+    {t:'Has at least one trigger event',      ok:(cur.triggers||[]).length>0, v:(cur.triggers||[]).length+' selected'},
     {t:'Prompt is written',                   ok:cur.prompt.trim().length>=60, v:cur.prompt.trim().length+' chars · 60 min'},
     {t:'Guardrail block is not empty',        ok:cur.guard.trim().length>=20, v:cur.guard.trim().length+' chars · 20 min'},
     {t:'Escalation path is set',              ok:!!cur.esc, v:cur.esc||'none'}
@@ -616,6 +619,20 @@ function renderStats(){
    this agent may do, not on wherever the last agent was left scrolled */
 function foldSections(){ document.querySelectorAll('details.card').forEach(function(d){d.open=false}); }
 
+/* Select helpers: stored guardrails may use codes ("owner", "3") that are not
+   options in the UI. Setting .value to a missing option clears the control in
+   the browser; collect() then blanked the model and blocked Promote with no
+   useful signal. Snap to the first option and keep the model in sync. */
+function setSelectOrFirst(id, val){
+  var el=document.getElementById(id);
+  if(!el) return '';
+  el.value=val==null?'':String(val);
+  if(el.options && el.options.length && el.value!==String(val||'')){
+    el.selectedIndex=0;
+  }
+  return el.value;
+}
+
 function select(id){
   cur=AGENTS.filter(function(a){return a.id===id})[0];
   foldSections();
@@ -626,8 +643,8 @@ function select(id){
   document.getElementById('a_code').value=cur.id;
   document.getElementById('a_prompt').value=cur.prompt;
   document.getElementById('a_guard').value=cur.guard;
-  document.getElementById('a_esc').value=cur.esc;
-  document.getElementById('a_escafter').value=cur.escAfter;
+  cur.esc=setSelectOrFirst('a_esc', cur.esc);
+  cur.escAfter=setSelectOrFirst('a_escafter', cur.escAfter);
   document.getElementById('a_escwhen').value=cur.escWhen;
   document.getElementById('a_disc').value=cur.disc;
   document.getElementById('a_msgcap').value=cur.msgcap;

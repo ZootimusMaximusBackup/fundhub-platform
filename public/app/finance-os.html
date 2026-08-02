@@ -558,9 +558,14 @@ button,input,select,textarea{font:inherit;color:inherit}
       // failure that never happened; it had simply never asked.
       apiGet("/api/finance/alerts?" + qs({ view: "triggers" }))
     ]).then(function (results) {
-      S.mm = results[0] && results[0].ok ? results[0].data : null;
+      /* A 200 that is not actually a money-map body (e.g. a catch-all mock
+         returning {ok:true,items:[]}) must not paint as a loaded file — that
+         path used to throw when render walked balances.groups. */
+      var mm = results[0] && results[0].ok ? results[0].data : null;
+      S.mm = (mm && mm.balances) ? mm : null;
       S.mmRes = results[0];
-      S.cc = results[1] && results[1].ok ? results[1].data : null;
+      var cc = results[1] && results[1].ok ? results[1].data : null;
+      S.cc = (cc && (cc.totals || cc.cashflow_series)) ? cc : null;
       S.ccRes = results[1];
       S.uw = results[2] && results[2].ok ? results[2].data : null;
       S.uwRes = results[2];

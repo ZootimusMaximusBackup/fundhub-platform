@@ -59,18 +59,44 @@ import { defineConfig, devices } from "@playwright/test";
  */
 function preinstalledChromium() {
   if (process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
-  const root = process.env.PLAYWRIGHT_BROWSERS_PATH;
-  if (!root) return undefined;
-  try {
-    // Newest build first, so a machine with several picks the most recent.
-    const dirs = fs.readdirSync(root)
-      .filter((d) => /^chromium-\d+$/.test(d))
-      .sort((a, b) => Number(b.split("-")[1]) - Number(a.split("-")[1]));
-    for (const d of dirs) {
-      const exe = path.join(root, d, "chrome-linux", "chrome");
-      if (fs.existsSync(exe)) return exe;
-    }
-  } catch { /* no such directory, or unreadable — fall through to undefined */ }
+  const roots = [];
+  if (process.env.PLAYWRIGHT_BROWSERS_PATH) roots.push(process.env.PLAYWRIGHT_BROWSERS_PATH);
+  // macOS fallback when PLAYWRIGHT_BROWSERS_PATH is unset or stale.
+  const homeCache = path.join(
+    process.env.HOME || process.env.USERPROFILE || "",
+    "Library", "Caches", "ms-playwright"
+  );
+  if (homeCache && !roots.includes(homeCache)) roots.push(homeCache);
+  const plat = process.platform;
+
+  /* Candidate relative paths under chromium-NNNN/. Linux ships a `chrome`
+     binary; modern macOS Playwright installs an app bundle named
+     "Google Chrome for Testing". */
+  const candidates = plat === "darwin"
+    ? [
+        path.join("chrome-mac-arm64", "Google Chrome for Testing.app", "Contents", "MacOS", "Google Chrome for Testing"),
+        path.join("chrome-mac", "Google Chrome for Testing.app", "Contents", "MacOS", "Google Chrome for Testing"),
+        path.join("chrome-mac-arm64", "chrome"),
+        path.join("chrome-mac", "chrome")
+      ]
+    : plat === "win32"
+      ? [path.join("chrome-win", "chrome.exe")]
+      : [path.join("chrome-linux", "chrome")];
+
+  for (const root of roots) {
+    if (!root || !fs.existsSync(root)) continue;
+    try {
+      const dirs = fs.readdirSync(root)
+        .filter((d) => /^chromium-\d+$/.test(d))
+        .sort((a, b) => Number(b.split("-")[1]) - Number(a.split("-")[1]));
+      for (const d of dirs) {
+        for (const rel of candidates) {
+          const exe = path.join(root, d, rel);
+          if (fs.existsSync(exe)) return exe;
+        }
+      }
+    } catch { /* try next root */ }
+  }
   return undefined;
 }
 

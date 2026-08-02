@@ -15,13 +15,13 @@ exists yet.
 
 | Area | What changed |
 |------|----------------|
-| **Agent editor** | Save, promote, demote, and new-agent now call `POST /api/agents` via `FHData.write`. Edits persist instead of dying in memory. |
-| **Pipeline board** | Card drag and MOVE menu call `POST /api/pipeline-cards` so stage changes stick. Sample cards without a real card id stay local-only. |
-| **Products & commissions** | Product save/create calls `POST /api/products`. Rails column stays empty (`[]`) — nothing in the products table records funnel membership. |
+| **Agent editor** | Save, promote, demote, and new-agent now call `POST /api/agents` via `FHData.write`. Edits persist instead of dying in memory. Topbar clears the shell chip so “+ New agent” is clickable (was landing on Sign out). |
+| **Pipeline board** | Card drag and MOVE menu call `POST /api/pipeline-cards` so stage changes stick. Sample cards without a real card id stay local-only. MOVE menu lives under `.board-wrap` (not inside `.board`) so live paint cannot delete it. |
+| **Products & commissions** | Product save/create calls `POST /api/products`. Rails column stays empty (`[]`) — nothing in the products table records funnel membership. Topbar clears the shell chip so “+ Add product” is clickable. |
 | **Client control panel** | The five ↗ link buttons open Finance OS, closer dashboard, documents, and raw report when a client id is present. GHL Contact stays disabled until a contact URL exists on the client. |
 | **Calendar** | Join Call and His file are wired but stay disabled when the task has no `meeting_url` or linked client. Buttons enable when live task data supplies those fields. |
 | **Command Center** | KPI tiles, holds strip, pipeline rail counts/dollars, and live feed no longer show invented numbers — all show `—` or an empty-state message until a read endpoint exists. Agent badge wiring from `/api/read/agents` is unchanged. |
-| **Ops & Admin** | Money KPI tiles and period picker no longer swap fake dollar amounts. AR table, affiliate summary, and staff comp “This Week” column show empty states. Outbound mail and DLQ tiles still read live (`/api/messages-outbound`, failed events). |
+| **Ops & Admin** | Money KPI tiles and period picker no longer swap fake dollar amounts. AR table, affiliate summary, and staff comp “This Week” column show empty states. Outbound mail and DLQ tiles still read live (`/api/messages-outbound`, failed events). Topbar clears the shell chip so the period picker is clickable. |
 | **Staff & Teams** | Clock tab and ON SHIFT / CONSENT stats show `—` when consent or clock is `null` (live roster from `/api/read/staff`). Sample PEOPLE array remains only as a pre-load fallback. Permission matrix unchanged (local UI config). |
 
 ### Still no source — what each would need

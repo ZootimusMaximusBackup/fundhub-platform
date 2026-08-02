@@ -3,6 +3,7 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-02 | all role + client actuals | regenerated after Agent Editor / pipeline / products write APIs and empty-state screen fixes | controls that looked saved now persist; sample KPIs show honest empties | (pending)
 ```
 YYYY-MM-DD | <journey> | <what changed> | <why> | <commit>
 ```

@@ -790,7 +790,12 @@
       </section>
 
 
-      <!-- ===== FLOATING: CROSS-RAIL ROUTE MENU ===== -->
+    </div>
+
+      <!-- FLOATING: CROSS-RAIL ROUTE MENU
+           Lives under .board-wrap, NOT inside .board. Live paint() tears down
+           every child of .board when a real pipeline loads — nesting the menu
+           there deleted #routeMenu and left MOVE with nowhere to open. -->
       <div class="route-menu" id="routeMenu" hidden>
         <div class="rm-head">
           <div class="rm-title" id="rmName">Move</div>
@@ -847,7 +852,6 @@
         <div class="rm-foot">Or drag the card to any stage on this rail.</div>
       </div>
 
-    </div>
   </div>
 
   <!-- ══ DEMONSTRATION STATES — collapsed by default, costs one divider row ══ -->

@@ -56,6 +56,8 @@
   .shell{flex:1;min-width:0;height:100vh;display:flex;flex-direction:column;}
 
   header.topbar{background:var(--ink);color:var(--dark-text);display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:44px;flex-shrink:0;border-bottom:1px solid var(--dark-line);}
+  /* shell chip covers the period picker at ≥1200px without this clearance. */
+  @media (min-width:1200px){ header.topbar{padding-right:352px} }
   .brand{display:flex;align-items:center;gap:9px;}
   /* the real fundhub wordmark, from fundhub-brand.css (--logo).
      .inv flips it for the dark topbar. */
