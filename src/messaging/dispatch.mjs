@@ -30,6 +30,7 @@ import {
   gateAndRecord, inQuietHours, QUIET_HOURS_CHANNELS, QUIET_END_HOUR, QUIET_HOURS_TZ
 } from "./gate.mjs";
 import { resolve, addressFieldFor } from "./providers/index.mjs";
+import { isSynthetic } from "./live-fence.mjs";
 
 /** How many times a message is retried before it is given up on. */
 export const MAX_ATTEMPTS = 5;
@@ -51,7 +52,8 @@ export const OUTCOME = Object.freeze({
   REJECTED: "rejected",         // provider says never retry
   RETRY: "retry",               // provider says try again
   GAVE_UP: "gave_up",           // out of attempts
-  DEFERRED: "deferred"          // inside quiet hours; due again when it opens
+  DEFERRED: "deferred",         // inside quiet hours; due again when it opens
+  SYNTHETIC: "synthetic"        // a test record, and the provider is real
 });
 
 /* ── QUIET HOURS ARE A DEFERRAL, NOT A BLOCK ────────────────────────────────
@@ -327,6 +329,44 @@ export async function dispatchOne(db, message, options = {}) {
     if (!provider.CHANNELS.has(message.channel)) {
       return await hold(db, message, OUTCOME.CHANNEL_MISMATCH,
         `${route.provider} does not carry ${message.channel}`);
+    }
+
+    /* ---- 2b. A TEST RECORD MUST NEVER MEET A REAL PROVIDER ----------------
+       src/messaging/live-fence.mjs stopped being called from here at the
+       five-branch merge, for a good reason: it refused every client that was
+       not marked synthetic, which is every real client, so leaving it wired in
+       would have refused all production mail the day sending switched on. Its
+       header says plainly that layer 1 went from structural to positional and
+       that "when W5 plugs sending in, somebody has to decide what the
+       per-message rule is for a REAL client."
+
+       Sending is plugged in now (119 / src/messaging/outbox.mjs), so that
+       question is live and this is the answer: the rule is the INVERSE of the
+       old one. Not "only synthetic clients may be sent to" — that refuses
+       everybody real. It is "a synthetic client may never be sent to by a
+       provider that can transmit."
+
+       WHY IT IS NEEDED AT ALL, given preflight(). preflight() refuses a whole
+       journey run when the org's routing can reach the outside world, so a run
+       cannot queue synthetic messages against a live route. What it cannot
+       cover is the ORDER SWITCHING: a run against the `memory` provider leaves
+       synthetic messages queued, somebody later routes email to Mailgun, and
+       the next drain mails invented people at whatever address the synthetic
+       record happened to carry. The queue outlives the routing that was in
+       place when it was written, so the check has to sit next to the send.
+
+       It is checked after the provider is resolved (we need TRANSMITS) and
+       before the send, and it is FINAL — a synthetic message is never a real
+       message, so retrying it can only ever be wrong. No override, no env var,
+       no "just this once", same as the compliance gate. */
+    if (provider.TRANSMITS === true) {
+      const { rows: cf } = await db.query(
+        `SELECT custom_fields FROM clients WHERE id = $1 LIMIT 1`, [message.client_id]);
+      if (isSynthetic(cf[0])) {
+        return await finalise(db, message, "failed", OUTCOME.SYNTHETIC,
+          "this is a test record from a journey run and the provider is real — refused",
+          route.provider);
+      }
     }
 
     const address = await addressFor(db, message, route.provider);

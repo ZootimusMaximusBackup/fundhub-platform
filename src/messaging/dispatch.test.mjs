@@ -45,7 +45,10 @@ function fakeDb({
   client = { email: "person@example.com", ghl_contact_id: "ghlContact123", phone: "+15551234567" },
   rules = [],
   subject = "Your file",
-  due = []
+  due = [],
+  /* custom_fields as stored on the client. The dispatcher reads it to refuse a
+     synthetic (journey-run) record when the resolved provider can transmit. */
+  customFields = null
 } = {}) {
   const updates = [];
   return {
@@ -60,6 +63,9 @@ function fakeDb({
         return { rows: r ? [r] : [] };
       }
       if (sql.includes("FROM message_templates")) return { rows: [{ subject }] };
+      if (sql.includes("SELECT custom_fields FROM clients")) {
+        return { rows: [{ custom_fields: customFields }] };
+      }
       if (sql.includes("FROM clients")) {
         // The dispatcher picks the column; echo whichever it asked for.
         const col = /SELECT (\w+) AS address/.exec(sql)?.[1];
@@ -261,6 +267,73 @@ describe("routing", () => {
     const u = db.updates.find((x) => /attempts = GREATEST/.test(x.sql));
     assert.ok(u, "a hold must return the attempt");
     assert.ok(/status = 'queued'/.test(u.sql), "a held message stays queued");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// THE SYNTHETIC FENCE
+//
+// A journey run mints fake clients and drives them through the real send path.
+// preflight() stops a run when the org's routing can transmit — but the QUEUE
+// OUTLIVES THE ROUTING. Run against `memory`, switch email to Mailgun tomorrow,
+// and yesterday's invented people get mailed. These tests are that case.
+//
+// The spy is the assertion: zero calls means nothing was sent, not merely that
+// something was marked as stopped.
+// ---------------------------------------------------------------------------
+
+describe("a test record never meets a real provider", () => {
+  test("a synthetic client is refused when the provider can transmit", async () => {
+    const f = spy();
+    const db = fakeDb({ customFields: { synthetic: true } });
+    const res = await dispatchOne(db, claimed(), { fetchImpl: f, env: ENV, now: MIDDAY });
+
+    assert.strictEqual(res.outcome, OUTCOME.SYNTHETIC);
+    assert.strictEqual(f.calls.length, 0, "A SYNTHETIC CLIENT WAS SENT TO BY A REAL PROVIDER");
+  });
+
+  test("the refusal is permanent — a fake person is never a real person later", async () => {
+    const db = fakeDb({ customFields: { synthetic: true } });
+    await dispatchOne(db, claimed(), { fetchImpl: spy(), env: ENV, now: MIDDAY });
+    const write = db.updates.at(-1);
+    assert.match(write.sql, /SET status = \$2/);
+    assert.strictEqual(write.params[1], "failed");
+  });
+
+  test("a real client is untouched by the fence", async () => {
+    const f = spy();
+    const db = fakeDb({ customFields: { source: "webform" } });
+    const res = await dispatchOne(db, claimed(), { fetchImpl: f, env: ENV, now: MIDDAY });
+    assert.strictEqual(res.outcome, OUTCOME.SENT);
+    assert.strictEqual(f.calls.length, 1);
+  });
+
+  test("the marker is strict — a truthy accident is a real client", async () => {
+    // Matching isSynthetic(): the STRING "true" is a real client with a
+    // confusing field. Guessing in its favour would refuse real mail.
+    for (const value of ["true", 1, "yes"]) {
+      const f = spy();
+      const db = fakeDb({ customFields: { synthetic: value } });
+      const res = await dispatchOne(db, claimed(), { fetchImpl: f, env: ENV, now: MIDDAY });
+      assert.strictEqual(res.outcome, OUTCOME.SENT, `synthetic: ${JSON.stringify(value)}`);
+      assert.strictEqual(f.calls.length, 1);
+    }
+  });
+
+  test("a non-transmitting provider does not pay for the lookup", async () => {
+    // memory cannot leave the building, so the fence is not load-bearing and the
+    // clients table is not read for it at all.
+    let asked = 0;
+    const inner = fakeDb({ routing: { email: { provider: "memory", enabled: true } } });
+    const db = {
+      updates: inner.updates,
+      query: async (sql, params) => {
+        if (sql.includes("SELECT custom_fields FROM clients")) asked += 1;
+        return inner.query(sql, params);
+      }
+    };
+    await dispatchOne(db, claimed(), { fetchImpl: spy(), env: ENV, now: MIDDAY });
+    assert.strictEqual(asked, 0);
   });
 });
 

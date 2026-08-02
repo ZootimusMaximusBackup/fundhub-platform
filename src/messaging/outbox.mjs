@@ -42,6 +42,7 @@
 // lives in src/messaging/providers/* and nowhere else (CLAUDE.md §12).
 
 import { dispatchDue, DEFAULT_BATCH } from "./dispatch.mjs";
+import { createTask } from "../lib/create-task.mjs";
 
 /** What a company that has never touched its settings gets. See the header. */
 export const DEFAULTS = Object.freeze({
@@ -212,17 +213,103 @@ export async function drain(db, { orgId, limit = DEFAULT_BATCH, now = null, disp
   try {
     const out = await dispatchDue(db, { ...dispatchOptions, orgId, limit: allowed, now });
     const results = out?.results || out || [];
+    /* The alert is the last thing and it cannot change the outcome — see
+       alertOnFailures. `alert_email` was a column that got written and never
+       read until this line. */
+    const alert = Array.isArray(results)
+      ? await alertOnFailures(db, { orgId, settings, results, now })
+      : { alerted: false, reason: "no_results" };
     return {
       ran: true,
       reason: null,
       dispatched: Array.isArray(results) ? results.length : 0,
       sent: Array.isArray(results) ? results.filter((r) => r.outcome === "sent").length : 0,
       blocked: Array.isArray(results) ? results.filter((r) => r.outcome === "blocked").length : 0,
+      alert,
       results
     };
   } catch (err) {
     console.warn(`[outbox] drain failed for org ${orgId}: ${err.message}`);
     return { ran: false, reason: "error", error: err.message, dispatched: 0, results: [] };
+  }
+}
+
+/* How many messages have to fail in one pass before somebody is told. One
+   failure is a bad address; several in a row is the sending setup being broken,
+   which is the thing nobody finds out about until a client asks why they never
+   heard back. */
+export const ALERT_FAILURE_THRESHOLD = 3;
+
+export const ALERT_WORKFLOW = "message-dispatch-sweeper";
+
+/**
+ * alertOnFailures — tell a human that mail is not going out.
+ *
+ * WHY A TASK AND NOT AN EMAIL. `messaging_settings.alert_email` names who should
+ * hear about it, and the obvious implementation is to email them. That
+ * implementation is wrong, and predictably so: the alert fires precisely when
+ * sending is broken, so the alert would go into the same queue that is already
+ * failing, and the one message guaranteed not to arrive is the one saying
+ * nothing is arriving.
+ *
+ * So the alert is a TASK — in the CRM, on somebody's list, visible without any
+ * provider working at all. `alert_email` is carried in the task body so the
+ * person picking it up knows who was meant to be told, and so the address stops
+ * being a field that is collected and never read.
+ *
+ * ONE PER COMPANY PER DAY. A sweep runs every five minutes; an alert that files
+ * 288 identical tasks in a day is noise that gets ignored, which is the same
+ * outcome as no alert at all. The day is in the TITLE, so tomorrow's outage is a
+ * new task rather than a silent duplicate of today's.
+ *
+ * THE DEDUPE IS DONE HERE, NOT BY createTask. Its dedupe compares
+ * `client_id = $1`, and this task has no client — in SQL `NULL = NULL` is not
+ * true, so every pass would look unique and file another task. This is exactly
+ * the class of bug that only shows up in production, so it is handled rather
+ * than assumed away.
+ *
+ * NEVER THROWS. An alert that fails must not take the drain down with it — the
+ * mail is the point and the alert is the commentary.
+ */
+export async function alertOnFailures(db, { orgId, settings, results = [], now = null } = {}) {
+  const failed = results.filter((r) => r && (r.outcome === "rejected" || r.outcome === "gave_up"));
+  if (failed.length < ALERT_FAILURE_THRESHOLD) return { alerted: false, reason: "below_threshold" };
+
+  const day = (now ? new Date(now) : new Date()).toISOString().slice(0, 10);
+  const title = `Emails are not going out (${day})`;
+  const to = settings?.alert_email;
+  try {
+    const dup = await db.query(
+      `SELECT id FROM tasks
+        WHERE org_id = $1::uuid AND client_id IS NULL
+          AND source_workflow = $2 AND title = $3 LIMIT 1`,
+      [orgId, ALERT_WORKFLOW, title]);
+    if (dup.rows[0]) return { alerted: false, reason: "already_alerted_today", taskId: dup.rows[0].id };
+
+    const out = await createTask(db, {
+      orgId,
+      clientId: null,
+      /* Owner, not admin. Mail failing to leave the building is a "the product
+         is not working" problem, not a queue-tidying chore. */
+      assigneeRole: "owner",
+      sourceWorkflow: ALERT_WORKFLOW,
+      title,
+      /* THE DAY IS IN THE BODY TOO, and that is load-bearing rather than
+         cosmetic. 006's `tasks_idempotency_idx` is unique on
+         (client_id, source_workflow, body) NULLS NOT DISTINCT — so for an
+         org-level task with no client, the BODY is the whole key. Two days with
+         the same failure count would collide and tomorrow's outage would be
+         silently swallowed as a duplicate of today's. */
+      body:
+        `${day}: ${failed.length} message${failed.length === 1 ? "" : "s"} could not be sent. ` +
+        (to ? `Tell ${to}. ` : "No alert address is set on the Outbound Mail panel. ") +
+        `Reasons: ${[...new Set(failed.map((r) => r.detail || r.outcome))].slice(0, 3).join("; ")}`,
+      dedupeOn: "title"
+    });
+    return { alerted: out.created, reason: out.reason, taskId: out.id, failures: failed.length };
+  } catch (err) {
+    console.warn(`[outbox] could not file a send-failure alert for org ${orgId}: ${err.message}`);
+    return { alerted: false, reason: "error", error: err.message };
   }
 }
 

@@ -16,7 +16,9 @@
 import { test, before, after, beforeEach, describe } from "node:test";
 import assert from "node:assert";
 import { db, close } from "../db.mjs";
-import { settingsFor, setSettings, outboxStatus, drain, drainAll, DEFAULTS } from "./outbox.mjs";
+import {
+  settingsFor, setSettings, outboxStatus, drain, drainAll, alertOnFailures, DEFAULTS
+} from "./outbox.mjs";
 import { emailInvoice, unemailedInvoices, emailOutstandingInvoices, formatAmount } from "../invoices/notify.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
@@ -43,14 +45,30 @@ describe("the outbound queue", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, (
      invoices.email_message_id references messages (119) — so the fixture unwinds
      in dependency order with the guard off. No application path can do either of
      these, which is the point of both. */
+  /* ONE TRANSACTION, ON ONE CONNECTION, ON PURPOSE.
+     `ALTER TABLE … DISABLE TRIGGER USER` is table-wide DDL, not a session
+     setting. Run on the pool it commits immediately, so for the length of this
+     wipe EVERY OTHER CONNECTION sees the invoice no-delete guard switched off —
+     including a concurrently running test asserting that the guard holds.
+     Inside a transaction the ALTER takes an ACCESS EXCLUSIVE lock and is
+     invisible until COMMIT: a concurrent deleter waits and then meets the
+     re-enabled trigger. Same effect here, none anywhere else. */
   const wipe = async () => {
-    await db.query(`ALTER TABLE invoices DISABLE TRIGGER USER`);
+    const client = await (await import("../db.mjs")).pool().connect();
     try {
-      await db.query(`DELETE FROM invoices WHERE org_id = $1`, [org]);
-    } finally {
-      await db.query(`ALTER TABLE invoices ENABLE TRIGGER USER`);
-    }
-    await db.query(`DELETE FROM messages WHERE org_id = $1`, [org]);
+      await client.query("BEGIN");
+      await client.query(`ALTER TABLE invoices DISABLE TRIGGER USER`);
+      await client.query(`DELETE FROM invoices WHERE org_id = $1`, [org]);
+      await client.query(`ALTER TABLE invoices ENABLE TRIGGER USER`);
+      // Alert tasks filed by alertOnFailures — org-level, so no client_id.
+      await client.query(
+        `DELETE FROM tasks WHERE org_id = $1 AND source_workflow = 'message-dispatch-sweeper'`, [org]);
+      await client.query(`DELETE FROM messages WHERE org_id = $1`, [org]);
+      await client.query("COMMIT");
+    } catch (e) {
+      try { await client.query("ROLLBACK"); } catch { /* the original error matters */ }
+      throw e;
+    } finally { client.release(); }
   };
 
   before(async () => {
@@ -358,6 +376,73 @@ describe("the outbound queue", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, (
       assert.equal(out.delivery.reason, "paused");
       const msg = (await db.query(`SELECT status FROM messages WHERE id = $1`, [out.messageId])).rows[0];
       assert.equal(msg.status, "queued");
+    });
+  });
+
+  // ── alert_email stops being a field nobody reads ──────────────────────────
+
+  describe("somebody gets told when mail stops going out", () => {
+    const fail = (n) => Array.from({ length: n }, (_, i) => ({
+      id: `m${i}`, outcome: "rejected", detail: "mailbox does not exist"
+    }));
+
+    test("enough failures files a task — not an email", async () => {
+      /* Deliberately NOT an email. The alert fires exactly when sending is
+         broken, so an emailed alert is the one message guaranteed not to
+         arrive. */
+      await setSettings(db, { orgId: org, staffId: staff, alertEmail: "boss@example.com" });
+      const out = await alertOnFailures(db, {
+        orgId: org, settings: await settingsFor(db, org), results: fail(3)
+      });
+      assert.equal(out.alerted, true, `no alert filed: ${out.reason}`);
+
+      const task = (await db.query(
+        `SELECT title, body, assignee_role FROM tasks WHERE id = $1`, [out.taskId])).rows[0];
+      assert.match(task.title, /Emails are not going out/);
+      assert.equal(task.assignee_role, "owner");
+      // The address is carried, so it stops being collected and never read.
+      assert.match(task.body, /boss@example\.com/);
+    });
+
+    test("one failure is a bad address, not an outage — no alert", async () => {
+      const out = await alertOnFailures(db, {
+        orgId: org, settings: await settingsFor(db, org), results: fail(1)
+      });
+      assert.equal(out.alerted, false);
+      assert.equal(out.reason, "below_threshold");
+    });
+
+    test("one alert per day, however often the sweep runs", async () => {
+      const settings = await settingsFor(db, org);
+      const first = await alertOnFailures(db, { orgId: org, settings, results: fail(4) });
+      const second = await alertOnFailures(db, { orgId: org, settings, results: fail(9) });
+      assert.equal(first.alerted, true);
+      assert.equal(second.alerted, false, "the sweep runs every five minutes — 288 tasks a day is not an alert");
+      assert.equal(second.reason, "already_alerted_today");
+    });
+
+    test("tomorrow's outage is its own task, not a silent duplicate", async () => {
+      const settings = await settingsFor(db, org);
+      await alertOnFailures(db, { orgId: org, settings, results: fail(3), now: "2026-08-02T12:00:00Z" });
+      const next = await alertOnFailures(db, { orgId: org, settings, results: fail(3), now: "2026-08-03T12:00:00Z" });
+      assert.equal(next.alerted, true);
+    });
+
+    test("no alert address set is said plainly rather than left blank", async () => {
+      await setSettings(db, { orgId: org, staffId: staff, alertEmail: "" });
+      const out = await alertOnFailures(db, {
+        orgId: org, settings: await settingsFor(db, org), results: fail(3)
+      });
+      const task = (await db.query(`SELECT body FROM tasks WHERE id = $1`, [out.taskId])).rows[0];
+      assert.match(task.body, /No alert address is set/);
+    });
+
+    test("a broken alert never takes the drain down with it", async () => {
+      // The mail is the point; the alert is the commentary.
+      const broken = { query: async () => { throw new Error("tasks table is on fire"); } };
+      const out = await alertOnFailures(broken, { orgId: org, settings: DEFAULTS, results: fail(5) });
+      assert.equal(out.alerted, false);
+      assert.equal(out.reason, "error");
     });
   });
 });

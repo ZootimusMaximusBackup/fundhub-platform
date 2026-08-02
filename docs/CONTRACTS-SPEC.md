@@ -1112,3 +1112,80 @@ provider, in their own org so they cannot disturb anyone else's routing.
   the customer journey. That is the natural next step and it is not built.
 * **`src/mail/` is still deliberately inert** — that is the FCRA prescreen path
   and is gated on a firm offer of credit, not on this work.
+
+## 39. Two of §38's gaps closed
+
+### A test record can never meet a real provider
+
+`src/messaging/live-fence.mjs` stopped being called from the dispatcher at the
+five-branch merge, and its own header says why and what it left open: layer 1
+went from structural to positional, and *"when W5 plugs sending in, somebody has
+to decide what the per-message rule is for a REAL client."*
+
+Part 4 plugged sending in, so that question went live. The answer is the
+**inverse** of the old rule. Not "only synthetic clients may be sent to" — that
+refuses everybody real, which is exactly why the fence was unwired. It is:
+
+> **A synthetic client may never be sent to by a provider that can transmit.**
+
+`preflight()` already refuses a whole journey run when the org's routing can
+reach the outside world, so a run cannot queue synthetic messages against a live
+route. What it cannot cover is **the order switching**: run against `memory`,
+route email to Mailgun a week later, and the next drain mails invented people at
+whatever address the fake record happened to carry. The queue outlives the
+routing that was in place when it was written, so the check has to sit next to
+the send — `dispatch.mjs`, after the provider is resolved and before it is
+called.
+
+The refusal is **permanent**, not a retry: a fake person does not become a real
+person later. Strict marker, as before — `custom_fields.synthetic` must be
+exactly `true`; the string `"true"` is a real client with a confusing field.
+No override, no env var, same as the compliance gate. Five tests, and the
+provider spy having zero calls is the assertion.
+
+### `alert_email` is read, not just written
+
+It was a column that got collected and never used. Now, when three or more
+messages fail in one pass, a **task** is filed.
+
+Deliberately a task and not an email: the alert fires exactly when sending is
+broken, so an emailed alert would go into the same failing queue and the one
+message guaranteed not to arrive would be the one saying nothing is arriving.
+The task is in the CRM, on the owner's list, and needs no provider to work at
+all. `alert_email` is carried in the body so whoever picks it up knows who was
+meant to be told.
+
+**One per company per day.** The sweep runs every five minutes; 288 identical
+tasks a day is the same as no alert. The day is in the title *and* the body —
+the body is load-bearing, because 006's `tasks_idempotency_idx` is unique on
+`(client_id, source_workflow, body) NULLS NOT DISTINCT`, so for an org-level
+task with no client the body **is** the whole key. Two days with the same
+failure count would otherwise collide and tomorrow's outage would be swallowed
+as a duplicate of today's. That was caught by a test, not by reading.
+
+The alert never throws and never changes the drain's outcome. The mail is the
+point; the alert is the commentary.
+
+### And one more DDL race, in a file written yesterday
+
+`src/messaging/outbox.pg.test.mjs`'s own cleanup had the identical bug §36
+describes — `ALTER TABLE invoices DISABLE TRIGGER USER` committed on the pool,
+switching the invoice no-delete guard off for every other connection. Wrapped in
+a transaction, same as the hiring pair.
+
+### Measured
+
+| | tests | pass | fail | skipped |
+|---|---|---|---|---|
+| no `DATABASE_URL` | 4496 | 4015 | **0** | 481 |
+| real Postgres | 5318 | 5268 | 34 | 9 |
+
+Still the same 34 as the pristine `fca108c` baseline, name for name, diffed.
+Lint clean across 726 files.
+
+### What §38 still leaves open
+
+No real provider configured; the sweeper registered but idle without
+`INNGEST_EVENT_KEY`; and **no per-stage send settings inside the customer
+journey** — the switch is per company. That last one is a feature, not a gap in
+what was built, and it is not started.
