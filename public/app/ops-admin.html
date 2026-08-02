@@ -321,12 +321,12 @@
     <div class="section">
       <div class="section-title">Company KPIs<span class="section-meta" id="kpi-meta">week to date</span></div>
       <div class="kpi-grid" id="kpi-grid">
-        <div class="kpi-tile"><div class="kpi-label">Cash Collected</div><div class="kpi-value" data-kpi="cash">$198,400</div></div>
-        <div class="kpi-tile"><div class="kpi-label">Funded</div><div class="kpi-value" data-kpi="funded">$312,000</div></div>
-        <div class="kpi-tile"><div class="kpi-label">Close Rate</div><div class="kpi-value" data-kpi="close">34%</div>
-          <div class="kpi-sub"><span data-kpi="show">71%</span> show rate</div></div>
-        <div class="kpi-tile"><div class="kpi-label">Cost / Funded</div><div class="kpi-value" data-kpi="cpf">$612</div></div>
-        <div class="kpi-tile"><div class="kpi-label">New Clients</div><div class="kpi-value" data-kpi="clients">28</div></div>
+        <div class="kpi-tile"><div class="kpi-label">Cash Collected</div><div class="kpi-value" data-kpi="cash">—</div></div>
+        <div class="kpi-tile"><div class="kpi-label">Funded</div><div class="kpi-value" data-kpi="funded">—</div></div>
+        <div class="kpi-tile"><div class="kpi-label">Close Rate</div><div class="kpi-value" data-kpi="close">—</div>
+          <div class="kpi-sub"><span data-kpi="show">—</span> show rate</div></div>
+        <div class="kpi-tile"><div class="kpi-label">Cost / Funded</div><div class="kpi-value" data-kpi="cpf">—</div></div>
+        <div class="kpi-tile"><div class="kpi-label">New Clients</div><div class="kpi-value" data-kpi="clients">—</div></div>
       </div>
     </div>
 
@@ -334,41 +334,10 @@
       <div>
 
         <div class="section">
-          <div class="section-title">AR + Collections — Oldest Unpaid First<span class="section-meta">$8,290 still unpaid</span></div>
+          <div class="section-title">AR + Collections — Oldest Unpaid First<span class="section-meta">—</span></div>
           <table class="admin" id="ar-table">
             <tr><th>Client</th><th>Invoice</th><th aria-sort="descending">Days Overdue</th><th>Status</th></tr>
-            <tr class="loud" data-ar tabindex="0" aria-expanded="false"
-                data-terms="Paid in full, 30 days" data-method="No payment method on file"
-                data-owner="Marcus Webb"
-                data-timeline="Jun 11|Invoice sent;Jun 26|Reminder sent;Jul 08|Reminder sent;Jul 19|Call, no answer">
-              <td><span class="archev">▸</span>Rachel Simmons</td><td class="mono">$3,200</td><td><span class="days-crit">45</span></td>
-              <td><span class="status-pill crit">45 days late — call her today</span></td>
-            </tr>
-            <tr class="warn" data-ar tabindex="0" aria-expanded="false"
-                data-terms="Paid in full, 30 days" data-method="Card declined · retry queued"
-                data-owner="Nina Castellano"
-                data-timeline="Jul 14|Invoice sent;Jul 21|Card declined;Jul 24|Reminder sent">
-              <td><span class="archev">▸</span>Courtney Vance</td><td class="mono">$890</td><td><span class="days-warn">12</span></td>
-              <td><span class="status-pill warn">Reminder sent</span></td>
-            </tr>
-            <tr data-ar tabindex="0" aria-expanded="false"
-                data-terms="3 payments of $400" data-method="ACH · Commas"
-                data-owner="Nina Castellano" data-timeline="Jul 21|Invoice sent;Jul 23|Payment 1 cleared">
-              <td><span class="archev">▸</span>Angela Byrne</td><td class="mono">$1,200</td><td><span class="days-neutral">5</span></td>
-              <td><span class="status-pill ok">On track</span></td>
-            </tr>
-            <tr data-ar tabindex="0" aria-expanded="false"
-                data-terms="2 payments of $1,000" data-method="Card on file · Commas"
-                data-owner="Jordan Blake" data-timeline="Jul 24|Invoice sent;Jul 26|Payment 1 cleared">
-              <td><span class="archev">▸</span>Diego Marchetti</td><td class="mono">$2,000</td><td><span class="days-neutral">2</span></td>
-              <td><span class="status-pill ok">On track</span></td>
-            </tr>
-            <tr data-ar tabindex="0" aria-expanded="false"
-                data-terms="Paid in full at signup" data-method="Card on file · Commas"
-                data-owner="Sarah Whitfield" data-timeline="today|Invoice sent">
-              <td><span class="archev">▸</span>Wendell Pryce</td><td class="mono">$1,000 DIY</td><td><span class="days-neutral">0</span></td>
-              <td><span class="status-pill neutral">Sent today</span></td>
-            </tr>
+            <tr><td colspan="4" class="empty-note" style="border-bottom:none">No unpaid invoices loaded — needs an AR read endpoint</td></tr>
           </table>
         </div>
 
@@ -417,35 +386,16 @@
         <summary>
           <span class="af-chev">›</span>
           <span class="af-t">Affiliates + Hiring</span>
-          <span class="af-n">20 referrals · $6,000 paid out · 2 applicants in process</span>
+          <span class="af-n">— referrals · — paid out · — applicants</span>
           <a class="af-link" href="affiliate.html" id="aff-link">Open Affiliates ↗</a>
         </summary>
         <div class="aff-body">
           <div class="card">
             <div class="section-meta" style="margin-bottom:6px;">AFFILIATES</div>
-            <div class="affiliate-row">
-              <div><div class="an">Priority Capital Partners</div><div class="ad">Active · last referral 3d ago</div></div>
-              <div class="aval">14 referrals<br>$4,200 paid</div>
-            </div>
-            <div class="affiliate-row">
-              <div><div class="an">Summit Business Brokers</div><div class="ad">Active · last referral 1w ago</div></div>
-              <div class="aval">6 referrals<br>$1,800 paid</div>
-            </div>
-            <div class="affiliate-row">
-              <div><div class="an">Ledger &amp; Vine Bookkeeping</div><div class="ad">Hasn't signed up yet</div></div>
-              <div class="aval">0 referrals<br>$0 paid</div>
-            </div>
+            <div class="empty-note" style="border-top:none;margin-top:0;padding-top:0">No affiliate data yet.</div>
 
             <div class="section-meta" style="margin:10px 0 6px;">HIRING PIPELINE</div>
-            <div class="affiliate-row">
-              <div><div class="an">Trevor Lindholm</div><div class="ad">Closer — resume review</div></div>
-              <div class="aval">applied 2d ago</div>
-            </div>
-            <div class="affiliate-row">
-              <div><div class="an">Dana Okoye</div><div class="ad">Closer — phone screen scheduled</div></div>
-              <div class="aval">Jul 29</div>
-            </div>
-            <div class="empty-note">Nobody has applied for the Funding Advisor role yet.</div>
+            <div class="empty-note" style="border-top:none;margin-top:0;padding-top:0">No hiring pipeline data yet.</div>
           </div>
         </div>
       </details>
@@ -466,11 +416,11 @@
             <div class="section-title">Staff &amp; Comp<span class="section-meta">this week</span></div>
             <table class="admin">
               <tr><th>Name</th><th>Role</th><th>Comp</th><th>This Week</th></tr>
-              <tr><td><span class="av human">SW</span> Sarah Whitfield</td><td>Sales Manager</td><td class="section-meta">salary + CR-03 · 2.5% override</td><td class="mono">$2,400</td></tr>
-              <tr><td><span class="av human">JB</span> Jordan Blake</td><td>Closer</td><td class="section-meta">CR-01 · 10% of each $3K deposit</td><td class="mono">$1,500</td></tr>
-              <tr><td><span class="av human">NC</span> Nina Castellano</td><td>Closer</td><td class="section-meta">CR-01 · 10% of each $3K deposit</td><td class="mono">$600</td></tr>
-              <tr><td><span class="av human">MW</span> Marcus Webb</td><td>Funding Advisor</td><td class="section-meta">hourly + CR-06 · card-stack tiers</td><td class="mono">$1,940</td></tr>
-              <tr><td><span class="av human">AT</span> Alvin Torres</td><td>Inquiry Remover</td><td class="section-meta">hourly + CR-04 · $25 per removal</td><td class="mono">$1,120</td></tr>
+              <tr><td><span class="av human">SW</span> Sarah Whitfield</td><td>Sales Manager</td><td class="section-meta">salary + CR-03 · 2.5% override</td><td class="mono">—</td></tr>
+              <tr><td><span class="av human">JB</span> Jordan Blake</td><td>Closer</td><td class="section-meta">CR-01 · 10% of each $3K deposit</td><td class="mono">—</td></tr>
+              <tr><td><span class="av human">NC</span> Nina Castellano</td><td>Closer</td><td class="section-meta">CR-01 · 10% of each $3K deposit</td><td class="mono">—</td></tr>
+              <tr><td><span class="av human">MW</span> Marcus Webb</td><td>Funding Advisor</td><td class="section-meta">hourly + CR-06 · card-stack tiers</td><td class="mono">—</td></tr>
+              <tr><td><span class="av human">AT</span> Alvin Torres</td><td>Inquiry Remover</td><td class="section-meta">hourly + CR-04 · $25 per removal</td><td class="mono">—</td></tr>
             </table>
           </div>
 
@@ -560,13 +510,13 @@
 (function(){
   var RANGES = [
     { id:'today', label:'Today',           range:'Jul 26',        foot:'today · Jul 26, 2026',
-      meta:'today',          kpi:{cash:'$28,300', funded:'$44,000',  close:'38%', show:'75%', cpf:'$598', clients:'4'} },
+      meta:'today',          kpi:{cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—'} },
     { id:'7d',    label:'Last 7 Days',     range:'Jul 20–26',     foot:'last 7 days · Jul 20–26, 2026',
-      meta:'week to date',   kpi:{cash:'$198,400',funded:'$312,000',close:'34%', show:'71%', cpf:'$612', clients:'28'} },
+      meta:'week to date',   kpi:{cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—'} },
     { id:'30d',   label:'Last 30 Days',    range:'Jun 27–Jul 26', foot:'last 30 days · Jun 27–Jul 26, 2026',
-      meta:'month to date',  kpi:{cash:'$842,100',funded:'$1.34M',  close:'31%', show:'68%', cpf:'$657', clients:'119'} },
+      meta:'month to date',  kpi:{cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—'} },
     { id:'qtd',   label:'Quarter to Date', range:'Jul 1–26',      foot:'quarter to date · Jul 1–26, 2026',
-      meta:'quarter to date',kpi:{cash:'$731,500',funded:'$1.16M',  close:'32%', show:'69%', cpf:'$641', clients:'103'} }
+      meta:'quarter to date',kpi:{cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—'} }
   ];
   var current = '7d';
   var btn   = document.getElementById('period-btn'),

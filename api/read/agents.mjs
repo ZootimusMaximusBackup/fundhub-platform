@@ -1,9 +1,11 @@
 // GET /api/read/agents — the AI agent registry from 037.
 //
-// Read-only. Auth + role gate + pagination + redaction from
-// src/http/read-api.mjs. Prompts and guardrails are NOT returned: they are
-// operational configuration, not screen data, and the registry ships them empty
-// anyway (see 037). prompt_missing / guardrails_missing say whether each is set.
+// Read-only. Auth + role gate + pagination from src/http/read-api.mjs.
+//
+// Prompt and guardrails ARE returned: the Agent Editor (public/app/agent-editor.html)
+// is the screen that edits them, and Save only means something if a reload can
+// paint what was stored. prompt_missing / guardrails_missing stay so other
+// screens can still ask "is it set?" without reading the bodies.
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { readHandler, ROLE_SETS } from "../../src/http/read-api.mjs";
@@ -18,6 +20,7 @@ export const run = readHandler({
     db.query(`
       SELECT code, name, agent_class, channel, status, runtime, runtime_ref,
              runtime_notes, owner_label, went_live_at, retired_at, sort_order,
+             prompt, guardrails,
              (prompt IS NULL OR btrim(prompt) = '') AS prompt_missing,
              (guardrails = '{}'::jsonb)             AS guardrails_missing
         FROM agents

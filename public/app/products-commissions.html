@@ -377,11 +377,11 @@ function dayBefore(iso){
 
 /* ══ PRODUCTS ════════════════════════════════════════════════════════════ */
 var PRODUCTS=[
-  {id:'P-01',name:'Business Financial Assessment',cat:'Diagnostic',price:32,variable:false,min:32,max:32,rails:['Sales']},
-  {id:'P-02',name:'Consulting Services Deposit',cat:'Funding',price:3000,variable:false,min:3000,max:3000,rails:['Funding: Card Stacking','Funding: Alt-Fin (Lendflow)']},
-  {id:'P-03',name:'Consulting Services Package (DIY)',cat:'Repair',price:1000,variable:true,min:750,max:1500,rails:['Optimization (Repair) Rounds']},
-  {id:'P-04',name:'Credit Optimization Bundle',cat:'Repair',price:2000,variable:true,min:1500,max:2500,rails:['Optimization (Repair) Rounds']},
-  {id:'P-05',name:'Inquiry Removal',cat:'Inquiry Removal',price:95,variable:true,min:75,max:150,rails:['Inquiry Removal']}
+  {id:'P-01',name:'Business Financial Assessment',cat:'Diagnostic',price:32,variable:false,min:32,max:32,rails:[]},
+  {id:'P-02',name:'Consulting Services Deposit',cat:'Funding',price:3000,variable:false,min:3000,max:3000,rails:[]},
+  {id:'P-03',name:'Consulting Services Package (DIY)',cat:'Repair',price:1000,variable:true,min:750,max:1500,rails:[]},
+  {id:'P-04',name:'Credit Optimization Bundle',cat:'Repair',price:2000,variable:true,min:1500,max:2500,rails:[]},
+  {id:'P-05',name:'Inquiry Removal',cat:'Inquiry Removal',price:95,variable:true,min:75,max:150,rails:[]}
 ];
 
 /* ══ COMMISSION RULES — every rate change appends a version ══════════════ */
@@ -457,7 +457,7 @@ function renderProducts(){
       '<td>'+(p.variable?'<span class="badge b-info">Variable</span>':'<span class="badge b-gray">Fixed</span>')+'</td>'+
       '<td class="money" style="color:'+(p.variable?'inherit':'var(--gray2)')+'">'+money(p.min)+'</td>'+
       '<td class="money" style="color:'+(p.variable?'inherit':'var(--gray2)')+'">'+money(p.max)+'</td>'+
-      '<td style="font-size:11px;color:var(--gray)">'+esc(p.rails.join(' · '))+'</td></tr>';
+      '<td style="font-size:11px;color:var(--gray)">'+(p.rails&&p.rails.length?esc(p.rails.join(' · ')):'<span title="No rails source">—</span>')+'</td></tr>';
   }).join('');
   document.querySelectorAll('#prodBody tr[data-p]').forEach(function(tr){
     tr.addEventListener('click',function(){openProduct(tr.dataset.p)});
@@ -652,14 +652,52 @@ document.getElementById('edSave').addEventListener('click',function(){
   var mx=variable?(parseFloat(document.getElementById('p_max').value)||0):price;
   if(variable&&mn>mx){alert('Minimum cannot exceed maximum.');return}
   if(variable&&(price<mn||price>mx)){alert('Default price must sit inside the min/max band.');return}
-  var rec={name:name,cat:document.getElementById('p_cat').value,price:price,variable:variable,min:mn,max:mx};
-  if(edProd){
-    var p=PRODUCTS.filter(function(x){return x.id===edProd})[0];
-    Object.keys(rec).forEach(function(k){p[k]=rec[k]});
-  }else{
-    rec.id='P-'+String(PRODUCTS.length+1).padStart(2,'0'); rec.rails=['Sales']; PRODUCTS.push(rec);
+  if(typeof FHData === 'undefined' || !FHData.write){
+    alert('Not available — the data layer has not loaded.');
+    return;
   }
-  closeEd(); renderProducts();
+  var payload={
+    name:name,
+    category:document.getElementById('p_cat').value,
+    default_price:price,
+    min_price:mn,
+    max_price:mx,
+    price_is_variable:variable
+  };
+  if(edProd){
+    payload.action='save';
+    payload.code=edProd;
+  }else{
+    payload.action='create';
+  }
+  var btn=document.getElementById('edSave');
+  btn.disabled=true;
+  FHData.write('/api/products', payload).then(function(res){
+    btn.disabled=false;
+    if(!res || !res.ok){
+      alert('Could not save product: ' + ((res && res.error) || 'request failed'));
+      return;
+    }
+    var p=res.data && res.data.product;
+    var rec={
+      id:(p && p.code) || edProd || name,
+      name:name,
+      cat:document.getElementById('p_cat').value,
+      price:price,
+      variable:variable,
+      min:mn,
+      max:mx,
+      rails:[]
+    };
+    if(edProd){
+      var existing=PRODUCTS.filter(function(x){return x.id===edProd})[0];
+      if(existing) Object.keys(rec).forEach(function(k){existing[k]=rec[k]});
+      else PRODUCTS.push(rec);
+    }else{
+      PRODUCTS.push(rec);
+    }
+    closeEd(); renderProducts();
+  });
 });
 
 document.getElementById('scopeFilter').addEventListener('change',renderRules);
