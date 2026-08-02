@@ -36,9 +36,10 @@
 //     migration. The engine calls a line "seasoned" at >= 24 months old and
 //     seasoning gates EVERY funding figure it produces. With no open date, every
 //     line reads unseasoned, `highestRevolvingLimit` stays 0, card and loan
-//     stacking are both unavailable, and `lite_banner_funding` falls back to its
-//     hardcoded 15000. This is the single largest hole in the integration and it
-//     is reported on every response, per line, as `opened`.
+//     stacking are both unavailable, and `lite_banner_funding` comes back null —
+//     no figure to show, not a placeholder one. This is the single largest hole
+//     in the integration and it is reported on every response, per line, as
+//     `opened`.
 //
 //   * LLC / ENTITY DATA — nowhere. `buildSuggestions` takes { hasLLC,
 //     llcAgeMonths } and, given nothing, defaults to "no LLC" and emits a
