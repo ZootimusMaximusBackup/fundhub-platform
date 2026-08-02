@@ -80,8 +80,21 @@ describe("GET /api/campaigns/* — the campaign-manager query strings",
     // Minted first because 044_accounts.sql makes a partner account invite-only:
     // invited_by must name a real staff row.
     const { createSession } = await import("../auth/session.mjs");
+    /* THE OLDEST ACTIVE STAFF ROW, NOT AN ARBITRARY ONE.
+
+       `LIMIT 1` with no ORDER BY returns whichever row Postgres reaches first, and
+       the suite runs test files CONCURRENTLY. src/auth/seed-staff.pg.test.mjs
+       inserts `+seedtest@fundhub.ai` staff rows into this same org and deletes them
+       again, so an unordered pick can land on a row that is gone by the time the
+       session built from it is verified — verifySession JOINs `staff`, finds
+       nothing, and answers 401. That is a flake, and it is a flake that reads like
+       an auth bug.
+
+       `ORDER BY created_at` pins it to the seeded DEMO roster, which is created at
+       migration time and outlives every test file. */
     const s = await db.query(
-      `SELECT id, org_id FROM staff WHERE org_id = $1 AND status = 'active' LIMIT 1`, [org]);
+      `SELECT id, org_id FROM staff WHERE org_id = $1 AND status = 'active'
+      ORDER BY created_at LIMIT 1`, [org]);
     if (!s.rows[0]) throw new Error("no active staff — run scripts/seed-staff.mjs");
     const staffId = s.rows[0].id;
     staffToken = (await createSession(db, { staffId, orgId: s.rows[0].org_id })).token;

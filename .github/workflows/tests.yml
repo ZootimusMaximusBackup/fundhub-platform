@@ -14,13 +14,17 @@
 #                          tsconfig and no inputs prints its help text and exits 0,
 #                          which is the exact "green that never ran" this file
 #                          refuses to add.
-#   * Playwright        — there is no Playwright config and no .spec file anywhere
 # Adding a step that silently passes because the tool is absent would be worse than
-# having no step: it would report a gate as green that was never run. When those
-# tools land, add them here.
+# having no step: it would report a gate as green that was never run. When that
+# tool lands, add it here.
 #
-# `npm run lint` HAS since landed (scripts/lint.mjs, 644 files parse-checked) and is
-# wired into the blocking job below — one of the three is no longer missing.
+# TWO OF THE THREE HAVE NOW LANDED.
+#   * `npm run lint` (scripts/lint.mjs) — wired into the blocking job below.
+#   * Playwright — playwright.config.mjs plus e2e/, added with the staff reply
+#     inbox, which rewrote a thousand-line screen that until then had never been
+#     opened in a browser by anything. It runs as its own BLOCKING job further
+#     down: a browser launch does not belong in the path of every unit run, and a
+#     screen that throws on load is not a soft failure.
 #
 #
 # *** WHY THERE ARE TWO TEST JOBS AND ONLY ONE OF THEM BLOCKS. ***
@@ -137,6 +141,54 @@ jobs:
             src/http/read-endpoints-org-scope.test.mjs \
             src/http/app-nav-reachability.test.mjs \
             src/http/health-migrations.test.mjs
+
+  # ---------------------------------------------------------------------------
+  # THE BROWSER JOB. CLAUDE.md §6 gate 4, which this repository listed as required
+  # and had no way to run until the staff reply inbox landed.
+  #
+  # IT BLOCKS. A screen that throws on load still returns 200 and still looks like
+  # a page — it just quietly does nothing, and every unit test stays green while it
+  # does. That is precisely the class of failure worth stopping a merge for.
+  #
+  # It installs its own Chromium. Unlike the build container these tests were
+  # written in, a GitHub runner can reach the CDN, so the config's
+  # pre-installed-browser search finds nothing and Playwright resolves its own —
+  # which is the correct behaviour here and needs no special casing.
+  # ---------------------------------------------------------------------------
+  browser:
+    name: screens (real browser)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      # --with-deps pulls the system libraries Chromium needs on a bare runner.
+      # chromium only: these specs declare one project and downloading Firefox and
+      # WebKit to not use them is two minutes per run for nothing.
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Screens
+        run: npm run test:e2e
+
+      # The screenshots Playwright captures on failure. Without them a red build
+      # says "expected 2, got 0" about a page nobody can see.
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-failures
+          path: test-results/
+          retention-days: 7
 
   # ---------------------------------------------------------------------------
   # THE REPORTING JOB. Runs the 442 tests the job above skips, against a real

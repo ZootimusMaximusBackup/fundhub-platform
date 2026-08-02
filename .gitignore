@@ -10,3 +10,5 @@ node_modules/
 
 # Real credentials. Never committed, on purpose — see credentials/README.md.
 credentials/
+test-results/
+playwright-report/

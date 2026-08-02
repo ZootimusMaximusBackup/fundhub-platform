@@ -1,5 +1,8 @@
-import { test } from "node:test";
+import { test, describe } from "node:test";
 import assert from "node:assert";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   requireActiveShift,
   activeShift,
@@ -7,6 +10,8 @@ import {
   staffIdFrom,
   SHIFT_UNAVAILABLE
 } from "./requireActiveShift.mjs";
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 const STAFF_ID = "11111111-1111-4111-8111-111111111111";
 const OTHER_ID = "22222222-2222-4222-8222-222222222222";
@@ -267,4 +272,132 @@ test("the gate never authenticates: it does not read headers or tokens", async (
   assert.equal(out, null);
   assert.equal(res.statusCode, 401);
   assert.equal(db.calls.length, 0);
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE OWNER EXEMPTION.
+
+   ACTIVE-SHIFT-ROLLOUT.md §3c and §4 question 2 both left this open and said
+   so: "Not built. Needs a decision", and "Left unimplemented rather than
+   guessed." Decided by the owner on 2026-08-02, verbatim: "Owners definitely
+   don't clock in."
+
+   The risk this block guards is not that the exemption fails to work — it is
+   that it works too widely. A gate that quietly stopped applying would be
+   indistinguishable from a gate that was never there, and the whole point of
+   requireActiveShift being one file is that "is this endpoint gated?" has a
+   readable answer.
+   ═══════════════════════════════════════════════════════════════════════════ */
+describe("requireActiveShift — the owner exemption", () => {
+
+  const noShiftDb = { query: async () => ({ rows: [] }) };
+  const staffPrincipal = (role) => ({
+    kind: "staff", staffId: "00000000-0000-4000-8000-000000000001",
+    orgId: "00000000-0000-4000-8000-0000000000ff", role
+  });
+
+  const res = () => {
+    const r = { code: null, body: null };
+    r.status = (c) => { r.code = c; return r; };
+    r.json = (b) => { r.body = b; return r; };
+    return r;
+  };
+
+  test("an owner with no open shift is let through", async () => {
+    const r = res();
+    const out = await requireActiveShift({ headers: {} }, r,
+      { db: noShiftDb, principal: staffPrincipal("owner"), exempt: ["owner"] });
+    assert.ok(out, "the owner was refused — he does not clock in, so he can never satisfy this");
+    assert.equal(r.code, null, "a refusal was written for somebody who was let through");
+  });
+
+  /* The shift id must be null, not invented. `staff_events.shift_id` is
+     nullable precisely because "not linked to a shift" is a real state, and a
+     fake id would attach an owner's work to a shift that does not exist. */
+  test("the owner's work is recorded against no shift, rather than a made-up one", async () => {
+    const out = await requireActiveShift({ headers: {} }, res(),
+      { db: noShiftDb, principal: staffPrincipal("owner"), exempt: ["owner"] });
+    assert.equal(out.id, null);
+    assert.equal(out.exempt, true);
+  });
+
+  test("everybody else still has to clock in", async () => {
+    for (const role of ["closer", "admin", "setter", "funding_advisor", "sales_manager", "inquiry_specialist"]) {
+      const r = res();
+      const out = await requireActiveShift({ headers: {} }, r,
+        { db: noShiftDb, principal: staffPrincipal(role), exempt: ["owner"] });
+      assert.equal(out, null, `${role} was let through without a shift`);
+      assert.equal(r.code, 403);
+      assert.equal(r.body.error, "no_active_shift");
+    }
+  });
+
+  /* THE DEFAULT MUST STAY "EVERYONE CLOCKS IN." If the exemption applied
+     without being asked for, every endpoint that adopts this gate later would
+     silently inherit it. */
+  test("with no exempt list, an owner is gated exactly as before", async () => {
+    const r = res();
+    const out = await requireActiveShift({ headers: {} }, r,
+      { db: noShiftDb, principal: staffPrincipal("owner") });
+    assert.equal(out, null, "the exemption applied without a call site asking for it");
+    assert.equal(r.code, 403);
+  });
+
+  test("an empty exempt list exempts nobody", async () => {
+    const r = res();
+    const out = await requireActiveShift({ headers: {} }, r,
+      { db: noShiftDb, principal: staffPrincipal("owner"), exempt: [] });
+    assert.equal(out, null);
+    assert.equal(r.code, 403);
+  });
+
+  test("the role is matched case-insensitively, and a blank role never matches", async () => {
+    const yes = await requireActiveShift({ headers: {} }, res(),
+      { db: noShiftDb, principal: staffPrincipal("OWNER"), exempt: ["owner"] });
+    assert.ok(yes, "a role stored with different capitalisation was not recognised");
+
+    const r = res();
+    const no = await requireActiveShift({ headers: {} }, r,
+      { db: noShiftDb, principal: staffPrincipal(""), exempt: ["owner"] });
+    assert.equal(no, null, "a session with no role at all was exempted");
+    assert.equal(r.code, 403);
+  });
+
+  /* A client or partner session must still be told this is not for them, not
+     handed an exemption because somebody put their kind in the list. */
+  test("a non-staff session is refused even if its role string is exempt", async () => {
+    const r = res();
+    const out = await requireActiveShift({ headers: {} }, r,
+      { db: noShiftDb, principal: { kind: "client", id: "acct-1", role: "owner" }, exempt: ["owner"] });
+    assert.equal(out, null, "a client session was let past the staff shift gate");
+    assert.equal(r.code, 403);
+    assert.equal(r.body.error, "forbidden");
+  });
+});
+
+describe("requireActiveShift — which endpoints grant the exemption", () => {
+
+  /* Read from the handler source. The exemption is opt-in per call site, so
+     "which endpoints" is a fact about those files and not about this one, and
+     it is worth failing loudly if a fourth gated endpoint appears without a
+     deliberate choice either way. */
+  const api = (name) => fs.readFileSync(path.resolve(HERE, "../../../api", name), "utf8");
+
+  test("all three shift-gated endpoints exempt the owner, and none invents its own list", () => {
+    for (const file of ["messages.mjs", "inquiries.mjs", "tasks.mjs"]) {
+      const src = api(file);
+      assert.match(src, /requireActiveShift\(req, res, \{ db, principal, exempt: SUPER_ROLES \}\)/,
+        `api/${file} is shift-gated but does not exempt the owner. He does not clock in, so ` +
+        "this locks him out of his own product.");
+      assert.match(src, /import \{ SUPER_ROLES \} from/,
+        `api/${file} names an exempt list of its own rather than reusing SUPER_ROLES`);
+    }
+  });
+
+  test("SUPER_ROLES is still just the owner", async () => {
+    const { SUPER_ROLES } = await import("./requireRole.mjs");
+    assert.deepEqual(SUPER_ROLES, ["owner"],
+      "SUPER_ROLES widened. It is now also the shift-gate exemption, so adding a role here " +
+      "silently stops that role having to clock in — which is a pay-and-attribution change.");
+  });
 });

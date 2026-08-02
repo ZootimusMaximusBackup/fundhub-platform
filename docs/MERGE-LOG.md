@@ -128,11 +128,25 @@ Retried against `main` at `8254e20`. This branch's conflicts turned out to be en
 - Pushed to `main` — see commit hash in the summary below.
 - Branch delete: not attempted (same 403 policy block expected).
 
-## 5. claude/staff-reply-inbox-5gob90 — SKIPPED (conflict, messaging code)
+## 5. claude/staff-reply-inbox-5gob90 — MERGED-WITH-RESOLUTION — COMPLIANCE REVIEW REQUIRED
 
-- Same reasoning as #4: not retried this session. Session 2's instructions require reading both sides of any contradictory application-logic conflict in messaging code and logging it rather than guessing, and time was spent instead on branches 2 and 3 (the latter of which surfaced the store.mjs conflict above). Not re-diffed against the current `main`.
-- Suite: not run.
-- Action: none — branch untouched, not deleted, not merged. **Needs an explicit re-attempt with `main` at `8254e20`.**
+Retried against `main` after merge #4. This branch touches messaging code, so every conflict was read in full before resolving, specifically checking for a contradictory application-logic rewrite like branch 3's. None was found — all conflicts were in the same shared manifest/doc/routing files:
+
+- Conflicts and how each was resolved:
+  - `db/expected-migrations.mjs` — additive, kept both sides (see migration renumbering below), regenerated with `npm run migrations:manifest` rather than hand-ordered, after the ordering mistake caught on branch 4.
+  - `docs/journeys/CHANGELOG.md` — kept both entries. Also fixed one inline cross-reference inside the incoming branch's own changelog text that named the migration by its old pre-renumber number (`messages.sender_staff_id (117)` → `(120, renumbered from 117 ...)`).
+  - `docs/journeys/README.md` + all `docs/journeys/*-actual.md` — regenerated via `npm run journeys`.
+  - `docs/diagrams/event-flow.md`, `netlify/functions/api.mjs`, `package.json`, `package-lock.json`, `public/app/data.js` — all auto-merged by git with no conflict; verified none of them contained leftover `<<<<<<<` markers before trusting that.
+- No application-logic conflict found anywhere in `src/messaging/`, `src/http/`, `netlify/functions/staff-message-sweeper.mjs`, or any other messaging file — everything there merged cleanly as new/non-overlapping code.
+- **Migration number collisions found and fixed**: `117_messages_sender.sql`, `118_sms_routing_twilio.sql`, `119_conversations_activity.sql` all collided with numbers already on `main` (117–119 from the three prior merges). Renumbered to `120_messages_sender.sql`, `121_sms_routing_twilio.sql`, `122_conversations_activity.sql`. Updated every reference: `src/http/messages-read.pg.test.mjs`, `api/read/messages.mjs`, `db/expected-migrations.mjs`, `docs/REPLY-INBOX-SPEC.md`, and the changelog cross-reference above.
+- Note from the branch's own changelog entry, preserved as-is (owner-set, not re-litigated per CLAUDE.md's owner-decisions section): a migration repointing SMS to Twilio was written and then deliberately withdrawn because of A2P 10DLC carrier registration; `121_sms_routing_twilio.sql` (formerly 118) is a documented no-op left for a human to act on, not applied automatically. This did not change in the merge — only its filename number did.
+- **COMPLIANCE REVIEW REQUIRED** (CLAUDE.md §7): this branch's own changelog entry flags itself as "the first path in the repository where an employee types free-form text and it reaches a consumer" via the staff reply inbox / `POST /api/messages`. Carrying that flag forward here rather than re-deciding anything about it — this is a marker, not new advice.
+- Suite before this merge: 4423 tests, 3942 pass, 0 fail (main after merge #4).
+- Suite after merge: 4562 tests, 4038 pass, 0 fail, 524 skipped.
+- Lint: clean (720 files). `src/http/routes.test.mjs`: 14/14 pass.
+- Playwright (CLAUDE.md §6 gate 4 — this branch is the one that added the config and specs in the first place): run via `npx playwright test` against the pre-installed Chromium — 18/18 passed (`e2e/messaging-inbox.spec.mjs`, 3.9 min).
+- Pushed to `main` — see commit hash in the summary below.
+- Branch delete: not attempted (same 403 policy block expected).
 
 ## 6. claude/journey-pipeline-crm-finishing-k7gf2e — SKIPPED (conflict)
 

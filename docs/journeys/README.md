@@ -19,18 +19,18 @@ against what it was *meant* to do. These pages are a mirror, not a test.
 
 | Journey | Who that is in the code | Reach |
 |---|---|---|
-| [client](./client-actual.md) | `client` | reaches 14 of 81 routes |
-| [role-owner](./role-owner-actual.md) | `owner` | reaches 81 of 81 routes |
-| [role-sales-manager](./role-sales-manager-actual.md) | `sales_manager` | reaches 64 of 81 routes |
-| [role-closer](./role-closer-actual.md) | `closer` | reaches 52 of 81 routes |
-| [role-funding-advisor](./role-funding-advisor-actual.md) | `funding_advisor` | reaches 53 of 81 routes |
-| [role-inquiry-remover](./role-inquiry-remover-actual.md) | `inquiry_specialist` | reaches 52 of 81 routes |
-| [affiliate](./affiliate-actual.md) | `affiliate` | reaches 10 of 81 routes |
-| [white-label](./white-label-actual.md) | `partner` | reaches 21 of 81 routes |
+| [client](./client-actual.md) | `client` | reaches 14 of 84 routes |
+| [role-owner](./role-owner-actual.md) | `owner` | reaches 84 of 84 routes |
+| [role-sales-manager](./role-sales-manager-actual.md) | `sales_manager` | reaches 67 of 84 routes |
+| [role-closer](./role-closer-actual.md) | `closer` | reaches 55 of 84 routes |
+| [role-funding-advisor](./role-funding-advisor-actual.md) | `funding_advisor` | reaches 56 of 84 routes |
+| [role-inquiry-remover](./role-inquiry-remover-actual.md) | `inquiry_specialist` | reaches 55 of 84 routes |
+| [affiliate](./affiliate-actual.md) | `affiliate` | reaches 10 of 84 routes |
+| [white-label](./white-label-actual.md) | `partner` | reaches 21 of 84 routes |
 
 ## What was found while generating these
 
-- **81 routes** are reachable in total.
+- **84 routes** are reachable in total.
 - **0 routes have gates that could not be traced.** Every gate resolved to its source.
 - **7 routes are genuinely open** (signing in, signing out, "who am I", and the health check).
 - **3 routes need no sign-in but are not open** — a signed link, a provider signature, and Inngest's own request signing. Anyone may call them; the wrong signature is refused.

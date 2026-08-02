@@ -63,7 +63,7 @@ flowchart TB
 | `commas` | inbound webhook | `verifyCommasSignature` (HMAC-SHA256) | `diagnostic.paid`<br/>`deposit.paid`<br/>`sale.closed`<br/>`payment.received`<br/>`payment.failed` | ⚠️ **no** — carries a CONFIRM banner |
 | `crs` | direct call | none — not a webhook | `analysis.completed`<br/>`decision.rendered` | yes |
 | `lendflow` | inbound webhook + outbound call | `verifyLendflowSignature` (HMAC-SHA256) | `round.started`<br/>`round.submitted`<br/>`round.approved`<br/>`round.funded` | ⚠️ **no** — carries a CONFIRM banner |
-| `mailgun` | inbound webhook | `verifyMailgunSignature` (HMAC-SHA256) | `mail.response` | yes |
+| `mailgun` | inbound webhook | `verifyMailgunSignature` (HMAC-SHA256) | `message.inbound`<br/>`mail.response` | yes |
 | `twilio-status` | inbound webhook | `verifyTwilioSignature` (HMAC-SHA1) | — | yes |
 | `twilio` | inbound webhook | `verifyTwilioSignature` (HMAC-SHA1) | `message.inbound` | yes |
 

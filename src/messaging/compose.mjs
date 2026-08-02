@@ -1,0 +1,351 @@
+// compose — the staff reply path. A person types words, they go to a client.
+//
+// THIS IS THE FIRST SEND IN THIS CODEBASE WITH A HUMAN AUTHOR. Every other
+// outbound row in `messages` is queued by a workflow reacting to an event, which
+// is why src/workflows/messaging.mjs's `staffId` seam has never once been
+// supplied. Everything below exists to make a human-authored send obey the same
+// rules a workflow's send obeys, and to record the one extra fact a workflow
+// send does not have: who wrote it.
+//
+//
+// ═══════════════════════════════════════════════════════════════════════════
+// WHAT IS REUSED, AND WHY NOTHING HERE RE-IMPLEMENTS IT.
+//
+//   the gate         src/messaging/gate.mjs, reached through dispatchMessage.
+//                    NOT called directly from here. See the next section.
+//   the dispatcher   src/messaging/dispatch.mjs — routing, provider resolution,
+//                    quiet-hours deferral, retries, the atomic claim.
+//   the thread       src/conversations/store.mjs — the same upsert the inbound
+//                    handler uses, so a staff reply and a client's text land on
+//                    ONE conversation row rather than two.
+//   telemetry        src/shifts/telemetry.mjs — the `text_sent` seam.
+//
+// The only new SQL here is the INSERT, and it is deliberately the same shape as
+// sendTemplated's insert with three differences: no template_key (there is no
+// template), compliance_check_passed = false (nothing has checked it yet — the
+// gate runs at dispatch, and claiming a pass before the check is exactly the lie
+// that column is for), and sender_staff_id set.
+//
+//
+// ═══════════════════════════════════════════════════════════════════════════
+// WHY THE GATE IS NOT CALLED FROM HERE.
+//
+// It would be one line and it would be wrong. gate.mjs's own header says opt-out
+// state must be read at the instant of sending and never earlier; dispatch.mjs
+// is what sends. A gate call here would be a SECOND verdict, taken at a
+// different instant from the one that governs the send, and the two would
+// disagree the moment a message waits — which is precisely the sleeping-workflow
+// bug the gate is built around. One gate, at dispatch, always.
+//
+// So this function queues a row and then asks the dispatcher to work it now.
+// Every rule the dispatcher enforces applies unchanged and unconditionally:
+//   * opted out          → blocked, recorded on the row, nothing sent
+//   * quiet hours (SMS)  → deferred to 11:00 Eastern, still queued
+//   * restricted wording → blocked, and a task is raised for an operator
+//   * no routing row     → held, nothing sent
+//
+// TEMPLATE APPROVAL DOES NOT APPLY, AND THAT IS NOT A BYPASS. Approval
+// (116_template_approval.sql) is a check on stored, reusable copy — it asks
+// "has a human reviewed this text before we send it ten thousand times". Here a
+// human IS the author, reviewing as they type, and there is no template row to
+// have a compliance_passed flag on. Note what this does NOT do: it does not skip
+// the gate, pass an option to it, or take a different path through it. The
+// restricted-wording rules in compliance_rules apply to a staff reply exactly as
+// they apply to a template — a phrase an employee may not put in a text is not
+// made sayable by typing it by hand.
+//
+//
+// ═══════════════════════════════════════════════════════════════════════════
+// IDEMPOTENCY IS OPT-IN, AND ABSENT IS HONEST.
+//
+// `messages` dedupes on (org_id, provider_ref) — migration 004. A workflow
+// synthesises provider_ref from the event id, so a replayed event cannot
+// double-send. A person clicking Send twice has no event id.
+//
+// So the caller may pass `idempotencyKey`, and provider_ref becomes
+// `staff:<key>`; a second send with the same key returns the FIRST message
+// rather than queueing a second. With no key, provider_ref is NULL — the unique
+// index is partial (WHERE provider_ref IS NOT NULL) so NULLs never collide, and
+// two identical replies typed a minute apart are two real messages, which they
+// are. Nothing invents a key from the body text: two "ok, thanks" replies in one
+// afternoon are not a double-send, and silently swallowing the second would lose
+// a message a client is waiting on.
+
+import { upsertConversation, linkMessage } from "../conversations/store.mjs";
+import { dispatchMessage, OUTCOME } from "./dispatch.mjs";
+import { logStaffEvent } from "../shifts/telemetry.mjs";
+
+/** Channels a staff member may compose on.
+ *
+ *  DELIBERATELY NARROWER THAN THE GATE'S. gate.mjs knows sms, email and voice,
+ *  because it must be able to reason about a voice message a workflow queued.
+ *  A person cannot type a phone call: `voice` rows are written by the Bland
+ *  handler after a call happened, and accepting one here would let the inbox
+ *  queue a "voice message" that no provider carries and nothing will ever
+ *  deliver. An unsupported channel is a 400, not a queued row nobody sends. */
+export const COMPOSE_CHANNELS = new Set(["sms", "email"]);
+
+/** The longest reply that may be queued.
+ *
+ *  Not a carrier limit — an SMS over 160 characters is segmented and delivered,
+ *  and truncating at 160 would silently cut a sentence in half. This is a bound
+ *  on what one request may write to the database, so a runaway paste cannot put
+ *  a megabyte of text in a `messages` row. Rejected, never truncated: sending
+ *  half of what somebody wrote is worse than telling them it was too long. */
+export const MAX_BODY_LENGTH = 4000;
+
+/* Which client column addresses a channel. The same map as
+   src/workflows/messaging.mjs's ADDRESS_BY_CHANNEL and for the same reason: the
+   destination is recorded in the terms of the CHANNEL, and a provider that
+   addresses by something else (the GHL relay wants a contact id) resolves it
+   live at dispatch. */
+const ADDRESS_BY_CHANNEL = { email: "email", sms: "phone" };
+
+/* A thrown error with a code the HTTP layer turns into a 400 rather than a 500.
+   The caller's request was wrong; that is not a server fault. */
+function badRequest(message) {
+  return Object.assign(new Error(message), { code: "BAD_REQUEST" });
+}
+
+/* resolveTarget — what conversation is this reply on, and who is it to.
+
+   TWO WAYS IN, AND THE ORG CHECK IS ON BOTH.
+
+     { conversationId }        replying in the inbox. The thread already exists;
+                               its client and channel are read from it, never
+                               taken from the request. A caller cannot post a
+                               reply onto one client's thread and address it to
+                               another, because the address is not theirs to
+                               name.
+     { clientId, channel }     starting a thread. find-or-create, through the
+                               SAME upsert the inbound handler uses.
+
+   The conversation lookup is filtered by org, so a conversation id belonging to
+   another org resolves to nothing and the request fails as though it did not
+   exist — which, for this caller, it does not. */
+async function resolveTarget(db, { orgId, conversationId, clientId, channel }) {
+  if (conversationId) {
+    const r = await db.query(
+      `SELECT id, client_id, channel FROM conversations
+        WHERE id = $1 AND org_id = $2 LIMIT 1`,
+      [conversationId, orgId]
+    );
+    const convo = r.rows[0];
+    if (!convo) throw badRequest("no such conversation");
+    if (!COMPOSE_CHANNELS.has(convo.channel)) {
+      // A voice thread exists (the Bland handler writes one). It cannot be
+      // replied to by typing, and saying so is better than queueing a row that
+      // no provider carries.
+      throw badRequest(`replies cannot be sent on a ${convo.channel} thread`);
+    }
+    return { conversationId: convo.id, clientId: convo.client_id, channel: convo.channel };
+  }
+
+  if (!clientId) throw badRequest("conversation_id, or client_id and channel, is required");
+  if (!COMPOSE_CHANNELS.has(channel)) {
+    throw badRequest(`channel must be one of ${[...COMPOSE_CHANNELS].join(", ")}`);
+  }
+
+  // The client must be ours. conversations.client_id has a foreign key but no
+  // org constraint tying it to conversations.org_id, so without this check a
+  // caller could mint a thread in their own org pointing at another org's
+  // client — and then read that client's name back off it.
+  const c = await db.query(
+    `SELECT id FROM clients WHERE id = $1 AND org_id = $2 LIMIT 1`,
+    [clientId, orgId]
+  );
+  if (!c.rows[0]) throw badRequest("no such client");
+
+  const convo = await upsertConversation(db, { orgId, clientId, channel });
+  return { conversationId: convo.id, clientId, channel };
+}
+
+/* addressFor — where this goes, as of now.
+
+   Recorded on the row (111_messages_address) rather than resolved at send time,
+   so a reply that waits in the queue still goes where it was written to go.
+
+   A MISSING ADDRESS IS NOT REFUSED HERE. It is tempting: no phone number means
+   no text. But the dispatcher already has that branch (OUTCOME.NO_ADDRESS) and
+   it is the branch that records WHY on the message row, where an operator can
+   see it. Refusing here would make the same message vanish with an error toast
+   and no record that anybody tried to send it. */
+async function addressFor(db, clientId, channel) {
+  const column = ADDRESS_BY_CHANNEL[channel];
+  if (!column) return null;
+  const r = await db.query(
+    `SELECT ${column} AS address FROM clients WHERE id = $1 LIMIT 1`,
+    [clientId]
+  );
+  return r.rows[0]?.address || null;
+}
+
+/**
+ * composeAndSend(db, input, options) → { message, outcome, detail, deduped }
+ *
+ * input: {
+ *   orgId,            required — the SESSION's org, never a request field
+ *   staffId,          required — who is writing. The whole point of this file.
+ *   conversationId,   one of these two forms is required (see resolveTarget)
+ *   clientId, channel,
+ *   body,             required — what they typed
+ *   subject,          email only; NULL on SMS
+ *   shiftId,          the open shift, for telemetry. Optional.
+ *   idempotencyKey    optional; see the header
+ * }
+ *
+ * options: { now, fetchImpl, timeoutMs, signal, env } — forwarded verbatim to
+ * the dispatcher, which forwards `now` to the gate. Nothing here reads a clock.
+ *
+ * `outcome` is the dispatcher's own vocabulary (OUTCOME in dispatch.mjs), so a
+ * caller rendering this to a person is reading the same word the message row
+ * records. It is NOT collapsed to a boolean: "held until 11am" and "this person
+ * asked us to stop" are different things to tell an employee, and a `sent: false`
+ * would make them the same thing.
+ */
+export async function composeAndSend(db, input = {}, options = {}) {
+  const {
+    orgId, staffId, conversationId = null, clientId = null, channel = null,
+    body, subject = null, shiftId = null, idempotencyKey = null
+  } = input;
+
+  if (!orgId) throw badRequest("orgId is required");
+  if (!staffId) throw badRequest("staffId is required");
+
+  const text = typeof body === "string" ? body.trim() : "";
+  if (!text) throw badRequest("body is required");
+  if (text.length > MAX_BODY_LENGTH) {
+    throw badRequest(`body is longer than ${MAX_BODY_LENGTH} characters`);
+  }
+
+  const target = await resolveTarget(db, { orgId, conversationId, clientId, channel });
+
+  // Email only. renderTemplate is not involved — there is no template and no
+  // merge tags to expand, so what the staff member typed is exactly what is
+  // stored and exactly what is sent.
+  const subjectLine = target.channel === "email" && typeof subject === "string" && subject.trim()
+    ? subject.trim()
+    : null;
+
+  const providerRef = idempotencyKey ? `staff:${idempotencyKey}` : null;
+  const toAddress = await addressFor(db, target.clientId, target.channel);
+
+  /* status='queued' and compliance_check_passed=false.
+
+     The gate has not run. It runs inside dispatchMessage below, against this
+     row, and records its verdict on this row. Setting the flag true here — as
+     sendTemplated does, because a template carries its own reviewed
+     compliance_passed — would assert a check that has not happened. */
+  const ins = await db.query(
+    `INSERT INTO messages (
+       org_id, client_id, conversation_id, direction, channel, rendered_body,
+       provider_ref, status, compliance_check_passed, to_address, subject, sender_staff_id
+     )
+     VALUES ($1,$2,$3,'outbound',$4,$5,$6,'queued',false,$7,$8,$9)
+     ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING
+     RETURNING id, created_at`,
+    [orgId, target.clientId, target.conversationId, target.channel, text,
+     providerRef, toAddress, subjectLine, staffId]
+  );
+
+  /* A deduped send is not a failure and not a second message. The caller sent
+     the same idempotency key twice — a double-click, a retried request — and
+     gets the message that already exists, unchanged and un-redispatched.
+     Re-dispatching it would be the double-send the key exists to prevent. */
+  if (!ins.rows[0]) {
+    const existing = await db.query(
+      `SELECT id, conversation_id, channel, rendered_body, status, created_at
+         FROM messages WHERE org_id = $1 AND provider_ref = $2 LIMIT 1`,
+      [orgId, providerRef]
+    );
+    return {
+      message: existing.rows[0] || null,
+      conversationId: target.conversationId,
+      outcome: null,
+      detail: null,
+      deduped: true
+    };
+  }
+
+  const messageId = ins.rows[0].id;
+
+  /* THE THREAD LINK IS SET IN THE INSERT, AND CONFIRMED HERE.
+
+     linkMessage() joins conversations and requires org AND client to match, so
+     it is the check that the id written above really is this client's thread in
+     this org. It is a no-op on the normal path (the column already holds that
+     value) and it is what catches a mis-pointed id. Swallowed the same way
+     src/handlers/comms.mjs swallows it: the message row is committed, and a
+     thread-index failure must not lose a message somebody is about to send. */
+  try {
+    await linkMessage(db, { messageId, conversationId: target.conversationId });
+    // The thread's clock moves to this message's own recorded time, not to a
+    // new Date() invented here — the same rule threadMessage() follows.
+    await upsertConversation(db, {
+      orgId,
+      clientId: target.clientId,
+      channel: target.channel,
+      lastPulseAt: ins.rows[0].created_at || null
+    });
+  } catch (err) {
+    console.error(`[compose] threading failed for message ${messageId}: ${err && err.message}`);
+  }
+
+  // ---- send ---------------------------------------------------------------
+  // Every rule lives on the other side of this call. See the header.
+  const result = await dispatchMessage(db, messageId, options);
+
+  /* THE TELEMETRY SEAM src/workflows/messaging.mjs DESCRIBED, NOW SUPPLIED.
+     Its header: "the `staffId` argument below is the place a staff-initiated
+     send would pass one; there is no such send today". This is that send.
+
+     SMS ONLY, and that is not an oversight. `text_sent` is one of the five kinds
+     in src/shifts/telemetry.mjs's frozen vocabulary; there is no kind for an
+     email, and filing an email under `text_sent` would make the count a lie.
+     The correct move when a vocabulary has no word is to report the gap, not to
+     borrow the nearest word — so an emailed reply writes no staff_events row and
+     that is recorded in docs/REPLY-INBOX-SPEC.md.
+
+     ONLY ON A REAL SEND. A blocked, deferred or held message is not a text this
+     person sent, and counting one would inflate their numbers with messages the
+     client never received. logStaffEvent never throws.
+
+     The body is NOT copied into `detail` — client-facing copy about a consumer's
+     file does not belong in a work index. Same rule as sendTemplated. */
+  if (target.channel === "sms" && result.outcome === OUTCOME.SENT) {
+    await logStaffEvent(db, {
+      orgId,
+      staffId,
+      shiftId: shiftId || null,
+      kind: "text_sent",
+      detail: {
+        client_id: target.clientId,
+        conversation_id: target.conversationId,
+        channel: target.channel,
+        message_id: messageId
+      }
+    });
+  }
+
+  /* Read the row back rather than reporting what was inserted. dispatchMessage
+     has just written status, blocked_reason, last_error and possibly
+     scheduled_at onto it, and the caller needs what the row SAYS, not what was
+     hoped for it. */
+  const final = await db.query(
+    `SELECT id, conversation_id, client_id, channel, direction, rendered_body,
+            subject, status, provider, blocked_reason, last_error, scheduled_at,
+            sender_staff_id, created_at
+       FROM messages WHERE id = $1`,
+    [messageId]
+  );
+
+  return {
+    message: final.rows[0] || null,
+    conversationId: target.conversationId,
+    outcome: result.outcome,
+    detail: result.detail,
+    deduped: false
+  };
+}
+
+export default composeAndSend;

@@ -54,7 +54,7 @@ flowchart LR
   adp_commas -- "diagnostic.paid<br/>deposit.paid<br/>sale.closed<br/>payment.received<br/>payment.failed" --> BUS
   adp_crs -- "analysis.completed<br/>decision.rendered" --> BUS
   adp_lendflow -- "round.started<br/>round.submitted<br/>round.approved<br/>round.funded" --> BUS
-  adp_mailgun -- "mail.response" --> BUS
+  adp_mailgun -- "message.inbound<br/>mail.response" --> BUS
   adp_twilio_status -- "—" --> BUS
   adp_twilio -- "message.inbound" --> BUS
   BUS --> REG

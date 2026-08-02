@@ -134,7 +134,7 @@ export function nextQuietHoursEnd(from, timeZone = QUIET_HOURS_TZ) {
 
    scheduled_at IS NULL means due immediately — the shape every row queued by
    src/workflows/messaging.mjs is already in. */
-export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = null } = {}) {
+export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = null, senderStaffOnly = false } = {}) {
   /* `now` IS A CLOCK FUNCTION EVERYWHERE ELSE IN THIS FEATURE. The gate takes
      one, dispatchOne forwards one, and dispatchDue hands the same options
      object to both — so this has to accept the same shape. It previously took
@@ -146,6 +146,28 @@ export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = 
      Both shapes are accepted. null means the database's own clock. */
   const at = typeof now === "function" ? now() : now;
 
+  /* senderStaffOnly — "only messages a person wrote".
+
+     ═══════════════════════════════════════════════════════════════════════
+     THIS EXISTS BECAUSE THE BACKLOG IS NOT ALL THE SAME AGE OR THE SAME KIND.
+
+     `messages` already holds several thousand rows queued by workflows over
+     months (110_messages_outbound.sql says so in as many words). None of them
+     has ever been dispatched, because nothing has ever called the dispatcher.
+     The instant anything sweeps the queue on a schedule, every one of those
+     becomes due at once and goes out — months of stale automated messages
+     landing on real people in one afternoon.
+
+     That is not a hypothetical and it is not this feature's decision to make.
+     So the sweeper that releases held STAFF replies filters to exactly those:
+     `sender_staff_id IS NOT NULL` is true only for rows written by
+     src/messaging/compose.mjs, i.e. a message a named employee typed and
+     pressed Send on, which was then held for the night. Releasing those is
+     what the owner asked for. Draining the legacy workflow backlog is a
+     separate, deliberate act by a human and is deliberately NOT done here.
+
+     Default false, so every existing caller — dispatchDue() from a test, a
+     future full drain — behaves exactly as it did. */
   const { rows } = await db.query(
     `UPDATE messages m
         SET status = 'sending', last_attempt_at = now(), attempts = m.attempts + 1
@@ -156,6 +178,7 @@ export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = 
             AND (scheduled_at IS NULL OR scheduled_at <= COALESCE($3::timestamptz, now()))
             AND ($1::uuid IS NULL OR org_id = $1)
             AND attempts < $4
+            AND ($5::boolean IS NOT TRUE OR sender_staff_id IS NOT NULL)
           ORDER BY scheduled_at NULLS FIRST, created_at
           LIMIT $2
           FOR UPDATE SKIP LOCKED
@@ -163,7 +186,7 @@ export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = 
       WHERE m.id = due.id
   RETURNING m.id, m.org_id, m.client_id, m.channel, m.rendered_body,
             m.template_key, m.provider_ref, m.attempts, m.to_address, m.subject`,
-    [orgId, limit, at, MAX_ATTEMPTS]
+    [orgId, limit, at, MAX_ATTEMPTS, senderStaffOnly === true]
   );
   return rows;
 }
@@ -412,6 +435,69 @@ async function finalise(db, message, status, outcome, detail, provider) {
     [message.id, status, provider || null, detail ? String(detail).slice(0, 300) : null]
   );
   return { id: message.id, outcome, detail };
+}
+
+/* claimOne — claim ONE named message, atomically, by id.
+
+   Same UPDATE ... RETURNING shape as claimDue and for the same reason: the
+   status flip to 'sending' happens in the statement that selects the row, so
+   two callers racing on the same id cannot both get it — the second sees no
+   row because the first has already moved it off 'queued'.
+
+   THE PREDICATES ARE claimDue's, MINUS THE DUE TIME. direction, status and the
+   attempt ceiling all still hold, so this cannot be used to re-send something
+   already sent, to send an inbound row, or to push a message past MAX_ATTEMPTS.
+   The `scheduled_at <= now()` clause is deliberately absent: a caller naming a
+   message by id is asking to work THAT message now, and a staff reply is queued
+   with no schedule anyway. Note what that does NOT open — quiet hours are not
+   a schedule, they are checked inside dispatchOne against the clock, so a text
+   named here at midnight still defers rather than sending.
+
+   Returns the claimed row, or null if there was nothing claimable. */
+async function claimOne(db, messageId) {
+  const { rows } = await db.query(
+    `UPDATE messages
+        SET status = 'sending', last_attempt_at = now(), attempts = attempts + 1
+      WHERE id = $1
+        AND direction = 'outbound'
+        AND status = 'queued'
+        AND attempts < $2
+  RETURNING id, org_id, client_id, channel, rendered_body,
+            template_key, provider_ref, attempts, to_address, subject`,
+    [messageId, MAX_ATTEMPTS]
+  );
+  return rows[0] || null;
+}
+
+/* dispatchMessage — claim one message by id and dispatch it now.
+
+   THE ENTRY POINT FOR A SEND SOMEONE IS WAITING ON. dispatchDue() works a
+   backlog on whatever schedule eventually runs it; a staff member who just
+   pressed Send needs an answer about THIS message in THIS request, and polling
+   a batch dispatcher for it would be both slower and racier.
+
+   IT ADDS NO CAPABILITY. Every check, every block, every deferral is
+   dispatchOne's, unchanged — this function resolves an id to a claimed row and
+   hands it over. There is no options key it accepts that dispatchOne does not,
+   and in particular there is nothing here that can skip the gate. Compare the
+   two call sites: dispatchDue passes claimDue's rows to dispatchOne, this passes
+   claimOne's row to dispatchOne, and dispatchOne cannot tell them apart.
+
+   Returns dispatchOne's shape, or { id, outcome: "not_claimable" } when the row
+   was not there to claim — already sent, already blocked, being dispatched by
+   somebody else, or out of attempts. That is a real answer, not an error: it
+   means this message is not currently the caller's to send.
+
+   NOTHING SCHEDULES THIS EITHER. The module header's "nothing is scheduled"
+   still holds — there is still no cron, no timer and no Inngest registration.
+   This runs when a request calls it. */
+export const NOT_CLAIMABLE = "not_claimable";
+
+export async function dispatchMessage(db, messageId, options = {}) {
+  if (!messageId) throw new Error("dispatchMessage: messageId is required");
+  const claimed = await claimOne(db, messageId);
+  if (!claimed) return { id: messageId, outcome: NOT_CLAIMABLE, detail: null };
+  return await dispatchOne(db, claimed, options);
 }
 
 /* dispatchDue — claim a batch and dispatch each one.

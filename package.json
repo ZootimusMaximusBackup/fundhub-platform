@@ -17,11 +17,15 @@
     "journeys": "node scripts/journeys/generate.mjs",
     "journeys:check": "node scripts/journeys/generate.mjs --check",
     "test": "node --test \"src/**/*.test.mjs\" \"scripts/**/*.test.mjs\"",
-    "guard:db": "node --test src/security/superuser-guard.test.mjs"
+    "guard:db": "node --test src/security/superuser-guard.test.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@netlify/blobs": "^10.7.11",
     "inngest": "^3.21.2",
     "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
   }
 }

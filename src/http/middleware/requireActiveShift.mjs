@@ -89,6 +89,36 @@ export const SHIFT_UNAVAILABLE = Symbol("shift_unavailable");
  * wrong table's key space that happens to return zero rows and read as "not
  * clocked in".
  */
+/* roleFrom — the caller's role, lowercased, or "".
+
+   Read from the same two shapes staffIdFrom reads, and for the same reason:
+   requirePrincipal hands back a `role` and attaches nothing, requireAuth
+   attaches req.staff.role. Used only by the exemption below. */
+export function roleFrom(req, { principal } = {}) {
+  const p = principal ?? req?.principal ?? null;
+  const raw = (p && (p.role ?? p.staff?.role)) ?? req?.staff?.role ?? "";
+  return String(raw).trim().toLowerCase();
+}
+
+/* EXEMPT_SHIFT — the sentinel a gate returns for somebody who does not clock in.
+ *
+ * WHY THIS IS AN OBJECT AND NOT `true`, AND NOT null.
+ *
+ * Every call site is written `const shift = await requireActiveShift(...); if
+ * (!shift) return;` and then reads `shift.id` to stamp the work with the clock
+ * it happened on. Returning null would refuse the caller. Returning `true` would
+ * pass them and then blow up on `.id`.
+ *
+ * So it is a shift-shaped object whose `id` is null, which is the honest value:
+ * this work is not attached to a shift, and `staff_events.shift_id` is nullable
+ * precisely because "not linked to a shift" is a legitimate state (see the
+ * header of src/shifts/telemetry.mjs). An owner's message is recorded as sent by
+ * that owner, on no shift, which is exactly what happened.
+ *
+ * `exempt: true` is on it so a caller that wants to tell the two apart can,
+ * without having to compare ids to null and guess why. */
+export const EXEMPT_SHIFT = Object.freeze({ id: null, exempt: true });
+
 export function staffIdFrom(req, { principal } = {}) {
   const p = principal ?? req?.principal ?? null;
   if (p && typeof p === "object") {
@@ -182,6 +212,38 @@ export async function attachShift(req, opts = {}) {
  */
 export async function requireActiveShift(req, res, opts = {}) {
   const { staffId, kind } = staffIdFrom(req, opts);
+
+  /* ── THE EXEMPTION ──────────────────────────────────────────────────────
+     ACTIVE-SHIFT-ROLLOUT.md §3c left this open: "Does an `owner` bypass this
+     gate the way SUPER_ROLES bypasses requireRole? ... Not built. Needs a
+     decision." §4 question 2 restated it: "Do owners and admins clock in?
+     Nothing in `staff`, `shifts`, the schema or the spec distinguishes roles
+     for the purpose of shifts. Left unimplemented rather than guessed."
+
+     DECIDED BY THE OWNER, 2026-08-02, verbatim: "Owners definitely don't clock
+     in." Logged as owner-set. The question is closed; do not re-raise it.
+
+     Note it is exactly the shape §3c proposed — an option on the gate, not a
+     second copy of the check — so which endpoints grant it stays readable at
+     each call site instead of being a rule buried in here. And it is
+     ROLE-scoped, not id-scoped: there is no list of exempt people to keep in
+     step with the staff table.
+
+     IT IS OPT-IN PER CALL SITE. A gate that exempted owners by default would
+     silently widen every future endpoint that adopts it. `exempt` is absent
+     unless a handler passes it, so the default is still "everyone clocks in".
+
+     The check runs before the database is touched, which matters: an owner who
+     does not clock in has no shift row to find, and asking for one would be a
+     query whose only possible answer is the refusal this skips. */
+  const exempt = opts.exempt;
+  if (staffId && Array.isArray(exempt) && exempt.length) {
+    const role = roleFrom(req, opts);
+    if (role && exempt.map((r) => String(r).trim().toLowerCase()).includes(role)) {
+      req.shift = EXEMPT_SHIFT;
+      return EXEMPT_SHIFT;
+    }
+  }
 
   if (!staffId) {
     if (kind) {

@@ -32,6 +32,7 @@
 import { db } from "../src/db.mjs";
 import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
 import { requireActiveShift } from "../src/http/middleware/requireActiveShift.mjs";
+import { SUPER_ROLES } from "../src/http/middleware/requireRole.mjs";
 import { isUuid, CLIENT_DATA_ERRORS } from "../src/http/read-api.mjs";
 import { logAttempt, confirmRemoval, setStatus, listAttempts, InquiryWriteError } from "../src/inquiries/work.mjs";
 
@@ -60,7 +61,12 @@ export default async function handler(req, res) {
          including the 503 it answers when the shift CHECK itself failed, which
          must never collapse into "you are not clocked in" and must never fall
          through to the write. */
-      const shift = await requireActiveShift(req, res, { db, principal });
+      /* Owners are exempt — owner decision, 2026-08-02: "Owners definitely
+         don't clock in." Granted here as well as on api/messages.mjs because
+         the decision is about owners, not about messaging: leaving it off this
+         endpoint would lock the owner out of the dispute write path with a
+         403 telling him to do something he has said he does not do. */
+      const shift = await requireActiveShift(req, res, { db, principal, exempt: SUPER_ROLES });
       if (!shift) return;
 
       const body = req.body || {};

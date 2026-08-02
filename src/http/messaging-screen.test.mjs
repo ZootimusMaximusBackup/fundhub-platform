@@ -1,0 +1,413 @@
+/* Tests for public/app/messaging.html — the staff reply inbox.
+ *
+ * TWO HALVES, the same shape as src/http/pipeline-screen.test.mjs:
+ *
+ *   THE VIEW MODEL. The block between FH-INBOX-BEGIN/END is lifted out and run
+ *   in a vm, so the rules with consequences — what a row says, which count is
+ *   which, and above all what each send outcome MEANS — are driven directly
+ *   rather than inferred from markup.
+ *
+ *   THE WIRING. Assertions on the page text: that the sample transcript is
+ *   gone, that the three reads and the one write are actually called, and that
+ *   nothing claims a fact no endpoint answers.
+ *
+ * THE OUTCOME CASES ARE THE ONES THAT MATTER. A message the compliance gate
+ * held and a message queued for the morning are both "not delivered", and if
+ * the screen says the same thing about them somebody either retypes a text
+ * that is already going out, or believes a blocked one went. That is a real
+ * consequence in a regulated product, so each outcome is asserted by name.
+ *
+ * It lives under src/ rather than public/ because package.json's test glob only
+ * walks src/ and scripts/ (CLAUDE.md §12).
+ */
+import { test, describe } from "node:test";
+import assert from "node:assert";
+import fs from "node:fs";
+import path from "node:path";
+import vm from "node:vm";
+import { fileURLToPath } from "node:url";
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const SCREEN = path.resolve(HERE, "../../public/app/messaging.html");
+const HTML = fs.readFileSync(SCREEN, "utf8");
+
+const BEGIN = "/* FH-INBOX-BEGIN */";
+const END = "/* FH-INBOX-END */";
+
+function loadViewModel() {
+  const a = HTML.indexOf(BEGIN);
+  const b = HTML.indexOf(END);
+  assert.ok(a !== -1 && b > a, "the FH-INBOX markers are gone from messaging.html");
+  const sandbox = { window: {} };
+  sandbox.globalThis = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(HTML.slice(a + BEGIN.length, b), sandbox, { filename: SCREEN + "#FH-INBOX" });
+  assert.ok(sandbox.window.FHInbox, "the view model did not attach itself to window");
+  return sandbox.window.FHInbox;
+}
+
+const NOW = Date.parse("2026-08-02T12:00:00Z");
+const ago = (ms) => new Date(NOW - ms).toISOString();
+
+describe("messaging.html — what a conversation row says", () => {
+
+  test("a person with no name on file is named honestly, not left blank", () => {
+    const V = loadViewModel();
+    assert.equal(V.displayName({ first_name: "Ada", last_name: "Byron" }), "Ada Byron");
+    assert.equal(V.displayName({ first_name: "Ada", last_name: null }), "Ada");
+    assert.equal(V.displayName({}), "Unnamed client");
+    assert.equal(V.displayName(null), "Unnamed client");
+  });
+
+  // An avatar reading "A" for somebody whose name we do not have is a small lie
+  // that looks like data.
+  test("initials fall back to a dash rather than to an invented letter", () => {
+    const V = loadViewModel();
+    assert.equal(V.initials({ first_name: "Ada", last_name: "Byron" }), "AB");
+    assert.equal(V.initials({}), "—");
+    assert.equal(V.initialsFromName(""), "—");
+    assert.equal(V.initialsFromName("Jordan Blake"), "JB");
+  });
+
+  test("a thread with no messages says so instead of showing an empty quote", () => {
+    const V = loadViewModel();
+    assert.equal(V.previewOf({ last_body: null }), "No messages on this thread yet.");
+    assert.equal(V.previewOf({ last_body: "   " }), "No messages on this thread yet.");
+    assert.equal(V.previewOf({ last_body: "call me back" }), "call me back");
+  });
+
+  test("the time is coarse and never negative, whatever a clock says", () => {
+    const V = loadViewModel();
+    assert.equal(V.shortWhen(ago(30 * 1000), NOW), "now");
+    assert.equal(V.shortWhen(ago(5 * 60 * 1000), NOW), "5m");
+    assert.equal(V.shortWhen(ago(3 * 3600 * 1000), NOW), "3h");
+    assert.equal(V.shortWhen(ago(2 * 86400 * 1000), NOW), "2d");
+    assert.equal(V.shortWhen(null, NOW), "");
+    assert.equal(V.shortWhen("not a date", NOW), "");
+    // A row stamped a second in the future (clock skew) must not read "-1m".
+    assert.equal(V.shortWhen(new Date(NOW + 5000).toISOString(), NOW), "now");
+  });
+
+  test("the message body is escaped — a client's text is not markup", () => {
+    const V = loadViewModel();
+    const html = V.conversationRow(
+      { id: "c1", first_name: "Ada", channel: "sms", last_body: "<img src=x onerror=alert(1)>" }, {});
+    assert.ok(!html.includes("<img"), "a client's message was rendered as HTML");
+    assert.ok(html.includes("&lt;img"));
+  });
+});
+
+describe("messaging.html — the unread indication", () => {
+
+  // "Needs reply", not "unread": nothing in this system records who has READ a
+  // thread. See the header of api/read/inbox.mjs.
+  test("a thread the client spoke on last is marked; one we answered is not", () => {
+    const V = loadViewModel();
+    const waiting = V.conversationRow({ id: "a", channel: "sms", needs_reply: true }, {});
+    const answered = V.conversationRow({ id: "b", channel: "sms", needs_reply: false }, {});
+    assert.match(waiting, /class="convo unread/);
+    assert.match(waiting, /unread-dot/);
+    assert.match(waiting, /Waiting on us/);
+    assert.ok(!/unread-dot/.test(answered), "an answered thread is marked as needing a reply");
+  });
+
+  test("a thread with no messages is neither waiting nor answered", () => {
+    const V = loadViewModel();
+    // needs_reply is null when there is no last message. Null is not false and
+    // must not be counted as either.
+    const row = V.conversationRow({ id: "c", channel: "email", needs_reply: null }, {});
+    assert.ok(!/unread-dot/.test(row));
+    assert.deepEqual(V.countsFor([{ needs_reply: null }, { needs_reply: true }, { needs_reply: false }]),
+      { all: 3, reply: 1 });
+  });
+
+  test("the counts are of real rows, and an empty inbox counts zero", () => {
+    const V = loadViewModel();
+    assert.deepEqual(V.countsFor([]), { all: 0, reply: 0 });
+    assert.deepEqual(V.countsFor(null), { all: 0, reply: 0 });
+  });
+
+  test("the Needs-reply tab filters to exactly those threads", () => {
+    const V = loadViewModel();
+    const rows = [
+      { id: "1", first_name: "Ada", needs_reply: true, last_body: "hello" },
+      { id: "2", first_name: "Bob", needs_reply: false, last_body: "thanks" },
+      { id: "3", first_name: "Cy", needs_reply: null, last_body: null }
+    ];
+    assert.deepEqual(V.filterRows(rows, { filter: "reply" }).map((r) => r.id), ["1"]);
+    assert.deepEqual(V.filterRows(rows, { filter: "all" }).map((r) => r.id), ["1", "2", "3"]);
+    assert.deepEqual(V.filterRows(rows, { filter: "all", q: "bob" }).map((r) => r.id), ["2"]);
+    assert.deepEqual(V.filterRows(rows, { filter: "all", q: "thanks" }).map((r) => r.id), ["2"]);
+    assert.deepEqual(V.filterRows(rows, { filter: "all", q: "nobody" }), []);
+  });
+});
+
+describe("messaging.html — who sent a message", () => {
+
+  test("a staff reply carries its author's name", () => {
+    const V = loadViewModel();
+    const html = V.messageRow(
+      { id: "m1", direction: "outbound", channel: "sms", rendered_body: "on my way", status: "sent", sender_name: "Jordan Blake" },
+      { clientName: "Ada Byron" });
+    assert.match(html, /Jordan Blake/);
+    assert.match(html, /out-human/);
+    assert.ok(!/Automatic/.test(html));
+  });
+
+  // A workflow's message has no author. Attributing it to whoever is looking at
+  // the screen would be inventing an actor.
+  test("a message with no author is labelled automatic, not attributed to anyone", () => {
+    const V = loadViewModel();
+    const html = V.messageRow(
+      { id: "m2", direction: "outbound", channel: "sms", rendered_body: "reminder", status: "sent", sender_name: null },
+      { clientName: "Ada Byron" });
+    assert.match(html, /Automatic/);
+    assert.match(html, /out-agent/);
+  });
+
+  test("an inbound message is the client's, on the client's side", () => {
+    const V = loadViewModel();
+    const html = V.messageRow(
+      { id: "m3", direction: "inbound", channel: "sms", rendered_body: "any update?", status: "received" },
+      { clientName: "Ada Byron", clientInitials: "AB" });
+    assert.match(html, /Ada Byron/);
+    assert.match(html, /bubble in/);
+    assert.ok(!/class="msg out"/.test(html));
+  });
+
+  // The one place a staff member learns their reply did not go out.
+  test("a held or blocked message says so on the message itself", () => {
+    const V = loadViewModel();
+    const blocked = V.messageRow(
+      { id: "m4", direction: "outbound", channel: "sms", rendered_body: "hi", status: "blocked",
+        blocked_reason: "opted_out", sender_name: "Jordan Blake" }, {});
+    assert.match(blocked, /msg-error/);
+    assert.match(blocked, /compliance check stopped it/);
+    assert.match(blocked, /opted_out/);
+
+    const sent = V.messageRow(
+      { id: "m5", direction: "outbound", channel: "sms", rendered_body: "hi", status: "sent", sender_name: "Jordan Blake" }, {});
+    assert.ok(!/msg-error/.test(sent), "a message that went out is flagged as a problem");
+  });
+
+  test("an email's subject is shown and a text's absent subject adds nothing", () => {
+    const V = loadViewModel();
+    const email = V.messageRow(
+      { id: "m6", direction: "inbound", channel: "email", subject: "Re: my file", rendered_body: "attached" }, {});
+    assert.match(email, /email-subj/);
+    assert.match(email, /Re: my file/);
+    const sms = V.messageRow({ id: "m7", direction: "inbound", channel: "sms", subject: null, rendered_body: "hi" }, {});
+    assert.ok(!/email-subj/.test(sms));
+  });
+});
+
+describe("messaging.html — what the screen says after a send", () => {
+
+  test("accepted is not delivered: each outcome is a different sentence", () => {
+    const V = loadViewModel();
+    const texts = ["sent", "deferred", "blocked", "no_route", "no_address", "retry", "rejected"]
+      .map((o) => V.outcomeMessage(o).text);
+    assert.equal(new Set(texts).size, texts.length,
+      "two different send outcomes are reported to the user with the same words");
+  });
+
+  test("a text held for quiet hours tells the person NOT to send it again", () => {
+    const V = loadViewModel();
+    const out = V.outcomeMessage("deferred");
+    assert.equal(out.tone, "hold");
+    assert.match(out.text, /11:00am Eastern/);
+    assert.match(out.text, /do not need to send it again/i);
+    assert.ok(!/failed|error|not sent/i.test(out.text), "a deferral is being reported as a failure");
+  });
+
+  /* ONE RULE, ONE SENTENCE. The warning above the compose box and the reply
+     after Send describe the same thing, and if they drift a staff member reads
+     them as two different rules. They said "11am Eastern" and "11:00am Eastern"
+     for a while, which is exactly how that starts. */
+  test("the hold message and the texting-hours warning use the same words", () => {
+    const V = loadViewModel();
+    const afterSend = V.outcomeMessage("deferred").text;
+    const beforeTyping = V.quietNotice("sms", Date.parse("2026-01-15T07:00:00Z")).text;
+    for (const phrase of ["11:00am Eastern", "do not need to send it again"]) {
+      assert.ok(afterSend.includes(phrase), `the post-send message dropped "${phrase}"`);
+      assert.ok(beforeTyping.includes(phrase), `the pre-typing warning dropped "${phrase}"`);
+    }
+  });
+
+  test("a blocked message is reported as not sent, and names why when we know", () => {
+    const V = loadViewModel();
+    const out = V.outcomeMessage("blocked", ["opted_out"]);
+    assert.equal(out.tone, "stop");
+    assert.match(out.text, /Not sent/);
+    assert.match(out.text, /opted_out/);
+  });
+
+  test("a missing phone number and a missing provider are different problems", () => {
+    const V = loadViewModel();
+    assert.match(V.outcomeMessage("no_address").text, /phone number or email address/);
+    assert.match(V.outcomeMessage("no_route").text, /provider is set up/);
+  });
+
+  // An outcome nobody has taught this screen about must not become "Sent."
+  test("an unknown outcome is never reported as sent", () => {
+    const V = loadViewModel();
+    const out = V.outcomeMessage("something_new_from_the_dispatcher");
+    assert.notEqual(out.tone, "ok");
+    assert.ok(!/^Sent\./.test(out.text));
+  });
+});
+
+describe("messaging.html — the wiring", () => {
+
+  test("the sample transcript and its cast are gone from the page", () => {
+    for (const sample of ["Priya Nair", "Jordan Blake", "Maria Delgado", "Felix Ndiaye",
+                          "Grace Kowalski", "Nair Catering", "$12,400", "$18,500"]) {
+      assert.ok(!HTML.includes(sample), `the sample value ${JSON.stringify(sample)} is still in the page`);
+    }
+  });
+
+  test("the three reads and the one write are all actually called", () => {
+    assert.match(HTML, /FHData\.inbox\(/, "the conversation list is not wired to /api/read/inbox");
+    assert.match(HTML, /FHData\.thread\(/, "the thread is not wired to /api/read/messages");
+    assert.match(HTML, /FHData\.conversations\(/, "the context panel is not wired to /api/read/conversations");
+    assert.match(HTML, /FHData\.sendMessage\(/, "the compose box does not send anything");
+  });
+
+  test("the compose box is a real control, not a div pretending to be one", () => {
+    assert.match(HTML, /<textarea[^>]*id="composeBody"/);
+    assert.match(HTML, /<button class="send-btn" id="sendBtn"/);
+    // Disabled until a conversation is open — there is nowhere to send to.
+    assert.match(HTML, /id="composeBody"[\s\S]{0,200}?disabled/);
+  });
+
+  test("the send carries an idempotency key so a retry cannot double-send", () => {
+    assert.match(HTML, /idempotency_key:/);
+  });
+
+  test("empty states are honest — no rows and a failed read say different things", () => {
+    assert.match(HTML, /No conversations yet\./);
+    assert.match(HTML, /Nothing matches what you typed\./);
+    assert.match(HTML, /We could not load your conversations\./);
+    assert.match(HTML, /Nothing has been said on this thread yet\./);
+  });
+
+  test("the context panel claims nothing the endpoints do not answer", () => {
+    // These four were sample values with no endpoint behind them. A made-up
+    // funding number beside a live thread is something somebody reads aloud.
+    for (const invented of ["Prequal estimate", "Temperature", "Available credit", "Requested draw"]) {
+      assert.ok(!HTML.includes(invented), `the context panel still shows "${invented}", which nothing answers`);
+    }
+  });
+
+  // sentiment is NULL for every row in this codebase and nothing computes it.
+  test("no sentiment is rendered, because nothing computes one", () => {
+    assert.ok(!/Hot|Warm|Cold/.test(HTML.replace(/<!--[\s\S]*?-->/g, "")),
+      "a Hot/Warm/Cold reading is on screen and no code in this repository produces one");
+  });
+});
+
+describe("messaging.html — the texting-hours warning, before anyone types", () => {
+
+  /* The owner had never heard of the overnight rule. That is the whole reason
+     this block exists: the rule was enforced at send time and stated nowhere,
+     so the first anybody knew of it was a reply that did not go out. */
+
+  test("the screen's window is the same window the server enforces", async () => {
+    const V = loadViewModel();
+    // Read the gate's own constants rather than restating them, so the screen
+    // cannot end up promising a window the server does not honour.
+    const gate = await import("../messaging/gate.mjs");
+    assert.equal(V.QUIET_START_HOUR, gate.QUIET_START_HOUR);
+    assert.equal(V.QUIET_END_HOUR, gate.QUIET_END_HOUR);
+  });
+
+  test("it reads the hour in US Eastern, not in the viewer's own timezone", () => {
+    const V = loadViewModel();
+    // 04:00 UTC is midnight or 1am in New York whatever the season. A staff
+    // member in Manila must see the rule that applies to the person receiving
+    // the text, not the clock on their own wall.
+    assert.equal(V.easternHour(Date.parse("2026-01-15T04:00:00Z")), 23);
+    assert.equal(V.easternHour(Date.parse("2026-01-15T18:00:00Z")), 13);
+  });
+
+  test("the window wraps midnight — it is shut at 2am and open at noon", () => {
+    const V = loadViewModel();
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T07:00:00Z")), true);  // 02:00 ET
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T05:00:00Z")), true);  // 00:00 ET
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T17:00:00Z")), false); // 12:00 ET
+    // 22:00 ET is the last hour the window is OPEN — one hour before it shuts.
+    // Getting this boundary backwards yields a window that is never open, which
+    // is why it is asserted rather than assumed.
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T03:00:00Z")), false); // 22:00 ET
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T04:00:00Z")), true);  // 23:00 ET — shuts
+  });
+
+  test("a text thread states the rule up front, before anything is typed", () => {
+    const V = loadViewModel();
+    const open = V.quietNotice("sms", Date.parse("2026-01-15T17:00:00Z"));
+    assert.equal(open.closed, false);
+    assert.match(open.text, /11:00am to 11:00pm Eastern/);
+    assert.match(open.text, /held and sent the next morning/);
+  });
+
+  test("inside the window it says plainly that this will not go now, and when it will", () => {
+    const V = loadViewModel();
+    const shut = V.quietNotice("sms", Date.parse("2026-01-15T07:00:00Z"));
+    assert.equal(shut.closed, true);
+    assert.match(shut.text, /11:00am Eastern/);
+    // The single most important sentence on the screen at 2am: do not retype it.
+    assert.match(shut.text, /do not need to send it again/i);
+  });
+
+  test("email threads say nothing about it, because it does not apply to them", () => {
+    const V = loadViewModel();
+    assert.equal(V.quietNotice("email", Date.parse("2026-01-15T07:00:00Z")).text, "");
+    assert.equal(V.quietNotice(null, Date.parse("2026-01-15T07:00:00Z")).text, "");
+  });
+
+  test("the notice is in the page and repaints on a timer, not only on load", () => {
+    assert.match(HTML, /id="quietNote"/);
+    assert.match(HTML, /paintQuietNote\(/);
+    // A browser left open across 11pm must stop saying the window is open.
+    assert.match(HTML, /setInterval\([\s\S]{0,200}?paintQuietNote/);
+  });
+});
+
+describe("messaging.html — what happens when there are a lot of conversations", () => {
+
+  test("the Needs-reply tab asks the server, so it cannot show a partial answer", () => {
+    assert.match(HTML, /params\.needs_reply\s*=\s*1/,
+      "the tab is still filtered in the browser, which at scale shows the unanswered " +
+      "threads among the loaded page while looking like it shows all of them");
+    // Switching tabs is a new question, so it refetches rather than re-slicing.
+    assert.match(HTML, /state\.filter = tab\.getAttribute\("data-filter"\);\s*\n[\s\S]{0,300}?loadList\(\)/);
+  });
+
+  test("the search box says when it is only searching what is loaded", () => {
+    const V = loadViewModel();
+    assert.equal(V.searchScopeNote(200, true, "ada"), "Searching the 200 most recent conversations only.");
+    // Nothing to disclose when everything is loaded, or when nobody is searching.
+    assert.equal(V.searchScopeNote(12, false, "ada"), "");
+    assert.equal(V.searchScopeNote(200, true, ""), "");
+    assert.equal(V.searchScopeNote(200, true, "   "), "");
+  });
+
+  test("the inbox refreshes itself, so a message that arrives is actually seen", () => {
+    assert.match(HTML, /REFRESH_MS/);
+    assert.match(HTML, /setInterval\([\s\S]{0,300}?loadList\(\{ quiet: true \}\)/);
+    // A background tab is not somebody looking at the screen.
+    assert.match(HTML, /document\.hidden/);
+    // And a refresh must not land in the middle of a send.
+    assert.match(HTML, /if \(state\.sending\) return;/);
+  });
+
+  test("a failed background refresh leaves the working screen alone", () => {
+    // Blanking a live inbox because one poll missed would take the thread
+    // somebody is mid-reply to off the screen.
+    assert.match(HTML, /if \(quiet\) \{ FHData\.explain\(res, "conversations"\); return; \}/);
+  });
+
+  test("an empty Needs-reply tab reads as good news, not as an error", () => {
+    assert.match(HTML, /Nothing is waiting on a reply/);
+  });
+});

@@ -39,6 +39,7 @@ import journeysRun from "../../api/journeys/run.mjs";
 import journeysStore from "../../api/journeys.mjs";
 import messageTemplatesWrite from "../../api/message-templates.mjs";
 import tasks from "../../api/tasks.mjs";
+import messagesWrite from "../../api/messages.mjs";
 import inquiry from "../../api/inquiry.mjs";
 import dashClients from "../../api/dashboard/clients.mjs";
 import dashClient from "../../api/dashboard/client.mjs";
@@ -61,6 +62,8 @@ import readAgents from "../../api/read/agents.mjs";
 import readInquiries from "../../api/read/inquiries.mjs";
 import readProducts from "../../api/read/products.mjs";
 import readConversations from "../../api/read/conversations.mjs";
+import readInbox from "../../api/read/inbox.mjs";
+import readMessages from "../../api/read/messages.mjs";
 import readTradelines from "../../api/read/tradelines.mjs";
 import readFinanceOs from "../../api/read/finance-os.mjs";
 import readBankingSurface from "../../api/read/banking-surface.mjs";
@@ -148,6 +151,19 @@ export const ROUTES = {
      is "read/message-templates" further down this map. */
   "message-templates": messageTemplatesWrite,
   "tasks": tasks,
+
+  /* The staff reply inbox's write half. POST only — a staff member composing a
+     message to a client. Routed in the same commit as the handler, the service,
+     the migration and the screen, because an unreachable send endpoint is the
+     failure mode src/http/routes.test.mjs exists for: the inbox would render,
+     the compose box would accept typing, and Send would 404.
+
+     Its read halves are "read/inbox" and "read/messages" further down this map.
+     They are separate routes rather than a GET branch here because they are
+     readHandler endpoints — paginated, role-gated, GET-only — and this one is a
+     shift-gated write. One route serving both would put a write gate and a read
+     gate in the same file and eventually on the same path. */
+  "messages": messagesWrite,
   "inquiry": inquiry,
   "dashboard/clients": dashClients,
   "dashboard/client": dashClient,
@@ -169,6 +185,14 @@ export const ROUTES = {
   "read/inquiries": readInquiries,
   "read/products": readProducts,
   "read/conversations": readConversations,
+
+  /* The staff reply inbox's two reads. "read/inbox" is the thread list across
+     the whole company; "read/conversations" directly above is the per-client
+     panel and is deliberately NOT the same endpoint — see the header of
+     api/read/inbox.mjs for why the client_id requirement there was left alone
+     rather than relaxed. "read/messages" reads inside one thread. */
+  "read/inbox": readInbox,
+  "read/messages": readMessages,
 
   // read/tradelines was held out of this map by the routing pass because
   // api/read/tradelines.mjs declared a role gate it did not get: it passed

@@ -315,6 +315,24 @@
     aspect-ratio:2698/543;background:var(--logo) no-repeat center/contain;
     filter:invert(1);opacity:.05;pointer-events:none;z-index:0;}
   .nominal{display:flex;align-items:center;gap:7px;margin-left:auto;}
+  /* The compose box is a real <textarea> now, not a placeholder div, and the
+     tabs are real <button>s. Both inherit browser defaults that fight the rest
+     of the page unless they are told not to. */
+  /* The texting-hours line. Two looks: a quiet statement of the rule while the
+     window is open, and a real warning while it is shut. */
+  /* What the search box is really searching, when that is not everything. */
+  .search-scope{font-size:10px;color:var(--text-faint);padding:7px 12px 0;line-height:1.4;}
+  .quiet-note{font-size:11px;line-height:1.45;color:var(--text-dim);margin-bottom:7px;
+    border-left:2px solid var(--line);padding:3px 0 3px 8px;}
+  .quiet-note.closed{color:var(--ink2);border-left-color:var(--warn-line);
+    background:var(--warn-bg);border-radius:0 5px 5px 0;padding:5px 8px;font-weight:600;}
+  .quiet-note[hidden]{display:none;}
+  textarea.compose-input{font-family:var(--sans);color:var(--text);resize:vertical;outline:none;}
+  textarea.compose-input:focus{border-color:var(--ink);}
+  textarea.compose-input:disabled{color:var(--text-faint);background:var(--paper-dim);}
+  .ctab{font-family:var(--sans);cursor:pointer;}
+  .send-btn:disabled{opacity:.42;cursor:default;}
+  .convo:focus-visible{outline:2px solid var(--ink);outline-offset:-2px;}
   .thread-note{margin-top:14px;padding-top:10px;border-top:1px dashed var(--line);
     font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--text-faint);line-height:1.6;}
 </style>
@@ -394,144 +412,25 @@
 
   <main>
 
-    <!-- ============ LEFT: CONVERSATIONS ============ -->
+    <!-- ============ LEFT: CONVERSATIONS ============
+         Every row here is a `conversations` row from GET /api/read/inbox,
+         newest activity first. There is no sample markup left in this column:
+         if the read fails the list says so, and if it succeeds with nothing it
+         says that instead. Those are different sentences on purpose. -->
     <section class="convo-col">
       <div class="convo-head">
-        <div class="search"><span>⌕</span><input id="q" placeholder="Search people and messages"></div>
+        <div class="search"><span>&#8981;</span><input id="q" placeholder="Search people and messages" autocomplete="off"></div>
         <div class="convo-tabs">
-          <div class="ctab active">All <span class="n">32</span></div>
-          <div class="ctab">Unread <span class="n">5</span></div>
-          <div class="ctab">Mine <span class="n">9</span></div>
-          <div class="ctab">Agents <span class="n">18</span></div>
+          <button class="ctab active" data-filter="all">All <span class="n" id="nAll">&mdash;</span></button>
+          <!-- "Needs reply", not "Unread". Nothing in this system records who
+               has READ a thread, so the count is "the client spoke last and
+               nobody has answered". See the header of api/read/inbox.mjs. -->
+          <button class="ctab" data-filter="reply">Needs reply <span class="n" id="nReply">&mdash;</span></button>
         </div>
       </div>
 
       <div class="convo-list" id="convoList">
-
-        <div class="convo active">
-          <div class="av client">PN</div>
-          <div class="cv-body">
-            <div class="cv-top"><span class="cv-name">Priya Nair</span><span class="cv-time">now</span></div>
-            <div class="cv-prev">“…so if I only draw part of it, does that change the payment?”</div>
-            <div class="cv-meta">
-              <span class="live-tag"><span class="d"></span>ON A CALL</span>
-              <span class="ch-tag">CALL</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="convo unread">
-          <div class="av client">KW</div>
-          <div class="cv-body">
-            <div class="cv-top"><span class="cv-name">Kayla Whitmore</span><span class="cv-time">now</span></div>
-            <div class="cv-prev">Setter Josh is walking her through the survey questions.</div>
-            <div class="cv-meta">
-              <span class="who-tag agent"><span class="av agent sm" style="width:11px;height:11px;font-size:0;"></span>Setter Josh</span>
-              <span class="ch-tag">CALL</span>
-            </div>
-          </div>
-          <span class="unread-dot"></span>
-        </div>
-
-        <div class="convo unread">
-          <div class="av client">RS</div>
-          <div class="cv-body">
-            <div class="cv-top"><span class="cv-name">Rachel Simmons</span><span class="cv-time">1h</span></div>
-            <div class="cv-prev">“I thought that invoice was already handled — can someone call me?”</div>
-            <div class="cv-meta">
-              <span class="who-tag client">Client replied</span>
-              <span class="ch-tag">SMS</span>
-            </div>
-          </div>
-          <span class="unread-dot urgent"></span>
-        </div>
-
-        <div class="convo">
-          <div class="av client">CB</div>
-          <div class="cv-body">
-            <div class="cv-top"><span class="cv-name">Carlos Bettencourt</span><span class="cv-time">2m</span></div>
-            <div class="cv-prev">“Today at 4:30 works great, see you then.”</div>
-            <div class="cv-meta">
-              <span class="who-tag agent">Setter Josh</span>
-              <span class="ch-tag">SMS</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="convo unread">
-          <div class="av client">DO</div>
-          <div class="cv-body">
-            <div class="cv-top"><span class="cv-name">Derek Owusu</span><span class="cv-time">2d</span></div>
-            <div class="cv-prev">Still waiting on bank statements and a voided check.</div>
-            <div class="cv-meta">
-              <span class="who-tag agent">Agent 5</span>
-              <span class="ch-tag">EMAIL</span>
-            </div>
-          </div>
-          <span class="unread-dot"></span>
-        </div>
-
-        <div class="convo">
-          <div class="av client">TR</div>
-          <div class="cv-body">
-            <div class="cv-top"><span class="cv-name">Tomás Reyes</span><span class="cv-time">12m</span></div>
-            <div class="cv-prev">“Not a good time, try me next week.”</div>
-            <div class="cv-meta">
-              <span class="who-tag agent">Agent 1</span>
-              <span class="ch-tag">SMS</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="convo">
-          <div class="av client">EV</div>
-          <div class="cv-body">
-            <div class="cv-top"><span class="cv-name">Elena Vasquez</span><span class="cv-time">3h</span></div>
-            <div class="cv-prev">“Talking it over with my husband tonight, I'll let you know tomorrow.”</div>
-            <div class="cv-meta">
-              <span class="who-tag human">Jordan Blake</span>
-              <span class="ch-tag">SMS</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="convo unread">
-          <div class="av client">FN</div>
-          <div class="cv-body">
-            <div class="cv-top"><span class="cv-name">Felix Ndiaye</span><span class="cv-time">2d 14h</span></div>
-            <div class="cv-prev">“Any update on the Capital One inquiry?”</div>
-            <div class="cv-meta">
-              <span class="who-tag human">Alvin Torres</span>
-              <span class="ch-tag">SMS</span>
-            </div>
-          </div>
-          <span class="unread-dot urgent"></span>
-        </div>
-
-        <div class="convo">
-          <div class="av client">GK</div>
-          <div class="cv-body">
-            <div class="cv-top"><span class="cv-name">Grace Kowalski</span><span class="cv-time">1d 3h</span></div>
-            <div class="cv-prev">Messages paused — her file is under fraud review.</div>
-            <div class="cv-meta">
-              <span class="who-tag agent">Compliance Gate</span>
-              <span class="ch-tag">HOLD</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="convo">
-          <div class="av client">MD</div>
-          <div class="cv-body">
-            <div class="cv-top"><span class="cv-name">Maria Delgado</span><span class="cv-time">2m</span></div>
-            <div class="cv-prev">“$18,500 just hit my account. Thank you so much!!”</div>
-            <div class="cv-meta">
-              <span class="who-tag client">Client replied</span>
-              <span class="ch-tag">SMS</span>
-            </div>
-          </div>
-        </div>
-
+        <div class="empty-box" id="convoEmpty" style="margin:14px 12px;">Loading conversations&hellip;</div>
       </div>
     </section>
 
@@ -540,256 +439,68 @@
 
       <div class="thread-head">
         <div class="th-left">
-          <div class="av client" id="thAv" style="width:32px;height:32px;font-size:11px;">PN</div>
+          <div class="av client" id="thAv" style="width:32px;height:32px;font-size:11px;">&mdash;</div>
           <div>
-            <div class="th-name" id="thName">Priya Nair</div>
-            <div class="th-sub" id="thSub">Sales · Diagnostic Paid · Jordan Blake owns this</div>
+            <div class="th-name" id="thName">No conversation open</div>
+            <div class="th-sub" id="thSub">Pick one on the left to read it.</div>
           </div>
-        </div>
-        <div class="th-right">
-          <button class="fchip active" data-ch="all">Everything</button>
-          <button class="fchip" data-ch="sms">Texts</button>
-          <button class="fchip" data-ch="email">Emails</button>
-          <button class="fchip" data-ch="call">Calls</button>
         </div>
       </div>
 
       <div class="thread" id="thread">
-
-        <div class="daydiv"><span class="lbl">Wed, Jul 22</span><span class="ln"></span></div>
-
-        <div class="call-card">
-          <div class="call-head">
-            <div class="av agent sm">SJ</div>
-            <div class="call-title">Setter Josh called Priya</div>
-            <span class="agent-tag">Agent</span>
-            <div class="call-meta">9:14 AM · 4m 12s</div>
-          </div>
-          <div class="call-body">
-            <div class="tr-line"><span class="spk">Josh:</span> …you mentioned you're looking at expanding the catering side. Roughly how much are you trying to raise?</div>
-            <div class="tr-line"><span class="spk">Priya:</span> Somewhere around thirty-five thousand. Enough for a second van and a deposit on kitchen space.</div>
-            <div class="tr-line"><span class="spk">Josh:</span> That's very doable. Let me get you on with Jordan — he'll go through exactly what you can access.</div>
-            <div class="call-out">Outcome: <b>Booked her with Jordan Blake for Thursday 2:00 PM.</b></div>
-          </div>
-        </div>
-
-        <div class="msg out">
-          <div class="av agent">A1</div>
-          <div class="msg-col">
-            <div class="msg-sender"><span class="ch-pill">SMS</span><span class="nm">Agent 1</span><span class="agent-tag">Agent</span></div>
-            <div class="bubble out-agent">You're all set for Thursday at 2:00 PM with Jordan. Have your last 3 months of bank statements handy — it makes the call much faster. Reply STOP to opt out.</div>
-            <div class="msg-time">9:20 AM · delivered</div>
-          </div>
-        </div>
-
-        <div class="msg">
-          <div class="av client">PN</div>
-          <div class="msg-col">
-            <div class="msg-sender"><span class="ch-pill">SMS</span><span class="nm">Priya Nair</span></div>
-            <div class="bubble in">Business statements or personal? I have both but the business account is only 8 months old.</div>
-            <div class="msg-time">11:02 AM</div>
-          </div>
-        </div>
-
-        <div class="msg out">
-          <div class="av agent">A1</div>
-          <div class="msg-col">
-            <div class="msg-sender"><span class="ch-pill">SMS</span><span class="nm">Agent 1</span><span class="agent-tag">Agent</span></div>
-            <div class="bubble out-agent">Bring both — an 8-month-old business account is completely fine, and the personal ones give us more to work with.</div>
-            <div class="msg-time">11:03 AM · delivered</div>
-          </div>
-        </div>
-
-        <div class="msg">
-          <div class="av client">PN</div>
-          <div class="msg-col">
-            <div class="msg-sender"><span class="ch-pill">SMS</span><span class="nm">Priya Nair</span></div>
-            <div class="bubble in">One more — I saw the $32 up front. Is there more after that? I don't want a surprise.</div>
-            <div class="msg-time">11:09 AM</div>
-          </div>
-        </div>
-
-        <div class="handoff">
-          <span class="ln"></span>
-          <span class="box"><b>Agent 1 handed this to Jordan Blake</b> — pricing question, needs a person · 11:10 AM</span>
-          <span class="ln"></span>
-        </div>
-
-        <div class="msg out">
-          <div class="av human">JB</div>
-          <div class="msg-col">
-            <div class="msg-sender"><span class="ch-pill">SMS</span><span class="nm">Jordan Blake</span><span class="human-tag">You</span></div>
-            <div class="bubble out-human">Hi Priya — Jordan here, I'll be on your call Thursday. The $32 covers your diagnostic and full credit analysis, and that's the only thing you pay before we know what you qualify for. If we move ahead there's a $3,000 deposit plus 10% of what actually funds. Nothing hidden, and I'll walk you through all of it on the call.</div>
-            <div class="msg-time">11:24 AM · delivered</div>
-          </div>
-        </div>
-
-        <div class="msg">
-          <div class="av client">PN</div>
-          <div class="msg-col">
-            <div class="msg-sender"><span class="ch-pill">SMS</span><span class="nm">Priya Nair</span></div>
-            <div class="bubble in">That's straightforward, appreciate it. See you Thursday.</div>
-            <div class="msg-time">11:31 AM</div>
-          </div>
-        </div>
-
-        <div class="daydiv"><span class="lbl">Fri, Jul 24</span><span class="ln"></span></div>
-
-        <div class="msg out">
-          <div class="av human">JB</div>
-          <div class="msg-col">
-            <div class="msg-sender"><span class="ch-pill">EMAIL</span><span class="nm">Jordan Blake</span><span class="human-tag">You</span></div>
-            <div class="bubble out-human email">
-              <div class="email-subj">Your Funding Snapshot — Priya Nair</div>
-              Great talking Thursday. Attached is your Funding Snapshot with the five lenders we matched and what each one is likely to approve. Take a look before Sunday and write down any questions.
-              <div class="attach">📎 Funding Snapshot.pdf · 412 KB</div>
-            </div>
-            <div class="msg-time">2:04 PM · opened 3 times</div>
-          </div>
-        </div>
-
-        <div class="msg">
-          <div class="av client">PN</div>
-          <div class="msg-col">
-            <div class="msg-sender"><span class="ch-pill">EMAIL</span><span class="nm">Priya Nair</span></div>
-            <div class="bubble in email">
-              <div class="email-subj">Re: Your Funding Snapshot — Priya Nair</div>
-              This is really clear, thank you. The only one I'm unsure about is the Chase card — the rate looked higher than the others. Can we go through that Sunday?
-            </div>
-            <div class="msg-time">6:12 PM</div>
-          </div>
-        </div>
-
-        <div class="daydiv"><span class="lbl">Today</span><span class="ln"></span></div>
-
-        <div class="msg out">
-          <div class="av agent">A2</div>
-          <div class="msg-col">
-            <div class="msg-sender"><span class="ch-pill">SMS</span><span class="nm">Agent 2</span><span class="agent-tag">Agent</span></div>
-            <div class="bubble out-agent">Receipt for your $32 diagnostic — thanks Priya. Your credit analysis is being prepared now.</div>
-            <div class="msg-error">
-              <span>⚠</span>
-              <span><b>Didn't send.</b> Her carrier rejected it — the number on file is a landline.</span>
-              <span class="retry-btn">Send as email</span>
-            </div>
-            <div class="msg-time">1:39 PM · failed</div>
-          </div>
-        </div>
-
-        <div class="call-card live">
-          <div class="call-head">
-            <div class="av human sm">JB</div>
-            <div class="call-title">Jordan Blake is on a call with Priya</div>
-            <span class="live-tag"><span class="d"></span>LIVE</span>
-            <div class="call-meta">started 2:33 PM · 14m 09s</div>
-          </div>
-          <div class="call-body">
-            <div class="tr-line"><span class="spk">Jordan:</span> …the Chase line is the highest rate of the five, so the waterfall puts it last. You only touch it if you draw the full thirty-five.</div>
-            <div class="tr-line"><span class="spk">Priya:</span> And if I only draw part of it, does that change the payment?</div>
-            <div class="tr-line"><span class="spk">Jordan:</span> It does — let me pull the numbers up right now and show you both versions.</div>
-            <div class="call-out">Live transcript · <b>Context Fetcher</b> loaded her Funding Snapshot and Bank and Lender Match List for this call.</div>
-          </div>
-        </div>
-
+        <div class="empty-box" id="threadEmpty">Pick a conversation on the left to read it.</div>
       </div>
 
       <div class="compose">
         <div class="compose-top">
-          <span class="ch-btn active">Text</span>
-          <span class="ch-btn">Email</span>
-          <span class="ch-btn">Call</span>
-          <span class="compose-note">
-            <span class="pausetag">Agent replies paused</span>
-            Agent 1 won't auto-reply while you're in this thread.
-          </span>
+          <span class="ch-btn active" id="composeChannel">&mdash;</span>
+          <span class="compose-note" id="composeNote">A reply goes out on the same channel the conversation is on.</span>
         </div>
+        <!-- The texting-hours rule, stated BEFORE anything is typed. Hidden on
+             email threads, where it does not apply. -->
+        <div class="quiet-note" id="quietNote" hidden></div>
         <div class="compose-box">
-          <div class="compose-input">Write a text to Priya…</div>
+          <textarea class="compose-input" id="composeBody" rows="3" maxlength="4000"
+                    placeholder="Pick a conversation first" disabled></textarea>
           <div class="compose-actions">
-            <button class="tmpl-btn">Templates</button>
-            <button class="send-btn">Send</button>
+            <button class="send-btn" id="sendBtn" disabled>Send</button>
           </div>
         </div>
-        <div class="sending-as">
-          <span class="av human sm">JB</span>
-          Sending as <b style="margin-left:-2px;">Jordan Blake</b> — Priya will see your name, not an agent's.
+        <!-- Two facts a person needs before they press Send, and both are true:
+             their name is stored on the message, and the message is checked
+             before it leaves. Neither is decoration. -->
+        <div class="sending-as" id="sendStatus">
+          Your name is saved on anything you send from here. Every message is checked before it goes out.
         </div>
       </div>
 
     </section>
 
-    <!-- ============ RIGHT: CLIENT CONTEXT ============ -->
+    <!-- ============ RIGHT: CLIENT CONTEXT ============
+         Only what the inbox read and GET /api/read/conversations actually
+         answer. The stage, the owner, the prequal estimate and the temperature
+         that used to sit here were sample values with no endpoint behind them;
+         printing a made-up funding number next to a live thread is the kind of
+         thing somebody reads aloud on a call. -->
     <section class="ctx-col">
 
-      <!-- Four facts stay up: the ones that answer "do I need to step in?".
-           Everything else is one click away in the sections below. -->
       <div class="ctx-card">
-        <div class="ctx-name">Priya Nair</div>
-        <div class="ctx-role">Nair Catering Co. · Columbus, OH</div>
-        <div style="margin-top:8px;">
-          <div class="ctx-row"><span class="k">Stage</span><span class="v"><span class="pill blue">Diagnostic Paid</span></span></div>
-          <div class="ctx-row"><span class="k">Owner</span><span class="v">Jordan Blake</span></div>
-          <div class="ctx-row"><span class="k">Prequal estimate</span><span class="v">$12,400</span></div>
-          <div class="ctx-row"><span class="k">Temperature</span><span class="v"><span class="pill green">Hot</span></span></div>
-        </div>
+        <div class="ctx-name" id="ctxName">No one selected</div>
+        <div class="ctx-role" id="ctxRole">Pick a conversation to see who it is with.</div>
+        <div style="margin-top:8px;" id="ctxRows"></div>
       </div>
 
-      <details class="ctx-sec">
-        <summary>Pipeline &amp; Timing</summary>
-        <div class="sec-body ctx-card">
-          <div class="ctx-row"><span class="k">Rail</span><span class="v">Sales</span></div>
-          <div class="ctx-row"><span class="k">In stage</span><span class="v">1h 10m</span></div>
+      <details class="ctx-sec" open>
+        <summary>Their other threads</summary>
+        <div class="sec-body" id="ctxThreads">
+          <div class="empty-box">Pick a conversation first.</div>
         </div>
       </details>
 
       <details class="ctx-sec">
-        <summary>Reach Her</summary>
-        <div class="sec-body ctx-card">
-          <div class="ctx-row"><span class="k">Mobile</span><span class="v">(614) 555-0132</span></div>
-          <div class="ctx-row"><span class="k">Landline</span><span class="v">(614) 555-0177</span></div>
-          <div class="ctx-row"><span class="k">Email</span><span class="v" style="font-size:10px;">priya@naircatering.com</span></div>
-          <div style="margin-top:8px;">
-            <div class="consent-row">
-              <span class="consent">Texts OK</span>
-              <span class="consent">Email OK</span>
-              <span class="consent">Calls OK</span>
-            </div>
-          </div>
-        </div>
-      </details>
-
-      <details class="ctx-sec">
-        <summary>Money</summary>
-        <div class="sec-body ctx-card">
-          <div class="ctx-row"><span class="k">Diagnostic</span><span class="v" style="color:var(--ink2);font-weight:700;">$32 paid</span></div>
-          <div class="ctx-row"><span class="k">Deposit</span><span class="v">not yet</span></div>
-          <div class="ctx-row"><span class="k">Requested draw</span><span class="v">$35,000</span></div>
-          <div class="ctx-row"><span class="k">Available credit</span><span class="v">$47,100</span></div>
-        </div>
-      </details>
-
-      <details class="ctx-sec">
-        <summary>Sent to Her</summary>
-        <div class="sec-body ctx-card">
-          <div class="ctx-row"><span class="k">Funding Snapshot</span><span class="v">Jul 24</span></div>
-          <div class="ctx-row"><span class="k">Bank &amp; Lender Match List</span><span class="v">Jul 24</span></div>
-          <div class="ctx-row"><span class="k">Credit Analysis Report</span><span class="v" style="color:var(--ink2);font-weight:700;">preparing</span></div>
-        </div>
-      </details>
-
-      <details class="ctx-sec">
-        <summary>Notes</summary>
-        <div class="sec-body">
-          <div class="empty-box">No notes on Priya yet — add anything the next person should know.</div>
-        </div>
-      </details>
-
-      <details class="ctx-sec">
-        <summary>Open Elsewhere</summary>
-        <div class="sec-body">
-          <button class="link-btn">Client Control Panel <span class="ar">↗</span></button>
-          <button class="link-btn">Deal Calculators <span class="ar">↗</span></button>
-          <button class="link-btn">Her card on the board <span class="ar">↗</span></button>
+        <summary>Open elsewhere</summary>
+        <div class="sec-body" id="ctxLinks">
+          <div class="empty-box">Pick a conversation first.</div>
         </div>
       </details>
 
@@ -809,9 +520,9 @@
       <div>
         <div class="demo-cap">MS-01 / Who sent it — every message already states this three ways at once</div>
         <div class="legend">
-          <span class="li"><span class="sw human"></span>a person on your team — dark avatar, dark bubble, “You” tag</span>
-          <span class="li"><span class="sw agent"></span>an agent, automatically — outlined avatar, outlined bubble, “Agent” tag</span>
-          <span class="li"><span class="sw client"></span><span id="lgClient">Priya</span> — plain avatar, plain bubble, no tag</span>
+          <span class="li"><span class="sw human"></span>someone on your team — dark avatar, dark bubble, their name on it</span>
+          <span class="li"><span class="sw agent"></span>sent automatically by the system — outlined avatar, “Automatic” tag</span>
+          <span class="li"><span class="sw client"></span>the client — plain avatar, plain bubble, no tag</span>
         </div>
       </div>
 
@@ -822,7 +533,7 @@
     <span class="ghost"></span>
     <span>fundhub-messaging · v1</span>
     <span>org: fundhub</span>
-    <span>thread: <span id="footName">Priya Nair</span></span>
+    <span>thread: <span id="footName">none open</span></span>
     <span class="nominal"><span class="pulse"></span>systems nominal · fundhub.ai</span>
   </footer>
 
@@ -839,6 +550,17 @@
     side.classList.toggle('mini');
     burger.textContent=side.classList.contains('mini')?'››':'‹‹';
   });
+  var demoToggle=document.getElementById('demoToggle'),
+      demoBody=document.getElementById('demoBody'),
+      demozone=document.getElementById('demozone');
+  if(demoToggle){
+    demoToggle.addEventListener('click',function(){
+      var open=demoBody.hasAttribute('hidden');
+      if(open){demoBody.removeAttribute('hidden');}else{demoBody.setAttribute('hidden','');}
+      demozone.classList.toggle('open',open);
+      demoToggle.setAttribute('aria-expanded',open?'true':'false');
+    });
+  }
   document.querySelectorAll('.navhead').forEach(function(h){
     h.addEventListener('click',function(){
       if(side.classList.contains('mini')) return;
@@ -847,188 +569,627 @@
   });
 })();
 
-/* ══════════════════════════════════════════════════════════════════════════
-   MESSAGING
-   ══════════════════════════════════════════════════════════════════════════ */
-(function(){
-"use strict";
-var thread=document.getElementById('thread');
-var convos=[].slice.call(document.querySelectorAll('.convo'));
-var thName=document.getElementById('thName'), thSub=document.getElementById('thSub'),
-    thAv=document.getElementById('thAv'), lgClient=document.getElementById('lgClient'),
-    footName=document.getElementById('footName');
-
-function txt(el,sel){ var n=el.querySelector(sel); return n?n.textContent.trim():''; }
-function esc(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-/* Priya's transcript is the one thread written out in full — keep it verbatim
-   and hand it back whenever she is reselected. */
-var FULL = {};
-FULL[txt(document.querySelector('.convo.active'),'.cv-name')] = thread.innerHTML;
-
-/* Every other conversation renders from the data its own row already carries:
-   last message, channel, time, and who sent it. Nothing is invented. */
-function build(c){
-  var name=txt(c,'.cv-name'), prev=txt(c,'.cv-prev'), when=txt(c,'.cv-time'),
-      ch=txt(c,'.ch-tag')||'SMS', ini=txt(c,'.av'),
-      whoEl=c.querySelector('.who-tag'), who=whoEl?whoEl.textContent.trim():'',
-      isAgent=whoEl&&whoEl.classList.contains('agent'),
-      live=!!c.querySelector('.live-tag');
-  /* a quoted preview is the client speaking; anything else went out to them */
-  var inbound = /^[“"]/.test(prev) || /client replied/i.test(who);
-  var body='<div class="daydiv"><span class="lbl">Today</span><span class="ln"></span></div>';
-  if(ch==='CALL'){
-    body+='<div class="call-card'+(live?' live':'')+'" data-ch="call">'+
-      '<div class="call-head"><div class="av '+(isAgent?'agent':'human')+' sm">'+esc(ini)+'</div>'+
-      '<div class="call-title">'+esc(who||'Call')+(live?' — on a call with '+esc(name):' called '+esc(name))+'</div>'+
-      (isAgent?'<span class="agent-tag">Agent</span>':'')+
-      '<div class="call-meta">'+esc(when)+'</div></div>'+
-      '<div class="call-body"><div class="tr-line">'+esc(prev)+'</div></div></div>';
-  }else{
-    body+='<div class="msg'+(inbound?'':' out')+'" data-ch="'+(ch.toLowerCase()==='email'?'email':'sms')+'">'+
-      '<div class="av '+(inbound?'client':(isAgent?'agent':'human'))+'">'+esc(ini)+'</div>'+
-      '<div class="msg-col"><div class="msg-sender"><span class="ch-pill">'+esc(ch)+'</span>'+
-      '<span class="nm">'+esc(inbound?name:(who||'Fundhub'))+'</span>'+
-      (!inbound&&isAgent?'<span class="agent-tag">Agent</span>':'')+'</div>'+
-      '<div class="bubble '+(inbound?'in':(isAgent?'out-agent':'out-human'))+'">'+esc(prev)+'</div>'+
-      '<div class="msg-time">'+esc(when)+'</div></div></div>';
-  }
-  body+='<div class="thread-note">This wireframe carries the full transcript for '+
-        esc(Object.keys(FULL)[0])+'. Other conversations show their latest message only.</div>';
-  return body;
-}
-
-function select(c){
-  convos.forEach(function(x){x.classList.remove('active')});
-  c.classList.add('active');
-  c.classList.remove('unread');
-  var dot=c.querySelector('.unread-dot'); if(dot) dot.style.visibility='hidden';
-
-  var name=txt(c,'.cv-name');
-  thName.textContent=name;
-  thAv.textContent=txt(c,'.av');
-  lgClient.textContent=name.split(' ')[0];
-  footName.textContent=name;
-  var whoEl=c.querySelector('.who-tag'), live=!!c.querySelector('.live-tag');
-  thSub.textContent = live ? 'On a call right now · '+txt(c,'.ch-tag')
-    : (whoEl? whoEl.textContent.trim()+' · last activity '+txt(c,'.cv-time')
-            : 'Last activity '+txt(c,'.cv-time'));
-
-  thread.innerHTML = FULL[name] || build(c);
-  thread.scrollTop = 0;
-  applyChannel();
-}
-convos.forEach(function(c){ c.addEventListener('click',function(){ select(c); }); });
-
-/* ---------- thread channel filter ---------- */
-var chips=[].slice.call(document.querySelectorAll('.fchip[data-ch]'));
-function applyChannel(){
-  var on=document.querySelector('.fchip.active');
-  var want=on?on.getAttribute('data-ch'):'all';
-  [].slice.call(thread.querySelectorAll('.msg,.call-card')).forEach(function(el){
-    var k=el.getAttribute('data-ch');
-    if(!k){ /* fall back to the pill the message renders */
-      var pill=el.querySelector('.ch-pill');
-      k = el.classList.contains('call-card') ? 'call'
-        : (pill && /email/i.test(pill.textContent) ? 'email' : 'sms');
-    }
-    el.classList.toggle('hidden', want!=='all' && k!==want);
-  });
-  /* a day divider with nothing under it is noise */
-  [].slice.call(thread.querySelectorAll('.daydiv')).forEach(function(d){
-    var any=false,n=d.nextElementSibling;
-    while(n&&!n.classList.contains('daydiv')){
-      if((n.classList.contains('msg')||n.classList.contains('call-card'))&&!n.classList.contains('hidden')) any=true;
-      n=n.nextElementSibling;
-    }
-    d.classList.toggle('hidden',!any);
-  });
-}
-chips.forEach(function(ch){
-  ch.addEventListener('click',function(){
-    chips.forEach(function(x){x.classList.remove('active')});
-    ch.classList.add('active');
-    applyChannel();
-  });
-});
-
-/* ---------- conversation list: tabs + search ---------- */
-var tabs=[].slice.call(document.querySelectorAll('.ctab'));
-var q=document.getElementById('q');
-function applyList(){
-  var on=document.querySelector('.ctab.active');
-  var mode=on?on.childNodes[0].textContent.trim().toLowerCase():'all';
-  var term=(q.value||'').trim().toLowerCase();
-  convos.forEach(function(c){
-    var hit=true;
-    if(mode==='unread' && !c.classList.contains('unread')) hit=false;
-    if(mode==='agents' && !c.querySelector('.who-tag.agent')) hit=false;
-    if(mode==='mine'   && !c.querySelector('.who-tag.human')) hit=false;
-    if(hit&&term){
-      var hay=(txt(c,'.cv-name')+' '+txt(c,'.cv-prev')).toLowerCase();
-      if(hay.indexOf(term)<0) hit=false;
-    }
-    c.classList.toggle('hidden',!hit);
-  });
-}
-tabs.forEach(function(t){
-  t.addEventListener('click',function(){
-    tabs.forEach(function(x){x.classList.remove('active')});
-    t.classList.add('active');
-    applyList();
-  });
-});
-q.addEventListener('input',applyList);
-
-/* ---------- reference drawer ---------- */
-var dz=document.getElementById('demozone'), dTog=document.getElementById('demoToggle'),
-    dBody=document.getElementById('demoBody');
-dTog.addEventListener('click',function(){
-  var open=dBody.hidden;
-  dBody.hidden=!open;
-  dz.classList.toggle('open',open);
-  dTog.setAttribute('aria-expanded',String(open));
-});
-
-/* ---------- compose channel buttons ---------- */
-var chBtns=[].slice.call(document.querySelectorAll('.ch-btn'));
-chBtns.forEach(function(b){
-  b.addEventListener('click',function(){
-    chBtns.forEach(function(x){x.classList.remove('active')});
-    b.classList.add('active');
-  });
-});
-})();
 </script>
 <script src="data.js"></script>
 <script>
+/* ══════════════════════════════════════════════════════════════════════════
+   THE STAFF REPLY INBOX
 
-/* Messaging — the template library is the part with a real source
-   (/api/read/message-templates). Conversation threads have NO endpoint: the
-   messages table exists but nothing exposes it as threads, so the thread list
-   keeps its sample markup and is reported as unwired rather than faked. */
+   Three reads and one write, and no sample data anywhere in the page:
+
+     GET  /api/read/inbox                        the conversation list
+     GET  /api/read/messages?conversation_id=    one thread
+     GET  /api/read/conversations?client_id=     that client's other threads
+     POST /api/messages                          send a reply
+
+   WHAT THIS SCREEN WILL NOT DO. It will not render a thread it did not read,
+   it will not show a client fact no endpoint answered, and it will not report
+   an accepted message as a delivered one. Every one of those was in the page
+   it replaces, as markup with nothing behind it.
+
+   The view model below is separated out between FH-INBOX markers because it is
+   the part with rules in it — what a row says, which count is which, and what
+   each send outcome means in plain words — and src/http/messaging-screen.test.mjs
+   loads exactly that block and drives it. The DOM wiring underneath is the part
+   a test cannot usefully reach without a browser, so it is kept as thin as it
+   can be: fetch, hand to the view model, put the string in an element.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* FH-INBOX-BEGIN */
+(function (root) {
+  "use strict";
+
+  function esc(v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* A person's initials for the avatar. Falls back to a dash rather than to a
+     letter we made up: an avatar reading "A" for somebody whose name we do not
+     have is a small lie that looks like data. */
+  function initials(row) {
+    var a = String((row && row.first_name) || "").trim();
+    var b = String((row && row.last_name) || "").trim();
+    var s = (a ? a[0] : "") + (b ? b[0] : "");
+    return s ? s.toUpperCase() : "—";
+  }
+
+  /* The name on the row. A client with no name on file is "Unnamed client",
+     which is honest and searchable, rather than a blank line. */
+  function displayName(row) {
+    var s = [(row && row.first_name) || "", (row && row.last_name) || ""]
+      .join(" ").replace(/\s+/g, " ").trim();
+    return s || "Unnamed client";
+  }
+
+  /* How long ago, coarsely. Coarse on purpose: an inbox is scanned, and
+     "2d" answers the question "is this stale" faster than a timestamp does.
+     `nowMs` is an argument so this is testable without waiting. */
+  function shortWhen(iso, nowMs) {
+    if (!iso) return "";
+    var then = new Date(iso).getTime();
+    if (!isFinite(then)) return "";
+    var secs = Math.floor(((nowMs == null ? Date.now() : nowMs) - then) / 1000);
+    if (secs < 0) secs = 0;
+    if (secs < 60) return "now";
+    var mins = Math.floor(secs / 60);
+    if (mins < 60) return mins + "m";
+    var hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + "h";
+    var days = Math.floor(hrs / 24);
+    if (days < 30) return days + "d";
+    return Math.floor(days / 30) + "mo";
+  }
+
+  /* The one-line preview. A thread with no messages says so rather than
+     rendering an empty quote — a conversation row can exist before any message
+     lands on it, and a blank line reads as a rendering bug. */
+  function previewOf(row) {
+    var body = row && row.last_body;
+    if (body == null || String(body).trim() === "") return "No messages on this thread yet.";
+    return String(body);
+  }
+
+  /* The two tab counts. `needs_reply` comes from the server (see
+     api/read/inbox.mjs) and is null on a thread with no messages — null is not
+     false and is not counted either way. */
+  function countsFor(items) {
+    var rows = items || [];
+    var reply = 0;
+    for (var i = 0; i < rows.length; i++) if (rows[i] && rows[i].needs_reply === true) reply++;
+    return { all: rows.length, reply: reply };
+  }
+
+  /* Client-side search over what is already loaded. Deliberately NOT a server
+     query: the list is one page of threads, and a search box that silently
+     searches only the loaded page while looking like it searches everything is
+     worse than one that plainly filters what is on screen. */
+  function matches(row, term) {
+    var q = String(term || "").trim().toLowerCase();
+    if (!q) return true;
+    return (displayName(row) + " " + previewOf(row) + " " + ((row && row.channel) || ""))
+      .toLowerCase().indexOf(q) !== -1;
+  }
+
+  /* THE TAB IS NO LONGER FILTERED HERE. It is `?needs_reply=1` on the server —
+     see api/read/inbox.mjs. Filtering it in the browser meant "Needs reply"
+     showed the unanswered threads among the page that happened to be loaded,
+     while looking like it showed all of them, and the oldest unanswered
+     message is exactly the one that would be missing.
+
+     The `filter` option is still accepted and still applied, because the rows
+     handed in are already the right set and re-checking them is free — but it
+     is now a consistency check rather than the mechanism. */
+  function filterRows(items, opts) {
+    var o = opts || {};
+    return (items || []).filter(function (r) {
+      if (o.filter === "reply" && r.needs_reply !== true) return false;
+      return matches(r, o.q);
+    });
+  }
+
+  /* What the search box is actually searching, said out loud.
+
+     The search filters the rows that are LOADED, which is one page. At fifty
+     threads that is everything and the distinction is meaningless. At fifty
+     thousand it is not, and a box that silently searches 2% of the data while
+     looking like it searches all of it will have somebody swear a customer
+     never messaged them. So the screen says which it is doing. */
+  function searchScopeNote(loaded, hasMore, term) {
+    if (!String(term || "").trim()) return "";
+    return hasMore
+      ? "Searching the " + loaded + " most recent conversations only."
+      : "";
+  }
+
+  /* One row of the conversation list. `unread` is the needs-a-reply marker —
+     the class name is the stylesheet's, the meaning is stated on the row. */
+  function conversationRow(row, opts) {
+    var o = opts || {};
+    var waiting = row.needs_reply === true;
+    return '<div class="convo' + (waiting ? " unread" : "") + (o.active ? " active" : "") +
+      '" role="option" aria-selected="' + (o.active ? "true" : "false") +
+      '" data-id="' + esc(row.id) + '" tabindex="0">' +
+      '<div class="av client">' + esc(initials(row)) + "</div>" +
+      '<div class="cv-body">' +
+        '<div class="cv-top"><span class="cv-name">' + esc(displayName(row)) + "</span>" +
+        '<span class="cv-time">' + esc(shortWhen(row.last_at || row.last_pulse_at, o.now)) + "</span></div>" +
+        '<div class="cv-prev">' + esc(previewOf(row)) + "</div>" +
+        '<div class="cv-meta">' +
+          '<span class="ch-tag">' + esc(String(row.channel || "").toUpperCase()) + "</span>" +
+          (waiting ? '<span class="who-tag client">Waiting on us</span>' : "") +
+        "</div>" +
+      "</div>" +
+      (waiting ? '<span class="unread-dot"></span>' : "") +
+      "</div>";
+  }
+
+  /* One message. Direction decides the side and the bubble; `sender_name`
+     decides the name. A message with no sender_name and direction outbound was
+     queued by a workflow, not by a person — it is labelled "Automatic" rather
+     than being attributed to whoever happens to be looking at the screen. */
+  function messageRow(msg, opts) {
+    var o = opts || {};
+    var inbound = msg.direction === "inbound";
+    var who = inbound ? (o.clientName || "Them")
+                      : (msg.sender_name || "Automatic");
+    var held = !inbound && msg.status && msg.status !== "sent";
+    return '<div class="msg' + (inbound ? "" : " out") + '" data-id="' + esc(msg.id) + '">' +
+      '<div class="av ' + (inbound ? "client" : (msg.sender_name ? "human" : "agent")) + '">' +
+        esc(inbound ? (o.clientInitials || "—") : (msg.sender_name ? initialsFromName(msg.sender_name) : "SYS")) +
+      "</div>" +
+      '<div class="msg-col">' +
+        '<div class="msg-sender">' +
+          '<span class="ch-pill">' + esc(String(msg.channel || "").toUpperCase()) + "</span>" +
+          '<span class="nm">' + esc(who) + "</span>" +
+          (!inbound && !msg.sender_name ? '<span class="agent-tag">Automatic</span>' : "") +
+        "</div>" +
+        '<div class="bubble ' + (inbound ? "in" : (msg.sender_name ? "out-human" : "out-agent")) + '">' +
+          (msg.subject ? '<div class="email-subj">' + esc(msg.subject) + "</div>" : "") +
+          esc(msg.rendered_body == null ? "" : msg.rendered_body) +
+        "</div>" +
+        '<div class="msg-time">' + esc(shortWhen(msg.created_at, o.now)) + "</div>" +
+        /* A held or failed message says so ON the message. This is the one
+           place a staff member finds out their reply did not go, and burying
+           it in a toast that has already gone is how somebody assumes it did. */
+        (held ? '<div class="msg-error"><b>' + esc(statusWord(msg.status)) + "</b>" +
+                (msg.blocked_reason ? " — " + esc(msg.blocked_reason) : "") +
+                (msg.last_error ? " — " + esc(msg.last_error) : "") + "</div>" : "") +
+      "</div></div>";
+  }
+
+  function initialsFromName(name) {
+    var parts = String(name || "").trim().split(/\s+/);
+    var s = (parts[0] ? parts[0][0] : "") + (parts[1] ? parts[1][0] : "");
+    return s ? s.toUpperCase() : "—";
+  }
+
+  /* QUIET HOURS, ON SCREEN, BEFORE ANYBODY TYPES.
+     Texts are not sent between 11pm and 11am US Eastern (TCPA). The rule was
+     already enforced at send time; nothing said it beforehand, so the first a
+     staff member knew of it was a reply that did not go. The owner asked for
+     the warning up front — people forget a rule they have never been told.
+
+     These mirror QUIET_START_HOUR / QUIET_END_HOUR / QUIET_HOURS_TZ in
+     src/messaging/gate.mjs. src/http/messaging-screen.test.mjs reads the gate's
+     own constants and fails if these drift from them, so the screen cannot end
+     up promising a window the server does not honour. */
+  var QUIET_START_HOUR = 23;
+  var QUIET_END_HOUR = 11;
+  var QUIET_TZ = "America/New_York";
+
+  /* The hour right now in US Eastern. Intl carries the timezone database, so
+     daylight saving is the browser's problem and not ours — the same reason
+     the server reads it out of Intl rather than hardcoding an offset. */
+  function easternHour(nowMs) {
+    try {
+      var parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: QUIET_TZ, hour: "numeric", hour12: false
+      }).formatToParts(new Date(nowMs == null ? Date.now() : nowMs));
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].type === "hour") return Number(parts[i].value) % 24;
+      }
+    } catch (e) { /* no Intl, or an unknown zone */ }
+    return null;
+  }
+
+  /* The window wraps midnight, so this is an OR rather than start <= h < end.
+     Returns null when the hour could not be read — and the caller treats null
+     as "do not claim anything", because a warning that guesses is worse than
+     no warning. */
+  function inQuietHours(nowMs) {
+    var h = easternHour(nowMs);
+    if (h == null) return null;
+    return h >= QUIET_START_HOUR || h < QUIET_END_HOUR;
+  }
+
+  /* The line under the compose box. Three states, and they are three different
+     sentences on purpose:
+       email          the rule does not apply; say nothing about it
+       sms, open      state the rule, so it is not a surprise at 11pm
+       sms, closed    say plainly that this will NOT go out now, and when it will */
+  function quietNotice(channel, nowMs) {
+    if (channel !== "sms") return { closed: false, text: "" };
+    var closed = inQuietHours(nowMs);
+    if (closed === null) return { closed: false, text: "" };
+    if (closed) {
+      return { closed: true, text:
+        "Texting hours are closed. Anything you send now is saved and goes out " +
+        "automatically at 11:00am Eastern — you do not need to send it again." };
+    }
+    return { closed: false, text:
+      "Texting hours: 11:00am to 11:00pm Eastern. Outside those hours a text is " +
+      "held and sent the next morning." };
+  }
+
+  function statusWord(status) {
+    if (status === "blocked") return "Not sent — the compliance check stopped it";
+    if (status === "failed") return "Not sent";
+    if (status === "queued") return "Waiting to go out";
+    if (status === "sending") return "Going out now";
+    return "Not sent yet";
+  }
+
+  /* What the send actually did, in words. THE POINT OF THIS FUNCTION IS THAT
+     "accepted" IS NOT "delivered". Each of these is a different thing to tell a
+     person, and collapsing them into "sent" or "failed" would either make
+     somebody retype a message that is already queued, or let them believe a
+     blocked one went out. The vocabulary is the dispatcher's own — see OUTCOME
+     in src/messaging/dispatch.mjs. */
+  function outcomeMessage(outcome, detail) {
+    switch (outcome) {
+      case "sent":       return { tone: "ok",   text: "Sent." };
+      /* THE SAME SENTENCE AS quietNotice's closed state, word for word. Two
+         wordings for one rule is how somebody ends up believing they are two
+         different rules — and the browser test that compares them is what
+         caught this drifting the first time. */
+      case "deferred":   return { tone: "hold", text: "Saved. It goes out automatically at 11:00am " +
+                                                       "Eastern — you do not need to send it again." };
+      case "blocked":    return { tone: "stop", text: "Not sent. The compliance check stopped it" +
+                                                       (detail && detail.length ? " (" + [].concat(detail).join(", ") + ")" : "") + "." };
+      case "no_route":   return { tone: "stop", text: "Not sent. No text or email provider is set up for your company yet." };
+      case "no_address": return { tone: "stop", text: "Not sent. We do not have a phone number or email address for this person." };
+      case "retry":      return { tone: "hold", text: "Not sent yet. The provider did not answer, so it is queued to try again." };
+      case "gave_up":
+      case "rejected":   return { tone: "stop", text: "Not sent. The provider refused it." };
+      case "channel_mismatch":
+      case "unknown_provider":
+        return { tone: "stop", text: "Not sent. The provider set up for this channel cannot carry it." };
+      case "not_claimable":
+        return { tone: "hold", text: "Saved, but it could not be sent right now. It stays in the queue." };
+      default:
+        return { tone: "hold", text: "Saved. We could not tell what happened next — check the message in the thread." };
+    }
+  }
+
+  root.FHInbox = {
+    esc: esc,
+    initials: initials,
+    initialsFromName: initialsFromName,
+    displayName: displayName,
+    shortWhen: shortWhen,
+    previewOf: previewOf,
+    countsFor: countsFor,
+    filterRows: filterRows,
+    searchScopeNote: searchScopeNote,
+    conversationRow: conversationRow,
+    messageRow: messageRow,
+    statusWord: statusWord,
+    outcomeMessage: outcomeMessage,
+    easternHour: easternHour,
+    inQuietHours: inQuietHours,
+    quietNotice: quietNotice,
+    QUIET_START_HOUR: QUIET_START_HOUR,
+    QUIET_END_HOUR: QUIET_END_HOUR
+  };
+})(window);
+/* FH-INBOX-END */
+
 (function () {
   "use strict";
-  var esc = function (v) {
-    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
-      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
-  };
-  FHData.wire(FHData.messageTemplates({ limit: 200 }), "message templates",
-    function (data) {
-      var rows = data.items || [];
-      if (!rows.length) return null;
-      var body = document.getElementById("demoBody");
-      if (!body) return null;
-      body.innerHTML = rows.map(function (t) {
-        return "<tr><td>" + esc(t.template_key) + "</td>" +
-               "<td>" + esc(t.channel) + "</td>" +
-               "<td>" + esc(t.subject || "—") + "</td>" +
-               "<td>" + esc(t.compliance_passed ? "passed" : "NOT AUDITED") + "</td></tr>";
-      }).join("");
-      var failing = rows.filter(function (t) { return !t.compliance_passed; }).length;
-      return "live templates · " + rows.length + " · " +
-             (failing ? failing + " not compliance-audited" : "all compliance-audited");
+
+  var V = window.FHInbox;
+  var $ = function (id) { return document.getElementById(id); };
+
+  var state = { rows: [], hasMore: false, selected: null, filter: "all", q: "", sending: false };
+
+  /* How often the inbox re-reads itself while somebody is sitting on it.
+
+     WITHOUT THIS THE SCREEN IS A SNAPSHOT. A staff member with the inbox open
+     would never see a message arrive — it would sit unanswered until they
+     happened to reload the page. For a screen whose entire job is "what came
+     in", that is the difference between an inbox and a report.
+
+     Thirty seconds: fast enough that a customer's text shows up while somebody
+     is looking at the screen, slow enough that a room of ten staff is twenty
+     requests a minute rather than six hundred. It skips a tick while a send is
+     in flight so a refresh cannot land between pressing Send and the reply
+     appearing. */
+  var REFRESH_MS = 30000;
+
+  /* ---------------------------------------------------------- the list ---- */
+
+  function paintList() {
+    var shown = V.filterRows(state.rows, { filter: state.filter, q: state.q });
+    var counts = V.countsFor(state.rows);
+    $("nAll").textContent = counts.all;
+    $("nReply").textContent = counts.reply;
+
+    var scope = V.searchScopeNote(state.rows.length, state.hasMore, state.q);
+    var scopeHtml = scope
+      ? '<div class="search-scope">' + V.esc(scope) + "</div>"
+      : "";
+
+    if (!shown.length) {
+      $("convoList").innerHTML = scopeHtml +
+        '<div class="empty-box" id="convoEmpty" style="margin:14px 12px;">' +
+        (state.rows.length
+          ? (state.filter === "reply"
+              ? "Nothing here needs a reply."
+              : "Nothing matches what you typed.")
+          : (state.filter === "reply"
+              ? "Nothing is waiting on a reply. Everything has been answered."
+              : "No conversations yet. One appears here the moment a client texts or emails you.")) +
+        "</div>";
+      return;
+    }
+    var now = Date.now();
+    $("convoList").innerHTML = scopeHtml + shown.map(function (r) {
+      return V.conversationRow(r, { active: state.selected && r.id === state.selected.id, now: now });
+    }).join("");
+  }
+
+  function loadList(opts) {
+    var quiet = opts && opts.quiet;
+    /* The tab is a SERVER-SIDE filter now. See searchScopeNote and the header of
+       api/read/inbox.mjs for why it stopped being a browser-side one. */
+    var params = { limit: 200 };
+    if (state.filter === "reply") params.needs_reply = 1;
+
+    return FHData.inbox(params).then(function (res) {
+      if (!res.ok) {
+        /* A FAILED BACKGROUND REFRESH LEAVES THE SCREEN ALONE. Blanking a
+           working inbox because one poll missed would take the thread somebody
+           is mid-reply to off the screen. The banner still reports it. */
+        if (quiet) { FHData.explain(res, "conversations"); return; }
+        state.rows = [];
+        $("convoList").innerHTML = '<div class="empty-box" style="margin:14px 12px;">' +
+          "We could not load your conversations. See the message at the bottom of the screen." + "</div>";
+        FHData.explain(res, "conversations");
+        return;
+      }
+      state.hasMore = res.data.hasMore === true;
+      state.rows = res.data.items || [];
+      FHData.banner("real", state.rows.length
+        ? "live conversations · " + state.rows.length
+        : "connected · no conversations in the database yet", "conversations");
+      paintList();
+      // Keep the open thread selected across a refresh; if it is gone, drop it.
+      if (state.selected) {
+        var still = state.rows.filter(function (r) { return r.id === state.selected.id; })[0];
+        if (still) state.selected = still; else clearThread();
+      }
     });
+  }
+
+  /* -------------------------------------------------------- the thread ---- */
+
+  function clearThread() {
+    state.selected = null;
+    $("thName").textContent = "No conversation open";
+    $("thSub").textContent = "Pick one on the left to read it.";
+    $("thAv").textContent = "—";
+    $("thread").innerHTML = '<div class="empty-box">Pick a conversation on the left to read it.</div>';
+    $("footName").textContent = "none open";
+    $("composeChannel").textContent = "—";
+    paintQuietNote(null);
+    $("composeBody").disabled = true;
+    $("composeBody").value = "";
+    $("composeBody").placeholder = "Pick a conversation first";
+    $("sendBtn").disabled = true;
+    paintContext(null);
+  }
+
+  /* The texting-hours line. Repainted on every thread open AND on a slow timer,
+     because a browser left open across 11pm must not still be showing "texting
+     hours are open" at midnight. */
+  function paintQuietNote(channel) {
+    var el = $("quietNote");
+    var notice = V.quietNotice(channel, Date.now());
+    if (!notice.text) { el.hidden = true; el.textContent = ""; el.className = "quiet-note"; return; }
+    el.hidden = false;
+    el.textContent = notice.text;
+    el.className = "quiet-note" + (notice.closed ? " closed" : "");
+  }
+
+  function openThread(row) {
+    state.selected = row;
+    paintList();
+
+    $("thName").textContent = V.displayName(row);
+    $("thSub").textContent = String(row.channel || "").toUpperCase() + " · " +
+      (row.needs_reply === true ? "waiting on a reply from us" : "no reply owed");
+    $("thAv").textContent = V.initials(row);
+    $("footName").textContent = V.displayName(row);
+    $("composeChannel").textContent = row.channel === "email" ? "Email" : "Text";
+    paintQuietNote(row.channel);
+    $("composeBody").disabled = false;
+    $("composeBody").placeholder = "Write to " + V.displayName(row) + "…";
+    $("sendBtn").disabled = false;
+    $("thread").innerHTML = '<div class="empty-box">Loading this conversation…</div>';
+
+    paintContext(row);
+
+    return FHData.thread(row.id, 200).then(function (res) {
+      if (state.selected !== row) return; // they moved on while this was in flight
+      if (!res.ok) {
+        $("thread").innerHTML = '<div class="empty-box">We could not load this conversation.</div>';
+        FHData.explain(res, "this conversation");
+        return;
+      }
+      paintThread(res.data.items || []);
+    });
+  }
+
+  function paintThread(items) {
+    var row = state.selected;
+    if (!items.length) {
+      $("thread").innerHTML = '<div class="empty-box">Nothing has been said on this thread yet. ' +
+        "Your reply below would be the first message.</div>";
+      return;
+    }
+    // The endpoint answers newest-first so `?limit=` returns the END of a long
+    // history. Reading order is the other way round.
+    var ordered = items.slice().reverse();
+    var now = Date.now();
+    var opts = { clientName: V.displayName(row), clientInitials: V.initials(row), now: now };
+    $("thread").innerHTML = ordered.map(function (m) { return V.messageRow(m, opts); }).join("");
+    $("thread").scrollTop = $("thread").scrollHeight;
+  }
+
+  /* ------------------------------------------------------- the context ---- */
+
+  function paintContext(row) {
+    if (!row) {
+      $("ctxName").textContent = "No one selected";
+      $("ctxRole").textContent = "Pick a conversation to see who it is with.";
+      $("ctxRows").innerHTML = "";
+      $("ctxThreads").innerHTML = '<div class="empty-box">Pick a conversation first.</div>';
+      $("ctxLinks").innerHTML = '<div class="empty-box">Pick a conversation first.</div>';
+      return;
+    }
+    $("ctxName").textContent = V.displayName(row);
+    $("ctxRole").textContent = "Talking to us on " + String(row.channel || "").toLowerCase() + ".";
+    $("ctxRows").innerHTML =
+      '<div class="ctx-row"><span class="k">Last activity</span><span class="v">' +
+        V.esc(V.shortWhen(row.last_at || row.last_pulse_at, Date.now()) || "never") + " ago</span></div>" +
+      '<div class="ctx-row"><span class="k">Waiting on us</span><span class="v">' +
+        (row.needs_reply === true ? "yes" : "no") + "</span></div>";
+
+    $("ctxLinks").innerHTML =
+      '<a class="link-btn" href="client-control-panel.html?id=' + encodeURIComponent(row.client_id) +
+      '">Their file <span class="ar">&#8599;</span></a>';
+
+    $("ctxThreads").innerHTML = '<div class="empty-box">Loading&hellip;</div>';
+    FHData.conversations({ client_id: row.client_id, limit: 50 }).then(function (res) {
+      if (state.selected !== row) return;
+      if (!res.ok) {
+        $("ctxThreads").innerHTML = '<div class="empty-box">We could not load their other threads.</div>';
+        return;
+      }
+      var others = (res.data.items || []).filter(function (c) { return c.id !== row.id; });
+      if (!others.length) {
+        $("ctxThreads").innerHTML = '<div class="empty-box">This is the only thread with them.</div>';
+        return;
+      }
+      $("ctxThreads").innerHTML = '<div class="ctx-card">' + others.map(function (c) {
+        return '<div class="ctx-row"><span class="k">' + V.esc(String(c.channel).toUpperCase()) +
+          '</span><span class="v">' + V.esc(V.shortWhen(c.last_pulse_at, Date.now()) || "quiet") + "</span></div>";
+      }).join("") + "</div>";
+    });
+  }
+
+  /* ---------------------------------------------------------- sending ---- */
+
+  function say(text, tone) {
+    var el = $("sendStatus");
+    el.textContent = text;
+    el.style.color = tone === "stop" ? "var(--alert)" : (tone === "hold" ? "var(--warn)" : "var(--text-dim)");
+  }
+
+  function send() {
+    var row = state.selected;
+    var body = $("composeBody").value;
+    if (!row || state.sending || !String(body).trim()) return;
+
+    state.sending = true;
+    $("sendBtn").disabled = true;
+    say("Sending…", "hold");
+
+    /* An idempotency key per attempt. If the request is retried by the network
+       — or the button is somehow hit twice — the server returns the message it
+       already has instead of sending a second one. Regenerated only when a send
+       genuinely completes, so a retry of THIS attempt carries THIS key. */
+    var key = state.sendKey || (state.sendKey = "inbox-" + row.id + "-" + Date.now() + "-" +
+      Math.random().toString(36).slice(2, 10));
+
+    FHData.sendMessage({ conversation_id: row.id, body: body, idempotency_key: key })
+      .then(function (res) {
+        state.sending = false;
+        $("sendBtn").disabled = false;
+        if (!res.ok) {
+          // A 403 here is very often "you are not clocked in", which is a thing
+          // the person can fix in ten seconds — so it must not read as an outage.
+          say(res.source === "unauthorized"
+            ? "Not sent. You need to be signed in and clocked in to send a message."
+            : "Not sent. " + (res.error || "The request was refused."), "stop");
+          return;
+        }
+        state.sendKey = null;
+        var verdict = V.outcomeMessage(res.data.deduped ? "sent" : res.data.outcome, res.data.detail);
+        say(verdict.text, verdict.tone);
+        // Only clear the box on an outcome where retyping would be wrong. On a
+        // hard stop the words stay put so they can be edited rather than lost.
+        if (verdict.tone !== "stop") $("composeBody").value = "";
+        openThread(row);
+        loadList();
+      });
+  }
+
+  /* ------------------------------------------------------------ wiring ---- */
+
+  $("convoList").addEventListener("click", function (e) {
+    var el = e.target.closest ? e.target.closest(".convo") : null;
+    if (!el) return;
+    var row = state.rows.filter(function (r) { return r.id === el.getAttribute("data-id"); })[0];
+    if (row) openThread(row);
+  });
+
+  $("q").addEventListener("input", function (e) { state.q = e.target.value; paintList(); });
+
+  [].slice.call(document.querySelectorAll(".ctab")).forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      [].slice.call(document.querySelectorAll(".ctab")).forEach(function (t) { t.classList.remove("active"); });
+      tab.classList.add("active");
+      state.filter = tab.getAttribute("data-filter");
+      // Refetch: the tab is a server-side filter, so switching it is a new
+      // question, not a different view of the same answer.
+      loadList();
+    });
+  });
+
+  $("sendBtn").addEventListener("click", send);
+  $("composeBody").addEventListener("keydown", function (e) {
+    // Enter sends, Shift+Enter is a new line — the convention every messaging
+    // app already taught everyone.
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+
+  /* ── keeping the screen current ──────────────────────────────────────────
+     Two timers, both cheap, both doing something a static page cannot:
+
+       the inbox     re-read every REFRESH_MS so a message that arrives while
+                     somebody is looking at the screen actually appears
+       the notice    the texting-hours line must change by itself at 11pm and
+                     11am; a browser left open overnight would otherwise still
+                     be telling somebody the window is open at 2am
+
+     The inbox refresh SKIPS a tick while a send is in flight, and never
+     disturbs the open thread — openThread() is not re-run, so a half-typed
+     reply and the scroll position both survive. */
+  setInterval(function () {
+    if (state.sending) return;
+    if (document.hidden) return;   // a background tab is not a person looking
+    loadList({ quiet: true });
+  }, REFRESH_MS);
+
+  setInterval(function () {
+    paintQuietNote(state.selected ? state.selected.channel : null);
+  }, 60000);
+
+  clearThread();
+  loadList();
 })();
 </script>
 </body>
