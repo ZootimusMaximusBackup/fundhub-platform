@@ -11,3 +11,5 @@ export { embedTexts, embedConfigFromEnv, toVectorLiteral, EMBEDDING_DIMS } from 
 export { tiersForRole, assertOwnerOnlyRole, ACCESS_TIERS } from "./access.mjs";
 export { upsertExtractedFile } from "./store.mjs";
 export { retrieveChunks } from "./retrieve.mjs";
+export { syncDriveIncremental, getSyncState, saveSyncState } from "./sync.mjs";
+export { deleteByDriveFileId } from "./store.mjs";

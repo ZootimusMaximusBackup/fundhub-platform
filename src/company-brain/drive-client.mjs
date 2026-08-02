@@ -122,11 +122,94 @@ export function createDriveClient({
     return Buffer.from(await res.arrayBuffer());
   }
 
+  async function getStartPageToken() {
+    const res = await driveFetch("/changes/startPageToken", {
+      query: { supportsAllDrives: "true" }
+    });
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      throw new Error(`changes.startPageToken non-json (${res.status})`);
+    }
+    if (!res.ok || !json.startPageToken) {
+      throw new Error(
+        `changes.startPageToken failed (${res.status}): ${json.error?.message || text.slice(0, 200)}`
+      );
+    }
+    return String(json.startPageToken);
+  }
+
+  /**
+   * One page of changes.list. Caller loops on nextPageToken until null,
+   * then persists newStartPageToken.
+   */
+  async function listChangesPage(pageToken, { pageSize = 1000 } = {}) {
+    if (!pageToken) throw new Error("listChangesPage requires pageToken");
+    const res = await driveFetch("/changes", {
+      query: {
+        pageToken: String(pageToken),
+        pageSize,
+        includeRemoved: "true",
+        supportsAllDrives: "true",
+        includeItemsFromAllDrives: "true",
+        fields: `nextPageToken,newStartPageToken,changes(fileId,removed,file(${FILE_FIELDS}))`
+      }
+    });
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      throw new Error(`changes.list non-json (${res.status})`);
+    }
+    if (res.status === 410) {
+      const err = new Error(`changes.list token expired (410): ${json.error?.message || text.slice(0, 200)}`);
+      err.code = "PAGE_TOKEN_EXPIRED";
+      err.status = 410;
+      throw err;
+    }
+    if (!res.ok) {
+      throw new Error(`changes.list failed (${res.status}): ${json.error?.message || text.slice(0, 200)}`);
+    }
+    const changes = (json.changes || []).map((ch) => ({
+      fileId: ch.fileId || ch.file?.id || null,
+      removed: !!ch.removed || !!ch.file?.trashed,
+      file: ch.file || null
+    }));
+    return {
+      changes,
+      nextPageToken: json.nextPageToken || null,
+      newStartPageToken: json.newStartPageToken || null
+    };
+  }
+
+  /** Drain all change pages from pageToken; returns { changes, newStartPageToken }. */
+  async function listAllChanges(pageToken, opts = {}) {
+    const all = [];
+    let token = pageToken;
+    let newStartPageToken = null;
+    while (token) {
+      const page = await listChangesPage(token, opts);
+      all.push(...page.changes);
+      if (page.nextPageToken) token = page.nextPageToken;
+      else {
+        newStartPageToken = page.newStartPageToken;
+        token = null;
+      }
+    }
+    return { changes: all, newStartPageToken };
+  }
+
   return {
     listAllFiles,
     getFile,
     downloadMedia,
     exportFile,
+    getStartPageToken,
+    listChangesPage,
+    listAllChanges,
     /** test helper */
     _clearTokenCache() { cached = null; }
   };

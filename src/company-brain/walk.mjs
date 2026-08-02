@@ -1,5 +1,5 @@
 // Full Drive walk — list every non-trashed file and extract text where possible.
-// Incremental changes.list pickup is build step 3 — not here.
+// Full walk only. Incremental pickup lives in sync.mjs (step 3).
 // H-2 owner-set 2026-08-02: no folder exclusions.
 
 import { driveConfigFromEnv } from "./config.mjs";

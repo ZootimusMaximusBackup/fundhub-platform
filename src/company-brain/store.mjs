@@ -156,3 +156,17 @@ async function upsertFileRow(db, { orgId, extracted, tier, contentHash, priorId 
   );
   return ins.rows[0].id;
 }
+
+/** Remove a Drive file from the index (cascade deletes chunks). */
+export async function deleteByDriveFileId(db, { orgId, driveFileId } = {}) {
+  if (!orgId || !driveFileId) {
+    return { ok: false, reason: "org_id_and_drive_file_id_required", deleted: 0 };
+  }
+  const res = await db.query(
+    `DELETE FROM brain_files
+      WHERE org_id = $1 AND drive_file_id = $2
+      RETURNING id`,
+    [orgId, driveFileId]
+  );
+  return { ok: true, reason: null, deleted: (res.rows || []).length };
+}
