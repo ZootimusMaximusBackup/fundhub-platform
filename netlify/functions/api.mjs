@@ -106,6 +106,7 @@ import bankingAccounts from "../../api/banking/accounts.mjs";
 import consentCapture from "../../api/consent/capture.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
+import documentsUpload from "../../api/documents-upload.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -415,6 +416,13 @@ export const ROUTES = {
   // the mock provider invents its data and makes no network call.
   "banking/accounts": bankingAccounts,
 
+  // Client file uploads (docs/UPLOADS-SPEC.md). Deliberately NOT
+  // "documents/upload" — src/http/routes.test.mjs refuses any exact key that
+  // would sit under the "documents/" prefix branch a few lines down (the
+  // signed download route, /api/documents/<uuid>), so this lives at its own
+  // top-level path instead of depending on ROUTES being checked first.
+  "documents-upload": documentsUpload,
+
   // Consent capture — the gate in front of the route directly above. Routed in
   // the same commit as the handler, the migration and the screen, because an
   // unreachable consent endpoint is worse here than anywhere else in this map:
@@ -520,11 +528,43 @@ export default async function handler(request, context) {
   const headers = {};
   for (const [k, v] of request.headers.entries()) headers[k.toLowerCase()] = v;
 
-  const rawBody = ["GET", "HEAD"].includes(request.method) ? "" : await request.text();
-  let body = rawBody;
   const ctype = headers["content-type"] || "";
-  if (rawBody && ctype.includes("application/json")) {
-    try { body = JSON.parse(rawBody); } catch { body = rawBody; }
+  const noBody = ["GET", "HEAD"].includes(request.method);
+
+  /* multipart/form-data (file uploads) must NOT go through request.text():
+     TextDecoder assumes UTF-8, so any byte sequence that is not valid UTF-8 —
+     which is most of a jpg/png/pdf — comes out corrupted, silently, with no
+     error to catch. request.formData() is the Web-standard parser and keeps
+     each file's bytes intact as a File/Blob. Fields land in req.body.fields,
+     files in req.body.files as [{ field, filename, mimeType, buffer, size }]
+     — a handler never sees a raw FormData object, matching how every other
+     handler here reads a plain req.body. */
+  let rawBody = "";
+  let body = "";
+  if (!noBody && ctype.includes("multipart/form-data")) {
+    const form = await request.formData();
+    const fields = {};
+    const files = [];
+    for (const [key, value] of form.entries()) {
+      if (typeof value === "object" && value !== null && typeof value.arrayBuffer === "function") {
+        files.push({
+          field: key,
+          filename: value.name || null,
+          mimeType: value.type || null,
+          buffer: Buffer.from(await value.arrayBuffer()),
+          size: value.size
+        });
+      } else {
+        fields[key] = value;
+      }
+    }
+    body = { fields, files };
+  } else {
+    rawBody = noBody ? "" : await request.text();
+    body = rawBody;
+    if (rawBody && ctype.includes("application/json")) {
+      try { body = JSON.parse(rawBody); } catch { body = rawBody; }
+    }
   }
 
   const ip =

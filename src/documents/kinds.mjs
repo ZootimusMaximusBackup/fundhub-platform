@@ -12,7 +12,8 @@ export const KINDS = Object.freeze({
   AUTHORIZATION: "authorization",         // soft-pull consent
   CONTRACT: "contract",                   // funding agreement, repair engagement, partner license
   INVOICE_DOCUMENT: "invoice_document",   // the rendered artifact for an invoices row
-  DELIVERABLE: "deliverable"              // the five UnderwriteIQ deliverables
+  DELIVERABLE: "deliverable",             // the five UnderwriteIQ deliverables
+  CLIENT_UPLOAD: "client_upload"          // a file the CLIENT sent us — see 118_client_uploads.sql
 });
 
 export const ALL_KINDS = Object.freeze(Object.values(KINDS));
@@ -40,6 +41,16 @@ export const SUBTYPES = Object.freeze({
     "credit_optimization_roadmap",  // Credit Optimization Roadmap
     "funding_snapshot",             // Funding Snapshot
     "bank_lender_match_list"        // Bank and Lender Match List
+  ]),
+  // what a client hands us through the upload endpoint (docs/UPLOADS-SPEC.md).
+  // One document PER FILE — never one-per-client — so uploads.mjs always
+  // passes its own discriminator and these never collapse into each other.
+  client_upload: Object.freeze([
+    "id_document",
+    "bank_statement",
+    "proof_of_income",
+    "tax_return",
+    "other"
   ])
 });
 
@@ -57,7 +68,12 @@ export const SUBTYPE_TITLES = Object.freeze({
   metro2_dispute_letter_pack: "Metro 2 Dispute Letter Pack",
   credit_optimization_roadmap: "Credit Optimization Roadmap",
   funding_snapshot: "Funding Snapshot",
-  bank_lender_match_list: "Bank and Lender Match List"
+  bank_lender_match_list: "Bank and Lender Match List",
+  id_document: "ID Document",
+  bank_statement: "Bank Statement",
+  proof_of_income: "Proof of Income",
+  tax_return: "Tax Return",
+  other: "Uploaded Document"
 });
 
 export const DELIVERY_CHANNELS = Object.freeze(

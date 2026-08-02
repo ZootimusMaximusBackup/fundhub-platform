@@ -23,6 +23,7 @@
 import { db } from "../../src/db.mjs";
 import { verifyDocumentUrl } from "../../src/documents/signed-url.mjs";
 import { resolveStorageTarget } from "../../src/documents/retrieve.mjs";
+import { storeFromEnv } from "../../src/documents/store.mjs";
 import { isUuid } from "../../src/http/read-api.mjs";
 import { safeError } from "../../src/http/health.mjs";
 
@@ -67,25 +68,29 @@ export default async function handler(req, res) {
       return res.status(200).end("");
     }
 
-    /* Hand the caller to storage rather than proxying the bytes through the
-       function. storage_key is an absolute URL under Vercel Blob, so this is a
-       redirect; it is deliberately NOT put in a JSON body, because a body is
-       readable by anything that logs responses whereas a 302 Location is spent
-       on the redirect itself.
-
-       FLAG for whoever wires real storage: if storage_key ever becomes a
-       relative path or a private bucket key, this must become a stream with a
-       server-side fetch, not a redirect — a redirect to a private key would
-       expose the key. */
+    /* Two storage shapes, two ways to serve them:
+       - Vercel Blob's storage_key IS the object's public URL, so the cheapest
+         correct thing is to hand the caller straight to it with a 302 — never
+         put it in a JSON body, since a body is readable by anything that logs
+         responses whereas a redirect's Location is spent on the redirect
+         itself.
+       - Netlify Blobs (the storage decision as of docs/UPLOADS-SPEC.md) and the
+         in-memory test provider both use an OPAQUE key with no public URL
+         behind it — there is nowhere to redirect to, so this streams the bytes
+         itself via the same store.mjs the write path used. That was flagged
+         here as the eventual requirement the day this route was written;
+         client uploads are what made it actually eventual. */
     const key = String(target.storage_key);
-    if (!/^https?:\/\//i.test(key)) {
-      return res.status(501).json({
-        ok: false, error: "storage_not_configured",
-        message: "storage_key is not an absolute URL — streaming is not implemented yet"
-      });
+    if (/^https?:\/\//i.test(key)) {
+      res.setHeader("location", key);
+      return res.status(302).end("");
     }
-    res.setHeader("location", key);
-    return res.status(302).end("");
+
+    const store = storeFromEnv();
+    const object = await store.get(key, { expectedChecksum: target.checksum || null });
+    if (!object) return GONE(res);
+    res.setHeader("content-type", target.mime_type || object.contentType || "application/octet-stream");
+    return res.status(200).end(object.body);
   } catch (err) {
     return res.status(500).json({ ok: false, error: safeError(err) });
   }

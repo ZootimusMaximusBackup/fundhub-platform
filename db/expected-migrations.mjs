@@ -100,6 +100,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/115_affiliates_white_label.sql",
   "migrations/116_template_approval.sql",
   "migrations/117_account_magic_links.sql",
+  "migrations/118_client_uploads.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
   "seed/007_portal_magic_link_template.sql"

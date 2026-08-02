@@ -248,6 +248,27 @@
   .notes-status .sd{width:6px;height:6px;border-radius:50%;background:var(--amber-line);flex:0 0 6px;}
   .notes-status.is-saved .sd{background:var(--green-line);}
   .notes-status.is-idle{opacity:0;}
+  .dropzone{
+    border:1px dashed var(--line);border-radius:8px;padding:18px 14px;text-align:center;
+    cursor:pointer;transition:border-color .12s,background .12s;
+  }
+  .dropzone:hover,.dropzone:focus-visible{border-color:var(--blue-line);background:var(--paper-dim);outline:none;}
+  .dropzone.drag{border-color:var(--blue-line);border-style:solid;background:var(--blue-bg);}
+  .dz-label{font-size:12.5px;font-weight:600;color:var(--text);}
+  .dz-hint{font-size:11px;color:var(--text-faint);margin-top:3px;}
+  .dz-filelist{display:flex;flex-direction:column;gap:4px;margin-top:8px;}
+  .dz-file{
+    display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text);
+    padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);
+  }
+  .dz-file.sent{border-color:var(--green-line);}
+  .dz-file .fn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dz-file .fs{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-faint);}
+  .dz-status{
+    margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.05em;
+    color:var(--text-faint);min-height:13px;
+  }
+  .dz-status.err{color:var(--red-line);}
   /* ---------- shared chrome: the 23-item sidebar, identical on every internal surface ---------- */
   .app{display:flex;min-height:100vh}
   .side{width:230px;flex:0 0 230px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
@@ -437,6 +458,27 @@
           <div class="notes-status is-idle" id="notes-status" role="status" aria-live="polite">
             <span class="sd"></span><span class="stxt"></span>
           </div>
+        </div>
+      </div>
+
+      <!-- Upload on the client's behalf — e.g. a document collected on a call.
+           Wired below to POST /api/documents-upload with this screen's
+           client id; a staff session is what makes that request a "staff
+           upload", the same endpoint the client portal itself posts to. -->
+      <div class="group">
+        <button class="group-title tog" type="button" aria-expanded="false" aria-controls="upload-body">
+          <span>Documents</span>
+          <span class="chev">collapsed by default <span class="cg">⌄</span></span>
+        </button>
+        <div class="group-body" id="upload-body" hidden>
+          <div class="dropzone" id="staff-dropzone" tabindex="0" role="button"
+               aria-label="Upload a document for this client">
+            <div class="dz-label">Drop a file here, or click to choose</div>
+            <div class="dz-hint">jpg, png or pdf</div>
+          </div>
+          <input type="file" id="staff-file-input" multiple hidden accept=".pdf,.png,.jpg,.jpeg">
+          <div class="dz-filelist" id="staff-filelist"></div>
+          <div class="dz-status" id="staff-upload-status" role="status" aria-live="polite"></div>
         </div>
       </div>
 
@@ -708,6 +750,92 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     } else {
       banner("error", "sample data — backend unavailable (" + res.source + ": " + res.error + ")");
     }
+  });
+})();
+</script>
+
+<!-- ══ STAFF UPLOAD — upload on this client's behalf ═══════════════════════
+     Posts to the same /api/documents-upload endpoint the client portal uses;
+     a staff session is what makes it a "staff upload" server-side. Needs a
+     real client id in the URL (?id=<uuid>) — the sample screen has nowhere
+     real to send a file, so the drop zone says so instead of pretending. -->
+<script>
+(function () {
+  "use strict";
+  var zone   = document.getElementById("staff-dropzone"),
+      input  = document.getElementById("staff-file-input"),
+      list   = document.getElementById("staff-filelist"),
+      status = document.getElementById("staff-upload-status"),
+      clientId = FHData.param("id");
+
+  if (!zone) return;
+
+  function say(text, isErr) {
+    status.textContent = text;
+    status.className = "dz-status" + (isErr ? " err" : "");
+  }
+
+  function size(b) {
+    if (b < 1024) return b + " B";
+    if (b < 1024 * 1024) return (b / 1024).toFixed(0) + " KB";
+    return (b / 1024 / 1024).toFixed(1) + " MB";
+  }
+
+  if (!clientId) {
+    say("open this screen with ?id=<client id> to upload for a real client", false);
+    zone.setAttribute("aria-disabled", "true");
+  }
+
+  function addRow(filename, bytes) {
+    var row = document.createElement("div");
+    row.className = "dz-file";
+    var fn = document.createElement("span"); fn.className = "fn"; fn.textContent = filename;
+    var fs = document.createElement("span"); fs.className = "fs"; fs.textContent = size(bytes);
+    row.appendChild(fn); row.appendChild(fs);
+    list.appendChild(row);
+    return { row: row, fn: fn };
+  }
+
+  function upload(files) {
+    if (!clientId || !files || !files.length) return;
+    say("uploading " + files.length + " " + (files.length === 1 ? "file" : "files") + "…", false);
+    var rows = [];
+    for (var i = 0; i < files.length; i++) rows.push(addRow(files[i].name, files[i].size));
+
+    FHData.uploadFiles("/api/documents-upload", files, { client_id: clientId }).then(function (res) {
+      if (!res.ok) {
+        say("upload failed — " + (res.error || "try again"), true);
+        return;
+      }
+      var docs = (res.data && res.data.documents) || [];
+      rows.forEach(function (r, i) {
+        r.row.classList.add("sent");
+        var d = docs[i];
+        if (d && d.download && d.download.url) {
+          var a = document.createElement("a");
+          a.href = d.download.url; a.target = "_blank"; a.rel = "noopener";
+          a.className = "fn"; a.textContent = r.fn.textContent;
+          r.row.replaceChild(a, r.fn);
+        }
+      });
+      say(docs.length + " " + (docs.length === 1 ? "file" : "files") + " sent", false);
+    });
+  }
+
+  zone.addEventListener("click", function () { if (clientId) input.click(); });
+  zone.addEventListener("keydown", function (e) {
+    if (clientId && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); input.click(); }
+  });
+  input.addEventListener("change", function () { upload(input.files); input.value = ""; });
+
+  ["dragenter", "dragover"].forEach(function (ev) {
+    zone.addEventListener(ev, function (e) { e.preventDefault(); if (clientId) zone.classList.add("drag"); });
+  });
+  ["dragleave", "drop"].forEach(function (ev) {
+    zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove("drag"); });
+  });
+  zone.addEventListener("drop", function (e) {
+    if (clientId && e.dataTransfer && e.dataTransfer.files.length) upload(e.dataTransfer.files);
   });
 })();
 </script>
