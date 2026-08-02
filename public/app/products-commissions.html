@@ -50,8 +50,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 .side.mini .side-foot .who{display:none}.side.mini .side-foot{justify-content:center;padding:12px 0}
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
-/* Clear the fixed shell chip so "+ Add product" is actually clickable. */
-@media (min-width:1200px){ .topbar{padding-right:352px} }
+/* Clear Search + Sign-out chip so "+ Add product" is actually clickable.
+   --fh-shell-top-clearance is set by shell.js layoutShellChrome(). */
+@media (min-width:1201px){ .topbar{padding-right:var(--fh-shell-top-clearance, 520px)} }
 .topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
 .topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
