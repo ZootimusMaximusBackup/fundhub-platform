@@ -30,6 +30,7 @@ import { ROLE_SETS, requireRole, isUuid, CLIENT_DATA_ERRORS } from "../../src/ht
 import { listTradelines } from "../../src/tradelines/store.mjs";
 import { requireClientInOrg } from "../../src/http/client-scope.mjs";
 import { financeOsGrid } from "../../src/finance/os-grid.mjs";
+import { dbDown } from "../../src/http/db-down.mjs";
 
 //
 // ── AND THE SCOPE IS THE SESSION'S ORG, WHICH IT WAS NOT ──
@@ -76,9 +77,13 @@ export default async function handler(req, res, deps = {}) {
   // can drive it without Postgres. Reaching past that to the module singleton
   // makes the ownership check the one query that ignores the injected handle,
   // and it fails with "DATABASE_URL not set" under every stubbed test.
-  if (!(await requireClientInOrg(res, database, staff, String(query.client_id).trim()))) return;
-
+  // INSIDE THE try, and that placement is the point. This is a DATABASE call,
+  // and it used to sit above the try where nothing caught it — so a database
+  // that stopped answering during the ownership check threw straight past every
+  // classification below and reached the browser as a bare 500 "our code broke".
   try {
+    if (!(await requireClientInOrg(res, database, staff, String(query.client_id).trim()))) return;
+
     // Closed lines are excluded by listTradelines' default AND again by the
     // grid's own DRAWABLE filter. Belt and braces on purpose: the grid is the
     // thing under test, and it must be correct for any row set handed to it,
@@ -99,6 +104,18 @@ export default async function handler(req, res, deps = {}) {
     if (CLIENT_DATA_ERRORS.has(e.code)) {
       return res.status(400).json({ ok: false, error: "bad request parameter" });
     }
+    /* A DATABASE THAT DID NOT ANSWER IS NOT OUR CODE THROWING, AND THE SCREEN
+       MUST NOT BE TOLD IT WAS. Everything above this line has already claimed
+       the faults it can name; what is left reaches netlify/functions/api.mjs as
+       a bare 500 internal_error, which public/app/data.js words as "something
+       went wrong on our side ... The database did not report a problem." That
+       sentence is false during an outage and it is how the funding-capacity read
+       reported a dead database as a bug in this file. 503 + db:"down" is the
+       shape data.js already reads as "the database is not answering".
+       See src/http/db-down.mjs — it stays narrow, so anything it cannot
+       positively identify still falls through to the 500 it got before. */
+    if (dbDown(res, e)) return;
+
     throw e;
   }
 }

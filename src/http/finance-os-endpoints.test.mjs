@@ -265,8 +265,22 @@ describe("GET /api/read/banking-surface", () => {
     const e = new Error("connection terminated unexpectedly");
     e.code = "08006";
     const r = await call(bankingSurface, { table: BANK, readError: e });
-    assert.ok(r.thrown, "a server fault was swallowed and answered as a 400");
-    assert.equal(r.thrown.code, "08006");
+    /* 08006 IS connection_failure — the database, not the caller and not us.
+       The assertion's intent is unchanged: this must not be disguised as the
+       caller's mistake. What changed is that it is no longer disguised as OUR
+       mistake either. It used to escape as a throw, which netlify/functions/
+       api.mjs answers as 500 internal_error, which public/app/data.js words as
+       "something went wrong on our side ... The database did not report a
+       problem" — a sentence that is false during an outage and that sent readers
+       of finance-os.html hunting a bug in this endpoint while Postgres was down.
+       503 db:"down" is the shape data.js reads as "the database is not
+       answering". A 400 still fails this case, which is what it was written for.
+       The sibling case above, 42P01 "relation does not exist", still THROWS —
+       that one is a broken deployment, not an outage, and src/http/db-down.mjs
+       is deliberately narrow enough to leave it alone. */
+    assert.equal(r.thrown, null, "the outage escaped as a throw and becomes a 500 that blames our code");
+    assert.equal(r.status, 503, "a server fault was answered as something other than an outage");
+    assert.equal(r.body.db, "down", "without db:'down' the screen cannot tell an outage from our bug");
   });
 
   /* THE ONE THE COMMENT PROMISED. api/read/banking-surface.mjs says in prose
