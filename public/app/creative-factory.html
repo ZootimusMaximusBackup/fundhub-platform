@@ -273,6 +273,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.deriv{grid-template-columns:1fr}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 <script src="shell.js"></script>
+<script src="data.js"></script>
 </head>
 <body>
 <!-- CREATIVE FACTORY (CF) — generation jobs, the asset library, the review queue and
@@ -311,7 +312,13 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
      substring, so page() strips it out of every row. Every tile below is the same
      placeholder, because the screen has nothing to tell one from another.
 
-     Sample rows below — there is no live API call on this page. -->
+     WIRED to all four api/creative/* endpoints (wireCreative(), near the bottom of
+     the page script), each read scoped to CF-01's selected partner_id. KITS / JOBS /
+     ASSETS below (renamed SAMPLE_KITS / SAMPLE_JOBS / SAMPLE_ASSETS internally) are
+     the fallback this screen renders immediately and falls back to on a demo
+     session or a failed read, exactly like every other wired screen in
+     public/app/ — CF-12's ledger reports which of the four actually answered on
+     the last check, rather than asserting it. -->
 <div class="app">
   <aside class="side" id="side">
     <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
@@ -1083,6 +1090,10 @@ var KITS = [
    products:['Credit analysis report','Dispute rounds'],
    created_at:'2026-06-19T08:55:02Z', updated_at:'2026-07-30T07:12:44Z'}
 ];
+/* wireCreative() below replaces KITS/JOBS/ASSETS/APPROVALS_LIVE with live rows
+   per the currently-selected partner; these SAMPLE_* copies are the fallback
+   this screen renders immediately and falls back to on any read failure. */
+var SAMPLE_KITS = KITS;
 
 /* ══ GENERATION JOBS — GET /api/creative/jobs ═════════════════════════════
    Exactly the columns jobs.mjs selects. cost_cents, spec (whole), requested_by,
@@ -1180,6 +1191,7 @@ var JOBS = [
    idempotency_key:'halcyon-cr-w30-copy-b', asset_kind:'copy', formats:null, variants:2,
    asset_count:0, created_at:'2026-07-28T20:15:37Z', started_at:'2026-07-28T20:44:02Z', finished_at:'2026-07-28T20:44:05Z'}
 ];
+var SAMPLE_JOBS = JOBS;
 
 /* ══ BLOCKED REASON OBJECTS ══════════════════════════════════════════════
    The exact shape src/compliance/screen.mjs builds and generate.mjs writes into
@@ -1372,6 +1384,7 @@ var ASSETS = [
    compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
    created_at:'2026-07-24T11:38:20Z', updated_at:'2026-07-24T11:38:21Z'}
 ];
+var SAMPLE_ASSETS = ASSETS;
 
 /* ══ CAMPAIGNS AWAITING APPROVAL — the second branch of the UNION ALL ═════
    `reasons` here is NOT a reason list. approvals.mjs synthesises it with
@@ -1649,13 +1662,17 @@ var CONTRACT = [
 ];
 
 var LEDGER = [
-  {s:'CF-02 Generation jobs', src:'api/creative/jobs.mjs', st:'readable', tone:'ok',
+  /* st/tone for these four are placeholders overwritten by updateLedgerLive()
+     the moment wireCreative()'s Promise.all resolves — this board used to claim
+     "readable / ok" here unconditionally, without ever making the call. It no
+     longer does; see wireCreative() and updateLedgerLive() near the bottom. */
+  {s:'CF-02 Generation jobs', src:'api/creative/jobs.mjs', st:'checking…', tone:'warn',
    note:'error is returned on purpose — scrub() strips anything key-shaped before it is stored. cost_cents is not.'},
-  {s:'CF-04 Creative library', src:'api/creative/library.mjs', st:'readable', tone:'ok',
+  {s:'CF-04 Creative library', src:'api/creative/library.mjs', st:'checking…', tone:'warn',
    note:'No storage_key, no url, no text, no width/height/file_size — and has_storage_key is selected but stripped by redact(), so previews are impossible in both directions.'},
-  {s:'CF-06 Review queue', src:'api/creative/approvals.mjs', st:'readable', tone:'ok',
+  {s:'CF-06 Review queue', src:'api/creative/approvals.mjs', st:'checking…', tone:'warn',
    note:'creative_asset (pending|blocked) + campaign (awaiting_approval). No ads, ad sets or social posts.'},
-  {s:'CF-08 Brand kits', src:'api/creative/brand-kits.mjs', st:'readable', tone:'ok',
+  {s:'CF-08 Brand kits', src:'api/creative/brand-kits.mjs', st:'checking…', tone:'warn',
    note:'asset_count counts non-archived assets. Nothing outside tests writes this table.'},
   {s:'CF-10 Config gaps', src:'v_creative_config_gaps', st:'no endpoint', tone:'warn',
    note:'org-level view, no HTTP handler. Rows here are the shipped status strings, not a live read.'},
@@ -1734,7 +1751,11 @@ function renderScope(){
       S.partner = parseInt(sel.value,10)||0;
       S.jobOffset = 0; S.libOffset = 0; S.apprOffset = 0; S.kitOffset = 0;
       S.libKit = '';
+      // Switching partners is switching ?partner_id= — re-fetch, don't re-filter
+      // cached rows from the partner we just left.
+      JOBS=SAMPLE_JOBS; ASSETS=SAMPLE_ASSETS; KITS=SAMPLE_KITS; APPROVALS_LIVE=null;
       renderAll();
+      wireCreative();
     });
   }
   sel.value = String(S.partner);
@@ -2201,6 +2222,13 @@ function libEmptyMsg(){
 /* ══ CF-06 · REVIEW &amp; APPROVAL QUEUE ══════════════════════════════════ */
 function apprRows(){
   var want = S.apprState;
+  if(APPROVALS_LIVE){
+    return APPROVALS_LIVE.filter(function(r){
+      if(want==='all') return true;
+      if(want==='awaiting_approval') return r.item_type==='campaign';
+      return r.item_type==='creative_asset' && r.state===want;
+    }).slice().sort(function(a,b){ return a.updated_at < b.updated_at ? 1 : a.updated_at > b.updated_at ? -1 : 0; });
+  }
   var out = [];
   if(want==='all' || want==='blocked' || want==='pending'){
     byPartner(ASSETS).forEach(function(a){
@@ -2751,13 +2779,145 @@ function renderAll(){
   renderApprovals();
   renderKits();
   document.getElementById('footNote').textContent =
-    'cf · api/creative/* · read-only · ' + PARTNERS[S.partner].name.toLowerCase();
+    'cf · api/creative/* · read-only · ' + PARTNERS[S.partner].name.toLowerCase() +
+    (CF_SRC.length ? ' · ' + CF_SRC.join(' · ') : '');
+}
+
+/* ══ API WIRING ══════════════════════════════════════════════════════════
+   data.js's FHData exposes readers for /api/read/* and /api/dashboard/*, not
+   for /api/creative/* (those live at their own paths, under partnerReadHandler,
+   not read-api.mjs's requireAuth), so the same { ok, source, data, error }
+   envelope is reproduced here — same pattern hiring.html and campaign-manager.html
+   use for the same reason.
+
+   Every one of these four endpoints requires ?partner_id= for a staff caller
+   (src/http/partner-read-api.mjs resolvePartnerId — a staff session with none
+   gets a 400, never "everything"), so every read below is scoped to whichever
+   partner CF-01's picker currently has selected. Switching partners re-fetches
+   all four rather than re-filtering cached rows, because the picker is really
+   choosing which tenant's data the server is allowed to hand back. */
+function apiGet(path){
+  var demo = false, tok = '';
+  try { demo = localStorage.getItem('fh_demo') === '1'; tok = localStorage.getItem('fh_token') || ''; } catch(e){}
+  if(demo) return Promise.resolve({ ok:false, source:'demo', data:null, error:'demo session — no backend read attempted' });
+  var started;
+  try {
+    started = fetch(path, { headers: tok ? { accept:'application/json', authorization:'Bearer '+tok } : { accept:'application/json' } });
+  } catch(e){
+    return Promise.resolve({ ok:false, source:'offline', data:null, error:(e && e.message) || 'fetch unavailable' });
+  }
+  return Promise.resolve(started).then(function(r){
+    if(r.status === 401 || r.status === 403) return { ok:false, source:'unauthorized', data:null, error:'not signed in, or role is not staff/partner' };
+    if(r.status === 404){
+      return r.json().then(function(d){
+        return (d && d.error === 'not_found' && typeof d.path === 'string')
+          ? { ok:false, source:'offline', data:null, error:'/api/* not deployed' }
+          : { ok:false, source:'notfound', data:null, error:'no such record' };
+      }).catch(function(){ return { ok:false, source:'offline', data:null, error:'/api/* not deployed' }; });
+    }
+    if(r.status === 400){
+      return r.json().then(function(d){
+        return { ok:false, source:'badrequest', data:null, error:(d && d.error) || 'bad request' };
+      }).catch(function(){ return { ok:false, source:'badrequest', data:null, error:'bad request' }; });
+    }
+    return r.json().then(function(d){
+      if(r.status === 503 || (d && d.db === 'down')) return { ok:false, source:'nodb', data:null, error:(d && d.error) || 'database unreachable' };
+      if(!d || d.ok !== true) return { ok:false, source:'server', data:null, error:(d && d.error) || 'request failed' };
+      return { ok:true, source:'api', data:d, error:null };
+    }).catch(function(){ return { ok:false, source:'offline', data:null, error:'response was not JSON' }; });
+  }).catch(function(e){
+    return { ok:false, source:'offline', data:null, error:(e && e.message) || 'network error' };
+  });
+}
+
+/* Every field on a live row already matches what this screen renders — each of
+   the four sample arrays was built column-for-column from its endpoint's SQL
+   (see the comments above KITS/JOBS/ASSETS). The one thing no endpoint returns
+   is which partner index the row belongs to, because the server only ever
+   answers for the one partner_id in the request — so that is stamped on here. */
+function tagPartner(items){ return (items||[]).map(function(r){ r.partner = S.partner; return r; }); }
+
+var LIVE_CF = {kits:false, jobs:false, assets:false, approvals:false};
+var APPROVALS_LIVE = null; // null = derive client-side from ASSETS + CAMPAIGNS, as apprRows() always did
+var CF_SRC = [];
+var CF_ENDPOINT_RES = {};
+
+function wireCreative(){
+  var demo=false; try{ demo = localStorage.getItem('fh_demo')==='1'; }catch(e){}
+  if(demo){
+    CF_SRC = ['demo session — sample markup'];
+    if(window.FHData) FHData.banner('sample','sample creative factory — demo session, the backend was not queried','creative');
+    updateLedgerLive();
+    return;
+  }
+  var pid = PARTNERS[S.partner].id;
+  Promise.all([
+    apiGet('/api/creative/jobs?partner_id='+encodeURIComponent(pid)+'&state=all&limit=200').then(function(res){
+      CF_ENDPOINT_RES.jobs=res;
+      if(res.ok){ LIVE_CF.jobs=true; JOBS=tagPartner(res.data.items); } else { JOBS=SAMPLE_JOBS; }
+    }),
+    apiGet('/api/creative/library?partner_id='+encodeURIComponent(pid)+'&state=all&include_archived=1&limit=200').then(function(res){
+      CF_ENDPOINT_RES.assets=res;
+      if(res.ok){ LIVE_CF.assets=true; ASSETS=tagPartner(res.data.items); } else { ASSETS=SAMPLE_ASSETS; }
+    }),
+    apiGet('/api/creative/brand-kits?partner_id='+encodeURIComponent(pid)+'&state=all&limit=200').then(function(res){
+      CF_ENDPOINT_RES.kits=res;
+      if(res.ok){ LIVE_CF.kits=true; KITS=tagPartner(res.data.items); } else { KITS=SAMPLE_KITS; }
+    }),
+    apiGet('/api/creative/approvals?partner_id='+encodeURIComponent(pid)+'&state=all&limit=200').then(function(res){
+      CF_ENDPOINT_RES.approvals=res;
+      if(res.ok){ LIVE_CF.approvals=true; APPROVALS_LIVE=tagPartner(res.data.items); } else { APPROVALS_LIVE=null; }
+    })
+  ]).then(function(){
+    CF_SRC = [];
+    ['jobs','assets','kits','approvals'].forEach(function(k){
+      var res=CF_ENDPOINT_RES[k];
+      if(res && res.ok) CF_SRC.push(k+':api');
+      else if(res) CF_SRC.push(k+':'+res.source);
+    });
+    updateLedgerLive();
+    renderAll();
+    var worst='real';
+    ['jobs','assets','kits','approvals'].forEach(function(k){
+      var res=CF_ENDPOINT_RES[k];
+      if(!res || res.ok) return;
+      worst = (res.source==='nodb'||res.source==='server'||res.source==='offline') ? 'error' : (worst==='error'?'error':'sample');
+    });
+    if(window.FHData) FHData.banner(worst, 'creative factory · '+CF_SRC.join(' · '), 'creative');
+  });
+}
+
+/* CF-12's ledger used to hardcode "readable / ok" for these four rows — true
+   only in the sense that the code compiles, never verified by an actual call.
+   This replaces those four with what wireCreative() just observed; the seven
+   genuinely-no-endpoint rows below them are untouched, because that fact does
+   not depend on the network. */
+function updateLedgerLive(){
+  var BY_SRC = {
+    'api/creative/jobs.mjs':'jobs', 'api/creative/library.mjs':'assets',
+    'api/creative/approvals.mjs':'approvals', 'api/creative/brand-kits.mjs':'kits'
+  };
+  LEDGER.forEach(function(l){
+    var key = BY_SRC[l.src];
+    if(!key) return; // one of the seven rows with no endpoint at all — leave as documented
+    if(l._baseNote===undefined) l._baseNote = l.note;
+    var res = CF_ENDPOINT_RES[key];
+    if(!res){ l.st='not yet checked'; l.tone='warn'; l.note=l._baseNote; return; }
+    if(res.ok){ l.st='verified reachable just now'; l.tone='ok'; l.note=l._baseNote; }
+    else {
+      l.tone = (res.source==='demo') ? 'warn' : 'bad';
+      l.st = res.source==='demo' ? 'not checked — demo session' : 'unreachable just now (' + res.source + ')';
+      l.note = l._baseNote + ' Last check: ' + (res.error || res.source) + '.';
+    }
+  });
+  renderStaticTables();
 }
 
 /* ══ BOOT ════════════════════════════════════════════════════════════════ */
 renderStaticTables();
 renderRules();
 renderAll();
+wireCreative();
 </script>
 </body>
 </html>

@@ -278,11 +278,22 @@ table.grid tr:last-child td{border-bottom:0}
 
     <div class="content">
 
+      <div class="notice" id="noBackendNotice" style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:8px;background:rgba(169,198,232,.16);border:1px solid var(--info);color:#22415F;font-size:12px;margin-bottom:14px">
+        <span>◉</span>
+        <span><b>No backend exists for this screen.</b> There is no <code>api/content/*</code> route in
+          <code>netlify/functions/api.mjs</code> — no videos table, no tier-mapping storage, no locked-tile config
+          table. Every number below reflects only what is in this browser tab right now: the video library starts
+          empty, uploading does not send or store a file anywhere, and the tier/tile edits below are lost on reload.
+          Building this for real would need: an <code>api/content/*</code> handler, a <code>content_videos</code>
+          table (or similar) plus a tier→video mapping, a <code>content_locked_tiles</code> config table, and a real
+          upload path (signed URL + storage, like <code>documents.html</code> uses) behind the "Upload video" button.</span>
+      </div>
+
       <div class="stats">
-        <div class="stat"><div class="eyebrow">CN-00 <span class="sep">/</span> VIDEOS</div><div class="sv" id="kVideos">5</div><div class="sd">in the library</div></div>
-        <div class="stat"><div class="eyebrow">CN-00 <span class="sep">/</span> TIERS MAPPED</div><div class="sv" id="kTiers">4/4</div><div class="sd">plus a default</div></div>
-        <div class="stat"><div class="eyebrow">CN-00 <span class="sep">/</span> LOCKED TILES</div><div class="sv" id="kTiles">3</div><div class="sd">showing in the portal</div></div>
-        <div class="stat"><div class="eyebrow">CN-00 <span class="sep">/</span> LAST UPLOAD</div><div class="sv" id="kLast">Jul 22</div><div class="sd">Card Stacking DFY welcome</div></div>
+        <div class="stat"><div class="eyebrow">CN-00 <span class="sep">/</span> VIDEOS</div><div class="sv" id="kVideos">0</div><div class="sd">in the library</div></div>
+        <div class="stat"><div class="eyebrow">CN-00 <span class="sep">/</span> TIERS MAPPED</div><div class="sv" id="kTiers">0/4</div><div class="sd">plus a default</div></div>
+        <div class="stat"><div class="eyebrow">CN-00 <span class="sep">/</span> LOCKED TILES</div><div class="sv" id="kTiles">3</div><div class="sd">in this editor, unsaved</div></div>
+        <div class="stat"><div class="eyebrow">CN-00 <span class="sep">/</span> LAST UPLOAD</div><div class="sv" id="kLast">—</div><div class="sd">no videos yet</div></div>
       </div>
 
       <div class="cols">
@@ -415,22 +426,16 @@ var TIERS = [
   {id:'default',       name:'Default',                     note:'no tier mapped', isDefault:true}
 ];
 
-var VIDEOS = [
-  {id:'V-05', title:'Welcome to Card Stacking DFY — what happens next', dur:'4:12', up:'Jul 22, 2026', by:'Marcus Webb'},
-  {id:'V-04', title:'Your Consulting Services kickoff',                 dur:'6:38', up:'Jul 18, 2026', by:'Sarah Whitfield'},
-  {id:'V-03', title:'How optimization rounds actually work',            dur:'5:04', up:'Jul 09, 2026', by:'Nina Castellano'},
-  {id:'V-02', title:'Inquiry removal — what we need from you',          dur:'2:47', up:'Jun 28, 2026', by:'Alvin Torres'},
-  {id:'V-01', title:'Welcome to Fundhub',                               dur:'3:21', up:'Jun 12, 2026', by:'Chris Stanbridge'}
-];
+/* No api/content/* endpoint exists (see the notice at the top of the page), so
+   this starts empty rather than with invented video rows — there is nothing
+   real to show, and pretending otherwise is exactly what CN-00's stats used to
+   do. Uploading through CN-01 below only pushes into this in-memory array; it
+   is gone on reload. */
+var VIDEOS = [];
 
-/* tier id -> video id */
-var MAP = {
-  'card-stacking':'V-05',
-  'consulting':'V-04',
-  'repair':'V-03',
-  'inquiry':'V-02',
-  'default':'V-01'
-};
+/* tier id -> video id. Empty for the same reason — nothing is mapped until a
+   real video exists to map. */
+var MAP = {};
 
 /* the locked tiles the portal renders under “Unlock More”. Price is what the
    client is shown; the catalogue in Products & Commissions stays the source of
@@ -459,27 +464,32 @@ function tierById(id){ for(var i=0;i<TIERS.length;i++){ if(TIERS[i].id===id) ret
 /* ══ VIDEO LIBRARY ═══════════════════════════════════════════════════════ */
 function renderVideos(){
   var host = document.getElementById('vlist');
-  host.innerHTML = VIDEOS.map(function(v){
-    /* which tiers point at this video */
-    var used = TIERS.filter(function(t){ return MAP[t.id] === v.id; })
-                    .map(function(t){ return t.name; });
-    var badge = used.length
-      ? '<span class="badge b-accent mono">' + esc(used.join(' · ')) + '</span>'
-      : '<span class="badge b-gray mono">unassigned</span>';
-    return '<div class="vrow">' +
-      '<div class="thumb"><span class="logo" role="presentation"></span><span class="dur">' + esc(v.dur) + '</span></div>' +
-      '<div class="vmeta">' +
-        '<div class="vt">' + esc(v.title) + '</div>' +
-        '<div class="vd">' + esc(v.id) + ' · uploaded ' + esc(v.up) + ' · ' + esc(v.by) + '</div>' +
-      '</div>' +
-      '<div class="vacts">' + badge + '</div>' +
-    '</div>';
-  }).join('');
+  if(!VIDEOS.length){
+    host.innerHTML = '<div class="empty">No videos in the library. There is no api/content/* endpoint to read from — ' +
+      'upload one above and it will appear here, in this tab, until you reload.</div>';
+  } else {
+    host.innerHTML = VIDEOS.map(function(v){
+      /* which tiers point at this video */
+      var used = TIERS.filter(function(t){ return MAP[t.id] === v.id; })
+                      .map(function(t){ return t.name; });
+      var badge = used.length
+        ? '<span class="badge b-accent mono">' + esc(used.join(' · ')) + '</span>'
+        : '<span class="badge b-gray mono">unassigned</span>';
+      return '<div class="vrow">' +
+        '<div class="thumb"><span class="logo" role="presentation"></span><span class="dur">' + esc(v.dur) + '</span></div>' +
+        '<div class="vmeta">' +
+          '<div class="vt">' + esc(v.title) + '</div>' +
+          '<div class="vd">' + esc(v.id) + ' · uploaded ' + esc(v.up) + ' · ' + esc(v.by) + '</div>' +
+        '</div>' +
+        '<div class="vacts">' + badge + '</div>' +
+      '</div>';
+    }).join('');
+  }
   document.getElementById('libCount').textContent = VIDEOS.length + ' video' + (VIDEOS.length===1?'':'s');
   document.getElementById('kVideos').textContent = VIDEOS.length;
-  document.getElementById('kLast').textContent = VIDEOS[0].up.replace(/,\s*\d{4}$/,'');
-  var top = videoById(MAP['card-stacking']);
-  document.querySelector('#kLast + .sd').textContent = top ? 'Card Stacking DFY welcome' : 'unassigned';
+  document.getElementById('kLast').textContent = VIDEOS.length ? VIDEOS[0].up.replace(/,\s*\d{4}$/,'') : '—';
+  var top = VIDEOS.length ? videoById(MAP['card-stacking']) : null;
+  document.querySelector('#kLast + .sd').textContent = top ? 'Card Stacking DFY welcome' : (VIDEOS.length ? 'unassigned' : 'no videos yet');
 }
 
 /* ══ TIER ASSIGNMENT ═════════════════════════════════════════════════════ */

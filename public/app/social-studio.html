@@ -315,6 +315,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
   .deriv{flex-direction:column;gap:6px}.deriv .dk{flex:none}}
 </style>
 <script src="shell.js"></script>
+<script src="data.js"></script>
 </head>
 <body>
 <!--
@@ -681,13 +682,15 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
         <div class="gapgrid">
           <div class="gap">
             <div class="gt"><span class="badge b-alert mono">blocking</span>No social API</div>
-            <div class="gb">Nothing on this screen can read or write real rows. There is no
-              <code class="mono">api/social/*</code> handler, and <code class="mono">netlify/functions/api.mjs</code>
-              routes neither <code class="mono">social</code>, <code class="mono">campaigns</code> nor
-              <code class="mono">creative</code> — so even
-              <code class="mono">/api/campaigns/action-log?target_type=social_post</code>, which the code already
-              accepts as a filter, is unreachable on the deployed target.</div>
-            <div class="gs">netlify/functions/api.mjs ROUTES 43–68 · api/campaigns/action-log.mjs:16</div>
+            <div class="gb">There is still no <code class="mono">api/social/*</code> handler, so
+              <code class="mono">social_posts</code> and <code class="mono">social_channels</code> themselves have no
+              endpoint — every post, channel, queue/blocked/failed/posted pane and the drawer above is still sample
+              markup. <b>This one is stale, not this whole gap:</b> <code class="mono">campaigns</code> and
+              <code class="mono">creative</code> are both routed now, and
+              <code class="mono">/api/campaigns/action-log?target_type=social_post</code> is reachable — SS-?? above
+              (the audit trail table) calls it live, scoped to this partner, and falls back to sample rows only when
+              that call fails. It is one read of one table, not a social API.</div>
+            <div class="gs">netlify/functions/api.mjs ROUTES · api/campaigns/action-log.mjs:16 · wireActionLog() near the bottom of this page's script</div>
           </div>
           <div class="gap">
             <div class="gt"><span class="badge b-alert mono">blocking</span>No channel adapter</div>
@@ -1687,9 +1690,35 @@ function auditRows(){
     return true;
   });
 }
+/* renderAudit — live api/campaigns/action-log rows when wireActionLog() below
+   landed any, otherwise the sample-derived auditRows(). The two are NOT the
+   same shape: a real row has no channel/offer_type (those live on
+   social_posts, which has no endpoint at all — see SS-12), so the channel/
+   offer filters above the table only apply in sample fallback. */
 function renderAudit(){
-  var rows = auditRows().sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
   var host = document.getElementById('tblAudit');
+  if(LIVE_ACTIONS){
+    if(!LIVE_ACTIONS.length){ host.innerHTML = '<div class="empty">No action_log rows with target_type = \'social_post\' for this partner.</div>'; return; }
+    host.innerHTML = '<table class="grid"><thead><tr>'+
+      '<th>created_at</th><th>rule_key</th><th>actor</th><th>reason</th><th>target_id</th>'+
+      '<th>before → after</th><th>executed_at</th><th>execute_error</th><th>revertible</th></tr></thead><tbody>'+
+      LIVE_ACTIONS.slice().sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); }).map(function(l){
+        return '<tr>'+
+          '<td class="mono">'+esc(fmt(l.created_at))+'</td>'+
+          '<td class="mono">'+esc(l.rule_key||'—')+'</td>'+
+          '<td><span class="badge '+(l.actor==='agent'?'b-accent':'b-gray')+'">'+esc(l.actor)+'</span>'+
+            '<span class="substate">'+(l.agent_name?esc(l.agent_name):(l.user_name?esc(l.user_name):'—'))+'</span></td>'+
+          '<td>'+esc(l.reason||'—')+'</td>'+
+          '<td class="mono" style="font-size:11px">'+esc(String(l.target_id||'—'))+'</td>'+
+          '<td class="mono" style="font-size:11px">'+esc(JSON.stringify(l.before))+'<br>→ '+esc(JSON.stringify(l.after))+'</td>'+
+          '<td class="mono">'+(l.executed_at?esc(fmt(l.executed_at)):'<span style="color:#6E2A22">null</span>')+'</td>'+
+          '<td>'+(l.execute_error?'<span class="err">'+esc(l.execute_error)+'</span>':'<span style="color:var(--gray2)">—</span>')+'</td>'+
+          '<td><span class="badge '+(l.revertible?'b-info':'b-gray')+'">'+(l.revertible?'true':'false')+'</span></td>'+
+        '</tr>';
+      }).join('') + '</tbody></table>';
+    return;
+  }
+  var rows = auditRows().sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
   if(!rows.length){ host.innerHTML = '<div class="empty">No action_log rows with target_type = \'social_post\' for this filter.</div>'; return; }
   host.innerHTML = '<table class="grid"><thead><tr>'+
     '<th>created_at</th><th>rule_key</th><th>actor</th><th>reason</th><th>before → after</th>'+
@@ -1936,7 +1965,7 @@ function renderCounts(){
   document.getElementById('nBlocked').textContent = applyFilters(byStatus('blocked')).length;
   document.getElementById('nFailed').textContent  = applyFilters(byStatus('failed')).length;
   document.getElementById('nPosted').textContent  = applyFilters(byStatus('posted')).length;
-  document.getElementById('nAudit').textContent   = auditRows().length;
+  document.getElementById('nAudit').textContent   = LIVE_ACTIONS ? LIVE_ACTIONS.length : auditRows().length;
   var all = applyFilters(posts()).length;
   document.getElementById('fCount').textContent = all + ' of ' + posts().length + ' posts match';
 }
@@ -1949,6 +1978,63 @@ function renderAll(){
   renderComposerOptions(); renderVerdict();
   renderFilterOptions(); renderPanes();
   renderBestTimes(); renderApproval();
+}
+
+/* ══ API WIRING — SS-?? AUDIT TRAIL ═══════════════════════════════════════
+   Everything else on this screen is sample: there is no api/social/* route
+   (see SS-12), so posts, channels, the queue/blocked/failed/posted panes and
+   the drawer have nothing real to read. api/campaigns/action-log is the one
+   exception — it is routed and it already accepts ?target_type=social_post
+   (action-log.mjs:16) — so this is the one live read on the page. Same
+   apiGet() reproduction of data.js's contract that hiring.html and
+   creative-factory.html use, for the same reason: action-log is not under
+   /api/read/*, so FHData has no wrapper for it. */
+function apiGet(path){
+  var demo = false, tok = '';
+  try { demo = localStorage.getItem('fh_demo') === '1'; tok = localStorage.getItem('fh_token') || ''; } catch(e){}
+  if(demo) return Promise.resolve({ ok:false, source:'demo', data:null, error:'demo session — no backend read attempted' });
+  var started;
+  try {
+    started = fetch(path, { headers: tok ? { accept:'application/json', authorization:'Bearer '+tok } : { accept:'application/json' } });
+  } catch(e){
+    return Promise.resolve({ ok:false, source:'offline', data:null, error:(e && e.message) || 'fetch unavailable' });
+  }
+  return Promise.resolve(started).then(function(r){
+    if(r.status === 401 || r.status === 403) return { ok:false, source:'unauthorized', data:null, error:'not signed in, or role is not staff/partner' };
+    if(r.status === 404){
+      return r.json().then(function(d){
+        return (d && d.error === 'not_found' && typeof d.path === 'string')
+          ? { ok:false, source:'offline', data:null, error:'/api/* not deployed' }
+          : { ok:false, source:'notfound', data:null, error:'no such record' };
+      }).catch(function(){ return { ok:false, source:'offline', data:null, error:'/api/* not deployed' }; });
+    }
+    if(r.status === 400){
+      return r.json().then(function(d){
+        return { ok:false, source:'badrequest', data:null, error:(d && d.error) || 'bad request' };
+      }).catch(function(){ return { ok:false, source:'badrequest', data:null, error:'bad request' }; });
+    }
+    return r.json().then(function(d){
+      if(r.status === 503 || (d && d.db === 'down')) return { ok:false, source:'nodb', data:null, error:(d && d.error) || 'database unreachable' };
+      if(!d || d.ok !== true) return { ok:false, source:'server', data:null, error:(d && d.error) || 'request failed' };
+      return { ok:true, source:'api', data:d, error:null };
+    }).catch(function(){ return { ok:false, source:'offline', data:null, error:'response was not JSON' }; });
+  }).catch(function(e){
+    return { ok:false, source:'offline', data:null, error:(e && e.message) || 'network error' };
+  });
+}
+
+var LIVE_ACTIONS = null; // null = fall back to the sample-derived auditRows()
+function wireActionLog(){
+  var pid = PARTNERS[P].id;
+  apiGet('/api/campaigns/action-log?partner_id='+encodeURIComponent(pid)+'&target_type=social_post&state=all&limit=200')
+    .then(function(res){
+      LIVE_ACTIONS = res.ok ? (res.data.items||[]) : null;
+      renderAudit(); renderCounts();
+      if(window.FHData){
+        if(res.ok) FHData.banner('real', 'social_post action log · api', 'social-audit');
+        else FHData.explain(res, 'social_post action log');
+      }
+    });
 }
 
 /* stat tiles → derivation strip */
@@ -1994,7 +2080,9 @@ document.getElementById('fOffer').addEventListener('change', function(){
     P = v; fltChannel = ''; fltOffer = '';
     document.getElementById('btChannel').innerHTML = '';
     closeDrawer();
+    LIVE_ACTIONS = null;
     renderAll();
+    wireActionLog();
   });
 })();
 
@@ -2033,6 +2121,7 @@ document.getElementById('cCaption').value =
   'Working capital for owners who need materials before the draw clears. Every application is underwritten individually.';
 document.getElementById('cOffer').value = 'funding';
 renderAll();
+wireActionLog();
 </script>
 </body>
 </html>
