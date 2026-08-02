@@ -59,13 +59,29 @@ export function secretFromEnv(env = process.env) {
   return secret;
 }
 
+/* A PER-SIGNER link gets its OWN SCHEME rather than an extra, sometimes-empty
+   field inside the contract-wide one. Two reasons, and the second is the one
+   that decided it:
+
+     * backward compatibility — a link minted before signers existed hashes the
+       identical string it always did, so it keeps working;
+     * a contract-wide link can never be replayed as one particular signer's
+       link, or the reverse, because the two live in different signature spaces.
+       With one scheme and an empty slot, "no signer" and "a signer whose id is
+       empty" would produce the same string, and a collision there is somebody
+       signing as the wrong party. */
+const SIGNER_SCHEME = "c1s";
+
 // Canonical string. Field order is fixed and "|" cannot appear in a uuid or in a
 // decimal timestamp, so no two distinct payloads produce the same HMAC input.
-const canonical = ({ contractId, expiresAt }) => [SCHEME, contractId, expiresAt].join("|");
+const canonical = ({ contractId, signerId, expiresAt }) =>
+  signerId
+    ? [SIGNER_SCHEME, contractId, signerId, expiresAt].join("|")
+    : [SCHEME, contractId, expiresAt].join("|");
 
-export function signature({ contractId, expiresAt, secret }) {
+export function signature({ contractId, signerId = null, expiresAt, secret }) {
   return createHmac("sha256", secret)
-    .update(canonical({ contractId, expiresAt }))
+    .update(canonical({ contractId, signerId, expiresAt }))
     .digest("hex");
 }
 
@@ -82,6 +98,11 @@ export function signature({ contractId, expiresAt, secret }) {
  */
 export function signContractUrl({
   contractId,
+  // Naming a signer mints THAT PERSON'S link: it opens the document as them,
+  // shows only their boxes, and signs only for them. Omitted, the link is the
+  // contract-wide one, which a single-signer contract resolves to its one
+  // signer (src/contracts/signers.mjs resolveSigner).
+  signerId = null,
   ttlSeconds = DEFAULT_TTL_SECONDS,
   secret = undefined,
   basePath = "/contract.html",
@@ -98,10 +119,11 @@ export function signContractUrl({
 
   const key = secret ?? secretFromEnv();
   const expiresAt = Math.floor(now() / 1000) + Math.floor(ttl);
-  const sig = signature({ contractId, expiresAt, secret: key });
+  const sig = signature({ contractId, signerId, expiresAt, secret: key });
 
   const params = new URLSearchParams();
   params.set("id", String(contractId));
+  if (signerId) params.set("s", String(signerId));
   params.set("exp", String(expiresAt));
   params.set("sig", sig);
 
@@ -123,9 +145,9 @@ export function signContractUrl({
  * link was wrong.
  */
 export function verifyContractUrl({
-  contractId, expiresAt, sig, secret = undefined, now = Date.now
+  contractId, signerId = null, expiresAt, sig, secret = undefined, now = Date.now
 } = {}) {
-  const fail = (reason) => ({ valid: false, reason, contractId: null, expiresAt: null });
+  const fail = (reason) => ({ valid: false, reason, contractId: null, signerId: null, expiresAt: null });
 
   if (!contractId || !sig || expiresAt === undefined || expiresAt === null) {
     return fail("malformed");
@@ -136,14 +158,14 @@ export function verifyContractUrl({
   let key;
   try { key = secret ?? secretFromEnv(); } catch { return fail("no_secret"); }
 
-  const expected = signature({ contractId, expiresAt: exp, secret: key });
+  const expected = signature({ contractId, signerId: signerId || null, expiresAt: exp, secret: key });
   const a = Buffer.from(expected, "utf8");
   const b = Buffer.from(String(sig), "utf8");
   if (a.length !== b.length || !timingSafeEqual(a, b)) return fail("bad_signature");
 
   if (Math.floor(now() / 1000) > exp) return fail("expired");
 
-  return { valid: true, reason: null, contractId, expiresAt: exp };
+  return { valid: true, reason: null, contractId, signerId: signerId || null, expiresAt: exp };
 }
 
 /** Parse + verify straight from a request URL (query-string form). */
@@ -152,10 +174,11 @@ export function verifyContractRequest(urlLike, { secret = undefined, now = Date.
   try {
     parsed = new URL(String(urlLike), "http://internal.invalid");
   } catch {
-    return { valid: false, reason: "malformed", contractId: null, expiresAt: null };
+    return { valid: false, reason: "malformed", contractId: null, signerId: null, expiresAt: null };
   }
   return verifyContractUrl({
     contractId: parsed.searchParams.get("id"),
+    signerId: parsed.searchParams.get("s"),
     expiresAt: parsed.searchParams.get("exp"),
     sig: parsed.searchParams.get("sig"),
     secret,

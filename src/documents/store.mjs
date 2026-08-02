@@ -290,24 +290,115 @@ export function vercelBlobProvider({
 // selection
 // ---------------------------------------------------------------------------
 
+/**
+ * Postgres provider — bytes in a `bytea` column (db/migrations/118_contract_esign.sql).
+ *
+ * WHY THIS EXISTS ALONGSIDE VERCEL BLOB. The owner's decision is blob storage.
+ * But BLOB_READ_WRITE_TOKEN cannot be set from this build environment
+ * (api.netlify.com is blocked by the network policy, CLAUDE.md §11), and the
+ * contract e-sign feature has to be able to store an uploaded PDF the day it
+ * deploys. A feature that cannot store a file until somebody sets an
+ * environment variable is a feature that ships dead — which this repository has
+ * done three times and written src/http/routes.test.mjs to stop doing.
+ *
+ * So this is the fallback, and providerFromEnv() below selects blob the instant
+ * the token appears. Nothing above the provider interface knows which it got.
+ *
+ * The key is `postgres://<content-addressed path>`. Unlike a blob URL that key
+ * is NOT a bearer credential, because reading it needs a database connection —
+ * but it is still never returned to a caller, because the layer above cannot
+ * tell the two apart and must not have to.
+ *
+ * Contracts are small and low-volume, so bytea is a reasonable home rather than
+ * a compromise; it also inherits the database's backup and retention story
+ * instead of needing its own.
+ */
+export function postgresProvider({ db = null } = {}) {
+  // Resolved lazily so this module still imports without a database, exactly
+  // like the blob SDK above.
+  const handle = async () => db || (await import("../db.mjs")).db;
+  const pathOf = (storageKey) => String(storageKey).replace(/^postgres:\/\//, "");
+
+  return {
+    name: "postgres",
+
+    async put(pathname, bytes, { contentType } = {}) {
+      const conn = await handle();
+      /* ON CONFLICT DO NOTHING, never DO UPDATE. The path is a hash of the
+         content, so a conflict means the identical bytes are already stored.
+         Rewriting would be a no-op at best, and at worst a way to put different
+         content behind an existing key — the exact property content addressing
+         exists to make impossible. */
+      await conn.query(
+        `INSERT INTO document_blobs (storage_path, content_type, byte_size, bytes)
+         VALUES ($1,$2,$3,$4) ON CONFLICT (storage_path) DO NOTHING`,
+        [pathname, contentType ?? null, bytes.byteLength, bytes]);
+      return `postgres://${pathname}`;
+    },
+
+    async get(storageKey) {
+      const conn = await handle();
+      const { rows } = await conn.query(
+        `SELECT bytes, content_type FROM document_blobs WHERE storage_path = $1`,
+        [pathOf(storageKey)]);
+      if (!rows[0]) return null;
+      return { body: Buffer.from(rows[0].bytes), contentType: rows[0].content_type };
+    },
+
+    async del(storageKey) {
+      const conn = await handle();
+      await conn.query(`DELETE FROM document_blobs WHERE storage_path = $1`, [pathOf(storageKey)]);
+    },
+
+    async exists(storageKey) {
+      const conn = await handle();
+      const { rows } = await conn.query(
+        `SELECT 1 FROM document_blobs WHERE storage_path = $1`, [pathOf(storageKey)]);
+      return Boolean(rows[0]);
+    }
+  };
+}
+
+// ---------------------------------------------------------------------------
+// selection
+// ---------------------------------------------------------------------------
+
 export const PROVIDERS = Object.freeze({
   memory: memoryProvider,
+  postgres: postgresProvider,
   "vercel-blob": vercelBlobProvider
 });
 
 /**
- * providerFromEnv — DOCUMENT_STORE_PROVIDER selects; memory is the default so
- * an unconfigured environment runs instead of exploding. Production must set
- * this explicitly; storeFromEnv() warns once if it has not.
+ * providerFromEnv — DOCUMENT_STORE_PROVIDER selects. When it is UNSET, the
+ * choice follows what is actually configured, in this order:
+ *
+ *   BLOB_READ_WRITE_TOKEN set  → vercel-blob   (the owner's chosen store)
+ *   DATABASE_URL set           → postgres      (works today, no vendor needed)
+ *   neither                    → memory        (unit tests; nothing survives)
+ *
+ * NAMING THE PROVIDER EXPLICITLY STILL WINS, always. The automatic choice exists
+ * so that deploying does not require an environment variable to be set first —
+ * not to take the decision away from anyone who wants to make it.
+ *
+ * The old default was `memory` whenever the variable was unset, which in
+ * production meant an uploaded file silently vanished on the next cold start.
+ * That is a worse default than either of the two real stores, and it is the one
+ * an operator is least likely to notice.
  */
 export function providerFromEnv(env = process.env, opts = {}) {
-  const name = env.DOCUMENT_STORE_PROVIDER || "memory";
-  const factory = PROVIDERS[name];
-  if (!factory) {
-    throw new Error(
-      `unknown DOCUMENT_STORE_PROVIDER "${name}" — expected one of ${Object.keys(PROVIDERS).join(", ")}`);
+  const explicit = env.DOCUMENT_STORE_PROVIDER;
+  if (explicit) {
+    const factory = PROVIDERS[explicit];
+    if (!factory) {
+      throw new Error(
+        `unknown DOCUMENT_STORE_PROVIDER "${explicit}" — expected one of ${Object.keys(PROVIDERS).join(", ")}`);
+    }
+    return factory(opts);
   }
-  return factory(opts);
+  if (env.BLOB_READ_WRITE_TOKEN) return vercelBlobProvider(opts);
+  if (env.DATABASE_URL) return postgresProvider(opts);
+  return memoryProvider(opts);
 }
 
 let _warned = false;

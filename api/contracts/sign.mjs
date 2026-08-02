@@ -44,7 +44,8 @@ import { db } from "../../src/db.mjs";
 import { isUuid, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import { verifyContractUrl } from "../../src/contracts/signed-link.mjs";
-import { viewForSigning, sign } from "../../src/contracts/sign.mjs";
+import { viewForSigning, sign, documentBytes, loadForClient } from "../../src/contracts/sign.mjs";
+import { declineSigner, resolveSigner } from "../../src/contracts/signers.mjs";
 import { ContractError } from "../../src/contracts/errors.mjs";
 
 const GONE = (res) => res.status(404).json({ ok: false, error: "not_found" });
@@ -77,12 +78,17 @@ export default async function handler(req, res) {
      re-send a credential is a worse shape than one that never handles it. */
   const q = req.query || {};
   const contractId = q.id;
+  // `s` names WHICH SIGNER this link belongs to. Its own signature space (see
+  // src/contracts/signed-link.mjs), so a contract-wide link can never be
+  // replayed as a particular person's, or the reverse.
+  const signerId = q.s || null;
 
-  // Shape check first: a malformed id must not reach Postgres as a 22P02.
+  // Shape checks first: a malformed id must not reach Postgres as a 22P02.
   if (!isUuid(contractId)) return GONE(res);
+  if (signerId && !isUuid(signerId)) return GONE(res);
 
   const verdict = verifyContractUrl({
-    contractId, expiresAt: q.exp, sig: q.sig
+    contractId, signerId, expiresAt: q.exp, sig: q.sig
   });
   if (!verdict.valid) {
     if (verdict.reason === "no_secret") {
@@ -110,24 +116,68 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === "GET") {
-      const out = await viewForSigning(db, { contractId });
+      /* ?file=1 — the document itself, base64 inside JSON.
+         Same transport as the staff side and for the same reason: one shape
+         that works identically under both (req,res) shims. The signing page
+         hands the bytes straight to pdf.js.
+
+         It goes through the SAME signature check as everything else above, so a
+         forged link cannot fetch the file either — which matters more here than
+         anywhere, because the file is the contract. */
+      if (String(q.file || "") === "1") {
+        const contract = await loadForClient(db, contractId);
+        if (!contract || contract.status === "draft" || contract.status === "void") return GONE(res);
+        // Only somebody who is really a signer on this contract may pull the file.
+        if (signerId) {
+          const { signer } = await resolveSigner(db, { contractId, signerId });
+          if (!signer) return GONE(res);
+        }
+        const out = await documentBytes(db, contract);
+        if (!out) return res.status(404).json({ ok: false, error: "no_file" });
+        res.setHeader("cache-control", "private, no-store");
+        res.setHeader("x-content-type-options", "nosniff");
+        return res.status(200).json({
+          ok: true, filename: out.filename, signed: out.signed,
+          pdf_base64: out.bytes.toString("base64")
+        });
+      }
+
+      const out = await viewForSigning(db, { contractId, signerId });
       res.setHeader("cache-control", "private, no-store");
       res.setHeader("x-content-type-options", "nosniff");
       return res.status(200).json({ ok: true, contract: out.contract });
     }
 
     const body = req.body || {};
+
+    /* Declining is a real answer and it is recorded, not swallowed. A signer
+       who will not sign has to be able to say so without the contract sitting
+       in "waiting" forever while somebody chases them. */
+    if (String(body.action || "") === "decline") {
+      const { signer } = await resolveSigner(db, { contractId, signerId });
+      if (!signer) return GONE(res);
+      await declineSigner(db, { signerId: signer.id, reason: body.reason });
+      return res.status(200).json({
+        ok: true, declined: true,
+        message: "Recorded. The person who sent this has been told you did not sign it."
+      });
+    }
+
     const out = await sign(db, {
       contractId,
+      signerId,
       signerName: body.signer_name,
       agreed: body.agreed === true,
+      fieldValues: body.field_values && typeof body.field_values === "object" ? body.field_values : {},
       ip: clientIp(req),
       userAgent: (req.headers || {})["user-agent"] || null
     });
     res.setHeader("cache-control", "private, no-store");
     return res.status(200).json({
-      ok: true, contract: out.contract,
-      message: "Signed. A copy is saved with the time you signed it."
+      ok: true, contract: out.contract, complete: out.complete === true,
+      message: out.complete
+        ? "Signed. A copy is saved with the time you signed it."
+        : "Signed. We will let you know when everybody else has signed too."
     });
   } catch (err) {
     if (err instanceof ContractError) {

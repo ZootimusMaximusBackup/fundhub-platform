@@ -29,9 +29,17 @@ import { normaliseManualFields } from "./render.mjs";
 
 export const TEMPLATE_KINDS = Object.freeze(["contract", "authorization"]);
 
+/* Every column a caller needs, in one list. THE NEW ONES FROM 118 ARE HERE FOR
+   A REASON: createDraft() reads `source_kind` off this row to decide whether a
+   contract is typed copy or an uploaded PDF, and a list that quietly omitted it
+   made every PDF contract default to 'text' and go down the wrong path — with
+   no error anywhere, because "text" is a perfectly valid value. Adding a column
+   to contract_templates means adding it here too. */
 const TEMPLATE_COLUMNS = `
   id, org_id, template_key, name, kind, subtype, body, manual_fields,
   signature_required, signature_statement, active,
+  source_kind, document_id, document_version_id, original_filename,
+  page_count, page_sizes, fields, signer_roles,
   created_by, updated_by, created_at, updated_at`;
 
 /* A key is typed by a person and matched by machines, so it is normalised to one

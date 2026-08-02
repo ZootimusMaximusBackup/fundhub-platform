@@ -19,12 +19,34 @@ export {
 
 export {
   CONTRACT_MIME, CONTRACT_COLUMNS, bodyHash, getContract, listContracts,
-  createDraft, saveDraft, preview, send, voidContract, emitContractEvent
+  createDraft, saveDraft, preview, send, voidContract, emitContractEvent,
+  mintLinks, agreementManifest
 } from "./send.mjs";
 
 export {
-  loadForClient, verifyIntegrity, viewForSigning, sign, signedCopyHash
+  loadForClient, verifyIntegrity, viewForSigning, sign, signedCopyHash, documentBytes
 } from "./sign.mjs";
+
+export {
+  FIELD_TYPES, SIGNING_TYPES, FIELD_SOURCES, normaliseFields, applyAutoFill,
+  fieldsForSigner, openFieldsForSigner, missingForSigner, mergeSignerValues, assertSignable
+} from "./fields.mjs";
+
+export {
+  SIGNER_COLUMNS, listSigners, getSigner, normaliseSigners, replaceSigners,
+  turnOf, canSign, allSigned, resolveSigner, markSignerViewed, declineSigner,
+  waitingSummary, publicSignerList
+} from "./signers.mjs";
+
+export {
+  decodeUpload, uploadTemplate, saveFields, normaliseSignerRoles, loadTemplatePdf,
+  ensureTemplateClient
+} from "./upload.mjs";
+
+export {
+  inspect as inspectPdf, flatten as flattenPdf, textToPdf, boxToPoints,
+  looksLikePdf, PdfError, MAX_UPLOAD_BYTES, PDF_MIME
+} from "./pdf.mjs";
 
 export {
   signContractUrl, verifyContractUrl, verifyContractRequest, secretFromEnv,

@@ -32,6 +32,7 @@ const CLIENT_RAW = fs.readFileSync(path.join(PUBLIC, "contract.html"), "utf8");
 const CLIENT = CLIENT_RAW.replace(/<!--[\s\S]*?-->/g, "");
 const SHELL = fs.readFileSync(path.join(PUBLIC, "app/shell.js"), "utf8");
 const HEADERS = fs.readFileSync(path.join(PUBLIC, "_headers"), "utf8");
+const VENDOR = path.join(PUBLIC, "vendor/pdfjs");
 
 /* Every /api/... path a file asks for, deduplicated. */
 function apiPaths(src) {
@@ -164,9 +165,16 @@ describe("the client signing page (public/contract.html)", () => {
     assert.match(CLIENT, /agreed: \$\("agree"\)\.checked/);
   });
 
-  test("the Sign button is disabled until both a name and the box are given", () => {
+  test("the Sign button starts disabled and is only enabled by an explicit check", () => {
     assert.match(CLIENT, /<button id="go" disabled>/);
-    assert.match(CLIENT, /\$\("go"\)\.disabled = !\(\$\("name"\)\.value\.trim\(\)\.length >= 2 && \$\("agree"\)\.checked\)/);
+    assert.match(CLIENT, /<button id="barGo" disabled>/);
+    // Enabling is derived in one place from name + tickbox + no outstanding
+    // boxes + the server's own can_sign. Four conditions, one expression — so a
+    // future edit cannot enable the button by satisfying only some of them.
+    assert.match(CLIENT,
+      /var ready = Boolean\(nameOk && \$\("agree"\)\.checked && left\.length === 0 && c && c\.can_sign\)/);
+    assert.match(CLIENT, /\$\("go"\)\.disabled = !ready/);
+    assert.match(CLIENT, /\$\("barGo"\)\.disabled = !ready/);
   });
 
   /* The page must never hold its own copy of the wording — that would be a
@@ -208,5 +216,144 @@ describe("the client signing page (public/contract.html)", () => {
 
   test("it is not cached, because a document somebody is about to sign must be fresh", () => {
     assert.match(HEADERS, /\/contract\.html\n\s+Cache-Control: public, max-age=0, must-revalidate/);
+  });
+});
+
+describe("the vendored PDF viewer", () => {
+  /* pdf.js is committed rather than fetched from a CDN because this repository
+     has NO BUILD STEP — netlify.toml publishes public/ as-is — so a committed
+     file is the only way a module reaches the browser. It also means a client
+     signing a contract does not depend on a third-party host being up. */
+  test("the files are actually in the repository", () => {
+    for (const f of ["pdf.min.mjs", "pdf.worker.min.mjs", "VERSION"]) {
+      assert.ok(fs.existsSync(path.join(VENDOR, f)), `public/vendor/pdfjs/${f} is missing`);
+    }
+    assert.ok(fs.statSync(path.join(VENDOR, "pdf.min.mjs")).size > 100000,
+      "pdf.min.mjs looks truncated");
+  });
+
+  /* THE VERSION IS PINNED TO 4.x ON PURPOSE. pdf.js 6 calls
+     Map.prototype.getOrInsertComputed, which is too new for a great many
+     browsers in use today and threw outright in the Chromium this was tested
+     against. The people opening the signing page are customers on whatever
+     device they own, so the widest compatible build is the correct one. */
+  test("it is the legacy 4.x build, not the newest", () => {
+    const v = fs.readFileSync(path.join(VENDOR, "VERSION"), "utf8").trim();
+    assert.match(v, /^4\./,
+      `pdf.js is pinned to 4.x for browser compatibility; found ${v}. ` +
+      "Read the note in this test before raising it.");
+  });
+
+  test("both pages load it from the repository, never from a CDN", () => {
+    for (const [name, src] of [["contract.html", CLIENT], ["contracts.html", CRM]]) {
+      assert.match(src, /import \* as pdfjsLib from "\/vendor\/pdfjs\/pdf\.min\.mjs"/,
+        `${name} does not load the vendored viewer`);
+      assert.match(src, /workerSrc = "\/vendor\/pdfjs\/pdf\.worker\.min\.mjs"/,
+        `${name} does not point the worker at the vendored file`);
+      /* No script is fetched from another host. Checked against real URLs in
+         code rather than the word "CDN", which appears in the comment
+         explaining why there isn't one. Google Fonts stylesheets are the
+         repo-wide convention on every screen and are not scripts. */
+      const code = src.replace(/\/\*[\s\S]*?\*\//g, " ");
+      assert.equal(/<script[^>]+src="https?:/i.test(code), false,
+        `${name} loads a script from another host`);
+      assert.equal(/\bfrom\s+["']https?:/i.test(code), false,
+        `${name} imports a module from another host`);
+    }
+  });
+});
+
+describe("the Contracts screen — uploading and placing boxes", () => {
+  test("a PDF can be uploaded from the screen", () => {
+    assert.match(CRM, /id="fileInput"[^>]*accept="application\/pdf/);
+    assert.ok(CRM.includes('action: "upload_template"'));
+    assert.match(CRM, /readAsDataURL/, "the file is never read into a request body");
+  });
+
+  test("the field editor exists and saves through the right action", () => {
+    assert.match(CRM, /id="pdfEditor"/);
+    assert.match(CRM, /id="pdfPages"/);
+    assert.ok(CRM.includes('action: "save_fields"'));
+  });
+
+  /* THE POSITION RULE, ON THE SCREEN. Boxes are laid out in PERCENTAGES from
+     the same fractions the server stores. If this ever became pixels, every box
+     would land somewhere else in the finished PDF than where it was dragged. */
+  test("boxes are positioned in percentages, never in pixels", () => {
+    assert.match(CRM, /el\.style\.left = \(b\.x \* 100\) \+ "%"/);
+    assert.match(CRM, /el\.style\.top = \(b\.y \* 100\) \+ "%"/);
+    assert.match(CLIENT, /el\.style\.left = \(f\.x \* 100\) \+ "%"/);
+    assert.match(CLIENT, /el\.style\.top = \(f\.y \* 100\) \+ "%"/);
+  });
+
+  test("the screen refuses to offer an auto-filled signature, matching the server", () => {
+    assert.match(CRM, /if \(b\.type === "signature" \|\| b\.type === "initials"\) b\.source = "manual"/);
+  });
+
+  test("several signers can be named, in an order", () => {
+    assert.match(CRM, /id="signerRows"/);
+    assert.match(CRM, /id="selOrder"/);
+    assert.ok(CRM.includes("signing_order"));
+    assert.ok(CRM.includes("signers: sendSigners"));
+  });
+
+  test("a contact can be added without leaving the screen", () => {
+    assert.ok(CRM.includes('action: "create_client"'));
+    assert.match(CRM, /id="newContact"/);
+  });
+
+  test("every signer's own link is shown, not one shared link", () => {
+    assert.match(CRM, /function showLinks/);
+    assert.match(CRM, /data\.links/);
+    assert.match(CRM, /signs first/);
+  });
+
+  test("the finished document can be downloaded from the CRM", () => {
+    assert.match(CRM, /file: "contract"/);
+    assert.match(CRM, /a\.download = res\.data\.filename/);
+  });
+});
+
+describe("the client signing page — uploaded documents", () => {
+  test("it renders the real pages and lays this signer's boxes over them", () => {
+    assert.match(CLIENT, /function renderPdf/);
+    assert.match(CLIENT, /function overlayFields/);
+    assert.match(CLIENT, /c\.source_kind === "pdf"/);
+  });
+
+  test("pages are rendered one after another, not all at once", () => {
+    // A long document on a phone runs out of memory doing them in parallel.
+    assert.match(CLIENT, /chain = chain\.then/);
+  });
+
+  test("an auto-filled box is shown locked and is not an input", () => {
+    assert.match(CLIENT, /if \(f\.locked\) \{/);
+    // A locked box is a span with the value in it, never an <input> the signer
+    // could type over.
+    assert.match(CLIENT, /v\.className = "lockval"/);
+    assert.match(CLIENT, /\.fld\.locked\{[^}]*cursor:default/);
+  });
+
+  test("it says who it is waiting for when it is not this signer's turn", () => {
+    assert.match(CLIENT, /error === "not_your_turn"/);
+    assert.match(CLIENT, /function waiting/);
+  });
+
+  test("a signer can decline, with a reason", () => {
+    assert.match(CLIENT, /action: "decline"/);
+    assert.match(CLIENT, /id="declineBtn"/);
+  });
+
+  test("it shows the other signers' progress but never their contact details", () => {
+    assert.match(CLIENT, /function renderWho/);
+    // The server already strips emails from the list; the page must not ask for
+    // them back by some other route.
+    assert.equal(/s\.email/.test(CLIENT), false,
+      "the signing page reads a signer's email, which it is never sent");
+  });
+
+  test("the typed name fills the signature box live, before they commit", () => {
+    assert.match(CLIENT, /f\.type === "signature" \|\| f\.type === "initials"/);
+    assert.match(CLIENT, /repaintSignatures/);
   });
 });

@@ -53,18 +53,24 @@ import { requireRole, ROLE_SETS, isUuid, CLIENT_DATA_ERRORS } from "../src/http/
 import { safeError } from "../src/http/health.mjs";
 import {
   ContractError, createTemplate, updateTemplate, getTemplate,
-  createDraft, saveDraft, preview, send, voidContract, getContract
+  createDraft, saveDraft, preview, send, voidContract, getContract,
+  uploadTemplate, saveFields, listSigners, replaceSigners
 } from "../src/contracts/index.mjs";
 
 /* Which actions need owner or admin. hasRole() treats "owner" as passing every
    gate (SUPER_ROLES), so naming "admin" here covers both. */
 const OWNER_ADMIN_ACTIONS = new Set([
-  "create_template", "save_template", "archive_template", "void"
+  "create_template", "save_template", "archive_template", "void",
+  // Uploading a document and deciding where it gets signed IS writing contract
+  // wording — the same act, arriving as a file instead of as typed copy. It
+  // carries the same gate for the same reason.
+  "upload_template", "save_fields"
 ]);
 
 const ALL_ACTIONS = [
-  "create_template", "save_template", "archive_template",
-  "create_draft", "save_draft", "preview", "send", "void"
+  "create_template", "upload_template", "save_template", "save_fields",
+  "archive_template", "create_draft", "save_draft", "preview", "send", "void",
+  "create_client"
 ];
 
 /* The absolute base a signed link is built on, so the CRM can show a link a
@@ -74,7 +80,19 @@ const baseUrlFrom = (req, env = process.env) => {
   if (env.PUBLIC_BASE_URL) return String(env.PUBLIC_BASE_URL).replace(/\/$/, "");
   const host = req.headers?.["x-forwarded-host"] || req.headers?.host;
   if (!host) return null;
-  const proto = req.headers?.["x-forwarded-proto"] || "https";
+  /* THE SCHEME IS NOT ASSUMED TO BE https. It used to be, which produced
+     `https://127.0.0.1:8899/...` links against the local http dev server —
+     every one of them dead with an SSL error, on the one screen where a dead
+     link is handed to a customer.
+
+     x-forwarded-proto wins when a proxy sets it (Netlify does). Otherwise the
+     host decides: a loopback or *.local address is http, and anything else is
+     https, because a real deployment that is not on TLS is not a case worth
+     defaulting to. */
+  const forwarded = req.headers?.["x-forwarded-proto"];
+  const local = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(String(host)) ||
+                /\.local(:\d+)?$/i.test(String(host));
+  const proto = forwarded ? String(forwarded).split(",")[0].trim() : (local ? "http" : "https");
   return `${proto}://${host}`;
 };
 
@@ -174,6 +192,95 @@ export default async function handler(req, res) {
         });
       }
 
+      /* ── upload a PDF ──────────────────────────────────────────────────
+         The file arrives base64-encoded inside the JSON body rather than as
+         multipart. The Netlify adapter reads a request as text and JSON-parses
+         it, and public/app/data.js's write() is a JSON POST, so multipart would
+         mean a second body parser for exactly one endpoint. Base64 costs about
+         a third more bytes on the wire and nothing else; the size limit is
+         applied to the DECODED length in src/contracts/upload.mjs. */
+      case "upload_template": {
+        const template = await uploadTemplate(db, {
+          orgId, staffId: staff.id,
+          templateKey: body.template_key,
+          name: body.name,
+          file: body.file,
+          filename: body.filename || null,
+          kind: body.kind || "contract",
+          subtype: body.subtype ?? null,
+          signatureStatement: body.signature_statement
+        });
+        return res.status(200).json({
+          ok: true, action, template,
+          message: `Uploaded. ${template.page_count} page${template.page_count === 1 ? "" : "s"}. ` +
+                   "Now place the boxes on it."
+        });
+      }
+
+      // ── where the boxes go, and who signs ─────────────────────────────────
+      case "save_fields": {
+        if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "invalid_id" });
+        const template = await saveFields(db, {
+          orgId, staffId: staff.id, id: body.id,
+          fields: body.fields, signerRoles: body.signer_roles
+        });
+        return res.status(200).json({
+          ok: true, action, template,
+          message: "Saved. Contracts already sent keep the boxes they were sent with."
+        });
+      }
+
+      /* ── a contact who is not on file yet ──────────────────────────────────
+         "we could create a new contact" — the owner's words. Sending a contract
+         to somebody who has never been entered is the ordinary case, and making
+         a staff member leave the screen, add a client, and come back is the
+         friction that makes people keep using a different tool.
+
+         ROLE_SETS.STAFF, not owner/admin: creating a client is something every
+         staff role already does through the pipeline. It writes nothing but a
+         name and contact details. */
+      case "create_client": {
+        const first = String(body.first_name ?? "").trim();
+        const last = String(body.last_name ?? "").trim();
+        const email = String(body.email ?? "").trim();
+        if (!first && !last) {
+          return res.status(400).json({
+            ok: false, error: "name_required",
+            message: "A new contact needs a name."
+          });
+        }
+        if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+          return res.status(400).json({
+            ok: false, error: "email_invalid",
+            message: `"${email}" does not look like an email address.`
+          });
+        }
+        /* An existing contact with the same email is REUSED rather than
+           duplicated. Two client rows for one person is the bug that takes
+           months to surface: their contracts, their credit file and their
+           payments end up split across two records and nothing says so. */
+        if (email) {
+          const dup = await db.query(
+            `SELECT id, first_name, last_name, email FROM clients
+              WHERE org_id = $1::uuid AND lower(email) = lower($2) LIMIT 1`, [orgId, email]);
+          if (dup.rows[0]) {
+            return res.status(200).json({
+              ok: true, action, client: dup.rows[0], existing: true,
+              message: "That email is already on file, so the existing contact was used."
+            });
+          }
+        }
+        const { rows } = await db.query(
+          `INSERT INTO clients (org_id, first_name, last_name, email, phone)
+           VALUES ($1,$2,$3,$4,$5)
+           RETURNING id, first_name, last_name, email, phone`,
+          [orgId, first || null, last || null, email || null,
+           String(body.phone ?? "").trim() || null]);
+        return res.status(200).json({
+          ok: true, action, client: rows[0], existing: false, message: "Contact added."
+        });
+      }
+
       // ── drafts ────────────────────────────────────────────────────────────
       case "create_draft": {
         if (!isUuid(body.client_id)) return res.status(400).json({ ok: false, error: "invalid_client_id" });
@@ -181,9 +288,14 @@ export default async function handler(req, res) {
         const contract = await createDraft(db, {
           orgId, staffId: staff.id,
           clientId: body.client_id, templateId: body.template_id,
-          values: body.values || {}, title: body.title || null
+          values: body.values || {}, title: body.title || null,
+          signers: Array.isArray(body.signers) && body.signers.length ? body.signers : null,
+          signingOrder: body.signing_order === "parallel" ? "parallel" : "sequential"
         });
-        return res.status(200).json({ ok: true, action, contract, message: "Draft created." });
+        const signers = await listSigners(db, contract.id);
+        return res.status(200).json({
+          ok: true, action, contract, signers, message: "Draft created."
+        });
       }
 
       case "save_draft": {
@@ -234,7 +346,8 @@ export default async function handler(req, res) {
           throw err;
         }
         return res.status(200).json({
-          ok: true, action, contract: out.contract, link: out.link, resent: out.resent,
+          ok: true, action, contract: out.contract, link: out.link,
+          links: out.links || [], resent: out.resent,
           message: out.resent
             ? "This contract was already sent. Here is a fresh link to the same document."
             : "Sent. Copy the link below and give it to the client."

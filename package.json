@@ -20,7 +20,10 @@
     "guard:db": "node --test src/security/superuser-guard.test.mjs"
   },
   "dependencies": {
+    "@vercel/blob": "^2.6.1",
     "inngest": "^3.21.2",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38",
     "pg": "^8.13.1"
   }
 }

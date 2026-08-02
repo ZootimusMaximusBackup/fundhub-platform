@@ -22,6 +22,8 @@ import { db, close } from "../db.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
 import { createSession } from "../auth/session.mjs";
 import { signContractUrl } from "../contracts/signed-link.mjs";
+import { listSigners } from "../contracts/signers.mjs";
+import { PDFDocument, StandardFonts } from "pdf-lib";
 import writeHandler from "../../api/contracts.mjs";
 import readHandlerFn from "../../api/read/contracts.mjs";
 import signHandler from "../../api/contracts/sign.mjs";
@@ -79,17 +81,37 @@ describe("/api/contracts endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : fals
     return r;
   };
 
-  /* The query string of a real signed link, as the page would send it. */
-  const linkQuery = (contractId, ttlSeconds = undefined, now = undefined) => {
-    const link = signContractUrl({ contractId, secret: SECRET, ttlSeconds, now });
+  /* The query string of a real signed link, as the page would send it.
+     Naming a signer mints THAT PERSON'S link — its own signature space, so it
+     can never be replayed as anybody else's. */
+  const linkQuery = (contractId, ttlSeconds = undefined, now = undefined, signerId = null) => {
+    const link = signContractUrl({ contractId, signerId, secret: SECRET, ttlSeconds, now });
     const u = new URL(link.url, "http://x.invalid");
-    return { id: contractId, exp: u.searchParams.get("exp"), sig: u.searchParams.get("sig") };
+    const q = { id: contractId, exp: u.searchParams.get("exp"), sig: u.searchParams.get("sig") };
+    if (signerId) q.s = signerId;
+    return q;
   };
+
+  async function samplePdf(pages = 2) {
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    for (let i = 0; i < pages; i++) {
+      doc.addPage([612, 792]).drawText(`p${i + 1}`, { x: 50, y: 700, size: 12, font });
+    }
+    return Buffer.from(await doc.save());
+  }
 
   const purge = async () => {
     const ids = (await db.query(
       `SELECT id FROM clients WHERE email LIKE $1`, [CLIENT_EMAIL_LIKE])).rows.map((r) => r.id);
     if (ids.length) {
+      // Signers first: contract_signers references contracts and is itself
+      // delete-blocked, so the fixture unwinds in dependency order with both
+      // guards off. No application path can do this, which is the point.
+      await withTriggerDisabled("contract_signers", "trg_contract_signers_no_delete", () =>
+        db.query(
+          `DELETE FROM contract_signers WHERE contract_id IN (SELECT id FROM contracts WHERE client_id = ANY($1))`,
+          [ids]));
       await withTriggerDisabled("contracts", "trg_contracts_no_delete", () =>
         db.query(`DELETE FROM contracts WHERE client_id = ANY($1)`, [ids]));
       await withTriggerDisabled("documents", "trg_documents_no_delete", () =>
@@ -105,6 +127,8 @@ describe("/api/contracts endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : fals
     await withTriggerDisabled("contract_templates", "trg_contract_templates_no_delete", () =>
       db.query(`DELETE FROM contract_templates WHERE template_key LIKE $1`, [KEY_LIKE]));
     await db.query(`DELETE FROM staff WHERE email LIKE $1`, [STAFF_EMAIL_LIKE]);
+    await db.query(`DELETE FROM clients WHERE org_id IN (SELECT id FROM orgs WHERE slug = $1)`,
+      [FOREIGN_ORG_SLUG]);
     await db.query(`DELETE FROM orgs WHERE slug = $1`, [FOREIGN_ORG_SLUG]);
   };
 
@@ -456,6 +480,275 @@ describe("/api/contracts endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : fals
       assert.equal(after.body.contract.status, "signed");
       assert.equal(after.body.contract.signer_name, "Katherine Johnson");
       assert.equal(after.body.contract.can_sign, false);
+    });
+  });
+
+  // ── uploaded PDFs, boxes, several signers ─────────────────────────────────
+
+  describe("uploading a document and placing boxes on it", () => {
+    async function uploadedTemplate(token = staff.owner.token, signerCount = 1) {
+      n += 1;
+      const up = await post({
+        action: "upload_template", template_key: `CTHTTP-PDF${n}`, name: `Pdf ${n}`,
+        filename: "deal.pdf", file: (await samplePdf(2)).toString("base64")
+      }, token);
+      if (up.code !== 200) return up;
+      const fields = [
+        { id: "who", page: 0, x: 0.2, y: 0.2, w: 0.4, h: 0.03, type: "text", signer: 0,
+          label: "Name", source: "contact.full_name" },
+        ...Array.from({ length: signerCount }, (_, i) => ({
+          id: `sig${i}`, page: 1, x: 0.05 + i * 0.3, y: 0.6, w: 0.25, h: 0.05,
+          type: "signature", signer: i, label: `Signature ${i + 1}`, source: "manual"
+        }))
+      ];
+      const saved = await post({
+        action: "save_fields", id: up.body.template.id, fields,
+        signer_roles: Array.from({ length: signerCount }, (_, i) =>
+          ({ label: i === 0 ? "Client" : `Party ${i + 1}` }))
+      }, token);
+      return saved;
+    }
+
+    test("an owner can upload a PDF and the endpoint reports its pages", async () => {
+      n += 1;
+      const r = await post({
+        action: "upload_template", template_key: `CTHTTP-UP${n}`, name: "Uploaded",
+        filename: "deal.pdf", file: (await samplePdf(3)).toString("base64")
+      }, staff.owner.token);
+      assert.equal(r.code, 200, JSON.stringify(r.body));
+      assert.equal(r.body.template.source_kind, "pdf");
+      assert.equal(r.body.template.page_count, 3);
+      assert.match(r.body.message, /3 pages/);
+    });
+
+    test("UPLOADING IS OWNER/ADMIN — a setter cannot, and nothing is written", async () => {
+      const r = await post({
+        action: "upload_template", template_key: "CTHTTP-NOPE2", name: "Nope",
+        filename: "d.pdf", file: (await samplePdf(1)).toString("base64")
+      }, staff.setter.token);
+      assert.equal(r.code, 403);
+      const rows = (await db.query(
+        `SELECT count(*)::int AS n FROM contract_templates WHERE template_key = 'CTHTTP-NOPE2'`)).rows[0].n;
+      assert.equal(rows, 0);
+    });
+
+    test("placing boxes is owner/admin too", async () => {
+      const t = await uploadedTemplate();
+      const r = await post({ action: "save_fields", id: t.body.template.id, fields: [] }, staff.closer.token);
+      assert.equal(r.code, 403);
+    });
+
+    test("a non-PDF is refused with a sentence a person can act on", async () => {
+      n += 1;
+      const r = await post({
+        action: "upload_template", template_key: `CTHTTP-BAD${n}`, name: "Bad",
+        filename: "deal.docx", file: Buffer.from("PK word doc").toString("base64")
+      }, staff.owner.token);
+      assert.equal(r.code, 400);
+      assert.equal(r.body.error, "not_a_pdf");
+      assert.match(r.body.message, /Save As or Print/);
+    });
+
+    test("a box off the page is refused, and says which one", async () => {
+      const t = await uploadedTemplate();
+      const r = await post({
+        action: "save_fields", id: t.body.template.id,
+        fields: [{ id: "x", page: 0, x: 0.9, y: 0.5, w: 0.4, h: 0.05, type: "text", signer: 0 }]
+      }, staff.owner.token);
+      assert.equal(r.code, 400);
+      assert.match(r.body.message, /hangs off the edge/);
+    });
+
+    test("the file comes back for the editor, and never a storage key", async () => {
+      const t = await uploadedTemplate();
+      const r = await read({ file: "template", template_id: t.body.template.id }, staff.owner.token);
+      assert.equal(r.code, 200);
+      assert.equal(r.body.page_count, 2);
+      assert.ok(r.body.pdf_base64.length > 100);
+      assert.equal(Buffer.from(r.body.pdf_base64, "base64").subarray(0, 5).toString(), "%PDF-");
+      assert.equal(JSON.stringify(r.body).includes("storage_key"), false);
+    });
+
+    test("another company cannot fetch the file", async () => {
+      const t = await uploadedTemplate();
+      const r = await read({ file: "template", template_id: t.body.template.id }, staff.foreign.token);
+      assert.equal(r.code, 404);
+    });
+  });
+
+  describe("sending to several people, in order", () => {
+    async function twoParty(token = staff.owner.token) {
+      n += 1;
+      const up = await post({
+        action: "upload_template", template_key: `CTHTTP-TWO${n}`, name: `Two ${n}`,
+        filename: "deal.pdf", file: (await samplePdf(2)).toString("base64")
+      }, staff.owner.token);
+      await post({
+        action: "save_fields", id: up.body.template.id,
+        signer_roles: [{ label: "Client" }, { label: "Lender" }],
+        fields: [
+          { id: "sig0", page: 1, x: 0.05, y: 0.6, w: 0.25, h: 0.05, type: "signature", signer: 0 },
+          { id: "sig1", page: 1, x: 0.4, y: 0.6, w: 0.25, h: 0.05, type: "signature", signer: 1 }
+        ]
+      }, staff.owner.token);
+      const d = await post({
+        action: "create_draft", client_id: client, template_id: up.body.template.id,
+        signers: [
+          { role_label: "Client", name: "Katherine Johnson", email: "kj@x.test", client_id: client },
+          { role_label: "Lender", name: "Bo Lender", email: "bo@x.test" }
+        ],
+        signing_order: "sequential"
+      }, token);
+      assert.equal(d.code, 200, JSON.stringify(d.body));
+      const s = await post({ action: "send", id: d.body.contract.id }, token);
+      assert.equal(s.code, 200, JSON.stringify(s.body));
+      return { contract: s.body.contract, links: s.body.links };
+    }
+
+    test("the send returns one link per signer", async () => {
+      const { links } = await twoParty();
+      assert.equal(links.length, 2);
+      assert.deepEqual(links.map((l) => l.role_label), ["Client", "Lender"]);
+      assert.ok(links[0].signer_id && links[1].signer_id);
+      assert.notEqual(links[0].url, links[1].url);
+    });
+
+    test("SIGNER 2'S LINK IS REFUSED UNTIL SIGNER 1 HAS SIGNED", async () => {
+      const { contract, links } = await twoParty();
+      const q2 = linkQuery(contract.id, undefined, undefined, links[1].signer_id);
+
+      const early = await callSign(q2);
+      assert.equal(early.code, 409);
+      assert.equal(early.body.error, "not_your_turn");
+      assert.match(early.body.message, /Katherine Johnson/);
+
+      const earlySign = await callSign(q2, {
+        method: "POST", body: { signer_name: "Bo Lender", agreed: true } });
+      assert.equal(earlySign.code, 409);
+
+      // Signer 1 goes.
+      const q1 = linkQuery(contract.id, undefined, undefined, links[0].signer_id);
+      const first = await callSign(q1, {
+        method: "POST", body: { signer_name: "Katherine Johnson", agreed: true }, ip: "203.0.113.5" });
+      assert.equal(first.code, 200, JSON.stringify(first.body));
+      assert.equal(first.body.complete, false);
+
+      // Now signer 2 may.
+      const nowOk = await callSign(q2);
+      assert.equal(nowOk.code, 200);
+      assert.equal(nowOk.body.contract.can_sign, true);
+      const second = await callSign(q2, {
+        method: "POST", body: { signer_name: "Bo Lender", agreed: true }, ip: "198.51.100.6" });
+      assert.equal(second.code, 200);
+      assert.equal(second.body.complete, true);
+
+      const row = (await db.query(`SELECT * FROM contracts WHERE id = $1`, [contract.id])).rows[0];
+      assert.equal(row.status, "signed");
+      assert.ok(row.signed_document_id);
+    });
+
+    test("A CONTRACT-WIDE LINK CANNOT SIGN A MULTI-SIGNER CONTRACT", async () => {
+      const { contract } = await twoParty();
+      const r = await callSign(linkQuery(contract.id), {
+        method: "POST", body: { signer_name: "Anybody", agreed: true } });
+      assert.equal(r.code, 409);
+      assert.equal(r.body.error, "signer_required");
+    });
+
+    test("one signer's link cannot open as the other signer", async () => {
+      const { contract, links } = await twoParty();
+      const q1 = linkQuery(contract.id, undefined, undefined, links[0].signer_id);
+      // Same signature, different signer id in the query.
+      const r = await callSign({ ...q1, s: links[1].signer_id });
+      assert.equal(r.code, 404);
+    });
+
+    test("the document itself is served through the same signature check", async () => {
+      const { contract, links } = await twoParty();
+      const q = linkQuery(contract.id, undefined, undefined, links[0].signer_id);
+      const ok = await callSign({ ...q, file: "1" });
+      assert.equal(ok.code, 200);
+      assert.equal(Buffer.from(ok.body.pdf_base64, "base64").subarray(0, 5).toString(), "%PDF-");
+
+      const forged = await callSign({ ...q, file: "1", sig: "0".repeat(64) });
+      assert.equal(forged.code, 404);
+    });
+
+    test("declining is recorded through the endpoint", async () => {
+      const { contract, links } = await twoParty();
+      const q1 = linkQuery(contract.id, undefined, undefined, links[0].signer_id);
+      const r = await callSign(q1, {
+        method: "POST", body: { action: "decline", reason: "The fee is wrong" } });
+      assert.equal(r.code, 200);
+      const rows = await listSigners(db, contract.id);
+      assert.equal(rows[0].status, "declined");
+      assert.equal(rows[0].decline_reason, "The fee is wrong");
+    });
+
+    test("the CRM read shows every signer and who is being waited on", async () => {
+      const { contract } = await twoParty();
+      const r = await read({ id: contract.id }, staff.closer.token);
+      assert.equal(r.code, 200);
+      assert.equal(r.body.signers.length, 2);
+      assert.equal(r.body.waiting_on.name, "Katherine Johnson");
+    });
+
+    test("the finished PDF is downloadable from the CRM", async () => {
+      const { contract, links } = await twoParty();
+      for (const l of links) {
+        await callSign(linkQuery(contract.id, undefined, undefined, l.signer_id), {
+          method: "POST", body: { signer_name: l.name, agreed: true } });
+      }
+      const r = await read({ file: "contract", id: contract.id }, staff.owner.token);
+      assert.equal(r.code, 200);
+      assert.equal(r.body.signed, true);
+      const doc = await PDFDocument.load(Buffer.from(r.body.pdf_base64, "base64"));
+      assert.equal(doc.getPageCount(), 3, "2 source pages + the signature record");
+    });
+  });
+
+  describe("adding a contact without leaving the screen", () => {
+    test("any staff role may add one", async () => {
+      const r = await post({
+        action: "create_client", first_name: "New", last_name: "Person",
+        email: "contract.http.test.new1@example.com"
+      }, staff.setter.token);
+      assert.equal(r.code, 200, JSON.stringify(r.body));
+      assert.equal(r.body.existing, false);
+      assert.ok(r.body.client.id);
+    });
+
+    test("A DUPLICATE EMAIL REUSES THE EXISTING CONTACT rather than making a second one", async () => {
+      const body = {
+        action: "create_client", first_name: "Dup", last_name: "Person",
+        email: "contract.http.test.dup@example.com"
+      };
+      const first = await post(body, staff.owner.token);
+      const second = await post(body, staff.owner.token);
+      assert.equal(second.code, 200);
+      assert.equal(second.body.existing, true);
+      assert.equal(second.body.client.id, first.body.client.id);
+      const count = (await db.query(
+        `SELECT count(*)::int AS n FROM clients WHERE lower(email) = $1`,
+        ["contract.http.test.dup@example.com"])).rows[0].n;
+      assert.equal(count, 1);
+    });
+
+    test("a nameless contact and a malformed email are refused", async () => {
+      assert.equal((await post({ action: "create_client", email: "x@y.co" }, staff.owner.token)).code, 400);
+      assert.equal((await post({
+        action: "create_client", first_name: "A", email: "not-an-email"
+      }, staff.owner.token)).code, 400);
+    });
+
+    test("a new contact belongs to the caller's company, never another", async () => {
+      const r = await post({
+        action: "create_client", first_name: "Scoped", last_name: "Person",
+        email: "contract.http.test.scoped@example.com"
+      }, staff.foreign.token);
+      assert.equal(r.code, 200);
+      const row = (await db.query(`SELECT org_id FROM clients WHERE id = $1`, [r.body.client.id])).rows[0];
+      assert.equal(row.org_id, foreignOrg);
     });
   });
 });

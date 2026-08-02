@@ -30,7 +30,8 @@ import {
 import { safeError } from "../../src/http/health.mjs";
 import {
   listTemplates, listContracts, getContract, getTemplate,
-  normaliseManualFields, verifyIntegrity, signedCopyHash
+  normaliseManualFields, verifyIntegrity, signedCopyHash,
+  listSigners, waitingSummary, loadTemplatePdf, documentBytes
 } from "../../src/contracts/index.mjs";
 
 const STATUSES = new Set(["draft", "sent", "viewed", "signed", "void"]);
@@ -57,6 +58,49 @@ export default async function handler(req, res) {
   const limit = boundedLimit(q.limit, { fallback: 100, cap: 200 });
 
   try {
+    /* ── the file itself ────────────────────────────────────────────────────
+       Returned base64 inside JSON rather than as raw bytes. The (req,res) shim
+       these handlers run behind is built for JSON — netlify/functions/api.mjs
+       and scripts/dev-server.mjs each implement it separately — and one
+       transport that works identically under both is worth more than saving a
+       third of the bytes on a screen only staff open. pdf.js reads a byte array
+       just as happily as a URL.
+
+       IT IS STILL NEVER THE STORAGE KEY. The bytes are fetched server-side
+       through the documents module and the key stays inside it, which is the
+       whole rule src/documents/store.mjs's header sets out. */
+    if (String(q.file || "") === "template") {
+      if (!isUuid(q.template_id)) return res.status(400).json({ ok: false, error: "invalid_template_id" });
+      const template = await getTemplate(db, { orgId: staff.org_id, id: q.template_id });
+      if (!template) return res.status(404).json({ ok: false, error: "not_found" });
+      const bytes = await loadTemplatePdf(db, template);
+      if (!bytes) return res.status(404).json({ ok: false, error: "no_file" });
+      res.setHeader("cache-control", "private, no-store");
+      return res.status(200).json({
+        ok: true, file: "template",
+        filename: template.original_filename || "document.pdf",
+        page_count: template.page_count,
+        page_sizes: template.page_sizes || [],
+        pdf_base64: bytes.toString("base64")
+      });
+    }
+
+    if (String(q.file || "") === "contract") {
+      if (!isUuid(q.id)) return res.status(400).json({ ok: false, error: "invalid_id" });
+      const contract = await getContract(db, { orgId: staff.org_id, id: q.id });
+      if (!contract) return res.status(404).json({ ok: false, error: "not_found" });
+      // `signed=1` asks for the finished document; the default gives whichever
+      // is current, which is the signed one once everybody has signed.
+      const wantSigned = q.signed === "1" ? true : (q.signed === "0" ? false : null);
+      const out = await documentBytes(db, contract, { signed: wantSigned });
+      if (!out) return res.status(404).json({ ok: false, error: "no_file" });
+      res.setHeader("cache-control", "private, no-store");
+      return res.status(200).json({
+        ok: true, file: "contract", filename: out.filename, signed: out.signed,
+        pdf_base64: out.bytes.toString("base64")
+      });
+    }
+
     // ── one contract, with its words ────────────────────────────────────────
     if (q.id != null && q.id !== "") {
       if (!isUuid(q.id)) return res.status(400).json({ ok: false, error: "invalid_id" });
@@ -70,13 +114,16 @@ export default async function handler(req, res) {
          a client who cannot sign it. */
       const integrity = await verifyIntegrity(db, contract);
       const template = await getTemplate(db, { orgId: staff.org_id, id: contract.template_id });
+      const signers = await listSigners(db, contract.id);
 
       return res.status(200).json({
         ok: true,
         contract: redact(contract),
         integrity: { ok: integrity.ok, reason: integrity.reason },
         copy_hash: signedCopyHash(contract),
-        manual_fields: template ? normaliseManualFields(template.manual_fields) : []
+        manual_fields: template ? normaliseManualFields(template.manual_fields) : [],
+        signers: redact(signers),
+        waiting_on: waitingSummary(signers, contract.signing_order)
       });
     }
 

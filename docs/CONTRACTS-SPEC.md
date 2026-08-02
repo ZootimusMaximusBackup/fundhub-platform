@@ -1,6 +1,9 @@
 # Contract generator — specification and decision record
 
 Status: built 2026-08-02 on `claude/crm-contract-generator-elsk3q`.
+**Part 2 (uploaded PDFs, placed fields, several signers in order) added the same
+day — see §13 onwards. Everything before §13 still describes the system exactly;
+part 2 is additive and changed no existing behaviour.**
 Owner brief: "Build a contract generator inside the CRM. Full build — nothing for
 it exists in this repo. It must be COMPLETE and OPERATIONAL end to end: a staff
 member creates, sends, and gets a contract signed without touching code."
@@ -439,3 +442,322 @@ authority. They are listed together so they can be overturned quickly.
   dependency, and CLAUDE.md §8 forbids adding one without asking.
 * **No countersignature.** One signer, the client. A two-party signing flow was
   not asked for.
+
+---
+
+# Part 2 — upload a PDF, put boxes on it, send it to several people
+
+Owner brief, verbatim: *"we gotta be able to upload contracts, you know, fill in
+blanks, just like DocuSign, send it out to other people, sending order… or just
+edit the PDF, and then basically from there, you know, put in fields, like, you
+know, date, name, address, whatever, from the client information… and then
+obviously that stuff gets saved in the blob."*
+
+Instruction attached to it: **"no further questions."** So every decision below
+was made by the build agent under that grant and is written down here rather
+than asked.
+
+## 13. What this adds, in plain language
+
+Before this, a contract was words typed into the CRM. Now it can also be **a PDF
+somebody already has** — a lender's agreement, a landlord's form, anything.
+
+1. Upload the file.
+2. Drag boxes onto its pages: name here, date there, sign at the bottom.
+3. Say who fills each box in. Some fill themselves from the client record.
+4. Say **who signs, and in what order**.
+5. Send. Each person gets their own link.
+6. When the last person signs, the system produces one finished PDF with
+   everybody's entries burned into the pages and a signature record page on the
+   end.
+
+The typed-copy contracts from part 1 are untouched. `source_kind` defaults to
+`'text'`, every existing row keeps that value, and every code path that predates
+this behaves identically — proved by the 66 part-1 tests still passing unchanged.
+
+## 14. The three decisions the owner named
+
+| | Decision | Where |
+|---|---|---|
+| PDF editing | **pdf-lib** added as a dependency | §15 |
+| Storage | **Vercel Blob, with a Postgres fallback** | §17 |
+| Viewing pages in a browser | **pdf.js 4.x, vendored into the repo** | §16 |
+
+## 15. pdf-lib, and why a dependency was added
+
+CLAUDE.md §8 forbids new dependencies without asking. The owner asked for the
+feature and closed questions, and the feature is not buildable without one: "edit
+the PDF, put in fields" means writing into a PDF, and nothing in Node does that
+natively.
+
+`pdf-lib` is pure JavaScript — no native build step, no external binary, so it
+works on Netlify's bundler with nothing configured. It does two jobs, both in
+`src/contracts/pdf.mjs`, which is the **only** file that imports it:
+
+* `inspect()` — page count and page sizes, and every refusal an upload can earn
+  (not a PDF, password protected, damaged, empty, too big), each with a sentence
+  a non-technical person can act on.
+* `flatten()` — draws every value onto the page it belongs to and appends the
+  signature record page.
+
+**Values are DRAWN, not added as PDF form fields.** A form field stays editable
+by whoever opens the file next, which would make the signed copy alterable by the
+person holding it — exactly what this feature exists to deny.
+
+### The coordinate flip
+
+A box is stored as **fractions of its page, from the top left** — never pixels. A
+pixel position only means something at the zoom level and screen width it was
+recorded at, so the same box would land somewhere else on a laptop, on a phone,
+and in the finished PDF.
+
+PDF measures from the **bottom** left, so every conversion is
+
+```
+px = x · pageWidth
+py = (1 − y − h) · pageHeight
+```
+
+That flip lives in exactly one function, `boxToPoints()`, and is asserted
+arithmetically in `src/contracts/pdf.test.mjs` rather than left to somebody
+comparing two pictures. Getting it backwards puts every signature at the top of
+the page on a document somebody has already agreed to.
+
+`boxToPoints` clamps y at zero: a box flush with the bottom has `y + h = 1`, and
+in floating point `0.9 + 0.1` is `1.0000000000000002`, so the honest arithmetic
+produces about `-2e-14`. Caught by a test, fixed in the code.
+
+## 16. pdf.js, vendored
+
+The field editor and the signing page both have to **show the pages**. That needs
+a PDF renderer in the browser, and `public/vendor/pdfjs/` holds one, committed.
+
+* **Committed, not fetched from a CDN.** This repo has no build step —
+  `netlify.toml` publishes `public/` as-is — so a committed file is the only way
+  a module reaches the browser. It also means a client signing a contract does
+  not depend on a third-party host being up.
+* **Pinned to the legacy 4.x build, deliberately.** pdf.js 6 calls
+  `Map.prototype.getOrInsertComputed`, which is too new for a great many browsers
+  in use today — it threw outright in the Chromium this was tested against. The
+  people opening the signing page are customers on whatever device they own, so
+  the widest compatible build is correct, not the newest. There is a test that
+  fails if somebody raises the major version without reading why.
+
+Two other things had to change to make this work, and both were real bugs:
+
+* `scripts/dev-server.mjs` served `.mjs` as `application/octet-stream`, which a
+  browser refuses to execute as a module. The editor rendered nothing locally
+  while working on the deploy target — the most confusing shape a bug can take.
+* `scripts/lint.mjs` checked every inline `<script>` with `new Function()`, where
+  `import` is a syntax error. Module blocks now go through `node --check`.
+
+## 17. Storage: blob, with a fallback that is not a compromise
+
+The owner said the files get saved in the blob. `src/documents/store.mjs` already
+had a Vercel Blob provider, and it is used the moment `BLOB_READ_WRITE_TOKEN`
+exists.
+
+But that token **cannot be set from this environment** — `api.netlify.com` is
+blocked by the network policy (CLAUDE.md §11) — and a feature that cannot store a
+file until somebody sets an environment variable is a feature that ships dead.
+This repository has done that three times and written a routing test to stop.
+
+So `providerFromEnv()` now chooses by what is actually configured:
+
+```
+BLOB_READ_WRITE_TOKEN set  → vercel-blob   (the owner's chosen store)
+DATABASE_URL set           → postgres      (works today, no vendor needed)
+neither                    → memory        (unit tests only)
+```
+
+Naming `DOCUMENT_STORE_PROVIDER` explicitly still wins over all of it. The
+Postgres provider writes to `document_blobs` (a `bytea` keyed by the
+content-addressed path) and is genuinely fine for this: contracts are small and
+low-volume, and the bytes inherit the database's existing backup and retention
+story instead of needing their own.
+
+**The old default was `memory` whenever the variable was unset**, which in
+production meant an uploaded file silently vanished on the next cold start. That
+is a worse default than either real store and it is the one an operator is least
+likely to notice.
+
+> **Operator action, when convenient:** set `BLOB_READ_WRITE_TOKEN` and the files
+> move to blob storage by themselves. Nothing needs redeploying beyond the env
+> change, and nothing above the provider interface knows which store it is
+> talking to.
+
+## 18. The signing order
+
+`contract_signers` (one row per person) carries `signer_index`, which **is** the
+order. `contracts.signing_order` is `sequential` (default) or `parallel`.
+
+Under a sequential contract, signer 2 **cannot open the document at all** until
+signer 1 has signed — not "the button is hidden", refused at the endpoint. A
+hidden button is a UI convention; this is a routing guarantee, so forwarding the
+second signer's link is not enough to read a document before the first party has
+agreed to it. The refusal names who is being waited on, because "not yet" without
+a name tells somebody nothing about what to do.
+
+Sequential is the default because it is the safer surprise: a countersigner who
+signs before the client is hard to explain, while a parallel flow somebody wanted
+sequential is merely slower.
+
+**Every contract has signer rows**, including the single-signer typed ones from
+part 1 — `resolveSigner()` resolves a contract-wide link to the only signer. One
+code path for one signer and for five, rather than a legacy branch nobody walks.
+A **multi**-signer contract refuses a contract-wide link outright: guessing which
+person it is would let one party sign as another.
+
+### Per-signer links
+
+`signContractUrl({ contractId, signerId })` mints that person's link, in **its own
+signature space** (scheme `c1s` rather than `c1`). Two consequences, and the
+second is why it is a separate scheme rather than an extra field:
+
+* a link minted before signers existed hashes the identical string and still
+  works;
+* a contract-wide link can never be replayed as a particular signer's, or the
+  reverse — with one scheme and an empty slot, "no signer" and "a signer whose id
+  is empty" would collide, and a collision there is somebody signing as the wrong
+  party.
+
+## 19. What a signer can see and do
+
+* **Only their own boxes.** Somebody else's fee figure is not their business, and
+  a field they cannot see is a field they cannot try to change.
+* **Auto-filled boxes arrive locked**, showing the value. Letting somebody edit
+  the address the CRM holds, inside a contract, without that edit reaching the
+  client record, produces a signed document that disagrees with the file it came
+  from and nothing records which is right.
+* **They cannot write into anybody else's box, or into an auto-filled one.**
+  `mergeSignerValues()` drops the rest of the payload silently — telling a client
+  which ids exist would only help them try again.
+* **The typed name is the signature** and fills every signature box they own.
+  They are never asked for it twice; a second box would be a place to type a
+  different name.
+* **They may decline, with a reason.** Without that, somebody who will not sign
+  simply never comes back and the contract sits in "waiting" forever.
+* They see the other signers' **names and states only** — never email addresses,
+  never anybody else's link.
+
+## 20. Immutability, extended
+
+Part 1's tamper check is unchanged and now covers PDFs too, through one addition:
+
+**`contracts.rendered_body` on a PDF contract holds the agreement manifest** — a
+plain-text record naming the file's fingerprint, its page count, and every box
+with the value that was in it at send. That is the one string that captures
+everything agreed, because for a PDF the file alone is not enough: the same file
+with a different figure typed into a box is a different agreement. Hashing the
+manifest covers both, so `sign.mjs` needed no changes at all.
+
+The manifest sorts its fields by a stable key, never by however the editor
+emitted them — otherwise a harmless reorder would read as tampering.
+
+Also now frozen or blocked:
+
+* `contracts.fields` joins the frozen set (118 replaces the 117 trigger
+  function). The finished PDF is drawn from these boxes, so editable fields would
+  mean an alterable final document while the manifest kept saying everything was
+  fine.
+* A signer's entries live on `contract_signers.field_values` and freeze the
+  moment they sign.
+* Signers cannot be deleted, and cannot be moved in the order.
+* The source PDF is **snapshotted onto the contract** (`source_document_id`), not
+  read through the template — otherwise giving a template a new file tomorrow
+  would silently change what every already-sent contract shows.
+
+## 21. Every other decision made without asking
+
+1. **PDF only.** A `.docx` is refused with "open it, choose Save As, pick PDF".
+   Filling boxes on a Word file is a different and much messier problem, and
+   every signing product refuses it at v1 too.
+2. **12 MB upload limit**, checked on the *encoded* length before decoding as
+   well as after — buffering a 400 MB base64 string into memory to discover it is
+   too big is the denial of service.
+3. **Base64 inside JSON, not multipart.** The Netlify adapter reads a request as
+   text and JSON-parses it, and `data.js`'s `write()` is a JSON POST; multipart
+   would mean a second body parser for one endpoint. Costs about a third more
+   bytes and nothing else.
+4. **Five kinds of box**: text, date, tick box, signature, initials.
+5. **A signature can never be auto-filled** — that would be the CRM typing
+   somebody's signature for them. Refused in the module, in the schema-adjacent
+   validator, and on the screen.
+6. **A send is refused if any signer has no signature box** — otherwise that
+   person can open the document, read it, and never be able to finish, and the
+   only way anybody finds out is the client saying so.
+7. **Max 10 signers.**
+8. **Uploaded templates are filed against one internal client row per org**
+   (`[Contract Templates]`), because `documents.client_id` is NOT NULL and a
+   blank template belongs to nobody. Widening a NOT NULL that fifteen other
+   things rely on was the worse option.
+9. **A new contact with an existing email reuses that contact.** Two client rows
+   for one person is the bug that takes months to surface.
+10. **Adding a contact is `ROLE_SETS.STAFF`**; uploading a document and placing
+    boxes are **owner/admin**, because that is writing contract wording — the
+    same act as typing it, arriving as a file.
+11. **Link scheme is inferred, not assumed https.** It used to be hardcoded,
+    which produced dead `https://127.0.0.1:8899` links against the local dev
+    server. `x-forwarded-proto` wins; otherwise loopback and `.local` are http
+    and everything else is https.
+12. **Text contracts now produce a signed PDF too**, via `textToPdf()`, so
+    "download a copy" means the same thing for both kinds.
+
+## 22. Files added or changed in part 2
+
+**Database** — `db/migrations/118_contract_esign.sql`: PDF columns on
+`contract_templates` and `contracts`, the `contract_signers` table,
+`document_blobs`, and a replacement of 117's freeze trigger.
+
+**Modules** — `src/contracts/pdf.mjs` (the only file that imports pdf-lib),
+`fields.mjs`, `signers.mjs`, `upload.mjs`; `send.mjs` and `sign.mjs` extended;
+`signed-link.mjs` given the per-signer scheme; `src/documents/store.mjs` given
+the Postgres provider and the automatic choice.
+
+**HTTP** — `api/contracts.mjs` gains `upload_template`, `save_fields`,
+`create_client`; `api/read/contracts.mjs` serves files and signer lists;
+`api/contracts/sign.mjs` handles per-signer links, file fetches and declines.
+
+**Screens** — `public/app/contracts.html` gains the upload button, the drag-and-
+drop field editor and the signer/order panel; `public/contract.html` rebuilt to
+render pages and overlay boxes; `public/vendor/pdfjs/` vendored.
+
+**Tests** — `fields.test.mjs`, `signers.test.mjs`, `pdf.test.mjs` (pure);
+`esign.pg.test.mjs` (the whole chain against Postgres); `contracts-endpoints.pg
+.test.mjs` and `contracts-screen.test.mjs` extended.
+
+## 23. Measured, part 2
+
+Same environment and same method as §10a — local **PostgreSQL 16.13** in the
+hosted agent container, connected as the database owner, against a **freshly
+migrated** database.
+
+| | tests | pass | fail | skipped |
+|---|---|---|---|---|
+| no `DATABASE_URL` | 4487 | 4006 | **0** | 481 |
+| real Postgres | 5257 | 5207 | 34 | 9 |
+
+The 34 are the **same failures, name for name**, as the baseline at `fca108c` —
+diffed, not eyeballed. None is a contract test. Part 2 added 143 tests and all of
+them pass.
+
+The whole flow was also walked in a real browser: sign in, upload a two-page PDF,
+drag five boxes onto it, add a second signer, add a brand-new contact, send;
+signer 2's link refuses to open; signer 1 opens theirs, sees the pages rendered
+with their own boxes (two locked and pre-filled), types an amount, signs; signer
+2 then signs; the CRM reports the document unchanged with a signed PDF on file.
+The finished file was rendered back to images and checked: entries and both
+signatures land exactly where they were dragged, and the signature record page
+lists both signers with their times, addresses and devices.
+
+## 24. Still not done, stated rather than hidden
+
+* **Nothing emails the links.** Unchanged from §12 and for the same reason —
+  outbound transmission is permitted only in `src/messaging/providers/*`. Send
+  returns one link per signer and a staff member passes them on.
+* **No reminders.** A contract that sits unsigned generates no task and no chase.
+* **Boxes are placed with a mouse.** There is no touch-drag path, so the field
+  editor wants a laptop. The signing page is fine on a phone.
+* **No field-level audit of who moved a box, and when.** Template edits record
+  `updated_by` only.
+* **Initials are derived from the typed name**, not drawn separately.

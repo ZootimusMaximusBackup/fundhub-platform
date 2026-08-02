@@ -40,6 +40,10 @@ import {
   normaliseManualFields
 } from "./render.mjs";
 import { signContractUrl, DEFAULT_TTL_SECONDS } from "./signed-link.mjs";
+import { PDF_MIME } from "./pdf.mjs";
+import { normaliseFields, applyAutoFill, assertSignable } from "./fields.mjs";
+import { replaceSigners, listSigners, normaliseSigners } from "./signers.mjs";
+import { loadTemplatePdf } from "./upload.mjs";
 
 export const CONTRACT_MIME = "text/html";
 
@@ -50,6 +54,9 @@ export const CONTRACT_COLUMNS = `
   sent_at, sent_by, link_expires_at, viewed_at, view_count,
   signed_at, signer_name, signer_ip, signer_user_agent,
   voided_at, voided_by, void_reason,
+  source_kind, fields, source_document_id, source_document_version_id,
+  signed_document_id, signed_document_version_id, signed_body_sha,
+  signing_order, completed_at,
   created_by, created_at, updated_at`;
 
 /** 'sha256:<hex>' — the same algorithm-prefixed shape documents.checksum uses. */
@@ -72,6 +79,7 @@ const LIST_COLUMNS = `
   c.kind, c.subtype, c.body_sha, c.document_id, c.status,
   c.sent_at, c.sent_by, c.link_expires_at, c.viewed_at, c.view_count,
   c.signed_at, c.signer_name, c.voided_at, c.void_reason,
+  c.source_kind, c.signing_order, c.completed_at, c.signed_document_id,
   c.created_at, c.updated_at`;
 
 /** listContracts — the CRM queue. Newest first, optionally narrowed to a client. */
@@ -103,7 +111,8 @@ export async function listContracts(db, { orgId, clientId = null, status = null,
  * ever be shown by accident.
  */
 export async function createDraft(db, {
-  orgId, staffId, clientId, templateId, values = {}, title = null
+  orgId, staffId, clientId, templateId, values = {}, title = null,
+  signers = null, signingOrder = "sequential"
 } = {}) {
   if (!orgId) throw badRequest("A contract needs to belong to a company.", "org_required");
   if (!staffId) throw badRequest("A contract has to record who created it.", "staff_required");
@@ -119,22 +128,45 @@ export async function createDraft(db, {
   }
 
   const owns = await db.query(
-    `SELECT 1 FROM clients WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`,
-    [clientId, orgId]);
+    `SELECT first_name, last_name, email FROM clients
+      WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`, [clientId, orgId]);
   if (!owns.rows[0]) throw notFound("That client is not on file.", "client_not_found");
+  const clientName =
+    [owns.rows[0].first_name, owns.rows[0].last_name].filter(Boolean).join(" ") || "Client";
+  const clientEmail = owns.rows[0].email || null;
 
   const { rows } = await db.query(
     `INSERT INTO contracts
        (org_id, client_id, template_id, template_key, title, kind, subtype,
-        merge_values, signature_required, created_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10)
+        merge_values, signature_required, created_by,
+        source_kind, fields, signing_order)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12::jsonb,$13)
      RETURNING ${CONTRACT_COLUMNS}`,
     [orgId, clientId, template.id, template.template_key,
      (title && String(title).trim()) || template.name,
      template.kind, template.subtype,
-     JSON.stringify(values || {}), template.signature_required, staffId]
+     JSON.stringify(values || {}), template.signature_required, staffId,
+     template.source_kind || "text",
+     /* The template's boxes are copied onto the draft NOW rather than at send.
+        A draft is where a sender adjusts what a particular contract says, and
+        adjusting it must not reach back and edit the template every other
+        contract is generated from. */
+     JSON.stringify(template.fields || []),
+     signingOrder === "parallel" ? "parallel" : "sequential"]
   );
-  return rows[0];
+  const contract = rows[0];
+
+  /* WHO SIGNS. Named by the caller, or — when nobody is named — the client, on
+     their own. Every contract gets signer rows, including the single-signer
+     text ones that predate this: one code path for one signer and for five is
+     worth more than a legacy branch that only the old flow walks. */
+  const roster = Array.isArray(signers) && signers.length
+    ? signers
+    : [{ role_label: (template.signer_roles || [])[0]?.label || "Client",
+         name: clientName || "Client", email: clientEmail || null, client_id: clientId }];
+  await replaceSigners(db, { orgId, contractId: contract.id, signers: roster, status: "draft" });
+
+  return contract;
 }
 
 /** saveDraft — change which blanks are filled in. Refused once sent. */
@@ -220,18 +252,33 @@ export async function send(db, {
     throw conflict("This contract is already signed.", "already_signed");
   }
 
-  // ── already sent: re-mint the link, touch nothing else ────────────────────
+  // ── already sent: re-mint the links, touch nothing else ───────────────────
   if (current.status !== "draft") {
-    const link = signContractUrl({ contractId: current.id, ttlSeconds, baseUrl, secret, now });
-    await db.query(
-      `UPDATE contracts SET link_expires_at = $3, updated_at = now()
-        WHERE id = $1::uuid AND org_id = $2::uuid`,
-      [current.id, orgId, new Date(link.expiresAt * 1000)]);
-    return { contract: await getContract(db, { orgId, id }), link, resent: true };
+    const out = await mintLinks(db, {
+      orgId, contract: current, ttlSeconds, baseUrl, secret, now
+    });
+    return { contract: await getContract(db, { orgId, id }), ...out, resent: true };
   }
 
   const template = await getTemplate(db, { orgId, id: current.template_id });
   if (!template) throw notFound("That contract template does not exist.", "template_not_found");
+
+  const signers = await listSigners(db, current.id);
+  if (!signers.length) {
+    throw badRequest("This contract has nobody to sign it.", "no_signers");
+  }
+
+  /* ── the uploaded-PDF path ──────────────────────────────────────────────
+     Everything below the branch is the 117 text path, unchanged. This is a
+     separate function rather than an `if` woven through it, because the two
+     freeze different artifacts and mixing them is how one of them ends up with
+     half the other's guarantees. */
+  if (current.source_kind === "pdf") {
+    return sendPdf(db, {
+      orgId, staffId, contract: current, template, signers,
+      store, ttlSeconds, baseUrl, secret, at, now
+    });
+  }
 
   const values = current.merge_values || {};
   const stillEmpty = missingRequired(template.manual_fields, values);
@@ -278,7 +325,6 @@ export async function send(db, {
   });
 
   const sha = registered.version?.checksum || bodyHash(body);
-  const link = signContractUrl({ contractId: current.id, ttlSeconds, baseUrl, secret, now });
 
   /* The UPDATE is conditional on status still being 'draft'. Two staff members
      pressing Send at the same instant must not both freeze the row — the second
@@ -289,21 +335,22 @@ export async function send(db, {
         SET status = 'sent', rendered_body = $3, body_sha = $4,
             document_id = $5, document_version_id = $6,
             signature_statement = $7, signature_required = $8,
-            sent_at = $9, sent_by = $10::uuid, link_expires_at = $11,
-            updated_at = now()
+            sent_at = $9, sent_by = $10::uuid, updated_at = now()
       WHERE id = $1::uuid AND org_id = $2::uuid AND status = 'draft'
       RETURNING ${CONTRACT_COLUMNS}`,
     [current.id, orgId, body, sha,
      registered.document?.id || null, registered.version?.id || null,
      template.signature_statement, template.signature_required,
-     at, staffId, new Date(link.expiresAt * 1000)]
+     at, staffId]
   );
 
   if (!rows[0]) {
     // Lost the race. Somebody else sent it a moment ago; hand back what they sent.
-    return { contract: await getContract(db, { orgId, id }), link, resent: true };
+    const out = await mintLinks(db, { orgId, contract: current, ttlSeconds, baseUrl, secret, now });
+    return { contract: await getContract(db, { orgId, id }), ...out, resent: true };
   }
   const contract = rows[0];
+  const { link, links } = await mintLinks(db, { orgId, contract, ttlSeconds, baseUrl, secret, now });
 
   // The document's own delivery state, so a "what did we send this client"
   // audit over documents/ reads correctly without joining contracts.
@@ -317,7 +364,7 @@ export async function send(db, {
   }
 
   await emitContractEvent(db, "contract.sent", contract);
-  return { contract, link, resent: false, document: registered.document || null };
+  return { contract, link, links, resent: false, document: registered.document || null };
 }
 
 /**
@@ -391,4 +438,241 @@ export async function emitContractEvent(db, name, contract) {
     console.warn(`[contracts] ${name} could not be written to the event bus: ${err.message}`);
     return { id: null, deduped: false, failed: true };
   }
+}
+
+// ---------------------------------------------------------------------------
+// links
+// ---------------------------------------------------------------------------
+
+/**
+ * mintLinks — one link per signer, plus the contract-wide one.
+ *
+ * EVERY SIGNER GETS THEIR OWN URL, and that is not a convenience. A shared link
+ * would mean whoever opened it first could sign as anybody, and there would be
+ * no way afterwards to say which of two people typed a name. The link IS the
+ * identification, so it has to be per person.
+ *
+ * `link` (the contract-wide one) is returned as well because a single-signer
+ * contract resolves it to its only signer, which is what keeps every contract
+ * sent before signers existed working through the same endpoint.
+ *
+ * The expiry is written back onto each signer row so the CRM can say "this
+ * person's link runs out on Friday" without re-deriving it from a signature.
+ */
+export async function mintLinks(db, {
+  orgId, contract, ttlSeconds = DEFAULT_TTL_SECONDS, baseUrl = null, secret, now = Date.now
+} = {}) {
+  const signers = await listSigners(db, contract.id);
+  const expiresAt = new Date();
+  const links = [];
+
+  for (const s of signers) {
+    const minted = signContractUrl({
+      contractId: contract.id, signerId: s.id, ttlSeconds, baseUrl, secret, now
+    });
+    expiresAt.setTime(minted.expiresAt * 1000);
+    await db.query(
+      `UPDATE contract_signers
+          SET link_expires_at = $2,
+              status = CASE WHEN status = 'pending' THEN 'sent' ELSE status END,
+              updated_at = now()
+        WHERE id = $1::uuid AND signed_at IS NULL`,
+      [s.id, new Date(minted.expiresAt * 1000)]);
+    links.push({
+      signer_id: s.id,
+      signer_index: s.signer_index,
+      role_label: s.role_label,
+      name: s.name,
+      email: s.email,
+      status: s.status,
+      url: minted.url,
+      expires_at: minted.expiresAtIso
+    });
+  }
+
+  const link = signContractUrl({ contractId: contract.id, ttlSeconds, baseUrl, secret, now });
+  await db.query(
+    `UPDATE contracts SET link_expires_at = $3, updated_at = now()
+      WHERE id = $1::uuid AND org_id = $2::uuid`,
+    [contract.id, orgId, new Date(link.expiresAt * 1000)]);
+
+  return { link, links };
+}
+
+// ---------------------------------------------------------------------------
+// the uploaded-PDF send path
+// ---------------------------------------------------------------------------
+
+/**
+ * agreementManifest — the ONE STRING that captures everything agreed.
+ *
+ * READ db/migrations/118_contract_esign.sql's note on contracts.rendered_body
+ * before changing anything here. 117's tamper refusal works by re-hashing
+ * rendered_body at signature time against a checksum in a different table. For
+ * a PDF, the file alone is not enough to hash: the same file with a different
+ * figure typed into a box is a different agreement. This manifest names the
+ * file's fingerprint AND every box with the value that was in it at send, so
+ * hashing it covers both.
+ *
+ * It is also plainly readable, on purpose. A person asked "what exactly did
+ * they agree to" can read this without any tooling.
+ */
+export function agreementManifest({ contract, template, fields, pdfChecksum, signers }) {
+  const lines = [];
+  lines.push("SIGNED PDF DOCUMENT");
+  lines.push("");
+  lines.push(`Title: ${contract.title}`);
+  lines.push(`Template: ${contract.template_key}`);
+  lines.push(`File: ${template.original_filename || "document.pdf"}`);
+  lines.push(`Pages: ${template.page_count}`);
+  lines.push(`File fingerprint: ${pdfChecksum}`);
+  lines.push(`Signing order: ${contract.signing_order}`);
+  lines.push("");
+  lines.push("SIGNERS");
+  for (const s of signers) {
+    lines.push(`  ${s.signer_index + 1}. ${s.name}${s.email ? ` <${s.email}>` : ""} — ${s.role_label}`);
+  }
+  lines.push("");
+  lines.push("FIELDS");
+  /* Sorted by a stable key, never by however the editor happened to emit them.
+     Two identical agreements whose field arrays are ordered differently must
+     hash the same, or a harmless reorder in the editor would read as tampering
+     to the check that refuses signatures. */
+  const sorted = [...fields].sort((a, b) =>
+    a.page - b.page || a.y - b.y || a.x - b.x || String(a.id).localeCompare(String(b.id)));
+  for (const f of sorted) {
+    lines.push(
+      `  [p${f.page + 1}] ${f.label} (${f.type}, signer ${f.signer + 1}, from ${f.source})` +
+      ` @ ${f.x.toFixed(4)},${f.y.toFixed(4)},${f.w.toFixed(4)},${f.h.toFixed(4)}` +
+      ` = ${JSON.stringify(f.value ?? "")}`);
+  }
+  return lines.join("\n");
+}
+
+/**
+ * sendPdf — freeze an uploaded-PDF contract.
+ *
+ * Registers TWO artifacts, and the split is deliberate:
+ *   the SOURCE PDF   snapshotted onto the contract, so a later re-upload to the
+ *                    template cannot change what an already-sent contract shows
+ *   the MANIFEST     the immutability anchor the tamper check compares against
+ *
+ * Both go through documents/document_versions, so both are immutable by trigger.
+ */
+async function sendPdf(db, {
+  orgId, staffId, contract, template, signers, store, ttlSeconds, baseUrl, secret, at, now
+}) {
+  const fields = normaliseFields(contract.fields, {
+    pageCount: template.page_count,
+    signerCount: signers.length
+  });
+  if (!fields.length) {
+    throw badRequest(
+      "This document has no boxes on it yet, so nobody can fill anything in or sign it. " +
+      "Open the template and place the boxes first.",
+      "no_fields");
+  }
+  // Everybody must have somewhere to sign. A signer with no signature box can
+  // open the document, read it, and never be able to finish.
+  assertSignable(fields, signers.length);
+
+  const pdfBytes = await loadTemplatePdf(db, template, { store });
+  if (!pdfBytes) {
+    throw conflict(
+      "The file behind this template could not be read, so it cannot be sent. " +
+      "Upload it again.",
+      "template_file_missing");
+  }
+
+  // Everything the CRM already knows, filled in and frozen. Resolved now rather
+  // than while somebody is reading the document: a value that can change
+  // between opening the page and signing it is not part of what was agreed.
+  const base = await clientContext(db, contract.client_id);
+  const filled = applyAutoFill(fields, {
+    contact: base.contact, signers, today: new Date(at).toISOString().slice(0, 10)
+  });
+
+  const documentStore = store || storeFromEnv();
+
+  // 1. the source file, snapshotted against THIS contract
+  const source = await storeAndRegister(db, documentStore, {
+    orgId,
+    clientId: contract.client_id,
+    kind: contract.kind,
+    subtype: contract.subtype,
+    title: `${contract.title} (as sent)`,
+    body: pdfBytes,
+    mimeType: PDF_MIME,
+    filename: template.original_filename || `${contract.template_key}.pdf`,
+    documentKey: buildDocumentKey({
+      kind: contract.kind, subtype: contract.subtype,
+      clientId: contract.client_id, discriminator: `${contract.id}:source`
+    }),
+    generatedBy: "contracts",
+    signatureRequired: true,
+    sourceEventId: `contract.source:${contract.id}`,
+    reason: "initial",
+    metadata: { contract_id: contract.id, role: "source" }
+  });
+
+  // 2. the manifest — the anchor the tamper check reads
+  const manifest = agreementManifest({
+    contract, template, fields: filled,
+    pdfChecksum: source.version?.checksum || "unknown",
+    signers
+  });
+  const registered = await storeAndRegister(db, documentStore, {
+    orgId,
+    clientId: contract.client_id,
+    kind: contract.kind,
+    subtype: contract.subtype,
+    title: contract.title,
+    body: manifest,
+    mimeType: "text/plain",
+    filename: `${contract.template_key}-manifest.txt`,
+    documentKey: buildDocumentKey({
+      kind: contract.kind, subtype: contract.subtype,
+      clientId: contract.client_id, discriminator: contract.id
+    }),
+    generatedBy: "contracts",
+    signatureRequired: true,
+    sourceEventId: `contract.sent:${contract.id}`,
+    reason: "initial",
+    metadata: { contract_id: contract.id, role: "manifest" }
+  });
+
+  const sha = registered.version?.checksum || bodyHash(manifest);
+
+  const { rows } = await db.query(
+    `UPDATE contracts
+        SET status = 'sent', rendered_body = $3, body_sha = $4,
+            document_id = $5, document_version_id = $6,
+            source_document_id = $7, source_document_version_id = $8,
+            fields = $9::jsonb,
+            signature_statement = $10, signature_required = true,
+            sent_at = $11, sent_by = $12::uuid, updated_at = now()
+      WHERE id = $1::uuid AND org_id = $2::uuid AND status = 'draft'
+      RETURNING ${CONTRACT_COLUMNS}`,
+    [contract.id, orgId, manifest, sha,
+     registered.document?.id || null, registered.version?.id || null,
+     source.document?.id || null, source.version?.id || null,
+     JSON.stringify(filled), template.signature_statement, at, staffId]);
+
+  if (!rows[0]) {
+    const out = await mintLinks(db, { orgId, contract, ttlSeconds, baseUrl, secret, now });
+    return { contract: await getContract(db, { orgId, id: contract.id }), ...out, resent: true };
+  }
+  const sent = rows[0];
+  const { link, links } = await mintLinks(db, { orgId, contract: sent, ttlSeconds, baseUrl, secret, now });
+
+  if (registered.document?.id) {
+    await markDelivered(db, {
+      documentId: registered.document.id,
+      versionId: registered.version?.id || null,
+      channel: "portal", status: "sent", deliveredAt: at
+    }).catch(() => { /* the contract is sent; a delivery-status write is not worth losing it over */ });
+  }
+
+  await emitContractEvent(db, "contract.sent", sent);
+  return { contract: sent, link, links, resent: false, document: registered.document || null };
 }

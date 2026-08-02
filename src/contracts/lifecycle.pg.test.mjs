@@ -37,6 +37,14 @@ describe("contracts — the full lifecycle", { skip: !HAVE_DB ? "no DATABASE_URL
     const ids = (await db.query(`SELECT id FROM clients WHERE email LIKE $1`, [CLIENT_EMAIL_LIKE]))
       .rows.map((r) => r.id);
     if (ids.length) {
+      // Signers first: contract_signers references contracts, and both tables
+      // block DELETE by trigger, so the fixture has to unwind in dependency
+      // order with both guards off. Application code cannot do any of this.
+      await db.query(`ALTER TABLE contract_signers DISABLE TRIGGER trg_contract_signers_no_delete`);
+      await db.query(
+        `DELETE FROM contract_signers WHERE contract_id IN (SELECT id FROM contracts WHERE client_id = ANY($1))`,
+        [ids]);
+      await db.query(`ALTER TABLE contract_signers ENABLE TRIGGER trg_contract_signers_no_delete`);
       await db.query(`ALTER TABLE contracts DISABLE TRIGGER trg_contracts_no_delete`);
       await db.query(`DELETE FROM contracts WHERE client_id = ANY($1)`, [ids]);
       await db.query(`ALTER TABLE contracts ENABLE TRIGGER trg_contracts_no_delete`);

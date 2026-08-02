@@ -54,6 +54,13 @@ describe("contracts — the tamper refusal", { skip: !HAVE_DB ? "no DATABASE_URL
     const ids = (await db.query(`SELECT id FROM clients WHERE email LIKE $1`, [CLIENT_EMAIL_LIKE]))
       .rows.map((r) => r.id);
     if (ids.length) {
+      // Signers first: contract_signers references contracts and is itself
+      // delete-blocked, so the fixture unwinds in dependency order with both
+      // guards off. No application path can do this, which is the point.
+      await withTriggerDisabled("contract_signers", "trg_contract_signers_no_delete", () =>
+        db.query(
+          `DELETE FROM contract_signers WHERE contract_id IN (SELECT id FROM contracts WHERE client_id = ANY($1))`,
+          [ids]));
       await withTriggerDisabled("contracts", "trg_contracts_no_delete", () =>
         db.query(`DELETE FROM contracts WHERE client_id = ANY($1)`, [ids]));
       await withTriggerDisabled("documents", "trg_documents_no_delete", async () => {
