@@ -118,8 +118,28 @@ const isSql = (v) => SQL_WORDS.test(v);
 const EXPLICIT_KEY_REF =
   /(?:template_key|templateKey|renderTemplate|sendTemplate|template)\s*[:(=]\s*["'`]([^"'`]+)["'`]/g;
 
-// Shape-based: anything that looks like one of our SMS keys, wherever it appears.
-const SMS_KEY_SHAPE = /^SMS-[A-Z0-9]/;
+/* Shape-based: anything that looks like one of our template keys, wherever it
+   appears.
+
+   THIS USED TO BE SMS-ONLY, AND THAT MADE THE AUDIT LIE. The explicit-reference
+   pattern above only fires on a literal written directly at the call site
+   (`templateKey: "X"`). Not one workflow file does that — every one of them
+   hoists the key into a module constant first:
+
+     const EMAIL_TEMPLATE_KEY = "EMAIL-F03-ROUND-SUBMITTED";
+     ... sendTemplated(db, { ..., templateKey: EMAIL_TEMPLATE_KEY })
+
+   `EMAIL_TEMPLATE_KEY = "..."` does not match EXPLICIT_KEY_REF (the name ends
+   `_KEY`, not `template`, and the pattern is case-sensitive), so the shape test
+   below was the only thing catching these — and it only knew about `SMS-`.
+   Result: every SMS key was found and roughly half the real keys, all the
+   `EMAIL-` ones, were invisible. An audit that reports "nothing uses this
+   template" about a template nineteen workflows send is worse than no audit,
+   because it reads as permission to change the key.
+
+   Widened on the owner's instruction, 2026-08-01, at the same time the template
+   editor started using this function to decide whether a key is safe to rename. */
+const TEMPLATE_KEY_SHAPE = /^(?:SMS|EMAIL)-[A-Z0-9]/;
 
 export function findTemplateKeyRefs(source) {
   const refs = new Map(); // key -> first line seen
@@ -129,7 +149,7 @@ export function findTemplateKeyRefs(source) {
     if (!refs.has(m[1])) refs.set(m[1], line);
   }
   for (const lit of stringLiterals(source)) {
-    if (SMS_KEY_SHAPE.test(lit.value) && !refs.has(lit.value)) refs.set(lit.value, lit.line);
+    if (TEMPLATE_KEY_SHAPE.test(lit.value) && !refs.has(lit.value)) refs.set(lit.value, lit.line);
   }
   return [...refs].map(([key, line]) => ({ key, line }));
 }

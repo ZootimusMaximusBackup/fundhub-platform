@@ -44,7 +44,19 @@
        live message copy and stage wiring, so it is owner/admin only (see
        OWNER_ADMIN_ONLY below). Same treatment as every other addition on
        this list: in ALL, and therefore in every sidebar. */
-    "journeys.html"
+    "journeys.html",
+    /* template-editor.html is the message copy editor — the screen that lets
+       staff change the wording of an SMS or an email without a developer.
+
+       DELIBERATELY NOT IN OWNER_ADMIN_ONLY, and that is not an oversight. Its
+       read (read/message-templates) and its save action are ROLE_SETS.STAFF:
+       message copy is what staff say to clients all day, and a template holds
+       no client data of any kind. Only APPROVING copy is owner/admin, and the
+       screen hides that one card from everybody else — the same
+       one-screen-two-gates shape finance-os.html uses and this file already
+       documents below. Move that gate in api/message-templates.mjs and this
+       row has to move with it. */
+    "template-editor.html"
   ];
 
   /* partner-galaxy.html is the white-label partner's own Galaxy — scoped to

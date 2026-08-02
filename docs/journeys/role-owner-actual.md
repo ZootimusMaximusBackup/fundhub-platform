@@ -28,13 +28,13 @@ flowchart TD
     CAN --> A_journeys[journeys — 2 routes]
     CAN --> A_privacy[privacy — 1 route]
     CAN --> A_read[Reading data — 23 routes]
-    CAN --> A_top_level[Everything else — 9 routes]
+    CAN --> A_top_level[Everything else — 10 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
 ```
 
 ## What they can reach
 
-**76 of 76 routes.**
+**77 of 77 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -85,6 +85,7 @@ flowchart TD
 | `/api/journeys` | GET, PUT | owner, admin |
 | `/api/journeys/ask` | POST | owner, admin |
 | `/api/journeys/run` | POST | owner, admin, sales_manager |
+| `/api/message-templates` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/partner-brand` | GET, PUT | owner, admin |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/privacy/erasure` | GET, POST | owner, admin |
@@ -123,7 +124,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**0 of 76 routes.**
+**0 of 77 routes.**
 
 _None._
 
