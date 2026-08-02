@@ -273,7 +273,7 @@ table.grid tr:last-child td{border-bottom:0}
     <div class="topbar">
       <span class="crumb">Setup</span><h1>Content</h1>
       <div class="spacer"></div>
-      <span class="chip on" id="liveChip"><span class="cd"></span><span id="liveTxt">3 tiles live</span></span>
+      <span class="chip on" id="liveChip"><span class="cd"></span><span id="liveTxt">local draft · not saved</span></span>
       <button class="btn dark mono" id="uploadTop" disabled title="Not available yet — no api/content/* route or storage upload path.">+ Upload video (not available yet)</button>
     </div>
 
@@ -293,7 +293,7 @@ table.grid tr:last-child td{border-bottom:0}
       <div class="stats">
         <div class="stat"><div class="eyebrow">CN-00 <span class="sep">/</span> VIDEOS</div><div class="sv" id="kVideos">0</div><div class="sd">in the library</div></div>
         <div class="stat"><div class="eyebrow">CN-00 <span class="sep">/</span> TIERS MAPPED</div><div class="sv" id="kTiers">0/4</div><div class="sd">plus a default</div></div>
-        <div class="stat"><div class="eyebrow">CN-00 <span class="sep">/</span> LOCKED TILES</div><div class="sv" id="kTiles">3</div><div class="sd">in this editor, unsaved</div></div>
+        <div class="stat"><div class="eyebrow">CN-00 <span class="sep">/</span> LOCKED TILES</div><div class="sv" id="kTiles">0</div><div class="sd">in this editor, unsaved</div></div>
         <div class="stat"><div class="eyebrow">CN-00 <span class="sep">/</span> LAST UPLOAD</div><div class="sv" id="kLast">—</div><div class="sd">no videos yet</div></div>
       </div>
 
@@ -305,7 +305,7 @@ table.grid tr:last-child td{border-bottom:0}
             <div class="card-hd">
               <div class="eyebrow">CN-01 <span class="sep">/</span> VIDEO LIBRARY</div>
               <div class="spacer"></div>
-              <span class="badge b-gray mono" id="libCount">5 videos</span>
+              <span class="badge b-gray mono" id="libCount">0 videos</span>
             </div>
             <div class="card-bd">
               <div class="drop" id="drop" style="opacity:.55;pointer-events:none" title="Not available yet — no api/content/* or storage upload.">
@@ -444,13 +444,13 @@ var MAP = {};
 var TILES = [
   {id:'metro2', code:'T-01', name:'Metro 2 Dispute Letter Pack — Rounds 2 & 3',
    copy:'Two more rounds of dispute letters, drafted and mailed for you, aimed at what\'s still holding your score down.',
-   price:450, on:true},
+   price:450, on:false},
   {id:'roadmap', code:'T-02', name:'Credit Optimization Roadmap',
    copy:'A month-by-month plan to lift your score before your next funding round, built off your Credit Analysis Report.',
-   price:2000, on:true},
+   price:2000, on:false},
   {id:'consulting', code:'T-03', name:'Consulting Services Package',
    copy:'Work one-to-one with a strategist to plan and run your next round yourself, start to finish.',
-   price:1000, on:true},
+   price:1000, on:false},
   {id:'inquiry', code:'T-04', name:'Inquiry Removal',
    copy:'We challenge hard inquiries that are dragging your score down, priced per removal.',
    price:95, on:false}
@@ -622,7 +622,9 @@ function renderPreview(){
 function renderStats(){
   var live = TILES.filter(function(t){ return t.on; }).length;
   document.getElementById('kTiles').textContent = live;
-  document.getElementById('liveTxt').textContent = live + ' tile' + (live===1?'':'s') + ' live';
+  document.getElementById('liveTxt').textContent = live
+    ? (live + ' tile' + (live===1?'':'s') + ' on · local draft, not saved')
+    : 'local draft · not saved';
 
   var mapped = TIERS.filter(function(t){ return !t.isDefault && MAP[t.id]; }).length,
       total  = TIERS.filter(function(t){ return !t.isDefault; }).length;

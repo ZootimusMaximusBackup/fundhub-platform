@@ -89,7 +89,9 @@ describe("shell.js — search wiring", () => {
     assert.match(SHELL, /["']k["']|key === "k"/i);
     assert.match(SHELL, /FHData\.search/);
     assert.match(SHELL, /mountSearch\(/);
+    assert.match(SHELL, /layoutShellChrome\(/);
     assert.match(SHELL, /SEARCH_SKIP_ROLES/);
+    assert.match(SHELL, /--fh-shell-top-clearance/);
   });
 
   test("principals are skipped — client and partner do not get CRM search", () => {

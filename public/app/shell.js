@@ -677,6 +677,35 @@
     "@media (max-width:480px){#fh-shell-chip{top:135px !important;left:10px !important;right:10px !important;" +
     "flex-wrap:wrap;gap:6px !important;padding:6px 9px !important;font-size:10px !important}}";
 
+  /* Search sits fixed to the LEFT of the Sign-out chip. Pages that put action
+     buttons in the topbar (agent editor "+ New", products "+ Add product") must
+     clear BOTH. A hard-coded right:360px left Search overlapping those buttons
+     after global search shipped — Playwright caught clicks landing on Search.
+     layoutShellChrome() measures the real widths and publishes
+     --fh-shell-top-clearance so topbars can pad once and stay clear. */
+  function layoutShellChrome() {
+    var chip = document.getElementById("fh-shell-chip");
+    var search = document.getElementById("fh-shell-search-btn");
+    var gap = 10;
+    var edge = 14;
+    var clear = edge;
+    if (chip) {
+      clear += (chip.offsetWidth || 337) + gap;
+    }
+    if (search && chip && window.matchMedia && window.matchMedia("(min-width:1201px)").matches) {
+      search.style.right = (edge + (chip.offsetWidth || 337) + gap) + "px";
+      clear += (search.offsetWidth || 110) + gap;
+    } else if (search) {
+      search.style.right = "";
+      if (window.matchMedia && window.matchMedia("(min-width:1201px)").matches) {
+        clear += (search.offsetWidth || 110) + gap;
+      }
+    }
+    try {
+      document.documentElement.style.setProperty("--fh-shell-top-clearance", clear + "px");
+    } catch (e) { /* ignore */ }
+  }
+
   /* External principals stay on their own surface — search is staff CRM chrome. */
   var SEARCH_SKIP_ROLES = { client: 1, affiliate: 1, partner: 1 };
 
@@ -763,6 +792,7 @@
       "border:1px solid #E4E4E7;border-radius:10px;padding:8px 12px;" +
       "font:500 12px/1 Inter,system-ui,sans-serif;cursor:pointer;" +
       "box-shadow:0 8px 24px rgba(0,0,0,.12)}" +
+      /* right: is overwritten by layoutShellChrome() once the chip is measured */
       "#fh-shell-search-btn .fh-k{font:600 10px/1 'JetBrains Mono',monospace;" +
       "letter-spacing:.04em;color:#71717A;border:1px solid #E4E4E7;border-radius:5px;" +
       "padding:3px 5px;background:#FAFAFA}" +
@@ -1118,6 +1148,10 @@
       gateLinks(ok, role);
       mountChip(sess.staff, sess.demo);
       mountSearch(sess.staff, sess.demo);
+      layoutShellChrome();
+      if (window.addEventListener) {
+        window.addEventListener("resize", layoutShellChrome);
+      }
       applyBrand(sess.staff);
       reveal();
     });
