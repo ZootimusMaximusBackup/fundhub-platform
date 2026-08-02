@@ -914,8 +914,13 @@
 "use strict";
 var board   = document.querySelector('.board');
 /* scoped to .board on purpose — the demonstration strip at the bottom of the
-   page reuses .col / .card markup and must stay out of the live board's model */
-var cols    = [].slice.call(board.querySelectorAll('.col'));
+   page reuses .col / .card markup and must stay out of the live board's model.
+
+   A LIVE query, not a cached array: the live board (below) tears down and
+   rebuilds .col sections on every pipeline switch, so a snapshot taken once
+   at load would go stale the first time a real board replaces the sample
+   columns and point drag/sort at detached nodes. */
+function cols(){ return [].slice.call(board.querySelectorAll('.col')); }
 var STORE   = 'fundhub.pipeline.sales';
 
 function cards(){ return [].slice.call(board.querySelectorAll('.col-body > .card')); }
@@ -939,17 +944,19 @@ function bump(col,dCount,dMoney){
 /* ---- in-session persistence: name -> stage index, replayed on load ---- */
 function save(){
   var map={};
-  cards().forEach(function(c){ map[nameOf(c)]=cols.indexOf(colOf(c)); });
+  var live=cols();
+  cards().forEach(function(c){ map[nameOf(c)]=live.indexOf(colOf(c)); });
   try{ sessionStorage.setItem(STORE,JSON.stringify(map)); }catch(e){}
 }
 function restore(){
   var raw; try{ raw=sessionStorage.getItem(STORE); }catch(e){ return; }
   if(!raw) return;
   var map; try{ map=JSON.parse(raw); }catch(e){ return; }
+  var live=cols();
   cards().forEach(function(c){
     var want=map[nameOf(c)];
     if(want===undefined) return;
-    var from=colOf(c), to=cols[want];
+    var from=colOf(c), to=live[want];
     if(!to||to===from) return;
     var amt=amountOf(c);
     to.querySelector('.col-body').appendChild(c);
@@ -983,9 +990,10 @@ function startDrag(card,e){
   document.body.style.userSelect='none';
 }
 function colUnder(x,y){
-  for(var i=0;i<cols.length;i++){
-    var r=cols[i].getBoundingClientRect();
-    if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom) return cols[i];
+  var live=cols();
+  for(var i=0;i<live.length;i++){
+    var r=live[i].getBoundingClientRect();
+    if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom) return live[i];
   }
   return null;
 }
@@ -1112,7 +1120,7 @@ function applyFilters(){
 }
 function applySort(){
   var mode=fSort.value; if(!mode) return;
-  cols.forEach(function(col){
+  cols().forEach(function(col){
     var body=col.querySelector('.col-body');
     var list=[].slice.call(body.querySelectorAll(':scope > .card'));
     list.sort(function(a,b){
@@ -1212,12 +1220,15 @@ dTog.addEventListener('click',function(){
   dTog.setAttribute('aria-expanded',String(open));
 });
 
-/* ---------- rail tabs ---------- */
+/* ---------- rail tabs ----------
+   Every rail is wired: data-rail (R-01..R-07) maps to the pipeline `key` the
+   backend knows it by (see db/seed/002_pipelines.sql), and a click asks the
+   live board (below) to load that pipeline for real. This used to special-case
+   Sales and print a static "no board yet" note for the other six regardless of
+   what the API had — the note is now only shown for a genuine fetch problem,
+   not a name check. */
 var tabs=[].slice.call(document.querySelectorAll('.rail-tab'));
-var wrap=document.querySelector('.board-wrap');
 var railLabel=document.getElementById('railLabel');
-var note=document.createElement('div');
-note.className='empty-rail-note';
 tabs.forEach(function(t){
   t.addEventListener('click',function(){
     tabs.forEach(function(x){x.classList.remove('active')});
@@ -1226,13 +1237,7 @@ tabs.forEach(function(t){
     var name=[].filter.call(t.childNodes,function(n){return n.nodeType===3;})
                 .map(function(n){return n.textContent;}).join('').trim();
     railLabel.textContent=name;
-    var isSales = name==='Sales';
-    board.style.display = isSales?'':'none';
-    if(isSales){ if(note.parentNode) note.remove(); }
-    else{
-      note.textContent=t.dataset.rail+' · '+name+' — no board yet. Sales is the only pipeline wired so far.';
-      wrap.appendChild(note);
-    }
+    if(window.FHPipelineBoard) window.FHPipelineBoard.load(t.dataset.rail,name);
   });
 });
 
@@ -1246,12 +1251,18 @@ restore();
 
 <!-- ══ LIVE BOARD ════════════════════════════════════════════════════════════
      Replaces the sample cards with the real board from
-     /api/dashboard/pipeline?key=sales — the client's actual position, read
-     from cards.stage_id, not inferred from payment flags.
+     /api/dashboard/pipeline?key=<pipeline> — the client's actual position,
+     read from cards.stage_id, not inferred from payment flags. All seven
+     pipelines go through this, not just Sales: the backend endpoint was
+     always generic per `key`, and every column here is now built FROM the
+     stages the API returns rather than matched against a fixed set of
+     Sales-shaped columns, so a pipeline with 4 stages or 7 renders exactly
+     that many — no invented or missing columns either way.
 
      It runs after the interaction script above on purpose. Drag is delegated
-     on .board and the filters re-query the DOM each time, so cards swapped in
-     underneath them stay fully interactive.
+     on .board and the filters re-query the DOM each time (cols() above is a
+     live query for the same reason), so columns swapped in by a pipeline
+     switch stay fully interactive without any handoff back to that script.
 
      If the backend cannot answer, the sample board is left untouched and the
      banner says so. Half-real boards are worse than either — so when the API
@@ -1264,12 +1275,6 @@ restore();
 
   var board = document.querySelector(".board");
   if (!board) return;
-  var cols = [].slice.call(board.querySelectorAll(".col"));
-
-  function colName(col) {
-    var n = col.querySelector(".col-name");
-    return n ? n.textContent.trim().toLowerCase() : "";
-  }
 
   function usd(n) { return "$" + Math.round(n || 0).toLocaleString("en-US"); }
 
@@ -1335,84 +1340,142 @@ restore();
     return card;
   }
 
+  // A single reused element, not one appended per load: switching rails
+  // repeatedly used to stack a fresh fixed banner at the bottom of the page
+  // on every click, once loads stopped happening exactly once at page load.
+  var bannerEl = null;
   function banner(tone, text) {
     var TONE = { real: "#A8D8B0", sample: "#F5CE8F", error: "#F2A69B" };
-    var el = document.createElement("div");
-    el.setAttribute("role", "status");
-    el.style.cssText =
-      "position:fixed;left:0;right:0;bottom:0;z-index:2147482000;padding:7px 14px;" +
-      "background:" + (TONE[tone] || TONE.error) + ";color:#0A0A0A;" +
-      "font:600 11px/1.4 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.05em;text-align:center";
-    el.textContent = text;
-    document.body.appendChild(el);
+    if (!bannerEl) {
+      bannerEl = document.createElement("div");
+      bannerEl.setAttribute("role", "status");
+      bannerEl.style.cssText =
+        "position:fixed;left:0;right:0;bottom:0;z-index:2147482000;padding:7px 14px;" +
+        "color:#0A0A0A;font:600 11px/1.4 'JetBrains Mono',ui-monospace,monospace;" +
+        "letter-spacing:.05em;text-align:center";
+      document.body.appendChild(bannerEl);
+    }
+    bannerEl.style.background = TONE[tone] || TONE.error;
+    bannerEl.textContent = text;
+  }
+
+  // No-column note, shown only for a genuine problem (backend down, or a key
+  // the database truly has no pipeline for) — never for "we haven't wired
+  // this rail yet", because every rail is wired to the same generic endpoint.
+  var wrap = document.querySelector(".board-wrap");
+  function showNote(text) {
+    var note = wrap.querySelector(".empty-rail-note");
+    if (!note) {
+      note = document.createElement("div");
+      note.className = "empty-rail-note";
+      wrap.appendChild(note);
+    }
+    note.textContent = text;
+    board.style.display = "none";
+  }
+  function hideNote() {
+    var note = wrap.querySelector(".empty-rail-note");
+    if (note && note.parentNode) note.parentNode.removeChild(note);
+    board.style.display = "";
+  }
+
+  /* Columns are built FROM the stages the API returns, in the order it
+     returns them (already stage.sort_order from the query) — not matched
+     against a fixed set of markup columns. .board is a flex row with no
+     fixed column count (see .board{width:max-content} in the stylesheet), so
+     any number of stages lays out and scrolls correctly. */
+  function buildColumn(stage) {
+    var col = document.createElement("section");
+    col.className = "col";
+    var head = document.createElement("div");
+    head.className = "col-head";
+    var headTop = document.createElement("div");
+    headTop.className = "col-head-top";
+    var nameEl = document.createElement("div");
+    nameEl.className = "col-name"; nameEl.textContent = stage.name;
+    var countEl = document.createElement("div");
+    countEl.className = "col-count"; countEl.textContent = String(stage.count);
+    headTop.appendChild(nameEl); headTop.appendChild(countEl);
+    var moneyEl = document.createElement("div");
+    moneyEl.className = "col-money"; moneyEl.textContent = usd(stage.amount) + " est.";
+    head.appendChild(headTop); head.appendChild(moneyEl);
+    var body = document.createElement("div");
+    body.className = "col-body";
+    stage.cards.forEach(function (c) { body.appendChild(cardEl(c)); });
+    col.appendChild(head); col.appendChild(body);
+    return col;
   }
 
   function paint(stages) {
-    var byName = {};
-    stages.forEach(function (s) { byName[String(s.name).trim().toLowerCase()] = s; });
-
+    while (board.firstChild) board.removeChild(board.firstChild);
     var shown = 0;
-    var matched = {};
-    cols.forEach(function (col) {
-      var s = byName[colName(col)];
-      var body = col.querySelector(".col-body");
-      var count = col.querySelector(".col-count");
-      var money = col.querySelector(".col-money");
-      if (!body) return;
-
-      while (body.firstChild) body.removeChild(body.firstChild);
-
-      if (!s) {
-        // No such stage in the database — an empty column is honest, a column
-        // still holding sample cards next to real ones is not.
-        if (count) count.textContent = "0";
-        if (money) money.textContent = usd(0) + " est.";
-        return;
-      }
-      s.cards.forEach(function (c) { body.appendChild(cardEl(c)); shown++; });
-      if (count) count.textContent = String(s.count);
-      if (money) money.textContent = usd(s.amount) + " est.";
-      matched[colName(col)] = true;
-    });
-
-    /* The board has five columns; the sales pipeline has ten stages. Cards in
-       the five stages with no column are not rendered anywhere. That is a
-       property of the approved layout, not something to fix by inventing
-       columns — but the banner used to say "N cards across 10 stages", which
-       claimed the board showed all ten. Count what is actually off-board so the
-       number is not a quiet lie. */
-    var offBoard = [], offCards = 0;
     stages.forEach(function (s) {
-      if (matched[String(s.name).trim().toLowerCase()]) return;
-      offBoard.push(s.name);
-      offCards += Number(s.count) || 0;
+      board.appendChild(buildColumn(s));
+      shown += s.cards.length;
     });
-    return { shown: shown, offBoard: offBoard, offCards: offCards };
+    return { shown: shown, stageCount: stages.length };
   }
 
-  FHData.pipeline("sales").then(function (res) {
-    if (res.ok && res.data && res.data.stages) {
-      var r = paint(res.data.stages);
-      // The dropdown was built from the sample cards this call just replaced.
+  // R-01..R-07 match the rail tabs in document order; the pipeline `key` is
+  // what the database and the API actually know each one by (see
+  // db/seed/002_pipelines.sql). All seven exist there today.
+  var PIPELINE_KEYS = {
+    "R-01": "sales",
+    "R-02": "funding_card_stacking",
+    "R-03": "funding_altfin",
+    "R-04": "optimization",
+    "R-05": "inquiry_removal",
+    "R-06": "ar_collections",
+    "R-07": "affiliates_hiring"
+  };
+
+  var cache = {}; // pipeline key -> last-fetched stages[], so re-clicking a rail doesn't refetch
+
+  function load(rail, label) {
+    var key = PIPELINE_KEYS[rail];
+    if (!key) { showNote(label + " — unknown rail."); return; }
+
+    if (cache[key]) {
+      hideNote();
+      var r = paint(cache[key]);
       if (typeof window.rebuildOwnerOptions === "function") {
         try { window.rebuildOwnerOptions(); } catch (e) { /* filter stays as-is */ }
       }
-      var total = res.data.stages.length;
-      var onBoard = total - r.offBoard.length;
-      banner("real", "live board · sales pipeline · " + r.shown + " cards across " +
-                     onBoard + " of " + total + " stages" +
-                     (r.offBoard.length
-                       ? " · " + r.offCards + " card(s) in " + r.offBoard.join(", ") +
-                         " have no column on this board"
-                       : ""));
+      banner("real", "live board · " + label.toLowerCase() + " pipeline · " + r.shown +
+                     " cards across " + r.stageCount + " stage" + (r.stageCount === 1 ? "" : "s"));
       return;
     }
-    if (res.source === "demo") {
-      banner("sample", "sample board — demo session, the backend was not queried");
-    } else {
-      banner("error", "sample board — backend unavailable (" + res.source + ": " + res.error + ")");
-    }
-  });
+
+    FHData.pipeline(key).then(function (res) {
+      if (res.ok && res.data && res.data.stages) {
+        cache[key] = res.data.stages;
+        hideNote();
+        var r = paint(res.data.stages);
+        // The dropdown was built from whatever cards this call just replaced.
+        if (typeof window.rebuildOwnerOptions === "function") {
+          try { window.rebuildOwnerOptions(); } catch (e) { /* filter stays as-is */ }
+        }
+        banner("real", "live board · " + label.toLowerCase() + " pipeline · " + r.shown +
+                       " cards across " + r.stageCount + " stage" + (r.stageCount === 1 ? "" : "s"));
+        return;
+      }
+      if (res.source === "demo") {
+        banner("sample", "sample board — demo session, the backend was not queried");
+      } else if (res.source === "notfound") {
+        showNote(label + " — the database has no pipeline configured for this rail yet.");
+      } else {
+        banner("error", label + " — backend unavailable (" + res.source + ": " + res.error + ")");
+      }
+    });
+  }
+
+  // Exposed so the rail-tab click handler (defined earlier in the page) can
+  // drive the same loader instead of the old isSales-only toggle. Safe to
+  // reference by the time a click can actually happen: this script runs
+  // synchronously during the initial page parse, before the user can click.
+  window.FHPipelineBoard = { load: load };
+
+  load("R-01", "Sales");
 })();
 </script>
 </body>
