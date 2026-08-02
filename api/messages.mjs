@@ -139,6 +139,6 @@ export default async function handler(req, res) {
     }
     // safeError scrubs the DSN, which err.message quotes on a connection
     // failure — the same treatment health.mjs and the Netlify adapter give it.
-    return res.status(500).json({ ok: false, error: "send_failed", message: safeError(err) });
+    return res.status(500).json({ ok: false, error: "send_failed", message: "Something went wrong sending that message. Try again in a moment.", detail: safeError(err) });
   }
 }

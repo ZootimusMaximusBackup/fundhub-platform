@@ -404,9 +404,14 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
   function problem(res) {
     if (res.transport || res.status === 0) return "Could not reach the server. Check your connection and try again.";
     if (res.status === 401) return "You are signed out. Sign in and open this page again.";
-    if (res.status === 403) return (res.body && res.body.error) || "Your account cannot record consent for this client.";
+    if (res.status === 403) return (res.body && (res.body.message || res.body.error)) || "Your account cannot record consent for this client.";
     if (res.status === 503) return "The backend is unavailable right now. Try again shortly.";
-    if (res.body && res.body.error) return String(res.body.error);
+    if (res.body && res.body.message) return String(res.body.message);
+    if (res.body && res.body.error) {
+      var code = String(res.body.error);
+      if (/\s/.test(code)) return code;
+      return "That consent could not be recorded. Try again.";
+    }
     return "Something went wrong (status " + res.status + ").";
   }
 

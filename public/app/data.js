@@ -62,6 +62,22 @@ window.FHData = (function () {
     return { ok: false, source: source, data: null, error: error };
   }
 
+  /* Prefer a sentence the server wrote for a person over a machine code.
+     APIs in this repo often answer { error: "some_code", message: "Plain words." }.
+     Older screens showed `error` and people saw "write_failed" / "invalid_template_key"
+     instead of the sentence that told them what to do. A value that is only
+     snake_case with no spaces is treated as an internal code and skipped when a
+     real message exists; when only the code is present, we still fall back to a
+     plain sentence rather than leaking the code onto the screen. */
+  function userFacing(d, fallback) {
+    var msg = d && typeof d.message === "string" ? d.message.trim() : "";
+    if (msg) return msg;
+    var err = d && typeof d.error === "string" ? d.error.trim() : "";
+    if (err && /\s/.test(err)) return err; // already a sentence
+    if (err && !/^[a-z][a-z0-9_]*$/.test(err)) return err;
+    return fallback || "That did not work. Try again.";
+  }
+
   function get(path) {
     if (isDemo()) {
       return Promise.resolve(fail("demo", "demo session — no backend read attempted"));
@@ -97,8 +113,8 @@ window.FHData = (function () {
       }
       if (r.status === 400) {
         return r.json().then(function (d) {
-          return fail("badrequest", (d && d.error) || "bad request");
-        }).catch(function () { return fail("badrequest", "bad request"); });
+          return fail("badrequest", userFacing(d, "That request was not accepted."));
+        }).catch(function () { return fail("badrequest", "That request was not accepted."); });
       }
       return r.json().then(function (d) {
         // THE DATABASE GETS TO SPEAK FOR ITSELF, AND NOTHING ELSE SPEAKS FOR IT.
@@ -107,7 +123,7 @@ window.FHData = (function () {
         // src/http/middleware/requireAuth.mjs:73) or an explicit db:"down" from
         // /api/health. Anything else claiming "the database is down" is a guess.
         if (r.status === 503 || (d && d.db === "down")) {
-          return fail("nodb", (d && d.error) || "database unreachable");
+          return fail("nodb", userFacing(d, "The database is not reachable right now."));
         }
         /* A CRASHED HANDLER IS NOT A DATABASE OUTAGE (audit m17). This line used
            to read fail("nodb", ...) for every body that was not ok, which meant
@@ -123,7 +139,7 @@ window.FHData = (function () {
            answered with an error, and the database did not report itself down.
            explain() words it that way on purpose; see the note there. */
         if (!d || d.ok !== true) {
-          return fail("server", "HTTP " + r.status + " " + ((d && d.error) || "request failed"));
+          return fail("server", userFacing(d, "Something went wrong. Try again in a moment."));
         }
         return { ok: true, source: "api", data: d, error: null };
       }).catch(function () {
@@ -300,14 +316,14 @@ window.FHData = (function () {
         if (r.status === 401 || r.status === 403) return fail("unauthorized", "not signed in, or not allowed");
         if (r.status === 501) {
           return r.json().then(function (d) {
-            return fail("unbuilt", (d && d.error) || "not_implemented");
-          }).catch(function () { return fail("unbuilt", "not_implemented"); });
+            return fail("unbuilt", userFacing(d, "That action is not built yet."));
+          }).catch(function () { return fail("unbuilt", "That action is not built yet."); });
         }
         if (r.status === 404) {
           return r.json().then(function (d) {
             return (d && d.error === "not_found" && typeof d.path === "string")
               ? fail("offline", "/api/* not deployed")
-              : fail("notfound", "no such record");
+              : fail("notfound", userFacing(d, "That record was not found."));
           }).catch(function () { return fail("offline", "/api/* not deployed"); });
         }
         if (r.status === 400 || r.status === 409) {
@@ -315,15 +331,15 @@ window.FHData = (function () {
           // user can act on, not a fault. It shares the badrequest source
           // because both mean "the backend is fine, the request was not".
           return r.json().then(function (d) {
-            return fail("badrequest", (d && (d.error || d.message)) || "rejected");
-          }).catch(function () { return fail("badrequest", "rejected"); });
+            return fail("badrequest", userFacing(d, "That request was not accepted."));
+          }).catch(function () { return fail("badrequest", "That request was not accepted."); });
         }
         return r.json().then(function (d) {
           if (r.status === 503 || (d && d.db === "down")) {
-            return fail("nodb", (d && d.error) || "database unreachable");
+            return fail("nodb", userFacing(d, "The database is not reachable right now."));
           }
           if (!d || d.ok !== true) {
-            return fail("server", "HTTP " + r.status + " " + ((d && d.error) || "request failed"));
+            return fail("server", userFacing(d, "Something went wrong. Try again in a moment."));
           }
           return { ok: true, source: "api", data: d, error: null };
         }).catch(function () {
@@ -380,15 +396,15 @@ window.FHData = (function () {
         }
         if (r.status === 400) {
           return r.json().then(function (d) {
-            return fail("badrequest", (d && (d.error || d.message)) || "rejected");
-          }).catch(function () { return fail("badrequest", "rejected"); });
+            return fail("badrequest", userFacing(d, "That request was not accepted."));
+          }).catch(function () { return fail("badrequest", "That request was not accepted."); });
         }
         return r.json().then(function (d) {
           if (r.status === 503 || (d && d.db === "down")) {
-            return fail("nodb", (d && d.error) || "database unreachable");
+            return fail("nodb", userFacing(d, "The database is not reachable right now."));
           }
           if (!d || d.ok !== true) {
-            return fail("server", "HTTP " + r.status + " " + ((d && d.error) || "request failed"));
+            return fail("server", userFacing(d, "Something went wrong. Try again in a moment."));
           }
           return { ok: true, source: "api", data: d, error: null };
         }).catch(function () {

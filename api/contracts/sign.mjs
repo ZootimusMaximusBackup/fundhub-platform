@@ -189,7 +189,11 @@ export default async function handler(req, res) {
       });
     }
     if (err && CLIENT_DATA_ERRORS.has(err.code)) return GONE(res);
-    return res.status(500).json({ ok: false, error: "sign_failed", message: safeError(err) });
+    return res.status(500).json({
+      ok: false, error: "sign_failed",
+      message: "Something went wrong while signing. Try again in a moment.",
+      detail: safeError(err)
+    });
   }
 }
 

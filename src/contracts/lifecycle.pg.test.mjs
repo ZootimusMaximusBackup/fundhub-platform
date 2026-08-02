@@ -118,6 +118,40 @@ describe("contracts — the full lifecycle", { skip: !HAVE_DB ? "no DATABASE_URL
     await assert.rejects(() => newTemplate("DUP"), (e) => e.code === "duplicate_template_key");
   });
 
+  test("the CRM reproduction — funding_agreement with two required blanks — inserts a row", async () => {
+    /* Exact shape from the bug report. Short name normalises to FUNDING-AGREEMENT;
+       clear any seed/prior row with that key so the create is the thing under test. */
+    await db.query(`ALTER TABLE contract_templates DISABLE TRIGGER trg_contract_templates_no_delete`);
+    await db.query(
+      `DELETE FROM contract_templates WHERE org_id = $1::uuid AND template_key = 'FUNDING-AGREEMENT'`,
+      [org]);
+    await db.query(`ALTER TABLE contract_templates ENABLE TRIGGER trg_contract_templates_no_delete`);
+
+    const t = await createTemplate(db, {
+      orgId: org, staffId: staff,
+      templateKey: "funding_agreement",
+      name: "Funding Agreement",
+      kind: "contract",
+      subtype: "funding_agreement",
+      body: "Hello {{contact.first_name}} {{contact.last_name}}. Amount {{field.funding_amount}}. Fee {{field.success_fee}}.",
+      manualFields: [
+        { key: "funding_amount", label: "Funding amount", required: true },
+        { key: "success_fee", label: "Success fee", required: true }
+      ]
+    });
+    assert.equal(t.template_key, "FUNDING-AGREEMENT");
+    assert.equal(t.source_kind, "text");
+    assert.deepEqual(t.fields, []);
+    const row = (await db.query(
+      `SELECT template_key, kind, subtype, source_kind, manual_fields
+         FROM contract_templates WHERE id = $1`, [t.id])).rows[0];
+    assert.equal(row.template_key, "FUNDING-AGREEMENT");
+    assert.equal(row.kind, "contract");
+    assert.equal(row.subtype, "funding_agreement");
+    assert.equal(row.source_kind, "text");
+    assert.equal(row.manual_fields.length, 2);
+  });
+
   test("editing a wording records who edited it", async () => {
     const t = await newTemplate("EDIT");
     const after = await updateTemplate(db, {

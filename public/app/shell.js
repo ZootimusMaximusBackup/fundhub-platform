@@ -551,7 +551,7 @@
           if (d && d.ok && d.db === "up") {
             return { code: "live", label: "LIVE", hint: (d.migrations || 0) + " migrations applied" };
           }
-          return { code: "nodb", label: "NO DB", hint: String((d && d.error) || "database unreachable") };
+          return { code: "nodb", label: "NO DB", hint: String((d && d.message) || "The database is not reachable right now.") };
         }).catch(function () {
           return { code: "offline", label: "NO API", hint: "/api/health did not return JSON" };
         });

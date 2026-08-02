@@ -120,7 +120,23 @@ describe("public/app/data.js — result classification", () => {
     const { FH } = load(() => ({ status: 400, body: { ok: false, error: "invalid_id" } }));
     const r = await FH.client("zzz-not-a-uuid");
     assert.equal(r.source, "badrequest");
-    assert.equal(r.error, "invalid_id");
+    // A bare machine code is not shown on screen — a sentence is.
+    assert.match(r.error, /request was not accepted/i);
+  });
+
+  test("a 400 with a plain-English message shows that message, not the code", async () => {
+    const { FH } = load(() => ({
+      status: 400,
+      body: {
+        ok: false,
+        error: "invalid_template_key",
+        message: "A template's short name needs letters, numbers and hyphens."
+      }
+    }));
+    const r = await FH.write("/api/contracts", { action: "create_template" });
+    assert.equal(r.source, "badrequest");
+    assert.match(r.error, /short name/i);
+    assert.ok(!/invalid_template_key/.test(r.error));
   });
 
   // ── the classifications that already existed must not regress ──────────────
@@ -153,7 +169,19 @@ describe("public/app/data.js — result classification", () => {
     assert.equal(r.ok, false);
     assert.equal(r.source, "server",
       "a crashed handler must not be reported as a database outage");
-    assert.match(r.error, /500/, "the status belongs in the detail so it is diagnosable");
+    // Prefer the server's sentence over "HTTP 500 internal_error".
+    assert.equal(r.error, "x is not a function");
+  });
+
+  test("a 500 write_failed with a human message never shows the raw code", async () => {
+    const { FH } = load(() => ({
+      status: 500,
+      body: { ok: false, error: "write_failed", message: "Something went wrong saving that. Try again in a moment." }
+    }));
+    const r = await FH.write("/api/contracts", { action: "create_template" });
+    assert.equal(r.source, "server");
+    assert.match(r.error, /went wrong saving/i);
+    assert.ok(!/write_failed/.test(r.error));
   });
 
   test("a 500 from a handler that never answered is 'server' too", async () => {
