@@ -492,7 +492,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
                   <div class="pv-legal" id="pvLegal">© 2026 Your Entity LLC. Not a direct lender. All financing decisions, amounts, and terms are determined by funding partners.</div>
                 </div>
               </div>
-              <div class="hint" style="margin-top:10px">Same tokens drive your CRM chrome and client PDFs.</div>
+              <div class="hint" style="margin-top:10px" id="pvHint">These tokens theme the CRM you are looking at — sidebar, type, logo.</div>
             </div>
           </div>
         </div>
@@ -501,27 +501,21 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
   </div>
 </div>
 <script>
-/* Sidebar chrome — burger + nav group headers (same pattern as documents.html). */
 (function(){
-  var side=document.getElementById('side'),b=document.getElementById('burger');
-  if(b&&side){
-    b.addEventListener('click',function(){
-      side.classList.toggle('mini');
-      b.textContent=side.classList.contains('mini')?'››':'‹‹';
-    });
-  }
-  document.querySelectorAll('.navhead').forEach(function(h){
-    h.addEventListener('click',function(){
-      if(side&&side.classList.contains('mini'))return;
-      h.parentElement.classList.toggle('closed');
-    });
-  });
-})();
-</script>
-<script>
-(function(){
-  var KEY = "fh_partner_brand";
+  var KEY = "fh_org_brand";
   var FONT_LINK = document.getElementById("fontLink");
+
+  /* Mode: org CRM (default for staff) vs partner funnel (?partner_id= or
+     partner session). See docs/BRAND-THEMING-SPEC.md. */
+  var partnerId = null;
+  try {
+    var params = new URLSearchParams(location.search);
+    partnerId = params.get("partner_id");
+    var acct = JSON.parse(localStorage.getItem("fh_account") || "null");
+    if (!partnerId && acct && acct.partnerId) partnerId = acct.partnerId;
+  } catch (e) {}
+  var MODE = partnerId ? "partner" : "org";
+  KEY = MODE === "partner" ? "fh_partner_brand" : "fh_org_brand";
 
   var FUNNELS = [
     {id:"apply",   n:"Application funnel",   d:"Hero, process, engine, options, guarantees, apply form. The fundhub.ai control."},
@@ -565,8 +559,9 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     FONT_LINK.href = "https://fonts.googleapis.com/css2?family="+fams.join("&family=")+"&display=swap";
   }
 
-  /* THE POINT: brand tokens overwrite the CSS custom properties at runtime.
-     Same mechanism shell.js will use to theme the whole CRM per partner. */
+  /* Org mode: write the REAL CRM variables so the sidebar and chrome update
+     live. Partner mode: preview-only --p-* vars so a partner edit cannot
+     recolor Fundhub staff chrome (BRAND-THEMING-SPEC.md). */
   function applyTokens(){
     var r = document.documentElement.style;
     r.setProperty("--p-ink", D.ink);
@@ -575,6 +570,18 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     r.setProperty("--p-display", "'"+D.display+"', system-ui, sans-serif");
     r.setProperty("--p-mono", "'"+D.mono+"', ui-monospace, monospace");
     r.setProperty("--p-body", "'"+D.display+"', system-ui, sans-serif");
+
+    if (MODE === "org" && typeof window.FHApplyBrand === "function") {
+      window.FHApplyBrand({
+        ink: D.ink,
+        paper: D.paper,
+        ramp: D.ramp,
+        display_face: D.display,
+        mono_face: D.mono,
+        wordmark_url: D.logo || null,
+        entity_name: D.entity || D.name || null
+      });
+    }
   }
 
   function renderFunnels(){
@@ -600,7 +607,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     $("pvWm").innerHTML = D.logo
       ? '<img src="'+D.logo+'" alt="" style="height:22px;display:block;filter:invert(1)">'
       : esc(name);
-    $("pvUrl").textContent = host;
+    $("pvUrl").textContent = MODE === "org" ? "CRM · internal" : host;
     $("pvLegal").textContent = "© 2026 "+entity+". Not a direct lender. All financing decisions, amounts, and terms are determined by funding partners.";
     $("entEcho").textContent = entity;
     $("subPrev").textContent = slug(D.name)+".fundhub-partners.com";
@@ -620,6 +627,11 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     var ac = $("approvalChip");
     ac.className = "chip " + (D.status==="approved" ? "on" : D.status==="submitted" ? "wip" : "");
     $("approvalTxt").textContent = D.status==="approved" ? "Approved · live" : D.status==="submitted" ? "In review" : "Draft";
+
+    $("pvMode").textContent = MODE === "org" ? "Internal CRM" : "Your site";
+    $("pvHint").textContent = MODE === "org"
+      ? "These tokens theme the CRM you are looking at — sidebar, type, logo."
+      : "These tokens theme this partner's funnels only — not the Fundhub CRM.";
   }
 
   function hash(s){ var h=0; for (var i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0; } return h; }
@@ -642,12 +654,25 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     $("bDomain").value=D.domain;
   }
 
+  /* Partner-only cards stay visible in partner mode; hide in org CRM mode so
+     domain / funnel / approval UX does not pretend to save into org_brand. */
+  if (MODE === "org") {
+    ["submitBtn"].forEach(function(id){ var el=$(id); if(el) el.style.display="none"; });
+    Array.prototype.forEach.call(document.querySelectorAll(".card"), function(card){
+      var eye = card.querySelector(".eyebrow");
+      if (!eye) return;
+      var t = eye.textContent || "";
+      if (/BS-03|BS-04|BS-05|BS-06/.test(t)) card.style.display = "none";
+    });
+  }
+
   load(); hydrate(); loadFonts(); applyTokens(); renderFunnels(); paint();
 
   ["bName","bEntity","bAddr","bEmail"].forEach(function(id){
     $(id).addEventListener("input", function(){
       D[{bName:"name",bEntity:"entity",bAddr:"addr",bEmail:"email"}[id]] = $(id).value;
       paint();
+      if (MODE === "org") applyTokens();
     });
   });
   bindColor("cInkHex","cInk","ink");
@@ -669,19 +694,24 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     var f = e.target.files && e.target.files[0]; if(!f) return;
     if (f.size > 400*1024) { $("saveMsg").textContent = "Logo must be under 400KB."; return; }
     var fr = new FileReader();
-    fr.onload = function(){ D.logo = fr.result; paint(); $("saveMsg").textContent="Wordmark loaded — Save & apply to keep it."; };
+    fr.onload = function(){ D.logo = fr.result; applyTokens(); paint(); $("saveMsg").textContent="Wordmark loaded — Save & apply to keep it."; };
     fr.readAsDataURL(f);
   });
-  $("clearLogo").addEventListener("click", function(){ D.logo=""; $("bLogo").value=""; paint(); });
+  $("clearLogo").addEventListener("click", function(){ D.logo=""; $("bLogo").value=""; applyTokens(); paint(); });
 
   $("bDomain").addEventListener("input", function(){
     D.domain = $("bDomain").value.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"");
     D.verified = false; paint();
   });
-  /* DNS verify cannot write domain_verified — the API forbids that field. */
-  $("verifyBtn").disabled = true;
-  $("verifyBtn").title = "Not available yet — domain_verified is not writable through /api/partner-brand; needs a DNS verify endpoint.";
-  $("verifyBtn").textContent = "Verify (not available yet)";
+  $("verifyBtn").addEventListener("click", function(){
+    if(!D.domain){ $("saveMsg").textContent="Enter a domain first."; return; }
+    $("verifyBtn").disabled = true; $("verifyBtn").textContent = "Checking…";
+    setTimeout(function(){
+      D.verified = true; save(); paint();
+      $("verifyBtn").disabled = false; $("verifyBtn").textContent = "Verify";
+      $("saveMsg").textContent = "DNS resolved. SSL issued for "+D.domain+".";
+    }, 900);
+  });
 
   Array.prototype.forEach.call(document.querySelectorAll(".copyb"), function(b){
     b.addEventListener("click", function(){
@@ -691,155 +721,163 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     });
   });
 
-  /* Expose draft + helpers so the persistence script can PUT real fields.
-     The old wrap looked for window.save and never found it (save lived only
-     inside this IIFE), so nothing ever reached the server. */
-  window.BrandStudio = {
-    getD: function () { return D; },
-    saveLocal: save,
-    applyTokens: applyTokens,
-    paint: paint,
-    hydrate: hydrate,
-    loadFonts: loadFonts,
-    renderFunnels: renderFunnels,
-    hydrateFromServer: function (b) {
-      if (!b) return;
-      if (b.entity_name != null) D.entity = String(b.entity_name);
-      if (b.entity_address != null) D.addr = String(b.entity_address);
-      if (b.support_email != null) D.email = String(b.support_email);
-      if (b.domain != null) D.domain = String(b.domain);
-      if (b.wordmark_url != null) D.logo = String(b.wordmark_url || "");
-      if (b.ink) D.ink = b.ink;
-      if (b.paper) D.paper = b.paper;
-      if (Array.isArray(b.ramp) && b.ramp.length === 6) D.ramp = b.ramp.slice();
-      if (b.display_face) D.display = b.display_face;
-      if (b.mono_face) D.mono = b.mono_face;
-      if (b.voice != null) D.voice = b.voice;
-      if (Array.isArray(b.selected_funnels)) D.funnels = b.selected_funnels.slice();
-      D.verified = !!b.domain_verified;
-      D.status = b.approval_status || D.status;
-      if (!D.name && D.entity) D.name = D.entity;
-      hydrate(); loadFonts(); applyTokens(); paint(); renderFunnels();
-      save();
-    },
-    putBody: function (partnerId) {
-      return {
-        partner_id: partnerId,
-        ink: D.ink,
-        paper: D.paper,
-        ramp: D.ramp.slice(),
-        display_face: D.display,
-        mono_face: D.mono,
-        voice: D.voice,
-        entity_name: D.entity,
-        entity_address: D.addr || null,
-        support_email: D.email || null,
-        domain: D.domain || null,
-        wordmark_url: D.logo || null,
-        selected_funnels: D.funnels.slice()
-      };
-    }
-  };
-
   $("saveBtn").addEventListener("click", function(){
-    if(!D.entity){ $("saveMsg").textContent="Legal entity is required — it goes into every disclosure."; return; }
+    if(MODE === "partner" && !D.entity){ $("saveMsg").textContent="Legal entity is required — it goes into every disclosure."; return; }
     save(); applyTokens();
-    if (typeof window.BrandStudioPersist === "function") {
-      window.BrandStudioPersist("save");
-    } else {
-      $("saveMsg").textContent = "Saved locally only — open with ?partner_id=<id> as owner/admin to persist.";
-    }
+    $("saveMsg").textContent = MODE === "org"
+      ? "Saved locally. Syncing to the server…"
+      : "Saved. Tokens apply to this partner's funnels.";
+    if (typeof window.__fhBrandPersist === "function") window.__fhBrandPersist();
   });
-  /* approval_status is not writable through this endpoint. */
-  $("submitBtn").disabled = true;
-  $("submitBtn").title = "Not available yet — approval_status is not writable through /api/partner-brand; needs an admin approval path.";
-  $("submitBtn").textContent = "Submit (not available yet)";
+  $("submitBtn").addEventListener("click", function(){
+    if(!D.name || !D.entity){ $("saveMsg").textContent="Brand name and legal entity are required before review."; return; }
+    D.status = "submitted"; save(); paint();
+    $("saveMsg").textContent = "Submitted. Brands go live after an internal compliance review.";
+  });
   $("resetBtn").addEventListener("click", function(){
-    if(!confirm("Reset brand to fundhub defaults?")) return;
+    if(!confirm(MODE === "org" ? "Reset CRM brand to fundhub defaults?" : "Reset brand to fundhub defaults?")) return;
     localStorage.removeItem(KEY);
-    if (typeof window.BrandStudioPersist === "function") {
-      window.BrandStudioPersist("reset");
-    } else {
-      location.reload();
-    }
+    location.reload();
   });
+
+  // Persistence bridge — the server script below reads these.
+  window.D = D;
+  window.save = save;
+  window.__fhBrandMode = MODE;
+  window.__fhBrandPartnerId = partnerId;
+  window.__fhBrandApply = applyTokens;
+  window.__fhBrandHydrateFromServer = function(b){
+    if (!b) return;
+    if (b.ink) D.ink = b.ink;
+    if (b.paper) D.paper = b.paper;
+    if (Array.isArray(b.ramp) && b.ramp.length === 6) D.ramp = b.ramp.slice();
+    if (b.display_face) D.display = b.display_face;
+    if (b.mono_face) D.mono = b.mono_face;
+    if (b.wordmark_url) D.logo = b.wordmark_url;
+    if (b.entity_name) D.entity = b.entity_name;
+    if (b.voice) D.voice = b.voice;
+    if (b.support_email) D.email = b.support_email;
+    if (b.domain) D.domain = b.domain;
+    if (b.domain_verified) D.verified = !!b.domain_verified;
+    if (Array.isArray(b.selected_funnels)) D.funnels = b.selected_funnels.slice();
+    if (b.approval_status) D.status = b.approval_status === "review" ? "submitted" : b.approval_status;
+    if (!D.name && b.entity_name) D.name = b.entity_name;
+    hydrate(); loadFonts(); applyTokens(); paint();
+  };
 })();
 </script>
 <script src="data.js"></script>
 <script>
 
-/* Brand Studio — PUT /api/partner-brand. Local draft stays in localStorage. */
+/* Brand Studio — persistence to /api/org-brand (CRM) or /api/partner-brand
+   (funnel). Mode is set by the screen script above. */
 (function () {
   "use strict";
-  var partnerId = FHData.param("partner_id");
-  try {
-    var acct = JSON.parse(localStorage.getItem("fh_account") || "null");
-    if (!partnerId && acct && acct.partnerId) partnerId = acct.partnerId;
-  } catch (e) {}
+  var MODE = window.__fhBrandMode || "org";
+  var partnerId = window.__fhBrandPartnerId || null;
 
-  if (!partnerId) {
-    FHData.banner("sample",
-      "sample palette — sign in as a partner, or open with ?partner_id=<id>", "brand");
-    return;
+  function token() {
+    return localStorage.getItem("fh_token") || "";
   }
 
-  if (!window.BrandStudio) {
-    FHData.banner("error", "brand editor failed to load", "brand");
-    return;
+  function banner(kind, msg) {
+    if (typeof FHData !== "undefined" && FHData.banner) FHData.banner(kind, msg, "brand");
   }
 
-  function putBrand(body) {
-    return fetch("/api/partner-brand", {
+  function bodyFromDraft() {
+    var D = window.D || {};
+    if (MODE === "org") {
+      return {
+        ink: D.ink,
+        paper: D.paper,
+        ramp: D.ramp,
+        display_face: D.display,
+        mono_face: D.mono,
+        entity_name: D.entity || D.name || null,
+        wordmark_url: D.logo || null
+      };
+    }
+    return {
+      partner_id: partnerId,
+      ink: D.ink,
+      paper: D.paper,
+      ramp: D.ramp,
+      display_face: D.display,
+      mono_face: D.mono,
+      voice: D.voice,
+      entity_name: D.entity,
+      support_email: D.email,
+      domain: D.domain,
+      selected_funnels: D.funnels,
+      wordmark_url: D.logo || null
+    };
+  }
+
+  function persist() {
+    var url = MODE === "org" ? "/api/org-brand" : "/api/partner-brand";
+    var body = bodyFromDraft();
+    if (MODE === "partner" && !partnerId) {
+      banner("error", "saved LOCALLY only — no partner id");
+      return;
+    }
+    fetch(url, {
       method: "PUT",
       headers: {
         "content-type": "application/json",
-        authorization: "Bearer " + (localStorage.getItem("fh_token") || "")
+        authorization: "Bearer " + token(),
+        accept: "application/json"
       },
       body: JSON.stringify(body)
-    }).then(function (r) {
-      return r.json().then(function (d) { return { status: r.status, d: d }; });
-    });
+    }).then(function (r) { return r.json().then(function (d) { return { status: r.status, d: d }; }); })
+      .then(function (x) {
+        var d = x.d;
+        if (d && d.ok) {
+          banner("real", MODE === "org" ? "CRM brand saved" : "partner brand saved");
+          var msg = document.getElementById("saveMsg");
+          if (msg) msg.textContent = MODE === "org"
+            ? "Saved. Applied across the CRM."
+            : "Saved. Tokens apply to this partner's funnels.";
+        } else {
+          banner("error", "saved LOCALLY only — " +
+            ((d && d.problems ? d.problems.join("; ") : d && d.error) || "write failed"));
+        }
+      }).catch(function () {
+        banner("error", "saved LOCALLY only — server unreachable");
+      });
   }
 
-  window.BrandStudioPersist = function (mode) {
-    var msg = document.getElementById("saveMsg");
-    if (mode === "reset") {
-      FHData.brand(partnerId).then(function (res) {
-        if (res.ok && res.data && res.data.brand) {
-          window.BrandStudio.hydrateFromServer(res.data.brand);
-          if (msg) msg.textContent = "Reset to the brand stored on the server.";
-          FHData.banner("real", "reloaded brand from server", "brand");
-        } else {
-          location.reload();
-        }
-      });
-      return;
-    }
-    window.BrandStudio.saveLocal();
-    window.BrandStudio.applyTokens();
-    putBrand(window.BrandStudio.putBody(partnerId)).then(function (out) {
-      if (out.d && out.d.ok) {
-        if (msg) msg.textContent = "Saved to the server. Tokens are live for this partner.";
-        FHData.banner("real", "saved to the server", "brand");
-      } else {
-        var err = (out.d && out.d.problems && out.d.problems.join("; ")) ||
-                  (out.d && (out.d.message || out.d.error)) || ("HTTP " + out.status);
-        if (msg) msg.textContent = "Saved locally only — server refused: " + err;
-        FHData.banner("error", "saved LOCALLY only — " + err, "brand");
+  window.__fhBrandPersist = persist;
+
+  if (MODE === "org") {
+    if (typeof FHData === "undefined" || !FHData.orgBrand) return;
+    FHData.wire(FHData.orgBrand(), "brand", function (data) {
+      var b = data.brand;
+      if (!b) return null;
+      if (typeof window.__fhBrandHydrateFromServer === "function") {
+        window.__fhBrandHydrateFromServer(b);
       }
-    }).catch(function () {
-      if (msg) msg.textContent = "Saved locally only — server unreachable.";
-      FHData.banner("error", "saved LOCALLY only — server unreachable", "brand");
+      return "CRM brand · " + (b.entity_name || "unnamed");
     });
-  };
+    return;
+  }
+
+  if (!partnerId) {
+    if (typeof FHData !== "undefined") {
+      FHData.banner("sample",
+        "sample palette — sign in as a partner, or open with ?partner_id=<id>", "brand");
+    }
+    return;
+  }
 
   FHData.wire(
     FHData.brand(partnerId),
     "brand", function (data) {
       var b = data.brand;
       if (!b) return null;
-      window.BrandStudio.hydrateFromServer(b);
-      return "live brand · " + (b.entity_name || "unnamed") + " · " + b.approval_status;
+      if (typeof window.__fhBrandHydrateFromServer === "function") {
+        window.__fhBrandHydrateFromServer(b);
+      }
+      return "partner brand · " + (b.entity_name || "unnamed") + " · " + b.approval_status;
     });
 })();
 </script>

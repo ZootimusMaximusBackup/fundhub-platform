@@ -22,7 +22,7 @@ flowchart TD
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 1 route]
     CAN --> A_read[Reading data — 1 route]
-    CAN --> A_top_level[Everything else — 3 routes]
+    CAN --> A_top_level[Everything else — 4 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 76 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
@@ -40,7 +40,7 @@ flowchart TD
 
 ## What they can reach
 
-**15 of 91 routes.**
+**16 of 92 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -57,6 +57,7 @@ flowchart TD
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
+| `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
 | `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager<br>plus: client |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
@@ -67,7 +68,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**76 of 91 routes.**
+**76 of 92 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

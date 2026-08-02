@@ -47,6 +47,7 @@ import dashPipeline from "../../api/dashboard/pipeline.mjs";
 import dashSeed from "../../api/dashboard/seed.mjs";
 import health from "../../api/health.mjs";
 import partnerBrand from "../../api/partner-brand.mjs";
+import orgBrand from "../../api/org-brand.mjs";
 import webhooks from "../../api/webhooks/[provider].mjs";
 import readCommissions from "../../api/read/commissions.mjs";
 import readInvoices from "../../api/read/invoices.mjs";
@@ -189,6 +190,7 @@ export const ROUTES = {
   "dashboard/seed": dashSeed,
   "health": health,
   "partner-brand": partnerBrand,
+  "org-brand": orgBrand,
   "read/commissions": readCommissions,
   "read/invoices": readInvoices,
   "read/documents": readDocuments,

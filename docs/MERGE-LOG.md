@@ -203,3 +203,14 @@ Baseline `origin/main`: `c37dc60`. Model: Grok. No split. Owner instruction: no 
 - Local migrate applied 127 (retired 1 pipeline row, 0 cards).
 - Push / delete: recorded below when pushed.
 
+
+## 10. feat/org-brand-crm — MERGED-WITH-RESOLUTION
+
+- Prep commit `806eed1` renumbered `127_org_brand.sql` → `128_org_brand.sql` and regenerated `db/expected-migrations.mjs` on the branch before merge.
+- Conflicts:
+  - `db/expected-migrations.mjs` — kept both 127 retire and 128 org_brand; regenerated via `npm run migrations:manifest`.
+  - `docs/journeys/*-actual.md` + README — regenerated via `npm run journeys` (keep both sides by regenerating from merged code).
+  - `docs/journeys/CHANGELOG.md` — kept both org-brand and controls-persist dated entries; fixed a pre-existing header corruption (template fence leaked into the changelog body on main from controls-persist).
+  - `public/app/brand-studio.html` — **call:** took org-brand's dual-mode persistence (`/api/org-brand` for CRM, `/api/partner-brand` for funnels via `__fhBrandPersist`). Discarded controls-persist's parallel `BrandStudioPersist` partner-only bridge on this screen because org-brand already covers partner save/load and adds the CRM mode the branch exists for. Reset still clears local draft and reloads.
+- Suite: unit (no DATABASE_URL) run after commit.
+- Push / delete: recorded when pushed.

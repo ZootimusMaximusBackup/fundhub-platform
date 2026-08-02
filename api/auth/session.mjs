@@ -18,8 +18,9 @@
 // keys on 'client', 'affiliate' and 'partner' (shell.js:120) — it has always
 // been ready for these three; nothing had ever handed them to it. So the role
 // this endpoint reports for an account session IS its principal kind, which is
-// exactly what that map expects, and applyBrand() gets the partner_id it needs
-// to theme a white-label partner's shell from partner_brand.
+// exactly what that map expects. applyBrand() themes CRM chrome from
+// /api/org-brand (docs/BRAND-THEMING-SPEC.md); partner_id is still projected
+// for partner-surface screens, not for CRM colours.
 //
 // `principal` is added alongside, naming the kind honestly, so nothing has to
 // infer type from a role string. The staff reply is byte-for-byte what it was
@@ -83,7 +84,7 @@ export default async function handler(req, res) {
       principal_kind: p.kind,    // unambiguous, for anything that should not read `role`
       client_id: p.clientId,
       affiliate_id: p.affiliateId,
-      partner_id: p.partnerId    // shell.js applyBrand() themes from this
+      partner_id: p.partnerId    // partner-surface screens; CRM uses org-brand
     }
   });
 }

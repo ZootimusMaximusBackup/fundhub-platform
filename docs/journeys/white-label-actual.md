@@ -22,7 +22,7 @@ flowchart TD
     CAN --> A_creative[Creative Factory — 4 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_read[Reading data — 1 route]
-    CAN --> A_top_level[Everything else — 2 routes]
+    CAN --> A_top_level[Everything else — 3 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 69 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
@@ -39,7 +39,7 @@ flowchart TD
 
 ## What they can reach
 
-**22 of 91 routes.**
+**23 of 92 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -63,6 +63,7 @@ flowchart TD
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
+| `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
@@ -73,7 +74,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**69 of 91 routes.**
+**69 of 92 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
