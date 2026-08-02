@@ -242,6 +242,7 @@
         <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
         <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
         <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+        <a class="navitem" href="contracts.html"><span class="ico">✒</span><span class="lbl">Contracts</span></a>
       </div></div>
 <div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
@@ -395,6 +396,23 @@
          week's payroll — one line, with the whole list one click inside it
          and the real surface a click away. -->
     <div class="section">
+
+      <!-- ── OUTBOUND MAIL ────────────────────────────────────────────────────
+           The queue an operator can finally see. Twenty-six workflows write to
+           it and, until 2026-08-02, nothing drained it — every client email this
+           platform composed sat in a table with no way to see it or act on it.
+           This panel is the switch, the count and the button. -->
+      <div class="card" id="outboxCard" style="margin-bottom:14px">
+        <div class="section-meta" style="margin-bottom:6px;">OUTBOUND MAIL</div>
+        <div id="outboxSummary" style="font-size:12.5px;line-height:1.6">Checking…</div>
+        <div id="outboxDetail" style="font-size:11.5px;color:var(--gray,#6b7280);margin-top:6px"></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+          <button id="outboxSend" type="button">Send what is waiting</button>
+          <button id="outboxToggle" type="button">Pause sending</button>
+          <button id="outboxInvoices" type="button">Email unsent invoices</button>
+        </div>
+        <div id="outboxMsg" style="font-size:12px;margin-top:8px"></div>
+      </div>
       <details class="aff" id="aff">
         <summary>
           <span class="af-chev">›</span>
@@ -739,6 +757,77 @@
 })();
 </script>
 <script src="data.js"></script>
+<script>
+/* The outbound mail panel. Every action goes through /api/messages-outbound, which is
+   ROLE_SETS.STAFF to look and owner/admin to act — so a narrower role sees the
+   state and simply gets a refusal if they press a button, rather than the
+   screen pretending the controls are not there. */
+(function () {
+  "use strict";
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  if (!$("outboxCard")) return;
+
+  var state = null;
+
+  function paint(d) {
+    state = d;
+    $("outboxSummary").textContent = d.message || d.summary || "";
+    var c = d.counts || {};
+    var route = (d.routing || []).filter(function (r) { return r.enabled; })
+      .map(function (r) { return r.channel + " via " + r.provider; }).join(", ");
+    $("outboxDetail").innerHTML =
+      esc((c.queued || 0) + " waiting · " + (c.sent_today || 0) + " sent today · " +
+          (c.failed || 0) + " failed · " + (c.blocked || 0) + " held by compliance") +
+      (route ? "<br>" + esc("Set up to send: " + route) : "<br>Nothing is set up to send yet.") +
+      (d.invoices_never_emailed
+        ? "<br><strong>" + esc(d.invoices_never_emailed + " invoice(s) were never emailed to the client.") + "</strong>"
+        : "");
+    $("outboxToggle").textContent =
+      d.settings && d.settings.outbound_enabled ? "Pause sending" : "Turn sending on";
+    $("outboxInvoices").style.display = d.invoices_never_emailed ? "" : "none";
+  }
+
+  function say(kind, text) {
+    $("outboxMsg").textContent = text;
+    $("outboxMsg").style.color = kind === "ok" ? "#2C5138" : "#6E2A22";
+  }
+
+  function call(body, done) {
+    return FHData.write("/api/messages-outbound", body).then(function (res) {
+      if (!res.ok) {
+        say("err", res.error === "unauthorized"
+          ? "Only an owner or an admin can change this."
+          : (res.error || "that did not work"));
+        return;
+      }
+      if (res.data && res.data.message) say("ok", res.data.message);
+      if (done) done(res.data);
+      refresh();
+    });
+  }
+
+  function refresh() {
+    return FHData.write("/api/messages-outbound", { action: "status" }).then(function (res) {
+      if (res.ok) paint(res.data);
+      else $("outboxSummary").textContent = "Could not read the outbound queue.";
+    });
+  }
+
+  $("outboxSend").onclick = function () { say("ok", "sending…"); call({ action: "dispatch" }); };
+  $("outboxToggle").onclick = function () {
+    var on = !(state && state.settings && state.settings.outbound_enabled);
+    call({ action: "settings", outbound_enabled: on });
+  };
+  $("outboxInvoices").onclick = function () {
+    if (!window.confirm("Email every invoice the client was never told about?")) return;
+    call({ action: "email_invoice_backlog" });
+  };
+
+  refresh();
+})();
+</script>
 <script>
 
 /* Ops & Admin — the dead-letter queue is the one thing on this screen with a

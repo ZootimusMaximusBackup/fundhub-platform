@@ -5,6 +5,8 @@ import { at01FirstTouchCapture } from './at-01-first-touch-capture.mjs';
 import { bc01CustomerResponsiveness } from './bc-01-customer-responsiveness.mjs';
 import { bc02CustomerFriction } from './bc-02-customer-friction.mjs';
 import { bs01PrecallLauncher } from './bs-01-precall-launcher.mjs';
+import { contractChaser } from './contract-chaser.mjs';
+import { messageDispatchSweeper } from './message-dispatch-sweeper.mjs';
 import { c00CrsSoftPullRequest } from './c-00-crs-soft-pull-request.mjs';
 import { c02InquiryCreated } from './c-02-inquiry-created.mjs';
 import { c02bInquiryRemovalRequested } from './c-02b-inquiry-removal-requested.mjs';
@@ -54,6 +56,36 @@ export const functions = [
   bc01CustomerResponsiveness,
   bc02CustomerFriction,
   bs01PrecallLauncher,
+  /* Contracts — chase unsigned, daily.
+
+     REGISTERING IT DOES NOT SWITCH SENDING ON. Inngest invokes nothing until
+     INNGEST_EVENT_KEY is set, which CLAUDE.md §11 reserves to the owner. This
+     array is a declaration of what exists.
+
+     It is deliberately NOT the same decision as the message dispatch sweeper,
+     which stays out of this array on purpose and has its own test asserting so:
+     that one drains the whole outbound queue for every workflow, and this one
+     touches contracts and nothing else. Different blast radius. (Its guard test
+     greps this file for its own name, so it is described here rather than
+     named — the guard is right to be that blunt.)
+
+     The chaser also runs today WITHOUT Inngest, through
+     /api/contracts { action: "run_reminders" } — see its header. */
+  contractChaser,
+
+  /* THE OUTBOUND DRAIN. Registered 2026-08-02, and it is the reason any client
+     email leaves this platform at all — twenty-six workflows queue mail and
+     until now nothing drained the queue.
+
+     REGISTERING IT IS NOT THE SWITCH. The switch is per company and lives in
+     messaging_settings.outbound_enabled (119), visible and changeable in the
+     CRM; src/messaging/outbox.mjs enforces it and a daily cap on every pass,
+     scheduled or manual. The compliance gate runs on every message underneath
+     both. And with no provider credentials nothing leaves whatever any of it
+     says — that is the real control and always was.
+
+     The file's own header carries the full reasoning for what moved. */
+  messageDispatchSweeper,
   c00CrsSoftPullRequest,
   c02InquiryCreated,
   c02bInquiryRemovalRequested,

@@ -133,6 +133,8 @@ flowchart LR
 | `invoice.sent` | commission + billing | — | 0 |
 | `invoice.paid` | commission + billing | — | 0 |
 | `invoice.voided` | commission + billing | — | 0 |
+| `contract.sent` | contracts | — | 0 |
+| `contract.signed` | contracts | — | 0 |
 
 An event with no handler and no function is declared but inert — it can be emitted and stored,
 and nothing happens. That is a real state in this repo, not an omission in the diagram.

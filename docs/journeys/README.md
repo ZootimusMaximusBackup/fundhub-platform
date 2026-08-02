@@ -19,20 +19,20 @@ against what it was *meant* to do. These pages are a mirror, not a test.
 
 | Journey | Who that is in the code | Reach |
 |---|---|---|
-| [client](./client-actual.md) | `client` | reaches 14 of 84 routes |
-| [role-owner](./role-owner-actual.md) | `owner` | reaches 84 of 84 routes |
-| [role-sales-manager](./role-sales-manager-actual.md) | `sales_manager` | reaches 67 of 84 routes |
-| [role-closer](./role-closer-actual.md) | `closer` | reaches 55 of 84 routes |
-| [role-funding-advisor](./role-funding-advisor-actual.md) | `funding_advisor` | reaches 56 of 84 routes |
-| [role-inquiry-remover](./role-inquiry-remover-actual.md) | `inquiry_specialist` | reaches 55 of 84 routes |
-| [affiliate](./affiliate-actual.md) | `affiliate` | reaches 10 of 84 routes |
-| [white-label](./white-label-actual.md) | `partner` | reaches 21 of 84 routes |
+| [client](./client-actual.md) | `client` | reaches 15 of 88 routes |
+| [role-owner](./role-owner-actual.md) | `owner` | reaches 88 of 88 routes |
+| [role-sales-manager](./role-sales-manager-actual.md) | `sales_manager` | reaches 71 of 88 routes |
+| [role-closer](./role-closer-actual.md) | `closer` | reaches 59 of 88 routes |
+| [role-funding-advisor](./role-funding-advisor-actual.md) | `funding_advisor` | reaches 60 of 88 routes |
+| [role-inquiry-remover](./role-inquiry-remover-actual.md) | `inquiry_specialist` | reaches 59 of 88 routes |
+| [affiliate](./affiliate-actual.md) | `affiliate` | reaches 11 of 88 routes |
+| [white-label](./white-label-actual.md) | `partner` | reaches 22 of 88 routes |
 
 ## What was found while generating these
 
-- **84 routes** are reachable in total.
+- **88 routes** are reachable in total.
 - **0 routes have gates that could not be traced.** Every gate resolved to its source.
-- **7 routes are genuinely open** (signing in, signing out, "who am I", and the health check).
+- **8 routes are genuinely open** (signing in, signing out, "who am I", and the health check).
 - **3 routes need no sign-in but are not open** — a signed link, a provider signature, and Inngest's own request signing. Anyone may call them; the wrong signature is refused.
 - **`role-sales-manager` is built.** It was tracked in `CLAUDE.md` §4 with nothing behind
   it until 2026-08-01, when the owner directed the build (Ticket 8). The role now carries a

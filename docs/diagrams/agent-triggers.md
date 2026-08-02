@@ -3,7 +3,7 @@
 # Agent trigger map
 
 Which canonical event wakes which automation. "Agent" here means a registered Inngest function —
-the 47 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
+the 49 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
 (The AG-xx prompt-driven agents in `wireframes/agent-editor.html` are a UI mock with no code behind
 them yet, and are deliberately not drawn here.)
 
@@ -121,6 +121,8 @@ Declared in `canonical.mjs`, emitted or emittable, with no Inngest function list
 - `invoice.sent`
 - `invoice.paid`
 - `invoice.voided`
+- `contract.sent`
+- `contract.signed`
 
 Some are handled synchronously by a bus handler instead (see [event-flow](./event-flow.md)); the
 commission and billing events are proposed-but-unbuilt. Either way, nothing durable reacts to them.

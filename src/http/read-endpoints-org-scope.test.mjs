@@ -59,6 +59,17 @@ const NO_ORG_COLUMN = new Map([
      Verified by reading both files, not assumed from the filename. */
   ["tradelines.mjs", "scoped in src/tradelines/store.mjs listTradelines(), which throws without an org"],
   ["finance-os.mjs", "scoped in src/tradelines/store.mjs listTradelines(), which throws without an org"],
+  /* Writes no SQL of its own either. All four of its reads go through
+     src/contracts/: listTemplates() and listContracts() THROW without an org
+     (src/contracts/templates.mjs, src/contracts/send.mjs), and getTemplate()
+     and getContract() bind `org_id = $2::uuid`, where a NULL matches no row —
+     so both shapes fail CLOSED. The handler additionally refuses a session with
+     no org with a 400 before any branch runs. Unlike its two neighbours above,
+     the outcome is also proved against a real second company with real sessions
+     in src/http/contracts-endpoints.pg.test.mjs ("one company cannot reach
+     another company's contracts"), rather than argued from the source. Verified
+     by reading the files, not assumed from the filename. */
+  ["contracts.mjs", "scoped in src/contracts/: the list functions throw without an org, the id lookups bind org_id = $2"],
 ]);
 
 /* An allow-listed endpoint must still prove it hands the SESSION's org to

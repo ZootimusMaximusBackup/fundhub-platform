@@ -28,87 +28,40 @@ First attempt (session 1) aborted on conflict and was skipped. Retried in sessio
 - Pushed to `main` as commit `8254e20`.
 - Branch delete: not attempted this session (same 403 policy block as branch 1 — no reason to expect a different result; not re-tested to avoid burning another blocked call).
 
-## 3. claude/crm-contract-generator-elsk3q — STILL-CONFLICTED-LOGGED-FOR-REVIEW
+## 3. claude/crm-contract-generator-elsk3q — MERGED-WITH-RESOLUTION (storage decision made by the owner)
 
-First attempt (session 1) aborted on conflict and was skipped. Retried in session 2:
+Two prior attempts stopped here: session 1 aborted on the first conflict wave; session 2 got further, hand-resolved everything except `src/documents/store.mjs`, and logged both full versions of the conflicting `providerFromEnv()` rewrite rather than guess which one to keep (that log entry is preserved in git history — commit `ba7221f` — for anyone who wants the original side-by-side). Session 3 carries an explicit owner decision:
 
-- Manifest/doc conflicts (`db/expected-migrations.mjs`, `docs/journeys/CHANGELOG.md`, `docs/journeys/README.md` + `*-actual.md`, `netlify/functions/api.mjs` imports, `package.json` dependency block) were all resolved cleanly — additive, both sides kept, journey docs regenerated via `npm run journeys`.
-- **Migration number collisions found and fixed**: incoming `117_contracts.sql`, `118_contract_esign.sql`, `119_outbound_switch.sql` all collided with numbers already taken on `main` (117/118 by branch 1+2, and a hypothetical 119 would have collided with nothing yet but was renumbered to stay sequential). Renumbered to `119_contracts.sql`, `120_contract_esign.sql`, `121_outbound_switch.sql`. Updated every reference across `src/workflows/message-dispatch-sweeper.mjs`, `src/contracts/tamper.pg.test.mjs`, `src/contracts/templates.mjs`, `src/contracts/signed-link.mjs`, `src/contracts/send.mjs`, `src/contracts/render.mjs`, `src/documents/store.mjs`, `db/expected-migrations.mjs`, `docs/journeys/CHANGELOG.md`, `docs/CONTRACTS-SPEC.md`. Also noted a same-number-different-name seed collision (`db/seed/007_portal_magic_link_template.sql` from branch 2 vs. `db/seed/007_contract_templates.sql` from this branch) — left as-is because `db/migrate.mjs` keys seeds by full filename, not by number, so this is not an actual tracking-table collision, just a coincidental shared prefix.
-- **Genuine logic conflict — not resolved, this is why the branch is skipped.** `src/documents/store.mjs`'s `providerFromEnv()` function (and its `PROVIDERS` registry two lines above it) was rewritten two different, incompatible ways by branch 2 and this branch:
+> main's current `providerFromEnv()` (from the already-merged uploads branch — netlify-blobs, `DOCUMENT_STORE_PROVIDER` env var authoritative, memory as fallback) is the ONLY storage layer in this repo. Discard branch 3's competing rewrite entirely.
 
-  **`main` side (from branch 2, client-file-uploads):**
-  ```js
-  export const PROVIDERS = Object.freeze({
-    memory: memoryProvider,
-    "vercel-blob": vercelBlobProvider,
-    "netlify-blobs": netlifyBlobsProvider
-  });
+**Storage resolution — `src/documents/store.mjs`:**
 
-  /**
-   * providerFromEnv — DOCUMENT_STORE_PROVIDER selects; memory is the default so
-   * an unconfigured environment runs instead of exploding. Production must set
-   * this explicitly; storeFromEnv() warns once if it has not.
-   *
-   * When the selection resolves to "memory" and the caller did not pass its own
-   * `opts.objects`, this hands memoryProvider() ONE Map shared for the life of
-   * the process (see storeMemoryObjects below) rather than a fresh one per
-   * call. ...
-   */
-  export function providerFromEnv(env = process.env, opts = {}) {
-    const explicit = env.DOCUMENT_STORE_PROVIDER;
-    if (explicit) {
-      const factory = PROVIDERS[explicit];
-      if (!factory) {
-        throw new Error(
-          `unknown DOCUMENT_STORE_PROVIDER "${explicit}" — expected one of ${Object.keys(PROVIDERS).join(", ")}`);
-      }
-      return factory(opts);
-    }
-    if (name === "memory" && !opts.objects) {
-      return factory({ ...opts, objects: storeMemoryObjects() });
-    }
-    return factory(opts);
-  }
-  ```
+- Replaced the entire conflicted `PROVIDERS` / `providerFromEnv()` block with `main`'s version verbatim (byte-for-byte from `git show :2:src/documents/store.mjs`) — no blending, no partial adoption of the auto-infer/`vercel-blob`/`postgres` design.
+- Deleted the `postgresProvider()` function entirely (58 lines, its own doc comment included) — it existed only to back the discarded auto-selection policy and had no other caller anywhere in the codebase (verified with a repo-wide grep after deletion).
+- **`db/migrations/118_contract_esign.sql`** (renumbered to `125_contract_esign.sql`, see below) had its own section 4 — `CREATE TABLE document_blobs` plus a grant statement — removed. That table existed only to back `postgresProvider()`. Section 5 (`fields` joins the frozen set) renumbered to section 4 in the file's own internal headers. Nothing else in the migration changed: `contract_templates`, `contracts`, and `contract_signers` all still reference `documents`/`document_versions` (030), which was always the storage-agnostic path — contracts never actually wrote to `document_blobs` directly.
+- Searched every contract call site (`src/contracts/upload.mjs`, `sign.mjs`, `send.mjs`) for its own storage calls: all three already went through `storeFromEnv()` in `src/documents/store.mjs` — the same shared module uploads uses, not a second abstraction. **No call-site rewrites were needed** — the only genuinely competing code was the `providerFromEnv()` rewrite and the now-deleted Postgres provider/table. Fixed the stale doc comments in `upload.mjs` and `docs/CONTRACTS-SPEC.md` §17 (and its §14 summary table row) that described the discarded Vercel-Blob-with-Postgres-fallback design; they now describe the actual merged behavior and record why the original draft was discarded, for anyone reading the spec later.
 
-  **incoming side (crm-contract-generator):**
-  ```js
-  export const PROVIDERS = Object.freeze({
-    memory: memoryProvider,
-    postgres: postgresProvider,
-    "vercel-blob": vercelBlobProvider
-  });
+**New conflict this session, not seen in either prior attempt** — an **add/add collision on `api/messages.mjs` itself**. Branch 3 and the already-merged staff-reply-inbox branch (#5) each independently wrote a file at that exact path for two unrelated features: #5's is a staff member's direct reply to a client conversation (`POST /api/messages`, routed as `"messages"`); branch 3's is the outbound-mail admin panel (`status`/`dispatch`/`settings`/`email_invoice`/`email_invoice_backlog` actions, also routed as `"messages"`). Diffed both versions in full — genuinely different features, not two takes on the same behavior, so this is a naming collision rather than a logic contradiction, resolved the same way a colliding migration number would be:
 
-  /**
-   * providerFromEnv — DOCUMENT_STORE_PROVIDER selects. When it is UNSET, the
-   * choice follows what is actually configured, in this order:
-   *
-   *   BLOB_READ_WRITE_TOKEN set  → vercel-blob   (the owner's chosen store)
-   *   DATABASE_URL set           → postgres      (works today, no vendor needed)
-   *   neither                    → memory        (unit tests; nothing survives)
-   *
-   * NAMING THE PROVIDER EXPLICITLY STILL WINS, always. ...
-   */
-  export function providerFromEnv(env = process.env, opts = {}) {
-    const explicit = env.DOCUMENT_STORE_PROVIDER;
-    if (explicit) {
-      const factory = PROVIDERS[explicit];
-      if (!factory) {
-        throw new Error(
-          `unknown DOCUMENT_STORE_PROVIDER "${explicit}" — expected one of ${Object.keys(PROVIDERS).join(", ")}`);
-      }
-      return factory(opts);
-    }
-    if (env.BLOB_READ_WRITE_TOKEN) return vercelBlobProvider(opts);
-    if (env.DATABASE_URL) return postgresProvider(opts);
-    return memoryProvider(opts);
-  }
-  ```
+- Kept `api/messages.mjs` as `main`'s (#5's) version unchanged.
+- Moved branch 3's version to a new file, `api/messages-outbound.mjs`, and registered it under a new route key, `"messages-outbound"`, instead of `"messages"`.
+- Updated every reference to the old path/route: `netlify/functions/api.mjs` (import + `ROUTES` entry, with a comment explaining the rename), `public/app/ops-admin.html` (the outbound-mail panel's two `FHData.write("/api/messages", …)` calls), `src/workflows/message-dispatch-sweeper.mjs` (a comment), and the two changelog entries that named the old path (see below).
+- No behavior changed on either side — same handlers, same actions, same role gates, different path.
 
-  These are not adjacent/additive — they're two full rewrites of the same function with different auto-selection rules and different provider registries (`netlify-blobs` on one side, `postgres` on the other; the HEAD side also references a `name` variable that isn't shown in this hunk, meaning it wasn't even a self-consistent replacement in isolation). Picking one silently discards the other branch's provider-selection design decision — a call only a human should make, not something to guess from the diff. Per instructions, this is a genuinely contradictory rewrite, not a mergeable adjacency, so this branch was **left unmerged** rather than force-resolved.
-- Suite: not run — merge reset before commit (only the `src/documents/store.mjs` hunk actually blocked; every other conflict in this branch was already resolved when the store.mjs conflict was found, but nothing was committed).
-- Action: reverted the in-progress merge (`git checkout HEAD -- .` + `git reset HEAD -- .` + moved the newly-added untracked files for this branch out of the worktree — `git merge --abort` itself failed because working-tree edits made during conflict resolution left the index "not up to date"; the revert sequence achieves the same result). `main` left at `8254e20`. Branch not deleted, not merged.
-- **What a human needs to decide before this can merge**: which provider auto-selection policy wins — branch 2's "always default to memory unless DOCUMENT_STORE_PROVIDER is explicitly set" (with the netlify-blobs provider in the registry), or this branch's "infer vercel-blob / postgres / memory from what's configured" (with the postgres provider in the registry, no netlify-blobs). Both provider lists probably need to end up merged (`memory`, `postgres`, `vercel-blob`, `netlify-blobs` all present) once the auto-selection logic is decided.
+**Migration number collisions found and fixed** (main's max was `123` going into this merge): incoming `117_contracts.sql`, `118_contract_esign.sql`, `119_outbound_switch.sql` all collided. Renumbered to `124_contracts.sql`, `125_contract_esign.sql`, `126_outbound_switch.sql`. Updated every reference across `src/workflows/message-dispatch-sweeper.mjs`, `src/contracts/tamper.pg.test.mjs`, `src/contracts/templates.mjs`, `src/contracts/signed-link.mjs`, `src/contracts/send.mjs`, `src/contracts/render.mjs`, `public/app/contracts.html`, `db/expected-migrations.mjs`, `docs/journeys/CHANGELOG.md`, `docs/CONTRACTS-SPEC.md`. Regenerated `db/expected-migrations.mjs` with `npm run migrations:manifest` afterward — matched the hand-resolution exactly. Noted, not renumbered: `db/seed/007_contract_templates.sql` shares its numeric prefix with branch 2's `db/seed/007_portal_magic_link_template.sql`; `db/migrate.mjs` keys seeds by full filename, not by number, so this is not an actual tracking-table collision.
+
+**Manifest/doc conflicts** (`db/expected-migrations.mjs`, `docs/journeys/CHANGELOG.md`, `docs/journeys/README.md` + all `*-actual.md`, `netlify/functions/api.mjs` imports, `package.json`, `package-lock.json`) all resolved additively — both sides kept, journey docs regenerated via `npm run journeys`, `package-lock.json` regenerated via `npm install` rather than hand-merged.
+
+**`package.json` dependency conflict**: kept `@netlify/blobs` (main's), **dropped** `@vercel/blob` as a hard dependency. Consistent with the storage decision — main deliberately keeps `@vercel/blob` as a lazily `import()`-ed, optional SDK (see `store.mjs`'s own header: "package.json is owned by..."), never a hard dependency, so it doesn't install at all until an operator actually configures Vercel Blob. `pdf-lib` and `pdfjs-dist` (branch 3's real, non-storage-related new dependencies for PDF handling) were kept — those were never part of the conflict.
+
+**Caught by the suite, not by inspection**: `src/messaging/staff-sweeper.pg.test.mjs` had one failing assertion — `sweeper: turning it on did not turn the workflow engine on` asserted `message-dispatch-sweeper` was NOT in `src/workflows/index.mjs`'s registry. Branch 3 registers it, with its own header explaining why in full ("IT IS NOW REGISTERED. WHAT CHANGED, AND WHY") — the earlier "stays unregistered" design was superseded by a per-company DB switch (`messaging_settings.outbound_enabled`, 126) plus a daily send cap, both independent of `INNGEST_EVENT_KEY`. This is a branch's own documented, reasoned design evolution, not a same-behavior contradiction to guess at — updated the test (renamed it, rewrote its assertion and comment) to check the function IS registered, keeping the still-valid half of the original test (the standalone Netlify-scheduled sweeper imports no Inngest code).
+
+- Suite before this merge: 4615 tests, 4087 pass, 0 fail (main after merge #6).
+- Suite after merge (post test-fix): 4792 tests, 4264 pass, 0 fail, 528 skipped.
+- Lint: clean (763 files). `src/http/routes.test.mjs`: 14/14 pass.
+- Playwright: **not run**, on explicit user instruction ("token budget is constrained today") — this branch adds/touches contract screens (`public/app/contracts.html`, `public/contract.html`) and the ops-admin outbound-mail panel, none of which have any Playwright spec regardless (the only spec file in the repo, `e2e/messaging-inbox.spec.mjs`, covers the messaging inbox only). Logged as owed, same as merge #6's incomplete run — no Playwright pass exists for contracts, ops-admin, or any screen either of these two merges touched.
+- Pushed to `main` — see commit hash in the summary below.
+- Branch delete: not attempted (same 403 policy block expected from prior sessions).
 
 ## 4. claude/commas-payment-links-crm-ri0yhk — MERGED-WITH-RESOLUTION
 
@@ -163,13 +116,15 @@ Retried against `main` at `ddd153b` (after merge #5). Only one conflict this tim
 - Pushed to `main` — see commit hash in the summary below.
 - Branch delete: not attempted (same 403 policy block expected).
 
-## Summary (session 2, final)
+## Summary (final — all six branches resolved)
 
-- Merged: 5 of 6 — portal-magic-link-auth (clean), client-file-uploads, commas-payment-links-crm, staff-reply-inbox, journey-pipeline-crm-finishing (each with a migration renumber and, for three of them, a regenerated `db/expected-migrations.mjs`/journey docs).
-- Blocked on a real decision: 1 of 6 — crm-contract-generator. `src/documents/store.mjs`'s `providerFromEnv()` was rewritten two incompatible ways by two different already-merged branches (branch 2's memory-default policy with a `netlify-blobs` provider vs. this branch's BLOB_READ_WRITE_TOKEN/DATABASE_URL-sniffing policy with a `postgres` provider). This is a genuine product decision — which document-storage backend and auto-selection order wins — not something inferrable from the diff. Full text of both versions is under section 3 above. **This is the one thing that needs a human call before the sixth branch can merge.**
-- `main` HEAD after this session: `141895d`, pushed to origin.
-- COMPLIANCE REVIEW REQUIRED is flagged on merge #5 (staff-reply-inbox) per CLAUDE.md §7 — first path in the repo where a staff member's free-form text reaches a consumer. Marker carried forward as owner-set, not re-argued.
-- `node_modules` (tracked Mac-path symlink): never committed as deleted, across all five merges this session. `npm install` was used locally each time to get a real `node_modules` for lint/test, then the tracked symlink was restored with `git checkout -- node_modules` (or, when merge staged its deletion, `git restore --staged node_modules && git checkout HEAD -- node_modules`) before every commit.
-- Migration numbering, final state: `main` now tops out at `123_journey_copy_double_brace.sql`. Every migration-number collision hit this session (five separate branches, five separate collisions, one branch with three colliding files) was caused by every feature branch being cut from the same pre-portal-auth commit and independently claiming `117` (or `117`–`119`) for its own first new migration. `db/expected-migrations.mjs` is regenerable with `npm run migrations:manifest` — worth remembering next time this many branches land in one sitting, since hand-merging its conflict block correctly (in the right order) is the one step that produced a real, if shallow, test failure this session (caught and fixed, see merge #4).
-- Branch deletion: not attempted for any of the five merged branches. The one attempt made (branch 1, session 1) returned `HTTP 403` from the outbound proxy — network policy in this hosted environment blocks GitHub branch-delete calls the same way it blocks `api.netlify.com`/`api.supabase.com` (CLAUDE.md §11). All five merged branches are still on origin and need deleting from an unrestricted environment or by a human.
-- Playwright (CLAUDE.md §6 gate 4): the only spec file in the repo (`e2e/messaging-inbox.spec.mjs`) was added by merge #5 itself — there was no Playwright config or spec anywhere before that (this branch's own changelog entry says so). So it could not be run at all for merges #1/#2/#4, even though #2 and #4 both touch UI (`client-control-panel.html`/`client-portal.html`, and `subscriptions.html`) — there is simply no browser-level spec covering those screens yet. It ran to completion once, for #5 (18/18 pass, the spec's own screen). For #6 it was started and then stopped mid-run on explicit user instruction before finishing, so #6 shipped without a completed Playwright pass. **Gap for a human to note**: uploads, payment-links, and every screen #6 touches (agent-editor, automations, client-control-panel, command-center, finance-os, journeys, pipeline, template-editor) shipped with no completed Playwright coverage; only the messaging inbox has a passing run on record.
+- Merged: 6 of 6. portal-magic-link-auth (clean), client-file-uploads, commas-payment-links-crm, staff-reply-inbox, journey-pipeline-crm-finishing, crm-contract-generator (each with a migration renumber; four of them also needed a regenerated `db/expected-migrations.mjs`/journey docs).
+- The one blocker (branch 3's `src/documents/store.mjs` storage-design conflict) was resolved by an explicit owner decision: main's `netlify-blobs`/env-var-authoritative `providerFromEnv()` is the only storage layer in this repo. Branch 3's competing auto-infer/`vercel-blob`/`postgres` rewrite was discarded in full — the function, the `PROVIDERS` registry entry, the `postgresProvider()` implementation, and the `document_blobs` table it backed are all gone. Contracts already stored files through the shared `storeFromEnv()` path, so no call-site rewrites were needed beyond fixing stale doc comments. Full account under section 3 above.
+- A second, previously-unseen conflict surfaced during branch 3's merge: an add/add collision where branch 3 and the already-merged branch 5 each wrote an unrelated feature to the same path, `api/messages.mjs`. Resolved by renaming branch 3's file/route to `api/messages-outbound.mjs` / `"messages-outbound"`, the same treatment as a colliding migration number — no feature dropped, no logic merged, just a path collision resolved.
+- One test failure surfaced by the suite itself (not by inspection): branch 3 deliberately registers `message-dispatch-sweeper` in the Inngest workflow registry, with its own header explaining why that supersedes branch 5's earlier "leave it unregistered" design (a per-company DB switch plus a daily cap replaced "not registered at all" as the safety mechanism). Updated the one test asserting the old behavior to match the branch's own documented reasoning, rather than reverting the registration or leaving the suite red.
+- `main` HEAD, final: see the last commit on `main` after this push (recorded below once pushed).
+- COMPLIANCE REVIEW REQUIRED is flagged on merge #5 (staff-reply-inbox, CLAUDE.md §7 — first path in the repo where a staff member's free-form text reaches a consumer) and was already present in branch 3's own migration comments (§7 marker on `125_contract_esign.sql` — signature capture on legally operative documents). Both carried forward as owner-set markers, not re-argued.
+- `node_modules` (tracked Mac-path symlink): never committed as deleted, across all six merges across three sessions. `npm install` was used locally each time to get a real `node_modules` for lint/test, then the tracked symlink was restored with `git checkout -- node_modules` (or, when a merge staged its deletion, `git restore --staged node_modules && git checkout HEAD -- node_modules`) before every commit.
+- Migration numbering, final state: `main` tops out at `126_outbound_switch.sql`. Every one of the six branches independently claimed `117` (or `117`–`119`) for its own first new migration, because all six were cut from the same pre-portal-auth commit — six branches, six renumbering passes, one with three colliding files at once (branch 3). `db/expected-migrations.mjs` is regenerable with `npm run migrations:manifest`; hand-merging its conflict block correctly (right content, right order) is the one step that produced real if shallow test failures twice across this merge run (branches 4 and — indirectly, via the sweeper registration change — 3).
+- Branch deletion: not attempted for five of the six merged branches (this session skipped a redundant attempt); the one attempt made (branch 1, session 1) returned `HTTP 403` from the outbound proxy — network policy in this hosted environment blocks GitHub branch-delete calls the same way it blocks `api.netlify.com`/`api.supabase.com` (CLAUDE.md §11). All six merged branches are still on origin and need deleting from an unrestricted environment or by a human.
+- Playwright (CLAUDE.md §6 gate 4) — the one item genuinely left undone, on explicit user instruction to skip it for token-budget reasons on both branch 6 and branch 3: the only spec file in the repo (`e2e/messaging-inbox.spec.mjs`) was added by merge #5 and covers only the messaging inbox. It ran to completion once (18/18 pass, merge #5). Merges #2 and #4 predate the spec entirely and were never coverable. Merge #6 (seven screens: agent-editor, automations, client-control-panel, command-center, finance-os, journeys, pipeline, template-editor) was started and stopped mid-run before finishing. Merge #3 (contract screens, ops-admin outbound panel) was never started at all, per instruction. **Net gap for a human**: only the messaging inbox has a completed Playwright pass on record; every other screen shipped across all six branches — uploads, payment links, contracts, ops-admin outbound mail, and all seven journey/pipeline screens — has no browser-level test coverage at all, not merge-specific incompleteness but an absence of specs.

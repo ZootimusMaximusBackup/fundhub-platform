@@ -111,6 +111,10 @@ import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
 import documentsUpload from "../../api/documents-upload.mjs";
 import paymentLinks from "../../api/payment-links.mjs";
+import contracts from "../../api/contracts.mjs";
+import readContracts from "../../api/read/contracts.mjs";
+import contractsSign from "../../api/contracts/sign.mjs";
+import messagesOutbound from "../../api/messages-outbound.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -467,7 +471,79 @@ export const ROUTES = {
   // behind it transmits: checkout_url is built by pure URL construction
   // (src/adapters/commas.mjs buildCommasCheckoutUrl), never a live Commas API
   // call. Routed in the same commit as the handler and the migration.
-  "payment-links": paymentLinks
+  "payment-links": paymentLinks,
+
+  // ── The contract generator (124_contracts.sql, src/contracts/) ─────────────
+  //
+  // Routed in the SAME COMMIT as the handlers, the migration and both screens.
+  // This map's header records three features that were built end to end and
+  // shipped unreachable because nobody added the line here; a contract link that
+  // 404s is the worst version of that failure, because the person hitting it is
+  // a client who was told to sign something and cannot.
+  //
+  // THE THREE GATES ARE DIFFERENT AND MUST NOT BE MADE UNIFORM.
+  //
+  // "contracts" is the staff write surface, ROLE_SETS.STAFF — plus a NARROWER
+  // owner/admin check inside the handler for the four actions that write
+  // contract wording or void a contract. Contract copy carries legal weight and,
+  // unlike message copy, has no second approval step downstream to catch a bad
+  // edit; the words go straight onto a document somebody signs. Sending is
+  // ordinary staff work and stays STAFF. public/app/contracts.html mirrors that
+  // split by hiding one card, the same one-screen-two-gates shape
+  // template-editor.html already uses.
+  //
+  // "read/contracts" is ROLE_SETS.STAFF, the same set that already reads a
+  // client's tradelines and bank balances. It exposes nothing narrower.
+  //
+  // "contracts/sign" IS NOT ROLE GATED AND TAKES NO SESSION AT ALL. That is the
+  // point of it: the caller is a consumer who has never signed in. Auth is the
+  // HMAC on the link (src/contracts/signed-link.mjs), exactly as
+  // api/documents/[id].mjs does it — fail closed with no secret, constant-time
+  // comparison, and one undifferentiated 404 for a forged link, an unknown id
+  // and a draft, so it cannot be used as an oracle for which contracts exist.
+  //
+  // NOTHING BEHIND ANY OF THE THREE TRANSMITS. `send` freezes the wording,
+  // registers an immutable document version, and returns a link for a staff
+  // member to pass on by hand. There is no email and no provider call:
+  // src/messaging/providers/* is the only place outbound fetch may be added
+  // (CLAUDE.md §12), and docs/CONTRACTS-SPEC.md §12 records that gap rather than
+  // working around it.
+  "contracts": contracts,
+  "read/contracts": readContracts,
+  "contracts/sign": contractsSign,
+
+  // ── The outbound queue ─────────────────────────────────────────────────────
+  //
+  // THE ROUTE THAT MAKES THIS PLATFORM ABLE TO EMAIL ANYBODY. Twenty-six
+  // workflows call sendTemplated(); every one writes a queued `messages` row;
+  // and until this endpoint existed nothing ever drained that queue. The
+  // dispatcher's own header records it: "dispatchDue() runs when something
+  // calls it, and today nothing does." Every client email this platform ever
+  // composed was sitting in a table, invisibly.
+  //
+  // `status` is ROLE_SETS.STAFF — whether mail is going out is operational
+  // visibility, the same class as read/workflows. Everything else is
+  // OWNER/ADMIN and the split lives inside the handler: draining the queue,
+  // pausing sending and mailing an invoice backlog all put mail in front of
+  // real people in bulk.
+  //
+  // THE SWITCH IS A ROW, NOT AN ENV VAR. messaging_settings.outbound_enabled
+  // (119) is per company, visible in the CRM and attributed to whoever changed
+  // it. src/messaging/outbox.mjs enforces it and a daily cap on every pass,
+  // scheduled or manual, and the compliance gate still runs on every single
+  // message underneath both. With no provider credentials nothing leaves
+  // whatever any of it says — that is the real control and always was.
+  //
+  // Nothing behind this route transmits directly: outbound fetch lives in
+  // src/messaging/providers/* and nowhere else (CLAUDE.md §12).
+  //
+  // ROUTED AS "messages-outbound", NOT "messages": the already-merged
+  // staff-reply-inbox branch claims "messages" for a staff member's direct
+  // reply to a client conversation. Both branches independently built a
+  // handler named api/messages.mjs for two entirely different features; this
+  // one was renamed at merge time rather than either feature being dropped
+  // or the two being forced into one file. See docs/MERGE-LOG.md section 3.
+  "messages-outbound": messagesOutbound
 
   /* NOT ROUTED, ON PURPOSE — see ALLOWED_UNROUTED in src/http/routes.test.mjs
      for the current list and the reason attached to each entry. That list is

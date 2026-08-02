@@ -17,7 +17,8 @@
 // where this repo's browser logic lives, none of it is imported by a test, and
 // a screen with a syntax error renders as a blank page under a green suite.
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, writeFileSync, unlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, extname } from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -67,12 +68,30 @@ for (const file of files) {
       const body = block.replace(/^<script[^>]*>/i, "").replace(/<\/script>$/i, "");
       if (!body.trim()) return;
       checked++;
+      /* A MODULE BLOCK CANNOT BE CHECKED WITH new Function(). `import` is a
+         syntax error outside a module, so every <script type="module"> was
+         reported as broken — which arrived the day public/contract.html started
+         importing the vendored pdf.js. Module blocks go to `node --check`
+         through a temp .mjs file instead, which is the same check every .mjs in
+         the repo already gets. */
+      const isModule = /^module$/i.test(type || "");
       try {
-        // Wrapped, because a top-level `return` is legal inside the IIFEs these
-        // screens use and is a syntax error at the top level of a check.
-        new Function(body);
+        if (isModule) {
+          const tmp = join(tmpdir(), `fh-lint-${process.pid}-${checked}.mjs`);
+          try {
+            writeFileSync(tmp, body);
+            execFileSync(process.execPath, ["--check", tmp], { stdio: "pipe" });
+          } finally {
+            try { unlinkSync(tmp); } catch { /* best effort */ }
+          }
+        } else {
+          // Wrapped, because a top-level `return` is legal inside the IIFEs these
+          // screens use and is a syntax error at the top level of a check.
+          new Function(body);
+        }
       } catch (e) {
-        failures.push(file.replace(ROOT, "") + " (inline script " + (i + 1) + ")\n  " + e.message);
+        const detail = String((e && e.stderr) || (e && e.message) || e).trim().split("\n").slice(0, 3).join("\n  ");
+        failures.push(file.replace(ROOT, "") + " (inline script " + (i + 1) + ")\n  " + detail);
       }
     });
   }

@@ -106,10 +106,15 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/121_sms_routing_twilio.sql",
   "migrations/122_conversations_activity.sql",
   "migrations/123_journey_copy_double_brace.sql",
+  "migrations/124_contracts.sql",
+  "migrations/125_contract_esign.sql",
+  "migrations/126_outbound_switch.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
+  "seed/007_contract_templates.sql",
   "seed/007_payment_link_template.sql",
-  "seed/007_portal_magic_link_template.sql"
+  "seed/007_portal_magic_link_template.sql",
+  "seed/008_contract_messages.sql"
 ]);
 
 export default EXPECTED_MIGRATIONS;

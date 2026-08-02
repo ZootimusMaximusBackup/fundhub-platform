@@ -1,0 +1,604 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Fundhub — Your document</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!--
+  THE CLIENT SIGNING PAGE.
+
+  IT LIVES AT THE SITE ROOT AND NOT UNDER /app/, AND THAT IS LOAD-BEARING.
+  Every file in public/app/ loads shell.js, which requires a CRM session and
+  bounces anybody without one. The person opening this page has no session and
+  must never be given one — they are a customer, not an employee. So this page
+  carries no shell.js, no data.js (which attaches a staff bearer token to every
+  request), and no reference to anything under /app/.
+
+  ITS ONLY CREDENTIAL IS THE LINK ITSELF. The contract id, the signer id, the
+  expiry and the signature in the address bar are passed straight through to
+  /api/contracts/sign, which verifies the HMAC before it looks anything up.
+
+  IT HOLDS NO COPY OF THE DOCUMENT. The words, the file, the boxes, the sentence
+  next to the checkbox and the names of the other signers all come from the
+  server on load. A page with its own hardcoded paragraph would be a second
+  source of truth for the one string that has to be exact.
+
+  TWO KINDS OF DOCUMENT, ONE PAGE. A typed contract renders as text. An uploaded
+  PDF renders through pdf.js with this signer's boxes laid over the pages at the
+  fractional positions they were placed at. Everything else — the signature
+  capture, the refusals, the record afterwards — is identical for both.
+-->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#0A0A0A;--paper:#FAFAF9;--line:#E4E4E7;--gray:#52525B;--gray2:#A1A1AA;
+      --soft:#F4F4F5;--ok:#A8D8B0;--warn:#F5CE8F;--alert:#F2A69B;--info:#A9C6E8;
+      --sans:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.6;
+     -webkit-font-smoothing:antialiased;padding:0 16px 90px}
+.spectrum{height:3px;background:linear-gradient(90deg,#F2A69B,#F5CE8F,#A8D8B0,#A9C6E8,#C4B3E5);margin:0 -16px}
+.wrap{max-width:880px;margin:0 auto}
+header{padding:26px 0 18px;border-bottom:1px solid var(--line);margin-bottom:20px}
+header .brand{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--gray2)}
+header h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-top:7px}
+header .sub{color:var(--gray);font-size:13px;margin-top:6px}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-family:var(--mono);
+     font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent}
+.b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
+.b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
+.b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
+.b-info{background:rgba(169,198,232,.26);border-color:var(--info);color:#22415F}
+.b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
+.doc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:26px 28px;
+     font-family:var(--mono);font-size:13px;line-height:1.85;white-space:pre-wrap;word-break:break-word}
+.pages{display:flex;flex-direction:column;gap:16px;align-items:center}
+.pagewrap{position:relative;background:#fff;border:1px solid var(--line);border-radius:8px;
+     overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);max-width:100%}
+.pagewrap canvas{display:block;max-width:100%;height:auto}
+.fld{position:absolute;border:2px solid #6C7DD6;background:rgba(169,198,232,.22);border-radius:3px;
+     display:flex;align-items:center;cursor:text}
+.fld.locked{border-style:dashed;border-color:var(--gray2);background:rgba(228,228,231,.55);cursor:default}
+.fld.done{border-color:#4E8B5F;background:rgba(168,216,176,.28)}
+.fld input[type=text]{width:100%;height:100%;border:0;background:transparent;padding:0 4px;
+     font:inherit;font-size:12px;outline:none}
+.fld .lockval{padding:0 4px;font-size:12px;color:var(--gray);overflow:hidden;white-space:nowrap}
+.fld .tag{position:absolute;top:-17px;left:-2px;font-family:var(--mono);font-size:9px;
+     letter-spacing:.08em;text-transform:uppercase;color:#4A57A8;white-space:nowrap;
+     background:var(--paper);padding:0 3px;pointer-events:none}
+.fld.locked .tag{color:var(--gray2)}
+.fld.sig{cursor:pointer;justify-content:center;font-family:'Times New Roman',serif;font-style:italic;
+     font-size:16px;color:#0D1C6B}
+.fld.chk{cursor:pointer;justify-content:center;font-weight:700;font-size:14px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin-top:18px}
+.panel h2{font-size:15px;font-weight:600;margin-bottom:10px}
+label.fl{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+     color:var(--gray);margin-bottom:5px}
+input[type=text]{width:100%;border:1px solid var(--line);border-radius:8px;padding:11px 12px;font:inherit;font-size:16px}
+input[type=text]:focus{outline:none;border-color:var(--gray);box-shadow:0 0 0 3px rgba(169,198,232,.3)}
+.agree{display:flex;gap:11px;align-items:flex-start;margin-top:16px;font-size:13.5px;line-height:1.55}
+.agree input{margin-top:3px;width:18px;height:18px;flex:0 0 18px}
+button{border:1px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:8px;
+     padding:13px 22px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;margin-top:18px;width:100%}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--line);font-size:13px;padding:10px 16px}
+.note{color:var(--gray);font-size:12.5px;line-height:1.6;margin-top:12px}
+.msg{margin-top:14px;font-size:13.5px}
+.err{background:rgba(242,166,155,.2);border:1px solid var(--alert);border-radius:8px;padding:14px 16px;
+     color:#6E2A22;font-size:13.5px;line-height:1.6}
+.wait{background:rgba(245,206,143,.2);border:1px solid var(--warn);border-radius:8px;padding:14px 16px;
+     color:#6B4A12;font-size:13.5px;line-height:1.6}
+.okbox{background:rgba(168,216,176,.2);border:1px solid var(--ok);border-radius:8px;padding:16px 18px;
+     color:#2C5138;font-size:14px;line-height:1.65}
+.rec{font-family:var(--mono);font-size:11.5px;color:var(--gray);margin-top:10px;line-height:1.9}
+.who{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.who .p{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:20px;
+     padding:4px 11px;font-size:12px;background:#fff}
+.who .p .d{width:7px;height:7px;border-radius:50%;flex:0 0 7px;background:var(--gray2)}
+.who .p.signed .d{background:#4E8B5F}
+.who .p.now .d{background:#D9A441}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);
+     padding:11px 16px;display:flex;gap:12px;align-items:center;justify-content:center;
+     box-shadow:0 -2px 10px rgba(0,0,0,.05);z-index:50}
+.bar button{margin:0;width:auto;padding:11px 24px}
+.bar .left{flex:1;max-width:520px;color:var(--gray);font-size:12.5px}
+@media print{.panel,.bar,header .sub,.spectrum{display:none}.doc{border:0;padding:0}}
+</style>
+</head><body>
+<div class="spectrum"></div>
+<div class="wrap">
+  <header>
+    <div class="brand">fundhub</div>
+    <h1 id="title">Loading your document…</h1>
+    <div class="sub" id="sub"></div>
+    <div class="who" id="who"></div>
+  </header>
+
+  <div id="problem" style="display:none"><div class="err" id="problemText"></div></div>
+  <div id="waiting" style="display:none"><div class="wait" id="waitingText"></div></div>
+
+  <div id="main" style="display:none">
+    <div class="doc" id="body" style="display:none"></div>
+    <div class="pages" id="pages" style="display:none"></div>
+
+    <div class="panel" id="signPanel" style="display:none">
+      <h2>Sign this document</h2>
+      <div class="note" id="todo" style="margin-top:0;margin-bottom:14px"></div>
+      <label class="fl" for="name">Type your full name</label>
+      <input id="name" type="text" autocomplete="name" placeholder="Your full name">
+      <label class="agree"><input id="agree" type="checkbox"><span id="statement"></span></label>
+      <button id="go" disabled>Sign</button>
+      <button class="ghost" id="declineBtn" type="button">I do not want to sign this</button>
+      <div class="msg" id="msg"></div>
+      <div class="note">
+        When you press Sign we save the exact document above, your name, and the
+        date and time. Your internet address is saved too, as a record of where
+        the signature came from. Nothing is charged and nothing is sent anywhere
+        else.
+      </div>
+    </div>
+
+    <div class="panel" id="donePanel" style="display:none">
+      <div class="okbox" id="doneText"></div>
+      <div class="rec" id="doneRecord"></div>
+      <button class="ghost" id="dlBtn" type="button" style="display:none">Download a copy</button>
+      <div class="note">This page is your copy. You can come back to this link and read it again at any time.</div>
+    </div>
+  </div>
+</div>
+
+<div class="bar" id="bar" style="display:none">
+  <div class="left" id="barText"></div>
+  <button id="barGo" disabled>Sign</button>
+</div>
+
+<script type="module">
+/* pdf.js is VENDORED into this repository (public/vendor/pdfjs) rather than
+   loaded from a CDN. There is no build step here — netlify.toml publishes
+   public/ as-is — so a committed file is the only way a module reaches the
+   browser, and a client signing a contract must not depend on a third-party
+   host being up.
+
+   IT IS THE LEGACY 4.x BUILD, DELIBERATELY. pdf.js 6 calls
+   Map.prototype.getOrInsertComputed, which is far too new for a great many
+   browsers in use today — it threw outright in the Chromium this was tested
+   against. The people opening this page are customers on whatever device they
+   own, so the widest compatible build is the correct one, not the newest.
+
+   Loaded as a module and handed to the classic script below through a global +
+   event, because the rest of this page is deliberately ES5-ish for the same
+   compatibility reason. */
+import * as pdfjsLib from "/vendor/pdfjs/pdf.min.mjs";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/pdf.worker.min.mjs";
+window.__pdfjs = pdfjsLib;
+window.dispatchEvent(new Event("pdfjs-ready"));
+</script>
+
+<script>
+(function () {
+  "use strict";
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  /* The link's parameters are passed through untouched. This page never
+     invents, rewrites or stores them — it is a courier for a credential it does
+     not own. */
+  var qs = location.search;
+  var params = new URLSearchParams(qs);
+  var API = "/api/contracts/sign" + qs;
+  var FILE_API = "/api/contracts/sign" + qs + (qs ? "&" : "?") + "file=1";
+
+  var state = { contract: null, values: {}, rendered: false };
+
+  function problem(text) {
+    $("title").textContent = "This document could not be opened";
+    $("sub").textContent = ""; $("who").innerHTML = "";
+    $("problem").style.display = ""; $("problemText").innerHTML = esc(text);
+    $("main").style.display = "none"; $("bar").style.display = "none";
+    $("waiting").style.display = "none";
+  }
+  function waiting(text) {
+    $("title").textContent = "Not your turn yet";
+    $("sub").innerHTML = '<span class="badge b-warn">waiting</span>';
+    $("waiting").style.display = ""; $("waitingText").innerHTML = esc(text);
+    $("main").style.display = "none"; $("bar").style.display = "none";
+    $("problem").style.display = "none";
+  }
+  function whenText(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    return isNaN(d.getTime()) ? String(iso) : d.toLocaleString();
+  }
+
+  /* Who else is on this document, and where they are up to. Names and states
+     only — never their email addresses, and never their links. */
+  function renderWho(c) {
+    var list = c.signers || [];
+    if (list.length < 2) { $("who").innerHTML = ""; return; }
+    var turnIdx = -1;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].status !== "signed" && list[i].status !== "declined") { turnIdx = i; break; }
+    }
+    $("who").innerHTML = list.map(function (s, i) {
+      var cls = s.status === "signed" ? "signed" : (i === turnIdx ? "now" : "");
+      var word = s.status === "signed" ? "signed"
+        : (s.status === "declined" ? "did not sign" : (i === turnIdx ? "signing now" : "waiting"));
+      return '<span class="p ' + cls + '"><span class="d"></span>' + esc(s.name) +
+        ' <span style="color:var(--gray2)">· ' + esc(s.role_label) + " · " + word + "</span></span>";
+    }).join("");
+  }
+
+  /* ── the pages of an uploaded PDF, with this signer's boxes on them ─────── */
+
+  function waitForPdfjs() {
+    if (window.__pdfjs) return Promise.resolve(window.__pdfjs);
+    return new Promise(function (resolve, reject) {
+      var t = setTimeout(function () {
+        reject(new Error("The document viewer did not load. Please refresh the page."));
+      }, 20000);
+      window.addEventListener("pdfjs-ready", function () { clearTimeout(t); resolve(window.__pdfjs); });
+    });
+  }
+
+  function b64ToBytes(b64) {
+    var raw = atob(b64), out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  function renderPdf(c) {
+    return waitForPdfjs().then(function (pdfjs) {
+      return fetch(FILE_API, { headers: { accept: "application/json" } })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d || d.ok !== true || !d.pdf_base64) {
+            throw new Error("The document could not be loaded. Please refresh the page.");
+          }
+          return pdfjs.getDocument({ data: b64ToBytes(d.pdf_base64) }).promise;
+        })
+        .then(function (doc) {
+          $("pages").innerHTML = "";
+          $("pages").style.display = "";
+          var chain = Promise.resolve();
+          for (var n = 1; n <= doc.numPages; n++) {
+            (function (page) {
+              // Rendered one page after another, not all at once: a long
+              // document on a phone runs out of memory doing them in parallel.
+              chain = chain.then(function () { return renderPage(doc, page, c); });
+            })(n);
+          }
+          return chain;
+        });
+    });
+  }
+
+  function renderPage(doc, n, c) {
+    return doc.getPage(n).then(function (page) {
+      /* 1.35 is readable on a laptop and still legible on a phone once the
+         canvas is scaled down by max-width. The overlay is positioned in
+         PERCENTAGES, so it follows whatever size the canvas ends up being. */
+      var vp = page.getViewport({ scale: 1.35 });
+      var wrap = document.createElement("div");
+      wrap.className = "pagewrap";
+      wrap.style.width = vp.width + "px";
+      var canvas = document.createElement("canvas");
+      canvas.width = vp.width; canvas.height = vp.height;
+      wrap.appendChild(canvas);
+      $("pages").appendChild(wrap);
+      return page.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise
+        .then(function () { overlayFields(wrap, n - 1, c); });
+    });
+  }
+
+  function overlayFields(wrap, pageIndex, c) {
+    (c.fields || []).filter(function (f) { return Number(f.page) === pageIndex; })
+      .forEach(function (f) {
+        var el = document.createElement("div");
+        el.className = "fld" + (f.locked ? " locked" : "") +
+          (f.type === "signature" || f.type === "initials" ? " sig" : "") +
+          (f.type === "checkbox" ? " chk" : "");
+        /* PERCENTAGES, from the same fractions the box was placed at. Nothing
+           here converts to pixels, so the box sits in the same place on every
+           screen and in the finished PDF. */
+        el.style.left = (f.x * 100) + "%";
+        el.style.top = (f.y * 100) + "%";
+        el.style.width = (f.w * 100) + "%";
+        el.style.height = (f.h * 100) + "%";
+        el.setAttribute("data-fid", f.id);
+
+        var tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = f.label + (f.required && !f.locked ? " *" : "");
+
+        if (f.locked) {
+          var v = document.createElement("span");
+          v.className = "lockval";
+          v.textContent = f.value || "";
+          el.appendChild(v);
+        } else if (f.type === "signature" || f.type === "initials") {
+          el.setAttribute("data-sig", "1");
+          el.onclick = function () { $("name").focus(); $("name").scrollIntoView({ block: "center" }); };
+        } else if (f.type === "checkbox") {
+          el.onclick = function () {
+            state.values[f.id] = state.values[f.id] === "true" ? "" : "true";
+            paintField(el, f); check();
+          };
+        } else {
+          var input = document.createElement("input");
+          input.type = "text";
+          input.value = state.values[f.id] || "";
+          input.oninput = function () { state.values[f.id] = input.value; paintField(el, f); check(); };
+          el.appendChild(input);
+        }
+        el.appendChild(tag);
+        wrap.appendChild(el);
+        paintField(el, f);
+      });
+  }
+
+  /* One box's appearance. Signature boxes show the typed name live, so somebody
+     sees their signature appear where it will actually print before they commit
+     to it — which is the whole reassurance a signing page has to give. */
+  function paintField(el, f) {
+    var filled, tag = el.querySelector(".tag");
+    if (f.locked) {
+      filled = true;
+    } else if (f.type === "signature" || f.type === "initials") {
+      var nm = $("name").value.trim();
+      filled = nm.length >= 2;
+      el.textContent = filled ? (f.type === "initials" ? initialsOf(nm) : nm) : "";
+      if (tag) el.appendChild(tag);
+    } else if (f.type === "checkbox") {
+      filled = state.values[f.id] === "true";
+      el.textContent = filled ? "X" : "";
+      if (tag) el.appendChild(tag);
+    } else {
+      filled = String(state.values[f.id] || "").trim() !== "";
+    }
+    el.className = el.className.replace(/ done\b/g, "") + (filled ? " done" : "");
+  }
+
+  function initialsOf(n) {
+    return n.split(/\s+/).map(function (w) { return w.charAt(0) || ""; }).join("").toUpperCase().slice(0, 5);
+  }
+
+  function repaintSignatures() {
+    var c = state.contract; if (!c) return;
+    Array.prototype.forEach.call(document.querySelectorAll(".fld[data-sig]"), function (el) {
+      var id = el.getAttribute("data-fid");
+      var f = (c.fields || []).filter(function (x) { return x.id === id; })[0];
+      if (f) paintField(el, f);
+    });
+  }
+
+  /* ── what still needs doing ─────────────────────────────────────────────── */
+
+  function outstanding() {
+    var c = state.contract; if (!c) return [];
+    return (c.fields || []).filter(function (f) {
+      if (f.locked || !f.required) return false;
+      // A signature box is filled by typing your name below, not separately.
+      if (f.type === "signature" || f.type === "initials") return false;
+      if (f.type === "checkbox") return state.values[f.id] !== "true";
+      return String(state.values[f.id] || "").trim() === "";
+    }).map(function (f) { return f.label; });
+  }
+
+  function check() {
+    var c = state.contract;
+    var nameOk = $("name").value.trim().length >= 2;
+    var left = outstanding();
+    var ready = Boolean(nameOk && $("agree").checked && left.length === 0 && c && c.can_sign);
+    $("go").disabled = !ready;
+    $("barGo").disabled = !ready;
+    $("todo").innerHTML = left.length
+      ? '<span class="badge b-warn">to fill in</span> ' + esc(left.join(", "))
+      : (c && (c.fields || []).length
+          ? '<span class="badge b-ok">all filled in</span> Everything on the document is complete.'
+          : "");
+    $("barText").innerHTML = left.length
+      ? esc(left.length + (left.length === 1 ? " box" : " boxes") + " still to fill in")
+      : (ready ? "Ready to sign." : "Type your name and tick the box to sign.");
+    repaintSignatures();
+  }
+
+  /* ── render ─────────────────────────────────────────────────────────────── */
+
+  function render(c) {
+    state.contract = c;
+    $("main").style.display = "";
+    $("problem").style.display = "none";
+    $("waiting").style.display = "none";
+    $("title").textContent = c.title || "Your document";
+    renderWho(c);
+
+    if (c.source_kind === "pdf") {
+      if (!state.rendered) {
+        state.rendered = true;
+        renderPdf(c).catch(function (e) {
+          $("pages").innerHTML = '<div class="err">' + esc(e.message ||
+            "The document could not be displayed.") + "</div>";
+          $("pages").style.display = "";
+        });
+      }
+    } else {
+      $("body").style.display = "";
+      $("body").textContent = c.body || "";
+    }
+
+    var iSigned = c.signer && c.signer.status === "signed";
+    if (c.status === "signed" || iSigned) {
+      $("signPanel").style.display = "none";
+      $("bar").style.display = "none";
+      $("donePanel").style.display = "";
+      var all = c.status === "signed";
+      $("sub").innerHTML = '<span class="badge ' + (all ? "b-ok" : "b-info") + '">' +
+        (all ? "signed" : "you have signed") + "</span>";
+      $("doneText").textContent = all
+        ? "This document is signed. Nothing else is needed from you."
+        : "Thank you — your signature is saved. We are waiting for the other people to sign.";
+      $("doneRecord").innerHTML = iSigned
+        ? "Signed by " + esc(c.signer.signer_name || c.signer.name) + "<br>On " +
+          esc(whenText(c.signer.signed_at))
+        : "";
+      $("dlBtn").style.display = all ? "" : "none";
+      return;
+    }
+
+    if (c.verified === false) {
+      /* The document on screen does not match what was sent. The page says so
+         before anybody types their name, rather than letting them fill it in
+         and hit a refusal — and it does NOT offer a way to sign anyway. */
+      $("signPanel").style.display = "none";
+      $("bar").style.display = "none";
+      $("sub").innerHTML = '<span class="badge b-alert">cannot be signed</span>';
+      $("problem").style.display = "";
+      $("problemText").innerHTML =
+        "This document does not match the copy that was sent to you, so it " +
+        "cannot be signed. Nothing has been agreed and nothing has been charged. " +
+        "Please contact the person who sent it to you.";
+      return;
+    }
+
+    if (!c.can_sign) {
+      $("signPanel").style.display = "none";
+      $("bar").style.display = "none";
+      $("sub").innerHTML = '<span class="badge b-warn">read only</span>';
+      return;
+    }
+
+    $("sub").innerHTML = '<span class="badge b-info">waiting for your signature</span>' +
+      (c.sent_at ? ' <span style="color:var(--gray);font-size:12.5px">· sent ' + esc(whenText(c.sent_at)) + "</span>" : "");
+    $("signPanel").style.display = "";
+    $("bar").style.display = "";
+    $("statement").textContent = c.signature_statement ||
+      "I have read this document and I agree to it. Typing my name here is my signature.";
+    check();
+  }
+
+  /* ── network ────────────────────────────────────────────────────────────── */
+
+  function load() {
+    if (!params.get("id") || !params.get("sig") || !params.get("exp")) {
+      problem("This link is incomplete. Please ask whoever sent it for a fresh one.");
+      return;
+    }
+    fetch(API, { headers: { accept: "application/json" } })
+      .then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (d) { return { r: r, d: d }; });
+      })
+      .then(function (out) {
+        var d = out.d;
+        if (out.r.status === 410) {
+          problem("This link has expired. Please ask for a new one — nothing has been lost.");
+          return;
+        }
+        if (out.r.status === 404) {
+          problem("This link is not valid. Please check you copied the whole thing, " +
+                  "or ask whoever sent it for a fresh one.");
+          return;
+        }
+        // Sequential signing: somebody ahead of them has not finished. Not an
+        // error — the same link works once it is their turn, and it says so.
+        if (out.r.status === 409 && d && d.error === "not_your_turn") {
+          waiting(d.message || "Somebody else has to sign this first.");
+          return;
+        }
+        if (!d || d.ok !== true) {
+          problem((d && d.message) ||
+            "We could not open this document. Please try again in a few minutes.");
+          return;
+        }
+        render(d.contract);
+      })
+      .catch(function () {
+        problem("We could not reach the server. Please check your connection and try again.");
+      });
+  }
+
+  function sign() {
+    $("go").disabled = true; $("barGo").disabled = true;
+    $("msg").textContent = "signing…";
+    fetch(API, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({
+        signer_name: $("name").value,
+        agreed: $("agree").checked,
+        field_values: state.values
+      })
+    })
+      .then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (d) { return { r: r, d: d }; });
+      })
+      .then(function (out) {
+        var d = out.d;
+        if (!d || d.ok !== true) {
+          $("msg").innerHTML = '<span class="badge b-alert">not signed</span> ' +
+            esc((d && d.message) || "Something went wrong. Please try again.");
+          check();
+          return;
+        }
+        $("msg").textContent = "";
+        render(d.contract);
+        window.scrollTo(0, 0);
+      })
+      .catch(function () {
+        $("msg").innerHTML = '<span class="badge b-alert">not signed</span> ' +
+          "We could not reach the server. Nothing was signed. Please try again.";
+        check();
+      });
+  }
+
+  /* Declining is a real answer, recorded with a reason. Without it, somebody who
+     will not sign simply never comes back and the contract sits in "waiting"
+     forever while staff chase them. */
+  function decline() {
+    var why = window.prompt(
+      "You do not have to sign. Please say why, so the person who sent it knows:");
+    if (why == null || !String(why).trim()) return;
+    fetch(API, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ action: "decline", reason: why })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || d.ok !== true) {
+          $("msg").innerHTML = '<span class="badge b-alert">not recorded</span> ' +
+            esc((d && d.message) || "Please try again.");
+          return;
+        }
+        $("signPanel").style.display = "none";
+        $("bar").style.display = "none";
+        $("sub").innerHTML = '<span class="badge b-gray">not signed</span>';
+        $("donePanel").style.display = "";
+        $("doneText").textContent = d.message;
+        $("doneRecord").innerHTML = "";
+      })
+      .catch(function () {
+        $("msg").innerHTML = '<span class="badge b-alert">not recorded</span> ' +
+          "We could not reach the server. Please try again.";
+      });
+  }
+
+  function download() {
+    fetch(FILE_API, { headers: { accept: "application/json" } })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || d.ok !== true) return;
+        var a = document.createElement("a");
+        a.href = "data:application/pdf;base64," + d.pdf_base64;
+        a.download = d.filename || "contract.pdf";
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+  }
+
+  $("name").addEventListener("input", check);
+  $("agree").addEventListener("change", check);
+  $("go").addEventListener("click", sign);
+  $("barGo").addEventListener("click", sign);
+  $("declineBtn").addEventListener("click", decline);
+  $("dlBtn").addEventListener("click", download);
+  load();
+})();
+</script>
+</body></html>

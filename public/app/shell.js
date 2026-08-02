@@ -56,7 +56,20 @@
        one-screen-two-gates shape finance-os.html uses and this file already
        documents below. Move that gate in api/message-templates.mjs and this
        row has to move with it. */
-    "template-editor.html"
+    "template-editor.html",
+    /* contracts.html is the contract generator — write a contract once, send it
+       to any client, watch it come back signed. None of that needs a developer.
+
+       DELIBERATELY NOT IN OWNER_ADMIN_ONLY, and that is not an oversight — it is
+       the same call template-editor.html one row up already carries, for the
+       same reason. Its read (read/contracts) and its send action are
+       ROLE_SETS.STAFF: a closer sending a funding agreement to the client they
+       are working is the ordinary case this screen exists for. The narrower
+       gates are INSIDE it — writing contract wording and voiding a contract are
+       owner/admin in api/contracts.mjs, and the screen hides those controls from
+       everybody else, the same one-screen-two-gates shape this file documents
+       above. Move a gate there and this row has to move with it. */
+    "contracts.html"
   ];
 
   /* partner-galaxy.html is the white-label partner's own Galaxy — scoped to

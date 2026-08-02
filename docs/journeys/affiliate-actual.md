@@ -34,7 +34,7 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| NONE[Nothing admits this one — every endpoint refuses them]
     NONE --> OPENONLY[Only the routes anyone can reach without signing in]
-    WHO -->|Yes| CANT[Blocked — 74 routes]
+    WHO -->|Yes| CANT[Blocked — 77 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_campaigns[Campaigns — 6 blocked]
@@ -45,13 +45,13 @@ flowchart TD
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_journeys[journeys — 2 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
-    CANT --> B_read[Reading data — 25 blocked]
-    CANT --> B_top_level[Everything else — 11 blocked]
+    CANT --> B_read[Reading data — 26 blocked]
+    CANT --> B_top_level[Everything else — 13 blocked]
 ```
 
 ## What they can reach
 
-**10 of 84 routes.**
+**11 of 88 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -61,6 +61,7 @@ flowchart TD
 | `/api/auth/magic-link-verify` | — | anyone |
 | `/api/auth/reset` | POST | anyone |
 | `/api/auth/session` | — | anyone |
+| `/api/contracts/sign` | GET, POST | anyone |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
@@ -69,12 +70,12 @@ flowchart TD
 ### Worth knowing
 
 - **Nothing admits an `affiliate` specifically** — see the finding above. Every route listed below is one anybody reaches without signing in.
-- **7 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/health`. These are the sign-in routes and the health check.
+- **8 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/contracts/sign`, `/api/health`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**74 of 84 routes.**
+**77 of 88 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -89,6 +90,7 @@ flowchart TD
 | `/api/campaigns/list` | GET | partner, staff |
 | `/api/campaigns/spend` | GET | partner, staff |
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
+| `/api/contracts` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/creative/approvals` | GET | partner, staff |
 | `/api/creative/brand-kits` | GET | partner, staff |
 | `/api/creative/jobs` | GET | partner, staff |
@@ -121,6 +123,7 @@ flowchart TD
 | `/api/journeys/run` | POST | owner, admin, sales_manager |
 | `/api/message-templates` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/messages` | POST | staff |
+| `/api/messages-outbound` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/partner-brand` | GET, PUT | owner, admin |
 | `/api/payment-links` | GET, POST | owner, admin, sales_manager |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
@@ -129,6 +132,7 @@ flowchart TD
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/banking-surface` | GET | owner, admin, sales_manager |
 | `/api/read/commissions` | GET | owner, admin, sales_manager |
+| `/api/read/contracts` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager<br>plus: client |

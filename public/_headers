@@ -49,3 +49,12 @@
 # the session the gate then reads. A stale one strands people outside the app.
 /login.html
   Cache-Control: public, max-age=0, must-revalidate
+
+# The contract signing page. Same rule for the same reason as the screens above —
+# a stale copy can talk to an endpoint shape that no longer exists — plus one
+# that is specific to this page: a document somebody is about to SIGN must never
+# be served from a cache. The words are fetched fresh on every load
+# (/api/contracts/sign answers no-store), and the page that fetches them must be
+# fresh too.
+/contract.html
+  Cache-Control: public, max-age=0, must-revalidate

@@ -44,7 +44,24 @@ export const CANONICAL_EVENTS = [
   "invoice.created",
   "invoice.sent",
   "invoice.paid",
-  "invoice.voided"
+  "invoice.voided",
+  /* Emitted by src/contracts/send.mjs and sign.mjs with an idempotency key
+     derived from the contract id, so a replay writes one event rather than two.
+     The payload carries ids and status ONLY — never the contract body. This
+     table is read by the dead-letter queue, the replay harness and the journey
+     runner, and none of them should end up holding a copy of a consumer's
+     signed agreement.
+
+     NO HANDLER IS REGISTERED FOR EITHER, deliberately. emit() dispatches to
+     whatever src/events/registry.mjs holds; adding one here would be inventing
+     a side effect nobody asked for. The names exist so a workflow can react
+     when somebody decides what should happen.
+
+     Keep the line below short — scripts/diagrams/generate.mjs uses the comment
+     line immediately above a group as that group's section name in the table. */
+  // contracts
+  "contract.sent",
+  "contract.signed"
 ];
 
 export const isCanonical = (name) => CANONICAL_EVENTS.includes(name);

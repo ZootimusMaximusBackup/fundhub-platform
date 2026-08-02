@@ -482,34 +482,45 @@ describe("hiring pipeline", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =
     } finally { client.release(); }
   }
 
+  /* ALL OF THIS RUNS IN ONE TRANSACTION, ON PURPOSE.
+     `ALTER TABLE … DISABLE TRIGGER` is table-wide DDL, not a session setting. Run
+     on the pool outside a transaction it commits immediately, so for the length of
+     the cleanup EVERY OTHER CONNECTION sees the audit-trail guards switched off —
+     including a concurrently running test asserting that a score cannot be
+     deleted, which then fails with "Missing expected rejection" for reasons that
+     have nothing to do with it. Inside a transaction the ALTER takes an ACCESS
+     EXCLUSIVE lock and the change is invisible until COMMIT: a concurrent deleter
+     waits and then meets the re-enabled trigger. Same effect here, none there. */
   async function cleanup() {
-    const ids = (await db.query(
-      `SELECT id FROM candidates WHERE email LIKE $1`, [`${TAG}-%`])).rows.map((r) => r.id);
-    for (const [t, trg] of [["application_scores", "trg_application_scores_no_delete"],
-                            ["hiring_decisions", "trg_hiring_decisions_no_delete"]]) {
-      await db.query(`ALTER TABLE ${t} DISABLE TRIGGER ${trg}`);
-    }
-    await db.query(`ALTER TABLE candidate_applications DISABLE TRIGGER trg_application_terminal`);
-    if (ids.length) {
-      const apps = (await db.query(
-        `SELECT id FROM candidate_applications WHERE candidate_id = ANY($1)`, [ids])).rows.map((r) => r.id);
-      if (apps.length) {
-        await db.query(`DELETE FROM hiring_interview_attendees WHERE application_id = ANY($1)`, [apps]);
-        await db.query(`DELETE FROM application_scores WHERE application_id = ANY($1)`, [apps]);
-        await db.query(`DELETE FROM hiring_decisions WHERE application_id = ANY($1)`, [apps]);
-        await db.query(`DELETE FROM candidate_applications WHERE id = ANY($1)`, [apps]);
+    await withTx(async (tx) => {
+      const ids = (await tx.query(
+        `SELECT id FROM candidates WHERE email LIKE $1`, [`${TAG}-%`])).rows.map((r) => r.id);
+      for (const [t, trg] of [["application_scores", "trg_application_scores_no_delete"],
+                              ["hiring_decisions", "trg_hiring_decisions_no_delete"]]) {
+        await tx.query(`ALTER TABLE ${t} DISABLE TRIGGER ${trg}`);
       }
-      await db.query(`DELETE FROM candidates WHERE id = ANY($1)`, [ids]);
-    }
-    await db.query(`DELETE FROM hiring_interviews WHERE org_id = $1`, [org]);
-    await db.query(`DELETE FROM staff WHERE email LIKE $1`, [`${TAG}-%`]);
-    await db.query(
-      `DELETE FROM tasks WHERE source_workflow IN
-        ('hiring-candidate-feedback','hiring-group-interview-review','hiring-bench-monitor','hiring-ramp-review')`);
-    await db.query(`ALTER TABLE candidate_applications ENABLE TRIGGER trg_application_terminal`);
-    for (const [t, trg] of [["application_scores", "trg_application_scores_no_delete"],
-                            ["hiring_decisions", "trg_hiring_decisions_no_delete"]]) {
-      await db.query(`ALTER TABLE ${t} ENABLE TRIGGER ${trg}`);
-    }
+      await tx.query(`ALTER TABLE candidate_applications DISABLE TRIGGER trg_application_terminal`);
+      if (ids.length) {
+        const apps = (await tx.query(
+          `SELECT id FROM candidate_applications WHERE candidate_id = ANY($1)`, [ids])).rows.map((r) => r.id);
+        if (apps.length) {
+          await tx.query(`DELETE FROM hiring_interview_attendees WHERE application_id = ANY($1)`, [apps]);
+          await tx.query(`DELETE FROM application_scores WHERE application_id = ANY($1)`, [apps]);
+          await tx.query(`DELETE FROM hiring_decisions WHERE application_id = ANY($1)`, [apps]);
+          await tx.query(`DELETE FROM candidate_applications WHERE id = ANY($1)`, [apps]);
+        }
+        await tx.query(`DELETE FROM candidates WHERE id = ANY($1)`, [ids]);
+      }
+      await tx.query(`DELETE FROM hiring_interviews WHERE org_id = $1`, [org]);
+      await tx.query(`DELETE FROM staff WHERE email LIKE $1`, [`${TAG}-%`]);
+      await tx.query(
+        `DELETE FROM tasks WHERE source_workflow IN
+          ('hiring-candidate-feedback','hiring-group-interview-review','hiring-bench-monitor','hiring-ramp-review')`);
+      await tx.query(`ALTER TABLE candidate_applications ENABLE TRIGGER trg_application_terminal`);
+      for (const [t, trg] of [["application_scores", "trg_application_scores_no_delete"],
+                              ["hiring_decisions", "trg_hiring_decisions_no_delete"]]) {
+        await tx.query(`ALTER TABLE ${t} ENABLE TRIGGER ${trg}`);
+      }
+    });
   }
 });

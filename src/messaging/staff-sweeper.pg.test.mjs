@@ -204,17 +204,26 @@ test("sweeper: netlify.toml schedules it, and on the same cron the module declar
   assert.ok(MAX_BATCHES_PER_PASS > 1, "one batch per pass cannot clear a night's backlog");
 });
 
-test("sweeper: turning it on did not turn the workflow engine on", async () => {
+test("sweeper: releasing held texts did not depend on the workflow engine", async () => {
   // CLAUDE.md §11 reserves INNGEST_EVENT_KEY for the owner because it makes 47
-  // workflow functions live. Releasing held texts must not require that, and
-  // the Inngest sweeper stays defined and unregistered.
+  // workflow functions live. Releasing held texts must not require that, so the
+  // standalone Netlify-scheduled sweeper (this file) stays Inngest-free — it
+  // runs on its own cron regardless of whether the key is ever set.
   const src = fs.readFileSync(
     path.resolve(HERE, "../../netlify/functions/staff-message-sweeper.mjs"), "utf8");
   assert.ok(!/inngest/i.test(src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/\/\/[^\n]*/g, "")),
     "the standalone sweeper imports Inngest — it was written precisely so it would not have to");
 
+  // message-dispatch-sweeper (a SEPARATE Inngest-registered function, added by
+  // the outbound-mail build on this same day) IS now in the registry — see its
+  // own header for why that changed from "deliberately unregistered" to
+  // registered: the switch that used to be "not registered at all" moved to a
+  // per-company DB row (messaging_settings.outbound_enabled) plus a daily cap,
+  // both enforced independently of whether INNGEST_EVENT_KEY is ever set.
+  // Registering the function does not itself send anything: Inngest invokes
+  // nothing until that key exists, which remains the owner's decision alone.
   const index = await import("../workflows/index.mjs");
   const registered = JSON.stringify(index.functions ? index.functions.map((f) => f?.id?.() ?? "") : []);
-  assert.ok(!registered.includes("message-dispatch-sweeper"),
-    "the Inngest dispatch sweeper got registered — see its own header for why it is not");
+  assert.ok(registered.includes("message-dispatch-sweeper"),
+    "message-dispatch-sweeper is expected to be registered now — see its own header for why");
 });

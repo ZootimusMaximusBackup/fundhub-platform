@@ -27,6 +27,13 @@ const PORT = Number(argv[argv.indexOf("--port") + 1]) || Number(process.env.PORT
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  /* .mjs matters as much as .js now that public/vendor/pdfjs holds ES modules.
+     Served as application/octet-stream a browser REFUSES to execute them —
+     "Failed to load module script: expected a JavaScript module script but the
+     server responded with a MIME type of application/octet-stream" — so the
+     contract field editor renders nothing at all locally while working fine on
+     the deploy target, which is the most confusing shape a bug can take. */
+  ".mjs": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json",
   ".svg": "image/svg+xml",
