@@ -256,6 +256,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.deriv{grid-template-columns:1fr}.gate .gbd{grid-template-columns:1fr}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 <script src="shell.js"></script>
+<script src="data.js"></script>
 </head>
 <body>
 <!-- Hiring (HR) — the always-on recruiting funnel: postings, candidates, graded
@@ -290,9 +291,14 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
      053_eeo_selfid.sql is deliberately NOT on this screen. That data is gated to
      compliance, has no endpoint, and is never projected per candidate.
 
-     Sample rows below. Scores are graded in-page by a port of grade() so the
-     arithmetic can be shown; in production average / recommendation / flags arrive
-     already computed on the row. -->
+     WIRED to all six api/hiring/* endpoints (wireHiring(), near the bottom of the
+     page script) — candidates, application, postings, decisions, funnel and bench
+     are all fetched live. SAMPLE_APPS / SAMPLE_POSTINGS / SAMPLE_DECISIONS below are
+     the fallback: they render immediately on load and stay up if a call fails, is
+     in a demo session, or returns nothing, exactly like every other wired screen in
+     public/app/. grade() is still run in-page over the sample rows so the rubric
+     arithmetic can be shown; a live row already carries average / recommendation /
+     flags computed on the server and is never re-graded client-side. -->
 <div class="app">
   <aside class="side" id="side">
     <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
@@ -982,7 +988,7 @@ var ROLE_BY_KEY={}; ROLES.forEach(function(r){ROLE_BY_KEY[r.key]=r;});
    round in BOTH endpoints: only `has_resume`, never `resume_document_id`.
    ═══════════════════════════════════════════════════════════════════════════ */
 function sc(o){ return o; }
-var APPS = [
+var SAMPLE_APPS = [
   /* ── CLOSER ──────────────────────────────────────────────────────────── */
   {id:'A-1041', role_key:'closer', stage_key:'one_on_one', status:'open',
    full_name:'Priya Raghunathan', email:'priya.raghunathan@gmail.com', phone:'+1 602 555 0148',
@@ -1411,7 +1417,7 @@ var APPS = [
    the second one restricted to applied_at > now() - 7 days. They count the same
    rows the board shows, so every number below reconciles against HR-03: only six
    of the twenty-four applications carry a job_posting_id at all. */
-var POSTINGS = [
+var SAMPLE_POSTINGS = [
   {id:'P-006', channel:'linkedin', role_key:'setter', title:'Setter — Fundhub (Remote, US)',
    location:'Remote — United States', apply_url:'/careers/setter', status:'failed', is_published:false,
    posted_at:null, closed_at:null, last_synced_at:'2026-07-28 04:12', created_at:'2026-07-28 04:10',
@@ -1461,7 +1467,7 @@ var POSTINGS = [
    score_at_decision, rubric_version, followed_recommendation. There is no
    application_id and no candidate name — the log is deliberately about the
    decision, not the person — so no row here carries one either. */
-var DECISIONS = [
+var SAMPLE_DECISIONS = [
   {id:'D-1016', created_at:'2026-07-27 16:40', decision:'offer',
    from_stage_key:'one_on_one', to_stage_key:'offer', role_key:'closer', source:'audience',
    decided_by_name:'Sarah Whitfield', human_decided:true,
@@ -1554,50 +1560,67 @@ var DECISIONS = [
    candidate_notified_at:null}
 ];
 
-/* ══ BOOT: grade every sample score, exactly as the server would ═════════ */
-var APP_BY_ID={}, DECISION_BY_ID={};
-APPS.forEach(function(a){
-  a.scores.forEach(function(s){
-    var r = RUBRICS[s.rubric];
-    var g = grade(r, s.category_scores);
-    s.rubric_version = r.version;
-    s.rubric_stage   = r.stage_key;
-    s.average        = g.average;
-    s.recommendation = g.recommendation;
-    s.label          = g.label;
-    s.flags          = g.flags;
-    s.missing        = g.missing;
-    s.totalWeight    = g.totalWeight;
-    s.weighted       = g.weighted;
+/* ══ BOOT: grade every sample score, exactly as the server would ═════════
+   Sample-only. Live rows from api/hiring/candidates arrive with average /
+   recommendation / flags / rubric_version already computed server-side (the
+   LATERAL join in the SQL), so this scoring pass never runs against them. */
+function deriveSample(apps, decisions){
+  var appById={}, decisionById={};
+  apps.forEach(function(a){
+    a.scores.forEach(function(s){
+      var r = RUBRICS[s.rubric];
+      var g = grade(r, s.category_scores);
+      s.rubric_version = r.version;
+      s.rubric_stage   = r.stage_key;
+      s.average        = g.average;
+      s.recommendation = g.recommendation;
+      s.label          = g.label;
+      s.flags          = g.flags;
+      s.missing        = g.missing;
+      s.totalWeight    = g.totalWeight;
+      s.weighted       = g.weighted;
+    });
+    /* The board's LATERAL … ORDER BY created_at DESC LIMIT 1 — latest only. */
+    var latest = a.scores.length ? a.scores[a.scores.length-1] : null;
+    a.latest          = latest;
+    a.average         = latest ? latest.average : null;
+    a.recommendation  = latest ? latest.recommendation : null;
+    a.flags           = latest ? latest.flags : [];
+    a.rubric_version  = latest ? latest.rubric_version : null;
+    a.is_automated    = latest ? latest.is_automated : null;
+    a.sort_order      = STAGE_BY_KEY[a.stage_key].sort;
+    a.stage_name      = STAGE_BY_KEY[a.stage_key].name;
+    a.role_name       = ROLE_BY_KEY[a.role_key].name;
+    a.recommendation_status = 'advisory — a human decides';
+    a.needs_human     = (a.flags.length > 0) || (a.average === null);
+    /* candidates.mjs:48 — (a.video_url IS NOT NULL) AS has_video. The board never
+       sees the URL; the drawer's endpoint (application.mjs:21) returns it whole. */
+    a.has_video       = a.video_url !== null;
+    appById[a.id]=a;
   });
-  /* The board's LATERAL … ORDER BY created_at DESC LIMIT 1 — latest only. */
-  var latest = a.scores.length ? a.scores[a.scores.length-1] : null;
-  a.latest          = latest;
-  a.average         = latest ? latest.average : null;
-  a.recommendation  = latest ? latest.recommendation : null;
-  a.flags           = latest ? latest.flags : [];
-  a.rubric_version  = latest ? latest.rubric_version : null;
-  a.is_automated    = latest ? latest.is_automated : null;
-  a.sort_order      = STAGE_BY_KEY[a.stage_key].sort;
-  a.stage_name      = STAGE_BY_KEY[a.stage_key].name;
-  a.role_name       = ROLE_BY_KEY[a.role_key].name;
-  a.recommendation_status = 'advisory — a human decides';
-  a.needs_human     = (a.flags.length > 0) || (a.average === null);
-  /* candidates.mjs:48 — (a.video_url IS NOT NULL) AS has_video. The board never
-     sees the URL; the drawer's endpoint (application.mjs:21) returns it whole. */
-  a.has_video       = a.video_url !== null;
-  APP_BY_ID[a.id]=a;
-});
-DECISIONS.forEach(function(d){
-  /* The endpoint's CASE expression, reproduced rather than reinterpreted. */
-  if(d.recommendation_at_decision===null) d.followed_recommendation=null;
-  else if(d.decision==='reject')
-    d.followed_recommendation = ['review_likely_no','incomplete'].indexOf(d.recommendation_at_decision)>=0;
-  else if(d.decision==='advance'||d.decision==='offer')
-    d.followed_recommendation = ['advance','advance_priority','review_maybe'].indexOf(d.recommendation_at_decision)>=0;
-  else d.followed_recommendation=null;
-  DECISION_BY_ID[d.id]=d;
-});
+  decisions.forEach(function(d){
+    /* The endpoint's CASE expression, reproduced rather than reinterpreted. */
+    if(d.recommendation_at_decision===null) d.followed_recommendation=null;
+    else if(d.decision==='reject')
+      d.followed_recommendation = ['review_likely_no','incomplete'].indexOf(d.recommendation_at_decision)>=0;
+    else if(d.decision==='advance'||d.decision==='offer')
+      d.followed_recommendation = ['advance','advance_priority','review_maybe'].indexOf(d.recommendation_at_decision)>=0;
+    else d.followed_recommendation=null;
+    decisionById[d.id]=d;
+  });
+  apps.forEach(function(a){
+    a.decisions = (a.decision_ids||[]).map(function(id){ return decisionById[id]; }).filter(Boolean);
+  });
+  return {appById:appById, decisionById:decisionById};
+}
+
+/* Sample by default; wireHiring() below replaces these with live rows and
+   rebuilds the indexes when the six api/hiring/* endpoints answer. */
+var APPS = SAMPLE_APPS, POSTINGS = SAMPLE_POSTINGS, DECISIONS = SAMPLE_DECISIONS;
+var BENCH_ROWS = null; // null = derive client-side from APPS (benchRows() below)
+var LIVE = {candidates:false, postings:false, decisions:false, bench:false, funnel:false};
+var sampleIdx = deriveSample(SAMPLE_APPS, SAMPLE_DECISIONS);
+var APP_BY_ID = sampleIdx.appById, DECISION_BY_ID = sampleIdx.decisionById;
 
 /* ══ SHARED RENDER HELPERS ═══════════════════════════════════════════════ */
 var STATUS_CLS={open:'b-info', hired:'b-ok', rejected:'b-alert', withdrawn:'b-gray'};
@@ -1689,7 +1712,7 @@ function renderBench(rows){
 
 /* ══ HR-00 · SUMMARY + DERIVATION ════════════════════════════════════════ */
 function renderStats(){
-  var bench = benchRows();
+  var bench = BENCH_ROWS || benchRows();
   var benchCount = bench.reduce(function(n,b){return n+b.bench_count;},0);
   var benchTarget= bench.reduce(function(n,b){return n+b.bench_target;},0);
   var shortfall  = bench.reduce(function(n,b){return n+b.bench_shortfall;},0);
@@ -2021,13 +2044,13 @@ function funnelRows(days, roleKey){
   return {rows:rows, scoped:scoped.length, cutoff:cutoff};
 }
 
-function renderFunnel(){
-  var days=parseInt(document.getElementById('fnDays').value,10);
-  var roleKey=document.getElementById('fnRole').value;
-  var out=funnelRows(days, roleKey);
+/* paintFunnel — shared by the live api/hiring/funnel response and the client
+   fallback funnelRows() produces; both hand it the identical row shape. */
+function paintFunnel(rows, days, roleKey){
   var tb=document.querySelector('#fnTbl tbody');
+  var cutoff = new Date(NOW.getTime() - days*86400000);
 
-  tb.innerHTML = out.rows.length ? out.rows.map(function(g){
+  tb.innerHTML = rows.length ? rows.map(function(g){
     var src=SOURCES.filter(function(s){return s.key===g.source;})[0];
     return '<tr>'+
       '<td><b>'+esc(src?src.label:g.source)+'</b><span class="sub">'+esc(g.source)+
@@ -2043,13 +2066,14 @@ function renderFunnel(){
     '</tr>';
   }).join('') : '<tr><td colspan="9"><div class="empty">No applications in this window.</div></td></tr>';
 
-  document.getElementById('fnWindow').textContent =
-    days+'d window · '+out.rows.length+' groups · '+out.scoped+' applications';
+  var totalApps=rows.reduce(function(n,g){return n+g.applications;},0);
 
-  var totalApps=out.rows.reduce(function(n,g){return n+g.applications;},0);
-  var totalHired=out.rows.reduce(function(n,g){return n+g.hired;},0);
+  document.getElementById('fnWindow').textContent =
+    days+'d window · '+rows.length+' groups · '+totalApps+' applications';
+
+  var totalHired=rows.reduce(function(n,g){return n+g.hired;},0);
   var rejCount=APPS.filter(function(a){
-    return a.stage_key==='rejected' && pd(a.applied_at)>out.cutoff && (!roleKey||a.role_key===roleKey);
+    return a.stage_key==='rejected' && pd(a.applied_at)>cutoff && (!roleKey||a.role_key===roleKey);
   }).length;
   document.getElementById('fnInsight').innerHTML =
     '<b>Worked example, so the column headers are believable:</b> '+rejCount+
@@ -2060,6 +2084,25 @@ function renderFunnel(){
     'Across the window: <span class="mono">'+totalHired+' hired ÷ '+totalApps+' applications = '+
     (totalApps? (Math.round(1000*totalHired/totalApps)/10).toFixed(1) : '0.0')+'%</span> — computed over the rows shown, '+
     'not over the table, because no endpoint here returns a table count.';
+}
+
+/* renderFunnel — live first. api/hiring/funnel takes the same ?days/?role this
+   screen's own selectors drive, so a filter change re-queries it rather than
+   re-deriving from the cached board rows. Falls back to the client
+   funnelRows() derivation (over APPS, which is itself live once wired) only
+   when the call cannot be made or fails. */
+function renderFunnel(){
+  var days=parseInt(document.getElementById('fnDays').value,10);
+  var roleKey=document.getElementById('fnRole').value;
+  if(!LIVE.candidates){ var out=funnelRows(days, roleKey); paintFunnel(out.rows, days, roleKey); return; }
+  apiGet('/api/hiring/funnel?days='+encodeURIComponent(days)+(roleKey?'&role='+encodeURIComponent(roleKey):'')+'&limit=200')
+    .then(function(res){
+      // A slower control change landing after a faster later one must not repaint stale rows.
+      if(days!==parseInt(document.getElementById('fnDays').value,10) ||
+         roleKey!==document.getElementById('fnRole').value) return;
+      if(res.ok){ LIVE.funnel=true; paintFunnel(res.data.items||[], days, roleKey); }
+      else { var out=funnelRows(days, roleKey); paintFunnel(out.rows, days, roleKey); }
+    });
 }
 
 /* ══ HR-07 · DECISION LOG ════════════════════════════════════════════════ */
@@ -2193,6 +2236,27 @@ function jsonBlock(obj){
 function scorePanel(a){
   return a.scores.map(function(s,i){
     var r=RUBRICS[s.rubric];
+    if(!r){
+      /* A real rubric version this page has no local copy of — happens only if
+         the database has a stage/version combination beyond the two seeded in
+         051 §E. Show the server's own numbers; skip the category breakdown and
+         the arithmetic, which need the rubric definition to render at all. */
+      return '<div class="panel">'+
+        '<div class="panel-hd"><span>Score '+(i+1)+' of '+a.scores.length+'</span>'+
+          badge('b-gray',(s.stage_key||'—')+' rubric v'+(s.rubric_version==null?'?':s.rubric_version))+
+          (s.is_automated?badge('b-gray','automated'):badge('b-info','scored by '+(s.scored_by_name||'someone')))+
+          '<span class="spacer"></span><span class="mono" style="font-size:10px;color:var(--gray2)">'+esc(ftime(s.created_at))+'</span>'+
+        '</div>'+
+        '<div class="panel-bd">'+
+          '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:9px">'+
+            avgCell(s.average)+recPill(s.recommendation)+
+          '</div>'+
+          '<div class="note">No local rubric definition for <span class="k">'+esc(s.rubric)+'</span> — the category '+
+          'breakdown and the weighted-average arithmetic are not shown, but the server’s own average and '+
+          'recommendation are.</div>'+
+          (s.flags&&s.flags.length?'<div style="margin-top:11px">'+flagList(s.flags)+'</div>':'')+
+        '</div></div>';
+    }
     var cats=r.categories.map(function(c){
       var v=s.category_scores[c.key];
       var has=(v!==undefined&&v!==null&&v!=='');
@@ -2284,8 +2348,8 @@ function interviewPanel(a){
   'at Group Interview.</div></div></div>';
 }
 
-function decisionPanel(a){
-  var ds=a.decision_ids.map(function(id){return DECISION_BY_ID[id];}).filter(Boolean);
+function decisionPanel(decisions){
+  var ds=(decisions||[]).slice();
   ds.sort(function(x,y){ return pd(x.created_at)-pd(y.created_at); });
   if(!ds.length)
     return '<div class="panel"><div class="panel-bd"><div class="empty" style="padding:14px 8px">No decisions recorded yet.</div></div></div>';
@@ -2304,14 +2368,9 @@ function decisionPanel(a){
   }).join('')+'</div></div></div>';
 }
 
-function openDrawer(appId){
-  var a=APP_BY_ID[appId]; if(!a) return;
+function renderDrawerBody(a){
   var role=ROLE_BY_KEY[a.role_key];
-  document.getElementById('dwTitle').textContent=a.full_name;
-  document.getElementById('dwSub').textContent =
-    a.id+' · '+a.role_name+' · '+a.stage_name+' · status '+a.status+' · applied '+fdatey(a.applied_at);
-
-  var answerKeys=Object.keys(a.answers);
+  var answerKeys=Object.keys(a.answers||{});
   document.getElementById('dwBody').innerHTML =
     '<div class="dw-sec"><div class="notice"><b>Scores are advisory. No candidate may be rejected without a named human '+
       'and a written reason; the database enforces this.</b><br>'+
@@ -2378,12 +2437,65 @@ function openDrawer(appId){
       interviewPanel(a)+'</div>'+
 
     '<div class="dw-sec"><div class="eyebrow">HR-08.6 <span class="sep">/</span> DECISIONS</div>'+
-      decisionPanel(a)+'</div>';
+      decisionPanel(a.decisions)+'</div>';
+}
 
+/* augmentScore — gives a live api/hiring/application score the same
+   rubric/label/weighted/totalWeight fields deriveSample() computes for the
+   sample rows, by looking the rubric up from stage_key + rubric_version
+   instead of trusting a client-only "rubric" string. The server's own
+   average/recommendation/flags win; grade() only fills in the show-your-work
+   fields it alone can produce. */
+function augmentScore(s){
+  s.rubric = s.stage_key+'@'+s.rubric_version;
+  var r = RUBRICS[s.rubric];
+  if(r){
+    var g = grade(r, s.category_scores||{});
+    s.rubric_stage = r.stage_key;
+    s.label = g.label;
+    s.weighted = g.weighted;
+    s.totalWeight = g.totalWeight;
+    if(s.average===undefined||s.average===null) s.average = g.average;
+    if(!s.recommendation) s.recommendation = g.recommendation;
+    if(!s.flags) s.flags = g.flags;
+  } else {
+    s.rubric_stage = s.stage_key;
+    if(!s.flags) s.flags = [];
+  }
+  return s;
+}
+
+function openDrawer(appId){
+  var a=APP_BY_ID[appId]; if(!a) return;
+  document.getElementById('dwTitle').textContent=a.full_name;
+  document.getElementById('dwSub').textContent =
+    a.id+' · '+a.role_name+' · '+a.stage_name+' · status '+a.status+' · applied '+fdatey(a.applied_at);
   drawer.classList.add('on'); scrim.classList.add('on');
   drawer.setAttribute('aria-hidden','false');
   drawer.removeAttribute('inert');
   document.getElementById('dwClose').focus();
+
+  if(!LIVE.candidates){ renderDrawerBody(a); return; }
+
+  /* Live board rows carry only what candidates.mjs projects — no answers, no
+     full score history, no interviews, no decisions. Those live on
+     api/hiring/application?id=, fetched here on demand rather than for every
+     card on the board. */
+  document.getElementById('dwBody').innerHTML =
+    '<div class="empty" style="padding:40px 8px">Loading application…</div>';
+  apiGet('/api/hiring/application?id='+encodeURIComponent(appId)).then(function(res){
+    if(document.getElementById('dwTitle').textContent!==a.full_name) return; // drawer moved on
+    if(!res.ok){
+      document.getElementById('dwBody').innerHTML =
+        '<div class="empty" style="padding:40px 8px">Could not load this application ('+esc(res.error||res.source)+'). '+
+        'Board-level data only.</div>';
+      renderDrawerBody(a);
+      return;
+    }
+    var d = Object.assign({}, a, res.data);
+    d.scores = (res.data.scores||[]).map(augmentScore);
+    renderDrawerBody(d);
+  });
 }
 function closeDrawer(){
   drawer.classList.remove('on'); scrim.classList.remove('on');
@@ -2430,6 +2542,108 @@ document.getElementById('resetBtn').addEventListener('click',function(){
   boot();
 });
 
+/* ══ API WIRING ══════════════════════════════════════════════════════════
+   data.js's FHData exposes readers for /api/read/* and /api/dashboard/*, not
+   for /api/hiring/* (those live at their own paths, not under read/), so the
+   same { ok, source, data, error } envelope is reproduced here rather than
+   reaching into its private get() — same pattern campaign-manager.html and
+   subscriptions.html use for the same reason. */
+function apiGet(path){
+  var demo = false, tok = '';
+  try { demo = localStorage.getItem('fh_demo') === '1'; tok = localStorage.getItem('fh_token') || ''; } catch(e){}
+  if(demo) return Promise.resolve({ ok:false, source:'demo', data:null, error:'demo session — no backend read attempted' });
+  var started;
+  try {
+    started = fetch(path, { headers: tok ? { accept:'application/json', authorization:'Bearer '+tok } : { accept:'application/json' } });
+  } catch(e){
+    return Promise.resolve({ ok:false, source:'offline', data:null, error:(e && e.message) || 'fetch unavailable' });
+  }
+  return Promise.resolve(started).then(function(r){
+    if(r.status === 401 || r.status === 403) return { ok:false, source:'unauthorized', data:null, error:'not signed in, or role is not owner/admin' };
+    if(r.status === 404){
+      return r.json().then(function(d){
+        return (d && d.error === 'not_found' && typeof d.path === 'string')
+          ? { ok:false, source:'offline', data:null, error:'/api/* not deployed' }
+          : { ok:false, source:'notfound', data:null, error:'no such record' };
+      }).catch(function(){ return { ok:false, source:'offline', data:null, error:'/api/* not deployed' }; });
+    }
+    if(r.status === 400){
+      return r.json().then(function(d){
+        return { ok:false, source:'badrequest', data:null, error:(d && d.error) || 'bad request' };
+      }).catch(function(){ return { ok:false, source:'badrequest', data:null, error:'bad request' }; });
+    }
+    return r.json().then(function(d){
+      if(r.status === 503 || (d && d.db === 'down')) return { ok:false, source:'nodb', data:null, error:(d && d.error) || 'database unreachable' };
+      if(!d || d.ok !== true) return { ok:false, source:'server', data:null, error:(d && d.error) || 'request failed' };
+      return { ok:true, source:'api', data:d, error:null };
+    }).catch(function(){ return { ok:false, source:'offline', data:null, error:'response was not JSON' }; });
+  }).catch(function(e){
+    return { ok:false, source:'offline', data:null, error:(e && e.message) || 'network error' };
+  });
+}
+
+/* candidates.mjs aliases the application id as application_id (it is the
+   pipeline card's id everywhere on this screen) and needs_human is this
+   screen's own derived field, not something the endpoint returns. */
+function mapCandidateRow(r){
+  var c = Object.assign({}, r);
+  c.id = r.application_id;
+  c.needs_human = (r.flags && r.flags.length > 0) || r.average === null || r.average === undefined;
+  return c;
+}
+
+var HIRING_SRC = {};
+function wireHiring(){
+  var demo=false; try{ demo = localStorage.getItem('fh_demo')==='1'; }catch(e){}
+  if(demo){
+    document.getElementById('footNote').textContent = 'hr · api/hiring/* · read-only · demo session, sample markup';
+    FHData.banner('sample','sample hiring pipeline — demo session, the backend was not queried','hiring');
+    return;
+  }
+  Promise.all([
+    apiGet('/api/hiring/candidates?state=all&limit=200').then(function(res){
+      HIRING_SRC.candidates=res;
+      if(res.ok){
+        LIVE.candidates=true;
+        APPS=(res.data.items||[]).map(mapCandidateRow);
+        APP_BY_ID={}; APPS.forEach(function(a){ APP_BY_ID[a.id]=a; });
+      }
+    }),
+    apiGet('/api/hiring/postings?limit=200').then(function(res){
+      HIRING_SRC.postings=res;
+      if(res.ok){ LIVE.postings=true; POSTINGS=res.data.items||[]; }
+    }),
+    apiGet('/api/hiring/decisions?state=all&days=730&limit=200').then(function(res){
+      HIRING_SRC.decisions=res;
+      if(res.ok){
+        LIVE.decisions=true;
+        DECISIONS=res.data.items||[];
+        DECISION_BY_ID={}; DECISIONS.forEach(function(d){ DECISION_BY_ID[d.id]=d; });
+      }
+    }),
+    apiGet('/api/hiring/bench?limit=200').then(function(res){
+      HIRING_SRC.bench=res;
+      if(res.ok){ LIVE.bench=true; BENCH_ROWS=res.data.items||[]; }
+    })
+  ]).then(function(){
+    boot(); // re-render against whatever mix of live/sample landed
+    var parts=[], worst='real';
+    ['candidates','postings','decisions','bench'].forEach(function(k){
+      var res=HIRING_SRC[k];
+      if(!res) return;
+      if(res.ok){ parts.push(k+':api'); }
+      else {
+        parts.push(k+':'+res.source+(res.error?' ('+res.error+')':''));
+        var badTone = (res.source==='nodb'||res.source==='server'||res.source==='offline') ? 'error' : 'sample';
+        if(badTone==='error') worst='error'; else if(worst!=='error') worst='sample';
+      }
+    });
+    document.getElementById('footNote').textContent =
+      'hr · api/hiring/* · read-only · '+(parts.length?parts.join(' · '):'sample');
+    FHData.banner(worst, 'hiring · '+(parts.length?parts.join(' · '):'sample markup'), 'hiring');
+  });
+}
+
 /* ══ BOOT ════════════════════════════════════════════════════════════════ */
 function boot(){
   renderBench(renderStats());
@@ -2440,6 +2654,7 @@ function boot(){
   renderDecisions();
 }
 boot();
+wireHiring();
 </script>
 </body>
 </html>

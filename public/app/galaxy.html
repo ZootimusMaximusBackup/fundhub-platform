@@ -130,7 +130,10 @@
     color:var(--text);background:var(--card);border:1px solid var(--cardline);
     padding:4px 9px 4px 7px;border-radius:20px;
   }
-  .live-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);animation:livepulse 1.8s infinite;}
+  /* Static, not pulsing — a pulsing dot reads as "this is live right now",
+     which is exactly the claim this screen no longer makes. See the notice
+     under the topbar. */
+  .live-dot{width:6px;height:6px;border-radius:50%;background:var(--text-faint);}
   @keyframes livepulse{
     0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 55%,transparent);}
     70%{box-shadow:0 0 0 6px color-mix(in srgb,var(--ok) 0%,transparent);}
@@ -304,9 +307,19 @@
     <div class="topbar-right">
       <div class="census" id="census"></div>
       <div class="clock" id="clock"></div>
-      <div class="live-pill"><span class="live-dot"></span>LIVE</div>
+      <div class="live-pill" id="livePill" title="No backend exists for this screen — see the notice below. Every worker, state, handoff and flare is scripted animation, not a read of anything real."><span class="live-dot" id="liveDot"></span>SIMULATED</div>
     </div>
   </header>
+
+  <div class="legend" style="border-color:var(--info)">
+    <b>No backend — this whole screen is a simulation</b>
+    <i>There is no api/company-activity/* (or any) endpoint behind Galaxy. Every worker, their state, the handoff
+      lines and the money flares below are scripted animation seeded from <code>NODES</code> in this file's own
+      script, not a read of anything real.</i>
+    <i>A real version would need: a presence/status feed per staff member and agent (something has to know who is
+      "working right now"), an events stream for handoffs between them, and a money-movement feed to trigger a
+      flare — none of which exist yet. Until then, treat this page the way you would a mockup, not a dashboard.</i>
+  </div>
 
   <div class="legend">
     <b>GX-01 / Reading the sky</b>
@@ -361,11 +374,17 @@
 "use strict";
 
 /* ============================================================
-   FUNDHUB GALAXY — a live pulse of the whole company.
+   FUNDHUB GALAXY — a simulated pulse of the whole company.
    Force-directed workers on a dark canvas. Clusters are teams.
    Rails run behind everything; clients travel them as pulses.
    Money lands as a flare that flies into the number it moved.
-   Read-only. Nothing here does anything but show you.
+
+   NO BACKEND. Every node below (NODES), its state, its stats and every
+   handoff/flare event is scripted from data in this file — there is no
+   api/company-activity/* or equivalent endpoint, and none should be invented
+   for this pass (see the notice under the topbar). A real version needs a
+   presence/status feed, a handoff-events stream and a money-movement feed;
+   none of the three exist. Read-only either way: nothing here writes.
    ============================================================ */
 
 var TAU = Math.PI*2;
