@@ -235,3 +235,12 @@ Baseline `origin/main`: `c37dc60`. Model: Grok. No split. Owner instruction: no 
 - Conflicts: only `db/expected-migrations.mjs` — regenerated; final sequence 127–133.
 - Auto-merged cleanly: `netlify/functions/api.mjs`, `public/app/shell.js`, and many CRM HTML screens (additive nav / empty-state patterns).
 - Env: deliberately NOT setting `OPENAI_API_KEY`, `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON`, or `GOOGLE_DRIVE_DELEGATE_EMAIL` — Drive/OpenAI sync stays off.
+
+### Post-merge fixes on company-brain (same commit as merge follow-up)
+
+Needed for suite green after merge — these were latent on the branch against current main gates:
+
+1. `public/app/company-brain.html` — fixed a broken regex (`\\/` → `\/`) that made the inline script fail `npm run lint`.
+2. Gate shapes for journey extractor: reviews and affiliate handlers now call `requireAuth(req, res, …)` (or injected deps) and `requireRole` with local sets (`OWNER_ONLY`, `AFFILIATE_BRAIN_ROLES`) so gates are not `UNVERIFIED`.
+3. Org-scope audit: both read handlers added to `NO_ORG_COLUMN` with retrieve.mjs as the scoper, and pass `orgId: staff.org_id` literally so the excuse stays true.
+4. Regenerated `docs/journeys/*-actual.md` via `npm run journeys`.

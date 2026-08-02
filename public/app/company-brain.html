@@ -299,7 +299,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       var client = s.clientId
         ? (' · <a href="client-control-panel.html?client_id=' + esc(s.clientId) + '">client record</a>')
         : "";
-      var av = (s.mimeType && /^(audio|video)\\//.test(s.mimeType))
+      var av = (s.mimeType && /^(audio|video)\//.test(s.mimeType))
         ? ' · <span class="badge b-butter">recording</span>' : "";
       return '<div style="padding:10px 0;border-bottom:1px solid var(--line)">' +
         '<div style="font-weight:600">[' + esc(s.n) + '] ' + esc(s.fileName) + av + '</div>' +

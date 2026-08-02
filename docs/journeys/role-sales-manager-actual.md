@@ -25,24 +25,25 @@ flowchart TD
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 9 routes]
     CAN --> A_journeys[journeys — 1 route]
-    CAN --> A_read[Reading data — 25 routes]
+    CAN --> A_read[Reading data — 26 routes]
     CAN --> A_top_level[Everything else — 15 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 17 routes]
+    WHO -->|Yes| CANT[Blocked — 19 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 1 blocked]
+    CANT --> B_company_brain[company-brain — 1 blocked]
     CANT --> B_consent[consent — 1 blocked]
     CANT --> B_finance[Finance — 1 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_journeys[journeys — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
-    CANT --> B_read[Reading data — 1 blocked]
+    CANT --> B_read[Reading data — 2 blocked]
     CANT --> B_top_level[Everything else — 4 blocked]
 ```
 
 ## What they can reach
 
-**75 of 92 routes.**
+**76 of 95 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -97,6 +98,7 @@ flowchart TD
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/banking-surface` | GET | owner, admin, sales_manager |
 | `/api/read/commissions` | GET | owner, admin, sales_manager |
+| `/api/read/company-brain` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/contracts` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -130,12 +132,13 @@ flowchart TD
 
 ## What they are blocked from
 
-**17 of 92 routes.**
+**19 of 95 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/auth/admin-reset` | POST | owner, admin |
 | `/api/banking/revoke` | GET, POST | owner, admin |
+| `/api/company-brain/reviews` | GET, POST | owner |
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/hiring/application` | GET | owner, admin |
@@ -150,6 +153,7 @@ flowchart TD
 | `/api/partner-brand` | GET, PUT | owner, admin |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/privacy/erasure` | GET, POST | owner, admin |
+| `/api/read/company-brain-affiliate` | POST | affiliate, partner |
 | `/api/read/failed-events` | GET | owner, admin |
 
 ## UNVERIFIED

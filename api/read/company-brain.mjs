@@ -15,7 +15,6 @@ import { synthesizeAnswer } from "../../src/company-brain/answer.mjs";
 
 export default async function handler(req, res, deps = {}) {
   const database = deps.db || db;
-  const auth = deps.requireAuth || requireAuth;
   const retrieve = deps.retrieveChunks || retrieveChunks;
   const answer = deps.synthesizeAnswer || synthesizeAnswer;
 
@@ -24,7 +23,9 @@ export default async function handler(req, res, deps = {}) {
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
   }
 
-  const staff = await auth(req, res, { db: database });
+  const staff = deps.requireAuth
+    ? await deps.requireAuth(req, res, { db: database })
+    : await requireAuth(req, res, { db: database });
   if (!staff) return;
   if (!requireRole(res, staff, ROLE_SETS.STAFF)) return;
 
@@ -33,8 +34,7 @@ export default async function handler(req, res, deps = {}) {
     return res.status(403).json({ ok: false, error: "forbidden_role" });
   }
 
-  const orgId = staff.org_id;
-  if (!orgId) return res.status(403).json({ ok: false, error: "no_org_scope" });
+  if (!staff.org_id) return res.status(403).json({ ok: false, error: "no_org_scope" });
 
   const question = String((req.body && req.body.question) || "").trim();
   if (!question) return res.status(400).json({ ok: false, error: "question_required" });
@@ -43,7 +43,7 @@ export default async function handler(req, res, deps = {}) {
   }
 
   const found = await retrieve(database, {
-    orgId,
+    orgId: staff.org_id,
     role: staff.role, // session only
     query: question,
     limit: Number((req.body && req.body.limit) || 8),

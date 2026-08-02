@@ -8,16 +8,14 @@
 
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
-import {
-  canQueryAffiliateBrain,
-  isExternalBrainRole
-} from "../../src/company-brain/access.mjs";
+import { requireRole } from "../../src/http/read-api.mjs";
 import { retrieveAffiliateChunks } from "../../src/company-brain/retrieve.mjs";
 import { synthesizeAnswer } from "../../src/company-brain/answer.mjs";
 
+const AFFILIATE_BRAIN_ROLES = new Set(["affiliate", "partner"]);
+
 export default async function handler(req, res, deps = {}) {
   const database = deps.db || db;
-  const auth = deps.requireAuth || requireAuth;
   const retrieve = deps.retrieveAffiliateChunks || retrieveAffiliateChunks;
   const answer = deps.synthesizeAnswer || synthesizeAnswer;
 
@@ -26,16 +24,15 @@ export default async function handler(req, res, deps = {}) {
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
   }
 
-  const staff = await auth(req, res, { db: database });
+  const staff = deps.requireAuth
+    ? await deps.requireAuth(req, res, { db: database })
+    : await requireAuth(req, res, { db: database });
   if (!staff) return;
 
   // Do NOT use ROLE_SETS.STAFF — affiliates are outside it.
-  if (!isExternalBrainRole(staff.role) || !canQueryAffiliateBrain(staff.role)) {
-    return res.status(403).json({ ok: false, error: "forbidden_role" });
-  }
+  if (!requireRole(res, staff, AFFILIATE_BRAIN_ROLES)) return;
 
-  const orgId = staff.org_id;
-  if (!orgId) return res.status(403).json({ ok: false, error: "no_org_scope" });
+  if (!staff.org_id) return res.status(403).json({ ok: false, error: "no_org_scope" });
 
   const question = String((req.body && req.body.question) || "").trim();
   if (!question) return res.status(400).json({ ok: false, error: "question_required" });
@@ -44,7 +41,7 @@ export default async function handler(req, res, deps = {}) {
   }
 
   const found = await retrieve(database, {
-    orgId,
+    orgId: staff.org_id,
     role: staff.role,
     query: question,
     limit: Number((req.body && req.body.limit) || 8),

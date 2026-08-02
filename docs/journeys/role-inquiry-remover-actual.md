@@ -24,24 +24,25 @@ flowchart TD
     CAN --> A_dashboard[The dashboard — 4 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 4 routes]
-    CAN --> A_read[Reading data — 19 routes]
+    CAN --> A_read[Reading data — 20 routes]
     CAN --> A_top_level[Everything else — 15 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 30 routes]
+    WHO -->|Yes| CANT[Blocked — 32 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 2 blocked]
+    CANT --> B_company_brain[company-brain — 1 blocked]
     CANT --> B_consent[consent — 1 blocked]
     CANT --> B_finance[Finance — 6 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_journeys[journeys — 2 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
-    CANT --> B_read[Reading data — 7 blocked]
+    CANT --> B_read[Reading data — 8 blocked]
     CANT --> B_top_level[Everything else — 4 blocked]
 ```
 
 ## What they can reach
 
-**62 of 92 routes.**
+**63 of 95 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -86,6 +87,7 @@ flowchart TD
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/pipeline-cards` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/company-brain` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/contracts` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -116,13 +118,14 @@ flowchart TD
 
 ## What they are blocked from
 
-**30 of 92 routes.**
+**32 of 95 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/auth/admin-reset` | POST | owner, admin |
 | `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/banking/sync-accounts` | POST | owner, admin, sales_manager |
+| `/api/company-brain/reviews` | GET, POST | owner |
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/finance/bank-accounts` | GET, POST | owner, admin, sales_manager |
 | `/api/finance/bills` | GET, POST | owner, admin, sales_manager |
@@ -146,6 +149,7 @@ flowchart TD
 | `/api/read/affiliates` | GET | owner, admin, sales_manager |
 | `/api/read/banking-surface` | GET | owner, admin, sales_manager |
 | `/api/read/commissions` | GET | owner, admin, sales_manager |
+| `/api/read/company-brain-affiliate` | POST | affiliate, partner |
 | `/api/read/failed-events` | GET | owner, admin |
 | `/api/read/invoices` | GET | owner, admin, sales_manager |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |

@@ -70,6 +70,12 @@ const NO_ORG_COLUMN = new Map([
      another company's contracts"), rather than argued from the source. Verified
      by reading the files, not assumed from the filename. */
   ["contracts.mjs", "scoped in src/contracts/: the list functions throw without an org, the id lookups bind org_id = $2"],
+  /* Company Brain reads write no SQL in the handler. Both pass session
+     `orgId: staff.org_id` into retrieveChunks / retrieveAffiliateChunks, which
+     bind `c.org_id = $1` and refuse a missing org (src/company-brain/retrieve.mjs).
+     Verified by reading those files, not assumed from the filename. */
+  ["company-brain.mjs", "scoped in src/company-brain/retrieve.mjs retrieveChunks(), which binds c.org_id = $1 and refuses without an org"],
+  ["company-brain-affiliate.mjs", "scoped in src/company-brain/retrieve.mjs retrieveAffiliateChunks(), which binds c.org_id = $1 and refuses without an org"],
 ]);
 
 /* An allow-listed endpoint must still prove it hands the SESSION's org to

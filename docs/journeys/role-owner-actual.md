@@ -19,6 +19,7 @@ flowchart TD
     CAN --> A_auth[Signing in and out — 7 routes]
     CAN --> A_banking[banking — 3 routes]
     CAN --> A_campaigns[Campaigns — 6 routes]
+    CAN --> A_company_brain[company-brain — 1 route]
     CAN --> A_consent[consent — 1 route]
     CAN --> A_contracts[contracts — 1 route]
     CAN --> A_creative[Creative Factory — 4 routes]
@@ -28,14 +29,16 @@ flowchart TD
     CAN --> A_hiring[Hiring — 6 routes]
     CAN --> A_journeys[journeys — 2 routes]
     CAN --> A_privacy[privacy — 1 route]
-    CAN --> A_read[Reading data — 26 routes]
+    CAN --> A_read[Reading data — 27 routes]
     CAN --> A_top_level[Everything else — 19 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
+    WHO -->|Yes| CANT[Blocked — 1 route]
+    CANT --> B_read[Reading data — 1 blocked]
 ```
 
 ## What they can reach
 
-**92 of 92 routes.**
+**94 of 95 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -56,6 +59,7 @@ flowchart TD
 | `/api/campaigns/fatigue` | GET | partner, staff |
 | `/api/campaigns/list` | GET | partner, staff |
 | `/api/campaigns/spend` | GET | partner, staff |
+| `/api/company-brain/reviews` | GET, POST | owner |
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/contracts` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/contracts/sign` | GET, POST | anyone |
@@ -106,6 +110,7 @@ flowchart TD
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/banking-surface` | GET | owner, admin, sales_manager |
 | `/api/read/commissions` | GET | owner, admin, sales_manager |
+| `/api/read/company-brain` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/contracts` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -140,9 +145,11 @@ flowchart TD
 
 ## What they are blocked from
 
-**0 of 92 routes.**
+**1 of 95 routes.**
 
-_None._
+| Route | Methods | Who the code lets in |
+|---|---|---|
+| `/api/read/company-brain-affiliate` | POST | affiliate, partner |
 
 ## UNVERIFIED
 

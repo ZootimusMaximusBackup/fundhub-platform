@@ -4,23 +4,25 @@
 
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
-import { isUuid } from "../../src/http/read-api.mjs";
+import { isUuid, requireRole } from "../../src/http/read-api.mjs";
 import {
   listPendingReviews,
-  decideClassificationReview,
-  canApproveClassification
+  decideClassificationReview
 } from "../../src/company-brain/review.mjs";
+
+/* H-3 2026-08-02: ONLY the owner role may approve or reject owner/affiliate
+   classifications. Admin is deliberately excluded. */
+const OWNER_ONLY = new Set(["owner"]);
 
 export default async function handler(req, res, deps = {}) {
   const database = deps.db || db;
-  const auth = deps.requireAuth || requireAuth;
 
-  const staff = await auth(req, res, { db: database });
+  const staff = deps.requireAuth
+    ? await deps.requireAuth(req, res, { db: database })
+    : await requireAuth(req, res, { db: database });
   if (!staff) return;
 
-  if (!canApproveClassification(staff.role)) {
-    return res.status(403).json({ ok: false, error: "forbidden_role" });
-  }
+  if (!requireRole(res, staff, OWNER_ONLY)) return;
 
   const orgId = staff.org_id;
   if (!orgId) return res.status(403).json({ ok: false, error: "no_org_scope" });
