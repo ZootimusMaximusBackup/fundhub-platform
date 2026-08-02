@@ -166,7 +166,7 @@ export function renderRailsIndex(pipelines, stageMoves) {
     header(
       "Rails",
       ["db/seed/002_pipelines.sql", "src/workflows/"],
-      "The 7 pipelines seeded by `002_pipelines.sql`, one state machine each."
+      "The pipelines seeded by `002_pipelines.sql`, one state machine each."
     ),
     "| rail | key | stages | code-driven moves |",
     "|---|---|---|---|"

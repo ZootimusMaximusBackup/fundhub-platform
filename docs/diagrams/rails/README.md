@@ -2,7 +2,7 @@
 
 # Rails
 
-The 7 pipelines seeded by `002_pipelines.sql`, one state machine each.
+The pipelines seeded by `002_pipelines.sql`, one state machine each.
 
 **Generated from:** `db/seed/002_pipelines.sql`, `src/workflows/`
 
@@ -14,4 +14,3 @@ The 7 pipelines seeded by `002_pipelines.sql`, one state machine each.
 | [Optimization (Repair) Rounds](./optimization.md) | `optimization` | 5 | — |
 | [Inquiry Removal](./inquiry_removal.md) | `inquiry_removal` | 6 | — |
 | [AR / Collections](./ar_collections.md) | `ar_collections` | 5 | — |
-| [Affiliates + Hiring](./affiliates_hiring.md) | `affiliates_hiring` | 3 | — |

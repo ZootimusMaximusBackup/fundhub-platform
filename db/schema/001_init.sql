@@ -185,7 +185,7 @@ CREATE INDEX idx_inqlog_client ON inquiry_log(client_id);
 CREATE TABLE pipelines (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id      uuid NOT NULL REFERENCES orgs(id),
-  key         text NOT NULL,   -- sales | funding_card_stacking | funding_altfin | optimization | inquiry_removal | ar_collections | affiliates_hiring
+  key         text NOT NULL,   -- sales | funding_card_stacking | funding_altfin | optimization | inquiry_removal | ar_collections | hiring | affiliates_white_label
   name        text NOT NULL,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now(),
