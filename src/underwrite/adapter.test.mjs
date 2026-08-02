@@ -125,12 +125,28 @@ describe("tradeline type and status mapping", () => {
     assert.equal(lines[0].status, "open");
   });
 
-  test("`opened` is always null and is always named as missing", () => {
-    // fundhub stores no account-opened date anywhere. This is the single largest
-    // hole in the integration and it must be reported on every line, every time.
+  test("a line with no opened_on reports `opened: null` and names the gap", () => {
+    // The historical case: rows ingested before the 2026-08-01 mapping fix, or a
+    // manual entry with no date given, have opened_on = null. That must still
+    // read as unseasoned rather than being guessed at.
     const { lines, gaps } = toEngineTradelines([line(), line({ id: "b" })]);
     assert.deepEqual(lines.map((l) => l.opened), [null, null]);
     for (const g of gaps) assert.ok(g.missing.includes("opened"));
+  });
+
+  test("a line with a real opened_on passes it through, not null", () => {
+    const { lines, gaps } = toEngineTradelines([line({ opened_on: "2020-12-11" })]);
+    assert.equal(lines[0].opened, "2020-12-11");
+    assert.ok(!gaps[0].missing.includes("opened"), "a known date must not be named as missing");
+  });
+
+  test("opened_on as a JS Date (what node-postgres returns for a `date` column) still converts", () => {
+    // tradelines.opened_on is a `date` column; the pg driver parses a non-null
+    // one into a local-time JS Date, not a string. If the adapter forgot to
+    // convert, monthsSince() in the vendored engine would reject the Date
+    // (it requires a string) and this would silently regress to "always null".
+    const { lines } = toEngineTradelines([line({ opened_on: new Date(2020, 11, 11) })]);
+    assert.equal(lines[0].opened, "2020-12-11");
   });
 
   test("a card with no stored liability position reports payment_status missing", () => {
@@ -205,11 +221,33 @@ describe("toBureaus — which bureaus are supplied, and what is recorded missing
     assert.equal(note.perBureau, false);
   });
 
-  test("hasLLC and opened are always reported missing at client level", () => {
+  test("hasLLC is always reported missing at client level; opened is reported only when true", () => {
+    // hasLLC has no code path that could ever fill it in — always missing.
+    // opened is data-dependent since the mapping fix: this fixture's line has
+    // no opened_on, so it is still missing here.
     const out = toBureaus({ crsResults: [crs(SCORES)], tradelines: [line()] });
     const fields = out.missing.client.map((m) => m.field);
     assert.ok(fields.includes("hasLLC"));
     assert.ok(fields.includes("opened"));
+  });
+
+  test("opened is NOT reported missing at client level once every line has a real date", () => {
+    const out = toBureaus({
+      crsResults: [crs(SCORES)],
+      tradelines: [line({ opened_on: "2018-01-01" })]
+    });
+    const fields = out.missing.client.map((m) => m.field);
+    assert.ok(!fields.includes("opened"), "a fully-dated file must not still claim the date is missing");
+  });
+
+  test("opened at client level names the partial count when only some lines lack a date", () => {
+    const out = toBureaus({
+      crsResults: [crs(SCORES)],
+      tradelines: [line({ id: "a", opened_on: "2018-01-01" }), line({ id: "b" })]
+    });
+    const gap = out.missing.client.find((m) => m.field === "opened");
+    assert.ok(gap, "one of two lines still lacks a date, so the gap must be named");
+    assert.match(gap.reason, /1 of 2/);
   });
 
   test("no credit pull at all is its own finding", () => {

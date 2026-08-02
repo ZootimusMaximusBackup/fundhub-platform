@@ -177,9 +177,10 @@ function basisFor(topic, uw) {
         highest_revolving_limit_usd: p.highest_revolving_limit,
         has_any_revolving: primary.hasAnyRevolving ?? null,
         compared_against: { anchor_limit_usd: ENGINE_THRESHOLDS.anchor_revolving_limit_usd },
-        // The reason this almost always fires here. Named at the point of use.
+        // The reason this can fire even on a strong file. Named at the point of use.
         note: "a line counts toward this limit only if it is open, revolving AND at least 24 months old; " +
-              "fundhub stores no account-opened date, so no line is treated as seasoned"
+              "a line with no account-opened date stored cannot be treated as seasoned, so this figure " +
+              "is a floor over whichever lines carry a date"
       };
 
     case "inquiries":
@@ -357,13 +358,18 @@ export function buildReport({ underwrite, suggestions, adapter, fundhubUtilizati
     !(uw.per_bureau?.[uw.primary_bureau]?.cardFunding > 0) &&
     !(uw.personal?.card_funding > 0);
 
+  // Data-dependent, same reasoning as the adapter's own client-level "opened"
+  // gap (src/underwrite/adapter.mjs): a real open date can now be stored, so
+  // this can no longer be asserted true on every response.
+  const openedIsMissing = missingFieldNames(missing).has("opened");
+
   return {
     engine: {
       name: ENGINES.UNDERWRITE_IQ,
       upstreamCommit: null, // filled by the endpoint from engine.mjs's UPSTREAM
       pure: false,
       purityNote: "computeUnderwrite reads the system clock to age tradelines; " +
-                  "with no stored open date every line reads unseasoned"
+                  "a line with no stored open date reads as unseasoned"
     },
     underwrite: uw,
     suggestions: annotateSuggestions(suggestions, uw, missing),
@@ -385,11 +391,12 @@ export function buildReport({ underwrite, suggestions, adapter, fundhubUtilizati
         ? "lite_banner_funding is the engine's hardcoded 15000 display floor, not a computed figure " +
           "and not an amount this client is approved for"
         : null,
-      fundingFiguresAreFloors: true,
-      fundingFiguresNote:
-        "fundhub stores no account-opened date, so no tradeline is treated as seasoned. " +
-        "Card and loan stacking capacity therefore compute as unavailable for every client " +
-        "until an open date is stored."
+      fundingFiguresAreFloors: openedIsMissing,
+      fundingFiguresNote: openedIsMissing
+        ? "at least one tradeline has no account-opened date stored, so it cannot be treated as " +
+          "seasoned. Card and loan stacking capacity are computed as a floor over whichever lines " +
+          "carry a date, not the client's full file."
+        : null
     }
   };
 }

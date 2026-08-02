@@ -30,15 +30,27 @@
 // These are gaps in the product, recorded here because they change what the
 // engine can honestly say:
 //
-//   * ACCOUNT OPENED DATE — nowhere. Not on `tradelines` (054 has as_of, which is
-//     when we OBSERVED the line, and closed_at; neither is an open date), not in
-//     the CRS normalizer's key lists in src/tradelines/index.mjs, not in any
-//     migration. The engine calls a line "seasoned" at >= 24 months old and
-//     seasoning gates EVERY funding figure it produces. With no open date, every
-//     line reads unseasoned, `highestRevolvingLimit` stays 0, card and loan
-//     stacking are both unavailable, and `lite_banner_funding` falls back to its
-//     hardcoded 15000. This is the single largest hole in the integration and it
-//     is reported on every response, per line, as `opened`.
+//   * ACCOUNT OPENED DATE — stored on `tradelines.opened_on` (migration 095) and
+//     mapped at ingest by src/tradelines/index.mjs's OPENED_KEYS. This was WRONG
+//     here until 2026-08-01: an earlier report concluded no such field existed
+//     anywhere, on the strength of this file's own synthetic test fixtures,
+//     which never matched the real CRS payload shape (`accountOpenedDate`,
+//     confirmed against the vendor's sandbox library). Two bugs, not one — the
+//     normalizer's key lists also missed the real lender/limit/balance/ref field
+//     names, so real bureau tradelines were being dropped before ingest even
+//     reached this column. Both are fixed as of the same change that corrected
+//     this comment.
+//
+//     A row ingested BEFORE the fix still has `opened_on: null` and reads as
+//     unseasoned until the client is pulled again — nothing here backfills that,
+//     on purpose (see src/tradelines/store.mjs). The engine calls a line
+//     "seasoned" at >= 24 months old and seasoning gates EVERY funding figure it
+//     produces, so a line with no date still reads unseasoned, still contributes
+//     0 to `highestRevolvingLimit`, and `lite_banner_funding` still falls back to
+//     its hardcoded 15000 whenever that leaves no card funding computed. That
+//     per-line gap is reported as `opened` in `tradelineGaps`; it is no longer
+//     reported unconditionally at the client level, because it is no longer
+//     unconditionally true.
 //
 //   * LLC / ENTITY DATA — nowhere. `buildSuggestions` takes { hasLLC,
 //     llcAgeMonths } and, given nothing, defaults to "no LLC" and emits a
@@ -62,6 +74,7 @@
 import { fromCents } from "../commissions/money.mjs";
 import { financeOsGrid } from "../finance/os-grid.mjs";
 import { triMerge } from "../http/client-detail.mjs";
+import { isoDay } from "../liabilities/card-stack.mjs";
 
 export const BUREAUS = Object.freeze(["experian", "equifax", "transunion"]);
 
@@ -160,27 +173,33 @@ export function toEngineTradelines(tradelines = [], liabilities = []) {
     const liability = byTradeline.get(String(t.id)) ?? null;
     const limit = dollars(t.credit_limit_cents);
     const balance = dollars(t.balance_cents);
+    // tradelines.opened_on is a `date` column; node-postgres parses a non-null
+    // one into a JS Date, and the engine's monthsSince() only accepts a string
+    // (./vendor/underwriter.cjs). isoDay handles both a Date and a string and
+    // returns null for either a null column or an unparseable value — never a
+    // guessed date. See src/tradelines/index.mjs for where this is populated
+    // (readOpenedOn, at ingest) and store.mjs for why a re-pull cannot erase it.
+    const openedOn = isoDay(t.opened_on);
 
     lines.push({
       type: engineType(t.kind),
       status: engineStatus(t, liability),
       limit,
       balance,
-      // NOT STORED ANYWHERE IN FUNDHUB. See the header. null makes monthsSince()
-      // return null, which makes the line unseasoned, which is the conservative
-      // reading — it withholds funding capacity rather than inventing it. It is
-      // also the CLOCK-STABLE choice: a null date cannot age into a different
-      // answer between two runs of the same input.
-      opened: null
+      // null makes monthsSince() return null, which makes the line unseasoned —
+      // the conservative reading, withholding funding capacity rather than
+      // inventing it, for any line whose open date fundhub does not have.
+      opened: openedOn
     });
 
     const missing = [];
     if (limit === null) missing.push("credit_limit_cents");
     if (balance === null) missing.push("balance_cents");
     if (liability === null) missing.push("payment_status");
-    // Always missing, always worth naming — it is the field that decides whether
-    // this line can support any funding at all.
-    missing.push("opened");
+    // Worth naming whenever it's true — it is the field that decides whether
+    // this specific line can support any funding at all. No longer unconditional
+    // now that real open dates flow through; see the header.
+    if (openedOn === null) missing.push("opened");
 
     gaps.push({
       tradelineId: t.id ?? null,
@@ -370,12 +389,23 @@ export function toBureaus({ tradelines = [], liabilities = [], crsResults = [], 
     reason: "no LLC or business-entity field exists in the schema",
     effect: "the engine's LLC suggestion is produced from its default of 'no LLC', not from this client's record"
   });
-  missing.client.push({
-    field: "opened",
-    source: "(not stored anywhere in fundhub)",
-    reason: "no account-opened date exists on `tradelines` or in the CRS normalizer",
-    effect: "every line reads unseasoned, so card and loan stacking are unavailable and all funding figures are floors"
-  });
+  // Data-dependent, not blanket: a line ingested since the 2026-08-01 fix (or a
+  // manual entry the client dated) can carry a real opened_on. Report the gap
+  // only when it is actually true for at least one line — see the header for
+  // why this is no longer an unconditional push.
+  const openedGapCount = gaps.filter((g) => g.missing.includes("opened")).length;
+  if (openedGapCount > 0) {
+    missing.client.push({
+      field: "opened",
+      source: "tradelines.opened_on",
+      reason: openedGapCount === lines.length
+        ? "no account-opened date stored for any line — ingested before the mapping fix, " +
+          "or a manual entry with no date given"
+        : `no account-opened date stored for ${openedGapCount} of ${lines.length} lines`,
+      effect: "those lines read unseasoned, so they contribute nothing to card or loan stacking " +
+              "and the client's true stacking capacity may be higher than what is shown"
+    });
+  }
   if (Array.isArray(crsResults) && crsResults.length === 0) {
     missing.client.push({
       field: "crs_results",

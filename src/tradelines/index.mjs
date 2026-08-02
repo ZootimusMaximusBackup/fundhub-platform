@@ -14,6 +14,8 @@
 //   * a field this module cannot find is null, and stays null all the way to the
 //     calculator, which is built to null out the dependent output;
 //   * an APR is only accepted if it can be read unambiguously (see readApr);
+//   * an open date is only accepted if it parses as a real calendar date (see
+//     readOpenedOn) — never inferred from any other field;
 //   * every line keeps its unparsed source record in `raw`.
 //
 // Pure and I/O-free. The db access lives in store.mjs so this half stays
@@ -57,15 +59,46 @@ export function readApr(value) {
   return Math.round(fraction * 1e5) / 1e5; // numeric(6,5) in the column
 }
 
+/* readOpenedOn — a calendar date as YYYY-MM-DD, or null. Same refusal rule as
+ * readApr and toCents: a value that cannot be read unambiguously is refused,
+ * not guessed at, and nothing here infers a date from any other field. The
+ * round-trip through Date is deterministic (a fixed string in, the same
+ * string out) — it does not read the clock, so this module stays PURE. */
+export function readOpenedOn(value) {
+  if (value == null || value === "") return null;
+  const s = String(value).trim();
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (!m) return null;
+  const iso = m[0];
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== iso) return null;
+  return iso;
+}
+
 /* The field names actually seen across the payloads this repo handles, most
    specific first. Kept as data rather than a chain of `??` so that adding a
-   vendor is a list edit and the precedence stays visible. */
-const LENDER_KEYS = ["lender", "creditor", "creditor_name", "subscriber_name", "name"];
-const LIMIT_KEYS = ["credit_limit", "creditLimit", "limit", "high_credit", "highCredit"];
-const BALANCE_KEYS = ["balance", "current_balance", "currentBalance", "balance_amount"];
+   vendor is a list edit and the precedence stays visible.
+   creditorName / creditLimitAmount / highBalanceAmount / currentBalanceAmount /
+   accountIdentifier / accountOpenedDate are the CRS sandbox's real TransUnion,
+   Experian and Equifax field names, confirmed 2026-08-01 against the vendor's
+   own JSON payload library — added alongside the earlier guesses rather than
+   replacing them, since those older names may still be exercised by fixtures
+   or by a source this repo has not seen a live sample of. */
+const LENDER_KEYS = ["lender", "creditor", "creditor_name", "subscriber_name", "name", "creditorName"];
+const LIMIT_KEYS = [
+  "credit_limit", "creditLimit", "limit", "high_credit", "highCredit",
+  "creditLimitAmount", "highBalanceAmount"
+];
+const BALANCE_KEYS = ["balance", "current_balance", "currentBalance", "balance_amount", "currentBalanceAmount"];
 const APR_KEYS = ["apr", "interest_rate", "interestRate", "rate"];
-const REF_KEYS = ["account_ref", "account_number", "accountNumber", "account_id", "id"];
+const REF_KEYS = ["account_ref", "account_number", "accountNumber", "account_id", "id", "accountIdentifier"];
 const KIND_KEYS = ["kind", "account_type", "accountType", "type"];
+/* The account-opened date. NOT read anywhere before 2026-08-01: an earlier
+   report concluded this field did not exist in the CRS payload at all — wrong,
+   confirmed against the vendor's sandbox library, where `accountOpenedDate`
+   sits on every tradeline across all three bureaus. The other three names are
+   defensive variants, not confirmed live. */
+const OPENED_KEYS = ["accountOpenedDate", "account_opened_date", "dateOpened", "opened"];
 
 function pick(record, keys) {
   for (const k of keys) {
@@ -132,6 +165,7 @@ export function normalizeTradeline(record, { source = "crs", sourceRef = null, a
     source,
     source_ref: sourceRef,
     account_ref: pick(record, REF_KEYS) == null ? null : String(pick(record, REF_KEYS)),
+    opened_on: readOpenedOn(pick(record, OPENED_KEYS)),
     raw: record,
     as_of: asOf
   };

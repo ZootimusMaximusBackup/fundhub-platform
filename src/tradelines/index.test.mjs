@@ -9,7 +9,7 @@
 import { test } from "node:test";
 import assert from "node:assert";
 import {
-  toCents, fromCents, readApr, readKind,
+  toCents, fromCents, readApr, readOpenedOn, readKind,
   extractTradelineRecords, normalizeTradeline, normalizeFromCrs, toCalculatorCards
 } from "./index.mjs";
 
@@ -41,6 +41,20 @@ test("readApr refuses rather than clamps what it cannot read", () => {
   assert.equal(readApr("variable"), null);
   assert.equal(readApr(-4), null);
   assert.equal(readApr(150), null, "150% is outside the range we will act on");
+});
+
+test("readOpenedOn reads a real calendar date and normalizes to YYYY-MM-DD", () => {
+  assert.equal(readOpenedOn("2022-12-13"), "2022-12-13", "the CRS sandbox's own accountOpenedDate shape");
+  assert.equal(readOpenedOn("1990-01-01"), "1990-01-01");
+  assert.equal(readOpenedOn("2022-12-13T00:00:00.000Z"), "2022-12-13", "a full timestamp still yields the day");
+});
+
+test("readOpenedOn refuses rather than guesses what it cannot read", () => {
+  assert.equal(readOpenedOn(null), null);
+  assert.equal(readOpenedOn(""), null);
+  assert.equal(readOpenedOn("unknown"), null);
+  assert.equal(readOpenedOn("2022-13-01"), null, "month 13 is not a calendar date");
+  assert.equal(readOpenedOn("2022-02-30"), null, "February has no 30th");
 });
 
 test("readKind keeps installment lines identifiable", () => {
@@ -81,6 +95,47 @@ test("normalizeTradeline maps a full record", () => {
   assert.equal(row.account_ref, "XXXX1234");
   assert.equal(row.as_of, "2026-07-30T00:00:00Z");
   assert.equal(row.raw.creditor, "Amex Blue Business", "the unparsed record is kept verbatim");
+});
+
+test("normalizeTradeline maps a real CRS sandbox tradeline, verbatim", () => {
+  // Taken unmodified from the vendor's own CRS Sandbox JSON Payload Library
+  // (TransUnion response), confirmed 2026-08-01 to be the real, live payload
+  // shape — NOT the synthetic shape this file's other fixtures use. Before this
+  // fix, every field below except `accountType` fell through every key list:
+  // `lender` and `credit_limit_cents` both resolved null, and normalizeTradeline
+  // would have dropped this tradeline entirely (see the null-lender-and-null-
+  // limit rule below).
+  const row = normalizeTradeline({
+    accountIdentifier: "111110316779",
+    accountOpenedDate: "2020-12-11",
+    accountOwnershipType: "AuthorizedUser",
+    accountReportedDate: "2025-11-03",
+    accountStatusType: "Open",
+    accountType: "Revolving",
+    borrowerSourceType: "Borrower",
+    creditLimitAmount: "8400",
+    derogatoryDataIndicator: false,
+    highBalanceAmount: "0",
+    lastActivityDate: "2025-11-03",
+    monthlyPaymentAmount: "20",
+    monthsReviewedCount: "26",
+    creditorName: "CITI",
+    subscriberCode: "B 064DB003",
+    pastDueAmount: "0",
+    currentBalanceAmount: "608",
+    businessType: "Banking",
+    loanType: "CreditCard",
+    sourceType: "TransUnion"
+  }, { source: "crs", sourceRef: "crs-real-1", asOf: "2026-03-01T21:08:27.195Z" });
+
+  assert.ok(row, "a real bureau tradeline must survive the normalizer, not be dropped");
+  assert.equal(row.lender, "CITI", "creditorName must be read — it was not on any old key list");
+  assert.equal(row.kind, "revolving");
+  assert.equal(row.credit_limit_cents, 840000, "creditLimitAmount: \"8400\" -> 840000 cents");
+  assert.equal(row.balance_cents, 60800, "currentBalanceAmount: \"608\" -> 60800 cents");
+  assert.equal(row.apr, null, "the CRS sandbox carries no APR field on tradelines; must stay unknown, not 0");
+  assert.equal(row.account_ref, "111110316779", "accountIdentifier must be read as the account reference");
+  assert.equal(row.opened_on, "2020-12-11", "accountOpenedDate must be read and passed through unmodified");
 });
 
 test("a missing APR stays null instead of becoming free money", () => {

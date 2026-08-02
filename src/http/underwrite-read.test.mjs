@@ -314,14 +314,27 @@ describe("the response body", () => {
     }
   });
 
-  test("the seasoning gap is reported on every response", async () => {
-    // fundhub stores no account-opened date, so every funding figure is a floor.
-    // A caller must not be able to read the numbers without seeing that.
+  test("the seasoning gap is reported when no line has a stored open date", async () => {
+    // Still the common case for older rows and manual entries with no date
+    // given. A caller must not be able to read the numbers without seeing that
+    // they are a floor.
     const res = makeRes();
     await handler(req(), res, fullDb());
     assert.equal(res.body.caveats.fundingFiguresAreFloors, true);
     assert.match(res.body.caveats.fundingFiguresNote, /no account-opened date/);
     assert.ok(res.body.dataCompleteness.tradelineGaps.every((g) => g.missing.includes("opened")));
+  });
+
+  test("the seasoning caveat clears once the stored tradeline has a real open date", async () => {
+    const res = makeRes();
+    await handler(req(), res, fullDb({
+      tradelines: [{ ...TRADELINE_ROW, opened_on: "2018-01-01" }]
+    }));
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.caveats.fundingFiguresAreFloors, false,
+      "a fully-dated file must not still be flagged as a funding floor");
+    assert.equal(res.body.caveats.fundingFiguresNote, null);
+    assert.ok(res.body.dataCompleteness.tradelineGaps.every((g) => !g.missing.includes("opened")));
   });
 
   test("no promise is added on top of the engine's own strings", async () => {

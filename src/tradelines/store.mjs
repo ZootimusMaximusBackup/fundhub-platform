@@ -17,7 +17,7 @@ import { normalizeFromCrs } from "./index.mjs";
 
 const COLUMNS = [
   "lender", "kind", "credit_limit_cents", "balance_cents", "apr",
-  "source", "source_ref", "account_ref", "raw", "as_of"
+  "source", "source_ref", "account_ref", "opened_on", "raw", "as_of"
 ];
 
 /**
@@ -47,6 +47,10 @@ export async function upsertTradelines(db, { orgId, clientId, rows = [] }) {
          -- COALESCE, not overwrite: a later pull that omits the APR must not
          -- erase a rate we already knew. Absence is not a correction.
          apr                = COALESCE(EXCLUDED.apr, tradelines.apr),
+         -- Same reasoning: an account's open date does not change, so a re-pull
+         -- that happens to omit it (or a payload shape this normalizer cannot
+         -- yet read) must not erase a date a previous ingest already stored.
+         opened_on          = COALESCE(EXCLUDED.opened_on, tradelines.opened_on),
          source             = EXCLUDED.source,
          source_ref         = EXCLUDED.source_ref,
          raw                = EXCLUDED.raw,
