@@ -104,6 +104,9 @@ import bankingAccounts from "../../api/banking/accounts.mjs";
 import consentCapture from "../../api/consent/capture.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
+import contracts from "../../api/contracts.mjs";
+import readContracts from "../../api/read/contracts.mjs";
+import contractsSign from "../../api/contracts/sign.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -409,7 +412,46 @@ export const ROUTES = {
   // in the portal, and an employee may record one given on a call. Its role gate
   // is the same narrow set as finance/soft-pull and is spelled out in
   // api/consent/capture.mjs. Nothing behind it transmits.
-  "consent/capture": consentCapture
+  "consent/capture": consentCapture,
+
+  // ── The contract generator (117_contracts.sql, src/contracts/) ─────────────
+  //
+  // Routed in the SAME COMMIT as the handlers, the migration and both screens.
+  // This map's header records three features that were built end to end and
+  // shipped unreachable because nobody added the line here; a contract link that
+  // 404s is the worst version of that failure, because the person hitting it is
+  // a client who was told to sign something and cannot.
+  //
+  // THE THREE GATES ARE DIFFERENT AND MUST NOT BE MADE UNIFORM.
+  //
+  // "contracts" is the staff write surface, ROLE_SETS.STAFF — plus a NARROWER
+  // owner/admin check inside the handler for the four actions that write
+  // contract wording or void a contract. Contract copy carries legal weight and,
+  // unlike message copy, has no second approval step downstream to catch a bad
+  // edit; the words go straight onto a document somebody signs. Sending is
+  // ordinary staff work and stays STAFF. public/app/contracts.html mirrors that
+  // split by hiding one card, the same one-screen-two-gates shape
+  // template-editor.html already uses.
+  //
+  // "read/contracts" is ROLE_SETS.STAFF, the same set that already reads a
+  // client's tradelines and bank balances. It exposes nothing narrower.
+  //
+  // "contracts/sign" IS NOT ROLE GATED AND TAKES NO SESSION AT ALL. That is the
+  // point of it: the caller is a consumer who has never signed in. Auth is the
+  // HMAC on the link (src/contracts/signed-link.mjs), exactly as
+  // api/documents/[id].mjs does it — fail closed with no secret, constant-time
+  // comparison, and one undifferentiated 404 for a forged link, an unknown id
+  // and a draft, so it cannot be used as an oracle for which contracts exist.
+  //
+  // NOTHING BEHIND ANY OF THE THREE TRANSMITS. `send` freezes the wording,
+  // registers an immutable document version, and returns a link for a staff
+  // member to pass on by hand. There is no email and no provider call:
+  // src/messaging/providers/* is the only place outbound fetch may be added
+  // (CLAUDE.md §12), and docs/CONTRACTS-SPEC.md §12 records that gap rather than
+  // working around it.
+  "contracts": contracts,
+  "read/contracts": readContracts,
+  "contracts/sign": contractsSign
 
   /* NOT ROUTED, ON PURPOSE — see ALLOWED_UNROUTED in src/http/routes.test.mjs
      for the current list and the reason attached to each entry. That list is

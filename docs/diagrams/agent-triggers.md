@@ -121,6 +121,8 @@ Declared in `canonical.mjs`, emitted or emittable, with no Inngest function list
 - `invoice.sent`
 - `invoice.paid`
 - `invoice.voided`
+- `contract.sent`
+- `contract.signed`
 
 Some are handled synchronously by a bus handler instead (see [event-flow](./event-flow.md)); the
 commission and billing events are proposed-but-unbuilt. Either way, nothing durable reacts to them.
