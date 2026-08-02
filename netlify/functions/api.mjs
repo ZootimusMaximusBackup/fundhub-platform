@@ -65,6 +65,7 @@ import readUnderwrite from "../../api/read/underwrite.mjs";
 import readMoneyMap from "../../api/read/money-map.mjs";
 import readFinanceCommand from "../../api/read/finance-command.mjs";
 import readFinanceAsk from "../../api/read/finance-ask.mjs";
+import readWorkflows from "../../api/read/workflows.mjs";
 import readTransactions from "../../api/read/transactions.mjs";
 import bankingSyncAccounts from "../../api/banking/sync-accounts.mjs";
 import inquiries from "../../api/inquiries.mjs";
@@ -210,6 +211,14 @@ export const ROUTES = {
   // api/finance/alerts.mjs's REASON_TEXT map. ROLE_SETS.STAFF, same as its
   // neighbour above.
   "read/finance-ask": readFinanceAsk,
+
+  // read/workflows introspects the live src/workflows/index.mjs `functions`
+  // array — the actual Inngest registry — rather than a hand-authored list, so
+  // this can never drift from what src/workflows/*.mjs actually exports.
+  // ROLE_SETS.STAFF, same as its read neighbours: knowing which automations
+  // exist and whether they've fired is operational visibility, not a finance
+  // or ops-only concern.
+  "read/workflows": readWorkflows,
 
   // read/transactions is the missing reader for bank_transactions (085) — the
   // table has had a real writer (src/banking/import.mjs) since the mock
