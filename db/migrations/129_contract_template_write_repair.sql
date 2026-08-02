@@ -1,4 +1,4 @@
--- 128_contract_template_write_repair.sql — make saving a contract wording work.
+-- 129_contract_template_write_repair.sql — make saving a contract wording work.
 --
 -- WHY. Creating a text template from the CRM was answering HTTP 500 write_failed
 -- every time. 124 and 125 create the tables and columns; both use
