@@ -46,8 +46,11 @@
 //     on purpose (see src/tradelines/store.mjs). The engine calls a line
 //     "seasoned" at >= 24 months old and seasoning gates EVERY funding figure it
 //     produces, so a line with no date still reads unseasoned, still contributes
-//     0 to `highestRevolvingLimit`, and `lite_banner_funding` still falls back to
-//     its hardcoded 15000 whenever that leaves no card funding computed. That
+//     0 to `highestRevolvingLimit`, and `lite_banner_funding` comes back null
+//     whenever that leaves no card funding computed — no figure to show, not a
+//     placeholder one. There is no hardcoded 15000 display floor any more; it was
+//     removed on 2026-08-01 because a placeholder figure is indistinguishable
+//     from a computed one at the screen, which is the worse failure. That
 //     per-line gap is reported as `opened` in `tradelineGaps`; it is no longer
 //     reported unconditionally at the client level, because it is no longer
 //     unconditionally true.

@@ -282,10 +282,11 @@ describe("the response body", () => {
     assert.deepEqual(body.dataCompleteness.bureausUnavailable, ["experian", "equifax", "transunion"]);
     assert.ok(body.dataCompleteness.missing.client.some((m) => m.field === "crs_results"));
 
-    // The banner number must be flagged as the engine's hardcoded floor.
-    assert.equal(body.underwrite.lite_banner_funding, 15000);
+    // No card funding could be computed, so the banner number is null — not a
+    // made-up placeholder — and the caveat flag says so.
+    assert.equal(body.underwrite.lite_banner_funding, null);
     assert.equal(body.caveats.bannerFundingIsFallback, true);
-    assert.match(body.caveats.bannerFundingNote, /not an amount this client is approved for/);
+    assert.match(body.caveats.bannerFundingNote, /no figure to show/);
   });
 
   test("PARTIAL DATA: a sentence resting on an unentered field names that field", async () => {

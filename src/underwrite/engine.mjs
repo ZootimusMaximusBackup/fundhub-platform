@@ -119,11 +119,11 @@ export const UPSTREAM = Object.freeze({
  * @returns {object} { fundable, primary_bureau, metrics, per_bureau, personal,
  *          business, totals, optimization, lite_banner_funding }
  *
- * ⚠️ `lite_banner_funding` FALLS BACK TO A HARDCODED 15000 when the engine
- * computed no card funding at all — see the last lines of the vendored file. It
- * is a display floor upstream chose, NOT a computed figure and NOT an amount
- * anybody is approved for. ./report.mjs flags it as such whenever the fallback
- * fired, so no screen can print it as a result.
+ * ⚠️ `lite_banner_funding` IS NULL when the engine computed no card funding at
+ * all — see the last lines of the vendored file. There is no display-floor
+ * number anymore: null means no figure is available, not a placeholder one.
+ * ./report.mjs flags it as such whenever no figure was computed, so no screen
+ * can print the null as $0, NaN, or blank.
  */
 export const computeUnderwrite = underwriter.computeUnderwrite;
 

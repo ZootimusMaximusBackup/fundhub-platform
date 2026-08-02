@@ -589,11 +589,10 @@ button,input,select,textarea{font:inherit;color:inherit}
     if (S.uwRes && !S.uwRes.ok) {
       notes.push('<div class="fos-note info">Funding capacity could not be read — ' + esc(S.uwRes.error || "unknown error") + ".</div>");
     }
-    if (S.uw && S.uw.underwrite && S.uw.underwrite.lite_banner_funding === 15000 &&
-        !(S.uw.underwrite.personal && S.uw.underwrite.personal.card_funding > 0)) {
+    if (S.uw && S.uw.caveats && S.uw.caveats.bannerFundingIsFallback) {
       notes.push('<div class="fos-note info">No card on file is seasoned enough to size a real funding number — ' +
         'Fundhub does not store an account-opened date, so no line can be proven 24 months old. ' +
-        'The figure below is the engine’s generic fallback, not a number this client currently qualifies for.</div>');
+        'No banner funding figure is available for this client yet.</div>');
     }
     return notes.length ? '<div class="fos-notes">' + notes.join("") + '</div>' : "";
   }

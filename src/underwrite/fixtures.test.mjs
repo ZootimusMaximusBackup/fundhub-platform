@@ -284,8 +284,8 @@ describe("pinned fixtures — known input, known sentences", () => {
     // unknown from a real number.
     assert.equal(uw.metrics.score, 0, "an unavailable bureau's score is 0, NOT null");
 
-    assert.equal(uw.lite_banner_funding, 15000,
-      "the engine's hardcoded display floor — not a computed figure and not an approval amount");
+    assert.equal(uw.lite_banner_funding, null,
+      "no card funding computed — null, not a made-up display floor");
 
     assert.deepEqual(buildSuggestions(uw), [
       "Add a strong primary revolving account (not AU) with a $5,000+ limit to anchor your profile before stacking.",

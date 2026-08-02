@@ -273,7 +273,7 @@ function computeUnderwrite(bureaus, businessAgeMonthsRaw) {
   };
 
   let liteBannerFunding = primary.cardFunding || cardFunding;
-  if (!liteBannerFunding) liteBannerFunding = 15000;
+  if (!liteBannerFunding) liteBannerFunding = null;
 
   const fundable =
     primary.score != null &&

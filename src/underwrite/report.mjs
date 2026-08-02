@@ -350,13 +350,11 @@ export function buildReport({ underwrite, suggestions, adapter, fundhubUtilizati
     });
   }
 
-  // `lite_banner_funding` has a hardcoded 15000 fallback upstream. If no card
-  // funding was computed, that is what this number is, and no screen should print
-  // it as an amount anyone qualifies for.
-  const bannerIsFallback =
-    (uw.lite_banner_funding ?? null) === 15000 &&
-    !(uw.per_bureau?.[uw.primary_bureau]?.cardFunding > 0) &&
-    !(uw.personal?.card_funding > 0);
+  // `lite_banner_funding` is null upstream whenever no card funding could be
+  // computed — there is no placeholder number, just an absence. This flag lets
+  // a screen tell "no figure available" apart from "here is a real number" so
+  // nothing renders the null as $0, NaN, or blank.
+  const bannerIsFallback = uw.lite_banner_funding == null;
 
   // Data-dependent, same reasoning as the adapter's own client-level "opened"
   // gap (src/underwrite/adapter.mjs): a real open date can now be stored, so
@@ -388,8 +386,8 @@ export function buildReport({ underwrite, suggestions, adapter, fundhubUtilizati
     caveats: {
       bannerFundingIsFallback: bannerIsFallback,
       bannerFundingNote: bannerIsFallback
-        ? "lite_banner_funding is the engine's hardcoded 15000 display floor, not a computed figure " +
-          "and not an amount this client is approved for"
+        ? "lite_banner_funding is null — the engine computed no card funding for this client, " +
+          "so there is no figure to show, not a placeholder one"
         : null,
       fundingFiguresAreFloors: openedIsMissing,
       fundingFiguresNote: openedIsMissing
