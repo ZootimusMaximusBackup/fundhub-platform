@@ -41,7 +41,7 @@
 // It holds no URL and no credential and makes no outbound request. Transmission
 // lives in src/messaging/providers/* and nowhere else (CLAUDE.md §12).
 
-import { dispatchDue, DEFAULT_BATCH } from "./dispatch.mjs";
+import { dispatchDue, DEFAULT_BATCH, resolveTimestampParam } from "./dispatch.mjs";
 import { createTask } from "../lib/create-task.mjs";
 
 /** What a company that has never touched its settings gets. See the header. */
@@ -126,7 +126,7 @@ export async function outboxStatus(db, { orgId, now = null } = {}) {
        max(last_attempt_at)                                                                AS last_attempt
        FROM messages
       WHERE org_id = $1::uuid AND direction = 'outbound'`,
-    [orgId, now]);
+    [orgId, resolveTimestampParam(now)]);
   const counts = rows[0] || {};
 
   /* Whether a provider is actually reachable is the question an operator really
@@ -200,7 +200,7 @@ export async function drain(db, { orgId, limit = DEFAULT_BATCH, now = null, disp
       `SELECT count(*)::int AS n FROM messages
         WHERE org_id = $1::uuid AND direction = 'outbound' AND status = 'sent'
           AND created_at >= date_trunc('day', COALESCE($2::timestamptz, now()))`,
-      [orgId, now]);
+      [orgId, resolveTimestampParam(now)]);
     const already = rows[0]?.n || 0;
     const room = settings.daily_send_cap - already;
     if (room <= 0) {

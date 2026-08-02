@@ -1,5 +1,21 @@
 /* The six journey trees, server-side.
  *
+ * THE KEY LIST HERE DOES NOT MATCH docs/journeys/. src/journeys/runner/
+ * describes itself as "the join" between this file's six trees (INTENT) and
+ * docs/journeys/*-actual.md's eight role-reachability pages (REALITY) — see
+ * that file's own header. But the key sets were never reconciled: six here
+ * (client, setter, closer, advisor, affiliate, partner) against eight there
+ * (client, role-owner, role-sales-manager, role-closer, role-funding-advisor,
+ * role-inquiry-remover, affiliate, white-label). Four of these six are
+ * plausibly the same real role under a shorter name (setter ≈
+ * role-sales-manager, closer ≈ role-closer, advisor ≈ role-funding-advisor,
+ * partner ≈ white-label); two documented roles — role-owner and
+ * role-inquiry-remover — have no tree here at all. Recorded rather than
+ * silently reconciled: renaming these keys would also mean rewriting the
+ * fuzzy-match label text src/journeys/runner/diff.mjs's Journey/handoff
+ * checks depend on, and authoring trees for the two missing roles is real
+ * journey content nobody has written — not this file's call to invent.
+ *
  * WHY THIS FILE EXISTS, AND WHY IT IS A COPY
  *
  * The journeys editor (public/app/journeys.html) carries these six trees in a

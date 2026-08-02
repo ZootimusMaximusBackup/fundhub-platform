@@ -325,10 +325,10 @@ function readme(data) {
     endpoints.filter((e) => reaches(j, e.gate).reachable === true && !generic.has(e.gate.kind)).length === 0);
 
   const rows = journeys.map((j) => {
-    if (j.missing) return `| [${j.name}](./${j.name}-actual.md) | — | **no such role exists** |`;
+    if (j.missing) return `| [${j.name}](./${j.name}-actual.md) ([intended](./${j.name}-intended.md)) | — | **no such role exists** |`;
     const scored = endpoints.map((e) => reaches(j, e.gate));
     const can = scored.filter((s) => s.reachable === true).length;
-    return `| [${j.name}](./${j.name}-actual.md) | \`${j.subject}\` | reaches ${can} of ${endpoints.length} routes |`;
+    return `| [${j.name}](./${j.name}-actual.md) ([intended](./${j.name}-intended.md)) | \`${j.subject}\` | reaches ${can} of ${endpoints.length} routes |`;
   });
 
   return [
@@ -339,15 +339,35 @@ function readme(data) {
     "One page per journey, showing who can reach what. **Generated from the code**, so it",
     "cannot drift into describing something that is not there.",
     "",
-    "## Actual only — there are no `-intended` files here",
+    "## `-intended.md` files exist now, written after the fact",
     "",
-    "`CLAUDE.md` §4 describes a pair per journey: `-intended.md`, hand-written by a human, and",
-    "`-actual.md`, generated from the code. **Only the actual files exist**, by the owner's",
-    "decision. Agents do not author intended journeys, so an agent creating them would be",
-    "writing the source of truth it is supposed to be checked against.",
+    "`CLAUDE.md` §4 describes a pair per journey: `-intended.md`, hand-written by a human",
+    "*before* the code, and `-actual.md`, generated from the code. From 2026-07-31 to",
+    "2026-08-02 only the actual files existed here, by the owner's decision — agents do not",
+    "normally author intended journeys, because an agent creating one would be writing the",
+    "source of truth its own work is checked against.",
     "",
-    "That means one thing is missing on purpose: nothing here compares what the system does",
-    "against what it was *meant* to do. These pages are a mirror, not a test.",
+    "On 2026-08-02 the owner directed a one-time exception: each `-intended.md` was generated",
+    "from the same extracted data as its `-actual.md`, because no independent spec existed to",
+    "draw one from otherwise. Every intended page says so at the top, in a warning banner that",
+    "is not decoration — a match between the two files today proves only that one was copied",
+    "from the other, not that either is correct. Treat them as a starting draft for a human to",
+    "revise into real intent the next time a journey changes on purpose, not as a settled spec.",
+    "",
+    "There is still no automated diff between the two files for any journey — CLAUDE.md §4",
+    "describes intended vs. actual as a human comparison. These pages remain a mirror, not a",
+    "test, until someone reads both sides and writes down what they find.",
+    "",
+    "## The join to src/journeys/runner/ was never finished",
+    "",
+    "`src/journeys/runner/` (the Journey Runner) describes itself as joining this page's eight",
+    "role-reachability journeys (REALITY) against `src/journeys/seed-journeys.mjs`'s CRM",
+    "automation trees (INTENT — what messages send and what pipeline moves happen). The two key",
+    "lists were never reconciled: six keys there (`client`, `setter`, `closer`, `advisor`,",
+    "`affiliate`, `partner`) against the eight here. Four are plausibly the same role under a",
+    "shorter name (`setter` ≈ `role-sales-manager`, `closer` ≈ `role-closer`, `advisor` ≈",
+    "`role-funding-advisor`, `partner` ≈ `white-label`); `role-owner` and `role-inquiry-remover`",
+    "have no automation tree at all. See `src/journeys/seed-journeys.mjs`'s header.",
     "",
     "## The journeys",
     "",

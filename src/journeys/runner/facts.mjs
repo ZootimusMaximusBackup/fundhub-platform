@@ -101,11 +101,48 @@ export function gatherRails(env = process.env) {
   return out;
 }
 
+/* gather() fires several read queries at once, and when the caller already has
+   an open transaction (api/journeys/run.mjs's BEGIN, always the case in
+   practice — see the header on gather() below), they all share it. Postgres
+   aborts an ENTIRE transaction on the first statement error, so one bad query
+   (originally: this file asking for a table named "stages" that has never
+   existed — the real name is pipeline_stages) silently failed every query
+   issued after it too, not just its own. Two tables that were perfectly
+   readable on their own (agents, message_templates) came back as "could not
+   read" in the diagnostic report as pure collateral damage.
+
+   Each query now runs inside its own SAVEPOINT, so a failure rolls back only
+   that one query's place in the transaction and leaves the rest able to run.
+   Outside an explicit transaction — SAVEPOINT with none open errors as
+   "25P01" — this just falls through to running the query directly, same as
+   before; nothing there was ever poisoned in the first place. */
+let savepointCounter = 0;
+
 async function rows(db, sql, params = []) {
+  const savepoint = `journey_facts_sp_${savepointCounter++}`;
+  let hasSavepoint = false;
+  try {
+    await db.query(`SAVEPOINT ${savepoint}`);
+    hasSavepoint = true;
+  } catch {
+    // No open transaction (or db does not support savepoints) — a failure
+    // below cannot poison anything else, so proceed without one.
+  }
+
   try {
     const r = await db.query(sql, params);
+    if (hasSavepoint) await db.query(`RELEASE SAVEPOINT ${savepoint}`).catch(() => {});
     return r?.rows || [];
   } catch {
+    if (hasSavepoint) {
+      try {
+        await db.query(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+        await db.query(`RELEASE SAVEPOINT ${savepoint}`);
+      } catch {
+        // Best effort — if this fails too the transaction was already in
+        // worse shape than this function can recover from.
+      }
+    }
     return null; // table absent or unreadable — the caller reports that, not a zero
   }
 }
@@ -117,23 +154,29 @@ async function rows(db, sql, params = []) {
  * exist" and "the templates table could not be read" are different findings
  * and conflating them is how a runner reports confidently about nothing. */
 export async function gather(db, { orgId, env = process.env, journeys = {} } = {}) {
-  const [pipelines, stages, agents, templates, clientColumns] = await Promise.all([
-    rows(db, `SELECT key, name FROM pipelines WHERE org_id = $1`, [orgId]),
-    rows(
-      db,
-      `SELECT p.name AS pipeline, s.name AS stage, s.key AS stage_key
-         FROM stages s JOIN pipelines p ON p.id = s.pipeline_id
-        WHERE p.org_id = $1`,
-      [orgId]
-    ),
-    rows(db, `SELECT code, name, status, prompt FROM agents WHERE org_id = $1`, [orgId]),
-    rows(db, `SELECT template_key, channel, compliance_passed FROM message_templates WHERE org_id = $1`, [orgId]),
-    rows(
-      db,
-      `SELECT column_name FROM information_schema.columns WHERE table_name = 'clients'`,
-      []
-    )
-  ]);
+  /* SEQUENTIAL, NOT Promise.all. Each rows() call opens and closes its own
+     SAVEPOINT (see above) so one bad query can't poison the rest — but
+     savepoints nest LIFO, and five of them opened concurrently on one shared
+     connection (which is what these all run on, inside gather()'s caller's
+     transaction) can interleave in submission order in ways that invalidate a
+     sibling's still-open savepoint. None of these five queries is expensive
+     enough for the concurrency to matter; running them one at a time keeps
+     every savepoint's open/close strictly nested and easy to reason about. */
+  const pipelines = await rows(db, `SELECT key, name FROM pipelines WHERE org_id = $1`, [orgId]);
+  const stages = await rows(
+    db,
+    `SELECT p.name AS pipeline, s.name AS stage, s.key AS stage_key
+       FROM pipeline_stages s JOIN pipelines p ON p.id = s.pipeline_id
+      WHERE p.org_id = $1`,
+    [orgId]
+  );
+  const agents = await rows(db, `SELECT code, name, status, prompt FROM agents WHERE org_id = $1`, [orgId]);
+  const templates = await rows(db, `SELECT template_key, channel, compliance_passed FROM message_templates WHERE org_id = $1`, [orgId]);
+  const clientColumns = await rows(
+    db,
+    `SELECT column_name FROM information_schema.columns WHERE table_name = 'clients'`,
+    []
+  );
 
   return {
     orgId,

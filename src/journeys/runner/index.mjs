@@ -8,6 +8,15 @@
  * README of that directory states the gap against itself — "these pages are a
  * mirror, not a test". This is the join.
  *
+ * THE JOIN IS INCOMPLETE. The INTENT side's six keys (client, setter, closer,
+ * advisor, affiliate, partner — src/journeys/seed-journeys.mjs) were never
+ * reconciled against the REALITY side's eight (client, role-owner,
+ * role-sales-manager, role-closer, role-funding-advisor,
+ * role-inquiry-remover, affiliate, white-label — docs/journeys/README.md).
+ * role-owner and role-inquiry-remover have no tree here at all. Recorded, not
+ * fixed here — see seed-journeys.mjs's header for why a rename or new trees
+ * are not this file's call to make unasked.
+ *
  * ═══════════════════════════════════════════════════════════════════════════
  * WHAT IS REAL HERE AND WHAT IS NOT
  *

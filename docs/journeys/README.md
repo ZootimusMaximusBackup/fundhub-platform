@@ -5,28 +5,48 @@
 One page per journey, showing who can reach what. **Generated from the code**, so it
 cannot drift into describing something that is not there.
 
-## Actual only — there are no `-intended` files here
+## `-intended.md` files exist now, written after the fact
 
-`CLAUDE.md` §4 describes a pair per journey: `-intended.md`, hand-written by a human, and
-`-actual.md`, generated from the code. **Only the actual files exist**, by the owner's
-decision. Agents do not author intended journeys, so an agent creating them would be
-writing the source of truth it is supposed to be checked against.
+`CLAUDE.md` §4 describes a pair per journey: `-intended.md`, hand-written by a human
+*before* the code, and `-actual.md`, generated from the code. From 2026-07-31 to
+2026-08-02 only the actual files existed here, by the owner's decision — agents do not
+normally author intended journeys, because an agent creating one would be writing the
+source of truth its own work is checked against.
 
-That means one thing is missing on purpose: nothing here compares what the system does
-against what it was *meant* to do. These pages are a mirror, not a test.
+On 2026-08-02 the owner directed a one-time exception: each `-intended.md` was generated
+from the same extracted data as its `-actual.md`, because no independent spec existed to
+draw one from otherwise. Every intended page says so at the top, in a warning banner that
+is not decoration — a match between the two files today proves only that one was copied
+from the other, not that either is correct. Treat them as a starting draft for a human to
+revise into real intent the next time a journey changes on purpose, not as a settled spec.
+
+There is still no automated diff between the two files for any journey — CLAUDE.md §4
+describes intended vs. actual as a human comparison. These pages remain a mirror, not a
+test, until someone reads both sides and writes down what they find.
+
+## The join to src/journeys/runner/ was never finished
+
+`src/journeys/runner/` (the Journey Runner) describes itself as joining this page's eight
+role-reachability journeys (REALITY) against `src/journeys/seed-journeys.mjs`'s CRM
+automation trees (INTENT — what messages send and what pipeline moves happen). The two key
+lists were never reconciled: six keys there (`client`, `setter`, `closer`, `advisor`,
+`affiliate`, `partner`) against the eight here. Four are plausibly the same role under a
+shorter name (`setter` ≈ `role-sales-manager`, `closer` ≈ `role-closer`, `advisor` ≈
+`role-funding-advisor`, `partner` ≈ `white-label`); `role-owner` and `role-inquiry-remover`
+have no automation tree at all. See `src/journeys/seed-journeys.mjs`'s header.
 
 ## The journeys
 
 | Journey | Who that is in the code | Reach |
 |---|---|---|
-| [client](./client-actual.md) | `client` | reaches 15 of 88 routes |
-| [role-owner](./role-owner-actual.md) | `owner` | reaches 88 of 88 routes |
-| [role-sales-manager](./role-sales-manager-actual.md) | `sales_manager` | reaches 71 of 88 routes |
-| [role-closer](./role-closer-actual.md) | `closer` | reaches 59 of 88 routes |
-| [role-funding-advisor](./role-funding-advisor-actual.md) | `funding_advisor` | reaches 60 of 88 routes |
-| [role-inquiry-remover](./role-inquiry-remover-actual.md) | `inquiry_specialist` | reaches 59 of 88 routes |
-| [affiliate](./affiliate-actual.md) | `affiliate` | reaches 11 of 88 routes |
-| [white-label](./white-label-actual.md) | `partner` | reaches 22 of 88 routes |
+| [client](./client-actual.md) ([intended](./client-intended.md)) | `client` | reaches 15 of 88 routes |
+| [role-owner](./role-owner-actual.md) ([intended](./role-owner-intended.md)) | `owner` | reaches 88 of 88 routes |
+| [role-sales-manager](./role-sales-manager-actual.md) ([intended](./role-sales-manager-intended.md)) | `sales_manager` | reaches 71 of 88 routes |
+| [role-closer](./role-closer-actual.md) ([intended](./role-closer-intended.md)) | `closer` | reaches 59 of 88 routes |
+| [role-funding-advisor](./role-funding-advisor-actual.md) ([intended](./role-funding-advisor-intended.md)) | `funding_advisor` | reaches 60 of 88 routes |
+| [role-inquiry-remover](./role-inquiry-remover-actual.md) ([intended](./role-inquiry-remover-intended.md)) | `inquiry_specialist` | reaches 59 of 88 routes |
+| [affiliate](./affiliate-actual.md) ([intended](./affiliate-intended.md)) | `affiliate` | reaches 11 of 88 routes |
+| [white-label](./white-label-actual.md) ([intended](./white-label-intended.md)) | `partner` | reaches 22 of 88 routes |
 
 ## What was found while generating these
 
