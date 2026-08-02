@@ -631,7 +631,24 @@
     revealNav();
   }
 
+  /* The chip is ~337px wide and sits position:fixed over the top-right corner.
+     Every editor screen puts its own header buttons in that same corner
+     (justify-content:space-between), and below 1200px there isn't 337px of
+     clearance left, so the chip sat on top of them — clickable but invisible.
+     This was "half-fixed" per-page (headers got z-index:14, which does nothing
+     against a fixed element whose own z-index is astronomically higher and
+     which doesn't reserve layout space either way). The real fix has to live
+     here, once: below 1200px the chip drops beneath the header instead of
+     sitting inside it, so the two can never occupy the same row. */
+  var CHIP_BREAKPOINT_CSS =
+    "@media (max-width:1200px){#fh-shell-chip{top:66px !important;right:10px !important}}";
+
   function mountChip(staff, demo) {
+    var style = document.createElement("style");
+    style.id = "fh-shell-chip-style";
+    style.textContent = CHIP_BREAKPOINT_CSS;
+    (document.head || document.documentElement).appendChild(style);
+
     var el = document.createElement("div");
     el.id = "fh-shell-chip";
     el.style.cssText = "position:fixed;top:12px;right:14px;z-index:2147483000;display:flex;gap:10px;align-items:center;background:#0A0A0A;color:#fff;border:1px solid #26262B;border-radius:10px;padding:8px 12px;font:500 11px/1 'JetBrains Mono',monospace;letter-spacing:.06em;box-shadow:0 10px 30px rgba(0,0,0,.35)";
