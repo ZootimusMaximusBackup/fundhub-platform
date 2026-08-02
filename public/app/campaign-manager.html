@@ -457,6 +457,8 @@ table.grid td.srccell .sub{white-space:normal}
           <div class="selwrap"><label for="fLimit">Limit</label>
             <select id="fLimit"><option>10</option><option>25</option><option selected>50</option><option>200</option></select>
           </div>
+          <button class="btn dark mono" id="syncMetaBtn" type="button" title="Pull campaigns, ad sets, ads, and spend from Meta Marketing API">Sync Meta now</button>
+          <span class="hint mono" id="syncMetaMsg" style="font-size:10.5px;color:var(--gray2)"></span>
         </div>
         <div class="card-bd" style="padding:11px 16px;border-bottom:1px solid var(--line)">
           <div class="rail" id="campRail"></div>
@@ -479,7 +481,8 @@ table.grid td.srccell .sub{white-space:normal}
           The <code>status</code> column beside it is a nullable free-text mirror of the platform's
           own status string with <b>no writer anywhere in the repo</b>, which is why it reads
           <span class="nul">—</span> on every row. <code>synced_at</code> is the same story: a real
-          column with no sync job behind it, so there is no "last synced" badge and no "Sync now".
+          column with no sync job behind it — until you click <b>Sync Meta now</b>, which
+          calls <code>POST /api/campaigns/sync</code> and writes <code>synced_at</code>.
         </div>
         <div class="cap">
           <b><code>spend_yesterday_cents</code> is <code>CURRENT_DATE − 1</code>, on purpose</b> —
@@ -2281,6 +2284,40 @@ function wireAll(){
   });
 }
 document.getElementById('reloadBtn').addEventListener('click', wireAll);
+
+document.getElementById('syncMetaBtn').addEventListener('click', function () {
+  var msg = document.getElementById('syncMetaMsg');
+  var pid = (window.FHData && FHData.param) ? FHData.param('partner_id') : null;
+  if (!pid) {
+    try { pid = new URL(location.href).searchParams.get('partner_id'); } catch (e) { pid = null; }
+  }
+  if (!pid) {
+    msg.textContent = 'Pick a partner_id first (CF-01 style scope).';
+    return;
+  }
+  msg.textContent = 'Syncing from Meta…';
+  var t = '';
+  try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
+  fetch('/api/campaigns/sync', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+      ...(t && t !== 'demo' ? { authorization: 'Bearer ' + t } : {})
+    },
+    body: JSON.stringify({ partner_id: pid })
+  }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+    .then(function (res) {
+      if (!res.ok) {
+        msg.textContent = 'Sync failed: ' + (res.message || res.error || 'unknown');
+        return;
+      }
+      msg.textContent = 'Synced ' + (res.campaigns || 0) + ' campaigns · ' +
+        (res.ad_sets || 0) + ' ad sets · ' + (res.ads || 0) + ' ads' +
+        (res.note ? ' · ' + res.note : '');
+      wireAll();
+    });
+});
 
 /* ══ BOOT ════════════════════════════════════════════════════════════════ */
 renderScope();

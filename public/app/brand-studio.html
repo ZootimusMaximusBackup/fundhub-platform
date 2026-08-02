@@ -429,9 +429,14 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
 
           <!-- FUNNELS -->
           <div class="card" style="margin-top:14px">
-            <div class="card-hd"><div class="eyebrow">BS-04 <span class="sep">/</span> FUNNELS</div><div class="spacer"></div><span class="statusline">proven structures, your brand, hosted here</span></div>
+            <div class="card-hd"><div class="eyebrow">BS-04 <span class="sep">/</span> FUNNELS</div><div class="spacer"></div><span class="statusline">proven structures → real page drafts</span></div>
             <div style="padding:12px 14px 14px">
               <div class="fun" id="funGrid"></div>
+              <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
+                <button class="btn dark mono" type="button" id="createPagesBtn">Create pages from selected funnels</button>
+                <span class="hint mono" id="pagesMsg" style="font-size:10.5px;color:var(--gray2)">Writes partner_pages drafts via /api/partner-pages. Hosted domains still deferred.</span>
+              </div>
+              <div id="pagesList" style="margin-top:12px"></div>
               <div class="hint" style="margin-top:11px">Hosted on your domain so tracking, attribution, and compliance updates keep working. HTML export is available but drops all three.</div>
             </div>
           </div>
@@ -730,6 +735,79 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       : "Saved. Tokens apply to this partner's funnels.";
     if (typeof window.__fhBrandPersist === "function") window.__fhBrandPersist();
   });
+
+  function authHeaders() {
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+    var h = { accept: "application/json", "content-type": "application/json" };
+    if (t && t !== "demo") h.authorization = "Bearer " + t;
+    return h;
+  }
+
+  function refreshPages() {
+    var list = $("pagesList");
+    var msg = $("pagesMsg");
+    if (!list) return;
+    if (MODE !== "partner" || !partnerId) {
+      list.innerHTML = '<div class="hint">Open with ?partner_id=&lt;uuid&gt; to create and list funnel pages.</div>';
+      return;
+    }
+    fetch("/api/partner-pages?partner_id=" + encodeURIComponent(partnerId), { headers: authHeaders() })
+      .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .then(function (res) {
+        if (!res.ok) {
+          list.innerHTML = '<div class="hint">Could not load pages: ' + (res.error || "error") + "</div>";
+          return;
+        }
+        var items = res.items || [];
+        if (!items.length) {
+          list.innerHTML = '<div class="hint">No page drafts yet. Select funnels above, then Create pages.</div>';
+          return;
+        }
+        list.innerHTML = items.map(function (p) {
+          return '<div class="funnel on" style="cursor:default;margin-bottom:8px">' +
+            '<b>' + (p.title || p.funnel_key) + '</b>' +
+            '<span>/' + (p.slug || "") + ' · ' + (p.status || "draft") + ' · ' + (p.funnel_key || "") + "</span></div>";
+        }).join("");
+        if (msg) msg.textContent = items.length + " page draft(s) on file.";
+      });
+  }
+
+  var createBtn = $("createPagesBtn");
+  if (createBtn) {
+    createBtn.addEventListener("click", function () {
+      var msg = $("pagesMsg");
+      if (MODE !== "partner" || !partnerId) {
+        if (msg) msg.textContent = "Partner mode only — open with ?partner_id=.";
+        return;
+      }
+      var keys = (D.funnels || []).filter(function (k) {
+        return ["apply", "diag", "edu", "aff", "book"].indexOf(k) !== -1;
+      });
+      if (!keys.length) {
+        if (msg) msg.textContent = "Select at least one supported funnel (apply/diag/edu/aff/book).";
+        return;
+      }
+      if (msg) msg.textContent = "Creating " + keys.length + " page(s)…";
+      var chain = Promise.resolve();
+      keys.forEach(function (key) {
+        chain = chain.then(function () {
+          return fetch("/api/partner-pages", {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify({ partner_id: partnerId, funnel_key: key })
+          }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+        });
+      });
+      chain.then(function () {
+        if (msg) msg.textContent = "Page drafts created.";
+        refreshPages();
+      }).catch(function () {
+        if (msg) msg.textContent = "Create failed.";
+      });
+    });
+  }
+  refreshPages();
   $("submitBtn").addEventListener("click", function(){
     if(!D.name || !D.entity){ $("saveMsg").textContent="Brand name and legal entity are required before review."; return; }
     D.status = "submitted"; save(); paint();

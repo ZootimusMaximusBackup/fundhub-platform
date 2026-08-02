@@ -287,8 +287,8 @@ button,input,select,textarea{font:inherit;color:inherit}
         <select class="pick" id="fosEntity" aria-label="Entity" style="display:none"></select>
         <div class="spacer"></div>
         <button class="btn" id="fosSoftPull" style="display:none">Soft pull</button>
-        <button class="btn" id="fosLoadSample" style="display:none">Load sample data</button>
-        <button class="btn" id="fosClearSample" style="display:none">Clear sample data</button>
+        <button class="btn" id="fosLoadSample" style="display:none">Load simulated data</button>
+        <button class="btn" id="fosClearSample" style="display:none">Clear simulated data</button>
       </div>
       <div id="fosWrap">
         <div class="fh-empty" id="fosEmpty">Loading…</div>
@@ -992,96 +992,72 @@ button,input,select,textarea{font:inherit;color:inherit}
     };
   }
 
-  /* ── sample data ───────────────────────────────────────────────────────── */
-  function sampleKey() { return "fh_fos_sample_" + clientId; }
+  /* ── simulated data (real is_demo client + CRS + tradelines + card) ───── */
+  function sampleKey() { return "fh_fos_sim_client"; }
   function hasSample() { try { return !!localStorage.getItem(sampleKey()); } catch (e) { return false; } }
-  function markSample() { try { localStorage.setItem(sampleKey(), "1"); } catch (e) {} }
+  function markSample(id) { try { localStorage.setItem(sampleKey(), id || "1"); } catch (e) {} }
   function clearSampleFlag() { try { localStorage.removeItem(sampleKey()); } catch (e) {} }
+  function storedSimClientId() {
+    try { return localStorage.getItem(sampleKey()) || null; } catch (e) { return null; }
+  }
 
   function loadSampleData() {
     if (S.busy) return; S.busy = true;
-    toast("Loading sample data through /api/banking/sync-accounts and /api/finance/liabilities…");
-    // Both writes below resolve to { ok, error } — never just "true" — so a
-    // failed write cannot be reported as loaded. Silently claiming success on
-    // a 400 is exactly the "screen shows a number the server did not send"
-    // class of bug this app's own code keeps calling out; unwritten sample
-    // rows are the same defect with the sign flipped.
-    var accountsDone = FHData.write("/api/banking/sync-accounts", { client_id: clientId, provider: "mock" })
-      .then(function (res) {
-        if (res.ok) return { ok: true };
-        // The mock provider needs BANKING_MOCK_PROVIDER=1 set — if that has
-        // not been configured, fall back to a manual sample account so the
-        // button still does something real rather than silently failing.
-        return FHData.write("/api/finance/bank-accounts", {
-          action: "add", client_id: clientId, name: "Sample Checking (mock)",
-          // api/finance/bank-accounts.mjs's account_type accepts depository,
-          // credit, loan, investment, other — never "checking", which is an
-          // account_subtype elsewhere in this app, not a type here.
-          account_type: "depository", mask: "0000", current: "5000"
-        }).then(function (res2) {
-          return { ok: res2.ok, error: res2.ok ? null : (res2.error || res2.source) };
-        });
-      });
-    var cardsDone = FHData.write("/api/finance/liabilities", {
-      action: "add_card", client_id: clientId, lender: "Sample Card (mock)",
-      // api/finance/liabilities.mjs's add_card is the one apr boundary in this
-      // app that wants a PERCENTAGE ("21.99") and rejects anything <= 1 as
-      // ambiguous. Everywhere else apr is a FRACTION (0.10 = 10%) — the
-      // tradelines.apr column stores a fraction, api/read/money-map.mjs and
-      // src/tradelines/index.mjs read it back unconverted, and
-      // api/finance/model.mjs's fractionIn() takes 0.10 for the same reason.
-      // add_card is the outlier, not this call site or model.mjs — flagged in
-      // the commit that fixed this, not changed here, since other callers may
-      // already depend on liabilities.mjs's stricter behaviour.
-      credit_limit: "10000", balance: "2500", apr: "21.99"
-    }).then(function (res) {
-      return { ok: res.ok, error: res.ok ? null : (res.error || res.source) };
-    });
-    Promise.all([accountsDone, cardsDone]).then(function (results) {
-      var accountsOk = results[0].ok, cardsOk = results[1].ok;
+    toast("Creating a simulated client with bureau-shaped tradelines…");
+    FHData.write("/api/demo/simulate", {}).then(function (res) {
       S.busy = false;
-      // The flag — and the Clear button it drives — must mean "there is
-      // something on file to clear", so it is only set when at least one
-      // write actually landed.
-      if (accountsOk || cardsOk) markSample();
-      if (accountsOk && cardsOk) {
-        toast("<b>Sample data loaded.</b> Marked provider = mock everywhere it lands, and included in every total below.");
-      } else if (accountsOk || cardsOk) {
-        var whichFailed = accountsOk ? "the sample card" : "the sample account";
-        var failure = accountsOk ? results[1] : results[0];
-        toast("<b>Partly loaded.</b> " + esc(whichFailed) + " was not saved — " +
-          esc(failure.error || "unknown error") + ".");
-      } else {
-        toast("<b>Not loaded.</b> Sample account: " + esc(results[0].error || "unknown error") +
-          " · Sample card: " + esc(results[1].error || "unknown error"));
+      if (!res.ok) {
+        toast("<b>Not loaded.</b> " + esc(res.error || res.source || "unknown error"));
+        return;
       }
-      loadAll();
-      updateSampleButtons();
+      markSample(res.client_id);
+      toast("<b>Simulated data loaded.</b> " +
+        esc(res.tradeline_count || 0) + " tradelines · client flagged is_demo. Opening…");
+      if (res.href) {
+        setTimeout(function () { location.href = res.href; }, 600);
+      } else {
+        loadAll();
+        updateSampleButtons();
+      }
     });
   }
 
   function clearSampleData() {
     if (S.busy) return; S.busy = true;
-    var closes = [];
-    if (S.mm && S.mm.balances) {
-      S.mm.balances.groups.forEach(function (g) {
-        g.accounts.forEach(function (a) {
-          closes.push(FHData.write("/api/finance/bank-accounts", { action: "close", account_id: a.id }));
-        });
+    var id = storedSimClientId();
+    var payload = (id && id !== "1") ? { client_id: id } : {};
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+    fetch("/api/demo/simulate", {
+      method: "DELETE",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        ...(t && t !== "demo" ? { authorization: "Bearer " + t } : {})
+      },
+      body: JSON.stringify(payload)
+    }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .then(function (res) {
+        clearSampleFlag();
+        S.busy = false;
+        if (!res.ok) {
+          toast("<b>Clear failed.</b> " + esc(res.error || "unknown error"));
+          return;
+        }
+        toast("<b>Cleared.</b> Removed " + esc(res.count || 0) + " simulated client(s).");
+        if (clientId && id && clientId === id) {
+          location.href = "finance-os.html";
+          return;
+        }
+        loadAll();
+        updateSampleButtons();
       });
-    }
-    Promise.all(closes).then(function () {
-      clearSampleFlag();
-      S.busy = false;
-      toast("<b>Cleared.</b> Sample accounts are marked closed — nothing in this product deletes a financial row outright.");
-      loadAll();
-      updateSampleButtons();
-    });
   }
 
   function updateSampleButtons() {
     var load = $("fosLoadSample"), clear = $("fosClearSample");
-    if (!isFinance || !clientId) { load.style.display = "none"; clear.style.display = "none"; return; }
+    if (!isFinance) { load.style.display = "none"; clear.style.display = "none"; return; }
+    // Load creates a new simulated client — available with or without client_id.
     load.style.display = "";
     clear.style.display = hasSample() ? "" : "none";
   }
@@ -1095,20 +1071,21 @@ button,input,select,textarea{font:inherit;color:inherit}
 
   /* ── boot ──────────────────────────────────────────────────────────────── */
   mountClientPicker();
+  $("fosLoadSample").onclick = loadSampleData;
+  $("fosClearSample").onclick = clearSampleData;
+  updateSampleButtons();
 
   if (!clientId) {
-    $("fosEmpty").innerHTML = "Open this screen with a client in the address bar, or pick one above — " +
-      "<code>finance-os.html?client_id=&lt;id&gt;</code>.";
+    $("fosEmpty").innerHTML = "Open this screen with a client in the address bar, pick one above, or " +
+      "<b>Load simulated data</b> to create a demo client with bureau tradelines.";
     FHData.banner("sample", "no client named", "finance os");
+    roleReady.then(function () { updateSampleButtons(); });
     return;
   }
 
   mountEntityPicker();
-  updateSampleButtons();
   $("fosSoftPull").style.display = "";
   $("fosSoftPull").onclick = softPull;
-  $("fosLoadSample").onclick = loadSampleData;
-  $("fosClearSample").onclick = clearSampleData;
   loadAll();
 
   // Runs in parallel with loadAll() rather than gating it — the data paints

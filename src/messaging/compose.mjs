@@ -239,9 +239,10 @@ export async function composeAndSend(db, input = {}, options = {}) {
   const ins = await db.query(
     `INSERT INTO messages (
        org_id, client_id, conversation_id, direction, channel, rendered_body,
-       provider_ref, status, compliance_check_passed, to_address, subject, sender_staff_id
+       provider_ref, status, compliance_check_passed, to_address, subject,
+       sender_staff_id, sender_kind
      )
-     VALUES ($1,$2,$3,'outbound',$4,$5,$6,'queued',false,$7,$8,$9)
+     VALUES ($1,$2,$3,'outbound',$4,$5,$6,'queued',false,$7,$8,$9,'staff')
      ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING
      RETURNING id, created_at`,
     [orgId, target.clientId, target.conversationId, target.channel, text,
