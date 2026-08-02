@@ -22,3 +22,4 @@ export {
   classifyAndApply, listPendingReviews, decideClassificationReview,
   setFileAccessTier, enqueueClassificationReview
 } from "./review.mjs";
+export { synthesizeAnswer } from "./answer.mjs";
