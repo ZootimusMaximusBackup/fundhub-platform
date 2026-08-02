@@ -64,6 +64,30 @@ export const RESOLVABLE_TAGS = Object.freeze([
 export const WARN_ONLY_TAGS = Object.freeze(["CLIENT_PORTAL_URL"]);
 export const WARN_ONLY_PREFIXES = Object.freeze(["custom_fields."]);
 
+/* Roots a specific send path supplies through sendTemplated's `context`, rather
+ * than clientContext() supplying them for every send.
+ *
+ * These are NOT the same thing as WARN_ONLY_PREFIXES above, and merging them
+ * would tell a person the wrong thing. A tag under custom_fields. resolves
+ * NOWHERE — it sends blank today. A tag under one of these resolves reliably in
+ * the one template it was written for, and blank in any other, so the warning a
+ * person needs is "this only works here", not "this is broken".
+ *
+ * `only` names that template so the editor can say which one.
+ *
+ * Adding to this list is a deliberate edit, same discipline as WARN_ONLY_TAGS:
+ * a root nobody supplies would render blank while claiming it does not. */
+export const CONTEXT_PREFIXES = Object.freeze([
+  Object.freeze({
+    prefix: "magic_link.",
+    only: "EMAIL-PORTAL-MAGIC-LINK",
+    supplied_by: "src/auth/magic-link.mjs"
+  })
+]);
+
+const contextPrefixFor = (tag) =>
+  CONTEXT_PREFIXES.find((c) => tag.startsWith(c.prefix) && tag.length > c.prefix.length) || null;
+
 const RESOLVABLE = new Set(RESOLVABLE_TAGS);
 const WARN_EXACT = new Set(WARN_ONLY_TAGS);
 
@@ -85,6 +109,9 @@ export function classifyTag(tag) {
   if (RESOLVABLE.has(t)) return "resolvable";
   if (WARN_EXACT.has(t)) return "unverifiable";
   if (WARN_ONLY_PREFIXES.some((p) => t.startsWith(p) && t.length > p.length)) return "unverifiable";
+  // Supplied by one send path. Real where it belongs, blank anywhere else —
+  // which is a warning, not a block: see CONTEXT_PREFIXES.
+  if (contextPrefixFor(t)) return "unverifiable";
   // A dotted path under `contact` may be one of the 252 ported custom fields.
   // Bare `contact` is not — it resolves to the object itself, which the renderer
   // refuses to stringify (it would send "[object Object]"), so it is unknown.
@@ -117,12 +144,17 @@ export function classifyChange(next, previous = null) {
   const grandfathered = now.unknown.filter((t) => before.has(t));
 
   const warnings = [
-    ...now.unverifiable.map((tag) => ({
-      tag,
-      reason: WARN_EXACT.has(tag) || WARN_ONLY_PREFIXES.some((p) => tag.startsWith(p))
-        ? "this tag does not resolve today — it will send as blank"
-        : "this may be one of the imported CRM fields; it fills in only if that client has a value"
-    })),
+    ...now.unverifiable.map((tag) => {
+      const ctx = contextPrefixFor(tag);
+      return {
+        tag,
+        reason: ctx
+          ? `this tag is filled in only by the ${ctx.only} email — anywhere else it sends as blank`
+          : WARN_EXACT.has(tag) || WARN_ONLY_PREFIXES.some((p) => tag.startsWith(p))
+            ? "this tag does not resolve today — it will send as blank"
+            : "this may be one of the imported CRM fields; it fills in only if that client has a value"
+      };
+    }),
     ...grandfathered.map((tag) => ({
       tag,
       reason: "this tag was already in the saved copy and does not resolve — it sends as blank"

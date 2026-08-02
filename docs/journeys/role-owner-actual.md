@@ -16,7 +16,7 @@ flowchart TD
     AUTH -->|Yes| WHO{Recognised as owner?}
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| CAN[Can reach]
-    CAN --> A_auth[Signing in and out — 5 routes]
+    CAN --> A_auth[Signing in and out — 7 routes]
     CAN --> A_banking[banking — 3 routes]
     CAN --> A_campaigns[Campaigns — 6 routes]
     CAN --> A_consent[consent — 1 route]
@@ -34,13 +34,15 @@ flowchart TD
 
 ## What they can reach
 
-**77 of 77 routes.**
+**79 of 79 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/auth/admin-reset` | POST | owner, admin |
 | `/api/auth/login` | GET | anyone |
 | `/api/auth/logout` | — | anyone |
+| `/api/auth/magic-link` | — | anyone |
+| `/api/auth/magic-link-verify` | — | anyone |
 | `/api/auth/reset` | POST | anyone |
 | `/api/auth/session` | — | anyone |
 | `/api/banking/accounts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -119,12 +121,12 @@ flowchart TD
 ### Worth knowing
 
 - **4 routes also accept a shared secret instead of a sign-in** (`DASHBOARD_SECRET`), so a caller holding that value reaches them without being anybody in particular: `/api/dashboard/client`, `/api/dashboard/clients`, `/api/dashboard/pipeline`, `/api/dashboard/seed`.
-- **5 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/reset`, `/api/auth/session`, `/api/health`. These are the sign-in routes and the health check.
+- **7 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/health`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**0 of 77 routes.**
+**0 of 79 routes.**
 
 _None._
 
