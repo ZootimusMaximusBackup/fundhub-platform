@@ -318,6 +318,15 @@
   /* The compose box is a real <textarea> now, not a placeholder div, and the
      tabs are real <button>s. Both inherit browser defaults that fight the rest
      of the page unless they are told not to. */
+  /* The texting-hours line. Two looks: a quiet statement of the rule while the
+     window is open, and a real warning while it is shut. */
+  /* What the search box is really searching, when that is not everything. */
+  .search-scope{font-size:10px;color:var(--text-faint);padding:7px 12px 0;line-height:1.4;}
+  .quiet-note{font-size:11px;line-height:1.45;color:var(--text-dim);margin-bottom:7px;
+    border-left:2px solid var(--line);padding:3px 0 3px 8px;}
+  .quiet-note.closed{color:var(--ink2);border-left-color:var(--warn-line);
+    background:var(--warn-bg);border-radius:0 5px 5px 0;padding:5px 8px;font-weight:600;}
+  .quiet-note[hidden]{display:none;}
   textarea.compose-input{font-family:var(--sans);color:var(--text);resize:vertical;outline:none;}
   textarea.compose-input:focus{border-color:var(--ink);}
   textarea.compose-input:disabled{color:var(--text-faint);background:var(--paper-dim);}
@@ -447,6 +456,9 @@
           <span class="ch-btn active" id="composeChannel">&mdash;</span>
           <span class="compose-note" id="composeNote">A reply goes out on the same channel the conversation is on.</span>
         </div>
+        <!-- The texting-hours rule, stated BEFORE anything is typed. Hidden on
+             email threads, where it does not apply. -->
+        <div class="quiet-note" id="quietNote" hidden></div>
         <div class="compose-box">
           <textarea class="compose-input" id="composeBody" rows="3" maxlength="4000"
                     placeholder="Pick a conversation first" disabled></textarea>
@@ -660,12 +672,35 @@
       .toLowerCase().indexOf(q) !== -1;
   }
 
+  /* THE TAB IS NO LONGER FILTERED HERE. It is `?needs_reply=1` on the server —
+     see api/read/inbox.mjs. Filtering it in the browser meant "Needs reply"
+     showed the unanswered threads among the page that happened to be loaded,
+     while looking like it showed all of them, and the oldest unanswered
+     message is exactly the one that would be missing.
+
+     The `filter` option is still accepted and still applied, because the rows
+     handed in are already the right set and re-checking them is free — but it
+     is now a consistency check rather than the mechanism. */
   function filterRows(items, opts) {
     var o = opts || {};
     return (items || []).filter(function (r) {
       if (o.filter === "reply" && r.needs_reply !== true) return false;
       return matches(r, o.q);
     });
+  }
+
+  /* What the search box is actually searching, said out loud.
+
+     The search filters the rows that are LOADED, which is one page. At fifty
+     threads that is everything and the distinction is meaningless. At fifty
+     thousand it is not, and a box that silently searches 2% of the data while
+     looking like it searches all of it will have somebody swear a customer
+     never messaged them. So the screen says which it is doing. */
+  function searchScopeNote(loaded, hasMore, term) {
+    if (!String(term || "").trim()) return "";
+    return hasMore
+      ? "Searching the " + loaded + " most recent conversations only."
+      : "";
   }
 
   /* One row of the conversation list. `unread` is the needs-a-reply marker —
@@ -730,6 +765,64 @@
     return s ? s.toUpperCase() : "—";
   }
 
+  /* QUIET HOURS, ON SCREEN, BEFORE ANYBODY TYPES.
+     Texts are not sent between 11pm and 11am US Eastern (TCPA). The rule was
+     already enforced at send time; nothing said it beforehand, so the first a
+     staff member knew of it was a reply that did not go. The owner asked for
+     the warning up front — people forget a rule they have never been told.
+
+     These mirror QUIET_START_HOUR / QUIET_END_HOUR / QUIET_HOURS_TZ in
+     src/messaging/gate.mjs. src/http/messaging-screen.test.mjs reads the gate's
+     own constants and fails if these drift from them, so the screen cannot end
+     up promising a window the server does not honour. */
+  var QUIET_START_HOUR = 23;
+  var QUIET_END_HOUR = 11;
+  var QUIET_TZ = "America/New_York";
+
+  /* The hour right now in US Eastern. Intl carries the timezone database, so
+     daylight saving is the browser's problem and not ours — the same reason
+     the server reads it out of Intl rather than hardcoding an offset. */
+  function easternHour(nowMs) {
+    try {
+      var parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: QUIET_TZ, hour: "numeric", hour12: false
+      }).formatToParts(new Date(nowMs == null ? Date.now() : nowMs));
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].type === "hour") return Number(parts[i].value) % 24;
+      }
+    } catch (e) { /* no Intl, or an unknown zone */ }
+    return null;
+  }
+
+  /* The window wraps midnight, so this is an OR rather than start <= h < end.
+     Returns null when the hour could not be read — and the caller treats null
+     as "do not claim anything", because a warning that guesses is worse than
+     no warning. */
+  function inQuietHours(nowMs) {
+    var h = easternHour(nowMs);
+    if (h == null) return null;
+    return h >= QUIET_START_HOUR || h < QUIET_END_HOUR;
+  }
+
+  /* The line under the compose box. Three states, and they are three different
+     sentences on purpose:
+       email          the rule does not apply; say nothing about it
+       sms, open      state the rule, so it is not a surprise at 11pm
+       sms, closed    say plainly that this will NOT go out now, and when it will */
+  function quietNotice(channel, nowMs) {
+    if (channel !== "sms") return { closed: false, text: "" };
+    var closed = inQuietHours(nowMs);
+    if (closed === null) return { closed: false, text: "" };
+    if (closed) {
+      return { closed: true, text:
+        "Texting hours are closed. Anything you send now is saved and goes out " +
+        "automatically at 11:00am Eastern — you do not need to send it again." };
+    }
+    return { closed: false, text:
+      "Texting hours: 11:00am to 11:00pm Eastern. Outside those hours a text is " +
+      "held and sent the next morning." };
+  }
+
   function statusWord(status) {
     if (status === "blocked") return "Not sent — the compliance check stopped it";
     if (status === "failed") return "Not sent";
@@ -747,8 +840,12 @@
   function outcomeMessage(outcome, detail) {
     switch (outcome) {
       case "sent":       return { tone: "ok",   text: "Sent." };
-      case "deferred":   return { tone: "hold", text: "Held until texting hours open again at 11am Eastern. " +
-                                                       "It will go out on its own — do not send it again." };
+      /* THE SAME SENTENCE AS quietNotice's closed state, word for word. Two
+         wordings for one rule is how somebody ends up believing they are two
+         different rules — and the browser test that compares them is what
+         caught this drifting the first time. */
+      case "deferred":   return { tone: "hold", text: "Saved. It goes out automatically at 11:00am " +
+                                                       "Eastern — you do not need to send it again." };
       case "blocked":    return { tone: "stop", text: "Not sent. The compliance check stopped it" +
                                                        (detail && detail.length ? " (" + [].concat(detail).join(", ") + ")" : "") + "." };
       case "no_route":   return { tone: "stop", text: "Not sent. No text or email provider is set up for your company yet." };
@@ -775,10 +872,16 @@
     previewOf: previewOf,
     countsFor: countsFor,
     filterRows: filterRows,
+    searchScopeNote: searchScopeNote,
     conversationRow: conversationRow,
     messageRow: messageRow,
     statusWord: statusWord,
-    outcomeMessage: outcomeMessage
+    outcomeMessage: outcomeMessage,
+    easternHour: easternHour,
+    inQuietHours: inQuietHours,
+    quietNotice: quietNotice,
+    QUIET_START_HOUR: QUIET_START_HOUR,
+    QUIET_END_HOUR: QUIET_END_HOUR
   };
 })(window);
 /* FH-INBOX-END */
@@ -789,7 +892,21 @@
   var V = window.FHInbox;
   var $ = function (id) { return document.getElementById(id); };
 
-  var state = { rows: [], selected: null, filter: "all", q: "", sending: false };
+  var state = { rows: [], hasMore: false, selected: null, filter: "all", q: "", sending: false };
+
+  /* How often the inbox re-reads itself while somebody is sitting on it.
+
+     WITHOUT THIS THE SCREEN IS A SNAPSHOT. A staff member with the inbox open
+     would never see a message arrive — it would sit unanswered until they
+     happened to reload the page. For a screen whose entire job is "what came
+     in", that is the difference between an inbox and a report.
+
+     Thirty seconds: fast enough that a customer's text shows up while somebody
+     is looking at the screen, slow enough that a room of ten staff is twenty
+     requests a minute rather than six hundred. It skips a tick while a send is
+     in flight so a refresh cannot land between pressing Send and the reply
+     appearing. */
+  var REFRESH_MS = 30000;
 
   /* ---------------------------------------------------------- the list ---- */
 
@@ -799,29 +916,50 @@
     $("nAll").textContent = counts.all;
     $("nReply").textContent = counts.reply;
 
+    var scope = V.searchScopeNote(state.rows.length, state.hasMore, state.q);
+    var scopeHtml = scope
+      ? '<div class="search-scope">' + V.esc(scope) + "</div>"
+      : "";
+
     if (!shown.length) {
-      $("convoList").innerHTML = '<div class="empty-box" id="convoEmpty" style="margin:14px 12px;">' +
+      $("convoList").innerHTML = scopeHtml +
+        '<div class="empty-box" id="convoEmpty" style="margin:14px 12px;">' +
         (state.rows.length
-          ? "Nothing matches what you typed."
-          : "No conversations yet. One appears here the moment a client texts or emails you.") +
+          ? (state.filter === "reply"
+              ? "Nothing here needs a reply."
+              : "Nothing matches what you typed.")
+          : (state.filter === "reply"
+              ? "Nothing is waiting on a reply. Everything has been answered."
+              : "No conversations yet. One appears here the moment a client texts or emails you.")) +
         "</div>";
       return;
     }
     var now = Date.now();
-    $("convoList").innerHTML = shown.map(function (r) {
+    $("convoList").innerHTML = scopeHtml + shown.map(function (r) {
       return V.conversationRow(r, { active: state.selected && r.id === state.selected.id, now: now });
     }).join("");
   }
 
-  function loadList() {
-    return FHData.inbox({ limit: 200 }).then(function (res) {
+  function loadList(opts) {
+    var quiet = opts && opts.quiet;
+    /* The tab is a SERVER-SIDE filter now. See searchScopeNote and the header of
+       api/read/inbox.mjs for why it stopped being a browser-side one. */
+    var params = { limit: 200 };
+    if (state.filter === "reply") params.needs_reply = 1;
+
+    return FHData.inbox(params).then(function (res) {
       if (!res.ok) {
+        /* A FAILED BACKGROUND REFRESH LEAVES THE SCREEN ALONE. Blanking a
+           working inbox because one poll missed would take the thread somebody
+           is mid-reply to off the screen. The banner still reports it. */
+        if (quiet) { FHData.explain(res, "conversations"); return; }
         state.rows = [];
         $("convoList").innerHTML = '<div class="empty-box" style="margin:14px 12px;">' +
           "We could not load your conversations. See the message at the bottom of the screen." + "</div>";
         FHData.explain(res, "conversations");
         return;
       }
+      state.hasMore = res.data.hasMore === true;
       state.rows = res.data.items || [];
       FHData.banner("real", state.rows.length
         ? "live conversations · " + state.rows.length
@@ -845,11 +983,24 @@
     $("thread").innerHTML = '<div class="empty-box">Pick a conversation on the left to read it.</div>';
     $("footName").textContent = "none open";
     $("composeChannel").textContent = "—";
+    paintQuietNote(null);
     $("composeBody").disabled = true;
     $("composeBody").value = "";
     $("composeBody").placeholder = "Pick a conversation first";
     $("sendBtn").disabled = true;
     paintContext(null);
+  }
+
+  /* The texting-hours line. Repainted on every thread open AND on a slow timer,
+     because a browser left open across 11pm must not still be showing "texting
+     hours are open" at midnight. */
+  function paintQuietNote(channel) {
+    var el = $("quietNote");
+    var notice = V.quietNotice(channel, Date.now());
+    if (!notice.text) { el.hidden = true; el.textContent = ""; el.className = "quiet-note"; return; }
+    el.hidden = false;
+    el.textContent = notice.text;
+    el.className = "quiet-note" + (notice.closed ? " closed" : "");
   }
 
   function openThread(row) {
@@ -862,6 +1013,7 @@
     $("thAv").textContent = V.initials(row);
     $("footName").textContent = V.displayName(row);
     $("composeChannel").textContent = row.channel === "email" ? "Email" : "Text";
+    paintQuietNote(row.channel);
     $("composeBody").disabled = false;
     $("composeBody").placeholder = "Write to " + V.displayName(row) + "…";
     $("sendBtn").disabled = false;
@@ -1001,7 +1153,9 @@
       [].slice.call(document.querySelectorAll(".ctab")).forEach(function (t) { t.classList.remove("active"); });
       tab.classList.add("active");
       state.filter = tab.getAttribute("data-filter");
-      paintList();
+      // Refetch: the tab is a server-side filter, so switching it is a new
+      // question, not a different view of the same answer.
+      loadList();
     });
   });
 
@@ -1011,6 +1165,28 @@
     // app already taught everyone.
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   });
+
+  /* ── keeping the screen current ──────────────────────────────────────────
+     Two timers, both cheap, both doing something a static page cannot:
+
+       the inbox     re-read every REFRESH_MS so a message that arrives while
+                     somebody is looking at the screen actually appears
+       the notice    the texting-hours line must change by itself at 11pm and
+                     11am; a browser left open overnight would otherwise still
+                     be telling somebody the window is open at 2am
+
+     The inbox refresh SKIPS a tick while a send is in flight, and never
+     disturbs the open thread — openThread() is not re-run, so a half-typed
+     reply and the scroll position both survive. */
+  setInterval(function () {
+    if (state.sending) return;
+    if (document.hidden) return;   // a background tab is not a person looking
+    loadList({ quiet: true });
+  }, REFRESH_MS);
+
+  setInterval(function () {
+    paintQuietNote(state.selected ? state.selected.channel : null);
+  }, 60000);
 
   clearThread();
   loadList();

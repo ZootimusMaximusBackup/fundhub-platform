@@ -60,6 +60,7 @@
 import { db } from "../src/db.mjs";
 import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
 import { requireActiveShift } from "../src/http/middleware/requireActiveShift.mjs";
+import { SUPER_ROLES } from "../src/http/middleware/requireRole.mjs";
 import { TASK_ROLES } from "../src/lib/create-task.mjs";
 import { isUuid, CLIENT_DATA_ERRORS, boundedLimit } from "../src/http/read-api.mjs";
 import { safeError } from "../src/http/health.mjs";
@@ -152,7 +153,11 @@ export default async function handler(req, res) {
        never collapse into "you are not clocked in" and must never fall through to
        an UPDATE. It is deliberately outside the try/catch below, which maps
        failures onto 400/500 and would otherwise be able to reshape that 503. */
-    const shift = await requireActiveShift(req, res, { db, principal });
+    /* Owners are exempt — owner decision, 2026-08-02: "Owners definitely don't
+       clock in." Same reason as the other two gated endpoints: the decision is
+       about who clocks in, not about which screen, and an owner who cannot
+       claim or close a task is locked out of his own work queue. */
+    const shift = await requireActiveShift(req, res, { db, principal, exempt: SUPER_ROLES });
     if (!shift) return;
 
     const { id, done, claim, assignee_staff_id } = req.body || {};

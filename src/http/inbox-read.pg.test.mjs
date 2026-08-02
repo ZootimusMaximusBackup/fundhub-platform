@@ -71,9 +71,54 @@ test("inbox: the company is never taken from the query string", async () => {
   );
 });
 
-test("inbox: the list is ordered by the newest activity on each thread", async () => {
+/* THE PAGE MUST BE CHOSEN BEFORE THE LATERAL RUNS.
+
+   This is the scale case, and it is asserted on the SQL text because it is a
+   query-plan property that no amount of test data at this size would reveal —
+   the old shape returned identical rows, just by sorting the company's whole
+   conversations table on every load. Getting it wrong again would be invisible
+   until the table is large, which is the worst time to find out. */
+test("inbox: the page is chosen from conversations alone, so an index can serve it", async () => {
   const { calls } = await drive();
-  assert.match(calls[0].sql, /order\s+by\s+coalesce\(last\.created_at,\s*c\.last_pulse_at,\s*c\.created_at\)\s+desc/i);
+  const sql = calls[0].sql;
+
+  // The inner page-picker sorts on columns that live on `conversations`.
+  assert.match(sql, /order\s+by\s+coalesce\(c\.last_pulse_at,\s*c\.created_at\)\s+desc/i,
+    "the page is no longer ordered by conversation columns — it cannot use idx_conversations_activity");
+  // ...and the LIMIT is applied there, inside the CTE, not after the join.
+  const cte = sql.slice(sql.indexOf("WITH page AS"), sql.indexOf(")\n       SELECT"));
+  assert.match(cte, /limit\s+\$1\s+offset\s+\$2/i,
+    "the page limit moved out of the CTE — the lateral will run for every row in the company");
+  assert.ok(!/lateral/i.test(cte),
+    "the newest-message lateral is inside the page-picking CTE, which is the exact shape this " +
+    "avoids: it forces one index lookup per conversation in the company on every inbox load");
+});
+
+test("inbox: the sort matches the expression idx_conversations_activity indexes", async () => {
+  const { calls } = await drive();
+  // Migration 119 indexes (org_id, (COALESCE(last_pulse_at, created_at)) DESC, id DESC).
+  // If the query's expression drifts from the index's, nothing breaks — the
+  // index is just silently not used, and the screen gets slower every month.
+  assert.match(calls[0].sql, /coalesce\(c\.last_pulse_at,\s*c\.created_at\)\s+desc,\s*c\.id\s+desc/i);
+});
+
+test("inbox: the Needs-reply tab filters in the database, not in the browser", async () => {
+  const off = await drive();
+  assert.ok(off.calls[0].params.includes(false),
+    "the needs-reply flag is not being bound — the tab cannot be a server-side filter");
+
+  const on = await drive({ needs_reply: "1" });
+  assert.ok(on.calls[0].params.includes(true), "?needs_reply=1 did not reach the query");
+  assert.match(on.calls[0].sql, /=\s*'inbound'\)/,
+    "the filter does not ask whether the newest message is inbound");
+});
+
+test("inbox: only an explicit 1 or true turns the filter on", async () => {
+  for (const raw of ["0", "false", "", "no", undefined]) {
+    const { calls } = await drive(raw === undefined ? {} : { needs_reply: raw });
+    assert.ok(calls[0].params.includes(false),
+      `needs_reply=${JSON.stringify(raw)} switched the filter on`);
+  }
 });
 
 test("inbox: the row carries what a list item renders without a second request", async () => {

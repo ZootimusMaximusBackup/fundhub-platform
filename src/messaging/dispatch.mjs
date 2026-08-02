@@ -134,7 +134,7 @@ export function nextQuietHoursEnd(from, timeZone = QUIET_HOURS_TZ) {
 
    scheduled_at IS NULL means due immediately — the shape every row queued by
    src/workflows/messaging.mjs is already in. */
-export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = null } = {}) {
+export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = null, senderStaffOnly = false } = {}) {
   /* `now` IS A CLOCK FUNCTION EVERYWHERE ELSE IN THIS FEATURE. The gate takes
      one, dispatchOne forwards one, and dispatchDue hands the same options
      object to both — so this has to accept the same shape. It previously took
@@ -146,6 +146,28 @@ export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = 
      Both shapes are accepted. null means the database's own clock. */
   const at = typeof now === "function" ? now() : now;
 
+  /* senderStaffOnly — "only messages a person wrote".
+
+     ═══════════════════════════════════════════════════════════════════════
+     THIS EXISTS BECAUSE THE BACKLOG IS NOT ALL THE SAME AGE OR THE SAME KIND.
+
+     `messages` already holds several thousand rows queued by workflows over
+     months (110_messages_outbound.sql says so in as many words). None of them
+     has ever been dispatched, because nothing has ever called the dispatcher.
+     The instant anything sweeps the queue on a schedule, every one of those
+     becomes due at once and goes out — months of stale automated messages
+     landing on real people in one afternoon.
+
+     That is not a hypothetical and it is not this feature's decision to make.
+     So the sweeper that releases held STAFF replies filters to exactly those:
+     `sender_staff_id IS NOT NULL` is true only for rows written by
+     src/messaging/compose.mjs, i.e. a message a named employee typed and
+     pressed Send on, which was then held for the night. Releasing those is
+     what the owner asked for. Draining the legacy workflow backlog is a
+     separate, deliberate act by a human and is deliberately NOT done here.
+
+     Default false, so every existing caller — dispatchDue() from a test, a
+     future full drain — behaves exactly as it did. */
   const { rows } = await db.query(
     `UPDATE messages m
         SET status = 'sending', last_attempt_at = now(), attempts = m.attempts + 1
@@ -156,6 +178,7 @@ export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = 
             AND (scheduled_at IS NULL OR scheduled_at <= COALESCE($3::timestamptz, now()))
             AND ($1::uuid IS NULL OR org_id = $1)
             AND attempts < $4
+            AND ($5::boolean IS NOT TRUE OR sender_staff_id IS NOT NULL)
           ORDER BY scheduled_at NULLS FIRST, created_at
           LIMIT $2
           FOR UPDATE SKIP LOCKED
@@ -163,7 +186,7 @@ export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = 
       WHERE m.id = due.id
   RETURNING m.id, m.org_id, m.client_id, m.channel, m.rendered_body,
             m.template_key, m.provider_ref, m.attempts, m.to_address, m.subject`,
-    [orgId, limit, at, MAX_ATTEMPTS]
+    [orgId, limit, at, MAX_ATTEMPTS, senderStaffOnly === true]
   );
   return rows;
 }

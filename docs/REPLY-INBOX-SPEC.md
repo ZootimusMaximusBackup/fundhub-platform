@@ -299,3 +299,139 @@ behaviour changed.
   none in messaging. Per CLAUDE.md §12, the count moves with the environment;
   34 is this container's number, measured on this branch at `fca108c`, not a
   figure to quote elsewhere.
+
+---
+
+# Follow-up pass — 2026-08-02, after the owner reviewed launch readiness
+
+Six things changed. Four were owner decisions, two were defects found while
+acting on them.
+
+## 1. Owners do not clock in
+
+Owner decision, verbatim: *"Owners definitely don't clock in."* This closes
+`ACTIVE-SHIFT-ROLLOUT.md` §3c and §4 question 2, both of which explicitly said
+the answer was not an agent's to guess.
+
+`requireActiveShift` gained an `exempt` option — exactly the shape §3c proposed
+— and all three shift-gated endpoints (`api/messages.mjs`, `api/inquiries.mjs`,
+`api/tasks.mjs`) pass `SUPER_ROLES`. Applied to all three because the decision
+is about **who clocks in**, not about which screen: an owner locked out of the
+task queue is the same bug in a different place.
+
+The exemption returns a shift-shaped object whose `id` is **null**, so an
+owner's message is recorded as sent by that owner **on no shift** — which is
+what actually happened. `staff_events.shift_id` is nullable for exactly this.
+
+It is **opt-in per call site**. A gate that exempted owners by default would
+silently widen every endpoint that adopts it later.
+
+## 2. Held messages now actually go out
+
+This was the largest hole in the first pass and it is closed.
+`netlify/functions/staff-message-sweeper.mjs` runs every five minutes and
+releases held staff replies.
+
+**It releases only messages a person wrote** (`sender_staff_id IS NOT NULL`).
+`messages` holds several thousand rows queued by workflows over months and never
+dispatched, because nothing has ever dispatched anything. A sweeper that drained
+the whole queue would put months of stale automated messages in front of real
+people the first time it ran. Draining that backlog is an owner decision and is
+deliberately not taken here.
+
+It is a **Netlify scheduled function, not the Inngest sweeper**. Registering the
+Inngest one would need `INNGEST_EVENT_KEY`, which CLAUDE.md §11 reserves for the
+owner because it makes 47 workflow functions live at once. Releasing held texts
+must not require switching on the whole workflow engine. `INNGEST_EVENT_KEY`
+remains unset; `src/workflows/message-dispatch-sweeper.mjs` remains defined and
+unregistered.
+
+Every message is **re-gated on the way out**. A client who opted out at 2am does
+not get the 11am text.
+
+## 3. Staff are told the texting-hours rule before they type
+
+The owner had never heard of it. That is a fair reaction to a rule that was
+enforced at send time and stated nowhere — the first anybody knew of it was a
+reply that did not go.
+
+The compose box now carries the rule permanently on SMS threads, and switches to
+a warning while the window is shut. Both the warning and the post-send message
+use **the same sentence**, and a test compares them: two wordings for one rule is
+how somebody concludes there are two rules.
+
+For the record, since it was new information: the window is not ours. TCPA
+restricts marketing texts by hour, with per-message penalties. The system uses
+11:00–23:00 Eastern, which is stricter than federal law requires.
+
+## 4. Twilio — written, then withdrawn
+
+Owner direction: *"We're gonna be using Twilio. GHL is just a patch."*
+
+A migration was written to repoint SMS at Twilio and **then withdrawn**, because
+acting on it surfaced something the first pass had missed: **A2P 10DLC**. Three
+separate places in this repository already record that the carrier registration
+lives on the GHL side and that Twilio ships `ENABLED = false` waiting for it.
+Unregistered A2P traffic is not rejected loudly — carriers filter it silently.
+A migration runs unattended on deploy, so encoding "the registration has
+cleared" would move live customer texting onto an unverified route with nobody
+present.
+
+`db/migrations/118_sms_routing_twilio.sql` is now a documented no-op carrying the
+one-line switch, the three environment variables it needs, and the code change
+that must go with it.
+
+**The underlying problem is real and is NOT fixed.** The GHL relay addresses a
+text by `clients.ghl_contact_id`, which is a legacy import key and is NULL for
+anybody created in this platform since the cutover. Those customers cannot
+receive a text reply. The query that measures it is in 118's header.
+
+## 5. What breaks at scale — fixed
+
+Asked for directly: *"think of, like, things that would make this fuck up at
+scale and fix them."*
+
+| Problem | What happened at scale | Fix |
+|---|---|---|
+| Inbox list query | The newest-message lateral ran for **every** conversation in the company before the sort could pick fifty. Invisible at hundreds; at a hundred thousand it is a hundred thousand index lookups per page load, degrading weekly | The page is chosen from `conversations` columns alone, then the lateral runs against the fifty survivors. `idx_conversations_activity` (migration 119) serves the sort |
+| "Needs reply" tab | Filtered in the browser over the loaded page, so it showed unanswered threads **among the newest 200** while looking like it showed all of them — and the oldest unanswered message is exactly the one that goes missing | `?needs_reply=1`, filtered in the database |
+| Search box | Silently searched ~one page while looking like it searched everything | Still filters what is loaded, but now **says so on screen** when there is more |
+| New messages | The inbox was a snapshot. A staff member sitting on the screen never saw a message arrive | Re-reads every 30s; skips while a send is in flight and while the tab is hidden; a failed refresh leaves the working screen alone |
+
+## 6. Browser testing — the gate that never existed
+
+CLAUDE.md §6 lists a Playwright check as required. There was no Playwright, no
+config and no spec anywhere; `.github/workflows/tests.yml` says so in its own
+header. So the gate was listed, understood to be required, and unrunnable — and
+a thousand-line screen had been rewritten without anyone opening it.
+
+Added: `playwright.config.mjs`, `e2e/static-server.mjs`, and
+`e2e/messaging-inbox.spec.mjs` — **18 tests in a real browser**, run by
+`npm run test:e2e` and by a new **blocking** CI job.
+
+It earned its place on the first run: it caught the held-message wording drifting
+from the texting-hours warning, which every unit test was happy with.
+
+The specs answer `/api/**` themselves, so they need no database and can reach
+states a live backend cannot produce on demand — an empty inbox, a blocked
+message, two in the morning.
+
+## Still open after this pass
+
+* **Texting newer customers.** See §4. This decides whether the inbox works on
+  day one and it is not a code question.
+* **The legacy queued backlog.** Thousands of workflow-queued messages, never
+  sent. The sweeper does not touch them. Someone has to decide whether they are
+  sent, discarded, or left.
+* **Per-staff read state.** Still derived; "needs reply", not "unread".
+* **Emailed replies file no `staff_events` row.** The frozen telemetry
+  vocabulary has no kind for an email.
+* **`npx tsc --noEmit`** remains the one §6 gate that cannot run — there is no
+  TypeScript in this repository.
+
+## Measured, this pass
+
+* No database: **3,934 passing, 0 failing**, 524 skipped.
+* Real browser: **18 passing**.
+* Local Postgres 16: **34 pre-existing failures, the same 34 as before this
+  work**, an identical set.

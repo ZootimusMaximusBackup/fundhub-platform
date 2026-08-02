@@ -67,6 +67,7 @@
 import { db } from "../src/db.mjs";
 import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
 import { requireActiveShift } from "../src/http/middleware/requireActiveShift.mjs";
+import { SUPER_ROLES } from "../src/http/middleware/requireRole.mjs";
 import { composeAndSend } from "../src/messaging/compose.mjs";
 import { safeError } from "../src/http/health.mjs";
 
@@ -86,7 +87,12 @@ export default async function handler(req, res) {
   const principal = await requirePrincipal(req, res, ["staff"], { db });
   if (!principal) return;
 
-  const shift = await requireActiveShift(req, res, { db, principal });
+  /* OWNERS DO NOT CLOCK IN — owner decision, 2026-08-02, verbatim: "Owners
+     definitely don't clock in." So an owner is exempt and everybody else is
+     not. The exemption returns a shift-shaped object whose id is null, so the
+     telemetry below records an owner's message as sent by that owner on no
+     shift — which is what actually happened. See EXEMPT_SHIFT. */
+  const shift = await requireActiveShift(req, res, { db, principal, exempt: SUPER_ROLES });
   if (!shift) return;
 
   const body = req.body || {};
@@ -105,8 +111,11 @@ export default async function handler(req, res) {
       subject: body.subject || null,
       /* The shift the gate above already resolved, threaded down so the
          `staff_events` row this send writes says which clock the work was on.
-         Free here — requireActiveShift returned the row — and never null on
-         this branch, because the gate refuses the request without one. */
+         Free here — the gate returned the row.
+
+         NULL FOR AN OWNER, and that is correct rather than missing: owners do
+         not clock in, so there is no shift this work belongs to.
+         `staff_events.shift_id` is nullable for exactly that case. */
       shiftId: shift.id,
       idempotencyKey: body.idempotency_key || null
     });

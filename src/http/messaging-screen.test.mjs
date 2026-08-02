@@ -215,9 +215,23 @@ describe("messaging.html — what the screen says after a send", () => {
     const V = loadViewModel();
     const out = V.outcomeMessage("deferred");
     assert.equal(out.tone, "hold");
-    assert.match(out.text, /11am Eastern/);
-    assert.match(out.text, /do not send it again/i);
-    assert.ok(!/failed|error/i.test(out.text), "a deferral is being reported as a failure");
+    assert.match(out.text, /11:00am Eastern/);
+    assert.match(out.text, /do not need to send it again/i);
+    assert.ok(!/failed|error|not sent/i.test(out.text), "a deferral is being reported as a failure");
+  });
+
+  /* ONE RULE, ONE SENTENCE. The warning above the compose box and the reply
+     after Send describe the same thing, and if they drift a staff member reads
+     them as two different rules. They said "11am Eastern" and "11:00am Eastern"
+     for a while, which is exactly how that starts. */
+  test("the hold message and the texting-hours warning use the same words", () => {
+    const V = loadViewModel();
+    const afterSend = V.outcomeMessage("deferred").text;
+    const beforeTyping = V.quietNotice("sms", Date.parse("2026-01-15T07:00:00Z")).text;
+    for (const phrase of ["11:00am Eastern", "do not need to send it again"]) {
+      assert.ok(afterSend.includes(phrase), `the post-send message dropped "${phrase}"`);
+      assert.ok(beforeTyping.includes(phrase), `the pre-typing warning dropped "${phrase}"`);
+    }
   });
 
   test("a blocked message is reported as not sent, and names why when we know", () => {
@@ -289,5 +303,111 @@ describe("messaging.html — the wiring", () => {
   test("no sentiment is rendered, because nothing computes one", () => {
     assert.ok(!/Hot|Warm|Cold/.test(HTML.replace(/<!--[\s\S]*?-->/g, "")),
       "a Hot/Warm/Cold reading is on screen and no code in this repository produces one");
+  });
+});
+
+describe("messaging.html — the texting-hours warning, before anyone types", () => {
+
+  /* The owner had never heard of the overnight rule. That is the whole reason
+     this block exists: the rule was enforced at send time and stated nowhere,
+     so the first anybody knew of it was a reply that did not go out. */
+
+  test("the screen's window is the same window the server enforces", async () => {
+    const V = loadViewModel();
+    // Read the gate's own constants rather than restating them, so the screen
+    // cannot end up promising a window the server does not honour.
+    const gate = await import("../messaging/gate.mjs");
+    assert.equal(V.QUIET_START_HOUR, gate.QUIET_START_HOUR);
+    assert.equal(V.QUIET_END_HOUR, gate.QUIET_END_HOUR);
+  });
+
+  test("it reads the hour in US Eastern, not in the viewer's own timezone", () => {
+    const V = loadViewModel();
+    // 04:00 UTC is midnight or 1am in New York whatever the season. A staff
+    // member in Manila must see the rule that applies to the person receiving
+    // the text, not the clock on their own wall.
+    assert.equal(V.easternHour(Date.parse("2026-01-15T04:00:00Z")), 23);
+    assert.equal(V.easternHour(Date.parse("2026-01-15T18:00:00Z")), 13);
+  });
+
+  test("the window wraps midnight — it is shut at 2am and open at noon", () => {
+    const V = loadViewModel();
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T07:00:00Z")), true);  // 02:00 ET
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T05:00:00Z")), true);  // 00:00 ET
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T17:00:00Z")), false); // 12:00 ET
+    // 22:00 ET is the last hour the window is OPEN — one hour before it shuts.
+    // Getting this boundary backwards yields a window that is never open, which
+    // is why it is asserted rather than assumed.
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T03:00:00Z")), false); // 22:00 ET
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T04:00:00Z")), true);  // 23:00 ET — shuts
+  });
+
+  test("a text thread states the rule up front, before anything is typed", () => {
+    const V = loadViewModel();
+    const open = V.quietNotice("sms", Date.parse("2026-01-15T17:00:00Z"));
+    assert.equal(open.closed, false);
+    assert.match(open.text, /11:00am to 11:00pm Eastern/);
+    assert.match(open.text, /held and sent the next morning/);
+  });
+
+  test("inside the window it says plainly that this will not go now, and when it will", () => {
+    const V = loadViewModel();
+    const shut = V.quietNotice("sms", Date.parse("2026-01-15T07:00:00Z"));
+    assert.equal(shut.closed, true);
+    assert.match(shut.text, /11:00am Eastern/);
+    // The single most important sentence on the screen at 2am: do not retype it.
+    assert.match(shut.text, /do not need to send it again/i);
+  });
+
+  test("email threads say nothing about it, because it does not apply to them", () => {
+    const V = loadViewModel();
+    assert.equal(V.quietNotice("email", Date.parse("2026-01-15T07:00:00Z")).text, "");
+    assert.equal(V.quietNotice(null, Date.parse("2026-01-15T07:00:00Z")).text, "");
+  });
+
+  test("the notice is in the page and repaints on a timer, not only on load", () => {
+    assert.match(HTML, /id="quietNote"/);
+    assert.match(HTML, /paintQuietNote\(/);
+    // A browser left open across 11pm must stop saying the window is open.
+    assert.match(HTML, /setInterval\([\s\S]{0,200}?paintQuietNote/);
+  });
+});
+
+describe("messaging.html — what happens when there are a lot of conversations", () => {
+
+  test("the Needs-reply tab asks the server, so it cannot show a partial answer", () => {
+    assert.match(HTML, /params\.needs_reply\s*=\s*1/,
+      "the tab is still filtered in the browser, which at scale shows the unanswered " +
+      "threads among the loaded page while looking like it shows all of them");
+    // Switching tabs is a new question, so it refetches rather than re-slicing.
+    assert.match(HTML, /state\.filter = tab\.getAttribute\("data-filter"\);\s*\n[\s\S]{0,300}?loadList\(\)/);
+  });
+
+  test("the search box says when it is only searching what is loaded", () => {
+    const V = loadViewModel();
+    assert.equal(V.searchScopeNote(200, true, "ada"), "Searching the 200 most recent conversations only.");
+    // Nothing to disclose when everything is loaded, or when nobody is searching.
+    assert.equal(V.searchScopeNote(12, false, "ada"), "");
+    assert.equal(V.searchScopeNote(200, true, ""), "");
+    assert.equal(V.searchScopeNote(200, true, "   "), "");
+  });
+
+  test("the inbox refreshes itself, so a message that arrives is actually seen", () => {
+    assert.match(HTML, /REFRESH_MS/);
+    assert.match(HTML, /setInterval\([\s\S]{0,300}?loadList\(\{ quiet: true \}\)/);
+    // A background tab is not somebody looking at the screen.
+    assert.match(HTML, /document\.hidden/);
+    // And a refresh must not land in the middle of a send.
+    assert.match(HTML, /if \(state\.sending\) return;/);
+  });
+
+  test("a failed background refresh leaves the working screen alone", () => {
+    // Blanking a live inbox because one poll missed would take the thread
+    // somebody is mid-reply to off the screen.
+    assert.match(HTML, /if \(quiet\) \{ FHData\.explain\(res, "conversations"\); return; \}/);
+  });
+
+  test("an empty Needs-reply tab reads as good news, not as an error", () => {
+    assert.match(HTML, /Nothing is waiting on a reply/);
   });
 });
