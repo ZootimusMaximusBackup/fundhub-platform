@@ -48,6 +48,23 @@ export function pool() {
       idleTimeoutMillis: Number(process.env.PG_IDLE_TIMEOUT_MS || 30000),
       statement_timeout: Number(process.env.PG_STATEMENT_TIMEOUT_MS || 15000)
     });
+    /* THE 'error' LISTENER. node-postgres emits this on the Pool whenever an
+       IDLE client's connection dies out from under it — a pooler (Supavisor,
+       PgBouncer) reaping or resetting a backend is exactly this. pg.Pool is a
+       plain EventEmitter, and an EventEmitter with no 'error' listener THROWS
+       on emit rather than swallowing it, which crashes the whole process.
+       That crash is worse than the error itself: every client the pool had
+       CHECKED OUT to an in-flight request dies mid-request, never reaching its
+       own try/finally's client.release() — the request simply stops existing.
+       Those connections are then orphaned at the pooler until it notices the
+       socket is gone, which is how a handful of them end up "idle" for
+       minutes or stuck mid-reset (DISCARD ALL) rather than cleanly returned.
+       Logging and swallowing it here is the documented fix: the pool already
+       discards the dead client on its own, so there is nothing left to do but
+       not die. */
+    _pool.on("error", (err) => {
+      console.error("db: idle client error (pool recovering)", err && err.message);
+    });
   }
   return _pool;
 }
