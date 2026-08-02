@@ -7,23 +7,6 @@ Generated from the routing table and the gate on each handler, not from a spec.
 
 > **Who this is, in the code:** src/auth/account-session.mjs — PRINCIPAL_KINDS includes 'affiliate'
 
-## FINDING — this journey reaches nothing
-
-**Not one endpoint in this system admits an `affiliate`.**
-
-An `affiliate` is a real kind of account — they can be issued a session and sign in
-(`src/auth/account-session.mjs`). Having signed in, every endpoint refuses them. The only
-routes they can reach are the ones anybody can reach without signing in at all: the login
-and health routes, and three that check a signature instead of a session.
-
-So the sign-in works and leads nowhere. `src/http/read-api.mjs` describes this exact
-failure in its own comments — *"a client or partner could sign in and then read NOTHING,
-because every endpoint 401'd them"* — and names it as what the `principals` option was
-added to fix. That fix was applied to some kinds and not to this one.
-
-**This is a finding for a human, not something to generate around.** Either endpoints are
-missing, or this account kind is not actually in use and should stop being offered.
-
 ## In one picture
 
 ```mermaid
@@ -32,8 +15,12 @@ flowchart TD
     AUTH -->|No| OUT[Refused — 401 not signed in]
     AUTH -->|Yes| WHO{Recognised as affiliate?}
     WHO -->|No| DENY[Refused — 403 forbidden]
-    WHO -->|Yes| NONE[Nothing admits this one — every endpoint refuses them]
-    NONE --> OPENONLY[Only the routes anyone can reach without signing in]
+    WHO -->|Yes| CAN[Can reach]
+    CAN --> A_auth[Signing in and out — 6 routes]
+    CAN --> A_contracts[contracts — 1 route]
+    CAN --> A_documents[Documents — 1 route]
+    CAN --> A_top_level[Everything else — 3 routes]
+    CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 77 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
@@ -51,7 +38,7 @@ flowchart TD
 
 ## What they can reach
 
-**11 of 88 routes.**
+**12 of 89 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -65,17 +52,17 @@ flowchart TD
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
+| `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
 ### Worth knowing
 
-- **Nothing admits an `affiliate` specifically** — see the finding above. Every route listed below is one anybody reaches without signing in.
 - **8 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/contracts/sign`, `/api/health`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**77 of 88 routes.**
+**77 of 89 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

@@ -728,49 +728,100 @@
     });
   }
 
-  /* applyBrand — a white-label partner's tokens over the CSS custom properties,
-     at boot.
+  /* applyBrand — this company's CRM tokens over the CSS custom properties, at
+     boot. See docs/BRAND-THEMING-SPEC.md.
 
-     Brand Studio used to save to localStorage and nothing read it, so nothing it
-     saved themed anything. This is the read half.
+     CRM chrome comes from /api/org-brand, never from partner_brand. A partner
+     editing their funnel tokens must not recolor Fundhub staff screens.
 
-     FALLS BACK TO FUNDHUB. No principal, no partner, no row, or a failed
-     request all leave the stylesheet untouched — the default brand is what the
-     page already has, so doing nothing IS the fallback. A partner surface must
-     never render unstyled because a brand lookup failed.
+     FALLS BACK TO FUNDHUB. No session, no row, or a failed request leave the
+     stylesheet untouched — the default brand is what the page already has, so
+     doing nothing IS the fallback.
 
-     Only ink, paper and the six-stop ramp are applied. Font faces are NOT
-     injected here: that would need a stylesheet link to fonts.googleapis.com
-     built from a partner-supplied string, and the value is validated but the
-     link is still a request this file should not be constructing. Left for the
-     funnel renderer, which already owns its <head>. */
-  function applyBrand(staff) {
-    var partnerId = staff && (staff.partner_id || staff.partnerId);
-    if (!partnerId) return;                       // fundhub staff — nothing to do
+     Applies ink, paper, spectrum (from the six-stop ramp), status stops that
+     match the Fundhub ramp order, Google Font faces, and the wordmark. */
+  function rampToSpectrum(ramp) {
+    return "linear-gradient(90deg," + ramp.map(function (c, i) {
+      return c + " " + Math.round(i * 100 / (ramp.length - 1)) + "%";
+    }).join(",") + ")";
+  }
 
-    fetch("/api/partner-brand?partner_id=" + encodeURIComponent(partnerId), {
-      headers: { accept: "application/json" }
-    }).then(function (r) { return r.ok ? r.json() : null; })
+  function safeWordmark(url) {
+    var s = String(url || "").trim();
+    if (!s) return null;
+    if (/^https:\/\/[^\s"'<>()]+$/i.test(s)) return s;
+    if (/^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+$/.test(s)) return s;
+    return null;
+  }
+
+  function injectFonts(display, mono) {
+    var FACE = /^[A-Za-z0-9 \-]{1,60}$/;
+    var d = FACE.test(String(display || "")) ? display : null;
+    var m = FACE.test(String(mono || "")) ? mono : null;
+    if (!d && !m) return;
+    var fams = [];
+    if (d) fams.push(d.replace(/ /g, "+") + ":wght@400;500;600;700;800");
+    if (m) fams.push(m.replace(/ /g, "+") + ":wght@400;500;600;700");
+    var link = document.getElementById("fh-brand-fonts");
+    if (!link) {
+      link = document.createElement("link");
+      link.id = "fh-brand-fonts";
+      link.rel = "stylesheet";
+      (document.head || document.documentElement).appendChild(link);
+    }
+    link.href = "https://fonts.googleapis.com/css2?family=" + fams.join("&family=") + "&display=swap";
+  }
+
+  function paintBrand(b) {
+    if (!b) return;
+    var root = document.documentElement;
+    var HEX = /^#[0-9a-fA-F]{6}$/;
+    // Re-validated here even though the table has a CHECK: a custom property
+    // accepts url() and expressions, so this is the last gate before the
+    // value reaches the stylesheet.
+    if (HEX.test(String(b.ink || ""))) root.style.setProperty("--ink", b.ink);
+    if (HEX.test(String(b.paper || ""))) root.style.setProperty("--paper", b.paper);
+    if (Array.isArray(b.ramp) && b.ramp.length === 6 &&
+        b.ramp.every(function (s) { return HEX.test(String(s)); })) {
+      root.style.setProperty("--spectrum", rampToSpectrum(b.ramp));
+      // Status stops follow the Fundhub pastel order (spec).
+      root.style.setProperty("--alert", b.ramp[0]);
+      root.style.setProperty("--warn", b.ramp[1]);
+      root.style.setProperty("--ok", b.ramp[3]);
+      root.style.setProperty("--info", b.ramp[4]);
+      root.style.setProperty("--accent", b.ramp[5]);
+    }
+    var FACE = /^[A-Za-z0-9 \-]{1,60}$/;
+    if (FACE.test(String(b.display_face || ""))) {
+      root.style.setProperty("--sans", "'" + b.display_face + "', system-ui, -apple-system, sans-serif");
+    }
+    if (FACE.test(String(b.mono_face || ""))) {
+      root.style.setProperty("--mono", "'" + b.mono_face + "', ui-monospace, SFMono-Regular, monospace");
+    }
+    injectFonts(b.display_face, b.mono_face);
+    var wm = safeWordmark(b.wordmark_url);
+    if (wm) root.style.setProperty("--logo", "url(\"" + wm.replace(/"/g, "") + "\")");
+    var chip = document.getElementById("fh-shell-chip");
+    if (chip && b.entity_name) chip.setAttribute("data-brand", b.entity_name);
+  }
+
+  function applyBrand(/* staff */) {
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+    var headers = { accept: "application/json" };
+    if (t) headers.authorization = "Bearer " + t;
+
+    fetch("/api/org-brand", { headers: headers })
+      .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         if (!d || !d.ok || !d.brand) return;
-        var b = d.brand;
-        var root = document.documentElement;
-        var HEX = /^#[0-9a-fA-F]{6}$/;
-        // Re-validated here even though 043 has a CHECK: a custom property
-        // accepts url() and expressions, so this is the last gate before the
-        // value reaches the stylesheet.
-        if (HEX.test(String(b.ink || ""))) root.style.setProperty("--ink", b.ink);
-        if (HEX.test(String(b.paper || ""))) root.style.setProperty("--paper", b.paper);
-        if (Array.isArray(b.ramp) && b.ramp.length === 6) {
-          b.ramp.forEach(function (stop, i) {
-            if (HEX.test(String(stop))) root.style.setProperty("--brand-" + (i + 1), stop);
-          });
-        }
-        var chip = document.getElementById("fh-shell-chip");
-        if (chip && b.entity_name) chip.setAttribute("data-brand", b.entity_name);
+        paintBrand(d.brand);
       })
       .catch(function () { /* fundhub default stays — see the comment above */ });
   }
+
+  // Expose for Brand Studio live preview of CRM chrome.
+  window.FHApplyBrand = paintBrand;
 
   function onReady(fn) {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
