@@ -116,13 +116,45 @@ Retried against `main` at `ddd153b` (after merge #5). Only one conflict this tim
 - Pushed to `main` — see commit hash in the summary below.
 - Branch delete: not attempted (same 403 policy block expected).
 
-## Summary (final — all six branches resolved)
+## 7. audit/wiring — MERGED-CLEAN
 
-- Merged: 6 of 6. portal-magic-link-auth (clean), client-file-uploads, commas-payment-links-crm, staff-reply-inbox, journey-pipeline-crm-finishing, crm-contract-generator (each with a migration renumber; four of them also needed a regenerated `db/expected-migrations.mjs`/journey docs).
+Wiring audit and fixes for five fake-data screens:
+
+- Merge conflicts: none.
+- Suite before merge: 4264 tests, 4264 pass, 0 fail, 528 skipped (main at 0910e34, after merges #1–6 and before this session).
+- Suite after merge: 4264 tests, 4264 pass, 0 fail, 528 skipped.
+- Lint: clean (763 files). `tsc --noEmit`: clean.
+- Pushed to `main` as commit before fix/journey-runner-bugs merge.
+- Branch deleted: yes, `origin/audit/wiring`.
+- Notable: adds `docs/WIRING-AUDIT.md` with diagnostic report of 26 screens (5 broken, 18 passing); fixes five fake-data screens (hiring, creative-factory, social-studio, content-admin, galaxy) with correctly wired data calls.
+
+## 8. fix/journey-runner-bugs — MERGED-CLEAN
+
+Journey Runner first-ever run against production, fixes for four bugs, regression tests, and intended-journey documentation:
+
+- Merge conflicts: none.
+- Suite before merge: 4264 tests, 4264 pass, 0 fail, 528 skipped (main at 0910e34 after audit/wiring merge).
+- Suite after merge: 4265 tests, 4265 pass, 0 fail, 532 skipped (one additional passing test is new dispatch.pg.test.mjs regression test for the timestamp cast crash; skipped count increased by 4, also from the new tests which skip without DATABASE_URL).
+- Lint: clean (763 files). `tsc --noEmit`: clean.
+- Pushed to `main`.
+- Branch deleted: yes, `origin/fix/journey-runner-bugs`.
+- What was fixed:
+  1. **Timestamp cast crash in drain()**: Virtual clock returns epoch milliseconds; dispatch.mjs's claimDue() was binding them directly to `::timestamptz` parameters. Postgres rejected "1767399600000" as out-of-range. Added resolveTimestampParam() to normalize clock functions, epoch-ms numbers, Date objects, and null to ISO strings before binding. Applied to dispatch.mjs claimDue(), outbox.mjs drain() and outboxStatus(). **Only visible on real Postgres** — dispatch.test.mjs mocks the database and never caught this.
+  2. **Missing-table lookup hiding working checks**: facts.mjs queried a table named "stages" that doesn't exist (correct name is pipeline_stages). Query failure poisoned the entire transaction, so two genuinely readable tables (agents, message_templates) came back as "could not read". Fixed the table name, wrapped each query in SAVEPOINT so one failure is isolated, made the five queries sequential so savepoints nest cleanly.
+  3. **Journey/doc naming mismatch**: Two separate "journeys" systems exist (API route reachability per role in docs/journeys/, vs. CRM automation trees in src/journeys/seed-journeys.mjs) with different key sets. Renaming either risked breaking fuzzy-match logic or inventing content. Documented the gap plainly in seed-journeys.mjs, index.mjs, and README.md instead of guessing at a merge.
+  4. **No -intended.md files**: Generated all eight from their actual behavior, each marked "WRITTEN AFTER THE FACT" with an unmissable banner. Useful as a human reference point; next real intention change should replace these generated versions with hand-authored ones.
+  5. **COMMAS_WEBHOOK_SECRET unset**: Shared secret with a live payment processor, unsafe to invent. Left as open follow-up per owner direction.
+- Added four regression tests exercising the exact virtual-clock shape (function, bare epoch-ms number, Date) that crashed in production against real Postgres — verified they fail on unfixed code, pass on the fix.
+- Added header comments to seed-journeys.mjs and index.mjs documenting why the two journeys systems' key sets aren't reconciled.
+- Regenerated docs/journeys/ README linking both actual and intended pages, updated generator test to validate after-the-fact disclaimer presence.
+
+## Summary (final — all eight branches resolved)
+
+- Merged: 8 of 8. portal-magic-link-auth (clean), client-file-uploads, commas-payment-links-crm, staff-reply-inbox, journey-pipeline-crm-finishing, crm-contract-generator, audit/wiring (clean), fix/journey-runner-bugs (clean). First six required migration renumbering and/or regenerated manifests; last two merged cleanly with zero conflicts.
 - The one blocker (branch 3's `src/documents/store.mjs` storage-design conflict) was resolved by an explicit owner decision: main's `netlify-blobs`/env-var-authoritative `providerFromEnv()` is the only storage layer in this repo. Branch 3's competing auto-infer/`vercel-blob`/`postgres` rewrite was discarded in full — the function, the `PROVIDERS` registry entry, the `postgresProvider()` implementation, and the `document_blobs` table it backed are all gone. Contracts already stored files through the shared `storeFromEnv()` path, so no call-site rewrites were needed beyond fixing stale doc comments. Full account under section 3 above.
 - A second, previously-unseen conflict surfaced during branch 3's merge: an add/add collision where branch 3 and the already-merged branch 5 each wrote an unrelated feature to the same path, `api/messages.mjs`. Resolved by renaming branch 3's file/route to `api/messages-outbound.mjs` / `"messages-outbound"`, the same treatment as a colliding migration number — no feature dropped, no logic merged, just a path collision resolved.
 - One test failure surfaced by the suite itself (not by inspection): branch 3 deliberately registers `message-dispatch-sweeper` in the Inngest workflow registry, with its own header explaining why that supersedes branch 5's earlier "leave it unregistered" design (a per-company DB switch plus a daily cap replaced "not registered at all" as the safety mechanism). Updated the one test asserting the old behavior to match the branch's own documented reasoning, rather than reverting the registration or leaving the suite red.
-- `main` HEAD, final: `d55dae4`, pushed to origin.
+- `main` HEAD, final: `0910e34`, pushed to origin.
 - COMPLIANCE REVIEW REQUIRED is flagged on merge #5 (staff-reply-inbox, CLAUDE.md §7 — first path in the repo where a staff member's free-form text reaches a consumer) and was already present in branch 3's own migration comments (§7 marker on `125_contract_esign.sql` — signature capture on legally operative documents). Both carried forward as owner-set markers, not re-argued.
 - `node_modules` (tracked Mac-path symlink): never committed as deleted, across all six merges across three sessions. `npm install` was used locally each time to get a real `node_modules` for lint/test, then the tracked symlink was restored with `git checkout -- node_modules` (or, when a merge staged its deletion, `git restore --staged node_modules && git checkout HEAD -- node_modules`) before every commit.
 - Migration numbering, final state: `main` tops out at `126_outbound_switch.sql`. Every one of the six branches independently claimed `117` (or `117`–`119`) for its own first new migration, because all six were cut from the same pre-portal-auth commit — six branches, six renumbering passes, one with three colliding files at once (branch 3). `db/expected-migrations.mjs` is regenerable with `npm run migrations:manifest`; hand-merging its conflict block correctly (right content, right order) is the one step that produced real if shallow test failures twice across this merge run (branches 4 and — indirectly, via the sweeper registration change — 3).
