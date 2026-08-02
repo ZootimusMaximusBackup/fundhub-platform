@@ -44,16 +44,32 @@ describe("the journeys are not stale", () => {
     }
   });
 
-  test("ONLY actual files exist — no agent-authored -intended.md", () => {
+  test("the generator itself never authors an -intended.md", () => {
     // CLAUDE.md §4: intended journeys are hand-authored and agents do not edit
     // them. An agent writing one would be authoring the source of truth it is
-    // meant to be checked against.
+    // meant to be checked against. That still holds for `npm run journeys` —
+    // build() below is the generator's own output, and it must stay limited to
+    // `-actual.md` and the README no matter what exists on disk.
     for (const name of Object.keys(files)) {
       assert.ok(!/-intended\.md$/.test(name), `the generator produced ${name}; it must never author an intended journey`);
     }
-    if (fs.existsSync(OUT_DIR)) {
-      const onDisk = fs.readdirSync(OUT_DIR).filter((f) => /-intended\.md$/.test(f));
-      assert.deepEqual(onDisk, [], "intended journeys exist on disk but nothing generates them — a human must own those");
+  });
+
+  test("every -intended.md on disk (if any) says plainly it was written after the fact", () => {
+    // From 2026-07-31 to 2026-08-02 none existed, by the owner's decision (see
+    // the prior version of this test and docs/journeys/README.md's history). On
+    // 2026-08-02 the owner directed a one-time, explicit exception: each one was
+    // generated from the same extracted data as its -actual.md, because no
+    // independent spec existed to draw intent from otherwise. This test does not
+    // require they exist — a human replacing one with real, independently
+    // authored intent is the intended end state — but any that DO exist must
+    // carry the disclaimer, so nobody mistakes a stopgap for a settled spec.
+    if (!fs.existsSync(OUT_DIR)) return;
+    const intendedFiles = fs.readdirSync(OUT_DIR).filter((f) => /-intended\.md$/.test(f));
+    for (const name of intendedFiles) {
+      const body = fs.readFileSync(path.join(OUT_DIR, name), "utf8");
+      assert.match(body, /WRITTEN AFTER THE FACT, NOT BEFORE IT/,
+        `${name} exists but does not carry the after-the-fact disclaimer`);
     }
   });
 

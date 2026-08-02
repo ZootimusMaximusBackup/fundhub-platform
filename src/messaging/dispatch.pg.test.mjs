@@ -83,6 +83,53 @@ test("claims a due message and marks it sending", { skip: !RUN }, async () => {
   assert.equal(after_.attempts, 1, "claiming consumes an attempt");
 });
 
+// ── regression: claimDue's `now` bound straight to $3::timestamptz ─────────
+//
+// src/journeys/runner/index.mjs's drain() calls dispatchDue() → claimDue()
+// with `{ now: () => clock.now() }`, and the runner's virtual clock
+// (fake-step.mjs) returns a plain epoch-ms NUMBER. Binding that number
+// straight to claimDue's $3::timestamptz parameter sent Postgres the literal
+// text "1767399600000" and it rejected every one — "date/time field value
+// out of range" — on the first live run against production (see
+// docs/JOURNEY-RUNNER-RESULTS.md). dispatch.test.mjs's fake db cannot catch
+// this: it pattern-matches the SQL string and never asks a real Postgres to
+// cast anything. Only this file can.
+
+test("claimDue accepts a clock function returning epoch milliseconds — the journey runner's virtual clock shape",
+  { skip: !RUN }, async () => {
+    const id = await queue();
+    const rows = await claimDue(db, { orgId, limit: 50, now: () => Date.now() });
+    assert.ok(rows.some((r) => r.id === id), "a due message should still be claimed under a virtual clock");
+  });
+
+test("a virtual epoch-ms clock set before a message's schedule leaves it queued",
+  { skip: !RUN }, async () => {
+    const scheduledAt = new Date(Date.now() + 3600_000);
+    const id = await queue({ scheduledAt });
+    const rows = await claimDue(db, { orgId, limit: 50, now: () => scheduledAt.getTime() - 60_000 });
+    assert.ok(!rows.some((r) => r.id === id), "a message scheduled after the virtual clock's time must wait");
+    assert.equal((await statusOf(id)).status, "queued");
+  });
+
+test("a virtual epoch-ms clock at or after a message's schedule claims it",
+  { skip: !RUN }, async () => {
+    const scheduledAt = new Date(Date.now() - 1000);
+    const id = await queue({ scheduledAt });
+    const rows = await claimDue(db, { orgId, limit: 50, now: () => scheduledAt.getTime() + 5000 });
+    assert.ok(rows.some((r) => r.id === id), "a message due under the virtual clock should be claimed");
+  });
+
+test("claimDue also accepts now as a bare epoch-ms number or a Date, not only a function",
+  { skip: !RUN }, async () => {
+    const id1 = await queue();
+    const rowsNumber = await claimDue(db, { orgId, limit: 50, now: Date.now() });
+    assert.ok(rowsNumber.some((r) => r.id === id1), "a bare epoch-ms number must work like a resolved clock");
+
+    const id2 = await queue();
+    const rowsDate = await claimDue(db, { orgId, limit: 50, now: new Date() });
+    assert.ok(rowsDate.some((r) => r.id === id2), "a bare Date must work like a resolved clock");
+  });
+
 test("a NULL scheduled_at means due immediately", { skip: !RUN }, async () => {
   const id = await queue({ scheduledAt: null });
   const rows = await claimDue(db, { orgId, limit: 50 });

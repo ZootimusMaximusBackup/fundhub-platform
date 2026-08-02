@@ -32,6 +32,21 @@ import {
 import { resolve, addressFieldFor } from "./providers/index.mjs";
 import { isSynthetic } from "./live-fence.mjs";
 
+/* A clock value, resolved to whatever a `::timestamptz` bind param accepts.
+   `now` arrives here as null, a Date, an ISO string, or — from a virtual
+   clock like the journey runner's — a function returning epoch milliseconds.
+   Binding that number straight to a $n::timestamptz parameter sent Postgres a
+   string like "1767399600000", and it rejected it as an out-of-range
+   date/time field: a bare numeric string is not a timestamp literal. Every
+   shape here converts to an ISO string (or null) before it reaches a query. */
+export function resolveTimestampParam(now) {
+  const value = typeof now === "function" ? now() : now;
+  if (value == null) return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "number") return new Date(value).toISOString();
+  return value;
+}
+
 /** How many times a message is retried before it is given up on. */
 export const MAX_ATTEMPTS = 5;
 
@@ -145,8 +160,15 @@ export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = 
      and Postgres rejected it. Neither existing test caught that, because each
      function was only ever driven on its own.
 
-     Both shapes are accepted. null means the database's own clock. */
-  const at = typeof now === "function" ? now() : now;
+     Calling the function was only half the fix. A virtual clock (the journey
+     runner's) returns epoch milliseconds, and THAT bound straight to
+     $3::timestamptz fails too — Postgres sees the text "1767399600000" and
+     rejects it as an out-of-range date/time field, not as a timestamp. Never
+     caught before src/journeys/runner/index.test.mjs's fakeDb() was pointed at
+     a real database, because a mock db does not validate a cast. Every shape
+     (null, Date, ISO string, epoch ms) is normalized to an ISO string below —
+     see resolveTimestampParam. */
+  const at = resolveTimestampParam(now);
 
   /* senderStaffOnly — "only messages a person wrote".
 
