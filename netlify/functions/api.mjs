@@ -32,6 +32,8 @@ import authLogout from "../../api/auth/logout.mjs";
 import authSession from "../../api/auth/session.mjs";
 import authReset from "../../api/auth/reset.mjs";
 import authAdminReset from "../../api/auth/admin-reset.mjs";
+import authMagicLink from "../../api/auth/magic-link.mjs";
+import authMagicLinkVerify from "../../api/auth/magic-link-verify.mjs";
 import journeysAsk from "../../api/journeys/ask.mjs";
 import journeysRun from "../../api/journeys/run.mjs";
 import journeysStore from "../../api/journeys.mjs";
@@ -116,6 +118,21 @@ export const ROUTES = {
   "auth/session": authSession,
   "auth/reset": authReset,
   "auth/admin-reset": authAdminReset,
+
+  /* Portal sign-in by emailed link. Routed in the same commit as the handlers,
+     the migration, the template seed and the page — this map is the file that
+     has twice turned a finished feature into a 404 (see the header), and a
+     magic link is the worst possible thing to leave unrouted: the client gets
+     an email, clicks the link, and lands on a page that cannot verify it.
+
+     Two paths, because ROUTES matches the whole path exactly and the request
+     and the exchange are different operations with different methods.
+     Both are open by design, like every other sign-in route here — the token
+     IS the credential, and the request endpoint deliberately answers the same
+     thing to everybody. */
+  "auth/magic-link": authMagicLink,
+  "auth/magic-link-verify": authMagicLinkVerify,
+
   "journeys/ask": journeysAsk,
   /* ROLE_SETS.FINANCE — {owner, admin}, the same gate as its two neighbours.
      A run drives the real event bus into the real workflows, so it is not a

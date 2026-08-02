@@ -1,0 +1,220 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Fundhub — Client portal sign-in</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/fh.css">
+<style>
+  /* Nothing new invented. fh.css already gives .login-box, .card, .err, .note,
+     .sub and .btn their look, and this page uses them exactly as
+     public/login.html does so the two sign-in screens are visibly the same
+     product. The only additions are the two states this page has that the
+     password page does not: the "check your inbox" panel and the spinner shown
+     while a link is being exchanged. */
+  #ok-box { display: none; border: 1px solid #A8D8B0; border-radius: 9px;
+            padding: 11px 13px; background: #0E1410; margin: 12px 0 0;
+            font-size: 13px; line-height: 1.55; color: #A8D8B0; }
+  #busy { display: none; margin: 14px 0 0; font: 500 11px/1.6 'JetBrains Mono', monospace;
+          letter-spacing: .08em; text-transform: uppercase; color: #A1A1AA; }
+</style>
+</head><body>
+<div class="spectrum"></div>
+<div class="login-box">
+  <div class="card">
+    <h1>fundhub portal</h1>
+    <p class="sub" style="margin:0">Client sign-in</p>
+
+    <div class="err" id="err"></div>
+    <div id="ok-box"></div>
+    <p id="busy">Signing you in…</p>
+
+    <form id="f">
+      <input id="email" type="email" placeholder="your email address"
+             autocomplete="email" required>
+      <button class="btn primary" id="go" type="submit">Email me a sign-in link</button>
+    </form>
+
+    <p class="note" id="lede" style="margin-top:14px">
+      No password needed. Type the email address on your Fundhub file and we will
+      send you a link that signs you in. The link works once and lasts 15 minutes.
+    </p>
+
+    <p class="note">Staff sign in at <a href="/login.html" style="text-decoration:underline">the staff page</a>.</p>
+    <p class="note"><a href="/" style="text-decoration:underline">← Back to fundhub.ai</a></p>
+  </div>
+</div>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   THIS PAGE IS BOTH ENDS OF THE FLOW: the form that asks for a link, and the
+   landing spot the emailed link points at.
+
+   WHY THE EMAIL POINTS HERE AND NOT AT THE API. A magic link works exactly
+   once, so whatever opens it first spends it — and mailbox providers and
+   corporate mail gateways routinely fetch every URL in a message to scan it. An
+   emailed link pointing straight at the verification endpoint therefore gets
+   burned before the human ever clicks, and the client is told, correctly, that
+   their link no longer works.
+
+   A scanner fetching THIS url consumes nothing: it is a static HTML file. Only
+   a real browser runs the script below, and only the script POSTs the token to
+   /api/auth/magic-link-verify. That POST is the single use.
+
+   THE TOKEN IS TAKEN OUT OF THE ADDRESS BAR IMMEDIATELY. history.replaceState
+   runs before the network call, so the credential is not left in the URL for a
+   screenshot, a shared tab, a bookmark or the next page's Referer header.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* esc — same helper every screen in this repo defines (public/app/shell.js,
+   public/login.html). Everything that reaches innerHTML goes through it. The
+   text below is our own, but the habit is the point: the day one of these
+   strings starts arriving over the wire, an escaped page shows the tag and an
+   unescaped one runs it. */
+function esc(v) {
+  return String(v == null ? "" : v)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+var elErr  = document.getElementById("err");
+var elOk   = document.getElementById("ok-box");
+var elBusy = document.getElementById("busy");
+var elForm = document.getElementById("f");
+var elLede = document.getElementById("lede");
+var elGo   = document.getElementById("go");
+var elEmail = document.getElementById("email");
+
+function showError(msg) {
+  elErr.innerHTML = esc(msg);
+  elErr.style.display = "block";
+}
+function clearError() { elErr.style.display = "none"; elErr.innerHTML = ""; }
+
+/* ── LANDING: a link was clicked ─────────────────────────────────────────── */
+
+function tokenFromUrl() {
+  try { return new URLSearchParams(window.location.search).get("t") || ""; }
+  catch (e) { return ""; }
+}
+
+function stripTokenFromUrl() {
+  try { window.history.replaceState({}, document.title, window.location.pathname); }
+  catch (e) { /* an old browser keeps the token in the bar; the link is still spent */ }
+}
+
+async function exchange(token) {
+  elForm.style.display = "none";
+  elLede.style.display = "none";
+  elBusy.style.display = "block";
+
+  var data = null;
+  try {
+    var r = await fetch("/api/auth/magic-link-verify", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ token: token })
+    });
+    data = await r.json();
+  } catch (e) {
+    /* fetch itself failed — no API deployed, or no network. Say that, rather
+       than "your link is bad", which would send somebody to request a second
+       link that will fail in exactly the same way. */
+    elBusy.style.display = "none";
+    elForm.style.display = "";
+    elLede.style.display = "";
+    showError("We could not reach Fundhub to check your link. Check your connection and try the link again.");
+    return;
+  }
+
+  elBusy.style.display = "none";
+
+  if (data && data.ok && data.token) {
+    /* The app reads its token from localStorage (public/app/shell.js), and the
+       endpoint also set an HttpOnly cookie. Storing it here is what makes the
+       portal's own fetches work; the cookie is what makes a cold reload work.
+       Same two transports the password login already uses. */
+    try { localStorage.setItem("fh_token", data.token); } catch (e) {}
+    /* A browser that fell back to fh.js's offline mock at some point has
+       fh_demo set, and while it is set NOTHING in the app contacts the real
+       backend again (see the note in public/login.html). A real session must
+       clear it or the portal will draw sample data over a live sign-in. */
+    try {
+      localStorage.removeItem("fh_demo");
+      localStorage.removeItem("fh_demo_staff");
+    } catch (e) {}
+    window.location.replace(data.next || "/app/client-portal.html");
+    return;
+  }
+
+  elForm.style.display = "";
+  elLede.style.display = "";
+  showError(
+    (data && data.message) ||
+    "That sign-in link did not work. Ask for a new one below."
+  );
+  /* Pre-fill nothing. We do not know whose link it was — the endpoint
+     deliberately does not say — and guessing an address here would put one
+     person's email on another person's screen. */
+}
+
+/* ── FORM: ask for a link ────────────────────────────────────────────────── */
+
+elForm.addEventListener("submit", async function (ev) {
+  ev.preventDefault();
+  clearError();
+  elOk.style.display = "none";
+
+  var email = String(elEmail.value || "").trim();
+  if (!email) return;
+
+  elGo.disabled = true;
+  elGo.textContent = "Sending…";
+
+  var data = null;
+  try {
+    var r = await fetch("/api/auth/magic-link", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ email: email })
+    });
+    data = await r.json();
+  } catch (e) {
+    elGo.disabled = false;
+    elGo.textContent = "Email me a sign-in link";
+    showError("We could not reach Fundhub. Check your connection and try again.");
+    return;
+  }
+
+  elGo.disabled = false;
+  elGo.textContent = "Email me a sign-in link";
+
+  if (data && data.ok) {
+    /* THE SAME PANEL FOR EVERY ADDRESS. The server answers identically whether
+       or not the address has a portal — that is deliberate, so this form cannot
+       be used to find out who is a Fundhub client — and this page must not
+       undo it by rendering two different states. There is one success state and
+       the server's own sentence goes in it. */
+    elOk.innerHTML = esc(data.message || "If that email address has a Fundhub portal, a sign-in link is on its way.");
+    elOk.style.display = "block";
+    elForm.style.display = "none";
+    elLede.style.display = "none";
+    return;
+  }
+
+  showError(
+    (data && data.message) ||
+    (data && data.error === "email_required"
+      ? "That does not look like an email address."
+      : "Something went wrong. Try again in a moment.")
+  );
+});
+
+/* ── BOOT ────────────────────────────────────────────────────────────────── */
+
+(function boot() {
+  var t = tokenFromUrl();
+  if (!t) return;              // ordinary visit: just show the form
+  stripTokenFromUrl();         // before the network call, not after
+  exchange(t);
+})();
+</script>
+</body></html>
