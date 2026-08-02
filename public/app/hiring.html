@@ -2569,12 +2569,12 @@ function apiGet(path){
     }
     if(r.status === 400){
       return r.json().then(function(d){
-        return { ok:false, source:'badrequest', data:null, error:(d && d.error) || 'bad request' };
+        return { ok:false, source:'badrequest', data:null, error:(d && d.message) || 'That request was not accepted.' };
       }).catch(function(){ return { ok:false, source:'badrequest', data:null, error:'bad request' }; });
     }
     return r.json().then(function(d){
-      if(r.status === 503 || (d && d.db === 'down')) return { ok:false, source:'nodb', data:null, error:(d && d.error) || 'database unreachable' };
-      if(!d || d.ok !== true) return { ok:false, source:'server', data:null, error:(d && d.error) || 'request failed' };
+      if(r.status === 503 || (d && d.db === 'down')) return { ok:false, source:'nodb', data:null, error:(d && d.message) || 'The database is not reachable right now.' };
+      if(!d || d.ok !== true) return { ok:false, source:'server', data:null, error:(d && d.message) || 'Something went wrong. Try again in a moment.' };
       return { ok:true, source:'api', data:d, error:null };
     }).catch(function(){ return { ok:false, source:'offline', data:null, error:'response was not JSON' }; });
   }).catch(function(e){

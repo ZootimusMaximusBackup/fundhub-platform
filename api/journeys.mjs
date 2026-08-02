@@ -37,7 +37,7 @@ export default async function handler(req, res) {
       }
       return res.status(200).json({ ok: true, journeys });
     } catch (err) {
-      return res.status(500).json({ ok: false, error: "query_failed", message: safeError(err) });
+      return res.status(500).json({ ok: false, error: "query_failed", message: "Something went wrong loading journeys. Try again in a moment.", detail: safeError(err) });
     }
   }
 
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
          JSON.stringify(body.nodes), staff.id]);
       return res.status(200).json({ ok: true, key: rows[0].key, updatedAt: rows[0].updated_at });
     } catch (err) {
-      return res.status(500).json({ ok: false, error: "write_failed", message: safeError(err) });
+      return res.status(500).json({ ok: false, error: "write_failed", message: "Something went wrong saving that journey. Try again in a moment.", detail: safeError(err) });
     }
   }
 

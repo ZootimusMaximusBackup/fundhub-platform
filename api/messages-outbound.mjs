@@ -177,7 +177,7 @@ export default async function handler(req, res) {
     if (err && CLIENT_DATA_ERRORS.has(err.code)) {
       return res.status(400).json({ ok: false, error: "bad_request_parameter" });
     }
-    return res.status(500).json({ ok: false, error: "request_failed", message: safeError(err) });
+    return res.status(500).json({ ok: false, error: "request_failed", message: "Something went wrong with that mail request. Try again in a moment.", detail: safeError(err) });
   }
 }
 

@@ -118,7 +118,14 @@ export async function createTemplate(db, {
   }
 
   const key = normaliseKey(templateKey);
-  const fields = normaliseManualFields(manualFields);
+  let fields;
+  try {
+    fields = normaliseManualFields(manualFields);
+  } catch (err) {
+    // Shape errors used to leave the handler as a bare Error and surface as
+    // HTTP 500 write_failed. They are the caller's fault — say so plainly.
+    throw badRequest(String(err.message || err), "invalid_manual_fields");
+  }
   const values = [
     orgId,
     key,
@@ -135,11 +142,21 @@ export async function createTemplate(db, {
   ];
 
   try {
+    /* source_kind / fields / page_sizes / signer_roles are set EXPLICITLY, not
+       left to column defaults. uploadTemplate already did this for PDFs.
+       createTemplate used to omit them and rely on DEFAULTs from
+       125_contract_esign.sql — and when a DEFAULT was missing (ADD COLUMN IF
+       NOT EXISTS skips the whole clause if the column already exists without
+       one), Postgres refused the INSERT with a NOT NULL violation that the
+       handler reported as write_failed. Naming the values here makes a text
+       template save work even when the catalog defaults are wrong. */
     const { rows } = await db.query(
       `INSERT INTO contract_templates
          (org_id, template_key, name, kind, subtype, body, manual_fields,
-          signature_required, signature_statement, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10)
+          signature_required, signature_statement, created_by,
+          source_kind, page_sizes, fields, signer_roles)
+       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,
+               'text','[]'::jsonb,'[]'::jsonb,'[]'::jsonb)
        RETURNING ${TEMPLATE_COLUMNS}`,
       values
     );
@@ -150,6 +167,27 @@ export async function createTemplate(db, {
       throw new ContractError(
         `A template called ${key} already exists. Open it and edit it, or pick a different short name.`,
         { status: 409, code: "duplicate_template_key" });
+    }
+    // 42501 = insufficient_privilege — the app role was never granted INSERT.
+    if (err && err.code === "42501") {
+      throw new ContractError(
+        "This system cannot save contract wording right now — the database " +
+        "role is not allowed to write it. Apply migration 128, then try again.",
+        { status: 500, code: "write_forbidden" });
+    }
+    // 23502 = not_null_violation — a required column the INSERT did not fill.
+    if (err && err.code === "23502") {
+      throw new ContractError(
+        "That wording could not be saved because a required field was missing " +
+        "in the database. Apply migration 128, then try again.",
+        { status: 500, code: "write_incomplete" });
+    }
+    // 42703 = undefined_column — 125's columns absent while this code expects them.
+    if (err && err.code === "42703") {
+      throw new ContractError(
+        "That wording could not be saved because the database is missing a " +
+        "column this screen needs. Apply migrations 125 and 128, then try again.",
+        { status: 500, code: "schema_behind" });
     }
     throw err;
   }
@@ -177,8 +215,14 @@ export async function updateTemplate(db, {
       : (subtype == null || String(subtype).trim() === "" ? null : String(subtype).trim()),
     body: body === undefined ? current.body
       : requireText(body, "A contract needs words in it.", "body_required"),
-    manual_fields: manualFields === undefined ? current.manual_fields
-      : normaliseManualFields(manualFields),
+    manual_fields: (() => {
+      if (manualFields === undefined) return current.manual_fields;
+      try {
+        return normaliseManualFields(manualFields);
+      } catch (err) {
+        throw badRequest(String(err.message || err), "invalid_manual_fields");
+      }
+    })(),
     signature_required: signatureRequired === undefined
       ? current.signature_required : signatureRequired !== false,
     signature_statement: signatureStatement === undefined

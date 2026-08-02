@@ -342,7 +342,7 @@
           if (d && d.ok && d.db === "up") {
             return { code: "live", label: "LIVE", hint: (d.migrations || 0) + " migrations applied" };
           }
-          return { code: "nodb", label: "NO DB", hint: String((d && d.error) || "database unreachable") };
+          return { code: "nodb", label: "NO DB", hint: String((d && d.message) || "The database is not reachable right now.") };
         }).catch(function () {
           return { code: "offline", label: "NO API", hint: "/api/health did not return JSON" };
         });
@@ -648,14 +648,14 @@ window.FHData = (function () {
       }
       if (r.status === 400) {
         return r.json().then(function (d) {
-          return fail("badrequest", (d && d.error) || "bad request");
+          return fail("badrequest", (d && d.message) || "That request was not accepted.");
         }).catch(function () { return fail("badrequest", "bad request"); });
       }
       return r.json().then(function (d) {
         if (r.status === 503 || (d && d.db === "down")) {
-          return fail("nodb", (d && d.error) || "database unreachable");
+          return fail("nodb", (d && d.message) || "The database is not reachable right now.");
         }
-        if (!d || d.ok !== true) return fail("nodb", (d && d.error) || "request failed");
+        if (!d || d.ok !== true) return fail("nodb", (d && d.message) || "Something went wrong. Try again in a moment.");
         return { ok: true, source: "api", data: d, error: null };
       }).catch(function () {
         return fail("offline", "response was not JSON");

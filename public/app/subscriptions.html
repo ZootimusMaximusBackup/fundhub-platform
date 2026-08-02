@@ -396,9 +396,9 @@ button,input,select,textarea{font:inherit;color:inherit}
             ? fail("offline", "/api/* not deployed")
             : fail("notfound", (d && d.error) || "no such record");
         }
-        if (r.status === 400) return fail("badrequest", (d && d.error) || "bad request");
-        if (r.status === 503 || (d && d.db === "down")) return fail("nodb", (d && d.error) || "database unreachable");
-        if (!d || d.ok !== true) return fail("server", "HTTP " + r.status + " " + ((d && d.error) || "request failed"));
+        if (r.status === 400) return fail("badrequest", (d && (d.message || d.error)) || "That request was not accepted.");
+        if (r.status === 503 || (d && d.db === "down")) return fail("nodb", (d && (d.message || d.error)) || "The database is not reachable right now.");
+        if (!d || d.ok !== true) return fail("server", (d && d.message) || "Something went wrong. Try again in a moment.");
         return { ok: true, source: "api", data: d, error: null };
       }).catch(function () { return fail("offline", "response was not JSON"); });
     }).catch(function (e) {

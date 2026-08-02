@@ -214,3 +214,12 @@ Baseline `origin/main`: `c37dc60`. Model: Grok. No split. Owner instruction: no 
   - `public/app/brand-studio.html` — **call:** took org-brand's dual-mode persistence (`/api/org-brand` for CRM, `/api/partner-brand` for funnels via `__fhBrandPersist`). Discarded controls-persist's parallel `BrandStudioPersist` partner-only bridge on this screen because org-brand already covers partner save/load and adds the CRM mode the branch exists for. Reset still clears local draft and reloads.
 - Suite: unit (no DATABASE_URL) run after commit.
 - Push / delete: recorded when pushed.
+
+## 11. fix/contract-template-save — MERGED-WITH-RESOLUTION
+
+- Prep commit `aae94d9` renumbered `128_contract_template_write_repair.sql` → `129_contract_template_write_repair.sql`.
+- Conflicts:
+  - `db/expected-migrations.mjs` — kept 127–129; regenerated via `npm run migrations:manifest`.
+  - `node_modules` modify/delete — **call:** kept HEAD deletion (main already stopped tracking the Mac symlink in `aa5382d`). Reinstalled locally with `npm ci` for the suite; not committed.
+- No logic conflicts in contract template code.
+- Suite: unit (no DATABASE_URL) after commit.

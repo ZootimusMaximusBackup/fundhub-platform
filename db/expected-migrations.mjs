@@ -111,6 +111,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/126_outbound_switch.sql",
   "migrations/127_retire_affiliates_hiring.sql",
   "migrations/128_org_brand.sql",
+  "migrations/129_contract_template_write_repair.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
   "seed/007_contract_templates.sql",

@@ -465,12 +465,18 @@ button,input,select,textarea{font:inherit;color:inherit}
         }).catch(function () { return { ok: false, source: "offline", data: null, error: "/api/* not deployed" }; });
       }
       if (r.status === 400 || r.status === 409) {
-        return r.json().then(function (d) { return { ok: false, source: "badrequest", data: null, error: (d && d.error) || "rejected" }; })
-          .catch(function () { return { ok: false, source: "badrequest", data: null, error: "rejected" }; });
+        return r.json().then(function (d) {
+          var msg = (d && d.message) || (d && d.error && /\s/.test(d.error) ? d.error : null) || "That request was not accepted.";
+          return { ok: false, source: "badrequest", data: null, error: msg };
+        }).catch(function () { return { ok: false, source: "badrequest", data: null, error: "That request was not accepted." }; });
       }
       return r.json().then(function (d) {
-        if (r.status === 503 || (d && d.db === "down")) return { ok: false, source: "nodb", data: null, error: (d && d.error) || "database unreachable" };
-        if (!d || d.ok !== true) return { ok: false, source: "server", data: null, error: "HTTP " + r.status + " " + ((d && d.error) || "request failed") };
+        if (r.status === 503 || (d && d.db === "down")) {
+          return { ok: false, source: "nodb", data: null, error: (d && d.message) || "The database is not reachable right now." };
+        }
+        if (!d || d.ok !== true) {
+          return { ok: false, source: "server", data: null, error: (d && d.message) || "Something went wrong. Try again in a moment." };
+        }
         return { ok: true, source: "api", data: d, error: null };
       }).catch(function () { return { ok: false, source: "offline", data: null, error: "response was not JSON" }; });
     }).catch(function (e) { return { ok: false, source: "offline", data: null, error: (e && e.message) || "network error" }; });

@@ -103,7 +103,10 @@ const baseUrlFrom = (req, env = process.env) => {
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).json({ ok: false, error: "method_not_allowed" });
+    return res.status(405).json({
+      ok: false, error: "method_not_allowed",
+      message: "This screen only accepts a save request, not a page load."
+    });
   }
 
   const staff = await requireAuth(req, res, { db });
@@ -121,7 +124,10 @@ export default async function handler(req, res) {
   const body = req.body || {};
   const action = String(body.action || "").trim().toLowerCase();
   if (!ALL_ACTIONS.includes(action)) {
-    return res.status(400).json({ ok: false, error: "unknown_action", allowed: ALL_ACTIONS });
+    return res.status(400).json({
+      ok: false, error: "unknown_action", allowed: ALL_ACTIONS,
+      message: "That action is not one this screen knows how to do."
+    });
   }
 
   if (OWNER_ADMIN_ACTIONS.has(action) && !hasRole(staff, ["admin"])) {
@@ -152,7 +158,7 @@ export default async function handler(req, res) {
       }
 
       case "save_template": {
-        if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "invalid_id" });
+        if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "invalid_id", message: "That id is not a valid record id." });
         /* A rename is refused outright rather than ignored. Same rule
            api/message-templates.mjs applies: the short name is what other code
            and every already-sent contract match on, so changing it makes the
@@ -183,7 +189,7 @@ export default async function handler(req, res) {
       }
 
       case "archive_template": {
-        if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "invalid_id" });
+        if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "invalid_id", message: "That id is not a valid record id." });
         const active = body.active === true;   // absent or false = archive
         const template = await updateTemplate(db, {
           orgId, staffId: staff.id, id: body.id, active
@@ -223,7 +229,7 @@ export default async function handler(req, res) {
 
       // ── where the boxes go, and who signs ─────────────────────────────────
       case "save_fields": {
-        if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "invalid_id" });
+        if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "invalid_id", message: "That id is not a valid record id." });
         const template = await saveFields(db, {
           orgId, staffId: staff.id, id: body.id,
           fields: body.fields, signerRoles: body.signer_roles
@@ -287,8 +293,8 @@ export default async function handler(req, res) {
 
       // ── drafts ────────────────────────────────────────────────────────────
       case "create_draft": {
-        if (!isUuid(body.client_id)) return res.status(400).json({ ok: false, error: "invalid_client_id" });
-        if (!isUuid(body.template_id)) return res.status(400).json({ ok: false, error: "invalid_template_id" });
+        if (!isUuid(body.client_id)) return res.status(400).json({ ok: false, error: "invalid_client_id", message: "That contact id is not valid." });
+        if (!isUuid(body.template_id)) return res.status(400).json({ ok: false, error: "invalid_template_id", message: "That template id is not valid." });
         const contract = await createDraft(db, {
           orgId, staffId: staff.id,
           clientId: body.client_id, templateId: body.template_id,
@@ -303,7 +309,7 @@ export default async function handler(req, res) {
       }
 
       case "save_draft": {
-        if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "invalid_id" });
+        if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "invalid_id", message: "That id is not a valid record id." });
         const contract = await saveDraft(db, {
           orgId, id: body.id, values: body.values || {}, title: body.title || null
         });
@@ -316,9 +322,9 @@ export default async function handler(req, res) {
          schedule — and GETs get logged with their query strings, prefetched and
          cached. Same reasoning api/consent/capture.mjs and api/pii.mjs record. */
       case "preview": {
-        if (!isUuid(body.template_id)) return res.status(400).json({ ok: false, error: "invalid_template_id" });
+        if (!isUuid(body.template_id)) return res.status(400).json({ ok: false, error: "invalid_template_id", message: "That template id is not valid." });
         if (body.client_id != null && !isUuid(body.client_id)) {
-          return res.status(400).json({ ok: false, error: "invalid_client_id" });
+          return res.status(400).json({ ok: false, error: "invalid_client_id", message: "That contact id is not valid." });
         }
         const out = await preview(db, {
           orgId, templateId: body.template_id,
@@ -329,7 +335,7 @@ export default async function handler(req, res) {
 
       // ── send ──────────────────────────────────────────────────────────────
       case "send": {
-        if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "invalid_id" });
+        if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "invalid_id", message: "That id is not a valid record id." });
         let out;
         try {
           out = await send(db, {
@@ -385,7 +391,7 @@ export default async function handler(req, res) {
 
       // ── void ──────────────────────────────────────────────────────────────
       case "void": {
-        if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "invalid_id" });
+        if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "invalid_id", message: "That id is not a valid record id." });
         const contract = await voidContract(db, {
           orgId, staffId: staff.id, id: body.id, reason: body.reason
         });
@@ -399,15 +405,32 @@ export default async function handler(req, res) {
         return res.status(400).json({ ok: false, error: "unknown_action", allowed: ALL_ACTIONS });
     }
   } catch (err) {
-    if (err instanceof ContractError) {
+    /* Duck-type as well as instanceof: a bundled copy of ContractError from a
+       second module graph would fail instanceof and turn a clear 400 into
+       write_failed. name + status is what every ContractError carries. */
+    const contractErr = err instanceof ContractError
+      || (err && err.name === "ContractError" && typeof err.status === "number");
+    if (contractErr) {
       return res.status(err.status).json({
-        ok: false, error: err.code, message: err.message, detail: err.detail ?? undefined
+        ok: false,
+        error: err.code,
+        message: err.message,
+        detail: err.detail ?? undefined
       });
     }
     if (err && CLIENT_DATA_ERRORS.has(err.code)) {
-      return res.status(400).json({ ok: false, error: "bad_request_parameter" });
+      return res.status(400).json({
+        ok: false,
+        error: "bad_request_parameter",
+        message: "That request used a value this screen does not accept."
+      });
     }
-    return res.status(500).json({ ok: false, error: "write_failed", message: safeError(err) });
+    return res.status(500).json({
+      ok: false,
+      error: "write_failed",
+      message: "Something went wrong saving that. Try again in a moment.",
+      detail: safeError(err)
+    });
   }
 }
 

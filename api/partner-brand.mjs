@@ -199,7 +199,7 @@ export default async function handler(req, res) {
       if (CLIENT_DATA_ERRORS.has(err && err.code)) {
         return res.status(400).json({ ok: false, error: "invalid_parameter" });
       }
-      return res.status(500).json({ ok: false, error: "query_failed", message: safeError(err) });
+      return res.status(500).json({ ok: false, error: "query_failed", message: "Something went wrong loading brand settings. Try again in a moment.", detail: safeError(err) });
     }
   }
 
@@ -249,7 +249,7 @@ export default async function handler(req, res) {
       if (CLIENT_DATA_ERRORS.has(err && err.code)) {
         return res.status(400).json({ ok: false, error: "invalid_parameter" });
       }
-      return res.status(500).json({ ok: false, error: "write_failed", message: safeError(err) });
+      return res.status(500).json({ ok: false, error: "write_failed", message: "Something went wrong saving brand settings. Try again in a moment.", detail: safeError(err) });
     }
   }
 
