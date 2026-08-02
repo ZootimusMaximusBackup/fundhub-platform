@@ -271,4 +271,18 @@ Needed for suite green after merge — these were latent on the branch against c
 
 ## Production migrate
 
-_(filled after apply)_
+Applied 2026-08-02 via `MIGRATION_DATABASE_URL` (admin pooler) → `node db/migrate.mjs`.
+
+Applied (7):
+- `migrations/127_retire_affiliates_hiring.sql` — retired 1 pipeline row, 0 cards
+- `migrations/128_org_brand.sql`
+- `migrations/129_contract_template_write_repair.sql` — granted contract tables to fundhub_app
+- `migrations/130_company_brain.sql` — pgvector + brain tables
+- `migrations/131_company_brain_sync.sql`
+- `migrations/132_company_brain_classification.sql`
+- `migrations/133_company_brain_affiliate_allowlist.sql`
+
+Deliberately NOT set: `OPENAI_API_KEY`, `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON`, `GOOGLE_DRIVE_DELEGATE_EMAIL` (Company Brain Drive/OpenAI sync stays off).
+
+Credentials were not logged.
+
