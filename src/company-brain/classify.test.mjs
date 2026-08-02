@@ -51,11 +51,13 @@ function reviewDb() {
   const files = new Map();
   const chunks = new Map(); // fileId -> tier
   const reviews = new Map();
+  const allowlist = new Map(); // fileId -> row
   let seq = 1;
   return {
     files,
     chunks,
     reviews,
+    allowlist,
     async query(sql, params) {
       if (/UPDATE brain_files SET access_tier/i.test(sql)) {
         const [fileId, orgId, tier] = params;
@@ -123,6 +125,13 @@ function reviewDb() {
         });
         return { rows: [{ id }] };
       }
+      // decideClassificationReview — look up by review id ($1) + org ($2)
+      if (/r\.id = \$1/i.test(sql) && /FROM brain_classification_reviews r/i.test(sql)) {
+        const r = reviews.get(params[0]);
+        if (!r || r.org_id !== params[1]) return { rows: [] };
+        return { rows: [{ ...r, drive_file_id: r.drive_file_id || "drive-x" }] };
+      }
+      // listPendingReviews — filter by org ($1)
       if (/FROM brain_classification_reviews r/i.test(sql)) {
         const rows = [...reviews.values()]
           .filter((r) => r.org_id === params[0] && r.status === "pending")
@@ -135,11 +144,19 @@ function reviewDb() {
           }));
         return { rows };
       }
-      if (/FROM brain_classification_reviews\s+WHERE id/i.test(sql)
-        || /SELECT id, file_id, proposed_tier, status/i.test(sql)) {
-        const r = reviews.get(params[0]);
-        if (!r || r.org_id !== params[1]) return { rows: [] };
-        return { rows: [r] };
+      if (/INSERT INTO brain_affiliate_allowlist/i.test(sql)) {
+        allowlist.set(params[1], {
+          org_id: params[0],
+          file_id: params[1],
+          drive_file_id: params[2],
+          review_id: params[3],
+          approved_by: params[4]
+        });
+        return { rows: [] };
+      }
+      if (/DELETE FROM brain_affiliate_allowlist/i.test(sql)) {
+        allowlist.delete(params[1]);
+        return { rows: [] };
       }
       if (/UPDATE brain_classification_reviews SET\s+status = 'approved'/i.test(sql)) {
         const r = reviews.get(params[0]);
@@ -264,6 +281,50 @@ test("decideClassificationReview reject keeps owner", async () => {
   assert.equal(out.accessTier, "owner");
   assert.equal(db.files.get("f4").access_tier, "owner");
   assert.equal(db.files.get("f4").classification_status, "rejected");
+  assert.equal(db.allowlist.has("f4"), false);
+});
+
+test("approve affiliate upserts allowlist; approve owner clears it", async () => {
+  const db = reviewDb();
+  db.files.set("f6", { id: "f6", org_id: "org", access_tier: "owner" });
+  const queued = await classifyAndApply(db, {
+    orgId: "org",
+    fileId: "f6",
+    driveFileId: "d6",
+    classify: async () => ({
+      proposedTier: "affiliate",
+      autoAssignable: false,
+      rationale: "partner kit",
+      source: "test"
+    })
+  });
+  const approved = await decideClassificationReview(db, {
+    orgId: "org",
+    reviewId: queued.reviewId,
+    role: "owner",
+    decision: "approve",
+    decidedBy: "owner-1"
+  });
+  assert.equal(approved.ok, true);
+  assert.equal(approved.affiliateAllowlisted, true);
+  assert.equal(db.files.get("f6").access_tier, "affiliate");
+  assert.ok(db.allowlist.has("f6"));
+
+  // Re-queue as owner and approve — allowlist must be removed.
+  db.reviews.set(queued.reviewId, {
+    ...db.reviews.get(queued.reviewId),
+    status: "pending",
+    proposed_tier: "owner"
+  });
+  const cleared = await decideClassificationReview(db, {
+    orgId: "org",
+    reviewId: queued.reviewId,
+    role: "owner",
+    decision: "approve"
+  });
+  assert.equal(cleared.ok, true);
+  assert.equal(cleared.affiliateAllowlisted, false);
+  assert.equal(db.allowlist.has("f6"), false);
 });
 
 test("setFileAccessTier updates file and chunks", async () => {

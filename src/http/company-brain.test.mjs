@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import handler from "../../api/read/company-brain.mjs";
 import reviewsHandler from "../../api/company-brain/reviews.mjs";
+import affiliateHandler from "../../api/read/company-brain-affiliate.mjs";
 import { synthesizeAnswer } from "../company-brain/answer.mjs";
 
 function mockRes() {
@@ -111,6 +112,72 @@ test("reviews POST approve requires owner", async () => {
     {
       requireAuth: async () => ({ id: "s1", org_id: "org-1", role: "closer" })
     }
+  );
+  assert.equal(res.statusCode, 403);
+});
+
+test("affiliate endpoint refuses staff roles", async () => {
+  const res = mockRes();
+  await affiliateHandler(
+    { method: "POST", body: { question: "kit" } },
+    res,
+    { requireAuth: async () => ({ id: "s1", org_id: "org-1", role: "closer" }) }
+  );
+  assert.equal(res.statusCode, 403);
+});
+
+test("affiliate endpoint uses allowlist retrieve and rejects non-affiliate chunks", async () => {
+  const res = mockRes();
+  await affiliateHandler(
+    { method: "POST", body: { question: "partner kit" } },
+    res,
+    {
+      requireAuth: async () => ({ id: "a1", org_id: "org-1", role: "affiliate" }),
+      retrieveAffiliateChunks: async (_db, args) => {
+        assert.equal(args.role, "affiliate");
+        return {
+          ok: true,
+          chunks: [{
+            fileName: "kit.doc",
+            content: "Welcome partner",
+            accessTier: "affiliate",
+            webViewLink: null
+          }]
+        };
+      },
+      synthesizeAnswer: async () => ({
+        ok: true, text: "Welcome [1]", thin: false, source: "test",
+        citations: [{ n: 1, fileName: "kit.doc" }]
+      })
+    }
+  );
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.scope, "affiliate_allowlist");
+});
+
+test("affiliate endpoint fails closed if a non-affiliate chunk is returned", async () => {
+  const res = mockRes();
+  await affiliateHandler(
+    { method: "POST", body: { question: "secret" } },
+    res,
+    {
+      requireAuth: async () => ({ id: "a1", org_id: "org-1", role: "partner" }),
+      retrieveAffiliateChunks: async () => ({
+        ok: true,
+        chunks: [{ fileName: "cap-table.pdf", content: "secret", accessTier: "owner" }]
+      })
+    }
+  );
+  assert.equal(res.statusCode, 500);
+  assert.equal(res.body.error, "affiliate_tier_violation");
+});
+
+test("staff company-brain endpoint refuses affiliate role via ROLE_SETS.STAFF", async () => {
+  const res = mockRes();
+  await handler(
+    { method: "POST", body: { question: "scripts" } },
+    res,
+    { requireAuth: async () => ({ id: "a1", org_id: "org-1", role: "affiliate" }) }
   );
   assert.equal(res.statusCode, 403);
 });

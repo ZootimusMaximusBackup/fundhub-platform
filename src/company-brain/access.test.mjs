@@ -68,6 +68,6 @@ test("retrieveChunks still refuses non-STAFF before any db call", async () => {
     embed: async () => ({ ok: true, embeddings: [new Array(1536).fill(0)] })
   });
   assert.equal(out.ok, false);
-  assert.equal(out.reason, "forbidden_role");
+  assert.equal(out.reason, "use_affiliate_path");
   assert.equal(called, false);
 });

@@ -72,6 +72,7 @@ import readMoneyMap from "../../api/read/money-map.mjs";
 import readFinanceCommand from "../../api/read/finance-command.mjs";
 import readFinanceAsk from "../../api/read/finance-ask.mjs";
 import readCompanyBrain from "../../api/read/company-brain.mjs";
+import readCompanyBrainAffiliate from "../../api/read/company-brain-affiliate.mjs";
 import companyBrainReviews from "../../api/company-brain/reviews.mjs";
 import readWorkflows from "../../api/read/workflows.mjs";
 import readTransactions from "../../api/read/transactions.mjs";
@@ -270,6 +271,10 @@ export const ROUTES = {
   // Company Brain — Drive search over role-cleared chunks. ROLE_SETS.STAFF;
   // role for tier filter comes from the session only.
   "read/company-brain": readCompanyBrain,
+
+  // EXTERNAL allowlist-only path for affiliate/partner. Never shares the staff
+  // tier filter. Step 7 of COMPANY-BRAIN-BUILD-SPEC.
+  "read/company-brain-affiliate": readCompanyBrainAffiliate,
 
   // Owner-only classification review queue (H-3).
   "company-brain/reviews": companyBrainReviews,

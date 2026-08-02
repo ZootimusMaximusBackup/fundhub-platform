@@ -1,7 +1,7 @@
 // Apply classification results and owner-only review decisions.
 // Live access_tier stays `owner` until auto-assigned or owner-approved (fail closed).
-// Affiliate visibility (allowlist) is step 7 — approving affiliate here only
- // sets the tier label; affiliate query path is not wired yet.
+// Step 7: approving `affiliate` also upserts brain_affiliate_allowlist;
+// reject / non-affiliate approve removes any allowlist row.
 
 import {
   classifyHeuristic,
@@ -177,9 +177,10 @@ export async function decideClassificationReview(db, {
   }
 
   const found = await db.query(
-    `SELECT id, file_id, proposed_tier, status
-       FROM brain_classification_reviews
-      WHERE id = $1 AND org_id = $2`,
+    `SELECT r.id, r.file_id, r.proposed_tier, r.status, f.drive_file_id
+       FROM brain_classification_reviews r
+       JOIN brain_files f ON f.id = r.file_id
+      WHERE r.id = $1 AND r.org_id = $2`,
     [reviewId, orgId]
   );
   const row = found.rows?.[0];
@@ -206,15 +207,38 @@ export async function decideClassificationReview(db, {
        WHERE id = $1`,
       [reviewId, decidedBy]
     );
+
+    // Step 7: affiliate visibility requires an explicit allowlist row.
+    if (row.proposed_tier === "affiliate") {
+      await db.query(
+        `INSERT INTO brain_affiliate_allowlist
+           (org_id, file_id, drive_file_id, review_id, approved_by, approved_at)
+         VALUES ($1, $2, $3, $4, $5, now())
+         ON CONFLICT (org_id, file_id) DO UPDATE SET
+           drive_file_id = EXCLUDED.drive_file_id,
+           review_id = EXCLUDED.review_id,
+           approved_by = EXCLUDED.approved_by,
+           approved_at = now()`,
+        [orgId, row.file_id, row.drive_file_id, reviewId, decidedBy]
+      );
+    } else {
+      await db.query(
+        `DELETE FROM brain_affiliate_allowlist
+          WHERE org_id = $1 AND file_id = $2`,
+        [orgId, row.file_id]
+      );
+    }
+
     return {
       ok: true,
       decision: "approved",
       accessTier: row.proposed_tier,
-      fileId: row.file_id
+      fileId: row.file_id,
+      affiliateAllowlisted: row.proposed_tier === "affiliate"
     };
   }
 
-  // reject — stay owner
+  // reject — stay owner; never leave an allowlist entry
   await setFileAccessTier(db, { fileId: row.file_id, orgId, tier: "owner" });
   await db.query(
     `UPDATE brain_files SET
@@ -230,11 +254,17 @@ export async function decideClassificationReview(db, {
      WHERE id = $1`,
     [reviewId, decidedBy]
   );
+  await db.query(
+    `DELETE FROM brain_affiliate_allowlist
+      WHERE org_id = $1 AND file_id = $2`,
+    [orgId, row.file_id]
+  );
   return {
     ok: true,
     decision: "rejected",
     accessTier: "owner",
-    fileId: row.file_id
+    fileId: row.file_id,
+    affiliateAllowlisted: false
   };
 }
 

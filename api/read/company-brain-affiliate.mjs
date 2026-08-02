@@ -1,22 +1,24 @@
-// POST /api/read/company-brain { question }
+// POST /api/read/company-brain-affiliate { question }
 //
-// Company Brain search. Role comes from the session (requireAuth), never from
-// the request body. Tier filter runs inside retrieveChunks before ranking.
+// EXTERNAL Company Brain path for affiliate + white-label partner roles.
+// Hits ONLY the owner-approved allowlist (access_tier = affiliate AND
+// brain_affiliate_allowlist). Never falls back to internal tiers.
 //
-// Returns an answer (synthesized when OpenAI is configured, extractive otherwise)
-// plus cited sources with Drive links.
+// Staff must use /api/read/company-brain — this endpoint refuses them.
 
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
-import { ROLE_SETS, requireRole } from "../../src/http/read-api.mjs";
-import { canQueryBrain } from "../../src/company-brain/access.mjs";
-import { retrieveChunks } from "../../src/company-brain/retrieve.mjs";
+import {
+  canQueryAffiliateBrain,
+  isExternalBrainRole
+} from "../../src/company-brain/access.mjs";
+import { retrieveAffiliateChunks } from "../../src/company-brain/retrieve.mjs";
 import { synthesizeAnswer } from "../../src/company-brain/answer.mjs";
 
 export default async function handler(req, res, deps = {}) {
   const database = deps.db || db;
   const auth = deps.requireAuth || requireAuth;
-  const retrieve = deps.retrieveChunks || retrieveChunks;
+  const retrieve = deps.retrieveAffiliateChunks || retrieveAffiliateChunks;
   const answer = deps.synthesizeAnswer || synthesizeAnswer;
 
   if (req.method !== "POST") {
@@ -26,10 +28,9 @@ export default async function handler(req, res, deps = {}) {
 
   const staff = await auth(req, res, { db: database });
   if (!staff) return;
-  if (!requireRole(res, staff, ROLE_SETS.STAFF)) return;
 
-  // External roles must use /api/read/company-brain-affiliate — never this path.
-  if (!canQueryBrain(staff.role)) {
+  // Do NOT use ROLE_SETS.STAFF — affiliates are outside it.
+  if (!isExternalBrainRole(staff.role) || !canQueryAffiliateBrain(staff.role)) {
     return res.status(403).json({ ok: false, error: "forbidden_role" });
   }
 
@@ -44,7 +45,7 @@ export default async function handler(req, res, deps = {}) {
 
   const found = await retrieve(database, {
     orgId,
-    role: staff.role, // session only
+    role: staff.role,
     query: question,
     limit: Number((req.body && req.body.limit) || 8),
     env: deps.env || process.env,
@@ -54,6 +55,12 @@ export default async function handler(req, res, deps = {}) {
   if (!found.ok) {
     const status = found.reason === "forbidden_role" ? 403 : 502;
     return res.status(status).json({ ok: false, error: found.reason || "retrieve_failed" });
+  }
+
+  // Hard check: every returned chunk must be affiliate-tier. Fail closed.
+  const leaked = (found.chunks || []).filter((c) => c.accessTier !== "affiliate");
+  if (leaked.length) {
+    return res.status(500).json({ ok: false, error: "affiliate_tier_violation" });
   }
 
   const synthesized = await answer({
@@ -72,6 +79,7 @@ export default async function handler(req, res, deps = {}) {
       source: synthesized.source
     },
     sources: synthesized.citations || [],
-    role: staff.role
+    role: staff.role,
+    scope: "affiliate_allowlist"
   });
 }

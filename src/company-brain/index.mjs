@@ -8,9 +8,13 @@ export { walkDriveAndExtract } from "./walk.mjs";
 export { extractOfficeText, unzipEntries } from "./office.mjs";
 export { chunkText } from "./chunk.mjs";
 export { embedTexts, embedConfigFromEnv, toVectorLiteral, EMBEDDING_DIMS } from "./embed.mjs";
-export { tiersForRole, assertBrainAccess, assertOwnerOnlyRole, canQueryBrain, ACCESS_TIERS } from "./access.mjs";
+export {
+  tiersForRole, tiersForAffiliateRole, assertBrainAccess, assertAffiliateBrainAccess,
+  assertOwnerOnlyRole, canQueryBrain, canQueryAffiliateBrain, isExternalBrainRole,
+  ACCESS_TIERS, EXTERNAL_BRAIN_ROLES
+} from "./access.mjs";
 export { upsertExtractedFile } from "./store.mjs";
-export { retrieveChunks } from "./retrieve.mjs";
+export { retrieveChunks, retrieveAffiliateChunks } from "./retrieve.mjs";
 export { syncDriveIncremental, getSyncState, saveSyncState } from "./sync.mjs";
 export { deleteByDriveFileId } from "./store.mjs";
 
