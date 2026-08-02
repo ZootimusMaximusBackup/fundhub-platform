@@ -1,4 +1,4 @@
--- 127_org_brand.sql — the company's own brand tokens for the internal CRM.
+-- 128_org_brand.sql — the company's own brand tokens for the internal CRM.
 --
 -- WHY THIS TABLE EXISTS. partner_brand (043) is for white-label partner funnels.
 -- Docs/BRAND-THEMING-SPEC.md records the owner decision: partners theme only
