@@ -15,8 +15,10 @@
 //      decision to make, so the filter is asserted here rather than trusted to
 //      a comment.
 //
-// The org is routed to the `memory` provider for the duration; the routing row
-// is restored in after(). Nothing leaves the process.
+// THIS SUITE OWNS ITS OWN ORG. Channels route to `memory` on that org only —
+// never by UPDATE-ing the default org's message_channel_routing. See
+// src/messaging/pg-test-fixture.mjs. Sweep calls also pass orgId so a
+// concurrent suite's queued rows cannot inflate claim counts.
 
 import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert";
@@ -26,15 +28,16 @@ import { fileURLToPath } from "node:url";
 import { db, close } from "../db.mjs";
 import { sweepStaffMessages, SWEEP_CRON, MAX_BATCHES_PER_PASS } from "../../netlify/functions/staff-message-sweeper.mjs";
 import { recorded, reset as resetMemory } from "./providers/memory.mjs";
+import { createMemoryRoutedOrg, destroyMemoryRoutedOrg } from "./pg-test-fixture.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
 const EMAIL = "staff_sweeper_pg_test@example.com";
+const ORG_SLUG = "staff-sweeper-pg-test";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 let orgId = null;
 let staffId = null;
 let clientId = null;
-let savedRouting = [];
 
 async function wipe() {
   await db.query(`DELETE FROM messages WHERE client_id IN (SELECT id FROM clients WHERE email = $1)`, [EMAIL]);
@@ -48,31 +51,24 @@ async function wipe() {
 before(async () => {
   if (!HAS_DB) return;
   await wipe();
-  orgId = (await db.query(`SELECT id FROM orgs ORDER BY created_at LIMIT 1`)).rows[0]?.id;
-  staffId = (await db.query(
-    `SELECT id FROM staff WHERE org_id = $1 AND status = 'active'
-      ORDER BY created_at LIMIT 1`, [orgId])).rows[0]?.id;
-  assert.ok(orgId && staffId, "an org and an active staff member must exist — run the seed");
+  await destroyMemoryRoutedOrg(db, { slug: ORG_SLUG });
+
+  ({ orgId, staffId } = await createMemoryRoutedOrg(db, {
+    slug: ORG_SLUG,
+    name: "Staff Sweeper Pg Test",
+    staffEmail: "staff_sweeper_pg_owner@example.com",
+    staffName: "Sweeper Owner"
+  }));
 
   clientId = (await db.query(
     `INSERT INTO clients (org_id, email, first_name, last_name, phone)
      VALUES ($1,$2,'Held','Overnight','+15550009999') RETURNING id`, [orgId, EMAIL])).rows[0].id;
-
-  savedRouting = (await db.query(
-    `SELECT channel, provider, enabled FROM message_channel_routing WHERE org_id = $1`, [orgId])).rows;
-  await db.query(
-    `UPDATE message_channel_routing SET provider = 'memory' WHERE org_id = $1 AND channel IN ('sms','email')`,
-    [orgId]);
 });
 
 after(async () => {
   if (!HAS_DB) return;
-  for (const row of savedRouting) {
-    await db.query(
-      `UPDATE message_channel_routing SET provider = $2, enabled = $3 WHERE org_id = $1 AND channel = $4`,
-      [orgId, row.provider, row.enabled, row.channel]);
-  }
   await wipe();
+  await destroyMemoryRoutedOrg(db, { orgId, slug: ORG_SLUG });
   await close();
 });
 
@@ -88,6 +84,10 @@ async function wipe2() {
    clock as an argument at all. 18:00 UTC is early afternoon Eastern on either
    side of a daylight-saving change. */
 const OPEN = () => new Date("2026-03-10T18:00:00Z");
+
+/* Scope every sweep to THIS org. Without it, claimDue races every other
+   suite's queued staff rows and the asserted counts become noise. */
+const sweep = (extra = {}) => sweepStaffMessages(db, { now: OPEN, orgId, ...extra });
 
 /* A message whose hold has already expired: `scheduled_at` set an hour before
    OPEN. That is exactly the state dispatchOne leaves an overnight text in once
@@ -110,7 +110,7 @@ test("sweeper: a text held overnight is sent once the window has opened",
   { skip: !HAS_DB }, async () => {
   const id = await held();
 
-  const result = await sweepStaffMessages(db, { now: OPEN });
+  const result = await sweep();
 
   assert.equal(result.ok, true);
   assert.equal(result.claimed, 1);
@@ -124,7 +124,7 @@ test("sweeper: it does NOT send messages no person wrote", { skip: !HAS_DB }, as
   const mine = await held();
   const workflowQueued = await held({ senderStaffId: null, body: "an old automated message" });
 
-  const result = await sweepStaffMessages(db, { now: OPEN });
+  const result = await sweep();
 
   assert.equal(result.claimed, 1, "the sweeper claimed a message nobody typed");
   const rows = (await db.query(
@@ -146,7 +146,7 @@ test("sweeper: every message is re-checked on the way out, not trusted",
   // whole reason the gate reads opt-out state at send time.
   await recordOptOut(db, clientId, orgId, "sms", "inbound_keyword");
 
-  await sweepStaffMessages(db, { now: OPEN });
+  await sweep();
 
   const row = (await db.query(`SELECT status, blocked_reason FROM messages WHERE id = $1`, [id])).rows[0];
   assert.equal(row.status, "blocked", "a message was sent to somebody who had since asked us to stop");
@@ -157,7 +157,7 @@ test("sweeper: every message is re-checked on the way out, not trusted",
 });
 
 test("sweeper: an empty queue is one cheap pass, not ten", { skip: !HAS_DB }, async () => {
-  const result = await sweepStaffMessages(db, { now: OPEN });
+  const result = await sweep();
   assert.equal(result.claimed, 0);
   assert.equal(result.batches, 1,
     "an empty queue did not stop after the first look — that is nine wasted queries on each of " +
@@ -169,13 +169,13 @@ test("sweeper: it works through more than one batch, but stops at the cap",
   for (let i = 0; i < 5; i += 1) await held({ body: `held ${i}` });
 
   // limit 2 with the real cap: five messages needs three batches.
-  const result = await sweepStaffMessages(db, { now: OPEN, limit: 2 });
+  const result = await sweep({ limit: 2 });
   assert.equal(result.claimed, 5, "the sweeper stopped after one batch — a night's backlog would take hours");
 
   // And with a cap of one batch it does exactly one, leaving the rest queued
   // for the next pass rather than running until it is killed mid-send.
   for (let i = 0; i < 4; i += 1) await held({ body: `second round ${i}` });
-  const bounded = await sweepStaffMessages(db, { now: OPEN, limit: 2, maxBatches: 1 });
+  const bounded = await sweep({ limit: 2, maxBatches: 1 });
   assert.equal(bounded.claimed, 2);
   assert.equal(bounded.batches, 1);
 });
