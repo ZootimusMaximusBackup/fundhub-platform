@@ -13,12 +13,10 @@
 // without DATABASE_URL — that is honest, and the request-shape cases that need
 // no database live in compose.test.mjs next door.
 //
-// THE ORG IS ROUTED TO THE `memory` PROVIDER for the duration of these tests.
-// That is the mechanism src/messaging/providers/memory.mjs was built for: the
-// dispatcher runs for real — claim, gate, quiet hours, routing, status writes —
-// and only the last inch appends to an array instead of calling a vendor. No
-// Twilio account, no Mailgun key, and nothing leaves the process. The routing
-// row is restored in after().
+// THIS SUITE OWNS ITS OWN ORG. Channels route to the `memory` provider on THAT
+// org only — never by UPDATE-ing the default org's message_channel_routing.
+// See src/messaging/pg-test-fixture.mjs for why the shared-org pattern is
+// permanently forbidden.
 
 import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert";
@@ -27,10 +25,13 @@ import { composeAndSend, MAX_BODY_LENGTH } from "./compose.mjs";
 import { OUTCOME } from "./dispatch.mjs";
 import { recorded, reset as resetMemory } from "./providers/memory.mjs";
 import { recordOptOut } from "../lib/opt-out.mjs";
+import { createMemoryRoutedOrg, destroyMemoryRoutedOrg } from "./pg-test-fixture.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
 const EMAIL = "compose_pg_test@example.com";
-const OTHER_ORG = "Compose Test Co";
+const ORG_SLUG = "compose-pg-test";
+const OTHER_ORG_SLUG = "compose-pg-test-other";
+const OTHER_ORG = "Compose Test Co Other";
 
 let orgId = null;
 let staffId = null;
@@ -38,7 +39,6 @@ let clientId = null;
 let convoId = null;
 let otherOrgId = null;
 let otherClientId = null;
-let savedRouting = [];
 
 /* A clock fixed OUTSIDE quiet hours (15:00 UTC ≈ 10-11am Eastern is inside;
    18:00 UTC is 13:00/14:00 Eastern, comfortably open on either side of a
@@ -49,7 +49,7 @@ const OPEN = () => new Date("2026-03-10T18:00:00Z");
 /* And one inside it: 05:00 UTC is midnight or 1am Eastern, always closed. */
 const CLOSED = () => new Date("2026-03-10T05:00:00Z");
 
-async function wipe() {
+async function wipeClients() {
   await db.query(`DELETE FROM staff_events WHERE detail->>'client_id' IN (SELECT id::text FROM clients WHERE email LIKE $1)`, [`%${EMAIL}`]);
   await db.query(`DELETE FROM messages WHERE client_id IN (SELECT id FROM clients WHERE email LIKE $1)`, [`%${EMAIL}`]);
   await db.query(`DELETE FROM conversations WHERE client_id IN (SELECT id FROM clients WHERE email LIKE $1)`, [`%${EMAIL}`]);
@@ -59,17 +59,21 @@ async function wipe() {
   // be removed until the work it generated is.
   await db.query(`DELETE FROM tasks WHERE client_id IN (SELECT id FROM clients WHERE email LIKE $1)`, [`%${EMAIL}`]);
   await db.query(`DELETE FROM clients WHERE email LIKE $1`, [`%${EMAIL}`]);
-  await db.query(`DELETE FROM orgs WHERE name = $1`, [OTHER_ORG]);
 }
 
 before(async () => {
   if (!HAS_DB) return;
-  await wipe();
-  orgId = (await db.query(`SELECT id FROM orgs ORDER BY created_at LIMIT 1`)).rows[0]?.id;
-  staffId = (await db.query(
-    `SELECT id FROM staff WHERE org_id = $1 AND status = 'active'
-      ORDER BY created_at LIMIT 1`, [orgId])).rows[0]?.id;
-  assert.ok(orgId && staffId, "an org and an active staff member must exist — run the seed");
+  await wipeClients();
+  await destroyMemoryRoutedOrg(db, { slug: OTHER_ORG_SLUG });
+  await destroyMemoryRoutedOrg(db, { slug: ORG_SLUG });
+
+  ({ orgId, staffId } = await createMemoryRoutedOrg(db, {
+    slug: ORG_SLUG,
+    name: "Compose Pg Test",
+    staffEmail: "compose_pg_owner@example.com",
+    staffName: "Compose Owner",
+    copyComplianceRules: true
+  }));
 
   clientId = (await db.query(
     `INSERT INTO clients (org_id, email, first_name, last_name, phone)
@@ -81,29 +85,19 @@ before(async () => {
     [orgId, clientId])).rows[0].id;
 
   otherOrgId = (await db.query(
-    `INSERT INTO orgs (name, slug) VALUES ($1,'compose-test-co') RETURNING id`, [OTHER_ORG])).rows[0].id;
+    `INSERT INTO orgs (name, slug) VALUES ($1,$2) RETURNING id`,
+    [OTHER_ORG, OTHER_ORG_SLUG])).rows[0].id;
   otherClientId = (await db.query(
     `INSERT INTO clients (org_id, email, first_name, last_name, phone)
      VALUES ($1,$2,'Other','Company','+15550000333') RETURNING id`,
     [otherOrgId, `theirs_${EMAIL}`])).rows[0].id;
-
-  // Point this org's channels at the recorder for the duration, remembering
-  // what was there so after() can put it back exactly.
-  savedRouting = (await db.query(
-    `SELECT channel, provider, enabled FROM message_channel_routing WHERE org_id = $1`, [orgId])).rows;
-  await db.query(
-    `UPDATE message_channel_routing SET provider = 'memory' WHERE org_id = $1 AND channel IN ('sms','email')`,
-    [orgId]);
 });
 
 after(async () => {
   if (!HAS_DB) return;
-  for (const row of savedRouting) {
-    await db.query(
-      `UPDATE message_channel_routing SET provider = $2, enabled = $3 WHERE org_id = $1 AND channel = $4`,
-      [orgId, row.provider, row.enabled, row.channel]);
-  }
-  await wipe();
+  await wipeClients();
+  await destroyMemoryRoutedOrg(db, { orgId: otherOrgId, slug: OTHER_ORG_SLUG });
+  await destroyMemoryRoutedOrg(db, { orgId, slug: ORG_SLUG });
   await close();
 });
 

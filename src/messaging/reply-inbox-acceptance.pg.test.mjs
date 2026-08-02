@@ -19,8 +19,9 @@
 // and a JSON body — which is where an id that is right in the database can
 // still be wrong on the screen.
 //
-// The org's SMS routing points at the `memory` provider for the duration, and
-// is put back in after(). See the note in compose.pg.test.mjs.
+// THIS SUITE OWNS ITS OWN ORG. SMS routes to `memory` on that org only — never
+// by UPDATE-ing the default org's message_channel_routing. See
+// src/messaging/pg-test-fixture.mjs.
 
 import { test, before, after } from "node:test";
 import assert from "node:assert";
@@ -29,18 +30,19 @@ import { onMessageInbound } from "../handlers/comms.mjs";
 import inboxHandler from "../../api/read/inbox.mjs";
 import threadHandler from "../../api/read/messages.mjs";
 import { recorded, reset as resetMemory } from "./providers/memory.mjs";
+import { createMemoryRoutedOrg, destroyMemoryRoutedOrg } from "./pg-test-fixture.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
 const EMAIL = "reply_inbox_acceptance@example.com";
 const PHONE = "+15550001234";
 const SID = "acceptance-inbound-sms-1";
+const ORG_SLUG = "reply-inbox-acceptance-pg";
 
 let orgId = null;
 let staffId = null;
 let clientId = null;
 let token = null;
 let sessionId = null;
-let savedRouting = [];
 
 const res = () => {
   const r = { code: null, body: null };
@@ -69,15 +71,18 @@ async function wipe() {
 before(async () => {
   if (!HAS_DB) return;
   await wipe();
-  orgId = (await db.query(`SELECT id FROM orgs ORDER BY created_at LIMIT 1`)).rows[0]?.id;
-  const s = (await db.query(
-    `SELECT id, org_id FROM staff WHERE org_id = $1 AND status = 'active'
-      ORDER BY created_at LIMIT 1`, [orgId])).rows[0];
-  assert.ok(orgId && s, "an org and an active staff member must exist — run the seed");
-  staffId = s.id;
+  await destroyMemoryRoutedOrg(db, { slug: ORG_SLUG });
+
+  ({ orgId, staffId } = await createMemoryRoutedOrg(db, {
+    slug: ORG_SLUG,
+    name: "Reply Inbox Acceptance",
+    staffEmail: "reply_inbox_acceptance_owner@example.com",
+    staffName: "Acceptance Owner",
+    channels: ["sms", "email"]
+  }));
 
   const { createSession } = await import("../auth/session.mjs");
-  const session = await createSession(db, { staffId, orgId: s.org_id });
+  const session = await createSession(db, { staffId, orgId });
   token = session.token;
   sessionId = session.sessionId;
 
@@ -85,22 +90,14 @@ before(async () => {
     `INSERT INTO clients (org_id, email, first_name, last_name, phone)
      VALUES ($1,$2,'Acceptance','Client',$3) RETURNING id`, [orgId, EMAIL, PHONE])).rows[0].id;
 
-  savedRouting = (await db.query(
-    `SELECT channel, provider, enabled FROM message_channel_routing WHERE org_id = $1`, [orgId])).rows;
-  await db.query(
-    `UPDATE message_channel_routing SET provider = 'memory' WHERE org_id = $1 AND channel = 'sms'`, [orgId]);
   resetMemory();
 });
 
 after(async () => {
   if (!HAS_DB) return;
-  for (const row of savedRouting) {
-    await db.query(
-      `UPDATE message_channel_routing SET provider = $2, enabled = $3 WHERE org_id = $1 AND channel = $4`,
-      [orgId, row.provider, row.enabled, row.channel]);
-  }
   await wipe();
   if (sessionId) await db.query(`DELETE FROM sessions WHERE id = $1`, [sessionId]);
+  await destroyMemoryRoutedOrg(db, { orgId, slug: ORG_SLUG });
   await close();
 });
 
