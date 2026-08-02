@@ -414,6 +414,69 @@ async function finalise(db, message, status, outcome, detail, provider) {
   return { id: message.id, outcome, detail };
 }
 
+/* claimOne — claim ONE named message, atomically, by id.
+
+   Same UPDATE ... RETURNING shape as claimDue and for the same reason: the
+   status flip to 'sending' happens in the statement that selects the row, so
+   two callers racing on the same id cannot both get it — the second sees no
+   row because the first has already moved it off 'queued'.
+
+   THE PREDICATES ARE claimDue's, MINUS THE DUE TIME. direction, status and the
+   attempt ceiling all still hold, so this cannot be used to re-send something
+   already sent, to send an inbound row, or to push a message past MAX_ATTEMPTS.
+   The `scheduled_at <= now()` clause is deliberately absent: a caller naming a
+   message by id is asking to work THAT message now, and a staff reply is queued
+   with no schedule anyway. Note what that does NOT open — quiet hours are not
+   a schedule, they are checked inside dispatchOne against the clock, so a text
+   named here at midnight still defers rather than sending.
+
+   Returns the claimed row, or null if there was nothing claimable. */
+async function claimOne(db, messageId) {
+  const { rows } = await db.query(
+    `UPDATE messages
+        SET status = 'sending', last_attempt_at = now(), attempts = attempts + 1
+      WHERE id = $1
+        AND direction = 'outbound'
+        AND status = 'queued'
+        AND attempts < $2
+  RETURNING id, org_id, client_id, channel, rendered_body,
+            template_key, provider_ref, attempts, to_address, subject`,
+    [messageId, MAX_ATTEMPTS]
+  );
+  return rows[0] || null;
+}
+
+/* dispatchMessage — claim one message by id and dispatch it now.
+
+   THE ENTRY POINT FOR A SEND SOMEONE IS WAITING ON. dispatchDue() works a
+   backlog on whatever schedule eventually runs it; a staff member who just
+   pressed Send needs an answer about THIS message in THIS request, and polling
+   a batch dispatcher for it would be both slower and racier.
+
+   IT ADDS NO CAPABILITY. Every check, every block, every deferral is
+   dispatchOne's, unchanged — this function resolves an id to a claimed row and
+   hands it over. There is no options key it accepts that dispatchOne does not,
+   and in particular there is nothing here that can skip the gate. Compare the
+   two call sites: dispatchDue passes claimDue's rows to dispatchOne, this passes
+   claimOne's row to dispatchOne, and dispatchOne cannot tell them apart.
+
+   Returns dispatchOne's shape, or { id, outcome: "not_claimable" } when the row
+   was not there to claim — already sent, already blocked, being dispatched by
+   somebody else, or out of attempts. That is a real answer, not an error: it
+   means this message is not currently the caller's to send.
+
+   NOTHING SCHEDULES THIS EITHER. The module header's "nothing is scheduled"
+   still holds — there is still no cron, no timer and no Inngest registration.
+   This runs when a request calls it. */
+export const NOT_CLAIMABLE = "not_claimable";
+
+export async function dispatchMessage(db, messageId, options = {}) {
+  if (!messageId) throw new Error("dispatchMessage: messageId is required");
+  const claimed = await claimOne(db, messageId);
+  if (!claimed) return { id: messageId, outcome: NOT_CLAIMABLE, detail: null };
+  return await dispatchOne(db, claimed, options);
+}
+
 /* dispatchDue — claim a batch and dispatch each one.
 
    Sequential rather than concurrent on purpose: providers rate-limit, and a

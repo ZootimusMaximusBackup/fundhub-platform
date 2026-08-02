@@ -208,6 +208,37 @@ window.FHData = (function () {
     staff:           function (p) { return this.read("staff", p); },
     entitlements:    function (p) { return this.read("entitlements", p); },
     failedEvents:    function (p) { return this.read("failed-events", p); },
+    /* The staff reply inbox — public/app/messaging.html.
+
+       THREE CALLS, THREE DIFFERENT QUESTIONS, and they are separate on purpose:
+         inbox()          every thread in the company, newest activity first
+         conversations()  ONE client's threads — the per-client panel, and the
+                          endpoint the Closer Dashboard already used. Reused
+                          rather than reimplemented; it requires a client_id and
+                          that requirement is deliberate (see its handler).
+         thread()         the messages inside one conversation
+
+       inbox() takes no id at all, which is the whole point of an inbox: it is
+       the list of things you do not already know about. Scoping is the
+       session's company, applied server-side. */
+    inbox: function (p) { return this.read("inbox", p); },
+    conversations: function (p) { return this.read("conversations", p); },
+    thread: function (conversationId, limit) {
+      if (!conversationId) return Promise.resolve(fail("nodata", "no conversation selected"));
+      return this.read("messages", { conversation_id: conversationId, limit: limit || 200 });
+    },
+
+    /* sendMessage — a staff member's reply. POST /api/messages.
+
+       Goes through write(), so a demo session refuses rather than attempting it,
+       and a 400 comes back as "badrequest" rather than as an outage. The reply
+       to a 200 carries an `outcome` the screen prints in plain words: accepted
+       is not the same as delivered, and a message held for quiet hours must not
+       be reported as a failure the user should retype. */
+    sendMessage: function (payload) {
+      return this.write("/api/messages", payload || {});
+    },
+
     /* The LOCAL inquiry_log queue. Not /api/inquiry — that proxies the external
        Airtable runtime and returns its shape, not these columns. */
     inquiries:       function (p) { return this.read("inquiries", p); },

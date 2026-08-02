@@ -154,7 +154,8 @@ before(async () => {
      VALUES ($1,$2,'Convo','Reader') RETURNING id`, [orgId, EMAIL])).rows[0].id;
 
   const s = await db.query(
-    `SELECT id, org_id FROM staff WHERE org_id = $1 AND status = 'active' LIMIT 1`, [orgId]);
+    `SELECT id, org_id FROM staff WHERE org_id = $1 AND status = 'active'
+      ORDER BY created_at LIMIT 1`, [orgId]);
   if (!s.rows[0]) throw new Error("no active staff — run scripts/seed-staff.mjs");
   const { createSession } = await import("../auth/session.mjs");
   const session = await createSession(db, { staffId: s.rows[0].id, orgId: s.rows[0].org_id });

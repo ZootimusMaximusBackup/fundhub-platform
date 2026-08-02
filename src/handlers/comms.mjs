@@ -2,7 +2,8 @@
 //
 // The journey-spine handlers live in client-lifecycle.mjs; these cover the
 // communication + scheduling side events:
-//   message.inbound (Twilio SMS)  -> messages row (channel=sms, inbound)
+//   message.inbound (Twilio SMS, and Mailgun email from a client's own address)
+//                                 -> messages row (inbound, channel off the payload)
 //   call.completed  (Bland voice) -> messages row (channel=voice, outbound)
 //   mail.response   (Mailgun)     -> bank_inbox row (classified bank email)
 //   booking.created (Cal.com)     -> tasks row (closer follow-up on the booking)
@@ -110,13 +111,34 @@ async function threadMessage(db, { orgId, clientId, channel, inserted, providerR
   }
 }
 
-// message.inbound — inbound SMS (Twilio). Link to client by phone if known.
+// message.inbound — a client contacting us. SMS from Twilio, or email from
+// Mailgun when the From address matches a client record (see the note at the
+// bottom of handleMailgunWebhook). Link to the client if known.
 // Handles TCPA STOP/START keywords before logging the message row.
+//
+// CHANNEL-DRIVEN, NOT SMS-WITH-EXCEPTIONS. `channel` has been read off the
+// payload since this handler was written; what follows now honours it in the
+// two places that were still assuming a text:
+//
+//   the client lookup — `from` is a phone number on sms and an email address on
+//     email, and asking `WHERE phone = 'someone@example.com'` matches nothing.
+//     The adapter resolves the client itself and passes it as event.clientId, so
+//     this is the fallback path rather than the usual one, but a fallback that
+//     silently cannot succeed is worse than no fallback: it turns a resolvable
+//     client into an unthreaded message with no error anywhere.
+//
+//   the subject — email has one and SMS does not. It is stored on the row
+//     (111_messages_address) so the thread can show what the client's reply was
+//     about, which for an email is frequently the only thing above the fold.
+//
+// The STOP/START branch is unchanged and still guarded on sms. An email is not
+// a TCPA text message and its words are not opt-out keywords.
 export async function onMessageInbound(event, db) {
   const p = event.payload || {};
-  const clientId = event.clientId || (await findClient(db, event.orgId, { phone: p.from }));
-  const word = String(p.body || "").trim().toUpperCase();
   const channel = p.channel || "sms";
+  const clientId = event.clientId || (await findClient(db, event.orgId,
+    channel === "email" ? { email: p.from } : { phone: p.from }));
+  const word = String(p.body || "").trim().toUpperCase();
   const providerRef = p.sid || null;
   if (clientId && channel === "sms") {
     if (STOP_KEYWORDS.has(word)) {
@@ -126,11 +148,14 @@ export async function onMessageInbound(event, db) {
     }
   }
   const ins = await db.query(
-    `INSERT INTO messages (org_id, client_id, direction, channel, rendered_body, provider, provider_ref, status)
-     VALUES ($1,$2,'inbound',$3,$4,$5,$6,'received')
+    `INSERT INTO messages (org_id, client_id, direction, channel, rendered_body, provider, provider_ref, status, subject)
+     VALUES ($1,$2,'inbound',$3,$4,$5,$6,'received',$7)
      ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING
      RETURNING id, created_at`,
-    [event.orgId, clientId, channel, p.body || null, p.source || "twilio", providerRef]
+    // NULL on SMS, which has no subject — not an empty string. The schema-wide
+    // rule is that NULL means "there isn't one" and must survive.
+    [event.orgId, clientId, channel, p.body || null, p.source || "twilio", providerRef,
+     channel === "email" ? (p.subject || null) : null]
   );
   await threadMessage(db, {
     orgId: event.orgId,

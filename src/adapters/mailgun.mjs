@@ -221,6 +221,47 @@ export function clientIdFromRecipient(recipient) {
   return m ? m[1] : null;
 }
 
+/* resolveClientFromSender — the client who WROTE this email, if it was a client.
+   Matched on the From address against `clients.email`, case-insensitively and
+   trimmed, the same lookup src/handlers/comms.mjs findClient() does.
+
+   THIS IS A DIFFERENT QUESTION FROM resolveClientFromRecipient BELOW, AND
+   CONFLATING THEM WOULD PUT A BANK'S WORDS IN A CLIENT'S MOUTH.
+
+   The inbound mail this adapter was built for is a bank statement forwarded to
+   `monitor+<clientId>@fundhub.ai`. There the client is the RECIPIENT — the mail
+   is addressed to their monitoring inbox — and the sender is a bank. That is
+   what `mail.response` is, and it is why onMailResponse writes a `bank_inbox`
+   row and not a message.
+
+   A client replying to an email we sent them is the opposite shape: they are
+   the SENDER, and the recipient is one of our own addresses. That is a person
+   talking to us, which is the only thing that belongs on their conversation
+   thread. The distinction is an observable fact about the payload, not a guess:
+   the From address either matches a client record or it does not.
+
+   ORG COMES FROM THE MATCHED CLIENT, not from a default. `clients.email` has no
+   unique index in this schema, so two orgs could hold the same address; LIMIT 1
+   would then pick one arbitrarily and file a person's email under a company
+   that is not theirs. So the org is read off the row that matched, and the
+   event is emitted into it — the same shape resolveClientFromRecipient's
+   sibling lookup returns. */
+export async function resolveClientFromSender(db, from) {
+  const email = String(from || "").trim().toLowerCase();
+  if (!email) return null;
+  // A From header is frequently `Name <addr@host>`; match the address inside
+  // angle brackets when there is one, and the whole string when there is not.
+  const bracketed = /<([^>]+)>/.exec(email);
+  const address = (bracketed ? bracketed[1] : email).trim();
+  if (!address) return null;
+  const r = await db.query(
+    `SELECT id, org_id FROM clients WHERE lower(email) = $1 LIMIT 1`,
+    [address]
+  );
+  const c = r.rows[0];
+  return c ? { clientId: c.id, orgId: c.org_id } : null;
+}
+
 export async function resolveClientFromRecipient(db, recipient) {
   if (!recipient) return null;
   const fromPlus = clientIdFromRecipient(recipient);
@@ -528,6 +569,52 @@ export async function handleMailgunWebhook({ db, body, signingKey }) {
     const idKey = evt.messageId ? `mailgun:${evt.messageId}:${c.name}` : undefined;
     const res = await emit(db, c.name, payload, { idempotencyKey: idKey, clientId: clientId || undefined });
     emitted.push({ name: c.name, id: res.id, deduped: res.deduped });
+  }
+
+  /* ── A CLIENT REPLYING TO US — the inbound half of the staff reply inbox ──
+     Emitted IN ADDITION TO mail.response above, never instead of it, and only
+     when the From address matches a client record. See resolveClientFromSender
+     for why that condition is the whole of the distinction between "a bank sent
+     a statement about this person" and "this person wrote to us".
+
+     WHY message.inbound RATHER THAN A NEW EVENT NAME. src/handlers/comms.mjs
+     onMessageInbound already writes the `messages` row, threads it onto the
+     client's conversation for that channel, and dedupes on (org, provider_ref).
+     It reads the channel off the payload rather than assuming SMS, so an email
+     runs the same code path an inbound text does — one handler, one threading
+     rule, one dedupe. A second event name would be a second copy of that, and
+     the two would drift.
+
+     The TCPA STOP/START branch inside that handler is guarded on
+     `channel === "sms"` and so does not fire here, which is correct: "STOP" in
+     an email subject line is not a TCPA opt-out keyword, and treating it as one
+     would silence a channel the consumer never asked us to stop using.
+
+     `sid` carries the Message-Id because that is the field onMessageInbound
+     writes to provider_ref — so a Mailgun redelivery of the same email lands on
+     the (org_id, provider_ref) unique index and does not become a second
+     message in the thread. An email with no Message-Id gets no dedupe key,
+     which the bus already handles the same way for mail.response.
+
+     THE BODY IS CARRIED, and only here. `mail.response` deliberately does not
+     carry one — onMailResponse stores `subject` as its own body_preview because
+     a forwarded bank statement's text is account detail nobody asked us to
+     keep. This payload is a person's own words written to us, which is exactly
+     what a conversation thread is, and a thread with the messages missing is
+     not a thread. */
+  const sender = await resolveClientFromSender(db, evt.from);
+  if (sender) {
+    const inboundKey = evt.messageId ? `mailgun:${evt.messageId}:message.inbound` : undefined;
+    const res = await emit(db, "message.inbound", {
+      from: evt.from,
+      to: evt.recipient,
+      body: evt.text,
+      subject: evt.subject,
+      sid: evt.messageId,
+      channel: "email",
+      source: "mailgun"
+    }, { idempotencyKey: inboundKey, orgId: sender.orgId, clientId: sender.clientId });
+    emitted.push({ name: "message.inbound", id: res.id, deduped: res.deduped });
   }
 
   return { ok: true, status: 200, emitted };
