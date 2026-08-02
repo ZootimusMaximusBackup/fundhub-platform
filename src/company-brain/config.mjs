@@ -1,8 +1,8 @@
 // Company Brain config — Drive connector credentials from env.
 //
+// Owner-set 2026-08-02 (H-1): pgvector (not Cognee) for v1 store.
 // Owner-set 2026-08-02 (H-2): index everything. No folder exclusion list.
-// H-1 (Cognee vs pgvector) and H-3 (classification approvers) are deferred —
-// they are not needed for connector + extraction.
+// H-3 (classification approvers) deferred until step 4.
 
 export const DRIVE_READONLY_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
 export const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
