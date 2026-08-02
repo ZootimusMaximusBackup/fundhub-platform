@@ -6,7 +6,8 @@ import {
   normalizeCommasEvent,
   productOf,
   mapToCanonical,
-  handleCommasWebhook
+  handleCommasWebhook,
+  buildCommasCheckoutUrl
 } from "./commas.mjs";
 import { _resetOrgCache } from "../events/bus.mjs";
 import { on, clearHandlers } from "../events/registry.mjs";
@@ -187,6 +188,62 @@ test("a webhook with NO event id still dedupes on replay", async () => {
     `a replayed id-less webhook emitted again: ${store.length} rows`);
   assert.ok(store.every((e) => e.idempotency_key),
     "an event was written with no idempotency key at all");
+});
+
+// --- payment links: outbound checkout URL + inbound ref round-trip ---------
+
+test("buildCommasCheckoutUrl: amount in dollars, ref and description on the query string", () => {
+  const url = buildCommasCheckoutUrl({
+    baseUrl: "https://pay.commas.io/c/onboarding",
+    linkRef: "pl_abc123",
+    amountCents: 250000,
+    description: "Onboarding deposit"
+  });
+  const parsed = new URL(url);
+  assert.equal(parsed.origin + parsed.pathname, "https://pay.commas.io/c/onboarding");
+  assert.equal(parsed.searchParams.get("amount"), "2500.00");
+  assert.equal(parsed.searchParams.get("ref"), "pl_abc123");
+  assert.equal(parsed.searchParams.get("description"), "Onboarding deposit");
+});
+
+test("buildCommasCheckoutUrl: description is optional, everything else is not", () => {
+  const url = buildCommasCheckoutUrl({ baseUrl: "https://pay.commas.io/c/x", linkRef: "pl_1", amountCents: 100 });
+  assert.equal(new URL(url).searchParams.has("description"), false);
+  assert.throws(() => buildCommasCheckoutUrl({ linkRef: "pl_1", amountCents: 100 }), TypeError);
+  assert.throws(() => buildCommasCheckoutUrl({ baseUrl: "https://x", amountCents: 100 }), TypeError);
+  assert.throws(() => buildCommasCheckoutUrl({ baseUrl: "https://x", linkRef: "pl_1", amountCents: 0 }), RangeError);
+  assert.throws(() => buildCommasCheckoutUrl({ baseUrl: "https://x", linkRef: "pl_1", amountCents: 19.5 }), RangeError);
+});
+
+test("normalizeCommasEvent: reads a client_reference_id back as ref", () => {
+  const evt = normalizeCommasEvent({
+    type: "payment.succeeded",
+    id: "txn_1",
+    data: { product: { title: "x" }, client_reference_id: "pl_abc123" }
+  });
+  assert.equal(evt.ref, "pl_abc123");
+});
+
+test("normalizeCommasEvent: ref falls back through metadata.link_ref / metadata.ref / reference / ref", () => {
+  assert.equal(normalizeCommasEvent({ data: { metadata: { link_ref: "pl_a" } } }).ref, "pl_a");
+  assert.equal(normalizeCommasEvent({ data: { metadata: { ref: "pl_b" } } }).ref, "pl_b");
+  assert.equal(normalizeCommasEvent({ data: { reference: "pl_c" } }).ref, "pl_c");
+  assert.equal(normalizeCommasEvent({ data: { ref: "pl_d" } }).ref, "pl_d");
+  assert.equal(normalizeCommasEvent({ data: {} }).ref, null, "no ref anywhere must not invent one");
+});
+
+test("handleCommasWebhook: a payment link's ref reaches the emitted payment.received payload", async () => {
+  _resetOrgCache(); clearHandlers();
+  let seenPayload = null;
+  on("payment.received", (e) => { seenPayload = e.payload; });
+  const raw = JSON.stringify({
+    type: "payment.succeeded",
+    id: "txn_link_1",
+    data: { product: { title: "Mystery Box", price: 250 }, fan: { email: "a@b.com" }, client_reference_id: "pl_xyz" }
+  });
+  await handleCommasWebhook({ db: fakeDb(), rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+  assert.ok(seenPayload, "payment.received never dispatched");
+  assert.equal(seenPayload.ref, "pl_xyz");
 });
 
 test("an id-less webhook with DIFFERENT bytes is not collapsed", async () => {

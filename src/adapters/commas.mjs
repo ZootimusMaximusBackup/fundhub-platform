@@ -103,13 +103,58 @@ export function normalizeCommasEvent(body) {
     (d.fan && d.fan.id ? `${d.fan.id}:${name}` : null) ||
     null;
 
+  /* ref — OUR OWN reference, round-tripped through the checkout link built by
+     buildCommasCheckoutUrl() below and (assumed to be) echoed back on the
+     webhook. This is how a payment_links row (119_payment_links.sql) finds its
+     way from 'sent' to 'paid': `id` above is the PROCESSOR's transaction id,
+     known only after payment, so it cannot be the thing a link is looked up
+     by. Same CONFIRM caveat as every other field path in this file — the
+     exact key Commas echoes a client reference back under has not been
+     observed against a live payload. Checked in the order a checkout-link
+     integration is most likely to carry it: an explicit reference id, then a
+     generic metadata bag, then a bare `ref` some processors use verbatim. */
+  const ref =
+    d.client_reference_id ||
+    (d.metadata && (d.metadata.link_ref || d.metadata.ref)) ||
+    d.reference ||
+    d.ref ||
+    b.client_reference_id ||
+    b.ref ||
+    null;
+
   return {
     id: id ? String(id) : null,
     type,
     name: String(name),
     amount,
-    email: String(email).trim().toLowerCase()
+    email: String(email).trim().toLowerCase(),
+    ref: ref ? String(ref) : null
   };
+}
+
+/* buildCommasCheckoutUrl — a checkout link for a VARIABLE amount, for the CRM's
+   "send a payment link" action (src/payment-links/index.mjs). Pure URL
+   construction, no network call: this repo permits new outbound `fetch` only
+   inside src/messaging/providers/* (CLAUDE.md §12), and a Commas API endpoint
+   to mint a server-side checkout SESSION is not confirmed to exist — see
+   docs/PAYMENT-LINKS-SPEC.md. What IS confirmed is that Commas checkout pages
+   are reached by URL, so this assumes (⚠️ CONFIRM against a live Commas
+   account, same as the rest of this file) that the page reads `amount`,
+   `description` and a caller-supplied reference off the query string the way
+   the live handler's product pages do. `ref` is the value normalizeCommasEvent
+   above looks for on the way back in — round-tripping it is what lets the
+   webhook find this link again. */
+export function buildCommasCheckoutUrl({ baseUrl, linkRef, amountCents, description }) {
+  if (!baseUrl) throw new TypeError("buildCommasCheckoutUrl: baseUrl is required (COMMAS_CHECKOUT_BASE_URL)");
+  if (!linkRef) throw new TypeError("buildCommasCheckoutUrl: linkRef is required");
+  if (!Number.isInteger(amountCents) || amountCents <= 0) {
+    throw new RangeError(`buildCommasCheckoutUrl: amountCents must be a positive integer, got ${amountCents}`);
+  }
+  const url = new URL(baseUrl);
+  url.searchParams.set("amount", (amountCents / 100).toFixed(2));
+  url.searchParams.set("ref", linkRef);
+  if (description) url.searchParams.set("description", description);
+  return url.toString();
 }
 
 function nameMatches(name, needle) {
@@ -185,6 +230,7 @@ export async function handleCommasWebhook({ db, rawBody, signatureHeader, secret
       amount: evt.amount,
       email: evt.email,
       providerRef: evt.id, // Commas txn id — lets the payment handler dedup on replay
+      ref: evt.ref, // our own reference, if the payment came from a payment_links checkout URL
       source: "commas"
     };
     /* An event with no provider id used to get NO idempotency key at all, so a

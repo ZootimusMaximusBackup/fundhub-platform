@@ -266,6 +266,15 @@ button,input,select,textarea{font:inherit;color:inherit}
   <!-- Filled by the script. Empty on purpose: an empty container reads as
        "nothing here yet"; sample rows read as this client's real figures. -->
   <div id="subsMount"></div>
+
+  <div class="fh-head" style="margin-top:34px">
+    <h1 class="fh-title">Payment links</h1>
+    <span class="fh-source" id="linksMountSource">no client</span>
+  </div>
+  <p class="fh-sub">A Commas checkout link for one amount — a deposit, the diagnostic fee, a
+    repair charge, or anything else. Unlike the plan above, this DOES move money: the client pays
+    Commas directly, and this screen only records the ask and, once Commas tells us, the result.</p>
+  <div id="linksMount"></div>
 </div>
 
     </div>
@@ -801,15 +810,166 @@ button,input,select,textarea{font:inherit;color:inherit}
     return Promise.all([a, b]).then(render, render);
   }
 
+  /* ══ PAYMENT LINKS ═════════════════════════════════════════════════════
+     Separate from the plan section above on purpose — see the fh-standing
+     note in the HTML. This DOES move money: a link is a real Commas checkout
+     URL, and a row here goes created -> sent -> paid only when Commas' own
+     webhook says so (src/handlers/payment-links.mjs). Nothing on this panel
+     ever lets a person click a link to "paid" — that would be inventing a
+     receipt nobody has seen. */
+  var linksMount = document.getElementById("linksMount");
+  var linksSourceBadge = document.getElementById("linksMountSource");
+  var PURPOSES = ["deposit", "diagnostic", "repair", "custom"];
+
+  function linkStatusTag(status) {
+    var cls = status === "paid" ? "live" : (status === "expired" || status === "void") ? "gone" : "";
+    return '<span class="fh-tag ' + cls + '">' + esc(status) + "</span>";
+  }
+
+  function linksListPanel() {
+    if (!state.linksRead) {
+      return '<div class="fh-panel"><div class="fh-empty">Reading payment links for this client…</div></div>';
+    }
+    var rows = state.links || [];
+    if (!rows.length) {
+      return '<div class="fh-panel"><div class="fh-empty">No payment links created for this client yet.</div></div>';
+    }
+    return '<div class="fh-panel"><div class="fh-scroll"><table class="fh-table">' +
+      "<thead><tr><th>Purpose</th><th>Amount</th><th>Status</th><th>Created</th><th>Link</th><th></th></tr></thead>" +
+      "<tbody>" + rows.map(function (l) {
+        var canAct = l.status === "created" || l.status === "sent";
+        return "<tr>" +
+          "<td>" + esc(l.description || l.purpose) + "</td>" +
+          '<td class="num">' + esc(group(l.amount_display)) + " " + esc(l.currency || "") +
+            (l.status === "paid" && l.paid_amount_display != null && l.paid_amount_display !== l.amount_display
+              ? ' <span class="fh-card-meta">(client paid ' + esc(l.paid_amount_display) + ")</span>" : "") +
+          "</td>" +
+          "<td>" + linkStatusTag(l.status) + "</td>" +
+          "<td>" + esc(day(l.created_at)) + "</td>" +
+          '<td><code class="fh-card-meta" style="word-break:break-all">' + esc(l.checkout_url) + "</code></td>" +
+          "<td>" +
+            '<button type="button" class="fh-btn secondary" data-copy="' + esc(l.checkout_url) + '">Copy link</button>' +
+            (canAct ? ' <button type="button" class="fh-btn secondary" data-act="send" data-id="' + esc(l.id) + '">Send</button>' : "") +
+            (canAct ? ' <button type="button" class="fh-btn secondary" data-act="expire" data-id="' + esc(l.id) + '">Expire</button>' : "") +
+          "</td>" +
+        "</tr>";
+      }).join("") + "</tbody></table></div></div>";
+  }
+
+  function linksFormPanel() {
+    var options = PURPOSES.map(function (p) {
+      return '<option value="' + p + '">' + p + "</option>";
+    }).join("");
+    return '<div class="fh-panel">' +
+      '<form class="fh-form" id="createLinkForm">' +
+        '<div class="fh-field"><label for="linkPurpose">Purpose</label>' +
+          '<select id="linkPurpose" name="purpose">' + options + "</select></div>" +
+        '<div class="fh-field"><label for="linkAmount">Amount (dollars)</label>' +
+          '<input id="linkAmount" name="price" type="text" inputmode="decimal" placeholder="amount in dollars" autocomplete="off" required></div>' +
+        '<div class="fh-field"><label for="linkDescription">Description</label>' +
+          '<input id="linkDescription" name="description" type="text" placeholder="what this is for" autocomplete="off"></div>' +
+        '<button type="submit" class="fh-btn">Create payment link</button>' +
+      "</form>" +
+      '<p class="fh-msg" id="createLinkMsg"></p>' +
+      '<div class="fh-empty">Required for "custom" — for the other three purposes it is optional and defaults ' +
+        "to the purpose name. Creating a link does not send it: copy it from the table below, or press Send " +
+        "to queue it through the messaging system.</div>" +
+    "</div>";
+  }
+
+  function renderLinks() {
+    linksMount.innerHTML =
+      '<p class="fh-msg" id="linksFlashMsg"></p>' +
+      '<div class="fh-section"><h2>Create a link</h2>' + linksFormPanel() + "</div>" +
+      '<div class="fh-section"><h2>Links for this client</h2>' + linksListPanel() + "</div>";
+    if (state.linksFlash) say("linksFlashMsg", "ok", state.linksFlash);
+    bindLinks();
+  }
+
+  function sendLinks(payload, msgId, workingText, doneText) {
+    state.linksFlash = null;
+    say(msgId, "", workingText);
+    return FHData.write("/api/payment-links", payload).then(function (res) {
+      if (res && res.ok) {
+        state.linksFlash = doneText;
+        say(msgId, "ok", doneText);
+        return loadLinks();
+      }
+      var detail = (res && res.error) || "no detail";
+      var source = res && res.source;
+      if (source === "unauthorized") say(msgId, "bad", "Not saved — you are not signed in, or your role cannot send payment links.");
+      else if (source === "unbuilt") say(msgId, "bad", "Not saved — this part is not built yet (" + detail + ").");
+      else if (source === "nodb") say(msgId, "bad", "Not saved — the database is not answering (" + detail + ").");
+      else if (source === "offline") say(msgId, "bad", "Not saved — we could not reach the server (" + detail + ").");
+      else if (source === "server") say(msgId, "bad", "Not saved — something went wrong on our side. (" + detail + ")");
+      else say(msgId, "bad", "Not saved — " + detail);
+      return null;
+    });
+  }
+
+  function bindLinks() {
+    var createForm = document.getElementById("createLinkForm");
+    if (createForm) createForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var payload = {
+        action: "create", client_id: clientId,
+        purpose: document.getElementById("linkPurpose").value,
+        price: val("linkAmount")
+      };
+      var desc = val("linkDescription");
+      if (desc) payload.description = desc;
+      sendLinks(payload, "createLinkMsg", "Creating…",
+        "Link created. Copy it from the table below, or press Send to queue it.");
+    });
+
+    Array.prototype.forEach.call(linksMount.querySelectorAll("button[data-copy]"), function (btn) {
+      btn.addEventListener("click", function () {
+        var url = btn.getAttribute("data-copy");
+        var done = function () { btn.textContent = "Copied"; setTimeout(function () { btn.textContent = "Copy link"; }, 1500); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(done, function () { window.prompt("Copy this link:", url); });
+        } else {
+          window.prompt("Copy this link:", url);
+        }
+      });
+    });
+
+    Array.prototype.forEach.call(linksMount.querySelectorAll("button[data-act]"), function (btn) {
+      var act = btn.getAttribute("data-act");
+      btn.addEventListener("click", function () {
+        sendLinks({ action: act, id: btn.getAttribute("data-id") }, "linksFlashMsg",
+          act === "send" ? "Sending…" : "Expiring…",
+          act === "send" ? "Queued for send (or already covered by copying the link)." : "Link expired.");
+      });
+    });
+  }
+
+  function loadLinks() {
+    return apiGet("/api/payment-links?client_id=" + encodeURIComponent(clientId)).then(function (res) {
+      state.linksRead = true;
+      if (res.ok) {
+        state.links = res.data.items || [];
+        linksSourceBadge.textContent = state.links.length + " link(s)";
+        FHData.banner("real", state.links.length + " payment link(s) on record", "payment-links");
+      } else {
+        state.links = null;
+        FHData.explain(res, "payment-links");
+      }
+      renderLinks();
+    });
+  }
+
   if (!clientId) {
     /* No client named. NOT a backend failure, and nothing is invented to fill
        the space — the page says what is missing and how to fix it. */
     sourceBadge.textContent = "no client";
+    linksSourceBadge.textContent = "no client";
     mount.innerHTML = '<div class="fh-panel"><div class="fh-empty">' +
       "Open this screen with a client in the address bar — " +
       "<code>subscriptions.html?client_id=&lt;id&gt;</code>. Nothing is shown without one, " +
       "because a plan and a card belong to a named person." +
       "</div></div>";
+    linksMount.innerHTML = mount.innerHTML;
     FHData.banner("sample", "no client named — open with ?client_id=<id>", "subscription");
     return;
   }
@@ -817,6 +977,8 @@ button,input,select,textarea{font:inherit;color:inherit}
   sourceBadge.textContent = "subscriptions";
   render();   // paints the "reading…" state, so the page is never blank
   load();
+  renderLinks();
+  loadLinks();
 })();
 </script>
 </body>

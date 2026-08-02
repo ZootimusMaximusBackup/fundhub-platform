@@ -5,12 +5,14 @@
 
 import { register as registerLifecycle } from "./handlers/client-lifecycle.mjs";
 import { register as registerComms } from "./handlers/comms.mjs";
+import { register as registerPaymentLinks } from "./handlers/payment-links.mjs";
 
 let _done = false;
 
 export function registerAll() {
   registerLifecycle();
   registerComms();
+  registerPaymentLinks();
   _done = true;
 }
 

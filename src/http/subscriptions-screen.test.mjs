@@ -138,8 +138,11 @@ const CARD = (over = {}) => ({
   removed_at: null, ...over
 });
 
-/* respondWith — one place that knows which of the two GETs is which. */
-function respondWith({ sub = {}, cards = {}, subStatus = 200, cardStatus = 200 } = {}) {
+/* respondWith — one place that knows which of the three GETs is which.
+   Payment links defaults to an empty list: the panel is a later addition
+   (src/payment-links/index.mjs) and most of the tests below are about the
+   plan/cards panel above it, not this one. */
+function respondWith({ sub = {}, cards = {}, links = {}, subStatus = 200, cardStatus = 200, linksStatus = 200 } = {}) {
   return (p) => {
     if (p.indexOf("/api/finance/subscriptions") === 0) {
       return { status: subStatus, body: subStatus === 200
@@ -150,6 +153,11 @@ function respondWith({ sub = {}, cards = {}, subStatus = 200, cardStatus = 200 }
       return { status: cardStatus, body: cardStatus === 200
         ? { ok: true, client_id: CID, include_removed: true, cards: [], ...cards }
         : cards };
+    }
+    if (p.indexOf("/api/payment-links") === 0) {
+      return { status: linksStatus, body: linksStatus === 200
+        ? { ok: true, items: [], ...links }
+        : links };
     }
     throw new Error("the screen called an endpoint nobody expected: " + p);
   };
@@ -182,14 +190,16 @@ describe("subscriptions.html — the reads it issues", () => {
     assert.match(s.banner(), /no client named/);
   });
 
-  test("with a client it reads the plan and the cards, removed cards included", async () => {
+  test("with a client it reads the plan, the cards and the payment links, removed cards included", async () => {
     const s = await runScreen({ respond: respondWith({}) });
-    assert.equal(s.calls.length, 2);
+    assert.equal(s.calls.length, 3);
     assert.ok(s.calls.some((c) => c.indexOf("/api/finance/subscriptions?client_id=" + CID) === 0));
     const cardCall = s.calls.find((c) => c.indexOf("/api/finance/cards") === 0);
     assert.match(cardCall, /include_removed=1/,
       "removed cards are not asked for, so a plan paid by a card that is now off file " +
       "would show as having no card at all");
+    assert.ok(s.calls.some((c) => c.indexOf("/api/payment-links?client_id=" + CID) === 0),
+      "the payment links panel did not read this client's links");
   });
 });
 
