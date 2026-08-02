@@ -1,4 +1,4 @@
--- 130_company_brain_affiliate_allowlist.sql — explicit affiliate allowlist.
+-- 133_company_brain_affiliate_allowlist.sql — explicit affiliate allowlist.
 --
 -- Step 7 of docs/COMPANY-BRAIN-BUILD-SPEC.md.
 -- Affiliates / white-label partners are EXTERNAL. They are not a tier above
@@ -9,7 +9,7 @@
 --   * Affiliate queries JOIN this table AND require access_tier = 'affiliate'.
 --   * No fallback to public/sales/staff/owner under any condition.
 --
--- DEPENDS ON: 127_company_brain.sql, 129_company_brain_classification.sql.
+-- DEPENDS ON: 130_company_brain.sql, 132_company_brain_classification.sql.
 
 CREATE TABLE IF NOT EXISTS brain_affiliate_allowlist (
   org_id       uuid NOT NULL REFERENCES orgs(id),

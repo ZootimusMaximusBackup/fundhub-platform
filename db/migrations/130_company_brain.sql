@@ -1,4 +1,4 @@
--- 127_company_brain.sql — Company Brain chunk store (pgvector).
+-- 130_company_brain.sql — Company Brain chunk store (pgvector).
 --
 -- Owner-set 2026-08-02 (H-1): pgvector in Postgres/Neon, not Cognee.
 -- Owner-set 2026-08-02 (H-2): index everything (no folder exclusions — connector side).

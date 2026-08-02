@@ -1,4 +1,4 @@
--- 128_company_brain_sync.sql — stored Drive changes.list page token.
+-- 131_company_brain_sync.sql — stored Drive changes.list page token.
 --
 -- Step 3 of docs/COMPANY-BRAIN-BUILD-SPEC.md: incremental pickup so new and
 -- modified files appear without a full rebuild.
@@ -8,7 +8,7 @@
 -- NULL page_token means "never synced" — caller should full-walk first,
 -- then seed startPageToken.
 --
--- DEPENDS ON: 127_company_brain.sql (brain tables), schema/001_init.sql (orgs).
+-- DEPENDS ON: 130_company_brain.sql (brain tables), schema/001_init.sql (orgs).
 
 CREATE TABLE IF NOT EXISTS brain_drive_sync (
   org_id       uuid PRIMARY KEY REFERENCES orgs(id),

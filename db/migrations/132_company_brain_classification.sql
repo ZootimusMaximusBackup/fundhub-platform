@@ -1,11 +1,11 @@
--- 129_company_brain_classification.sql — classification review queue.
+-- 132_company_brain_classification.sql — classification review queue.
 --
 -- Step 4 of docs/COMPANY-BRAIN-BUILD-SPEC.md.
 -- Owner-set 2026-08-02 (H-3): ONLY the owner role may approve or reject
 -- proposed `owner` and `affiliate` tiers. public/sales/staff may auto-assign.
 -- Fail closed: live access_tier stays `owner` until auto-assigned or approved.
 --
--- DEPENDS ON: 127_company_brain.sql.
+-- DEPENDS ON: 130_company_brain.sql.
 
 ALTER TABLE brain_files
   ADD COLUMN IF NOT EXISTS classification_status text NOT NULL DEFAULT 'pending'
