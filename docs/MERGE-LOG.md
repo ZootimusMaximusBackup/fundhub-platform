@@ -244,3 +244,31 @@ Needed for suite green after merge — these were latent on the branch against c
 2. Gate shapes for journey extractor: reviews and affiliate handlers now call `requireAuth(req, res, …)` (or injected deps) and `requireRole` with local sets (`OWNER_ONLY`, `AFFILIATE_BRAIN_ROLES`) so gates are not `UNVERIFIED`.
 3. Org-scope audit: both read handlers added to `NO_ORG_COLUMN` with retrieve.mjs as the scoper, and pass `orgId: staff.org_id` literally so the excuse stays true.
 4. Regenerated `docs/journeys/*-actual.md` via `npm run journeys`.
+
+## 13. feat/crm-global-search — MERGED-WITH-RESOLUTION
+
+- No migrations.
+- Conflicts: journey `*-actual.md` + README only — regenerated via `npm run journeys`. CHANGELOG kept both sides (search entry + prior go-live entries); search entry moved to newest-at-top.
+- Auto-merged: `netlify/functions/api.mjs`, `public/app/shell.js`, `public/app/data.js`, `public/app/messaging.html`.
+- Suite: unit 4326 pass / 0 fail; lint clean.
+
+## 14. fix/controls-persist — SKIPPED (already on main)
+
+- `origin/fix/controls-persist` is an ancestor of `main` via PR #65 (`c230269`). No new commits to merge. Remote branch deleted after confirmation.
+
+## Final migration sequence after this batch
+
+```
+126_outbound_switch.sql                    (pre-existing)
+127_retire_affiliates_hiring.sql           (from retire/r07, unchanged)
+128_org_brand.sql                          (was 127 on feat/org-brand-crm)
+129_contract_template_write_repair.sql     (was 128 on fix/contract-template-save)
+130_company_brain.sql                      (was 127 on feat/company-brain)
+131_company_brain_sync.sql                 (was 128)
+132_company_brain_classification.sql       (was 129)
+133_company_brain_affiliate_allowlist.sql  (was 130)
+```
+
+## Production migrate
+
+_(filled after apply)_
