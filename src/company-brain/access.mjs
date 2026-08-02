@@ -1,9 +1,11 @@
 // Access tiers for Company Brain retrieval.
 //
 // Spec: filter by tier BEFORE retrieval. Role comes from the session.
-// Step 2 (owner-set H-1 = pgvector): only owner/admin may query.
-// Classification (step 4) will widen what owner-tier means and add staff/sales;
-// until then every stored chunk is 'owner' and non-owners see nothing.
+// Step 2 (owner-set H-1 = pgvector): only owner/admin may query (retrieval).
+// Step 4 classification: public/sales/staff may auto-assign onto chunks.
+// Owner-set H-3 2026-08-02: only the owner role may approve owner/affiliate.
+// Retrieval still owner-only until step 5 wires ROLE_SETS.
+// Affiliate query path is step 7 (separate allowlist).
 
 export const ACCESS_TIERS = Object.freeze([
   "public",

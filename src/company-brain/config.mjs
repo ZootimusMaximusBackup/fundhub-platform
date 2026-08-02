@@ -2,7 +2,7 @@
 //
 // Owner-set 2026-08-02 (H-1): pgvector (not Cognee) for v1 store.
 // Owner-set 2026-08-02 (H-2): index everything. No folder exclusion list.
-// H-3 (classification approvers) deferred until step 4.
+// Owner-set 2026-08-02 (H-3): only the owner role approves owner/affiliate classifications.
 
 export const DRIVE_READONLY_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
 export const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";

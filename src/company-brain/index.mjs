@@ -13,3 +13,12 @@ export { upsertExtractedFile } from "./store.mjs";
 export { retrieveChunks } from "./retrieve.mjs";
 export { syncDriveIncremental, getSyncState, saveSyncState } from "./sync.mjs";
 export { deleteByDriveFileId } from "./store.mjs";
+
+export {
+  classifyHeuristic, classifyWithModel, canApproveClassification,
+  AUTO_TIERS, REVIEW_TIERS
+} from "./classify.mjs";
+export {
+  classifyAndApply, listPendingReviews, decideClassificationReview,
+  setFileAccessTier, enqueueClassificationReview
+} from "./review.mjs";

@@ -4,6 +4,7 @@
 import crypto from "node:crypto";
 import { chunkText } from "./chunk.mjs";
 import { embedTexts, toVectorLiteral } from "./embed.mjs";
+import { classifyAndApply } from "./review.mjs";
 
 function sha256(text) {
   return crypto.createHash("sha256").update(String(text || ""), "utf8").digest("hex");
@@ -18,10 +19,12 @@ function sha256(text) {
 export async function upsertExtractedFile(db, {
   orgId,
   extracted,
-  accessTier = "owner", // step 2 default
+  accessTier = "owner", // fail-closed default before classification
   env = process.env,
   fetchImpl,
-  embed = embedTexts
+  embed = embedTexts,
+  classify = true,
+  classifyFn = null
 } = {}) {
   if (!orgId) return { ok: false, reason: "org_id_required" };
   if (!extracted?.fileId) return { ok: false, reason: "drive_file_id_required" };
@@ -49,7 +52,10 @@ export async function upsertExtractedFile(db, {
       contentHash: null,
       priorId: prior?.id
     });
-    return { ok: true, fileId, chunkCount: 0, skipped: false, reason: "needs_transcription" };
+    const classification = await maybeClassify(db, {
+      orgId, fileId, extracted, env, fetchImpl, classify, classifyFn
+    });
+    return { ok: true, fileId, chunkCount: 0, skipped: false, reason: "needs_transcription", classification };
   }
 
   if (!text) {
@@ -60,7 +66,10 @@ export async function upsertExtractedFile(db, {
       contentHash: null,
       priorId: prior?.id
     });
-    return { ok: true, fileId, chunkCount: 0, skipped: false, reason: extracted.reason || "empty" };
+    const classification = await maybeClassify(db, {
+      orgId, fileId, extracted, env, fetchImpl, classify, classifyFn
+    });
+    return { ok: true, fileId, chunkCount: 0, skipped: false, reason: extracted.reason || "empty", classification };
   }
 
   const chunks = chunkText(text);
@@ -92,7 +101,36 @@ export async function upsertExtractedFile(db, {
     );
   }
 
-  return { ok: true, fileId, chunkCount: chunks.length, skipped: false, reason: null };
+  const classification = await maybeClassify(db, {
+    orgId, fileId, extracted, env, fetchImpl, classify, classifyFn
+  });
+  return {
+    ok: true,
+    fileId,
+    chunkCount: chunks.length,
+    skipped: false,
+    reason: null,
+    classification
+  };
+}
+
+
+async function maybeClassify(db, {
+  orgId, fileId, extracted, env, fetchImpl, classify, classifyFn
+}) {
+  if (!classify || !fileId) return null;
+  return classifyAndApply(db, {
+    orgId,
+    fileId,
+    driveFileId: extracted.fileId,
+    name: extracted.name,
+    path: extracted.path || extracted.name,
+    text: extracted.text,
+    parentNames: extracted.parentNames,
+    env,
+    fetchImpl,
+    classify: classifyFn
+  });
 }
 
 function ACCESS_TIER_OR_OWNER(tier) {

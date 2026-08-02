@@ -100,7 +100,8 @@ test("upsertExtractedFile writes file + chunks through db mock", async () => {
       webViewLink: "https://drive.google.com/file/d/drive-1",
       ok: true
     },
-    embed
+    embed,
+    classify: false
   });
 
   assert.equal(out.ok, true);
