@@ -18,27 +18,31 @@ flowchart TD
     WHO -->|Yes| CAN[Can reach]
     CAN --> A_auth[Signing in and out — 7 routes]
     CAN --> A_banking[banking — 3 routes]
-    CAN --> A_campaigns[Campaigns — 6 routes]
+    CAN --> A_campaigns[Campaigns — 8 routes]
+    CAN --> A_chat[chat — 3 routes]
     CAN --> A_company_brain[company-brain — 1 route]
     CAN --> A_consent[consent — 1 route]
     CAN --> A_contracts[contracts — 1 route]
-    CAN --> A_creative[Creative Factory — 4 routes]
+    CAN --> A_creative[Creative Factory — 5 routes]
     CAN --> A_dashboard[The dashboard — 4 routes]
+    CAN --> A_demo[demo — 1 route]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 10 routes]
     CAN --> A_hiring[Hiring — 6 routes]
     CAN --> A_journeys[journeys — 2 routes]
     CAN --> A_privacy[privacy — 1 route]
     CAN --> A_read[Reading data — 28 routes]
-    CAN --> A_top_level[Everything else — 19 routes]
+    CAN --> A_social[social — 1 route]
+    CAN --> A_top_level[Everything else — 20 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 1 route]
+    WHO -->|Yes| CANT[Blocked — 2 routes]
+    CANT --> B_chat[chat — 1 blocked]
     CANT --> B_read[Reading data — 1 blocked]
 ```
 
 ## What they can reach
 
-**95 of 96 routes.**
+**104 of 106 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -59,18 +63,25 @@ flowchart TD
 | `/api/campaigns/fatigue` | GET | partner, staff |
 | `/api/campaigns/list` | GET | partner, staff |
 | `/api/campaigns/spend` | GET | partner, staff |
+| `/api/campaigns/sync` | POST | partner, staff |
+| `/api/campaigns/write` | POST | partner, staff |
+| `/api/chat/ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/chat/messages` | GET, POST | staff |
+| `/api/chat/peers` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/company-brain/reviews` | GET, POST | owner |
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/contracts` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/contracts/sign` | GET, POST | anyone |
 | `/api/creative/approvals` | GET | partner, staff |
 | `/api/creative/brand-kits` | GET | partner, staff |
+| `/api/creative/generate` | POST | partner, staff |
 | `/api/creative/jobs` | GET | partner, staff |
 | `/api/creative/library` | GET | partner, staff |
 | `/api/dashboard/client` | — | staff |
 | `/api/dashboard/clients` | — | staff |
 | `/api/dashboard/pipeline` | — | staff |
 | `/api/dashboard/seed` | — | staff |
+| `/api/demo/simulate` | DELETE, POST | owner, admin |
 | `/api/documents-upload` | POST | staff, client |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
 | `/api/finance/alerts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -101,6 +112,7 @@ flowchart TD
 | `/api/messages-outbound` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
 | `/api/partner-brand` | GET, PUT | owner, admin |
+| `/api/partner-pages` | GET, PATCH, POST | owner, admin |
 | `/api/payment-links` | GET, POST | owner, admin, sales_manager |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/pipeline-cards` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -135,6 +147,7 @@ flowchart TD
 | `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/workflows` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
+| `/api/social/schedule` | POST | partner, staff |
 | `/api/tasks` | GET, PATCH | staff |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
@@ -146,10 +159,11 @@ flowchart TD
 
 ## What they are blocked from
 
-**1 of 96 routes.**
+**2 of 106 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
+| `/api/chat/portal-message` | POST | client |
 | `/api/read/company-brain-affiliate` | POST | affiliate, partner |
 
 ## UNVERIFIED

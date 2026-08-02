@@ -682,27 +682,61 @@
      clear BOTH. A hard-coded right:360px left Search overlapping those buttons
      after global search shipped — Playwright caught clicks landing on Search.
      layoutShellChrome() measures the real widths and publishes
-     --fh-shell-top-clearance so topbars can pad once and stay clear. */
+     --fh-shell-top-clearance so topbars can pad once and stay clear.
+
+     Medium screens used to park Search and the chip on the SAME top/right
+     corner (both top:66 right:10) — they stacked and ate clicks. Search now
+     sits left of the chip at every breakpoint, measured in layoutShellChrome. */
   function layoutShellChrome() {
     var chip = document.getElementById("fh-shell-chip");
     var search = document.getElementById("fh-shell-search-btn");
     var gap = 10;
     var edge = 14;
     var clear = edge;
+    var narrow = window.matchMedia && window.matchMedia("(max-width:1200px)").matches;
+    var phone = window.matchMedia && window.matchMedia("(max-width:480px)").matches;
     if (chip) {
       clear += (chip.offsetWidth || 337) + gap;
     }
-    if (search && chip && window.matchMedia && window.matchMedia("(min-width:1201px)").matches) {
-      search.style.right = (edge + (chip.offsetWidth || 337) + gap) + "px";
-      clear += (search.offsetWidth || 110) + gap;
-    } else if (search) {
-      search.style.right = "";
-      if (window.matchMedia && window.matchMedia("(min-width:1201px)").matches) {
+    if (search && chip) {
+      // Always dock Search immediately left of the chip (same row), never on
+      // top of it. Phone: chip wraps full width lower; Search stays above chip
+      // on the right so it does not cover sidebar / topbar actions.
+      if (phone) {
+        search.style.top = "135px";
+        search.style.left = "auto";
+        search.style.right = edge + "px";
+        clear = Math.max(clear, edge + (search.offsetWidth || 110) + gap);
+      } else if (narrow) {
+        search.style.top = "66px";
+        search.style.left = "auto";
+        search.style.right = (edge + (chip.offsetWidth || 200) + gap) + "px";
+        clear += (search.offsetWidth || 110) + gap;
+      } else {
+        search.style.top = "";
+        search.style.left = "auto";
+        search.style.right = (edge + (chip.offsetWidth || 337) + gap) + "px";
         clear += (search.offsetWidth || 110) + gap;
       }
+    } else if (search) {
+      search.style.right = edge + "px";
+      search.style.left = "auto";
+      clear += (search.offsetWidth || 110) + gap;
     }
     try {
       document.documentElement.style.setProperty("--fh-shell-top-clearance", clear + "px");
+      // Pages with a topbar of action buttons: pad the right so Search/chip
+      // never cover "+ New" / Save. Harmless if a page has no .topbar.
+      var styleId = "fh-shell-clearance-style";
+      var st = document.getElementById(styleId);
+      if (!st) {
+        st = document.createElement("style");
+        st.id = styleId;
+        (document.head || document.documentElement).appendChild(st);
+      }
+      st.textContent =
+        ".topbar,.top,.page-hd,.hdr-actions,.screen-actions{" +
+        "padding-right:max(16px,var(--fh-shell-top-clearance,360px)) !important}";
     } catch (e) { /* ignore */ }
   }
 
@@ -787,12 +821,12 @@
     var style = document.createElement("style");
     style.id = "fh-shell-search-style";
     style.textContent =
-      "#fh-shell-search-btn{position:fixed;top:12px;right:360px;z-index:2147483000;" +
+      "#fh-shell-search-btn{position:fixed;top:12px;right:360px;z-index:2147482500;" +
       "display:flex;align-items:center;gap:8px;background:#fff;color:#0A0A0A;" +
       "border:1px solid #E4E4E7;border-radius:10px;padding:8px 12px;" +
       "font:500 12px/1 Inter,system-ui,sans-serif;cursor:pointer;" +
       "box-shadow:0 8px 24px rgba(0,0,0,.12)}" +
-      /* right: is overwritten by layoutShellChrome() once the chip is measured */
+      /* top/right overwritten by layoutShellChrome() once the chip is measured */
       "#fh-shell-search-btn .fh-k{font:600 10px/1 'JetBrains Mono',monospace;" +
       "letter-spacing:.04em;color:#71717A;border:1px solid #E4E4E7;border-radius:5px;" +
       "padding:3px 5px;background:#FAFAFA}" +
@@ -822,9 +856,7 @@
       "#fh-shell-search-panel .fh-search-hit:focus{background:#F4F4F5;outline:0}" +
       "#fh-shell-search-panel .fh-search-title{display:block;font:600 13.5px/1.3 Inter,system-ui,sans-serif}" +
       "#fh-shell-search-panel .fh-search-sub{display:block;margin-top:2px;" +
-      "font:500 11.5px/1.35 Inter,system-ui,sans-serif;color:#71717A}" +
-      "@media (max-width:1200px){#fh-shell-search-btn{top:66px;right:10px}}" +
-      "@media (max-width:480px){#fh-shell-search-btn{top:180px;left:10px;right:auto}}";
+      "font:500 11.5px/1.35 Inter,system-ui,sans-serif;color:#71717A}";
     (document.head || document.documentElement).appendChild(style);
 
     var mac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || "");
@@ -1101,6 +1133,29 @@
       .catch(function () { /* fundhub default stays — see the comment above */ });
   }
 
+  /* Chat widget — Ask / Knowledge / Message. Spec: docs/CRM-CHAT-WIDGET-SPEC.md.
+     Affiliates and partners do not get it in v1 (owner call C-3). */
+  var CHAT_SKIP_ROLES = { affiliate: 1, partner: 1 };
+
+  function mountChatWidget(staff, demo) {
+    var role = normRole(staff && staff.role);
+    if (CHAT_SKIP_ROLES[role]) return;
+    var isPortal = role === "client" || PAGE === "client-portal.html";
+    function go() {
+      if (window.FHChat && typeof window.FHChat.mount === "function") {
+        window.FHChat.mount({ portal: isPortal, demo: !!demo });
+      }
+    }
+    if (window.FHChat) { go(); return; }
+    var s = document.createElement("script");
+    s.src = (location.pathname.indexOf("/app/") === 0 ? "" : "/app/") + "chat-widget.js";
+    if (location.pathname.indexOf("/app/") !== 0) s.src = "/app/chat-widget.js";
+    else s.src = "chat-widget.js";
+    s.async = true;
+    s.onload = go;
+    (document.head || document.documentElement).appendChild(s);
+  }
+
   // Expose for Brand Studio live preview of CRM chrome.
   window.FHApplyBrand = paintBrand;
 
@@ -1153,6 +1208,7 @@
         window.addEventListener("resize", layoutShellChrome);
       }
       applyBrand(sess.staff);
+      mountChatWidget(sess.staff, sess.demo);
       reveal();
     });
   }).catch(function () {

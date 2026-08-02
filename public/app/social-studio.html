@@ -519,10 +519,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
 
               <div style="display:flex;gap:9px;margin-top:14px;align-items:center;flex-wrap:wrap">
                 <button class="btn dark mono" id="runScreen">Run guardrail preview</button>
-                <button class="btn mono" id="queueBtn" disabled
-                  title="Not available yet — no HTTP schedule endpoint. Needs POST that calls schedule() in src/social/scheduler.mjs, plus a cron that runs publishDue.">Queue post (not available yet)</button>
+                <button class="btn mono" id="queueBtn"
+                  title="POST /api/social/schedule → src/social/scheduler.mjs schedule()">Queue post</button>
                 <button class="btn mono" id="clearComposer">Clear</button>
-                <span class="hint mono" style="font-size:10.5px;color:var(--gray2)">not available yet — needs schedule API + publishDue scheduler</span>
+                <span class="hint mono" id="queueMsg" style="font-size:10.5px;color:var(--gray2)">Queues into social_posts. Publishing still needs a publishDue cron (see STILL-MISSING).</span>
               </div>
             </div>
           </div>
@@ -2104,6 +2104,51 @@ document.getElementById('clearComposer').addEventListener('click', function(){
   document.getElementById('cAsset').value = '';
   document.getElementById('cWhen').value = '';
   renderVerdict();
+});
+document.getElementById('queueBtn').addEventListener('click', function(){
+  var msg = document.getElementById('queueMsg');
+  var caption = document.getElementById('cCaption').value.trim();
+  var channelId = document.getElementById('cChannel').value;
+  var offer = document.getElementById('cOffer').value || 'funding';
+  var when = document.getElementById('cWhen').value;
+  var asset = document.getElementById('cAsset').value || null;
+  var partnerSel = document.getElementById('partnerSel');
+  var partnerId = partnerSel ? partnerSel.value : '';
+  if (!partnerId || partnerId === '-1') {
+    msg.textContent = 'Pick a real partner_id first.';
+    return;
+  }
+  if (!channelId) { msg.textContent = 'Pick a channel.'; return; }
+  if (!caption) { msg.textContent = 'Caption required.'; return; }
+  msg.textContent = 'Queueing…';
+  var t = '';
+  try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
+  var body = {
+    partner_id: partnerId,
+    channel_id: channelId,
+    caption: caption,
+    offer_type: offer,
+    asset_id: asset || null,
+    scheduled_for: when ? new Date(when).toISOString() : null
+  };
+  fetch('/api/social/schedule', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+      ...(t && t !== 'demo' ? { authorization: 'Bearer ' + t } : {})
+    },
+    body: JSON.stringify(body)
+  }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+    .then(function (res) {
+      if (!res.ok) {
+        msg.textContent = 'Not queued: ' + (res.message || res.error || 'error');
+        return;
+      }
+      msg.textContent = 'Queued as ' + (res.state || 'ok') +
+        (res.post && res.post.id ? ' · id ' + res.post.id : '') +
+        '. Publish still needs publishDue cron.';
+    });
 });
 document.getElementById('composeTop').addEventListener('click', function(){
   document.getElementById('composer').scrollIntoView({behavior:'smooth', block:'center'});

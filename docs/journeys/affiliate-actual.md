@@ -21,25 +21,28 @@ flowchart TD
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_top_level[Everything else — 3 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 84 routes]
+    WHO -->|Yes| CANT[Blocked — 94 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
-    CANT --> B_campaigns[Campaigns — 6 blocked]
+    CANT --> B_campaigns[Campaigns — 8 blocked]
+    CANT --> B_chat[chat — 4 blocked]
     CANT --> B_company_brain[company-brain — 1 blocked]
     CANT --> B_consent[consent — 1 blocked]
-    CANT --> B_creative[Creative Factory — 4 blocked]
+    CANT --> B_creative[Creative Factory — 5 blocked]
     CANT --> B_dashboard[The dashboard — 4 blocked]
+    CANT --> B_demo[demo — 1 blocked]
     CANT --> B_finance[Finance — 10 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_journeys[journeys — 2 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_read[Reading data — 29 blocked]
-    CANT --> B_top_level[Everything else — 16 blocked]
+    CANT --> B_social[social — 1 blocked]
+    CANT --> B_top_level[Everything else — 17 blocked]
 ```
 
 ## What they can reach
 
-**12 of 96 routes.**
+**12 of 106 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -63,7 +66,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**84 of 96 routes.**
+**94 of 106 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -78,17 +81,25 @@ flowchart TD
 | `/api/campaigns/fatigue` | GET | partner, staff |
 | `/api/campaigns/list` | GET | partner, staff |
 | `/api/campaigns/spend` | GET | partner, staff |
+| `/api/campaigns/sync` | POST | partner, staff |
+| `/api/campaigns/write` | POST | partner, staff |
+| `/api/chat/ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/chat/messages` | GET, POST | staff |
+| `/api/chat/peers` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/chat/portal-message` | POST | client |
 | `/api/company-brain/reviews` | GET, POST | owner |
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/contracts` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/creative/approvals` | GET | partner, staff |
 | `/api/creative/brand-kits` | GET | partner, staff |
+| `/api/creative/generate` | POST | partner, staff |
 | `/api/creative/jobs` | GET | partner, staff |
 | `/api/creative/library` | GET | partner, staff |
 | `/api/dashboard/client` | — | staff |
 | `/api/dashboard/clients` | — | staff |
 | `/api/dashboard/pipeline` | — | staff |
 | `/api/dashboard/seed` | — | staff |
+| `/api/demo/simulate` | DELETE, POST | owner, admin |
 | `/api/documents-upload` | POST | staff, client |
 | `/api/finance/alerts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/finance/bank-accounts` | GET, POST | owner, admin, sales_manager |
@@ -115,6 +126,7 @@ flowchart TD
 | `/api/messages` | POST | staff |
 | `/api/messages-outbound` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/partner-brand` | GET, PUT | owner, admin |
+| `/api/partner-pages` | GET, PATCH, POST | owner, admin |
 | `/api/payment-links` | GET, POST | owner, admin, sales_manager |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/pipeline-cards` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -150,6 +162,7 @@ flowchart TD
 | `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/workflows` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
+| `/api/social/schedule` | POST | partner, staff |
 | `/api/tasks` | GET, PATCH | staff |
 
 ## UNVERIFIED

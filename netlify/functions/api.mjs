@@ -88,6 +88,16 @@ import campaignsSpend from "../../api/campaigns/spend.mjs";
 import campaignsFatigue from "../../api/campaigns/fatigue.mjs";
 import campaignsConnections from "../../api/campaigns/connections.mjs";
 import campaignsActionLog from "../../api/campaigns/action-log.mjs";
+import campaignsSync from "../../api/campaigns/sync.mjs";
+import campaignsWrite from "../../api/campaigns/write.mjs";
+import socialSchedule from "../../api/social/schedule.mjs";
+import chatAsk from "../../api/chat/ask.mjs";
+import chatMessages from "../../api/chat/messages.mjs";
+import chatPortalMessage from "../../api/chat/portal-message.mjs";
+import chatPeers from "../../api/chat/peers.mjs";
+import demoSimulate from "../../api/demo/simulate.mjs";
+import partnerPages from "../../api/partner-pages.mjs";
+import creativeGenerate from "../../api/creative/generate.mjs";
 import creativeLibrary from "../../api/creative/library.mjs";
 import creativeBrandKits from "../../api/creative/brand-kits.mjs";
 import creativeJobs from "../../api/creative/jobs.mjs";
@@ -360,6 +370,16 @@ export const ROUTES = {
   "campaigns/fatigue": campaignsFatigue,
   "campaigns/connections": campaignsConnections,
   "campaigns/action-log": campaignsActionLog,
+  "campaigns/sync": campaignsSync,
+  "campaigns/write": campaignsWrite,
+  "social/schedule": socialSchedule,
+  "chat/ask": chatAsk,
+  "chat/messages": chatMessages,
+  "chat/portal-message": chatPortalMessage,
+  "chat/peers": chatPeers,
+  "demo/simulate": demoSimulate,
+  "partner-pages": partnerPages,
+  "creative/generate": creativeGenerate,
   "creative/library": creativeLibrary,
   "creative/brand-kits": creativeBrandKits,
   "creative/jobs": creativeJobs,

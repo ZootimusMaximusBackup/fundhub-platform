@@ -18,31 +18,35 @@ flowchart TD
     WHO -->|Yes| CAN[Can reach]
     CAN --> A_auth[Signing in and out — 6 routes]
     CAN --> A_banking[banking — 1 route]
-    CAN --> A_campaigns[Campaigns — 6 routes]
+    CAN --> A_campaigns[Campaigns — 8 routes]
+    CAN --> A_chat[chat — 3 routes]
     CAN --> A_consent[consent — 1 route]
     CAN --> A_contracts[contracts — 1 route]
-    CAN --> A_creative[Creative Factory — 4 routes]
+    CAN --> A_creative[Creative Factory — 5 routes]
     CAN --> A_dashboard[The dashboard — 4 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 5 routes]
     CAN --> A_read[Reading data — 21 routes]
+    CAN --> A_social[social — 1 route]
     CAN --> A_top_level[Everything else — 14 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 31 routes]
+    WHO -->|Yes| CANT[Blocked — 34 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 2 blocked]
+    CANT --> B_chat[chat — 1 blocked]
     CANT --> B_company_brain[company-brain — 1 blocked]
+    CANT --> B_demo[demo — 1 blocked]
     CANT --> B_finance[Finance — 5 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_journeys[journeys — 2 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_read[Reading data — 8 blocked]
-    CANT --> B_top_level[Everything else — 5 blocked]
+    CANT --> B_top_level[Everything else — 6 blocked]
 ```
 
 ## What they can reach
 
-**65 of 96 routes.**
+**72 of 106 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -60,11 +64,17 @@ flowchart TD
 | `/api/campaigns/fatigue` | GET | partner, staff |
 | `/api/campaigns/list` | GET | partner, staff |
 | `/api/campaigns/spend` | GET | partner, staff |
+| `/api/campaigns/sync` | POST | partner, staff |
+| `/api/campaigns/write` | POST | partner, staff |
+| `/api/chat/ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/chat/messages` | GET, POST | staff |
+| `/api/chat/peers` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/contracts` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/contracts/sign` | GET, POST | anyone |
 | `/api/creative/approvals` | GET | partner, staff |
 | `/api/creative/brand-kits` | GET | partner, staff |
+| `/api/creative/generate` | POST | partner, staff |
 | `/api/creative/jobs` | GET | partner, staff |
 | `/api/creative/library` | GET | partner, staff |
 | `/api/dashboard/client` | — | staff |
@@ -109,6 +119,7 @@ flowchart TD
 | `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/workflows` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
+| `/api/social/schedule` | POST | partner, staff |
 | `/api/tasks` | GET, PATCH | staff |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
@@ -120,14 +131,16 @@ flowchart TD
 
 ## What they are blocked from
 
-**31 of 96 routes.**
+**34 of 106 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/auth/admin-reset` | POST | owner, admin |
 | `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/banking/sync-accounts` | POST | owner, admin, sales_manager |
+| `/api/chat/portal-message` | POST | client |
 | `/api/company-brain/reviews` | GET, POST | owner |
+| `/api/demo/simulate` | DELETE, POST | owner, admin |
 | `/api/finance/bank-accounts` | GET, POST | owner, admin, sales_manager |
 | `/api/finance/bills` | GET, POST | owner, admin, sales_manager |
 | `/api/finance/cards` | GET, POST | owner, admin, sales_manager |
@@ -144,6 +157,7 @@ flowchart TD
 | `/api/journeys/ask` | POST | owner, admin |
 | `/api/journeys/run` | POST | owner, admin, sales_manager |
 | `/api/partner-brand` | GET, PUT | owner, admin |
+| `/api/partner-pages` | GET, PATCH, POST | owner, admin |
 | `/api/payment-links` | GET, POST | owner, admin, sales_manager |
 | `/api/privacy/erasure` | GET, POST | owner, admin |
 | `/api/products` | POST | owner, admin, sales_manager |

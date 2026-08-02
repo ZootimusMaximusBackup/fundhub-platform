@@ -926,13 +926,29 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </table>
         </div>
         <div class="cap">
-          <b>No write path exists at all.</b> All four <code>api/creative/*</code> files are built on
-          <code>partnerReadHandler</code>, which answers any non-GET with HTTP 405. There is no POST
-          to enqueue a job, retry or cancel one, approve or reject an asset, archive an asset, create
-          or edit a brand kit, or trigger a scrape. And nothing in the repo calls
-          <code>enqueue()</code>, <code>claim()</code> or <code>run()</code> — no worker, no cron, no
-          Inngest function, no handler. A "Generate assets" form would have nothing behind it, so
-          this screen does not have one.
+          <b>Generate is live.</b> <code>POST /api/creative/generate</code> enqueues a
+          <code>generation_jobs</code> row via <code>enqueue()</code>. Provider credentials
+          (<code>CREATIVE_*</code> env) must be set for assets to actually render — otherwise
+          the job stays queued. Use the form below.
+        </div>
+        <div class="card-bd" style="padding:14px 16px;border-top:1px solid var(--line)">
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:end">
+            <div class="selwrap"><label for="genKind">asset_kind</label>
+              <select id="genKind"><option>static</option><option>copy</option><option>video</option><option>resize</option></select>
+            </div>
+            <div class="selwrap" style="min-width:220px"><label for="genPrompt">prompt</label>
+              <input id="genPrompt" placeholder="Working capital for owners…" style="width:220px">
+            </div>
+            <div class="selwrap" style="min-width:180px"><label for="genIdem">idempotency_key</label>
+              <input id="genIdem" placeholder="unique-key-per-batch" style="width:180px">
+            </div>
+            <button class="btn dark mono" type="button" id="genBtn">Enqueue generation</button>
+            <span class="hint mono" id="genMsg" style="font-size:10.5px;color:var(--gray2)"></span>
+          </div>
+        </div>
+        <div class="cap">
+          <b>Still no archive / approve / reject UI</b> on this screen — those stay in
+          docs/STILL-MISSING.md. Reads for kits/jobs/library remain as wired.
         </div>
         <div class="cap">
           <b>Nothing hard-deletes and nothing archives.</b> <code>fundhub_no_delete()</code> guards
@@ -2919,6 +2935,52 @@ renderStaticTables();
 renderRules();
 renderAll();
 wireCreative();
+
+document.getElementById('genBtn').addEventListener('click', function () {
+  var msg = document.getElementById('genMsg');
+  var partnerId = null;
+  try {
+    if (typeof PARTNERS !== 'undefined' && typeof S !== 'undefined' && PARTNERS[S.partner]) {
+      partnerId = PARTNERS[S.partner].id;
+    }
+  } catch (e) {}
+  if (!partnerId && window.FHData && FHData.param) partnerId = FHData.param('partner_id');
+  if (!partnerId) {
+    try { partnerId = new URL(location.href).searchParams.get('partner_id'); } catch (e) {}
+  }
+  var kind = document.getElementById('genKind').value;
+  var prompt = document.getElementById('genPrompt').value.trim();
+  var idem = document.getElementById('genIdem').value.trim();
+  if (!partnerId) { msg.textContent = 'Need partner_id in the URL or picker.'; return; }
+  if (!idem) { msg.textContent = 'idempotency_key required.'; return; }
+  msg.textContent = 'Enqueueing…';
+  var t = '';
+  try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
+  fetch('/api/creative/generate', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+      ...(t && t !== 'demo' ? { authorization: 'Bearer ' + t } : {})
+    },
+    body: JSON.stringify({
+      partner_id: partnerId,
+      asset_kind: kind,
+      idempotency_key: idem,
+      prompt: prompt,
+      spec: { prompt: prompt, formats: ['1x1'], variants: 1, assetKind: kind }
+    })
+  }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+    .then(function (res) {
+      if (!res.ok) {
+        msg.textContent = 'Failed: ' + (res.message || res.error || 'error');
+        return;
+      }
+      msg.textContent = (res.created ? 'Created' : 'Deduped') + ' job ' +
+        ((res.job && res.job.id) || '') + '. ' + (res.note || '');
+      if (typeof wireCreative === 'function') wireCreative();
+    });
+});
 </script>
 </body>
 </html>
