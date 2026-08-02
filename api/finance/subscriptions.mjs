@@ -45,6 +45,7 @@ import {
   startSubscription, changeTier, cancelSubscription
 } from "../../src/subscriptions/store.mjs";
 import { priceToCents, assertPriceCents, formatPrice } from "../../src/subscriptions/index.mjs";
+import { dbDown } from "../../src/http/db-down.mjs";
 
 /* ROLE_SETS.FINANCE — {owner, admin}. A subscription row carries a price, and
    price is comp-adjacent money the STAFF set does not see anywhere else in this
@@ -335,6 +336,18 @@ export default async function handler(req, res) {
     if (e && (e.code === "23514" || e.code === "23503")) {
       return res.status(400).json({ ok: false, error: "the database refused that value" });
     }
+    /* A DATABASE THAT DID NOT ANSWER IS NOT OUR CODE THROWING, AND THE SCREEN
+       MUST NOT BE TOLD IT WAS. Everything above this line has already claimed
+       the faults it can name; what is left reaches netlify/functions/api.mjs as
+       a bare 500 internal_error, which public/app/data.js words as "something
+       went wrong on our side ... The database did not report a problem." That
+       sentence is false during an outage and it is how the funding-capacity read
+       reported a dead database as a bug in this file. 503 + db:"down" is the
+       shape data.js already reads as "the database is not answering".
+       See src/http/db-down.mjs — it stays narrow, so anything it cannot
+       positively identify still falls through to the 500 it got before. */
+    if (dbDown(res, e)) return;
+
     throw e;
   }
 }

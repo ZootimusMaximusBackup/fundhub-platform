@@ -63,6 +63,7 @@ import {
 import { thresholdFromBps } from "../../src/alerts/evaluate.mjs";
 import { listTradelines } from "../../src/tradelines/store.mjs";
 import { fromCents } from "../../src/commissions/money.mjs";
+import { dbDown } from "../../src/http/db-down.mjs";
 
 /* ROLE_SETS.STAFF — the queue is operational work and the alerts restate
    utilization and score figures api/read/tradelines.mjs already serves to this
@@ -475,6 +476,18 @@ export default async function handler(req, res) {
     if (CLIENT_DATA_ERRORS.has(e && e.code)) {
       return res.status(400).json({ ok: false, error: "invalid_parameter" });
     }
+    /* A DATABASE THAT DID NOT ANSWER IS NOT OUR CODE THROWING, AND THE SCREEN
+       MUST NOT BE TOLD IT WAS. Everything above this line has already claimed
+       the faults it can name; what is left reaches netlify/functions/api.mjs as
+       a bare 500 internal_error, which public/app/data.js words as "something
+       went wrong on our side ... The database did not report a problem." That
+       sentence is false during an outage and it is how the funding-capacity read
+       reported a dead database as a bug in this file. 503 + db:"down" is the
+       shape data.js already reads as "the database is not answering".
+       See src/http/db-down.mjs — it stays narrow, so anything it cannot
+       positively identify still falls through to the 500 it got before. */
+    if (dbDown(res, e)) return;
+
     throw e;
   }
 }

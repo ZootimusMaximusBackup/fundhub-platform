@@ -379,8 +379,32 @@ describe("failures", () => {
       return inner(sql, params);
     };
     const res = makeRes();
-    await assert.rejects(() => handler(req(), res, deps), /connection terminated/,
-      "a real outage must surface, not be reported as a clean empty result");
+    /* STILL NOT SWALLOWED — but it now SURFACES AS AN ANSWER instead of as a
+       throw, and that is the whole of the finance-os-500 fix.
+
+       The original assertion here was `assert.rejects(...)`. Its intent was that
+       a real outage must not be reported as a clean empty result, and that intent
+       is kept and tightened below. What it accidentally also pinned was the
+       ROUTE the outage took out of this handler: `throw` lands in
+       netlify/functions/api.mjs's catch, which answers 500 internal_error, which
+       public/app/data.js words as "something went wrong on our side ... The
+       database did not report a problem." That is how a dead database was shown
+       on finance-os.html as "Funding capacity could not be read — HTTP 500
+       internal_error", pointing whoever read it at this file instead of at
+       Postgres.
+
+       So the case now asserts the STATUS rather than the mechanism: 503 carrying
+       db:"down", which data.js classifies as source "nodb" and words as "the
+       database is not answering". Louder than the old behaviour, not quieter —
+       and a swallowed outage would fail this as surely as it failed the old
+       assertion, because a 200 is neither 503 nor an empty body. */
+    const thrown = await handler(req(), res, deps).then(() => null, (e) => e);
+    assert.equal(thrown, null,
+      "the outage escaped as a throw; api.mjs turns that into a 500 that blames our code");
+    assert.equal(res.statusCode, 503,
+      "a real outage must surface as an outage, not as a clean empty result");
+    assert.equal(res.body.db, "down",
+      "without db:'down' public/app/data.js cannot tell this from our own code breaking");
   });
 
   test("the handler never reads DATABASE_URL", async () => {

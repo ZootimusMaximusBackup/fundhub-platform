@@ -50,6 +50,7 @@ import { ROLE_SETS, requireRole, isUuid, CLIENT_DATA_ERRORS } from "../../src/ht
 import { bankingSurface } from "../../src/finance/banking-surface.mjs";
 import { isPlaidEnabled } from "../../src/banking/plaid.mjs";
 import { requireClientInOrg } from "../../src/http/client-scope.mjs";
+import { dbDown } from "../../src/http/db-down.mjs";
 
 const COLUMNS = `
   id, client_id, name, official_name, mask,
@@ -81,9 +82,13 @@ export default async function handler(req, res) {
      named client's financial detail — and it answers "are you staff", never "are
      they yours". Any employee of any company could read any client's figures
      given only an id. See src/http/client-scope.mjs. */
-  if (!(await requireClientInOrg(res, db, staff, String(query.client_id).trim()))) return;
-
+  // INSIDE THE try, and that placement is the point. This is a DATABASE call,
+  // and it used to sit above the try where nothing caught it — so a database
+  // that stopped answering during the ownership check threw straight past every
+  // classification below and reached the browser as a bare 500 "our code broke".
   try {
+    if (!(await requireClientInOrg(res, db, staff, String(query.client_id).trim()))) return;
+
     /* Closed accounts are fetched, not filtered out here. "This client had six
        accounts and two are closed" is a different fact from "this client has
        four accounts", and the grouping module is what decides that a closed
@@ -109,6 +114,18 @@ export default async function handler(req, res) {
     if (CLIENT_DATA_ERRORS.has(e.code)) {
       return res.status(400).json({ ok: false, error: "bad request parameter" });
     }
+    /* A DATABASE THAT DID NOT ANSWER IS NOT OUR CODE THROWING, AND THE SCREEN
+       MUST NOT BE TOLD IT WAS. Everything above this line has already claimed
+       the faults it can name; what is left reaches netlify/functions/api.mjs as
+       a bare 500 internal_error, which public/app/data.js words as "something
+       went wrong on our side ... The database did not report a problem." That
+       sentence is false during an outage and it is how the funding-capacity read
+       reported a dead database as a bug in this file. 503 + db:"down" is the
+       shape data.js already reads as "the database is not answering".
+       See src/http/db-down.mjs — it stays narrow, so anything it cannot
+       positively identify still falls through to the 500 it got before. */
+    if (dbDown(res, e)) return;
+
     throw e;
   }
 }

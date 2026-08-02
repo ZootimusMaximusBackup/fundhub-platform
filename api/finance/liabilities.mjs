@@ -62,6 +62,7 @@ import { readApr } from "../../src/tradelines/index.mjs";
 // wrong for a form is answer 0 for an empty input, which moneyCents() handles
 // before delegating. See the note there.
 import { toCents as dollarsToCents } from "../../src/commissions/money.mjs";
+import { dbDown } from "../../src/http/db-down.mjs";
 
 /* ROLE_SETS.STAFF — the same gate api/read/tradelines.mjs carries, and for the
    same reason: this is the balance half of the card rows that endpoint already
@@ -210,6 +211,18 @@ export default async function handler(req, res) {
     if (e && (e.code === "23514" || e.code === "23503")) {
       return res.status(400).json({ ok: false, error: "value_refused_by_the_database" });
     }
+    /* A DATABASE THAT DID NOT ANSWER IS NOT OUR CODE THROWING, AND THE SCREEN
+       MUST NOT BE TOLD IT WAS. Everything above this line has already claimed
+       the faults it can name; what is left reaches netlify/functions/api.mjs as
+       a bare 500 internal_error, which public/app/data.js words as "something
+       went wrong on our side ... The database did not report a problem." That
+       sentence is false during an outage and it is how the funding-capacity read
+       reported a dead database as a bug in this file. 503 + db:"down" is the
+       shape data.js already reads as "the database is not answering".
+       See src/http/db-down.mjs — it stays narrow, so anything it cannot
+       positively identify still falls through to the 500 it got before. */
+    if (dbDown(res, e)) return;
+
     throw e;
   }
 }
