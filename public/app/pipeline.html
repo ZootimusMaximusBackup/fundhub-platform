@@ -396,9 +396,9 @@
     <div class="filter-chips" id="filterChips"></div>
     <div class="filter-spacer"></div>
     <div class="board-summary">
-      <span><b>82</b> cards</span>
-      <span><b>$544,200</b> est.</span>
-      <span class="held-n">4 held</span>
+      <span><b id="sumCount">—</b> cards</span>
+      <span><b id="sumMoney">—</b> est.</span>
+      <span class="held-n" id="sumHeld" title="the pipeline API does not return hold status">— held</span>
     </div>
   </div>
   <div class="filterpanel" id="filterPanel" hidden>
@@ -1283,6 +1283,33 @@ restore();
 
   function usd(n) { return "$" + Math.round(n || 0).toLocaleString("en-US"); }
 
+  /* FH-SUMMARY-BEGIN */
+  // Pure, so it can be unit-tested without a DOM. Sums the same count/amount
+  // fields buildColumn() already put on each column — the summary bar can
+  // never disagree with the columns under it.
+  function fhPipelineSummary(stages) {
+    var count = 0, money = 0;
+    (stages || []).forEach(function (s) {
+      count += s.count || 0;
+      money += s.amount || 0;
+    });
+    return { count: count, money: money };
+  }
+  window.FHPipelineSummary = fhPipelineSummary;
+  /* FH-SUMMARY-END */
+
+  // Held count has no honest value here: no card the API returns carries a
+  // hold flag (see api/dashboard/pipeline.mjs — cards has no hold column), so
+  // the board-summary's "held" stat stays a dash always. Card count and est.
+  // money DO come from the API and are set for real once a pipeline loads;
+  // unknown (not yet loaded, or the load failed) is a dash too, never 0.
+  var sumCountEl = document.getElementById("sumCount");
+  var sumMoneyEl = document.getElementById("sumMoney");
+  function setSummary(totals) {
+    if (sumCountEl) sumCountEl.textContent = totals ? String(totals.count) : "—";
+    if (sumMoneyEl) sumMoneyEl.textContent = totals ? usd(totals.money) : "—";
+  }
+
   function initials(name) {
     var parts = String(name).trim().split(/\s+/);
     return ((parts[0] || "?")[0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
@@ -1443,6 +1470,7 @@ restore();
     if (cache[key]) {
       hideNote();
       var r = paint(cache[key]);
+      setSummary(fhPipelineSummary(cache[key]));
       if (typeof window.rebuildOwnerOptions === "function") {
         try { window.rebuildOwnerOptions(); } catch (e) { /* filter stays as-is */ }
       }
@@ -1456,6 +1484,7 @@ restore();
         cache[key] = res.data.stages;
         hideNote();
         var r = paint(res.data.stages);
+        setSummary(fhPipelineSummary(res.data.stages));
         // The dropdown was built from whatever cards this call just replaced.
         if (typeof window.rebuildOwnerOptions === "function") {
           try { window.rebuildOwnerOptions(); } catch (e) { /* filter stays as-is */ }
@@ -1464,6 +1493,10 @@ restore();
                        " cards across " + r.stageCount + " stage" + (r.stageCount === 1 ? "" : "s"));
         return;
       }
+      // No real totals to show for any of these — a stale number left over
+      // from the last pipeline would be exactly the invented-value bug this
+      // summary bar used to have.
+      setSummary(null);
       if (res.source === "demo") {
         banner("sample", "sample board — demo session, the backend was not queried");
       } else if (res.source === "notfound") {
