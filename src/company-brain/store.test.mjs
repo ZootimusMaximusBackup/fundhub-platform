@@ -22,13 +22,15 @@ test("chunkText splits with overlap and skips empty", () => {
   assert.ok(parts.every((p) => p.length <= 1000));
 });
 
-test("tiersForRole is owner-only in step 2", () => {
-  assert.deepEqual(tiersForRole("closer"), []);
-  assert.deepEqual(tiersForRole("funding_advisor"), []);
+test("tiersForRole uses ROLE_SETS (step 5)", () => {
+  assert.deepEqual(tiersForRole("closer"), ["public", "sales", "staff"]);
+  assert.deepEqual(tiersForRole("funding_advisor"), ["public", "sales", "staff"]);
   assert.ok(assertOwnerOnlyRole("owner").ok);
   assert.ok(assertOwnerOnlyRole("admin").ok);
-  assert.equal(assertOwnerOnlyRole("closer").ok, false);
+  assert.ok(assertOwnerOnlyRole("closer").ok);
+  assert.ok(tiersForRole("owner").includes("owner"));
   assert.ok(!tiersForRole("owner").includes("affiliate"));
+  assert.ok(!tiersForRole("closer").includes("owner"));
 });
 
 test("embedTexts uses providers/http postJson via mocked fetch", async () => {
@@ -111,7 +113,7 @@ test("upsertExtractedFile writes file + chunks through db mock", async () => {
   assert.equal(rows.chunks[0][4], "owner"); // access_tier
 });
 
-test("retrieveChunks refuses non-owner before any db call", async () => {
+test("retrieveChunks refuses non-STAFF before any db call", async () => {
   let called = false;
   const db = {
     async query() {
@@ -121,7 +123,7 @@ test("retrieveChunks refuses non-owner before any db call", async () => {
   };
   const out = await retrieveChunks(db, {
     orgId: "org-1",
-    role: "closer",
+    role: "partner",
     query: "scripts",
     embed: async () => ({ ok: true, embeddings: [fakeEmbedding(1)] })
   });

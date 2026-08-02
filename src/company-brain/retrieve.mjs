@@ -1,7 +1,10 @@
-// Owner-only retrieval. Filter by access_tier BEFORE ranking — the model
+// Role-gated retrieval. Filter by access_tier BEFORE ranking — the model
 // never sees a chunk the asker is not cleared for.
+//
+// Tier clearance comes from ROLE_SETS via tiersForRole (step 5).
+// Role argument must come from the session, never the request body.
 
-import { assertOwnerOnlyRole } from "./access.mjs";
+import { assertBrainAccess } from "./access.mjs";
 import { embedTexts, toVectorLiteral } from "./embed.mjs";
 
 /**
@@ -22,7 +25,7 @@ export async function retrieveChunks(db, {
   fetchImpl,
   embed = embedTexts
 } = {}) {
-  const gate = assertOwnerOnlyRole(role);
+  const gate = assertBrainAccess(role);
   if (!gate.ok) {
     return { ok: false, reason: gate.reason, chunks: [] };
   }

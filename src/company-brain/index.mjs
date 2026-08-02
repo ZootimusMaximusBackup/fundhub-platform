@@ -8,7 +8,7 @@ export { walkDriveAndExtract } from "./walk.mjs";
 export { extractOfficeText, unzipEntries } from "./office.mjs";
 export { chunkText } from "./chunk.mjs";
 export { embedTexts, embedConfigFromEnv, toVectorLiteral, EMBEDDING_DIMS } from "./embed.mjs";
-export { tiersForRole, assertOwnerOnlyRole, ACCESS_TIERS } from "./access.mjs";
+export { tiersForRole, assertBrainAccess, assertOwnerOnlyRole, canQueryBrain, ACCESS_TIERS } from "./access.mjs";
 export { upsertExtractedFile } from "./store.mjs";
 export { retrieveChunks } from "./retrieve.mjs";
 export { syncDriveIncremental, getSyncState, saveSyncState } from "./sync.mjs";
