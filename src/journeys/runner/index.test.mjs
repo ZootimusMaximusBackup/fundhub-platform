@@ -87,12 +87,12 @@ test("the six seeded journeys walk to nine paths", () => {
    and it will always sit in neverFired — which is the correct outcome, not a
    coverage hole. The counts here are pinned so that registering a workflow stays
    a visible decision; see the note in src/workflows/index.test.mjs. */
-test("ACCEPTANCE: the registry accounts for all 48 registered workflows", async () => {
+test("ACCEPTANCE: the registry accounts for all 49 registered workflows", async () => {
   const reg = await loadRegistry();
-  assert.equal(reg.registered, 48, "src/workflows/index.mjs registers 48 functions");
+  assert.equal(reg.registered, 49, "src/workflows/index.mjs registers 49 functions");
   assert.equal(
     reg.workflows.length + reg.unrunnable.length,
-    48,
+    49,
     "every registered workflow is either runnable or explicitly listed as unrunnable"
   );
   assert.deepEqual(reg.unrunnable, [], "no registered workflow should be unreachable by the runner");
@@ -102,9 +102,9 @@ test("every workflow is either fired or named in neverFired — none silently mi
   const reg = await loadRegistry();
   const pretendFired = ["n-06-renewal-second-wave", "s-02-incomplete-survey-nudge"];
   const never = neverFired(reg, pretendFired);
-  assert.equal(never.length + pretendFired.length, 48);
+  assert.equal(never.length + pretendFired.length, 49);
   const all = new Set([...never.map((w) => w.id), ...pretendFired]);
-  assert.equal(all.size, 48);
+  assert.equal(all.size, 49);
   for (const fn of functions) assert.ok(all.has(fn.id()), `${fn.id()} is unaccounted for`);
 });
 
@@ -194,11 +194,11 @@ test("the coverage report names every unreached workflow explicitly", async () =
   const db = fakeDb();
   const report = await run(db, { journeys: SEED_JOURNEYS, orgId: "org-1", runId: "t3", env: {} });
   const c = report.workflowCoverage;
-  assert.equal(c.registered, 48);
+  assert.equal(c.registered, 49);
   assert.equal(
     c.fired.length + c.neverFired.length,
-    48,
-    "fired + neverFired must account for all 48 — a workflow missing from both is a silent coverage hole"
+    49,
+    "fired + neverFired must account for all 49 — a workflow missing from both is a silent coverage hole"
   );
 });
 

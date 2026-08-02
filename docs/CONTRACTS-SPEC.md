@@ -931,3 +931,184 @@ reference, and the notify tests had to stop mutating the shared org's routing.
 * **The chase is time-based only.** It does not notice that a client opened the
   document three times and stopped — which is the moment a person should call.
 * **No per-org chase settings.** 3/3/4 is the same for everybody.
+
+---
+
+# Part 4 — the platform can send email at all, and an invoice is one of them
+
+> "You should definitely be able to send a fucking invoice via email. It's kinda
+> retarded if you can't. So figure that out — and if there's any other gaps or
+> parts, like sending out emails, figure that out too… But it's not like the
+> workflow is something that we turn on. It should be an option, the ability to
+> set it up, within the customer journey. It's a fucking CRM."
+
+## 32. The gap, and it was bigger than invoices
+
+Part 3 made contracts send by handing **specific message rows** to the
+dispatcher, by id. That was deliberately narrow: it kept the blast radius to one
+contract and left the general queue alone.
+
+Looking at the general queue is what this part did, and the finding is blunt:
+
+* **Twenty-six workflows call `sendTemplated()`.** Every one writes a `messages`
+  row with `status = 'queued'`.
+* **Nothing ever drained it.** `src/messaging/dispatch.mjs` said so in its own
+  header — "dispatchDue() runs when something calls it, and today nothing does."
+  The one scheduled caller, `message-dispatch-sweeper.mjs`, was written and
+  deliberately left out of the registry.
+* So **every client email this platform has ever composed is still sitting in a
+  table.** Not blocked, not failed, not bounced. Invisible.
+* **Invoices were worse**, because they did not even reach the queue.
+  `invoices.status` has included `'sent'` since 017 and `markSent()` flips it,
+  but no code has ever emailed one. Two workflows (`ds-02`, `f-07`) raise
+  invoices automatically, so the platform has been quietly billing people who
+  were never told.
+
+## 33. The switch moved; it did not disappear
+
+The old design made sending an **ignition key**: one environment variable, set by
+one person, invisible in the product, all-or-nothing across every company on the
+platform. The owner's objection is correct — that is not how a CRM behaves.
+
+`db/migrations/119_outbound_switch.sql` replaces it with
+`messaging_settings`, one row per company:
+
+| column | default | what it is |
+|---|---|---|
+| `outbound_enabled` | `true` | the pause button |
+| `daily_send_cap` | `500` | how many may leave in one day; `0` = unlimited |
+| `alert_email` | null | where to shout if something goes wrong |
+| `updated_by` | null | **who changed it** — an env var could never say |
+
+Every existing org is backfilled, so nothing depends on a row appearing later.
+
+**A missing row means the defaults, not "disabled."** That direction was chosen on
+purpose: a company that has never opened the screen should behave like a CRM,
+not like a mute one. The pause button is for somebody who *decided* to pause.
+
+### What still stops an accident
+
+Nothing that mattered was removed:
+
+* `drain()` refuses outright when the switch is off.
+* The **daily cap** is counted from what was actually sent today, so a looping
+  workflow mails 500 people and stops — not 50,000.
+* The **compliance gate** runs on every single message inside `dispatch.mjs`, in
+  the order gate → route → send, with no override and no bypass.
+* **With no provider credentials, nothing leaves whatever any flag says.** That is
+  the real control and always was; `message_channel_routing` resolves to the
+  `memory` provider until somebody configures a real one.
+
+So `INNGEST_EVENT_KEY` — the one thing CLAUDE.md §11 reserves to the owner — is
+**still unset and still untouched.** Registering the sweeper does not send
+anything; Inngest invokes nothing without that key. Until it is set, the same
+drain runs from a button on the Outbox panel and from
+`POST /api/messages { action: "dispatch" }`.
+
+## 34. What was actually built
+
+**`src/messaging/outbox.mjs`** — the layer between "there are queued messages"
+and the dispatcher.
+
+* `settingsFor(db, orgId)` — the row, or the defaults.
+* `setSettings(...)` — write it, attributed to the staff member.
+* `outboxStatus(...)` — counts by status, the resolved channel routing, and a
+  **plain-language `summary`** so no screen has to invent wording.
+* `drain(...)` — refuses when paused, enforces the cap, then calls the real
+  dispatcher. Returns *why* it declined, never just `false`.
+* `drainAll(...)` — the same, per org, for the scheduled pass.
+
+**`src/invoices/notify.mjs`** — an invoice that reaches a person.
+
+* `emailInvoice()` renders the editable `INVOICE-SENT-EMAIL` template, writes one
+  `messages` row, stamps `invoices.emailed_at` / `email_message_id`, and drains.
+* **It never throws.** An invoice is a financial record; its existence must not
+  depend on an email succeeding.
+* **Idempotent by the database, not by a flag.** `provider_ref` is
+  `invoice:<id>:<purpose>` and 004's unique index on `(org_id, provider_ref)` is
+  the guarantee. A deliberate resend passes a different purpose.
+* `unemailedInvoices()` / `emailOutstandingInvoices()` — the backlog 119 makes
+  visible for the first time, and a bounded way to work through it.
+
+**`api/messages.mjs`** — `status` (STAFF), and `dispatch` / `settings` /
+`email_invoice` / `email_invoice_backlog` (owner or admin). Putting mail in front
+of real people in bulk is a narrower act than anything a closer does in a day.
+
+**`src/workflows/message-dispatch-sweeper.mjs`** — registered (49 functions), and
+rewritten to call `drainAll()` rather than `dispatchDue()` directly. That is what
+makes the switch and the cap apply to the scheduled pass as well as to the
+button; a sweeper that went straight to the dispatcher would ignore both, and an
+operator who paused sending would find it still sending on the hour.
+
+**Outbound Mail panel on `ops-admin.html`** — the count, the routing, the
+summary, and three buttons: Send what's waiting, Pause, Email unsent invoices.
+
+## 35. Decisions taken without asking, part 4
+
+1. **`emailed_at` is stamped once and never moved.** It is when the client was
+   told, not when we last touched the row — matching `markDelivered()`.
+2. **The backlog is a button, not a schedule.** Mailing a pile of historical
+   invoices has real consequences for real people. Somebody should press it
+   having seen the count.
+3. **`invoice.amount` reads `invoices.amount_due`.** 017 created the column as
+   `amount`; 031 renamed it. Reading the table instead of the migration is how
+   you email a client the word "undefined."
+4. **Unapproved copy still does not go out.** `compliance_passed = false` holds
+   the email, not the invoice.
+5. **A voided invoice cannot be emailed**, and a client with no email address is
+   reported as `no_email` rather than silently skipped.
+6. **The invoice email states an amount and a due date and makes no claim about
+   credit outcomes**, and is editable from the template editor like all other
+   copy. Flagged `COMPLIANCE REVIEW REQUIRED` — fee-timing communication.
+7. **Nothing in this part transmits.** Every byte still leaves through
+   `src/messaging/providers/*` and nowhere else (CLAUDE.md §12).
+
+## 36. A pre-existing test race, found and fixed
+
+The full database run came back **35** failures against a baseline of 34. The
+extra one was `hiring pipeline → "scores cannot be deleted — they are the audit
+trail"`, failing with *Missing expected rejection*.
+
+It was not caused by this work, and it was not a fluke. Both hiring test files
+run `ALTER TABLE application_scores DISABLE TRIGGER …` in their cleanup. That is
+**table-wide DDL, not a session setting**: committed on its own it switches the
+audit-trail guard off *for every other connection* for the length of the cleanup
+— including a concurrently scheduled test asserting that the guard holds. Adding
+two test files changed the scheduling enough to expose it.
+
+Fixed by wrapping each cleanup in a single transaction. The `ALTER` then holds an
+`ACCESS EXCLUSIVE` lock and is invisible until `COMMIT`: a concurrent deleter
+waits, and then meets the re-enabled trigger. Same effect inside the cleanup,
+none outside it.
+
+## 37. Measured, part 4
+
+Run on this branch, against local Postgres 16.13 (port 5433), 98 migrations
+applied to a database created fresh for the run.
+
+| | tests | pass | fail | skipped |
+|---|---|---|---|---|
+| no `DATABASE_URL` | 4491 | 4010 | **0** | 481 |
+| real Postgres | 5307 | 5257 | 34 | 9 |
+
+The 34 are the same failures, **name for name**, as the pristine baseline at
+`fca108c` — diffed, not eyeballed. `npm run lint` clean across 726 files.
+
+New coverage: 24 database-backed tests in `src/messaging/outbox.pg.test.mjs`
+driving the real dispatcher, gate and provider path through the `memory`
+provider, in their own org so they cannot disturb anyone else's routing.
+
+## 38. Still not done
+
+* **The sweeper is registered but idle.** Inngest invokes nothing until
+  `INNGEST_EVENT_KEY` is set, which is the owner's to set (CLAUDE.md §11). Until
+  then the drain is a button.
+* **No real provider is configured.** `message_channel_routing` resolves to
+  `memory` in this environment, so nothing leaves the building. Setting up
+  Mailgun is a credential job, not a code job.
+* **`alert_email` is stored and not yet used.** Nothing shouts when a send fails
+  repeatedly.
+* **No per-journey send settings.** The switch is per company, not per stage of
+  the customer journey. That is the natural next step and it is not built.
+* **`src/mail/` is still deliberately inert** — that is the FCRA prescreen path
+  and is gated on a firm offer of credit, not on this work.

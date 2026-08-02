@@ -1,23 +1,40 @@
-// The message dispatch sweeper — the thing that would call the dispatcher on a
-// schedule, if it were switched on.
+// The message dispatch sweeper — the thing that calls the dispatcher on a
+// schedule.
 //
 // ═══════════════════════════════════════════════════════════════════════════
-// IT IS NOT SWITCHED ON, AND DEFINING IT DID NOT SWITCH IT ON.
+// IT IS NOW REGISTERED. WHAT CHANGED, AND WHY — 2026-08-02
 //
-// This file exports an Inngest function. That is a definition, not a running
-// job. Two separate things stand between it and a real send:
+// This file used to open by explaining at length that it was deliberately NOT in
+// src/workflows/index.mjs, so that outbound sending could not start without the
+// owner's say-so. That reasoning was right for the state of the product it was
+// written in, and it is what shipped: twenty-six workflows queued client email
+// and NOTHING EVER DRAINED IT. Every message this platform ever composed sat in
+// a table, invisibly, forever.
 //
-//   1. It is deliberately NOT in src/workflows/index.mjs. That array is what
-//      netlify/functions/inngest.mjs serves, so a function missing from it is
-//      never registered with Inngest and is never invoked by anything. There is
-//      a test below asserting it stays absent — if someone adds it, that test
-//      fails and says why.
-//   2. INNGEST_EVENT_KEY is unset, and CLAUDE.md §11 names turning it on as one
-//      of the three things to ask the owner about first.
+// The owner's instruction, verbatim: "holy shit, we gotta send out emails.
+// Right? That's kind of like an obvious… it's not like the workflow is something
+// that we turn on… it should be an option, the ability to set it up."
 //
-// So the wiring is written and reviewable, and the switch is a separate,
-// deliberate act by a human. W5 on the cutover board is that act; it is marked
-// blocked on purpose.
+// So the gate moved rather than disappearing. It is no longer "this function is
+// not registered"; it is db/migrations/119_outbound_switch.sql —
+// messaging_settings.outbound_enabled, PER COMPANY, visible in the CRM,
+// changeable by an owner, and attributed to whoever changed it. Every one of
+// those is a property an env var did not have.
+//
+// WHAT STILL PROTECTS AGAINST AN ACCIDENT, all of it unchanged:
+//   * src/messaging/outbox.mjs drain() refuses when the switch is off, and
+//     enforces a per-company daily cap so a looping workflow mails 500 people
+//     and stops rather than 50,000.
+//   * The compliance gate runs on every single message inside dispatch.mjs, in
+//     the order gate → route → send, with no override and no bypass.
+//   * With no provider credentials nothing leaves whatever any flag says. That
+//     is the real control and always was.
+//
+// So this switch is a PAUSE BUTTON, not an ignition key. Registering the
+// function does not itself send anything either: Inngest invokes nothing until
+// INNGEST_EVENT_KEY is set, which remains the owner's to set. Until then the
+// same drain runs from the CRM's Outbox screen and from
+// POST /api/messages { action: "dispatch" }.
 //
 //
 // WHY A SWEEPER AND NOT AN EVENT HANDLER.
@@ -48,7 +65,8 @@
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
-import { dispatchDue, DEFAULT_BATCH } from "../messaging/dispatch.mjs";
+import { DEFAULT_BATCH } from "../messaging/dispatch.mjs";
+import { drainAll } from "../messaging/outbox.mjs";
 
 /** How often a pass would run once this is registered. Every five minutes: the
     quiet-hours window opens on the hour, and a text held overnight should go out
@@ -66,21 +84,39 @@ export const SOURCE_WORKFLOW = "message-dispatch-sweeper";
 export async function sweep(db, options = {}) {
   const { limit = DEFAULT_BATCH, ...rest } = options;
   try {
-    const result = await dispatchDue(db, { ...rest, limit });
+    /* THROUGH outbox.drainAll(), NOT dispatchDue() DIRECTLY. That is what makes
+       the per-company switch and the daily cap apply to the scheduled run as
+       well as to the button — a sweeper that went straight to the dispatcher
+       would ignore both, and an operator who paused sending would find it still
+       sending on the hour. */
+    const result = await drainAll(db, { ...rest, limit });
     return { ok: true, ...result };
   } catch (err) {
     return {
       ok: false,
-      claimed: 0,
-      results: [],
-      counts: {},
+      orgs: 0,
+      dispatched: 0,
+      sent: 0,
+      per: [],
       error: String((err && err.message) || err).slice(0, 300)
     };
   }
 }
 
-/* The scheduled definition. NOT exported from src/workflows/index.mjs, so
-   nothing registers it and nothing runs it. See the header. */
+/* handle — the shape src/journeys/runner/registry.mjs expects of every
+   registered workflow, so that "every registered workflow is callable" stays
+   true rather than this one becoming the exception that softens the rule.
+
+   It has no event trigger (it is a cron), so no journey will ever reach it and
+   it will always appear in the runner's neverFired list. That is the correct
+   outcome for a scheduled job, not a coverage hole. */
+export async function handle({ db: handleDb, step } = {}) {
+  const run = () => sweep(handleDb || db);
+  return step && typeof step.run === "function" ? step.run("sweep", run) : run();
+}
+
+/* The scheduled definition. Registered in src/workflows/index.mjs since
+   2026-08-02 — see the header for what moved and what still guards it. */
 export const messageDispatchSweeper = inngest.createFunction(
   { id: "message-dispatch-sweeper", name: "Message dispatch sweeper" },
   { cron: SWEEP_CRON },

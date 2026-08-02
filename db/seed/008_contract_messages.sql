@@ -74,3 +74,43 @@ BEGIN
 
   RAISE NOTICE 'contract message templates seeded (or already present) for org %', v_org;
 END $$;
+
+-- ---------------------------------------------------------------------------
+-- The invoice email.
+--
+-- Added here rather than in a new seed file because it is the same act: copy
+-- this platform sends that had nowhere to live. `invoices.status = 'sent'` has
+-- existed since 017 and nothing has ever emailed one, so every invoice the
+-- workflows have raised has been silent.
+--
+-- COMPLIANCE REVIEW REQUIRED (CLAUDE.md §7) — fee timing. It states an amount
+-- and a due date, and makes no claim about credit outcomes.
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE
+  v_org uuid;
+BEGIN
+  SELECT id INTO v_org FROM orgs WHERE slug = 'fundhub' LIMIT 1;
+  IF v_org IS NULL THEN RETURN; END IF;
+
+  INSERT INTO message_templates (org_id, template_key, channel, subject, body, compliance_passed)
+  VALUES (
+    v_org,
+    'INVOICE-SENT-EMAIL',
+    'email',
+    'Your invoice from {{invoice.company}} — {{invoice.amount}}',
+    E'Hi {{contact.first_name}},\n\n' ||
+    E'Here is your invoice from {{invoice.company}}.\n\n' ||
+    E'What it is for: {{invoice.kind}}\n' ||
+    E'Amount: {{invoice.amount}}\n' ||
+    E'Due: {{invoice.due}}\n' ||
+    E'Reference: {{invoice.reference}}\n\n' ||
+    E'If you have already paid this, thank you — you can ignore this email.\n\n' ||
+    E'If anything here does not look right, reply to this email and a person ' ||
+    E'will get back to you.',
+    true
+  )
+  ON CONFLICT (org_id, template_key) DO NOTHING;
+
+  RAISE NOTICE 'invoice email template seeded (or already present) for org %', v_org;
+END $$;

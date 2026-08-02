@@ -20,14 +20,17 @@
 // WHY IT DISPATCHES BY ID INSTEAD OF CALLING dispatchDue()
 //
 // dispatchDue(db, { orgId }) claims every message that is due for the org. That
-// is correct for a sweeper on a schedule and WRONG here: pressing "send this
-// contract" would also flush anything else sitting in the queue, which is a
-// surprise with an unbounded blast radius and precisely what CLAUDE.md §11
-// reserves to the owner ("that switch makes 47 workflow functions go live").
+// is correct for the scheduled sweep and surprising here: pressing "send this
+// contract" would also flush whatever else happened to be waiting. Sending a
+// contract sends THAT CONTRACT — the rows this module just wrote, claimed by id
+// and dispatched one at a time.
 //
-// Sending a contract sends THAT CONTRACT. The rows this module just wrote are
-// claimed by id and dispatched one at a time. The global switch stays off and
-// stays the owner's to throw.
+// IT STILL OBEYS THE SAME PAUSE BUTTON. deliverQueued() reads
+// messaging_settings.outbound_enabled (119) and refuses when a company has
+// paused its outbound mail. A switch with an exception in it is not a switch,
+// and an operator who pauses sending must not find contracts still going out.
+// The rows simply stay queued, and the scheduled sweep picks them up when
+// sending is turned back on.
 //
 // ═══════════════════════════════════════════════════════════════════════════
 // IT DEGRADES, IT NEVER FAILS THE SEND
@@ -47,6 +50,7 @@
 
 import { renderTemplate } from "../lib/render-template.mjs";
 import { dispatchOne } from "../messaging/dispatch.mjs";
+import { settingsFor } from "../messaging/outbox.mjs";
 import { createTask } from "../lib/create-task.mjs";
 
 /** The two pieces of copy this feature sends. Seeded in db/seed/008. */
@@ -168,6 +172,17 @@ export async function deliverQueued(db, ids = [], options = {}) {
   const summary = { sent: 0, blocked: 0, failed: 0, outcomes: [] };
   if (!ids || !ids.length) return summary;
 
+  /* THE SAME PAUSE BUTTON EVERYTHING ELSE OBEYS. An operator who has paused
+     outbound mail must not find contracts still going out — a switch with an
+     exception in it is not a switch. The rows stay queued and the scheduled
+     sweep picks them up when sending is turned back on. */
+  if (options.orgId) {
+    const settings = await settingsFor(db, options.orgId);
+    if (!settings.outbound_enabled) {
+      return { ...summary, paused: true, outcomes: ids.map((id) => ({ id, outcome: "paused" })) };
+    }
+  }
+
   for (const id of ids) {
     try {
       const claimed = (await db.query(
@@ -198,7 +213,9 @@ export async function deliverQueued(db, ids = [], options = {}) {
 /** queue + deliver, as one call. What send() and the chaser both use. */
 export async function notifySigners(db, args = {}) {
   const queued = await queueSignerMessages(db, args);
-  const delivered = await deliverQueued(db, queued.queued, args.dispatchOptions || {});
+  const delivered = await deliverQueued(db, queued.queued, {
+    ...(args.dispatchOptions || {}), orgId: args.orgId
+  });
   return { ...queued, delivery: delivered };
 }
 

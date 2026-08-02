@@ -193,32 +193,40 @@ describe("hiring read endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
     } finally { client.release(); }
   }
 
+  /* One transaction, for the same reason as src/hiring/hiring.pg.test.mjs:
+     `ALTER TABLE … DISABLE TRIGGER` is table-wide DDL. Committed on its own it
+     turns the audit-trail guards off for every other connection for the length of
+     the cleanup, and a concurrent test asserting "a score cannot be deleted"
+     fails through no fault of its own. Inside a transaction the ALTER holds an
+     ACCESS EXCLUSIVE lock and is invisible until COMMIT. */
   async function cleanup() {
-    const ids = (await db.query(
-      `SELECT id FROM candidates WHERE email LIKE $1`, [`${TAG}-%`])).rows.map((r) => r.id);
-    for (const [t, trg] of [["application_scores", "trg_application_scores_no_delete"],
-                            ["hiring_decisions", "trg_hiring_decisions_no_delete"]]) {
-      await db.query(`ALTER TABLE ${t} DISABLE TRIGGER ${trg}`);
-    }
-    await db.query(`ALTER TABLE candidate_applications DISABLE TRIGGER trg_application_terminal`);
-    if (ids.length) {
-      const apps = (await db.query(
-        `SELECT id FROM candidate_applications WHERE candidate_id = ANY($1)`, [ids])).rows.map((r) => r.id);
-      if (apps.length) {
-        await db.query(`DELETE FROM application_scores WHERE application_id = ANY($1)`, [apps]);
-        await db.query(`DELETE FROM hiring_decisions WHERE application_id = ANY($1)`, [apps]);
-        await db.query(`DELETE FROM candidate_applications WHERE id = ANY($1)`, [apps]);
+    await withTx(async (tx) => {
+      const ids = (await tx.query(
+        `SELECT id FROM candidates WHERE email LIKE $1`, [`${TAG}-%`])).rows.map((r) => r.id);
+      for (const [t, trg] of [["application_scores", "trg_application_scores_no_delete"],
+                              ["hiring_decisions", "trg_hiring_decisions_no_delete"]]) {
+        await tx.query(`ALTER TABLE ${t} DISABLE TRIGGER ${trg}`);
       }
-      await db.query(`DELETE FROM candidates WHERE id = ANY($1)`, [ids]);
-    }
-    await db.query(`DELETE FROM hiring_job_postings WHERE external_id = 'urn:li:job:1'`);
-    await db.query(
-      `DELETE FROM tasks WHERE source_workflow IN ('hiring-candidate-feedback','hiring-bench-monitor')`);
-    await db.query(`ALTER TABLE candidate_applications ENABLE TRIGGER trg_application_terminal`);
-    for (const [t, trg] of [["application_scores", "trg_application_scores_no_delete"],
-                            ["hiring_decisions", "trg_hiring_decisions_no_delete"]]) {
-      await db.query(`ALTER TABLE ${t} ENABLE TRIGGER ${trg}`);
-    }
-    await db.query(`DELETE FROM staff WHERE email LIKE $1`, [`${TAG}-%`]);
+      await tx.query(`ALTER TABLE candidate_applications DISABLE TRIGGER trg_application_terminal`);
+      if (ids.length) {
+        const apps = (await tx.query(
+          `SELECT id FROM candidate_applications WHERE candidate_id = ANY($1)`, [ids])).rows.map((r) => r.id);
+        if (apps.length) {
+          await tx.query(`DELETE FROM application_scores WHERE application_id = ANY($1)`, [apps]);
+          await tx.query(`DELETE FROM hiring_decisions WHERE application_id = ANY($1)`, [apps]);
+          await tx.query(`DELETE FROM candidate_applications WHERE id = ANY($1)`, [apps]);
+        }
+        await tx.query(`DELETE FROM candidates WHERE id = ANY($1)`, [ids]);
+      }
+      await tx.query(`DELETE FROM hiring_job_postings WHERE external_id = 'urn:li:job:1'`);
+      await tx.query(
+        `DELETE FROM tasks WHERE source_workflow IN ('hiring-candidate-feedback','hiring-bench-monitor')`);
+      await tx.query(`ALTER TABLE candidate_applications ENABLE TRIGGER trg_application_terminal`);
+      for (const [t, trg] of [["application_scores", "trg_application_scores_no_delete"],
+                              ["hiring_decisions", "trg_hiring_decisions_no_delete"]]) {
+        await tx.query(`ALTER TABLE ${t} ENABLE TRIGGER ${trg}`);
+      }
+      await tx.query(`DELETE FROM staff WHERE email LIKE $1`, [`${TAG}-%`]);
+    });
   }
 });

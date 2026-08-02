@@ -107,6 +107,7 @@ import documentById from "../../api/documents/[id].mjs";
 import contracts from "../../api/contracts.mjs";
 import readContracts from "../../api/read/contracts.mjs";
 import contractsSign from "../../api/contracts/sign.mjs";
+import messages from "../../api/messages.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -451,7 +452,33 @@ export const ROUTES = {
   // working around it.
   "contracts": contracts,
   "read/contracts": readContracts,
-  "contracts/sign": contractsSign
+  "contracts/sign": contractsSign,
+
+  // ── The outbound queue ─────────────────────────────────────────────────────
+  //
+  // THE ROUTE THAT MAKES THIS PLATFORM ABLE TO EMAIL ANYBODY. Twenty-six
+  // workflows call sendTemplated(); every one writes a queued `messages` row;
+  // and until this endpoint existed nothing ever drained that queue. The
+  // dispatcher's own header records it: "dispatchDue() runs when something
+  // calls it, and today nothing does." Every client email this platform ever
+  // composed was sitting in a table, invisibly.
+  //
+  // `status` is ROLE_SETS.STAFF — whether mail is going out is operational
+  // visibility, the same class as read/workflows. Everything else is
+  // OWNER/ADMIN and the split lives inside the handler: draining the queue,
+  // pausing sending and mailing an invoice backlog all put mail in front of
+  // real people in bulk.
+  //
+  // THE SWITCH IS A ROW, NOT AN ENV VAR. messaging_settings.outbound_enabled
+  // (119) is per company, visible in the CRM and attributed to whoever changed
+  // it. src/messaging/outbox.mjs enforces it and a daily cap on every pass,
+  // scheduled or manual, and the compliance gate still runs on every single
+  // message underneath both. With no provider credentials nothing leaves
+  // whatever any of it says — that is the real control and always was.
+  //
+  // Nothing behind this route transmits directly: outbound fetch lives in
+  // src/messaging/providers/* and nowhere else (CLAUDE.md §12).
+  "messages": messages
 
   /* NOT ROUTED, ON PURPOSE — see ALLOWED_UNROUTED in src/http/routes.test.mjs
      for the current list and the reason attached to each entry. That list is
