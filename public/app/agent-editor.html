@@ -235,13 +235,17 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 
     <div class="content">
       <div class="stats">
-        <div class="stat"><div class="eyebrow">AE-00 <span class="sep">/</span> AGENTS</div><div class="sv" id="kAll">14</div><div class="sd">9 client-facing · 5 ops</div></div>
+        <div class="stat"><div class="eyebrow">AE-00 <span class="sep">/</span> AGENTS</div><div class="sv" id="kAll">—</div><div class="sd" id="kAllSub">loading…</div></div>
         <div class="stat"><div class="eyebrow">AE-00 <span class="sep">/</span> LIVE</div><div class="sv" id="kLive">0</div><div class="sd">acting on real clients</div></div>
         <div class="stat"><div class="eyebrow">AE-00 <span class="sep">/</span> SHADOW</div><div class="sv" id="kShadow">0</div><div class="sd">logging, not sending</div></div>
         <div class="stat"><div class="eyebrow">AE-00 <span class="sep">/</span> BREACHES 7D</div><div class="sv" id="kBreach">0</div><div class="sd">guardrail blocks</div></div>
       </div>
 
-      <div class="layout" style="margin-top:14px">
+      <div class="card" id="emptyState" style="display:none;margin-top:14px">
+        <div class="card-bd" style="text-align:center;color:var(--gray);padding:40px 16px" id="emptyStateMsg">No agents found.</div>
+      </div>
+
+      <div class="layout" style="margin-top:14px" id="layoutRoot">
         <div class="alist" id="alist"></div>
 
         <div>
@@ -377,94 +381,27 @@ function A(o){
   },o);
 }
 
-var AGENTS=[
-  A({id:'AG-04',name:'Setter Josh',chan:'SMS',owner:'Sarah Whitfield',mode:'live',runs:1284,breaches:0,
-    triggers:['entry.captured','survey.submitted'],
-    prompt:'You are Josh, a setter at Fundhub. A lead just came in from the funnel.\n\nYour only job is to book them onto a closer\'s calendar. Confirm the business name and how much they are trying to access, then offer two specific time slots.\n\nDo not explain the program. Do not quote a price. If they ask what it costs, say the $32 assessment is the only thing they pay to start and move back to booking.',
-    guard:'BLOCK: any funding amount, any interest rate, any approval language\nBLOCK: "guaranteed", "pre-approved", "you qualify"\nBLOCK: discussing competitors by name\nSTOP + HAND OFF: attorney, lawsuit, CFPB, "sue"\nMAX 3 outbound per client per day\nQUIET HOURS 21:00-08:00 client local',
-    escWhen:'lead asks for a refund or names a lawyer', book:true, msgcap:3,
-    log:[{t:'14:22:07',c:'Amara Nwosu',o:'Hi Amara — Josh at Fundhub. Saw you came through on the funding assessment for Nwosu Interiors. Do you have 15 minutes Thursday at 10:00 or Friday at 2:00?'},
-         {t:'13:58:41',c:'Carlos Bettencourt',o:'Carlos — got your assessment for Bettencourt Freight. Two slots open tomorrow: 11:30 or 4:30. Which works?'},
-         {t:'11:04:19',c:'Priya Nair',o:'BLOCKED by guardrail — draft contained "you\'re pre-approved for". Rewritten and sent without the claim.'}]}),
-  A({id:'AG-01',name:'Agent 1 Lead Follow-up',chan:'SMS',owner:'Sarah Whitfield',mode:'live',runs:963,breaches:1,
-    triggers:['entry.captured','booking.created','message.inbound'],
-    prompt:'Follow up with a lead who booked but has not shown, or who went quiet after the assessment.\n\nOne message, short, no pressure. Reference the specific business by name. Offer to move the time rather than asking if they are still interested.',
-    guard:'BLOCK: funding amounts, approval language\nBLOCK: more than one follow-up in 24h\nSTOP + HAND OFF: attorney, refund, "stop texting"\nQUIET HOURS 21:00-08:00 client local',
-    escWhen:'client says stop', msgcap:1,
-    log:[{t:'09:31:55',c:'Elena Vasquez',o:'Elena — we had you down for 11:00 today and I don\'t want to leave you hanging. Want me to move it to Thursday?'}]}),
-  A({id:'AG-02',name:'Agent 2 Billing',chan:'Email',owner:'Chris Stanbridge',mode:'live',runs:412,breaches:0,
-    triggers:['payment.failed','deposit.paid','sale.closed'],
-    prompt:'Handle a billing event. On a failed payment, send one clear email naming the product and the amount, with a single link to update the card. On a successful deposit or sale, send the receipt and what happens next.\n\nNever imply service has stopped. Never threaten collections.',
-    guard:'BLOCK: collections language, "final notice", legal threats\nBLOCK: quoting a refund policy — hand to Chris\nSTOP + HAND OFF: chargeback, dispute, attorney\nMAX 2 per client per day', pay:true,
-    esc:'Chris Stanbridge · Owner', escWhen:'chargeback or dispute mentioned',
-    log:[{t:'08:12:33',c:'Ray Pulaski',o:'Subject: Your Credit Optimization Bundle payment did not go through — card ending 4471 was declined. One link to update it, no action needed beyond that.'}]}),
-  A({id:'AG-03',name:'Agent 3 Nurture',chan:'SMS',owner:'Sarah Whitfield',mode:'live',runs:2810,breaches:0,
-    triggers:['decision.rendered','analysis.completed'],
-    prompt:'The client got a decision but has not moved. Send a low-pressure nurture touch tied to what their report actually said — the specific thing holding them back, not a generic reminder.\n\nOne message. End with a question they can answer in four words.',
-    guard:'BLOCK: funding amounts, score promises\nBLOCK: more than 2 touches per week\nSTOP + HAND OFF: attorney, refund, complaint\nQUIET HOURS 21:00-08:00 client local', msgcap:1,
-    log:[{t:'16:40:02',c:'Tabitha Nguyen',o:'Tabitha — the one thing sitting between you and the full stack is that 46% utilization. It moves faster than you\'d think. Want the 60-day version?'}]}),
-  A({id:'AG-05',name:'Agent 5 Onboarding',chan:'Email',owner:'Nina Castellano',mode:'live',runs:188,breaches:0,
-    triggers:['sale.closed','deposit.paid'],
-    prompt:'A client just signed. Send the onboarding sequence: what the first 14 days look like, what you need from them, and who their advisor is by name.\n\nBe concrete about dates. No marketing language — they already bought.',
-    guard:'BLOCK: new offers or upsells during onboarding\nBLOCK: funding timelines stated as promises\nSTOP + HAND OFF: cancellation request', contract:true,
-    esc:'Nina Castellano · Closer',
-    log:[{t:'12:45:18',c:'Devon Marsh',o:'Subject: Welcome to Fundhub, Devon — your first 14 days. Marcus Webb is your funding advisor. Docs needed by Wednesday: last 3 months business bank statements, EIN letter.'}]}),
-  A({id:'AG-06',name:'Document Check',chan:'Internal',cls:'Client-facing',owner:'Marcus Webb',mode:'live',runs:527,breaches:0,
-    triggers:['sale.closed','mail.response'],
-    prompt:'Check every document a client uploaded against what the file actually needs. Name what is missing, what is expired, and what is illegible. Output a checklist, not prose.',
-    guard:'BLOCK: contacting the client directly — this agent reports internally only\nBLOCK: approving a document as valid; it flags, a human clears',
-    esc:'Marcus Webb · Funding Advisor',
-    log:[{t:'15:22:44',c:'Priya Nair',o:'2 of 5 docs incomplete. Bank statement for May is page 1 of 4 only. EIN letter is a photo at an angle, OCR failed. Driver license expires in 11 days.'}]}),
-  A({id:'AG-07',name:'Recon',chan:'Internal',cls:'Client-facing',owner:'Chris Stanbridge',mode:'shadow',runs:64,breaches:0,
-    triggers:['entry.captured','decision.rendered'],
-    prompt:'Before a closer takes the call, assemble what is knowable about this business: entity age from Secretary of State, industry risk band, whether the address is residential or commercial, and any obvious mismatch against what they told us.\n\nFlag contradictions. Do not speculate.',
-    guard:'BLOCK: pulling anything requiring the client\'s authorization\nBLOCK: writing to the client record — read and report only\nBLOCK: any consumer-report data source',
-    esc:'Chris Stanbridge · Owner',
-    log:[{t:'10:17:30',c:'Victor Manzano',o:'MISMATCH — stated 3 years in business, Nevada SoS shows LLC registered 11 weeks ago. Address is a residential unit in a 40-unit building. Recommend manual review before any pull.'},
-         {t:'09:55:12',c:'Dwayne Okafor',o:'Clean. Texas SoS confirms LLC active since 2024-12, commercial address, DOT number active and matches stated trucking operation.'}]}),
-  A({id:'AG-08',name:'Context Fetcher',chan:'Internal',cls:'Client-facing',owner:'Chris Stanbridge',mode:'live',runs:8940,breaches:0,
-    triggers:['entry.captured','survey.submitted','message.inbound','call.completed','decision.rendered'],
-    prompt:'Assemble the client state every other agent reads before it runs: journey flags, last 10 messages, outcome tier, open tasks, payment history, document status.\n\nReturn structured data. Never prose, never an opinion.',
-    guard:'BLOCK: any outbound channel — this agent never talks to a client\nBLOCK: writing state; read-only against Postgres',
-    esc:'Chris Stanbridge · Owner',
-    log:[{t:'16:41:09',c:'—',o:'8,940 assemblies today. p50 34ms, p99 210ms. No misses.'}]}),
-  A({id:'AG-09',name:'Inquiry Removal AI',chan:'Internal',cls:'Client-facing',owner:'Alvin Torres',mode:'live',runs:31,breaches:2,
-    triggers:['analysis.completed','decision.rendered'],
-    prompt:'Read the credit report and identify every hard inquiry that is disputable: unauthorized, duplicate within 30 days, or beyond the reporting window.\n\nFor each, draft the Metro 2 dispute language and name the bureau. Group by bureau so they mail as one packet.',
-    guard:'BLOCK: disputing an inquiry the client authorized\nBLOCK: mailing anything — Alvin reviews and sends\nBLOCK: promising a removal timeline or outcome',
-    esc:'Alvin Torres · Inquiry Remover',
-    log:[{t:'14:03:21',c:'Ray Pulaski',o:'BLOCKED by guardrail — draft included "these will be removed within 30 days". Removal timelines are not promisable. Held for Alvin.'},
-         {t:'13:47:55',c:'Ray Pulaski',o:'9 inquiries flagged: 4 duplicate (same lender, 11 days apart), 3 beyond window, 2 client says unauthorized. Drafted per bureau.'},
-         {t:'11:20:08',c:'Tabitha Nguyen',o:'BLOCKED by guardrail — attempted to dispute an inquiry the client authorized on 2026-03-14. Held.'}]}),
-  A({id:'OP-01',name:'Heartbeat',chan:'Internal',cls:'Ops',owner:'Chris Stanbridge',mode:'live',runs:20160,breaches:0,
-    triggers:[],prompt:'Every 60 seconds, confirm each adapter has received traffic inside its expected window and that the bus is draining. Page on a gap, not on a single miss.',
-    guard:'BLOCK: any client-facing channel\nBLOCK: restarting a service — it reports, Fixer acts',
-    esc:'Chris Stanbridge · Owner',
-    log:[{t:'16:42:00',c:'—',o:'All 7 adapters green. Bus depth 0. Last Commas webhook 4m ago, inside window.'}]}),
-  A({id:'OP-02',name:'Fixer',chan:'Internal',cls:'Ops',owner:'Chris Stanbridge',mode:'shadow',runs:12,breaches:0,
-    triggers:['payment.failed'],
-    prompt:'When Heartbeat reports a stuck adapter or a failed handler, attempt the known remediation: replay the failed events, or re-register the handler. Report what you did and whether it worked.',
-    guard:'BLOCK: any schema change or migration\nBLOCK: deleting or mutating stored events — replay only\nBLOCK: more than 3 remediation attempts per hour\nSTOP: if the same failure recurs twice, page Chris instead',
-    esc:'Chris Stanbridge · Owner',
-    log:[{t:'03:14:22',c:'—',o:'WOULD HAVE: replayed 4 mail.response events stuck behind a handler exception at 03:09. Shadow — no action taken.'}]}),
-  A({id:'OP-03',name:'Daily Brief',chan:'Email',cls:'Ops',owner:'Chris Stanbridge',mode:'live',runs:214,breaches:0,
-    triggers:[],prompt:'At 6:30am, send Chris one email: yesterday\'s closes and dollars, what is stuck, which agents breached a guardrail, and the single thing most worth his attention today.\n\nLead with the number. No preamble.',
-    guard:'BLOCK: sending to anyone but the owner\nBLOCK: including client PII in the body',
-    esc:'Chris Stanbridge · Owner',
-    log:[{t:'06:30:00',c:'—',o:'Sent. 2 closes / $6,000 collected. Stuck: Ray Pulaski repair round 2 waiting 9 days on Alvin. Breaches: Inquiry Removal AI ×2.'}]}),
-  A({id:'OP-04',name:'Compliance Gate',chan:'Internal',cls:'Ops',owner:'Chris Stanbridge',mode:'live',runs:1673,breaches:0,
-    triggers:['decision.rendered','analysis.completed'],
-    prompt:'Every FRAUD_HOLD and every soft-pull authorization passes through here. Confirm the authorization exists, is signed, is inside its validity window, and matches the identity on the pull.\n\nFail closed. If anything is missing, block and say exactly what.',
-    guard:'BLOCK: releasing a hold without an owner signature\nBLOCK: any client-facing channel\nFAIL CLOSED on missing or expired authorization',
-    esc:'Chris Stanbridge · Owner',
-    log:[{t:'10:18:02',c:'Victor Manzano',o:'HELD. Soft-pull authorization signature does not match applicant identity. No pull executed. Routed FRAUD_HOLD to Chris.'}]}),
-  A({id:'OP-05',name:'Data + Models',chan:'Internal',cls:'Ops',owner:'Chris Stanbridge',mode:'shadow',runs:47,breaches:0,
-    triggers:['decision.rendered'],
-    prompt:'Track how the outcome ruleset performs against what actually happened. For every decision rendered 90+ days ago, compare the tier to the real result — funded, repaired then funded, or churned.\n\nReport where the gates are miscalibrated. Propose threshold changes with the sample size behind them.',
-    guard:'BLOCK: changing a gate threshold — it proposes, Chris approves\nBLOCK: client-facing channels\nBLOCK: reporting on fewer than 30 samples',
-    esc:'Chris Stanbridge · Owner',
-    log:[{t:'02:00:14',c:'—',o:'WOULD PROPOSE: G-05 utilization ceiling 40% → 45%. 61 clients between 40-45% util funded at 88% vs 91% for sub-40. Gate is costing ~6 approvals/quarter.'}]})
-];
+// AGENTS is populated from /api/read/agents by loadAgents() below. The
+// endpoint does not return prompt/guardrails/triggers/log (see api/read/
+// agents.mjs — those are operational config, not screen data, and 037 ships
+// them empty), so a row loaded from the registry starts with A()'s blank
+// defaults for those fields; promptMissing/guardMissing carry whether the
+// registry has real values stored.
+var AGENTS=[];
+
+function agentFromRow(real){
+  return A({
+    id: real.code,
+    name: real.name || real.code,
+    chan: real.channel || 'Internal',
+    cls: real.agent_class === 'ops' ? 'Ops' : 'Client-facing',
+    owner: real.owner_label || '—',
+    mode: real.status === 'live' ? 'live' : real.status === 'shadow' ? 'shadow' : 'draft',
+    runtime: real.runtime || null,
+    promptMissing: !!real.prompt_missing,
+    guardMissing: !!real.guardrails_missing
+  });
+}
 
 var cur=null, dirty=false;
 
@@ -558,14 +495,14 @@ function renderGate(){
 function renderStats(){
   document.getElementById('kAll').textContent=AGENTS.length;
   var lv=AGENTS.filter(function(a){return a.mode==='live'}).length;
-  /* Count shadow as shadow. This was AGENTS.length - lv, i.e. "everything not
-     live", which is only correct while nothing is in draft — true of the sample
-     roster (11 live, 5 shadow, 0 draft) and false the moment the real 037
-     registry loads, where most agents are drafts. The tile reads "logging, not
-     sending", so counting a draft there claims an agent is running when it is
-     not, and contradicted both the banner and the list on the same screen. */
+  /* Count shadow as shadow, not "everything not live" — a draft counted there
+     would claim an agent is running when it is not, and would contradict the
+     banner and the list on the same screen. */
   var sh=AGENTS.filter(function(a){return a.mode==='shadow'}).length;
   var dr=AGENTS.length-lv-sh;
+  var cf=AGENTS.filter(function(a){return a.cls==='Client-facing'}).length;
+  document.getElementById('kAllSub').textContent=
+    AGENTS.length ? (cf+' client-facing · '+(AGENTS.length-cf)+' ops') : 'registry is empty';
   document.getElementById('kLive').textContent=lv;
   document.getElementById('kShadow').textContent=sh;
   document.getElementById('kBreach').textContent=AGENTS.reduce(function(a,x){return a+x.breaches},0);
@@ -655,57 +592,57 @@ document.getElementById('revertBtn').addEventListener('click',function(){select(
 document.getElementById('newBtn').addEventListener('click',function(){
   var n=AGENTS.filter(function(a){return a.cls==='Client-facing'}).length+1;
   var a=A({id:'AG-'+String(n).padStart(2,'0')+'x',name:'New agent',mode:'shadow',runs:0,breaches:0,log:[]});
-  AGENTS.push(a); select(a.id);
+  AGENTS.push(a); hideEmpty(); select(a.id);
   /* a blank agent has nothing to read yet — open every section so it can be built */
   document.querySelectorAll('details.card').forEach(function(d){d.open=true});
   document.getElementById('a_name').focus();
 });
 
-select('AG-04');
+function showEmpty(msg){
+  document.getElementById('layoutRoot').style.display='none';
+  document.getElementById('emptyStateMsg').textContent=msg;
+  document.getElementById('emptyState').style.display='';
+}
+function hideEmpty(){
+  document.getElementById('layoutRoot').style.display='';
+  document.getElementById('emptyState').style.display='none';
+}
 </script>
 <script src="data.js"></script>
 <script>
 
-/* Agent Editor — the list's mode and status come from the 037 registry.
-
-   The screen owns AGENTS as its working model, so this OVERLAYS the real status
-   onto the matching entries by code and re-renders through the screen's own
-   renderList(), rather than replacing the model. That keeps every interaction —
-   selection, editing, the guardrail panel — working exactly as before.
-
-   Prompts and guardrails are NOT overlaid: /api/read/agents does not return them
-   (they are operational config, and 037 ships them empty). The screen's sample
-   prompt text stays, and the banner says which agents have no real definition
-   stored, so the gap is visible rather than looking configured. */
+/* Agent Editor's list is the registry, full stop — no sample agents padded
+   in alongside it. AGENTS starts empty (see agentFromRow() above) and is
+   populated only from what /api/read/agents actually returns; a registry
+   with two rows shows two rows, and a registry with zero rows shows the
+   empty state, not built-in sample markup. */
 (function () {
   "use strict";
   if (typeof AGENTS === "undefined" || typeof renderList !== "function") return;
 
-  FHData.wire(FHData.read("agents", { limit: 200 }), "agent registry", function (data) {
-    var rows = data.items || [];
-    if (!rows.length) return null;
-    var byCode = {};
-    rows.forEach(function (a) { byCode[a.code] = a; });
-
-    var matched = 0;
-    AGENTS.forEach(function (a) {
-      var real = byCode[a.id];
-      if (!real) return;
-      a.mode = real.status === "live" ? "live"
-             : real.status === "shadow" ? "shadow" : "draft";
-      a.cls = real.agent_class === "ops" ? "Ops" : "Client-facing";
-      a.runtime = real.runtime || null;
-      matched++;
-    });
-    if (!matched) return null;
-    try { renderList(); } catch (e) { return null; }
-
-    var live = rows.filter(function (a) { return a.status === "live"; }).length;
-    var undefined_ = rows.filter(function (a) {
-      return (a.status === "live" || a.status === "shadow") &&
-             (a.prompt_missing || a.guardrails_missing); }).length;
-    return "live registry · " + matched + " agents · " + live + " live" +
-      (undefined_ ? " · " + undefined_ + " running with no stored prompt/guardrails" : "");
+  FHData.read("agents", { limit: 200 }).then(function (res) {
+    if (res && res.ok) {
+      var rows = (res.data && res.data.items) || [];
+      AGENTS = rows.map(agentFromRow);
+      if (!AGENTS.length) {
+        showEmpty("No agents in the registry yet.");
+        FHData.banner("sample", "no agent registry rows yet", "agents");
+      } else {
+        hideEmpty();
+        select(AGENTS[0].id);
+        var live = AGENTS.filter(function (a) { return a.mode === "live"; }).length;
+        var undefined_ = AGENTS.filter(function (a) {
+          return (a.mode === "live" || a.mode === "shadow") &&
+                 (a.promptMissing || a.guardMissing); }).length;
+        FHData.banner("real", AGENTS.length + " agents · " + live + " live" +
+          (undefined_ ? " · " + undefined_ + " running with no stored prompt/guardrails" : ""), "agents");
+      }
+    } else {
+      AGENTS = [];
+      showEmpty("Could not load the agent registry.");
+      FHData.explain(res, "agents");
+    }
+    renderStats();
   });
 })();
 </script>
