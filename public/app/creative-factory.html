@@ -926,10 +926,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </table>
         </div>
         <div class="cap">
-          <b>Generate is live.</b> <code>POST /api/creative/generate</code> enqueues a
-          <code>generation_jobs</code> row via <code>enqueue()</code>. Provider credentials
-          (<code>CREATIVE_*</code> env) must be set for assets to actually render — otherwise
-          the job stays queued. Use the form below.
+          <b>Generate + run are live.</b> <code>POST /api/creative/generate</code> enqueues;
+          <code>POST /api/creative/run</code> (and the <code>creative-job-runner</code> cron every 2 minutes)
+          claim and run jobs. Provider credentials (<code>CREATIVE_*</code>) must be set for assets
+          to render — otherwise the job fails or requeues with a clear error.
         </div>
         <div class="card-bd" style="padding:14px 16px;border-top:1px solid var(--line)">
           <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:end">
@@ -943,19 +943,29 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
               <input id="genIdem" placeholder="unique-key-per-batch" style="width:180px">
             </div>
             <button class="btn dark mono" type="button" id="genBtn">Enqueue generation</button>
+            <button class="btn mono" type="button" id="runJobsBtn">Run queued jobs now</button>
             <span class="hint mono" id="genMsg" style="font-size:10.5px;color:var(--gray2)"></span>
           </div>
         </div>
         <div class="cap">
-          <b>Still no archive / approve / reject UI</b> on this screen — those stay in
-          docs/STILL-MISSING.md. Reads for kits/jobs/library remain as wired.
+          <b>Approve / Reject / Archive</b> — expand a row in the review queue (CF-06) or use asset
+          id below. Writes <code>POST /api/creative/actions</code>.
+        </div>
+        <div class="card-bd" style="padding:14px 16px;border-top:1px solid var(--line)">
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:end">
+            <div class="selwrap" style="min-width:260px"><label for="actAsset">asset_id</label>
+              <input id="actAsset" class="mono" placeholder="uuid from library / approvals" style="width:260px">
+            </div>
+            <button class="btn mono" type="button" data-cact="approve">Approve</button>
+            <button class="btn mono" type="button" data-cact="reject">Reject</button>
+            <button class="btn mono" type="button" data-cact="archive">Archive</button>
+            <span class="hint mono" id="actMsg" style="font-size:10.5px;color:var(--gray2)"></span>
+          </div>
         </div>
         <div class="cap">
-          <b>Nothing hard-deletes and nothing archives.</b> <code>fundhub_no_delete()</code> guards
-          <code>creative_assets</code>, <code>brand_kit_sources</code>,
-          <code>compliance_screenings</code> and <code>creative_usage_events</code> — "rows are not
-          deletable — archive instead" — but no code path sets <code>archived_at</code> either. The
-          <code>?include_archived=1</code> filter is real; on a real database it changes nothing.
+          <b>Archive sets <code>archived_at</code></b> — library <code>?include_archived=1</code> then
+          includes those rows. Approve sets <code>compliance_state='approved'</code>; reject sets
+          <code>blocked</code> with a reason.
         </div>
         <div class="cap">
           <b>No human names.</b> <code>requested_by</code>, <code>approved_by</code> and
@@ -2977,9 +2987,68 @@ document.getElementById('genBtn').addEventListener('click', function () {
         return;
       }
       msg.textContent = (res.created ? 'Created' : 'Deduped') + ' job ' +
-        ((res.job && res.job.id) || '') + '. ' + (res.note || '');
+        ((res.job && res.job.id) || '') + '. Runner cron picks it up, or click Run queued jobs now.';
       if (typeof wireCreative === 'function') wireCreative();
     });
+});
+
+function cfPartnerId() {
+  var partnerId = null;
+  try {
+    if (typeof PARTNERS !== 'undefined' && typeof S !== 'undefined' && PARTNERS[S.partner]) {
+      partnerId = PARTNERS[S.partner].id;
+    }
+  } catch (e) {}
+  if (!partnerId && window.FHData && FHData.param) partnerId = FHData.param('partner_id');
+  if (!partnerId) {
+    try { partnerId = new URL(location.href).searchParams.get('partner_id'); } catch (e) {}
+  }
+  return partnerId;
+}
+function cfAuthHeaders() {
+  var t = '';
+  try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
+  var h = { accept: 'application/json', 'content-type': 'application/json' };
+  if (t && t !== 'demo') h.authorization = 'Bearer ' + t;
+  return h;
+}
+document.getElementById('runJobsBtn').addEventListener('click', function () {
+  var msg = document.getElementById('genMsg');
+  var partnerId = cfPartnerId();
+  if (!partnerId) { msg.textContent = 'Need partner_id.'; return; }
+  msg.textContent = 'Running queued jobs…';
+  fetch('/api/creative/run', {
+    method: 'POST',
+    headers: cfAuthHeaders(),
+    body: JSON.stringify({ partner_id: partnerId, max_jobs: 3 })
+  }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+    .then(function (res) {
+      if (!res.ok) { msg.textContent = 'Run failed: ' + (res.message || res.error || 'error'); return; }
+      msg.textContent = 'Ran ' + (res.ran || 0) + ' job(s).' + (res.note ? ' ' + res.note : '');
+      if (typeof wireCreative === 'function') wireCreative();
+    });
+});
+document.querySelectorAll('[data-cact]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var msg = document.getElementById('actMsg');
+    var partnerId = cfPartnerId();
+    var assetId = (document.getElementById('actAsset').value || '').trim();
+    if (!partnerId) { msg.textContent = 'Need partner_id.'; return; }
+    if (!assetId) { msg.textContent = 'asset_id required.'; return; }
+    var action = btn.getAttribute('data-cact');
+    msg.textContent = action + '…';
+    fetch('/api/creative/actions', {
+      method: 'POST',
+      headers: cfAuthHeaders(),
+      body: JSON.stringify({ partner_id: partnerId, asset_id: assetId, action: action })
+    }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .then(function (res) {
+        if (!res.ok) { msg.textContent = 'Failed: ' + (res.message || res.error || 'error'); return; }
+        msg.textContent = action + ' ok · state=' + ((res.asset && res.asset.compliance_state) || '') +
+          (res.asset && res.asset.archived_at ? ' · archived' : '');
+        if (typeof wireCreative === 'function') wireCreative();
+      });
+  });
 });
 </script>
 </body>

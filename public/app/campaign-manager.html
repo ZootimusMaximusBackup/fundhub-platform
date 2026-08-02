@@ -1951,6 +1951,18 @@ function renderDrawerBody(){
   host.innerHTML =
     '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">CM-05.1 <span class="sep">/</span> HEADER</div>' +
       '<div class="kv">' + kv.map(function(p){ return '<div><div class="k">'+esc(p[0])+'</div><div class="v">'+p[1]+'</div></div>'; }).join('') + '</div>' +
+      '<div style="margin-top:14px;padding:12px;border:1px solid var(--line);background:var(--wash,#fafafa)">' +
+        '<div class="eyebrow" style="margin-bottom:8px">WRITE · Meta pause / resume / budget</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:end">' +
+          '<button type="button" class="btn mono" data-cw="pause">Pause</button>' +
+          '<button type="button" class="btn mono" data-cw="resume">Resume</button>' +
+          '<div class="selwrap"><label for="cwBudget">budget_cents (daily)</label>' +
+            '<input id="cwBudget" class="inp mono" type="number" min="100" step="100" value="' +
+              esc(c.budget_cents != null ? c.budget_cents : '') + '" style="width:140px"></div>' +
+          '<button type="button" class="btn dark mono" data-cw="update_budget">Update budget</button>' +
+        '</div>' +
+        '<div class="hint mono" id="cwMsg" style="margin-top:8px;font-size:10.5px;color:var(--gray2)">POST /api/campaigns/write — mirrors Meta into local campaigns on success.</div>' +
+      '</div>' +
       (c.last_error
         ? '<div style="margin-top:10px"><div class="k mono" style="font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:4px">last_error — verbatim, truncated at 2000 chars, overwritten by the most recent failure</div>' +
           '<div class="errbox">'+esc(c.last_error)+'</div>' +
@@ -2022,6 +2034,47 @@ function renderDrawerBody(){
     b.addEventListener('click', function(){ DW.metric = b.dataset.m; renderDrawerBody(); });
   });
   hookChart(series, DW.metric);
+  host.querySelectorAll('[data-cw]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var action = btn.getAttribute('data-cw');
+      var msg = document.getElementById('cwMsg');
+      var pid = (window.FHData && FHData.param) ? FHData.param('partner_id') : null;
+      if (!pid) { try { pid = new URL(location.href).searchParams.get('partner_id'); } catch (e) { pid = null; } }
+      if (!pid) { if (msg) msg.textContent = 'Need partner_id in the URL.'; return; }
+      var body = { partner_id: pid, campaign_id: c.id, action: action, reason: 'campaign-manager drawer' };
+      if (action === 'update_budget') {
+        var el = document.getElementById('cwBudget');
+        var n = el ? Number(el.value) : NaN;
+        if (!Number.isFinite(n) || n < 100) {
+          if (msg) msg.textContent = 'budget_cents must be a number ≥ 100.';
+          return;
+        }
+        body.budget_cents = Math.round(n);
+      }
+      if (msg) msg.textContent = 'Sending ' + action + '…';
+      var t = '';
+      try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
+      fetch('/api/campaigns/write', {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          ...(t && t !== 'demo' ? { authorization: 'Bearer ' + t } : {})
+        },
+        body: JSON.stringify(body)
+      }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+        .then(function (res) {
+          if (!res.ok) {
+            if (msg) msg.textContent = 'Failed: ' + (res.message || res.error || 'error') +
+              (res.reasons && res.reasons.length ? ' · ' + JSON.stringify(res.reasons) : '');
+            return;
+          }
+          if (msg) msg.textContent = 'Done: ' + action + (res.action_log_id ? ' · log ' + res.action_log_id : '');
+          if (typeof wireAll === 'function') wireAll();
+          loadDetail(DW.id);
+        });
+    });
+  });
 }
 
 /* hover layer — crosshair + tooltip, the default for any plotted chart here */

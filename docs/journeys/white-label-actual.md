@@ -19,13 +19,14 @@ flowchart TD
     CAN --> A_auth[Signing in and out — 6 routes]
     CAN --> A_campaigns[Campaigns — 8 routes]
     CAN --> A_contracts[contracts — 1 route]
-    CAN --> A_creative[Creative Factory — 5 routes]
+    CAN --> A_creative[Creative Factory — 7 routes]
     CAN --> A_documents[Documents — 1 route]
+    CAN --> A_public[public — 1 route]
     CAN --> A_read[Reading data — 1 route]
-    CAN --> A_social[social — 1 route]
+    CAN --> A_social[social — 2 routes]
     CAN --> A_top_level[Everything else — 3 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 79 routes]
+    WHO -->|Yes| CANT[Blocked — 80 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_chat[chat — 4 blocked]
@@ -36,6 +37,7 @@ flowchart TD
     CANT --> B_finance[Finance — 10 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_journeys[journeys — 2 blocked]
+    CANT --> B_partner_brand[partner-brand — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_read[Reading data — 28 blocked]
     CANT --> B_top_level[Everything else — 17 blocked]
@@ -43,7 +45,7 @@ flowchart TD
 
 ## What they can reach
 
-**27 of 106 routes.**
+**31 of 111 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -62,27 +64,31 @@ flowchart TD
 | `/api/campaigns/sync` | POST | partner, staff |
 | `/api/campaigns/write` | POST | partner, staff |
 | `/api/contracts/sign` | GET, POST | anyone |
+| `/api/creative/actions` | POST | partner, staff |
 | `/api/creative/approvals` | GET | partner, staff |
 | `/api/creative/brand-kits` | GET | partner, staff |
 | `/api/creative/generate` | POST | partner, staff |
 | `/api/creative/jobs` | GET | partner, staff |
 | `/api/creative/library` | GET | partner, staff |
+| `/api/creative/run` | POST | partner, staff |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
+| `/api/public/partner-page` | GET | anyone |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
+| `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
 ### Worth knowing
 
-- **8 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/contracts/sign`, `/api/health`. These are the sign-in routes and the health check.
+- **9 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/contracts/sign`, `/api/health`, `/api/public/partner-page`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**79 of 106 routes.**
+**80 of 111 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -129,6 +135,7 @@ flowchart TD
 | `/api/messages` | POST | staff |
 | `/api/messages-outbound` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/partner-brand` | GET, PUT | owner, admin |
+| `/api/partner-brand/verify-domain` | POST | owner, admin |
 | `/api/partner-pages` | GET, PATCH, POST | owner, admin |
 | `/api/payment-links` | GET, POST | owner, admin, sales_manager |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |

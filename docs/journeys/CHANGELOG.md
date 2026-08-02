@@ -3,6 +3,8 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-02 | all roles | regenerated actuals for social/publish, creative/run+actions, partner-brand/verify-domain, public/partner-page, hosted /sites | finish items 4 and 5 | (this commit)
+
 2026-08-02 | all roles | regenerated actuals for chat/demo/campaigns/social/creative/partner-pages routes | session six-items build | c820270
 
 2026-08-02 | client, role-owner, role-sales-manager, role-closer, role-funding-advisor, role-inquiry-remover, affiliate, white-label | Three routes added — `POST /api/read/company-brain` (STAFF), `POST /api/read/company-brain-affiliate` (affiliate/partner), `GET,POST /api/company-brain/reviews` (owner only). Migrations 130–133 (renumbered from 127–130 at go-live). Drive/OpenAI sync stays off until credentials are set | Company Brain steps 1–7 | (this commit)

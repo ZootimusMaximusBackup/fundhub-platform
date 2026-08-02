@@ -42,13 +42,31 @@ export default async function handler(req, res) {
         return res.status(400).json({ ok: false, error: "partner_id_required" });
       }
       const r = await db.query(
-        `SELECT id, partner_id, funnel_key, title, slug, status, body_json, created_at, updated_at
+        `SELECT id, partner_id, funnel_key, title, slug, status, body_json,
+                created_at, updated_at
            FROM partner_pages
           WHERE org_id = $1 AND partner_id = $2
           ORDER BY updated_at DESC`,
         [staff.org_id, partnerId]
       );
-      return res.status(200).json({ ok: true, items: r.rows, templates: Object.keys(FUNNELS) });
+      const brand = (await db.query(
+        `SELECT domain, domain_verified FROM partner_brand WHERE partner_id = $1`,
+        [partnerId]
+      )).rows[0];
+      const items = r.rows.map((p) => ({
+        ...p,
+        live_path: p.status === "published" ? `/sites/${p.partner_id}/${p.slug}` : null,
+        live_url: p.status === "published" && brand?.domain_verified && brand?.domain
+          ? `https://${brand.domain}/${p.slug}`
+          : (p.status === "published" ? `/sites/${p.partner_id}/${p.slug}` : null)
+      }));
+      return res.status(200).json({
+        ok: true,
+        items,
+        templates: Object.keys(FUNNELS),
+        domain: brand?.domain || null,
+        domain_verified: !!brand?.domain_verified
+      });
     }
 
     if (req.method === "POST") {
@@ -110,7 +128,8 @@ export default async function handler(req, res) {
         sets.push(`slug = $${params.length}`);
       }
       if (body.status != null) {
-        params.push(String(body.status));
+        const st = String(body.status);
+        params.push(st);
         sets.push(`status = $${params.length}`);
       }
       if (body.body_json != null) {
@@ -126,6 +145,19 @@ export default async function handler(req, res) {
         params
       );
       if (!r.rows[0]) return res.status(404).json({ ok: false, error: "not_found" });
+      // Best-effort published_at stamp (migration 136). Ignore if column absent.
+      if (String(body.status) === "published") {
+        await db.query(
+          `UPDATE partner_pages SET published_at = COALESCE(published_at, now())
+            WHERE id = $1`,
+          [body.id]
+        ).catch(() => null);
+      } else if (body.status != null) {
+        await db.query(
+          `UPDATE partner_pages SET published_at = NULL WHERE id = $1`,
+          [body.id]
+        ).catch(() => null);
+      }
       return res.status(200).json({ ok: true, page: r.rows[0] });
     }
 

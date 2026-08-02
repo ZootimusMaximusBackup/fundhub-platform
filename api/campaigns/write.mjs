@@ -75,13 +75,14 @@ export default async function handler(req, res) {
         platform: "meta",
         targetType: "campaign",
         targetId: camp.id,
-        reason: body.reason || `chat/campaigns write: ${action}`,
+        reason: body.reason || `campaigns write: ${action}`,
         actor: "human",
         userId: principal.staffId || null,
-        before: { status: camp.status, budget_cents: camp.budget_cents },
+        before: { status: camp.status, budget_cents: camp.budget_cents, approval_state: camp.approval_state },
         after: {
           status: action === "pause" ? "PAUSED" : action === "resume" ? "ACTIVE" : camp.status,
-          budget_cents: action === "update_budget" ? budgetCents : camp.budget_cents
+          budget_cents: action === "update_budget" ? budgetCents : camp.budget_cents,
+          approval_state: action === "pause" ? "paused" : action === "resume" ? "live" : camp.approval_state
         },
         budget: action === "update_budget" ? {
           campaignId: camp.id,
@@ -96,15 +97,41 @@ export default async function handler(req, res) {
             budgetCents
           });
         }
+      }).then(async (out) => {
+        // Mirror Meta's outcome into our row so the Campaigns screen and spend
+        // ceilings see the same state without waiting for the next sync.
+        if (out && out.ok) {
+          if (action === "pause") {
+            await tx.query(
+              `UPDATE campaigns SET status = 'PAUSED', approval_state = 'paused',
+                 last_error = NULL, synced_at = now(), updated_at = now() WHERE id = $1`,
+              [camp.id]
+            );
+          } else if (action === "resume") {
+            await tx.query(
+              `UPDATE campaigns SET status = 'ACTIVE', approval_state = 'live',
+                 last_error = NULL, synced_at = now(), updated_at = now() WHERE id = $1`,
+              [camp.id]
+            );
+          } else if (action === "update_budget" && Number.isFinite(budgetCents)) {
+            await tx.query(
+              `UPDATE campaigns SET budget_cents = $2, last_error = NULL,
+                 synced_at = now(), updated_at = now() WHERE id = $1`,
+              [camp.id, budgetCents]
+            );
+          }
+        }
+        return out;
       });
     });
 
-    if (result.blocked) {
+    if (result.blocked || result.ok === false) {
       return res.status(400).json({
         ok: false,
-        error: "blocked",
-        state: result.state,
-        reasons: result.reasons
+        error: result.blocked ? "blocked" : "platform_error",
+        state: result.state || null,
+        reasons: result.reasons || [],
+        message: result.error || null
       });
     }
     return res.status(200).json({ ok: true, action, result: result.result, action_log_id: result.actionLogId });

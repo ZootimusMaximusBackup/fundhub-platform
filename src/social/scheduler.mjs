@@ -90,7 +90,9 @@ export async function schedule(tx, {
    down does not stop the rest of the queue. */
 export async function publishDue(tx, { orgId, partnerId, now = null, agentId = null } = {}) {
   const { rows: due } = await tx.query(
-    `SELECT p.*, c.channel, c.connection_state
+    `SELECT p.*, c.channel, c.connection_state,
+            c.encrypted_access_token, c.external_account_id,
+            c.partner_id AS channel_partner_id
        FROM social_posts p
        JOIN social_channels c ON c.id = p.channel_id
       WHERE p.partner_id = $1 AND p.status = 'queued'
