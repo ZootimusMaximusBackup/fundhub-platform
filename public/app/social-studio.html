@@ -521,8 +521,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
                 <button class="btn dark mono" id="runScreen">Run guardrail preview</button>
                 <button class="btn mono" id="queueBtn"
                   title="POST /api/social/schedule → src/social/scheduler.mjs schedule()">Queue post</button>
+                <button class="btn dark mono" id="publishDueBtn" type="button"
+                  title="POST /api/social/publish → publishDue">Publish due now</button>
                 <button class="btn mono" id="clearComposer">Clear</button>
-                <span class="hint mono" id="queueMsg" style="font-size:10.5px;color:var(--gray2)">Queues into social_posts. Publishing still needs a publishDue cron (see STILL-MISSING).</span>
+                <span class="hint mono" id="queueMsg" style="font-size:10.5px;color:var(--gray2)">Queues into social_posts. Cron social-publish-sweeper runs publishDue every 5 minutes.</span>
               </div>
             </div>
           </div>
@@ -694,19 +696,11 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
             <div class="gs">netlify/functions/api.mjs ROUTES · api/campaigns/action-log.mjs:16 · wireActionLog() near the bottom of this page's script</div>
           </div>
           <div class="gap">
-            <div class="gt"><span class="badge b-alert mono">blocking</span>No channel adapter</div>
-            <div class="gb"><code class="mono">ADAPTERS = {}</code> and <code class="mono">registerAdapter</code> is
-              called only from the test file. Without an adapter <code class="mono">publishOne</code> throws
-              <code class="mono">no adapter registered for channel &lt;x&gt;</code> and burns all three attempts. No post
-              has ever actually reached a platform from production code.</div>
-            <div class="gs">src/social/scheduler.mjs:18–20, 134 · src/social/social.pg.test.mjs:104, 124</div>
-          </div>
-          <div class="gap">
-            <div class="gt"><span class="badge b-alert mono">blocking</span>Nothing calls publishDue</div>
-            <div class="gb"><code class="mono">publishDue</code> has zero callers outside its test file. No cron, no
-              scheduled function, no queue worker invokes it — so a queued post stays queued whatever its
-              <code class="mono">scheduled_for</code> says.</div>
-            <div class="gs">src/social/scheduler.mjs:91</div>
+            <div class="gt"><span class="badge b-ok mono">wired</span>Channel adapters + publishDue cron</div>
+            <div class="gb"><code class="mono">src/social/adapters.mjs</code> registers facebook/instagram/others.
+              Live Graph needs channel tokens; otherwise set <code class="mono">SOCIAL_PUBLISH_DRY_RUN=1</code>.
+              <code class="mono">netlify/functions/social-publish-sweeper.mjs</code> runs every 5 minutes.</div>
+            <div class="gs">src/social/adapters.mjs · netlify/functions/social-publish-sweeper.mjs</div>
           </div>
           <div class="gap">
             <div class="gt"><span class="badge b-warn mono">missing</span>No OAuth connect flow</div>
@@ -2147,7 +2141,37 @@ document.getElementById('queueBtn').addEventListener('click', function(){
       }
       msg.textContent = 'Queued as ' + (res.state || 'ok') +
         (res.post && res.post.id ? ' · id ' + res.post.id : '') +
-        '. Publish still needs publishDue cron.';
+        '. Cron publishes due posts every 5 min, or click Publish due now.';
+    });
+});
+document.getElementById('publishDueBtn').addEventListener('click', function () {
+  var msg = document.getElementById('queueMsg');
+  var partnerSel = document.getElementById('partnerSel');
+  var partnerId = partnerSel ? partnerSel.value : '';
+  if (!partnerId || partnerId === '-1') {
+    msg.textContent = 'Pick a real partner_id first.';
+    return;
+  }
+  msg.textContent = 'Publishing due posts…';
+  var t = '';
+  try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
+  fetch('/api/social/publish', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+      ...(t && t !== 'demo' ? { authorization: 'Bearer ' + t } : {})
+    },
+    body: JSON.stringify({ partner_id: partnerId })
+  }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+    .then(function (res) {
+      if (!res.ok) {
+        msg.textContent = 'Publish failed: ' + (res.message || res.error || 'error');
+        return;
+      }
+      var n = (res.results || []).length;
+      var ok = (res.results || []).filter(function (x) { return x.ok; }).length;
+      msg.textContent = 'publishDue returned ' + n + ' result(s), ' + ok + ' ok.';
     });
 });
 document.getElementById('composeTop').addEventListener('click', function(){

@@ -91,17 +91,22 @@ import campaignsActionLog from "../../api/campaigns/action-log.mjs";
 import campaignsSync from "../../api/campaigns/sync.mjs";
 import campaignsWrite from "../../api/campaigns/write.mjs";
 import socialSchedule from "../../api/social/schedule.mjs";
+import socialPublish from "../../api/social/publish.mjs";
 import chatAsk from "../../api/chat/ask.mjs";
 import chatMessages from "../../api/chat/messages.mjs";
 import chatPortalMessage from "../../api/chat/portal-message.mjs";
 import chatPeers from "../../api/chat/peers.mjs";
 import demoSimulate from "../../api/demo/simulate.mjs";
 import partnerPages from "../../api/partner-pages.mjs";
+import partnerBrandVerifyDomain from "../../api/partner-brand/verify-domain.mjs";
+import publicPartnerPage from "../../api/public/partner-page.mjs";
 import creativeGenerate from "../../api/creative/generate.mjs";
 import creativeLibrary from "../../api/creative/library.mjs";
 import creativeBrandKits from "../../api/creative/brand-kits.mjs";
 import creativeJobs from "../../api/creative/jobs.mjs";
 import creativeApprovals from "../../api/creative/approvals.mjs";
+import creativeActions from "../../api/creative/actions.mjs";
+import creativeRun from "../../api/creative/run.mjs";
 import hiringCandidates from "../../api/hiring/candidates.mjs";
 import hiringApplication from "../../api/hiring/application.mjs";
 import hiringPostings from "../../api/hiring/postings.mjs";
@@ -373,17 +378,22 @@ export const ROUTES = {
   "campaigns/sync": campaignsSync,
   "campaigns/write": campaignsWrite,
   "social/schedule": socialSchedule,
+  "social/publish": socialPublish,
   "chat/ask": chatAsk,
   "chat/messages": chatMessages,
   "chat/portal-message": chatPortalMessage,
   "chat/peers": chatPeers,
   "demo/simulate": demoSimulate,
   "partner-pages": partnerPages,
+  "partner-brand/verify-domain": partnerBrandVerifyDomain,
+  "public/partner-page": publicPartnerPage,
   "creative/generate": creativeGenerate,
   "creative/library": creativeLibrary,
   "creative/brand-kits": creativeBrandKits,
   "creative/jobs": creativeJobs,
   "creative/approvals": creativeApprovals,
+  "creative/actions": creativeActions,
+  "creative/run": creativeRun,
 
   // Hiring. ROLE_SETS.HIRING is {owner, admin} — NOT the STAFF set, because
   // these carry applicant PII and the scoring trail of an automated employment

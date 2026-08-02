@@ -434,7 +434,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
               <div class="fun" id="funGrid"></div>
               <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
                 <button class="btn dark mono" type="button" id="createPagesBtn">Create pages from selected funnels</button>
-                <span class="hint mono" id="pagesMsg" style="font-size:10.5px;color:var(--gray2)">Writes partner_pages drafts via /api/partner-pages. Hosted domains still deferred.</span>
+                <span class="hint mono" id="pagesMsg" style="font-size:10.5px;color:var(--gray2)">Writes partner_pages drafts. Publish makes them live at /sites/:partner_id/:slug.</span>
               </div>
               <div id="pagesList" style="margin-top:12px"></div>
               <div class="hint" style="margin-top:11px">Hosted on your domain so tracking, attribution, and compliance updates keep working. HTML export is available but drops all three.</div>
@@ -628,7 +628,9 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     dc.className = "chip " + (D.verified ? "on" : (D.domain ? "wip" : ""));
     dt.textContent = D.verified ? "Verified · SSL issued" : (D.domain ? "Awaiting DNS" : "Not connected");
     $("dnsBox").style.display = D.domain ? "block" : "none";
-    $("dnsC").textContent = "verify=" + slug(D.name || "brand") + "-" + String(Math.abs(hash(D.domain||"x"))).slice(0,8);
+    $("dnsC").textContent = partnerId
+      ? ("fundhub-site-verify=" + partnerId)
+      : ("fundhub-site-verify=" + slug(D.name || "brand"));
 
     var ac = $("approvalChip");
     ac.className = "chip " + (D.status==="approved" ? "on" : D.status==="submitted" ? "wip" : "");
@@ -711,12 +713,29 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
   });
   $("verifyBtn").addEventListener("click", function(){
     if(!D.domain){ $("saveMsg").textContent="Enter a domain first."; return; }
+    if (MODE !== "partner" || !partnerId) {
+      $("saveMsg").textContent = "Open with ?partner_id= to verify a partner domain.";
+      return;
+    }
     $("verifyBtn").disabled = true; $("verifyBtn").textContent = "Checking…";
-    setTimeout(function(){
-      D.verified = true; save(); paint();
-      $("verifyBtn").disabled = false; $("verifyBtn").textContent = "Verify";
-      $("saveMsg").textContent = "DNS resolved. SSL issued for "+D.domain+".";
-    }, 900);
+    fetch("/api/partner-brand/verify-domain", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ partner_id: partnerId })
+    }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .then(function (res) {
+        $("verifyBtn").disabled = false; $("verifyBtn").textContent = "Verify";
+        if (res.ok && res.verified) {
+          D.verified = true; save(); paint();
+          $("saveMsg").textContent = "DNS verified for " + D.domain + ". Add the domain in Netlify for SSL, then publish pages.";
+        } else {
+          D.verified = false; paint();
+          $("saveMsg").textContent = res.message || ("Not verified: " + (res.error || "txt_mismatch"));
+        }
+      }).catch(function () {
+        $("verifyBtn").disabled = false; $("verifyBtn").textContent = "Verify";
+        $("saveMsg").textContent = "Verify request failed.";
+      });
   });
 
   Array.prototype.forEach.call(document.querySelectorAll(".copyb"), function(b){
@@ -765,11 +784,42 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
           return;
         }
         list.innerHTML = items.map(function (p) {
-          return '<div class="funnel on" style="cursor:default;margin-bottom:8px">' +
-            '<b>' + (p.title || p.funnel_key) + '</b>' +
-            '<span>/' + (p.slug || "") + ' · ' + (p.status || "draft") + ' · ' + (p.funnel_key || "") + "</span></div>";
+          var live = p.live_path
+            ? ' · <a href="' + p.live_path + '" target="_blank" rel="noopener">' + p.live_path + "</a>"
+            : "";
+          return '<div class="funnel on" style="cursor:default;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;align-items:center">' +
+            '<div><b>' + (p.title || p.funnel_key) + '</b>' +
+            '<span>/' + (p.slug || "") + ' · ' + (p.status || "draft") + ' · ' + (p.funnel_key || "") + live + "</span></div>" +
+            (p.status !== "published"
+              ? '<button type="button" class="btn mono" data-pub="' + p.id + '">Publish</button>'
+              : '<button type="button" class="btn mono" data-unpub="' + p.id + '">Unpublish</button>') +
+            "</div>";
         }).join("");
-        if (msg) msg.textContent = items.length + " page draft(s) on file.";
+        if (msg) msg.textContent = items.length + " page(s) on file.";
+        list.querySelectorAll("[data-pub]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            fetch("/api/partner-pages", {
+              method: "PATCH",
+              headers: authHeaders(),
+              body: JSON.stringify({ id: btn.getAttribute("data-pub"), status: "published" })
+            }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+              .then(function (res) {
+                if (msg) msg.textContent = res.ok
+                  ? "Published. Live at /sites/" + partnerId + "/" + ((res.page && res.page.slug) || "")
+                  : ("Publish failed: " + (res.error || "error"));
+                refreshPages();
+              });
+          });
+        });
+        list.querySelectorAll("[data-unpub]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            fetch("/api/partner-pages", {
+              method: "PATCH",
+              headers: authHeaders(),
+              body: JSON.stringify({ id: btn.getAttribute("data-unpub"), status: "draft" })
+            }).then(function () { refreshPages(); });
+          });
+        });
       });
   }
 

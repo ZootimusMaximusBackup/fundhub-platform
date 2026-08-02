@@ -1,8 +1,7 @@
 # Still missing
 
-Captured 2026-08-02 in the `feat/session-six-items` session. Things previously
-described as requirements that were not finished here (or need an external
-credential the session does not have).
+Updated 2026-08-02 in the `feat/finish-4-and-5` session after closing the
+Campaigns / Social / Creative / Brand Studio gaps from the prior scorecard.
 
 ## Credentials needed (do not invent)
 
@@ -12,62 +11,65 @@ credential the session does not have).
 | `META_APP_SECRET` | Same | Same panel; store as Netlify secret |
 | Meta user / system user Marketing API token | `ad_platform_connections.encrypted_access_token` for platform=`meta` | Meta Business Manager → System Users → Generate token with `ads_read`, `ads_management` |
 | Meta ad account id | `ad_platform_connections.external_ad_account_id` (`act_…`) | Business Manager → Ad accounts |
-| Creative provider keys (`CREATIVE_*` — see `src/creative/providers/`) | `enqueue` works without them; `run()` needs them to produce assets | Provider dashboards (depends which provider is configured) |
+| Creative provider keys (`CREATIVE_*` — see `src/creative/providers/`) | `enqueue` + runner; `run()` needs them to produce assets | Provider dashboards |
+| Social channel page token | `social_channels.encrypted_access_token` | Channel OAuth / Meta page token |
+| Optional `SOCIAL_PUBLISH_DRY_RUN=1` | Marks due posts posted with `dryrun:…` ids without Graph | Netlify env — tests / staging only |
 
-Without a Meta connection row + token, **Sync Meta now** returns a clear
-`no_meta_connection` / `credential_missing` error. The route is wired; the
-credential is not fabricated.
+Without a Meta connection row + token, **Sync Meta now** / pause / resume /
+budget return a clear credential error. Routes are wired; credentials are not
+fabricated.
 
-## Large / deferred
+## Closed in finish-4-and-5 (was deferred)
 
-1. **Hosted partner funnels at custom domains** — Brand Studio now creates
-   `partner_pages` drafts from funnel templates (`apply` / `diag` / `edu` /
-   `aff` / `book`). Serving them on a verified custom domain (DNS, SSL, live
-   HTML) is still deferred. Spec: `docs/BRAND-THEMING-SPEC.md`,
-   `HANDOFF.md`.
+1. **Hosted partner funnels** — `partner_pages` publish sets `published_at`;
+   live HTML at `/sites/:partner_id/:slug` via `netlify/functions/partner-site.mjs`.
+   Custom domain: TXT verify at `_fundhub.<domain>` =
+   `fundhub-site-verify=<partner_id>` via `POST /api/partner-brand/verify-domain`.
+   Adding the hostname in the Netlify UI (SSL) is still an operator DNS step on
+   a real domain you own — the app cannot invent that certificate.
 
-2. **Social `publishDue` cron** — `POST /api/social/schedule` queues
-   `social_posts`. Nothing in this repo yet runs `publishDue` on a schedule to
-   push to Instagram/TikTok/etc. Adapters register via
-   `src/social/scheduler.mjs` `registerAdapter`.
+2. **Social `publishDue` cron** — `netlify/functions/social-publish-sweeper.mjs`
+   every 5 minutes + `POST /api/social/publish`. Adapters in
+   `src/social/adapters.mjs`.
 
-3. **Creative job runner / Inngest worker** — `POST /api/creative/generate`
-   enqueues. No worker claims/runs jobs in production yet. Approve / reject /
-   archive asset UI still missing on Creative Factory.
+3. **Creative job runner + approve/reject/archive** —
+   `netlify/functions/creative-job-runner.mjs` every 2 minutes,
+   `POST /api/creative/run`, `POST /api/creative/actions`. Creative Factory UI
+   wired.
 
-4. **Campaign write UI beyond pause/resume/budget** — `POST /api/campaigns/write`
-   supports pause, resume, update_budget through the existing Meta adapter +
-   guardedWrite. Full create-campaign / create-ad-set from the Campaigns screen
-   UI is not built; use Meta (or a later form) then Sync.
+4. **Campaign write loop** — successful Meta pause/resume/budget updates the
+   local `campaigns` row; Campaign Manager drawer has the controls.
 
-5. **Chat widget: agent-sent messages** — data model ready
-   (`messages.sender_kind` includes `agent`). Application send path stays off
-   (spec §8).
+## Still deferred / out of scope
 
-6. **Chat widget for affiliates / white-label** — owner call C-3 for this
-   session: internal staff + client portal only. Affiliates keep
-   `/api/read/company-brain-affiliate` without the widget chrome.
+1. **Full create-campaign / create-ad-set UI** — use Meta (or a later form) then
+   Sync. Pause / resume / budget writes are live.
 
-7. **Platform how-to corpus expansion** — v1 is a curated FAQ in
-   `src/chat/platform-help.mjs` (C-1: separate from Company Brain). Indexing
-   full `docs/` into a searchable store is a follow-up.
+2. **Chat widget: agent-sent messages** — data model ready; application send
+   path stays off (spec §8).
 
-8. **UNFINISHED-AUDIT.md** — referenced from CONTROLS-AUDIT but was never
-   committed on this tree. Soft-pull bureau fulfilment path still queues only
-   (historical note).
+3. **Chat widget for affiliates / white-label** — owner call C-3: internal staff
+   + client portal only.
 
-9. **Closer sales assets / call recording / recruiting pipeline** — still in
-   `PRODUCT-BACKLOG.md`, not started.
+4. **Platform how-to corpus expansion** — v1 FAQ in `src/chat/platform-help.mjs`.
 
-10. **Message dispatcher sweeper registration** — `message-dispatch-sweeper`
-    defined and deliberately not registered (CLAUDE.md §12). Staff compose
-    dispatches immediately; templated queue still needs the sweeper for full
-    outbound.
+5. **UNFINISHED-AUDIT.md** — referenced from CONTROLS-AUDIT but never committed.
 
-## Built in this session (so this file is not silent about wins)
+6. **Closer sales assets / call recording / recruiting pipeline** — backlog.
 
-- CRM + portal chat widget (Ask / Knowledge / Message)
-- Finance OS simulated client loader + teardown (`/api/demo/simulate`)
-- Global search overlap fix (chip vs Search positioning)
-- Campaigns Meta sync + write routes; Social schedule route; Creative generate route
-- Brand Studio → `partner_pages` funnel page drafts
+7. **Message dispatcher sweeper registration** — deliberately unregistered
+   (CLAUDE.md §12). Staff compose dispatches immediately.
+
+8. **Social OAuth connect flow** — channels still need an INSERT + token; no
+   OAuth screen yet.
+
+9. **Instagram / TikTok live media publish** — facebook Graph caption path is
+   live when tokenized; other channels need provider wiring or
+   `SOCIAL_PUBLISH_DRY_RUN=1`.
+
+## Built earlier (session-six) and kept
+
+- CRM + portal chat widget
+- Finance OS simulated client loader + teardown
+- Global search overlap fix
+- Brand Studio → `partner_pages` drafts (now also publishable/live)

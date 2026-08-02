@@ -36,22 +36,9 @@
   node_bundler = "esbuild"
 
 # ---------------------------------------------------------------------------
-# THE ONE SCHEDULED JOB IN THIS REPOSITORY.
-#
-# netlify/functions/staff-message-sweeper.mjs releases outbound STAFF messages
-# that were held — overnight quiet hours, or a provider that failed in a way
-# worth retrying. Without it, a text typed at 11pm is held until 11am and then
-# sits there forever, because nothing else in this codebase has ever called the
-# dispatcher on a clock.
-#
-# It is scoped to messages a person actually wrote (sender_staff_id IS NOT
-# NULL). It does NOT drain the several thousand rows queued by workflows over
-# the past months — see the header of that file before widening it.
-#
-# Declared here rather than with the @netlify/functions `schedule()` wrapper so
-# no npm dependency is added for it (CLAUDE.md §8). The value must match
-# SWEEP_CRON in that file; src/messaging/staff-sweeper.test.mjs fails if the two
-# ever disagree.
+# Scheduled jobs (Netlify cron). Declared here rather than with the
+# @netlify/functions schedule() wrapper so no npm dependency is added
+# (CLAUDE.md §8). Each SWEEP_CRON constant in the named file must match.
 #
 # This is NOT the Inngest engine. INNGEST_EVENT_KEY remains unset and the 47
 # workflow functions remain dormant — turning those on is still an owner
@@ -60,13 +47,19 @@
 [functions."staff-message-sweeper"]
   schedule = "*/5 * * * *"
 
+[functions."social-publish-sweeper"]
+  schedule = "*/5 * * * *"
+
+[functions."creative-job-runner"]
+  schedule = "*/2 * * * *"
+
 # ---------------------------------------------------------------------------
 # Routing
 #
 # The CRM lives in the directory public/app/, so its URL is /app/. There used
 # to be a public/app.html redirect stub alongside it, which meant two files
 # claimed the same URL: Netlify resolves /app to the *file* app.html, while the
-# stub's own script sent the browser to /app/ — and /app/ normalises back to
+# stub's own script sent the browser to the /app/ — and /app/ normalises back to
 # /app whenever a sibling .html exists. That is a redirect loop, and it is why
 # /app never finished loading. The stub is gone; these rules make what is left
 # explicit instead of leaving it to filename-resolution order.
@@ -82,6 +75,12 @@
   from = "/app.html"
   to = "/app/"
   status = 301
+
+# Published partner funnel pages (Brand Studio → partner_pages status=published).
+[[redirects]]
+  from = "/sites/*"
+  to = "/.netlify/functions/partner-site/:splat"
+  status = 200
 
 # The api/ handlers run as one function. netlify/functions/api.mjs already
 # declares `config.path = "/api/*"`; this rewrite is the belt to that braces, so
