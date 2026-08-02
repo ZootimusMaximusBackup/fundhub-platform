@@ -22,6 +22,8 @@ import {
   EDITOR_DELAYS,
   JOURNEY_ORDER
 } from "./seed-journeys.mjs";
+import { findSingleBraceTagsInNodes } from "./copy-tags.mjs";
+import { renderTemplate } from "../lib/render-template.mjs";
 
 const EDITOR = path.join(process.cwd(), "public/app/journeys.html");
 
@@ -140,4 +142,47 @@ test("the known-unbuilt Screen declaration is present in the data", () => {
   };
   Object.values(SEED_JOURNEYS).forEach((j) => walk(j.nodes));
   assert.deepEqual(found, ["Affiliate portal — not built yet"]);
+});
+
+/* Journey copy vs. the real renderer — the regression guard for the bug that
+ * motivated src/journeys/copy-tags.mjs: the editor used to seed sms/email
+ * bodies with single-brace tags ({first_name}) while src/lib/render-
+ * template.mjs's TOKEN_RE only ever matches {{double braces}}. A single-brace
+ * tag saved through the editor would render as literal brace characters
+ * instead of the client's name — this is what stops it coming back. */
+test("no seeded journey step carries a single-brace merge tag", () => {
+  const violations = [];
+  for (const [key, journey] of Object.entries(SEED_JOURNEYS)) {
+    for (const v of findSingleBraceTagsInNodes(journey.nodes)) {
+      violations.push(`${key}/${v.nodeId} (${v.field}): {${v.tags.join("}, {")}}`);
+    }
+  }
+  assert.deepEqual(violations, [], "single-brace tag(s) found in seeded journey copy: " + violations.join("; "));
+});
+
+test("every double-brace tag in the seeded copy is one render-template.mjs actually fills", () => {
+  // Not just "is it double-braced" — does the real renderer resolve it? The
+  // seeded copy uses flat tag names (first_name, survey_link, ...), so a
+  // context carrying those same flat keys must render every tag as a real
+  // value, never fall through to renderTemplate's "unknown token" blank.
+  const FAKE_CONTEXT = {
+    first_name: "Dana", last_name: "Reyes", company: "Reyes Fabrication LLC",
+    survey_link: "fundhub.ai/s/dq8f2", booking_link: "fundhub.ai/b/dq8f2",
+    portal_link: "portal.fundhub.ai/c/dq8f2", time: "2:30pm", lender: "Chase Ink", amount: "$18,000"
+  };
+  const walk = (nodes) => {
+    for (const n of nodes) {
+      if (n.type === "sms" || n.type === "email") {
+        for (const field of ["body", "subject"]) {
+          const text = n.cfg?.[field];
+          if (text == null) continue;
+          const rendered = renderTemplate(text, FAKE_CONTEXT);
+          assert.ok(!/\{\{|\}\}/.test(rendered),
+            `${n.id} ${field} still has an unrendered tag after renderTemplate: "${rendered}"`);
+        }
+      }
+      for (const b of n.branches || []) walk(b.nodes);
+    }
+  };
+  Object.values(SEED_JOURNEYS).forEach((j) => walk(j.nodes));
 });

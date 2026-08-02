@@ -652,8 +652,17 @@
      which doesn't reserve layout space either way). The real fix has to live
      here, once: below 1200px the chip drops beneath the header instead of
      sitting inside it, so the two can never occupy the same row. */
+  // A second step at phone width: several screens have more than just the
+  // 44-57px header to clear by then — pipeline.html's rail tabs, messaging
+  // .html's search bar, agent-editor.html's wrapped two-row header — and the
+  // chip's own ~337px width no longer fits with 10px to spare on a ~390px
+  // screen either. 135px clears the tallest of those (agent-editor's header,
+  // 125px) with a little to spare; pinned to both edges so it wraps to the
+  // available width instead of running off it.
   var CHIP_BREAKPOINT_CSS =
-    "@media (max-width:1200px){#fh-shell-chip{top:66px !important;right:10px !important}}";
+    "@media (max-width:1200px){#fh-shell-chip{top:66px !important;right:10px !important}}" +
+    "@media (max-width:480px){#fh-shell-chip{top:135px !important;left:10px !important;right:10px !important;" +
+    "flex-wrap:wrap;gap:6px !important;padding:6px 9px !important;font-size:10px !important}}";
 
   function mountChip(staff, demo) {
     var style = document.createElement("style");
