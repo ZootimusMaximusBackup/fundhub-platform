@@ -27,7 +27,7 @@ flowchart TD
     CAN --> A_read[Reading data — 16 routes]
     CAN --> A_top_level[Everything else — 7 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 27 routes]
+    WHO -->|Yes| CANT[Blocked — 28 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_finance[Finance — 5 blocked]
@@ -35,12 +35,12 @@ flowchart TD
     CANT --> B_journeys[journeys — 2 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_read[Reading data — 7 blocked]
-    CANT --> B_top_level[Everything else — 3 blocked]
+    CANT --> B_top_level[Everything else — 4 blocked]
 ```
 
 ## What they can reach
 
-**50 of 77 routes.**
+**50 of 78 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -103,7 +103,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**27 of 77 routes.**
+**28 of 78 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -126,6 +126,7 @@ flowchart TD
 | `/api/journeys/ask` | POST | owner, admin |
 | `/api/journeys/run` | POST | owner, admin, sales_manager |
 | `/api/partner-brand` | GET, PUT | owner, admin |
+| `/api/payment-links` | GET, POST | owner, admin, sales_manager |
 | `/api/privacy/erasure` | GET, POST | owner, admin |
 | `/api/read/affiliates` | GET | owner, admin, sales_manager |
 | `/api/read/banking-surface` | GET | owner, admin, sales_manager |

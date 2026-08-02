@@ -115,7 +115,7 @@ flowchart LR
 | `round.approved` | journey spine | — | 3 |
 | `round.funded` | journey spine | — | 5 |
 | `file.finalized` | journey spine | — | 0 |
-| `payment.received` | side events | `onPaymentReceived` | 1 |
+| `payment.received` | side events | `onPaymentReceived`, `onPaymentReceivedForLink` | 1 |
 | `payment.failed` | side events | `onPaymentFailed` | 0 |
 | `docs.received` | side events | — | 1 |
 | `inquiry.removed` | side events | — | 1 |

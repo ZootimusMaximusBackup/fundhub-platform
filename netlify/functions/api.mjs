@@ -104,6 +104,7 @@ import bankingAccounts from "../../api/banking/accounts.mjs";
 import consentCapture from "../../api/consent/capture.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
+import paymentLinks from "../../api/payment-links.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -409,7 +410,15 @@ export const ROUTES = {
   // in the portal, and an employee may record one given on a call. Its role gate
   // is the same narrow set as finance/soft-pull and is spelled out in
   // api/consent/capture.mjs. Nothing behind it transmits.
-  "consent/capture": consentCapture
+  "consent/capture": consentCapture,
+
+  // Payment links. ROLE_SETS.FINANCE, same gate as finance/subscriptions and
+  // finance/cards — a payment link is a live request for a client's money,
+  // the same class of action as starting a plan or filing a card. Nothing
+  // behind it transmits: checkout_url is built by pure URL construction
+  // (src/adapters/commas.mjs buildCommasCheckoutUrl), never a live Commas API
+  // call. Routed in the same commit as the handler and the migration.
+  "payment-links": paymentLinks
 
   /* NOT ROUTED, ON PURPOSE — see ALLOWED_UNROUTED in src/http/routes.test.mjs
      for the current list and the reason attached to each entry. That list is

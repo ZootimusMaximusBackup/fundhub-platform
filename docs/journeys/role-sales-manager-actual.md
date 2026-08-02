@@ -25,7 +25,7 @@ flowchart TD
     CAN --> A_finance[Finance — 9 routes]
     CAN --> A_journeys[journeys — 1 route]
     CAN --> A_read[Reading data — 22 routes]
-    CAN --> A_top_level[Everything else — 6 routes]
+    CAN --> A_top_level[Everything else — 7 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 17 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
@@ -41,7 +41,7 @@ flowchart TD
 
 ## What they can reach
 
-**60 of 77 routes.**
+**61 of 78 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -80,6 +80,7 @@ flowchart TD
 | `/api/inquiries` | GET, POST | staff |
 | `/api/journeys/run` | POST | owner, admin, sales_manager |
 | `/api/message-templates` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/payment-links` | GET, POST | owner, admin, sales_manager |
 | `/api/read/affiliates` | GET | owner, admin, sales_manager |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/banking-surface` | GET | owner, admin, sales_manager |
@@ -114,7 +115,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**17 of 77 routes.**
+**17 of 78 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
