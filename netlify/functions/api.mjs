@@ -35,6 +35,7 @@ import authAdminReset from "../../api/auth/admin-reset.mjs";
 import journeysAsk from "../../api/journeys/ask.mjs";
 import journeysRun from "../../api/journeys/run.mjs";
 import journeysStore from "../../api/journeys.mjs";
+import messageTemplatesWrite from "../../api/message-templates.mjs";
 import tasks from "../../api/tasks.mjs";
 import inquiry from "../../api/inquiry.mjs";
 import dashClients from "../../api/dashboard/clients.mjs";
@@ -121,6 +122,11 @@ export const ROUTES = {
      what keeps its synthetic clients off every dashboard. */
   "journeys/run": journeysRun,
   "journeys": journeysStore,
+  /* The write half of the template editor. ROLE_SETS.STAFF to save copy,
+     owner/admin to approve it — the split lives inside the handler because the
+     two actions share a route and only one of them is narrower. Its read half
+     is "read/message-templates" further down this map. */
+  "message-templates": messageTemplatesWrite,
   "tasks": tasks,
   "inquiry": inquiry,
   "dashboard/clients": dashClients,

@@ -23,7 +23,7 @@ flowchart TD
     CAN --> A_read[Reading data — 1 route]
     CAN --> A_top_level[Everything else — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 64 routes]
+    WHO -->|Yes| CANT[Blocked — 65 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_campaigns[Campaigns — 6 blocked]
@@ -34,12 +34,12 @@ flowchart TD
     CANT --> B_journeys[journeys — 2 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_read[Reading data — 21 blocked]
-    CANT --> B_top_level[Everything else — 7 blocked]
+    CANT --> B_top_level[Everything else — 8 blocked]
 ```
 
 ## What they can reach
 
-**11 of 75 routes.**
+**11 of 76 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -62,7 +62,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**64 of 75 routes.**
+**65 of 76 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -104,6 +104,7 @@ flowchart TD
 | `/api/journeys` | GET, PUT | owner, admin |
 | `/api/journeys/ask` | POST | owner, admin |
 | `/api/journeys/run` | POST | owner, admin, sales_manager |
+| `/api/message-templates` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/partner-brand` | GET, PUT | owner, admin |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/privacy/erasure` | GET, POST | owner, admin |

@@ -25,7 +25,7 @@ flowchart TD
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 5 routes]
     CAN --> A_read[Reading data — 15 routes]
-    CAN --> A_top_level[Everything else — 6 routes]
+    CAN --> A_top_level[Everything else — 7 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 27 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
@@ -40,7 +40,7 @@ flowchart TD
 
 ## What they can reach
 
-**48 of 75 routes.**
+**49 of 76 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -73,6 +73,7 @@ flowchart TD
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/inquiries` | GET, POST | staff |
+| `/api/message-templates` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -101,7 +102,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**27 of 75 routes.**
+**27 of 76 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
