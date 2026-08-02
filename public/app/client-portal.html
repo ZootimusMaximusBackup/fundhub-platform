@@ -848,7 +848,8 @@ var PRODUCTS = {
       title  = document.getElementById('action-title'),
       needed = [].slice.call(document.querySelectorAll('.doc-need')),
       picked = [],
-      sent   = false;
+      sent   = false,
+      uploadedDocs = [];  /* filled from the upload response — [{ download:{url} }] */
 
   var BTN_REST = btn.textContent;          /* keep the file's own label */
   var TITLE_REST = title.textContent;
@@ -870,7 +871,14 @@ var PRODUCTS = {
       var ico = document.createElement('span');
       ico.className = 'fi-ico'; ico.textContent = sent ? '✓' : '📄';
 
-      var nm = document.createElement('span');
+      var docUrl = sent && uploadedDocs[i] && uploadedDocs[i].download && uploadedDocs[i].download.url;
+      var nm;
+      if (docUrl) {
+        nm = document.createElement('a');
+        nm.href = docUrl; nm.target = '_blank'; nm.rel = 'noopener';
+      } else {
+        nm = document.createElement('span');
+      }
       nm.className = 'fi-name'; nm.textContent = f.name;
 
       var sz = document.createElement('span');
@@ -935,34 +943,76 @@ var PRODUCTS = {
     if(e.dataTransfer && e.dataTransfer.files.length) add(e.dataTransfer.files);
   });
 
+  /* clientId is resolved once, the same way the entitlements block further
+     down this file does: ?id= first, the signed-in client's own account
+     second. Neither script tag has run yet when this IIFE executes, but
+     localStorage and URLSearchParams don't need them to. */
+  function resolveClientId(){
+    var id = null;
+    try { id = new URLSearchParams(location.search).get('id'); } catch(e){}
+    try {
+      var acct = JSON.parse(localStorage.getItem('fh_account') || 'null');
+      if (!id && acct && acct.clientId) id = acct.clientId;
+    } catch(e){}
+    return id;
+  }
+
+  function markSentUi(docs){
+    uploadedDocs = docs || [];
+    sent = true;
+    btn.disabled = false;
+    card.classList.add('done');
+    title.textContent = 'Thanks — we have got what we needed';
+    needed.forEach(function(n){ n.classList.add('covered'); });
+    needed.forEach(function(n){
+      var age = n.querySelector('.dn-age');
+      if(age) age.textContent = 'received just now';
+    });
+    paint();
+  }
+
   function send(){
     btn.disabled = true;
     btn.textContent = 'Sending…';
     more.hidden = true;
     hint.textContent = '';
     bar.classList.add('on');
-    var fillEl = bar.querySelector('i'), pct = 0;
+    var fillEl = bar.querySelector('i');
 
-    var tick = setInterval(function(){
-      pct = Math.min(100, pct + 20 + Math.random()*15);
-      fillEl.style.width = pct + '%';
-      if(pct >= 100){
-        clearInterval(tick);
-        setTimeout(function(){
-          bar.classList.remove('on'); fillEl.style.width = '0';
-          sent = true;
-          btn.disabled = false;
-          card.classList.add('done');
-          title.textContent = 'Thanks — we have got what we needed';
-          needed.forEach(function(n){ n.classList.add('covered'); });
-          needed.forEach(function(n){
-            var age = n.querySelector('.dn-age');
-            if(age) age.textContent = 'received just now';
-          });
-          paint();
-        }, 260);
-      }
-    }, 220);
+    var clientId = resolveClientId();
+
+    /* No client id in the URL and no signed-in client session — there is
+       nobody to upload to. Same "sample" posture as the rest of this file:
+       show what sending would look like rather than doing nothing. */
+    if (!window.FHData || !clientId) {
+      var pct = 0;
+      var tick = setInterval(function(){
+        pct = Math.min(100, pct + 20 + Math.random()*15);
+        fillEl.style.width = pct + '%';
+        if(pct >= 100){
+          clearInterval(tick);
+          setTimeout(function(){
+            bar.classList.remove('on'); fillEl.style.width = '0';
+            markSentUi();
+          }, 260);
+        }
+      }, 220);
+      return;
+    }
+
+    fillEl.style.width = '45%';
+    FHData.uploadFiles('/api/documents-upload', picked, { client_id: clientId })
+      .then(function(res){
+        bar.classList.remove('on'); fillEl.style.width = '0';
+        btn.disabled = false;
+        if (!res.ok) {
+          more.hidden = false;
+          btn.textContent = 'Send ' + plural(picked.length,'document','documents');
+          hint.textContent = 'could not send — ' + (res.error || 'try again');
+          return;
+        }
+        markSentUi(res.data && res.data.documents);
+      });
   }
 
   paint();

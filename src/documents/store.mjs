@@ -175,6 +175,11 @@ export function createStore({ provider = memoryProvider() } = {}) {
 /**
  * In-memory provider. The DEFAULT, so unit tests and local runs never need a
  * storage vendor. Obviously not durable — do not select it in production.
+ *
+ * Every direct call gets its OWN fresh Map, on purpose: store.test.mjs and
+ * register.test.mjs each build one to get an isolated store per test. The
+ * process-wide sharing that a real caller needs (see storeFromEnv() below)
+ * lives there, not here — this stays the plain, unsurprising constructor.
  */
 export function memoryProvider({ objects = new Map() } = {}) {
   return {
@@ -287,18 +292,123 @@ export function vercelBlobProvider({
 }
 
 // ---------------------------------------------------------------------------
+// provider: Netlify Blobs — the storage decision for client uploads.
+// ---------------------------------------------------------------------------
+//
+// Unlike Vercel Blob, a Netlify Blobs key is NOT a public URL — reading one
+// back requires the SDK (and, outside a Netlify runtime, a siteID + token).
+// That is a better fit for storage_key's own contract ("opaque and secret",
+// see the file header) than a bearer-credential URL ever was; nothing in
+// register.mjs or retrieve.mjs cares which shape a key takes.
+//
+// `@netlify/blobs` is loaded lazily for the same reason `@vercel/blob` is —
+// package.json now DOES declare it (this is the provider the storage decision
+// actually picked), but the lazy import keeps the failure mode identical and
+// actionable if it is ever removed or the version drifts.
+const loadNetlifyBlobsSdk = () => import("@netlify/blobs");
+
+const netlifyBlobsSdkOrExplain = async (loadSdk) => {
+  try {
+    return await loadSdk();
+  } catch (cause) {
+    throw new Error(
+      "the netlify-blobs document store provider needs the @netlify/blobs package, " +
+      "which is not installed. Run `npm i @netlify/blobs`, or select a different " +
+      "provider (DOCUMENT_STORE_PROVIDER=memory).",
+      { cause });
+  }
+};
+
+/**
+ * netlifyBlobsProvider.
+ *
+ * Inside a deployed Netlify Function, `getStore(storeName)` resolves the site
+ * and an internal token from the runtime automatically — no config needed.
+ * Outside that runtime (a local script, a test, `netlify dev` without the
+ * right context) it needs `siteID` + `token` explicitly, which is exactly
+ * what NETLIFY_SITE_ID / NETLIFY_BLOBS_TOKEN are for below.
+ */
+export function netlifyBlobsProvider({
+  storeName = process.env.NETLIFY_BLOBS_STORE || "documents",
+  siteID = process.env.NETLIFY_SITE_ID,
+  token = process.env.NETLIFY_BLOBS_TOKEN,
+  loadSdk = loadNetlifyBlobsSdk
+} = {}) {
+  const openStore = async () => {
+    const { getStore } = await netlifyBlobsSdkOrExplain(loadSdk);
+    return siteID && token ? getStore({ name: storeName, siteID, token }) : getStore(storeName);
+  };
+
+  // The pathname IS the key — buildStoragePath() already makes it opaque and
+  // content-addressed. Prefixed with the store name only so a storage_key
+  // written by a DIFFERENT provider can never be silently misread by this one.
+  const KEY_PREFIX = `netlify-blob://${storeName}/`;
+  const toBlobKey = (storageKey) => {
+    const s = String(storageKey);
+    if (!s.startsWith(KEY_PREFIX)) {
+      throw new Error(`storage key "${s}" was not written by the netlify-blobs provider`);
+    }
+    return s.slice(KEY_PREFIX.length);
+  };
+
+  return {
+    name: "netlify-blobs",
+
+    async put(pathname, bytes, { contentType } = {}) {
+      const store = await openStore();
+      await store.set(pathname, bytes, contentType ? { metadata: { contentType } } : undefined);
+      return `${KEY_PREFIX}${pathname}`;
+    },
+
+    async get(storageKey) {
+      const store = await openStore();
+      const blobKey = toBlobKey(storageKey);
+      const [buf, meta] = await Promise.all([
+        store.get(blobKey, { type: "arrayBuffer" }),
+        store.getMetadata(blobKey).catch(() => null)
+      ]);
+      if (buf == null) return null;
+      return { body: Buffer.from(buf), contentType: meta?.metadata?.contentType ?? null };
+    },
+
+    async del(storageKey) {
+      const store = await openStore();
+      await store.delete(toBlobKey(storageKey));
+    },
+
+    async exists(storageKey) {
+      const store = await openStore();
+      const meta = await store.getMetadata(toBlobKey(storageKey)).catch(() => null);
+      return Boolean(meta);
+    }
+  };
+}
+
+// ---------------------------------------------------------------------------
 // selection
 // ---------------------------------------------------------------------------
 
 export const PROVIDERS = Object.freeze({
   memory: memoryProvider,
-  "vercel-blob": vercelBlobProvider
+  "vercel-blob": vercelBlobProvider,
+  "netlify-blobs": netlifyBlobsProvider
 });
 
 /**
  * providerFromEnv — DOCUMENT_STORE_PROVIDER selects; memory is the default so
  * an unconfigured environment runs instead of exploding. Production must set
  * this explicitly; storeFromEnv() warns once if it has not.
+ *
+ * When the selection resolves to "memory" and the caller did not pass its own
+ * `opts.objects`, this hands memoryProvider() ONE Map shared for the life of
+ * the process (see storeMemoryObjects below) rather than a fresh one per
+ * call. Every real caller — an upload handler storing bytes, the download
+ * route reading them back a moment later — goes through storeFromEnv()
+ * independently and expects to see what the other one wrote; a fresh Map
+ * per call made that impossible; a document would register successfully and
+ * its own just-minted signed link would 404. Tests that want an isolated
+ * store still get one by constructing memoryProvider() directly (unaffected
+ * by this) or by passing `{ objects: new Map() }` here.
  */
 export function providerFromEnv(env = process.env, opts = {}) {
   const name = env.DOCUMENT_STORE_PROVIDER || "memory";
@@ -307,7 +417,18 @@ export function providerFromEnv(env = process.env, opts = {}) {
     throw new Error(
       `unknown DOCUMENT_STORE_PROVIDER "${name}" — expected one of ${Object.keys(PROVIDERS).join(", ")}`);
   }
+  if (name === "memory" && !opts.objects) {
+    return factory({ ...opts, objects: storeMemoryObjects() });
+  }
   return factory(opts);
+}
+
+// The process-wide memory store providerFromEnv() shares across calls.
+// Lazily created so importing store.mjs never allocates it unused.
+let _sharedMemoryObjects = null;
+function storeMemoryObjects() {
+  if (!_sharedMemoryObjects) _sharedMemoryObjects = new Map();
+  return _sharedMemoryObjects;
 }
 
 let _warned = false;

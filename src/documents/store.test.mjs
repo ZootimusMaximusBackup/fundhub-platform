@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert";
 import {
-  createStore, memoryProvider, vercelBlobProvider, providerFromEnv, storeFromEnv,
+  createStore, memoryProvider, vercelBlobProvider, netlifyBlobsProvider, providerFromEnv, storeFromEnv,
   checksumOf, toBytes, buildStoragePath, extensionFor
 } from "./store.mjs";
 
@@ -209,6 +209,92 @@ test("a missing @vercel/blob package fails with an actionable message, not a mod
 });
 
 // ---------------------------------------------------------------------------
+// netlify blobs provider — the storage decision for client uploads
+// ---------------------------------------------------------------------------
+function fakeNetlifyBlobsSdk() {
+  const blobs = new Map();
+  const meta = new Map();
+  const store = {
+    async set(key, bytes, opts) {
+      blobs.set(key, Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes));
+      meta.set(key, (opts && opts.metadata) || null);
+    },
+    async get(key, opts) {
+      const hit = blobs.get(key);
+      if (hit === undefined) return null;
+      if (opts && opts.type === "arrayBuffer") {
+        return hit.buffer.slice(hit.byteOffset, hit.byteOffset + hit.byteLength);
+      }
+      return hit;
+    },
+    async getMetadata(key) {
+      if (!blobs.has(key)) throw new Error("not found");
+      return { metadata: meta.get(key) || {} };
+    },
+    async delete(key) { blobs.delete(key); meta.delete(key); }
+  };
+  return { getStore: () => store, _blobs: blobs };
+}
+
+test("netlify blobs provider round-trips bytes and the declared content type", async () => {
+  const sdk = fakeNetlifyBlobsSdk();
+  const provider = netlifyBlobsProvider({ storeName: "documents", loadSdk: async () => sdk });
+  const store = createStore({ provider });
+
+  const put = await store.put({ ...PUT, body: "pdf bytes" });
+  assert.strictEqual(put.storageKey, `netlify-blob://documents/${put.pathname}`);
+
+  const got = await store.get(put.storageKey, { expectedChecksum: put.checksum });
+  assert.strictEqual(got.body.toString(), "pdf bytes");
+  assert.strictEqual(got.contentType, "application/pdf");
+});
+
+test("netlify blobs provider round-trips binary bytes intact (a jpg, not just text)", async () => {
+  const sdk = fakeNetlifyBlobsSdk();
+  const provider = netlifyBlobsProvider({ storeName: "documents", loadSdk: async () => sdk });
+  const store = createStore({ provider });
+  const jpgBytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
+
+  const put = await store.put({ ...PUT, mimeType: "image/jpeg", body: jpgBytes });
+  const got = await store.get(put.storageKey);
+  assert.deepStrictEqual(got.body, jpgBytes);
+});
+
+test("netlify blobs provider returns null for a key it never wrote", async () => {
+  const sdk = fakeNetlifyBlobsSdk();
+  const provider = netlifyBlobsProvider({ storeName: "documents", loadSdk: async () => sdk });
+  assert.strictEqual(await createStore({ provider }).get("netlify-blob://documents/nope"), null);
+});
+
+test("netlify blobs provider refuses a storage key from a different provider/store", async () => {
+  const sdk = fakeNetlifyBlobsSdk();
+  const provider = netlifyBlobsProvider({ storeName: "documents", loadSdk: async () => sdk });
+  await assert.rejects(
+    () => createStore({ provider }).get("https://blob.vercel-storage.com/x"),
+    /was not written by the netlify-blobs provider/);
+});
+
+test("netlify blobs provider exists()/del() round-trip", async () => {
+  const sdk = fakeNetlifyBlobsSdk();
+  const provider = netlifyBlobsProvider({ storeName: "documents", loadSdk: async () => sdk });
+  const store = createStore({ provider });
+  const put = await store.put({ ...PUT, body: "x" });
+
+  assert.strictEqual(await store.exists(put.storageKey), true);
+  await store.del(put.storageKey);
+  assert.strictEqual(await store.exists(put.storageKey), false);
+});
+
+test("a missing @netlify/blobs package fails with an actionable message, not a module crash", async () => {
+  const provider = netlifyBlobsProvider({
+    loadSdk: async () => { throw new Error("Cannot find module '@netlify/blobs'"); }
+  });
+  await assert.rejects(
+    () => createStore({ provider }).put({ ...PUT, body: "x" }),
+    /npm i @netlify\/blobs/);
+});
+
+// ---------------------------------------------------------------------------
 // selection
 // ---------------------------------------------------------------------------
 test("memory is the default provider — nothing needs a vendor configured", () => {
@@ -218,6 +304,7 @@ test("memory is the default provider — nothing needs a vendor configured", () 
 
 test("DOCUMENT_STORE_PROVIDER selects the provider", () => {
   assert.strictEqual(providerFromEnv({ DOCUMENT_STORE_PROVIDER: "vercel-blob" }).name, "vercel-blob");
+  assert.strictEqual(providerFromEnv({ DOCUMENT_STORE_PROVIDER: "netlify-blobs" }).name, "netlify-blobs");
 });
 
 test("an unknown provider name fails loudly instead of silently using memory", () => {

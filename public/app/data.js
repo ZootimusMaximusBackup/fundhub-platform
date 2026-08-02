@@ -303,6 +303,71 @@ window.FHData = (function () {
       });
     },
 
+    /* ---------------------------------------------------------------------
+       uploadFiles — POST /api/documents-upload as multipart/form-data.
+       Same { ok, source, data, error } contract as get()/write() so a screen
+       branches on `ok` exactly once whichever call it made — but it does NOT
+       reuse write(): write() JSON.stringifies its body and sets
+       content-type: application/json, both wrong for a file. The browser sets
+       multipart's boundary itself, so content-type must be left unset here.
+
+       files — an array of File/Blob objects (e.g. from an <input type=file>
+       or a drop event). fields — plain string key/values (client_id, subtype).
+       DEMO SESSIONS DO NOT UPLOAD, same reasoning as write(). */
+    uploadFiles: function (path, files, fields) {
+      if (isDemo()) {
+        return Promise.resolve(fail("demo", "demo session — no upload attempted"));
+      }
+      if (!files || !files.length) {
+        return Promise.resolve(fail("badrequest", "no files to upload"));
+      }
+      var t = token();
+      var headers = { accept: "application/json" };
+      if (t) headers.authorization = "Bearer " + t;
+
+      var form = new FormData();
+      var f = fields || {};
+      for (var k in f) {
+        if (Object.prototype.hasOwnProperty.call(f, k) && f[k] != null) form.append(k, f[k]);
+      }
+      for (var i = 0; i < files.length; i++) form.append("file", files[i], files[i].name);
+
+      var started;
+      try {
+        started = fetch(path, { method: "POST", headers: headers, body: form });
+      } catch (e) {
+        return Promise.resolve(fail("offline", (e && e.message) || "fetch unavailable"));
+      }
+      return Promise.resolve(started).then(function (r) {
+        if (r.status === 401 || r.status === 403) return fail("unauthorized", "not signed in, or not allowed");
+        if (r.status === 404) {
+          return r.json().then(function (d) {
+            return (d && d.error === "not_found" && typeof d.path === "string")
+              ? fail("offline", "/api/* not deployed")
+              : fail("notfound", "no such record");
+          }).catch(function () { return fail("offline", "/api/* not deployed"); });
+        }
+        if (r.status === 400) {
+          return r.json().then(function (d) {
+            return fail("badrequest", (d && (d.error || d.message)) || "rejected");
+          }).catch(function () { return fail("badrequest", "rejected"); });
+        }
+        return r.json().then(function (d) {
+          if (r.status === 503 || (d && d.db === "down")) {
+            return fail("nodb", (d && d.error) || "database unreachable");
+          }
+          if (!d || d.ok !== true) {
+            return fail("server", "HTTP " + r.status + " " + ((d && d.error) || "request failed"));
+          }
+          return { ok: true, source: "api", data: d, error: null };
+        }).catch(function () {
+          return fail("offline", "response was not JSON");
+        });
+      }).catch(function (e) {
+        return fail("offline", (e && e.message) || "network error");
+      });
+    },
+
     /* The query string is how a screen is told which record to show. */
     param: function (name) {
       try { return new URLSearchParams(location.search).get(name); } catch (e) { return null; }

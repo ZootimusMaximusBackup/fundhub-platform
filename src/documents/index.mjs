@@ -12,7 +12,7 @@ export {
 } from "./kinds.mjs";
 
 export {
-  createStore, memoryProvider, vercelBlobProvider, providerFromEnv, storeFromEnv,
+  createStore, memoryProvider, vercelBlobProvider, netlifyBlobsProvider, providerFromEnv, storeFromEnv,
   PROVIDERS, checksumOf, toBytes, buildStoragePath, extensionFor
 } from "./store.mjs";
 
