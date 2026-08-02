@@ -15,6 +15,7 @@
 import { db } from "../src/db.mjs";
 import { requireRole } from "../src/http/middleware/requireRole.mjs";
 import { safeError } from "../src/http/health.mjs";
+import { findSingleBraceTagsInNodes } from "../src/journeys/copy-tags.mjs";
 
 const KEYS = new Set(["client", "setter", "closer", "advisor", "affiliate", "partner"]);
 
@@ -55,6 +56,20 @@ export default async function handler(req, res) {
     }
     if (!Array.isArray(body.nodes)) {
       return res.status(400).json({ ok: false, error: "nodes_must_be_an_array" });
+    }
+    // A single-brace tag like {first_name} is not a token render-template.mjs can
+    // see — it only matches {{double braces}} — so it would send as literal brace
+    // characters instead of the client's name. Refused here, not just warned,
+    // because a saved single-brace tag is a live outbound message defect the
+    // editor itself cannot show the author once it round-trips through the DB.
+    const braceViolations = findSingleBraceTagsInNodes(body.nodes);
+    if (braceViolations.length) {
+      return res.status(400).json({
+        ok: false,
+        error: "single_brace_tags",
+        message: "Some steps use one curly brace instead of two, like {first_name} instead of {{first_name}}. Fix those and save again.",
+        violations: braceViolations
+      });
     }
     try {
       const { rows } = await db.query(

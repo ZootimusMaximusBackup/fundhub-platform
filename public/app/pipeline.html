@@ -102,6 +102,28 @@
   .side.mini .side-foot{justify-content:center;padding:10px 0;}
   .side.mini .side-foot .who{display:none;}
 
+  /* ---------- mobile: the sidebar defaults to the same slim icon rail the
+     desktop collapse button already produces, so it never eats the screen,
+     and the same button expands it — as a floating overlay here instead of
+     an in-flow column, since a phone has no spare width to give it. No new
+     UI element: the existing collapse/expand toggle just means something
+     slightly different below this width. ---------- */
+  @media (max-width:860px){
+    .side:not(.mini){position:fixed;top:0;left:0;height:100vh;width:250px;flex:0 0 250px;
+      z-index:500;box-shadow:12px 0 34px rgba(0,0,0,.45);}
+    .side.mini .navitem{padding:11px 0;}
+    .side-scrim{display:none;}
+    .side-scrim.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:490;}
+  }
+  @media (max-width:480px){
+    /* .topbar-right ran 49px past the right edge of a phone screen — the
+       LIVE pill was clipped off entirely. The clock is the least useful of
+       the three on a phone (org and LIVE status are the ones worth the
+       width) and dropping it is what buys back the room. */
+    .clock{display:none;}
+    .topbar-right{gap:8px;}
+  }
+
   /* rail code eyebrow on each rail tab */
   .rail-tab .rt-code{font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;opacity:.65;margin-right:1px;}
   .rail-tab{cursor:pointer;}
@@ -116,7 +138,8 @@
 
   /* ---------- rail switcher (nav = dark chrome) ---------- */
   .railbar{background:var(--ink);display:flex;align-items:flex-end;gap:2px;padding:0 14px;flex-shrink:0;height:38px;
-    border-bottom:1px solid var(--dark-line);}
+    border-bottom:1px solid var(--dark-line);overflow-x:auto;}
+  .rail-tab{flex-shrink:0;}
   .rail-tab{display:flex;align-items:center;gap:7px;padding:7px 12px 8px;border-radius:6px 6px 0 0;cursor:default;
     font-size:12px;font-weight:600;color:var(--dark-text-dim);white-space:nowrap;position:relative;}
   .rail-tab .rt-count{font-family:var(--mono);font-size:10.5px;background:var(--card);color:var(--dark-text-dim);
@@ -359,6 +382,7 @@
     </nav>
     <div class="side-foot"><span class="pulse"></span><span class="who">CS · EMP-000001</span></div>
   </aside>
+  <div class="side-scrim" id="sideScrim"></div>
 
   <div class="shell">
 
@@ -378,13 +402,13 @@
 
   <!-- RAIL SWITCHER -->
   <nav class="railbar">
-    <div class="rail-tab active" data-rail="R-01"><span class="rt-code">R-01</span>Sales <span class="rt-count">82</span></div>
-    <div class="rail-tab" data-rail="R-02"><span class="rt-code">R-02</span>Funding: Card Stacking <span class="rt-count">33</span></div>
-    <div class="rail-tab" data-rail="R-03"><span class="rt-code">R-03</span>Funding: Alt-Fin (Lendflow) <span class="rt-count">15</span></div>
-    <div class="rail-tab" data-rail="R-04"><span class="rt-code">R-04</span>Optimization (Repair) Rounds <span class="rt-count">44</span></div>
-    <div class="rail-tab" data-rail="R-05"><span class="rt-code">R-05</span>Inquiry Removal <span class="rt-count">27</span></div>
-    <div class="rail-tab" data-rail="R-06"><span class="rt-code">R-06</span>AR / Collections <span class="rt-count">75</span></div>
-    <div class="rail-tab empty" data-rail="R-07"><span class="rt-code">R-07</span>Affiliates + Hiring <span class="rt-count">0</span></div>
+    <div class="rail-tab active" data-rail="R-01"><span class="rt-code">R-01</span>Sales <span class="rt-count">—</span></div>
+    <div class="rail-tab" data-rail="R-02"><span class="rt-code">R-02</span>Funding: Card Stacking <span class="rt-count">—</span></div>
+    <div class="rail-tab" data-rail="R-03"><span class="rt-code">R-03</span>Funding: Alt-Fin (Lendflow) <span class="rt-count">—</span></div>
+    <div class="rail-tab" data-rail="R-04"><span class="rt-code">R-04</span>Optimization (Repair) Rounds <span class="rt-count">—</span></div>
+    <div class="rail-tab" data-rail="R-05"><span class="rt-code">R-05</span>Inquiry Removal <span class="rt-count">—</span></div>
+    <div class="rail-tab" data-rail="R-06"><span class="rt-code">R-06</span>AR / Collections <span class="rt-count">—</span></div>
+    <div class="rail-tab" data-rail="R-07"><span class="rt-code">R-07</span>Affiliates + Hiring <span class="rt-count">—</span></div>
     <div class="rail-tab empty" data-rail="R-08"><span class="rt-code">R-08</span>Affiliates + White Label <span class="rt-count">0</span></div>
     <div class="rail-tab empty" data-rail="R-09"><span class="rt-code">R-09</span>Hiring <span class="rt-count">0</span></div>
   </nav>
@@ -900,9 +924,23 @@
    ══════════════════════════════════════════════════════════════════════════ */
 (function(){
   var side=document.getElementById('side'), burger=document.getElementById('burger');
+  var scrim=document.getElementById('sideScrim');
+  var mobileQ=window.matchMedia('(max-width:860px)');
+  // A phone starts with the sidebar in its compact rail, not the full column
+  // desktop opens with — there is no room to spare on first paint.
+  if(mobileQ.matches && !side.classList.contains('mini')){
+    side.classList.add('mini'); burger.textContent='››';
+  }
+  function syncScrim(){
+    if(scrim) scrim.classList.toggle('show', mobileQ.matches && !side.classList.contains('mini'));
+  }
   burger.addEventListener('click',function(){
     side.classList.toggle('mini');
     burger.textContent=side.classList.contains('mini')?'››':'‹‹';
+    syncScrim();
+  });
+  if(scrim) scrim.addEventListener('click',function(){
+    side.classList.add('mini'); burger.textContent='››'; syncScrim();
   });
   document.querySelectorAll('.navhead').forEach(function(h){
     h.addEventListener('click',function(){
@@ -1310,6 +1348,18 @@ restore();
     if (sumMoneyEl) sumMoneyEl.textContent = totals ? usd(totals.money) : "—";
   }
 
+  /* FH-RAILCOUNT-BEGIN */
+  // Same rule as setSummary: a rail's count is real (from the API, summed the
+  // same way fhPipelineSummary sums a column) or it is a dash. Never the
+  // 82/33/15/44/27/75/0 the tabs used to carry printed once at page load and
+  // never touched again.
+  function setRailCount(rail, n) {
+    var el = document.querySelector('.rail-tab[data-rail="' + rail + '"] .rt-count');
+    if (el) el.textContent = String(n);
+  }
+  window.setRailCount = setRailCount;
+  /* FH-RAILCOUNT-END */
+
   function initials(name) {
     var parts = String(name).trim().split(/\s+/);
     return ((parts[0] || "?")[0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
@@ -1471,6 +1521,7 @@ restore();
       hideNote();
       var r = paint(cache[key]);
       setSummary(fhPipelineSummary(cache[key]));
+      setRailCount(rail, fhPipelineSummary(cache[key]).count);
       if (typeof window.rebuildOwnerOptions === "function") {
         try { window.rebuildOwnerOptions(); } catch (e) { /* filter stays as-is */ }
       }
@@ -1485,6 +1536,7 @@ restore();
         hideNote();
         var r = paint(res.data.stages);
         setSummary(fhPipelineSummary(res.data.stages));
+        setRailCount(rail, fhPipelineSummary(res.data.stages).count);
         // The dropdown was built from whatever cards this call just replaced.
         if (typeof window.rebuildOwnerOptions === "function") {
           try { window.rebuildOwnerOptions(); } catch (e) { /* filter stays as-is */ }
@@ -1507,12 +1559,32 @@ restore();
     });
   }
 
+  // Every rail's tab count, on page load — not just whichever pipeline is
+  // active. Reuses `cache` (so clicking a tab afterward never refetches) and
+  // leaves a rail's count at the "—" it starts on if the fetch fails: the
+  // same rule setSummary follows, unknown is a dash, never a fabricated 0.
+  // `skipRail` is the one load() is already fetching for the initial paint,
+  // so this never double-fetches it.
+  function loadRailCounts(skipRail) {
+    Object.keys(PIPELINE_KEYS).forEach(function (rail) {
+      if (rail === skipRail) return;
+      var key = PIPELINE_KEYS[rail];
+      FHData.pipeline(key).then(function (res) {
+        if (res.ok && res.data && res.data.stages) {
+          cache[key] = res.data.stages;
+          setRailCount(rail, fhPipelineSummary(res.data.stages).count);
+        }
+      });
+    });
+  }
+
   // Exposed so the rail-tab click handler (defined earlier in the page) can
   // drive the same loader instead of the old isSales-only toggle. Safe to
   // reference by the time a click can actually happen: this script runs
   // synchronously during the initial page parse, before the user can click.
   window.FHPipelineBoard = { load: load };
 
+  loadRailCounts("R-01");
   load("R-01", "Sales");
 })();
 </script>

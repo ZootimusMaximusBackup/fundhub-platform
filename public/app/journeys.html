@@ -59,6 +59,30 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .side.mini .navitem{justify-content:center;padding:9px 0}.side.mini .navitem .lbl{display:none}
 .side-foot{padding:12px 16px;border-top:1px solid var(--cardline);font-family:var(--mono);font-size:10px;color:#52525B;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
 .side.mini .side-foot .who{display:none}.side.mini .side-foot{justify-content:center;padding:12px 0}
+
+  /* ---------- mobile: the sidebar defaults to the same slim icon rail the
+     desktop collapse button already produces, so it never eats the screen,
+     and the same button expands it — as a floating overlay here instead of
+     an in-flow column, since a phone has no spare width to give it. No new
+     UI element: the existing collapse/expand toggle just means something
+     slightly different below this width. ---------- */
+  @media (max-width:860px){
+    .side:not(.mini){position:fixed;top:0;left:0;height:100vh;width:250px;flex:0 0 250px;
+      z-index:500;box-shadow:12px 0 34px rgba(0,0,0,.45);}
+    .side.mini .navitem{padding:11px 0;}
+    .side-scrim{display:none;}
+    .side-scrim.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:490;}
+  }
+  @media (max-width:480px){
+    /* .shell clips its children's overflow (see below), and header's four
+       action buttons — Undo, Save version, Test against the code, Apply —
+       don't fit next to the brand on a phone. Without this, Apply (the save
+       button) was simply unreachable, clipped rather than scrollable.
+       Wrapping gives .hactions its own row; overflow-x on .hactions itself
+       means the buttons scroll within that row instead of past .shell's edge. */
+    header{flex-wrap:wrap;row-gap:8px;}
+    .hactions{overflow-x:auto;max-width:100%;}
+  }
 .shell{height:100vh;display:flex;flex-direction:column;flex:1;min-width:0;overflow:hidden}
 
 /* THE RIGHT PADDING BELOW IS NOT COSMETIC. public/app/shell.js mounts a fixed
@@ -353,7 +377,12 @@ body.running .lane.notaken{opacity:.25}
 
 @media (max-width:1140px){.panel{flex:0 0 308px}}
 @media (max-width:920px){
-  .side{display:none}
+  /* The app sidebar itself is handled by the shared mobile rule above (it
+     collapses to the same slim icon rail the desktop collapse button
+     produces, tap to open) — this block is only the journey editor's own
+     three-pane layout (list / canvas / step panel) collapsing to one
+     column, so it no longer hides .side outright and loses the only way
+     off this screen on a phone. */
   .workspace{flex-direction:column;overflow-y:auto}
   #jlist{flex:0 0 auto;border-right:none;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;padding:10px 0}
   #jlist .eyebrow{display:none}
@@ -427,6 +456,7 @@ body.running .lane.notaken{opacity:.25}
 
     <div class="side-foot"><span class="pulse"></span><span class="who">journeys editor</span></div>
   </aside>
+  <div class="side-scrim" id="sideScrim"></div>
 
   <div class="shell">
 
@@ -460,7 +490,12 @@ body.running .lane.notaken{opacity:.25}
 <script>
 (function(){
   var side=document.getElementById('side'),b=document.getElementById('burger');
-  b.addEventListener('click',function(){side.classList.toggle('mini');b.textContent=side.classList.contains('mini')?'››':'‹‹';});
+  var scrim=document.getElementById('sideScrim');
+  var mobileQ=window.matchMedia('(max-width:860px)');
+  if(mobileQ.matches && !side.classList.contains('mini')){side.classList.add('mini');b.textContent='››';}
+  function syncScrim(){if(scrim) scrim.classList.toggle('show', mobileQ.matches && !side.classList.contains('mini'));}
+  b.addEventListener('click',function(){side.classList.toggle('mini');b.textContent=side.classList.contains('mini')?'››':'‹‹';syncScrim();});
+  if(scrim) scrim.addEventListener('click',function(){side.classList.add('mini');b.textContent='››';syncScrim();});
   document.querySelectorAll('.navhead').forEach(function(h){
     h.addEventListener('click',function(){if(side.classList.contains('mini'))return;h.parentElement.classList.toggle('closed');});
   });
@@ -494,7 +529,7 @@ function seed(){return{
  client:{name:'Client',start:'Someone submits the funding form',end:'They have their diagnostic — funding takes over',
   desc:'What a business owner goes through, from filling out the form to getting their result.',
   nodes:[
-   N('sms','Text them the survey link',{body:"Hi {first_name} — Chris from Fundhub. Got your request. Quick 2-min survey so I can see what you'd qualify for: {survey_link}  Reply STOP to opt out.",delay:'instant'},
+   N('sms','Text them the survey link',{body:"Hi {{first_name}} — Chris from Fundhub. Got your request. Quick 2-min survey so I can see what you'd qualify for: {{survey_link}}  Reply STOP to opt out.",delay:'instant'},
      [['Template','S-01'],['Agent','Setter Josh picks up the reply thread'],['Rule','A2P opt-out language required']]),
    N('assign','Give the lead to a setter',{role:'Setter'},
      [['Journey','Setter journey starts'],['Agent','Setter Josh dials within 5 minutes'],['Screen','Setter queue']]),
@@ -502,12 +537,12 @@ function seed(){return{
    N('condition','Did they finish the survey',{field:'survey_complete',op:'is true'},[],[
      {label:'Yes',nodes:[
        N('stage','Move them to Survey Complete',{stage:'Survey Complete',pipeline:'Sales'},[['Screen','Sales board']]),
-       N('sms','Text them the booking link',{body:"Thanks {first_name}. Based on what you shared there's a path here. Grab a time and I'll walk you through it: {booking_link}  Reply STOP to opt out.",delay:'instant'},[['Template','S-02'],['Screen','Closer calendar']])]},
+       N('sms','Text them the booking link',{body:"Thanks {{first_name}}. Based on what you shared there's a path here. Grab a time and I'll walk you through it: {{booking_link}}  Reply STOP to opt out.",delay:'instant'},[['Template','S-02'],['Screen','Closer calendar']])]},
      {label:'No',nodes:[
-       N('sms','Nudge them once more',{body:"{first_name} — still need those 2 minutes to see what you qualify for: {survey_link}  Reply STOP to opt out.",delay:'instant'},[['Template','S-02b']])]}
+       N('sms','Nudge them once more',{body:"{{first_name}} — still need those 2 minutes to see what you qualify for: {{survey_link}}  Reply STOP to opt out.",delay:'instant'},[['Template','S-02b']])]}
    ]),
    N('stage','Move them to Booked',{stage:'Booked',pipeline:'Sales'},[['Screen','Sales board']]),
-   N('sms','Remind them the day before',{body:"{first_name} — we're on for tomorrow at {time}. Bring your entity info and I'll map out what's available. Reply STOP to opt out.",delay:'24h before'},[['Template','S-03']]),
+   N('sms','Remind them the day before',{body:"{{first_name}} — we're on for tomorrow at {{time}}. Bring your entity info and I'll map out what's available. Reply STOP to opt out.",delay:'24h before'},[['Template','S-03']]),
    N('handoff','Hand the call to a closer',{role:'Closer',stage:'Call Assigned'},
      [['Journey','Closer journey starts'],['Screen','Pre-call panel'],['Rule','Only clocked-in closers get bookings']]),
    N('payment','Take the $32 diagnostic',{amount:'32.00',product:'Business Financial Assessment'},
@@ -515,7 +550,7 @@ function seed(){return{
    N('agent','Run UnderwriteIQ',{agent:'UnderwriteIQ',note:'Soft pull, then score the file and pick a route.'},
      [['Agent','UnderwriteIQ engine'],['Rule','FCRA soft-pull consent gate'],['Screen','Closer result screen']]),
    N('email','Email the results',{subject:'Your Fundhub diagnostic is ready',
-     body:"{first_name} — your report is in the portal: {portal_link}. Your advisor will call to walk through it.",delay:'instant'},
+     body:"{{first_name}} — your report is in the portal: {{portal_link}}. Your advisor will call to walk through it.",delay:'instant'},
      [['Screen','portal.fundhub.ai'],['Journey','Funding Advisor can start']])
   ]},
  setter:{name:'Setter',start:'A new lead lands in the queue',end:'Call is booked and handed to a closer',
@@ -524,8 +559,8 @@ function seed(){return{
    N('agent','Voice agent calls them',{agent:'Setter Josh',note:'Three attempts across the first hour.'},
      [['Agent','Setter Josh (Bland)'],['Rule','Stops at three attempts']]),
    N('condition','Did they pick up',{field:'call_answered',op:'is true'},[],[
-     {label:'Yes',nodes:[N('sms','Send the survey link',{body:"Here's the 2-minute survey, {first_name}: {survey_link}  Reply STOP to opt out.",delay:'instant'},[['Template','N-03']])]},
-     {label:'No',nodes:[N('sms','Text after the missed call',{body:"Tried you just now, {first_name} — Chris from Fundhub. Easier to text? Tell me what you're trying to fund. Reply STOP to opt out.",delay:'instant'},[['Template','N-02']])]}
+     {label:'Yes',nodes:[N('sms','Send the survey link',{body:"Here's the 2-minute survey, {{first_name}}: {{survey_link}}  Reply STOP to opt out.",delay:'instant'},[['Template','N-03']])]},
+     {label:'No',nodes:[N('sms','Text after the missed call',{body:"Tried you just now, {{first_name}} — Chris from Fundhub. Easier to text? Tell me what you're trying to fund. Reply STOP to opt out.",delay:'instant'},[['Template','N-02']])]}
    ]),
    N('stage','Move them to Booked',{stage:'Booked',pipeline:'Sales'},[['Screen','Sales board']]),
    N('handoff','Hand off to a closer',{role:'Closer',stage:'Call Assigned'},[['Journey','Closer journey'],['Rule','Setter credited for commission']])
@@ -539,7 +574,7 @@ function seed(){return{
    N('condition','Do they qualify for funding',{field:'underwrite_route',op:'= funding'},[],[
      {label:'Qualified',nodes:[
        N('stage','Close them to deposit',{stage:'Closed Won (deposit)',pipeline:'Sales'},[['Rule','Commission splits read from the table']]),
-       N('sms','Text the good news',{body:"{first_name} — you're approved to move forward. {lender} came back at {amount}. Your advisor will call today. Reply STOP to opt out.",delay:'instant'},[['Template','F-03']]),
+       N('sms','Text the good news',{body:"{{first_name}} — you're approved to move forward. {{lender}} came back at {{amount}}. Your advisor will call today. Reply STOP to opt out.",delay:'instant'},[['Template','F-03']]),
        N('handoff','Hand to a funding advisor',{role:'Funding Advisor',stage:'File Received'},[['Journey','Funding Advisor journey']])]},
      {label:'Not yet',nodes:[
        N('stage','Move them to Downsell',{stage:'Downsell',pipeline:'Sales'},[]),
@@ -551,7 +586,7 @@ function seed(){return{
   nodes:[
    N('record','Open a funding round',{note:'Lender set comes from the Bank and Lender Match List.'},[['Screen','Advisor dashboard'],['Rule','Round scoped to one company']]),
    N('stage','Submit the round',{stage:'Round Submitted',pipeline:'Funding: Card Stacking'},[['Rule','Alt-fin moves only on Lendflow webhooks']]),
-   N('sms','Tell them it went out',{body:"Round submitted, {first_name}. Decisions usually land in 24-72 hours. I'll text as they come in. Reply STOP to opt out.",delay:'instant'},[['Template','F-02']]),
+   N('sms','Tell them it went out',{body:"Round submitted, {{first_name}}. Decisions usually land in 24-72 hours. I'll text as they come in. Reply STOP to opt out.",delay:'instant'},[['Template','F-02']]),
    N('wait','Wait on lender decisions',{amount:'3',unit:'days'},[]),
    N('stage','Mark it funded',{stage:'Funded',pipeline:'Funding: Card Stacking'},[['Screen','Client finance dashboard'],['Journey','Owner revenue roll-up']])
   ]},
@@ -688,8 +723,9 @@ RETURN:
 RULES:
 1. FILL EVERYTHING IN. Never a placeholder, TODO, empty string, or unfilled {{variable}}. Write the real SMS
    copy. Pick the real delay. Name the real field. A half-finished step is worse than none — this is the point.
-2. Match the existing SMS voice: first person from Chris, short, casual, one clear ask, {first_name} and
-   links like {booking_link}. Every SMS body MUST end "Reply STOP to opt out."
+2. Match the existing SMS voice: first person from Chris, short, casual, one clear ask, {{first_name}} and
+   links like {{booking_link}}. Merge tags always use DOUBLE curly braces — {{first_name}}, never
+   {first_name} — that is what the renderer reads. Every SMS body MUST end "Reply STOP to opt out."
 3. "path":["conditionId",0] targets the first lane, 1 the second. [] or omitted = main line.
 4. "after" is the id the new step goes below, or "start" for the top of that line.
 5. Every inserted node needs type, title (plain English, verb first), cfg. Conditions need two labelled lanes.
@@ -730,13 +766,13 @@ function localPatch(text,scopeId){
   if(/confirm|no.?show|remind|follow.?up|again|chase|nudge|quiet/.test(t)) return {summary:'Added a wait and a follow-up text.',ops:[
     {op:'insert',after,path:[],node:{type:'wait',title:'Give them a couple of hours',cfg:{amount:'2',unit:'hours'}}},
     {op:'insert',after,path:[],node:{type:'sms',title:'Follow up if they went quiet',
-      cfg:{body:"{first_name} — haven't heard back. Still want me to look at what you'd qualify for? Reply STOP to opt out.",delay:'after 2 hours'}}}]};
+      cfg:{body:"{{first_name}} — haven't heard back. Still want me to look at what you'd qualify for? Reply STOP to opt out.",delay:'after 2 hours'}}}]};
   if(/email/.test(t)) return {summary:'Added an email step.',ops:[{op:'insert',after,path:[],
     node:{type:'email',title:'Email them a recap',cfg:{subject:'What we covered',body:'A short recap of the call and what happens next.',delay:'instant'}}}]};
   if(/wait|delay|hold/.test(t)) return {summary:'Added a one-day wait.',ops:[{op:'insert',after,path:[],
     node:{type:'wait',title:'Wait a day',cfg:{amount:'1',unit:'days'}}}]};
   return {summary:'Added a text step.',ops:[{op:'insert',after,path:[],
-    node:{type:'sms',title:'Reach out',cfg:{body:"{first_name} — quick one from Fundhub. Reply STOP to opt out.",delay:'instant'}}}]};
+    node:{type:'sms',title:'Reach out',cfg:{body:"{{first_name}} — quick one from Fundhub. Reply STOP to opt out.",delay:'instant'}}}]};
 }
 function stagePatch(patch,askedFor){
   pushUndo();
@@ -781,7 +817,7 @@ function rejectPending(){ if(undoStack.length) J[active]=JSON.parse(undoStack.po
 const FAKE={first_name:'Dana',last_name:'Reyes',company:'Reyes Fabrication LLC',
   survey_link:'fundhub.ai/s/dq8f2',booking_link:'fundhub.ai/b/dq8f2',portal_link:'portal.fundhub.ai/c/dq8f2',
   time:'2:30pm',lender:'Chase Ink',amount:'$18,000'};
-function fill(s){return String(s||'').replace(/\{(\w+)\}/g,(m,k)=>FAKE[k]!==undefined?FAKE[k]:m)}
+function fill(s){return String(s||'').replace(/\{\{\s*(\w+)\s*\}\}/g,(m,k)=>FAKE[k]!==undefined?FAKE[k]:m)}
 
 function plan(nodes){
   const out=[];
@@ -960,7 +996,7 @@ function stepHTML(){
   const n=findNode(selId).node,c=n.cfg||{};
   let body='';
   switch(n.type){
-    case 'sms': body=F.area('What it says','body',c.body,'Braces fill in from their file. The opt-out line has to stay.')+
+    case 'sms': body=F.area('What it says','body',c.body,'Use double braces like {{first_name}} to fill in from their file. The opt-out line has to stay.')+
       F.sel('When it goes out','delay',c.delay,DELAYS); break;
     case 'email': body=F.txt('Subject','subject',c.subject)+F.area('What it says','body',c.body)+
       F.sel('When it goes out','delay',c.delay,['instant','after 1 hour','after 1 day','after 2 days']); break;
@@ -1127,6 +1163,31 @@ function toast(html){
   d.innerHTML=html+'<div class="pb"></div>';
   document.body.appendChild(d); setTimeout(()=>d.remove(),4500);
 }
+/* Same check the server runs (src/journeys/copy-tags.mjs), duplicated here so a
+   staff member finds out before a network round trip, not after. The server
+   check is still the one that actually protects the database — this is only
+   the fast path to the same answer. A naive /\{(\w+)\}/ would also match inside
+   a correct {{first_name}} (the substring "{first_name}" satisfies it), so real
+   double-brace tokens are stripped first and only what is left is checked. */
+function singleBraceTags(s){
+  if(s==null) return [];
+  const stripped=String(s).replace(/\{\{\s*\w+(?:\.\w+)*\s*\}\}/g,'');
+  const seen=new Set();
+  for(const m of stripped.matchAll(/\{(\w+)\}/g)) seen.add(m[1]);
+  return [...seen];
+}
+function singleBraceViolations(nodes){
+  const out=[];
+  const walk=list=>(list||[]).forEach(n=>{
+    if(n.type==='sms'||n.type==='email'){
+      ['body','subject'].forEach(f=>{ const tags=singleBraceTags(n.cfg&&n.cfg[f]);
+        if(tags.length) out.push({title:n.title,field:f,tags}); });
+    }
+    (n.branches||[]).forEach(b=>walk(b.nodes));
+  });
+  walk(nodes);
+  return out;
+}
 /* applyAll — saves every touched journey to the database via PUT /api/journeys.
    One request per touched journey; on any failure nothing is cleared, so a
    half-saved batch always shows up as still dirty rather than looking applied. */
@@ -1134,6 +1195,12 @@ async function applyAll(){
   if(!dirty){toast('<b>Nothing to apply.</b> Change a step first.');return}
   const keys=Object.keys(touched);
   const n=dirty, imp=impact();
+  const braceProblems=[];
+  keys.forEach(k=>{ const v=singleBraceViolations(J[k].nodes); if(v.length) braceProblems.push(...v.map(x=>J[k].name+' — "'+x.title+'": {'+x.tags.join('}, {')+'}')); });
+  if(braceProblems.length){
+    toast('<b>Fix the braces first.</b> These steps use one { } instead of two {{ }} — nothing was saved: '+esc(braceProblems.join('; '))+'.');
+    return;
+  }
   const btn=document.getElementById('apply'); if(btn) btn.disabled=true;
   try{
     for(const k of keys){
@@ -1142,7 +1209,7 @@ async function applyAll(){
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({key:k,name:j.name,start:j.start,end:j.end,desc:j.desc,nodes:j.nodes})});
       const data=await res.json().catch(()=>({}));
-      if(!res.ok||!data.ok) throw new Error((data&&data.error)||('HTTP '+res.status));
+      if(!res.ok||!data.ok) throw new Error((data&&(data.message||data.error))||('HTTP '+res.status));
     }
     keys.forEach(k=>{ SAVED[k]=JSON.parse(JSON.stringify(J[k])); });
     dirty=0; touched={}; undoStack=[];

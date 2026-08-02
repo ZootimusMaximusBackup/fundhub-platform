@@ -105,6 +105,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/120_messages_sender.sql",
   "migrations/121_sms_routing_twilio.sql",
   "migrations/122_conversations_activity.sql",
+  "migrations/123_journey_copy_double_brace.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
   "seed/007_payment_link_template.sql",

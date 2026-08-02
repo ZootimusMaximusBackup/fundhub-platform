@@ -94,7 +94,7 @@ export const SEED_JOURNEYS = {
         "type": "sms",
         "title": "Text them the survey link",
         "cfg": {
-          "body": "Hi {first_name} — Chris from Fundhub. Got your request. Quick 2-min survey so I can see what you'd qualify for: {survey_link}  Reply STOP to opt out.",
+          "body": "Hi {{first_name}} — Chris from Fundhub. Got your request. Quick 2-min survey so I can see what you'd qualify for: {{survey_link}}  Reply STOP to opt out.",
           "delay": "instant"
         },
         "touches": [
@@ -177,7 +177,7 @@ export const SEED_JOURNEYS = {
                 "type": "sms",
                 "title": "Text them the booking link",
                 "cfg": {
-                  "body": "Thanks {first_name}. Based on what you shared there's a path here. Grab a time and I'll walk you through it: {booking_link}  Reply STOP to opt out.",
+                  "body": "Thanks {{first_name}}. Based on what you shared there's a path here. Grab a time and I'll walk you through it: {{booking_link}}  Reply STOP to opt out.",
                   "delay": "instant"
                 },
                 "touches": [
@@ -201,7 +201,7 @@ export const SEED_JOURNEYS = {
                 "type": "sms",
                 "title": "Nudge them once more",
                 "cfg": {
-                  "body": "{first_name} — still need those 2 minutes to see what you qualify for: {survey_link}  Reply STOP to opt out.",
+                  "body": "{{first_name}} — still need those 2 minutes to see what you qualify for: {{survey_link}}  Reply STOP to opt out.",
                   "delay": "instant"
                 },
                 "touches": [
@@ -235,7 +235,7 @@ export const SEED_JOURNEYS = {
         "type": "sms",
         "title": "Remind them the day before",
         "cfg": {
-          "body": "{first_name} — we're on for tomorrow at {time}. Bring your entity info and I'll map out what's available. Reply STOP to opt out.",
+          "body": "{{first_name}} — we're on for tomorrow at {{time}}. Bring your entity info and I'll map out what's available. Reply STOP to opt out.",
           "delay": "24h before"
         },
         "touches": [
@@ -316,7 +316,7 @@ export const SEED_JOURNEYS = {
         "title": "Email the results",
         "cfg": {
           "subject": "Your Fundhub diagnostic is ready",
-          "body": "{first_name} — your report is in the portal: {portal_link}. Your advisor will call to walk through it.",
+          "body": "{{first_name}} — your report is in the portal: {{portal_link}}. Your advisor will call to walk through it.",
           "delay": "instant"
         },
         "touches": [
@@ -375,7 +375,7 @@ export const SEED_JOURNEYS = {
                 "type": "sms",
                 "title": "Send the survey link",
                 "cfg": {
-                  "body": "Here's the 2-minute survey, {first_name}: {survey_link}  Reply STOP to opt out.",
+                  "body": "Here's the 2-minute survey, {{first_name}}: {{survey_link}}  Reply STOP to opt out.",
                   "delay": "instant"
                 },
                 "touches": [
@@ -395,7 +395,7 @@ export const SEED_JOURNEYS = {
                 "type": "sms",
                 "title": "Text after the missed call",
                 "cfg": {
-                  "body": "Tried you just now, {first_name} — Chris from Fundhub. Easier to text? Tell me what you're trying to fund. Reply STOP to opt out.",
+                  "body": "Tried you just now, {{first_name}} — Chris from Fundhub. Easier to text? Tell me what you're trying to fund. Reply STOP to opt out.",
                   "delay": "instant"
                 },
                 "touches": [
@@ -540,7 +540,7 @@ export const SEED_JOURNEYS = {
                 "type": "sms",
                 "title": "Text the good news",
                 "cfg": {
-                  "body": "{first_name} — you're approved to move forward. {lender} came back at {amount}. Your advisor will call today. Reply STOP to opt out.",
+                  "body": "{{first_name}} — you're approved to move forward. {{lender}} came back at {{amount}}. Your advisor will call today. Reply STOP to opt out.",
                   "delay": "instant"
                 },
                 "touches": [
@@ -648,7 +648,7 @@ export const SEED_JOURNEYS = {
         "type": "sms",
         "title": "Tell them it went out",
         "cfg": {
-          "body": "Round submitted, {first_name}. Decisions usually land in 24-72 hours. I'll text as they come in. Reply STOP to opt out.",
+          "body": "Round submitted, {{first_name}}. Decisions usually land in 24-72 hours. I'll text as they come in. Reply STOP to opt out.",
           "delay": "instant"
         },
         "touches": [

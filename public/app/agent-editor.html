@@ -47,11 +47,33 @@ button,input,select,textarea{font:inherit;color:inherit}
 .side.mini .navitem{justify-content:center;padding:9px 0}.side.mini .navitem .lbl{display:none}
 .side-foot{padding:12px 16px;border-top:1px solid var(--cardline);font-family:var(--mono);font-size:10px;color:#52525B;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
 .side.mini .side-foot .who{display:none}.side.mini .side-foot{justify-content:center;padding:12px 0}
+
+  /* ---------- mobile: the sidebar defaults to the same slim icon rail the
+     desktop collapse button already produces, so it never eats the screen,
+     and the same button expands it — as a floating overlay here instead of
+     an in-flow column, since a phone has no spare width to give it. No new
+     UI element: the existing collapse/expand toggle just means something
+     slightly different below this width. ---------- */
+  @media (max-width:860px){
+    .side:not(.mini){position:fixed;top:0;left:0;height:100vh;width:250px;flex:0 0 250px;
+      z-index:500;box-shadow:12px 0 34px rgba(0,0,0,.45);}
+    .side.mini .navitem{padding:11px 0;}
+    .side-scrim{display:none;}
+    .side-scrim.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:490;}
+  }
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
 .topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
 .topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
+@media (max-width:480px){
+  /* The title, live chip and "+ New agent" button don't fit in one 57px row
+     on a phone — the button was running 14px off the right edge of the
+     screen. Same fix .card-hd already uses (flex-wrap) rather than a new
+     pattern: wrap to two rows, with .spacer forcing the break between them. */
+  .topbar{height:auto;flex:0 0 auto;flex-wrap:wrap;padding:10px 16px;row-gap:8px}
+  .topbar .spacer{flex-basis:100%;height:0}
+}
 .content{padding:22px 24px 40px;flex:1}
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .card+.card{margin-top:14px}
@@ -217,6 +239,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
     </nav>
     <div class="side-foot"><span class="pulse"></span><span class="who">CS · EMP-000001</span></div>
   </aside>
+  <div class="side-scrim" id="sideScrim"></div>
 
   <div class="main">
     <div class="topbar">
@@ -354,7 +377,12 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 <script>
 (function(){
   var side=document.getElementById('side'),b=document.getElementById('burger');
-  b.addEventListener('click',function(){side.classList.toggle('mini');b.textContent=side.classList.contains('mini')?'››':'‹‹';});
+  var scrim=document.getElementById('sideScrim');
+  var mobileQ=window.matchMedia('(max-width:860px)');
+  if(mobileQ.matches && !side.classList.contains('mini')){side.classList.add('mini');b.textContent='››';}
+  function syncScrim(){if(scrim) scrim.classList.toggle('show', mobileQ.matches && !side.classList.contains('mini'));}
+  b.addEventListener('click',function(){side.classList.toggle('mini');b.textContent=side.classList.contains('mini')?'››':'‹‹';syncScrim();});
+  if(scrim) scrim.addEventListener('click',function(){side.classList.add('mini');b.textContent='››';syncScrim();});
   document.querySelectorAll('.navhead').forEach(function(h){
     h.addEventListener('click',function(){if(side.classList.contains('mini'))return;h.parentElement.classList.toggle('closed');});
   });
