@@ -160,3 +160,46 @@ Journey Runner first-ever run against production, fixes for four bugs, regressio
 - Migration numbering, final state: `main` tops out at `126_outbound_switch.sql`. Every one of the six branches independently claimed `117` (or `117`–`119`) for its own first new migration, because all six were cut from the same pre-portal-auth commit — six branches, six renumbering passes, one with three colliding files at once (branch 3). `db/expected-migrations.mjs` is regenerable with `npm run migrations:manifest`; hand-merging its conflict block correctly (right content, right order) is the one step that produced real if shallow test failures twice across this merge run (branches 4 and — indirectly, via the sweeper registration change — 3).
 - Branch deletion: not attempted for five of the six merged branches (this session skipped a redundant attempt); the one attempt made (branch 1, session 1) returned `HTTP 403` from the outbound proxy — network policy in this hosted environment blocks GitHub branch-delete calls the same way it blocks `api.netlify.com`/`api.supabase.com` (CLAUDE.md §11). All six merged branches are still on origin and need deleting from an unrestricted environment or by a human.
 - Playwright (CLAUDE.md §6 gate 4) — the one item genuinely left undone, on explicit user instruction to skip it for token-budget reasons on both branch 6 and branch 3: the only spec file in the repo (`e2e/messaging-inbox.spec.mjs`) was added by merge #5 and covers only the messaging inbox. It ran to completion once (18/18 pass, merge #5). Merges #2 and #4 predate the spec entirely and were never coverable. Merge #6 (seven screens: agent-editor, automations, client-control-panel, command-center, finance-os, journeys, pipeline, template-editor) was started and stopped mid-run before finishing. Merge #3 (contract screens, ops-admin outbound panel) was never started at all, per instruction. **Net gap for a human**: only the messaging inbox has a completed Playwright pass on record; every other screen shipped across all six branches — uploads, payment links, contracts, ops-admin outbound mail, and all seven journey/pipeline screens — has no browser-level test coverage at all, not merge-specific incompleteness but an absence of specs.
+
+---
+
+# Go-live batch 2026-08-02 (session: merge colliding 127–130)
+
+Worktree: `/Users/zootimusmaximus/fundhub-platform-merge-live` on `merge/go-live`.
+Baseline `origin/main`: `c37dc60`. Model: Grok. No split. Owner instruction: no questions; document calls and continue.
+
+## Branches found on origin (this batch)
+
+| Branch | Migrations as written | Notes |
+|--------|----------------------|-------|
+| `retire/r07-affiliates-hiring` | `127_retire_affiliates_hiring.sql` | |
+| `feat/org-brand-crm` | `127_org_brand.sql` | collides on 127 |
+| `feat/company-brain` | `127_company_brain.sql`, `128_company_brain_sync.sql`, `129_company_brain_classification.sql`, `130_company_brain_affiliate_allowlist.sql` | collides on 127–130 |
+| `fix/contract-template-save` | `128_contract_template_write_repair.sql` | collides on 128 |
+| `fix/controls-persist` | _(none)_ | already on main via PR #65 (`c230269`); skip merge |
+| `feat/crm-global-search` | _(none)_ | UI + API only |
+
+## Renumber map (old → new)
+
+| Source | Old | New |
+|--------|-----|-----|
+| retire/r07 | `127_retire_affiliates_hiring.sql` | `127_retire_affiliates_hiring.sql` (unchanged) |
+| org-brand | `127_org_brand.sql` | `128_org_brand.sql` |
+| contract-template-save | `128_contract_template_write_repair.sql` | `129_contract_template_write_repair.sql` |
+| company-brain | `127_company_brain.sql` | `130_company_brain.sql` |
+| company-brain | `128_company_brain_sync.sql` | `131_company_brain_sync.sql` |
+| company-brain | `129_company_brain_classification.sql` | `132_company_brain_classification.sql` |
+| company-brain | `130_company_brain_affiliate_allowlist.sql` | `133_company_brain_affiliate_allowlist.sql` |
+
+## Merge order
+
+1. retire/r07 → 2. org-brand (renumber) → 3. contract-template-save (renumber) → 4. company-brain (renumber) → 5. crm-global-search. Skip controls-persist.
+
+## 9. retire/r07-affiliates-hiring — MERGED-CLEAN
+
+- Conflicts: none.
+- Migration: `127_retire_affiliates_hiring.sql` kept as 127.
+- Suite gate (same convention as prior merge log: no `DATABASE_URL`, pg files skip): green — unit + skipped-pg, 0 fail. With local `fundhub_ci` as owner + `ALLOW_SUPERUSER_DB=1`, pg layer showed ~40 fails from dirty shared DB stage counts / unrelated modules (sales rail returned 13 stages vs seeded 3); not introduced by this merge. Targeted pipeline screen tests for R-07 retirement are in the branch and pass under unit.
+- Local migrate applied 127 (retired 1 pipeline row, 0 cards).
+- Push / delete: recorded below when pushed.
+
