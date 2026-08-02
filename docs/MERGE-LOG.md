@@ -223,3 +223,15 @@ Baseline `origin/main`: `c37dc60`. Model: Grok. No split. Owner instruction: no 
   - `node_modules` modify/delete — **call:** kept HEAD deletion (main already stopped tracking the Mac symlink in `aa5382d`). Reinstalled locally with `npm ci` for the suite; not committed.
 - No logic conflicts in contract template code.
 - Suite: unit (no DATABASE_URL) after commit.
+
+## 12. feat/company-brain — MERGED-WITH-RESOLUTION
+
+- Prep commits `acb3c4c`/`36d25ba` renumbered:
+  - `127_company_brain.sql` → `130_company_brain.sql`
+  - `128_company_brain_sync.sql` → `131_company_brain_sync.sql`
+  - `129_company_brain_classification.sql` → `132_company_brain_classification.sql`
+  - `130_company_brain_affiliate_allowlist.sql` → `133_company_brain_affiliate_allowlist.sql`
+  and updated file headers + DEPENDS ON comments. Also dropped tracked `node_modules` symlink on the prep branch so it matches main hygiene.
+- Conflicts: only `db/expected-migrations.mjs` — regenerated; final sequence 127–133.
+- Auto-merged cleanly: `netlify/functions/api.mjs`, `public/app/shell.js`, and many CRM HTML screens (additive nav / empty-state patterns).
+- Env: deliberately NOT setting `OPENAI_API_KEY`, `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON`, or `GOOGLE_DRIVE_DELEGATE_EMAIL` — Drive/OpenAI sync stays off.

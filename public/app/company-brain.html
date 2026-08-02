@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fundhub — Company Brain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--butter:#F2E39B}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+.logo{width:118px;height:24px;flex:0 0 118px}
+.eyebrow{display:block}
+.eyebrow .sep{color:var(--line);margin:0 6px}
+.app{display:flex;min-height:100vh}
+.side{width:230px;flex:0 0 230px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
+.side::after{content:"";position:absolute;top:0;right:0;width:2px;height:100%;background:var(--spectrum);opacity:.9}
+.side.mini{width:60px;flex:0 0 60px}
+.side-top{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--cardline)}
+.side.mini .side-top{padding:0 12px}.side.mini .logo{display:none}
+.burger{margin-left:auto;width:26px;height:26px;flex:0 0 26px;border:1px solid var(--cardline);background:transparent;color:var(--gray2);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+.burger:hover{border-color:#3F3F46;color:var(--paper)}.side.mini .burger{margin:0 auto}
+.side-scroll{flex:1;overflow-y:auto;padding:12px 0 8px}
+.side-scroll::-webkit-scrollbar{width:6px}.side-scroll::-webkit-scrollbar-thumb{background:#27272A;border-radius:3px}
+.navgroup{margin-bottom:3px}
+.navhead{width:100%;background:transparent;border:0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;padding:9px 18px 6px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#71717A}
+.navhead:hover{color:var(--gray2)}
+.navhead .chev{margin-left:auto;font-size:9px;transition:transform .16s;color:#52525B}
+.navgroup.closed .chev{transform:rotate(-90deg)}.navgroup.closed .navlist{display:none}
+.side.mini .navhead{justify-content:center;padding:10px 0 6px;font-size:0;letter-spacing:0}
+.side.mini .navhead::after{content:"";display:block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;opacity:.5}
+.side.mini .navhead .chev{display:none}
+.navlist{display:flex;flex-direction:column}
+.navitem{display:flex;align-items:center;gap:11px;padding:7px 18px;font-size:12.5px;color:var(--gray2);text-decoration:none;position:relative;transition:color .12s,background .12s}
+.navitem:hover{color:var(--paper);background:#161619}
+.navitem .ico{font-family:var(--mono);font-size:12px;width:16px;flex:0 0 16px;text-align:center;opacity:.75}
+.navitem.on{color:var(--paper);background:#161619;font-weight:500}
+.navitem.on::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--spectrum);border-radius:0 2px 2px 0}
+.navitem.on .ico{opacity:1}
+.side.mini .navitem{justify-content:center;padding:9px 0}.side.mini .navitem .lbl{display:none}
+.side-foot{padding:12px 16px;border-top:1px solid var(--cardline);font-family:var(--mono);font-size:10px;color:#52525B;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
+.side.mini .side-foot .who{display:none}.side.mini .side-foot{justify-content:center;padding:12px 0}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.spacer{flex:1}
+.content{padding:22px 24px 40px;flex:1}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.card+.card{margin-top:14px}
+.card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.card-bd{padding:16px}
+.hair{height:2px;background:var(--spectrum);border-radius:1px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
+.btn:hover{background:var(--soft);border-color:var(--gray2)}
+.btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn.dark:hover{background:var(--ink2)}
+.btn.sm{padding:5px 10px;font-size:11.5px}
+.btn.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.tabs{display:flex;border-bottom:1px solid var(--line);padding:0 16px;background:#fff;overflow-x:auto}
+.tab{background:transparent;border:0;border-bottom:2px solid transparent;cursor:pointer;padding:11px 13px;font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:-1px;white-space:nowrap}
+.tab:hover{color:var(--ink)}.tab.on{color:var(--ink);border-bottom-color:var(--ink)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
+.b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
+.b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
+.b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
+.b-info{background:rgba(169,198,232,.26);border-color:var(--info);color:#22415F}
+.b-accent{background:rgba(196,179,229,.26);border-color:var(--accent);color:#3F2F63}
+.b-butter{background:rgba(242,227,155,.32);border-color:var(--butter);color:#5E5310}
+.b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
+table.grid{width:100%;border-collapse:collapse}
+table.grid th{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft);cursor:pointer;user-select:none}
+table.grid th:hover{color:var(--ink)}
+table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+table.grid tr:last-child td{border-bottom:0}
+table.grid tbody tr:hover{background:var(--soft)}
+table.grid tr.stale td{background:rgba(242,166,155,.09)}
+table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
+.age{font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums}
+.age.hot{color:#6E2A22;font-weight:600}
+.age.warm{color:#6B4A12}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+.stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
+.stat .sv{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
+.stat .sd{font-size:11px;color:var(--gray);margin-top:2px}
+.classbar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+.classcard{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .12s;position:relative;overflow:hidden}
+.classcard:hover{border-color:var(--ink)}
+.classcard::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum);opacity:0;transition:opacity .12s}
+.classcard:hover::before,.classcard.on::before{opacity:1}
+.classcard.on{border-color:var(--ink)}
+.classcard .cn{font-size:13px;font-weight:600;margin-top:7px;letter-spacing:-.01em}
+.classcard .cc{font-family:var(--mono);font-size:19px;font-weight:600;margin-top:6px}
+.classcard .cs{font-size:11px;color:var(--gray);margin-top:2px}
+.bar{height:5px;border-radius:3px;background:var(--soft);overflow:hidden;display:flex;margin-top:9px}
+.bar i{display:block;height:100%}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+.empty{padding:26px 16px;text-align:center;color:var(--gray2);font-size:12px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--gray);padding:12px 16px;border-top:1px solid var(--line);background:var(--soft)}
+@media(max-width:1000px){.stats,.classbar{grid-template-columns:repeat(2,1fr)}}
+</style>
+<script src="shell.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
+    <nav class="side-scroll">
+<div class="navgroup"><button class="navhead">Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+        <a class="navitem on" href="company-brain.html"><span class="ico">◎</span><span class="lbl">Company Brain</span></a>
+        <a class="navitem" href="contracts.html"><span class="ico">✒</span><span class="lbl">Contracts</span></a>
+      </div></div>
+<div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
+        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+      </div></div>
+<div class="navgroup"><button class="navhead">Automation<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+        <a class="navitem" href="journeys.html"><span class="ico">⇝</span><span class="lbl">Journeys</span></a>
+        <a class="navitem" href="template-editor.html"><span class="ico">✎</span><span class="lbl">Message Copy</span></a>
+      </div></div>
+<div class="navgroup"><button class="navhead">Setup<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
+        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
+      </div></div>
+<div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
+        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+      </div></div>
+<div class="navgroup"><button class="navhead">Client<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+      </div></div>
+<div class="navgroup"><button class="navhead">Finance<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="finance-os.html"><span class="ico">▩</span><span class="lbl">Finance OS</span></a>
+        <a class="navitem" href="subscriptions.html"><span class="ico">◍</span><span class="lbl">Subscriptions</span></a>
+      </div></div>
+<div class="navgroup"><button class="navhead">Marketing<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
+        <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
+        <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Beta<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
+        <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
+      </div></div>
+    </nav>
+    <div class="side-foot"><span class="pulse"></span><span class="who">CS · EMP-000001</span></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="crumb">Work · Company Brain</div>
+        <h1>Company Brain</h1>
+      </div>
+      <div class="spacer"></div>
+    </div>
+
+    <div class="content">
+      <div class="card">
+        <div class="hair"></div>
+        <div class="card-hd">
+          <div>
+            <div class="mono" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray)">Search</div>
+            <div style="font-size:15px;font-weight:600;margin-top:2px">Ask the company docs</div>
+          </div>
+          <div class="spacer"></div>
+          <span class="badge b-info" id="rolePill">staff</span>
+        </div>
+        <div class="card-bd">
+          <form id="askForm" style="display:flex;gap:10px;flex-wrap:wrap;align-items:stretch">
+            <input id="q" name="q" autocomplete="off" placeholder="e.g. What is our closer objection script for rate objections?"
+              style="flex:1;min-width:220px;border:1px solid var(--line);border-radius:7px;padding:10px 12px;font-size:13px">
+            <button class="btn dark" type="submit" id="askBtn">Ask</button>
+          </form>
+          <p id="status" class="mono" style="margin-top:10px;font-size:11px;color:var(--gray);letter-spacing:.06em"></p>
+          <div id="answerBox" style="display:none;margin-top:16px;padding:14px 16px;background:var(--soft);border:1px solid var(--line);border-radius:8px;white-space:pre-wrap;line-height:1.55"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">
+          <div style="font-weight:600">Sources</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray" id="srcCount">0</span>
+        </div>
+        <div class="card-bd" id="sources" style="color:var(--gray)">Ask a question to see matching Drive files.</div>
+      </div>
+
+      <div class="card" id="reviewCard" style="display:none">
+        <div class="card-hd">
+          <div>
+            <div class="mono" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray)">Owner only</div>
+            <div style="font-weight:600">Classification review queue</div>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn sm" type="button" id="refreshReviews">Refresh</button>
+        </div>
+        <div class="card-bd" id="reviewList" style="color:var(--gray)">No pending reviews.</div>
+      </div>
+    </div>
+
+    <div class="foot"><span class="pulse"></span><span>company brain · fundhub.ai</span></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var side=document.getElementById('side'),b=document.getElementById('burger');
+  if(side&&b){b.addEventListener('click',function(){side.classList.toggle('mini');b.textContent=side.classList.contains('mini')?'››':'‹‹';});}
+  document.querySelectorAll('.navhead').forEach(function(h){
+    h.addEventListener('click',function(){if(side.classList.contains('mini'))return;h.parentElement.classList.toggle('closed');});
+  });
+})();
+</script>
+<script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+  var esc = function (v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
+  };
+  var statusEl = document.getElementById("status");
+  var answerBox = document.getElementById("answerBox");
+  var sourcesEl = document.getElementById("sources");
+  var srcCount = document.getElementById("srcCount");
+  var rolePill = document.getElementById("rolePill");
+  var reviewCard = document.getElementById("reviewCard");
+  var reviewList = document.getElementById("reviewList");
+  var askBtn = document.getElementById("askBtn");
+
+  function setStatus(msg) { if (statusEl) statusEl.textContent = msg || ""; }
+  function token() { try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; } }
+  function isDemo() { try { return localStorage.getItem("fh_demo") === "1"; } catch (e) { return false; } }
+  function role() {
+    try {
+      var s = JSON.parse(localStorage.getItem("fh_session") || "null");
+      return (s && (s.role || (s.staff && s.staff.role))) || "";
+    } catch (e) { return ""; }
+  }
+
+  var r = String(role() || "").toLowerCase();
+  if (rolePill) rolePill.textContent = r || "staff";
+  if (r === "owner" && reviewCard) { reviewCard.style.display = ""; loadReviews(); }
+
+  function postJson(path, body) {
+    if (isDemo()) return Promise.resolve({ ok: false, error: "demo session", demo: true });
+    var t = token();
+    return fetch(path, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json", authorization: t ? ("Bearer " + t) : "" },
+      body: JSON.stringify(body || {})
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (j) { j._status = res.status; return j; });
+    }).catch(function (e) { return { ok: false, error: (e && e.message) || "offline" }; });
+  }
+  function getJson(path) {
+    if (isDemo()) return Promise.resolve({ ok: false, error: "demo", demo: true });
+    var t = token();
+    return fetch(path, {
+      headers: { accept: "application/json", authorization: t ? ("Bearer " + t) : "" }
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (j) { j._status = res.status; return j; });
+    }).catch(function (e) { return { ok: false, error: (e && e.message) || "offline" }; });
+  }
+
+  function renderSources(sources) {
+    srcCount.textContent = String((sources && sources.length) || 0);
+    if (!sources || !sources.length) {
+      sourcesEl.style.color = "var(--gray)";
+      sourcesEl.textContent = "No matching sources in your clearance.";
+      return;
+    }
+    sourcesEl.style.color = "inherit";
+    sourcesEl.innerHTML = sources.map(function (s) {
+      var link = s.webViewLink
+        ? ('<a href="' + esc(s.webViewLink) + '" target="_blank" rel="noopener">Open in Drive</a>')
+        : '<span class="mono" style="color:var(--gray)">no Drive link</span>';
+      var client = s.clientId
+        ? (' · <a href="client-control-panel.html?client_id=' + esc(s.clientId) + '">client record</a>')
+        : "";
+      var av = (s.mimeType && /^(audio|video)\\//.test(s.mimeType))
+        ? ' · <span class="badge b-butter">recording</span>' : "";
+      return '<div style="padding:10px 0;border-bottom:1px solid var(--line)">' +
+        '<div style="font-weight:600">[' + esc(s.n) + '] ' + esc(s.fileName) + av + '</div>' +
+        '<div class="mono" style="font-size:11px;color:var(--gray);margin-top:3px">' +
+          esc(s.accessTier || "") + " · " + link + client + '</div>' +
+        '<div style="margin-top:6px;font-size:12.5px">' + esc(s.excerpt || "") + '</div></div>';
+    }).join("");
+  }
+
+  document.getElementById("askForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var q = String(document.getElementById("q").value || "").trim();
+    if (!q) { setStatus("Type a question first."); return; }
+    askBtn.disabled = true;
+    setStatus("Searching…");
+    answerBox.style.display = "none";
+    postJson("/api/read/company-brain", { question: q }).then(function (j) {
+      askBtn.disabled = false;
+      if (!j.ok) { setStatus("Could not answer — " + (j.error || ("HTTP " + j._status))); return; }
+      setStatus("Answer ready (" + ((j.answer && j.answer.source) || "ok") + ")");
+      answerBox.style.display = "";
+      answerBox.textContent = (j.answer && j.answer.text) || "";
+      renderSources(j.sources || []);
+      if (rolePill && j.role) rolePill.textContent = j.role;
+    });
+  });
+
+  function loadReviews() {
+    getJson("/api/company-brain/reviews").then(function (j) {
+      if (!j.ok) {
+        reviewList.textContent = j.demo ? "Demo session — review queue not loaded." :
+          ("Could not load reviews — " + (j.error || j._status));
+        return;
+      }
+      var rows = j.reviews || [];
+      if (!rows.length) { reviewList.style.color = "var(--gray)"; reviewList.textContent = "No pending reviews."; return; }
+      reviewList.style.color = "inherit";
+      reviewList.innerHTML = rows.map(function (row) {
+        var open = row.web_view_link
+          ? ('<a href="' + esc(row.web_view_link) + '" target="_blank" rel="noopener">Drive</a>') : "";
+        return '<div style="padding:12px 0;border-bottom:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">' +
+          '<div style="flex:1;min-width:180px">' +
+            '<div style="font-weight:600">' + esc(row.file_name || row.drive_file_id) + '</div>' +
+            '<div class="mono" style="font-size:11px;color:var(--gray);margin-top:3px">proposed ' +
+              esc(row.proposed_tier) + " · live " + esc(row.access_tier) + (open ? (" · " + open) : "") + '</div>' +
+            '<div style="margin-top:6px;font-size:12.5px">' + esc(row.rationale || "") + '</div></div>' +
+          '<div style="display:flex;gap:8px">' +
+            '<button class="btn sm dark" data-decide="approve" data-id="' + esc(row.id) + '">Approve</button>' +
+            '<button class="btn sm" data-decide="reject" data-id="' + esc(row.id) + '">Reject</button>' +
+          '</div></div>';
+      }).join("");
+    });
+  }
+
+  var refresh = document.getElementById("refreshReviews");
+  if (refresh) refresh.addEventListener("click", loadReviews);
+  reviewList.addEventListener("click", function (ev) {
+    var btn = ev.target.closest("[data-decide]");
+    if (!btn) return;
+    btn.disabled = true;
+    postJson("/api/company-brain/reviews", {
+      review_id: btn.getAttribute("data-id"),
+      decision: btn.getAttribute("data-decide")
+    }).then(function (j) {
+      if (!j.ok) { setStatus("Review failed — " + (j.error || j._status)); btn.disabled = false; return; }
+      setStatus("Review saved.");
+      loadReviews();
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -134,6 +134,7 @@ table.grid tbody tr:hover{background:var(--soft)}
         <a class="navitem gated" href="messaging.html" title="Not available on the Affiliate role"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
         <a class="navitem gated" href="calendar.html" title="Not available on the Affiliate role"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
         <a class="navitem gated" href="documents.html" title="Not available on the Affiliate role"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+        <a class="navitem gated" href="company-brain.html" title="Not available on the Affiliate role"><span class="ico">◎</span><span class="lbl">Company Brain</span></a>
         <a class="navitem gated" href="contracts.html" title="Not available on the Affiliate role"><span class="ico">✒</span><span class="lbl">Contracts</span></a>
       </div></div>
 <div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
@@ -192,6 +193,29 @@ table.grid tbody tr:hover{background:var(--soft)}
         <span class="st">You are seeing only clients that came through your link, and only your own payouts —
         permissions <span class="mono">PM-12</span> and <span class="mono">PM-18</span>. Client contact details, credit data
         and outcome tiers are not part of the Affiliate role. Greyed items in the sidebar are not available to you.</span>
+      </div>
+
+      <div class="card" id="brainCard" style="margin:14px 0">
+        <div class="hair"></div>
+        <div class="card-hd">
+          <div>
+            <div class="eyebrow">Company Brain</div>
+            <div style="font-weight:600;margin-top:2px">Ask approved partner docs</div>
+          </div>
+        </div>
+        <div class="card-bd">
+          <p style="color:var(--gray);font-size:12.5px;margin-bottom:10px">
+            Only documents the owner explicitly approved for affiliates. Internal staff docs never appear here.
+          </p>
+          <form id="brainForm" style="display:flex;gap:10px;flex-wrap:wrap">
+            <input id="brainQ" autocomplete="off" placeholder="Ask about the partner kit, rates, or onboarding…"
+              style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:7px;padding:10px 12px;font-size:13px">
+            <button class="btn dark" type="submit" id="brainBtn">Ask</button>
+          </form>
+          <p id="brainStatus" class="mono" style="margin-top:10px;font-size:11px;color:var(--gray)"></p>
+          <div id="brainAnswer" style="display:none;margin-top:12px;padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:8px;white-space:pre-wrap"></div>
+          <div id="brainSources" style="margin-top:12px;color:var(--gray);font-size:12.5px"></div>
+        </div>
       </div>
 
       <div class="linkbox">
@@ -466,5 +490,70 @@ renderLeads(); renderPayouts(); renderFunnel(); renderStats();
   });
 })();
 </script>
+
+<script>
+(function () {
+  "use strict";
+  var form = document.getElementById("brainForm");
+  if (!form) return;
+  var esc = function (v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
+  };
+  function token() { try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; } }
+  function isDemo() { try { return localStorage.getItem("fh_demo") === "1"; } catch (e) { return false; } }
+  form.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var q = String(document.getElementById("brainQ").value || "").trim();
+    var status = document.getElementById("brainStatus");
+    var answer = document.getElementById("brainAnswer");
+    var sources = document.getElementById("brainSources");
+    var btn = document.getElementById("brainBtn");
+    if (!q) { status.textContent = "Type a question first."; return; }
+    if (isDemo()) { status.textContent = "Demo session — partner docs not loaded."; return; }
+    btn.disabled = true;
+    status.textContent = "Searching approved docs…";
+    answer.style.display = "none";
+    sources.textContent = "";
+    var t = token();
+    fetch("/api/read/company-brain-affiliate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json",
+        authorization: t ? ("Bearer " + t) : ""
+      },
+      body: JSON.stringify({ question: q })
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (j) {
+        j._status = res.status; return j;
+      });
+    }).then(function (j) {
+      btn.disabled = false;
+      if (!j.ok) {
+        status.textContent = "Could not answer — " + (j.error || ("HTTP " + j._status));
+        return;
+      }
+      status.textContent = "Answer ready (allowlist only)";
+      answer.style.display = "";
+      answer.textContent = (j.answer && j.answer.text) || "";
+      var list = j.sources || [];
+      sources.innerHTML = list.length
+        ? list.map(function (s) {
+            var link = s.webViewLink
+              ? ('<a href="' + esc(s.webViewLink) + '" target="_blank" rel="noopener">Open</a>')
+              : "";
+            return '<div style="padding:8px 0;border-bottom:1px solid var(--line)">[' +
+              esc(s.n) + "] " + esc(s.fileName) + (link ? (" · " + link) : "") + "</div>";
+          }).join("")
+        : "No approved partner docs matched.";
+    }).catch(function (e) {
+      btn.disabled = false;
+      status.textContent = "Offline — " + ((e && e.message) || "error");
+    });
+  });
+})();
+</script>
+
 </body>
 </html>

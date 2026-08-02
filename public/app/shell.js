@@ -15,7 +15,7 @@
 
   var ALL = [
     "closer-dashboard.html", "pipeline.html", "client-control-panel.html",
-    "messaging.html", "calendar.html", "documents.html",
+    "messaging.html", "calendar.html", "documents.html", "company-brain.html",
     "ops-admin.html", "command-center.html", "galaxy.html",
     "agent-editor.html", "automations.html", "products-commissions.html",
     "staff-teams.html", "content-admin.html", "sample-data.html",

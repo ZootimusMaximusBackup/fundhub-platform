@@ -72,6 +72,9 @@ import readUnderwrite from "../../api/read/underwrite.mjs";
 import readMoneyMap from "../../api/read/money-map.mjs";
 import readFinanceCommand from "../../api/read/finance-command.mjs";
 import readFinanceAsk from "../../api/read/finance-ask.mjs";
+import readCompanyBrain from "../../api/read/company-brain.mjs";
+import readCompanyBrainAffiliate from "../../api/read/company-brain-affiliate.mjs";
+import companyBrainReviews from "../../api/company-brain/reviews.mjs";
 import readWorkflows from "../../api/read/workflows.mjs";
 import readTransactions from "../../api/read/transactions.mjs";
 import bankingSyncAccounts from "../../api/banking/sync-accounts.mjs";
@@ -280,6 +283,17 @@ export const ROUTES = {
   // api/finance/alerts.mjs's REASON_TEXT map. ROLE_SETS.STAFF, same as its
   // neighbour above.
   "read/finance-ask": readFinanceAsk,
+
+  // Company Brain — Drive search over role-cleared chunks. ROLE_SETS.STAFF;
+  // role for tier filter comes from the session only.
+  "read/company-brain": readCompanyBrain,
+
+  // EXTERNAL allowlist-only path for affiliate/partner. Never shares the staff
+  // tier filter. Step 7 of COMPANY-BRAIN-BUILD-SPEC.
+  "read/company-brain-affiliate": readCompanyBrainAffiliate,
+
+  // Owner-only classification review queue (H-3).
+  "company-brain/reviews": companyBrainReviews,
 
   // read/workflows introspects the live src/workflows/index.mjs `functions`
   // array — the actual Inngest registry — rather than a hand-authored list, so
