@@ -63,6 +63,9 @@ button,input,select,textarea{font:inherit;color:inherit}
   }
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+/* shell.js mounts #fh-shell-chip fixed top-right (~337px). Without this
+   padding, "+ New agent" sits under Sign out and a click signs you out. */
+@media (min-width:1200px){ .topbar{padding-right:352px} }
 .topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
 .topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
@@ -403,25 +406,92 @@ function A(o){
   },o);
 }
 
-// AGENTS is populated from /api/read/agents by loadAgents() below. The
-// endpoint does not return prompt/guardrails/triggers/log (see api/read/
-// agents.mjs — those are operational config, not screen data, and 037 ships
-// them empty), so a row loaded from the registry starts with A()'s blank
-// defaults for those fields; promptMissing/guardMissing carry whether the
-// registry has real values stored.
+// AGENTS is populated from /api/read/agents by loadAgents() below. Prompt and
+// guardrails come back on the read so a Save that wrote them can be painted
+// after a reload. triggers / authority / flag switches live inside the
+// guardrails jsonb; runs/breaches have no table yet and stay at 0 without
+// blocking promote.
 var AGENTS=[];
 
+function channelLabel(ch){
+  var s=String(ch||'').toLowerCase();
+  if(s==='sms') return 'SMS';
+  if(s==='email') return 'Email';
+  if(s==='voice') return 'Voice';
+  return 'Internal';
+}
+function channelValue(label){
+  var s=String(label||'').toLowerCase();
+  if(s==='sms'||s==='text') return 'sms';
+  if(s==='email') return 'email';
+  if(s==='voice') return 'voice';
+  return 'internal';
+}
+function classValue(label){
+  return String(label||'').toLowerCase().indexOf('ops')===0 ? 'ops' : 'client_facing';
+}
+function guardFromRow(g){
+  g = g && typeof g === 'object' ? g : {};
+  var flags = g.flags || g.g || {};
+  var auth = g.authority || {};
+  var esc = g.escalation || {};
+  return {
+    block: typeof g.block === 'string' ? g.block : (typeof g.text === 'string' ? g.text : ''),
+    triggers: Array.isArray(g.triggers) ? g.triggers.slice() : [],
+    esc: esc.path || g.esc || '',
+    escAfter: esc.after || g.escAfter || '3',
+    escWhen: esc.when || g.escWhen || '',
+    disc: auth.disc != null ? Number(auth.disc) : (g.disc != null ? Number(g.disc) : 0),
+    msgcap: auth.msgcap != null ? Number(auth.msgcap) : (g.msgcap != null ? Number(g.msgcap) : 3),
+    pay: !!(auth.pay != null ? auth.pay : g.pay),
+    contract: !!(auth.contract != null ? auth.contract : g.contract),
+    book: !!(auth.book != null ? auth.book : g.book),
+    pull: !!(auth.pull != null ? auth.pull : g.pull),
+    g: {
+      noamount: flags.noamount !== false,
+      noscore: flags.noscore !== false,
+      attorney: flags.attorney !== false,
+      quiet: flags.quiet !== false
+    }
+  };
+}
+function guardrailsPayload(a){
+  return {
+    block: a.guard || '',
+    triggers: (a.triggers || []).slice(),
+    escalation: { path: a.esc || '', after: a.escAfter || '', when: a.escWhen || '' },
+    authority: {
+      disc: a.disc || 0, msgcap: a.msgcap || 0,
+      pay: !!a.pay, contract: !!a.contract, book: !!a.book, pull: !!a.pull
+    },
+    flags: a.g || {}
+  };
+}
+
 function agentFromRow(real){
+  var g = guardFromRow(real.guardrails);
   return A({
     id: real.code,
     name: real.name || real.code,
-    chan: real.channel || 'Internal',
+    chan: channelLabel(real.channel),
     cls: real.agent_class === 'ops' ? 'Ops' : 'Client-facing',
-    owner: real.owner_label || '—',
+    owner: real.owner_label || 'Chris Stanbridge',
     mode: real.status === 'live' ? 'live' : real.status === 'shadow' ? 'shadow' : 'draft',
     runtime: real.runtime || null,
+    prompt: real.prompt || '',
+    guard: g.block,
+    triggers: g.triggers,
+    esc: g.esc, escAfter: g.escAfter, escWhen: g.escWhen,
+    disc: g.disc, msgcap: g.msgcap,
+    pay: g.pay, contract: g.contract, book: g.book, pull: g.pull,
+    g: g.g,
     promptMissing: !!real.prompt_missing,
-    guardMissing: !!real.guardrails_missing
+    guardMissing: !!real.guardrails_missing,
+    // No agent_runs table yet — do not invent counters or block promote on them.
+    runsTracked: false,
+    runs: 0,
+    breaches: 0,
+    log: []
   });
 }
 
@@ -437,7 +507,7 @@ function renderList(){
       /* name, mode and trigger count — the three facts you scan the list for.
          The agent code moves to the row's hover title; it is on the Identity
          card inside the config. */
-      var n=a.triggers.length;
+      var n=(a.triggers||[]).length;
       return '<div class="aitem '+(cur&&a.id===cur.id?'on':'')+'" data-a="'+a.id+'" title="'+a.id+'">'+
         '<span class="dot" style="background:'+modeDot(a.mode)+'"></span>'+
         '<span class="an">'+esc(a.name)+'</span>'+
@@ -484,14 +554,27 @@ function renderLog(){
 
 /* promotion gate — a real checklist that blocks */
 function gateChecks(){
-  return [
-    {t:'Has at least one trigger event',      ok:cur.triggers.length>0, v:cur.triggers.length+' selected'},
+  var checks=[
+    {t:'Has at least one trigger event',      ok:(cur.triggers||[]).length>0, v:(cur.triggers||[]).length+' selected'},
     {t:'Prompt is written',                   ok:cur.prompt.trim().length>=60, v:cur.prompt.trim().length+' chars · 60 min'},
     {t:'Guardrail block is not empty',        ok:cur.guard.trim().length>=20, v:cur.guard.trim().length+' chars · 20 min'},
-    {t:'Escalation path is set',              ok:!!cur.esc, v:cur.esc||'none'},
-    {t:'At least 25 shadow runs',             ok:cur.runs>=25, v:cur.runs+' runs'},
-    {t:'Zero guardrail breaches in shadow',   ok:cur.breaches===0, v:cur.breaches+' breaches'}
+    {t:'Escalation path is set',              ok:!!cur.esc, v:cur.esc||'none'}
   ];
+  // Shadow-run counters have no source in the database yet. Show them as
+  // informational, never as a hard block — inventing a pass/fail from zero
+  // would either lock every agent forever or lie that sample numbers are real.
+  if(cur.runsTracked){
+    checks.push(
+      {t:'At least 25 shadow runs',           ok:cur.runs>=25, v:cur.runs+' runs'},
+      {t:'Zero guardrail breaches in shadow', ok:cur.breaches===0, v:cur.breaches+' breaches'}
+    );
+  }else{
+    checks.push(
+      {t:'Shadow-run counter', ok:true, v:'no source yet · not blocking'},
+      {t:'Breach counter',     ok:true, v:'no source yet · not blocking'}
+    );
+  }
+  return checks;
 }
 function renderGate(){
   var live=cur.mode==='live';
@@ -536,6 +619,20 @@ function renderStats(){
    this agent may do, not on wherever the last agent was left scrolled */
 function foldSections(){ document.querySelectorAll('details.card').forEach(function(d){d.open=false}); }
 
+/* Select helpers: stored guardrails may use codes ("owner", "3") that are not
+   options in the UI. Setting .value to a missing option clears the control in
+   the browser; collect() then blanked the model and blocked Promote with no
+   useful signal. Snap to the first option and keep the model in sync. */
+function setSelectOrFirst(id, val){
+  var el=document.getElementById(id);
+  if(!el) return '';
+  el.value=val==null?'':String(val);
+  if(el.options && el.options.length && el.value!==String(val||'')){
+    el.selectedIndex=0;
+  }
+  return el.value;
+}
+
 function select(id){
   cur=AGENTS.filter(function(a){return a.id===id})[0];
   foldSections();
@@ -546,8 +643,8 @@ function select(id){
   document.getElementById('a_code').value=cur.id;
   document.getElementById('a_prompt').value=cur.prompt;
   document.getElementById('a_guard').value=cur.guard;
-  document.getElementById('a_esc').value=cur.esc;
-  document.getElementById('a_escafter').value=cur.escAfter;
+  cur.esc=setSelectOrFirst('a_esc', cur.esc);
+  cur.escAfter=setSelectOrFirst('a_escafter', cur.escAfter);
   document.getElementById('a_escwhen').value=cur.escWhen;
   document.getElementById('a_disc').value=cur.disc;
   document.getElementById('a_msgcap').value=cur.msgcap;
@@ -593,31 +690,91 @@ document.querySelectorAll('.sw').forEach(function(s){
   s.addEventListener('click',function(){s.classList.toggle('on');collect();markDirty();renderGate()});
 });
 
+function saveNote(msg){ document.getElementById('saveNote').textContent=msg||''; }
+function writeFail(res, what){
+  var msg=(res && (res.error || (res.data && res.data.message))) || 'request failed';
+  saveNote('NOT SAVED');
+  alert((what||'Could not save')+': '+msg);
+}
+
 document.getElementById('promoteBtn').addEventListener('click',function(){
   collect();
   var checks=gateChecks();
   if(!checks.every(function(c){return c.ok})){alert('Promotion blocked — not every gate check passes.');return}
   if(!confirm('Promote '+cur.name+' to live?\n\nIt will start acting on real clients over '+cur.chan+' immediately. Its guardrail block becomes the only thing between it and a client.')) return;
-  cur.mode='live'; renderGate(); renderList(); renderLog();
+  // Persist the form first so promote judges the words on screen, not a stale row.
+  saveNote('SAVING…');
+  FHData.write('/api/agents', {
+    action:'save', code:cur.id, name:cur.name,
+    channel:channelValue(cur.chan), agent_class:classValue(cur.cls),
+    owner_label:cur.owner, prompt:cur.prompt, guardrails:guardrailsPayload(cur)
+  }).then(function(saveRes){
+    if(!saveRes || !saveRes.ok){ writeFail(saveRes, 'Could not save before promote'); return; }
+    return FHData.write('/api/agents', { action:'promote', code:cur.id }).then(function(res){
+      if(!res || !res.ok){ writeFail(res, 'Could not promote'); return; }
+      var agent = res.data && res.data.agent;
+      if(agent){
+        var idx=AGENTS.indexOf(cur);
+        var next=agentFromRow(agent);
+        AGENTS[idx]=next; cur=next;
+      }else{ cur.mode='live'; }
+      dirty=false; saveNote('PROMOTED');
+      renderGate(); renderList(); renderLog();
+      setTimeout(function(){if(!dirty)saveNote('');},2200);
+    });
+  });
 });
 document.getElementById('demoteBtn').addEventListener('click',function(){
-  cur.mode='shadow'; renderGate(); renderList(); renderLog();
+  FHData.write('/api/agents', { action:'demote', code:cur.id }).then(function(res){
+    if(!res || !res.ok){ writeFail(res, 'Could not demote'); return; }
+    var agent = res.data && res.data.agent;
+    if(agent){
+      var idx=AGENTS.indexOf(cur);
+      var next=agentFromRow(agent);
+      AGENTS[idx]=next; cur=next;
+    }else{ cur.mode='shadow'; }
+    dirty=false; saveNote('DEMOTED');
+    renderGate(); renderList(); renderLog();
+    setTimeout(function(){if(!dirty)saveNote('');},2200);
+  });
 });
 document.getElementById('saveBtn').addEventListener('click',function(){
   collect();
   if(!cur.name){alert('Agent name is required.');return}
-  dirty=false; document.getElementById('saveNote').textContent='SAVED';
-  renderList(); renderGate();
-  setTimeout(function(){if(!dirty)document.getElementById('saveNote').textContent=''},2200);
+  saveNote('SAVING…');
+  FHData.write('/api/agents', {
+    action:'save', code:cur.id, name:cur.name,
+    channel:channelValue(cur.chan), agent_class:classValue(cur.cls),
+    owner_label:cur.owner, prompt:cur.prompt, guardrails:guardrailsPayload(cur)
+  }).then(function(res){
+    if(!res || !res.ok){ writeFail(res, 'Could not save'); return; }
+    var agent = res.data && res.data.agent;
+    if(agent){
+      var idx=AGENTS.indexOf(cur);
+      var next=agentFromRow(agent);
+      AGENTS[idx]=next; cur=next; select(cur.id);
+    }
+    dirty=false; saveNote('SAVED');
+    renderList(); renderGate();
+    setTimeout(function(){if(!dirty)saveNote('');},2200);
+  });
 });
 document.getElementById('revertBtn').addEventListener('click',function(){select(cur.id)});
 document.getElementById('newBtn').addEventListener('click',function(){
-  var n=AGENTS.filter(function(a){return a.cls==='Client-facing'}).length+1;
-  var a=A({id:'AG-'+String(n).padStart(2,'0')+'x',name:'New agent',mode:'shadow',runs:0,breaches:0,log:[]});
-  AGENTS.push(a); hideEmpty(); select(a.id);
-  /* a blank agent has nothing to read yet — open every section so it can be built */
-  document.querySelectorAll('details.card').forEach(function(d){d.open=true});
-  document.getElementById('a_name').focus();
+  saveNote('CREATING…');
+  FHData.write('/api/agents', {
+    action:'create', name:'New agent', channel:'internal', agent_class:'client_facing'
+  }).then(function(res){
+    if(!res || !res.ok){ writeFail(res, 'Could not create agent'); return; }
+    var agent = res.data && res.data.agent;
+    if(!agent){ writeFail({error:'no agent in response'}, 'Could not create agent'); return; }
+    var a=agentFromRow(agent);
+    AGENTS.push(a); hideEmpty(); select(a.id);
+    document.querySelectorAll('details.card').forEach(function(d){d.open=true});
+    document.getElementById('a_name').focus();
+    dirty=false; saveNote('CREATED');
+    setTimeout(function(){if(!dirty)saveNote('');},2200);
+  });
 });
 
 function showEmpty(msg){

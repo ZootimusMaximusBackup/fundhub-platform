@@ -530,11 +530,11 @@
       <details class="more" id="more-menu">
         <summary>More <span class="arrow">⌄</span></summary>
         <div class="more-body">
-          <button class="link-btn">Open Funding Matrix <span class="arrow">↗</span></button>
-          <button class="link-btn">Open Credit Snapshot <span class="arrow">↗</span></button>
-          <button class="link-btn">Open Bank Inbox <span class="arrow">↗</span></button>
-          <button class="link-btn">GHL Contact <span class="arrow">↗</span></button>
-          <button class="link-btn">Raw Report <span class="arrow">↗</span></button>
+          <button class="link-btn" type="button" data-open="funding">Open Funding Matrix <span class="arrow">↗</span></button>
+          <button class="link-btn" type="button" data-open="credit">Open Credit Snapshot <span class="arrow">↗</span></button>
+          <button class="link-btn" type="button" data-open="bank">Open Bank Inbox <span class="arrow">↗</span></button>
+          <button class="link-btn" type="button" data-open="ghl" disabled title="No GHL contact link on file">GHL Contact <span class="arrow">↗</span></button>
+          <button class="link-btn" type="button" data-open="raw">Raw Report <span class="arrow">↗</span></button>
         </div>
       </details>
 
@@ -871,6 +871,51 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
   });
   zone.addEventListener("drop", function (e) {
     if (clientId && e.dataTransfer && e.dataTransfer.files.length) upload(e.dataTransfer.files);
+  });
+})();
+</script>
+<script>
+/* Deep-links from this file into the screens that already hold the real
+   surfaces. GHL Contact stays disabled — there is no GHL contact URL on the
+   client record. */
+(function () {
+  "use strict";
+  var id = (typeof FHData !== "undefined" && FHData.param)
+    ? FHData.param("id")
+    : (new URLSearchParams(location.search).get("id") || "");
+
+  function needClient() {
+    if (id) return true;
+    alert("Open this screen with ?id=<client id> first.");
+    return false;
+  }
+
+  document.querySelectorAll(".link-btn[data-open]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var kind = btn.getAttribute("data-open");
+      if (kind === "ghl") {
+        alert("No GoHighLevel contact link is stored on this client yet.");
+        return;
+      }
+      if (!needClient()) return;
+      var q = encodeURIComponent(id);
+      if (kind === "funding") {
+        location.href = "finance-os.html?client_id=" + q;
+        return;
+      }
+      if (kind === "credit") {
+        location.href = "finance-os.html?client_id=" + q + "#credit";
+        return;
+      }
+      if (kind === "bank") {
+        location.href = "finance-os.html?client_id=" + q + "#banking";
+        return;
+      }
+      if (kind === "raw") {
+        location.href = "documents.html?client_id=" + q;
+        return;
+      }
+    });
   });
 })();
 </script>

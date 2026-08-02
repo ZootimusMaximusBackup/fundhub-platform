@@ -234,15 +234,15 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
     <div class="topbar">
       <span class="crumb">Setup</span><h1>Staff &amp; Teams</h1>
       <div class="spacer"></div>
-      <span class="chip on" id="onShiftChip"><span class="cd"></span><span id="onShiftTxt">3 on shift</span></span>
+      <span class="chip on" id="onShiftChip"><span class="cd"></span><span id="onShiftTxt">— on shift</span></span>
       <button class="btn dark mono" id="addBtn">+ Add person</button>
     </div>
 
     <div class="content">
       <div class="stats">
         <div class="stat"><div class="eyebrow">ST-00 <span class="sep">/</span> HEADCOUNT</div><div class="sv" id="kHead">7</div><div class="sd">across 6 roles</div></div>
-        <div class="stat"><div class="eyebrow">ST-00 <span class="sep">/</span> ON SHIFT</div><div class="sv" id="kShift">3</div><div class="sd">clocked in right now</div></div>
-        <div class="stat"><div class="eyebrow">ST-00 <span class="sep">/</span> CONSENT</div><div class="sv" id="kConsent">5/7</div><div class="sd">monitoring consent on file</div></div>
+        <div class="stat"><div class="eyebrow">ST-00 <span class="sep">/</span> ON SHIFT</div><div class="sv" id="kShift">—</div><div class="sd">clocked in right now</div></div>
+        <div class="stat"><div class="eyebrow">ST-00 <span class="sep">/</span> CONSENT</div><div class="sv" id="kConsent">—</div><div class="sd">monitoring consent on file</div></div>
         <div class="stat"><div class="eyebrow">ST-00 <span class="sep">/</span> PENDING</div><div class="sv" id="kPending">1</div><div class="sd">invited, not yet active</div></div>
       </div>
 
@@ -458,7 +458,7 @@ function renderRoster(){
     /* employee code and start date ride in the row's hover title and stay
        editable in the person editor — they don't earn a column here */
     var t=p.code+' · started '+p.start+' · '+preset(p.role).names.join(', ');
-    return '<tr data-id="'+p.id+'" class="'+(p.id===selId?'sel':'')+'" title="'+esc(t)+'">'+
+    return '<tr data-id="'+esc(String(p.id))+'" class="'+(String(p.id)===String(selId)?'sel':'')+'" title="'+esc(t)+'">'+
       '<td><div class="who-cell"><span class="av">'+initials(p)+'</span><div><div class="nm">'+esc(p.first+' '+p.last)+'</div><div class="em">'+esc(p.email)+'</div></div></div></td>'+
       '<td>'+presetCell(p.role)+'</td>'+
       /* consent === null means a REAL staff row: monitoring consent and clock
@@ -475,28 +475,36 @@ function renderRoster(){
   }).join('');
   document.getElementById('rosterBody').innerHTML=rows||'<tr><td colspan="5" class="empty">No one matches that filter.</td></tr>';
   document.querySelectorAll('#rosterBody tr[data-id]').forEach(function(tr){
-    tr.addEventListener('click',function(){openEditor(parseInt(tr.dataset.id,10))});
+    tr.addEventListener('click',function(){openEditor(tr.dataset.id);});
   });
 }
 
 function renderClock(){
   document.getElementById('clockBody').innerHTML=PEOPLE.map(function(p){
+    var canSelf = !!p.self;
+    var clockCell = canSelf
+      ? '<button class="btn sm mono" data-clock="'+esc(String(p.id))+'">'+(p.clock?'Clock out':'Clock in')+'</button>'
+      : '<span class="badge b-gray" title="Each person clocks themselves via /api/shifts — you can only clock your own row">—</span>';
     return '<tr>'+
-      '<td><div class="who-cell"><span class="av">'+initials(p)+'</span><div><div class="nm">'+esc(p.first+' '+p.last)+'</div><div class="em">'+p.code+'</div></div></div></td>'+
-      '<td>'+(p.clock?'<span class="badge b-ok">Clocked in</span>':'<span class="badge b-gray">Clocked out</span>')+'</td>'+
-      '<td class="mono" style="font-size:11.5px">'+p.since+'</td>'+
-      '<td class="mono" style="font-size:11.5px">'+p.today+'</td>'+
-      '<td>'+(p.consent?'<span class="badge b-ok">v2.1 signed</span>':'<span class="badge b-alert">Not signed — dialer blocked</span>')+'</td>'+
+      '<td><div class="who-cell"><span class="av">'+initials(p)+'</span><div><div class="nm">'+esc(p.first+' '+p.last)+(canSelf?' <span class="badge b-info">you</span>':'')+'</div><div class="em">'+esc(p.email||p.code)+'</div></div></div></td>'+
+      '<td>'+(canSelf
+             ?(p.clock?'<span class="badge b-ok">Clocked in</span>':'<span class="badge b-gray">Clocked out</span>')
+             :'<span class="badge b-gray" title="Open shift is only returned for the signed-in person">—</span>')+'</td>'+
+      '<td class="mono" style="font-size:11.5px">'+(canSelf&&p.clock?p.since:'—')+'</td>'+
+      '<td class="mono" style="font-size:11.5px">'+(canSelf?p.today:'—')+'</td>'+
+      '<td>'+(p.consent===null?'<span class="badge b-gray" title="No consent record in the database">—</span>'
+             :p.consent?'<span class="badge b-ok">On file</span>':'<span class="badge b-alert">Missing</span>')+'</td>'+
       '<td class="mono" style="font-size:11.5px;color:var(--gray)">'+(p.consentAt||'—')+'</td>'+
-      '<td style="text-align:right"><button class="btn sm mono" data-clock="'+p.id+'">'+(p.clock?'Clock out':'Clock in')+'</button></td></tr>';
+      '<td style="text-align:right">'+clockCell+'</td></tr>';
   }).join('');
   document.querySelectorAll('[data-clock]').forEach(function(b){
     b.addEventListener('click',function(e){
       e.stopPropagation();
-      var p=PEOPLE.filter(function(x){return x.id===parseInt(b.dataset.clock,10)})[0];
-      if(!p.consent && !p.clock){ alert('Blocked — '+p.first+' has no monitoring consent on file. Consent v2.1 must be signed before clock-in.'); return; }
-      p.clock=!p.clock; p.since=p.clock?'now':'—';
-      renderAll();
+      var p=PEOPLE.filter(function(x){return String(x.id)===String(b.dataset.clock)})[0];
+      if(!p || !p.self){ alert('You can only clock yourself. /api/shifts always uses the signed-in session.'); return; }
+      if(typeof window.FHStaffClock !== 'function'){ alert('Clock API not loaded — sign in as staff.'); return; }
+      b.disabled = true;
+      window.FHStaffClock(p.clock ? 'clock_out' : 'clock_in').then(function(){ b.disabled = false; });
     });
   });
 }
@@ -518,7 +526,7 @@ function renderPerm(){
       pm.d[c.dataset.r]=pm.d[c.dataset.r]===1?0:1;
       /* the roster's preset line is derived from PERMS — refresh it too */
       renderPerm(); renderRoster();
-      if(selId) fillPerms(PEOPLE.filter(function(x){return x.id===selId})[0]);
+      if(selId) fillPerms(PEOPLE.filter(function(x){return String(x.id)===String(selId)})[0]);
     });
   });
   var granted=0; PERMS.forEach(function(pm){ROLES.forEach(function(r){if(pm.d[r]===1)granted++})});
@@ -526,15 +534,17 @@ function renderPerm(){
 }
 
 function renderStats(){
-  var shift=PEOPLE.filter(function(p){return p.clock}).length;
-  var cons=PEOPLE.filter(function(p){return p.consent}).length;
+  var hasClock=PEOPLE.some(function(p){return p.clock!==null});
+  var hasConsent=PEOPLE.some(function(p){return p.consent!==null});
+  var shift=hasClock?PEOPLE.filter(function(p){return p.clock===true}).length:null;
+  var cons=hasConsent?PEOPLE.filter(function(p){return p.consent===true}).length:null;
   document.getElementById('kHead').textContent=PEOPLE.length;
-  document.getElementById('kShift').textContent=shift;
-  document.getElementById('kConsent').textContent=cons+'/'+PEOPLE.length;
+  document.getElementById('kShift').textContent=shift===null?'—':String(shift);
+  document.getElementById('kConsent').textContent=cons===null?'—':(cons+'/'+PEOPLE.length);
   document.getElementById('kPending').textContent=PEOPLE.filter(function(p){return !p.active}).length;
-  document.getElementById('onShiftTxt').textContent=shift+' on shift';
+  document.getElementById('onShiftTxt').textContent=(shift===null?'—':shift)+' on shift';
   var chip=document.getElementById('onShiftChip');
-  chip.className='chip '+(shift>0?'on':'wip');
+  chip.className='chip '+(shift===null?'wip':(shift>0?'on':'wip'));
 }
 function renderAll(){renderRoster();renderClock();renderPerm();renderStats();}
 
@@ -557,7 +567,8 @@ function setSw(id,on){document.getElementById(id).classList.toggle('on',!!on)}
 function getSw(id){return document.getElementById(id).classList.contains('on')}
 
 function openEditor(id){
-  selId=id;
+  /* Live roster ids are UUIDs — keep as string. Sample ids stay numeric strings. */
+  selId=id==null?null:String(id);
   var p=PEOPLE.filter(function(x){return x.id===id})[0];
   document.getElementById('edMode').textContent='EDIT PERSON';
   document.getElementById('edTitle').textContent=p.first+' '+p.last;
@@ -613,7 +624,7 @@ document.getElementById('edSave').addEventListener('click',function(){
     active:getSw('ed_active'), consent:getSw('ed_consent'), clock:getSw('ed_clock')};
   if(rec.clock && !rec.consent){alert('Cannot clock in without monitoring consent on file.');return}
   if(selId){
-    var p=PEOPLE.filter(function(x){return x.id===selId})[0];
+    var p=PEOPLE.filter(function(x){return String(x.id)===String(selId)})[0];
     Object.keys(rec).forEach(function(k){p[k]=rec[k]});
     if(rec.consent && !p.consentAt) p.consentAt='2026-07-27';
     if(!rec.consent) p.consentAt=null;
@@ -627,7 +638,7 @@ document.getElementById('edSave').addEventListener('click',function(){
 });
 document.getElementById('edDeact').addEventListener('click',function(){
   if(!selId){closeEditor();return}
-  var p=PEOPLE.filter(function(x){return x.id===selId})[0];
+  var p=PEOPLE.filter(function(x){return String(x.id)===String(selId)})[0];
   if(p.role==='Owner'){alert('The Owner account cannot be deactivated.');return}
   p.active=false; p.clock=false; p.since='—';
   closeEditor(); renderAll();
@@ -640,7 +651,7 @@ document.getElementById('edDeact').addEventListener('click',function(){
    time a click is possible, script loading has long finished. */
 document.getElementById('edReset').addEventListener('click', async function(){
   if(!selId){return}
-  var p=PEOPLE.filter(function(x){return x.id===selId})[0];
+  var p=PEOPLE.filter(function(x){return String(x.id)===String(selId)})[0];
   if(!p || !p.email){alert('This person has no email on file.');return}
   if(typeof FHData === 'undefined' || !FHData.write){alert('Not available — the data layer has not loaded.');return}
   if(!confirm('Create a password reset link for '+p.first+' '+p.last+' ('+p.email+')?')) return;
@@ -704,6 +715,70 @@ renderAll();
     inquiry_specialist: "Inquiry Specialist"
   };
 
+  var meEmail = null;
+  var meId = null;
+
+  function loadMe() {
+    var t;
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+    return fetch("/api/auth/session", { headers: t ? { authorization: "Bearer " + t } : {} })
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (d) {
+        if (!(d && d.ok && d.principal === "staff" && d.staff)) return;
+        if (d.staff.email) meEmail = String(d.staff.email).toLowerCase();
+        if (d.staff.id) meId = d.staff.id;
+      })
+      .catch(function () {
+        try {
+          var sess = JSON.parse(localStorage.getItem("fh_account") || "null");
+          if (sess && sess.email) meEmail = String(sess.email).toLowerCase();
+          if (sess && sess.id) meId = sess.id;
+        } catch (e) {}
+      });
+  }
+
+  /* /api/shifts only clocks the signed-in session — never another person. */
+  window.FHStaffClock = function (action) {
+    return FHData.write("/api/shifts", { action: action }).then(function (res) {
+      if (!res.ok) {
+        alert("Could not " + (action === "clock_in" ? "clock in" : "clock out") + ": " +
+              (res.error || (res.data && res.data.error) || "unknown error"));
+        return res;
+      }
+      var shift = res.data && res.data.shift;
+      PEOPLE.forEach(function (p) {
+        if (!p.self) return;
+        if (action === "clock_in" && shift) {
+          p.clock = true;
+          p.since = "now";
+        } else {
+          p.clock = false;
+          p.since = "—";
+        }
+      });
+      try { renderAll(); } catch (e) {}
+      FHData.banner("real", action === "clock_in" ? "clocked in" : "clocked out", "shifts");
+      return res;
+    });
+  };
+
+  function applyMyShift(people) {
+    return fetch("/api/shifts", {
+      headers: {
+        accept: "application/json",
+        authorization: "Bearer " + (localStorage.getItem("fh_token") || "")
+      }
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      var open = d && d.ok && d.shift;
+      people.forEach(function (p) {
+        if (!p.self) return;
+        p.clock = !!open;
+        p.since = open ? "now" : "—";
+      });
+    }).catch(function () {});
+  }
+
+  loadMe().then(function () {
   FHData.wire(FHData.staff({ limit: 200 }), "roster", function (data) {
     var rows = data.items || [];
     if (!rows.length) return null;
@@ -715,31 +790,38 @@ renderAll();
       var sp = name.indexOf(" ");
       var role = ROLE_LABEL[s.role];
       if (!role) { role = label(s.role); unmapped.push(role); }
+      var email = String(s.email || "").toLowerCase();
+      var self = !!(meEmail && email && meEmail === email) || !!(meId && s.id && String(meId) === String(s.id));
       return {
-        id: i + 1,
+        id: s.id || ("row-" + (i + 1)),
+        staffId: s.id || null,
+        self: self,
         first: sp > 0 ? name.slice(0, sp) : name,
         last:  sp > 0 ? name.slice(sp + 1) : "",
-        code: "—",                       // no employee code column in the schema
+        code: "—",
         role: role,
         email: s.email || "",
-        phone: "—",                      // no phone column on staff
-        start: "—",                      // no start date column
+        phone: "—",
+        start: "—",
         active: s.status === "active",
-        consent: null,                   // NO SOURCE — rendered as "—", never faked
+        consent: null,
         consentAt: null,
-        clock: null,                     // NO SOURCE
+        clock: self ? false : null,
         since: "—",
         today: "—"
       };
     });
 
-    PEOPLE.length = 0;
-    Array.prototype.push.apply(PEOPLE, mapped);
-    try { renderAll(); } catch (e) { return null; }
-
-    return "live roster · " + rows.length + " staff" +
-           (unmapped.length ? " · " + unmapped.length + " role(s) outside the permission matrix" : "") +
-           " · consent, clock, phone and start date have no source";
+    return applyMyShift(mapped).then(function () {
+      PEOPLE.length = 0;
+      Array.prototype.push.apply(PEOPLE, mapped);
+      try { renderAll(); } catch (e) { return null; }
+      var selfRow = mapped.filter(function (p) { return p.self; })[0];
+      return "live roster · " + rows.length + " staff" +
+             (selfRow ? (selfRow.clock ? " · you are clocked in" : " · you are clocked out") : " · signed-in user not on roster") +
+             (unmapped.length ? " · " + unmapped.length + " role(s) outside the permission matrix" : "");
+    });
+  });
   });
 })();
 </script>

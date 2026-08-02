@@ -115,6 +115,9 @@ import contracts from "../../api/contracts.mjs";
 import readContracts from "../../api/read/contracts.mjs";
 import contractsSign from "../../api/contracts/sign.mjs";
 import messagesOutbound from "../../api/messages-outbound.mjs";
+import agentsWrite from "../../api/agents.mjs";
+import pipelineCards from "../../api/pipeline-cards.mjs";
+import productsWrite from "../../api/products.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -154,6 +157,17 @@ export const ROUTES = {
      two actions share a route and only one of them is narrower. Its read half
      is "read/message-templates" further down this map. */
   "message-templates": messageTemplatesWrite,
+  /* Agent Editor write half. ROLE_SETS.STAFF. Save / promote / demote / create
+     used to mutate memory only and paint "SAVED" — a reload threw the prompt
+     away with no error. Routed in the same commit as the handler and the
+     screen wiring. */
+  "agents": agentsWrite,
+  /* Pipeline board card moves. Shift-gated STAFF write. Drag and MOVE used to
+     rearrange the DOM and stash positions in sessionStorage. */
+  "pipeline-cards": pipelineCards,
+  /* Products & Commissions product ladder edits. ROLE_SETS.FINANCE — prices are
+     configuration, same gate as other money-config writes. */
+  "products": productsWrite,
   "tasks": tasks,
 
   /* The staff reply inbox's write half. POST only — a staff member composing a

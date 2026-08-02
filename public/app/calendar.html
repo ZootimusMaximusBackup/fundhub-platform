@@ -687,98 +687,38 @@
     <aside class="rail">
 
       <div class="rail-title">Up Next</div>
-      <div class="upnext">
+      <div class="upnext" id="upNext">
         <div class="un-head">
           <div class="un-countdown">
-            <span class="un-mins">15</span>
-            <span class="un-minlbl">minutes out</span>
-            <span class="un-when">3:02 PM</span>
+            <span class="un-mins" id="unMins">—</span>
+            <span class="un-minlbl" id="unMinLbl">no call linked</span>
+            <span class="un-when" id="unWhen"></span>
           </div>
-          <div class="un-client">Derek Owusu</div>
-          <div class="un-meta">Marcus Webb · Card Stacking · Docs Received</div>
+          <div class="un-client" id="unClient">Nothing up next</div>
+          <div class="un-meta" id="unMeta">Dated work from the task queue paints here when one is due.</div>
         </div>
         <div class="un-body">
-
           <div class="un-sec">Before you dial</div>
-          <div class="un-bullet">Approved for <b>$46,500</b> on Round 2 — funding is the next step</div>
-          <div class="un-bullet warn">Still owes bank statements and a voided check — <b>2d 6h now</b></div>
-          <div class="un-bullet">Paid his <b>$3,000 deposit</b> on Jul 15</div>
-          <div class="un-bullet">Agent 5 emailed him twice about the docs — <b>no reply</b></div>
+          <div class="un-bullet" id="unBody">No briefing is stored for calendar appointments yet. Open the client file for context.</div>
 
           <div class="un-div"></div>
 
-          <div class="un-sec">Ready for you</div>
-          <div class="un-check"><span class="ck">✓</span> Context Fetcher pulled his file</div>
-          <div class="un-check"><span class="ck">✓</span> Reminder text sent to Derek at 2:32</div>
-          <div class="un-check"><span class="ck">✓</span> Recording on, transcript will save to his thread</div>
-          <div class="un-docs">
-            <span class="un-doc">Funding Snapshot</span>
-            <span class="un-doc">Bank &amp; Lender Match List</span>
-            <span class="un-doc">Credit Analysis Report</span>
-          </div>
-
           <div class="un-actions">
-            <button class="un-join">Join Call</button>
-            <button class="un-alt">His file</button>
+            <button type="button" class="un-join" id="unJoin" disabled title="No call link on this appointment">Join Call</button>
+            <button type="button" class="un-alt" id="unFile" disabled title="No client linked">His file</button>
           </div>
-
         </div>
       </div>
 
       <div class="rail-title">Then</div>
-      <div class="then">
-        <div class="then-row">
-          <div class="then-time">4:00</div>
-          <div class="then-name">Hollis Grant<div class="then-sub">Nina Castellano · Sales</div></div>
-          <span class="av human">NC</span>
-        </div>
-        <div class="then-row conflict">
-          <div class="then-time">4:30</div>
-          <div class="then-name">Meredith Yao<div class="then-sub" style="color:var(--ink2);font-weight:600;">Clashes with Carlos Bettencourt</div></div>
-          <span class="av human">JB</span>
-        </div>
-        <div class="then-row conflict">
-          <div class="then-time">4:30</div>
-          <div class="then-name">Carlos Bettencourt<div class="then-sub" style="color:var(--ink2);font-weight:600;">Clashes with Meredith Yao</div></div>
-          <span class="av human">JB</span>
-        </div>
-        <div class="then-row">
-          <div class="then-time">5:15</div>
-          <div class="then-name">Isabel Cortez<div class="then-sub">Alvin Torres · Inquiry Removal</div></div>
-          <span class="av human">AT</span>
-        </div>
+      <div class="then" id="thenList">
+        <div class="then-row"><div class="then-name" style="color:var(--ink2)">Nothing else dated after Up Next.</div></div>
       </div>
 
-      <div class="rail-title eyebrow">CA-03 / Who's On Today</div>
-      <div class="cov">
-        <div class="cov-row">
-          <span class="av human">JB</span>
-          <span class="cov-name">Jordan Blake</span>
-          <span class="cov-load hot">5 calls · 1 clash</span>
-        </div>
-        <div class="cov-row">
-          <span class="av human">NC</span>
-          <span class="cov-name">Nina Castellano</span>
-          <span class="cov-load">3 calls</span>
-        </div>
-        <div class="cov-row">
-          <span class="av human">MW</span>
-          <span class="cov-name">Marcus Webb</span>
-          <span class="cov-load">2 calls</span>
-        </div>
-        <div class="cov-row">
-          <span class="av human">AT</span>
-          <span class="cov-name">Alvin Torres</span>
-          <span class="cov-load">1 call</span>
-        </div>
-        <div class="cov-row">
-          <span class="av agent">SJ</span>
-          <span class="cov-name">Setter Josh</span>
-          <span class="cov-load">34 dials · 6 booked</span>
-        </div>
+      <div class="rail-title eyebrow">CA-03<div class="rail-title eyebrow">CA-03 / Who's On Today</div>
+      <div class="cov" id="covList">
+        <div class="cov-row"><span class="cov-name" style="color:var(--ink2)">No coverage feed yet — shift roster is on Staff &amp; Teams.</span></div>
       </div>
-
-    </aside>
 
   </main>
 
@@ -1062,15 +1002,99 @@ dTog.addEventListener('click',function(){
       }
       wrap.innerHTML = html;
 
-      /* Name EVERY part that is still sample. A banner that says "live" while
-         two thirds of the screen is fabricated is the failure this whole fix is
-         about, and being vague about which parts is the same failure in
-         miniature. The header date, week strip, KPI tiles and the right rail all
-         have no source in tasks. */
+      // Paint Up Next from the soonest open dated task. Join Call stays
+      // disabled until a meeting URL exists on the task (none today). His file
+      // opens the client control panel when client_id is present.
+      var next = today[0] || rows[0] || null;
+      var joinBtn = document.getElementById("unJoin");
+      var fileBtn = document.getElementById("unFile");
+      if (next) {
+        var nd = new Date(next.due_at);
+        var mins = Math.round((nd.getTime() - Date.now()) / 60000);
+        var minsEl = document.getElementById("unMins");
+        var lblEl = document.getElementById("unMinLbl");
+        if (minsEl) minsEl.textContent = String(Math.abs(mins));
+        if (lblEl) lblEl.textContent = mins >= 0 ? "minutes out" : "minutes overdue";
+        var whenEl = document.getElementById("unWhen");
+        if (whenEl) whenEl.textContent = clockTime(nd);
+        var clientEl = document.getElementById("unClient");
+        if (clientEl) clientEl.textContent = next.client_name || "(no client)";
+        var metaEl = document.getElementById("unMeta");
+        if (metaEl) {
+          metaEl.textContent = (next.assignee_name ? next.assignee_name + " · " : "") +
+            (next.title || "open task");
+        }
+        var bodyEl = document.getElementById("unBody");
+        if (bodyEl) bodyEl.textContent = next.body || "No briefing text on this task.";
+        if (fileBtn) {
+          if (next.client_id) {
+            fileBtn.disabled = false;
+            fileBtn.dataset.clientId = next.client_id;
+            fileBtn.removeAttribute("title");
+          } else {
+            fileBtn.disabled = true;
+            delete fileBtn.dataset.clientId;
+            fileBtn.title = "No client linked to this task";
+          }
+        }
+        if (joinBtn) {
+          var joinUrl = next.meeting_url || next.join_url || null;
+          if (joinUrl) {
+            joinBtn.disabled = false;
+            joinBtn.dataset.joinUrl = joinUrl;
+            joinBtn.removeAttribute("title");
+          } else {
+            joinBtn.disabled = true;
+            delete joinBtn.dataset.joinUrl;
+            joinBtn.title = "No call link on this appointment";
+          }
+        }
+        // Later items in the Then list.
+        var then = document.getElementById("thenList");
+        if (then) {
+          var rest = rows.filter(function (t) { return t !== next; }).slice(0, 6);
+          if (!rest.length) {
+            then.innerHTML = '<div class="then-row"><div class="then-name" style="color:var(--ink2)">Nothing else dated after Up Next.</div></div>';
+          } else {
+            then.innerHTML = rest.map(function (t) {
+              var d = new Date(t.due_at);
+              return '<div class="then-row">' +
+                '<div class="then-time">' + esc(clockTime(d)) + "</div>" +
+                '<div class="then-name">' + esc(t.client_name || t.title || "Task") +
+                '<div class="then-sub">' + esc(t.assignee_name || t.title || "") + "</div></div></div>";
+            }).join("");
+          }
+        }
+      }
+
+      /* Name EVERY part that is still sample. */
       return "live schedule · " + today.length + " today" +
              (later ? " · " + later + " dated later" : "") +
-             ' · header date, week strip, tiles and right rail are still sample';
+             " · header date, week strip and coverage still have no source";
     });
+
+  var joinBtn0 = document.getElementById("unJoin");
+  var fileBtn0 = document.getElementById("unFile");
+  if (joinBtn0) {
+    joinBtn0.addEventListener("click", function () {
+      var url = joinBtn0.dataset.joinUrl;
+      if (!url) {
+        alert("No call link on this appointment yet.");
+        return;
+      }
+      window.open(url, "_blank", "noopener");
+    });
+  }
+  if (fileBtn0) {
+    fileBtn0.addEventListener("click", function () {
+      var cid = fileBtn0.dataset.clientId;
+      if (!cid) {
+        alert("No client file is linked to this appointment.");
+        return;
+      }
+      location.href = "client-control-panel.html?id=" + encodeURIComponent(cid);
+    });
+  }
 })();
 </script>
 </body>

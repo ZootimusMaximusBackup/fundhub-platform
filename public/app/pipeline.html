@@ -790,64 +790,68 @@
       </section>
 
 
-      <!-- ===== FLOATING: CROSS-RAIL ROUTE MENU ===== -->
+    </div>
+
+      <!-- FLOATING: CROSS-RAIL ROUTE MENU
+           Lives under .board-wrap, NOT inside .board. Live paint() tears down
+           every child of .board when a real pipeline loads — nesting the menu
+           there deleted #routeMenu and left MOVE with nowhere to open. -->
       <div class="route-menu" id="routeMenu" hidden>
         <div class="rm-head">
           <div class="rm-title" id="rmName">Move</div>
-          <div class="rm-sub">Their decision came back — send them down the right track.</div>
+          <div class="rm-sub">Send this client to another pipeline stage. The move is saved.</div>
         </div>
 
         <div class="rm-group">Funding routes</div>
-        <div class="rm-item">
+        <div class="rm-item" data-pipeline-key="funding_card_stacking" data-stage-key="apply_now">
           <span class="rm-dot"></span>
           <div>
-            <div class="rm-label">Full Funding</div>
-            <div class="rm-dest">Card Stacking · Docs Received · Marcus Webb</div>
+            <div class="rm-label">Card Stacking</div>
+            <div class="rm-dest">Funding: Card Stacking · Apply Now</div>
           </div>
         </div>
-        <div class="rm-item">
+        <div class="rm-item" data-pipeline-key="funding_altfin" data-stage-key="app_created">
           <span class="rm-dot"></span>
           <div>
-            <div class="rm-label">Premium Stack</div>
-            <div class="rm-dest">Card Stacking · Docs Received · Marcus Webb</div>
+            <div class="rm-label">Alt-Fin (Lendflow)</div>
+            <div class="rm-dest">Funding: Alt-Fin · App Created</div>
           </div>
         </div>
-        <div class="rm-item focus">
+        <div class="rm-item" data-pipeline-key="optimization" data-stage-key="round_sent">
           <span class="rm-dot"></span>
           <div>
-            <div class="rm-label">Funding + Repair</div>
-            <div class="rm-dest">Card Stacking + Repair Rounds · both open</div>
+            <div class="rm-label">Repair Rounds</div>
+            <div class="rm-dest">Optimization · Round Sent</div>
           </div>
         </div>
-        <div class="rm-item">
+        <div class="rm-item" data-pipeline-key="inquiry_removal" data-stage-key="requested">
           <span class="rm-dot warn"></span>
           <div>
-            <div class="rm-label">Repair Only</div>
-            <div class="rm-dest">Repair Rounds · Docs Received · $2,000 bundle</div>
+            <div class="rm-label">Inquiry Removal</div>
+            <div class="rm-dest">Inquiry Removal · Requested</div>
           </div>
         </div>
 
         <div class="rm-div"></div>
-        <div class="rm-group">Hold routes</div>
-        <div class="rm-item">
+        <div class="rm-group">Hold / close</div>
+        <div class="rm-item" data-pipeline-key="sales" data-stage-key="lost">
           <span class="rm-dot warn"></span>
           <div>
-            <div class="rm-label">Manual Review</div>
-            <div class="rm-dest">Stays in Sales · Internal Review hold</div>
+            <div class="rm-label">Mark Lost</div>
+            <div class="rm-dest">Sales · Lost</div>
           </div>
         </div>
-        <div class="rm-item">
-          <span class="rm-dot crit"></span>
+        <div class="rm-item" data-pipeline-key="ar_collections" data-stage-key="invoice_sent">
+          <span class="rm-dot warn"></span>
           <div>
-            <div class="rm-label">Fraud Hold</div>
-            <div class="rm-dest">Stays in Sales · Fraud Alert hold · Sarah notified</div>
+            <div class="rm-label">AR / Collections</div>
+            <div class="rm-dest">AR · Invoice Sent</div>
           </div>
         </div>
 
-        <div class="rm-foot">Or drag her card to any stage in Sales.</div>
+        <div class="rm-foot">Or drag the card to any stage on this rail.</div>
       </div>
 
-    </div>
   </div>
 
   <!-- ══ DEMONSTRATION STATES — collapsed by default, costs one divider row ══ -->
@@ -985,11 +989,17 @@ function bump(col,dCount,dMoney){
   if(mEl){ mEl.textContent=fmt(Math.max(0,money(mEl)+dMoney))+' est.'; }
 }
 
-/* ---- in-session persistence: name -> stage index, replayed on load ---- */
+/* ---- in-session persistence was sessionStorage only; real cards now
+        persist through /api/pipeline-cards. Sample markup cards (no
+        data-client-id) still use sessionStorage so the demo strip keeps
+        working offline. ---- */
 function save(){
   var map={};
   var live=cols();
-  cards().forEach(function(c){ map[nameOf(c)]=live.indexOf(colOf(c)); });
+  cards().forEach(function(c){
+    if(c.dataset.clientId) return; // live cards persist via API
+    map[nameOf(c)]=live.indexOf(colOf(c));
+  });
   try{ sessionStorage.setItem(STORE,JSON.stringify(map)); }catch(e){}
 }
 function restore(){
@@ -998,6 +1008,7 @@ function restore(){
   var map; try{ map=JSON.parse(raw); }catch(e){ return; }
   var live=cols();
   cards().forEach(function(c){
+    if(c.dataset.clientId) return;
     var want=map[nameOf(c)];
     if(want===undefined) return;
     var from=colOf(c), to=live[want];
@@ -1005,6 +1016,42 @@ function restore(){
     var amt=amountOf(c);
     to.querySelector('.col-body').appendChild(c);
     bump(from,-1,-amt); bump(to,1,amt);
+  });
+}
+
+function persistCardMove(card, pipelineKey, stageKey, onFail){
+  if(typeof FHData === 'undefined' || !FHData.write){
+    if(onFail) onFail('data layer not loaded');
+    return;
+  }
+  var clientId = card && card.dataset.clientId;
+  if(!clientId){
+    // Sample/demo card — local only.
+    save();
+    return;
+  }
+  if(!pipelineKey || !stageKey){
+    if(onFail) onFail('missing stage');
+    return;
+  }
+  card.classList.add('saving');
+  FHData.write('/api/pipeline-cards', {
+    action: 'move',
+    client_id: clientId,
+    pipeline_key: pipelineKey,
+    stage_key: stageKey
+  }).then(function(res){
+    card.classList.remove('saving');
+    if(!res || !res.ok){
+      var msg = (res && res.error) || 'move failed';
+      if(onFail) onFail(msg);
+      else alert('Could not save the move: ' + msg);
+      return;
+    }
+    // Bust the board cache so the next rail click refetches.
+    if(window.FHPipelineBoard && typeof window.FHPipelineBoard.invalidate === 'function'){
+      window.FHPipelineBoard.invalidate(pipelineKey);
+    }
   });
 }
 
@@ -1067,9 +1114,19 @@ function end(){
   document.body.style.userSelect='';
   if(d.target&&d.target!==d.from){
     var amt=amountOf(d.card);
+    var fromCol=d.from, toCol=d.target;
     d.ph.parentNode.insertBefore(d.card,d.ph);
-    bump(d.from,-1,-amt); bump(d.target,1,amt);
-    save();
+    bump(fromCol,-1,-amt); bump(toCol,1,amt);
+    var pipelineKey = toCol.dataset.pipelineKey
+      || (window.FHPipelineBoard && window.FHPipelineBoard.currentKey)
+      || null;
+    var stageKey = toCol.dataset.stageKey || null;
+    persistCardMove(d.card, pipelineKey, stageKey, function(msg){
+      // Revert the DOM move if the server refused.
+      fromCol.querySelector('.col-body').appendChild(d.card);
+      bump(toCol,-1,-amt); bump(fromCol,1,amt);
+      alert('Could not save the move: ' + msg);
+    });
   }
   if(d.target) d.target.classList.remove('drop-target');
   if(d.ph.parentNode) d.ph.parentNode.removeChild(d.ph);
@@ -1088,10 +1145,12 @@ window.addEventListener('pointercancel',end);
 
 /* ---------- MOVE opens the cross-rail route menu for that card ---------- */
 var menu=document.getElementById('routeMenu'), rmName=document.getElementById('rmName');
+var moveCard=null;
 document.addEventListener('click',function(e){
   var btn=e.target.closest('.c-btn.route');
   if(btn){
     var card=btn.closest('.card');
+    moveCard=card;
     rmName.textContent='Move '+nameOf(card);
     menu.hidden=false;
     var r=btn.getBoundingClientRect(), w=274;
@@ -1101,15 +1160,47 @@ document.addEventListener('click',function(e){
     e.stopPropagation();
     return;
   }
-  if(!e.target.closest('.route-menu')) menu.hidden=true;
+  if(!e.target.closest('.route-menu')){ menu.hidden=true; moveCard=null; }
 });
 menu.addEventListener('click',function(e){
   var item=e.target.closest('.rm-item');
   if(!item) return;
   menu.querySelectorAll('.rm-item').forEach(function(x){x.classList.remove('focus')});
   item.classList.add('focus');
+  var pipelineKey=item.dataset.pipelineKey;
+  var stageKey=item.dataset.stageKey;
+  if(!moveCard || !pipelineKey || !stageKey){
+    alert('That route is not wired to a real stage yet.');
+    return;
+  }
+  var card=moveCard;
+  menu.hidden=true; moveCard=null;
+  persistCardMove(card, pipelineKey, stageKey, function(msg){
+    alert('Could not save the move: ' + msg);
+  });
+  // Cross-rail: remove from this board after a successful write path starts;
+  // invalidate + leave the card until refetch if same rail.
+  var currentKey = window.FHPipelineBoard && window.FHPipelineBoard.currentKey;
+  if(currentKey && pipelineKey !== currentKey){
+    var from=colOf(card);
+    if(from){
+      var amt=amountOf(card);
+      bump(from,-1,-amt);
+      if(card.parentNode) card.parentNode.removeChild(card);
+    }
+  }else if(currentKey && pipelineKey === currentKey){
+    // Same pipeline: find the destination column and move the card there.
+    var dest=null;
+    cols().forEach(function(c){ if(c.dataset.stageKey===stageKey) dest=c; });
+    if(dest && dest!==colOf(card)){
+      var amt2=amountOf(card);
+      var from2=colOf(card);
+      dest.querySelector('.col-body').appendChild(card);
+      bump(from2,-1,-amt2); bump(dest,1,amt2);
+    }
+  }
 });
-document.addEventListener('keydown',function(e){ if(e.key==='Escape') menu.hidden=true; });
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ menu.hidden=true; moveCard=null; } });
 
 /* ---------- filters, search, sort ---------- */
 var q=document.getElementById('q'), fOwner=document.getElementById('fOwner'),
@@ -1385,6 +1476,8 @@ restore();
       return d;
     }
     var card = div("card");
+    if (c.client_id) card.dataset.clientId = c.client_id;
+    if (c.id) card.dataset.cardId = c.id;
 
     var top = div("c-top");
     top.appendChild(div("av agent", initials(c.name)));
@@ -1467,9 +1560,11 @@ restore();
      against a fixed set of markup columns. .board is a flex row with no
      fixed column count (see .board{width:max-content} in the stylesheet), so
      any number of stages lays out and scrolls correctly. */
-  function buildColumn(stage) {
+  function buildColumn(stage, pipelineKey) {
     var col = document.createElement("section");
     col.className = "col";
+    if (pipelineKey) col.dataset.pipelineKey = pipelineKey;
+    if (stage.key) col.dataset.stageKey = stage.key;
     var head = document.createElement("div");
     head.className = "col-head";
     var headTop = document.createElement("div");
@@ -1489,11 +1584,13 @@ restore();
     return col;
   }
 
-  function paint(stages) {
+  var activePipelineKey = "sales";
+
+  function paint(stages, pipelineKey) {
     while (board.firstChild) board.removeChild(board.firstChild);
     var shown = 0;
     stages.forEach(function (s) {
-      board.appendChild(buildColumn(s));
+      board.appendChild(buildColumn(s, pipelineKey || activePipelineKey));
       shown += s.cards.length;
     });
     return { shown: shown, stageCount: stages.length };
@@ -1517,10 +1614,12 @@ restore();
   function load(rail, label) {
     var key = PIPELINE_KEYS[rail];
     if (!key) { showNote(label + " — unknown rail."); return; }
+    activePipelineKey = key;
+    if (window.FHPipelineBoard) window.FHPipelineBoard.currentKey = key;
 
     if (cache[key]) {
       hideNote();
-      var r = paint(cache[key]);
+      var r = paint(cache[key], key);
       setSummary(fhPipelineSummary(cache[key]));
       setRailCount(rail, fhPipelineSummary(cache[key]).count);
       if (typeof window.rebuildOwnerOptions === "function") {
@@ -1535,7 +1634,7 @@ restore();
       if (res.ok && res.data && res.data.stages) {
         cache[key] = res.data.stages;
         hideNote();
-        var r = paint(res.data.stages);
+        var r = paint(res.data.stages, key);
         setSummary(fhPipelineSummary(res.data.stages));
         setRailCount(rail, fhPipelineSummary(res.data.stages).count);
         // The dropdown was built from whatever cards this call just replaced.
@@ -1580,10 +1679,15 @@ restore();
   }
 
   // Exposed so the rail-tab click handler (defined earlier in the page) can
-  // drive the same loader instead of the old isSales-only toggle. Safe to
-  // reference by the time a click can actually happen: this script runs
-  // synchronously during the initial page parse, before the user can click.
-  window.FHPipelineBoard = { load: load };
+  // drive the same loader. currentKey / invalidate are used by drag + MOVE.
+  window.FHPipelineBoard = {
+    load: load,
+    currentKey: activePipelineKey,
+    invalidate: function (key) {
+      if (key) delete cache[key];
+      else Object.keys(cache).forEach(function (k) { delete cache[k]; });
+    }
+  };
 
   loadRailCounts("R-01");
   load("R-01", "Sales");

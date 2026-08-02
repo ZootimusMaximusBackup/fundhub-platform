@@ -1,4 +1,5 @@
-node_modules/
+# Trailing slash does not match a symlink; use node_modules.
+node_modules
 .env
 .env.*
 *.log

@@ -4,6 +4,11 @@ The custom platform replacing GoHighLevel + Airtable + Commas-hosted checkout wi
 
 > Built WHILE the live GHL system keeps running. Nothing about launch pauses. Cut over rail by rail once gates pass.
 
+## Requirements
+
+- **Node.js 22** is required. Use the version in [`.nvmrc`](.nvmrc) (`nvm use` or your version manager equivalent).
+- `package.json` `engines.node` is pinned to **22.x**; other Node versions are unsupported.
+
 ## Status: Phase 0 / B1 started
 
 This is the **B1 (Schema + events)** deliverable — the foundation every other builder builds against (Spec §16). B1 merges first.
