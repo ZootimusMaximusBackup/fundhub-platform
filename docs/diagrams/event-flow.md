@@ -103,19 +103,19 @@ flowchart LR
 |---|---|---|---|
 | `entry.captured` | journey spine | `onEntryCaptured` | 5 |
 | `survey.submitted` | journey spine | `onSurveySubmitted` | 1 |
-| `diagnostic.paid` | journey spine | `onDiagnosticPaid` | 2 |
+| `diagnostic.paid` | journey spine | `onDiagnosticPaid`, `onDiagnosticPaidMoney` | 2 |
 | `analysis.completed` | journey spine | `onAnalysisCompleted` | 8 |
 | `booking.created` | journey spine | `onBookingCreated` | 6 |
 | `call.completed` | journey spine | `onCallCompleted` | 4 |
 | `decision.rendered` | journey spine | `onDecisionRendered` | 0 |
-| `deposit.paid` | journey spine | `onDepositPaid` | 2 |
-| `sale.closed` | journey spine | `onSaleClosed` | 0 |
-| `round.started` | journey spine | — | 7 |
+| `deposit.paid` | journey spine | `onDepositPaid`, `onDepositPaidMoney` | 2 |
+| `sale.closed` | journey spine | `onSaleClosed`, `onSaleClosedMoney` | 0 |
+| `round.started` | journey spine | `onRoundStartedMoney` | 7 |
 | `round.submitted` | journey spine | — | 1 |
 | `round.approved` | journey spine | — | 3 |
-| `round.funded` | journey spine | — | 5 |
+| `round.funded` | journey spine | `onRoundFundedMoney` | 5 |
 | `file.finalized` | journey spine | — | 0 |
-| `payment.received` | side events | `onPaymentReceived`, `onPaymentReceivedForLink` | 1 |
+| `payment.received` | side events | `onPaymentReceived`, `onPaymentReceivedMoney`, `onPaymentReceivedForLink` | 1 |
 | `payment.failed` | side events | `onPaymentFailed` | 0 |
 | `docs.received` | side events | — | 1 |
 | `inquiry.removed` | side events | — | 1 |
