@@ -65,6 +65,13 @@ fabricated.
    live when tokenized; other channels need provider wiring or
    `SOCIAL_PUBLISH_DRY_RUN=1`.
 
+9. **Commission-rule writes** — `products-commissions.html` saves rate changes
+   locally only; there is no `POST /api/commission-rules`. A 168-line draft was
+   written on the old `fix/controls-dead-stub` branch and never landed. That
+   branch is gone; the draft is kept at
+   `~/fundhub-branch-backup/unlanded-drafts/commission-rules.mjs` and needs a
+   rebase onto current `api/products.mjs` conventions before use.
+
 ## Built earlier (session-six) and kept
 
 - CRM + portal chat widget
