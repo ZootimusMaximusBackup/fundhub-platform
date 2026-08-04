@@ -520,6 +520,14 @@
 
     <div class="side-col">
 
+      <div class="side-title">Funding · Apply</div>
+      <div id="fh-funding-apply" style="margin-bottom:14px;padding:10px 12px;border:1px solid var(--line,#E4E4E7);border-radius:10px;background:#fff">
+        <div style="font:700 10px/1 var(--mono,ui-monospace);letter-spacing:.1em;text-transform:uppercase;color:var(--gray,#71717A)">Residential proxy door</div>
+        <div id="fh-funding-apply-status" style="margin-top:6px;font-size:12.5px;color:var(--gray,#71717A)">Open with ?id=&lt;client&gt; to load matching lenders.</div>
+        <div id="fh-funding-apply-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
+        <p style="margin:8px 0 0;font-size:11px;color:var(--gray,#71717A)">Apply verifies an exit IP near the client before the bank URL opens. Extension = one-click; without it, copyable proxy settings (routing not claimed active). Chrome proxy is profile-wide; PAC limits to the lender host.</p>
+      </div>
+
       <div class="side-title">Actions</div>
       <div class="action-error" id="equifax-error">
         <span>⚠</span>
@@ -714,6 +722,7 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
      the shape of the thing, and the banner stops it being mistaken for real.
      ═══════════════════════════════════════════════════════════════════════ -->
 <script src="data.js"></script>
+<script src="proxy-apply.js"></script>
 <script>
 (function () {
   "use strict";
@@ -885,6 +894,72 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
   zone.addEventListener("drop", function (e) {
     if (clientId && e.dataTransfer && e.dataTransfer.files.length) upload(e.dataTransfer.files);
   });
+})();
+</script>
+<script>
+/* Funding Apply — load matching lenders and wire the residential proxy door. */
+(function () {
+  "use strict";
+  var clientId = (typeof FHData !== "undefined" && FHData.param)
+    ? FHData.param("id")
+    : (new URLSearchParams(location.search).get("id") || "");
+  var statusEl = document.getElementById("fh-funding-apply-status");
+  var listEl = document.getElementById("fh-funding-apply-list");
+  if (!statusEl || !listEl) return;
+  if (!clientId) return;
+  statusEl.textContent = "Loading matching lenders…";
+  var t = "";
+  try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
+  var headers = { accept: "application/json" };
+  if (t) headers.authorization = "Bearer " + t;
+  fetch("/api/read/lender-matches?client_id=" + encodeURIComponent(clientId), { headers: headers })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d || !d.ok) {
+        statusEl.textContent = "Could not load lender matches.";
+        return;
+      }
+      var n = d.match_count || 0;
+      if (n === 0) {
+        statusEl.textContent = (d.summary && d.summary.lender_count === 0)
+          ? "Lender list is empty — import CSV on Lenders."
+          : "No lenders fit this client's state / inquiry profile.";
+        return;
+      }
+      statusEl.textContent = n + " fit. Click Apply to verify exit IP, then open the bank URL.";
+      listEl.innerHTML = "";
+      (d.matches || []).slice(0, 12).forEach(function (m) {
+        var row = document.createElement("div");
+        row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px";
+        var label = document.createElement("span");
+        label.style.cssText = "font-size:12.5px;min-width:0";
+        label.textContent = (m.name || "?") + (m.bureaus_pulled ? (" · " + m.bureaus_pulled) : "");
+        row.appendChild(label);
+        if (m.id && m.application_url && window.FHProxyApply) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "action-btn";
+          btn.style.cssText = "margin:0;padding:6px 10px;font-size:11px";
+          btn.textContent = "Apply";
+          btn.setAttribute("data-fh-apply", "1");
+          btn.addEventListener("click", function () {
+            window.FHProxyApply.applyToLender({
+              clientId: clientId,
+              lenderId: m.id,
+              lenderName: m.name || "Lender"
+            });
+          });
+          row.appendChild(btn);
+        } else {
+          var miss = document.createElement("span");
+          miss.style.cssText = "font-size:11px;color:var(--gray2,#A1A1AA)";
+          miss.textContent = "No URL";
+          row.appendChild(miss);
+        }
+        listEl.appendChild(row);
+      });
+    })
+    .catch(function () { statusEl.textContent = "Could not load lender matches."; });
 })();
 </script>
 <script>

@@ -148,6 +148,9 @@ import readLenderMatches from "../../api/read/lender-matches.mjs";
 import readLenderObservations from "../../api/read/lender-observations.mjs";
 import readInquiryCases from "../../api/read/inquiry-cases.mjs";
 import readAiBureauConfig from "../../api/read/ai-bureau-config.mjs";
+import proxyLaunch from "../../api/proxy/launch.mjs";
+import proxyEnd from "../../api/proxy/end.mjs";
+import readProxySessions from "../../api/read/proxy-sessions.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -208,6 +211,9 @@ export const ROUTES = {
   "inquiry-cases": inquiryCasesWrite,
   /* AI bureau IVR config — owner/admin/funding_advisor. */
   "ai-bureau-config": aiBureauConfigWrite,
+  /* Oxylabs residential Apply door — owner + funding_advisor only. */
+  "proxy/launch": proxyLaunch,
+  "proxy/end": proxyEnd,
   "tasks": tasks,
 
   /* The staff reply inbox's write half. POST only — a staff member composing a
@@ -239,6 +245,7 @@ export const ROUTES = {
   "read/lender-observations": readLenderObservations,
   "read/inquiry-cases": readInquiryCases,
   "read/ai-bureau-config": readAiBureauConfig,
+  "read/proxy-sessions": readProxySessions,
   "read/affiliates": readAffiliates,
   "read/partners": readPartners,
   "read/message-templates": readMessageTemplates,

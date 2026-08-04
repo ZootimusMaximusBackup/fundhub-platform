@@ -7,6 +7,8 @@ Campaigns / Social / Creative / Brand Studio gaps from the prior scorecard.
 
 | Env / credential | Where used | How to get it |
 |---|---|---|
+| `OXYLABS_USERNAME` | Residential Apply proxy (`src/adapters/oxylabs.mjs`, `POST /api/proxy/launch`) | Oxylabs dashboard → proxy user (no `customer-` prefix; adapter adds it) |
+| `OXYLABS_PASSWORD` | Same | Same panel; store as Netlify secret |
 | `META_APP_ID` | Meta token refresh / Marketing API app context (`api/campaigns/sync.mjs`) | Meta Developer app → Settings → Basic |
 | `META_APP_SECRET` | Same | Same panel; store as Netlify secret |
 | Meta user / system user Marketing API token | `ad_platform_connections.encrypted_access_token` for platform=`meta` | Meta Business Manager → System Users → Generate token with `ads_read`, `ads_management` |
@@ -69,6 +71,12 @@ Stacking round-planning fits correctly show **0**.
   items from Approved applications (10% success fee).
 - Application status changes write `application_decisions` (no silent updates).
 - Case close / inquiry confirm emit `inquiry.removed` for workflow C-03.
+
+## Oxylabs Apply door (platform wired; credentials unset)
+
+Updated 2026-08-04. Adapter + `proxy_sessions` (temp migration `t141_proxy_sessions.sql` — renumber at merge) + `POST /api/proxy/launch` / `POST /api/proxy/end` / `GET /api/read/proxy-sessions` + Chrome extension under `extension/` + Apply controls on client-scoped Lenders, pipeline Card Stacking matches, and client control panel funding section.
+
+**Left unset on purpose:** `OXYLABS_USERNAME` / `OXYLABS_PASSWORD`. Set both as Netlify secrets, then `netlify deploy --build --prod`. Until they are set, launch returns a clear 503 — it does not invent credentials or silently skip geo checks.
 
 ## Still deferred / out of scope
 

@@ -32,8 +32,9 @@ flowchart TD
     CAN --> A_journeys[journeys — 2 routes]
     CAN --> A_partner_brand[partner-brand — 1 route]
     CAN --> A_privacy[privacy — 1 route]
+    CAN --> A_proxy[proxy — 2 routes]
     CAN --> A_public[public — 1 route]
-    CAN --> A_read[Reading data — 33 routes]
+    CAN --> A_read[Reading data — 34 routes]
     CAN --> A_social[social — 2 routes]
     CAN --> A_top_level[Everything else — 25 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
@@ -44,7 +45,7 @@ flowchart TD
 
 ## What they can reach
 
-**119 of 121 routes.**
+**122 of 124 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -128,6 +129,8 @@ flowchart TD
 | `/api/pipeline-cards` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/privacy/erasure` | GET, POST | owner, admin |
 | `/api/products` | POST | owner, admin, sales_manager |
+| `/api/proxy/end` | POST | owner, funding_advisor |
+| `/api/proxy/launch` | POST | owner, funding_advisor |
 | `/api/public/partner-page` | GET | anyone |
 | `/api/read/affiliates` | GET | owner, admin, sales_manager |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -156,6 +159,7 @@ flowchart TD
 | `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
 | `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/proxy-sessions` | GET | owner, funding_advisor |
 | `/api/read/search` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/staff` | GET | owner, admin, sales_manager |
 | `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -176,7 +180,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**2 of 121 routes.**
+**2 of 124 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

@@ -20,6 +20,7 @@ flowchart LR
     ext_crs["CRS engine output"]
     ext_lendflow["Lendflow alt-fin"]
     ext_mailgun["Mailgun inbound-email"]
+    ext_oxylabs["Oxylabs residential proxy adapter."]
     ext_twilio_status["Twilio delivery-status callback"]
     ext_twilio["Twilio inbound SMS"]
   end
@@ -32,6 +33,7 @@ flowchart LR
     adp_crs["crs<br/>direct call"]
     adp_lendflow["lendflow<br/>HMAC-SHA256"]
     adp_mailgun["mailgun<br/>HMAC-SHA256"]
+    adp_oxylabs["oxylabs<br/>direct call"]
     adp_twilio_status["twilio-status<br/>HMAC-SHA1"]
     adp_twilio["twilio<br/>HMAC-SHA1"]
   end
@@ -46,6 +48,7 @@ flowchart LR
   ext_crs --> adp_crs
   ext_lendflow --> adp_lendflow
   ext_mailgun --> adp_mailgun
+  ext_oxylabs --> adp_oxylabs
   ext_twilio_status --> adp_twilio_status
   ext_twilio --> adp_twilio
   adp_bland -- "call.completed" --> BUS
@@ -55,6 +58,7 @@ flowchart LR
   adp_crs -- "analysis.completed<br/>decision.rendered" --> BUS
   adp_lendflow -- "round.started<br/>round.submitted<br/>round.approved<br/>round.funded" --> BUS
   adp_mailgun -- "message.inbound<br/>mail.response" --> BUS
+  adp_oxylabs -- "—" --> BUS
   adp_twilio_status -- "—" --> BUS
   adp_twilio -- "message.inbound" --> BUS
   BUS --> REG

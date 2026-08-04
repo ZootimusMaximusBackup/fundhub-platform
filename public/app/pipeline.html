@@ -1409,6 +1409,7 @@ restore();
      does answer, every column is rebuilt from it, including the empty ones.
      ═══════════════════════════════════════════════════════════════════════ -->
 <script src="data.js"></script>
+<script src="proxy-apply.js"></script>
 <script>
 (function () {
   "use strict";
@@ -1544,12 +1545,16 @@ restore();
     }
     matchPanel.innerHTML =
       "<div style=\"font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#71717A\">" +
-      "Round planning · lender fits</div>" +
+      "Round planning · Apply</div>" +
       "<div style=\"font-weight:600;margin-top:6px\"></div>" +
       "<div class=\"fh-mm-body\" style=\"margin-top:8px;color:#71717A\">Loading…</div>" +
-      "<div style=\"margin-top:10px\"><a href=\"lenders.html\" style=\"font-size:12px\">Open Lenders ↗</a></div>";
+      "<div class=\"fh-mm-apply\" style=\"margin-top:10px;display:flex;flex-direction:column;gap:6px\"></div>" +
+      "<div style=\"margin-top:10px\"><a class=\"fh-mm-lenders\" href=\"#\" style=\"font-size:12px\">Open Lenders for this client ↗</a></div>";
     matchPanel.querySelector("div[style*=\"font-weight\"]").textContent = c.name || "Client";
+    matchPanel.querySelector(".fh-mm-lenders").href =
+      "lenders.html?client_id=" + encodeURIComponent(c.client_id);
     var body = matchPanel.querySelector(".fh-mm-body");
+    var applyBox = matchPanel.querySelector(".fh-mm-apply");
     var q = "client_id=" + encodeURIComponent(c.client_id);
     var t = "";
     try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
@@ -1569,12 +1574,44 @@ restore();
             : "No lenders fit this client's state / inquiry profile.";
           return;
         }
-        var lines = (d.matches || []).slice(0, 8).map(function (m) {
-          return (m.priority_tier != null ? ("T" + m.priority_tier + " · ") : "") +
+        body.textContent = n + " lender" + (n === 1 ? "" : "s") + " fit. Apply opens a verified residential proxy near the client, then the bank URL.";
+        applyBox.innerHTML = "";
+        (d.matches || []).slice(0, 8).forEach(function (m) {
+          var row = document.createElement("div");
+          row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid #F4F4F5";
+          var label = document.createElement("div");
+          label.style.cssText = "font-size:12px;min-width:0";
+          label.textContent =
+            (m.priority_tier != null ? ("T" + m.priority_tier + " · ") : "") +
             (m.name || "?") +
             (m.bureaus_pulled ? (" · " + m.bureaus_pulled) : "");
+          row.appendChild(label);
+          if (m.application_url && m.id && window.FHProxyApply) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = "Apply";
+            btn.setAttribute("data-fh-apply", "1");
+            btn.style.cssText =
+              "flex:0 0 auto;border:1px solid #18181B;background:#18181B;color:#fff;border-radius:6px;" +
+              "padding:5px 10px;font:600 11px/1 system-ui;cursor:pointer";
+            btn.addEventListener("click", function (ev) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              window.FHProxyApply.applyToLender({
+                clientId: c.client_id,
+                lenderId: m.id,
+                lenderName: m.name || "Lender"
+              });
+            });
+            row.appendChild(btn);
+          } else {
+            var miss = document.createElement("span");
+            miss.style.cssText = "font-size:11px;color:#A1A1AA";
+            miss.textContent = m.application_url ? "—" : "No URL";
+            row.appendChild(miss);
+          }
+          applyBox.appendChild(row);
         });
-        body.textContent = n + " fit. Top: " + lines.join("; ");
       })
       .catch(function () { body.textContent = "Could not load matches."; });
   }

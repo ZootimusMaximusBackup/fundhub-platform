@@ -57,6 +57,7 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
 @media(max-width:860px){.side{position:fixed;z-index:30;height:100%;transform:translateX(0)}.side.mini{transform:translateX(-100%)}}
 </style>
 <script src="shell.js"></script>
+<script src="proxy-apply.js"></script>
 </head>
 <body>
 <div class="app">
@@ -181,7 +182,7 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
               <thead>
                 <tr>
                   <th>Name</th><th>Table</th><th>Bureaus</th><th>Requirements</th>
-                  <th>Tier</th><th>Status</th><th>State</th><th>Updated</th><th></th>
+                  <th>Tier</th><th>Status</th><th>State</th><th>Updated</th><th>Apply</th><th></th>
                 </tr>
               </thead>
               <tbody id="lenderBody"></tbody>
@@ -305,6 +306,19 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
   }
 
   var rows = [];
+  var scopedClientId = (new URLSearchParams(location.search)).get("client_id") || "";
+  if (scopedClientId) {
+    var applyBanner = document.createElement("div");
+    applyBanner.className = "banner";
+    applyBanner.id = "applyClientBanner";
+    applyBanner.appendChild(document.createTextNode("Client-scoped Apply · "));
+    var code = document.createElement("code");
+    code.textContent = scopedClientId;
+    applyBanner.appendChild(code);
+    applyBanner.appendChild(document.createTextNode(". Click Apply to verify a residential exit near the client, then open the lender URL. Extension = one-click; without it you get copyable proxy settings (routing is NOT claimed active). Chrome proxy is profile-wide; PAC limits to the lender host."));
+    var emptyBanner = document.getElementById("emptyBanner");
+    if (emptyBanner && emptyBanner.parentNode) emptyBanner.parentNode.insertBefore(applyBanner, emptyBanner);
+  }
 
   function render() {
     var body = document.getElementById("lenderBody");
@@ -336,6 +350,7 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
         '<td><input data-f="eligible_states" value="' + esc(L.eligible_states) + '"/></td>' +
         '<td style="white-space:nowrap;font-family:var(--mono);font-size:11px;color:var(--gray)">' +
           esc(L.last_updated_by || "—") + "<br/>" + esc(L.last_updated_date || "") + "</td>" +
+        '<td class="apply-cell"></td>' +
         '<td><button class="btn sm save-btn" type="button">Save</button></td>';
       body.appendChild(tr);
       tr.querySelectorAll("input,select").forEach(function (el) {
@@ -343,6 +358,33 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
         el.addEventListener("input", function () { el.classList.add("dirty"); });
       });
       tr.querySelector(".save-btn").addEventListener("click", function () { saveRow(tr); });
+      var applyCell = tr.querySelector(".apply-cell");
+      if (scopedClientId && L.application_url && window.FHProxyApply) {
+        var ab = document.createElement("button");
+        ab.type = "button";
+        ab.className = "btn sm dark";
+        ab.textContent = "Apply";
+        ab.setAttribute("data-fh-apply", "1");
+        ab.setAttribute("data-client-id", scopedClientId);
+        ab.setAttribute("data-lender-id", L.id);
+        ab.setAttribute("data-lender-name", L.name || "Lender");
+        ab.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          window.FHProxyApply.applyToLender({
+            clientId: scopedClientId,
+            lenderId: L.id,
+            lenderName: L.name || "Lender"
+          });
+        });
+        applyCell.appendChild(ab);
+      } else if (scopedClientId && !L.application_url) {
+        applyCell.textContent = "No URL";
+        applyCell.style.color = "var(--gray)";
+        applyCell.style.fontSize = "11px";
+      } else {
+        applyCell.textContent = "—";
+        applyCell.style.color = "var(--gray2)";
+      }
     });
   }
 

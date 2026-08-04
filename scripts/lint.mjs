@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const SKIP = new Set(["node_modules", ".git", "dist", ".netlify"]);
-const ROOTS = ["src", "scripts", "api", "netlify", "db", "public"];
+const ROOTS = ["src", "scripts", "api", "netlify", "db", "public", "extension"];
 
 function walk(dir, out = []) {
   let entries;

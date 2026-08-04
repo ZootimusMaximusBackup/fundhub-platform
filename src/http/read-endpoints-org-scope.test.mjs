@@ -85,6 +85,9 @@ const NO_ORG_COLUMN = new Map([
   /* Parallel inquiry-ops session: handlers delegate to store modules that bind org_id. */
   ["ai-bureau-config.mjs", "scoped in src/inquiry-ops/ai-bureau-config.mjs listAiBureauConfig(), which binds org_id"],
   ["inquiry-cases.mjs", "scoped in src/inquiry-ops/cases.mjs listCases/getActiveCaseForClient, which bind org_id"],
+  /* Oxylabs Apply audit log — handler delegates to src/proxy/sessions.mjs which
+     binds org_id = $1::uuid on every list/get. */
+  ["proxy-sessions.mjs", "scoped in src/proxy/sessions.mjs listProxySessions/getProxySession, which bind org_id = $1::uuid"],
 ]);
 
 /* An allow-listed endpoint must still prove it hands the SESSION's org to
