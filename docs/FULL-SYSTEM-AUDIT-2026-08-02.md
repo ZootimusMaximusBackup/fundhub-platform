@@ -81,7 +81,7 @@ Method: phrase scan for “not available yet” / “no endpoint” / “coming 
 
 ## 4. `docs/UNFINISHED-AUDIT.md` money-chain findings
 
-**File not present on this tree.** Referenced from CONTROLS-AUDIT (soft-pull note) but never committed as `docs/UNFINISHED-AUDIT.md`.
+**Now on this tree** as `docs/UNFINISHED-AUDIT.md`, recovered from the `audit/unfinished` branch before that branch was deleted. It was missing when this pass was written.
 
 Money-chain status from **this** pass (detail in `docs/MONEY-CHAIN-AUDIT.md`):
 

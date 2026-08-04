@@ -53,17 +53,15 @@ fabricated.
 
 4. **Platform how-to corpus expansion** — v1 FAQ in `src/chat/platform-help.mjs`.
 
-5. **UNFINISHED-AUDIT.md** — referenced from CONTROLS-AUDIT but never committed.
+5. **Closer sales assets / call recording / recruiting pipeline** — backlog.
 
-6. **Closer sales assets / call recording / recruiting pipeline** — backlog.
-
-7. **Message dispatcher sweeper registration** — deliberately unregistered
+6. **Message dispatcher sweeper registration** — deliberately unregistered
    (CLAUDE.md §12). Staff compose dispatches immediately.
 
-8. **Social OAuth connect flow** — channels still need an INSERT + token; no
+7. **Social OAuth connect flow** — channels still need an INSERT + token; no
    OAuth screen yet.
 
-9. **Instagram / TikTok live media publish** — facebook Graph caption path is
+8. **Instagram / TikTok live media publish** — facebook Graph caption path is
    live when tokenized; other channels need provider wiring or
    `SOCIAL_PUBLISH_DRY_RUN=1`.
 
