@@ -216,6 +216,16 @@ export async function ensureAttributions(db, { orgId, saleId, event, basisHint =
 
   let written = 0;
   for (const a of list) {
+    // The split-check trigger runs BEFORE INSERT and rejects a duplicate 100%
+    // row as "200%" before ON CONFLICT can absorb it. Probe first.
+    const exists = await db.query(
+      `SELECT 1 FROM sale_attributions
+        WHERE sale_id = $1 AND staff_id = $2 AND role = $3 AND basis = $4
+        LIMIT 1`,
+      [saleId, a.staffId, a.role, a.basis]
+    );
+    if (exists.rows[0]) continue;
+
     const r = await db.query(
       `INSERT INTO sale_attributions (org_id, sale_id, staff_id, role, basis, split_percent)
        VALUES ($1,$2,$3,$4,$5,$6)

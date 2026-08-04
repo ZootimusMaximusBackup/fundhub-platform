@@ -192,11 +192,15 @@ depends on a real Commas sandbox (called out in the payment-links spec).
 | Workflow success-fee / DIY | Invoice row **if** workflows run |
 | Staff payment link | payment_links row + settle on webhook |
 
-**Bottom line:** the platform can **calculate** and **display** money concepts,
-and it can **invoice** and **payment-link** when those paths are on. The core
-**sale → commission → entitlement → funding round** write chain is not hooked
-to live events. Screens that look like a ledger are reading tables that live
-traffic does not fill.
+**Bottom line (as of 2026-08-02):** the platform could **calculate** and
+**display** money concepts, and it could **invoice** and **payment-link** when
+those paths were on. The core **sale → commission → entitlement → funding round**
+write chain was not hooked to live events.
+
+**Update 2026-08-04:** live writers landed in `src/handlers/money-chain.mjs`
+(registered from `src/register-all.mjs`), with idempotency keys in migration
+`137_money_chain_idempotency.sql`. See `docs/workflows/money-chain-writers.md`.
+The diagnostic table above is kept as the pre-fix record.
 
 ---
 
