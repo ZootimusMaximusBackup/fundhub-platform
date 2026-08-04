@@ -61,6 +61,8 @@ import readEntitlements from "../../api/read/entitlements.mjs";
 import readFailedEvents from "../../api/read/failed-events.mjs";
 import readAgents from "../../api/read/agents.mjs";
 import readInquiries from "../../api/read/inquiries.mjs";
+import readInquiryCases from "../../api/read/inquiry-cases.mjs";
+import inquiryCases from "../../api/inquiry-cases.mjs";
 import readProducts from "../../api/read/products.mjs";
 import readConversations from "../../api/read/conversations.mjs";
 import readInbox from "../../api/read/inbox.mjs";
@@ -222,6 +224,8 @@ export const ROUTES = {
   "read/failed-events": readFailedEvents,
   "read/agents": readAgents,
   "read/inquiries": readInquiries,
+  "read/inquiry-cases": readInquiryCases,
+  "inquiry-cases": inquiryCases,
   "read/products": readProducts,
   "read/conversations": readConversations,
 

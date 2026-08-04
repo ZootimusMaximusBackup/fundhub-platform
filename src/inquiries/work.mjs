@@ -35,6 +35,7 @@
 import { db as sharedDb, pool } from "../db.mjs";
 import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
+import { emit } from "../events/bus.mjs";
 
 const ATTEMPT_KINDS = new Set(["call", "letter", "portal", "note"]);
 const COUNTING_KINDS = new Set(["call", "letter", "portal"]);
@@ -158,13 +159,56 @@ export async function confirmRemoval(db, { inquiryId, staffId, status = "Removed
 
   const res = await db.query(
     `UPDATE inquiry_log
-        SET status = $3, confirmed_at = now(), worked_by = $2, worked_at = now(), updated_at = now()
+        SET status = $3,
+            confirmed_at = now(),
+            cleared_at = COALESCE(cleared_at, now()),
+            is_open = false,
+            worked_by = $2, worked_at = now(), updated_at = now()
       WHERE id = $1
       RETURNING *`,
     [inquiryId, staffId, status]
   );
   if (!res.rows[0]) throw new InquiryWriteError("inquiry not found", { status: 404 });
-  return res.rows[0];
+  const row = res.rows[0];
+  // Emit inquiry.removed only when a linked case has no open inquiries left.
+  // A lone inquiry_log row (no case) does not speak for the whole client file —
+  // use POST /api/inquiry-cases mark_cleared for that.
+  if (row.case_id) {
+    const open = await db.query(
+      `SELECT COUNT(*)::int AS n FROM inquiry_log WHERE case_id = $1 AND is_open = true`,
+      [row.case_id]
+    );
+    const remaining = open.rows[0]?.n || 0;
+    if (remaining === 0) {
+      await db.query(
+        `UPDATE inquiry_removal_cases SET
+            case_status = 'Cleared',
+            cleared_at = COALESCE(cleared_at, now()),
+            completed_at = COALESCE(completed_at, now()),
+            open_inquiry_count = 0,
+            master_call_state = 'completed',
+            updated_at = now()
+          WHERE id = $1 AND case_status NOT IN ('Cleared','Closed','Completed')`,
+        [row.case_id]
+      );
+      await emit(db, "inquiry.removed", {
+        source: "inquiry-remover-desk",
+        inquiryId: row.id,
+        caseId: row.case_id,
+        staffId
+      }, { clientId: row.client_id, orgId: row.org_id,
+           idempotencyKey: `inquiry-log:${row.id}:case-cleared` });
+    } else {
+      await db.query(
+        `UPDATE inquiry_removal_cases SET
+            open_inquiry_count = $2::int,
+            updated_at = now()
+          WHERE id = $1`,
+        [row.case_id, remaining]
+      );
+    }
+  }
+  return row;
 }
 
 /**
@@ -179,7 +223,7 @@ export async function setStatus(db, { inquiryId, staffId, status }) {
   if (!staffId) throw new InquiryWriteError("staffId is required", { status: 401 });
   if (!status || !String(status).trim()) throw new InquiryWriteError("status is required");
 
-  const confirmed = /removed|confirmed|deleted/i.test(status);
+  const confirmed = /removed|confirmed|deleted|cleared/i.test(status);
   const res = await db.query(
     `UPDATE inquiry_log
         SET status = $3,

@@ -3,6 +3,7 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-04 | role-inquiry-remover, client | Added inquiry-removal bridge routes `GET /api/read/inquiry-cases`, `GET,POST /api/inquiry-cases`, and webhook provider `inquiry-removal` under `/api/webhooks/:provider`. Inquiry Remover queue shows case call state / hold time with Mark Cleared + Close Case; Client Control Panel shows active inquiry-removal case status. Migrations 137–138. | Bridge IRA Airtable runtime into the platform CRM desk | (this commit)
 2026-08-02 | all roles | regenerated actuals for social/publish, creative/run+actions, partner-brand/verify-domain, public/partner-page, hosted /sites | finish items 4 and 5 | 2e1e77e
 
 2026-08-02 | all roles | regenerated actuals for chat/demo/campaigns/social/creative/partner-pages routes | session six-items build | c820270

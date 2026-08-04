@@ -155,6 +155,19 @@
   table.queue tr[data-row].stuck:hover td{background:rgba(242,166,155,.14);}
   table.queue tr[data-row][aria-expanded="true"] td{background:var(--paper-dim);}
   table.queue tr[data-row].locked{cursor:not-allowed;}
+  .call-state{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;}
+  .call-state.holding{color:var(--amber);}
+  .call-state.live,.call-state.transferred{color:var(--green,#2f7d4a);}
+  .hold-time{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800;color:var(--amber);}
+  .case-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .case-actions button{font:700 11px/1 'Inter',sans-serif;letter-spacing:.04em;text-transform:uppercase;
+    border:1px solid var(--line);background:var(--surface);padding:8px 12px;border-radius:6px;cursor:pointer;}
+  .case-actions button.primary{background:var(--text);color:var(--surface);}
+  .case-detail{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:12px;background:var(--surface);}
+  .case-detail .cd-title{font-weight:800;font-size:14px;margin-bottom:4px;}
+  .case-detail .cd-meta{font-size:12px;color:var(--text-dim);margin-bottom:8px;}
+  #cases-panel{margin-bottom:18px;}
+
   .rowchev{display:inline-block;width:9px;color:var(--text-faint);font-size:9px;
     transition:transform .16s ease;margin-right:5px;}
   tr[data-row][aria-expanded="true"] .rowchev{transform:rotate(90deg);}
@@ -347,33 +360,38 @@
       <div class="filter-note" id="filter-note" role="status" aria-live="polite"></div>
     </div>
 
+    <div class="section" id="cases-panel" hidden>
+      <div class="section-title">Active Cases</div>
+      <div id="cases-list"></div>
+    </div>
+
     <div class="section">
       <div class="section-title">Work Queue</div>
       <table class="queue">
-        <tr><th>Client</th><th>Bureau</th><th>Inquiry</th><th>Attempts</th><th>Status</th></tr>
+        <tr><th>Client</th><th>Bureau</th><th>Inquiry</th><th>Call State</th><th>Hold</th><th>Attempts</th><th>Status</th></tr>
         <tr data-row data-bureau="Equifax" data-done="1" tabindex="0" aria-expanded="false">
-          <td><span class="rowchev">▸</span>Wei Chen</td><td>Equifax</td><td>Synchrony Bank</td><td class="mono">2</td>
+          <td><span class="rowchev">▸</span>Wei Chen</td><td>Equifax</td><td>Synchrony Bank</td><td><span class="call-state">—</span></td><td>—</td><td class="mono">2</td>
           <td><span class="status-pill confirmed">Confirmed · Removed</span></td>
         </tr>
         <tr class="stuck" data-row data-bureau="Equifax" tabindex="0" aria-expanded="false">
-          <td><span class="rowchev">▸</span>Felix Ndiaye</td><td>Equifax</td><td>Capital One Auto</td><td class="mono">3</td>
+          <td><span class="rowchev">▸</span>Felix Ndiaye</td><td>Equifax</td><td>Capital One Auto</td><td><span class="call-state">—</span></td><td>—</td><td class="mono">3</td>
           <td><span class="stuck-age">2d 14h</span> <span class="status-pill" style="background:var(--amber-bg);color:var(--amber);">Awaiting CRS</span></td>
         </tr>
         <tr data-row data-bureau="TransUnion" tabindex="0" aria-expanded="false">
-          <td><span class="rowchev">▸</span>Isabel Cortez</td><td>TransUnion</td><td>Sallie Mae</td><td class="mono">1</td>
+          <td><span class="rowchev">▸</span>Isabel Cortez</td><td>TransUnion</td><td>Sallie Mae</td><td><span class="call-state">—</span></td><td>—</td><td class="mono">1</td>
           <td><span class="status-pill progress">Filed — waiting on TransUnion</span></td>
         </tr>
         <tr data-row data-bureau="TransUnion" tabindex="0" aria-expanded="false">
-          <td><span class="rowchev">▸</span>Samuel Okafor</td><td>TransUnion</td><td>Comenity Bank</td><td class="mono">3</td>
+          <td><span class="rowchev">▸</span>Samuel Okafor</td><td>TransUnion</td><td>Comenity Bank</td><td><span class="call-state">—</span></td><td>—</td><td class="mono">3</td>
           <td><span class="status-pill noanswer">Called 3 times — no answer</span></td>
         </tr>
         <tr class="stuck locked" data-row data-bureau="Equifax" tabindex="0" aria-expanded="false"
             data-locked="Her file is frozen for fraud review — leave this one alone.">
-          <td><span class="rowchev">▸</span>Grace Kowalski</td><td>Equifax</td><td>Discover</td><td class="mono">0</td>
+          <td><span class="rowchev">▸</span>Grace Kowalski</td><td>Equifax</td><td>Discover</td><td><span class="call-state">—</span></td><td>—</td><td class="mono">0</td>
           <td><span class="status-pill new">New · paused for fraud review</span></td>
         </tr>
         <tr data-row data-bureau="TransUnion" data-done="1" tabindex="0" aria-expanded="false">
-          <td><span class="rowchev">▸</span>Theresa Lindqvist</td><td>TransUnion</td><td>Barclays</td><td class="mono">2</td>
+          <td><span class="rowchev">▸</span>Theresa Lindqvist</td><td>TransUnion</td><td>Barclays</td><td><span class="call-state">—</span></td><td>—</td><td class="mono">2</td>
           <td><span class="status-pill confirmed">Confirmed · Removed</span></td>
         </tr>
       </table>
@@ -480,7 +498,7 @@ function pill(status, outcome) {
   const s = String(status || outcome || "").trim();
   const k = s.toLowerCase();
   if (!s) return { cls: "new", text: "No status recorded", known: false, done: false };
-  if (/removed|confirmed/.test(k)) return { cls: "confirmed", text: s, known: true, done: true };
+  if (/removed|confirmed|deleted|cleared/.test(k)) return { cls: "confirmed", text: s, known: true, done: true };
   if (/no answer|unreachable/.test(k)) return { cls: "noanswer", text: s, known: true, done: false };
   if (/filed|sent|progress|pending/.test(k)) return { cls: "progress", text: s, known: true, done: false };
   if (/new|queued/.test(k)) return { cls: "new", text: s, known: true, done: false };
@@ -945,12 +963,6 @@ window.__fhQueueReady = (function () {
   var table = document.querySelector('table.queue');
   if (!table || !window.FHData) return Promise.resolve();
 
-  /* Status → pill class now lives in FHInquiryView.pill, because the write path
-     has to re-render a status the server just returned and a second copy of the
-     mapping would eventually disagree with this one about what "Removed" looks
-     like. Same rule as before: mapped ONLY where the wording is unambiguous, an
-     unrecognised status keeps its real text on a neutral pill and is counted
-     into the banner rather than guessed into a colour the database did not say. */
   var pill = window.FHInquiryView.pill;
 
   function cell(html) { var td = document.createElement('td'); td.innerHTML = html; return td; }
@@ -959,8 +971,96 @@ window.__fhQueueReady = (function () {
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
   }
+  function callStateLabel(s) {
+    if (!s) return '—';
+    return String(s).replace(/_/g, ' ');
+  }
+  function callStateClass(s) {
+    if (s === 'holding') return 'holding';
+    if (s === 'live_agent_reached') return 'live';
+    if (s === 'transferred_to_rep') return 'transferred';
+    return '';
+  }
 
-  return FHData.inquiries({ limit: 200 }).then(function (res) {
+  function renderCases(cases) {
+    var panel = document.getElementById('cases-panel');
+    var list = document.getElementById('cases-list');
+    if (!panel || !list) return;
+    if (!cases.length) { panel.hidden = true; list.innerHTML = ''; return; }
+    panel.hidden = false;
+    list.innerHTML = '';
+    cases.forEach(function (c) {
+      var box = document.createElement('div');
+      box.className = 'case-detail';
+      box.dataset.caseId = c.id || '';
+      var hold = c.hold_duration_display || (c.master_call_state === 'holding' ? '…' : '—');
+      var inqs = (c.inquiries || []).map(function (i) {
+        return '<div style="font-size:12px;margin:3px 0;">' +
+          esc(i.bureau || '—') + ' · ' + esc(i.inquiry_name || i.inquiry || '—') +
+          ' · <span class="call-state ' + callStateClass(i.call_state) + '">' +
+          esc(callStateLabel(i.call_state)) + '</span>' +
+          (i.is_open === false ? ' · cleared' : '') + '</div>';
+      }).join('');
+      box.innerHTML =
+        '<div class="cd-title">' + esc(c.client_name || '(unnamed)') +
+          ' · <span class="status-pill progress">' + esc(c.case_status || 'Open') + '</span></div>' +
+        '<div class="cd-meta">' +
+          esc(c.selected_bureaus_raw || '—') +
+          ' · call: <span class="call-state ' + callStateClass(c.master_call_state) + '">' +
+          esc(callStateLabel(c.master_call_state)) + '</span>' +
+          ' · hold <span class="hold-time">' + esc(hold) + '</span>' +
+          ' · open inquiries ' + esc(c.open_inquiry_count == null ? 0 : c.open_inquiry_count) +
+        '</div>' +
+        (inqs || '<div class="cd-meta">No linked inquiries yet</div>') +
+        '<div class="case-actions">' +
+          '<button type="button" class="primary" data-case-act="mark_cleared">Mark Cleared</button>' +
+          '<button type="button" data-case-act="close">Close Case</button>' +
+        '</div>';
+      list.appendChild(box);
+    });
+
+    list.onclick = function (ev) {
+      var btn = ev.target.closest('[data-case-act]');
+      if (!btn) return;
+      var box = btn.closest('.case-detail');
+      if (!box || !box.dataset.caseId) return;
+      var action = btn.getAttribute('data-case-act');
+      var body = { case_id: box.dataset.caseId, action: action };
+      if (action === 'close') {
+        if (!window.confirm('Close this inquiry-removal case?')) return;
+        body.reason = 'closed_by_rep';
+      }
+      btn.disabled = true;
+      fetch('/api/inquiry-cases', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body)
+      }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (out) {
+          if (!out.ok || !out.j || !out.j.ok) {
+            FHData.banner('error', 'case action failed — ' + ((out.j && out.j.error) || 'unknown'), 'inquiry-cases');
+            btn.disabled = false;
+            return;
+          }
+          FHData.banner('real', 'case updated · ' + action, 'inquiry-cases');
+          location.reload();
+        }).catch(function () {
+          FHData.banner('error', 'case action failed — network', 'inquiry-cases');
+          btn.disabled = false;
+        });
+    };
+  }
+
+  return Promise.all([
+    FHData.inquiries({ limit: 200 }),
+    FHData.inquiryCases ? FHData.inquiryCases({ limit: 100, active: 1 }) : Promise.resolve({ ok: false })
+  ]).then(function (pair) {
+    var res = pair[0];
+    var casesRes = pair[1];
+    if (casesRes && casesRes.ok) {
+      renderCases((casesRes.data && casesRes.data.items) || []);
+    }
     if (!res.ok) { FHData.explain(res, 'inquiry queue'); return; }
     var items = (res.data && res.data.items) || [];
     if (!items.length) {
@@ -968,7 +1068,6 @@ window.__fhQueueReady = (function () {
       return;
     }
 
-    // Header row is the table's first <tr>; keep it and drop only the samples.
     [].slice.call(table.querySelectorAll('tr[data-row]')).forEach(function (r) { r.remove(); });
 
     var unknown = 0, calls = 0, left = 0, confirmed = 0, byBureau = {};
@@ -985,22 +1084,21 @@ window.__fhQueueReady = (function () {
       tr.setAttribute('data-row', '');
       if (it.bureau) tr.dataset.bureau = it.bureau;
       if (p.done) tr.dataset.done = '1';
-      /* The two ids the write path needs. A row WITHOUT data-id is sample
-         markup, and the work strip disables every button on it rather than
-         posting at an id it made up. */
       if (it.id) tr.dataset.id = it.id;
       if (it.client_id) tr.dataset.clientId = it.client_id;
-      /* The raw row, so the work strip seeds its state from what the database
-         said rather than from the pill text it is about to render — otherwise a
-         status-less row would come back out of the DOM as the literal string
-         "No status recorded" and get saved as one. */
+      if (it.case_id) tr.dataset.caseId = it.case_id;
       tr._row = { status: it.status, outcome: it.outcome, call_attempts: it.call_attempts };
       tr.tabIndex = 0;
       tr.setAttribute('aria-expanded', 'false');
       tr.appendChild(cell('<span class="rowchev">&#9656;</span>' +
         esc(it.client_name || '(unnamed client)')));
       tr.appendChild(cell(esc(it.bureau || '—')));
-      tr.appendChild(cell(esc(it.inquiry || '—')));
+      tr.appendChild(cell(esc(it.inquiry_name || it.inquiry || '—')));
+      tr.appendChild(cell('<span class="call-state ' + callStateClass(it.call_state) + '">' +
+        esc(callStateLabel(it.call_state)) + '</span>'));
+      var holdCell = '—';
+      if (it.call_state === 'holding') holdCell = '<span class="hold-time">live</span>';
+      tr.appendChild(cell(holdCell));
       var att = cell(esc(it.call_attempts == null ? 0 : it.call_attempts));
       att.className = 'mono';
       tr.appendChild(att);
@@ -1008,9 +1106,6 @@ window.__fhQueueReady = (function () {
       table.appendChild(tr);
     });
 
-    /* Stats that the rows actually support. "Worked" is deliberately left on
-       its sample value: nothing in inquiry_log records who worked a row or
-       when, and deriving it from call_attempts > 0 would be a guess. */
     function setStat(name, n) {
       var el = document.querySelector('[data-stat="' + name + '"]');
       if (el) el.textContent = String(n);
@@ -1019,7 +1114,6 @@ window.__fhQueueReady = (function () {
     setStat('calls', calls);
     setStat('confirmed', confirmed);
 
-    // Bureau chip counts, so a chip can never disagree with its own rows.
     [].slice.call(document.querySelectorAll('.bureau-chip[data-bureau]')).forEach(function (c) {
       var bc = c.querySelector('.bc');
       if (!bc) return;
@@ -1030,8 +1124,7 @@ window.__fhQueueReady = (function () {
 
     FHData.banner('real', 'live queue · ' + items.length + ' inquiries · ' +
       left + ' open' +
-      (unknown ? ' · ' + unknown + ' with an unmapped status' : '') +
-      ' · "Worked" is still sample', 'inquiries');
+      (unknown ? ' · ' + unknown + ' with an unmapped status' : ''), 'inquiries');
   }).catch(function () {
     FHData.banner('error', 'sample queue — the inquiry read failed', 'inquiries');
   });

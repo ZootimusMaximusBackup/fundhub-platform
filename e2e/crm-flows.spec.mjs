@@ -151,7 +151,8 @@ test.describe("closer dashboard", () => {
 test.describe("inquiry remover", () => {
   test("loads the queue", async ({ page }) => {
     await openScreen(page, "/app/inquiry-remover.html", OWNER, {
-      "/api/read/inquiries": EMPTY_PAGE
+      "/api/read/inquiries": EMPTY_PAGE,
+      "/api/read/inquiry-cases": EMPTY_PAGE
     });
     await expect(page.locator("body")).toBeVisible();
   });

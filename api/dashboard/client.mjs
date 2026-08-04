@@ -28,7 +28,7 @@ export default async function handler(req, res) {
   if (!isUuid(id)) return res.status(400).json({ ok: false, error: "invalid_id" });
 
   try {
-    const [clientRes, txRes, crsRes, msgRes, taskRes, roundRes, invRes] = await Promise.all([
+    const [clientRes, txRes, crsRes, msgRes, taskRes, roundRes, invRes, caseRes] = await Promise.all([
       db.query(
         `SELECT id, first_name, last_name, email, phone,
                 outcome_tier, funded, funded_amount, days_to_fund,
@@ -75,6 +75,18 @@ export default async function handler(req, res) {
          FROM v_invoice_balance WHERE client_id = $1 ORDER BY created_at DESC`,
         [id]
       ),
+      db.query(
+        `SELECT id, case_status, master_call_state, selected_bureaus_raw,
+                open_inquiry_count, hold_started_at, attempt_count,
+                call_outcome_summary, requested_at, cleared_at, completed_at,
+                closed_at, updated_at
+           FROM inquiry_removal_cases
+          WHERE client_id = $1
+            AND case_status NOT IN ('Cleared','Closed','Completed')
+          ORDER BY updated_at DESC
+          LIMIT 1`,
+        [id]
+      ),
     ]);
 
     if (!clientRes.rows.length) {
@@ -99,6 +111,7 @@ export default async function handler(req, res) {
       tasks:         taskRes.rows,
       funding_rounds: roundRes.rows,
       invoices:      invRes.rows,
+      inquiry_removal_case: caseRes.rows[0] || null,
       // Derived, never stored — see src/http/client-detail.mjs for why each of
       // these explains rather than recomputes.
       ...extras

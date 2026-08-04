@@ -26,9 +26,9 @@ flowchart TD
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 4 routes]
     CAN --> A_public[public — 1 route]
-    CAN --> A_read[Reading data — 21 routes]
+    CAN --> A_read[Reading data — 22 routes]
     CAN --> A_social[social — 2 routes]
-    CAN --> A_top_level[Everything else — 15 routes]
+    CAN --> A_top_level[Everything else — 16 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 36 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
@@ -48,7 +48,7 @@ flowchart TD
 
 ## What they can reach
 
-**75 of 111 routes.**
+**77 of 113 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -94,6 +94,7 @@ flowchart TD
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/inquiries` | GET, POST | staff |
 | `/api/inquiry` | — | inquiry_specialist, admin, owner |
+| `/api/inquiry-cases` | GET, POST | inquiry_specialist, admin, owner |
 | `/api/message-templates` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/messages` | POST | staff |
 | `/api/messages-outbound` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -113,6 +114,7 @@ flowchart TD
 | `/api/read/funding-rounds` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/inbox` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/inquiries` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/inquiry-cases` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/message-templates` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/messages` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -136,7 +138,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**36 of 111 routes.**
+**36 of 113 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

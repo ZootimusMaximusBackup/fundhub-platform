@@ -27,11 +27,11 @@ flowchart TD
     CAN --> A_finance[Finance — 9 routes]
     CAN --> A_journeys[journeys — 1 route]
     CAN --> A_public[public — 1 route]
-    CAN --> A_read[Reading data — 27 routes]
+    CAN --> A_read[Reading data — 28 routes]
     CAN --> A_social[social — 2 routes]
     CAN --> A_top_level[Everything else — 15 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 23 routes]
+    WHO -->|Yes| CANT[Blocked — 24 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 1 blocked]
     CANT --> B_chat[chat — 1 blocked]
@@ -44,12 +44,12 @@ flowchart TD
     CANT --> B_partner_brand[partner-brand — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_read[Reading data — 2 blocked]
-    CANT --> B_top_level[Everything else — 5 blocked]
+    CANT --> B_top_level[Everything else — 6 blocked]
 ```
 
 ## What they can reach
 
-**88 of 111 routes.**
+**89 of 113 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -124,6 +124,7 @@ flowchart TD
 | `/api/read/funding-rounds` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/inbox` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/inquiries` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/inquiry-cases` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/invoices` | GET | owner, admin, sales_manager |
 | `/api/read/message-templates` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/messages` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -150,7 +151,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**23 of 111 routes.**
+**24 of 113 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -168,6 +169,7 @@ flowchart TD
 | `/api/hiring/funnel` | GET | owner, admin |
 | `/api/hiring/postings` | GET | owner, admin |
 | `/api/inquiry` | — | inquiry_specialist, admin, owner |
+| `/api/inquiry-cases` | GET, POST | inquiry_specialist, admin, owner |
 | `/api/journeys` | GET, PUT | owner, admin |
 | `/api/journeys/ask` | POST | owner, admin |
 | `/api/partner-brand` | GET, PUT | owner, admin |
