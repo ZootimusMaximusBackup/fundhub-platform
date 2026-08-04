@@ -112,9 +112,8 @@ test("every canonical event lands in exactly one group", async () => {
 test("adapters report their auth scheme and emitted events", async () => {
   const { canonicalEvents } = await extractAll();
   const adapters = extractAdapters(canonicalEvents);
-  // 10: nine webhook/direct adapters plus oxylabs.mjs (residential Apply proxy,
-  // credential-string targeting — not a signed webhook).
-  assert.equal(adapters.length, 10, "10 adapters in src/adapters");
+  // 11: nine webhook/direct adapters + oxylabs (Apply proxy) + hubstaff (poll ingest).
+  assert.equal(adapters.length, 11, "11 adapters in src/adapters");
 
   const twilio = adapters.find((a) => a.name === "twilio");
   assert.equal(twilio.scheme, "HMAC-SHA1", "Twilio signs with SHA1, unlike the rest");

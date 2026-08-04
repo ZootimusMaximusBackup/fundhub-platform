@@ -39,15 +39,16 @@ const OK = { staffId: "11111111-1111-1111-1111-111111111111", kind: "call_made" 
 
 // --- the vocabulary -----------------------------------------------------------
 
-test("EVENT_KINDS is exactly the five kinds named in the 001_init.sql column comment", () => {
+test("EVENT_KINDS is the original five plus Hubstaff monitor kinds", () => {
   assert.deepEqual([...EVENT_KINDS], [
-    "file_touched", "pull_run", "letter_issued", "text_sent", "call_made"
+    "file_touched", "pull_run", "letter_issued", "text_sent", "call_made",
+    "monitor_activity", "monitor_screenshot"
   ]);
 });
 
 test("EVENT_KINDS is frozen, so a call site cannot mint a kind by pushing onto it", () => {
   assert.throws(() => EVENT_KINDS.push("whatever"), TypeError);
-  assert.equal(EVENT_KINDS.length, 5);
+  assert.equal(EVENT_KINDS.length, 7);
 });
 
 test("the trailing '...' in the schema comment is an ellipsis, not a sixth kind", () => {

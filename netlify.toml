@@ -53,6 +53,9 @@
 [functions."creative-job-runner"]
   schedule = "*/2 * * * *"
 
+[functions."hubstaff-poll-sweeper"]
+  schedule = "*/10 * * * *"
+
 # ---------------------------------------------------------------------------
 # Routing
 #

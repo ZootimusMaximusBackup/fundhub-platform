@@ -18,6 +18,7 @@ flowchart LR
     ext_clickfunnels["ClickFunnels webhook"]
     ext_commas["Commas (formerly FanBasis) payment"]
     ext_crs["CRS engine output"]
+    ext_hubstaff["Hubstaff deep-monitoring"]
     ext_lendflow["Lendflow alt-fin"]
     ext_mailgun["Mailgun inbound-email"]
     ext_oxylabs["Oxylabs residential proxy adapter."]
@@ -31,6 +32,7 @@ flowchart LR
     adp_clickfunnels["clickfunnels<br/>HMAC-SHA256"]
     adp_commas["commas<br/>HMAC-SHA256"]
     adp_crs["crs<br/>direct call"]
+    adp_hubstaff["hubstaff<br/>direct call"]
     adp_lendflow["lendflow<br/>HMAC-SHA256"]
     adp_mailgun["mailgun<br/>HMAC-SHA256"]
     adp_oxylabs["oxylabs<br/>direct call"]
@@ -46,6 +48,7 @@ flowchart LR
   ext_clickfunnels --> adp_clickfunnels
   ext_commas --> adp_commas
   ext_crs --> adp_crs
+  ext_hubstaff --> adp_hubstaff
   ext_lendflow --> adp_lendflow
   ext_mailgun --> adp_mailgun
   ext_oxylabs --> adp_oxylabs
@@ -56,6 +59,7 @@ flowchart LR
   adp_clickfunnels -- "entry.captured<br/>survey.submitted" --> BUS
   adp_commas -- "diagnostic.paid<br/>deposit.paid<br/>sale.closed<br/>payment.received<br/>payment.failed" --> BUS
   adp_crs -- "analysis.completed<br/>decision.rendered" --> BUS
+  adp_hubstaff -- "—" --> BUS
   adp_lendflow -- "round.started<br/>round.submitted<br/>round.approved<br/>round.funded" --> BUS
   adp_mailgun -- "message.inbound<br/>mail.response" --> BUS
   adp_oxylabs -- "—" --> BUS

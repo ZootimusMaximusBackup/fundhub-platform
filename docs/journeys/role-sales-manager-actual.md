@@ -29,9 +29,10 @@ flowchart TD
     CAN --> A_public[public — 1 route]
     CAN --> A_read[Reading data — 32 routes]
     CAN --> A_social[social — 2 routes]
+    CAN --> A_staff[staff — 1 route]
     CAN --> A_top_level[Everything else — 19 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 27 routes]
+    WHO -->|Yes| CANT[Blocked — 28 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 1 blocked]
     CANT --> B_chat[chat — 1 blocked]
@@ -45,12 +46,13 @@ flowchart TD
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
     CANT --> B_read[Reading data — 3 blocked]
+    CANT --> B_staff[staff — 1 blocked]
     CANT --> B_top_level[Everything else — 6 blocked]
 ```
 
 ## What they can reach
 
-**97 of 124 routes.**
+**98 of 126 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -149,6 +151,7 @@ flowchart TD
 | `/api/shifts` | GET, POST | staff |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
+| `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/tasks` | GET, PATCH | staff |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
@@ -160,7 +163,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**27 of 124 routes.**
+**28 of 126 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -191,6 +194,7 @@ flowchart TD
 | `/api/read/company-brain-affiliate` | POST | affiliate, partner |
 | `/api/read/failed-events` | GET | owner, admin |
 | `/api/read/proxy-sessions` | GET | owner, funding_advisor |
+| `/api/staff/monitoring-consent` | POST | owner |
 
 ## UNVERIFIED
 
