@@ -1,8 +1,4 @@
--- t141_proxy_sessions.sql — Audit trail for Oxylabs residential Apply sessions.
---
--- TEMPORARY PREFIX. Other sessions are landing migrations in parallel; final
--- numbering is decided at merge. Sort order places this after t140_* and before
--- any later numbered file once renumbered.
+-- 141_proxy_sessions.sql — Audit trail for Oxylabs residential Apply sessions.
 --
 -- Every Apply launch that opens a geo-targeted residential proxy is logged
 -- here — this is the proof of which exit IP an application came from.

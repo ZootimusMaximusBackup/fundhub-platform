@@ -44,9 +44,7 @@ fabricated.
 
 ## Lender + inquiry ops data (owner / funding advisor action)
 
-Updated 2026-08-04. Schema lives in temporary migrations `t138_lenders.sql`,
-`t139_funding_ops.sql`, `t140_inquiry_ops.sql` — **renumber at merge** if peers
-landed 138+.
+Updated 2026-08-04. Schema lives in migrations `138_lenders.sql`, `139_funding_ops.sql`, `140_inquiry_ops.sql`.
 
 **Tables ship empty on purpose.** Do not invent lender names, bureau phone
 numbers, IVR paths, or approval criteria in code or seed.
@@ -74,7 +72,7 @@ Stacking round-planning fits correctly show **0**.
 
 ## Oxylabs Apply door (platform wired; credentials unset)
 
-Updated 2026-08-04. Adapter + `proxy_sessions` (temp migration `t141_proxy_sessions.sql` — renumber at merge) + `POST /api/proxy/launch` / `POST /api/proxy/end` / `GET /api/read/proxy-sessions` + Chrome extension under `extension/` + Apply controls on client-scoped Lenders, pipeline Card Stacking matches, and client control panel funding section.
+Updated 2026-08-04. Adapter + `proxy_sessions` (`141_proxy_sessions.sql`) + `POST /api/proxy/launch` / `POST /api/proxy/end` / `GET /api/read/proxy-sessions` + Chrome extension under `extension/` + Apply controls on client-scoped Lenders, pipeline Card Stacking matches, and client control panel funding section.
 
 **Left unset on purpose:** `OXYLABS_USERNAME` / `OXYLABS_PASSWORD`. Set both as Netlify secrets, then `netlify deploy --build --prod`. Until they are set, launch returns a clear 503 — it does not invent credentials or silently skip geo checks.
 

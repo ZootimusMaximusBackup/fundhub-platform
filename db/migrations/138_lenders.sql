@@ -1,8 +1,4 @@
--- t138_lenders.sql — Lender database (Airtable port).
---
--- TEMPORARY PREFIX. Other sessions are landing migrations in parallel; final
--- numbering is decided at merge. Sort order places this after 137_* and before
--- any later numbered file once renumbered.
+-- 138_lenders.sql — Lender database (Airtable port).
 --
 -- Source: fundhub-docs sources/ghl-crm-source-of-truth.md
 --   ONLINEBIZCC / INBRANCHBIZCC / BIZLOC_STATED / BIZLOC_DOCUMENTED /

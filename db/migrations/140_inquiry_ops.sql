@@ -1,6 +1,5 @@
--- t140_inquiry_ops.sql — Inquiry removal ops + AI bureau config + business tradelines.
+-- 140_inquiry_ops.sql — Inquiry removal ops + AI bureau config + business tradelines.
 --
--- TEMPORARY PREFIX. Renumber at merge if peers land 138+/140+.
 -- Source: fundhub-docs ghl-crm-source-of-truth.md ~9780–9882
 --
 -- CRITICAL: business status (inquiry_log.status: open/cleared/disputed) and

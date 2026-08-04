@@ -1,7 +1,7 @@
 # Lender database (session 2026-08-04)
 
 **Owner:** this session (Grok, one-shot — §0 split waived by owner).  
-**Migration prefix:** `t138_*` — temporary. Renumber at merge if peers land `138+`.
+**Migration:** `138_lenders.sql`.
 
 ## Decisions (owner said decide, document, continue)
 
@@ -25,7 +25,7 @@
 
 | Unit | Status | Notes |
 |---|---|---|
-| Schema `t138_lenders.sql` | done | lenders + observations + apps ALTER |
+| Schema `138_lenders.sql` | done | lenders + observations + apps ALTER |
 | Core `src/lenders/*` | done | csv, match, observations, store |
 | API read/write + routes | done | lenders, observations, matches |
 | CRM `lenders.html` + Funding nav | done | all sidebars + shell.js ALL |
@@ -35,7 +35,7 @@
 ## Change manifest
 
 ### Schema
-- `db/migrations/t138_lenders.sql` — enums, `lenders`, `lender_bureau_observations`, applications columns
+- `db/migrations/138_lenders.sql` — enums, `lenders`, `lender_bureau_observations`, applications columns
 - `db/expected-migrations.mjs` — regenerated
 
 ### Modules

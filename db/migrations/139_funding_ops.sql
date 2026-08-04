@@ -1,6 +1,5 @@
--- t139_funding_ops.sql — Application decisions + funding closeout (success fee).
+-- 139_funding_ops.sql — Application decisions + funding closeout (success fee).
 --
--- TEMPORARY PREFIX. Renumber at merge if peers land 138+/139+.
 -- Source: fundhub-docs ghl-crm-source-of-truth.md ~9822–9844
 --   APPLICATION_DECISIONS, FUNDING_CLOSEOUT, FUNDING_CLOSEOUT_ITEMS
 
