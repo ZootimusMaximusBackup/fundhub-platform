@@ -19,15 +19,19 @@ and converges the rows on whatever the docs currently say.
 
 ## Sources
 
-| Doc | Channel | `compliance_passed` |
+| Doc | Channel | Notes |
 |---|---|---|
-| `SMS-Compliant-Rewrites.md` | sms | `true` — audited + reworded |
-| `Workflow-SMS-Fixes-Ready-to-Paste.md` | sms | `true` — audited + reworded |
-| `EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md` | email | `false` — never audited |
+| `SMS-Compliant-Rewrites.md` | sms | audited + reworded |
+| `Workflow-SMS-Fixes-Ready-to-Paste.md` | sms | audited + reworded |
+| `EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md` | email | never compliance-audited |
 
-`compliance_passed` is carried **from the source doc**. It is an input to the
-compliance gate, not a verdict from it — this seeder neither renders nor
-compliance-checks anything.
+**`compliance_passed` is always written `false`.** Owner decision 2026-08-04:
+nothing sends until a human approves in the template editor (migration 116).
+
+Workflow keys (`EMAIL-F03-ROUND-SUBMITTED`, etc.) often differ from doc IDs.
+`workflow-keys.mjs` aliases them to doc copy, falls back to
+`src/workflows/templates-seed.mjs`, or seeds a clearly marked `[DRAFT — NO
+SOURCE COPY]` body.
 
 ## Keys
 

@@ -7,7 +7,7 @@ function h(title) {
 
 export function formatReport(r) {
   const out = [];
-  const { perDoc, seedable, problems, byChannel, mergeTags, audit, write, dryRun } = r;
+  const { perDoc, seedable, problems, byChannel, mergeTags, audit, write, dryRun, coverage } = r;
 
   out.push(h("SEEDED — message_templates"));
   out.push(`docs: ${r.docsDir}`);
@@ -53,6 +53,17 @@ export function formatReport(r) {
   const width = Math.max(...mergeTags.map((t) => t.tag.length), 1);
   for (const t of mergeTags) {
     out.push(`  {{${t.tag}}}${" ".repeat(width - t.tag.length)}  ×${String(t.count).padStart(4)}  ${t.channels.join("+")}`);
+  }
+
+  if (coverage?.length) {
+    out.push(h("WORKFLOW KEY COVERAGE"));
+    out.push("  Every SMS-* / EMAIL-* key referenced under src/workflows/:");
+    for (const c of coverage) {
+      const mark = c.source === "draft" ? "DRAFT" : c.source;
+      out.push(`  ${c.templateKey.padEnd(40)} ${mark}${c.detail && c.source !== "doc-exact" ? ` ← ${c.detail}` : ""}`);
+    }
+    const drafts = coverage.filter((c) => c.source === "draft");
+    out.push(`\n  DRAFT count: ${drafts.length}`);
   }
 
   out.push(h("WORKFLOW AUDIT — template keys referenced but not seeded"));

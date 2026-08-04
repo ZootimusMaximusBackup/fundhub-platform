@@ -12,8 +12,9 @@
 //  - F-03/F-04 email + F-07 email (FR22 "Total Funding Locked"): EMAIL-TEMPLATES-
 //    SOURCE-OF-TRUTH.md (grepped for these specific keys only, per instructions —
 //    this file was never read wholesale).
-// Every row here already passed compliance (opt-out present, no restricted wording)
-// per the audit — compliance_passed is seeded true.
+// Copy here is audit-scrubbed (opt-out present, no restricted wording), but
+// compliance_passed is seeded false: owner decision 2026-08-04 — human approval
+// in the template editor (migration 116) turns send on.
 
 export const KNOWN_TEMPLATES = [
   {
@@ -114,7 +115,7 @@ export async function seedKnownTemplates(db, orgId) {
   for (const t of KNOWN_TEMPLATES) {
     await db.query(
       `INSERT INTO message_templates (org_id, template_key, channel, subject, body, compliance_passed)
-       VALUES ($1,$2,$3,$4,$5,true)
+       VALUES ($1,$2,$3,$4,$5,false)
        ON CONFLICT (org_id, template_key) DO NOTHING`,
       [orgId, t.template_key, t.channel, t.subject || null, t.body]
     );

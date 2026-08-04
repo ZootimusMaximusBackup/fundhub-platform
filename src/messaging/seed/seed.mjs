@@ -13,14 +13,16 @@
 //
 // Requires db/seed/006_message_templates_source_doc.sql (adds source_doc).
 //
-// Does NOT render and does NOT compliance-check: `compliance_passed` is carried
-// from the source doc (true for the audited SMS, false for the unaudited emails)
-// and is an input to the compliance gate, not a verdict from it.
+// Does NOT render and does NOT compliance-check. Owner decision (2026-08-04):
+// every seeded row ships compliance_passed=false so nothing sends until a human
+// approves in the template editor (migration 116). Workflow keys that differ
+// from doc IDs are covered via workflow-keys.mjs (alias / templates-seed / DRAFT).
 
 import { collect, resolveDocsDir } from "./collect.mjs";
 import { collectMergeTags } from "./merge-tags.mjs";
 import { auditWorkflows } from "./workflow-audit.mjs";
 import { formatReport } from "./report.mjs";
+import { prepareSeedable } from "./workflow-keys.mjs";
 
 const UPSERT = `
   INSERT INTO message_templates
@@ -65,11 +67,13 @@ export function countByChannel(templates) {
 // Everything except the DB write — used by the report and by the tests.
 export function analyse({ docs, root } = {}) {
   const docsDir = resolveDocsDir(docs);
-  const { perDoc, seedable, problems } = collect(docsDir);
+  const { perDoc, seedable: fromDocs, problems } = collect(docsDir);
+  const { seedable, coverage } = prepareSeedable(fromDocs, root ? { root } : {});
   return {
     docsDir,
     perDoc,
     seedable,
+    coverage,
     problems,
     byChannel: countByChannel(seedable),
     mergeTags: collectMergeTags(seedable),
