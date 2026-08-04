@@ -57,6 +57,8 @@ import readAffiliates from "../../api/read/affiliates.mjs";
 import readPartners from "../../api/read/partners.mjs";
 import readMessageTemplates from "../../api/read/message-templates.mjs";
 import readStaff from "../../api/read/staff.mjs";
+import staffTelemetry from "../../api/staff/telemetry.mjs";
+import staffMonitoringConsent from "../../api/staff/monitoring-consent.mjs";
 import readEntitlements from "../../api/read/entitlements.mjs";
 import readFailedEvents from "../../api/read/failed-events.mjs";
 import readAgents from "../../api/read/agents.mjs";
@@ -218,6 +220,8 @@ export const ROUTES = {
   "read/partners": readPartners,
   "read/message-templates": readMessageTemplates,
   "read/staff": readStaff,
+  "staff/telemetry": staffTelemetry,
+  "staff/monitoring-consent": staffMonitoringConsent,
   "read/entitlements": readEntitlements,
   "read/failed-events": readFailedEvents,
   "read/agents": readAgents,

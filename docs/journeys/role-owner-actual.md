@@ -35,6 +35,7 @@ flowchart TD
     CAN --> A_public[public — 1 route]
     CAN --> A_read[Reading data — 28 routes]
     CAN --> A_social[social — 2 routes]
+    CAN --> A_staff[staff — 2 routes]
     CAN --> A_top_level[Everything else — 20 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 2 routes]
@@ -44,7 +45,7 @@ flowchart TD
 
 ## What they can reach
 
-**109 of 111 routes.**
+**111 of 113 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -155,6 +156,8 @@ flowchart TD
 | `/api/shifts` | GET, POST | staff |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
+| `/api/staff/monitoring-consent` | POST | owner |
+| `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/tasks` | GET, PATCH | staff |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
@@ -166,7 +169,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**2 of 111 routes.**
+**2 of 113 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

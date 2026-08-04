@@ -3,6 +3,8 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-04 | role-owner, role-sales-manager, role-closer, role-funding-advisor, role-inquiry-remover, client, affiliate, white-label | Two routes added — `GET /api/staff/telemetry` (FINANCE) and `POST /api/staff/monitoring-consent` (owner only). Hubstaff poll sweeper + consent gate on `staff.monitoring_consent_at`. Staff & Teams gains Telemetry tab. COMPLIANCE REVIEW REQUIRED: employee monitoring consent capture | Spec §14 deep monitoring | (this commit)
+
 2026-08-02 | all roles | regenerated actuals for social/publish, creative/run+actions, partner-brand/verify-domain, public/partner-page, hosted /sites | finish items 4 and 5 | 2e1e77e
 
 2026-08-02 | all roles | regenerated actuals for chat/demo/campaigns/social/creative/partner-pages routes | session six-items build | c820270

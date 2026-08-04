@@ -21,8 +21,15 @@ const run = readHandler({
   fetch: (db, { limit, offset, query, staff }) =>
     db.query(`SELECT s.id, s.name, s.email, s.role, s.status, s.assignment_order,
            s.last_assigned_at, s.created_at,
+           s.monitoring_consent_at, s.hubstaff_user_id,
            (SELECT count(*)::int FROM tasks t
-             WHERE t.assignee_staff_id = s.id AND t.done = false) AS open_tasks
+             WHERE t.assignee_staff_id = s.id AND t.done = false) AS open_tasks,
+           (SELECT count(*)::int FROM shifts sh
+             WHERE sh.staff_id = s.id AND sh.ended_at IS NULL) AS open_shift,
+           (SELECT count(*)::int FROM staff_events se
+             WHERE se.staff_id = s.id
+               AND se.kind IN ('monitor_activity','monitor_screenshot')
+               AND se.created_at >= date_trunc('day', now())) AS monitor_events_today
       FROM staff s
      WHERE s.org_id = $4::uuid
        AND ($3::text IS NULL OR s.role = $3)

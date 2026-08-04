@@ -14,6 +14,13 @@ Campaigns / Social / Creative / Brand Studio gaps from the prior scorecard.
 | Creative provider keys (`CREATIVE_*` — see `src/creative/providers/`) | `enqueue` + runner; `run()` needs them to produce assets | Provider dashboards |
 | Social channel page token | `social_channels.encrypted_access_token` | Channel OAuth / Meta page token |
 | Optional `SOCIAL_PUBLISH_DRY_RUN=1` | Marks due posts posted with `dryrun:…` ids without Graph | Netlify env — tests / staging only |
+| `HUBSTAFF_TOKEN` | Hubstaff org access token (or ready bearer) for deep-monitoring poll (`src/adapters/hubstaff.mjs`, `hubstaff-poll-sweeper`) | Hubstaff → Settings → Organization → API tokens. Store as Netlify secret. **Leave unset until cutover.** |
+| `HUBSTAFF_ORG_ID` | Hubstaff organization id for `/v2/organizations/{id}/activities` | Same Hubstaff org settings |
+| Optional `HUBSTAFF_API_BASE` | Override API host (default `https://api.hubstaff.com`) | Only if Hubstaff documents a different base |
+
+Without Hubstaff credentials the poll sweeper no-ops (`not_configured`). Consent
+gate, routes, and Staff & Teams telemetry UI are wired; credentials are not
+fabricated.
 
 Without a Meta connection row + token, **Sync Meta now** / pause / resume /
 budget return a clear credential error. Routes are wired; credentials are not

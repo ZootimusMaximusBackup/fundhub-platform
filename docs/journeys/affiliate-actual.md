@@ -22,7 +22,7 @@ flowchart TD
     CAN --> A_public[public — 1 route]
     CAN --> A_top_level[Everything else — 3 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 98 routes]
+    WHO -->|Yes| CANT[Blocked — 100 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_campaigns[Campaigns — 8 blocked]
@@ -39,12 +39,13 @@ flowchart TD
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_read[Reading data — 29 blocked]
     CANT --> B_social[social — 2 blocked]
+    CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 17 blocked]
 ```
 
 ## What they can reach
 
-**13 of 111 routes.**
+**13 of 113 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -69,7 +70,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**98 of 111 routes.**
+**100 of 113 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -170,6 +171,8 @@ flowchart TD
 | `/api/shifts` | GET, POST | staff |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
+| `/api/staff/monitoring-consent` | POST | owner |
+| `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/tasks` | GET, PATCH | staff |
 
 ## UNVERIFIED

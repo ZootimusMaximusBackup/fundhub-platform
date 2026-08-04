@@ -252,6 +252,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
           <button class="tab on" data-tab="roster">Roster</button>
           <button class="tab" data-tab="perms">Advanced permissions</button>
           <button class="tab" data-tab="clock">Clock &amp; consent</button>
+          <button class="tab" data-tab="telemetry">Telemetry</button>
         </div>
 
         <div class="tabpane on" id="tab-roster">
@@ -291,7 +292,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
           <div class="card-hd" style="border-bottom:1px solid var(--line)">
             <div class="eyebrow">ST-03 <span class="sep">/</span> CLOCK STATE &amp; MONITORING CONSENT</div>
             <div class="spacer"></div>
-            <span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em">CONSENT v2.1 · 2026-06-01</span>
+            <span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em">CONSENT · docs/MONITORING-CONSENT-FORM.md</span>
           </div>
           <div style="overflow-x:auto">
             <table class="grid">
@@ -302,10 +303,39 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
           <div style="padding:13px 16px;border-top:1px solid var(--line)">
             <div class="eyebrow" style="margin-bottom:7px">ST-04 <span class="sep">/</span> WHAT CONSENT COVERS</div>
             <div style="font-size:11.5px;color:var(--gray);line-height:1.6;max-width:76ch">
-              Call recording on outbound and inbound voice, SMS and email content on company numbers and inboxes,
-              screen activity during clocked-in hours, and retention of that record for 24 months.
-              Consent is per-person and versioned — a new version voids the old signature and has to be re-signed.
-              Anyone without consent on file is blocked from the dialer and from company inboxes.
+              Deep monitoring (activity level, apps and sites used, and screenshots when Hubstaff has them on)
+              during clocked-in shifts only. Off by default. Owner records a signed written notice to turn it on,
+              and clears that record to revoke. See docs/MONITORING-CONSENT-FORM.md. Get legal review before use.
+            </div>
+          </div>
+        </div>
+
+        <div class="tabpane" id="tab-telemetry">
+          <div class="card-hd" style="border-bottom:1px solid var(--line)">
+            <div class="eyebrow">ST-08 <span class="sep">/</span> SHIFT &amp; ACTIVITY TELEMETRY</div>
+            <div class="spacer"></div>
+            <select id="teleStaff" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:12px;background:#fff;min-width:200px">
+              <option value="">Select a person…</option>
+            </select>
+            <button class="btn sm mono" id="teleRefresh">Refresh</button>
+          </div>
+          <div id="teleEmpty" style="padding:28px 16px;font-size:12.5px;color:var(--gray)">Pick someone to see shifts, hours, and Hubstaff activity.</div>
+          <div id="teleBody" style="display:none">
+            <div class="stats" style="margin:0;border-bottom:1px solid var(--line);border-radius:0">
+              <div class="stat"><div class="eyebrow">CONSENT</div><div class="sv" id="teleConsent">—</div><div class="sd" id="teleConsentSd">monitoring consent</div></div>
+              <div class="stat"><div class="eyebrow">HOURS</div><div class="sv" id="teleHours">—</div><div class="sd">payable across listed shifts</div></div>
+              <div class="stat"><div class="eyebrow">ACTIVITY AVG</div><div class="sv" id="teleAvg">—</div><div class="sd" id="teleAvgSd">from monitor samples</div></div>
+              <div class="stat"><div class="eyebrow">SAMPLES</div><div class="sv" id="teleSamples">—</div><div class="sd">activity + screenshots</div></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+              <div style="border-right:1px solid var(--line);overflow-x:auto">
+                <div class="card-hd" style="border-bottom:1px solid var(--line)"><div class="eyebrow">SHIFTS</div></div>
+                <table class="grid"><thead><tr><th>Started</th><th>Ended</th><th>State</th></tr></thead><tbody id="teleShifts"></tbody></table>
+              </div>
+              <div style="overflow-x:auto">
+                <div class="card-hd" style="border-bottom:1px solid var(--line)"><div class="eyebrow">RECENT MONITOR EVENTS</div></div>
+                <table class="grid"><thead><tr><th>When</th><th>Kind</th><th>Summary</th></tr></thead><tbody id="teleEvents"></tbody></table>
+              </div>
             </div>
           </div>
         </div>
@@ -335,7 +365,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
     <div style="margin-top:18px">
       <div class="eyebrow" style="margin-bottom:6px">ST-06 <span class="sep">/</span> STATE</div>
       <div class="swrow"><div class="swl"><div class="n">Active</div><div class="d">Inactive people keep their record and history but cannot sign in.</div></div><div class="sw on" id="ed_active"></div></div>
-      <div class="swrow"><div class="swl"><div class="n">Monitoring consent on file</div><div class="d">Required before the dialer or a company inbox will open. Version 2.1.</div></div><div class="sw" id="ed_consent"></div></div>
+      <div class="swrow"><div class="swl"><div class="n">Monitoring consent on file</div><div class="d">Owner only. On = signed form received. Off = revoke to NULL — Hubstaff ingest skips.</div></div><div class="sw" id="ed_consent"></div></div>
       <div class="swrow"><div class="swl"><div class="n">Clocked in</div><div class="d">Drives shift pay, pace targets and round-robin lead assignment.</div></div><div class="sw" id="ed_clock"></div></div>
     </div>
     <div style="margin-top:18px">
@@ -483,20 +513,26 @@ function renderRoster(){
 function renderClock(){
   document.getElementById('clockBody').innerHTML=PEOPLE.map(function(p){
     var canSelf = !!p.self;
+    var clockKnown = p.clock !== null;
     var clockCell = canSelf
       ? '<button class="btn sm mono" data-clock="'+esc(String(p.id))+'">'+(p.clock?'Clock out':'Clock in')+'</button>'
       : '<span class="badge b-gray" title="Each person clocks themselves via /api/shifts — you can only clock your own row">—</span>';
+    var consentCell = p.consent===null
+      ? '<span class="badge b-gray" title="No consent record in the database">—</span>'
+      : p.consent?'<span class="badge b-ok">On file</span>':'<span class="badge b-alert">Off</span>';
+    var consentBtn = (window.__FH_IS_OWNER && p.staffId)
+      ? '<button class="btn sm mono" data-consent="'+esc(String(p.staffId))+'" data-on="'+(p.consent?1:0)+'">'+(p.consent?'Revoke':'Record form')+'</button>'
+      : '';
     return '<tr>'+
       '<td><div class="who-cell"><span class="av">'+initials(p)+'</span><div><div class="nm">'+esc(p.first+' '+p.last)+(canSelf?' <span class="badge b-info">you</span>':'')+'</div><div class="em">'+esc(p.email||p.code)+'</div></div></div></td>'+
-      '<td>'+(canSelf
+      '<td>'+(clockKnown
              ?(p.clock?'<span class="badge b-ok">Clocked in</span>':'<span class="badge b-gray">Clocked out</span>')
-             :'<span class="badge b-gray" title="Open shift is only returned for the signed-in person">—</span>')+'</td>'+
-      '<td class="mono" style="font-size:11.5px">'+(canSelf&&p.clock?p.since:'—')+'</td>'+
-      '<td class="mono" style="font-size:11.5px">'+(canSelf?p.today:'—')+'</td>'+
-      '<td>'+(p.consent===null?'<span class="badge b-gray" title="No consent record in the database">—</span>'
-             :p.consent?'<span class="badge b-ok">On file</span>':'<span class="badge b-alert">Missing</span>')+'</td>'+
+             :'<span class="badge b-gray" title="Open shift unknown for this row">—</span>')+'</td>'+
+      '<td class="mono" style="font-size:11.5px">'+(clockKnown&&p.clock?p.since:'—')+'</td>'+
+      '<td class="mono" style="font-size:11.5px">'+(p.today||'—')+'</td>'+
+      '<td>'+consentCell+'</td>'+
       '<td class="mono" style="font-size:11.5px;color:var(--gray)">'+(p.consentAt||'—')+'</td>'+
-      '<td style="text-align:right">'+clockCell+'</td></tr>';
+      '<td style="text-align:right;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">'+consentBtn+clockCell+'</td></tr>';
   }).join('');
   document.querySelectorAll('[data-clock]').forEach(function(b){
     b.addEventListener('click',function(e){
@@ -506,6 +542,19 @@ function renderClock(){
       if(typeof window.FHStaffClock !== 'function'){ alert('Clock API not loaded — sign in as staff.'); return; }
       b.disabled = true;
       window.FHStaffClock(p.clock ? 'clock_out' : 'clock_in').then(function(){ b.disabled = false; });
+    });
+  });
+  document.querySelectorAll('[data-consent]').forEach(function(b){
+    b.addEventListener('click',function(e){
+      e.stopPropagation();
+      if(typeof window.FHMonitoringConsent !== 'function'){ alert('Consent API not loaded.'); return; }
+      var on = b.dataset.on === '1';
+      var msg = on
+        ? 'Revoke monitoring consent? Hubstaff ingest will skip this person.'
+        : 'Record that a signed monitoring consent form is on file for this person?';
+      if(!confirm(msg)) return;
+      b.disabled = true;
+      window.FHMonitoringConsent(b.dataset.consent, on ? 'revoke' : 'grant').then(function(){ b.disabled = false; });
     });
   });
 }
@@ -623,9 +672,19 @@ document.getElementById('edSave').addEventListener('click',function(){
     role:document.getElementById('ed_role').value,
     start:document.getElementById('ed_start').value,
     active:getSw('ed_active'), consent:getSw('ed_consent'), clock:getSw('ed_clock')};
-  if(rec.clock && !rec.consent){alert('Cannot clock in without monitoring consent on file.');return}
   if(selId){
     var p=PEOPLE.filter(function(x){return String(x.id)===String(selId)})[0];
+    if(p && p.staffId && typeof window.FHMonitoringConsent === 'function' && window.__FH_IS_OWNER){
+      var want = !!rec.consent;
+      var had = !!p.consent;
+      if(want !== had){
+        window.FHMonitoringConsent(p.staffId, want ? 'grant' : 'revoke').then(function(){
+          Object.keys(rec).forEach(function(k){ if(k!=='consent'&&k!=='consentAt') p[k]=rec[k]; });
+          closeEditor(); renderAll();
+        });
+        return;
+      }
+    }
     Object.keys(rec).forEach(function(k){p[k]=rec[k]});
     if(rec.consent && !p.consentAt) p.consentAt='2026-07-27';
     if(!rec.consent) p.consentAt=null;
@@ -728,6 +787,7 @@ renderAll();
         if (!(d && d.ok && d.principal === "staff" && d.staff)) return;
         if (d.staff.email) meEmail = String(d.staff.email).toLowerCase();
         if (d.staff.id) meId = d.staff.id;
+        window.__FH_IS_OWNER = String(d.staff.role || "").toLowerCase() === "owner";
       })
       .catch(function () {
         try {
@@ -737,6 +797,85 @@ renderAll();
         } catch (e) {}
       });
   }
+
+  window.__FH_IS_OWNER = window.__FH_IS_OWNER || false;
+  function fmtWhen(v) {
+    if (!v) return "—";
+    try { var d = new Date(v); if (isNaN(d.getTime())) return String(v); return d.toLocaleString(); }
+    catch (e) { return String(v); }
+  }
+  function fillTeleSelect() {
+    var sel = document.getElementById("teleStaff"); if (!sel) return;
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">Select a person…</option>' +
+      PEOPLE.filter(function (p) { return p.staffId; }).map(function (p) {
+        return '<option value="' + esc(String(p.staffId)) + '">' + esc(p.first + " " + p.last) + "</option>";
+      }).join("");
+    if (cur) sel.value = cur;
+  }
+  function renderTelemetry(data) {
+    var empty = document.getElementById("teleEmpty");
+    var body = document.getElementById("teleBody");
+    if (!empty || !body) return;
+    if (!data || !data.ok) {
+      empty.style.display = ""; body.style.display = "none";
+      empty.textContent = (data && data.error) ? ("Could not load: " + data.error) : "Pick someone to see shifts, hours, and Hubstaff activity.";
+      return;
+    }
+    empty.style.display = "none"; body.style.display = "";
+    var on = !!(data.staff && data.staff.monitoring_on);
+    document.getElementById("teleConsent").textContent = on ? "On" : "Off";
+    document.getElementById("teleConsentSd").textContent = on ? ("signed " + fmtWhen(data.staff.monitoring_consent_at)) : "no consent — ingest skips";
+    var hrs = data.hours && data.hours.payable_hours;
+    document.getElementById("teleHours").textContent = hrs == null ? "—" : (Math.round(hrs * 100) / 100) + "h";
+    var avg = data.activity && data.activity.avg_overall;
+    document.getElementById("teleAvg").textContent = avg == null ? "—" : (avg + "%");
+    document.getElementById("teleAvgSd").textContent = (data.activity && data.activity.activity_samples || 0) + " activity blocks";
+    document.getElementById("teleSamples").textContent = String((data.activity && (data.activity.activity_samples + data.activity.screenshot_samples)) || 0);
+    document.getElementById("teleShifts").innerHTML = (data.shifts || []).map(function (s) {
+      return "<tr><td class=\"mono\" style=\"font-size:11px\">" + esc(fmtWhen(s.started_at)) +
+        "</td><td class=\"mono\" style=\"font-size:11px\">" + esc(s.open ? "open" : fmtWhen(s.ended_at)) +
+        "</td><td>" + (s.open ? '<span class="badge b-ok">Open</span>' : '<span class="badge b-gray">Closed</span>') + "</td></tr>";
+    }).join("") || '<tr><td colspan="3" class="empty">No shifts on file.</td></tr>';
+    document.getElementById("teleEvents").innerHTML = ((data.activity && data.activity.recent) || []).map(function (e) {
+      var d = e.detail || {};
+      var summary = e.kind === "monitor_activity"
+        ? ("overall " + (d.overall == null ? "—" : d.overall + "%"))
+        : "screenshot";
+      return "<tr><td class=\"mono\" style=\"font-size:11px\">" + esc(fmtWhen(e.created_at)) +
+        "</td><td><span class=\"badge b-info\">" + esc(e.kind) + "</span></td><td style=\"font-size:11.5px\">" + esc(summary) + "</td></tr>";
+    }).join("") || '<tr><td colspan="3" class="empty">No monitor events yet.</td></tr>';
+  }
+  window.FHLoadTelemetry = function (staffId) {
+    if (!staffId) return Promise.resolve(null);
+    var t; try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+    return fetch("/api/staff/telemetry?staff_id=" + encodeURIComponent(staffId), {
+      headers: { accept: "application/json", authorization: t ? "Bearer " + t : "" }
+    }).then(function (r) { return r.json(); }).then(function (d) { renderTelemetry(d); return d; })
+      .catch(function () { renderTelemetry({ ok: false, error: "network" }); });
+  };
+  window.FHMonitoringConsent = function (staffId, action) {
+    return FHData.write("/api/staff/monitoring-consent", { staff_id: staffId, action: action }).then(function (res) {
+      if (!res.ok) { alert("Could not update consent: " + (res.error || "unknown")); return res; }
+      var at = res.data && res.data.staff && res.data.staff.monitoring_consent_at;
+      var on = !!(res.data && res.data.staff && res.data.staff.monitoring_on);
+      PEOPLE.forEach(function (p) {
+        if (String(p.staffId) !== String(staffId)) return;
+        p.consent = on; p.consentAt = on && at ? fmtWhen(at).slice(0, 10) : null;
+      });
+      try { renderAll(); fillTeleSelect(); } catch (e) {}
+      FHData.banner("real", on ? "consent on file" : "consent revoked", "monitoring-consent");
+      return res;
+    });
+  };
+  var teleSel = document.getElementById("teleStaff");
+  if (teleSel) teleSel.addEventListener("change", function () {
+    if (teleSel.value) window.FHLoadTelemetry(teleSel.value); else renderTelemetry(null);
+  });
+  var teleBtn = document.getElementById("teleRefresh");
+  if (teleBtn) teleBtn.addEventListener("click", function () {
+    if (teleSel && teleSel.value) window.FHLoadTelemetry(teleSel.value);
+  });
 
   /* /api/shifts only clocks the signed-in session — never another person. */
   window.FHStaffClock = function (action) {
@@ -805,21 +944,24 @@ renderAll();
         phone: "—",
         start: "—",
         active: s.status === "active",
-        consent: null,
-        consentAt: null,
-        clock: self ? false : null,
-        since: "—",
-        today: "—"
+        consent: (Object.prototype.hasOwnProperty.call(s, "monitoring_consent_at") ? !!s.monitoring_consent_at : null),
+        consentAt: s.monitoring_consent_at ? String(s.monitoring_consent_at).slice(0, 10) : null,
+        clock: self ? false : (Object.prototype.hasOwnProperty.call(s, "open_shift") ? Number(s.open_shift) > 0 : null),
+        since: Number(s.open_shift) > 0 ? "now" : "—",
+        today: (s.monitor_events_today != null ? (s.monitor_events_today + " mon") : "—"),
+        hubstaffUserId: s.hubstaff_user_id || null
       };
     });
 
     return applyMyShift(mapped).then(function () {
       PEOPLE.length = 0;
       Array.prototype.push.apply(PEOPLE, mapped);
-      try { renderAll(); } catch (e) { return null; }
+      try { renderAll(); fillTeleSelect(); } catch (e) { return null; }
       var selfRow = mapped.filter(function (p) { return p.self; })[0];
+      var consented = mapped.filter(function (p) { return p.consent === true; }).length;
       return "live roster · " + rows.length + " staff" +
              (selfRow ? (selfRow.clock ? " · you are clocked in" : " · you are clocked out") : " · signed-in user not on roster") +
+             " · consent " + consented + "/" + rows.length +
              (unmapped.length ? " · " + unmapped.length + " role(s) outside the permission matrix" : "");
     });
   });

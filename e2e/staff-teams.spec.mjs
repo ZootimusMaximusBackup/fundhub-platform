@@ -56,4 +56,20 @@ test.describe("Staff & Teams empty stats", () => {
     await expect(page.locator("#tab-perms")).toBeVisible();
     await expect(page.locator("#permCount")).toBeVisible();
   });
+
+  test("telemetry tab is present", async ({ page }) => {
+    await wireApi(page, {
+      session: OWNER,
+      handlers: {
+        "/api/read/staff": () => ({
+          ok: true, count: 1, limit: 200, offset: 0, hasMore: false,
+          items: [STAFF_ROW]
+        })
+      }
+    });
+    await gotoScreen(page, "staff-teams.html");
+    await page.locator('.tab[data-tab="telemetry"]').click();
+    await expect(page.locator("#tab-telemetry")).toBeVisible();
+    await expect(page.locator("#teleEmpty")).toBeVisible();
+  });
 });

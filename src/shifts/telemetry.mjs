@@ -47,7 +47,7 @@
  *
  *   kind text NOT NULL,   -- file_touched | pull_run | letter_issued | text_sent | call_made | ...
  *
- * Five names. The trailing `...` in that comment is an ellipsis, not a sixth
+ * The original five names plus Hubstaff monitor kinds. The trailing `...` in that comment is an ellipsis, not a sixth
  * kind, and it is NOT read here as licence to mint new ones: there is no CHECK
  * constraint and no catalog table on `kind`, so this array is the only thing
  * standing between the column and free text. A vocabulary that grows by
@@ -70,12 +70,14 @@ export const EVENT_KINDS = Object.freeze([
   "pull_run",
   "letter_issued",
   "text_sent",
-  "call_made"
+  "call_made",
+  "monitor_activity",
+  "monitor_screenshot"
 ]);
 
 const KIND_SET = new Set(EVENT_KINDS);
 
-/** Is this one of the five kinds? Pure, total, no throw. */
+/** Is this one of the catalogued kinds? Pure, total, no throw. */
 export const isEventKind = (kind) => KIND_SET.has(kind);
 
 /**
