@@ -16,6 +16,7 @@ const SCREENS = [
   "/app/client-control-panel.html",
   "/app/closer-dashboard.html",
   "/app/inquiry-remover.html",
+  "/app/lenders.html",
   "/app/finance-os.html",
   "/app/subscriptions.html",
   "/app/products-commissions.html",

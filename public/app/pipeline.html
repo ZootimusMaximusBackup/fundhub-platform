@@ -360,6 +360,9 @@
         <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
         <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
       </div></div>
+<div class="navgroup"><button class="navhead">Funding<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="lenders.html"><span class="ico">⬡</span><span class="lbl">Lenders</span></a>
+      </div></div>
 <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
         <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
@@ -1515,7 +1518,65 @@ restore();
     foot.appendChild(act);
     foot.appendChild(div("c-when", c.funded ? "funded" : (c.outcome_tier || "")));
     card.appendChild(foot);
+
+    // Card Stacking round planning: surface which lenders fit this client.
+    // Empty lender DB → count 0. Never invents lender names.
+    if (c.client_id) {
+      card.addEventListener("click", function (ev) {
+        if (ev.target && (ev.target.closest && (ev.target.closest(".c-btn") || ev.target.closest(".grip")))) return;
+        if (activePipelineKey !== "funding_card_stacking") return;
+        showLenderMatches(c);
+      });
+    }
     return card;
+  }
+
+  var matchPanel = null;
+  function showLenderMatches(c) {
+    if (!matchPanel) {
+      matchPanel = document.createElement("div");
+      matchPanel.id = "fh-lender-match-panel";
+      matchPanel.style.cssText =
+        "position:fixed;right:16px;bottom:48px;z-index:2147482100;width:min(360px,92vw);" +
+        "background:#fff;border:1px solid #E4E4E7;border-radius:10px;padding:12px 14px;" +
+        "box-shadow:0 12px 40px rgba(0,0,0,.18);font:13px/1.4 var(--sans,system-ui)";
+      document.body.appendChild(matchPanel);
+    }
+    matchPanel.innerHTML =
+      "<div style=\"font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#71717A\">" +
+      "Round planning · lender fits</div>" +
+      "<div style=\"font-weight:600;margin-top:6px\"></div>" +
+      "<div class=\"fh-mm-body\" style=\"margin-top:8px;color:#71717A\">Loading…</div>" +
+      "<div style=\"margin-top:10px\"><a href=\"lenders.html\" style=\"font-size:12px\">Open Lenders ↗</a></div>";
+    matchPanel.querySelector("div[style*=\"font-weight\"]").textContent = c.name || "Client";
+    var body = matchPanel.querySelector(".fh-mm-body");
+    var q = "client_id=" + encodeURIComponent(c.client_id);
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
+    var headers = { accept: "application/json" };
+    if (t) headers.authorization = "Bearer " + t;
+    fetch("/api/read/lender-matches?" + q, { headers: headers })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.ok) {
+          body.textContent = "Could not load matches.";
+          return;
+        }
+        var n = d.match_count || 0;
+        if (n === 0) {
+          body.textContent = (d.summary && d.summary.lender_count === 0)
+            ? "Lender list is empty — import CSV on the Lenders screen."
+            : "No lenders fit this client's state / inquiry profile.";
+          return;
+        }
+        var lines = (d.matches || []).slice(0, 8).map(function (m) {
+          return (m.priority_tier != null ? ("T" + m.priority_tier + " · ") : "") +
+            (m.name || "?") +
+            (m.bureaus_pulled ? (" · " + m.bureaus_pulled) : "");
+        });
+        body.textContent = n + " fit. Top: " + lines.join("; ");
+      })
+      .catch(function () { body.textContent = "Could not load matches."; });
   }
 
   // A single reused element, not one appended per load: switching rails

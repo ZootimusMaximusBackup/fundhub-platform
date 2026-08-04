@@ -259,6 +259,9 @@
         <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
         <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
       </div></div>
+<div class="navgroup"><button class="navhead">Funding<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="lenders.html"><span class="ico">⬡</span><span class="lbl">Lenders</span></a>
+      </div></div>
 <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
         <a class="navitem on" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
@@ -397,6 +400,24 @@
         <!-- three most recent stay up; the rest of today's run is one click away -->
         <a class="letter-more" href="documents.html">All letters<span class="lm-ar">↗</span></a>
       </div>
+    </div>
+
+    <div class="section" id="caseQueueSection">
+      <div class="section-title">Inquiry removal cases</div>
+      <p style="font-size:12.5px;color:var(--text-dim);margin:0 0 10px">
+        Active cases with call state and hold time. Mark cleared closes the case and fires inquiry.removed.
+      </p>
+      <table class="queue" id="caseQueueTable">
+        <thead>
+          <tr>
+            <th>Case</th><th>Status</th><th>Call state</th><th>Hold</th>
+            <th>Assigned</th><th>Open</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="caseQueueBody">
+          <tr><td colspan="7" style="color:var(--text-dim)">Loading cases…</td></tr>
+        </tbody>
+      </table>
     </div>
 
   </main>
@@ -1538,6 +1559,76 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
 } else {
   window.__fhInitQueue();
 }
+
+/* Inquiry removal case queue — separate from per-inquiry work rows. */
+(function loadCaseQueue() {
+  function token() {
+    try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; }
+  }
+  function headers(json) {
+    var h = { accept: "application/json" };
+    var t = token();
+    if (t) h.authorization = "Bearer " + t;
+    if (json) h["content-type"] = "application/json";
+    return h;
+  }
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+  function renderCases(cases) {
+    var body = document.getElementById("caseQueueBody");
+    if (!body) return;
+    if (!cases || !cases.length) {
+      body.innerHTML = '<tr><td colspan="7" style="color:var(--text-dim)">No active cases.</td></tr>';
+      return;
+    }
+    body.innerHTML = "";
+    cases.forEach(function (C) {
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td class=\"mono\">" + esc(C.case_id) + "</td>" +
+        "<td>" + esc(C.case_status) + "</td>" +
+        "<td>" + esc(C.master_call_state || "—") + "</td>" +
+        "<td>" + esc(C.hold_duration_display || "—") + "</td>" +
+        "<td>" + esc(C.assigned_remover || "—") + "</td>" +
+        "<td>" + esc(C.open_inquiry_count) + "</td>" +
+        '<td style="white-space:nowrap">' +
+          '<button type="button" class="btn-mini" data-act="cleared">Mark cleared</button> ' +
+          '<button type="button" class="btn-mini" data-act="close">Close</button>' +
+        "</td>";
+      body.appendChild(tr);
+      tr.querySelectorAll("button[data-act]").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var act = btn.getAttribute("data-act") === "cleared" ? "mark_cleared" : "close";
+          fetch("/api/inquiry-cases", {
+            method: "POST",
+            headers: headers(true),
+            body: JSON.stringify({
+              action: act,
+              id: C.id,
+              case_status: act === "close" ? "Canceled" : "Completed"
+            })
+          }).then(function (r) { return r.json(); }).then(function (d) {
+            if (!d.ok) { btn.textContent = d.error || "failed"; return; }
+            load();
+          });
+        });
+      });
+    });
+  }
+  function load() {
+    fetch("/api/read/inquiry-cases?active_only=true", { headers: headers() })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { renderCases((d && d.cases) || []); })
+      .catch(function () {
+        var body = document.getElementById("caseQueueBody");
+        if (body) body.innerHTML = '<tr><td colspan="7" style="color:var(--text-dim)">Could not load cases (sign in?).</td></tr>';
+      });
+  }
+  load();
+})();
 </script>
 </body>
 </html>

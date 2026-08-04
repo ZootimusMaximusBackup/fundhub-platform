@@ -254,6 +254,9 @@
         <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
         <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
       </div></div>
+<div class="navgroup"><button class="navhead">Funding<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="lenders.html"><span class="ico">⬡</span><span class="lbl">Lenders</span></a>
+      </div></div>
 <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem on" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
         <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
@@ -339,6 +342,12 @@
           <div class="big-tile">
             <div><div class="lbl">Total Available Credit</div></div>
             <div class="val" id="oCredit">$47,100</div>
+          </div>
+
+          <div class="big-tile" style="margin-top:10px">
+            <div><div class="lbl">Lender matches (live list)</div></div>
+            <div class="val" id="oLenderMatches">—</div>
+            <div class="lbl" id="oLenderMatchesNote" style="margin-top:6px">Import lenders to see a real count</div>
           </div>
 
           <div class="inrow">
@@ -1105,6 +1114,39 @@ window.FHCloserView = (function () {
     }
   }
 
+  function renderLenderMatches(payload) {
+    var el = $("oLenderMatches");
+    var note = $("oLenderMatchesNote");
+    if (!el) return;
+    if (!payload || payload.ok !== true) {
+      el.textContent = "—";
+      if (note) note.textContent = "Could not load lender matches";
+      return;
+    }
+    var n = payload.match_count;
+    el.textContent = (n == null ? "—" : String(n));
+    if (note) {
+      if (n === 0) {
+        note.textContent = payload.summary && payload.summary.lender_count === 0
+          ? "Lender list is empty — import CSV on Lenders"
+          : "No lenders fit this client's state / inquiry profile";
+      } else {
+        note.textContent = n + " lender" + (n === 1 ? "" : "s") +
+          " fit (state + inquiry sensitivity + bureau rotation)";
+      }
+    }
+  }
+
+  function loadLenderMatches() {
+    if (!clientId || !window.FHData || typeof FHData.read !== "function") return Promise.resolve();
+    return FHData.read("lender-matches", { client_id: clientId }).then(function (res) {
+      /* Endpoint returns a flat { ok, match_count, summary } — not { data }. */
+      renderLenderMatches(res);
+    }).catch(function () {
+      renderLenderMatches(null);
+    });
+  }
+
   function render(view) {
     var credit = $("oCredit");
     if (credit) credit.textContent = view.totalAvailableText;
@@ -1165,6 +1207,7 @@ window.FHCloserView = (function () {
       live = true;
       window.__fhCloserLive = true;   // stands the sample calculators down
       FHData.banner("real", V.bannerText(view), "tradelines");
+      loadLenderMatches();
     }).catch(function (e) {
       // FHData never rejects, but the contract holding is not the same as this
       // screen surviving if it stops holding.

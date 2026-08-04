@@ -3,6 +3,8 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-04 | role-funding-advisor, role-closer, role-owner, role-sales-manager, role-inquiry-remover | Lender + inquiry ops port: `lenders` / observations / applications Airtable shape / application_decisions / funding_closeout(+items) / inquiry_removal_cases / ai_bureau_config / inquiry_prep / inquiry_log call_state / business_tradelines. Routes: lenders, lender-observations, applications, inquiry-cases, ai-bureau-config + reads. CRM Lenders (list + mismatch + AI bureau tabs); inquiry-remover case queue; closer lender-match tile; client panel case status; `inquiry.removed` on confirm/case close; closeout on `round.funded`. Migrations `t138`–`t140` temporary prefix — renumber at merge. Tables empty; CSV/CRM import required | Platform had fundability scoring but no lenders, success fee, or AI inquiry bridge | (this commit)
+
 2026-08-02 | all roles | regenerated actuals for social/publish, creative/run+actions, partner-brand/verify-domain, public/partner-page, hosted /sites | finish items 4 and 5 | 2e1e77e
 
 2026-08-02 | all roles | regenerated actuals for chat/demo/campaigns/social/creative/partner-pages routes | session six-items build | c820270

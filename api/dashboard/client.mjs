@@ -7,6 +7,7 @@ import { clientDetailExtras } from "../../src/http/client-detail.mjs";
 import { redact, isUuid, requireRole, ROLE_SETS, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
 import { safeError } from "../../src/http/health.mjs";
+import { getActiveCaseForClient } from "../../src/inquiry-ops/cases.mjs";
 
 export default async function handler(req, res) {
   // Staff session first; the DASHBOARD_SECRET gate stays as the fallback until
@@ -30,7 +31,7 @@ export default async function handler(req, res) {
   try {
     const [clientRes, txRes, crsRes, msgRes, taskRes, roundRes, invRes] = await Promise.all([
       db.query(
-        `SELECT id, first_name, last_name, email, phone,
+        `SELECT id, org_id, first_name, last_name, email, phone,
                 outcome_tier, funded, funded_amount, days_to_fund,
                 channel_source, tags, pipeline_ids,
                 dnd_sms, dnd_email, dnd_voice, consent_sms,
@@ -90,6 +91,21 @@ export default async function handler(req, res) {
       invoices: invRes.rows
     });
 
+    // Active inquiry-removal case for the control panel status tile.
+    // Table may be absent before migration — never break the dashboard.
+    let inquiry_removal_case = null;
+    try {
+      const orgId = client.org_id || (staff && staff.org_id) || null;
+      if (orgId && isUuid(orgId)) {
+        inquiry_removal_case = await getActiveCaseForClient(db, {
+          orgId,
+          clientId: id
+        });
+      }
+    } catch (_) {
+      inquiry_removal_case = null;
+    }
+
     res.status(200).json(redact({
       ok: true,
       client,
@@ -99,6 +115,7 @@ export default async function handler(req, res) {
       tasks:         taskRes.rows,
       funding_rounds: roundRes.rows,
       invoices:      invRes.rows,
+      inquiry_removal_case,
       // Derived, never stored — see src/http/client-detail.mjs for why each of
       // these explains rather than recomputes.
       ...extras

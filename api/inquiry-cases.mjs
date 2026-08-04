@@ -1,0 +1,105 @@
+// POST /api/inquiry-cases — create / update / close inquiry removal cases.
+// Closing a Completed case emits inquiry.removed on the canonical bus.
+
+import { db } from "../src/db.mjs";
+import { requireAuth } from "../src/http/middleware/requireAuth.mjs";
+import { ROLE_SETS, requireRole, isUuid } from "../src/http/read-api.mjs";
+import { createCase, updateCase, closeCase, CASE_STATUSES } from "../src/inquiry-ops/cases.mjs";
+import { emit } from "../src/events/bus.mjs";
+import { dbDown } from "../src/http/db-down.mjs";
+
+const ACTIONS = new Set(["create", "update", "close", "mark_cleared"]);
+
+export default async function handler(req, res, deps = {}) {
+  const database = deps.db ?? db;
+  const emitFn = deps.emit ?? emit;
+
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ ok: false, error: "method_not_allowed" });
+  }
+
+  const staff = await requireAuth(req, res, { db: database });
+  if (!staff) return;
+  if (!requireRole(res, staff, ROLE_SETS.STAFF)) return;
+
+  const orgId = staff.org_id;
+  if (!isUuid(orgId)) {
+    return res.status(403).json({ ok: false, error: "forbidden" });
+  }
+
+  const body = req.body || {};
+  const action = String(body.action || "update").trim().toLowerCase();
+  if (!ACTIONS.has(action)) {
+    return res.status(400).json({
+      ok: false,
+      error: "unknown_action",
+      message: `Use one of: ${[...ACTIONS].join(", ")}`
+    });
+  }
+
+  try {
+    if (action === "create") {
+      if (!isUuid(body.client_id)) {
+        return res.status(400).json({ ok: false, error: "client_id required" });
+      }
+      const c = await createCase(database, {
+        orgId,
+        row: {
+          ...body,
+          requested_by: body.requested_by || staff.name || staff.email || staff.id
+        }
+      });
+      return res.status(200).json({ ok: true, case: c });
+    }
+
+    if (!isUuid(body.id)) {
+      return res.status(400).json({ ok: false, error: "id required" });
+    }
+
+    if (action === "update") {
+      const c = await updateCase(database, { orgId, id: body.id, patch: body });
+      if (!c) return res.status(404).json({ ok: false, error: "not_found" });
+      return res.status(200).json({ ok: true, case: c });
+    }
+
+    // close | mark_cleared
+    const status = action === "mark_cleared" ? "Completed" : (body.case_status || "Completed");
+    if (!CASE_STATUSES.includes(status)) {
+      return res.status(400).json({ ok: false, error: "invalid_case_status" });
+    }
+    const c = await closeCase(database, {
+      orgId,
+      id: body.id,
+      case_status: status,
+      notes: body.notes || null,
+      staff
+    });
+    if (!c) return res.status(404).json({ ok: false, error: "not_found" });
+
+    let event = null;
+    if (status === "Completed") {
+      event = await emitFn(
+        database,
+        "inquiry.removed",
+        {
+          caseId: c.case_id,
+          inquiryRemovalCaseId: c.id,
+          selectedBureaus: c.selected_bureaus_raw,
+          fundingRoundId: c.funding_round_id,
+          source: "inquiry_removal_case"
+        },
+        {
+          orgId,
+          clientId: c.client_id,
+          idempotencyKey: `inquiry.removed:case:${c.id}`
+        }
+      );
+    }
+
+    return res.status(200).json({ ok: true, case: c, event });
+  } catch (err) {
+    if (dbDown(res, err)) return;
+    throw err;
+  }
+}

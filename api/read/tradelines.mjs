@@ -20,6 +20,7 @@ import {
   parseUtilizationThreshold,
   UTILIZATION_THRESHOLD_REFUSALS
 } from "../../src/calculators/deal-funding.mjs";
+import { listLenders } from "../../src/lenders/store.mjs";
 
 // THE ROLE GATE IS TWO CALLS, NOT ONE ARGUMENT. requireAuth's third parameter
 // is { db, env } — src/http/middleware/requireAuth.mjs passes it straight to
@@ -143,10 +144,41 @@ export default async function handler(req, res, deps = {}) {
       utilizationThreshold = parsed.value;
     }
 
+    // Real lender database match count for the closer dashboard / card stack.
+    // Empty lenders → match_count 0, never a fabricated number.
+    let lenders = [];
+    let clientState = null;
+    let inquiryLog = [];
+    try {
+      lenders = await listLenders(db, { orgId: staff.org_id, active: true, limit: 500 });
+      const clientRow = await db.query(
+        `SELECT custom_fields FROM clients
+          WHERE org_id = $1::uuid AND id = $2::uuid`,
+        [staff.org_id, clientId]
+      );
+      const c = clientRow.rows[0];
+      if (c) {
+        const cf = c.custom_fields || {};
+        clientState = cf.business_state || cf.state || cf.home_state || null;
+      }
+      const inq = await db.query(
+        `SELECT bureau, status, created_at FROM inquiry_log
+          WHERE org_id = $1::uuid AND client_id = $2::uuid
+          ORDER BY created_at DESC LIMIT 200`,
+        [staff.org_id, clientId]
+      );
+      inquiryLog = inq.rows;
+    } catch (_) {
+      /* Lender match is additive — card funding still returns without it. */
+    }
+
     const funding = calcFunding({
       cards,
       requestedAmount: Number.isFinite(requestedAmount) ? requestedAmount : undefined,
-      ...(utilizationThreshold === undefined ? {} : { utilizationThreshold })
+      ...(utilizationThreshold === undefined ? {} : { utilizationThreshold }),
+      lenders,
+      clientState,
+      inquiryLog
     });
 
     return res.status(200).json({

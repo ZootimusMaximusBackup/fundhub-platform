@@ -34,6 +34,7 @@ import {
   ledgerInsertParams
 } from "../commissions/index.mjs";
 import { grantFromTransaction } from "../entitlements/entitlements.mjs";
+import { createFundingCloseoutSafe } from "../funding/closeout.mjs";
 
 /** Semantic product bucket → products.code when name/alias resolve fails. */
 export const BUCKET_TO_CODE = Object.freeze({
@@ -688,12 +689,21 @@ export async function onRoundFundedMoney(event, db) {
 
   const commission = await writeBackEndCommissions(db, { roundId: round.id, event });
 
+  // Success-fee closeout from Approved applications (10%). Idempotent per round.
+  const closeout = await createFundingCloseoutSafe(db, {
+    orgId: event.orgId,
+    fundingRoundId: round.id,
+    feePercent: p.feePercent != null ? Number(p.feePercent) : undefined
+  });
+
   return {
     done: true,
     fundingRoundId: round.id,
     saleId,
     commissionInserted: commission.inserted,
-    warnings: commission.warnings
+    warnings: commission.warnings,
+    closeoutId: closeout.closeout?.id || null,
+    closeoutError: closeout.error || null
   };
 }
 

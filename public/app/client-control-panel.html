@@ -360,6 +360,9 @@
         <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
         <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
       </div></div>
+<div class="navgroup"><button class="navhead">Funding<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="lenders.html"><span class="ico">⬡</span><span class="lbl">Lenders</span></a>
+      </div></div>
 <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
         <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
@@ -759,7 +762,16 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     var cf = c.custom_fields || {};
     setText(tile("Prequal"), cf.total_funding_estimate ? "Approved" : "Not yet");
     setText(tile("Total Approved"), money(c.funded_amount) || money(cf.total_funding_estimate) || "—");
-    setText(tile("Open Inquiries"), String((d.tasks || []).filter(function (t) { return !t.done; }).length));
+    /* Active inquiry-removal case status when present; else open inquiry task count. */
+    var irc = d.inquiry_removal_case;
+    if (irc && irc.case_status) {
+      setText(tile("Open Inquiries"),
+        irc.case_status +
+        (irc.open_inquiry_count != null ? " · " + irc.open_inquiry_count + " open" : "") +
+        (irc.hold_duration_display ? " · hold " + irc.hold_duration_display : ""));
+    } else {
+      setText(tile("Open Inquiries"), String((d.tasks || []).filter(function (t) { return !t.done; }).length));
+    }
 
     var badge = document.querySelector(".status-badge-lg");
     if (badge) {

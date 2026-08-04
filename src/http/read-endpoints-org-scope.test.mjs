@@ -76,6 +76,15 @@ const NO_ORG_COLUMN = new Map([
      Verified by reading those files, not assumed from the filename. */
   ["company-brain.mjs", "scoped in src/company-brain/retrieve.mjs retrieveChunks(), which binds c.org_id = $1 and refuses without an org"],
   ["company-brain-affiliate.mjs", "scoped in src/company-brain/retrieve.mjs retrieveAffiliateChunks(), which binds c.org_id = $1 and refuses without an org"],
+  /* Lender reads write no SQL in the handler. listLenders / matchForClient /
+     listObservations in src/lenders/store.mjs always bind org_id = $1::uuid from
+     the session org passed by the handler (which also 403s when org is missing). */
+  ["lenders.mjs", "scoped in src/lenders/store.mjs listLenders(), which binds org_id = $1::uuid"],
+  ["lender-matches.mjs", "scoped in src/lenders/store.mjs matchForClient(), which binds org_id on clients/inquiry_log/lenders"],
+  ["lender-observations.mjs", "scoped in src/lenders/store.mjs listObservations(), which binds org_id = $1::uuid"],
+  /* Parallel inquiry-ops session: handlers delegate to store modules that bind org_id. */
+  ["ai-bureau-config.mjs", "scoped in src/inquiry-ops/ai-bureau-config.mjs listAiBureauConfig(), which binds org_id"],
+  ["inquiry-cases.mjs", "scoped in src/inquiry-ops/cases.mjs listCases/getActiveCaseForClient, which bind org_id"],
 ]);
 
 /* An allow-listed endpoint must still prove it hands the SESSION's org to

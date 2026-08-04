@@ -35,6 +35,7 @@ import { requireActiveShift } from "../src/http/middleware/requireActiveShift.mj
 import { SUPER_ROLES } from "../src/http/middleware/requireRole.mjs";
 import { isUuid, CLIENT_DATA_ERRORS } from "../src/http/read-api.mjs";
 import { logAttempt, confirmRemoval, setStatus, listAttempts, InquiryWriteError } from "../src/inquiries/work.mjs";
+import { emit } from "../src/events/bus.mjs";
 
 export default async function handler(req, res) {
   const principal = await requirePrincipal(req, res, ["staff"], { db });
@@ -99,7 +100,36 @@ export default async function handler(req, res) {
         default:
           return res.status(400).json({ ok: false, error: "action must be one of: attempt, confirm, status" });
       }
-      return res.status(200).json({ ok: true, inquiry });
+
+      /* Emit inquiry.removed when a row is confirmed/cleared so C-03 can run.
+         Business status only — never driven by call_state phone-work. */
+      let event = null;
+      const st = String(inquiry?.status || "");
+      if (/removed|confirmed|cleared|deleted/i.test(st)) {
+        try {
+          event = await emit(
+            db,
+            "inquiry.removed",
+            {
+              inquiryId: inquiry.id,
+              bureau: inquiry.bureau,
+              inquiry: inquiry.inquiry,
+              status: inquiry.status,
+              source: "inquiry_log"
+            },
+            {
+              orgId: inquiry.org_id,
+              clientId: inquiry.client_id,
+              idempotencyKey: `inquiry.removed:log:${inquiry.id}:${st.toLowerCase()}`
+            }
+          );
+        } catch (_) {
+          /* Bus failure must not undo the confirm write. */
+          event = { ok: false, error: "emit_failed" };
+        }
+      }
+
+      return res.status(200).json({ ok: true, inquiry, event });
     }
 
     res.setHeader("allow", "GET, POST");

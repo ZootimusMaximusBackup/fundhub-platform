@@ -9,7 +9,13 @@
  *   4. guardrail             — hard stop if a draw pushes utilization past the org threshold
  *
  * All math is deterministic. No LLM calls. Any missing required input → null-bearing output.
+ *
+ * Optional lender-database inputs (lenders, clientState, inquiryLog) attach a
+ * real match_count from src/lenders/match.mjs. When those inputs are omitted,
+ * lenderMatchCount is null — never a fabricated number.
  */
+
+import { matchLenders } from "../lenders/match.mjs";
 
 const round2 = (n) => (n == null ? null : Math.round(n * 100) / 100);
 const round6 = (n) => (n == null ? null : Math.round(n * 1e6) / 1e6); // rates need precision
@@ -127,6 +133,10 @@ export function calcFunding({
   utilizationThreshold = 0.30,
   minPaymentPct = 0.02,
   horizons = [12, 24, 36],
+  lenders = null,
+  clientState = null,
+  inquiryLog = null,
+  lenderTable = null,
 } = {}) {
   const clean = Array.isArray(cards) ? cards.filter((c) => c && num(c.creditLimit) != null) : [];
 
@@ -240,7 +250,34 @@ export function calcFunding({
     };
   }
 
-  return { totalAvailableCredit, allocation, payMethodComparison, guardrail };
+  // --- 5. Real lender-database match count (optional) ---
+  // When the caller passes the org's lenders list (and optional inquiry log /
+  // client state), attach how many product rows fit. Omitted inputs → null,
+  // never a guessed count.
+  let lenderMatchCount = null;
+  let lenderMatches = null;
+  let lenderMatchSummary = null;
+  if (Array.isArray(lenders)) {
+    const matched = matchLenders({
+      lenders,
+      clientState,
+      inquiryLog: inquiryLog || [],
+      lenderTable
+    });
+    lenderMatchCount = matched.summary.match_count;
+    lenderMatches = matched.matches;
+    lenderMatchSummary = matched.summary;
+  }
+
+  return {
+    totalAvailableCredit,
+    allocation,
+    payMethodComparison,
+    guardrail,
+    lenderMatchCount,
+    lenderMatches,
+    lenderMatchSummary
+  };
 }
 
 /**

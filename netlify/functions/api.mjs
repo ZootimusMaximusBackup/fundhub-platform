@@ -138,6 +138,16 @@ import messagesOutbound from "../../api/messages-outbound.mjs";
 import agentsWrite from "../../api/agents.mjs";
 import pipelineCards from "../../api/pipeline-cards.mjs";
 import productsWrite from "../../api/products.mjs";
+import lendersWrite from "../../api/lenders.mjs";
+import lenderObservationsWrite from "../../api/lender-observations.mjs";
+import applicationsWrite from "../../api/applications.mjs";
+import inquiryCasesWrite from "../../api/inquiry-cases.mjs";
+import aiBureauConfigWrite from "../../api/ai-bureau-config.mjs";
+import readLenders from "../../api/read/lenders.mjs";
+import readLenderMatches from "../../api/read/lender-matches.mjs";
+import readLenderObservations from "../../api/read/lender-observations.mjs";
+import readInquiryCases from "../../api/read/inquiry-cases.mjs";
+import readAiBureauConfig from "../../api/read/ai-bureau-config.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -188,6 +198,16 @@ export const ROUTES = {
   /* Products & Commissions product ladder edits. ROLE_SETS.FINANCE — prices are
      configuration, same gate as other money-config writes. */
   "products": productsWrite,
+  /* Lender database maintenance + CSV import. ROLE_SETS.STAFF. */
+  "lenders": lendersWrite,
+  /* Bureau observation log + mismatch review. ROLE_SETS.STAFF. */
+  "lender-observations": lenderObservationsWrite,
+  /* Application status transitions + decision audit. ROLE_SETS.STAFF. */
+  "applications": applicationsWrite,
+  /* Inquiry removal case queue writes + inquiry.removed emit. ROLE_SETS.STAFF. */
+  "inquiry-cases": inquiryCasesWrite,
+  /* AI bureau IVR config — owner/admin/funding_advisor. */
+  "ai-bureau-config": aiBureauConfigWrite,
   "tasks": tasks,
 
   /* The staff reply inbox's write half. POST only — a staff member composing a
@@ -214,6 +234,11 @@ export const ROUTES = {
   "read/invoices": readInvoices,
   "read/documents": readDocuments,
   "read/funding-rounds": readFundingRounds,
+  "read/lenders": readLenders,
+  "read/lender-matches": readLenderMatches,
+  "read/lender-observations": readLenderObservations,
+  "read/inquiry-cases": readInquiryCases,
+  "read/ai-bureau-config": readAiBureauConfig,
   "read/affiliates": readAffiliates,
   "read/partners": readPartners,
   "read/message-templates": readMessageTemplates,

@@ -131,3 +131,23 @@ test('empty cards → 0 available, no crash', () => {
   assert.equal(r.allocation.shortfall, 5000);
   assert.equal(r.payMethodComparison, null); // nothing drawn
 });
+
+test('lenderMatchCount is null when lenders are omitted — never invented', () => {
+  const r = calcFunding({ cards: CARDS });
+  assert.equal(r.lenderMatchCount, null);
+  assert.equal(r.lenderMatches, null);
+});
+
+test('lenderMatchCount reads the real lenders list when provided', () => {
+  const r = calcFunding({
+    cards: CARDS,
+    lenders: [
+      { id: '1', name: 'Fit', lender_table: 'OnlineBizCC', active: true, priority_tier: 1, bureaus_pulled: 'EQ', eligible_states: 'AZ' },
+      { id: '2', name: 'Hot', lender_table: 'OnlineBizCC', active: true, priority_tier: 1, bureaus_pulled: 'EX', eligible_states: 'AZ' }
+    ],
+    clientState: 'AZ',
+    inquiryLog: [{ bureau: 'EX', status: 'open' }]
+  });
+  assert.equal(r.lenderMatchCount, 1);
+  assert.equal(r.lenderMatches[0].name, 'Fit');
+});

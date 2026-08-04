@@ -24,6 +24,7 @@ export const ROLE_ROUTES: Record<Role, string[]> = {
     'app/content-admin.html',
     'app/brand-studio.html',
     'app/inquiry-remover.html',
+    'app/lenders.html',
     'app/sample-data.html',
     'app/client-portal.html',
     'app/partner-galaxy.html',
@@ -49,6 +50,7 @@ export const ROLE_ROUTES: Record<Role, string[]> = {
     'app/content-admin.html',
     'app/brand-studio.html',
     'app/inquiry-remover.html',
+    'app/lenders.html',
     'app/sample-data.html',
     'app/client-portal.html',
   ],
@@ -91,6 +93,7 @@ export const NAV_ITEMS: Record<string, string> = {
   'app/content-admin.html': 'Content admin',
   'app/brand-studio.html': 'Brand studio',
   'app/inquiry-remover.html': 'Inquiry remover',
+  'app/lenders.html': 'Lenders',
   'app/sample-data.html': 'Sample data',
   'app/client-portal.html': 'Client portal',
   'app/partner-galaxy.html': 'Partner galaxy',
@@ -116,6 +119,12 @@ export const NAV_GROUPS = [
       'app/campaign-manager.html',
       'app/social-studio.html',
       'app/creative-factory.html',
+    ],
+  },
+  {
+    name: 'Funding',
+    items: [
+      'app/lenders.html',
     ],
   },
   {

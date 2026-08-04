@@ -69,7 +69,11 @@
        owner/admin in api/contracts.mjs, and the screen hides those controls from
        everybody else, the same one-screen-two-gates shape this file documents
        above. Move a gate there and this row has to move with it. */
-    "contracts.html"
+    "contracts.html",
+    /* lenders.html — funding advisor maintenance surface for the seven Airtable
+       lender product tables (+ bureau mismatch review). ROLE_SETS.STAFF at the
+       API. Lives under the Funding sidebar group. */
+    "lenders.html"
   ];
 
   /* partner-galaxy.html is the white-label partner's own Galaxy — scoped to

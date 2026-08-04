@@ -40,6 +40,36 @@ fabricated.
 4. **Campaign write loop** — successful Meta pause/resume/budget updates the
    local `campaigns` row; Campaign Manager drawer has the controls.
 
+## Lender + inquiry ops data (owner / funding advisor action)
+
+Updated 2026-08-04. Schema lives in temporary migrations `t138_lenders.sql`,
+`t139_funding_ops.sql`, `t140_inquiry_ops.sql` — **renumber at merge** if peers
+landed 138+.
+
+**Tables ship empty on purpose.** Do not invent lender names, bureau phone
+numbers, IVR paths, or approval criteria in code or seed.
+
+### Export from Airtable and import
+
+| Airtable source | Platform table / screen | How to load |
+|---|---|---|
+| ONLINEBIZCC, INBRANCHBIZCC, BIZLOC_STATED, BIZLOC_DOCUMENTED, PERSONALCC, PERSONALLOANS, PERSONALLOC | `lenders` via Lenders screen CSV | Map primary name → `name`, table name → `lender_table` (APPLICATIONS single-select spelling: OnlineBizCC, …). |
+| AI_BUREAU_CONFIG (EX/EQ/TU) | `ai_bureau_config` via Lenders → AI bureau config tab | Type real service numbers / menu paths — never invent. |
+| INQUIRY_REMOVAL_CASES (open cases) | `inquiry_removal_cases` | No CSV yet — recreate active cases in CRM or a follow-up import. |
+| INQUIRY_PREP | `inquiry_prep` | Staging; promote when `Ready for Cleanup`. |
+| LENDER_BUREAU_OBSERVATIONS | `lender_bureau_observations` | Filled by live application observations; optional historical import later. |
+| BUSINESS_TRADELINES | `business_tradelines` | Filled from CRS extract; no seed. |
+
+Until lender CSV import runs, closer-dashboard lender match count and Card
+Stacking round-planning fits correctly show **0**.
+
+### Wiring notes
+
+- `round.funded` (money-chain `onRoundFundedMoney`) creates `funding_closeout` +
+  items from Approved applications (10% success fee).
+- Application status changes write `application_decisions` (no silent updates).
+- Case close / inquiry confirm emit `inquiry.removed` for workflow C-03.
+
 ## Still deferred / out of scope
 
 1. **Full create-campaign / create-ad-set UI** — use Meta (or a later form) then
