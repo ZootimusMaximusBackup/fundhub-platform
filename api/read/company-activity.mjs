@@ -25,7 +25,7 @@ export default async function handler(req, res, deps = {}) {
   }
 
   try {
-    const data = await companyActivity(database, { orgId });
+    const data = await companyActivity(database, { orgId: staff.org_id });
     return res.status(200).json({ ok: true, ...data });
   } catch (e) {
     if (dbDown(res, e)) return;
