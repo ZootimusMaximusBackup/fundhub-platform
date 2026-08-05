@@ -187,7 +187,7 @@ export async function runFundingJourney(db, ctx, collector) {
       orgId: ctx.orgId,
       clientId: client.id,
       kind: "soft_pull_consent",
-      grantedBy: "client",
+      grantedBy: { kind: "staff", id: closer.id },
       captureMethod: "checkbox",
       grantedName: "Verify Funding",
       consentText: "I authorize a soft credit pull for underwriting."
@@ -455,13 +455,13 @@ export async function runFundingJourney(db, ctx, collector) {
         orgId: ctx.orgId,
         clientId: sim.client.id,
         templateId: tpl.id || tpl,
-        createdBy: closer.id,
+        staffId: closer.id,
         title: "Verify Funding Agreement"
       });
       contract = await sendContract(db, {
         orgId: ctx.orgId,
         id: draft.id,
-        sentBy: closer.id
+        staffId: closer.id
       }).catch(async (err) => {
         // send may require signers — record honestly
         return { error: String(err.message || err), draft };
@@ -600,18 +600,20 @@ export async function runFundingJourney(db, ctx, collector) {
     }
   }
 
-  // Audit row on status change — if applications table has decisions trail
+  // Audit row — must go through setApplicationStatus (raw SQL UPDATE is silent).
   if (appId) {
+    const { setApplicationStatus } = await import("../../applications/status.mjs");
+    await setApplicationStatus(db, {
+      orgId: ctx.orgId,
+      applicationId: appId,
+      status: "Approved",
+      staff: closer,
+      eventType: "status_change",
+      notes: "verify harness"
+    }).catch(() => null);
     const decisions = (await db.query(
       `SELECT * FROM application_decisions WHERE application_id = $1`, [appId]
     ).catch(() => ({ rows: [] }))).rows;
-    if (!decisions.length) {
-      // Try writing a status update the way the API would
-      await db.query(
-        `UPDATE applications SET status = 'Approved', updated_at = now() WHERE id = $1`,
-        [appId]
-      ).catch(() => {});
-    }
     collector.assertCount({
       section, journey, role, id: "fund-app-row",
       claim: "Approved application row exists for the round",
@@ -619,14 +621,13 @@ export async function runFundingJourney(db, ctx, collector) {
       file: "api/applications.mjs",
       opReturnedOk: true
     });
-    if (!decisions.length) {
-      collector.silent({
-        section, journey, role, id: "fund-app-audit",
-        claim: "Application status change wrote an audit/decision row",
-        detail: "application_decisions empty after Approved insert. If the CRM status picker only UPDATEs applications.status, the audit trail is silent.",
-        file: "api/applications.mjs"
-      });
-    }
+    collector.assertCount({
+      section, journey, role, id: "fund-app-audit",
+      claim: "Application status change wrote an audit/decision row",
+      count: decisions.length >= 1 ? 1 : 0, expected: 1,
+      file: "src/applications/status.mjs",
+      opReturnedOk: decisions.length >= 1
+    });
   }
 
   await emit(db, "round.funded", {
@@ -814,7 +815,7 @@ export async function runFundingJourney(db, ctx, collector) {
   )).rows[0].n;
   let replayErr = null;
   try {
-    await replay(db, {});
+    await replay(db, { orgId: ctx.orgId });
   } catch (err) {
     replayErr = String(err.message || err);
     collector.fail({

@@ -185,6 +185,7 @@ export function writeReport({ collector, meta = {}, journeyNotes = [], credentia
     { check: "Mailgun inbound bank-email parse", credential: "MAILGUN_WEBHOOK_SIGNING_KEY + real MIME" },
     { check: "Bland AI voice call outcome", credential: "BLAND_WEBHOOK_SECRET + live call" },
     { check: "Lendflow application decision webhooks", credential: "LENDFLOW_WEBHOOK_SECRET" },
+    { check: "Company Brain live embedding retrieve", credential: "OPENAI_API_KEY (or COMPANY_BRAIN_OPENAI_API_KEY)" },
     { check: "Agent live model replies (non-shadow)", credential: "ANTHROPIC_API_KEY" },
     { check: "Oxylabs residential proxy geo-verify", credential: "OXYLABS credentials" },
     { check: "Actual outbound SMS/email delivery", credential: "Twilio/Mailgun send credentials + outbound_enabled=true" },
@@ -212,7 +213,15 @@ export function writeReport({ collector, meta = {}, journeyNotes = [], credentia
   lines.push(meta.operatorNotes || [
     "This harness drives real handlers against a real Postgres. Adapters run with mock secrets; nothing transmits.",
     "A PASS means the write path was exercised and the persisted value matched. Looking-correct code without a write is SILENT or UNVERIFIED.",
-    "Money amounts are checked by independent hand-calculation constants in src/verification/fixtures.mjs (MONEY), not by re-calling commission helpers under test."
+    "Money amounts are checked by independent hand-calculation constants in src/verification/fixtures.mjs (MONEY), not by re-calling commission helpers under test.",
+    "",
+    "### Decisions this pass (2026-08-04)",
+    "- Closeout fee = 10% of funding_rounds.funded_amount (docs/CLOSEOUT-FEE-BASIS.md).",
+    "- Static HTML direct-URL is not a P0 leak: Netlify serves files; API ROLE_SET probes prove isolation.",
+    "- Company Brain tier gate verified via access.mjs + SQL filter; live retrieve needs OPENAI_API_KEY.",
+    "- DIY EMAIL-DS02 still [DRAFT]: hard guard correctly refuses send (not silent no-op).",
+    "- Harness sample-data check matches fabricated $12,450 only — not nav label \"Sample Data\".",
+    "- Bus replay skips payload amounts ≥ $1bn so adversarial poison events cannot kill the job."
   ].join("\n\n"));
   lines.push("");
 

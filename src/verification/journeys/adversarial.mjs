@@ -53,7 +53,8 @@ export async function runAdversarialJourney(db, ctx, collector) {
   }).catch(() => {});
   await emit(db, "deposit.paid", {
     email: `${ctx.mark}.huge@verify.local`,
-    amount: 999999999999, product: "deposit", providerRef: "huge"
+    amount: 999999999999, product: "deposit",
+    providerRef: `${ctx.mark}_huge_${ctx.stamp}`
   }, { orgId: ctx.orgId, idempotencyKey: `${ctx.mark}:huge:${ctx.stamp}` }).catch(() => {});
 
   const afterSales = (await db.query(`SELECT count(*)::int n FROM sales`)).rows[0].n;
@@ -128,12 +129,12 @@ export async function runAdversarialJourney(db, ctx, collector) {
     await emit(db, "entry.captured", {
       email: weirdEmail, name: weird, firstName: weird, lastName: "Test"
     }, { orgId: ctx.orgId, idempotencyKey: `${ctx.mark}:uni:${ctx.stamp}` });
-    const w = (await db.query(`SELECT name, first_name FROM clients WHERE email = $1`, [weirdEmail])).rows[0];
+    const w = (await db.query(`SELECT first_name, last_name FROM clients WHERE email = $1`, [weirdEmail])).rows[0];
     if (w) clientIds.push((await db.query(`SELECT id FROM clients WHERE email = $1`, [weirdEmail])).rows[0].id);
     collector.pass({
       section, journey, role, id: "adv-unicode",
       claim: "Unicode/emoji/quotes name persists without injection error",
-      actual: w,
+      actual: { first_name: w?.first_name, last_name: w?.last_name },
       file: "src/handlers/client-lifecycle.mjs"
     });
   } catch (err) {

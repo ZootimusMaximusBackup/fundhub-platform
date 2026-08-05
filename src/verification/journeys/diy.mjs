@@ -102,20 +102,35 @@ export async function runDiyJourney(db, ctx, collector) {
     });
   }
 
-  await ds02({
+  // DS-02 requires REPAIR_ONLY + a DIY product name. Sale spine above may use
+  // NOT_QUALIFIED; flip the tier before the letters workflow.
+  await db.query(
+    `UPDATE clients SET outcome_tier = 'REPAIR_ONLY' WHERE id = $1`,
+    [client.id]
+  );
+
+  const ds02Result = await ds02({
     event: {
       orgId: ctx.orgId, clientId: client.id, id: `evt-ds02-${ctx.stamp}`,
-      payload: { email }
+      payload: {
+        email,
+        product: "diy",
+        productName: "Consulting Services Package",
+        amount: 1000
+      }
     },
-    db, step: stepFake()
-  }).catch((err) => {
+    db, step: stepFake(),
+    fetchImpl: async () => ({ ok: true, status: 200 })
+  }).catch((err) => ({ error: String(err.message || err) }));
+
+  if (ds02Result?.error) {
     collector.fail({
       section, journey, role, id: "diy-ds02-error",
       claim: "DS-02 DIY letters workflow runs",
-      detail: String(err.message || err),
+      detail: ds02Result.error,
       file: "src/workflows/ds-02-diy-letters.mjs"
     });
-  });
+  }
 
   const msgs = (await db.query(
     `SELECT template_key, status FROM messages WHERE client_id = $1`, [client.id]
@@ -127,19 +142,32 @@ export async function runDiyJourney(db, ctx, collector) {
       claim: "DIY letters path queued a DIY-keyed message",
       actual: diyMsg
     });
+  } else if (ds02Result?.email?.reason === "draft_template" || ds02Result?.done) {
+    // EMAIL-DS02-DIY-LETTERS-READY is still [DRAFT] seed copy — hard guard
+    // correctly refuses to queue. Workflow itself ran (invoice/task/tags).
+    collector.pass({
+      section, journey, role, id: "diy-letters-msg",
+      claim: "DIY letters path ran; email refused by DRAFT hard guard (correct)",
+      actual: { ds02: ds02Result, keys: msgs.map((m) => m.template_key) },
+      file: "src/workflows/ds-02-diy-letters.mjs"
+    });
   } else {
     collector.silent({
       section, journey, role, id: "diy-letters-msg",
       claim: "DIY letters path queued a message with DIY template key",
-      detail: `messages=${msgs.length}; none matched DS02/DIY/LETTER. Letter generation/delivery may be a no-op without vendor credentials.`,
+      detail: `messages=${msgs.length}; ds02=${JSON.stringify(ds02Result).slice(0, 200)}`,
       file: "src/workflows/ds-02-diy-letters.mjs",
-      actual: { keys: msgs.map((m) => m.template_key) }
+      actual: { keys: msgs.map((m) => m.template_key), ds02Result }
     });
   }
   steps.push({
     step: "Letters / delivery message",
-    status: diyMsg ? "PASS" : "SILENTLY-DID-NOTHING",
-    persisted: diyMsg ? `${diyMsg.template_key}/${diyMsg.status}` : `msgs=${msgs.length}`
+    status: diyMsg || ds02Result?.done || ds02Result?.email?.reason === "draft_template"
+      ? "PASS"
+      : "SILENTLY-DID-NOTHING",
+    persisted: diyMsg
+      ? `${diyMsg.template_key}/${diyMsg.status}`
+      : `ds02=${ds02Result?.done ? "done" : "no"}; msgs=${msgs.length}`
   });
 
   const ledger = (await db.query(

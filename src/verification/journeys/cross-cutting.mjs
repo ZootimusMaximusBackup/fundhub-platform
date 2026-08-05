@@ -273,10 +273,11 @@ export async function runCrossCutting(db, ctx, collector) {
     const jsPath = path.join(appDir, jsName);
     const js = fs.existsSync(jsPath) ? fs.readFileSync(jsPath, "utf8") : "";
     const combined = src + "\n" + js;
-    // Flag obvious fabricated dollars in markup that aren't clearly demos
+    // Flag fabricated $12,450 demo dollars only. Do not match nav "Sample Data"
+    // labels or ordinary product price copy ($3,000).
     const sampleHits = [];
-    if (/\$\s*12,?450/.test(combined) || /sample data/i.test(combined) && !/sample-data\.html/.test(f)) {
-      sampleHits.push("sample-ish dollar or label");
+    if (/\$\s*12,?450/.test(combined)) {
+      sampleHits.push("fabricated $12,450 dollar figure");
     }
     if (f === "sample-data.html") {
       collector.pass({

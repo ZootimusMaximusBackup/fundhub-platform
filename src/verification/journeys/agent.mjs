@@ -174,20 +174,28 @@ export async function runAgentJourney(db, ctx, collector) {
     }
   }
 
-  // Draft agent does nothing
+  // Draft agent does nothing — retire every live/shadow agent in the org so
+  // select cannot fall through to another messaging agent.
+  // Constraint agents_retired_ck: status='retired' iff retired_at IS NOT NULL.
   if (draftCode) {
     await db.query(
-      `UPDATE agents SET status = 'draft' WHERE org_id = $1 AND code = $2`,
-      [ctx.orgId, draftCode]
-    ).catch(() => {});
-    // Demote others so select may pick draft — best effort
-    await db.query(
-      `UPDATE agents SET status = 'retired' WHERE org_id = $1 AND code = ANY($2::text[])`,
-      [ctx.orgId, [liveCode, shadowCode].filter(Boolean)]
+      `UPDATE agents
+          SET status = 'retired', retired_at = now()
+        WHERE org_id = $1 AND status IN ('live', 'shadow')`,
+      [ctx.orgId]
     ).catch(() => {});
     await db.query(
-      `UPDATE agents SET status = 'draft' WHERE org_id = $1 AND code = $2`,
+      `UPDATE agents
+          SET status = 'draft', retired_at = NULL
+        WHERE org_id = $1 AND code = $2`,
       [ctx.orgId, draftCode]
+    ).catch(() => {});
+
+    // Clear sticky conversation assignment so select cannot revive a retired agent.
+    await db.query(
+      `UPDATE conversations SET agent_code = NULL
+        WHERE org_id = $1 AND client_id = $2`,
+      [ctx.orgId, client.id]
     ).catch(() => {});
 
     const draftResult = await handleInbound({
@@ -196,7 +204,8 @@ export async function runAgentJourney(db, ctx, collector) {
       payload: { ...event.payload, sid: inboundSid + "_d", body: "Hello again" }
     }, db, { env: process.env, fetchImpl: async () => ({ ok: false }) });
 
-    if (draftResult?.reason === "draft" || draftResult?.reason === "no_agent") {
+    if (draftResult?.reason === "draft" || draftResult?.reason === "no_agent"
+        || draftResult?.reason === "no_eligible_agent") {
       collector.pass({
         section, journey, role, id: "agent-draft-noop",
         claim: "status=draft agents do nothing (or no live agent selected)",
@@ -210,6 +219,15 @@ export async function runAgentJourney(db, ctx, collector) {
         detail: `Got reason=${draftResult?.reason}`,
         file: "src/agents/runtime.mjs"
       });
+    }
+
+    // Restore a live agent so STOP / later checks still have a selectable agent.
+    if (liveCode) {
+      await db.query(
+        `UPDATE agents SET status = 'live', retired_at = NULL
+          WHERE org_id = $1 AND code = $2`,
+        [ctx.orgId, liveCode]
+      ).catch(() => {});
     }
   }
 

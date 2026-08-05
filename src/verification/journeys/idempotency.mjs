@@ -15,7 +15,7 @@ export async function runIdempotencyJourney(db, ctx, collector) {
   await emit(db, "deposit.paid", {
     email, name: "Idem Client", product: "deposit",
     productName: "Consulting Services Deposit",
-    amount: MONEY.depositDollars, providerRef: `${ctx.mark}_idem_dep`,
+    amount: MONEY.depositDollars, providerRef: `${ctx.mark}_idem_dep_${ctx.stamp}`,
     closerId: closer.id, advisorId: advisor.id, source: "commas"
   }, { orgId: ctx.orgId, idempotencyKey: `${ctx.mark}:idem-dep:${ctx.stamp}` });
 
@@ -35,7 +35,7 @@ export async function runIdempotencyJourney(db, ctx, collector) {
   // Double-fire identical money event
   await emit(db, "deposit.paid", {
     email, product: "deposit", productName: "Consulting Services Deposit",
-    amount: MONEY.depositDollars, providerRef: `${ctx.mark}_idem_dep`,
+    amount: MONEY.depositDollars, providerRef: `${ctx.mark}_idem_dep_${ctx.stamp}`,
     closerId: closer.id, source: "commas"
   }, { orgId: ctx.orgId, clientId: client.id, idempotencyKey: `${ctx.mark}:idem-dep:${ctx.stamp}` });
 
@@ -71,7 +71,7 @@ export async function runIdempotencyJourney(db, ctx, collector) {
   // Full replay — must not throw and must not duplicate
   let replayErr = null;
   try {
-    await replay(db, {});
+    await replay(db, { orgId: ctx.orgId });
   } catch (err) {
     replayErr = String(err.message || err);
     collector.fail({
@@ -149,7 +149,7 @@ export async function runIdempotencyJourney(db, ctx, collector) {
   const key = `${ctx.mark}:conc-dep:${ctx.stamp}`;
   const payload = {
     email: concEmail, product: "deposit", productName: "Consulting Services Deposit",
-    amount: MONEY.depositDollars, providerRef: `${ctx.mark}_conc_dep`,
+    amount: MONEY.depositDollars, providerRef: `${ctx.mark}_conc_dep_${ctx.stamp}`,
     closerId: closer.id, source: "commas"
   };
   await Promise.all([

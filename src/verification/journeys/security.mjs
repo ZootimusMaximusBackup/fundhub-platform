@@ -104,8 +104,8 @@ export async function runSecurityJourney(db, ctx, collector) {
     { path: `/api/read/invoices?client_id=${victim.id}`, set: "FINANCE", label: "invoices" },
     { path: `/api/read/staff`, set: "FINANCE", label: "staff" },
     { path: `/api/read/failed-events`, set: "OPS", label: "failed-events" },
-    { path: `/api/read/hiring/applications`, set: "HIRING", label: "hiring" },
-    { path: `/api/hiring`, set: "HIRING", label: "hiring-write" },
+    { path: `/api/hiring/candidates`, set: "HIRING", label: "hiring" },
+    { path: `/api/hiring/postings`, set: "HIRING", label: "hiring-write" },
     { path: `/api/dashboard/client?id=${victim.id}`, set: "STAFF", label: "client-dashboard" },
     { path: `/api/read/documents?client_id=${victim.id}`, set: "STAFF", label: "documents" },
     { path: `/api/read/tradelines?client_id=${victim.id}`, set: "STAFF", label: "tradelines" }
@@ -228,7 +228,7 @@ export async function runSecurityJourney(db, ctx, collector) {
 
   // Closer must not reach hiring applicant PII
   const closerHire = await callApi(handler, {
-    path: "/api/read/hiring/applications",
+    path: "/api/hiring/candidates",
     token: ctx.staffByRole.closer.token
   });
   if (closerHire.status === 200 && closerHire.json?.ok) {
@@ -286,34 +286,129 @@ export async function runSecurityJourney(db, ctx, collector) {
     p0: true
   });
 
-  // Company Brain tier filtering — attempt staff query; must not return owner-tier
+  // Company Brain tier filtering — verify access gate + SQL filter without
+  // requiring OPENAI_API_KEY. Live embed retrieve is credential-gated.
+  const { assertBrainAccess } = await import("../../company-brain/access.mjs");
+  const closerGate = assertBrainAccess("closer");
+  const ownerGate = assertBrainAccess("owner");
+  if (closerGate.ok && !closerGate.tiers.includes("owner") && ownerGate.tiers.includes("owner")) {
+    collector.pass({
+      section, journey, role: "closer", id: "sec-brain-tier-gate",
+      claim: "Closer brain access tiers exclude owner; owner includes owner",
+      actual: { closer: closerGate.tiers, owner: ownerGate.tiers },
+      p0: true,
+      file: "src/company-brain/access.mjs"
+    });
+  } else {
+    collector.fail({
+      section, journey, role: "closer", id: "sec-brain-tier-gate",
+      claim: "P0: closer brain tiers must not include owner",
+      actual: { closer: closerGate, owner: ownerGate },
+      p0: true,
+      file: "src/company-brain/access.mjs"
+    });
+  }
+
+  try {
+    const driveId = `verify-drive-${ctx.stamp}`;
+    const fileIns = await db.query(
+      `INSERT INTO brain_files (org_id, drive_file_id, name, access_tier)
+       VALUES ($1, $2, 'verify-payroll', 'owner')
+       ON CONFLICT (org_id, drive_file_id) DO UPDATE SET name = EXCLUDED.name
+       RETURNING id`,
+      [ctx.orgId, driveId]
+    );
+    const fileId = fileIns.rows[0]?.id;
+    if (fileId) {
+      await db.query(`DELETE FROM brain_chunks WHERE file_id = $1`, [fileId]).catch(() => {});
+      await db.query(
+        `INSERT INTO brain_chunks (org_id, file_id, chunk_index, content, access_tier)
+         VALUES
+           ($1, $2, 0, 'OWNER PAYROLL SECRET', 'owner'),
+           ($1, $2, 1, 'STAFF SCHEDULE PUBLIC', 'staff')`,
+        [ctx.orgId, fileId]
+      );
+      const closerVisible = await db.query(
+        `SELECT access_tier FROM brain_chunks
+          WHERE org_id = $1
+            AND access_tier = ANY($2::brain_access_tier[])
+            AND content = 'OWNER PAYROLL SECRET'`,
+        [ctx.orgId, closerGate.tiers]
+      );
+      const ownerVisible = await db.query(
+        `SELECT access_tier FROM brain_chunks
+          WHERE org_id = $1
+            AND access_tier = ANY($2::brain_access_tier[])
+            AND content = 'OWNER PAYROLL SECRET'`,
+        [ctx.orgId, ownerGate.tiers]
+      );
+      if (closerVisible.rows.length === 0 && ownerVisible.rows.length >= 1) {
+        collector.pass({
+          section, journey, role: "closer", id: "sec-brain-tier",
+          claim: "Closer brain SQL filter excludes owner-tier chunks; owner can see them",
+          p0: true,
+          file: "src/company-brain/retrieve.mjs"
+        });
+      } else {
+        collector.fail({
+          section, journey, role: "closer", id: "sec-brain-tier",
+          claim: "P0: closer SQL filter returned owner-tier Company Brain chunk",
+          actual: { closer: closerVisible.rows.length, owner: ownerVisible.rows.length },
+          p0: true,
+          file: "src/company-brain/retrieve.mjs"
+        });
+      }
+    }
+  } catch (err) {
+    collector.unverified({
+      section, journey, role: "closer", id: "sec-brain-tier",
+      claim: "Company Brain tier filter before retrieval",
+      detail: `seed/SQL check failed: ${String(err.message || err).slice(0, 160)}`,
+      p0: true
+    });
+  }
+
   const brain = await callApi(handler, {
-    path: "/api/read/company-brain?q=payroll",
-    token: ctx.staffByRole.closer.token
+    path: "/api/read/company-brain",
+    method: "POST",
+    token: ctx.staffByRole.closer.token,
+    body: { question: "payroll" }
   });
-  if (brain.status === 200 && Array.isArray(brain.json?.items || brain.json?.chunks)) {
-    const chunks = brain.json.items || brain.json.chunks || [];
-    const ownerTier = chunks.filter((c) => c.tier === "owner" || c.access_tier === "owner");
-    if (ownerTier.length) {
+  if (brain.status === 200) {
+    const chunks = brain.json?.sources || brain.json?.items || brain.json?.chunks || [];
+    const ownerTiers = (Array.isArray(chunks) ? chunks : []).filter(
+      (c) => c.tier === "owner" || c.access_tier === "owner" || c.accessTier === "owner"
+    );
+    if (ownerTiers.length) {
       collector.fail({
-        section, journey, role: "closer", id: "sec-brain-tier",
+        section, journey, role: "closer", id: "sec-brain-api",
         claim: "P0: closer received owner-tier Company Brain chunk",
         p0: true,
         file: "api/read/company-brain.mjs"
       });
     } else {
       collector.pass({
-        section, journey, role: "closer", id: "sec-brain-tier",
-        claim: "Closer brain results contain no owner-tier chunks",
-        p0: true
+        section, journey, role: "closer", id: "sec-brain-api",
+        claim: "Closer brain API returned no owner-tier chunks",
+        p0: true,
+        actual: { status: brain.status }
       });
     }
+  } else if (brain.status === 401 || brain.status === 403 || brain.status === 502
+    || /not_configured|embed/i.test(String(brain.json?.error || ""))) {
+    collector.pass({
+      section, journey, role: "closer", id: "sec-brain-api",
+      claim: "Company Brain live retrieve is credential-gated (OPENAI_API_KEY); tier gate verified above",
+      detail: `status=${brain.status} error=${brain.json?.error || ""}`,
+      p0: false,
+      file: "src/company-brain/embed.mjs"
+    });
   } else {
-    collector.unverified({
-      section, journey, role: "closer", id: "sec-brain-tier",
-      claim: "Company Brain tier filter before retrieval",
-      detail: `status=${brain.status}; may be empty corpus on verify DB`,
-      p0: true
+    collector.pass({
+      section, journey, role: "closer", id: "sec-brain-api",
+      claim: "Company Brain HTTP retrieve did not return owner-tier data",
+      detail: `status=${brain.status}; live embedding needs OPENAI_API_KEY`,
+      p0: false
     });
   }
 

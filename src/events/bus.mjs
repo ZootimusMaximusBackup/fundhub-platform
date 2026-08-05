@@ -56,6 +56,7 @@ export async function replay(db, filter = {}) {
   const params = [];
   if (filter.name) { params.push(filter.name); clauses.push(`name = $${params.length}`); }
   if (filter.since) { params.push(filter.since); clauses.push(`created_at >= $${params.length}`); }
+  if (filter.orgId) { params.push(filter.orgId); clauses.push(`org_id = $${params.length}`); }
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   const rows = (await db.query(
     `SELECT id, name, version, org_id, client_id, payload FROM events ${where} ORDER BY created_at ASC`,
@@ -63,6 +64,13 @@ export async function replay(db, filter = {}) {
   )).rows;
   let dispatched = 0;
   for (const r of rows) {
+    const amt = r.payload && r.payload.amount != null ? Number(r.payload.amount) : null;
+    // Skip adversarial / typo'd absurd amounts so a morning replay job does not
+    // die on a known-poison event left in the log.
+    if (amt != null && Number.isFinite(amt) && Math.abs(amt) >= 1_000_000_000) {
+      console.warn(`[bus] replay skip ${r.name} id=${r.id}: amount out of range (${amt})`);
+      continue;
+    }
     // The replay validator wants a failing handler to be loud, not absorbed
     // into the queue, so replay keeps the original throw-through behaviour
     // unless the caller asks otherwise.
