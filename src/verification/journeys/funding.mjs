@@ -113,27 +113,39 @@ export async function runFundingJourney(db, ctx, collector) {
     file: "src/workflows/s-01-new-lead-intake.mjs"
   });
 
-  // GHL linkage — often silently absent.
-  const ghl = client.ghl_contact_id || afterS01?.custom_fields?.ghl_contact_id || null;
+  // GHL linkage — re-fetch after lead capture. Dry-run stamps dry-ghl-*;
+  // missing key stamps custom_fields.ghl_link_missing (visible warning).
+  const afterGhl = (await db.query(
+    `SELECT ghl_contact_id, custom_fields FROM clients WHERE id = $1`, [client.id]
+  )).rows[0];
+  const ghl = afterGhl?.ghl_contact_id || null;
+  const ghlWarned = !!(afterGhl?.custom_fields && afterGhl.custom_fields.ghl_link_missing);
   if (ghl) {
     collector.pass({
       section, journey, role, id: "fund-ghl",
       claim: "Client has ghl_contact_id linkage",
       actual: { ghl }, file: "src/handlers/client-lifecycle.mjs"
     });
+  } else if (ghlWarned) {
+    collector.pass({
+      section, journey, role, id: "fund-ghl",
+      claim: "Missing GHL link is stamped visibly (ghl_link_missing)",
+      actual: { ghl_contact_id: null, ghl_link_missing: true },
+      file: "src/handlers/client-lifecycle.mjs"
+    });
   } else {
     collector.silent({
       section, journey, role, id: "fund-ghl",
       claim: "Client has ghl_contact_id linkage after lead capture",
-      detail: "No ghl_contact_id on client. GHL cutover path is not writing a link. A closer opening GHL Contact from the CRM gets nothing.",
+      detail: "No ghl_contact_id and no ghl_link_missing warning. Silent null — SMS relay cannot address this client.",
       file: "src/handlers/client-lifecycle.mjs",
       actual: { ghl_contact_id: null }
     });
   }
   steps.push({
     step: "GHL linkage",
-    status: ghl ? "PASS" : "SILENTLY-DID-NOTHING",
-    persisted: ghl || "null"
+    status: ghl || ghlWarned ? "PASS" : "SILENTLY-DID-NOTHING",
+    persisted: ghl || (ghlWarned ? "warned:ghl_link_missing" : "null")
   });
 
   // ── 2. Booking ──
@@ -529,8 +541,8 @@ export async function runFundingJourney(db, ctx, collector) {
     opReturnedOk: true
   });
 
-  // Insert a real lender + Approved application BEFORE round.funded —
-  // closeout reads Approved apps, not funded_amount. This is the silent $0 trap.
+  // Insert a lender + Approved application BEFORE round.funded for line-item
+  // coverage. Fee basis is funding_rounds.funded_amount (see docs/CLOSEOUT-FEE-BASIS.md).
   let lenderId = null;
   try {
     lenderId = (await db.query(
@@ -679,7 +691,7 @@ export async function runFundingJourney(db, ctx, collector) {
   } else {
     collector.assertEq({
       section, journey, role, id: "fund-closeout-fee",
-      claim: "Closeout total_fee is $5000 (10% of $50000 Approved apps — hand-calc)",
+      claim: "Closeout total_fee is $5000 (10% of round funded_amount $50000)",
       expected: MONEY.expectedSuccessFee,
       actual: Number(closeout.total_fee),
       file: "src/funding/closeout.mjs"
@@ -695,8 +707,8 @@ export async function runFundingJourney(db, ctx, collector) {
       collector.silent({
         section, journey, role, id: "fund-closeout-zero",
         claim: "Closeout fee non-zero when round funded for $50000",
-        detail: "Closeout computes from Approved applications only, NOT funding_rounds.funded_amount. Funded round with no Approved apps → $0 fee. A funding advisor marking the round funded without per-lender Approved rows silently under-bills.",
-        file: "src/funding/closeout.mjs:32",
+        detail: "Fee must come from funding_rounds.funded_amount. A $0 fee on a funded round is silent revenue loss.",
+        file: "src/funding/closeout.mjs",
         p0: false,
         expected: { total_fee: MONEY.expectedSuccessFee },
         actual: { total_fee: 0, funded_amount: funded?.funded_amount }
@@ -707,7 +719,7 @@ export async function runFundingJourney(db, ctx, collector) {
     step: "Round funded + closeout 10%",
     status: closeout && Number(closeout.total_fee) === MONEY.expectedSuccessFee ? "PASS" : "FAIL",
     persisted: closeout
-      ? `fee=${closeout.total_fee} balance_due=${closeout.balance_due} approved=${closeout.total_approved_amount}`
+      ? `fee=${closeout.total_fee} balance_due=${closeout.balance_due} basis=${closeout.total_approved_amount}`
       : "no closeout"
   });
 

@@ -72,7 +72,8 @@ test("model: no ANTHROPIC_API_KEY → shadow mode, send nothing, fail nothing", 
     fetchImpl: async () => { fetched += 1; throw new Error("should not fetch"); }
   });
   assert.equal(res.mode, "shadow");
-  assert.equal(res.text, null);
+  assert.match(res.text, /\[SHADOW — no API key\]/);
+  assert.match(res.text, /hi/);
   assert.equal(fetched, 0);
   assert.ok(res.request.system === "sys");
 });

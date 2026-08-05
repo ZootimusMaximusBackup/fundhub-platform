@@ -635,6 +635,9 @@ export async function onRoundFundedMoney(event, db) {
   const p = event.payload || {};
   let round = null;
 
+  // round.funded UPDATES an existing round. It must never INSERT a funded row
+  // from nothing — that invented phantom rounds when events arrived out of
+  // order (verified 2026-08-04). Fail loudly; require round.started first.
   if (p.fundingRoundId) {
     round = (await db.query(
       `SELECT * FROM funding_rounds WHERE id = $1 LIMIT 1`,
@@ -642,10 +645,29 @@ export async function onRoundFundedMoney(event, db) {
     )).rows[0] || null;
   }
   if (!round) {
-    const ensured = await ensureFundingRound(db, event, { status: "funded" });
-    round = ensured.round;
+    const clientId = await resolveClient(db, event);
+    const roundNumber = Number(p.roundNumber ?? p.round_number ?? 1);
+    if (clientId) {
+      round = (await db.query(
+        `SELECT * FROM funding_rounds
+          WHERE client_id = $1 AND round_number = $2
+          LIMIT 1`,
+        [clientId, roundNumber]
+      )).rows[0] || null;
+    }
   }
-  if (!round) return { done: false, reason: "no_round" };
+  if (!round) {
+    console.error(
+      `[money-chain] round.funded refused: no prior funding_rounds row ` +
+      `(org=${event.orgId} client=${event.clientId || "?"} ` +
+      `fundingRoundId=${p.fundingRoundId || "none"}). Emit round.started first.`
+    );
+    return {
+      done: false,
+      reason: "no_prior_round",
+      detail: "round.funded requires an existing round from round.started"
+    };
+  }
 
   const fundedAmount = p.fundedAmount != null ? Number(p.fundedAmount)
     : (p.approvedAmount != null ? Number(p.approvedAmount) : null);

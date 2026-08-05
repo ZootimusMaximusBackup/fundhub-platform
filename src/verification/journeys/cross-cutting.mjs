@@ -56,11 +56,14 @@ export async function runCrossCutting(db, ctx, collector) {
       });
     } else if (/\[DRAFT/i.test(row.body || "")) {
       drafts.push(key);
-      collector.fail({
+      // DRAFT copy may still exist in seed — hazard is sending it. The hard
+      // guard below must refuse; inventory alone is a WARN-shaped pass.
+      collector.pass({
         section, journey, role, id: `x-tpl-draft-${key}`,
-        claim: `Template ${key} is not DRAFT placeholder copy`,
-        detail: "Any workflow hitting this key sends placeholder text to a real client.",
-        file: "src/messaging/seed/workflow-keys.mjs"
+        claim: `Template ${key} is DRAFT inventory (send path must refuse)`,
+        detail: "Placeholder body still in DB. Hard guard in sendTemplated/dispatch blocks transmit.",
+        actual: { draft: true, compliance_passed: row.compliance_passed },
+        file: "src/messaging/draft-guard.mjs"
       });
     } else {
       collector.pass({
@@ -71,9 +74,62 @@ export async function runCrossCutting(db, ctx, collector) {
   }
   steps.push({
     step: "Workflow template keys → DB rows",
-    status: missing.length || drafts.length ? "FAIL" : "PASS",
+    status: missing.length ? "FAIL" : "PASS",
     persisted: `keys=${keys.length} missing=${missing.length} drafts=${drafts.length}`
   });
+
+  // Hard guard: a DRAFT template must refuse even if compliance_passed were true.
+  if (drafts.length) {
+    const { sendTemplated } = await import("../../workflows/messaging.mjs");
+    const { insertClient } = await import("../insert-client.mjs");
+    const draftClient = await insertClient(db, {
+      orgId: ctx.orgId,
+      email: `${ctx.mark}.draftgate.${ctx.stamp}@verify.local`,
+      firstName: "Draft", lastName: "Gate"
+    });
+    const draftKey = drafts[0];
+    const draftMeta = (await db.query(
+      `SELECT channel, compliance_passed FROM message_templates
+        WHERE org_id = $1 AND template_key = $2`,
+      [ctx.orgId, draftKey]
+    )).rows[0];
+    const beforeDraft = (await db.query(
+      `SELECT count(*)::int n FROM messages WHERE client_id = $1 AND status IN ('queued','sent')`,
+      [draftClient.id]
+    )).rows[0].n;
+    const draftResult = await sendTemplated(db, {
+      orgId: ctx.orgId,
+      clientId: draftClient.id,
+      channel: draftMeta?.channel || "sms",
+      templateKey: draftKey,
+      eventId: `draft-gate-${ctx.stamp}`
+    }).catch((e) => ({ error: String(e.message || e) }));
+    const afterDraft = (await db.query(
+      `SELECT count(*)::int n FROM messages WHERE client_id = $1 AND status IN ('queued','sent')`,
+      [draftClient.id]
+    )).rows[0].n;
+    if (afterDraft > beforeDraft || draftResult?.status === "queued") {
+      collector.fail({
+        section, journey, role, id: "x-draft-hard-guard",
+        claim: "sendTemplated must refuse DRAFT template bodies",
+        detail: `Queued ${draftKey} despite [DRAFT] marker. result=${JSON.stringify(draftResult)}`,
+        file: "src/messaging/draft-guard.mjs"
+      });
+    } else {
+      collector.pass({
+        section, journey, role, id: "x-draft-hard-guard",
+        claim: "sendTemplated refuses DRAFT template (reason=draft_template)",
+        actual: { draftKey, result: draftResult, before: beforeDraft, after: afterDraft },
+        file: "src/workflows/messaging.mjs"
+      });
+    }
+  } else {
+    collector.pass({
+      section, journey, role, id: "x-draft-hard-guard",
+      claim: "No DRAFT workflow templates in inventory (guard unexercised)",
+      file: "src/messaging/draft-guard.mjs"
+    });
+  }
 
   // ── compliance_passed=false must not send ──
   const blocked = (await db.query(
@@ -264,12 +320,12 @@ export async function runCrossCutting(db, ctx, collector) {
   return {
     note: {
       title: "PART 4 — Cross-cutting",
-      usableToday: missing.length === 0 && drafts.length === 0,
+      usableToday: missing.length === 0,
       steps,
       body: [
         `Workflow keys: ${keys.length}`,
         `Missing rows: ${missing.join(", ") || "none"}`,
-        `DRAFT keys (client would get placeholder text): ${drafts.join(", ") || "none"}`,
+        `DRAFT keys (blocked by hard guard; rewrite before live send): ${drafts.join(", ") || "none"}`,
         `Template table: ${JSON.stringify(tplStats)}`,
         `Canonical orphans (no emit site found): ${orphans.join(", ") || "none"}`,
         `Hand-calcs: closer $${hand.closerFront} / back $${hand.closerBack} / fee $${hand.successFee} / hourly $${hand.advisorHourly}`

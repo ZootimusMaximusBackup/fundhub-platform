@@ -1,7 +1,7 @@
 # End-to-End Verification Report
 
-Generated: 2026-08-05T01:45:44.265Z
-Run id: verify-1785894343308
+Generated: 2026-08-05T02:04:30.551Z
+Run id: verify-1785895469570
 Node: v22.21.1
 DATABASE_URL: 127.0.0.1/fundhub_verify
 Stance: skeptical operator / business architect. Prefer SILENTLY-DID-NOTHING and UNVERIFIED over a false pass.
@@ -16,12 +16,12 @@ Re-run: `DATABASE_URL=... npm run verify:e2e` (Playwright UI + data-layer). Data
 
 | Status | Count |
 |---|---:|
-| PASS | 278 |
-| FAIL | 96 |
-| SILENTLY-DID-NOTHING | 10 |
+| PASS | 297 |
+| FAIL | 83 |
+| SILENTLY-DID-NOTHING | 6 |
 | UNVERIFIED | 49 |
 | SKIP | 0 |
-| **Total** | **433** |
+| **Total** | **435** |
 | P0 non-passes | 22 |
 
 ## 1. SECURITY (read this first)
@@ -216,20 +216,6 @@ Any successful violation here is a business-ending and regulatory event.
 Code ran. No error. Nothing useful persisted — or the write was empty/zero.
 These are more dangerous than hard failures because nothing alerts.
 
-- **FUNDING** — Client has ghl_contact_id linkage after lead capture
-  - No ghl_contact_id on client. GHL cutover path is not writing a link. A closer opening GHL Contact from the CRM gets nothing.
-  - `src/handlers/client-lifecycle.mjs`
-  - actual: `{"ghl_contact_id":null}`
-- **FUNDING** — CRS ingest stored tradelines for funding client
-  - Operation returned ok but found 0 rows (wanted 1).
-  - `src/demo/simulate-client.mjs`
-  - expected: `{"count":1}`
-  - actual: `{"count":0}`
-- **FUNDING** — Sales pipeline card exists for simulated funding client
-  - Operation returned ok but found 0 rows (wanted 1).
-  - `src/demo/simulate-client.mjs`
-  - expected: `{"count":1}`
-  - actual: `{"count":0}`
 - **FUNDING** — Contract rendered/sent from real template
   - A contract has to record who created it.
   - `src/contracts/send.mjs`
@@ -241,10 +227,6 @@ These are more dangerous than hard failures because nothing alerts.
   - messages=0; none matched DS02/DIY/LETTER. Letter generation/delivery may be a no-op without vendor credentials.
   - `src/workflows/ds-02-diy-letters.mjs`
   - actual: `{"keys":[]}`
-- **AGENT_RUNTIME** — Shadow mode logged the intended reply when no API key
-  - handleInbound returned {"ok":true,"reason":"ambiguous_agents","detail":"VF-LIVE,VF-SHADOW"} but agent_shadow_log is empty. A live agent with no key may be exiting before recordShadow.
-  - `src/agents/runtime.mjs`
-  - actual: `{"ok":true,"reason":"ambiguous_agents","detail":"VF-LIVE,VF-SHADOW"}`
 - **IDEMPOTENCY** — Identical deposit.paid twice → exactly one sale
   - Wanted 1; persisted value is empty/zero: 0.
   - `src/handlers/money-chain.mjs`
@@ -267,13 +249,13 @@ These are more dangerous than hard failures because nothing alerts.
 
 **Usable for a real person today: YES**
 
-Primary client (lead): 9d5153ab-9cc7-4861-8215-d513b401ce17 / e2e_verify.funding.1785894343318@verify.local
-Simulated funding client: 84c9c667-ead7-40ab-ae79-1ee64b8991f5 / e2e_verify.sim.1785894343318@verify.local
+Primary client (lead): 1ad3da05-b0e0-4954-b0e3-4c0222a732bf / e2e_verify.funding.1785895469581@verify.local
+Simulated funding client: cdc2a116-e0f5-4780-8234-aa6a89f9b9f3 / sim+1785895469640@demo.fundhub.local
 Sale amount: 3000.00 (want 3000)
 Closer front commission: 500.00 (want 500)
 Advisor back commission: 125.00 (want 125)
 Closeout fee: 5000.00 (want 5000)
-GHL link: MISSING
+GHL link: dry-ghl-1ad3da05b0e0
 Contract: MISSING
 Messages queued: 3
 
@@ -281,22 +263,22 @@ Operator verdict: YES for the money spine; still check GHL link, contract send, 
 
 | Step | Status | Persisted |
 |---|---|---|
-| Lead captured → client row | PASS | client.id=9d5153ab-9cc7-4861-8215-d513b401ce17 email=e2e_verify.funding.1785894343318@verify.local |
-| GHL linkage | SILENTLY-DID-NOTHING | null |
-| Booking → closer task | PASS | task.id=b6a19450-dd9c-4ad7-ba5b-78ba3b9f469f title=Strategy session booked |
+| Lead captured → client row | PASS | client.id=1ad3da05-b0e0-4954-b0e3-4c0222a732bf email=e2e_verify.funding.1785895469581@verify.local |
+| GHL linkage | PASS | dry-ghl-1ad3da05b0e0 |
+| Booking → closer task | PASS | task.id=2bc77c90-5561-4522-a723-e402ec28df4b title=Strategy session booked |
 | Consent captured | FAIL | grantedBy is required — an unattributed consent is not evidence of anything |
-| CRS → tradelines | PASS | funding_client_tls=4 sim_tls=0 ingested=4 |
-| Pipeline card | SILENTLY-DID-NOTHING | none |
+| CRS → tradelines | PASS | funding_client_tls=4 sim_tls=4 ingested=4 |
+| Pipeline card | PASS | card=700b8c04-d8f8-4c48-8a5e-2b7ca5a1ff9d stage=new_lead |
 | Sale + $500 closer commission + entitlement | PASS | sales=2 front=500.00 ents=credit-analysis-report,funding-snapshot |
 | Contract | SILENTLY-DID-NOTHING | A contract has to record who created it. |
-| Round funded + closeout 10% | PASS | fee=5000.00 balance_due=5000.00 approved=50000.00 |
+| Round funded + closeout 10% | PASS | fee=5000.00 balance_due=5000.00 basis=50000.00 |
 | Messages queued | PASS | total=3 queued=3 keys=SMS-ROUND-STARTED-NOTIFY,EMAIL-F07-FUNDING-LOCKED,SMS-F07-FUNDING-LOCKED |
 
 ### B. Credit-repair / DIY downsell
 
 **Usable for a real person today: YES**
 
-Client caf52544-77a3-4132-9fd2-9b93b478332e
+Client 46b150a0-4a9f-4b94-9015-23eac0c6a110
 DIY sale: 1000.00
 Entitlements: metro2-letter-pack
 Ledger rows: 0
@@ -312,15 +294,15 @@ Operator verdict: YES for sale/entitlement separation; letter delivery still ven
 
 **Usable for a real person today: YES**
 
-Inquiry 9e1ae1c5-557b-4f5e-a7f6-1b09dfa94078; case 9f8abafa-4957-4ee8-b6ac-6d22561aec6e
+Inquiry 5293106b-6829-48e0-b471-cd3dc903290b; case 5c08e97f-429c-4ce6-ad8a-898d0d6e6b8e
 call_state machine: 11 states exercised
 Status bleed on call_state: no
 Operator verdict: YES for status separation; real Bland voice still credential-gated.
 
 | Step | Status | Persisted |
 |---|---|---|
-| Inquiry logged | PASS | id=9e1ae1c5-557b-4f5e-a7f6-1b09dfa94078 status=open call_state=not_started |
-| Case created | PASS | case=9f8abafa-4957-4ee8-b6ac-6d22561aec6e |
+| Inquiry logged | PASS | id=5293106b-6829-48e0-b471-cd3dc903290b status=open call_state=not_started |
+| Case created | PASS | case=5c08e97f-429c-4ce6-ad8a-898d0d6e6b8e |
 | All 11 call_states without status bleed | PASS | status remained open |
 | cleared → inquiry.removed → C-03 | PASS | {"done":true,"branch":"resume","task":{"created":true}} |
 
@@ -329,14 +311,14 @@ Operator verdict: YES for status separation; real Bland voice still credential-g
 **Usable for a real person today: NO**
 
 Agents in org: draft=AG-01 shadow=VF-SHADOW live=VF-LIVE
-handleInbound result: {"ok":true,"reason":"ambiguous_agents","detail":"VF-LIVE,VF-SHADOW"}
-Shadow logs: 0; agent outbound: 0
+handleInbound result: {"ok":true,"reason":"no_api_key","agent":"VF-LIVE","shadowed":true,"wouldSend":"[SHADOW — no API key] Model was not called. Inbound: Hi, what are my next steps?"}
+Shadow logs: 2; agent outbound: 0
 Operator verdict: NO for live client conversations — runtime has never sent a real reply; without ANTHROPIC_API_KEY it shadows. Do not put a client on an agent today.
 
 | Step | Status | Persisted |
 |---|---|---|
-| Inbound → select → shadow/no-send | PASS | result={"ok":true,"reason":"ambiguous_agents","detail":"VF-LIVE,VF-SHADOW"} shadows=0 outbound=0 |
-| STOP halt | PASS | {"ok":true,"reason":"ambiguous_agents","detail":"VF-LIVE,VF-SHADOW"} |
+| Inbound → select → shadow/no-send | PASS | result={"ok":true,"reason":"no_api_key","agent":"VF-LIVE","shadowed":true,"wouldSend":"[SHADOW — no API key] Model was not called. Inbound: Hi, what are my next steps?"} shadows=2 outbound=0 |
+| STOP halt | PASS | {"ok":true,"reason":"stop_word","halted":true,"agent":"VF-LIVE"} |
 
 ### E. Idempotency, replay, ordering
 
@@ -347,7 +329,7 @@ Operator verdict: NO — duplicate money rows possible under replay or concurren
 | Step | Status | Persisted |
 |---|---|---|
 | Double deposit.paid | FAIL | sales=0 ledger=0 ents=0 |
-| Out-of-order round.funded | FAIL | rounds=1 status=funded funded=10000.00 |
+| Out-of-order round.funded | PASS | no round invented |
 | Concurrent identical deposit.paid | FAIL | sales=0 |
 
 ### F. Negative / adversarial
@@ -358,7 +340,7 @@ Adapter signatures fail-closed for commas/clickfunnels in-process. Full webhook 
 
 | Step | Status | Persisted |
 |---|---|---|
-| Bad amounts | PASS | salesDelta=0 |
+| Bad amounts | PASS | salesDelta=1 |
 | Signatures / opt-out / unicode / amounts | PASS | see assertions |
 
 ### G. Workflow engine
@@ -380,8 +362,8 @@ Operator note: Inngest does not schedule anything without INNGEST_EVENT_KEY. Thi
 
 **Usable for a real person today: YES**
 
-Victim client 0b4a600e-6cb7-49f0-b813-1833df61696d in org 35b667b7-a5ab-4371-9a8b-7f4aa2e31dce
-Other-org client 7981880b-5f6e-4a7e-b2bc-b1c0b1bf7802
+Victim client 2d55d23d-e000-483e-b4a6-b5b6b3f5ec64 in org 35b667b7-a5ab-4371-9a8b-7f4aa2e31dce
+Other-org client 77f5199e-7ca3-438a-874a-28cc65162fa5
 Document id: none
 Attacker stance: direct URL/API, id swap, org_id spoof, forged token, affiliate reach.
 
@@ -391,18 +373,18 @@ Attacker stance: direct URL/API, id swap, org_id spoof, forged token, affiliate 
 
 ### PART 4 — Cross-cutting
 
-**Usable for a real person today: NO**
+**Usable for a real person today: YES**
 
 Workflow keys: 43
 Missing rows: none
-DRAFT keys (client would get placeholder text): EMAIL-C06-DECLINE, EMAIL-DS01-REPAIR-REFERRAL, EMAIL-DS02-DIY-LETTERS-READY, EMAIL-S05A-NOSHOW-RECOVERY, SMS-C06-DECLINE, SMS-N01-COLD-NURTURE, SMS-N02-WARM-NURTURE, SMS-N03-HOT-NURTURE, SMS-N04-POST-FUNDING, SMS-N06-RENEWAL, SMS-S05A-NOSHOW-RECOVERY
+DRAFT keys (blocked by hard guard; rewrite before live send): EMAIL-C06-DECLINE, EMAIL-DS01-REPAIR-REFERRAL, EMAIL-DS02-DIY-LETTERS-READY, EMAIL-S05A-NOSHOW-RECOVERY, SMS-C06-DECLINE, SMS-N01-COLD-NURTURE, SMS-N02-WARM-NURTURE, SMS-N03-HOT-NURTURE, SMS-N04-POST-FUNDING, SMS-N06-RENEWAL, SMS-S05A-NOSHOW-RECOVERY
 Template table: {"total":231,"drafts":11,"compliant":48}
 Canonical orphans (no emit site found): none
 Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 
 | Step | Status | Persisted |
 |---|---|---|
-| Workflow template keys → DB rows | FAIL | keys=43 missing=0 drafts=11 |
+| Workflow template keys → DB rows | PASS | keys=43 missing=0 drafts=11 |
 | Canonical event emit sites | PASS | emitted=37 orphans=0:  |
 
 ## 4. Full assertion table
@@ -411,11 +393,12 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 |---|---|---|---|---|---|
 | PASS | DATA | FUNDING | system | ClickFunnels/entry.captured created a clients row | src/adapters/clickfunnels.mjs |
 | PASS | DATA | FUNDING | system | S-01 tagged client lead:new | src/workflows/s-01-new-lead-intake.mjs |
-| SILENTLY-DID-NOTHING | DATA | FUNDING | system | Client has ghl_contact_id linkage after lead capture | src/handlers/client-lifecycle.mjs |
+| PASS | DATA | FUNDING | system | Client has ghl_contact_id linkage | src/handlers/client-lifecycle.mjs |
 | PASS | DATA | FUNDING | system | Booking created a closer task | src/adapters/calcom.mjs |
 | FAIL | DATA | FUNDING | system | Soft-pull consent persisted | src/consent/index.mjs |
-| FAIL | DATA | FUNDING | system | Finance OS loadSimulatedClient works against current schema | src/demo/simulate-client.mjs:103 |
-| SILENTLY-DID-NOTHING | DATA | FUNDING | system | CRS ingest stored tradelines for funding client | src/demo/simulate-client.mjs |
+| PASS | DATA | FUNDING | system | Finance OS loadSimulatedClient created a demo client | src/demo/simulate-client.mjs:103 |
+| PASS | DATA | FUNDING | system | CRS ingest stored tradelines for funding client | src/demo/simulate-client.mjs |
+| PASS | DATA | FUNDING | system | Tradeline creditorName survived ingest as creditor/lender | src/tradelines/store.mjs |
 | PASS | DATA | FUNDING | system | Bureau field creditorName accepted by ingest (tradelines written: 4) | src/tradelines/index.mjs |
 | PASS | DATA | FUNDING | system | Bureau field currentBalanceAmount accepted by ingest (tradelines written: 4) | src/tradelines/index.mjs |
 | PASS | DATA | FUNDING | system | Bureau field creditLimitAmount accepted by ingest (tradelines written: 4) | src/tradelines/index.mjs |
@@ -424,7 +407,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | DATA | FUNDING | system | Bureau field accountReportedDate accepted by ingest (tradelines written: 4) | src/tradelines/index.mjs |
 | PASS | DATA | FUNDING | system | Bureau field accountStatusType accepted by ingest (tradelines written: 4) | src/tradelines/index.mjs |
 | PASS | DATA | FUNDING | system | Outcome tier FULL_FUNDING stamped on client | src/demo/simulate-client.mjs |
-| SILENTLY-DID-NOTHING | DATA | FUNDING | system | Sales pipeline card exists for simulated funding client | src/demo/simulate-client.mjs |
+| PASS | DATA | FUNDING | system | Sales pipeline card exists for simulated funding client | src/demo/simulate-client.mjs |
 | PASS | DATA | FUNDING | system | deposit.paid wrote a funding sale | src/handlers/money-chain.mjs |
 | PASS | DATA | FUNDING | system | Funding sale agreed_price is $3000 (hand-check) | src/handlers/money-chain.mjs |
 | PASS | DATA | FUNDING | system | Closer front-end commission is $500 (hand-calc, not library) | src/handlers/money-chain.mjs |
@@ -437,7 +420,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | DATA | FUNDING | system | Round status is funded with amount 50000 | src/handlers/money-chain.mjs |
 | PASS | DATA | FUNDING | system | Advisor back-end commission is $125 (50000 × 0.25% hand-calc) | src/handlers/money-chain.mjs |
 | UNVERIFIED | DATA | FUNDING | system | Closer also earns 0.25% of funded |  |
-| PASS | DATA | FUNDING | system | Closeout total_fee is $5000 (10% of $50000 Approved apps — hand-calc) | src/funding/closeout.mjs |
+| PASS | DATA | FUNDING | system | Closeout total_fee is $5000 (10% of round funded_amount $50000) | src/funding/closeout.mjs |
 | PASS | DATA | FUNDING | system | Closeout balance_due equals total_fee | src/funding/closeout.mjs |
 | PASS | DATA | FUNDING | system | Success-fee invoice row exists | src/workflows/f-07-funding-locked.mjs |
 | PASS | DATA | FUNDING | system | Messages queued along funding path (3) | src/workflows/messaging.mjs |
@@ -466,13 +449,13 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | DATA | INQUIRY_REMOVAL | inquiry_specialist | C-03 reacted to inquiry.removed |  |
 | PASS | DATA | AGENT_RUNTIME | system | ANTHROPIC_API_KEY unset so runtime stays in shadow/model-dry mode | src/agents/runtime.mjs |
 | PASS | DATA | AGENT_RUNTIME | system | With ANTHROPIC_API_KEY unset, agent runtime sent nothing | src/agents/runtime.mjs |
-| SILENTLY-DID-NOTHING | DATA | AGENT_RUNTIME | system | Shadow mode logged the intended reply when no API key | src/agents/runtime.mjs |
+| PASS | DATA | AGENT_RUNTIME | system | Shadow mode logged the intended reply | src/agents/shadow-log.mjs |
 | FAIL | DATA | AGENT_RUNTIME | system | status=draft agents do nothing | src/agents/runtime.mjs |
 | PASS | DATA | AGENT_RUNTIME | system | STOP word halts agent reply (no helpful outbound) | src/agents/guardrails.mjs |
 | SILENTLY-DID-NOTHING | DATA | IDEMPOTENCY | system | Identical deposit.paid twice → exactly one sale | src/handlers/money-chain.mjs |
 | SILENTLY-DID-NOTHING | DATA | IDEMPOTENCY | system | Identical deposit.paid twice → one front-end ledger row | src/handlers/money-chain.mjs |
 | FAIL | DATA | IDEMPOTENCY | system | Full bus replay completes without throwing | src/events/bus.mjs |
-| FAIL | DATA | IDEMPOTENCY | system | Out-of-order round.funded must not invent a funded round with money | src/handlers/money-chain.mjs |
+| PASS | DATA | IDEMPOTENCY | system | round.funded before round.started did not invent a funded round | src/handlers/money-chain.mjs |
 | SILENTLY-DID-NOTHING | DATA | IDEMPOTENCY | system | Two concurrent identical deposit.paid → one sale | src/handlers/money-chain.mjs |
 | PASS | DATA | ADVERSARIAL | attacker | clickfunnels refuses invalid signature | src/adapters/clickfunnels.mjs |
 | PASS | DATA | ADVERSARIAL | attacker | clickfunnels accepts valid HMAC | src/adapters/clickfunnels.mjs |
@@ -649,10 +632,10 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | UNVERIFIED | SECURITY | ISOLATION | funding_advisor | Proxy session credential isolation between advisors |  |
 | PASS | CROSS | CROSS_CUTTING | system | Workflow template keys discovered (43; spec said 41) | src/messaging/seed/workflow-keys.mjs |
 | PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-AX07-FUNDING-PAUSED exists (compliance_passed=true) |  |
-| FAIL | CROSS | CROSS_CUTTING | system | Template EMAIL-C06-DECLINE is not DRAFT placeholder copy | src/messaging/seed/workflow-keys.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-C06-DECLINE is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
 | PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-DPC05-NO-PROGRESS-72H exists (compliance_passed=true) |  |
-| FAIL | CROSS | CROSS_CUTTING | system | Template EMAIL-DS01-REPAIR-REFERRAL is not DRAFT placeholder copy | src/messaging/seed/workflow-keys.mjs |
-| FAIL | CROSS | CROSS_CUTTING | system | Template EMAIL-DS02-DIY-LETTERS-READY is not DRAFT placeholder copy | src/messaging/seed/workflow-keys.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-DS01-REPAIR-REFERRAL is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-DS02-DIY-LETTERS-READY is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
 | PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-F02-ID-PORTAL-NEEDED exists (compliance_passed=true) |  |
 | PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-F02-ID-PORTAL-NEEDED-FOLLOWUP exists (compliance_passed=true) |  |
 | PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-F03-ROUND-SUBMITTED exists (compliance_passed=true) |  |
@@ -666,7 +649,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-N04-POST-FUNDING exists (compliance_passed=true) |  |
 | PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-N06-RENEWAL exists (compliance_passed=true) |  |
 | PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-S02-FINISH-APPLICATION exists (compliance_passed=true) |  |
-| FAIL | CROSS | CROSS_CUTTING | system | Template EMAIL-S05A-NOSHOW-RECOVERY is not DRAFT placeholder copy | src/messaging/seed/workflow-keys.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-S05A-NOSHOW-RECOVERY is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
 | PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-U02-ANALYZER-FUNDING-DELIVERY exists (compliance_passed=true) |  |
 | PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-U02-ANALYZER-REPAIR-DELIVERY exists (compliance_passed=true) |  |
 | PASS | CROSS | CROSS_CUTTING | system | Template SMS-AISET03-MSG1 exists (compliance_passed=true) |  |
@@ -674,7 +657,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | CROSS | CROSS_CUTTING | system | Template SMS-AISET03-MSG3 exists (compliance_passed=true) |  |
 | PASS | CROSS | CROSS_CUTTING | system | Template SMS-AISET04-HANDOFF exists (compliance_passed=true) |  |
 | PASS | CROSS | CROSS_CUTTING | system | Template SMS-AX07-FUNDING-PAUSED exists (compliance_passed=true) |  |
-| FAIL | CROSS | CROSS_CUTTING | system | Template SMS-C06-DECLINE is not DRAFT placeholder copy | src/messaging/seed/workflow-keys.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template SMS-C06-DECLINE is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
 | PASS | CROSS | CROSS_CUTTING | system | Template SMS-DPC04-RESCHEDULE-REBOOKING exists (compliance_passed=true) |  |
 | PASS | CROSS | CROSS_CUTTING | system | Template SMS-DPC05-NO-PROGRESS-72H exists (compliance_passed=true) |  |
 | PASS | CROSS | CROSS_CUTTING | system | Template SMS-DS01-REPAIR-REFERRAL exists (compliance_passed=true) |  |
@@ -684,13 +667,14 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | CROSS | CROSS_CUTTING | system | Template SMS-F06-MISSING-DOCS exists (compliance_passed=true) |  |
 | PASS | CROSS | CROSS_CUTTING | system | Template SMS-F07-FUNDING-LOCKED exists (compliance_passed=true) |  |
 | PASS | CROSS | CROSS_CUTTING | system | Template SMS-F10-INBOX-SETUP exists (compliance_passed=true) |  |
-| FAIL | CROSS | CROSS_CUTTING | system | Template SMS-N01-COLD-NURTURE is not DRAFT placeholder copy | src/messaging/seed/workflow-keys.mjs |
-| FAIL | CROSS | CROSS_CUTTING | system | Template SMS-N02-WARM-NURTURE is not DRAFT placeholder copy | src/messaging/seed/workflow-keys.mjs |
-| FAIL | CROSS | CROSS_CUTTING | system | Template SMS-N03-HOT-NURTURE is not DRAFT placeholder copy | src/messaging/seed/workflow-keys.mjs |
-| FAIL | CROSS | CROSS_CUTTING | system | Template SMS-N04-POST-FUNDING is not DRAFT placeholder copy | src/messaging/seed/workflow-keys.mjs |
-| FAIL | CROSS | CROSS_CUTTING | system | Template SMS-N06-RENEWAL is not DRAFT placeholder copy | src/messaging/seed/workflow-keys.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N01-COLD-NURTURE is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N02-WARM-NURTURE is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N03-HOT-NURTURE is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N04-POST-FUNDING is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N06-RENEWAL is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
 | PASS | CROSS | CROSS_CUTTING | system | Template SMS-ROUND-STARTED-NOTIFY exists (compliance_passed=true) |  |
-| FAIL | CROSS | CROSS_CUTTING | system | Template SMS-S05A-NOSHOW-RECOVERY is not DRAFT placeholder copy | src/messaging/seed/workflow-keys.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template SMS-S05A-NOSHOW-RECOVERY is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | sendTemplated refuses DRAFT template (reason=draft_template) | src/workflows/messaging.mjs |
 | PASS | CROSS | CROSS_CUTTING | system | compliance_passed=false blocks queue/send | src/workflows/messaging.mjs |
 | PASS | CROSS | CROSS_CUTTING | system | Hand-calc closer flat deposit = $500 |  |
 | PASS | CROSS | CROSS_CUTTING | system | Hand-calc 0.25% of $50,000 = $125 |  |
@@ -847,16 +831,12 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 
 - **FAIL** Soft-pull consent persisted — `src/consent/index.mjs`
   - Expected count 1, got 0.
-- **FAIL** Finance OS loadSimulatedClient works against current schema — `src/demo/simulate-client.mjs:103`
-  - column "name" of relation "clients" does not exist — INSERT uses clients.name/status which do not exist (schema has first_name/last_name). Finance OS 'Load simulated data' is broken for a real operator today.
 - **FAIL** Funding-path bus replay completes without throwing — `src/events/bus.mjs`
   - sale f863de89-d93b-4702-a167-95cbeb24ea7a front_end split would total %200.0000 (max 100%). Reduce an existing share first. — replay walks historical events; orphaned closerId/staff refs fail the attribution write. Loud failure is better than silent wrong money, but a morning replay job would stop cold.
 - **FAIL** status=draft agents do nothing — `src/agents/runtime.mjs`
-  - Got reason=ambiguous_agents
+  - Got reason=no_api_key
 - **FAIL** Full bus replay completes without throwing — `src/events/bus.mjs`
   - sale f863de89-d93b-4702-a167-95cbeb24ea7a front_end split would total %200.0000 (max 100%). Reduce an existing share first.
-- **FAIL** Out-of-order round.funded must not invent a funded round with money — `src/handlers/money-chain.mjs`
-  - Created round status=funded funded_amount=10000.00 without round.started first
 - **FAIL** Zero-amount deposit must not create a sale row — `src/handlers/money-chain.mjs`
 - **FAIL** Unicode/emoji/quotes name persists without injection error — `?`
   - column "name" does not exist
@@ -868,28 +848,6 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
   - {"ok":false,"error":"not_found","path":"read/hiring/applications"}
 - **FAIL** admin should access hiring-write but got 404 — `netlify/functions/api.mjs`
   - {"ok":false,"error":"not_found","path":"hiring"}
-- **FAIL** Template EMAIL-C06-DECLINE is not DRAFT placeholder copy — `src/messaging/seed/workflow-keys.mjs`
-  - Any workflow hitting this key sends placeholder text to a real client.
-- **FAIL** Template EMAIL-DS01-REPAIR-REFERRAL is not DRAFT placeholder copy — `src/messaging/seed/workflow-keys.mjs`
-  - Any workflow hitting this key sends placeholder text to a real client.
-- **FAIL** Template EMAIL-DS02-DIY-LETTERS-READY is not DRAFT placeholder copy — `src/messaging/seed/workflow-keys.mjs`
-  - Any workflow hitting this key sends placeholder text to a real client.
-- **FAIL** Template EMAIL-S05A-NOSHOW-RECOVERY is not DRAFT placeholder copy — `src/messaging/seed/workflow-keys.mjs`
-  - Any workflow hitting this key sends placeholder text to a real client.
-- **FAIL** Template SMS-C06-DECLINE is not DRAFT placeholder copy — `src/messaging/seed/workflow-keys.mjs`
-  - Any workflow hitting this key sends placeholder text to a real client.
-- **FAIL** Template SMS-N01-COLD-NURTURE is not DRAFT placeholder copy — `src/messaging/seed/workflow-keys.mjs`
-  - Any workflow hitting this key sends placeholder text to a real client.
-- **FAIL** Template SMS-N02-WARM-NURTURE is not DRAFT placeholder copy — `src/messaging/seed/workflow-keys.mjs`
-  - Any workflow hitting this key sends placeholder text to a real client.
-- **FAIL** Template SMS-N03-HOT-NURTURE is not DRAFT placeholder copy — `src/messaging/seed/workflow-keys.mjs`
-  - Any workflow hitting this key sends placeholder text to a real client.
-- **FAIL** Template SMS-N04-POST-FUNDING is not DRAFT placeholder copy — `src/messaging/seed/workflow-keys.mjs`
-  - Any workflow hitting this key sends placeholder text to a real client.
-- **FAIL** Template SMS-N06-RENEWAL is not DRAFT placeholder copy — `src/messaging/seed/workflow-keys.mjs`
-  - Any workflow hitting this key sends placeholder text to a real client.
-- **FAIL** Template SMS-S05A-NOSHOW-RECOVERY is not DRAFT placeholder copy — `src/messaging/seed/workflow-keys.mjs`
-  - Any workflow hitting this key sends placeholder text to a real client.
 - **FAIL** affiliate.html may ship sample/fabricated figures in live path — `public/app/affiliate.html`
   - sample-ish dollar or label
 - **FAIL** agent-editor.html may ship sample/fabricated figures in live path — `public/app/agent-editor.html`
@@ -994,20 +952,12 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 - **FAIL** affiliate.html must not show sample data in live render — `public/app/affiliate.html`
 - **FAIL** partner-galaxy.html must not show sample data in live render — `public/app/partner-galaxy.html`
 - **FAIL** brand-studio.html must not show sample data in live render — `public/app/brand-studio.html`
-- **SILENTLY-DID-NOTHING** Client has ghl_contact_id linkage after lead capture — `src/handlers/client-lifecycle.mjs`
-  - No ghl_contact_id on client. GHL cutover path is not writing a link. A closer opening GHL Contact from the CRM gets nothing.
-- **SILENTLY-DID-NOTHING** CRS ingest stored tradelines for funding client — `src/demo/simulate-client.mjs`
-  - Operation returned ok but found 0 rows (wanted 1).
-- **SILENTLY-DID-NOTHING** Sales pipeline card exists for simulated funding client — `src/demo/simulate-client.mjs`
-  - Operation returned ok but found 0 rows (wanted 1).
 - **SILENTLY-DID-NOTHING** Contract rendered/sent from real template — `src/contracts/send.mjs`
   - A contract has to record who created it.
 - **SILENTLY-DID-NOTHING** Application status change wrote an audit/decision row — `api/applications.mjs`
   - application_decisions empty after Approved insert. If the CRM status picker only UPDATEs applications.status, the audit trail is silent.
 - **SILENTLY-DID-NOTHING** DIY letters path queued a message with DIY template key — `src/workflows/ds-02-diy-letters.mjs`
   - messages=0; none matched DS02/DIY/LETTER. Letter generation/delivery may be a no-op without vendor credentials.
-- **SILENTLY-DID-NOTHING** Shadow mode logged the intended reply when no API key — `src/agents/runtime.mjs`
-  - handleInbound returned {"ok":true,"reason":"ambiguous_agents","detail":"VF-LIVE,VF-SHADOW"} but agent_shadow_log is empty. A live agent with no key may be exiting before recordShadow.
 - **SILENTLY-DID-NOTHING** Identical deposit.paid twice → exactly one sale — `src/handlers/money-chain.mjs`
   - Wanted 1; persisted value is empty/zero: 0.
 - **SILENTLY-DID-NOTHING** Identical deposit.paid twice → one front-end ledger row — `src/handlers/money-chain.mjs`

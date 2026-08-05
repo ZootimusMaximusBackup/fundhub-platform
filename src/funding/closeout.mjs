@@ -1,5 +1,12 @@
 /* Funding closeout — records the 10% success fee when a round is finalized.
-   Hooked from round.funded (money-chain). Idempotent per funding_round_id. */
+   Hooked from round.funded (money-chain). Idempotent per funding_round_id.
+
+   OWNER DECISION (2026-08-04, operational fix from END-TO-END-VERIFICATION):
+   The fee basis is funding_rounds.funded_amount — what the client actually
+   received / is billed 10% of. Approved application rows are a lender
+   breakdown only. Computing the fee from Approved apps alone meant a funded
+   round with no per-lender Approved rows silently billed $0.
+*/
 
 const DEFAULT_FEE_PERCENT = 0.10;
 
@@ -9,7 +16,11 @@ function money(n) {
 }
 
 /**
- * Create or refresh a closeout for a funded round from its Approved applications.
+ * Create or refresh a closeout for a funded round.
+ *
+ * Fee = feePercent × funding_rounds.funded_amount.
+ * Approved applications are recorded as line items when present; they do not
+ * gate or replace the fee.
  *
  * @param {import("pg").Pool|object} db
  * @param {{ orgId: string, fundingRoundId: string, feePercent?: number }} opts
@@ -29,6 +40,33 @@ export async function createFundingCloseout(db, {
   const pct = Number(feePercent);
   const feePct = Number.isFinite(pct) && pct >= 0 && pct <= 1 ? pct : DEFAULT_FEE_PERCENT;
 
+  const roundRes = await db.query(
+    `SELECT id, funded_amount, approved_amount, status
+       FROM funding_rounds
+      WHERE org_id = $1::uuid AND id = $2::uuid
+      LIMIT 1`,
+    [orgId, fundingRoundId]
+  );
+  const round = roundRes.rows[0];
+  if (!round) {
+    const err = new Error("funding round not found");
+    err.code = "closeout_no_round";
+    throw err;
+  }
+
+  // Fee basis = funded amount on the round. Fall back only if funded is null
+  // and approved_amount on the round itself is set (not application rows).
+  const feeBasis = money(
+    round.funded_amount != null && Number(round.funded_amount) > 0
+      ? round.funded_amount
+      : round.approved_amount
+  );
+  const totalFee = money(feeBasis * feePct);
+  const balanceDue = totalFee;
+  // Column name is historical ("total_approved_amount"); value is the fee basis
+  // (funded amount). Do not rename without a migration — screens already read it.
+  const totalApproved = feeBasis;
+
   const apps = await db.query(
     `SELECT id, approved_amount, lender_name, bank, status
        FROM applications
@@ -39,12 +77,6 @@ export async function createFundingCloseout(db, {
       ORDER BY created_at ASC`,
     [orgId, fundingRoundId]
   );
-
-  let totalApproved = 0;
-  for (const a of apps.rows) totalApproved += money(a.approved_amount);
-  totalApproved = money(totalApproved);
-  const totalFee = money(totalApproved * feePct);
-  const balanceDue = totalFee;
 
   const existing = await db.query(
     `SELECT * FROM funding_closeout
@@ -85,10 +117,23 @@ export async function createFundingCloseout(db, {
     created = true;
   }
 
+  // Lender breakdown for audit. Item fees are proportional shares of totalFee
+  // when apps exist; they must sum to totalFee (not re-derive from app × pct).
   const items = [];
-  for (const a of apps.rows) {
+  const appSum = apps.rows.reduce((s, a) => s + money(a.approved_amount), 0);
+  let allocated = 0;
+  for (let i = 0; i < apps.rows.length; i++) {
+    const a = apps.rows[i];
     const approved = money(a.approved_amount);
-    const fee = money(approved * feePct);
+    let fee;
+    if (i === apps.rows.length - 1) {
+      fee = money(totalFee - allocated);
+    } else if (appSum > 0 && totalFee > 0) {
+      fee = money((approved / appSum) * totalFee);
+      allocated = money(allocated + fee);
+    } else {
+      fee = 0;
+    }
     const item = await db.query(
       `INSERT INTO funding_closeout_items (
          org_id, funding_closeout_id, application_id,
@@ -107,7 +152,7 @@ export async function createFundingCloseout(db, {
     items.push(item.rows[0]);
   }
 
-  return { closeout, items, created };
+  return { closeout, items, created, feeBasis };
 }
 
 /**

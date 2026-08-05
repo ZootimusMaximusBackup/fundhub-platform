@@ -1,11 +1,15 @@
 // Agent selection — which registry row owns this inbound message.
 //
-// Order (owner-set this session):
+// Order (owner-set; tiebreak added 2026-08-04 after ambiguous_agents left the
+// shadow log empty in verification):
 //   1. Skip if no client, or conversation is agent-halted.
 //   2. conversations.agent_code if set and the agent is eligible.
 //   3. Last outbound sender_agent_code on this conversation, if eligible.
-//   4. Exactly one channel-compatible live|shadow messaging agent.
-//      Zero or many → skip (ambiguous ownership must not invent a reply).
+//   4. Channel-compatible live|shadow messaging agents, with a deterministic
+//      tiebreak when more than one matches:
+//        live before shadow → sort_order ASC → created_at ASC → code ASC.
+//      Zero matches → skip. Many matches → pick the winner (never invent a
+//      second reply; never leave the operator with an empty shadow log).
 //
 // Eligible = status in (live, shadow), channel covers the inbound channel,
 // agent_class = client_facing, channel is messaging (sms|email|sms_email),
@@ -126,6 +130,9 @@ export async function selectAgent(db, {
   );
 
   const matched = candidates.filter((a) => isEligibleAgent(a, channel));
+  if (matched.length === 0) {
+    return { agent: null, reason: "no_eligible_agent", conversationId: convoId || null };
+  }
   if (matched.length === 1) {
     return {
       agent: matched[0],
@@ -133,12 +140,23 @@ export async function selectAgent(db, {
       conversationId: convoId || null
     };
   }
-  if (matched.length === 0) {
-    return { agent: null, reason: "no_eligible_agent", conversationId: convoId || null };
-  }
+
+  // Deterministic tiebreak — live wins over shadow, then stable ordering.
+  matched.sort((a, b) => {
+    const liveRank = (s) => (s === "live" ? 0 : 1);
+    const byStatus = liveRank(a.status) - liveRank(b.status);
+    if (byStatus) return byStatus;
+    const bySort = (Number(a.sort_order) || 100) - (Number(b.sort_order) || 100);
+    if (bySort) return bySort;
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    if (ta !== tb) return ta - tb;
+    return String(a.code || "").localeCompare(String(b.code || ""));
+  });
+
   return {
-    agent: null,
-    reason: "ambiguous_agents",
+    agent: matched[0],
+    reason: "tiebreak_channel_match",
     detail: matched.map((a) => a.code).join(","),
     conversationId: convoId || null
   };

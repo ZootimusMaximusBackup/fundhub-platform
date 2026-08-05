@@ -251,6 +251,15 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
         <div class="stat"><div class="eyebrow">TE-00 <span class="sep">/</span> TEXTS</div><div class="sv" id="kSms">—</div><div class="sd">sent as SMS</div></div>
         <div class="stat"><div class="eyebrow">TE-00 <span class="sep">/</span> EMAILS</div><div class="sv" id="kEmail">—</div><div class="sd">sent as email</div></div>
         <div class="stat"><div class="eyebrow">TE-00 <span class="sep">/</span> SWITCHED OFF</div><div class="sv" id="kOff">—</div><div class="sd">waiting on approval</div></div>
+        <div class="stat" style="border-color:var(--alert)"><div class="eyebrow">TE-00 <span class="sep">/</span> DRAFT HAZARD</div><div class="sv" id="kDraft" style="color:var(--alert)">—</div><div class="sd">placeholder copy — blocked from send</div></div>
+      </div>
+
+      <div class="card" id="draftBanner" style="display:none;margin-bottom:14px;border-color:var(--alert)">
+        <div class="card-hd"><span class="badge b-alert">DRAFT templates — will not send</span></div>
+        <div class="card-bd" style="font-size:12.5px;line-height:1.6;color:var(--gray)">
+          <p>These keys still have <span class="mono">[DRAFT]</span> placeholder bodies. The dispatcher refuses them even if someone marks them approved. Replace the copy before a live send can reach a client.</p>
+          <ul id="draftList" class="mono" style="margin-top:8px;font-size:11px;padding-left:18px"></ul>
+        </div>
       </div>
 
       <div class="card" id="explainCard">
@@ -464,14 +473,44 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 
   /* ── list ──────────────────────────────────────────────────────────────── */
 
+  function isDraftRow(r) {
+    var body = String(r.body || "");
+    var subject = String(r.subject || "");
+    return /\[DRAFT\b/i.test(body) || /\[DRAFT\b/i.test(subject);
+  }
+
   function renderList() {
     var groups = [
       { key: "sms", title: "Text messages" },
       { key: "email", title: "Emails" }
     ];
+    var drafts = rows.filter(isDraftRow);
+    $("kDraft").textContent = drafts.length;
+    if (drafts.length) {
+      $("draftBanner").style.display = "";
+      $("draftList").innerHTML = drafts.map(function (r) {
+        return "<li>" + esc(r.template_key) + " · " + esc(r.channel) + "</li>";
+      }).join("");
+    } else {
+      $("draftBanner").style.display = "none";
+      $("draftList").innerHTML = "";
+    }
+
     var html = "";
+    if (drafts.length) {
+      html += '<div class="agrp" style="color:var(--alert)">DRAFT — blocked from send · ' + drafts.length + "</div>";
+      drafts.forEach(function (r) {
+        html +=
+          '<div class="aitem' + (sel && sel.id === r.id ? " on" : "") + '" data-id="' + esc(r.id) + '">' +
+            '<span class="dot" style="background:var(--alert)"></span>' +
+            '<span class="an">' + esc(r.template_key) + "</span>" +
+            '<span class="ac" title="Placeholder copy — dispatch refuses this">DRAFT</span>' +
+            '<span class="ast">off</span>' +
+          "</div>";
+      });
+    }
     groups.forEach(function (g) {
-      var mine = rows.filter(function (r) { return r.channel === g.key; });
+      var mine = rows.filter(function (r) { return r.channel === g.key && !isDraftRow(r); });
       if (!mine.length) return;
       html += '<div class="agrp">' + esc(g.title) + " · " + mine.length + "</div>";
       mine.forEach(function (r) {

@@ -97,18 +97,23 @@ export async function loadSimulatedClient(db, { orgId, staffId = null } = {}) {
 
   const stamp = Date.now();
   const email = `${DEMO_EMAIL_PREFIX}${stamp}@${DEMO_EMAIL_DOMAIN}`;
-  const name = "Simulated Client";
+  const firstName = "Simulated";
+  const lastName = "Client";
+  const name = `${firstName} ${lastName}`;
   const phone = `+1555${String(stamp).slice(-7)}`;
 
+  // Schema (001 / 094): first_name, last_name, is_demo — never clients.name or
+  // clients.status. The Finance OS button used the wrong columns and silently
+  // failed for every operator click (verified 2026-08-04).
   const clientRes = await db.query(
     `INSERT INTO clients (
-       org_id, email, name, phone, status, channel_source, tags,
+       org_id, email, first_name, last_name, phone, channel_source, tags,
        consent_sms, is_demo
      ) VALUES (
-       $1, $2, $3, $4, 'active', 'simulated', ARRAY['is_demo','simulated'],
+       $1, $2, $3, $4, $5, 'simulated', ARRAY['is_demo','simulated'],
        true, true
      ) RETURNING *`,
-    [orgId, email, name, phone]
+    [orgId, email, firstName, lastName, phone]
   );
   const client = clientRes.rows[0];
 

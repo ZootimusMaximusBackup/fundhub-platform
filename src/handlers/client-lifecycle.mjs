@@ -14,7 +14,7 @@
 import { on } from "../events/registry.mjs";
 import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
-import { ensureGhlContactId } from "../messaging/ghl-contacts.mjs";
+import { ensureGhlContactId, config as ghlConfig } from "../messaging/ghl-contacts.mjs";
 
 // --- helpers ----------------------------------------------------------------
 
@@ -26,35 +26,92 @@ export function splitName(name) {
   return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
 }
 
-// True when the org's sms channel is routed to the GHL relay provider
-// (message_channel_routing, migration 110 — one row per org+channel). No row,
-// a disabled row, or any other provider all read as "not ghl_relay" here —
-// same fail-closed reading the dispatcher itself uses for that table.
-async function isGhlRelaySms(db, orgId) {
+/** Stamp a visible warning on the client when GHL linkage is missing. */
+async function markGhlMissing(db, clientId, reason) {
   try {
-    const r = await db.query(
-      `SELECT provider FROM message_channel_routing WHERE org_id = $1 AND channel = 'sms'`,
-      [orgId]
+    await db.query(
+      `UPDATE clients
+          SET custom_fields = COALESCE(custom_fields, '{}'::jsonb)
+            || jsonb_build_object(
+                 'ghl_link_missing', true,
+                 'ghl_link_missing_reason', $2::text,
+                 'ghl_link_missing_at', to_jsonb(now()::text)
+               )
+        WHERE id = $1`,
+      [clientId, String(reason || "unknown").slice(0, 200)]
     );
-    return r.rows[0]?.provider === "ghl_relay";
   } catch {
-    return false;
+    /* custom_fields must not block client creation */
   }
 }
 
-// Best-effort GHL contact sync for a just-created client. Only runs when the
-// org's sms channel is actually routed to ghl_relay — a client in an org still
-// on another sms provider (or none) has no reason to exist in GHL. NEVER
-// throws and NEVER blocks client creation: ensureGhlContactId already
-// swallows its own failures, and this is wrapped again because the routing
-// lookup above is not.
-async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, lastName }, opts) {
-  if (!email) return;
+/**
+ * Best-effort GHL contact sync for a just-created client.
+ *
+ * Decision (2026-08-04): never leave ghl_contact_id null silently.
+ *   1. When GHL_API_KEY is set — find-or-create regardless of sms routing
+ *      (relay may turn on later; the contact should already exist).
+ *   2. When ADAPTERS_DRY_RUN / MESSAGING_DRY_RUN — stamp a local placeholder
+ *      so verification and CRM screens are not blank.
+ *   3. Otherwise — console.warn + custom_fields.ghl_link_missing so an
+ *      operator can see the client cannot receive SMS via the relay.
+ *
+ * NEVER throws and NEVER blocks client creation.
+ */
+async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, lastName }, opts = {}) {
+  const env = opts.env || process.env;
+  if (!email && !phone) {
+    console.warn(
+      `[client-lifecycle] client ${clientId}: no email/phone — cannot link a GHL contact`
+    );
+    await markGhlMissing(db, clientId, "no_identifier");
+    return;
+  }
+
   try {
-    if (!(await isGhlRelaySms(db, orgId))) return;
-    await ensureGhlContactId(db, { id: clientId, email, phone, first_name: firstName, last_name: lastName }, opts);
-  } catch {
-    // Logged nothing sensitive on purpose — see ghl-contacts.mjs's own header.
+    const cfg = ghlConfig(env);
+    if (cfg.ok) {
+      const result = await ensureGhlContactId(
+        db,
+        { id: clientId, email, phone, first_name: firstName, last_name: lastName },
+        opts
+      );
+      if (result.ok) return;
+      console.warn(
+        `[client-lifecycle] client ${clientId}: GHL link failed (${result.reason}). ` +
+        `SMS via ghl_relay will not work until this is fixed.`
+      );
+      await markGhlMissing(db, clientId, result.reason);
+      return;
+    }
+
+    if (env.ADAPTERS_DRY_RUN === "1" || env.MESSAGING_DRY_RUN === "1") {
+      const placeholder = `dry-ghl-${String(clientId).replace(/-/g, "").slice(0, 12)}`;
+      await db.query(
+        `UPDATE clients
+            SET ghl_contact_id = COALESCE(ghl_contact_id, $1),
+                custom_fields = COALESCE(custom_fields, '{}'::jsonb)
+                  || jsonb_build_object('ghl_link_dry_run', true)
+          WHERE id = $2`,
+        [placeholder, clientId]
+      );
+      console.warn(
+        `[client-lifecycle] client ${clientId}: dry-run GHL placeholder ${placeholder} ` +
+        `(no GHL_API_KEY — replace before live SMS relay)`
+      );
+      return;
+    }
+
+    console.warn(
+      `[client-lifecycle] client ${clientId}: GHL_API_KEY unset — ghl_contact_id left null. ` +
+      `This client cannot receive SMS through the GHL relay.`
+    );
+    await markGhlMissing(db, clientId, "not_configured");
+  } catch (err) {
+    console.warn(
+      `[client-lifecycle] client ${clientId}: GHL sync threw (${String(err && err.message || err).slice(0, 120)})`
+    );
+    await markGhlMissing(db, clientId, "exception");
   }
 }
 
@@ -64,18 +121,48 @@ async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, la
 // `opts` ({ fetchImpl, env }) is the GHL contact-sync test seam — every real
 // call site omits it and gets globalThis.fetch / process.env, same default as
 // every provider in src/messaging/providers/.
+async function backfillGhlIfMissing(db, clientId, orgId, p, opts = {}) {
+  if (!clientId || !orgId) return clientId;
+  const { rows } = await db.query(
+    `SELECT id, ghl_contact_id, email, phone, first_name, last_name
+       FROM clients WHERE id = $1 AND org_id = $2 LIMIT 1`,
+    [clientId, orgId]
+  );
+  const row = rows[0];
+  if (!row) return clientId;
+  if (row.ghl_contact_id) return clientId;
+
+  const { firstName, lastName } = splitName(p?.name);
+  await syncGhlContact(db, {
+    clientId,
+    orgId,
+    email: row.email || (p?.email ? String(p.email).trim().toLowerCase() : null),
+    phone: row.phone || p?.phone || null,
+    firstName: row.first_name || firstName,
+    lastName: row.last_name || lastName
+  }, opts);
+  return clientId;
+}
+
 export async function resolveClient(db, event, opts = {}) {
   const orgId = event.orgId;
-  if (event.clientId) return event.clientId;
   const p = event.payload || {};
+  if (event.clientId) {
+    // Explicit id still needs a GHL link when missing — lead capture often
+    // creates the row first, then emits with clientId set.
+    return backfillGhlIfMissing(db, event.clientId, orgId, p, opts);
+  }
   const email = String(p.email || "").trim().toLowerCase();
   if (!orgId || !email) return null;
 
   const found = await db.query(
-    `SELECT id FROM clients WHERE org_id = $1 AND lower(email) = $2 LIMIT 1`,
+    `SELECT id, ghl_contact_id FROM clients WHERE org_id = $1 AND lower(email) = $2 LIMIT 1`,
     [orgId, email]
   );
-  if (found.rows[0]) return found.rows[0].id;
+  if (found.rows[0]) {
+    // Existing row with a null GHL id is the silent-null hazard — backfill.
+    return backfillGhlIfMissing(db, found.rows[0].id, orgId, p, opts);
+  }
 
   const { firstName, lastName } = splitName(p.name);
   const ins = await db.query(
@@ -91,12 +178,13 @@ export async function resolveClient(db, event, opts = {}) {
     return clientId;
   }
 
-  // Lost an insert race (or already existed) — re-select.
+  // Lost an insert race (or already existed) — re-select and backfill if needed.
   const re = await db.query(
     `SELECT id FROM clients WHERE org_id = $1 AND lower(email) = $2 LIMIT 1`,
     [orgId, email]
   );
-  return re.rows[0] ? re.rows[0].id : null;
+  if (!re.rows[0]) return null;
+  return backfillGhlIfMissing(db, re.rows[0].id, orgId, p, opts);
 }
 
 // Merge a partial object into clients.custom_fields (jsonb). No-op on empty.

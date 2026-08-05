@@ -147,10 +147,10 @@ export function pgFake(seed = {}) {
       }
 
       // --- message_templates + messages (sendTemplated) ---
-      if (/SELECT body, subject FROM message_templates/.test(sql)) {
+      if (/SELECT body,\s*subject(?:\s*,\s*compliance_passed)?[\s\S]*?FROM message_templates/.test(sql)) {
         const [orgId, key] = params;
-        const t = templates.find((t) => t.org_id === orgId && t.template_key === key && t.compliance_passed);
-        return { rows: t ? [{ body: t.body, subject: t.subject || null }] : [] };
+        const t = templates.find((t) => t.org_id === orgId && t.template_key === key);
+        return { rows: t ? [{ body: t.body, subject: t.subject || null, compliance_passed: !!t.compliance_passed }] : [] };
       }
       if (/INSERT INTO messages/.test(sql)) {
         const providerRef = params[5];
