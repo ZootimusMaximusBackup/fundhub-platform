@@ -19,15 +19,17 @@ const orgOf = (staff) => (staff && staff.org_id) || null;
 const run = readHandler({
   roles: ROLE_SETS.FINANCE,
   fetch: (db, { limit, offset, query, staff }) =>
-    db.query(`SELECT invoice_id AS id, client_id, source, status, currency,
-           amount_due, amount_paid, balance_due, open_balance, settlement_state,
-           payment_count, last_payment_at, due_at, sent_at, paid_at,
-           reminder_count, escalated_at, written_off_at, voided_at, created_at
-      FROM v_invoice_balance
-     WHERE org_id = $5::uuid
-       AND ($3::uuid IS NULL OR client_id = $3)
-       AND ($4::text IS NULL OR status = $4)
-     ORDER BY created_at DESC
+    db.query(`SELECT v.invoice_id AS id, v.client_id, v.source, v.status, v.currency,
+           v.amount_due, v.amount_paid, v.balance_due, v.open_balance, v.settlement_state,
+           v.payment_count, v.last_payment_at, v.due_at, v.sent_at, v.paid_at,
+           v.reminder_count, v.escalated_at, v.written_off_at, v.voided_at, v.created_at
+      FROM v_invoice_balance v
+      JOIN invoices i ON i.id = v.invoice_id
+     WHERE v.org_id = $5::uuid
+       AND ($3::uuid IS NULL OR v.client_id = $3)
+       AND ($4::text IS NULL OR v.status = $4)
+       AND COALESCE(i.is_demo, false) = false
+     ORDER BY v.created_at DESC
      LIMIT $1 OFFSET $2`, [limit + 1, offset, query.client_id || null, query.status || null, orgOf(staff)]).then((r) => r.rows)
 });
 

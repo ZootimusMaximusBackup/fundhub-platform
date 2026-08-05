@@ -133,7 +133,7 @@ export async function seedPlatformDemo(db, { orgId } = {}) {
     }
     if (!(await q(db, `SELECT id FROM invoices WHERE org_id=$1 AND client_id=$2 AND is_demo LIMIT 1`, [orgId, clientId])).rows[0]) {
       const st=["draft","sent","paid","overdue"][n%4];
-      await q(db, `INSERT INTO invoices (org_id,client_id,sale_id,invoice_type,status,amount,issued_at,due_at,paid_at,idempotency_key,notes,is_demo)
+      await q(db, `INSERT INTO invoices (org_id,client_id,sale_id,invoice_type,status,amount_due,issued_at,due_at,paid_at,idempotency_key,notes,is_demo)
         VALUES ($1,$2,$3,$4,$5,$6,now()-interval '12 days',now()+interval '18 days',$7,$8,'demo',true)`,
         [orgId,clientId,sale.id,(n===1||n===7)?"success_fee":"deposit",st,(n===1||n===7)?Math.round((DEMO_CLIENTS.find(x=>x.n===n)?.amount||50000)*0.1):price,st==="paid"?new Date():null,`demo-inv-${n}`]);
     }
@@ -253,6 +253,10 @@ export async function wipeDemoData(db, { orgId } = {}) {
   const clientIds = (await db.query(`SELECT id FROM clients WHERE org_id=$1 AND is_demo`, [orgId])).rows.map(r => r.id);
   await q(db, `ALTER TABLE commission_ledger DISABLE TRIGGER trg_commission_ledger_no_delete`);
   await q(db, `ALTER TABLE entitlements DISABLE TRIGGER trg_entitlements_no_delete`);
+  await q(db, `ALTER TABLE contracts DISABLE TRIGGER trg_contracts_no_delete`);
+  await q(db, `ALTER TABLE contracts DISABLE TRIGGER trg_contracts_frozen`);
+  await q(db, `ALTER TABLE affiliate_referrals DISABLE TRIGGER trg_affiliate_referrals_no_delete`);
+  await q(db, `ALTER TABLE affiliate_referrals DISABLE TRIGGER trg_affiliate_referrals_sticky`);
   try {
     if (clientIds.length) {
       for (const sql of [
@@ -281,7 +285,34 @@ export async function wipeDemoData(db, { orgId } = {}) {
       await q(db, `DELETE FROM snapshots WHERE client_id=ANY($1)`, [clientIds]);
       await q(db, `DELETE FROM tasks WHERE client_id=ANY($1)`, [clientIds]);
       await q(db, `DELETE FROM affiliate_referrals WHERE client_id=ANY($1)`, [clientIds]);
-      await q(db, `DELETE FROM clients WHERE org_id=$1 AND is_demo`, [orgId]);
+      await q(db, `DELETE FROM contracts WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM contract_signers WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM soft_pull_requests WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM client_custom_fields WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM client_consents WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM client_cards WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM documents WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM alerts WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM entities WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM lender_bureau_observations WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM inquiry_prep WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM business_tradelines WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM call_compliance_flags WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM cards WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM messages WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM conversations WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM call_outcomes WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM payment_links WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM invoices WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM commission_ledger WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM entitlements WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM sales WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM transactions WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM inquiry_log WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM inquiry_removal_cases WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM funding_rounds WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM applications WHERE client_id=ANY($1)`, [clientIds]);
+      await q(db, `DELETE FROM clients WHERE id=ANY($1)`, [clientIds]);
     }
     await q(db, `DELETE FROM staff_events WHERE org_id=$1 AND is_demo`, [orgId]);
     await q(db, `DELETE FROM shifts WHERE org_id=$1 AND is_demo`, [orgId]);
@@ -292,6 +323,10 @@ export async function wipeDemoData(db, { orgId } = {}) {
   } finally {
     await q(db, `ALTER TABLE commission_ledger ENABLE TRIGGER trg_commission_ledger_no_delete`);
     await q(db, `ALTER TABLE entitlements ENABLE TRIGGER trg_entitlements_no_delete`);
+    await q(db, `ALTER TABLE contracts ENABLE TRIGGER trg_contracts_no_delete`);
+    await q(db, `ALTER TABLE contracts ENABLE TRIGGER trg_contracts_frozen`);
+    await q(db, `ALTER TABLE affiliate_referrals ENABLE TRIGGER trg_affiliate_referrals_no_delete`);
+    await q(db, `ALTER TABLE affiliate_referrals ENABLE TRIGGER trg_affiliate_referrals_sticky`);
   }
   return { ok: true, wiped: true, clients_removed: clientIds.length };
 }

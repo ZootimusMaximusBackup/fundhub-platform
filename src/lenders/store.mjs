@@ -4,6 +4,7 @@ import { INLINE_EDIT_FIELDS, LENDER_CSV_COLUMNS, isLenderTable } from "./tables.
 import { buildObservation } from "./observations.mjs";
 import { parseLenderCsv, serializeLenderCsv } from "./csv.mjs";
 import { matchLenders } from "./match.mjs";
+import { orgDemoModeEnabled } from "../demo/exclude-demo.mjs";
 
 const SELECT_COLS = `
   id, org_id, lender_table, name, product_name, application_url, lender_row_url,
@@ -18,7 +19,7 @@ const SELECT_COLS = `
   underwriter_interaction, relationship_manager, documentation_required,
   minimum_time_in_business_years, minimum_revenue_threshold, collateral_required,
   renewal_terms, loan_type, apr_range_pct, repayment_terms_months, funding_speed,
-  loc_type, external_row_id, created_at, updated_at
+  loc_type, external_row_id, created_at, updated_at, is_demo
 `;
 
 function publicLender(row) {
@@ -33,6 +34,8 @@ function publicLender(row) {
   }
   if (out.priority_tier != null) out.priority_tier = Number(out.priority_tier);
   out.active = out.active !== false;
+  out.is_demo = !!out.is_demo;
+  if (out.is_demo && out.name && !String(out.name).startsWith("DEMO")) out.name = "DEMO · " + out.name;
   return out;
 }
 
@@ -49,7 +52,9 @@ export async function listLenders(db, {
   state = null,
   q = null,
   limit = 200,
-  offset = 0
+  offset = 0,
+  includeDemo = null,
+  forExport = false
 } = {}) {
   const params = [orgId];
   const where = ["org_id = $1::uuid"];
@@ -77,6 +82,8 @@ export async function listLenders(db, {
     params.push(`%${String(q).trim()}%`);
     where.push(`(name ILIKE $${params.length} OR notes ILIKE $${params.length})`);
   }
+  const demoOn = forExport ? false : (includeDemo == null ? await orgDemoModeEnabled(db, orgId) : !!includeDemo);
+  if (!demoOn) where.push("COALESCE(is_demo, false) = false");
   params.push(Math.min(Math.max(Number(limit) || 200, 1), 500));
   params.push(Math.max(Number(offset) || 0, 0));
   const sql = `
@@ -212,7 +219,7 @@ export async function importLendersCsv(db, { orgId, text, staff }) {
 }
 
 export async function exportLendersCsv(db, { orgId, ...filters }) {
-  const rows = await listLenders(db, { orgId, ...filters, limit: 500 });
+  const rows = await listLenders(db, { orgId, ...filters, limit: 500, forExport: true });
   return serializeLenderCsv(rows);
 }
 
