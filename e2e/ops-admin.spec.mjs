@@ -24,7 +24,8 @@ test.describe("Ops & Admin honest empty states", () => {
   });
 
   test("AR table shows empty note, not fake invoices", async ({ page }) => {
-    await expect(page.locator("#zone-money .empty-note").first()).toContainText(/AR read endpoint/i);
+    await expect(page.locator("#ar-table")).toContainText(/No unpaid invoices/i);
+    await expect(page.locator("#ar-table")).not.toContainText("Devon Marsh");
   });
 
   test("affiliate summary line shows em dash counts", async ({ page }) => {

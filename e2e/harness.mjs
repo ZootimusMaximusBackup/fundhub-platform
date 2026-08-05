@@ -142,6 +142,27 @@ function defaultGet(url) {
   if (url.includes("/api/dashboard/pipeline")) {
     return { ok: true, pipeline: "sales", total: 1, stages: PIPELINE_STAGES };
   }
+  if (url.includes("/api/dashboard/kpis")) {
+    return {
+      ok: true,
+      kpis: {
+        cash_collected_cents: 0, funded_count: 0, close_rate: null, show_rate: null,
+        cost_per_funded_cents: null, cost_per_funded_reason: "ad_spend_unavailable",
+        new_clients: 0, pipeline_movement: 0
+      },
+      display: {
+        cash: "—", funded: "—", close: "—", show: "—", cpf: "—",
+        clients: "—", pipeline_movement: "—"
+      }
+    };
+  }
+  if (url.includes("/api/shifts") && url.includes("roster")) {
+    return { ok: true, roster: [] };
+  }
+  if (url.includes("/api/shifts")) return { ok: true, shift: null };
+  if (url.includes("/api/social/oauth")) {
+    return { ok: false, error: "not_configured", missing: ["META_APP_ID"], message: "META_APP_ID unset" };
+  }
   if (url.includes("/api/tasks")) return { ok: true, tasks: [] };
   if (url.includes("/api/finance/entities")) {
     return { ok: true, client_id: CLIENT_ID, entities: [] };

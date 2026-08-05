@@ -32,7 +32,7 @@
 import { db } from "../src/db.mjs";
 import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
 import { CLIENT_DATA_ERRORS } from "../src/http/read-api.mjs";
-import { clockIn, clockOut, currentShift, ShiftError } from "../src/shifts/store.mjs";
+import { clockIn, clockOut, currentShift, listOpenRoster, ShiftError } from "../src/shifts/store.mjs";
 
 /* Own properties only, and safe on a body that is not an object at all — a
    request sent without a JSON content-type arrives here as a raw string, and
@@ -54,6 +54,12 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === "GET") {
+      // ?roster=1 → everyone currently clocked in for this company.
+      // Calendar coverage rail; not a timesheet export.
+      if (req.query?.roster === "1" || req.query?.roster === "true") {
+        const roster = await listOpenRoster(db, { orgId });
+        return res.status(200).json({ ok: true, roster });
+      }
       const shift = await currentShift(db, { staffId });
       // `null` explicitly, not an omitted key: "you are not on shift" is an
       // answer, and a caller reading body.shift must be able to tell it from a

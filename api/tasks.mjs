@@ -119,6 +119,7 @@ export default async function handler(req, res) {
       SELECT t.id, t.client_id, t.title, t.body, t.due_at,
              t.source_workflow, t.done, t.created_at,
              t.assignee_role, t.assignee_staff_id,
+             t.meeting_url,
              s.name AS assignee_name,
              TRIM(COALESCE(c.first_name,'') || ' ' || COALESCE(c.last_name,'')) AS client_name
         FROM tasks t

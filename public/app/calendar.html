@@ -719,7 +719,7 @@
         <div class="then-row"><div class="then-name" style="color:var(--ink2)">Nothing else dated after Up Next.</div></div>
       </div>
 
-      <div class="rail-title eyebrow">CA-03<div class="rail-title eyebrow">CA-03 / Who's On Today</div>
+      <div class="rail-title eyebrow">CA-03 / Who's On Today</div>
       <div class="cov" id="covList">
         <div class="cov-row"><span class="cov-name" style="color:var(--ink2)">No coverage feed yet — shift roster is on Staff &amp; Teams.</span></div>
       </div>
@@ -1074,8 +1074,37 @@ dTog.addEventListener('click',function(){
       /* Name EVERY part that is still sample. */
       return "live schedule · " + today.length + " today" +
              (later ? " · " + later + " dated later" : "") +
-             " · header date, week strip and coverage still have no source";
+             " · coverage from open shifts";
     });
+
+  // Coverage roster — staff currently clocked in.
+  (function loadCoverage() {
+    var cov = document.getElementById("covList");
+    if (!cov || typeof FHData === "undefined") return;
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
+    fetch("/api/shifts?roster=1", {
+      headers: t ? { accept: "application/json", authorization: "Bearer " + t }
+                 : { accept: "application/json" }
+    }).then(function (r) { return r.json(); }).then(function (body) {
+      var rows = (body && body.roster) || [];
+      if (!rows.length) {
+        cov.innerHTML = '<div class="cov-row"><span class="cov-name" style="color:var(--ink2)">Nobody clocked in right now.</span></div>';
+        return;
+      }
+      cov.innerHTML = rows.map(function (p) {
+        var name = p.name || p.email || "Staff";
+        var role = p.role ? String(p.role).replace(/_/g, " ") : "";
+        var started = p.started_at ? new Date(p.started_at) : null;
+        var since = started ? started.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+        return '<div class="cov-row"><span class="cov-name">' + esc(name) +
+          '</span><span class="cov-role">' + esc(role) +
+          (since ? ' · since ' + esc(since) : '') + '</span></div>';
+      }).join("");
+    }).catch(function () {
+      cov.innerHTML = '<div class="cov-row"><span class="cov-name" style="color:var(--ink2)">Coverage unavailable — clock in on Staff &amp; Teams.</span></div>';
+    });
+  })();
 
   var joinBtn0 = document.getElementById("unJoin");
   var fileBtn0 = document.getElementById("unFile");

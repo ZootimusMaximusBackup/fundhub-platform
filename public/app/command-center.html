@@ -1407,14 +1407,43 @@ document.querySelectorAll('.rail-toggle').forEach(function(t){
    Layout untouched: each card keeps its markup and only its status badge and
    rail class change, matched by the AG-/OP- code already in the DOM.
 
-   The KPI tiles are NOT wired — no endpoint feeds them yet. Values show "—"
-   until a real source exists (cost per funded client waits on migration 038). */
+   KPI tiles load from /api/dashboard/kpis (transactions, events, ad_metrics_daily). */
 (function () {
   "use strict";
   var esc = function (v) {
     return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
       return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
   };
+
+  function paintKpis(display, kpis) {
+    var tiles = document.querySelectorAll(".kpi-grid .kpi-tile");
+    if (!tiles.length || !display) return;
+    var map = [
+      { value: display.cash, sub: "cash collected (transactions)" },
+      { value: display.pipeline_movement, sub: "stage changes in window" },
+      { value: display.close, sub: "booked → decision rendered" },
+      { value: display.show, sub: "booked calls with call.completed" },
+      { value: display.cpf, sub: kpis && kpis.cost_per_funded_reason === "ad_spend_unavailable"
+          ? "ad spend not synced yet" : "ad spend ÷ funded clients" },
+      { value: display.funded, sub: "clients marked funded" }
+    ];
+    for (var i = 0; i < tiles.length && i < map.length; i++) {
+      var val = tiles[i].querySelector(".kpi-value");
+      var sub = tiles[i].querySelector(".kpi-sub");
+      if (val) val.textContent = map[i].value || "—";
+      if (sub && map[i].sub) sub.textContent = map[i].sub;
+    }
+  }
+
+  if (typeof FHData !== "undefined" && FHData.kpis) {
+    FHData.wire(FHData.kpis("today"), "command center KPIs", function (data) {
+      if (!data || !data.display) return null;
+      paintKpis(data.display, data.kpis);
+      return "live KPIs · cash " + data.display.cash +
+             " · funded " + data.display.funded;
+    });
+  }
+
   var STATE = {
     live:    { label: "Active",  cls: "active"  },
     shadow:  { label: "Shadow",  cls: "shadow"  },

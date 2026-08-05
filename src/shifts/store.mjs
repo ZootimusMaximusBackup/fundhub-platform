@@ -218,6 +218,25 @@ export async function currentShift(db, { staffId } = {}) {
 }
 
 /**
+ * listOpenRoster(db, { orgId }) — everyone currently clocked in for an org.
+ * Used by the Calendar "Who's On Today" coverage rail.
+ */
+export async function listOpenRoster(db, { orgId } = {}) {
+  requireId(orgId, "listOpenRoster: orgId");
+  const res = await db.query(
+    `SELECT sh.id AS shift_id, sh.staff_id, sh.started_at,
+            s.name, s.role, s.email
+       FROM shifts sh
+       JOIN staff s ON s.id = sh.staff_id
+      WHERE sh.org_id = $1
+        AND sh.ended_at IS NULL
+      ORDER BY s.name ASC`,
+    [orgId]
+  );
+  return res.rows;
+}
+
+/**
  * autoCloseStale(db, { olderThanHours }) — close shifts nobody ever clocked out
  * of. Returns the array of closed shifts, oldest first.
  *
