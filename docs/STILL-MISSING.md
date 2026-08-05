@@ -7,6 +7,7 @@ Campaigns / Social / Creative / Brand Studio gaps from the prior scorecard.
 
 | Env / credential | Where used | How to get it |
 |---|---|---|
+| `ANTHROPIC_API_KEY` | Agent runtime model calls (`src/agents/model.mjs`) | Anthropic Console → API keys. Leave unset for shadow mode (logs would-be replies, sends nothing). |
 | `OXYLABS_USERNAME` | Residential Apply proxy (`src/adapters/oxylabs.mjs`, `POST /api/proxy/launch`) | Oxylabs dashboard → proxy user (no `customer-` prefix; adapter adds it) |
 | `OXYLABS_PASSWORD` | Same | Same panel; store as Netlify secret |
 | `META_APP_ID` | Meta token refresh / Marketing API app context (`api/campaigns/sync.mjs`) | Meta Developer app → Settings → Basic |
@@ -78,13 +79,36 @@ Updated 2026-08-04. Adapter + `proxy_sessions` (temp migration `t141_proxy_sessi
 
 **Left unset on purpose:** `OXYLABS_USERNAME` / `OXYLABS_PASSWORD`. Set both as Netlify secrets, then `netlify deploy --build --prod`. Until they are set, launch returns a clear 503 — it does not invent credentials or silently skip geo checks.
 
+## Agent runtime (built 2026-08-04; key unset)
+
+The platform agent runtime is wired (`src/agents/runtime.mjs` on
+`message.inbound`). With `ANTHROPIC_API_KEY` unset it runs in **shadow mode**:
+builds context, would call the model, logs the would-be reply to
+`agent_shadow_log` (AE-08), sends nothing, fails nothing. Set the key as a
+Netlify secret and deploy when you want live replies. Promote GHL agents from
+`draft` → `shadow` → `live` in the agent editor; assign
+`conversations.agent_code` (or leave a single channel-matching agent) so
+selection is unambiguous. `runtime='bland'` agents stay on the external Bland
+path and are skipped here.
+
+### Booking calendar cutover (ClickFunnels Appointments vs Cal.com)
+
+Funnels currently use ClickFunnels native Appointments, not Cal.com. At cutover pick one:
+
+- **Option A — CF Appointments adapter** (~2–3 days): new adapter normalizing CF appointment webhooks → booking.* events; capture mode (CF_CAPTURE_MODE) already logs raw payloads for path correction.
+- **Option B — Swap embeds to Cal.com** (~1 day engineering + funnel rebuild): point booking buttons at Cal.com; existing calcom adapter already emits booking.created/rescheduled/cancelled/noshow.
+
+Effort estimates as stated.
+
 ## Still deferred / out of scope
 
 1. **Full create-campaign / create-ad-set UI** — use Meta (or a later form) then
    Sync. Pause / resume / budget writes are live.
 
 2. **Chat widget: agent-sent messages** — data model ready; application send
-   path stays off (spec §8).
+   path stays off for the *widget* UI (spec §8). The messaging agent runtime
+   above does send via `composeAgentReply` when an agent is live and the key
+   is set.
 
 3. **Chat widget for affiliates / white-label** — owner call C-3: internal staff
    + client portal only.
@@ -96,12 +120,50 @@ Updated 2026-08-04. Adapter + `proxy_sessions` (temp migration `t141_proxy_sessi
 6. **Message dispatcher sweeper registration** — deliberately unregistered
    (CLAUDE.md §12). Staff compose dispatches immediately.
 
-7. **Social OAuth connect flow** — channels still need an INSERT + token; no
-   OAuth screen yet.
+7. **Social OAuth connect flow** — wired at `/api/social/oauth` + Social Studio
+   Connect buttons. Still needs app credentials (below).
 
 8. **Instagram / TikTok live media publish** — facebook Graph caption path is
-   live when tokenized; other channels need provider wiring or
-   `SOCIAL_PUBLISH_DRY_RUN=1`.
+   live when tokenized; LinkedIn org UGC adapter is wired; Instagram still needs
+   a media container. Use `SOCIAL_PUBLISH_DRY_RUN=1` to exercise the cron.
+
+### Booking calendar cutover (ClickFunnels Appointments vs Cal.com)
+
+Funnels currently use ClickFunnels' native Appointments app, not Cal.com. The
+platform Cal.com adapter now emits `booking.created` / `booking.rescheduled` /
+`booking.cancelled` / `booking.noshow`. At cutover pick one:
+
+- **Option A — CF Appointments adapter** (~2–3 days): new adapter normalizing CF
+  appointment webhooks → `booking.*` events. `CF_CAPTURE_MODE=1` already logs
+  raw payloads into `webhook_captures` so one real test lead can correct field
+  paths afterward.
+- **Option B — Swap embeds to Cal.com** (~1 day engineering + funnel rebuild):
+  point booking buttons at Cal.com; existing adapter + handlers already cover
+  the lifecycle including S-05a no-show recovery.
+
+### LinkedIn app setup (required for social connect)
+
+- Create a LinkedIn Developer app; enable Community Management / Share on LinkedIn.
+- Auth redirect URL: `{APP_BASE_URL}/api/social/oauth?action=callback&channel=linkedin`
+- Set `LINKEDIN_CLIENT_ID` + `LINKEDIN_CLIENT_SECRET` as Netlify secrets (leave unset until ready).
+- Organization posts need Marketing Developer Platform access + org admin grant of
+  `w_organization_social`. Pass the organization URN as `external_account_id` on connect start
+  (or set `LINKEDIN_ORG_ID`).
+
+### Meta social connect
+
+- `META_APP_ID` + `META_APP_SECRET` (same app as Marketing API is fine).
+- Facebook Login scopes: `pages_show_list`, `pages_manage_posts`, `instagram_basic`,
+  `instagram_content_publish`.
+- Redirect: `{APP_BASE_URL}/api/social/oauth?action=callback&channel=facebook`
+  (and `channel=instagram`).
+
+### GHL contact backfill
+
+- New clients attempt GHL contact create/lookup when SMS routing is `ghl_relay`.
+- Set `GHL_API_KEY` (preferred) or `GHL_RELAY_API_KEY`. Leave unset until ready.
+- One-shot existing clients: `node scripts/backfill-ghl-contact-ids.mjs` (dry-run)
+  then `--write`.
 
 9. **Commission-rule writes** — `products-commissions.html` saves rate changes
    locally only; there is no `POST /api/commission-rules`. A 168-line draft was

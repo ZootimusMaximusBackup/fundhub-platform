@@ -82,17 +82,18 @@ test("the six seeded journeys walk to nine paths", () => {
 
 // ── the registry ──────────────────────────────────────────────────────────
 
-/* 48 SINCE contract-chaser.mjs JOINED THE REGISTRY (2026-08-02).
-   It is a CRON function with no event trigger, so no journey will ever reach it
-   and it will always sit in neverFired — which is the correct outcome, not a
-   coverage hole. The counts here are pinned so that registering a workflow stays
-   a visible decision; see the note in src/workflows/index.test.mjs. */
-test("ACCEPTANCE: the registry accounts for all 49 registered workflows", async () => {
+/* 50 SINCE s-05a-no-show-recovery.mjs JOINED THE REGISTRY (2026-08-04).
+   contract-chaser is a CRON with no event trigger, so no journey will ever
+   reach it and it will always sit in neverFired — which is the correct
+   outcome, not a coverage hole. The counts here are pinned so that
+   registering a workflow stays a visible decision; see the note in
+   src/workflows/index.test.mjs. */
+test("ACCEPTANCE: the registry accounts for all 50 registered workflows", async () => {
   const reg = await loadRegistry();
-  assert.equal(reg.registered, 49, "src/workflows/index.mjs registers 49 functions");
+  assert.equal(reg.registered, 50, "src/workflows/index.mjs registers 50 functions");
   assert.equal(
     reg.workflows.length + reg.unrunnable.length,
-    49,
+    50,
     "every registered workflow is either runnable or explicitly listed as unrunnable"
   );
   assert.deepEqual(reg.unrunnable, [], "no registered workflow should be unreachable by the runner");
@@ -102,9 +103,9 @@ test("every workflow is either fired or named in neverFired — none silently mi
   const reg = await loadRegistry();
   const pretendFired = ["n-06-renewal-second-wave", "s-02-incomplete-survey-nudge"];
   const never = neverFired(reg, pretendFired);
-  assert.equal(never.length + pretendFired.length, 49);
+  assert.equal(never.length + pretendFired.length, 50);
   const all = new Set([...never.map((w) => w.id), ...pretendFired]);
-  assert.equal(all.size, 49);
+  assert.equal(all.size, 50);
   for (const fn of functions) assert.ok(all.has(fn.id()), `${fn.id()} is unaccounted for`);
 });
 
@@ -194,11 +195,11 @@ test("the coverage report names every unreached workflow explicitly", async () =
   const db = fakeDb();
   const report = await run(db, { journeys: SEED_JOURNEYS, orgId: "org-1", runId: "t3", env: {} });
   const c = report.workflowCoverage;
-  assert.equal(c.registered, 49);
+  assert.equal(c.registered, 50);
   assert.equal(
     c.fired.length + c.neverFired.length,
-    49,
-    "fired + neverFired must account for all 49 — a workflow missing from both is a silent coverage hole"
+    50,
+    "fired + neverFired must account for all 50 — a workflow missing from both is a silent coverage hole"
   );
 });
 

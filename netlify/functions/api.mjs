@@ -45,6 +45,7 @@ import dashClients from "../../api/dashboard/clients.mjs";
 import dashClient from "../../api/dashboard/client.mjs";
 import dashPipeline from "../../api/dashboard/pipeline.mjs";
 import dashSeed from "../../api/dashboard/seed.mjs";
+import dashKpis from "../../api/dashboard/kpis.mjs";
 import health from "../../api/health.mjs";
 import partnerBrand from "../../api/partner-brand.mjs";
 import orgBrand from "../../api/org-brand.mjs";
@@ -60,6 +61,8 @@ import readStaff from "../../api/read/staff.mjs";
 import readEntitlements from "../../api/read/entitlements.mjs";
 import readFailedEvents from "../../api/read/failed-events.mjs";
 import readAgents from "../../api/read/agents.mjs";
+import readAgentContext from "../../api/read/agent-context.mjs";
+import readAgentShadowLog from "../../api/read/agent-shadow-log.mjs";
 import readInquiries from "../../api/read/inquiries.mjs";
 import readProducts from "../../api/read/products.mjs";
 import readConversations from "../../api/read/conversations.mjs";
@@ -92,6 +95,7 @@ import campaignsSync from "../../api/campaigns/sync.mjs";
 import campaignsWrite from "../../api/campaigns/write.mjs";
 import socialSchedule from "../../api/social/schedule.mjs";
 import socialPublish from "../../api/social/publish.mjs";
+import socialOauth from "../../api/social/oauth.mjs";
 import chatAsk from "../../api/chat/ask.mjs";
 import chatMessages from "../../api/chat/messages.mjs";
 import chatPortalMessage from "../../api/chat/portal-message.mjs";
@@ -233,6 +237,7 @@ export const ROUTES = {
   "dashboard/client": dashClient,
   "dashboard/pipeline": dashPipeline,
   "dashboard/seed": dashSeed,
+  "dashboard/kpis": dashKpis,
   "health": health,
   "partner-brand": partnerBrand,
   "org-brand": orgBrand,
@@ -253,6 +258,8 @@ export const ROUTES = {
   "read/entitlements": readEntitlements,
   "read/failed-events": readFailedEvents,
   "read/agents": readAgents,
+  "read/agent-context": readAgentContext,
+  "read/agent-shadow-log": readAgentShadowLog,
   "read/inquiries": readInquiries,
   "read/products": readProducts,
   "read/conversations": readConversations,
@@ -411,6 +418,7 @@ export const ROUTES = {
   "campaigns/write": campaignsWrite,
   "social/schedule": socialSchedule,
   "social/publish": socialPublish,
+  "social/oauth": socialOauth,
   "chat/ask": chatAsk,
   "chat/messages": chatMessages,
   "chat/portal-message": chatPortalMessage,

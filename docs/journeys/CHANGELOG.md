@@ -3,6 +3,8 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-04 | all eight | Two routes added — `GET /api/read/agent-context`, `GET /api/read/agent-shadow-log` (STAFF). Agent runtime on `message.inbound` (select → context → guardrails → Anthropic/shadow → dispatch via gate). Migration 142. AE-08 reads real shadow log; client control panel shows agent context card | Registry stored agents but nothing executed them; GHL cutover would kill conversational AI | (this commit)
+
 2026-08-04 | role-funding-advisor, role-owner | Routes added — POST /api/proxy/launch, POST /api/proxy/end, GET /api/read/proxy-sessions (owner + funding_advisor) | Oxylabs residential Apply door: geo-targeted proxy before lender application_url; Chrome extension one-click + manual fallback | (this commit)
 
 2026-08-04 | role-funding-advisor, role-closer, role-owner, role-sales-manager, role-inquiry-remover | Lender + inquiry ops port: `lenders` / observations / applications Airtable shape / application_decisions / funding_closeout(+items) / inquiry_removal_cases / ai_bureau_config / inquiry_prep / inquiry_log call_state / business_tradelines. Routes: lenders, lender-observations, applications, inquiry-cases, ai-bureau-config + reads. CRM Lenders (list + mismatch + AI bureau tabs); inquiry-remover case queue; closer lender-match tile; client panel case status; `inquiry.removed` on confirm/case close; closeout on `round.funded`. Migrations `t138`–`t140` temporary prefix — renumber at merge. Tables empty; CSV/CRM import required | Platform had fundability scoring but no lenders, success fee, or AI inquiry bridge | (this commit)

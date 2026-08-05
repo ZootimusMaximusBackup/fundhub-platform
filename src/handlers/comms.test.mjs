@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { onMessageInbound, onCallCompleted, onMailResponse, onBookingCreated } from "./comms.mjs";
+import {
+  onMessageInbound, onCallCompleted, onMailResponse, onBookingCreated,
+  onBookingRescheduled, onBookingCancelled, onBookingNoshow
+} from "./comms.mjs";
 
 // Fake pg covering the queries comms.mjs + resolveClient issue. Messages dedup is
 // DB-level (ON CONFLICT) and proven in the pg integration test; the guard-based
@@ -38,7 +41,7 @@ function pgFake() {
       if (/INSERT INTO clients/.test(sql)) {
         if (clients.find((c) => c.org_id === params[0] && String(c.email || "").toLowerCase() === String(params[1]).toLowerCase())) return { rows: [] };
         const id = "cl-" + ++n;
-        clients.push({ id, org_id: params[0], email: params[1], phone: params[4] });
+        clients.push({ id, org_id: params[0], email: params[1], phone: params[4], tags: [], custom_fields: {} });
         return { rows: [{ id }] };
       }
       if (/INSERT INTO messages/.test(sql)) { messages.push({ sql, params }); return { rows: [] }; }
@@ -50,10 +53,49 @@ function pgFake() {
         bank.push({ org_id: params[0], client_id: params[1], classification: params[2], __event_id: raw.__event_id });
         return { rows: [] };
       }
+      // --- clients.tags add (addTags, mirrors src/workflows/tags.mjs) ---
+      if (/UPDATE clients SET tags = array\(SELECT DISTINCT unnest\(tags \|\|/.test(sql)) {
+        const c = clients.find((c) => c.id === params[0]);
+        if (c) c.tags = Array.from(new Set([...(c.tags || []), ...params[1]]));
+        return { rows: [] };
+      }
+      // --- clients.custom_fields merge (mergeCustomFields, mirrors src/workflows/custom-fields.mjs) ---
+      if (/UPDATE clients SET custom_fields/.test(sql)) {
+        const c = clients.find((c) => c.id === params[0]);
+        if (c) c.custom_fields = { ...(c.custom_fields || {}), ...JSON.parse(params[1]) };
+        return { rows: [] };
+      }
+      // --- tasks: reschedule update (RETURNING id when an open row matches) ---
+      if (/UPDATE tasks[\s\S]*SET[\s\S]*due_at = COALESCE/.test(sql)) {
+        const [clientId, uid, dueAt, meetingUrl] = params;
+        const t = tasks.find((t) => t.client_id === clientId && t.source_workflow === "calcom" && t.body === uid);
+        if (!t) return { rows: [] };
+        t.due_at = dueAt ?? t.due_at;
+        t.meeting_url = meetingUrl ?? t.meeting_url;
+        t.title = "Strategy session rescheduled";
+        t.done = false;
+        return { rows: [{ id: t.id }] };
+      }
+      // --- tasks: cancel/no-show close-out (mark the open task done) ---
+      if (/UPDATE tasks SET done = true/.test(sql)) {
+        const [clientId, uid] = params;
+        const t = tasks.find((t) => t.client_id === clientId && t.source_workflow === "calcom" && t.body === uid && !t.done);
+        if (t) t.done = true;
+        return { rows: [] };
+      }
       if (/SELECT 1 FROM tasks/.test(sql)) {
         return { rows: tasks.find((t) => t.client_id === params[0] && t.body === params[1]) ? [{ x: 1 }] : [] };
       }
-      if (/INSERT INTO tasks/.test(sql)) { tasks.push({ org_id: params[0], client_id: params[1], body: params[3] }); return { rows: [] }; }
+      if (/INSERT INTO tasks/.test(sql)) {
+        const row = {
+          id: "task-" + (tasks.length + 1),
+          org_id: params[0], client_id: params[1], title: params[2], body: params[3],
+          due_at: params[4], source_workflow: params[5], meeting_url: params[8] ?? null,
+          done: false
+        };
+        tasks.push(row);
+        return { rows: [{ id: row.id }] };
+      }
       return { rows: [] };
     }
   };

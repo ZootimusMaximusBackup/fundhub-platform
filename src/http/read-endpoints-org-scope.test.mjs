@@ -88,6 +88,8 @@ const NO_ORG_COLUMN = new Map([
   /* Oxylabs Apply audit log — handler delegates to src/proxy/sessions.mjs which
      binds org_id = $1::uuid on every list/get. */
   ["proxy-sessions.mjs", "scoped in src/proxy/sessions.mjs listProxySessions/getProxySession, which bind org_id = $1::uuid"],
+  /* Agent shadow log — handler delegates to listShadow which binds org_id = $1. */
+  ["agent-shadow-log.mjs", "scoped in src/agents/shadow-log.mjs listShadow(), which binds org_id = $1 and throws without an org"],
 ]);
 
 /* An allow-listed endpoint must still prove it hands the SESSION's org to

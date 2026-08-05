@@ -26,13 +26,13 @@ flowchart TD
     CAN --> A_social[social — 2 routes]
     CAN --> A_top_level[Everything else — 3 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 93 routes]
+    WHO -->|Yes| CANT[Blocked — 97 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_chat[chat — 4 blocked]
     CANT --> B_company_brain[company-brain — 1 blocked]
     CANT --> B_consent[consent — 1 blocked]
-    CANT --> B_dashboard[The dashboard — 4 blocked]
+    CANT --> B_dashboard[The dashboard — 5 blocked]
     CANT --> B_demo[demo — 1 blocked]
     CANT --> B_finance[Finance — 10 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
@@ -40,13 +40,14 @@ flowchart TD
     CANT --> B_partner_brand[partner-brand — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
-    CANT --> B_read[Reading data — 34 blocked]
+    CANT --> B_read[Reading data — 36 blocked]
+    CANT --> B_social[social — 1 blocked]
     CANT --> B_top_level[Everything else — 22 blocked]
 ```
 
 ## What they can reach
 
-**31 of 124 routes.**
+**31 of 128 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -89,7 +90,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**93 of 124 routes.**
+**97 of 128 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -109,6 +110,7 @@ flowchart TD
 | `/api/contracts` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/dashboard/client` | — | staff |
 | `/api/dashboard/clients` | — | staff |
+| `/api/dashboard/kpis` | — | staff |
 | `/api/dashboard/pipeline` | — | staff |
 | `/api/dashboard/seed` | — | staff |
 | `/api/demo/simulate` | DELETE, POST | owner, admin |
@@ -151,6 +153,8 @@ flowchart TD
 | `/api/proxy/end` | POST | owner, funding_advisor |
 | `/api/proxy/launch` | POST | owner, funding_advisor |
 | `/api/read/affiliates` | GET | owner, admin, sales_manager |
+| `/api/read/agent-context` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/agent-shadow-log` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/ai-bureau-config` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/banking-surface` | GET | owner, admin, sales_manager |
@@ -185,6 +189,7 @@ flowchart TD
 | `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/workflows` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
+| `/api/social/oauth` | — | staff |
 | `/api/tasks` | GET, PATCH | staff |
 
 ## UNVERIFIED

@@ -54,6 +54,7 @@ export async function createTask(db, {
   eventId = null,
   body = undefined,
   dueAt = null,
+  meetingUrl = null,
   dedupeOn = "event"
 } = {}) {
   if (!orgId) throw new Error("createTask: orgId is required");
@@ -100,11 +101,11 @@ export async function createTask(db, {
   const ins = await db.query(
     `INSERT INTO tasks
        (org_id, client_id, assignee, title, body, due_at, source_workflow,
-        assignee_role, assignee_staff_id)
-     VALUES ($1,$2,NULL,$3,$4,$5,$6,$7,$8)
+        assignee_role, assignee_staff_id, meeting_url)
+     VALUES ($1,$2,NULL,$3,$4,$5,$6,$7,$8,$9)
      ON CONFLICT DO NOTHING
      RETURNING id`,
-    [orgId, clientId, title, dedupeValue, dueAt, sourceWorkflow, role, assigneeStaffId]
+    [orgId, clientId, title, dedupeValue, dueAt, sourceWorkflow, role, assigneeStaffId, meetingUrl]
   );
 
   // No row back means the unique index absorbed a concurrent insert. That is a

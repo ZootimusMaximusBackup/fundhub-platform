@@ -23,13 +23,13 @@ flowchart TD
     CAN --> A_consent[consent — 1 route]
     CAN --> A_contracts[contracts — 1 route]
     CAN --> A_creative[Creative Factory — 7 routes]
-    CAN --> A_dashboard[The dashboard — 4 routes]
+    CAN --> A_dashboard[The dashboard — 5 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 5 routes]
     CAN --> A_proxy[proxy — 2 routes]
     CAN --> A_public[public — 1 route]
-    CAN --> A_read[Reading data — 27 routes]
-    CAN --> A_social[social — 2 routes]
+    CAN --> A_read[Reading data — 29 routes]
+    CAN --> A_social[social — 3 routes]
     CAN --> A_top_level[Everything else — 19 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 35 routes]
@@ -49,7 +49,7 @@ flowchart TD
 
 ## What they can reach
 
-**89 of 124 routes.**
+**93 of 128 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -86,6 +86,7 @@ flowchart TD
 | `/api/creative/run` | POST | partner, staff |
 | `/api/dashboard/client` | — | staff |
 | `/api/dashboard/clients` | — | staff |
+| `/api/dashboard/kpis` | — | staff |
 | `/api/dashboard/pipeline` | — | staff |
 | `/api/dashboard/seed` | — | staff |
 | `/api/documents-upload` | POST | staff, client |
@@ -110,6 +111,8 @@ flowchart TD
 | `/api/proxy/end` | POST | owner, funding_advisor |
 | `/api/proxy/launch` | POST | owner, funding_advisor |
 | `/api/public/partner-page` | GET | anyone |
+| `/api/read/agent-context` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/agent-shadow-log` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/ai-bureau-config` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/company-brain` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -138,6 +141,7 @@ flowchart TD
 | `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/workflows` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
+| `/api/social/oauth` | — | staff |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
 | `/api/tasks` | GET, PATCH | staff |
@@ -145,13 +149,13 @@ flowchart TD
 
 ### Worth knowing
 
-- **4 routes also accept a shared secret instead of a sign-in** (`DASHBOARD_SECRET`), so a caller holding that value reaches them without being anybody in particular: `/api/dashboard/client`, `/api/dashboard/clients`, `/api/dashboard/pipeline`, `/api/dashboard/seed`.
+- **5 routes also accept a shared secret instead of a sign-in** (`DASHBOARD_SECRET`), so a caller holding that value reaches them without being anybody in particular: `/api/dashboard/client`, `/api/dashboard/clients`, `/api/dashboard/kpis`, `/api/dashboard/pipeline`, `/api/dashboard/seed`.
 - **9 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/contracts/sign`, `/api/health`, `/api/public/partner-page`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**35 of 124 routes.**
+**35 of 128 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

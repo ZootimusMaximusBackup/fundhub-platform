@@ -28,6 +28,8 @@ import { on } from "../events/registry.mjs";
 import { resolveClient } from "./client-lifecycle.mjs";
 import { recordOptOut, recordOptIn } from "../lib/opt-out.mjs";
 import { createTask } from "../lib/create-task.mjs";
+import { addTags } from "../workflows/tags.mjs";
+import { mergeCustomFields } from "../workflows/custom-fields.mjs";
 import { upsertConversation, linkMessage } from "../conversations/store.mjs";
 
 // TCPA standard opt-out and opt-in keyword sets (case-insensitive, trimmed).
@@ -217,9 +219,6 @@ export async function onBookingCreated(event, db) {
     [clientId, uid]
   );
   if (uid && dup.rows[0]) return;
-  // Routed to closer: a booked strategy session is a sales call, and the closer
-  // takes it. This was the last task writer still creating work with no owner —
-  // it is not a workflow, so it was outside the 19 the routing pass covered.
   await createTask(db, {
     orgId: event.orgId,
     clientId,
@@ -227,8 +226,80 @@ export async function onBookingCreated(event, db) {
     sourceWorkflow: "calcom",
     assigneeRole: "closer",
     dueAt: p.startTime || null,
-    eventId: uid
+    eventId: uid,
+    meetingUrl: p.meetingUrl || null
   });
+}
+
+export async function onBookingRescheduled(event, db) {
+  const clientId = await resolveClient(db, event);
+  if (!clientId) return;
+  const p = event.payload || {};
+  const uid = p.bookingUid || null;
+  if (uid) {
+    const upd = await db.query(
+      `UPDATE tasks
+          SET due_at = COALESCE($3, due_at),
+              meeting_url = COALESCE($4, meeting_url),
+              title = 'Strategy session rescheduled',
+              done = false,
+              updated_at = now()
+        WHERE client_id = $1 AND source_workflow = 'calcom' AND body = $2
+        RETURNING id`,
+      [clientId, uid, p.startTime || null, p.meetingUrl || null]
+    );
+    if (upd.rows[0]) {
+      await mergeCustomFields(db, clientId, { call_outcome: "rescheduled" });
+      return;
+    }
+  }
+  await createTask(db, {
+    orgId: event.orgId,
+    clientId,
+    title: "Strategy session rescheduled",
+    sourceWorkflow: "calcom",
+    assigneeRole: "closer",
+    dueAt: p.startTime || null,
+    eventId: uid,
+    meetingUrl: p.meetingUrl || null
+  });
+  await mergeCustomFields(db, clientId, { call_outcome: "rescheduled" });
+}
+
+// booking.cancelled — close out the open calcom task and drop the "booked"
+// heat. Re-nurture is NOT a new task here: tagging call:cancelled is enough for
+// the N-workflows to re-evaluate lead temperature on the next classification
+// pass (see src/config/lead-temperature.mjs) — that is the whole re-nurture path.
+export async function onBookingCancelled(event, db) {
+  const clientId = await resolveClient(db, event);
+  if (!clientId) return;
+  const p = event.payload || {};
+  const uid = p.bookingUid || null;
+  if (uid) {
+    await db.query(
+      `UPDATE tasks SET done = true, updated_at = now()
+        WHERE client_id = $1 AND source_workflow = 'calcom' AND body = $2 AND done = false`,
+      [clientId, uid]
+    );
+  }
+  await mergeCustomFields(db, clientId, { call_outcome: "cancelled" });
+  await addTags(db, clientId, ["call:cancelled"]);
+}
+
+export async function onBookingNoshow(event, db) {
+  const clientId = await resolveClient(db, event);
+  if (!clientId) return;
+  const p = event.payload || {};
+  const uid = p.bookingUid || null;
+  if (uid) {
+    await db.query(
+      `UPDATE tasks SET done = true, updated_at = now()
+        WHERE client_id = $1 AND source_workflow = 'calcom' AND body = $2 AND done = false`,
+      [clientId, uid]
+    );
+  }
+  await addTags(db, clientId, ["call:no_show"]);
+  await mergeCustomFields(db, clientId, { call_outcome: "no_show" });
 }
 
 export function register() {
@@ -236,4 +307,7 @@ export function register() {
   on("call.completed", onCallCompleted);
   on("mail.response", onMailResponse);
   on("booking.created", onBookingCreated);
+  on("booking.rescheduled", onBookingRescheduled);
+  on("booking.cancelled", onBookingCancelled);
+  on("booking.noshow", onBookingNoshow);
 }

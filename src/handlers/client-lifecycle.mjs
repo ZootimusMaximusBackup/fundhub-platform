@@ -14,6 +14,7 @@
 import { on } from "../events/registry.mjs";
 import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
+import { ensureGhlContactId } from "../messaging/ghl-contacts.mjs";
 
 // --- helpers ----------------------------------------------------------------
 
@@ -48,7 +49,34 @@ export async function resolveClient(db, event) {
      RETURNING id`,
     [orgId, email, firstName, lastName, p.phone || null, p.source || null]
   );
-  if (ins.rows[0]) return ins.rows[0].id;
+  if (ins.rows[0]) {
+    const newId = ins.rows[0].id;
+    // Best-effort GHL contact for SMS relay. Only when sms routes to ghl_relay.
+    // Missing GHL_API_KEY must not block lead capture.
+    try {
+      const route = await db.query(
+        `SELECT provider FROM message_channel_routing
+          WHERE channel = 'sms' AND (org_id IS NULL OR org_id = $1)
+          ORDER BY org_id NULLS LAST LIMIT 1`,
+        [orgId]
+      );
+      const provider = route.rows[0]?.provider || "ghl_relay";
+      if (provider === "ghl_relay") {
+        await ensureGhlContactId(db, {
+          id: newId,
+          org_id: orgId,
+          email,
+          phone: p.phone || null,
+          first_name: firstName,
+          last_name: lastName,
+          ghl_contact_id: null
+        });
+      }
+    } catch {
+      /* never fail client creation on GHL */
+    }
+    return newId;
+  }
 
   // Lost an insert race (or already existed) — re-select.
   const re = await db.query(

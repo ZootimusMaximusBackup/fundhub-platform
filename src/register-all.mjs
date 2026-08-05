@@ -7,6 +7,7 @@ import { register as registerLifecycle } from "./handlers/client-lifecycle.mjs";
 import { register as registerComms } from "./handlers/comms.mjs";
 import { register as registerPaymentLinks } from "./handlers/payment-links.mjs";
 import { register as registerMoneyChain } from "./handlers/money-chain.mjs";
+import { register as registerAgentRuntime } from "./agents/runtime.mjs";
 
 let _done = false;
 
@@ -15,6 +16,9 @@ export function registerAll() {
   registerComms();
   registerPaymentLinks();
   registerMoneyChain();
+  // After comms: the inbound message row must exist before the runtime
+  // looks it up by provider_ref. Handler order on the bus is registration order.
+  registerAgentRuntime();
   _done = true;
 }
 

@@ -1,0 +1,106 @@
+// Model call — Anthropic Messages API.
+//
+// Key: ANTHROPIC_API_KEY from the environment. Left unset on purpose until the
+// owner sets it (see docs/STILL-MISSING.md). With no key, callModel() returns
+// a shadow result: nothing is sent to Anthropic, nothing throws, and the
+// caller logs the would-be request.
+//
+// No new npm dependency — raw fetch, same posture as src/messaging/providers/*.
+
+export const DEFAULT_MODEL = "claude-sonnet-4-20250514";
+export const DEFAULT_MAX_TOKENS = 600;
+
+/**
+ * callModel({ system, user, env?, fetchImpl?, model?, maxTokens? })
+ * → {
+ *     mode: 'live' | 'shadow',
+ *     text: string | null,          // assistant reply text (null in keyless shadow)
+ *     raw: object | null,
+ *     request: { model, system, user, max_tokens },
+ *     error: string | null
+ *   }
+ */
+export async function callModel({
+  system, user, env = process.env, fetchImpl = globalThis.fetch,
+  model = DEFAULT_MODEL, maxTokens = DEFAULT_MAX_TOKENS
+} = {}) {
+  const request = {
+    model,
+    system: String(system || ""),
+    user: String(user || ""),
+    max_tokens: maxTokens
+  };
+
+  const key = env && env.ANTHROPIC_API_KEY;
+  if (!key) {
+    return {
+      mode: "shadow",
+      text: null,
+      raw: null,
+      request,
+      error: null,
+      detail: "ANTHROPIC_API_KEY unset — shadow mode, no model call"
+    };
+  }
+
+  if (typeof fetchImpl !== "function") {
+    return {
+      mode: "shadow",
+      text: null,
+      raw: null,
+      request,
+      error: "fetch unavailable",
+      detail: "no fetch implementation"
+    };
+  }
+
+  try {
+    const res = await fetchImpl("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify({
+        model: request.model,
+        max_tokens: request.max_tokens,
+        system: request.system,
+        messages: [{ role: "user", content: request.user }]
+      })
+    });
+
+    const raw = await res.json().catch(() => null);
+    if (!res.ok) {
+      return {
+        mode: "live",
+        text: null,
+        raw,
+        request,
+        error: `anthropic ${res.status}: ${JSON.stringify(raw).slice(0, 300)}`
+      };
+    }
+
+    const text = extractText(raw);
+    return { mode: "live", text, raw, request, error: null };
+  } catch (err) {
+    return {
+      mode: "live",
+      text: null,
+      raw: null,
+      request,
+      error: String((err && err.message) || err).slice(0, 300)
+    };
+  }
+}
+
+function extractText(raw) {
+  if (!raw || !Array.isArray(raw.content)) return null;
+  const parts = raw.content
+    .filter((b) => b && b.type === "text" && typeof b.text === "string")
+    .map((b) => b.text);
+  const joined = parts.join("\n").trim();
+  return joined || null;
+}
+
+export default callModel;

@@ -456,6 +456,20 @@
         </div>
       </div>
 
+      <!-- Agent context — exactly what the AI sees for this client. -->
+      <div class="group">
+        <button class="group-title tog" type="button" aria-expanded="false" aria-controls="agent-context-body">
+          <span>Agent context</span>
+          <span class="chev">collapsed by default <span class="cg">⌄</span></span>
+        </button>
+        <div class="group-body" id="agent-context-body" hidden>
+          <p style="font-size:12px;color:var(--muted,#666);margin:0 0 10px;">
+            Read-only. Same facts the agent runtime injects into every reply prompt.
+          </p>
+          <pre id="agent-context-pre" class="mono" style="white-space:pre-wrap;font-size:11px;line-height:1.45;background:var(--surface,#fff);border:1px solid var(--line,#ddd);border-radius:6px;padding:12px;margin:0;max-height:320px;overflow:auto;">Open with ?id=&lt;client id&gt; to load.</pre>
+        </div>
+      </div>
+
       <!-- Credit & Hold Status restates the blocker card in four key/value
            pairs. Same four facts, said twice, was the noise — it collapses so
            the blocker above is the only place they read loud. -->
@@ -808,6 +822,24 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
       banner("error", "sample data — backend unavailable (" + res.source + ": " + res.error + ")");
     }
   });
+
+  /* Agent context card — same payload the runtime injects into prompts. */
+  (function loadAgentContext() {
+    var pre = document.getElementById("agent-context-pre");
+    if (!pre || !id) return;
+    FHData.read("agent-context", { client_id: id }).then(function (res) {
+      if (res && res.ok && res.data && res.data.context) {
+        var block = res.data.context.as_prompt_block
+          || JSON.stringify(res.data.context, null, 2);
+        pre.textContent = block;
+      } else if (res && res.source === "notfound") {
+        pre.textContent = "Client not found.";
+      } else if (!res || !res.ok) {
+        pre.textContent = "Could not load agent context"
+          + (res && res.error ? " (" + res.error + ")" : "") + ".";
+      }
+    });
+  })();
 })();
 </script>
 
