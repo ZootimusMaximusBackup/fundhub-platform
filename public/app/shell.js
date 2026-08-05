@@ -519,21 +519,12 @@
     if (want && ok.indexOf(screenOf(want)) !== -1) location.href = want;
   }
 
-  /* Without a hint the gate cannot answer before paint, so hold the screen
-     back rather than let a forbidden one flash. The timer is the safety net: a
-     backend that never answers must not leave a blank page.
-
-     Two layers, because they fail differently. The document hold is the strong
-     one and it is what stops a forbidden screen being seen at all; the nav-row
-     rule (carried over from the fix on main) outlives it. If a stalled
-     /api/auth/session lets HOLD_MS expire, the screen has to come back — but
-     the sidebar should still not offer tabs whose permission is unknown, so the
-     rows stay hidden until gateLinks() has actually run. Clicks are blocked
-     independently in that window either way, so neither layer is load-bearing
-     for correctness; this is about not showing a nav we cannot stand behind. */
-  var HOLD_MS = 4000;
-  var held = false;
-
+  /* Without a hint the gate cannot answer before paint. Owner-set 2026-08-05:
+     do NOT blank the whole document while /api/auth/session is in flight — that
+     was a multi-second empty screen on every cold load. The layers that remain
+     are enough for the gate: nav rows stay hidden until gateLinks() runs, and
+     clicks on screen links are blocked until the role is known. A cold load
+     may briefly show page chrome before a bounce; a blank wait is worse. */
   var navStyle = document.createElement("style");
   navStyle.id = "fh-gate-style";
   navStyle.textContent = ".navitem{visibility:hidden}";
@@ -636,18 +627,6 @@
     mountSidebar();
   }
 
-  function hold() {
-    if (held || !document.documentElement) return;
-    held = true;
-    document.documentElement.style.visibility = "hidden";
-    setTimeout(reveal, HOLD_MS);
-  }
-  function reveal() {
-    if (!held) return;
-    held = false;
-    document.documentElement.style.visibility = "";
-  }
-
   function getSession() {
     var t = localStorage.getItem("fh_token") || "";
     var real = fetch("/api/auth/session", {
@@ -667,6 +646,10 @@
       return null;
     });
   }
+
+  /* Kick the session off as soon as this file can. Sidebar mount and the role
+     hint still run below; overlapping them with the network is free speed. */
+  var sessionPromise = getSession();
 
   /* backendState — what is actually answering, as opposed to what the screen
      is drawing. Three distinct failures used to look identical from the
@@ -1376,12 +1359,12 @@
       settleClicks(hintedOk);
       onReady(function () { gateLinks(hintedOk, hinted); });
     }
-  } else {
-    hold();
   }
+  /* No document hold on a cold load (owner-set 2026-08-05). Nav stays gated
+     and clicks stay blocked until pass 2 settles the role. */
 
   /* ---- pass 2: the session, authoritative ---- */
-  getSession().then(function (sess) {
+  sessionPromise.then(function (sess) {
     if (!sess) {
       writeCachedRole("");
       location.href = "/login.html?next=/app/" + PAGE;
@@ -1412,12 +1395,10 @@
       applyBrand(sess.staff);
       mountChatWidget(sess.staff, sess.demo);
       mountDemoBanner(sess.staff);
-      reveal();
     });
   }).catch(function () {
-    // Never leave the screen held back on an unexpected failure.
+    // Never leave nav permanently gated on an unexpected failure.
     settleClicks(allowedNow || ALL.slice());
-    reveal();
     revealNav();
   });
 })();
