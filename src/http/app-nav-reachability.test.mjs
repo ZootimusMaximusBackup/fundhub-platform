@@ -52,15 +52,19 @@ const PRINCIPAL_ONLY = shellList("PRINCIPAL_ONLY");
 const OWNER_ADMIN_ONLY = shellList("OWNER_ADMIN_ONLY");
 const CLOSER_DESK_ONLY = shellList("CLOSER_DESK_ONLY");
 const SALES_FLOOR_ONLY = shellList("SALES_FLOOR_ONLY");
+const PORTAL_ONLY = shellList("PORTAL_ONLY");
+const HIRING_ONLY = shellList("HIRING_ONLY");
 
 /** staffTabs — shell.js's own staffTabs(), the shared employee surface.
-    Closer desk and sales floor are role-narrow extras on top of this. */
+    Role-narrow extras stack on top in allowedFor(). */
 const STAFF_TABS = ALL.filter(
   (s) =>
     !PRINCIPAL_ONLY.includes(s) &&
     !OWNER_ADMIN_ONLY.includes(s) &&
     !CLOSER_DESK_ONLY.includes(s) &&
-    !SALES_FLOOR_ONLY.includes(s)
+    !SALES_FLOOR_ONLY.includes(s) &&
+    !PORTAL_ONLY.includes(s) &&
+    !HIRING_ONLY.includes(s)
 );
 
 const CLOSER_TABS = [...STAFF_TABS, ...CLOSER_DESK_ONLY];
@@ -109,6 +113,8 @@ describe("app shell — the lists this test reads", () => {
     }
     assert.deepEqual([...CLOSER_DESK_ONLY].sort(), ["closer-call.html", "my-numbers.html"].sort());
     assert.deepEqual(SALES_FLOOR_ONLY, ["sales-floor.html"]);
+    assert.deepEqual([...PORTAL_ONLY].sort(), ["affiliate.html", "client-portal.html"].sort());
+    assert.deepEqual(HIRING_ONLY, ["hiring.html"]);
     assert.ok(WITH_SIDEBAR.length >= 20,
       `only ${WITH_SIDEBAR.length} screens were found to carry a sidebar`);
   });

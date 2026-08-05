@@ -13,6 +13,10 @@
   // never in ALL. Anything not in the role's list gets sent to its home.
   var PAGE = location.pathname.split("/").pop();
 
+  /* ==SIDEBAR_HTML_START== */
+  var SIDEBAR_HTML = "<aside class=\"side\" id=\"side\">\n  <div class=\"side-top\"><a class=\"logo inv\" href=\"command-center.html\" aria-label=\"fundhub\"></a><button class=\"burger\" id=\"burger\" type=\"button\" title=\"Collapse sidebar\">‹‹</button></div>\n  <nav class=\"side-scroll\" id=\"fh-side-nav\">\n\n<div class=\"navgroup\" data-fh-section=\"sales\"><button class=\"navhead\" type=\"button\">Sales<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"pipeline.html\"><span class=\"ico\">▤</span><span class=\"lbl\">Pipeline</span></a>\n        <a class=\"navitem\" href=\"closer-dashboard.html\"><span class=\"ico\">★</span><span class=\"lbl\">Closer Dashboard</span></a>\n        <a class=\"navitem\" href=\"closer-call.html\"><span class=\"ico\">☎</span><span class=\"lbl\">Call cockpit</span></a>\n        <a class=\"navitem\" href=\"my-numbers.html\"><span class=\"ico\">＃</span><span class=\"lbl\">My numbers</span></a>\n        <a class=\"navitem\" href=\"sales-floor.html\"><span class=\"ico\">▣</span><span class=\"lbl\">Sales floor</span></a>\n        <a class=\"navitem\" href=\"calendar.html\"><span class=\"ico\">▦</span><span class=\"lbl\">Calendar</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"funding\"><button class=\"navhead\" type=\"button\">Funding<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"lenders.html\"><span class=\"ico\">⬡</span><span class=\"lbl\">Lenders</span></a>\n        <a class=\"navitem\" href=\"finance-os.html\"><span class=\"ico\">▩</span><span class=\"lbl\">Finance OS</span></a>\n        <a class=\"navitem\" href=\"contracts.html\"><span class=\"ico\">✒</span><span class=\"lbl\">Contracts</span></a>\n        <a class=\"navitem\" href=\"subscriptions.html\"><span class=\"ico\">◍</span><span class=\"lbl\">Subscriptions</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"client-ops\"><button class=\"navhead\" type=\"button\">Client ops<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"client-control-panel.html\"><span class=\"ico\">◎</span><span class=\"lbl\">Client Control Panel</span></a>\n        <a class=\"navitem\" href=\"messaging.html\"><span class=\"ico\">✉</span><span class=\"lbl\">Messaging</span></a>\n        <a class=\"navitem\" href=\"documents.html\"><span class=\"ico\">▧</span><span class=\"lbl\">Documents</span></a>\n        <a class=\"navitem\" href=\"inquiry-remover.html\"><span class=\"ico\">⊘</span><span class=\"lbl\">Inquiry Remover</span></a>\n        <a class=\"navitem\" href=\"company-brain.html\"><span class=\"ico\">◎</span><span class=\"lbl\">Company Brain</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"watch\"><button class=\"navhead\" type=\"button\">Watch<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"command-center.html\"><span class=\"ico\">⌘</span><span class=\"lbl\">Command Center</span></a>\n        <a class=\"navitem\" href=\"galaxy.html\"><span class=\"ico\">✷</span><span class=\"lbl\">Galaxy</span></a>\n        <a class=\"navitem\" href=\"ops-admin.html\"><span class=\"ico\">⚙</span><span class=\"lbl\">Ops &amp; Admin</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"automation\"><button class=\"navhead\" type=\"button\">Automation<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"agent-editor.html\"><span class=\"ico\">◈</span><span class=\"lbl\">Agent Editor</span></a>\n        <a class=\"navitem\" href=\"automations.html\"><span class=\"ico\">⇄</span><span class=\"lbl\">Workflows</span></a>\n        <a class=\"navitem\" href=\"journeys.html\"><span class=\"ico\">⇝</span><span class=\"lbl\">Journeys</span></a>\n        <a class=\"navitem\" href=\"template-editor.html\"><span class=\"ico\">✎</span><span class=\"lbl\">Message Copy</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"marketing\"><button class=\"navhead\" type=\"button\">Marketing<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"campaign-manager.html\"><span class=\"ico\">◇</span><span class=\"lbl\">Campaigns</span></a>\n        <a class=\"navitem\" href=\"social-studio.html\"><span class=\"ico\">◉</span><span class=\"lbl\">Social Studio</span></a>\n        <a class=\"navitem\" href=\"creative-factory.html\"><span class=\"ico\">✳</span><span class=\"lbl\">Creative Factory</span></a>\n        <a class=\"navitem\" href=\"content-admin.html\"><span class=\"ico\">▶</span><span class=\"lbl\">Content</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"admin\"><button class=\"navhead\" type=\"button\">Admin<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"staff-teams.html\"><span class=\"ico\">⚇</span><span class=\"lbl\">Staff &amp; Teams</span></a>\n        <a class=\"navitem\" href=\"hiring.html\"><span class=\"ico\">⊕</span><span class=\"lbl\">Hiring</span></a>\n        <a class=\"navitem\" href=\"products-commissions.html\"><span class=\"ico\">⛁</span><span class=\"lbl\">Products &amp; Commissions</span></a>\n        <a class=\"navitem\" href=\"sample-data.html\"><span class=\"ico\">⌗</span><span class=\"lbl\">Sample Data</span></a>\n        <a class=\"navitem\" href=\"brand-studio.html\"><span class=\"ico\">◆</span><span class=\"lbl\">Brand Studio</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"portals\"><button class=\"navhead\" type=\"button\">Portals<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"client-portal.html\"><span class=\"ico\">◐</span><span class=\"lbl\">Client Portal</span></a>\n        <a class=\"navitem\" href=\"affiliate.html\"><span class=\"ico\">⇗</span><span class=\"lbl\">Affiliate</span></a>\n</div></div>\n\n  </nav>\n  <div class=\"side-foot\"><span class=\"pulse\"></span><span class=\"who\">fundhub</span></div>\n</aside>";
+  /* ==SIDEBAR_HTML_END== */
+
   var ALL = [
     "closer-dashboard.html", "closer-call.html", "my-numbers.html", "sales-floor.html",
     "pipeline.html", "client-control-panel.html",
@@ -77,11 +81,10 @@
     "lenders.html"
   ];
 
-  /* partner-galaxy.html is the white-label partner's own Galaxy — scoped to
-     their book, with staff identities replaced by anonymous team nodes. It is
-     the one screen no sidebar links to, and employees get the real Galaxy
-     instead, so it stays out of the staff surface. */
-  var PRINCIPAL_ONLY = ["partner-galaxy.html"];
+  /* Screens that are not part of the shared employee rail. partner-galaxy is
+     deliberately unlinked for staff (employees use galaxy.html). brand-studio
+     is a partner brand tool — owner/admin still reach it via "*". */
+  var PRINCIPAL_ONLY = ["partner-galaxy.html", "brand-studio.html"];
 
   /* NOT PART OF THE SHARED STAFF SURFACE — waiting on a human approval, not on
      a nav decision, or gated narrower than STAFF at the API itself.
@@ -128,6 +131,14 @@
      /api/read/sales-floor gate. */
   var SALES_FLOOR_ONLY = ["sales-floor.html"];
 
+  /* External principal portals — not an employee desk. ROLE_TABS.client /
+     .affiliate name the only openers; staffTabs() drops them. */
+  var PORTAL_ONLY = ["client-portal.html", "affiliate.html"];
+
+  /* ROLE_SETS.HIRING — applicant PII. owner/admin only (via "*" or this list
+     added for those roles — "*" already covers owner/admin). */
+  var HIRING_ONLY = ["hiring.html"];
+
   /* staffTabs — every screen a signed-in employee may open, which is every row
      the shared sidebar leaves them looking at — except the role-narrow
      screens above, which closer / sales_manager pick up in allowedFor().
@@ -143,7 +154,9 @@
       return PRINCIPAL_ONLY.indexOf(s) === -1
         && OWNER_ADMIN_ONLY.indexOf(s) === -1
         && CLOSER_DESK_ONLY.indexOf(s) === -1
-        && SALES_FLOOR_ONLY.indexOf(s) === -1;
+        && SALES_FLOOR_ONLY.indexOf(s) === -1
+        && PORTAL_ONLY.indexOf(s) === -1
+        && HIRING_ONLY.indexOf(s) === -1;
     });
   }
 
@@ -528,6 +541,99 @@
 
   function revealNav() {
     if (navStyle && navStyle.parentNode) navStyle.parentNode.removeChild(navStyle);
+  }
+
+  /* ---- sidebar: one markup, one geometry, owned here ---- */
+  function ensureSidebarCss() {
+    if (document.getElementById("fh-crm-sidebar-css")) return;
+    var link = document.createElement("link");
+    link.id = "fh-crm-sidebar-css";
+    link.rel = "stylesheet";
+    link.href = (location.pathname.indexOf("/app/") === 0 ? "" : "/app/") + "crm-sidebar.css";
+    if (location.pathname.indexOf("/app/") === 0) link.href = "crm-sidebar.css";
+    (document.head || document.documentElement).appendChild(link);
+    var lock = document.createElement("style");
+    lock.id = "fh-side-lock";
+    lock.textContent =
+      "aside.side,.side{position:fixed!important;top:0!important;left:0!important;" +
+      "bottom:0!important;width:var(--fh-side-w,228px)!important;flex:none!important;" +
+      "margin:0!important;max-height:none!important;z-index:400!important}" +
+      ".side.mini{width:var(--fh-side-w-mini,60px)!important}" +
+      ".app,.app-shell{padding-left:var(--fh-side-w,228px)!important;box-sizing:border-box}" +
+      "html.fh-side-mini .app,html.fh-side-mini .app-shell{padding-left:var(--fh-side-w-mini,60px)!important}";
+    (document.head || document.documentElement).appendChild(lock);
+  }
+
+  function mountSidebar() {
+    ensureSidebarCss();
+    if (!SIDEBAR_HTML) return;
+    var existing = document.getElementById("side") || document.querySelector("aside.side");
+    if (!existing) return;
+    var wrap = document.createElement("div");
+    wrap.innerHTML = SIDEBAR_HTML;
+    var fresh = wrap.firstElementChild;
+    if (!fresh) return;
+    existing.parentNode.replaceChild(fresh, existing);
+    var page = PAGE || "";
+    var links = fresh.querySelectorAll("a.navitem");
+    for (var i = 0; i < links.length; i++) {
+      var a = links[i];
+      var href = (a.getAttribute("href") || "").split("?")[0];
+      if (href === page) a.classList.add("on");
+      else a.classList.remove("on");
+    }
+    wireSidebarChrome(fresh);
+  }
+
+  function wireSidebarChrome(side) {
+    if (!side || side.getAttribute("data-fh-wired") === "1") return;
+    side.setAttribute("data-fh-wired", "1");
+    var burger = side.querySelector("#burger") || document.getElementById("burger");
+    function syncMini() {
+      var mini = side.classList.contains("mini");
+      document.documentElement.classList.toggle("fh-side-mini", mini);
+      if (burger) burger.textContent = mini ? "››" : "‹‹";
+      var scrim = document.getElementById("side-scrim");
+      if (scrim) {
+        var mobile = window.matchMedia && window.matchMedia("(max-width:860px)").matches;
+        scrim.classList.toggle("show", mobile && !mini);
+      }
+    }
+    if (burger) {
+      burger.addEventListener("click", function () {
+        side.classList.toggle("mini");
+        syncMini();
+      });
+    }
+    var heads = side.querySelectorAll(".navhead");
+    for (var h = 0; h < heads.length; h++) {
+      heads[h].addEventListener("click", function (ev) {
+        var g = ev.currentTarget.closest(".navgroup");
+        if (g) g.classList.toggle("closed");
+      });
+    }
+    if (window.matchMedia) {
+      var mq = window.matchMedia("(max-width:860px)");
+      function onMq() {
+        if (mq.matches && !side.classList.contains("mini")) {
+          side.classList.add("mini");
+        }
+        syncMini();
+      }
+      if (mq.addEventListener) mq.addEventListener("change", onMq);
+      else if (mq.addListener) mq.addListener(onMq);
+      onMq();
+    } else {
+      syncMini();
+    }
+  }
+
+  /* Mount before first paint when possible — head script + documentElement. */
+  ensureSidebarCss();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", mountSidebar);
+  } else {
+    mountSidebar();
   }
 
   function hold() {
@@ -1202,6 +1308,46 @@
     (document.head || document.documentElement).appendChild(s);
   }
 
+  /* Persistent Demo Mode banner — not a chip. Every CRM screen when the org
+     toggle is on. Money totals still exclude is_demo rows on the server. */
+  function mountDemoBanner(staff) {
+    if (!staff || !staff.org_id) return;
+    var role = normRole(staff.role);
+    if (role === "client" || role === "affiliate" || role === "partner") return;
+    fetch("/api/demo/mode", { credentials: "same-origin", headers: { Accept: "application/json" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !d.ok || !d.demo_mode_enabled) {
+          var old = document.getElementById("fh-demo-banner");
+          if (old) old.remove();
+          document.documentElement.classList.remove("fh-demo-mode");
+          return;
+        }
+        document.documentElement.classList.add("fh-demo-mode");
+        if (document.getElementById("fh-demo-banner")) return;
+        var bar = document.createElement("div");
+        bar.id = "fh-demo-banner";
+        bar.setAttribute("role", "status");
+        bar.setAttribute("data-fh-demo-banner", "1");
+        bar.style.cssText = [
+          "position:sticky", "top:0", "z-index:2147482990", "width:100%",
+          "box-sizing:border-box", "padding:10px 16px",
+          "background:#7A2E0E", "color:#FFF7ED",
+          "font:600 13px/1.35 'JetBrains Mono',ui-monospace,monospace",
+          "letter-spacing:.04em", "text-align:center",
+          "border-bottom:2px solid #FDBA74",
+          "display:flex", "gap:12px", "align-items:center", "justify-content:center",
+          "flex-wrap:wrap"
+        ].join(";");
+        bar.innerHTML =
+          "<span>DEMO MODE ON — sample data is displayed. Numbers on this screen may be fictional.</span>" +
+          "<a href=\"sample-data.html\" style=\"color:#FFEDD5;text-decoration:underline;font-weight:700\">Manage demo data</a>";
+        var app = document.querySelector(".app") || document.body;
+        app.insertBefore(bar, app.firstChild);
+      })
+      .catch(function () { /* no banner if the endpoint is unreachable */ });
+  }
+
   // Expose for Brand Studio live preview of CRM chrome.
   window.FHApplyBrand = paintBrand;
 
@@ -1255,6 +1401,7 @@
       }
       applyBrand(sess.staff);
       mountChatWidget(sess.staff, sess.demo);
+      mountDemoBanner(sess.staff);
       reveal();
     });
   }).catch(function () {
