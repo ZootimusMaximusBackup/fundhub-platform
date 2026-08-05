@@ -182,6 +182,23 @@ export async function handleClickFunnelsWebhook({ db, rawBody, signatureHeader, 
     return { ok: false, status: 400, reason: "invalid_json", emitted: [] };
   }
 
+  // CF_CAPTURE_MODE — raw payload capture for adapter correction (CF Classic vs
+  // 2.0 field-path drift, see the header note above). Fires after signature
+  // verify + JSON parse succeed, so only real deliveries are captured. A capture
+  // failure must never block the normal processing path below — try/catch and
+  // move on.
+  if (process.env.CF_CAPTURE_MODE === "1") {
+    try {
+      await db.query(
+        `INSERT INTO webhook_captures (provider, headers, raw_body, parsed)
+         VALUES ($1,$2,$3,$4)`,
+        ["clickfunnels", JSON.stringify({ "x-cf-signature": signatureHeader || null }), rawBody, JSON.stringify(body)]
+      );
+    } catch (err) {
+      console.warn(`[clickfunnels] webhook capture failed (non-fatal): ${String(err?.message || err)}`);
+    }
+  }
+
   const evt = normalizeClickFunnelsEvent(body);
 
   if (!evt.email) {

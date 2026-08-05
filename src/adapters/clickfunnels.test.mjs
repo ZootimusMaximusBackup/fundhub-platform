@@ -217,6 +217,97 @@ test("handleClickFunnelsWebhook: no_email => 200, no emit", async () => {
   assert.equal(res.emitted.length, 0);
 });
 
+// --- CF_CAPTURE_MODE ----------------------------------------------------------
+test("handleClickFunnelsWebhook: CF_CAPTURE_MODE=1 inserts a webhook_captures row and still emits normally", async () => {
+  _resetOrgCache(); clearHandlers();
+  const captures = [];
+  const seen = [];
+  on("entry.captured", (e) => seen.push(e.name));
+  const db = {
+    query(sql, params) {
+      if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
+      if (/INSERT INTO webhook_captures/.test(sql)) {
+        captures.push({ provider: params[0], headers: params[1], rawBody: params[2], parsed: params[3] });
+        return { rows: [] };
+      }
+      if (/INSERT INTO events/.test(sql)) return { rows: [{ id: "evt-1" }] };
+      return { rows: [] };
+    }
+  };
+  const raw = JSON.stringify({
+    id: "cf_capture_1",
+    event: "contact_created",
+    data: { contact: { email: "captured@example.com", first_name: "Cap" } }
+  });
+  const prev = process.env.CF_CAPTURE_MODE;
+  process.env.CF_CAPTURE_MODE = "1";
+  try {
+    const res = await handleClickFunnelsWebhook({ db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+    assert.equal(res.ok, true);
+    assert.deepEqual(res.emitted.map((e) => e.name), ["entry.captured"]);
+    assert.deepEqual(seen, ["entry.captured"]);
+    assert.equal(captures.length, 1);
+    assert.equal(captures[0].provider, "clickfunnels");
+    assert.equal(captures[0].rawBody, raw);
+    assert.equal(JSON.parse(captures[0].parsed).id, "cf_capture_1");
+  } finally {
+    if (prev === undefined) delete process.env.CF_CAPTURE_MODE;
+    else process.env.CF_CAPTURE_MODE = prev;
+  }
+});
+
+test("handleClickFunnelsWebhook: capture failure is non-fatal — processing still completes", async () => {
+  _resetOrgCache(); clearHandlers();
+  const seen = [];
+  on("entry.captured", (e) => seen.push(e.name));
+  const db = {
+    query(sql, params) {
+      if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
+      if (/INSERT INTO webhook_captures/.test(sql)) throw new Error("capture table unavailable");
+      if (/INSERT INTO events/.test(sql)) return { rows: [{ id: "evt-1" }] };
+      return { rows: [] };
+    }
+  };
+  const raw = JSON.stringify({
+    id: "cf_capture_fail",
+    event: "contact_created",
+    data: { contact: { email: "stillworks@example.com" } }
+  });
+  const prev = process.env.CF_CAPTURE_MODE;
+  process.env.CF_CAPTURE_MODE = "1";
+  try {
+    const res = await handleClickFunnelsWebhook({ db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+    assert.equal(res.ok, true);
+    assert.deepEqual(res.emitted.map((e) => e.name), ["entry.captured"]);
+    assert.deepEqual(seen, ["entry.captured"]);
+  } finally {
+    if (prev === undefined) delete process.env.CF_CAPTURE_MODE;
+    else process.env.CF_CAPTURE_MODE = prev;
+  }
+});
+
+test("handleClickFunnelsWebhook: CF_CAPTURE_MODE unset — no capture insert", async () => {
+  _resetOrgCache(); clearHandlers();
+  let captureCalls = 0;
+  const db = {
+    query(sql) {
+      if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
+      if (/INSERT INTO webhook_captures/.test(sql)) { captureCalls += 1; return { rows: [] }; }
+      if (/INSERT INTO events/.test(sql)) return { rows: [{ id: "evt-1" }] };
+      return { rows: [] };
+    }
+  };
+  const raw = JSON.stringify({
+    id: "cf_no_capture",
+    event: "contact_created",
+    data: { contact: { email: "nocapture@example.com" } }
+  });
+  delete process.env.CF_CAPTURE_MODE;
+  const res = await handleClickFunnelsWebhook({ db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+  assert.equal(res.ok, true);
+  assert.equal(captureCalls, 0, "no capture insert when CF_CAPTURE_MODE is unset");
+});
+
 test("handleClickFunnelsWebhook: idempotent re-delivery (deduped, no handler dispatch)", async () => {
   _resetOrgCache(); clearHandlers();
   let fired = 0;

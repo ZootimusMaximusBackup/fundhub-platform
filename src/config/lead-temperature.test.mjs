@@ -26,8 +26,47 @@ test("classifyTemperature: diagnostic.paid exits nurture entirely, regardless of
   assert.equal(classifyTemperature(new Set(["entry.captured", "survey.submitted", "booking.created", "diagnostic.paid"])), null);
 });
 
+test("classifyTemperature: cancelled booking with survey falls back to warm", () => {
+  assert.equal(
+    classifyTemperature(new Set(["entry.captured", "survey.submitted", "booking.created", "booking.cancelled"])),
+    "warm"
+  );
+});
+
+test("classifyTemperature: noshow without survey falls back to cold", () => {
+  assert.equal(
+    classifyTemperature(new Set(["entry.captured", "booking.created", "booking.noshow"])),
+    "cold"
+  );
+});
+
 test("classifyTemperature: no funnel activity classifies as null", () => {
   assert.equal(classifyTemperature(new Set()), null);
+});
+
+// --- booking.cancelled / booking.noshow fallback ---
+test("classifyTemperature: booking.cancelled alone (survey submitted) falls back to warm", () => {
+  assert.equal(classifyTemperature(new Set(["entry.captured", "survey.submitted", "booking.cancelled"])), "warm");
+});
+
+test("classifyTemperature: booking.cancelled alone (no survey) falls back to cold", () => {
+  assert.equal(classifyTemperature(new Set(["entry.captured", "booking.cancelled"])), "cold");
+});
+
+test("classifyTemperature: booking.noshow alone (survey submitted) falls back to warm", () => {
+  assert.equal(classifyTemperature(new Set(["entry.captured", "survey.submitted", "booking.noshow"])), "warm");
+});
+
+test("classifyTemperature: booking.noshow alone (no survey, no entry) falls back to cold", () => {
+  assert.equal(classifyTemperature(new Set(["booking.noshow"])), "cold");
+});
+
+test("classifyTemperature: booking.created AND booking.cancelled both present prefers the cancel (falls back)", () => {
+  assert.equal(classifyTemperature(new Set(["entry.captured", "survey.submitted", "booking.created", "booking.cancelled"])), "warm");
+});
+
+test("classifyTemperature: call.completed after a cancel/noshow keeps them hot (real call happened)", () => {
+  assert.equal(classifyTemperature(new Set(["entry.captured", "booking.cancelled", "call.completed"])), "hot");
 });
 
 // Minimal fake covering only the events table query currentTemperature issues.

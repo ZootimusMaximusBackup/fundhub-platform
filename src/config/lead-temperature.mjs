@@ -17,21 +17,35 @@ export const TEMPERATURE_EVENTS = [
   "entry.captured",
   "survey.submitted",
   "booking.created",
+  "booking.cancelled",
+  "booking.noshow",
   "call.completed",
   "diagnostic.paid"
 ];
 
 // classifyTemperature — pure, no I/O. `seen` is the Set of canonical event names this
-// lead has ever fired. Checks run deepest-funnel-first: a lead with both
-// survey.submitted and booking.created lands on "hot", not "warm" — each rule's
-// "no X" clause is implicit in the ordering, not a separate condition to track.
+// lead has ever fired. Checks run deepest-funnel-first.
+//
+// Cancel / no-show decision (owner-set for this pass): if booking.cancelled or
+// booking.noshow is present AND there is no still-standing booking.created /
+// call.completed heat, fall back to warm (survey) or cold (entry). Sets do not
+// carry order, so a lead who booked then cancelled looks the same as cancelled
+// then rebooked — prefer cancel/noshow over booking.created when both appear,
+// so a cancelled book does not stay "hot" forever. A later rebook emits a new
+// booking.created; until then they re-enter nurture.
 export function classifyTemperature(seen) {
   const has = (name) => seen.has(name);
-  if (has("diagnostic.paid")) return null; // past nurture — sales/decision pipeline owns them now
+  if (has("diagnostic.paid")) return null;
+  const cancelled = has("booking.cancelled") || has("booking.noshow");
+  if (cancelled && !has("call.completed")) {
+    if (has("survey.submitted")) return "warm";
+    if (has("entry.captured")) return "cold";
+    return "cold";
+  }
   if (has("booking.created") || has("call.completed")) return "hot";
   if (has("survey.submitted")) return "warm";
   if (has("entry.captured")) return "cold";
-  return null; // no funnel activity yet — nothing to classify
+  return null;
 }
 
 // currentTemperature — look up which funnel-depth events this client has fired and

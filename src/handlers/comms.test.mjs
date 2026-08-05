@@ -139,6 +139,81 @@ test("booking.created: creates a task once (dedup by booking uid), creates clien
   assert.equal(db.clients.length, 1, "resolved+created the client from the booking email");
 });
 
+test("booking.created: stores meetingUrl on the task", async () => {
+  const db = pgFake();
+  const e = ev("booking.created", {
+    email: "meet@x.com", name: "Meet Person", bookingUid: "bk_meet", startTime: "2026-08-01T15:00:00Z",
+    source: "calcom", meetingUrl: "https://meet.example.com/abc"
+  });
+  await onBookingCreated(e, db);
+  assert.equal(db.tasks[0].meeting_url, "https://meet.example.com/abc");
+});
+
+// booking.rescheduled — updates the existing task in place (no second task).
+test("booking.rescheduled: updates the existing open task's due_at + meeting_url in place", async () => {
+  const db = pgFake();
+  const created = ev("booking.created", { email: "resched@x.com", bookingUid: "bk_2", startTime: "2026-08-01T15:00:00Z", source: "calcom" });
+  await onBookingCreated(created, db);
+  const rescheduled = ev("booking.rescheduled", {
+    clientId: db.clients[0].id, bookingUid: "bk_2", startTime: "2026-08-02T15:00:00Z",
+    meetingUrl: "https://meet.example.com/new", source: "calcom"
+  }, { clientId: db.clients[0].id });
+  await onBookingRescheduled(rescheduled, db);
+  assert.equal(db.tasks.length, 1, "no second task created — the open one was updated");
+  assert.equal(db.tasks[0].due_at, "2026-08-02T15:00:00Z");
+  assert.equal(db.tasks[0].meeting_url, "https://meet.example.com/new");
+  assert.equal(db.tasks[0].title, "Strategy session rescheduled");
+  assert.equal(db.clients[0].custom_fields.call_outcome, "rescheduled");
+});
+
+test("booking.rescheduled: no open task found → creates one (rescheduled before created seen)", async () => {
+  const db = pgFake();
+  db.clients.push({ id: "cl-resched", org_id: "org-1", email: "noopen@x.com", tags: [], custom_fields: {} });
+  const e = ev("booking.rescheduled", { clientId: "cl-resched", bookingUid: "bk_3", startTime: "2026-08-03T15:00:00Z", source: "calcom" }, { clientId: "cl-resched" });
+  await onBookingRescheduled(e, db);
+  assert.equal(db.tasks.length, 1);
+  assert.equal(db.tasks[0].body, "bk_3");
+  assert.equal(db.clients[0].custom_fields.call_outcome, "rescheduled");
+});
+
+// booking.cancelled — closes the open task, tags, sets custom field. No re-nurture task.
+test("booking.cancelled: marks the open task done, tags call:cancelled, sets call_outcome", async () => {
+  const db = pgFake();
+  const created = ev("booking.created", { email: "cancel@x.com", bookingUid: "bk_4", startTime: "2026-08-01T15:00:00Z", source: "calcom" });
+  await onBookingCreated(created, db);
+  const clientId = db.clients[0].id;
+  const cancelled = ev("booking.cancelled", { clientId, bookingUid: "bk_4", source: "calcom" }, { clientId });
+  await onBookingCancelled(cancelled, db);
+  assert.equal(db.tasks[0].done, true);
+  assert.deepEqual(db.clients[0].tags, ["call:cancelled"]);
+  assert.equal(db.clients[0].custom_fields.call_outcome, "cancelled");
+});
+
+test("booking.cancelled: replay is idempotent (task stays done, tag not duplicated)", async () => {
+  const db = pgFake();
+  const created = ev("booking.created", { email: "cancel2@x.com", bookingUid: "bk_5", startTime: "2026-08-01T15:00:00Z", source: "calcom" });
+  await onBookingCreated(created, db);
+  const clientId = db.clients[0].id;
+  const cancelled = ev("booking.cancelled", { clientId, bookingUid: "bk_5", source: "calcom" }, { clientId });
+  await onBookingCancelled(cancelled, db);
+  await onBookingCancelled(cancelled, db);
+  assert.equal(db.tasks.length, 1);
+  assert.deepEqual(db.clients[0].tags, ["call:cancelled"]);
+});
+
+// booking.noshow — closes the open task, tags call:no_show, sets call_outcome.
+test("booking.noshow: marks the open task done, tags call:no_show, sets call_outcome", async () => {
+  const db = pgFake();
+  const created = ev("booking.created", { email: "noshow@x.com", bookingUid: "bk_6", startTime: "2026-08-01T15:00:00Z", source: "calcom" });
+  await onBookingCreated(created, db);
+  const clientId = db.clients[0].id;
+  const noshow = ev("booking.noshow", { clientId, bookingUid: "bk_6", source: "calcom" }, { clientId });
+  await onBookingNoshow(noshow, db);
+  assert.equal(db.tasks[0].done, true);
+  assert.deepEqual(db.clients[0].tags, ["call:no_show"]);
+  assert.equal(db.clients[0].custom_fields.call_outcome, "no_show");
+});
+
 // TCPA STOP/START keyword handling
 
 test("message.inbound STOP: records opt-out for known client", async () => {
