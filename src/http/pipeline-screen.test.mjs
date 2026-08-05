@@ -113,8 +113,12 @@ describe("public/app/pipeline.html — screen wiring", () => {
   });
 
   test("both the cache-hit path and the fresh-fetch path update the summary from real stages", () => {
-    assert.match(HTML, /setSummary\(fhPipelineSummary\(cache\[key\]\)\)/);
-    assert.match(HTML, /setSummary\(fhPipelineSummary\(res\.data\.stages\)\)/);
+    // Both paths go through applyBoard(), which always sets the summary from
+    // the stages it was handed — cache hit and fresh fetch alike.
+    assert.match(HTML, /function applyBoard\(stages, rail, label, key\)/);
+    assert.match(HTML, /setSummary\(fhPipelineSummary\(stages\)\)/);
+    assert.match(HTML, /applyBoard\(cache\[key\], rail, label, key\)/);
+    assert.match(HTML, /applyBoard\(res\.data\.stages, rail, label, key\)/);
   });
 
   test("a failed or demo load clears the summary instead of leaving the last rail's numbers on screen", () => {
@@ -176,8 +180,11 @@ describe("public/app/pipeline.html — rail tab counts", () => {
     assert.match(HTML, /"R-09":\s*"hiring"/);
   });
 
-  test("both the cache-hit path and the fresh-fetch path update the rail tab's own count", () => {
-    assert.match(HTML, /setRailCount\(rail, fhPipelineSummary\(cache\[key\]\)\.count\)/);
+    test("both the cache-hit path and the fresh-fetch path update the rail tab's own count", () => {
+    assert.match(HTML, /setRailCount\(rail, fhPipelineSummary\(stages\)\.count\)/);
+    assert.match(HTML, /applyBoard\(cache\[key\], rail, label, key\)/);
+    assert.match(HTML, /applyBoard\(res\.data\.stages, rail, label, key\)/);
+    // loadRailCounts still writes each inactive rail's count from its own fetch.
     assert.match(HTML, /setRailCount\(rail, fhPipelineSummary\(res\.data\.stages\)\.count\)/);
   });
 
