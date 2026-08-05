@@ -5,6 +5,7 @@ import {
   DEMO_EMAIL_DOMAIN, PLATFORM_TAG, demoClientEmail,
   OUTCOMES, BELIEFS, CALL_STATES
 } from "./roster.mjs";
+import { seedUiCoverage } from "./seed-ui-coverage.mjs";
 
 const q = async (db, sql, params = []) => { try { return await db.query(sql, params); } catch { return { rows: [] }; } };
 
@@ -215,13 +216,26 @@ export async function seedPlatformDemo(db, { orgId } = {}) {
     SELECT $1,$2,$3,'direct',$4,now()-interval '14 days','manual',now()-interval '7 days','converted','demo'
     WHERE NOT EXISTS (SELECT 1 FROM affiliate_referrals WHERE client_id=$3 AND tier='direct')`, [orgId,affiliateId,clientIds[11],DEMO_AFFILIATE.tracking_id]);
 
+  await seedUiCoverage(db, { orgId, clientIds, staffRows, closer, advisor, owner });
+
   const counts = (await db.query(`SELECT
     (SELECT count(*)::int FROM clients WHERE org_id=$1 AND is_demo) AS clients,
     (SELECT count(*)::int FROM lenders WHERE org_id=$1 AND is_demo) AS lenders,
     (SELECT count(*)::int FROM call_outcomes WHERE org_id=$1 AND is_demo) AS call_outcomes,
     (SELECT count(*)::int FROM sales WHERE org_id=$1 AND is_demo) AS sales,
-    (SELECT count(*)::int FROM funding_rounds WHERE org_id=$1 AND is_demo) AS funding_rounds`, [orgId])).rows[0];
-  return { ok: true, seeded: true, counts, domain: DEMO_EMAIL_DOMAIN };
+    (SELECT count(*)::int FROM funding_rounds WHERE org_id=$1 AND is_demo) AS funding_rounds,
+    (SELECT count(*)::int FROM tasks WHERE org_id=$1 AND is_demo) AS tasks,
+    (SELECT count(*)::int FROM documents WHERE org_id=$1 AND is_demo) AS documents,
+    (SELECT count(*)::int FROM bank_accounts WHERE org_id=$1 AND is_demo) AS bank_accounts,
+    (SELECT count(*)::int FROM subscriptions WHERE org_id=$1 AND is_demo) AS subscriptions`, [orgId])).rows[0];
+  return {
+    ok: true,
+    seeded: true,
+    counts,
+    domain: DEMO_EMAIL_DOMAIN,
+    primary_client_id: clientIds[1] || null,
+    primary_client_href: clientIds[1] ? `/app/client-control-panel.html?id=${clientIds[1]}` : null
+  };
 }
 
 export async function setDemoMode(db, { orgId, enabled } = {}) {
@@ -243,8 +257,21 @@ export async function getDemoModeStatus(db, { orgId } = {}) {
     (SELECT count(*)::int FROM lenders WHERE org_id=$1 AND is_demo) AS lenders,
     (SELECT count(*)::int FROM call_outcomes WHERE org_id=$1 AND is_demo) AS call_outcomes,
     (SELECT count(*)::int FROM sales WHERE org_id=$1 AND is_demo) AS sales,
-    (SELECT count(*)::int FROM funding_rounds WHERE org_id=$1 AND is_demo) AS funding_rounds`, [orgId])).rows[0];
-  return { demo_mode_enabled: org.rows[0]?.demo_mode_enabled === true, counts, domain: DEMO_EMAIL_DOMAIN };
+    (SELECT count(*)::int FROM funding_rounds WHERE org_id=$1 AND is_demo) AS funding_rounds,
+    (SELECT count(*)::int FROM tasks WHERE org_id=$1 AND COALESCE(is_demo,false)) AS tasks,
+    (SELECT count(*)::int FROM documents WHERE org_id=$1 AND COALESCE(is_demo,false)) AS documents,
+    (SELECT count(*)::int FROM bank_accounts WHERE org_id=$1 AND COALESCE(is_demo,false)) AS bank_accounts,
+    (SELECT count(*)::int FROM subscriptions WHERE org_id=$1 AND COALESCE(is_demo,false)) AS subscriptions`, [orgId])).rows[0];
+  const primary = (await db.query(
+    `SELECT id FROM clients WHERE org_id=$1 AND is_demo AND email LIKE 'demo.client.01@%' LIMIT 1`,
+    [orgId]
+  )).rows[0];
+  return {
+    demo_mode_enabled: org.rows[0]?.demo_mode_enabled === true,
+    counts,
+    domain: DEMO_EMAIL_DOMAIN,
+    primary_client_id: primary?.id || null
+  };
 }
 
 /** Run a wipe delete; ignore missing-relation / undefined-column only. */
@@ -289,9 +316,26 @@ export async function wipeDemoData(db, { orgId } = {}) {
       `DELETE FROM tradelines WHERE org_id=$1 AND is_demo`,
       `DELETE FROM crs_results WHERE org_id=$1 AND is_demo`,
       `DELETE FROM bank_accounts WHERE org_id=$1 AND is_demo`,
-      `DELETE FROM marketing_flags WHERE org_id=$1 AND is_demo`
+      `DELETE FROM marketing_flags WHERE org_id=$1 AND is_demo`,
+      `DELETE FROM tasks WHERE org_id=$1 AND is_demo`,
+      `DELETE FROM bank_transactions WHERE org_id=$1 AND is_demo`,
+      `DELETE FROM recurring_bills WHERE org_id=$1 AND is_demo`,
+      `DELETE FROM card_liabilities WHERE org_id=$1 AND is_demo`,
+      `DELETE FROM subscriptions WHERE org_id=$1 AND is_demo`,
+      `DELETE FROM client_cards WHERE org_id=$1 AND is_demo`,
+      `DELETE FROM staff_targets WHERE org_id=$1 AND is_demo`,
+      `DELETE FROM events WHERE org_id=$1 AND is_demo`,
+      `DELETE FROM journeys WHERE org_id=$1 AND is_demo`,
+      `DELETE FROM hiring_job_postings WHERE org_id=$1 AND is_demo`
     ];
     for (const sql of byOrgDemo) await wipeQ(db, sql, [orgId]);
+
+    // Hiring applications for demo candidates (by email domain).
+    await wipeQ(db,
+      `DELETE FROM candidate_applications WHERE candidate_id IN (
+         SELECT id FROM candidates WHERE org_id=$1 AND COALESCE(is_demo,false)
+       )`, [orgId]);
+    await wipeQ(db, `DELETE FROM candidates WHERE org_id=$1 AND is_demo`, [orgId]);
 
     // Every non-CASCADE FK to clients must be cleared before DELETE clients.
     const byClient = [
@@ -300,6 +344,10 @@ export async function wipeDemoData(db, { orgId } = {}) {
       `DELETE FROM documents WHERE client_id=ANY($1)`,
       `DELETE FROM events WHERE client_id=ANY($1)`,
       `DELETE FROM bank_inbox WHERE client_id=ANY($1)`,
+      `DELETE FROM bank_transactions WHERE client_id=ANY($1)`,
+      `DELETE FROM recurring_bills WHERE client_id=ANY($1)`,
+      `DELETE FROM card_liabilities WHERE client_id=ANY($1)`,
+      `DELETE FROM subscriptions WHERE client_id=ANY($1)`,
       `DELETE FROM affiliate_events WHERE client_id=ANY($1)`,
       `DELETE FROM affiliate_payout_lines WHERE client_id=ANY($1)`,
       `DELETE FROM opt_outs WHERE client_id=ANY($1)`,
@@ -315,6 +363,7 @@ export async function wipeDemoData(db, { orgId } = {}) {
       `DELETE FROM client_consents WHERE client_id=ANY($1)`,
       `DELETE FROM client_cards WHERE client_id=ANY($1)`,
       `DELETE FROM alerts WHERE client_id=ANY($1)`,
+      `DELETE FROM bank_accounts WHERE client_id=ANY($1)`,
       `DELETE FROM entities WHERE client_id=ANY($1)`,
       `DELETE FROM lender_bureau_observations WHERE client_id=ANY($1)`,
       `DELETE FROM inquiry_prep WHERE client_id=ANY($1)`,
@@ -349,6 +398,9 @@ export async function wipeDemoData(db, { orgId } = {}) {
   await wipeQ(db, `DELETE FROM partners WHERE org_id=$1 AND is_demo AND slug=$2`, [orgId, DEMO_PARTNER.slug]);
   await wipeQ(db, `DELETE FROM affiliates WHERE org_id=$1 AND is_demo AND tracking_id=$2`, [orgId, DEMO_AFFILIATE.tracking_id]);
   await wipeQ(db, `DELETE FROM contract_templates WHERE org_id=$1 AND is_demo`, [orgId]);
+  await wipeQ(db, `DELETE FROM journeys WHERE org_id=$1 AND is_demo`, [orgId]);
+  await wipeQ(db, `DELETE FROM staff_targets WHERE org_id=$1 AND is_demo`, [orgId]);
+  await wipeQ(db, `DELETE FROM events WHERE org_id=$1 AND is_demo`, [orgId]);
 
   return { ok: true, wiped: true, clients_removed: clientIds.length };
 }

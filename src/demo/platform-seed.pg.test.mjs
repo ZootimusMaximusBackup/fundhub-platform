@@ -23,6 +23,11 @@ test("demo mode isolation", { skip: !hasDb }, async () => {
   assert.ok(status.counts.clients >= 8, "expected 8+ demo clients");
   assert.ok(status.counts.lenders >= 7, "expected 7 demo lenders");
   assert.ok(status.counts.call_outcomes >= 20, "expected call volume");
+  assert.ok((status.counts.tasks || 0) >= 4, "expected calendar tasks");
+  assert.ok((status.counts.documents || 0) >= 2, "expected documents");
+  assert.ok((status.counts.bank_accounts || 0) >= 2, "expected finance bank accounts");
+  assert.ok((status.counts.subscriptions || 0) >= 1, "expected subscriptions");
+  assert.ok(status.primary_client_id, "primary demo client for screen bootstrap");
 
   await setDemoMode(db, { orgId, enabled: true });
   assert.equal((await getDemoModeStatus(db, { orgId })).demo_mode_enabled, true);

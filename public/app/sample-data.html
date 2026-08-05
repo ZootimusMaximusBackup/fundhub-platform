@@ -414,7 +414,16 @@ pre.json .b{color:#C4B3E5}
     statusEl.textContent = on ? "Demo Mode is ON — CRM screens show seeded sample data with a banner." : "Demo Mode is OFF — demo rows are hidden.";
     pill.innerHTML = on ? '<span class="dot" style="background:#FDBA74"></span>DEMO MODE ON' : '<span class="dot" style="background:var(--gray2)"></span>Demo Mode off';
     var c = (d && d.counts) || {};
-    countsEl.textContent = ["clients: "+(c.clients||0),"lenders: "+(c.lenders||0),"call_outcomes: "+(c.call_outcomes||0),"sales: "+(c.sales||0)].join("\n");
+    countsEl.textContent = [
+      "clients: "+(c.clients||0),
+      "lenders: "+(c.lenders||0),
+      "call_outcomes: "+(c.call_outcomes||0),
+      "sales: "+(c.sales||0),
+      "tasks: "+(c.tasks||0),
+      "documents: "+(c.documents||0),
+      "bank_accounts: "+(c.bank_accounts||0),
+      "subscriptions: "+(c.subscriptions||0)
+    ].join("\n");
   }
   function load() {
     return fetch("/api/demo/mode", { credentials: "same-origin", headers: headers() })
