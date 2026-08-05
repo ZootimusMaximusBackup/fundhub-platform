@@ -286,3 +286,121 @@ Deliberately NOT set: `OPENAI_API_KEY`, `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON`, `GO
 
 Credentials were not logged.
 
+---
+
+# Merge log — three feature branches into main (2026-08-04)
+
+Worktree: `/Users/zootimusmaximus/fundhub-merge-round` on branch `merge-round-2026-08-04`.
+Baseline on `main` before this round (`7ba8a6c`): unit 4342 tests / 4339 pass / 0 fail / 3 skipped; pg 578 / 47 pass / 531 skipped (no `DATABASE_URL`).
+
+## Branches found on origin not merged into main
+
+1. `origin/money-chain-writers`
+2. `origin/staff-deep-monitoring`
+3. `origin/feat/inquiry-removal-bridge`
+
+## Four-session verification on money-chain-writers (step 3)
+
+All four survived on the branch tip and on final `main` — none overwrote another:
+
+1. **Money-chain writers** — `src/handlers/money-chain.mjs` (+ unit/pg tests) PRESENT
+2. **Airtable funding/inquiry schema port** — `138_lenders.sql` / `139_funding_ops.sql` / `140_inquiry_ops.sql` + `src/lenders/*` + `src/inquiry-ops/*` PRESENT
+3. **Message template load (8b052b6)** — `src/messaging/seed/workflow-keys.mjs` PRESENT; dry-run seeder reports **TOTAL 224 rows**
+4. **Oxylabs proxy door (7925115)** — `src/adapters/oxylabs.mjs` + `extension/` (manifest, background, content, icons) PRESENT
+
+## Migration renumbering (old → new)
+
+| Old | New |
+|---|---|
+| `137_money_chain_idempotency.sql` | `137_money_chain_idempotency.sql` (unchanged) |
+| `t138_lenders.sql` | `138_lenders.sql` |
+| `t139_funding_ops.sql` | `139_funding_ops.sql` |
+| `t140_inquiry_ops.sql` | `140_inquiry_ops.sql` |
+| `t141_proxy_sessions.sql` | `141_proxy_sessions.sql` |
+| `138_staff_monitoring_consent.sql` (staff branch) | `142_staff_monitoring_consent.sql` |
+| `137_inquiry_removal_cases.sql` (bridge CREATE) | **dropped** — superseded by additive `143` |
+| `138_inquiry_log_bridge.sql` (bridge ALTER) | **dropped** — superseded by additive `143` |
+| (new) | `143_inquiry_removal_bridge.sql` |
+
+Manifest regenerated with `npm run migrations:manifest` after each renumber.
+
+### Final sequence (after 136)
+
+```
+137_money_chain_idempotency.sql
+138_lenders.sql
+139_funding_ops.sql
+140_inquiry_ops.sql
+141_proxy_sessions.sql
+142_staff_monitoring_consent.sql
+143_inquiry_removal_bridge.sql
+```
+
+## 15. money-chain-writers — MERGED-CLEAN (fast-forward) + renumber commit
+
+- Fast-forward onto main (`7ba8a6c` → tip `7925115`), then renumber commit `7e15574`.
+- Conflicts: none on merge.
+- Suite after renumber: unit 4401 / 4398 pass / 0 fail; pg 578 / 47 pass / 531 skipped. Lint clean (891 files).
+- Pushed to `main` as `7e15574`. Branch deleted: `origin/money-chain-writers`.
+
+## 16. staff-deep-monitoring — MERGED-WITH-RESOLUTION — COMPLIANCE REVIEW REQUIRED
+
+- Conflicts: journey `*-actual.md` + README + CHANGELOG only. Regenerated journeys via `npm run journeys`; CHANGELOG kept both sides (staff monitoring entry newest).
+- **Number collision:** incoming `138_staff_monitoring_consent.sql` collided with `138_lenders.sql`. Renumbered to `142_staff_monitoring_consent.sql`.
+- Diagram suite: adapter count 10 → 11 for hubstaff; regenerated `npm run diagrams`.
+- Suite after: unit 4417 / 4414 pass / 0 fail; pg green. Lint clean (902 files).
+- Pushed as `6cbc74d`. Branch deleted: `origin/staff-deep-monitoring`.
+- **COMPLIANCE REVIEW REQUIRED:** employee monitoring consent capture (`staff.monitoring_consent_at`). Marker only — not new advice.
+- Env left unset: `HUBSTAFF_TOKEN`, `HUBSTAFF_ORG_ID`.
+
+## 17. feat/inquiry-removal-bridge — MERGED-WITH-RESOLUTION
+
+### Genuine logic conflict — call made
+
+Bridge shipped `137_inquiry_removal_cases.sql` (CREATE `inquiry_removal_cases` with Airtable-facing text statuses) and `138_inquiry_log_bridge.sql` while money-chain already had `140_inquiry_ops.sql` creating the same table with `inquiry_case_status` / `inquiry_call_state` enums and a richer ops shape.
+
+**Call:** Keep **140 as the canonical table**. Drop the bridge CREATE/ALTER files. Add **`143_inquiry_removal_bridge.sql`** with only the missing Airtable/IRA mirror columns (`external_case_id`, case-level call rollups, `inquiry_log.external_inquiry_id` / `inquiry_name` / `is_open` / `cleared_at`, plus `case_id` synonym of `inquiry_removal_case_id` kept in sync by trigger). Adapt `src/inquiry-removal/cases.mjs` to map IRA status/call-state strings onto the 140 enums on write.
+
+### Handler collision — call made
+
+Both branches added `api/inquiry-cases.mjs` and `api/read/inquiry-cases.mjs`.
+
+**Call:** Keep money-chain (`src/inquiry-ops`) handlers as `/api/inquiry-cases` and `/api/read/inquiry-cases`. Extend the write handler with `clear_inquiry` that calls the adapted bridge clearer. Keep the IRA webhook on `src/http/router.mjs` as provider `inquiry-removal` (`INQUIRY_REMOVAL_WEBHOOK_SECRET`). Dashboard keeps `getActiveCaseForClient` (money-chain); discarded the bridge's parallel case SELECT that used non-enum status literals.
+
+### Manifest/doc conflicts
+
+- `db/expected-migrations.mjs` — regenerated.
+- Journeys + diagrams — regenerated (`npm run journeys`, `npm run diagrams`). Adapter count → 12 (inquiry-removal).
+- CHANGELOG — kept both sides; bridge entry updated to say migration 143.
+
+### Suite
+
+Unit 4426 / 4423 pass / 0 fail; pg 578 / 47 pass / 531 skipped. Lint clean (906 files).
+Pushed as `13f04e3`. Branch deleted: `origin/feat/inquiry-removal-bridge`.
+
+## Production migrate
+
+Applied 2026-08-04 via `MIGRATION_DATABASE_URL` (admin pooler) → `node db/migrate.mjs`.
+
+Applied (7):
+- `migrations/137_money_chain_idempotency.sql`
+- `migrations/138_lenders.sql`
+- `migrations/139_funding_ops.sql`
+- `migrations/140_inquiry_ops.sql`
+- `migrations/141_proxy_sessions.sql`
+- `migrations/142_staff_monitoring_consent.sql`
+- `migrations/143_inquiry_removal_bridge.sql`
+
+## Credentials deliberately NOT set
+
+Documented in `docs/STILL-MISSING.md`: `INNGEST_EVENT_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_DRIVE_*`, `META_*`, `HUBSTAFF_*`, `OXYLABS_*`, `TWILIO_*`, `LINKEDIN_*`, `INQUIRY_REMOVAL_WEBHOOK_SECRET`.
+
+## Skipped / left undone
+
+- Playwright not run this round (proxy/lenders/staff e2e specs exist; messaging inbox was the only prior full pass — owed if you want a screen pass).
+- Local worktree branches `money-chain-writers` / `staff-deep-monitoring` / `feat/inquiry-removal-bridge` may still exist in other worktrees; remotes deleted.
+- Message template **rows** are produced by the seeder (224) — not auto-written to production DB in this session (seeder is a separate ops step; only schema migrations were applied).
+
+## Remotes remaining unmerged into main
+
+None.
