@@ -266,6 +266,7 @@ window.FHData = (function () {
     /* The LOCAL inquiry_log queue. Not /api/inquiry — that proxies the external
        Airtable runtime and returns its shape, not these columns. */
     inquiries:       function (p) { return this.read("inquiries", p); },
+    inquiryCases:    function (p) { return this.read("inquiry-cases", p); },
 
     /* GET /api/partner-brand — not under /api/read, so it gets its own reader
        rather than a path-traversal through read(). Partner funnel lane only —

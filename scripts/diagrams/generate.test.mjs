@@ -112,8 +112,8 @@ test("every canonical event lands in exactly one group", async () => {
 test("adapters report their auth scheme and emitted events", async () => {
   const { canonicalEvents } = await extractAll();
   const adapters = extractAdapters(canonicalEvents);
-  // 11: nine webhook/direct adapters + oxylabs (Apply proxy) + hubstaff (poll ingest).
-  assert.equal(adapters.length, 11, "11 adapters in src/adapters");
+  // 12: nine webhook/direct + oxylabs + hubstaff + inquiry-removal (IRA bridge).
+  assert.equal(adapters.length, 12, "12 adapters in src/adapters");
 
   const twilio = adapters.find((a) => a.name === "twilio");
   assert.equal(twilio.scheme, "HMAC-SHA1", "Twilio signs with SHA1, unlike the rest");
@@ -122,6 +122,12 @@ test("adapters report their auth scheme and emitted events", async () => {
   const crs = adapters.find((a) => a.name === "crs");
   assert.equal(crs.inbound, false, "CRS is a direct call, not a signed webhook");
   assert.equal(crs.verifiers.length, 0);
+
+  const ira = adapters.find((a) => a.name === "inquiry-removal");
+  assert.ok(ira, "inquiry-removal adapter must be extracted");
+  assert.equal(ira.inbound, true);
+  assert.ok(ira.verifiers.length > 0, "inquiry-removal verifies a signature");
+  assert.ok(ira.events.includes("inquiry.removed"));
 
   for (const a of adapters) {
     assert.ok(a.events.every((e) => canonicalEvents.includes(e)), `${a.name} emits a non-canonical event`);

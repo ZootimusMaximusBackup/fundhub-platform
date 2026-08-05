@@ -1,6 +1,6 @@
 # Still missing
 
-Updated 2026-08-02 in the `feat/finish-4-and-5` session after closing the
+Updated 2026-08-04 in the `feat/finish-4-and-5` session after closing the
 Campaigns / Social / Creative / Brand Studio gaps from the prior scorecard.
 
 ## Credentials needed (do not invent)
@@ -83,6 +83,26 @@ Updated 2026-08-04. Adapter + `proxy_sessions` (`141_proxy_sessions.sql`) + `POS
 
 **Left unset on purpose:** `OXYLABS_USERNAME` / `OXYLABS_PASSWORD`. Set both as Netlify secrets, then `netlify deploy --build --prod`. Until they are set, launch returns a clear 503 — it does not invent credentials or silently skip geo checks.
 
+## Deliberately unset (owner — do not set in this merge)
+
+These stay off until a separate cutover. Routes fail clean / no-op without them.
+
+| Env | Why it stays unset |
+|---|---|
+| `INNGEST_EVENT_KEY` | Turns on the live workflow engine (47 functions). Owner gate. |
+| `ANTHROPIC_API_KEY` | Model calls — not part of this merge. |
+| `OPENAI_API_KEY` | Company Brain / creative — stays off with Drive. |
+| `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON` | Company Brain Drive sync. |
+| `GOOGLE_DRIVE_DELEGATE_EMAIL` | Same. |
+| `META_APP_ID` / `META_APP_SECRET` / Meta tokens | Campaign sync — wired, credentials not fabricated. |
+| `HUBSTAFF_TOKEN` / `HUBSTAFF_ORG_ID` | Deep monitoring poll — consent gate is live; ingest stays dark. |
+| `OXYLABS_USERNAME` / `OXYLABS_PASSWORD` | Residential Apply door — launch returns 503 until set. |
+| `TWILIO_*` | SMS provider — A2P / routing still gated. |
+| `LINKEDIN_*` | Social — not part of this merge. |
+| `INQUIRY_REMOVAL_WEBHOOK_SECRET` | IRA → platform webhook — configure with the IRA runtime at cutover. |
+
+
+
 ## Still deferred / out of scope
 
 1. **Full create-campaign / create-ad-set UI** — use Meta (or a later form) then
@@ -121,3 +141,63 @@ Updated 2026-08-04. Adapter + `proxy_sessions` (`141_proxy_sessions.sql`) + `POS
 - Finance OS simulated client loader + teardown
 - Global search overlap fix
 - Brand Studio → `partner_pages` drafts (now also publishable/live)
+
+## Inquiry Removal AI bridge (platform side shipped; IRA outbound still open)
+
+Updated 2026-08-04 on `feat/inquiry-removal-bridge`.
+
+The platform now has:
+
+| Piece | Where |
+|---|---|
+| `inquiry_removal_cases` + bridged `inquiry_log` | migrations `137`, `138` |
+| Signed inbound webhook | `POST /api/webhooks/inquiry-removal` |
+| Case queue + Mark Cleared / Close Case | `GET /api/read/inquiry-cases`, `GET/POST /api/inquiry-cases`, Inquiry Remover screen |
+| Client file status | `inquiry_removal_case` on `GET /api/dashboard/client` |
+
+**Env (platform):** `INQUIRY_REMOVAL_WEBHOOK_SECRET` — HMAC-SHA256 of the raw body; header `x-inquiry-removal-signature` (raw hex or `sha256=<hex>`).
+
+### Darwin — inquiry-removal-ai repo changes (not this platform)
+
+The IRA runtime still writes only to Airtable. It needs outbound POSTs to the platform after each of these moments:
+
+1. **Case created** (AX23 / schedule-call path) → `type: "case.created"`
+2. **Call state changes** (Bland progress / call-webhook) → `type: "call_state.changed"`
+3. **Inquiry cleared** → `type: "inquiry.cleared"`
+4. **Case closed** → `type: "case.closed"`
+
+Suggested payload fields (snake_case):
+
+```json
+{
+  "type": "case.created",
+  "id": "stable-event-id-for-idempotency",
+  "client_id": "<platform clients.id uuid>",
+  "external_case_id": "recAirtableCaseId",
+  "case_status": "Scheduled",
+  "selected_bureaus_raw": "EX,TU",
+  "requested_at": "2026-08-04T18:00:00Z",
+  "master_call_state": "queued",
+  "inquiries": [
+    {
+      "external_inquiry_id": "recAirtableInquiryId",
+      "bureau": "EX",
+      "inquiry_name": "Capital One",
+      "status": "Open",
+      "call_state": "queued"
+    }
+  ]
+}
+```
+
+For `call_state.changed`, send `external_case_id` (or platform `case_id`) plus `master_call_state` one of:
+`queued | dialing | ivr | holding | live_agent_reached | transferred_to_rep | completed | failed | idle`.
+When state is `holding`, include `hold_started_at`.
+
+For `inquiry.cleared` / `case.closed` with clears, the platform emits canonical `inquiry.removed` (C-03 listens). Set `as_cleared: true` on `case.closed` when the file is clean.
+
+**Mapping gap:** IRA today keys cases by Airtable client links. Darwin must resolve and send the platform `client_id` (uuid). Until that mapping exists, case.created will 400 with `client_id_required`.
+
+**URL:** `https://<platform-host>/api/webhooks/inquiry-removal`
+
+**Do not** point Bland's own webhook at the platform — Bland still hits IRA `/api/call-webhook`; IRA then forwards normalized events here.

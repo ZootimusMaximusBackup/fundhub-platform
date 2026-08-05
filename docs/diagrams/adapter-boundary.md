@@ -17,6 +17,7 @@ flowchart TB
     o_commas["Commas (formerly FanBasis) payment"]
     o_crs["CRS engine output"]
     o_hubstaff["Hubstaff deep-monitoring"]
+    o_inquiry_removal["Inquiry Removal AI → platform bridge webhook."]
     o_lendflow["Lendflow alt-fin"]
     o_mailgun["Mailgun inbound-email"]
     o_oxylabs["Oxylabs residential proxy adapter."]
@@ -31,6 +32,7 @@ flowchart TB
     b_commas["commas<br/>HMAC-SHA256<br/>fail-closed"]
     b_crs["crs<br/>no signature<br/>direct call"]
     b_hubstaff["hubstaff<br/>no signature<br/>direct call"]
+    b_inquiry_removal["inquiry-removal<br/>HMAC-SHA256<br/>fail-closed"]
     b_lendflow["lendflow<br/>HMAC-SHA256<br/>fail-closed"]
     b_mailgun["mailgun<br/>HMAC-SHA256<br/>fail-closed"]
     b_oxylabs["oxylabs<br/>no signature<br/>direct call"]
@@ -51,6 +53,8 @@ flowchart TB
   b_crs --> BUS
   o_hubstaff --> b_hubstaff
   b_hubstaff --> DB_hubstaff[("messages<br/>status update")]
+  o_inquiry_removal --> b_inquiry_removal
+  b_inquiry_removal --> BUS
   o_lendflow --> b_lendflow
   b_lendflow --> BUS
   o_mailgun --> b_mailgun
@@ -71,13 +75,14 @@ flowchart TB
 | `commas` | inbound webhook | `verifyCommasSignature` (HMAC-SHA256) | `diagnostic.paid`<br/>`deposit.paid`<br/>`sale.closed`<br/>`payment.received`<br/>`payment.failed` | ⚠️ **no** — carries a CONFIRM banner |
 | `crs` | direct call | none — not a webhook | `analysis.completed`<br/>`decision.rendered` | yes |
 | `hubstaff` | direct call | none — not a webhook | — | yes |
+| `inquiry-removal` | inbound webhook | `verifyInquiryRemovalSignature` (HMAC-SHA256) | `inquiry.removed` | yes |
 | `lendflow` | inbound webhook + outbound call | `verifyLendflowSignature` (HMAC-SHA256) | `round.started`<br/>`round.submitted`<br/>`round.approved`<br/>`round.funded` | ⚠️ **no** — carries a CONFIRM banner |
 | `mailgun` | inbound webhook | `verifyMailgunSignature` (HMAC-SHA256) | `message.inbound`<br/>`mail.response` | yes |
 | `oxylabs` | direct call | none — not a webhook | — | yes |
 | `twilio-status` | inbound webhook | `verifyTwilioSignature` (HMAC-SHA1) | — | yes |
 | `twilio` | inbound webhook | `verifyTwilioSignature` (HMAC-SHA1) | `message.inbound` | yes |
 
-> ⚠️ 4 of 11 adapters still carry a `CONFIRM` banner in their header:
+> ⚠️ 4 of 12 adapters still carry a `CONFIRM` banner in their header:
 > `bland`, `clickfunnels`, `commas`, `lendflow`. Their field paths, header names or signature
 > schemes were written from documentation rather than from an observed payload. The boundary is drawn
 > here as the code intends it, which is not the same as how the vendor actually behaves.

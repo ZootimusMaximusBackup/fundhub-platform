@@ -42,10 +42,15 @@ function stubDb({ found = true, failOn = null, openShift = null } = {}) {
       if (/INSERT INTO staff_events/.test(sql)) {
         return { rows: [{ id: "ev-1", org_id: ORG, staff_id: params[0], shift_id: params[2], kind: params[3] }] };
       }
+      if (/FROM orgs/.test(sql)) return { rows: [{ id: ORG }] };
+      if (/INSERT INTO events/.test(sql)) return { rows: [{ id: "bus-evt-1" }] };
       if (/FROM shifts/.test(sql)) return { rows: openShift ? [{ id: openShift }] : [] };
       if (/FOR UPDATE/.test(sql)) return { rows: found ? [{ id: INQUIRY, org_id: ORG }] : [] };
+      if (/UPDATE inquiry_log/.test(sql) && /RETURNING/.test(sql)) {
+        return { rows: found ? [{ id: INQUIRY, org_id: ORG, client_id: CLIENT, call_attempts: 1, case_id: null }] : [] };
+      }
       if (/RETURNING/.test(sql)) {
-        return { rows: found ? [{ id: INQUIRY, org_id: ORG, client_id: CLIENT, call_attempts: 1 }] : [] };
+        return { rows: found ? [{ id: INQUIRY, org_id: ORG, client_id: CLIENT, call_attempts: 1, case_id: null }] : [] };
       }
       return { rows: [] };
     },
@@ -124,9 +129,12 @@ test("a missing inquiry is a 404 and rolls back", async () => {
 test("confirmRemoval attributes the confirmation and defaults the wording", async () => {
   const db = stubDb();
   await confirmRemoval(db, { inquiryId: INQUIRY, staffId: STAFF });
-  const call = db.calls.at(-1);
+  const call = db.calls.find((c) => /UPDATE inquiry_log/.test(c.sql) && /confirmed_at/.test(c.sql));
+  assert.ok(call, "expected inquiry_log confirmation update");
   assert.match(call.sql, /confirmed_at = now\(\)/);
   assert.deepEqual(call.params, [INQUIRY, STAFF, "Removed"]);
+  assert.equal(db.calls.some((c) => /INSERT INTO events/.test(c.sql)), false,
+    "standalone inquiry confirm must not emit inquiry.removed (case-level only)");
 });
 
 test("setStatus clears confirmed_at when a row moves off a confirmed state", async () => {

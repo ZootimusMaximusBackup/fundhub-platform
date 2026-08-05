@@ -415,6 +415,7 @@
       <div class="rf-tile"><div class="rf-label">Prequal</div><div class="rf-value">Approved</div></div>
       <div class="rf-tile"><div class="rf-label">Total Approved</div><div class="rf-value">$46,500</div></div>
       <div class="rf-tile"><div class="rf-label">Open Inquiries</div><div class="rf-value">2</div></div>
+      <div class="rf-tile"><div class="rf-label">Inquiry Removal</div><div class="rf-value" data-ir-case>—</div></div>
       <div class="rf-tile"><div class="rf-label">Owner</div>
         <div class="rf-value" style="font-family:'Inter',sans-serif;font-size:12px;">
           <span class="av human">MW</span> Marcus Webb</div></div>
@@ -780,6 +781,19 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
         (irc.hold_duration_display ? " · hold " + irc.hold_duration_display : ""));
     } else {
       setText(tile("Open Inquiries"), String((d.tasks || []).filter(function (t) { return !t.done; }).length));
+    }
+
+    var irEl = document.querySelector("[data-ir-case]");
+    if (irEl) {
+      var ir = d.inquiry_removal_case;
+      if (ir) {
+        var bits = [ir.case_status || "Active"];
+        if (ir.master_call_state) bits.push(String(ir.master_call_state).replace(/_/g, " "));
+        if (ir.open_inquiry_count != null) bits.push(ir.open_inquiry_count + " open");
+        setText(irEl, bits.join(" · "));
+      } else {
+        setText(irEl, "None active");
+      }
     }
 
     var badge = document.querySelector(".status-badge-lg");

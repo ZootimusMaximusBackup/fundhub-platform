@@ -14,6 +14,10 @@ import { handleTwilioWebhook } from "../adapters/twilio.mjs";
 import { handleMailgunWebhook, handleMailgunDeliveryEvent } from "../adapters/mailgun.mjs";
 import { handleTwilioStatusWebhook } from "../adapters/twilio-status.mjs";
 import { handleLendflowWebhook, SIGNATURE_HEADER as LENDFLOW_SIG } from "../adapters/lendflow.mjs";
+import {
+  handleInquiryRemovalWebhook,
+  SIGNATURE_HEADER as INQUIRY_REMOVAL_SIG
+} from "../adapters/inquiry-removal.mjs";
 
 // Standard HMAC-body adapters: same {db, rawBody, signatureHeader, secret} shape.
 const STD = {
@@ -27,7 +31,14 @@ const STD = {
      workflows (f-02, f-03, f-04, f-07, f-08, f-10, sys-01, bc-02) and back-end
      commission accrual had no trigger at all. The adapter's own header comment
      points at this table as the place the wiring belongs. */
-  lendflow: { fn: handleLendflowWebhook, sig: LENDFLOW_SIG, env: "LENDFLOW_WEBHOOK_SECRET" }
+  lendflow: { fn: handleLendflowWebhook, sig: LENDFLOW_SIG, env: "LENDFLOW_WEBHOOK_SECRET" },
+  /* IRA runtime → platform bridge. Writes inquiry_removal_cases / inquiry_log
+     and emits inquiry.removed when a case clears. */
+  "inquiry-removal": {
+    fn: handleInquiryRemovalWebhook,
+    sig: INQUIRY_REMOVAL_SIG,
+    env: "INQUIRY_REMOVAL_WEBHOOK_SECRET"
+  }
 };
 
 const norm = (res) => ({ status: res.status || (res.ok ? 200 : 400), body: res });

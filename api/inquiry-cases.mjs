@@ -5,10 +5,11 @@ import { db } from "../src/db.mjs";
 import { requireAuth } from "../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid } from "../src/http/read-api.mjs";
 import { createCase, updateCase, closeCase, CASE_STATUSES } from "../src/inquiry-ops/cases.mjs";
+import { clearInquiry as clearBridgeInquiry } from "../src/inquiry-removal/cases.mjs";
 import { emit } from "../src/events/bus.mjs";
 import { dbDown } from "../src/http/db-down.mjs";
 
-const ACTIONS = new Set(["create", "update", "close", "mark_cleared"]);
+const ACTIONS = new Set(["create", "update", "close", "mark_cleared", "clear_inquiry"]);
 
 export default async function handler(req, res, deps = {}) {
   const database = deps.db ?? db;
@@ -39,6 +40,27 @@ export default async function handler(req, res, deps = {}) {
   }
 
   try {
+    if (action === "clear_inquiry") {
+      const inquiryId = body.inquiry_id || body.inquiryId;
+      if (!inquiryId || !isUuid(inquiryId)) {
+        return res.status(400).json({ ok: false, error: "inquiry_id_required" });
+      }
+      const result = await clearBridgeInquiry(database, {
+        inquiryId,
+        staffId: staff.id
+      });
+      if (result.caseCleared && result.caseRow) {
+        await emitFn("inquiry.removed", {
+          org_id: orgId,
+          client_id: result.caseRow.client_id,
+          case_id: result.caseRow.id,
+          inquiry_id: result.inquiry.id,
+          source: "staff_clear_inquiry"
+        });
+      }
+      return res.status(200).json({ ok: true, inquiry: result.inquiry, case: result.caseRow, case_cleared: result.caseCleared });
+    }
+
     if (action === "create") {
       if (!isUuid(body.client_id)) {
         return res.status(400).json({ ok: false, error: "client_id required" });

@@ -91,7 +91,7 @@ export function pill(status, outcome) {
   const s = String(status || outcome || "").trim();
   const k = s.toLowerCase();
   if (!s) return { cls: "new", text: "No status recorded", known: false, done: false };
-  if (/removed|confirmed/.test(k)) return { cls: "confirmed", text: s, known: true, done: true };
+  if (/removed|confirmed|deleted|cleared/.test(k)) return { cls: "confirmed", text: s, known: true, done: true };
   if (/no answer|unreachable/.test(k)) return { cls: "noanswer", text: s, known: true, done: false };
   if (/filed|sent|progress|pending/.test(k)) return { cls: "progress", text: s, known: true, done: false };
   if (/new|queued/.test(k)) return { cls: "new", text: s, known: true, done: false };
