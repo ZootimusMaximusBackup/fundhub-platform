@@ -30,7 +30,7 @@ Ordered by how a Fundhub day actually runs: sell → fund → serve the client �
 | **Watch** | Command Center → Galaxy → Ops & Admin | Roll-up KPIs, relationship graph, then platform health. |
 | **Automation** | Agent Editor → Workflows → Journeys → Message Copy | Who speaks → what runs → drip journeys → the words themselves. |
 | **Marketing** | Campaigns → Social Studio → Creative Factory → Content | Paid → organic → asset production → content library. |
-| **Admin** | Staff & Teams → Hiring → Products & Commissions → Sample Data → Brand Studio | People, then recruiting, then what we sell, then fixtures, then partner brand. |
+| **Admin** | Staff & Teams → Hiring → Products & Commissions → Demo Mode → Brand Studio | People, then recruiting, then what we sell, then demo toggle, then partner brand. |
 | **Portals** | Client Portal → Affiliate | External principal surfaces (hidden from ordinary staff). |
 
 `partner-galaxy.html` stays out of the rail on purpose — partners land there from login; employees use Galaxy.

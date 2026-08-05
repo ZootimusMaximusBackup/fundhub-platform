@@ -288,7 +288,7 @@
         <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
         <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
         <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
-        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
+        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Demo Mode</span></a>
         <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
 </div></div>
 
@@ -323,6 +323,24 @@
 
 
   <main>
+
+    <!-- Demo Mode — owner/admin org toggle. Same control as Admin → Demo Mode. -->
+    <div class="section" id="fh-demo-mode-panel" style="margin-bottom:18px">
+      <div class="card" style="padding:14px 16px;border:2px solid #9A3412;background:#FFF7ED">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
+          <div style="min-width:220px;max-width:52ch">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.06em;color:#9A3412;margin-bottom:4px">DEMO MODE</div>
+            <div id="fhDemoModeStatus" style="font-size:13px;line-height:1.45;color:#7C2D12">Checking…</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button type="button" id="fhDemoModeOn" style="background:#9A3412;color:#FFF7ED;border:0;padding:10px 14px;border-radius:6px;cursor:pointer;font-weight:700">Turn ON</button>
+            <button type="button" id="fhDemoModeOff" style="background:transparent;border:1px solid #9A3412;color:#9A3412;padding:10px 14px;border-radius:6px;cursor:pointer;font-weight:700">Turn OFF</button>
+            <a href="sample-data.html" style="font-size:12.5px;font-weight:700;color:#9A3412;text-decoration:underline">Open Demo Mode screen →</a>
+          </div>
+        </div>
+        <div id="fhDemoModeMsg" style="margin-top:8px;font-size:12px;color:#7C2D12"></div>
+      </div>
+    </div>
 
     <div class="zonetabs" role="tablist" aria-label="Ops and admin zones">
       <button class="zonetab on" type="button" role="tab" aria-selected="true"  aria-controls="zone-money"  data-zone="money">Money<span class="zt-sub">KPIs · AR · compliance</span></button>
@@ -901,6 +919,66 @@
       return "live ops health · " + rows.length + " pending failure(s)" +
              (worst ? " · latest: " + esc(worst.event_name) + "/" + esc(worst.handler_name) : "");
     });
+})();
+</script>
+<script>
+(function () {
+  var statusEl = document.getElementById("fhDemoModeStatus");
+  var msgEl = document.getElementById("fhDemoModeMsg");
+  var panel = document.getElementById("fh-demo-mode-panel");
+  if (!statusEl || !panel) return;
+  function headers() {
+    var h = { Accept: "application/json", "Content-Type": "application/json" };
+    var t = localStorage.getItem("fh_token");
+    if (t) h.Authorization = "Bearer " + t;
+    return h;
+  }
+  function say(t, bad) {
+    if (!msgEl) return;
+    msgEl.textContent = t || "";
+    msgEl.style.color = bad ? "#B91C1C" : "#7C2D12";
+  }
+  function paint(d) {
+    var on = !!(d && d.demo_mode_enabled);
+    var c = (d && d.counts) || {};
+    statusEl.textContent = on
+      ? "ON — CRM shows seeded demo data (banner on every screen). Clients: " + (c.clients || 0) + ", lenders: " + (c.lenders || 0) + "."
+      : "OFF — demo rows are hidden. Turn on to seed fictional clients for demos and training.";
+  }
+  function load() {
+    return fetch("/api/demo/mode", { credentials: "same-origin", headers: headers() })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); })
+      .then(function (x) {
+        if (x.status === 403 || x.status === 401) {
+          panel.style.display = "none";
+          return;
+        }
+        if (!x.ok) { say((x.j && (x.j.message || x.j.error)) || "Could not load Demo Mode.", true); return; }
+        paint(x.j);
+      })
+      .catch(function (e) { say(String(e), true); });
+  }
+  function post(enabled) {
+    say(enabled ? "Seeding demo data…" : "Hiding demo data…");
+    return fetch("/api/demo/mode", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: headers(),
+      body: JSON.stringify({ enabled: !!enabled })
+    })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) {
+        if (!x.ok) { say((x.j && (x.j.message || x.j.error)) || "Failed", true); return; }
+        paint(x.j);
+        say(enabled ? "Demo Mode is ON." : "Demo Mode is OFF.", false);
+      })
+      .catch(function (e) { say(String(e), true); });
+  }
+  var onBtn = document.getElementById("fhDemoModeOn");
+  var offBtn = document.getElementById("fhDemoModeOff");
+  if (onBtn) onBtn.onclick = function () { post(true); };
+  if (offBtn) offBtn.onclick = function () { post(false); };
+  load();
 })();
 </script>
 </body>
