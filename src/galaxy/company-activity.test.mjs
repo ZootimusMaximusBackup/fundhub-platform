@@ -60,6 +60,10 @@ test("companyActivity maps open-shift staff to active nodes and respects demo to
       ] })
     },
     {
+      match: (sql) => /FROM clients/.test(sql) && /first_name/.test(sql),
+      result: () => ({ rows: [{ name: "Avery Cobalt", is_demo: true }] })
+    },
+    {
       match: (sql) => /cash_collected_cents/.test(sql),
       result: () => ({ rows: [{ cash_cents: 0, funded_today: 0, deposits_today: 0 }] })
     }
@@ -69,6 +73,7 @@ test("companyActivity maps open-shift staff to active nodes and respects demo to
   assert.equal(on.demo_mode, true);
   assert.equal(on.simulated, false);
   assert.equal(on.nodes.length, 2);
+  assert.deepEqual(on.clients, ["DEMO · Avery Cobalt"]);
   const human = on.nodes.find((n) => n.kind === "human");
   assert.equal(human.state, "active");
   assert.equal(human.c, "sales");

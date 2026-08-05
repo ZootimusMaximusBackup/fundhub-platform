@@ -1314,7 +1314,11 @@
     if (!staff || !staff.org_id) return;
     var role = normRole(staff.role);
     if (role === "client" || role === "affiliate" || role === "partner") return;
-    fetch("/api/demo/mode", { credentials: "same-origin", headers: { Accept: "application/json" } })
+    var tok = "";
+    try { tok = localStorage.getItem("fh_token") || ""; } catch (e) { tok = ""; }
+    var demoHeaders = { Accept: "application/json" };
+    if (tok && tok !== "demo") demoHeaders.authorization = "Bearer " + tok;
+    fetch("/api/demo/mode", { credentials: "same-origin", headers: demoHeaders })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         if (!d || !d.ok || !d.demo_mode_enabled) {
@@ -1330,8 +1334,8 @@
         bar.setAttribute("role", "status");
         bar.setAttribute("data-fh-demo-banner", "1");
         bar.style.cssText = [
-          "position:sticky", "top:0", "z-index:2147482990", "width:100%",
-          "box-sizing:border-box", "padding:10px 16px",
+          "position:relative", "top:0", "z-index:2147482990", "width:100%",
+          "flex:0 0 auto", "box-sizing:border-box", "padding:10px 16px",
           "background:#7A2E0E", "color:#FFF7ED",
           "font:600 13px/1.35 'JetBrains Mono',ui-monospace,monospace",
           "letter-spacing:.04em", "text-align:center",
@@ -1342,8 +1346,14 @@
         bar.innerHTML =
           "<span>DEMO MODE ON — sample data is displayed. Numbers on this screen may be fictional.</span>" +
           "<a href=\"sample-data.html\" style=\"color:#FFEDD5;text-decoration:underline;font-weight:700\">Manage demo data</a>";
-        var app = document.querySelector(".app") || document.body;
-        app.insertBefore(bar, app.firstChild);
+        /* Prefer .shell so Galaxy (and any flex-column .app) keeps the canvas.
+           Fall back to .app, then body. Never insert beside a row-flex sibling
+           in a way that steals the full width from the stage. */
+        var shell = document.querySelector(".app > .shell") || document.querySelector(".shell");
+        var app = document.querySelector(".app");
+        var host = shell || app || document.body;
+        host.insertBefore(bar, host.firstChild);
+        try { window.dispatchEvent(new Event("resize")); } catch (e) { /* ignore */ }
       })
       .catch(function () { /* no banner if the endpoint is unreachable */ });
   }

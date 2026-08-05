@@ -37,7 +37,7 @@
   *{box-sizing:border-box;}
   html,body{
     margin:0;padding:0;height:100%;
-    background:var(--ink);
+    background:var(--ink) !important;
     font-family:var(--sans);
     color:var(--text);
     overflow:hidden;
@@ -45,8 +45,32 @@
   }
   a{color:inherit;text-decoration:none;}
   button{font:inherit;color:inherit;}
-  .app{display:flex;height:100vh;overflow:hidden;}
-  .shell{flex:1;min-width:0;display:flex;flex-direction:column;}
+  /* crm-sidebar.css paints .app paper-white and display:block — that collapses
+     the sky on this screen. Keep Galaxy a full-height dark column that clears
+     the fixed rail. Column (not row) so the Demo Mode banner can sit on top
+     without crushing the canvas. */
+  .app{
+    display:flex !important;
+    flex-direction:column !important;
+    height:100vh !important;
+    max-height:100vh !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    background:var(--ink) !important;
+    padding-left:var(--fh-side-w,228px) !important;
+    box-sizing:border-box !important;
+  }
+  html.fh-side-mini .app{padding-left:var(--fh-side-w-mini,60px) !important;}
+  .app > #fh-demo-banner{flex:0 0 auto !important; width:100% !important;}
+  .shell{
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    display:flex !important;
+    flex-direction:column !important;
+    overflow:hidden !important;
+    background:var(--ink) !important;
+  }
 
   /* ══════════════════════════════════════════════════════════════════════════
      SHARED CHROME — collapsible grouped sidebar. Identical across every file.
@@ -171,8 +195,17 @@
   .nominal{display:flex;align-items:center;gap:7px;margin-left:auto;}
 
   /* ---------- canvas ---------- */
-  .sky-wrap{flex:1;position:relative;min-height:0;}
-  #sky{display:block;width:100%;height:100%;}
+  .sky-wrap{
+    flex:1 1 auto !important;
+    position:relative;
+    min-height:0 !important;
+    background:var(--ink);
+  }
+  #sky{display:block;width:100%;height:100%;background:var(--ink);}
+  .live-pill.live .live-dot{
+    background:var(--ok);
+    animation:livepulse 1.8s infinite;
+  }
 
   /* ---------- worker panel (light surface, close reading) ---------- */
   #panel{
@@ -325,8 +358,7 @@
 
   <div class="legend" style="border-color:var(--info)" id="galaxyBackendNotice">
     <b>Waiting on activity</b>
-    <i>Galaxy reads <code>/api/read/company-activity</code>. Until someone has an open shift, recent staff events, or a live agent, the sky stays empty on purpose — no fake workers.</i>
-    <i>With Demo Mode on, the seed opens demo shifts so this screen fills. Toggle Demo Mode off and demo workers disappear.</i>
+    <i>Loading open shifts, recent events, and live agents…</i>
   </div>
 
   <div class="legend">
@@ -1739,19 +1771,43 @@ function applyLiveFeed(data){
   NODES = (data.nodes || []).slice();
   ND = {};
   NODES.forEach(function(n){
-    n.flash = n.flash || 0;
-    n.say = n.say || null;
-    n.sayT = n.sayT || 0;
-    n.z = n.z || 0;
-    if(!Array.isArray(n.pool)) n.pool = [];
+    /* Force a fresh layout pass — never keep a 0×0 boot position. */
+    delete n.x; delete n.y; delete n.vx; delete n.vy;
+    n.flash = 0;
+    n.say = null;
+    n.sayT = 0;
+    n.z = 0.5;
+    n.b = n.state === 'active' ? 0.75 : 0.32;
+    n.hit = 0;
+    n.res = 0;
+    if(!Array.isArray(n.pool) || !n.pool.length){
+      n.pool = n.state === 'active'
+        ? ['Working a file', 'On a client touch', 'Updating the queue']
+        : ['Idle — no open shift'];
+    }
     if(!Array.isArray(n.stats)) n.stats = [];
     if(!Array.isArray(n.files)) n.files = [];
     if(!Array.isArray(n.tl)) n.tl = [['—', 'No timeline yet']];
+    if(n.tempo == null) n.tempo = n.state === 'active' ? 0.55 : 0.25;
+    if(n.out == null) n.out = 1;
     sizeNode(n);
     ND[n.id] = n;
   });
   CLIENTS = (data.clients || []).slice();
+  if(!CLIENTS.length){
+    NODES.forEach(function(n){
+      (n.files || []).forEach(function(f){
+        if(f && CLIENTS.indexOf(f) < 0) CLIENTS.push(f);
+      });
+    });
+  }
   ROUTES = (data.routes || []).slice();
+  if(!ROUTES.length && NODES.length >= 2){
+    var ids = NODES.map(function(n){ return n.id; });
+    for(var ri=0; ri<Math.min(6, ids.length-1); ri++){
+      ROUTES.push([ids[ri], ids[(ri+1)%ids.length], 'handoff — {C}']);
+    }
+  }
   KPIS = (data.kpis || []).slice();
   KPI = {};
   KPIS.forEach(function(k){
@@ -1759,27 +1815,33 @@ function applyLiveFeed(data){
     if(k.glow == null) k.glow = 0;
     if(k.delta == null) k.delta = '';
     if(k.deltaT == null) k.deltaT = 0;
+    if(k.disp == null) k.disp = Number(k.v) || 0;
     while(k.hist.length < 52) k.hist.unshift(Number(k.v) || 0);
     KPI[k.id] = k;
   });
   LIVE_FEED = true;
   SCHED.length = 0;
-  SCHED.push({fn:evActivity, lo:3.2, hi:7.0, next:1.2});
-  if(CLIENTS.length) SCHED.push({fn:evMove, lo:2.6, hi:5.4, next:0.4});
-  if(ROUTES.length) SCHED.push({fn:evHandoff, lo:4.2, hi:9.0, next:0.9});
+  SCHED.push(
+    {fn:evActivity, lo:2.4, hi:5.5, next:0.6},
+    {fn:evHandoff,  lo:3.8, hi:8.0, next:1.1},
+    {fn:evMove,     lo:2.4, hi:5.0, next:0.5},
+    {fn:evMoney,    lo:10,  hi:22,  next:2.8}
+  );
 
   var pill = document.getElementById('livePill');
   if(pill){
+    pill.classList.add('live');
     pill.innerHTML = '<span class="live-dot" id="liveDot"></span>LIVE';
     pill.title = 'Live from open shifts, staff events, and agents';
   }
   var notice = document.getElementById('galaxyBackendNotice');
   if(notice){
     notice.style.borderColor = 'var(--ok, #6BBF8A)';
-    notice.innerHTML = '<b>Live from shifts &amp; agents</b><i>Workers below come from open shifts, recent staff activity, and live agents'
-      + (data.demo_mode ? ' (Demo Mode workers included).' : '.')
-      + '</i>';
+    notice.innerHTML = '<b>Live</b><i>Open shifts, recent events, and agents'
+      + (data.demo_mode ? ' · Demo Mode on' : '')
+      + ' · '+NODES.length+' workers</i>';
   }
+  resize();
   layout();
   chrome();
 }
@@ -1787,16 +1849,31 @@ function applyLiveFeed(data){
 async function loadActivityFeed(){
   var token = '';
   try { token = localStorage.getItem('fh_token') || ''; } catch (e) { token = ''; }
-  if(!token || token === 'demo') return;
+  if(!token || token === 'demo'){
+    var notice = document.getElementById('galaxyBackendNotice');
+    if(notice) notice.innerHTML = '<b>Sign in required</b><i>Galaxy needs a real staff session to load activity.</i>';
+    return;
+  }
   try {
     var res = await fetch('/api/read/company-activity', {
       headers: { accept: 'application/json', authorization: 'Bearer ' + token }
     });
-    if(!res.ok) return;
+    if(!res.ok){
+      var noticeFail = document.getElementById('galaxyBackendNotice');
+      if(noticeFail) noticeFail.innerHTML = '<b>Activity feed failed</b><i>Could not load /api/read/company-activity ('+res.status+').</i>';
+      return;
+    }
     var data = await res.json();
-    if(!data || !data.ok || !data.nodes || !data.nodes.length) return;
+    if(!data || !data.ok || !data.nodes || !data.nodes.length){
+      var noticeEmpty = document.getElementById('galaxyBackendNotice');
+      if(noticeEmpty) noticeEmpty.innerHTML = '<b>No workers yet</b><i>Turn Demo Mode on (Admin → Demo Mode) to seed open shifts, or clock someone in.</i>';
+      return;
+    }
     applyLiveFeed(data);
-  } catch (e) { /* keep honest empty sky */ }
+  } catch (e) {
+    var noticeErr = document.getElementById('galaxyBackendNotice');
+    if(noticeErr) noticeErr.innerHTML = '<b>Activity feed error</b><i>Check the network tab for /api/read/company-activity.</i>';
+  }
 }
 
 /* ============================================================
@@ -1806,6 +1883,9 @@ window.addEventListener('resize', resize);
 resize();
 requestAnimationFrame(draw);
 loadActivityFeed();
+/* Sidebar mount + Demo banner arrive after first paint — remeasure the sky. */
+setTimeout(function(){ resize(); }, 280);
+setTimeout(function(){ resize(); }, 900);
 
 })();
 </script>

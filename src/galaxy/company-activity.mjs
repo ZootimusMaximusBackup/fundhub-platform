@@ -253,6 +253,21 @@ export async function companyActivity(db, { orgId } = {}) {
   );
   for (const row of agentsRes.rows) nodes.push(buildAgentNode(row));
 
+  // Client names for rail pulses — presence only; money still excludes is_demo.
+  const clientsRes = await db.query(
+    `SELECT trim(both FROM concat_ws(' ', first_name, last_name)) AS name, is_demo
+       FROM clients
+      WHERE org_id = $1
+        AND ($2::boolean OR COALESCE(is_demo, false) = false)
+        AND coalesce(trim(both FROM concat_ws(' ', first_name, last_name)), '') <> ''
+      ORDER BY updated_at DESC NULLS LAST
+      LIMIT 24`,
+    [orgId, demoMode]
+  );
+  const clients = clientsRes.rows.map((r) =>
+    r.is_demo ? `DEMO · ${r.name}` : r.name
+  ).filter(Boolean);
+
   // Money KPIs — always exclude is_demo.
   const money = await db.query(
     `SELECT
@@ -286,7 +301,7 @@ export async function companyActivity(db, { orgId } = {}) {
     demo_mode: demoMode,
     nodes,
     kpis,
-    clients: [],
+    clients,
     routes: []
   };
 }
