@@ -14,6 +14,22 @@ bite under a rebrand are closed or downgraded below — see 3 and 6.
 
 ---
 
+## Status
+
+| # | Finding | State |
+|---|---|---|
+| 1 | `crm.html` — old CRM still published | **HELD** — needs owner answer |
+| 2 | `dashboard.html` — foreign dark theme | **HELD** — needs owner answer |
+| 3 | Five invented color tokens | **CLOSED** — owner set, no rebrand |
+| 4 | Legal pages on warm off-palette | **FIXED** |
+| 5 | Marketing pages missing status colors | **RETRACTED — the finding was wrong** |
+| 6 | Brand defined in 23 places | **LOW** — drift risk only, no rebrand |
+| 7 | Faux-bold from missing font weight | **FIXED** |
+| 8 | `sidebar.fragment.html` dead | **HELD** — deletion, needs owner answer |
+| — | `contract.html` signature overlay colors | **HELD** — needs a visual check |
+
+---
+
 ## What is clean
 
 | Check | Result |
@@ -83,9 +99,18 @@ They fill a real gap the spec does not cover — dark text that stays readable o
 the pastel chips (used 209 times as `color:`). Worth naming in the spec if
 anyone documents it, but nothing is broken today.
 
-### 4. Legal pages use a warm off-palette — MEDIUM
+### 4. Legal pages use a warm off-palette — FIXED 2026-08-05
 
-`public/terms/index.html` and `public/privacy/index.html`:
+**Correction to the first draft of this audit: it is five pages, not two.** The
+three education legal pages carry the identical block.
+
+- `public/terms/index.html`
+- `public/privacy/index.html`
+- `public/education/terms/index.html`
+- `public/education/privacy/index.html`
+- `public/education/refund/index.html`
+
+All five declared the same values:
 
 | Token | These pages | Brand | Difference |
 |---|---|---|---|
@@ -94,20 +119,34 @@ anyone documents it, but nothing is broken today.
 | line | `#E6E3DC` | `#E4E4E7` | warm vs cool |
 | muted | `#565C66` | `#52525B` | different gray |
 
-They also rename `--accent` to mean black (`#0A0A0A`), while brand `--accent` is
-lavender `#C4B3E5`. Same token name, opposite meaning.
+**Fix applied:** all five now use the brand values. `--surface:#FFFFFF` was left
+alone — it is declared but never referenced on any of the five (`var(--surface)`
+count: 0). `--accent:#0A0A0A` was also left alone: the value is already exactly
+brand ink, and these pages do not load `fundhub-brand.css`, so there is no live
+collision with brand `--accent` (lavender `#C4B3E5`). The name is still
+misleading and worth renaming if anyone touches these pages again.
 
-`public/contract.html` has `--paper:#FAFAF9` instead of `#FCFCFC`.
+`public/contract.html` had `--paper:#FAFAF9` instead of `#FCFCFC`. **Fixed.**
 
-These are the "little things" — close enough to look intentional, wrong enough
+These were the "little things" — close enough to look intentional, wrong enough
 to read as a slightly different site next to the real one.
 
-### 5. Marketing pages have no status colors — MEDIUM
+### 5. Marketing pages have no status colors — RETRACTED, the finding was wrong
 
-`index.html`, `affiliates/index.html`, `education/index.html` and `404.html`
-inline the brand tokens with **correct values**, but omit `--ok`, `--warn`,
-`--alert`, `--info` and `--accent` entirely. Any status chip on those pages
-falls back to browser defaults.
+The first draft of this audit claimed the chips on `index.html`,
+`affiliates/index.html`, `education/index.html` and `404.html` fall back to
+browser defaults. **They do not.** Those pages style the chip dots with the
+correct brand hexes written out directly:
+
+```css
+.chip.on  .cd{background:#A8D8B0}   /* sage  — correct */
+.chip.wip .cd{background:#F5CE8F}   /* peach — correct */
+```
+
+`education/index.html` and `404.html` have no chips at all. Nothing renders
+wrong. The only nit is that the hex is written out rather than referenced as a
+token, and on a page with no token to reference that is the reasonable choice.
+No action.
 
 ### 6. The brand is defined in 23 places — LOW (downgraded, no rebrand planned)
 
@@ -125,26 +164,52 @@ Files that declare `--spectrum` themselves:
 
 There is no single source of truth for the brand.
 
-### 7. Font weights are requested inconsistently — LOW
+### 7. Faux-bold from a missing font weight — FIXED 2026-08-05
 
-Four different Inter weight sets across pages:
+Four different Inter weight sets were requested across pages. Rather than assume
+that was a problem, every page was checked for weights it *uses* but does not
+*load*. Exactly three pages were actually affected — each styles text at
+`font-weight:800` while loading only up to 700:
 
-```
-wght@400;500;600
-wght@400;500;600;700
-wght@400;500;600;700;800
-wght@400;600;700
-```
+- `public/index.html`
+- `public/affiliates/index.html`
+- `public/education/index.html`
 
-A page that loads `400;500;600` and then styles something `font-weight:700`
-gets a browser-faked bold, which looks heavier and blurrier than real Inter
-Bold. Same story for JetBrains Mono (5 variants).
+On those three the browser fakes the extra weight by smearing the 700 face,
+which reads heavier and blurrier than real Inter ExtraBold. **Fixed** by adding
+`800` to the Inter request on those three pages only.
+
+No page was found requesting too little for a 700 weight, and JetBrains Mono had
+no gap despite having 5 request variants. The remaining variation in weight sets
+is harmless — a page that loads fewer weights than the maximum is fine as long
+as it does not use them, and none do.
 
 ### 8. `public/app/sidebar.fragment.html` is dead — LOW
 
 68 lines. Nothing references it at runtime; `shell.js` carries the sidebar
 markup inline in its `SIDEBAR_HTML` constant. It is a second copy of the
 navigation that will drift.
+
+### 9. `contract.html` signature overlay uses five foreign colors — HELD
+
+Not fixed, deliberately. These colour the signature fields on the contract:
+
+| Hex | Line | Role |
+|---|---|---|
+| `#6C7DD6` | 56 | field border (periwinkle) |
+| `#4E8B5F` | 59, 95 | completed field border + signed dot (green) |
+| `#4A57A8` | 64 | field label text |
+| `#0D1C6B` | 68 | field value text (navy) |
+| `#D9A441` | 96 | "signing now" dot (gold) |
+
+Periwinkle and gold are not in the Fundhub ramp. But these are 2px borders and
+6px dots that must stay visible against pastel fills — the ramp's own colors are
+probably too light to read at that size, which is likely why someone reached
+outside the palette.
+
+Replacing them is a judgement call about legibility on a legally significant
+screen, and it cannot be made without looking at the rendered page. Changing a
+signature-field border blind is not worth the risk. Flagged for a visual pass.
 
 ---
 
@@ -170,6 +235,32 @@ a second gray scale living alongside the brand's own (`52525B`, `A1A1AA`,
 `E4E4E7`, `F4F4F5`). Heaviest in `crm.html` (78 uses).
 
 ---
+
+One `#FBFAF7` remains in the tree, at `public/app/creative-factory.html:1119`:
+
+```js
+palette:{primary:'#1F3A5F', accent:'#C9A227', surface:'#FBFAF7'}
+```
+
+That is ad-creative data, not Fundhub chrome. `BRAND-THEMING-SPEC.md` says
+Creative Factory `brand_kits` are a separate system for ads. Correctly out of
+scope — left alone.
+
+---
+
+## Verification of the fixes
+
+- `npm run lint` — pass, 982 files parse clean
+- `npm test` — 4536 pass, 2 fail, 4 skipped. **Identical to the pre-change
+  baseline**, so nothing here broke anything. The two failures are pre-existing
+  and unrelated to color: `src/http/read-endpoints-org-scope.test.mjs` (audit
+  finding C1, multi-tenant scoping) and `src/workflows/task-routing.test.mjs`.
+- `npx tsc --noEmit` — not applicable, there is no `tsconfig.json`; this is a
+  JavaScript repo.
+- **No Playwright check was run.** The app was not started. These are CSS value
+  changes with no logic, but they are unverified visually.
+- No journey changed. These edits touch color values only — no flow, route,
+  step or decision point is affected, so no `-actual.md` needed updating.
 
 ## Not covered
 
