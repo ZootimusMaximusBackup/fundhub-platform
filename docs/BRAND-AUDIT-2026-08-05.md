@@ -7,7 +7,10 @@ audit of colors, fonts and tokens, not a visual design review.
 Scope: 52 HTML pages, 4 stylesheets, `shell.js`.
 
 Verdict: **the brand is mostly right. Fonts are perfect. Two whole pages are on
-a different brand, and one rebrand bug means five colors will not change.**
+a different brand, and the legal pages are on a warm off-palette.**
+
+Owner decision 2026-08-05: **Fundhub is not rebranding.** Findings that only
+bite under a rebrand are closed or downgraded below — see 3 and 6.
 
 ---
 
@@ -52,7 +55,14 @@ It carries 78 off-palette gray references plus Tailwind default colors. It is
 live at `/crm.html`. It was last edited **2026-08-02** — three days ago — so it
 is still being maintained in parallel with the real app and drifting from it.
 
-### 3. Rebrand bug: five colors will not change — HIGH
+### 3. Rebrand bug: five colors will not change — CLOSED, owner decision 2026-08-05
+
+**Owner-set: Fundhub is not rebranding.** This finding is closed. The tokens
+below only diverge when the brand changes, and it is not changing. They are
+doing a real job — readable dark text on the pastel chips — and their values
+look correct against the ramp. No action.
+
+Recorded for the record only:
 
 Six live app pages invent their own color tokens:
 
@@ -65,18 +75,13 @@ Files: `automations.html`, `client-control-panel.html`, `client-portal.html`,
 `consent-capture.html`, `inquiry-remover.html`, `ops-admin.html`
 (plus `crm.html`).
 
-`shell.js` never sets these. Confirmed — zero `setProperty` calls for any of
-them. So when the owner changes the brand in Brand Studio, every other color on
-these screens updates and these five stay Fundhub's originals.
+`shell.js` never sets these — zero `setProperty` calls for any of them. Under a
+rebrand those five would stay Fundhub's originals while everything else moved.
+Not a live problem: no rebrand is planned.
 
-Two further problems with them:
-
-- They are named for the color (`--red`) not the meaning (`--alert`). The brand
-  stylesheet says in a comment: *"Status colors are spectrum stops. Do not
-  invent others."*
-- They fill a real gap the spec does not cover — dark text that stays readable
-  on the pastel chips (used 209 times as `color:`). The need is legitimate. The
-  spec should name them.
+They fill a real gap the spec does not cover — dark text that stays readable on
+the pastel chips (used 209 times as `color:`). Worth naming in the spec if
+anyone documents it, but nothing is broken today.
 
 ### 4. Legal pages use a warm off-palette — MEDIUM
 
@@ -104,7 +109,11 @@ inline the brand tokens with **correct values**, but omit `--ok`, `--warn`,
 `--alert`, `--info` and `--accent` entirely. Any status chip on those pages
 falls back to browser defaults.
 
-### 6. The brand is defined in 23 places — MEDIUM
+### 6. The brand is defined in 23 places — LOW (downgraded, no rebrand planned)
+
+Nothing is broken today: the three `fundhub-brand.css` copies are byte-identical
+and `fh.css` matches them. With no rebrand coming, this is a slow drift risk
+rather than a bug — it bites only when someone edits one copy and not the rest.
 
 Files that declare `--spectrum` themselves:
 
