@@ -460,11 +460,16 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
           <span class="badge b-gray mono" id="ghCount">—</span>
         </div>
         <div id="ghGrid"></div>
-        <div class="cap">
-          These are the remaining values allowed by <code class="mono">social_channels_channel_ck</code> and by the frozen
-          <code class="mono">CHANNELS</code> export in <code class="mono">scheduler.mjs:193</code>. There is deliberately no
-          “Connect” button: no social OAuth handler exists in the repo — <code class="mono">tokens.mjs</code> only encrypts and
-          decrypts, and the only writers of <code class="mono">social_channels</code> today are test fixtures.
+        <div class="cap" id="oauthConnectBox">
+          Connect a channel via OAuth. Tokens store encrypted on
+          <code class="mono">social_channels</code>. Credentials stay unset until the apps are provisioned
+          (see <code class="mono">docs/STILL-MISSING.md</code>).
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn" data-oauth="facebook" id="oauthFb">Connect Facebook</button>
+            <button type="button" class="btn" data-oauth="instagram" id="oauthIg">Connect Instagram</button>
+            <button type="button" class="btn" data-oauth="linkedin" id="oauthLi">Connect LinkedIn</button>
+          </div>
+          <div id="oauthMsg" style="margin-top:8px;font-size:12px;color:var(--ink2)">Needs META_APP_ID / LINKEDIN_CLIENT_ID when unset — the API names the missing env var.</div>
         </div>
       </div>
 
@@ -683,7 +688,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
         <div class="card-hd">
           <div class="eyebrow">SS-12 <span class="sep">/</span> NOT BUILT YET</div>
           <div class="spacer"></div>
-          <span class="badge b-alert mono">6 gaps</span>
+          <span class="badge b-alert mono">3 gaps</span>
         </div>
         <div class="gapgrid">
           <div class="gap">
@@ -706,12 +711,17 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
             <div class="gs">src/social/adapters.mjs · netlify/functions/social-publish-sweeper.mjs</div>
           </div>
           <div class="gap">
-            <div class="gt"><span class="badge b-warn mono">missing</span>No OAuth connect flow</div>
-            <div class="gb">A channel can only exist if something INSERTs it. There is no social OAuth handler;
-              <code class="mono">src/adplatforms/tokens.mjs</code> encrypts and decrypts but never acquires a token.
-              Note the unique index <code class="mono">(partner_id, channel, external_account_id)</code> that any future
-              connect flow has to respect.</div>
-            <div class="gs">db/migrations/049_social.sql:51–52</div>
+            <div class="gt"><span class="badge b-ok mono">wired</span> OAuth connect (controls live in SS-02 above)</div>
+            <div class="gb"><code class="mono">api/social/oauth.mjs</code> now handles the connect flow: HMAC-signed
+              state, provider token exchange, and an <code class="mono">ON CONFLICT</code> UPSERT into
+              <code class="mono">social_channels</code> respecting the
+              <code class="mono">(partner_id, channel, external_account_id)</code> unique index. The buttons above call
+              it live and show whatever reason the API gives back — including
+              <code class="mono">not_configured</code> with the exact env var name — rather than pretending a
+              connection exists. Still needs <code class="mono">META_APP_ID</code>/<code class="mono">META_APP_SECRET</code>
+              or <code class="mono">LINKEDIN_CLIENT_ID</code>/<code class="mono">LINKEDIN_CLIENT_SECRET</code>
+              provisioned before either app can be used for real — see <code class="mono">docs/STILL-MISSING.md</code>.</div>
+            <div class="gs">api/social/oauth.mjs · src/social/oauth.mjs · db/migrations/049_social.sql:51–52</div>
           </div>
           <div class="gap">
             <div class="gt"><span class="badge b-warn mono">missing</span>No organic engagement data</div>
@@ -2187,6 +2197,53 @@ document.getElementById('btChannel').addEventListener('change', renderBestTimes)
 document.getElementById('scrim').addEventListener('click', closeDrawer);
 document.getElementById('drawerClose').addEventListener('click', closeDrawer);
 document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDrawer(); });
+
+/* ══ OAUTH CONNECT ═══════════════════════════════════════════════════════ */
+(function () {
+  var msg = document.getElementById('oauthMsg');
+  // Same partner the rest of this screen is scoped to (the topbar partnerSel),
+  // not an invented session lookup — PARTNERS[P].id is the real uuid that
+  // wireActionLog() already sends on the one other live call this page makes.
+  function partnerId() { return PARTNERS[P] ? PARTNERS[P].id : ''; }
+  function token() {
+    try { return localStorage.getItem('fh_token') || ''; } catch (e) { return ''; }
+  }
+  function start(channel) {
+    var pid = partnerId();
+    if (!pid) {
+      if (msg) msg.textContent = 'Pick a partner in the topbar before connecting.';
+      return;
+    }
+    var url = '/api/social/oauth?action=start&channel=' + encodeURIComponent(channel) +
+      '&partner_id=' + encodeURIComponent(pid);
+    if (channel === 'linkedin') {
+      var org = window.prompt('LinkedIn organization id or URN (required)');
+      if (!org) { if (msg) msg.textContent = 'LinkedIn connect cancelled — org URN required.'; return; }
+      url += '&external_account_id=' + encodeURIComponent(org);
+    }
+    var t = token();
+    if (msg) msg.textContent = 'Starting ' + channel + ' connect…';
+    fetch(url, {
+      headers: Object.assign({ accept: 'application/json' },
+        (t && t !== 'demo') ? { authorization: 'Bearer ' + t } : {})
+    }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .then(function (res) {
+        if (!res.ok) {
+          var reason = res.message || res.error || 'not_configured';
+          if (msg) msg.textContent = reason;
+          return;
+        }
+        if (res.url) location.href = res.url;
+      });
+  }
+  ['oauthFb', 'oauthIg', 'oauthLi'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', function () {
+      start(el.getAttribute('data-oauth'));
+    });
+  });
+})();
 
 /* ══ BOOT ════════════════════════════════════════════════════════════════ */
 document.getElementById('nowTxt').textContent = 'now = ' + fmt(NOW_ISO);

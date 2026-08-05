@@ -63,6 +63,45 @@ export async function instagramPost(post) {
   );
 }
 
+/** LinkedIn organization UGC post. external_account_id is the org id (digits) or full URN. */
+export async function linkedinPost(post, { fetchImpl } = {}) {
+  if (process.env.SOCIAL_PUBLISH_DRY_RUN === "1") {
+    return { external_post_id: dryRunId("linkedin", post) };
+  }
+  const channel = channelFromPost(post);
+  const token = tokenFrom(channel);
+  if (!token) refuse("social channel has no access token");
+  let orgId = String(channel.external_account_id || "");
+  if (!orgId) refuse("social channel has no external_account_id");
+  if (!orgId.startsWith("urn:")) orgId = `urn:li:organization:${orgId}`;
+
+  const doFetch = fetchImpl || globalThis.fetch;
+  const res = await doFetch("https://api.linkedin.com/v2/ugcPosts", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "X-Restli-Protocol-Version": "2.0.0"
+    },
+    body: JSON.stringify({
+      author: orgId,
+      lifecycleState: "PUBLISHED",
+      specificContent: {
+        "com.linkedin.ugc.ShareContent": {
+          shareCommentary: { text: post.caption || "" },
+          shareMediaCategory: "NONE"
+        }
+      },
+      visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" }
+    })
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    refuse(json.message || json.error || `linkedin HTTP ${res.status}`);
+  }
+  return { external_post_id: json.id || json.value || null };
+}
+
 function otherChannelPost(channelName) {
   return async (post) => {
     if (process.env.SOCIAL_PUBLISH_DRY_RUN === "1") {
@@ -78,9 +117,10 @@ function otherChannelPost(channelName) {
 export function registerDefaultAdapters(registerFn) {
   registerFn("facebook", { post: facebookPost });
   registerFn("instagram", { post: instagramPost });
-  for (const ch of ["tiktok", "linkedin", "x", "youtube_shorts", "threads", "pinterest"]) {
+  registerFn("linkedin", { post: linkedinPost });
+  for (const ch of ["tiktok", "x", "youtube_shorts", "threads", "pinterest"]) {
     registerFn(ch, { post: otherChannelPost(ch) });
   }
 }
 
-export default { registerDefaultAdapters, facebookPost, instagramPost };
+export default { registerDefaultAdapters, facebookPost, instagramPost, linkedinPost };
