@@ -248,6 +248,86 @@ scope — left alone.
 
 ---
 
+## Round 2 — UI consistency and load speed
+
+Owner note 2026-08-05: parts of the interface were built by another tool and
+some controls drifted. Scope for this round: **no layout changes, no new
+features.** Corner radius only where it does not move or resize anything, plus
+speed wins with no behaviour change.
+
+### Controls brought back to the house standard
+
+Every one of these was the same class doing the same job with a drifted number.
+
+**Buttons** — standard `border-radius:7px`, `padding:8px 14px`, `font-weight:500`:
+
+| File | Was | Now |
+|---|---|---|
+| `app/finance-os.html:93` | `padding:7px 13px` | `8px 14px` |
+| `app/lenders.html:35` | `padding:8px 12px`, no `font-weight` | `8px 14px`, `font-weight:500` |
+| `app/consent-capture.html:129` | `radius:6px` | `7px` |
+| `app/client-portal.html:174` | `radius:8px` | `7px` |
+| `app/client-portal.html:193` | `radius:9px` | `7px` |
+
+`lenders.html` was the visible one — its buttons had no `font-weight` at all, so
+they rendered lighter than the same button on every other screen.
+`client-portal.html` had two sibling buttons at 8px and 9px.
+
+Result: all 19 button radii are now 7px.
+
+**Cards and panels** — standard `border-radius:10px`:
+
+| File | Was | Now |
+|---|---|---|
+| `app/ops-admin.html:142` `.card` | `8px` | `10px` |
+| `app/pipeline.html:219` `.card` | `7px` | `10px` |
+| `app/client-portal.html:64` `.card` | `14px` | `10px` |
+| `app/client-portal.html:165` `.tile` | `12px` | `10px` |
+| `app/hiring.html:237` `.panel` | `9px` | `10px` |
+| `app/pipeline.html:160` `.select` | `6px` | `7px` (matches inputs) |
+
+The three `.card` rules were byte-identical apart from the radius.
+
+Result: 24 card radii at 10px; both input radii at 7px.
+
+**Left alone deliberately:** the three `border-radius:3px` rules are 14×14px
+checkboxes (`agent-editor`, `template-editor`) and the signature-field overlay
+(`contracts.html`) — 3px is right at that size. `.btn-book` and `.btn-unlock`
+keep their larger padding and weight; that is a deliberate size hierarchy on the
+client portal, and changing it would resize the control.
+
+### Load speed
+
+**Fixed — font preconnect.** 4 pages requested Google Fonts with no
+`preconnect`, so the browser waited until it parsed the stylesheet link before
+starting DNS and TLS to the font hosts: `login.html`, `portal-login.html`,
+`reset-password.html`, `contract.html`. Sign-in is the first page every user
+loads. Added the two preconnect hints already used on the other 42 pages.
+
+`crm.html` also lacks it and was left alone per owner direction.
+
+**Checked and correct, no change made:**
+
+- `display=swap` — present on all 47 pages that load fonts. No invisible-text
+  flash anywhere.
+- **Caching** — `public/_headers` already forces revalidation on `/app/*.js`,
+  `/app/*.html`, `login.html` and `contract.html`. That is deliberate: a stale
+  `shell.js` broke every screen on 2026-07-31. Adding long-lived cache here
+  would reintroduce that bug, and adding it to the CSS would mean a brand fix
+  takes a year to appear. Correct as written.
+- **Render-blocking `shell.js`** — 72KB, in `<head>`, no `defer`, on every app
+  page. It is the auth gate; it decides whether you may see the screen and
+  redirects if not. Deferring it would paint the page before the gate runs.
+  Blocking is the right call. Not changed.
+- **No image files exist** in the project at all. The logo is an inline base64
+  SVG, so it costs no extra request.
+
+**Noted, not actioned** (would need restructuring, which is out of scope):
+`creative-factory.html` 196KB, `hiring.html` 180KB, `campaign-manager.html`
+164KB. All inline CSS/JS, no images.
+
+---
+
 ## Verification of the fixes
 
 - `npm run lint` — pass, 982 files parse clean
