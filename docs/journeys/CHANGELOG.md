@@ -1,3 +1,4 @@
+2026-08-04 | role-owner, role-sales-manager, role-closer, role-funding-advisor | Regenerated actual journeys after pipeline board load path + s-01 card placement | Actual board path no longer flashes sample cards; new leads get a Sales card | c0fa78b
 2026-08-04 | role-closer, role-sales-manager | actual regenerated — call cockpit, my-numbers, sales-floor screens + call_outcomes APIs | sales dashboards build | pending
 # Journey changelog
 

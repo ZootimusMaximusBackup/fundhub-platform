@@ -25,7 +25,7 @@ flowchart TD
     CAN --> A_contracts[contracts — 1 route]
     CAN --> A_creative[Creative Factory — 7 routes]
     CAN --> A_dashboard[The dashboard — 5 routes]
-    CAN --> A_demo[demo — 1 route]
+    CAN --> A_demo[demo — 2 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 10 routes]
     CAN --> A_hiring[Hiring — 6 routes]
@@ -46,7 +46,7 @@ flowchart TD
 
 ## What they can reach
 
-**134 of 136 routes.**
+**135 of 137 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -91,6 +91,7 @@ flowchart TD
 | `/api/dashboard/kpis` | — | staff |
 | `/api/dashboard/pipeline` | — | staff |
 | `/api/dashboard/seed` | — | staff |
+| `/api/demo/mode` | DELETE, GET, POST | owner, admin |
 | `/api/demo/simulate` | DELETE, POST | owner, admin |
 | `/api/documents-upload` | POST | staff, client |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
@@ -193,7 +194,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**2 of 136 routes.**
+**2 of 137 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

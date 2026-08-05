@@ -26,14 +26,14 @@ flowchart TD
     CAN --> A_social[social — 2 routes]
     CAN --> A_top_level[Everything else — 3 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 105 routes]
+    WHO -->|Yes| CANT[Blocked — 106 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_chat[chat — 4 blocked]
     CANT --> B_company_brain[company-brain — 1 blocked]
     CANT --> B_consent[consent — 1 blocked]
     CANT --> B_dashboard[The dashboard — 5 blocked]
-    CANT --> B_demo[demo — 1 blocked]
+    CANT --> B_demo[demo — 2 blocked]
     CANT --> B_finance[Finance — 10 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_journeys[journeys — 2 blocked]
@@ -48,7 +48,7 @@ flowchart TD
 
 ## What they can reach
 
-**31 of 136 routes.**
+**31 of 137 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -91,7 +91,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**105 of 136 routes.**
+**106 of 137 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -115,6 +115,7 @@ flowchart TD
 | `/api/dashboard/kpis` | — | staff |
 | `/api/dashboard/pipeline` | — | staff |
 | `/api/dashboard/seed` | — | staff |
+| `/api/demo/mode` | DELETE, GET, POST | owner, admin |
 | `/api/demo/simulate` | DELETE, POST | owner, admin |
 | `/api/documents-upload` | POST | staff, client |
 | `/api/finance/alerts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
