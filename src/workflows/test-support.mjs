@@ -39,8 +39,10 @@ export function pgFake(seed = {}) {
       }
       // --- pipeline_stages/pipelines lookup + cards find-or-create (moveCardToStage) ---
       if (/SELECT ps\.id AS stage_id, ps\.pipeline_id FROM pipeline_stages/.test(sql)) {
-        const [pipelineKey, stageKey] = params;
-        const row = pipelineStages.find((r) => r.pipeline_key === pipelineKey && r.stage_key === stageKey);
+        const [pipelineKey, stageKey, orgId] = params;
+        const row = pipelineStages.find((r) =>
+          r.pipeline_key === pipelineKey && r.stage_key === stageKey &&
+          (orgId == null || r.org_id == null || r.org_id === orgId));
         return { rows: row ? [{ stage_id: row.stage_id, pipeline_id: row.pipeline_id }] : [] };
       }
       if (/SELECT id FROM cards WHERE client_id/.test(sql)) {

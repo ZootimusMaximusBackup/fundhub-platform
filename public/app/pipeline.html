@@ -451,358 +451,15 @@
     <button class="fp-clear" id="filterClear">Clear all</button>
   </div>
 
-  <!-- BOARD -->
+  <!-- BOARD
+       Starts empty on purpose. Sample columns used to paint here, then the
+       live loader tore them down when /api/dashboard/pipeline answered — often
+       with real stages and zero cards — and the page looked blank. Loading,
+       real columns, an honest empty message, or a named failure. Never fake
+       rows that vanish. -->
   <div class="board-wrap">
-    <div class="board">
-
-      <!-- COLUMN 1 — NEW LEAD -->
-      <section class="col">
-        <div class="col-head">
-          <div class="col-head-top"><div class="col-name">New Lead</div><div class="col-count">42</div></div>
-          <div class="col-money">$268,400 est.</div>
-        </div>
-        <div class="col-body">
-
-          <div class="card">
-            <div class="c-top">
-              <div class="av agent">SJ</div>
-              <div class="c-name">Kayla Whitmore</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$6,500 <span class="unit">est.</span></div>
-            <div class="c-age">22m in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Setter Josh</b> is on a call with her now</div>
-              <div class="c-when">now</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="c-top">
-              <div class="av agent">A1</div>
-              <div class="c-name">Tomás Reyes</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$5,400 <span class="unit">est.</span></div>
-            <div class="c-age">3h in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Agent 1</b> followed up by text</div>
-              <div class="c-when">12m</div>
-            </div>
-          </div>
-
-          <div class="card held">
-            <div class="c-top">
-              <div class="av human">SW</div>
-              <div class="c-name">Yvonne Adeyemi</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$6,500 <span class="unit">est.</span></div>
-            <div class="c-age old">2d 1h in stage</div>
-            <div class="hold-badge neutral">New Inquiry <span class="hb-age">2d 1h</span></div>
-            <div class="c-foot">
-              <div class="c-act">Nobody has worked this yet</div>
-              <div class="c-when">—</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="c-top">
-              <div class="av agent">A3</div>
-              <div class="c-name">Marcus Fielding</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$8,900 <span class="unit">est.</span></div>
-            <div class="c-age">1d 4h in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Agent 3</b> sent a nurture email</div>
-              <div class="c-when">5h</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="c-top">
-              <div class="av agent">SJ</div>
-              <div class="c-name">Rosa Iglesias</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$4,200 <span class="unit">est.</span></div>
-            <div class="c-age">4h in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Setter Josh</b> called — no answer</div>
-              <div class="c-when">1h</div>
-            </div>
-          </div>
-
-          <div class="col-more">+37 more in this stage</div>
-        </div>
-      </section>
-
-      <!-- COLUMN 2 — SURVEY COMPLETED (card being dragged out of here) -->
-      <section class="col">
-        <div class="col-head">
-          <div class="col-head-top"><div class="col-name">Survey Complete</div><div class="col-count">18</div></div>
-          <div class="col-money">$121,300 est.</div>
-        </div>
-        <div class="col-body">
-
-
-          <div class="card">
-            <div class="c-top">
-              <div class="av agent">SJ</div>
-              <div class="c-name">Dana Whitlock</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$6,500 <span class="unit">est.</span></div>
-            <div class="c-age">1d 2h in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Setter Josh</b> left a voicemail</div>
-              <div class="c-when">3h</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="c-top">
-              <div class="av human">NC</div>
-              <div class="c-name">Trevor Nakamura</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$11,200 <span class="unit">est.</span></div>
-            <div class="c-age old">2d 6h in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Nina Castellano</b> tried to book him</div>
-              <div class="c-when">1d</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="c-top">
-              <div class="av agent">A1</div>
-              <div class="c-name">Simone Baptiste</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$5,400 <span class="unit">est.</span></div>
-            <div class="c-age">5h in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Agent 1</b> sent booking link</div>
-              <div class="c-when">40m</div>
-            </div>
-          </div>
-
-          <div class="col-more">+15 more in this stage</div>
-        </div>
-      </section>
-
-      <!-- COLUMN 3 — BOOKED (drop target) -->
-      <section class="col drop-target">
-        <div class="col-head">
-          <div class="col-head-top"><div class="col-name">Booked</div><div class="col-count">11</div></div>
-          <div class="col-money">$74,800 est.</div>
-        </div>
-        <div class="col-body">
-
-
-          <div class="card">
-            <div class="c-top">
-              <div class="av human">JB</div>
-              <div class="c-name">Devon Marsh</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$9,600 <span class="unit">est.</span></div>
-            <div class="c-age">1d in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Jordan Blake</b> finished the call</div>
-              <div class="c-when">2h</div>
-            </div>
-          </div>
-
-          <div class="card held">
-            <div class="c-top">
-              <div class="av human">JB</div>
-              <div class="c-name">Amara Nwosu</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$7,300 <span class="unit">est.</span></div>
-            <div class="c-age old">2d 3h in stage</div>
-            <div class="hold-badge">Missing Documents <span class="hb-age">1d 2h</span></div>
-            <div class="c-foot">
-              <div class="c-act"><b>Jordan Blake</b> asked for pay stubs</div>
-              <div class="c-when">1d</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="c-top">
-              <div class="av human">NC</div>
-              <div class="c-name">Hollis Grant</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$6,500 <span class="unit">est.</span></div>
-            <div class="c-age">6h in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Nina Castellano</b> confirmed 4pm call</div>
-              <div class="c-when">2h</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="c-top">
-              <div class="av agent">A5</div>
-              <div class="c-name">Sean Kilbride</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$4,900 <span class="unit">est.</span></div>
-            <div class="c-age">4h in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Agent 5</b> sent the intake form</div>
-              <div class="c-when">3h</div>
-            </div>
-          </div>
-
-          <div class="col-more">+7 more in this stage</div>
-        </div>
-      </section>
-
-      <!-- COLUMN 4 — DIAGNOSTIC PAID -->
-      <section class="col">
-        <div class="col-head">
-          <div class="col-head-top"><div class="col-name">Diagnostic Paid</div><div class="col-count">7</div></div>
-          <div class="col-money">$70,700 est. · $224 collected</div>
-        </div>
-        <div class="col-body">
-
-          <div class="card">
-            <div class="c-top">
-              <div class="av human">JB</div>
-              <div class="c-name">Priya Nair</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$35,000 <span class="unit">est.</span></div>
-            <div class="c-age">1h 10m in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Jordan Blake</b> is on the call now</div>
-              <div class="c-when">now</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="c-top">
-              <div class="av agent">A2</div>
-              <div class="c-name">Jonathan Kessler</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$6,500 <span class="unit">est.</span></div>
-            <div class="c-age">11m in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Agent 2</b> receipted the $32 diagnostic</div>
-              <div class="c-when">11m</div>
-            </div>
-          </div>
-
-          <div class="card held">
-            <div class="c-top">
-              <div class="av agent">CF</div>
-              <div class="c-name">Lucia Ferrante</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$8,900 <span class="unit">est.</span></div>
-            <div class="c-age old">2d in stage</div>
-            <div class="hold-badge">Awaiting CRS <span class="hb-age">1d 8h</span></div>
-            <div class="c-foot">
-              <div class="c-act"><b>Context Fetcher</b> is still waiting on the pull</div>
-              <div class="c-when">4h</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="c-top">
-              <div class="av human">NC</div>
-              <div class="c-name">Wendell Pryce</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$5,400 <span class="unit">est.</span></div>
-            <div class="c-age">1d 5h in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Nina Castellano</b> rescheduled to Monday</div>
-              <div class="c-when">6h</div>
-            </div>
-          </div>
-
-          <div class="col-more">+3 more in this stage</div>
-        </div>
-      </section>
-
-      <!-- COLUMN 5 — DECISION RENDERED -->
-      <section class="col">
-        <div class="col-head">
-          <div class="col-head-top"><div class="col-name">Decision Rendered</div><div class="col-count">4</div></div>
-          <div class="col-money">$31,600 est.</div>
-        </div>
-        <div class="col-body">
-
-          <div class="card" style="border-color:var(--alert-line);background:color-mix(in srgb,var(--alert) 8%,#fff);">
-            <div class="c-top">
-              <div class="av human">JB</div>
-              <div class="c-name">Gustavo Rincón</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$8,900 <span class="unit">est.</span></div>
-            <div class="c-age old">3d 4h in stage</div>
-            <div class="hold-badge crit">Move sent back <span class="hb-age">6m</span></div>
-            <div class="c-foot">
-              <div class="c-act" style="color:var(--ink2);font-weight:700;">Move to Card Stacking was sent back — the $3,000 deposit is unpaid</div>
-              <div class="c-when">6m</div>
-            </div>
-          </div>
-
-          <div class="card" style="box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent);border-color:var(--accent);">
-            <div class="c-top">
-              <div class="av human">JB</div>
-              <div class="c-name">Elena Vasquez</div>
-              <div class="c-tools"><span class="c-btn route" style="background:var(--accent);color:var(--ink2);border-color:var(--accent);">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$11,200 <span class="unit">est.</span></div>
-            <div class="c-age">1d 6h in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Jordan Blake</b> — awaiting her decision</div>
-              <div class="c-when">3h</div>
-            </div>
-          </div>
-
-          <div class="card held crit">
-            <div class="c-top">
-              <div class="av agent">CG</div>
-              <div class="c-name">Nate Farrow</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$6,500 <span class="unit">est.</span></div>
-            <div class="c-age">1d 2h in stage</div>
-            <div class="hold-badge crit">Internal Review <span class="hb-age">9h</span></div>
-            <div class="c-foot">
-              <div class="c-act"><b>Compliance Gate</b> flagged the file</div>
-              <div class="c-when">9h</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="c-top">
-              <div class="av human">NC</div>
-              <div class="c-name">Meredith Yao</div>
-              <div class="c-tools"><span class="c-btn route">MOVE</span><span class="grip">⠿</span></div>
-            </div>
-            <div class="c-amt">$5,000 <span class="unit">est.</span></div>
-            <div class="c-age">5h in stage</div>
-            <div class="c-foot">
-              <div class="c-act"><b>Nina Castellano</b> sent the roadmap</div>
-              <div class="c-when">1h</div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-
-    </div>
+    <div class="empty-rail-note" id="boardStatus">Loading the board&hellip;</div>
+    <div class="board" id="board" hidden></div>
 
       <!-- FLOATING: CROSS-RAIL ROUTE MENU
            Lives under .board-wrap, NOT inside .board. Live paint() tears down
@@ -1650,28 +1307,30 @@ restore();
   // No-column note, shown only for a genuine problem (backend down, or a key
   // the database truly has no pipeline for) — never for "we haven't wired
   // this rail yet", because every rail is wired to the same generic endpoint.
+  // Status note over the board. Used for loading, honest empty, and failures.
+  // Never leave the board area blank without a sentence saying why.
   var wrap = document.querySelector(".board-wrap");
+  var statusEl = document.getElementById("boardStatus");
   function showNote(text) {
-    var note = wrap.querySelector(".empty-rail-note");
-    if (!note) {
-      note = document.createElement("div");
-      note.className = "empty-rail-note";
-      wrap.appendChild(note);
+    if (!statusEl) {
+      statusEl = document.createElement("div");
+      statusEl.className = "empty-rail-note";
+      statusEl.id = "boardStatus";
+      wrap.insertBefore(statusEl, board);
     }
-    note.textContent = text;
-    board.style.display = "none";
+    statusEl.textContent = text;
+    statusEl.hidden = false;
+    board.hidden = true;
   }
   function hideNote() {
-    var note = wrap.querySelector(".empty-rail-note");
-    if (note && note.parentNode) note.parentNode.removeChild(note);
-    board.style.display = "";
+    if (statusEl) statusEl.hidden = true;
+    board.hidden = false;
+  }
+  function showLoading(label) {
+    showNote("Loading " + (label || "the board") + "…");
+    setSummary(null);
   }
 
-  /* Columns are built FROM the stages the API returns, in the order it
-     returns them (already stage.sort_order from the query) — not matched
-     against a fixed set of markup columns. .board is a flex row with no
-     fixed column count (see .board{width:max-content} in the stylesheet), so
-     any number of stages lays out and scrolls correctly. */
   function buildColumn(stage, pipelineKey) {
     var col = document.createElement("section");
     col.className = "col";
@@ -1691,7 +1350,14 @@ restore();
     head.appendChild(headTop); head.appendChild(moneyEl);
     var body = document.createElement("div");
     body.className = "col-body";
-    stage.cards.forEach(function (c) { body.appendChild(cardEl(c)); });
+    (stage.cards || []).forEach(function (c) { body.appendChild(cardEl(c)); });
+    if (!(stage.cards || []).length) {
+      var empty = document.createElement("div");
+      empty.className = "empty-rail-note";
+      empty.style.cssText = "margin:16px 8px;font-size:10px;";
+      empty.textContent = "No cards in this stage";
+      body.appendChild(empty);
+    }
     col.appendChild(head); col.appendChild(body);
     return col;
   }
@@ -1701,17 +1367,14 @@ restore();
   function paint(stages, pipelineKey) {
     while (board.firstChild) board.removeChild(board.firstChild);
     var shown = 0;
-    stages.forEach(function (s) {
+    (stages || []).forEach(function (s) {
       board.appendChild(buildColumn(s, pipelineKey || activePipelineKey));
-      shown += s.cards.length;
+      shown += (s.cards || []).length;
     });
-    return { shown: shown, stageCount: stages.length };
+    hideNote();
+    return { shown: shown, stageCount: (stages || []).length };
   }
 
-  // Rail codes match the tabs in document order; the pipeline `key` is what
-  // the database and the API actually know each one by. R-01..R-06 come from
-  // db/seed/002_pipelines.sql; R-08 and R-09 from migrations 115 and 051.
-  // R-07 ('affiliates_hiring') is retired — see migration 127.
   var PIPELINE_KEYS = {
     "R-01": "sales",
     "R-02": "funding_card_stacking",
@@ -1723,7 +1386,44 @@ restore();
     "R-09": "hiring"
   };
 
-  var cache = {}; // pipeline key -> last-fetched stages[], so re-clicking a rail doesn't refetch
+  var cache = {};
+  var loadSeq = 0;
+
+  function applyBoard(stages, rail, label, key) {
+    var r = paint(stages, key);
+    setSummary(fhPipelineSummary(stages));
+    setRailCount(rail, fhPipelineSummary(stages).count);
+    if (typeof window.rebuildOwnerOptions === "function") {
+      try { window.rebuildOwnerOptions(); } catch (e) {}
+    }
+    if (r.shown === 0) {
+      banner("real",
+        "live board · " + label.toLowerCase() +
+        " · no cards on this rail yet — stages are ready, nobody has been placed here");
+    } else {
+      banner("real", "live board · " + label.toLowerCase() + " pipeline · " + r.shown +
+                     " cards across " + r.stageCount + " stage" + (r.stageCount === 1 ? "" : "s"));
+    }
+  }
+
+  function failBoard(res, label) {
+    setSummary(null);
+    while (board.firstChild) board.removeChild(board.firstChild);
+    if (res.source === "demo") {
+      showNote(label + " — demo session. The board was not loaded from the database.");
+      banner("sample", "demo session — the backend was not queried");
+    } else if (res.source === "notfound") {
+      showNote(label + " — the database has no pipeline configured for this rail yet.");
+      banner("sample", label + " — pipeline not configured");
+    } else if (res.source === "unauthorized") {
+      showNote(label + " — you are not signed in, so the board cannot load.");
+      banner("error", label + " — not signed in");
+    } else {
+      showNote(label + " — could not load the board (" + (res.source || "error") +
+               (res.error ? ": " + res.error : "") + ").");
+      banner("error", label + " — load failed (" + res.source + ": " + res.error + ")");
+    }
+  }
 
   function load(rail, label) {
     var key = PIPELINE_KEYS[rail];
@@ -1732,48 +1432,24 @@ restore();
     if (window.FHPipelineBoard) window.FHPipelineBoard.currentKey = key;
 
     if (cache[key]) {
-      hideNote();
-      var r = paint(cache[key], key);
-      setSummary(fhPipelineSummary(cache[key]));
-      setRailCount(rail, fhPipelineSummary(cache[key]).count);
-      if (typeof window.rebuildOwnerOptions === "function") {
-        try { window.rebuildOwnerOptions(); } catch (e) { /* filter stays as-is */ }
-      }
-      banner("real", "live board · " + label.toLowerCase() + " pipeline · " + r.shown +
-                     " cards across " + r.stageCount + " stage" + (r.stageCount === 1 ? "" : "s"));
+      applyBoard(cache[key], rail, label, key);
       return;
     }
 
+    var seq = ++loadSeq;
+    showLoading(label);
     FHData.pipeline(key).then(function (res) {
+      if (seq !== loadSeq) return;
       if (res.ok && res.data && res.data.stages) {
         cache[key] = res.data.stages;
-        hideNote();
-        var r = paint(res.data.stages, key);
-        setSummary(fhPipelineSummary(res.data.stages));
-        setRailCount(rail, fhPipelineSummary(res.data.stages).count);
-        // The dropdown was built from whatever cards this call just replaced.
-        if (typeof window.rebuildOwnerOptions === "function") {
-          try { window.rebuildOwnerOptions(); } catch (e) { /* filter stays as-is */ }
-        }
-        banner("real", "live board · " + label.toLowerCase() + " pipeline · " + r.shown +
-                       " cards across " + r.stageCount + " stage" + (r.stageCount === 1 ? "" : "s"));
+        applyBoard(res.data.stages, rail, label, key);
         return;
       }
-      // No real totals to show for any of these — a stale number left over
-      // from the last pipeline would be exactly the invented-value bug this
-      // summary bar used to have.
-      setSummary(null);
-      if (res.source === "demo") {
-        banner("sample", "sample board — demo session, the backend was not queried");
-      } else if (res.source === "notfound") {
-        showNote(label + " — the database has no pipeline configured for this rail yet.");
-      } else {
-        banner("error", label + " — backend unavailable (" + res.source + ": " + res.error + ")");
-      }
+      failBoard(res || { source: "offline", error: "no answer" }, label);
     });
   }
 
-  // Every rail's tab count, on page load — not just whichever pipeline is
+    // Every rail's tab count, on page load — not just whichever pipeline is
   // active. Reuses `cache` (so clicking a tab afterward never refetches) and
   // leaves a rail's count at the "—" it starts on if the fetch fails: the
   // same rule setSummary follows, unknown is a dash, never a fabricated 0.

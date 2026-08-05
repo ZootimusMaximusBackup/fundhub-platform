@@ -1,17 +1,13 @@
 // S-01 — New Lead / Intake.
-// Source: GHL-System-Map.md SALES WORKFLOWS section ("ADD WEBHOOK TO ANALYZER").
-// The GHL-internal webhook step (POST back to GHL's own webhook-trigger endpoint)
-// dies with GHL per Spec §2 — not ported, nothing on our side needs it.
-//
-// Trigger: entry.captured. client-lifecycle.mjs's onEntryCaptured already creates
-// the client row on this same event; this adds the lifecycle-status field + lead
-// tag GHL set alongside contact creation.
+// Trigger: entry.captured. Creates lifecycle status + lead tag and places a
+// Sales board card on new_lead so the client is visible on pipeline.html.
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
+import { moveCardToStage } from "./cards.mjs";
 
 export async function handle({ event, db, step }) {
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
@@ -20,7 +16,14 @@ export async function handle({ event, db, step }) {
   await step.run("set-lifecycle-status", () => mergeCustomFields(db, clientId, { lifecycle_status: "New Lead" }));
   await step.run("tag-lead-new", () => addTags(db, clientId, ["lead:new"]));
 
-  return { done: true };
+  const orgId = event.orgId;
+  let card = null;
+  if (orgId) {
+    card = await step.run("place-on-new-lead", () =>
+      moveCardToStage(db, { orgId, clientId, pipelineKey: "sales", stageKey: "new_lead" }));
+  }
+
+  return { done: true, card };
 }
 
 export const s01NewLeadIntake = inngest.createFunction(
