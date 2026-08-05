@@ -35,6 +35,11 @@ All of these were reviewed. They already bind session org, partner scope/RLS,
 - `api/documents/[id].mjs`, `api/contracts/sign.mjs` — **HMAC signed URL, not session**
 - `api/webhooks/[provider].mjs`, `api/public/partner-page.mjs`, `api/inquiry.mjs` (proxy), auth routes
 
+## Recurrence guard
+
+- Static: `src/http/cross-org-guard.test.mjs` auto-discovers every `api/` handler that accepts an id/client_id and fails CI if it lacks an org/partner scope marker (or the sessionless allowlist).
+- Runtime: `src/http/cross-org-isolation.pg.test.mjs` seeds org A, calls every runtime probe as org B, asserts 403/404 and no leaked PII.
+
 ## Verification
 
 Before (commit `cc56c16`): **29 P0** non-passes — 7 confirmed FAIL for
