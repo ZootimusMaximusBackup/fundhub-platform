@@ -7,7 +7,9 @@
    load-bearing. It used to run as the last script in <body>: a screen the role
    may not open was parsed, painted and only then bounced away, once the session
    fetch came back. That is the "it opens the page and then throws me back"
-   behaviour. The gate now decides first and the screen paints second. */
+   behaviour. With a cached role the gate still decides first. Without one we
+   no longer blank the whole page waiting on the network (owner-set 2026-08-05)
+   — nav stays hidden and clicks stay blocked until the session answers. */
 (function () {
   // "" when the URL is /app/ — the router page, which is not a screen and is
   // never in ALL. Anything not in the role's list gets sent to its home.
