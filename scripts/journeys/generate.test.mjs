@@ -276,7 +276,10 @@ describe("nothing is invented", () => {
     // rather than by the walk: a role with no ROLE_TABS entry signs in and
     // bounces to the shared staff tabs.
     const shell = fs.readFileSync(path.join(REPO, "public/app/shell.js"), "utf8");
-    assert.match(shell, /sales_manager:\s*"staff"/, "shell.js ROLE_TABS has no sales_manager row");
+    // ROLE_TABS value is the resolver key ("sales_manager"), not the old
+    // blanket "staff" string — allowedFor() adds SALES_FLOOR_ONLY on top.
+    assert.match(shell, /sales_manager:\s*"(?:staff|sales_manager)"/,
+      "shell.js ROLE_TABS has no sales_manager row");
     assert.match(shell, /sales_manager:\s*"sales-floor\.html"/, "shell.js HOME has no sales_manager landing screen");
   });
 

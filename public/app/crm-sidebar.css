@@ -1,0 +1,194 @@
+/* Shared CRM sidebar chrome — used by every screen that carries the aside.
+   Extracted so screens that use a different page layout (sales dashboards)
+   still get the same dark rail as pipeline.html / command-center.html.
+   Tokens come from fundhub-brand.css (--ink, --paper, --spectrum, etc.). */
+
+:root {
+  --dark-text: var(--paper);
+  --dark-text-dim: var(--gray2);
+  --dark-line: var(--cardline);
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Sales dashboards wrap aside + stage in .app-shell instead of .app */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--paper);
+}
+.app-shell .stage {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.side {
+  width: 228px;
+  flex: 0 0 228px;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 20;
+  transition: width .18s ease, flex-basis .18s ease;
+}
+.side::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2px;
+  height: 100%;
+  background: var(--spectrum);
+  opacity: .9;
+}
+.side.mini { width: 60px; flex: 0 0 60px; }
+.side-top {
+  height: 44px;
+  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--dark-line);
+}
+.side-top .logo { width: 118px; height: 24px; flex: 0 0 118px; }
+.side.mini .side-top { padding: 0 12px; }
+.side.mini .side-top .logo { display: none; }
+.burger {
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  border: 1px solid var(--dark-line);
+  background: transparent;
+  color: var(--gray2);
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.burger:hover { border-color: #3F3F46; color: var(--paper); }
+.side.mini .burger { margin: 0 auto; }
+.side-scroll { flex: 1; overflow-y: auto; padding: 12px 0 8px; }
+.side-scroll::-webkit-scrollbar { width: 6px; }
+.side-scroll::-webkit-scrollbar-thumb { background: #27272A; border-radius: 3px; }
+.navgroup { margin-bottom: 3px; }
+.navhead {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #71717A;
+}
+.navhead:hover { color: var(--gray2); }
+.navhead .chev { margin-left: auto; font-size: 9px; transition: transform .16s; color: var(--gray); }
+.navgroup.closed .chev { transform: rotate(-90deg); }
+.navgroup.closed .navlist { display: none; }
+.side.mini .navhead {
+  justify-content: center;
+  padding: 10px 0 6px;
+  font-size: 0;
+  letter-spacing: 0;
+}
+.side.mini .navhead::after {
+  content: "";
+  display: block;
+  width: 16px;
+  height: 2px;
+  background: var(--spectrum);
+  border-radius: 1px;
+  opacity: .5;
+}
+.side.mini .navhead .chev { display: none; }
+.navlist { display: flex; flex-direction: column; }
+.navitem {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 7px 18px;
+  font-size: 12.5px;
+  color: var(--gray2);
+  text-decoration: none;
+  position: relative;
+  transition: color .12s, background .12s;
+}
+.navitem:hover { color: var(--paper); background: #161619; }
+.navitem .ico {
+  font-family: var(--mono);
+  font-size: 12px;
+  width: 16px;
+  flex: 0 0 16px;
+  text-align: center;
+  opacity: .75;
+}
+.navitem.on { color: var(--paper); background: #161619; font-weight: 500; }
+.navitem.on::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 5px;
+  bottom: 5px;
+  width: 2px;
+  background: var(--spectrum);
+  border-radius: 0 2px 2px 0;
+}
+.navitem.on .ico { opacity: 1; }
+.navitem.soon { opacity: .38; }
+.side.mini .navitem { justify-content: center; padding: 9px 0; }
+.side.mini .navitem .lbl { display: none; }
+.side-foot {
+  padding: 10px 16px;
+  border-top: 1px solid var(--dark-line);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--gray);
+  letter-spacing: .08em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.side.mini .side-foot { justify-content: center; padding: 10px 0; }
+.side.mini .side-foot .who { display: none; }
+
+@media (max-width: 860px) {
+  .side:not(.mini) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 250px;
+    flex: 0 0 250px;
+    z-index: 500;
+    box-shadow: 12px 0 34px rgba(0, 0, 0, .45);
+  }
+  .side.mini .navitem { padding: 11px 0; }
+  .side-scrim { display: none; }
+  .side-scrim.show {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    z-index: 490;
+  }
+}

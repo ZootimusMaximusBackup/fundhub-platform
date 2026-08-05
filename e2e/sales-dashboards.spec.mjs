@@ -108,13 +108,16 @@ test("my-numbers loads for a closer and shows honest empty call quality", async 
   await expect(page.locator("text=Deposit → funded")).toBeVisible();
 });
 
-test("sales-floor loads for sales_manager and refuses closer at the API", async ({ page }) => {
+test("sales-floor loads for sales_manager and shell bounces a closer home", async ({ page }) => {
   await openScreen(page, "/app/sales-floor.html", SALES_MANAGER, salesHandlers());
   await expect(page.locator("body")).toBeVisible();
   await expect(page.locator(".hero").first()).toBeVisible();
 
-  await openScreen(page, "/app/sales-floor.html", CLOSER, salesHandlers({ floorStatus: 403 }));
-  await expect(page.locator("[data-fh-gate='sales-floor']")).toContainText(/Forbidden|refused|sales managers/i);
+  // Closers are not on the sales-floor allow list — shell.js replaces them
+  // to their home before the page (or its API 403 banner) can paint.
+  const errors = await openScreen(page, "/app/sales-floor.html", CLOSER, salesHandlers({ floorStatus: 403 }));
+  await expect(page).toHaveURL(/closer-dashboard\.html/);
+  expect(errors).toEqual([]);
 });
 
 test("sales-floor loads for owner", async ({ page }) => {

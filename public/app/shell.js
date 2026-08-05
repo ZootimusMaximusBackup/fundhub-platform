@@ -117,17 +117,33 @@
     "journeys.html"
   ];
 
-  /* staffTabs — every screen a signed-in employee may open, which is every row
-     the shared sidebar leaves them looking at.
+  /* Closer desk — call cockpit + personal numbers. In every sidebar so the
+     markup stays identical across screens; gateLinks() shows them only to
+     closers (and owner/admin via "*"). Funding advisors and setters do not
+     get these rows. */
+  var CLOSER_DESK_ONLY = ["closer-call.html", "my-numbers.html"];
 
-     The sidebar markup itself carries one row more than this: subscriptions
-     .html is in it so owner and admin can reach it, and gateLinks() hides that
-     row for everybody else. partner-galaxy.html is in no sidebar at all, per
+  /* Sales floor — manager roll-up. Same pattern: in every sidebar, visible to
+     sales_manager (and owner/admin via "*"). Matches ROLE_SETS.FINANCE at the
+     /api/read/sales-floor gate. */
+  var SALES_FLOOR_ONLY = ["sales-floor.html"];
+
+  /* staffTabs — every screen a signed-in employee may open, which is every row
+     the shared sidebar leaves them looking at — except the role-narrow
+     screens above, which closer / sales_manager pick up in allowedFor().
+
+     The sidebar markup itself carries more rows than this: subscriptions
+     .html, closer-call, my-numbers, and sales-floor sit in the markup so
+     every screen's sidebar stays identical, and gateLinks() hides the ones
+     the role may not open. partner-galaxy.html is in no sidebar at all, per
      the note above. Adding a screen to ALL and to nothing else gives it no way
      in — src/http/app-nav-reachability.test.mjs fails when that happens. */
   function staffTabs() {
     return ALL.filter(function (s) {
-      return PRINCIPAL_ONLY.indexOf(s) === -1 && OWNER_ADMIN_ONLY.indexOf(s) === -1;
+      return PRINCIPAL_ONLY.indexOf(s) === -1
+        && OWNER_ADMIN_ONLY.indexOf(s) === -1
+        && CLOSER_DESK_ONLY.indexOf(s) === -1
+        && SALES_FLOOR_ONLY.indexOf(s) === -1;
     });
   }
 
@@ -158,15 +174,15 @@
     owner: "*",
     admin: "*",
     funding_advisor: "staff",
-    closer: "staff",
+    /* Closer gets the shared staff surface plus the closer desk screens.
+       "closer" is resolved in allowedFor() — staffTabs() + CLOSER_DESK_ONLY. */
+    closer: "closer",
     inquiry_specialist: "staff",
     setter: "staff",
-    /* Sales manager sees the staff surface. The commission screens
-       (products-commissions.html, staff-teams.html) are NOT in
-       OWNER_ADMIN_ONLY, so the staff surface already includes them — which
-       matches the owner decision putting sales_manager in ROLE_SETS.FINANCE.
-       Move that gate and move this row, per the rule above. */
-    sales_manager: "staff",
+    /* Sales manager gets the shared staff surface plus the sales floor.
+       Commission screens stay on the staff surface (not OWNER_ADMIN_ONLY),
+       matching ROLE_SETS.FINANCE. "sales_manager" resolves in allowedFor(). */
+    sales_manager: "sales_manager",
     /* Principal types, not staff roles — they are gated here on staff.role only
        because no principals table exists yet. 'partner' is seeded into the
        staff_roles catalog by db/migrations/036_partner_role.sql purely to make
@@ -218,6 +234,8 @@
     if (!role) return [];
     var m = ROLE_TABS[role];
     if (m === "*") return ALL.slice();
+    if (m === "closer") return staffTabs().concat(CLOSER_DESK_ONLY);
+    if (m === "sales_manager") return staffTabs().concat(SALES_FLOOR_ONLY);
     if (m === "staff" || !m) return staffTabs();
     return m.slice();
   }
@@ -656,6 +674,28 @@
       } else if (box.hasAttribute("data-fh-gated")) {
         box.style.display = "";
         box.removeAttribute("data-fh-gated");
+      }
+    }
+    /* Hide a nav group whose every .navitem is gated — otherwise the section
+       header sits over an empty list (closer desk / sales floor / Setup). */
+    var groups = document.querySelectorAll(".navgroup");
+    for (var g = 0; g < groups.length; g++) {
+      var group = groups[g];
+      var items = group.querySelectorAll(".navitem");
+      if (!items.length) continue;
+      var any = false;
+      for (var j = 0; j < items.length; j++) {
+        if (items[j].style.display !== "none" && !items[j].hasAttribute("data-fh-gated")) {
+          any = true;
+          break;
+        }
+      }
+      if (!any) {
+        group.style.display = "none";
+        group.setAttribute("data-fh-gated-group", "1");
+      } else if (group.hasAttribute("data-fh-gated-group")) {
+        group.style.display = "";
+        group.removeAttribute("data-fh-gated-group");
       }
     }
     // The nav is now telling the truth, so it can be seen.

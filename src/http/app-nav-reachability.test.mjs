@@ -50,12 +50,21 @@ function shellList(name) {
 const ALL = shellList("ALL");
 const PRINCIPAL_ONLY = shellList("PRINCIPAL_ONLY");
 const OWNER_ADMIN_ONLY = shellList("OWNER_ADMIN_ONLY");
+const CLOSER_DESK_ONLY = shellList("CLOSER_DESK_ONLY");
+const SALES_FLOOR_ONLY = shellList("SALES_FLOOR_ONLY");
 
-/** staffTabs — shell.js's own staffTabs(), which is what the chip counts for
-    every staff role. */
+/** staffTabs — shell.js's own staffTabs(), the shared employee surface.
+    Closer desk and sales floor are role-narrow extras on top of this. */
 const STAFF_TABS = ALL.filter(
-  (s) => !PRINCIPAL_ONLY.includes(s) && !OWNER_ADMIN_ONLY.includes(s)
+  (s) =>
+    !PRINCIPAL_ONLY.includes(s) &&
+    !OWNER_ADMIN_ONLY.includes(s) &&
+    !CLOSER_DESK_ONLY.includes(s) &&
+    !SALES_FLOOR_ONLY.includes(s)
 );
+
+const CLOSER_TABS = [...STAFF_TABS, ...CLOSER_DESK_ONLY];
+const SALES_MANAGER_TABS = [...STAFF_TABS, ...SALES_FLOOR_ONLY];
 
 /* ── the screens on disk ──────────────────────────────────────────────────── */
 
@@ -93,11 +102,13 @@ const SOLE_SCREEN_FOR_ITS_ROLE = ["client-portal.html"];
 /* ── the fixture has to be honest ─────────────────────────────────────────── */
 
 describe("app shell — the lists this test reads", () => {
-  test("the shell still declares all three lists and screens on disk back them", () => {
+  test("the shell still declares its lists and screens on disk back them", () => {
     assert.ok(ALL.length >= 20, `ALL parsed as only ${ALL.length} screens`);
     for (const s of ALL) {
       assert.ok(HTML.has(s), `shell.js lists ${s} but public/app/${s} does not exist`);
     }
+    assert.deepEqual([...CLOSER_DESK_ONLY].sort(), ["closer-call.html", "my-numbers.html"].sort());
+    assert.deepEqual(SALES_FLOOR_ONLY, ["sales-floor.html"]);
     assert.ok(WITH_SIDEBAR.length >= 20,
       `only ${WITH_SIDEBAR.length} screens were found to carry a sidebar`);
   });
@@ -148,15 +159,42 @@ describe("app shell — every screen it opens has a way out", () => {
 });
 
 describe("app shell — the chip's tab count matches what the sidebar shows", () => {
-  test("a staff role is left looking at exactly as many rows as the chip counts", () => {
-    // gateLinks() hides the row for any screen the role may not open, so what a
-    // staff role sees is the sidebar minus the owner/admin and partner screens.
-    const visible = navHrefs(HTML.get(WITH_SIDEBAR[0]))
-      .filter((h) => !OWNER_ADMIN_ONLY.includes(h) && !PRINCIPAL_ONLY.includes(h));
-    assert.equal(visible.length, STAFF_TABS.length,
-      `the chip says "${STAFF_TABS.length} tabs" but the sidebar leaves a staff ` +
-        `role ${visible.length} rows`);
+  const nav = () => navHrefs(HTML.get(WITH_SIDEBAR[0]));
+
+  function visibleFor(allowed) {
+    return nav().filter((h) => allowed.includes(h));
+  }
+
+  test("a generic staff role sees the shared staff surface only", () => {
+    // funding_advisor / setter / inquiry_specialist — no closer desk, no floor.
+    const visible = visibleFor(STAFF_TABS);
+    assert.equal(visible.length, STAFF_TABS.length);
     assert.deepEqual([...visible].sort(), [...STAFF_TABS].sort());
+    for (const h of [...CLOSER_DESK_ONLY, ...SALES_FLOOR_ONLY, ...OWNER_ADMIN_ONLY]) {
+      assert.ok(!visible.includes(h), `generic staff must not see ${h}`);
+    }
+  });
+
+  test("a closer sees the staff surface plus closer desk, not the sales floor", () => {
+    const visible = visibleFor(CLOSER_TABS);
+    assert.deepEqual([...visible].sort(), [...CLOSER_TABS].sort());
+    assert.ok(visible.includes("closer-call.html"));
+    assert.ok(visible.includes("my-numbers.html"));
+    assert.ok(!visible.includes("sales-floor.html"));
+  });
+
+  test("a sales manager sees the staff surface plus sales floor, not closer desk", () => {
+    const visible = visibleFor(SALES_MANAGER_TABS);
+    assert.deepEqual([...visible].sort(), [...SALES_MANAGER_TABS].sort());
+    assert.ok(visible.includes("sales-floor.html"));
+    assert.ok(!visible.includes("closer-call.html"));
+    assert.ok(!visible.includes("my-numbers.html"));
+  });
+
+  test("owner/admin keep every non-partner sidebar row", () => {
+    const ownerAllowed = ALL.filter((s) => !PRINCIPAL_ONLY.includes(s));
+    const visible = visibleFor(ownerAllowed);
+    assert.deepEqual([...visible].sort(), [...ownerAllowed].sort());
   });
 });
 
