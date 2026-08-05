@@ -931,9 +931,24 @@ renderAll();
   }
 
   loadMe().then(function () {
+  try {
+    var demo = false;
+    try { demo = localStorage.getItem("fh_demo") === "1"; } catch (e) {}
+    if (!demo && typeof PEOPLE !== "undefined") {
+      PEOPLE.length = 0;
+      if (typeof renderAll === "function") try { renderAll(); } catch (e) {}
+      FHData.banner("sample", "loading roster…", "roster");
+    }
+  } catch (e) {}
   FHData.wire(FHData.staff({ limit: 200 }), "roster", function (data) {
     var rows = data.items || [];
-    if (!rows.length) return null;
+    if (!rows.length) {
+      if (typeof PEOPLE !== "undefined") {
+        PEOPLE.length = 0;
+        if (typeof renderAll === "function") try { renderAll(); } catch (e) {}
+      }
+      return "no staff on the roster yet";
+    }
     if (typeof PEOPLE === "undefined" || typeof renderAll !== "function") return null;
 
     var unmapped = [];

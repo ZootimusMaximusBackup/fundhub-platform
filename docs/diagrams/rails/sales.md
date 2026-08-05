@@ -34,6 +34,7 @@ stateDiagram-v2
     note right of lost : moved by dpc-02-call-outcome-enforcement
     note right of closed_won : moved by dpc-03-inbound-reply-router
     note right of downsell : moved by dpc-03-inbound-reply-router
+    note right of new_lead : moved by s-01-new-lead-intake
     note right of booked : moved by s-04-call-booked
 ```
 
@@ -46,7 +47,7 @@ card into, via `moveCardToStage`.
 
 | # | stage key | name | moved into by |
 |---|---|---|---|
-| 0 | `new_lead` | New Lead | — |
+| 0 | `new_lead` | New Lead | `s-01-new-lead-intake` |
 | 1 | `survey_complete` | Survey Complete | — |
 | 2 | `booked` | Booked | `s-04-call-booked` |
 | 3 | `confirmed` | Confirmed | — |

@@ -381,31 +381,7 @@
       <div class="section-title">Work Queue</div>
       <table class="queue">
         <tr><th>Client</th><th>Bureau</th><th>Inquiry</th><th>Call State</th><th>Hold</th><th>Attempts</th><th>Status</th></tr>
-        <tr data-row data-bureau="Equifax" data-done="1" tabindex="0" aria-expanded="false">
-          <td><span class="rowchev">▸</span>Wei Chen</td><td>Equifax</td><td>Synchrony Bank</td><td><span class="call-state">—</span></td><td>—</td><td class="mono">2</td>
-          <td><span class="status-pill confirmed">Confirmed · Removed</span></td>
-        </tr>
-        <tr class="stuck" data-row data-bureau="Equifax" tabindex="0" aria-expanded="false">
-          <td><span class="rowchev">▸</span>Felix Ndiaye</td><td>Equifax</td><td>Capital One Auto</td><td><span class="call-state">—</span></td><td>—</td><td class="mono">3</td>
-          <td><span class="stuck-age">2d 14h</span> <span class="status-pill" style="background:var(--amber-bg);color:var(--amber);">Awaiting CRS</span></td>
-        </tr>
-        <tr data-row data-bureau="TransUnion" tabindex="0" aria-expanded="false">
-          <td><span class="rowchev">▸</span>Isabel Cortez</td><td>TransUnion</td><td>Sallie Mae</td><td><span class="call-state">—</span></td><td>—</td><td class="mono">1</td>
-          <td><span class="status-pill progress">Filed — waiting on TransUnion</span></td>
-        </tr>
-        <tr data-row data-bureau="TransUnion" tabindex="0" aria-expanded="false">
-          <td><span class="rowchev">▸</span>Samuel Okafor</td><td>TransUnion</td><td>Comenity Bank</td><td><span class="call-state">—</span></td><td>—</td><td class="mono">3</td>
-          <td><span class="status-pill noanswer">Called 3 times — no answer</span></td>
-        </tr>
-        <tr class="stuck locked" data-row data-bureau="Equifax" tabindex="0" aria-expanded="false"
-            data-locked="Her file is frozen for fraud review — leave this one alone.">
-          <td><span class="rowchev">▸</span>Grace Kowalski</td><td>Equifax</td><td>Discover</td><td><span class="call-state">—</span></td><td>—</td><td class="mono">0</td>
-          <td><span class="status-pill new">New · paused for fraud review</span></td>
-        </tr>
-        <tr data-row data-bureau="TransUnion" data-done="1" tabindex="0" aria-expanded="false">
-          <td><span class="rowchev">▸</span>Theresa Lindqvist</td><td>TransUnion</td><td>Barclays</td><td><span class="call-state">—</span></td><td>—</td><td class="mono">2</td>
-          <td><span class="status-pill confirmed">Confirmed · Removed</span></td>
-        </tr>
+        <tr id="queue-status-row"><td colspan="7" style="text-align:center;padding:28px 16px;color:var(--text-dim);">Loading inquiry queue…</td></tr>
       </table>
     </div>
 
@@ -992,6 +968,20 @@ return VIEW;
 window.__fhQueueReady = (function () {
   var table = document.querySelector('table.queue');
   if (!table || !window.FHData) return Promise.resolve();
+  function showQueueStatus(msg) {
+    var table = document.querySelector('table.queue');
+    if (!table) return;
+    [].slice.call(table.querySelectorAll('tr[data-row], #queue-status-row')).forEach(function (r) { r.remove(); });
+    var tr = document.createElement('tr');
+    tr.id = 'queue-status-row';
+    var td = document.createElement('td');
+    td.colSpan = 7;
+    td.style.cssText = 'text-align:center;padding:28px 16px;color:var(--text-dim)';
+    td.textContent = msg;
+    tr.appendChild(td);
+    table.appendChild(tr);
+  }
+
 
   var pill = window.FHInquiryView.pill;
 
@@ -1091,10 +1081,11 @@ window.__fhQueueReady = (function () {
     if (casesRes && casesRes.ok) {
       renderCases((casesRes.data && casesRes.data.items) || []);
     }
-    if (!res.ok) { FHData.explain(res, 'inquiry queue'); return; }
+    if (!res.ok) { showQueueStatus('Could not load the inquiry queue.'); FHData.explain(res, 'inquiry queue'); return; }
     var items = (res.data && res.data.items) || [];
     if (!items.length) {
-      FHData.banner('sample', 'no inquiries in the database yet — showing sample markup', 'inquiries');
+      showQueueStatus('No inquiries in the database yet.');
+      FHData.banner('sample', 'No inquiries in the database yet.', 'inquiries');
       return;
     }
 

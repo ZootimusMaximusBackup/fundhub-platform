@@ -438,9 +438,25 @@ renderTabs(); renderClassbar(); render();
   var day = function (d) { return d ? new Date(d).toLocaleDateString("en-US",
     { month:"short", day:"numeric", year:"2-digit" }) : "—"; };
 
+  try {
+    var demo = false;
+    try { demo = localStorage.getItem("fh_demo") === "1"; } catch (e) {}
+    if (!demo && typeof DOCS !== "undefined") {
+      DOCS.length = 0;
+      if (typeof render === "function") try { render(); } catch (e) {}
+      FHData.banner("sample", "loading documents…", "documents");
+    }
+  } catch (e) {}
+
   FHData.wire(FHData.documents({ limit: 200 }), "documents", function (data) {
     var rows = data.items || [];
-    if (!rows.length) return null;                 // keep the sample markup
+    if (!rows.length) {
+      if (typeof DOCS !== "undefined") {
+        DOCS.length = 0;
+        if (typeof render === "function") try { render(); } catch (e) {}
+      }
+      return "no documents on file yet";
+    }
 
     /* Feed the screen's OWN model and renderer.
 
