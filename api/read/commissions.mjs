@@ -25,9 +25,8 @@ const run = readHandler({
            l.void_reason, l.created_at
       FROM commission_ledger l
       LEFT JOIN staff s ON s.id = l.staff_id
-     WHERE l.org_id = $5::uuid
-       AND ($3::uuid IS NULL OR l.client_id = $3)
-       AND ($4::text IS NULL OR l.status = $4)
+     $1
+       AND COALESCE(l.is_demo, false) = false
      ORDER BY l.earned_at DESC NULLS LAST, l.created_at DESC
      LIMIT $1 OFFSET $2`, [limit + 1, offset, query.client_id || null, query.status || null, orgOf(staff)]).then((r) => r.rows)
 });

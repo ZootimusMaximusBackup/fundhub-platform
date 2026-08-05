@@ -4,6 +4,7 @@
 
 import { BELIEFS, BELIEF_LABELS } from "./beliefs.mjs";
 import { countUnlogged, listUnloggedCalls } from "./call-outcomes.mjs";
+import { orgDemoModeEnabled, demoClause } from "../demo/exclude-demo.mjs";
 
 function monthWindow(now = new Date()) {
   const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -40,7 +41,8 @@ async function staffCashCents(db, { orgId, staffId, start, end }) {
             count(*)::int AS logged
        FROM call_outcomes
       WHERE org_id = $1 AND staff_id = $2
-        AND logged_at >= $3 AND logged_at < $4`,
+        AND logged_at >= $3 AND logged_at < $4
+        AND COALESCE(is_demo, false) = false`,
     [orgId, staffId, start.toISOString(), end.toISOString()]
   );
   return r.rows[0];
@@ -86,7 +88,8 @@ async function commissionBuckets(db, { orgId, staffId }) {
         COALESCE(SUM(amount) FILTER (WHERE status = 'paid'), 0) AS paid_dollars,
         COALESCE(SUM(amount) FILTER (WHERE status IN ('earned','approved')), 0) AS pending_dollars
        FROM commission_ledger
-      WHERE org_id = $1 AND staff_id = $2`,
+      WHERE org_id = $1 AND staff_id = $2
+        AND COALESCE(is_demo, false) = false`,
     [orgId, staffId]
   ).catch(() => ({ rows: [{ paid_dollars: null, pending_dollars: null }] }));
   const row = r.rows[0] || {};

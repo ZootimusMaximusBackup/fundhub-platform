@@ -1,0 +1,25 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { db, close } from "../db.mjs";
+import { moneyReportingSnapshot } from "./money-snapshot.mjs";
+import { seedPlatformDemo, setDemoMode, wipeDemoData, getDemoModeStatus } from "./platform-seed.mjs";
+const hasDb = !!process.env.DATABASE_URL;
+test("demo mode isolation", { skip: !hasDb }, async () => {
+  const orgId = (await db.query(`SELECT id FROM orgs WHERE is_default LIMIT 1`)).rows[0]?.id;
+  assert.ok(orgId);
+  await wipeDemoData(db, { orgId });
+  const before = await moneyReportingSnapshot(db, orgId);
+  await seedPlatformDemo(db, { orgId });
+  assert.deepEqual(await moneyReportingSnapshot(db, orgId), before);
+  await seedPlatformDemo(db, { orgId });
+  assert.deepEqual(await moneyReportingSnapshot(db, orgId), before);
+  const status = await getDemoModeStatus(db, { orgId });
+  assert.ok(status.counts.clients >= 8);
+  assert.ok(status.counts.lenders >= 7);
+  await setDemoMode(db, { orgId, enabled: true });
+  assert.equal((await getDemoModeStatus(db, { orgId })).demo_mode_enabled, true);
+  assert.deepEqual(await moneyReportingSnapshot(db, orgId), before);
+  await wipeDemoData(db, { orgId });
+  assert.equal((await getDemoModeStatus(db, { orgId })).counts.clients, 0);
+  await close().catch(() => {});
+});

@@ -6,6 +6,7 @@ import { db } from "../../src/db.mjs";
 import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
 import { boundedLimit, requireRole, ROLE_SETS } from "../../src/http/read-api.mjs";
 import { requireSessionOrg } from "../../src/http/session-org.mjs";
+import { orgDemoModeEnabled } from "../../src/demo/exclude-demo.mjs";
 
 const SQL = `
   SELECT
@@ -16,6 +17,7 @@ const SQL = `
     c.outcome_tier,
     c.funded,
     c.funded_amount,
+    c.is_demo,
     -- custom_fields flags
     (c.custom_fields->>'crs_paid')::boolean          AS crs_paid,
     (c.custom_fields->>'deposit_paid')::boolean       AS deposit_paid,
@@ -41,6 +43,7 @@ const SQL = `
   LEFT JOIN tasks        tk  ON tk.client_id = c.id AND tk.org_id = c.org_id
   LEFT JOIN messages     m   ON m.client_id  = c.id AND m.org_id = c.org_id
   WHERE c.org_id = $1
+    AND ($3::boolean OR COALESCE(c.is_demo, false) = false)
   GROUP BY c.id
   ORDER BY c.created_at DESC
   LIMIT $2
@@ -69,7 +72,8 @@ export default async function handler(req, res) {
   if (!orgId) return;
   try {
     const limit = boundedLimit(req.query?.limit, { fallback: 50, cap: 500 });
-    const { rows } = await db.query(SQL, [orgId, limit]);
+    const demoOn = await orgDemoModeEnabled(db, orgId);
+    const { rows } = await db.query(SQL, [orgId, limit, demoOn]);
     const clients = rows.map((r) => ({
       id:           r.id,
       first_name:   r.first_name,
@@ -78,6 +82,7 @@ export default async function handler(req, res) {
       outcome_tier: r.outcome_tier,
       funded:       r.funded,
       funded_amount: r.funded_amount,
+      is_demo: !!r.is_demo,
       custom_fields: {
         crs_paid:               r.crs_paid ?? false,
         deposit_paid:           r.deposit_paid ?? false,

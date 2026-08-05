@@ -15,6 +15,7 @@ import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
 import { boundedLimit, CLIENT_DATA_ERRORS, requireRole, ROLE_SETS } from "../../src/http/read-api.mjs";
 import { requireSessionOrg } from "../../src/http/session-org.mjs";
 import { safeError } from "../../src/http/health.mjs";
+import { orgDemoModeEnabled } from "../../src/demo/exclude-demo.mjs";
 
 // Stages first, so a stage with no cards still renders as an empty column
 // rather than vanishing from the board. Org always from the session.
@@ -38,11 +39,13 @@ const CARDS_SQL = `
     c.outcome_tier,
     c.funded,
     c.funded_amount,
+    c.is_demo,
     (c.custom_fields->>'total_funding_estimate') AS total_funding_estimate
   FROM cards cd
   JOIN pipelines p ON p.id = cd.pipeline_id
   JOIN clients   c ON c.id = cd.client_id AND c.org_id = p.org_id
   WHERE p.key = $1 AND p.org_id = $2 AND cd.org_id = $2
+    AND ($4::boolean OR COALESCE(c.is_demo, false) = false)
   ORDER BY cd.entered_at DESC
   LIMIT $3
 `;
@@ -71,7 +74,8 @@ export default async function handler(req, res) {
     if (stagesRes.rows.length === 0) {
       return res.status(404).json({ ok: false, error: "unknown_pipeline", key });
     }
-    const cardsRes = await db.query(CARDS_SQL, [key, orgId, limit]);
+    const demoOn = await orgDemoModeEnabled(db, orgId);
+    const cardsRes = await db.query(CARDS_SQL, [key, orgId, limit, demoOn]);
 
     // Group in one pass; a card whose stage was filtered out is dropped rather
     // than silently re-homed into the first column.
@@ -83,12 +87,13 @@ export default async function handler(req, res) {
       bucket.push({
         id: r.id,
         client_id: r.client_id,
-        name: [r.first_name, r.last_name].filter(Boolean).join(" ") || "(unnamed)",
+        name: (r.is_demo ? "DEMO · " : "") + ([r.first_name, r.last_name].filter(Boolean).join(" ") || "(unnamed)"),
         owner: r.owner ?? null,
         entered_at: r.entered_at,
         outcome_tier: r.outcome_tier ?? null,
         funded: r.funded ?? false,
-        amount: est === null ? null : Number(est)
+        amount: est === null ? null : Number(est),
+        is_demo: !!r.is_demo
       });
     }
 
