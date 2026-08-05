@@ -504,3 +504,49 @@ Main already stopped tracking the Mac-path symlink (`aa5382d`). Local `npm ci` f
 - Pushed merge tip to `origin/main`.
 - Deleted `origin/money-chain-writers` after green suite.
 
+
+---
+
+# Merge log — money-chain-writers verification remainder into main (2026-08-04 night)
+
+Worktree: `/Users/zootimusmaximus/fundhub-platform` on branch `main`.
+Baseline `main`: `fa5f7ef`. Incoming tip: `2367a04` (`origin/money-chain-writers`).
+
+## What this round brought in
+
+Five commits after the evening remainder merge (`edc9330` already on main):
+
+| Commit | What |
+|---|---|
+| `cc56c16` | End-to-end verification harness + report |
+| `f3bd7f3` | P0 cross-org data leaks: scope every id lookup to the session org |
+| `8c13842` | Restore recurrence-guard section in cross-org audit doc |
+| `1aa1a51` | Fix six operational findings from end-to-end verification |
+| `2367a04` | Clear remaining verify SILENT, P0, and FAIL findings |
+
+## Migration renumbering
+
+None. Main already tops out at `146_tasks_meeting_url.sql`. Incoming tip had no migration files — the temporary `t138`–`t143` set was already renumbered onto main in the morning/evening rounds.
+
+## Conflicts and calls
+
+- `src/inquiries/work.mjs` / `src/inquiries/work.test.mjs` — **kept both sides**.
+  - Main (inquiry-removal bridge): `cleared_at = COALESCE(...)`, `is_open = false` on confirm.
+  - Branch (cross-org P0): `WHERE id = $1 AND org_id = $4`.
+  - Combined SQL keeps both. Test asserts org scope, `is_open = false`, and no standalone `inquiry.removed` emit.
+
+## Suite
+
+- Before merge (main `fa5f7ef`): unit 4514 / 4511 pass / 0 fail / 3 skipped; pg 579 / 47 pass / 532 skipped / 0 fail. Node 22.21.1.
+- After merge (`46e746c`): unit 4525 / 4522 pass / 0 fail / 3 skipped; pg 622 / 48 pass / 574 skipped / 0 fail.
+
+## Production migrate
+
+Applied 2026-08-04 night via `MIGRATION_DATABASE_URL` (admin pooler) → `node db/migrate.mjs`.
+
+Applied (0): every migration through `146_tasks_meeting_url.sql` already present from morning/evening rounds.
+
+## Push / branch delete
+
+- Pushed merge tip to `origin/main`.
+- Deleted `origin/money-chain-writers` after green suite.
