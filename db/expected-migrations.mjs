@@ -136,6 +136,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/151_demo_wipe_allow_more.sql",
   "migrations/152_demo_wipe_by_client.sql",
   "migrations/153_demo_ui_coverage.sql",
+  "migrations/154_no_bare_rls_again.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
   "seed/007_contract_templates.sql",

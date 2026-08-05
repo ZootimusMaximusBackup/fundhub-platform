@@ -109,9 +109,12 @@ export async function seedPlatformDemo(db, { orgId } = {}) {
       const apps = (await q(db, `SELECT id,approved_amount,lender_name FROM applications WHERE funding_round_id=$1 AND status='Approved' AND is_demo`, [round.id])).rows;
       const total = apps.reduce((s,a)=>s+Number(a.approved_amount||0),0);
       const fee = Math.round(total*0.1*100)/100;
-      const co = await db.query(`INSERT INTO funding_closeout (org_id,funding_round_id,total_approved_amount,total_fee,balance_due,fee_percent,status,is_demo) VALUES ($1,$2,$3,$4,$4,0.10,'open',true) RETURNING id`, [orgId,round.id,total,fee]);
-      for (const a of apps) await q(db, `INSERT INTO funding_closeout_items (org_id,funding_closeout_id,application_id,approved_amount,fee_amount,lender_name) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING`,
-        [orgId,co.rows[0].id,a.id,Number(a.approved_amount||0),Math.round(Number(a.approved_amount||0)*0.1*100)/100,a.lender_name]);
+      // Must use q() — bare RLS on funding_closeout must not abort the whole seed.
+      const co = await q(db, `INSERT INTO funding_closeout (org_id,funding_round_id,total_approved_amount,total_fee,balance_due,fee_percent,status,is_demo) VALUES ($1,$2,$3,$4,$4,0.10,'open',true) RETURNING id`, [orgId,round.id,total,fee]);
+      if (co.rows[0]) {
+        for (const a of apps) await q(db, `INSERT INTO funding_closeout_items (org_id,funding_closeout_id,application_id,approved_amount,fee_amount,lender_name) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING`,
+          [orgId,co.rows[0].id,a.id,Number(a.approved_amount||0),Math.round(Number(a.approved_amount||0)*0.1*100)/100,a.lender_name]);
+      }
     }
   }
 
@@ -241,8 +244,10 @@ export async function seedPlatformDemo(db, { orgId } = {}) {
 export async function setDemoMode(db, { orgId, enabled } = {}) {
   if (!orgId) throw new TypeError("setDemoMode: orgId required");
   if (enabled) {
-    const seed = await seedPlatformDemo(db, { orgId });
+    // Flip the toggle first so CRM lists show is_demo rows even if a later
+    // seed step hits a transient error. Seed is idempotent — re-click fixes gaps.
     await db.query(`UPDATE orgs SET demo_mode_enabled=true, updated_at=now() WHERE id=$1`, [orgId]);
+    const seed = await seedPlatformDemo(db, { orgId });
     return { demo_mode_enabled: true, ...seed };
   }
   await db.query(`UPDATE orgs SET demo_mode_enabled=false, updated_at=now() WHERE id=$1`, [orgId]);
