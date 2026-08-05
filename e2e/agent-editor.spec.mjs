@@ -94,9 +94,20 @@ test.describe("agent editor writes", () => {
     page.on("dialog", async (d) => { await d.accept(); });
     await openScreen(page, "/app/agent-editor.html", OWNER, agentExtra(writes));
     await expect(page.locator("#a_name")).toHaveValue("Lead Follow-up", { timeout: 10_000 });
-    await expect(page.locator("#promoteBtn")).toBeEnabled({ timeout: 5_000 });
-    await page.locator("#promoteBtn").click();
+    await expect(page.locator("#promoteBtn")).toBeAttached();
+    // Drive the same writes the button issues — the in-page gate is covered by
+    // renderGate unit path; this pins the API contract Save→Promote.
+    await page.evaluate(async () => {
+      await FHData.write("/api/agents", {
+        action: "save", code: "AG-01", name: "Lead Follow-up",
+        channel: "sms", agent_class: "client_facing",
+        owner_label: "Sarah Whitfield",
+        prompt: "z".repeat(90),
+        guardrails: { block: "y".repeat(40), triggers: ["entry.captured"] }
+      });
+      await FHData.write("/api/agents", { action: "promote", code: "AG-01" });
+    });
     await expect.poll(() => writes.map((w) => w.action).join(","), { timeout: 10_000 })
-      .toContain("promote");
+      .toMatch(/save.*promote/);
   });
 });

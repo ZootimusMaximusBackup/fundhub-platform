@@ -27,6 +27,15 @@ export function verifyCalcomSignature(rawBody, header, secret) {
 
 // --- 2. Normalize the webhook body into a flat event ------------------------
 // Cal.com shape: { triggerEvent, payload: { uid, startTime, endTime, attendees, organizer, eventType } }
+function pickMeetingUrl(p) {
+  const meta = p.metadata || {};
+  const candidates = [meta.videoCallUrl, meta.meetingUrl, p.location, p.meetingUrl];
+  for (const c of candidates) {
+    if (typeof c === "string" && /^https?:\/\//i.test(c.trim())) return c.trim();
+  }
+  return null;
+}
+
 export function normalizeCalcomEvent(body) {
   const b = body || {};
   const p = b.payload || {};
@@ -39,7 +48,9 @@ export function normalizeCalcomEvent(body) {
     startTime: p.startTime || null,
     endTime: p.endTime || null,
     email: String(first.email || "").trim().toLowerCase(),
-    name: String(first.name || "").trim()
+    name: String(first.name || "").trim(),
+    meetingUrl: pickMeetingUrl(p),
+    rescheduleUid: p.rescheduleUid || p.rescheduledBy || null
   };
 }
 
@@ -52,8 +63,11 @@ export function normalizeCalcomEvent(body) {
 export function mapToCanonical(evt) {
   if (!evt) return [];
   const trigger = String(evt.triggerEvent || "");
-  if (trigger === "BOOKING_CREATED" || trigger === "BOOKING_RESCHEDULED") {
-    return [{ name: "booking.created" }];
+  if (trigger === "BOOKING_CREATED") return [{ name: "booking.created" }];
+  if (trigger === "BOOKING_RESCHEDULED") return [{ name: "booking.rescheduled" }];
+  if (trigger === "BOOKING_CANCELLED") return [{ name: "booking.cancelled" }];
+  if (trigger === "BOOKING_NO_SHOW" || trigger === "MEETING_NO_SHOW" || trigger === "BOOKING_NO_SHOW_CREATED") {
+    return [{ name: "booking.noshow" }];
   }
   return [];
 }
@@ -94,6 +108,8 @@ export async function handleCalcomWebhook({ db, rawBody, signatureHeader, secret
       endTime: evt.endTime,
       email: evt.email,
       name: evt.name,
+      meetingUrl: evt.meetingUrl,
+      rescheduleUid: evt.rescheduleUid,
       source: "calcom"
     };
     const idKey = evt.bookingUid ? `calcom:${evt.bookingUid}:${c.name}` : undefined;

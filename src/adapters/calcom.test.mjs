@@ -93,19 +93,80 @@ test("normalizeCalcomEvent: missing attendees yields empty email/name", () => {
   assert.equal(evt.name, "");
 });
 
+test("normalizeCalcomEvent: extracts meetingUrl from metadata.videoCallUrl", () => {
+  const evt = normalizeCalcomEvent({
+    triggerEvent: "BOOKING_CREATED",
+    payload: { uid: "uid-1", metadata: { videoCallUrl: "https://meet.example.com/room-1" } }
+  });
+  assert.equal(evt.meetingUrl, "https://meet.example.com/room-1");
+});
+
+test("normalizeCalcomEvent: falls back to metadata.meetingUrl", () => {
+  const evt = normalizeCalcomEvent({
+    triggerEvent: "BOOKING_CREATED",
+    payload: { uid: "uid-1", metadata: { meetingUrl: "https://meet.example.com/room-2" } }
+  });
+  assert.equal(evt.meetingUrl, "https://meet.example.com/room-2");
+});
+
+test("normalizeCalcomEvent: falls back to payload.location when it looks like a URL", () => {
+  const evt = normalizeCalcomEvent({
+    triggerEvent: "BOOKING_CREATED",
+    payload: { uid: "uid-1", location: "https://zoom.us/j/12345" }
+  });
+  assert.equal(evt.meetingUrl, "https://zoom.us/j/12345");
+});
+
+test("normalizeCalcomEvent: payload.location that is not a URL yields no meetingUrl", () => {
+  const evt = normalizeCalcomEvent({
+    triggerEvent: "BOOKING_CREATED",
+    payload: { uid: "uid-1", location: "Phone call" }
+  });
+  assert.equal(evt.meetingUrl, null);
+});
+
+test("normalizeCalcomEvent: extracts rescheduleUid when present", () => {
+  const evt = normalizeCalcomEvent({
+    triggerEvent: "BOOKING_RESCHEDULED",
+    payload: { uid: "uid-new", rescheduleUid: "uid-old" }
+  });
+  assert.equal(evt.rescheduleUid, "uid-old");
+});
+
+test("normalizeCalcomEvent: no rescheduleUid yields null", () => {
+  const evt = normalizeCalcomEvent({ triggerEvent: "BOOKING_CREATED", payload: { uid: "uid-1" } });
+  assert.equal(evt.rescheduleUid, null);
+});
+
 // --- canonical mapping -------------------------------------------------------
 test("mapToCanonical: BOOKING_CREATED → booking.created", () => {
   const names = mapToCanonical({ triggerEvent: "BOOKING_CREATED" }).map((c) => c.name);
   assert.deepEqual(names, ["booking.created"]);
 });
 
-test("mapToCanonical: BOOKING_RESCHEDULED → booking.created (new time exists)", () => {
+test("mapToCanonical: BOOKING_RESCHEDULED → booking.rescheduled (not booking.created)", () => {
   const names = mapToCanonical({ triggerEvent: "BOOKING_RESCHEDULED" }).map((c) => c.name);
-  assert.deepEqual(names, ["booking.created"]);
+  assert.deepEqual(names, ["booking.rescheduled"]);
 });
 
-test("mapToCanonical: BOOKING_CANCELLED → [] (ignored)", () => {
-  assert.deepEqual(mapToCanonical({ triggerEvent: "BOOKING_CANCELLED" }), []);
+test("mapToCanonical: BOOKING_CANCELLED → booking.cancelled", () => {
+  const names = mapToCanonical({ triggerEvent: "BOOKING_CANCELLED" }).map((c) => c.name);
+  assert.deepEqual(names, ["booking.cancelled"]);
+});
+
+test("mapToCanonical: BOOKING_NO_SHOW → booking.noshow", () => {
+  const names = mapToCanonical({ triggerEvent: "BOOKING_NO_SHOW" }).map((c) => c.name);
+  assert.deepEqual(names, ["booking.noshow"]);
+});
+
+test("mapToCanonical: MEETING_NO_SHOW → booking.noshow", () => {
+  const names = mapToCanonical({ triggerEvent: "MEETING_NO_SHOW" }).map((c) => c.name);
+  assert.deepEqual(names, ["booking.noshow"]);
+});
+
+test("mapToCanonical: BOOKING_NO_SHOW_CREATED → booking.noshow", () => {
+  const names = mapToCanonical({ triggerEvent: "BOOKING_NO_SHOW_CREATED" }).map((c) => c.name);
+  assert.deepEqual(names, ["booking.noshow"]);
 });
 
 test("mapToCanonical: unknown trigger → [] (ignored)", () => {
@@ -139,9 +200,22 @@ test("handleCalcomWebhook: BOOKING_CREATED → emits booking.created with correc
   assert.equal(seen[0].payload.endTime, "2026-08-01T10:30:00Z", "booking.created must include endTime from Cal.com payload.endTime");
 });
 
-test("handleCalcomWebhook: BOOKING_CANCELLED → 200, ignored, no emit", async () => {
+test("handleCalcomWebhook: BOOKING_CANCELLED → emits booking.cancelled", async () => {
   _resetOrgCache(); clearHandlers();
+  const seen = [];
+  on("booking.cancelled", (e) => seen.push(e.payload.bookingUid));
   const raw = bookingBody("BOOKING_CANCELLED");
+  const res = await handleCalcomWebhook({ db: fakeDb(), rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+  assert.equal(res.ok, true);
+  assert.equal(res.status, 200);
+  assert.equal(res.emitted.length, 1);
+  assert.equal(res.emitted[0].name, "booking.cancelled");
+  assert.deepEqual(seen, ["booking-uid-abc"]);
+});
+
+test("handleCalcomWebhook: unrecognized trigger → 200, ignored, no emit", async () => {
+  _resetOrgCache(); clearHandlers();
+  const raw = bookingBody("MEETING_ENDED");
   const res = await handleCalcomWebhook({ db: fakeDb(), rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
   assert.equal(res.ok, true);
   assert.equal(res.status, 200);
@@ -173,13 +247,34 @@ test("handleCalcomWebhook: idempotent re-delivery (deduped, handler not re-fired
   assert.equal(fired, 0, "handler must not fire on deduped re-delivery");
 });
 
-test("handleCalcomWebhook: BOOKING_RESCHEDULED dispatches booking.created handler", async () => {
+test("handleCalcomWebhook: BOOKING_RESCHEDULED dispatches booking.rescheduled handler", async () => {
   _resetOrgCache(); clearHandlers();
   const seen = [];
-  on("booking.created", (e) => seen.push(e.payload.bookingUid));
+  on("booking.rescheduled", (e) => seen.push(e.payload.bookingUid));
   const raw = bookingBody("BOOKING_RESCHEDULED");
   const res = await handleCalcomWebhook({ db: fakeDb(), rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
   assert.equal(res.ok, true);
-  assert.equal(res.emitted[0].name, "booking.created");
+  assert.equal(res.emitted[0].name, "booking.rescheduled");
   assert.deepEqual(seen, ["booking-uid-abc"]);
+});
+
+test("handleCalcomWebhook: BOOKING_NO_SHOW → emits booking.noshow", async () => {
+  _resetOrgCache(); clearHandlers();
+  const seen = [];
+  on("booking.noshow", (e) => seen.push(e.payload.bookingUid));
+  const raw = bookingBody("BOOKING_NO_SHOW");
+  const res = await handleCalcomWebhook({ db: fakeDb(), rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+  assert.equal(res.ok, true);
+  assert.equal(res.emitted[0].name, "booking.noshow");
+  assert.deepEqual(seen, ["booking-uid-abc"]);
+});
+
+test("handleCalcomWebhook: booking.created payload includes meetingUrl", async () => {
+  _resetOrgCache(); clearHandlers();
+  const seen = [];
+  on("booking.created", (e) => seen.push(e.payload.meetingUrl));
+  const raw = bookingBody("BOOKING_CREATED", { metadata: { videoCallUrl: "https://meet.example.com/abc" } });
+  const res = await handleCalcomWebhook({ db: fakeDb(), rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+  assert.equal(res.ok, true);
+  assert.deepEqual(seen, ["https://meet.example.com/abc"]);
 });

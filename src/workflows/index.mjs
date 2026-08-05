@@ -39,6 +39,7 @@ import { roundStartedClientNotify } from './round-started-client-notify.mjs';
 import { s01NewLeadIntake } from './s-01-new-lead-intake.mjs';
 import { s02IncompleteSurveyNudge } from './s-02-incomplete-survey-nudge.mjs';
 import { s04CallBooked } from './s-04-call-booked.mjs';
+import { s05aNoShowRecovery } from './s-05a-no-show-recovery.mjs';
 import { s06PostCallFundingPurchased } from './s-06-post-call-funding-purchased.mjs';
 import { s08PostCallFundingDeclined } from './s-08-post-call-funding-declined.mjs';
 import { sys01ClientValueCalculator } from './sys-01-client-value-calculator.mjs';
@@ -118,6 +119,7 @@ export const functions = [
   s01NewLeadIntake,
   s02IncompleteSurveyNudge,
   s04CallBooked,
+  s05aNoShowRecovery,
   s06PostCallFundingPurchased,
   s08PostCallFundingDeclined,
   sys01ClientValueCalculator,

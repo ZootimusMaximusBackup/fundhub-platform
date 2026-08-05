@@ -353,14 +353,9 @@
 
         <div class="section">
           <div class="section-title"><span><span class="av agent">CG</span> Compliance Gate — Messages It Stopped</span></div>
-          <table class="admin">
+          <table class="admin" id="compliance-blocked-table">
             <tr><th>Client</th><th>Channel</th><th>Reason</th><th>When</th></tr>
-            <tr>
-              <td>Devon Marsh</td><td>SMS</td><td>No opt-out line at the end</td><td class="mono">24m ago</td>
-            </tr>
-            <tr>
-              <td>Isabel Cortez</td><td>Email</td><td>Said "guaranteed approval" — we can't promise that</td><td class="mono">1h 10m ago</td>
-            </tr>
+            <tr><td colspan="4" class="empty-note" style="border-bottom:none">Loading blocked messages…</td></tr>
           </table>
         </div>
 
@@ -515,13 +510,13 @@
    The other three ranges are scaled from it so switching shows movement.    */
 (function(){
   var RANGES = [
-    { id:'today', label:'Today',           range:'Jul 26',        foot:'today · Jul 26, 2026',
+    { id:'today', label:'Today',           range:'today',        foot:'today',
       meta:'today',          kpi:{cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—'} },
-    { id:'7d',    label:'Last 7 Days',     range:'Jul 20–26',     foot:'last 7 days · Jul 20–26, 2026',
+    { id:'7d',    label:'Last 7 Days',     range:'last 7 days',  foot:'last 7 days',
       meta:'week to date',   kpi:{cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—'} },
-    { id:'30d',   label:'Last 30 Days',    range:'Jun 27–Jul 26', foot:'last 30 days · Jun 27–Jul 26, 2026',
+    { id:'30d',   label:'Last 30 Days',    range:'last 30 days', foot:'last 30 days',
       meta:'month to date',  kpi:{cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—'} },
-    { id:'qtd',   label:'Quarter to Date', range:'Jul 1–26',      foot:'quarter to date · Jul 1–26, 2026',
+    { id:'qtd',   label:'Quarter to Date', range:'quarter',     foot:'quarter to date',
       meta:'quarter to date',kpi:{cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—'} }
   ];
   var current = '7d';
@@ -549,22 +544,38 @@
   function open(){ menu.hidden=false; btn.setAttribute('aria-expanded','true'); mark(); }
   function close(){ menu.hidden=true;  btn.setAttribute('aria-expanded','false'); }
 
+  function applyDisplay(display){
+    if(!display) return;
+    Object.keys(display).forEach(function(k){
+      var el = grid.querySelector('[data-kpi="'+k+'"]');
+      if(el) el.textContent = display[k] == null ? '—' : display[k];
+    });
+  }
+
+  function loadKpis(period){
+    if(typeof FHData === 'undefined' || !FHData.kpis) return;
+    grid.classList.add('swapping');
+    FHData.kpis(period).then(function(res){
+      grid.classList.remove('swapping');
+      if(res && res.ok && res.data && res.data.display){
+        applyDisplay(res.data.display);
+      }
+    });
+  }
+
   function pick(id){
     var r = RANGES.filter(function(x){ return x.id===id; })[0];
-    if(!r || id===current) return;
+    if(!r) return;
+    if(id===current && id !== '7d') return;
     current = id;
-    grid.classList.add('swapping');
-    setTimeout(function(){
-      Object.keys(r.kpi).forEach(function(k){
-        var el = grid.querySelector('[data-kpi="'+k+'"]');
-        if(el) el.textContent = r.kpi[k];
-      });
-      grid.classList.remove('swapping');
-    }, 170);
     label.textContent = r.label + ' — ' + r.range;
     meta.textContent  = r.meta;
     foot.textContent  = r.foot;
+    loadKpis(id);
   }
+
+  // Initial live paint (do not wait for a period click).
+  loadKpis(current);
 
   btn.addEventListener('click', function(e){
     e.stopPropagation();
@@ -786,16 +797,76 @@
 </script>
 <script>
 
-/* Ops & Admin — the dead-letter queue is the one thing on this screen with a
-   real source (039). Appends a health row into the existing KPI grid rather
-   than restyling anything; the AR table and affiliate block keep their sample
-   markup and are reported as unwired. */
+/* Ops & Admin — KPIs, dead-letter queue, AR, compliance blocks from live APIs. */
 (function () {
   "use strict";
   var esc = function (v) {
     return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
       return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
   };
+
+  function relTime(iso) {
+    if (!iso) return "—";
+    var ms = Date.now() - new Date(iso).getTime();
+    if (!Number.isFinite(ms) || ms < 0) return "—";
+    var m = Math.round(ms / 60000);
+    if (m < 60) return m + "m ago";
+    var h = Math.round(m / 60);
+    if (h < 48) return h + "h ago";
+    return Math.round(h / 24) + "d ago";
+  }
+
+  // AR oldest unpaid first.
+  if (FHData.invoices) {
+    FHData.wire(FHData.invoices({ status: "open", limit: 50 }), "AR table", function (data) {
+      var table = document.getElementById("ar-table");
+      if (!table) return null;
+      var rows = (data.items || []).filter(function (r) {
+        return Number(r.balance_due || r.open_balance || 0) > 0;
+      });
+      rows.sort(function (a, b) {
+        var ad = a.due_at ? new Date(a.due_at).getTime() : 0;
+        var bd = b.due_at ? new Date(b.due_at).getTime() : 0;
+        return ad - bd;
+      });
+      var html = "<tr><th>Client</th><th>Invoice</th><th aria-sort=\"descending\">Days Overdue</th><th>Status</th></tr>";
+      if (!rows.length) {
+        html += '<tr><td colspan="4" class="empty-note" style="border-bottom:none">No unpaid invoices</td></tr>';
+      } else {
+        rows.slice(0, 20).forEach(function (r) {
+          var due = r.due_at ? new Date(r.due_at) : null;
+          var days = due ? Math.max(0, Math.floor((Date.now() - due.getTime()) / 86400000)) : "—";
+          html += "<tr><td>" + esc(r.client_id || "—") + "</td><td class=\"mono\">" +
+            esc(String(r.id || "").slice(0, 8)) + "</td><td>" + esc(String(days)) +
+            "</td><td>" + esc(r.status || r.settlement_state || "open") + "</td></tr>";
+        });
+      }
+      table.innerHTML = html;
+      return "live AR · " + rows.length + " open balance(s)";
+    });
+  }
+
+  // Compliance gate — messages with status blocked.
+  if (FHData.read) {
+    FHData.wire(FHData.read("messages", { status: "blocked", limit: 30 }), "compliance blocks", function (data) {
+      var table = document.getElementById("compliance-blocked-table");
+      if (!table) return null;
+      var rows = data.items || data.messages || [];
+      var html = "<tr><th>Client</th><th>Channel</th><th>Reason</th><th>When</th></tr>";
+      if (!rows.length) {
+        html += '<tr><td colspan="4" class="empty-note" style="border-bottom:none">No messages stopped by the compliance gate</td></tr>';
+      } else {
+        rows.slice(0, 15).forEach(function (r) {
+          html += "<tr><td>" + esc(r.client_name || r.client_id || "—") +
+            "</td><td>" + esc(r.channel || "—") +
+            "</td><td>" + esc(r.blocked_reason || r.status || "blocked") +
+            "</td><td class=\"mono\">" + esc(relTime(r.created_at)) + "</td></tr>";
+        });
+      }
+      table.innerHTML = html;
+      return "live compliance gate · " + rows.length + " blocked";
+    });
+  }
 
   FHData.wire(FHData.failedEvents({ status: "pending", limit: 200 }), "ops health",
     function (data) {

@@ -58,7 +58,7 @@ flowchart LR
   ext_twilio_status --> adp_twilio_status
   ext_twilio --> adp_twilio
   adp_bland -- "call.completed" --> BUS
-  adp_calcom -- "booking.created" --> BUS
+  adp_calcom -- "booking.created<br/>booking.rescheduled<br/>booking.cancelled<br/>booking.noshow" --> BUS
   adp_clickfunnels -- "entry.captured<br/>survey.submitted" --> BUS
   adp_commas -- "diagnostic.paid<br/>deposit.paid<br/>sale.closed<br/>payment.received<br/>payment.failed" --> BUS
   adp_crs -- "analysis.completed<br/>decision.rendered" --> BUS
@@ -89,24 +89,30 @@ flowchart LR
   s2 --> s3
   s4["booking.created"]
   s3 --> s4
-  s5["call.completed"]
+  s5["booking.rescheduled"]
   s4 --> s5
-  s6["decision.rendered"]
+  s6["booking.cancelled"]
   s5 --> s6
-  s7["deposit.paid"]
+  s7["booking.noshow"]
   s6 --> s7
-  s8["sale.closed"]
+  s8["call.completed"]
   s7 --> s8
-  s9["round.started"]
+  s9["decision.rendered"]
   s8 --> s9
-  s10["round.submitted"]
+  s10["deposit.paid"]
   s9 --> s10
-  s11["round.approved"]
+  s11["sale.closed"]
   s10 --> s11
-  s12["round.funded"]
+  s12["round.started"]
   s11 --> s12
-  s13["file.finalized"]
+  s13["round.submitted"]
   s12 --> s13
+  s14["round.approved"]
+  s13 --> s14
+  s15["round.funded"]
+  s14 --> s15
+  s16["file.finalized"]
+  s15 --> s16
 ```
 
 ## Reactions per event
@@ -118,6 +124,9 @@ flowchart LR
 | `diagnostic.paid` | journey spine | `onDiagnosticPaid`, `onDiagnosticPaidMoney` | 2 |
 | `analysis.completed` | journey spine | `onAnalysisCompleted` | 8 |
 | `booking.created` | journey spine | `onBookingCreated` | 6 |
+| `booking.rescheduled` | journey spine | `onBookingRescheduled` | 0 |
+| `booking.cancelled` | journey spine | `onBookingCancelled` | 0 |
+| `booking.noshow` | journey spine | `onBookingNoshow` | 1 |
 | `call.completed` | journey spine | `onCallCompleted` | 4 |
 | `decision.rendered` | journey spine | `onDecisionRendered` | 0 |
 | `deposit.paid` | journey spine | `onDepositPaid`, `onDepositPaidMoney` | 2 |

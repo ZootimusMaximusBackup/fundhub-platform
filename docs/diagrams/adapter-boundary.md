@@ -70,7 +70,7 @@ flowchart TB
 | adapter | direction | auth | emits | verified against a real payload? |
 |---|---|---|---|---|
 | `bland` | inbound webhook | `verifyBlandSignature` (HMAC-SHA256) | `call.completed` | ⚠️ **no** — carries a CONFIRM banner |
-| `calcom` | inbound webhook | `verifyCalcomSignature` (HMAC-SHA256) | `booking.created` | yes |
+| `calcom` | inbound webhook | `verifyCalcomSignature` (HMAC-SHA256) | `booking.created`<br/>`booking.rescheduled`<br/>`booking.cancelled`<br/>`booking.noshow` | yes |
 | `clickfunnels` | inbound webhook | `verifyClickFunnelsSignature` (HMAC-SHA256) | `entry.captured`<br/>`survey.submitted` | ⚠️ **no** — carries a CONFIRM banner |
 | `commas` | inbound webhook | `verifyCommasSignature` (HMAC-SHA256) | `diagnostic.paid`<br/>`deposit.paid`<br/>`sale.closed`<br/>`payment.received`<br/>`payment.failed` | ⚠️ **no** — carries a CONFIRM banner |
 | `crs` | direct call | none — not a webhook | `analysis.completed`<br/>`decision.rendered` | yes |

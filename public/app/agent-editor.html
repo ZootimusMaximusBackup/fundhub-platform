@@ -422,6 +422,7 @@ function channelLabel(ch){
   var s=String(ch||'').toLowerCase();
   if(s==='sms') return 'SMS';
   if(s==='email') return 'Email';
+  if(s==='sms_email') return 'SMS';
   if(s==='voice') return 'Voice';
   return 'Internal';
 }
@@ -658,6 +659,21 @@ function select(id){
   setSw('g_attorney',cur.g.attorney); setSw('g_quiet',cur.g.quiet);
   dirty=false; document.getElementById('saveNote').textContent='';
   renderList(); renderEvents(); renderGate(); renderLog(); syncLens();
+  loadShadowLog(cur.id);
+}
+function loadShadowLog(code){
+  if(typeof FHData === 'undefined' || !FHData.read){ renderLog(); return; }
+  FHData.read('agent-shadow-log', { code: code, limit: 40 }).then(function(res){
+    if(!cur || cur.id !== code) return;
+    if(res && res.ok && res.data){
+      cur.log = res.data.log || [];
+      cur.runs = (res.data.rows || []).length;
+      cur.runsTracked = true;
+    } else {
+      cur.log = [];
+    }
+    renderLog();
+  });
 }
 function markDirty(){dirty=true;document.getElementById('saveNote').textContent='UNSAVED CHANGES'}
 function syncLens(){

@@ -401,6 +401,88 @@ Documented in `docs/STILL-MISSING.md`: `INNGEST_EVENT_KEY`, `ANTHROPIC_API_KEY`,
 - Local worktree branches `money-chain-writers` / `staff-deep-monitoring` / `feat/inquiry-removal-bridge` may still exist in other worktrees; remotes deleted.
 - Message template **rows** are produced by the seeder (224) — not auto-written to production DB in this session (seeder is a separate ops step; only schema migrations were applied).
 
-## Remotes remaining unmerged into main
+## Remotes remaining unmerged into main (after 2026-08-04 morning round)
 
-None.
+`origin/money-chain-writers` was **not** fully done. The morning round fast-forwarded
+through `7925115` (Oxylabs) and deleted that tip from origin, but six more sessions
+kept landing on a recreated/continued `money-chain-writers` branch. Five commits after
+`7925115` were still unmerged when this evening session started (`main` at `66b8257`).
+
+---
+
+# Merge log — money-chain-writers remainder into main (2026-08-04 evening)
+
+Worktree: `/Users/zootimusmaximus/fundhub-mcw-merge` on branch `merge-money-chain-2026-08-04`.
+Baseline `main`: `66b8257`. Incoming tip: `edc9330` (`origin/money-chain-writers`).
+
+## Six-session verification (CRITICAL — before merge)
+
+All six sets confirmed present on `origin/money-chain-writers` (`edc9330`). None missing.
+Sessions 1–4 were already on `main` from the morning FF+renumber through `7925115`;
+sessions 5–6 (plus agent runtime) are the remainder this merge brings in. Verified no
+overwrite: unique paths/commits still intact; `137_money_chain_idempotency.sql` identical
+on both tips; `t138`–`t141` SQL matches main's already-renumbered `138`–`141` (header-only diff).
+
+| # | Session | Present? | Evidence |
+|---|---|---|---|
+| 1 | Money chain writers | YES (already on main) | `src/handlers/money-chain.mjs` 717 lines; `money-chain.pg.test.mjs` 401 lines; commits `01a0e87` / `3ecbdf9` ancestors of both tips |
+| 2 | Airtable funding/inquiry schema | YES (already on main as 138–140) | 7 `lender_table` enums; `lender_bureau_observations`; applications expansion; `application_decisions`; `funding_closeout` default `fee_percent=0.10`; `ai_bureau_config` / `inquiry_prep` / `business_tradelines` |
+| 3 | Message template load (`8b052b6`) | YES (already on main) | Ancestor of both tips; seeder + `workflow-keys.mjs`; compliance forced false |
+| 4 | Oxylabs proxy door (`7925115`) | YES (already on main as 141) | `src/adapters/oxylabs.mjs`; `proxy_sessions`; `extension/`; Apply on lender rows |
+| 5 | Integration gaps | YES (incoming) | `00f9ef7` booking lifecycle + CF capture; `c07b9ca` GHL backfill; `766e8bc` Meta/LinkedIn OAuth + LinkedIn publish; calendar meeting URL |
+| 6 | Final usability pass (`edc9330`) | YES (incoming tip) | `docs/FINAL-USABILITY-PASS.md`; live KPIs; `e2e/integration-round.spec.mjs`; calendar roster |
+
+**Call:** proceed with merge. Nothing missing.
+
+## Migration renumbering (old → new)
+
+Main's max before this merge: `143_inquiry_removal_bridge.sql`.
+
+| Old (on branch) | New | Notes |
+|---|---|---|
+| `t138_lenders.sql` | _(already `138_lenders.sql` on main)_ | Git rename from morning round; not re-added |
+| `t139_funding_ops.sql` | _(already `139_funding_ops.sql` on main)_ | same |
+| `t140_inquiry_ops.sql` | _(already `140_inquiry_ops.sql` on main)_ | same |
+| `t141_proxy_sessions.sql` | _(already `141_proxy_sessions.sql` on main)_ | same |
+| `142_agent_runtime.sql` | `144_agent_runtime.sql` | Collided with main's `142_staff_monitoring_consent.sql` |
+| `t142_webhook_captures.sql` | `145_webhook_captures.sql` | Temp prefix; after 143 |
+| `t143_tasks_meeting_url.sql` | `146_tasks_meeting_url.sql` | Temp prefix; after 143 |
+
+Staff monitoring's `142` was already on main — not a second `137` collision in this
+remainder merge. Money-chain `137` identical both sides — no renumber.
+
+Manifest regenerated with `npm run migrations:manifest` (127 migration entries).
+
+### Final sequence (after 143)
+
+```
+144_agent_runtime.sql
+145_webhook_captures.sql
+146_tasks_meeting_url.sql
+```
+
+## 18. money-chain-writers (remainder) — MERGED-WITH-RESOLUTION
+
+### Conflicts and calls
+
+- `db/expected-migrations.mjs` — regenerated via `npm run migrations:manifest` after renumber.
+- `docs/journeys/*-actual.md` + README — regenerated via `npm run journeys`.
+- `docs/diagrams/*` — regenerated via `npm run diagrams`.
+- `docs/journeys/CHANGELOG.md` — **kept both sides**. Agent-runtime entry updated to say migration 144.
+- `docs/STILL-MISSING.md` — **kept both sides**. Combined deliberately-unset table (main) with agent-runtime + social/GHL/CF cutover notes (branch). Credentials stay unset by design.
+- `netlify/functions/api.mjs` — auto-merged clean; both staff-monitoring and agent/oauth/kpi routes present.
+- No genuine logic conflict in application code this round — only manifest/doc/changelog collisions plus the migration number collision above.
+
+### Suite
+
+- Before merge (main `66b8257`): unit 4426 / 4423 pass / 0 fail; pg 578 / 47 pass / 531 skipped (no `DATABASE_URL`).
+- After merge: see commit notes below (filled after suite run).
+
+### Credentials deliberately NOT set
+
+All stay unset. Consolidated in `docs/STILL-MISSING.md` (ANTHROPIC, OXYLABS, META, HUBSTAFF, LINKEDIN_*, GHL_*, INNGEST_EVENT_KEY, TWILIO_*, INQUIRY_REMOVAL_WEBHOOK_SECRET, CF_CAPTURE_MODE, Drive/OpenAI).
+
+### node_modules
+
+Main already stopped tracking the Mac-path symlink (`aa5382d`). Local `npm ci` for the suite only — not committed. Matches morning-round hygiene.
+

@@ -304,11 +304,12 @@
       <div class="who-role">Closer · on shift 6h 32m</div>
     </div>
     <div class="stat-tiles">
-      <div class="stat-tile"><div class="stat-label">Calls Today</div><div class="stat-value">5</div></div>
-      <div class="stat-tile"><div class="stat-label">Kept</div><div class="stat-value">3</div></div>
-      <div class="stat-tile"><div class="stat-label">Collected</div><div class="stat-value">$3,000</div>
-        <div class="stat-sub">1 deposit</div></div>
-      <div class="stat-tile"><div class="stat-label">Pace</div><div class="stat-value pace-neutral">60%</div></div>
+      <div class="stat-tile"><div class="stat-label">Calls Today</div><div class="stat-value">—</div>
+        <div class="stat-sub">no closer shift endpoint</div></div>
+      <div class="stat-tile"><div class="stat-label">Kept</div><div class="stat-value">—</div></div>
+      <div class="stat-tile"><div class="stat-label">Collected</div><div class="stat-value">—</div>
+        <div class="stat-sub">no deposit rollup for this seat</div></div>
+      <div class="stat-tile"><div class="stat-label">Pace</div><div class="stat-value pace-neutral">—</div></div>
     </div>
   </div>
 
@@ -318,13 +319,7 @@
       <div class="section-title eyebrow">CD-01 / Today's Pipeline</div>
       <table class="pipe">
         <tr><th>Client</th><th>Stage</th><th>Next</th><th>When</th></tr>
-        <tr><td>Amara Nwosu</td><td><span class="stage-pill">Booked</span></td><td>Asked her for pay stubs — still waiting</td><td class="mono">10:00 AM</td></tr>
-        <tr><td>Devon Marsh</td><td><span class="stage-pill">Booked</span></td><td>Closed — $3,000 deposit collected</td><td class="mono">12:40 PM</td></tr>
-        <tr><td>Elena Vasquez</td><td><span class="stage-pill">Decision Rendered</span></td><td>Waiting on her decision</td><td class="mono">11:47 AM</td></tr>
-        <tr><td>Priya Nair</td><td><span class="stage-pill">Diagnostic Paid</span></td><td>On the call now — calculators below</td><td class="mono">now</td></tr>
-        <tr style="background:color-mix(in srgb,var(--alert) 8%,#fff);"><td>Meredith Yao</td><td><span class="stage-pill">Decision Rendered</span></td><td>Follow-up on her roadmap — clashes with Carlos</td><td class="mono">4:30 PM</td></tr>
-        <tr style="background:color-mix(in srgb,var(--alert) 8%,#fff);"><td>Carlos Bettencourt</td><td><span class="stage-pill">Booked</span></td><td><span class="av agent">SJ</span> Setter Josh just booked him</td><td class="mono">4:30 PM</td></tr>
-        <tr><td colspan="4"><span class="empty-slot">Two calls both sit at 4:30 — one has to move. Nothing after that.</span></td></tr>
+        <tr><td colspan="4"><span class="empty-slot">No closer-day pipeline endpoint yet — open Pipeline for the live board. Deal calculators below load when you open this screen with ?client_id=.</span></td></tr>
       </table>
     </div>
 
@@ -341,7 +336,7 @@
 
           <div class="big-tile">
             <div><div class="lbl">Total Available Credit</div></div>
-            <div class="val" id="oCredit">$47,100</div>
+            <div class="val" id="oCredit">—</div>
           </div>
 
           <div class="big-tile" style="margin-top:10px">
@@ -387,11 +382,11 @@
           <div class="res-grid">
             <div class="big-tile">
               <div class="lbl">Net Cash to Client</div>
-              <div class="val" id="oNet">$28,500</div>
+              <div class="val" id="oNet">—</div>
             </div>
             <div class="big-tile">
               <div class="lbl">Monthly Obligation</div>
-              <div class="val" id="oMonthly">$1,050 / mo</div>
+              <div class="val" id="oMonthly">—</div>
             </div>
           </div>
           <div class="res-note">Net of deposit, success fee and debts · monthly is the minimum on all
@@ -417,12 +412,8 @@
           <div class="bd-sub">CD-02a / Where the draw comes from — lowest APR first</div>
           <table class="deal">
             <tr><th>Lender</th><th>Limit</th><th>Balance</th><th>Headroom</th><th>Draw</th></tr>
-            <tr><td>Capital One Spark <span class="apr-tag">14.99% APR</span></td><td>15,000</td><td>4,000</td><td>11,000</td><td id="d0">11,000</td></tr>
-            <tr><td>Amex Blue Business <span class="apr-tag">16.99% APR</span></td><td>18,000</td><td>8,200</td><td>9,800</td><td id="d1">9,800</td></tr>
-            <tr><td>Citi Costco <span class="apr-tag">18.99% APR</span></td><td>12,000</td><td>4,700</td><td>7,300</td><td id="d2">7,300</td></tr>
-            <tr><td>Barclays View <span class="apr-tag">19.99% APR</span></td><td>9,000</td><td>3,600</td><td>5,400</td><td id="d3">5,400</td></tr>
-            <tr><td>Chase Sapphire <span class="apr-tag">22.99% APR</span></td><td>22,000</td><td>8,400</td><td>13,600</td><td id="d4">1,500</td></tr>
-            <tr class="total"><td id="oLeft">Total drawn · $12,100 headroom left</td><td></td><td></td><td></td><td id="oDrawn">35,000</td></tr>
+            <tr><td colspan="5"><span class="empty-slot">Opens with a client id — waterfall comes from live tradelines.</span></td></tr>
+            <tr class="total"><td id="oLeft">Total drawn · —</td><td></td><td></td><td></td><td id="oDrawn">—</td></tr>
           </table>
 
           <div class="bd-cols">
@@ -431,26 +422,26 @@
               <table class="pm">
                 <tr><th>Method</th><th>12mo</th><th>24mo</th><th>36mo</th></tr>
                 <tr><td>Lump Sum</td><td>$0</td><td>$0</td><td>$0</td></tr>
-                <tr><td>Minimum Payments</td><td id="m12">$4,120</td><td id="m24">$7,860</td><td id="m36">$11,240</td></tr>
-                <tr><td>Interest-Only</td><td id="i12">$6,300</td><td id="i24">$12,600</td><td id="i36">$17,640 + balloon</td></tr>
+                <tr><td>Minimum Payments</td><td id="m12">—</td><td id="m24">—</td><td id="m36">—</td></tr>
+                <tr><td>Interest-Only</td><td id="i12">—</td><td id="i24">—</td><td id="i36">—</td></tr>
               </table>
 
               <div class="bd-sub" style="margin-top:14px;">D-03b / How the net cash is arrived at</div>
               <table class="pm">
-                <tr><td>Funded Amount</td><td id="oFunded">$35,000</td></tr>
-                <tr><td id="oFeeLabel">Deposit + 10% Success Fee</td><td id="oFees">−$6,500</td></tr>
-                <tr><td>Debts she must clear first</td><td id="oDebts">−$0</td></tr>
+                <tr><td>Funded Amount</td><td id="oFunded">—</td></tr>
+                <tr><td id="oFeeLabel">Deposit + 10% Success Fee</td><td id="oFees">—</td></tr>
+                <tr><td>Debts she must clear first</td><td id="oDebts">—</td></tr>
               </table>
             </div>
             <div>
               <div class="bd-sub">D-04 / Minimum payment, card by card</div>
               <table class="pm">
                 <tr><th>Card</th><th>APR</th><th>Min. Payment</th></tr>
-                <tr><td>Capital One Spark</td><td>14.99%</td><td id="p0">$330</td></tr>
-                <tr><td>Amex Blue Business</td><td>16.99%</td><td id="p1">$294</td></tr>
-                <tr><td>Citi Costco</td><td>18.99%</td><td id="p2">$219</td></tr>
-                <tr><td>Barclays View</td><td>19.99%</td><td id="p3">$162</td></tr>
-                <tr><td>Chase Sapphire</td><td>22.99%</td><td id="p4">$45</td></tr>
+                <tr><td>Capital One Spark</td><td>14.99%</td><td id="p0">—</td></tr>
+                <tr><td>Amex Blue Business</td><td>16.99%</td><td id="p1">—</td></tr>
+                <tr><td>Citi Costco</td><td>18.99%</td><td id="p2">—</td></tr>
+                <tr><td>Barclays View</td><td>19.99%</td><td id="p3">—</td></tr>
+                <tr><td>Chase Sapphire</td><td>22.99%</td><td id="p4">—</td></tr>
               </table>
             </div>
           </div>

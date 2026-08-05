@@ -337,8 +337,8 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
     src/adplatforms/tokens.mjs              redactConnection() — has_access_token only
     api/campaigns/action-log.mjs            the audit read shape, incl. `revertible`
 
-  NO API IS WIRED. There is no api/social/* handler in the repo and netlify's ROUTES
-  map has no social entry, so every row below is in-file sample data. See SS-12.
+  OAuth connect + schedule/publish are wired. There is still no list API for
+  social_posts / social_channels, so post panes stay empty until that lands. See SS-12.
 -->
 <div class="app">
   <aside class="side" id="side">
@@ -433,11 +433,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
       <div class="notice" id="sampleNotice">
         <span class="ni">◉</span>
         <span>
-          <b>Sample rows.</b> There is no <code>api/social/*</code> endpoint in the repo and
-          <code>netlify/functions/api.mjs</code> routes nothing under <code>social</code>, so this screen
-          has nothing live to read. Every column, enum and consequence below is the real schema
-          from <code>049_social.sql</code>; the values are illustrative. Section <b>SS-12</b> lists exactly
-          what is missing.
+          <b>Connect is live; the post queue has no list API yet.</b>
+          <code>/api/social/oauth</code>, <code>schedule</code>, and <code>publish</code> are routed.
+          There is still no list endpoint for <code>social_posts</code> / <code>social_channels</code>,
+          so queue panes stay empty rather than inventing rows. Section <b>SS-12</b> lists what is left.
         </span>
       </div>
 
@@ -460,11 +459,16 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
           <span class="badge b-gray mono" id="ghCount">—</span>
         </div>
         <div id="ghGrid"></div>
-        <div class="cap">
-          These are the remaining values allowed by <code class="mono">social_channels_channel_ck</code> and by the frozen
-          <code class="mono">CHANNELS</code> export in <code class="mono">scheduler.mjs:193</code>. There is deliberately no
-          “Connect” button: no social OAuth handler exists in the repo — <code class="mono">tokens.mjs</code> only encrypts and
-          decrypts, and the only writers of <code class="mono">social_channels</code> today are test fixtures.
+        <div class="cap" id="oauthConnectBox">
+          Connect a channel via OAuth. Tokens store encrypted on
+          <code class="mono">social_channels</code>. Credentials stay unset until the apps are provisioned
+          (see <code class="mono">docs/STILL-MISSING.md</code>).
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn" data-oauth="facebook" id="oauthFb">Connect Facebook</button>
+            <button type="button" class="btn" data-oauth="instagram" id="oauthIg">Connect Instagram</button>
+            <button type="button" class="btn" data-oauth="linkedin" id="oauthLi">Connect LinkedIn</button>
+          </div>
+          <div id="oauthMsg" style="margin-top:8px;font-size:12px;color:var(--ink2)">Needs META_APP_ID / LINKEDIN_CLIENT_ID when unset — the API names the missing env var.</div>
         </div>
       </div>
 
@@ -683,20 +687,18 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
         <div class="card-hd">
           <div class="eyebrow">SS-12 <span class="sep">/</span> NOT BUILT YET</div>
           <div class="spacer"></div>
-          <span class="badge b-alert mono">6 gaps</span>
+          <span class="badge b-alert mono">3 gaps</span>
         </div>
         <div class="gapgrid">
           <div class="gap">
-            <div class="gt"><span class="badge b-alert mono">blocking</span>No social API</div>
-            <div class="gb">There is still no <code class="mono">api/social/*</code> handler, so
-              <code class="mono">social_posts</code> and <code class="mono">social_channels</code> themselves have no
-              endpoint — every post, channel, queue/blocked/failed/posted pane and the drawer above is still sample
-              markup. <b>This one is stale, not this whole gap:</b> <code class="mono">campaigns</code> and
-              <code class="mono">creative</code> are both routed now, and
-              <code class="mono">/api/campaigns/action-log?target_type=social_post</code> is reachable — SS-?? above
-              (the audit trail table) calls it live, scoped to this partner, and falls back to sample rows only when
-              that call fails. It is one read of one table, not a social API.</div>
-            <div class="gs">netlify/functions/api.mjs ROUTES · api/campaigns/action-log.mjs:16 · wireActionLog() near the bottom of this page's script</div>
+            <div class="gt"><span class="badge b-alert mono">blocking</span>No social list API</div>
+            <div class="gb"><code class="mono">oauth</code>, <code class="mono">schedule</code>, and
+              <code class="mono">publish</code> are routed. There is still no list endpoint for
+              <code class="mono">social_posts</code> / <code class="mono">social_channels</code>, so those
+              panes render empty on purpose — not invented rows.
+              <code class="mono">/api/campaigns/action-log?target_type=social_post</code> is live for the
+              audit table.</div>
+            <div class="gs">netlify/functions/api.mjs ROUTES · api/campaigns/action-log.mjs · empty SOCIAL_CHANNELS/POSTS in this page</div>
           </div>
           <div class="gap">
             <div class="gt"><span class="badge b-ok mono">wired</span>Channel adapters + publishDue cron</div>
@@ -706,12 +708,17 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
             <div class="gs">src/social/adapters.mjs · netlify/functions/social-publish-sweeper.mjs</div>
           </div>
           <div class="gap">
-            <div class="gt"><span class="badge b-warn mono">missing</span>No OAuth connect flow</div>
-            <div class="gb">A channel can only exist if something INSERTs it. There is no social OAuth handler;
-              <code class="mono">src/adplatforms/tokens.mjs</code> encrypts and decrypts but never acquires a token.
-              Note the unique index <code class="mono">(partner_id, channel, external_account_id)</code> that any future
-              connect flow has to respect.</div>
-            <div class="gs">db/migrations/049_social.sql:51–52</div>
+            <div class="gt"><span class="badge b-ok mono">wired</span> OAuth connect (controls live in SS-02 above)</div>
+            <div class="gb"><code class="mono">api/social/oauth.mjs</code> now handles the connect flow: HMAC-signed
+              state, provider token exchange, and an <code class="mono">ON CONFLICT</code> UPSERT into
+              <code class="mono">social_channels</code> respecting the
+              <code class="mono">(partner_id, channel, external_account_id)</code> unique index. The buttons above call
+              it live and show whatever reason the API gives back — including
+              <code class="mono">not_configured</code> with the exact env var name — rather than pretending a
+              connection exists. Still needs <code class="mono">META_APP_ID</code>/<code class="mono">META_APP_SECRET</code>
+              or <code class="mono">LINKEDIN_CLIENT_ID</code>/<code class="mono">LINKEDIN_CLIENT_SECRET</code>
+              provisioned before either app can be used for real — see <code class="mono">docs/STILL-MISSING.md</code>.</div>
+            <div class="gs">api/social/oauth.mjs · src/social/oauth.mjs · db/migrations/049_social.sql:51–52</div>
           </div>
           <div class="gap">
             <div class="gt"><span class="badge b-warn mono">missing</span>No organic engagement data</div>
@@ -737,7 +744,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
     <div class="foot">
       <span class="pulse"></span><span>systems nominal · fundhub.ai</span>
       <span class="spacer"></span>
-      <span id="footNote">ss · no api/social/* · sample rows</span>
+      <span id="footNote">ss · oauth/schedule/publish live · no list API · empty panes</span>
     </div>
   </div>
 </div>
@@ -879,268 +886,19 @@ var PARTNERS = [
 ];
 
 /* ══ SOCIAL CHANNELS ═════════════════════════════════════════════════════ */
-var SOCIAL_CHANNELS = [
-  {id:'2d91f4a7', partner:0, channel:'linkedin', handle:'@ironwood-capital',
-   external_account_id:'urn:li:organization:82214417', connection_state:'active',
-   has_access_token:true, has_refresh_token:true, token_expires_at:'2026-09-12T00:00:00.000Z',
-   scopes:['r_organization_social','w_organization_social','rw_organization_admin'],
-   last_error:null, timezone:'America/Phoenix',
-   best_times:{mon:['08:30','12:15'], tue:['08:30'], wed:['08:30','16:45'], thu:['08:30'], fri:['07:45']},
-   created_at:'2026-05-14T17:02:41.000Z'},
-
-  {id:'7b04c8e2', partner:0, channel:'instagram', handle:'@ironwoodcapital',
-   external_account_id:'17841409255310118', connection_state:'active',
-   has_access_token:true, has_refresh_token:true, token_expires_at:'2026-08-14T00:00:00.000Z',
-   scopes:['instagram_basic','instagram_content_publish','pages_read_engagement'],
-   last_error:null, timezone:'America/Phoenix',
-   best_times:{mon:['11:00','18:30'], wed:['11:00'], fri:['11:00','19:00'], sat:['10:00']},
-   created_at:'2026-05-14T17:09:03.000Z'},
-
-  {id:'e51a3d90', partner:0, channel:'facebook', handle:'Ironwood Capital Group',
-   external_account_id:'102884417553201', connection_state:'expired',
-   has_access_token:true, has_refresh_token:false, token_expires_at:'2026-07-02T00:00:00.000Z',
-   scopes:['pages_manage_posts','pages_read_engagement'],
-   last_error:'Error validating access token: Session has expired on Thursday, 02-Jul-26 00:00:00 PDT (code 190, subcode 463)',
-   timezone:'America/Phoenix',
-   best_times:{tue:['09:00'], thu:['09:00']},
-   created_at:'2026-05-14T17:11:55.000Z'},
-
-  {id:'a6c72f18', partner:0, channel:'x', handle:'@ironwoodcap',
-   external_account_id:'1748220913776488448', connection_state:'pending',
-   has_access_token:false, has_refresh_token:false, token_expires_at:null,
-   scopes:[], last_error:null, timezone:'America/Phoenix',
-   best_times:{},
-   created_at:'2026-07-21T20:44:12.000Z'},
-
-  {id:'40be9c53', partner:0, channel:'tiktok', handle:'@ironwoodcapital',
-   external_account_id:'7284119035522170882', connection_state:'revoked',
-   has_access_token:true, has_refresh_token:true, token_expires_at:'2026-07-19T00:00:00.000Z',
-   scopes:['video.publish','user.info.basic'],
-   last_error:'The user revoked access to this application (code 10009)',
-   timezone:'America/Phoenix',
-   best_times:{tue:['19:00'], thu:['19:00'], sun:['13:00']},
-   created_at:'2026-05-16T15:30:08.000Z'},
-
-  {id:'c3f8017d', partner:1, channel:'linkedin', handle:'@larkspur-cards',
-   external_account_id:'urn:li:organization:90447122', connection_state:'pending',
-   has_access_token:false, has_refresh_token:false, token_expires_at:null,
-   scopes:[], last_error:null, timezone:'America/New_York',
-   best_times:{mon:['09:00'], wed:['09:00'], fri:['09:00']},
-   created_at:'2026-07-24T13:18:29.000Z'}
-];
+var SOCIAL_CHANNELS = []; /* live list API not built — empty on purpose */
 
 /* ══ CREATIVE ASSETS — the composer's asset picker ═══════════════════════
    Same-partner is enforced by trigger social_post_same_partner, so only this
    partner's library is offered. */
-var ASSETS = [
-  {id:'4e19b7c2', partner:0, kind:'static', format:'4x5', compliance_state:'approved',
-   ai_generated:true,  synthetic_performer:false, created_at:'2026-07-18T16:04:00.000Z'},
-  {id:'91a4d07f', partner:0, kind:'video',  format:'9x16', compliance_state:'approved',
-   ai_generated:true,  synthetic_performer:true,  duration_sec:21.5, created_at:'2026-07-20T14:22:00.000Z'},
-  {id:'ba370e15', partner:0, kind:'static', format:'16x9', compliance_state:'passed',
-   ai_generated:false, synthetic_performer:false, created_at:'2026-07-22T11:47:00.000Z'},
-  {id:'6cd2f884', partner:0, kind:'static', format:'1x1', compliance_state:'pending',
-   ai_generated:true,  synthetic_performer:false, created_at:'2026-07-29T09:31:00.000Z'},
-  {id:'0f5b91ac', partner:1, kind:'static', format:'1x1', compliance_state:'approved',
-   ai_generated:true,  synthetic_performer:false, created_at:'2026-07-25T18:00:00.000Z'}
-];
+var ASSETS = []; /* live list API not built — empty on purpose */
 
 /* ══ SOCIAL POSTS ════════════════════════════════════════════════════════
    Columns are exactly social_posts. There is no title, hashtags, link_url, utm,
    first_comment, alt_text, location, thumbnail or post_type column, and no
    archived_at / deleted_at — so there is nothing here to edit or delete.
    ════════════════════════════════════════════════════════════════════════ */
-var POSTS = [
-  /* ---- queued -------------------------------------------------------- */
-  {id:'9f2b41c8', partner:0, channel_id:'2d91f4a7', asset_id:'ba370e15', offer_type:'funding',
-   status:'queued', attempt:0, last_error:null, scheduled_for:'2026-07-30T13:30:00.000Z',
-   posted_at:null, external_post_id:null, blocked_reasons:[],
-   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
-   caption:'Working capital for contractors who need materials before the draw clears. Applications are underwritten individually — see what you prequalify for.',
-   created_at:'2026-07-29T16:41:22.000Z'},
-
-  {id:'3c7de095', partner:0, channel_id:'7b04c8e2', asset_id:'4e19b7c2', offer_type:'credit_cards',
-   status:'queued', attempt:1, last_error:'channel rate limited', scheduled_for:'2026-07-30T11:00:00.000Z',
-   posted_at:null, external_post_id:null, blocked_reasons:[],
-   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
-   caption:'Three cards, one strategy. We build the stack around the business you already run, not around a score you do not have yet.',
-   created_at:'2026-07-29T18:02:10.000Z'},
-
-  {id:'ae60b3f4', partner:0, channel_id:'e51a3d90', asset_id:null, offer_type:'funding',
-   status:'queued', attempt:0, last_error:null, scheduled_for:'2026-07-31T16:00:00.000Z',
-   posted_at:null, external_post_id:null, blocked_reasons:[],
-   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
-   caption:'Thursday reminder: the paperwork you have already gathered for your bank is most of what we need too.',
-   created_at:'2026-07-29T19:14:47.000Z'},
-
-  {id:'15c98a2e', partner:0, channel_id:'a6c72f18', asset_id:null, offer_type:'funding',
-   status:'queued', attempt:0, last_error:null, scheduled_for:null,
-   posted_at:null, external_post_id:null, blocked_reasons:[],
-   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
-   caption:'Most owners find out what they can access only after they need it. Run the assessment before the quarter turns.',
-   created_at:'2026-07-28T15:52:31.000Z'},
-
-  {id:'d2417f6b', partner:0, channel_id:'2d91f4a7', asset_id:null, offer_type:'credit_repair',
-   status:'queued', attempt:0, last_error:null, scheduled_for:'2026-08-01T15:30:00.000Z',
-   posted_at:null, external_post_id:null, blocked_reasons:[],
-   screening:{state:'needs_approval', codes:['human_approval_required_credit_repair']},
-   caption:'Consumer Credit File Rights Under State and Federal Law — you have the right to dispute inaccurate information in your credit report yourself, free of charge. We dispute items that are inaccurate or unverifiable, and we do not promise outcomes.',
-   created_at:'2026-07-29T21:07:56.000Z'},
-
-  {id:'7e0c5d13', partner:0, channel_id:'40be9c53', asset_id:'91a4d07f', offer_type:'credit_cards',
-   status:'queued', attempt:0, last_error:null, scheduled_for:'2026-07-30T13:00:00.000Z',
-   posted_at:null, external_post_id:null, blocked_reasons:[],
-   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
-   caption:'What a 0% intro window is actually for — and the three mistakes that turn it into interest.',
-   created_at:'2026-07-29T22:18:04.000Z'},
-
-  {id:'b8a3ce70', partner:0, channel_id:'7b04c8e2', asset_id:'6cd2f884', offer_type:'funding',
-   status:'queued', attempt:0, last_error:null, scheduled_for:'2026-08-01T18:00:00.000Z',
-   posted_at:null, external_post_id:null, blocked_reasons:[],
-   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
-   caption:'Friday numbers: what a clean profit and loss statement is worth when the file gets read by a human.',
-   created_at:'2026-07-30T09:33:19.000Z'},
-
-  /* ---- blocked ------------------------------------------------------- */
-  {id:'5a1e6402', partner:0, channel_id:'7b04c8e2', asset_id:null, offer_type:'credit_repair',
-   status:'blocked', attempt:0, last_error:null, scheduled_for:'2026-07-27T18:30:00.000Z',
-   posted_at:null, external_post_id:null,
-   caption:'We delete late payments and collections off your report. Get a CPN today and start fresh.',
-   blocked_reasons:[
-     {code:'remove-late-payments-collections', rule_set:'croa', severity:'block',
-      message:'Claiming to remove late payments, collections or similar accurate tradelines is prohibited.',
-      citation:'CROA 15 U.S.C. 1679b(a)(3)'},
-     {code:'file-segregation-cpn', rule_set:'croa', severity:'block',
-      message:'File segregation, CPNs and new-credit-identity offers are federal fraud. This copy cannot run.',
-      citation:'CROA 15 U.S.C. 1679b(a)(1)-(2)'},
-     {code:'croa-consumer-rights', rule_set:'disclosure', severity:'block',
-      message:'Credit-repair funnels must carry the "Consumer Credit File Rights Under State and Federal Law" disclosure, linked to the campaign before launch.',
-      citation:'CROA 15 U.S.C. 1679c(a)'}],
-   screening:{state:'blocked', codes:['remove-late-payments-collections','file-segregation-cpn','croa-consumer-rights']},
-   created_at:'2026-07-26T14:12:08.000Z'},
-
-  {id:'c04f8b39', partner:0, channel_id:'2d91f4a7', asset_id:null, offer_type:'funding',
-   status:'blocked', attempt:0, last_error:null, scheduled_for:'2026-07-28T08:30:00.000Z',
-   posted_at:null, external_post_id:null,
-   caption:'Guaranteed approval — get $50,000 in funding, no matter what your file looks like.',
-   blocked_reasons:[
-     {code:'guaranteed-approval', rule_set:'claims', severity:'block',
-      message:'Guaranteed approval cannot be advertised. Approval depends on underwriting.',
-      citation:'FTC Act 15 U.S.C. 45'},
-     {code:'guaranteed-funding-amount', rule_set:'claims', severity:'block',
-      message:'Guaranteeing a specific funding amount is prohibited. Use "up to" with qualifying conditions stated.',
-      citation:'FTC Act 15 U.S.C. 45'}],
-   screening:{state:'blocked', codes:['guaranteed-approval','guaranteed-funding-amount']},
-   created_at:'2026-07-27T10:05:44.000Z'},
-
-  {id:'2f95d7a6', partner:0, channel_id:'e51a3d90', asset_id:null, offer_type:'credit_repair',
-   status:'blocked', attempt:0, last_error:null, scheduled_for:'2026-07-28T09:00:00.000Z',
-   posted_at:null, external_post_id:null,
-   caption:'Guaranteed 100 point increase in 30 days or your money back.',
-   blocked_reasons:[
-     {code:'guaranteed-score-increase', rule_set:'croa', severity:'block',
-      message:'Promising a specific or guaranteed credit-score increase is prohibited. State what the service does, not what the score will do.',
-      citation:'CROA 15 U.S.C. 1679b(a)(3)'},
-     {code:'guaranteed-timeline', rule_set:'croa', severity:'block',
-      message:'Guaranteeing a timeframe for credit-repair results is prohibited. Outcomes and timing vary by file.',
-      citation:'CROA 15 U.S.C. 1679b(a)(3)'},
-     {code:'croa-consumer-rights', rule_set:'disclosure', severity:'block',
-      message:'Credit-repair funnels must carry the "Consumer Credit File Rights Under State and Federal Law" disclosure, linked to the campaign before launch.',
-      citation:'CROA 15 U.S.C. 1679c(a)'}],
-   screening:{state:'blocked', codes:['guaranteed-score-increase','guaranteed-timeline','croa-consumer-rights']},
-   created_at:'2026-07-27T13:41:19.000Z'},
-
-  {id:'8d3706ef', partner:0, channel_id:'7b04c8e2', asset_id:null, offer_type:'funding',
-   status:'blocked', attempt:0, last_error:null, scheduled_for:'2026-07-29T11:00:00.000Z',
-   posted_at:null, external_post_id:null,
-   caption:'Bad credit? No problem. If you make less than $75,000 we can still get you funded this week.',
-   blocked_reasons:[
-     {code:'income-wealth-targeting-cue', rule_set:'claims', severity:'block',
-      message:"Copy that targets or implies the viewer's income or financial distress is prohibited in this vertical.",
-      citation:'Meta special ad category / ECOA'}],
-   screening:{state:'blocked', codes:['income-wealth-targeting-cue']},
-   created_at:'2026-07-28T17:26:52.000Z'},
-
-  {id:'46b1c8d5', partner:0, channel_id:'2d91f4a7', asset_id:null, offer_type:'credit_cards',
-   status:'blocked', attempt:0, last_error:null, scheduled_for:'2026-07-29T12:15:00.000Z',
-   posted_at:null, external_post_id:null,
-   caption:'The 0% window explained in ninety seconds — what it is for and what it is not.',
-   blocked_reasons:[
-     {code:'screen_error', rule_set:'engine',
-      message:'Compliance screening could not complete, so this is blocked. Try again; if it persists this is a platform fault, not your copy.',
-      detail:'Connection terminated unexpectedly'}],
-   screening:{state:'blocked', codes:['screen_error']},
-   created_at:'2026-07-29T07:58:36.000Z'},
-
-  /* ---- failed -------------------------------------------------------- */
-  {id:'e97240ba', partner:0, channel_id:'7b04c8e2', asset_id:'4e19b7c2', offer_type:'funding',
-   status:'failed', attempt:3, last_error:'channel rate limited',
-   scheduled_for:'2026-07-28T11:00:00.000Z', posted_at:null, external_post_id:null, blocked_reasons:[],
-   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
-   caption:'The four documents that decide how fast an application moves. None of them are a surprise.',
-   created_at:'2026-07-27T20:11:03.000Z'},
-
-  {id:'71fc0e48', partner:0, channel_id:'2d91f4a7', asset_id:null, offer_type:'credit_cards',
-   status:'failed', attempt:3, last_error:'no adapter registered for channel linkedin',
-   scheduled_for:'2026-07-29T08:30:00.000Z', posted_at:null, external_post_id:null, blocked_reasons:[],
-   screening:{state:'needs_approval', codes:['human_approval_required_setting']},
-   caption:'A stack built on utilization, not on optimism. Here is the order we open in and why it matters.',
-   created_at:'2026-07-28T19:47:41.000Z'},
-
-  /* ---- posted -------------------------------------------------------- */
-  {id:'0b5ae913', partner:0, channel_id:'2d91f4a7', asset_id:'ba370e15', offer_type:'funding',
-   status:'posted', attempt:1, last_error:null, scheduled_for:'2026-07-29T08:30:00.000Z',
-   posted_at:'2026-07-29T08:30:12.000Z', external_post_id:'urn:li:share:7226104418337992704',
-   blocked_reasons:[], screening:{state:'needs_approval', codes:['human_approval_required_setting']},
-   caption:'Most owners come to us after the bank says no. The file that got declined is usually the same file that gets approved somewhere else — read differently.',
-   created_at:'2026-07-28T14:03:55.000Z'},
-
-  {id:'a3d8241f', partner:0, channel_id:'7b04c8e2', asset_id:'4e19b7c2', offer_type:'credit_cards',
-   status:'posted', attempt:1, last_error:null, scheduled_for:'2026-07-28T18:30:00.000Z',
-   posted_at:'2026-07-28T18:30:07.000Z', external_post_id:'18042117739284461',
-   blocked_reasons:[], screening:{state:'needs_approval', codes:['human_approval_required_setting']},
-   caption:'Utilization is the lever nobody wants to hear about. It is also the fastest one.',
-   created_at:'2026-07-27T16:22:31.000Z'},
-
-  {id:'6ec91b07', partner:0, channel_id:'2d91f4a7', asset_id:null, offer_type:'funding',
-   status:'posted', attempt:1, last_error:null, scheduled_for:'2026-07-27T08:30:00.000Z',
-   posted_at:'2026-07-27T08:30:09.000Z', external_post_id:'urn:li:share:7225379914712023040',
-   blocked_reasons:[], screening:{state:'needs_approval', codes:['human_approval_required_setting']},
-   caption:'What underwriters actually read first. It is not the revenue line.',
-   created_at:'2026-07-26T13:50:12.000Z'},
-
-  {id:'f4207ac6', partner:0, channel_id:'e51a3d90', asset_id:null, offer_type:'funding',
-   status:'posted', attempt:1, last_error:null, scheduled_for:'2026-07-25T16:00:00.000Z',
-   posted_at:'2026-07-25T16:00:04.000Z', external_post_id:'102884417553201_841903117524466',
-   blocked_reasons:[], screening:{state:'needs_approval', codes:['human_approval_required_setting']},
-   caption:'Friday: three things to have ready before the next quarter closes.',
-   created_at:'2026-07-24T18:39:27.000Z'},
-
-  /* ---- Larkspur Card Collective -------------------------------------- */
-  {id:'cc1f60d8', partner:1, channel_id:'c3f8017d', asset_id:'0f5b91ac', offer_type:'credit_cards',
-   status:'queued', attempt:0, last_error:null, scheduled_for:'2026-07-29T13:00:00.000Z',
-   posted_at:null, external_post_id:null, blocked_reasons:[],
-   screening:{state:'passed', codes:[]},
-   caption:'A card stack is a sequence, not a shopping list. Start with the one that reports to all three.',
-   created_at:'2026-07-28T20:15:00.000Z'},
-
-  {id:'92ea7b31', partner:1, channel_id:'c3f8017d', asset_id:null, offer_type:'credit_repair',
-   status:'blocked', attempt:0, last_error:null, scheduled_for:null,
-   posted_at:null, external_post_id:null,
-   caption:'Pay the fee upfront to get started and we will clear the negative items off your report.',
-   blocked_reasons:[
-     {code:'advance-fee', rule_set:'croa', severity:'block',
-      message:'Charging or advertising a fee before credit-repair services are fully performed is prohibited.',
-      citation:'CROA 15 U.S.C. 1679b(b)'},
-     {code:'promise-to-remove-accurate-info', rule_set:'croa', severity:'block',
-      message:'Claiming to remove accurate or verifiable negative information is prohibited. Only inaccurate or unverifiable items may be disputed.',
-      citation:'CROA 15 U.S.C. 1679b(a)(3)'},
-     {code:'croa-consumer-rights', rule_set:'disclosure', severity:'block',
-      message:'Credit-repair funnels must carry the "Consumer Credit File Rights Under State and Federal Law" disclosure, linked to the campaign before launch.',
-      citation:'CROA 15 U.S.C. 1679c(a)'}],
-   screening:{state:'blocked', codes:['advance-fee','promise-to-remove-accurate-info','croa-consumer-rights']},
-   created_at:'2026-07-28T20:41:33.000Z'}
-];
+var POSTS = []; /* live list API not built — empty on purpose */
 
 /* ══ ACTION LOG — target_type = 'social_post' ════════════════════════════
    Written BEFORE the platform call, every time. actor is always 'agent';
@@ -1177,13 +935,7 @@ var ACTION_LOG = [
    connection_id nor a campaign_id, so a partner has AT MOST ONE open row for it —
    no matter how many posts failed. A repeat open refreshes `detail` only; the
    `title` keeps the channel named by the first failure. */
-var TASKS = [
-  {id:'ad4e0c76', partner:0, task_key:'social_post_failed', severity:'warning',
-   title:'A scheduled instagram post failed after 3 attempts',
-   detail:'no adapter registered for channel linkedin',
-   connection_id:null, campaign_id:null, resolved_at:null,
-   created_at:'2026-07-28T18:41:00.000Z', updated_at:'2026-07-29T09:12:00.000Z'}
-];
+var TASKS = []; /* live list API not built — empty on purpose */
 
 /* ══ HELPERS ═════════════════════════════════════════════════════════════ */
 var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -2187,6 +1939,53 @@ document.getElementById('btChannel').addEventListener('change', renderBestTimes)
 document.getElementById('scrim').addEventListener('click', closeDrawer);
 document.getElementById('drawerClose').addEventListener('click', closeDrawer);
 document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDrawer(); });
+
+/* ══ OAUTH CONNECT ═══════════════════════════════════════════════════════ */
+(function () {
+  var msg = document.getElementById('oauthMsg');
+  // Same partner the rest of this screen is scoped to (the topbar partnerSel),
+  // not an invented session lookup — PARTNERS[P].id is the real uuid that
+  // wireActionLog() already sends on the one other live call this page makes.
+  function partnerId() { return PARTNERS[P] ? PARTNERS[P].id : ''; }
+  function token() {
+    try { return localStorage.getItem('fh_token') || ''; } catch (e) { return ''; }
+  }
+  function start(channel) {
+    var pid = partnerId();
+    if (!pid) {
+      if (msg) msg.textContent = 'Pick a partner in the topbar before connecting.';
+      return;
+    }
+    var url = '/api/social/oauth?action=start&channel=' + encodeURIComponent(channel) +
+      '&partner_id=' + encodeURIComponent(pid);
+    if (channel === 'linkedin') {
+      var org = window.prompt('LinkedIn organization id or URN (required)');
+      if (!org) { if (msg) msg.textContent = 'LinkedIn connect cancelled — org URN required.'; return; }
+      url += '&external_account_id=' + encodeURIComponent(org);
+    }
+    var t = token();
+    if (msg) msg.textContent = 'Starting ' + channel + ' connect…';
+    fetch(url, {
+      headers: Object.assign({ accept: 'application/json' },
+        (t && t !== 'demo') ? { authorization: 'Bearer ' + t } : {})
+    }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .then(function (res) {
+        if (!res.ok) {
+          var reason = res.message || res.error || 'not_configured';
+          if (msg) msg.textContent = reason;
+          return;
+        }
+        if (res.url) location.href = res.url;
+      });
+  }
+  ['oauthFb', 'oauthIg', 'oauthLi'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', function () {
+      start(el.getAttribute('data-oauth'));
+    });
+  });
+})();
 
 /* ══ BOOT ════════════════════════════════════════════════════════════════ */
 document.getElementById('nowTxt').textContent = 'now = ' + fmt(NOW_ISO);

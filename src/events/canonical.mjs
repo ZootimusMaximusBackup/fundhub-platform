@@ -7,6 +7,9 @@ export const CANONICAL_EVENTS = [
   "diagnostic.paid", // $32
   "analysis.completed",
   "booking.created",
+  "booking.rescheduled",
+  "booking.cancelled",
+  "booking.noshow",
   "call.completed",
   "decision.rendered", // 6-tier outcome
   "deposit.paid",

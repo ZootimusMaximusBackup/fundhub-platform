@@ -13,11 +13,14 @@ import {
 } from "./client-lifecycle.mjs";
 
 // In-memory Postgres fake: interprets the exact queries the handlers issue.
-function pgFake({ openShift = null, failOn = null } = {}) {
+// `smsRouting` seeds message_channel_routing for the GHL contact-sync wiring:
+// a string applies to every org, or pass a map of orgId -> provider.
+function pgFake({ openShift = null, failOn = null, smsRouting = null } = {}) {
   const clients = [], transactions = [], crs = [], events = [];
   let n = 0;
   const findClient = (org, email) =>
     clients.find((c) => c.org_id === org && String(c.email || "").toLowerCase() === String(email).toLowerCase());
+  const routingFor = (orgId) => (typeof smsRouting === "string" ? smsRouting : smsRouting?.[orgId]) ?? null;
   return {
     clients, transactions, crs, events,
     async query(sql, params = []) {
@@ -28,6 +31,10 @@ function pgFake({ openShift = null, failOn = null } = {}) {
         return { rows: [{ id: "ev-" + events.length, ...e }] };
       }
       if (/FROM shifts/.test(sql)) return { rows: openShift ? [{ id: openShift }] : [] };
+      if (/SELECT provider FROM message_channel_routing/.test(sql)) {
+        const provider = routingFor(params[0]);
+        return { rows: provider ? [{ provider }] : [] };
+      }
       if (/SELECT id FROM clients/.test(sql)) {
         const c = findClient(params[0], params[1]);
         return { rows: c ? [{ id: c.id }] : [] };
@@ -35,8 +42,13 @@ function pgFake({ openShift = null, failOn = null } = {}) {
       if (/INSERT INTO clients/.test(sql)) {
         if (findClient(params[0], params[1])) return { rows: [] }; // ON CONFLICT DO NOTHING
         const id = "cl-" + ++n;
-        clients.push({ id, org_id: params[0], email: params[1], first_name: params[2], last_name: params[3], custom_fields: {}, outcome_tier: null });
+        clients.push({ id, org_id: params[0], email: params[1], first_name: params[2], last_name: params[3], custom_fields: {}, outcome_tier: null, ghl_contact_id: null });
         return { rows: [{ id }] };
+      }
+      if (/UPDATE clients SET ghl_contact_id/.test(sql)) {
+        const c = clients.find((c) => c.id === params[1]);
+        if (c) c.ghl_contact_id = params[0];
+        return { rows: [] };
       }
       if (/UPDATE clients SET custom_fields/.test(sql)) {
         const c = clients.find((c) => c.id === params[0]);
@@ -226,4 +238,84 @@ test("a broken telemetry write does NOT lose the credit-pull result", async () =
   assert.equal(db.crs.length, 1, "the pull result is the record; it must survive a broken observer");
   assert.equal(db.events.length, 0);
   assert.ok(lines.some((l) => /\[telemetry\].*write_failed/.test(l)), JSON.stringify(lines));
+});
+
+// =============================================================================
+// GHL CONTACT SYNC — resolveClient wires a new client to a GHL contact id when
+// (and only when) the org's sms routing is ghl_relay. See
+// src/messaging/ghl-contacts.mjs for find-or-create; ghl-contacts.test.mjs
+// covers that module's own behaviour with a fake fetch. These tests cover the
+// wiring: is it called at the right time, with the right guard, and does a
+// GHL failure ever block client creation.
+// =============================================================================
+
+function fakeGhlFetch(responses) {
+  const calls = [];
+  const queue = Array.isArray(responses) ? [...responses] : [responses];
+  const impl = async (url, init) => {
+    calls.push({ url, init });
+    const next = queue.length > 1 ? queue.shift() : queue[0];
+    if (typeof next === "function") return next(url, init);
+    const { status = 200, body = {} } = next || {};
+    return { ok: status >= 200 && status < 300, status, text: async () => JSON.stringify(body) };
+  };
+  impl.calls = calls;
+  return impl;
+}
+
+test("resolveClient: ghl_relay routing + a configured key stores the found-or-created GHL contact id", async () => {
+  const db = pgFake({ smsRouting: "ghl_relay" });
+  const fetchImpl = fakeGhlFetch({ status: 200, body: { contact: { id: "ghl-abc123" }, new: true } });
+  const id = await resolveClient(
+    db,
+    ev("entry.captured", { email: "ghl@x.com", name: "Ghl Contact" }),
+    { fetchImpl, env: { GHL_API_KEY: "test-key" } }
+  );
+  assert.equal(db.clients.find((c) => c.id === id).ghl_contact_id, "ghl-abc123");
+  assert.equal(fetchImpl.calls.length, 1, "exactly one GHL call for one new client");
+});
+
+test("resolveClient: routing is NOT ghl_relay — no GHL call is made at all", async () => {
+  const db = pgFake({ smsRouting: "mailgun" }); // sms routed elsewhere; wrong channel too, but exercises the guard
+  const fetchImpl = fakeGhlFetch({ status: 200, body: { contact: { id: "should-not-be-used" } } });
+  await resolveClient(
+    db,
+    ev("entry.captured", { email: "no-relay@x.com" }),
+    { fetchImpl, env: { GHL_API_KEY: "test-key" } }
+  );
+  assert.equal(db.clients[0].ghl_contact_id, null);
+  assert.equal(fetchImpl.calls.length, 0, "no routing row for sms->ghl_relay means no GHL contact lookup");
+});
+
+test("resolveClient: ghl_relay routing but no GHL_API_KEY does not block client creation", async () => {
+  const db = pgFake({ smsRouting: "ghl_relay" });
+  const id = await resolveClient(
+    db,
+    ev("entry.captured", { email: "nokey@x.com" }),
+    { env: {} } // neither GHL_API_KEY nor GHL_RELAY_API_KEY set — not invented
+  );
+  assert.ok(id, "the client is still created");
+  assert.equal(db.clients[0].ghl_contact_id, null);
+});
+
+test("resolveClient: a GHL request failure never blocks or breaks client creation", async () => {
+  const db = pgFake({ smsRouting: "ghl_relay" });
+  const fetchImpl = async () => { throw new Error("network is down"); };
+  const id = await resolveClient(
+    db,
+    ev("entry.captured", { email: "ghlfail@x.com" }),
+    { fetchImpl, env: { GHL_API_KEY: "test-key" } }
+  );
+  assert.ok(id, "client creation must survive a GHL transport failure");
+  assert.equal(db.clients[0].ghl_contact_id, null);
+});
+
+test("resolveClient: an existing client (no new insert) is never re-synced to GHL", async () => {
+  const db = pgFake({ smsRouting: "ghl_relay" });
+  const fetchImpl = fakeGhlFetch({ status: 200, body: { contact: { id: "ghl-once" } } });
+  const opts = { fetchImpl, env: { GHL_API_KEY: "test-key" } };
+  const id1 = await resolveClient(db, ev("entry.captured", { email: "repeat@x.com" }), opts);
+  const id2 = await resolveClient(db, ev("survey.submitted", { email: "repeat@x.com" }), opts);
+  assert.equal(id1, id2);
+  assert.equal(fetchImpl.calls.length, 1, "GHL is only contacted on the client's first (insert) resolution");
 });

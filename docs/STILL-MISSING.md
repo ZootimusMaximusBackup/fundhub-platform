@@ -7,6 +7,7 @@ Campaigns / Social / Creative / Brand Studio gaps from the prior scorecard.
 
 | Env / credential | Where used | How to get it |
 |---|---|---|
+| `ANTHROPIC_API_KEY` | Agent runtime model calls (`src/agents/model.mjs`) | Anthropic Console → API keys. Leave unset for shadow mode (logs would-be replies, sends nothing). |
 | `OXYLABS_USERNAME` | Residential Apply proxy (`src/adapters/oxylabs.mjs`, `POST /api/proxy/launch`) | Oxylabs dashboard → proxy user (no `customer-` prefix; adapter adds it) |
 | `OXYLABS_PASSWORD` | Same | Same panel; store as Netlify secret |
 | `META_APP_ID` | Meta token refresh / Marketing API app context (`api/campaigns/sync.mjs`) | Meta Developer app → Settings → Basic |
@@ -83,24 +84,38 @@ Updated 2026-08-04. Adapter + `proxy_sessions` (`141_proxy_sessions.sql`) + `POS
 
 **Left unset on purpose:** `OXYLABS_USERNAME` / `OXYLABS_PASSWORD`. Set both as Netlify secrets, then `netlify deploy --build --prod`. Until they are set, launch returns a clear 503 — it does not invent credentials or silently skip geo checks.
 
+## Agent runtime (built 2026-08-04; key unset)
+
+The platform agent runtime is wired (`src/agents/runtime.mjs` on
+`message.inbound`). With `ANTHROPIC_API_KEY` unset it runs in **shadow mode**:
+builds context, would call the model, logs the would-be reply to
+`agent_shadow_log` (AE-08), sends nothing, fails nothing. Set the key as a
+Netlify secret and deploy when you want live replies. Promote GHL agents from
+`draft` → `shadow` → `live` in the agent editor; assign
+`conversations.agent_code` (or leave a single channel-matching agent) so
+selection is unambiguous. `runtime='bland'` agents stay on the external Bland
+path and are skipped here. Migration: `144_agent_runtime.sql`.
+
 ## Deliberately unset (owner — do not set in this merge)
 
 These stay off until a separate cutover. Routes fail clean / no-op without them.
+**This merge sets none of these.** Credentials stay unset by design.
 
 | Env | Why it stays unset |
 |---|---|
 | `INNGEST_EVENT_KEY` | Turns on the live workflow engine (47 functions). Owner gate. |
-| `ANTHROPIC_API_KEY` | Model calls — not part of this merge. |
+| `ANTHROPIC_API_KEY` | Agent runtime model calls — shadow mode without it. |
 | `OPENAI_API_KEY` | Company Brain / creative — stays off with Drive. |
 | `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON` | Company Brain Drive sync. |
 | `GOOGLE_DRIVE_DELEGATE_EMAIL` | Same. |
-| `META_APP_ID` / `META_APP_SECRET` / Meta tokens | Campaign sync — wired, credentials not fabricated. |
+| `META_APP_ID` / `META_APP_SECRET` / Meta tokens | Campaign sync + social OAuth — wired, credentials not fabricated. |
 | `HUBSTAFF_TOKEN` / `HUBSTAFF_ORG_ID` | Deep monitoring poll — consent gate is live; ingest stays dark. |
 | `OXYLABS_USERNAME` / `OXYLABS_PASSWORD` | Residential Apply door — launch returns 503 until set. |
 | `TWILIO_*` | SMS provider — A2P / routing still gated. |
-| `LINKEDIN_*` | Social — not part of this merge. |
+| `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET` / `LINKEDIN_ORG_ID` | Social Studio LinkedIn connect + org publish. |
+| `GHL_API_KEY` / `GHL_RELAY_API_KEY` | GHL contact create/lookup + backfill script. |
 | `INQUIRY_REMOVAL_WEBHOOK_SECRET` | IRA → platform webhook — configure with the IRA runtime at cutover. |
-
+| `CF_CAPTURE_MODE` | Optional ClickFunnels raw webhook capture into `webhook_captures`. |
 
 
 ## Still deferred / out of scope
@@ -109,7 +124,9 @@ These stay off until a separate cutover. Routes fail clean / no-op without them.
    Sync. Pause / resume / budget writes are live.
 
 2. **Chat widget: agent-sent messages** — data model ready; application send
-   path stays off (spec §8).
+   path stays off for the *widget* UI (spec §8). The messaging agent runtime
+   above does send via `composeAgentReply` when an agent is live and the key
+   is set.
 
 3. **Chat widget for affiliates / white-label** — owner call C-3: internal staff
    + client portal only.
@@ -121,12 +138,50 @@ These stay off until a separate cutover. Routes fail clean / no-op without them.
 6. **Message dispatcher sweeper registration** — deliberately unregistered
    (CLAUDE.md §12). Staff compose dispatches immediately.
 
-7. **Social OAuth connect flow** — channels still need an INSERT + token; no
-   OAuth screen yet.
+7. **Social OAuth connect flow** — wired at `/api/social/oauth` + Social Studio
+   Connect buttons. Still needs app credentials (below).
 
 8. **Instagram / TikTok live media publish** — facebook Graph caption path is
-   live when tokenized; other channels need provider wiring or
-   `SOCIAL_PUBLISH_DRY_RUN=1`.
+   live when tokenized; LinkedIn org UGC adapter is wired; Instagram still needs
+   a media container. Use `SOCIAL_PUBLISH_DRY_RUN=1` to exercise the cron.
+
+### Booking calendar cutover (ClickFunnels Appointments vs Cal.com)
+
+Funnels currently use ClickFunnels' native Appointments app, not Cal.com. The
+platform Cal.com adapter now emits `booking.created` / `booking.rescheduled` /
+`booking.cancelled` / `booking.noshow`. At cutover pick one:
+
+- **Option A — CF Appointments adapter** (~2–3 days): new adapter normalizing CF
+  appointment webhooks → `booking.*` events. `CF_CAPTURE_MODE=1` already logs
+  raw payloads into `webhook_captures` so one real test lead can correct field
+  paths afterward.
+- **Option B — Swap embeds to Cal.com** (~1 day engineering + funnel rebuild):
+  point booking buttons at Cal.com; existing adapter + handlers already cover
+  the lifecycle including S-05a no-show recovery.
+
+### LinkedIn app setup (required for social connect)
+
+- Create a LinkedIn Developer app; enable Community Management / Share on LinkedIn.
+- Auth redirect URL: `{APP_BASE_URL}/api/social/oauth?action=callback&channel=linkedin`
+- Set `LINKEDIN_CLIENT_ID` + `LINKEDIN_CLIENT_SECRET` as Netlify secrets (leave unset until ready).
+- Organization posts need Marketing Developer Platform access + org admin grant of
+  `w_organization_social`. Pass the organization URN as `external_account_id` on connect start
+  (or set `LINKEDIN_ORG_ID`).
+
+### Meta social connect
+
+- `META_APP_ID` + `META_APP_SECRET` (same app as Marketing API is fine).
+- Facebook Login scopes: `pages_show_list`, `pages_manage_posts`, `instagram_basic`,
+  `instagram_content_publish`.
+- Redirect: `{APP_BASE_URL}/api/social/oauth?action=callback&channel=facebook`
+  (and `channel=instagram`).
+
+### GHL contact backfill
+
+- New clients attempt GHL contact create/lookup when SMS routing is `ghl_relay`.
+- Set `GHL_API_KEY` (preferred) or `GHL_RELAY_API_KEY`. Leave unset until ready.
+- One-shot existing clients: `node scripts/backfill-ghl-contact-ids.mjs` (dry-run)
+  then `--write`.
 
 9. **Commission-rule writes** — `products-commissions.html` saves rate changes
    locally only; there is no `POST /api/commission-rules`. A 168-line draft was
@@ -150,7 +205,7 @@ The platform now has:
 
 | Piece | Where |
 |---|---|
-| `inquiry_removal_cases` + bridged `inquiry_log` | migrations `137`, `138` |
+| `inquiry_removal_cases` + bridged `inquiry_log` | migrations `140_inquiry_ops`, `143_inquiry_removal_bridge` |
 | Signed inbound webhook | `POST /api/webhooks/inquiry-removal` |
 | Case queue + Mark Cleared / Close Case | `GET /api/read/inquiry-cases`, `GET/POST /api/inquiry-cases`, Inquiry Remover screen |
 | Client file status | `inquiry_removal_case` on `GET /api/dashboard/client` |

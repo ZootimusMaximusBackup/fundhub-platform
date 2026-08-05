@@ -3,7 +3,7 @@
 # Agent trigger map
 
 Which canonical event wakes which automation. "Agent" here means a registered Inngest function —
-the 49 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
+the 50 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
 (The AG-xx prompt-driven agents in `wireframes/agent-editor.html` are a UI mock with no code behind
 them yet, and are deliberately not drawn here.)
 
@@ -27,6 +27,8 @@ flowchart LR
   e_booking_created --> w_dpc_05_no_progress_escalation["dpc-05-no-progress-escalation"]
   e_booking_created --> w_n_03_hot_nurture["n-03-hot-nurture"]
   e_booking_created --> w_s_04_call_booked["s-04-call-booked"]
+  e_booking_noshow(["booking.noshow"])
+  e_booking_noshow --> w_s_05a_no_show_recovery["s-05a-no-show-recovery"]
   e_call_completed(["call.completed"])
   e_call_completed --> w_ai_set_03_no_answer_cadence["ai-set-03-no-answer-cadence"]
   e_call_completed --> w_ds_01_repair_referral["ds-01-repair-referral"]
@@ -86,6 +88,7 @@ flowchart LR
 |---|---|---|
 | `analysis.completed` | 8 | `af-02-referral-ownership-capture`, `c-02-inquiry-created`, `c-06-crs-results-router`, `dpc-01-analyzer-lock`, `u-02-analyzer-complete-delivery`, `u-03-crs-snapshot-sync`, `u-04-promote-crs-primary`, `u-05-data-health-monitor` |
 | `booking.created` | 6 | `ai-set-04-3way-handoff`, `bs-01-precall-launcher`, `dpc-02-call-outcome-enforcement`, `dpc-05-no-progress-escalation`, `n-03-hot-nurture`, `s-04-call-booked` |
+| `booking.noshow` | 1 | `s-05a-no-show-recovery` |
 | `call.completed` | 4 | `ai-set-03-no-answer-cadence`, `ds-01-repair-referral`, `n-03-hot-nurture`, `s-08-post-call-funding-declined` |
 | `deposit.paid` | 2 | `c-02b-inquiry-removal-requested`, `s-06-post-call-funding-purchased` |
 | `diagnostic.paid` | 2 | `af-02-referral-ownership-capture`, `c-00-crs-soft-pull-request` |
@@ -105,6 +108,8 @@ flowchart LR
 
 Declared in `canonical.mjs`, emitted or emittable, with no Inngest function listening:
 
+- `booking.rescheduled`
+- `booking.cancelled`
 - `decision.rendered`
 - `sale.closed`
 - `file.finalized`

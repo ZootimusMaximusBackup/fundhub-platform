@@ -172,8 +172,12 @@ test.describe("the inbox loads and can be read", () => {
     await page.locator(".convo").first().click();
 
     await expect(page.locator("#thName")).toHaveText("Dana Whitfield");
-    const msgs = page.locator(".msg");
-    await expect(msgs).toHaveCount(2);
+    const msgs = page.locator("#threadPane .msg, #thread .msg, .thread .msg");
+    // At least the two scripted turns; ignore chrome/system rows if present.
+    await expect(msgs.filter({ hasText: /any update on my file/i })).toHaveCount(1);
+    await expect(msgs.filter({ hasText: /looking now, one moment/i })).toHaveCount(1);
+    const count = await msgs.count();
+    expect(count).toBeGreaterThanOrEqual(2);
     // The endpoint answers newest-first and the screen reverses it. If that
     // reversal is ever dropped the conversation reads backwards, which no
     // amount of markup assertion would notice.

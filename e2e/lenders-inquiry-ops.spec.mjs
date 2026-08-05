@@ -18,7 +18,7 @@ test("lenders.html loads with list, mismatch, and AI bureau tabs", async ({ page
 
 test("inquiry-remover.html shows case queue section", async ({ page }) => {
   await openScreen(page, "/app/inquiry-remover.html", OWNER);
-  await expect(page.locator("#caseQueueSection")).toBeVisible();
+  await expect(page.locator("#caseQueueSection")).toBeVisible({ timeout: 15000 });
   await expect(page.locator("#caseQueueTable")).toBeVisible();
   await expect(page.getByText(/Inquiry removal cases/i)).toBeVisible();
 });

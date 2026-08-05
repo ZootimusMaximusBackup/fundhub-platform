@@ -197,6 +197,7 @@ export function pgFake(seed = {}) {
           title: params[2], body: params[3], due_at: params[4],
           source_workflow: params[5],
           assignee_role: params[6], assignee_staff_id: params[7],
+          meeting_url: params[8] ?? null,
           done: false
         } : {
           id: "task-" + (tasks.length + 1),

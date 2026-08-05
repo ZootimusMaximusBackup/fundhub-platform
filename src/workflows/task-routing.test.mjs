@@ -38,8 +38,10 @@ const SPEC = {
 };
 
 // Task writers outside src/workflows. Same requirement, different directory.
+// comms.mjs creates three Cal.com tasks: booking → closer, reschedule → closer,
+// cancel re-nurture → setter. All must be employee roles from TASK_ROLES.
 const NON_WORKFLOW_SITES = [
-  { file: "src/handlers/comms.mjs", role: "closer" }
+  { file: "src/handlers/comms.mjs", roles: ["closer", "setter"] }
 ];
 
 /* Templates are defined per-test-file in this suite rather than exported from
@@ -167,11 +169,13 @@ describe("task role routing", () => {
       if (!found.length) missing.push(`${key} (no assigneeRole)`);
       else if (!found.every((r) => r === role)) wrong.push(`${key}: ${found} ≠ ${role}`);
     }
-    for (const { file, role } of NON_WORKFLOW_SITES) {
+    for (const { file, roles } of NON_WORKFLOW_SITES) {
       const src = fs.readFileSync(path.join(process.cwd(), file), "utf8");
       const found = [...src.matchAll(/assigneeRole:\s*"([a-z_]+)"/g)].map((m) => m[1]);
       if (!found.length) missing.push(`${file} (no assigneeRole)`);
-      else if (!found.every((r) => r === role)) wrong.push(`${file}: ${found} ≠ ${role}`);
+      else if (!found.every((r) => roles.includes(r))) {
+        wrong.push(`${file}: ${found} not in ${roles}`);
+      }
     }
     assert.deepEqual(missing, [], `sites with no role: ${missing}`);
     assert.deepEqual(wrong, [], `sites routed to the wrong role: ${wrong}`);

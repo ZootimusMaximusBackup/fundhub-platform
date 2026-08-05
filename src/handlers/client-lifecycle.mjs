@@ -14,6 +14,7 @@
 import { on } from "../events/registry.mjs";
 import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
+import { ensureGhlContactId } from "../messaging/ghl-contacts.mjs";
 
 // --- helpers ----------------------------------------------------------------
 
@@ -25,9 +26,45 @@ export function splitName(name) {
   return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
 }
 
+// True when the org's sms channel is routed to the GHL relay provider
+// (message_channel_routing, migration 110 — one row per org+channel). No row,
+// a disabled row, or any other provider all read as "not ghl_relay" here —
+// same fail-closed reading the dispatcher itself uses for that table.
+async function isGhlRelaySms(db, orgId) {
+  try {
+    const r = await db.query(
+      `SELECT provider FROM message_channel_routing WHERE org_id = $1 AND channel = 'sms'`,
+      [orgId]
+    );
+    return r.rows[0]?.provider === "ghl_relay";
+  } catch {
+    return false;
+  }
+}
+
+// Best-effort GHL contact sync for a just-created client. Only runs when the
+// org's sms channel is actually routed to ghl_relay — a client in an org still
+// on another sms provider (or none) has no reason to exist in GHL. NEVER
+// throws and NEVER blocks client creation: ensureGhlContactId already
+// swallows its own failures, and this is wrapped again because the routing
+// lookup above is not.
+async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, lastName }, opts) {
+  if (!email) return;
+  try {
+    if (!(await isGhlRelaySms(db, orgId))) return;
+    await ensureGhlContactId(db, { id: clientId, email, phone, first_name: firstName, last_name: lastName }, opts);
+  } catch {
+    // Logged nothing sensitive on purpose — see ghl-contacts.mjs's own header.
+  }
+}
+
 // Resolve the platform client for an event: prefer an explicit clientId on the
 // event, else find-or-create by (org, email). Returns a client uuid or null.
-export async function resolveClient(db, event) {
+//
+// `opts` ({ fetchImpl, env }) is the GHL contact-sync test seam — every real
+// call site omits it and gets globalThis.fetch / process.env, same default as
+// every provider in src/messaging/providers/.
+export async function resolveClient(db, event, opts = {}) {
   const orgId = event.orgId;
   if (event.clientId) return event.clientId;
   const p = event.payload || {};
@@ -48,7 +85,11 @@ export async function resolveClient(db, event) {
      RETURNING id`,
     [orgId, email, firstName, lastName, p.phone || null, p.source || null]
   );
-  if (ins.rows[0]) return ins.rows[0].id;
+  if (ins.rows[0]) {
+    const clientId = ins.rows[0].id;
+    await syncGhlContact(db, { clientId, orgId, email, phone: p.phone || null, firstName, lastName }, opts);
+    return clientId;
+  }
 
   // Lost an insert race (or already existed) — re-select.
   const re = await db.query(
