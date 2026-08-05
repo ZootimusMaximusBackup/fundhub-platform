@@ -319,17 +319,14 @@
     <div class="topbar-right">
       <div class="census" id="census"></div>
       <div class="clock" id="clock"></div>
-      <div class="live-pill" id="livePill" title="No backend exists for this screen — see the notice below. Every worker, state, handoff and flare is scripted animation, not a read of anything real."><span class="live-dot" id="liveDot"></span>SIMULATED</div>
+      <div class="live-pill" id="livePill" title="No activity feed yet — Galaxy stays empty until open shifts or agents exist."><span class="live-dot" id="liveDot"></span>WAITING</div>
     </div>
   </header>
 
-  <div class="legend" style="border-color:var(--info)">
-    <b>No backend — this whole screen is a simulation</b>
-    <i>There is no api/company-activity/* (or any) endpoint behind Galaxy. There is no live worker feed. The sky below is empty on purpose — the old scripted
-      <code>NODES</code> simulation was removed so this screen cannot be mistaken for a dashboard.</i>
-    <i>A real version would need: a presence/status feed per staff member and agent (something has to know who is
-      "working right now"), an events stream for handoffs between them, and a money-movement feed to trigger a
-      flare — none of which exist yet. Until then, treat this page the way you would a mockup, not a dashboard.</i>
+  <div class="legend" style="border-color:var(--info)" id="galaxyBackendNotice">
+    <b>Waiting on activity</b>
+    <i>Galaxy reads <code>/api/read/company-activity</code>. Until someone has an open shift, recent staff events, or a live agent, the sky stays empty on purpose — no fake workers.</i>
+    <i>With Demo Mode on, the seed opens demo shifts so this screen fills. Toggle Demo Mode off and demo workers disappear.</i>
   </div>
 
   <div class="legend">
@@ -449,13 +446,12 @@ var CLUSTERS = [
 ];
 var CL = {}; CLUSTERS.forEach(function(c){CL[c.id]=c;});
 
-/* Honest empty: there is no activity / presence API behind Galaxy. The old
-   scripted NODES seed animated invented workers, money flares and handoffs as
-   if they were live. That seed is gone. Clusters still draw as empty seats so
-   the layout is readable; nothing claims to be working. */
+/* Start empty. Boot fetches /api/read/company-activity and fills NODES when
+   real (or Demo Mode) presence exists. No hardcoded worker rows. */
 var CLIENTS = [];
 var NODES = [];
 var ND = {}; NODES.forEach(function(n){ND[n.id]=n;});
+var LIVE_FEED = false;
 
 /* handoff routes that actually happen at Fundhub */
 var ROUTES = [];
@@ -579,12 +575,18 @@ function nodeSay(n, txt){
   if(sel===n.id) renderPanel(n);
 }
 
-function fillC(s){ return s.replace('{C}', pick(CLIENTS)); }
+function fillC(s){
+  if(!s) return '';
+  var c = CLIENTS.length ? pick(CLIENTS) : 'a client';
+  return String(s).replace('{C}', c);
+}
 
 /* -- workers change what they're doing -- */
 function evActivity(){
   var cands = NODES.filter(function(n){return n.state!=='blocked' && n.pool && n.pool.length>1;});
+  if(!cands.length) return;
   var n = pick(cands);
+  if(!n) return;
   var txt = fillC(pick(n.pool));
   if(txt===n.act) return;
   if(n.state==='idle' && Math.random()<0.55){ n.state='active'; }
@@ -596,18 +598,19 @@ function evActivity(){
 
 /* -- one worker hands something to another -- */
 function evHandoff(){
-  if(threads.length>=5) return;
+  if(threads.length>=5 || !ROUTES.length) return;
   var r = pick(ROUTES);
+  if(!r) return;
   var a = ND[r[0]], b = ND[r[1]];
   if(!a||!b) return;
   threads.push({a:a,b:b, label:fillC(r[2]), t:0, dur:6.2, off:(Math.random()<0.5?1:-1)*(0.14+Math.random()*0.10), landed:false});
-  a.flash = Math.max(a.flash, 0.6);
+  a.flash = Math.max(a.flash||0, 0.6);
   if(b.state==='idle' && Math.random()<0.5) b.state='active';
 }
 
 /* -- a client advances a stage: a pulse travels its rail -- */
 function evMove(){
-  if(pulses.length>=4) return;
+  if(pulses.length>=4 || !CLIENTS.length) return;
   var i = (Math.random()*RAILS.length)|0;
   if(RAILS[i].quiet && Math.random()<0.88) i = (Math.random()*(RAILS.length-1))|0;
   var r = RAILS[i];
@@ -619,23 +622,21 @@ function evMove(){
 
 /* -- money lands: the loudest thing on this screen -- */
 function evMoney(){
-  if(flares.length>=2) return;
+  if(flares.length>=2 || !NODES.length) return;
+  var actives = NODES.filter(function(n){ return n.state==='active'; });
+  var n = pick(actives.length ? actives : NODES);
+  if(!n) return;
   var roll = Math.random();
-  var n, amt, kid, kind, color;
-  if(roll < 0.42){
-    n = pick([ND.jordan, ND.nina]); amt = 3000 + (Math.random()<0.5?300:0);
+  var amt, kid, kind, color;
+  if(roll < 0.55){
+    amt = 3000 + (Math.random()<0.5?300:0);
     kid='cash'; kind='Deposit paid'; color=C.green;
-  } else if(roll < 0.72){
-    n = ND.marcus; amt = 8500 + Math.round(Math.random()*7)*2500;
-    kid='fund'; kind='Round funded'; color=C.gold;
-  } else if(roll < 0.90){
-    n = ND.a2; amt = 600 + Math.round(Math.random()*12)*100;
-    kid='cash'; kind='Payment received'; color=C.green;
   } else {
-    n = ND.marcus; amt = 18500 + Math.round(Math.random()*10)*1500;
+    amt = 8500 + Math.round(Math.random()*7)*2500;
     kid='fund'; kind='Round funded'; color=C.gold;
   }
   var k = KPI[kid];
+  if(!k) return;
   flares.push({n:n, k:k, amt:amt, kind:kind, color:color, t:0, dur:2.9, delivered:false, big: amt>=12000});
   blooms.push({x:n.x, y:n.y, t:0, dur:1.5, color:color, big: amt>=12000});
   n.flash = 1; n.out += (kid==='fund'?3:1); sizeNode(n);
@@ -648,16 +649,20 @@ function evMoney(){
 
 /* -- the soft numbers drift as calls resolve -- */
 function evRate(){
-  var k = pick([KPI.close, KPI.show]);
+  var opts = [KPI.close, KPI.show].filter(Boolean);
+  if(!opts.length) return;
+  var k = pick(opts);
+  if(!k) return;
   bumpKPI(k.id, (Math.random()-0.42)*1.4, false);
 }
 
 function bumpKPI(id, d, loud){
   var k = KPI[id];
+  if(!k) return;
   k.v += d;
   if(k.id==='close') k.v = clamp(k.v, 22, 48);
   if(k.id==='show')  k.v = clamp(k.v, 58, 86);
-  k.glow = Math.max(k.glow, loud?1:0.55);
+  k.glow = Math.max(k.glow||0, loud?1:0.55);
   k.delta = (k.fmt==='pct') ? (d>=0?'+':'')+d.toFixed(1)+'pt'
           : (k.fmt==='int') ? (d>=0?'+':'')+Math.round(d)
           : (d>=0?'+$':'-$')+Math.abs(Math.round(d)).toLocaleString('en-US');
@@ -1720,7 +1725,7 @@ var clockEl=document.getElementById('clock'), censusEl=document.getElementById('
 function chrome(){
   clockEl.textContent = nowClock(false);
   if(!NODES.length){
-    censusEl.innerHTML = '<b>0</b> workers · no activity feed (no backend)';
+    censusEl.innerHTML = '<b>0</b> workers · waiting on activity feed';
     return;
   }
   var a=0,i=0,b=0;
@@ -1730,12 +1735,77 @@ function chrome(){
 }
 chrome(); setInterval(chrome, 1000);
 
+function applyLiveFeed(data){
+  NODES = (data.nodes || []).slice();
+  ND = {};
+  NODES.forEach(function(n){
+    n.flash = n.flash || 0;
+    n.say = n.say || null;
+    n.sayT = n.sayT || 0;
+    n.z = n.z || 0;
+    if(!Array.isArray(n.pool)) n.pool = [];
+    if(!Array.isArray(n.stats)) n.stats = [];
+    if(!Array.isArray(n.files)) n.files = [];
+    if(!Array.isArray(n.tl)) n.tl = [['—', 'No timeline yet']];
+    sizeNode(n);
+    ND[n.id] = n;
+  });
+  CLIENTS = (data.clients || []).slice();
+  ROUTES = (data.routes || []).slice();
+  KPIS = (data.kpis || []).slice();
+  KPI = {};
+  KPIS.forEach(function(k){
+    if(!Array.isArray(k.hist)) k.hist = [];
+    if(k.glow == null) k.glow = 0;
+    if(k.delta == null) k.delta = '';
+    if(k.deltaT == null) k.deltaT = 0;
+    while(k.hist.length < 52) k.hist.unshift(Number(k.v) || 0);
+    KPI[k.id] = k;
+  });
+  LIVE_FEED = true;
+  SCHED.length = 0;
+  SCHED.push({fn:evActivity, lo:3.2, hi:7.0, next:1.2});
+  if(CLIENTS.length) SCHED.push({fn:evMove, lo:2.6, hi:5.4, next:0.4});
+  if(ROUTES.length) SCHED.push({fn:evHandoff, lo:4.2, hi:9.0, next:0.9});
+
+  var pill = document.getElementById('livePill');
+  if(pill){
+    pill.innerHTML = '<span class="live-dot" id="liveDot"></span>LIVE';
+    pill.title = 'Live from open shifts, staff events, and agents';
+  }
+  var notice = document.getElementById('galaxyBackendNotice');
+  if(notice){
+    notice.style.borderColor = 'var(--ok, #6BBF8A)';
+    notice.innerHTML = '<b>Live from shifts &amp; agents</b><i>Workers below come from open shifts, recent staff activity, and live agents'
+      + (data.demo_mode ? ' (Demo Mode workers included).' : '.')
+      + '</i>';
+  }
+  layout();
+  chrome();
+}
+
+async function loadActivityFeed(){
+  var token = '';
+  try { token = localStorage.getItem('fh_token') || ''; } catch (e) { token = ''; }
+  if(!token || token === 'demo') return;
+  try {
+    var res = await fetch('/api/read/company-activity', {
+      headers: { accept: 'application/json', authorization: 'Bearer ' + token }
+    });
+    if(!res.ok) return;
+    var data = await res.json();
+    if(!data || !data.ok || !data.nodes || !data.nodes.length) return;
+    applyLiveFeed(data);
+  } catch (e) { /* keep honest empty sky */ }
+}
+
 /* ============================================================
    go
    ============================================================ */
 window.addEventListener('resize', resize);
 resize();
 requestAnimationFrame(draw);
+loadActivityFeed();
 
 })();
 </script>

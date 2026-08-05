@@ -189,6 +189,37 @@ export async function seedPlatformDemo(db, { orgId } = {}) {
     if (shift) await q(db, `INSERT INTO staff_events (org_id,staff_id,shift_id,kind,detail,is_demo) VALUES ($1,$2,$3,'call_made','{"demo":true}',true),($1,$2,$3,'file_touched','{"demo":true}',true)`, [orgId,s.id,shift.id]);
   }
 
+  // Open shifts + recent events so Galaxy / company-activity has live presence.
+  const presenceRoles = new Set(["closer", "sales_manager", "setter", "funding_advisor", "inquiry_specialist", "owner", "admin"]);
+  for (const s of staffRows.filter((row) => presenceRoles.has(row.role))) {
+    let open = (await q(db,
+      `SELECT id FROM shifts WHERE org_id=$1 AND staff_id=$2 AND is_demo AND ended_at IS NULL LIMIT 1`,
+      [orgId, s.id])).rows[0];
+    if (!open) {
+      open = (await q(db,
+        `INSERT INTO shifts (org_id,staff_id,started_at,ended_at,is_demo)
+         SELECT $1,$2,now()-interval '90 minutes',NULL,true
+          WHERE NOT EXISTS (
+            SELECT 1 FROM shifts WHERE org_id=$1 AND staff_id=$2 AND is_demo AND ended_at IS NULL
+          )
+         RETURNING id`,
+        [orgId, s.id])).rows[0];
+    }
+    if (!open?.id) continue;
+    const recent = (await q(db,
+      `SELECT count(*)::int n FROM staff_events
+        WHERE org_id=$1 AND staff_id=$2 AND is_demo
+          AND created_at >= now() - interval '1 hour'`,
+      [orgId, s.id])).rows[0]?.n || 0;
+    if (recent >= 3) continue;
+    await q(db,
+      `INSERT INTO staff_events (org_id,staff_id,shift_id,kind,detail,created_at,is_demo) VALUES
+         ($1,$2,$3,'call_made','{"demo":true}',now()-interval '12 minutes',true),
+         ($1,$2,$3,'file_touched','{"demo":true}',now()-interval '8 minutes',true),
+         ($1,$2,$3,'note_added','{"demo":true}',now()-interval '3 minutes',true)`,
+      [orgId, s.id, open.id]);
+  }
+
   for (const n of [6,10]) {
     const clientId = clientIds[n]; const caseId = `DEMO-CASE-${String(n).padStart(2,"0")}`;
     await q(db, `INSERT INTO inquiry_removal_cases (org_id,client_id,case_id,case_status,selected_bureaus_raw,request_source,requested_by,open_inquiry_count,master_call_state,remover_notes,is_demo)

@@ -3,6 +3,7 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-05 | all eight | Regenerated actuals — `GET /api/read/company-activity` (STAFF) for Galaxy presence feed | Hook Galaxy to real shifts/agents activity; Demo Mode seeds open shifts | pending
 2026-08-04 | role-owner, role-sales-manager, role-closer, role-funding-advisor | Regenerated actual journeys after pipeline board load path + s-01 card placement | Actual board path no longer flashes sample cards; new leads get a Sales card | c0fa78b
 2026-08-04 | role-closer, role-sales-manager | actual regenerated — call cockpit, my-numbers, sales-floor screens + call_outcomes APIs | sales dashboards build | pending
 2026-08-04 | all eight | Two routes added — `GET /api/read/agent-context`, `GET /api/read/agent-shadow-log` (STAFF). Agent runtime on `message.inbound` (select → context → guardrails → Anthropic/shadow → dispatch via gate). Migration 144 (renumbered from 142 at merge — main already had 142–143). AE-08 reads real shadow log; client control panel shows agent context card | Registry stored agents but nothing executed them; GHL cutover would kill conversational AI | (this commit)

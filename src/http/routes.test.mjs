@@ -211,6 +211,10 @@ test("routes: the twenty handlers that were 404ing are now reachable at their do
   assert.deepEqual(missing, [], `regressed to 404: ${missing.join(", ")}`);
 });
 
+test("routes: Galaxy company-activity feed is routed", () => {
+  assert.ok(Object.prototype.hasOwnProperty.call(ROUTES, "read/company-activity"));
+});
+
 test("routes: /api/inquiries and /api/inquiry stay separate routes", () => {
   // Two different systems: /api/inquiry proxies the external Airtable runtime,
   // /api/inquiries writes the local inquiry_log table. They are one letter apart
