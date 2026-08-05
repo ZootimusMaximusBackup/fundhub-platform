@@ -476,7 +476,20 @@ Manifest regenerated with `npm run migrations:manifest` (127 migration entries).
 ### Suite
 
 - Before merge (main `66b8257`): unit 4426 / 4423 pass / 0 fail; pg 578 / 47 pass / 531 skipped (no `DATABASE_URL`).
-- After merge: see commit notes below (filled after suite run).
+- After merge: unit 4514 / 4511 pass / 0 fail / 3 skipped; pg 579 / 47 pass / 532 skipped / 0 fail.
+- Lint: clean (929 files). `src/http/routes.test.mjs`: 14/14. Journeys + diagrams `--check`: up to date.
+- Playwright: not re-run in this session (integration-round + lenders/proxy specs ship with the branch; morning round already owed a full e2e pass).
+
+### Production migrate
+
+Applied 2026-08-04 evening via `MIGRATION_DATABASE_URL` (admin pooler) → `node db/migrate.mjs`.
+
+Applied (3):
+- `migrations/144_agent_runtime.sql`
+- `migrations/145_webhook_captures.sql`
+- `migrations/146_tasks_meeting_url.sql`
+
+(137–143 already applied in the morning round.)
 
 ### Credentials deliberately NOT set
 
@@ -485,4 +498,9 @@ All stay unset. Consolidated in `docs/STILL-MISSING.md` (ANTHROPIC, OXYLABS, MET
 ### node_modules
 
 Main already stopped tracking the Mac-path symlink (`aa5382d`). Local `npm ci` for the suite only — not committed. Matches morning-round hygiene.
+
+### Push / branch delete
+
+- Pushed merge tip to `origin/main`.
+- Deleted `origin/money-chain-writers` after green suite.
 
