@@ -41,12 +41,16 @@ export default async function handler(req, res) {
   const principal = await requirePrincipal(req, res, ["staff"], { db });
   if (!principal) return;
   const staffId = principal.staffId;
+  const orgId = principal.orgId;
+  if (!orgId || !isUuid(orgId)) {
+    return res.status(403).json({ ok: false, error: "no_org_on_session" });
+  }
 
   try {
     if (req.method === "GET") {
       const inquiryId = (req.query || {}).inquiry_id;
       if (!isUuid(inquiryId)) return res.status(400).json({ ok: false, error: "inquiry_id must be a uuid" });
-      return res.status(200).json({ ok: true, attempts: await listAttempts(db, { inquiryId }) });
+      return res.status(200).json({ ok: true, attempts: await listAttempts(db, { inquiryId, orgId }) });
     }
 
     if (req.method === "POST") {
@@ -78,7 +82,7 @@ export default async function handler(req, res) {
       switch (body.action) {
         case "attempt":
           inquiry = await logAttempt(db, {
-            inquiryId, staffId,
+            inquiryId, staffId, orgId,
             kind: body.kind || "call",
             outcome: body.outcome ?? null,
             note: body.note ?? null,
@@ -92,10 +96,13 @@ export default async function handler(req, res) {
           });
           break;
         case "confirm":
-          inquiry = await confirmRemoval(db, { inquiryId, staffId, ...(body.status ? { status: body.status } : {}) });
+          inquiry = await confirmRemoval(db, {
+            inquiryId, staffId, orgId,
+            ...(body.status ? { status: body.status } : {})
+          });
           break;
         case "status":
-          inquiry = await setStatus(db, { inquiryId, staffId, status: body.status });
+          inquiry = await setStatus(db, { inquiryId, staffId, orgId, status: body.status });
           break;
         default:
           return res.status(400).json({ ok: false, error: "action must be one of: attempt, confirm, status" });

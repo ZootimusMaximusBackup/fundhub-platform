@@ -1,14 +1,14 @@
 # End-to-End Verification Report
 
-Generated: 2026-08-05T01:31:59.795Z
-Run id: verify-1785893518879
+Generated: 2026-08-05T01:45:44.265Z
+Run id: verify-1785894343308
 Node: v22.21.1
 DATABASE_URL: 127.0.0.1/fundhub_verify
 Stance: skeptical operator / business architect. Prefer SILENTLY-DID-NOTHING and UNVERIFIED over a false pass.
 
 ## Operator headline
 
-**Do not put a real client on this platform today.** 29 P0 isolation finding(s) — at least one staff session can read another company's client record by guessing a UUID (`GET /api/dashboard/client?id=`). That is credit-file / PII leakage across orgs.
+**Do not put a real client on this platform today.** 22 P0 isolation finding(s). Review the P0 list below before treating this as a ship gate.
 
 Re-run: `DATABASE_URL=... npm run verify:e2e` (Playwright UI + data-layer). Data only: `node src/verification/run-all.mjs`.
 
@@ -16,13 +16,13 @@ Re-run: `DATABASE_URL=... npm run verify:e2e` (Playwright UI + data-layer). Data
 
 | Status | Count |
 |---|---:|
-| PASS | 272 |
-| FAIL | 103 |
-| SILENTLY-DID-NOTHING | 9 |
+| PASS | 278 |
+| FAIL | 96 |
+| SILENTLY-DID-NOTHING | 10 |
 | UNVERIFIED | 49 |
 | SKIP | 0 |
 | **Total** | **433** |
-| P0 non-passes | 29 |
+| P0 non-passes | 22 |
 
 ## 1. SECURITY (read this first)
 
@@ -30,27 +30,6 @@ Re-run: `DATABASE_URL=... npm run verify:e2e` (Playwright UI + data-layer). Data
 
 Any successful violation here is a business-ending and regulatory event.
 
-- **P0 FAIL** — P0: owner read another ORG's client by id
-  - status=200
-  - at `api/dashboard/client.mjs`
-- **P0 FAIL** — P0: admin read another ORG's client by id
-  - status=200
-  - at `api/dashboard/client.mjs`
-- **P0 FAIL** — P0: sales_manager read another ORG's client by id
-  - status=200
-  - at `api/dashboard/client.mjs`
-- **P0 FAIL** — P0: funding_advisor read another ORG's client by id
-  - status=200
-  - at `api/dashboard/client.mjs`
-- **P0 FAIL** — P0: closer read another ORG's client by id
-  - status=200
-  - at `api/dashboard/client.mjs`
-- **P0 FAIL** — P0: inquiry_specialist read another ORG's client by id
-  - status=200
-  - at `api/dashboard/client.mjs`
-- **P0 FAIL** — P0: setter read another ORG's client by id
-  - status=200
-  - at `api/dashboard/client.mjs`
 - **P0 UNVERIFIED** — Company Brain tier filter before retrieval
   - status=405; may be empty corpus on verify DB
 - **P0 UNVERIFIED** — sales_manager direct-URL to hiring.html: static HTML loads; API isolation checked in pg security journey
@@ -134,7 +113,7 @@ Any successful violation here is a business-ending and regulatory event.
 | PASS | owner | owner may access client-dashboard |  |  |
 | PASS | owner | owner may access documents |  |  |
 | PASS | owner | owner may access tradelines |  |  |
-| FAIL | owner | P0: owner read another ORG's client by id | status=200 | api/dashboard/client.mjs |
+| PASS | owner | owner cannot read other org client (404) |  |  |
 | PASS | owner | owner org_id/role query spoof does not elevate (200) |  |  |
 | PASS | admin | admin may access commissions |  |  |
 | PASS | admin | admin may access invoices |  |  |
@@ -145,7 +124,7 @@ Any successful violation here is a business-ending and regulatory event.
 | PASS | admin | admin may access client-dashboard |  |  |
 | PASS | admin | admin may access documents |  |  |
 | PASS | admin | admin may access tradelines |  |  |
-| FAIL | admin | P0: admin read another ORG's client by id | status=200 | api/dashboard/client.mjs |
+| PASS | admin | admin cannot read other org client (404) |  |  |
 | PASS | admin | admin org_id/role query spoof does not elevate (200) |  |  |
 | PASS | sales_manager | sales_manager may access commissions |  |  |
 | PASS | sales_manager | sales_manager may access invoices |  |  |
@@ -156,7 +135,7 @@ Any successful violation here is a business-ending and regulatory event.
 | PASS | sales_manager | sales_manager may access client-dashboard |  |  |
 | PASS | sales_manager | sales_manager may access documents |  |  |
 | PASS | sales_manager | sales_manager may access tradelines |  |  |
-| FAIL | sales_manager | P0: sales_manager read another ORG's client by id | status=200 | api/dashboard/client.mjs |
+| PASS | sales_manager | sales_manager cannot read other org client (404) |  |  |
 | PASS | sales_manager | sales_manager org_id/role query spoof does not elevate (200) |  |  |
 | PASS | funding_advisor | funding_advisor refused commissions (403) |  |  |
 | PASS | funding_advisor | funding_advisor refused invoices (403) |  |  |
@@ -167,7 +146,7 @@ Any successful violation here is a business-ending and regulatory event.
 | PASS | funding_advisor | funding_advisor may access client-dashboard |  |  |
 | PASS | funding_advisor | funding_advisor may access documents |  |  |
 | PASS | funding_advisor | funding_advisor may access tradelines |  |  |
-| FAIL | funding_advisor | P0: funding_advisor read another ORG's client by id | status=200 | api/dashboard/client.mjs |
+| PASS | funding_advisor | funding_advisor cannot read other org client (404) |  |  |
 | PASS | funding_advisor | funding_advisor org_id/role query spoof does not elevate (403) |  |  |
 | PASS | closer | closer refused commissions (403) |  |  |
 | PASS | closer | closer refused invoices (403) |  |  |
@@ -178,7 +157,7 @@ Any successful violation here is a business-ending and regulatory event.
 | PASS | closer | closer may access client-dashboard |  |  |
 | PASS | closer | closer may access documents |  |  |
 | PASS | closer | closer may access tradelines |  |  |
-| FAIL | closer | P0: closer read another ORG's client by id | status=200 | api/dashboard/client.mjs |
+| PASS | closer | closer cannot read other org client (404) |  |  |
 | PASS | closer | closer org_id/role query spoof does not elevate (403) |  |  |
 | PASS | inquiry_specialist | inquiry_specialist refused commissions (403) |  |  |
 | PASS | inquiry_specialist | inquiry_specialist refused invoices (403) |  |  |
@@ -189,7 +168,7 @@ Any successful violation here is a business-ending and regulatory event.
 | PASS | inquiry_specialist | inquiry_specialist may access client-dashboard |  |  |
 | PASS | inquiry_specialist | inquiry_specialist may access documents |  |  |
 | PASS | inquiry_specialist | inquiry_specialist may access tradelines |  |  |
-| FAIL | inquiry_specialist | P0: inquiry_specialist read another ORG's client by id | status=200 | api/dashboard/client.mjs |
+| PASS | inquiry_specialist | inquiry_specialist cannot read other org client (404) |  |  |
 | PASS | inquiry_specialist | inquiry_specialist org_id/role query spoof does not elevate (403) |  |  |
 | PASS | setter | setter refused commissions (403) |  |  |
 | PASS | setter | setter refused invoices (403) |  |  |
@@ -200,7 +179,7 @@ Any successful violation here is a business-ending and regulatory event.
 | PASS | setter | setter may access client-dashboard |  |  |
 | PASS | setter | setter may access documents |  |  |
 | PASS | setter | setter may access tradelines |  |  |
-| FAIL | setter | P0: setter read another ORG's client by id | status=200 | api/dashboard/client.mjs |
+| PASS | setter | setter cannot read other org client (404) |  |  |
 | PASS | setter | setter org_id/role query spoof does not elevate (403) |  |  |
 | PASS | closer | Closer refused hiring endpoint (404) |  |  |
 | PASS | forged | Forged bearer token is refused |  | src/auth/session.mjs |
@@ -276,6 +255,11 @@ These are more dangerous than hard failures because nothing alerts.
   - `src/handlers/money-chain.mjs`
   - expected: `{"count":1}`
   - actual: `{"count":0}`
+- **IDEMPOTENCY** — Two concurrent identical deposit.paid → one sale
+  - Wanted 1; persisted value is empty/zero: 0.
+  - `src/handlers/money-chain.mjs`
+  - expected: `{"value":1}`
+  - actual: `{"value":0}`
 
 ## 3. Journey accounts (persisted values)
 
@@ -283,8 +267,8 @@ These are more dangerous than hard failures because nothing alerts.
 
 **Usable for a real person today: YES**
 
-Primary client (lead): 1e0b702d-629c-4eef-a935-606eb36904db / e2e_verify.funding.1785893518889@verify.local
-Simulated funding client: e2e97c5e-04a5-4cce-b596-d164d956f0fa / e2e_verify.sim.1785893518889@verify.local
+Primary client (lead): 9d5153ab-9cc7-4861-8215-d513b401ce17 / e2e_verify.funding.1785894343318@verify.local
+Simulated funding client: 84c9c667-ead7-40ab-ae79-1ee64b8991f5 / e2e_verify.sim.1785894343318@verify.local
 Sale amount: 3000.00 (want 3000)
 Closer front commission: 500.00 (want 500)
 Advisor back commission: 125.00 (want 125)
@@ -297,9 +281,9 @@ Operator verdict: YES for the money spine; still check GHL link, contract send, 
 
 | Step | Status | Persisted |
 |---|---|---|
-| Lead captured → client row | PASS | client.id=1e0b702d-629c-4eef-a935-606eb36904db email=e2e_verify.funding.1785893518889@verify.local |
+| Lead captured → client row | PASS | client.id=9d5153ab-9cc7-4861-8215-d513b401ce17 email=e2e_verify.funding.1785894343318@verify.local |
 | GHL linkage | SILENTLY-DID-NOTHING | null |
-| Booking → closer task | PASS | task.id=1ba3acb9-2754-4b4d-b5bf-fc49bc985477 title=Strategy session booked |
+| Booking → closer task | PASS | task.id=b6a19450-dd9c-4ad7-ba5b-78ba3b9f469f title=Strategy session booked |
 | Consent captured | FAIL | grantedBy is required — an unattributed consent is not evidence of anything |
 | CRS → tradelines | PASS | funding_client_tls=4 sim_tls=0 ingested=4 |
 | Pipeline card | SILENTLY-DID-NOTHING | none |
@@ -312,7 +296,7 @@ Operator verdict: YES for the money spine; still check GHL link, contract send, 
 
 **Usable for a real person today: YES**
 
-Client 8f53ba4a-08d6-4c27-bab2-19b281c6426f
+Client caf52544-77a3-4132-9fd2-9b93b478332e
 DIY sale: 1000.00
 Entitlements: metro2-letter-pack
 Ledger rows: 0
@@ -328,15 +312,15 @@ Operator verdict: YES for sale/entitlement separation; letter delivery still ven
 
 **Usable for a real person today: YES**
 
-Inquiry cdce80de-50ee-40da-b3da-8fa8e349e972; case c6e7aa30-71ed-4eda-a6fe-f046406a8f6f
+Inquiry 9e1ae1c5-557b-4f5e-a7f6-1b09dfa94078; case 9f8abafa-4957-4ee8-b6ac-6d22561aec6e
 call_state machine: 11 states exercised
 Status bleed on call_state: no
 Operator verdict: YES for status separation; real Bland voice still credential-gated.
 
 | Step | Status | Persisted |
 |---|---|---|
-| Inquiry logged | PASS | id=cdce80de-50ee-40da-b3da-8fa8e349e972 status=open call_state=not_started |
-| Case created | PASS | case=c6e7aa30-71ed-4eda-a6fe-f046406a8f6f |
+| Inquiry logged | PASS | id=9e1ae1c5-557b-4f5e-a7f6-1b09dfa94078 status=open call_state=not_started |
+| Case created | PASS | case=9f8abafa-4957-4ee8-b6ac-6d22561aec6e |
 | All 11 call_states without status bleed | PASS | status remained open |
 | cleared → inquiry.removed → C-03 | PASS | {"done":true,"branch":"resume","task":{"created":true}} |
 
@@ -362,9 +346,9 @@ Operator verdict: NO — duplicate money rows possible under replay or concurren
 
 | Step | Status | Persisted |
 |---|---|---|
-| Double deposit.paid | FAIL | sales=0 ledger=0 ents=1 |
+| Double deposit.paid | FAIL | sales=0 ledger=0 ents=0 |
 | Out-of-order round.funded | FAIL | rounds=1 status=funded funded=10000.00 |
-| Concurrent identical deposit.paid | PASS | sales=1 |
+| Concurrent identical deposit.paid | FAIL | sales=0 |
 
 ### F. Negative / adversarial
 
@@ -374,7 +358,7 @@ Adapter signatures fail-closed for commas/clickfunnels in-process. Full webhook 
 
 | Step | Status | Persisted |
 |---|---|---|
-| Bad amounts | PASS | salesDelta=1 |
+| Bad amounts | PASS | salesDelta=0 |
 | Signatures / opt-out / unicode / amounts | PASS | see assertions |
 
 ### G. Workflow engine
@@ -394,10 +378,10 @@ Operator note: Inngest does not schedule anything without INNGEST_EVENT_KEY. Thi
 
 ### PART 3 — Security & isolation
 
-**Usable for a real person today: NO**
+**Usable for a real person today: YES**
 
-Victim client 0d887f74-4761-4a7d-9204-e6212f1bb437 in org 35b667b7-a5ab-4371-9a8b-7f4aa2e31dce
-Other-org client 629216e4-6f1e-42fc-bbcc-760caf7c7a4b
+Victim client 0b4a600e-6cb7-49f0-b813-1833df61696d in org 35b667b7-a5ab-4371-9a8b-7f4aa2e31dce
+Other-org client 7981880b-5f6e-4a7e-b2bc-b1c0b1bf7802
 Document id: none
 Attacker stance: direct URL/API, id swap, org_id spoof, forged token, affiliate reach.
 
@@ -489,7 +473,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | SILENTLY-DID-NOTHING | DATA | IDEMPOTENCY | system | Identical deposit.paid twice → one front-end ledger row | src/handlers/money-chain.mjs |
 | FAIL | DATA | IDEMPOTENCY | system | Full bus replay completes without throwing | src/events/bus.mjs |
 | FAIL | DATA | IDEMPOTENCY | system | Out-of-order round.funded must not invent a funded round with money | src/handlers/money-chain.mjs |
-| PASS | DATA | IDEMPOTENCY | system | Two concurrent identical deposit.paid → one sale | src/handlers/money-chain.mjs |
+| SILENTLY-DID-NOTHING | DATA | IDEMPOTENCY | system | Two concurrent identical deposit.paid → one sale | src/handlers/money-chain.mjs |
 | PASS | DATA | ADVERSARIAL | attacker | clickfunnels refuses invalid signature | src/adapters/clickfunnels.mjs |
 | PASS | DATA | ADVERSARIAL | attacker | clickfunnels accepts valid HMAC | src/adapters/clickfunnels.mjs |
 | PASS | DATA | ADVERSARIAL | attacker | commas refuses invalid signature | src/adapters/commas.mjs |
@@ -501,7 +485,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | DATA | ADVERSARIAL | attacker | Expired payment link status is expired | src/payment-links/index.mjs |
 | PASS | DATA | ADVERSARIAL | attacker | booking.cancelled emits without throwing | src/events/canonical.mjs |
 | PASS | DATA | ADVERSARIAL | attacker | payment.failed emits without creating a sale | src/handlers/money-chain.mjs |
-| PASS | DATA | ADVERSARIAL | attacker | String amount coerced safely to 3000 or refused |  |
+| PASS | DATA | ADVERSARIAL | attacker | Malformed currency amount refused (no sale) |  |
 | UNVERIFIED | DATA | ADVERSARIAL | attacker | Tampered contract refused |  |
 | UNVERIFIED | DATA | ADVERSARIAL | attacker | Quiet-hours message holds then releases |  |
 | PASS | DATA | WORKFLOWS | system | Workflow registry has 49–50 functions (contract chaser + sweeper included) | src/workflows/index.mjs |
@@ -589,7 +573,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | SECURITY | ISOLATION | owner | owner may access client-dashboard |  |
 | PASS | SECURITY | ISOLATION | owner | owner may access documents |  |
 | PASS | SECURITY | ISOLATION | owner | owner may access tradelines |  |
-| FAIL | SECURITY | ISOLATION | owner | P0: owner read another ORG's client by id | api/dashboard/client.mjs |
+| PASS | SECURITY | ISOLATION | owner | owner cannot read other org client (404) |  |
 | PASS | SECURITY | ISOLATION | owner | owner org_id/role query spoof does not elevate (200) |  |
 | PASS | SECURITY | ISOLATION | admin | admin may access commissions |  |
 | PASS | SECURITY | ISOLATION | admin | admin may access invoices |  |
@@ -600,7 +584,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | SECURITY | ISOLATION | admin | admin may access client-dashboard |  |
 | PASS | SECURITY | ISOLATION | admin | admin may access documents |  |
 | PASS | SECURITY | ISOLATION | admin | admin may access tradelines |  |
-| FAIL | SECURITY | ISOLATION | admin | P0: admin read another ORG's client by id | api/dashboard/client.mjs |
+| PASS | SECURITY | ISOLATION | admin | admin cannot read other org client (404) |  |
 | PASS | SECURITY | ISOLATION | admin | admin org_id/role query spoof does not elevate (200) |  |
 | PASS | SECURITY | ISOLATION | sales_manager | sales_manager may access commissions |  |
 | PASS | SECURITY | ISOLATION | sales_manager | sales_manager may access invoices |  |
@@ -611,7 +595,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | SECURITY | ISOLATION | sales_manager | sales_manager may access client-dashboard |  |
 | PASS | SECURITY | ISOLATION | sales_manager | sales_manager may access documents |  |
 | PASS | SECURITY | ISOLATION | sales_manager | sales_manager may access tradelines |  |
-| FAIL | SECURITY | ISOLATION | sales_manager | P0: sales_manager read another ORG's client by id | api/dashboard/client.mjs |
+| PASS | SECURITY | ISOLATION | sales_manager | sales_manager cannot read other org client (404) |  |
 | PASS | SECURITY | ISOLATION | sales_manager | sales_manager org_id/role query spoof does not elevate (200) |  |
 | PASS | SECURITY | ISOLATION | funding_advisor | funding_advisor refused commissions (403) |  |
 | PASS | SECURITY | ISOLATION | funding_advisor | funding_advisor refused invoices (403) |  |
@@ -622,7 +606,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | SECURITY | ISOLATION | funding_advisor | funding_advisor may access client-dashboard |  |
 | PASS | SECURITY | ISOLATION | funding_advisor | funding_advisor may access documents |  |
 | PASS | SECURITY | ISOLATION | funding_advisor | funding_advisor may access tradelines |  |
-| FAIL | SECURITY | ISOLATION | funding_advisor | P0: funding_advisor read another ORG's client by id | api/dashboard/client.mjs |
+| PASS | SECURITY | ISOLATION | funding_advisor | funding_advisor cannot read other org client (404) |  |
 | PASS | SECURITY | ISOLATION | funding_advisor | funding_advisor org_id/role query spoof does not elevate (403) |  |
 | PASS | SECURITY | ISOLATION | closer | closer refused commissions (403) |  |
 | PASS | SECURITY | ISOLATION | closer | closer refused invoices (403) |  |
@@ -633,7 +617,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | SECURITY | ISOLATION | closer | closer may access client-dashboard |  |
 | PASS | SECURITY | ISOLATION | closer | closer may access documents |  |
 | PASS | SECURITY | ISOLATION | closer | closer may access tradelines |  |
-| FAIL | SECURITY | ISOLATION | closer | P0: closer read another ORG's client by id | api/dashboard/client.mjs |
+| PASS | SECURITY | ISOLATION | closer | closer cannot read other org client (404) |  |
 | PASS | SECURITY | ISOLATION | closer | closer org_id/role query spoof does not elevate (403) |  |
 | PASS | SECURITY | ISOLATION | inquiry_specialist | inquiry_specialist refused commissions (403) |  |
 | PASS | SECURITY | ISOLATION | inquiry_specialist | inquiry_specialist refused invoices (403) |  |
@@ -644,7 +628,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | SECURITY | ISOLATION | inquiry_specialist | inquiry_specialist may access client-dashboard |  |
 | PASS | SECURITY | ISOLATION | inquiry_specialist | inquiry_specialist may access documents |  |
 | PASS | SECURITY | ISOLATION | inquiry_specialist | inquiry_specialist may access tradelines |  |
-| FAIL | SECURITY | ISOLATION | inquiry_specialist | P0: inquiry_specialist read another ORG's client by id | api/dashboard/client.mjs |
+| PASS | SECURITY | ISOLATION | inquiry_specialist | inquiry_specialist cannot read other org client (404) |  |
 | PASS | SECURITY | ISOLATION | inquiry_specialist | inquiry_specialist org_id/role query spoof does not elevate (403) |  |
 | PASS | SECURITY | ISOLATION | setter | setter refused commissions (403) |  |
 | PASS | SECURITY | ISOLATION | setter | setter refused invoices (403) |  |
@@ -655,7 +639,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | SECURITY | ISOLATION | setter | setter may access client-dashboard |  |
 | PASS | SECURITY | ISOLATION | setter | setter may access documents |  |
 | PASS | SECURITY | ISOLATION | setter | setter may access tradelines |  |
-| FAIL | SECURITY | ISOLATION | setter | P0: setter read another ORG's client by id | api/dashboard/client.mjs |
+| PASS | SECURITY | ISOLATION | setter | setter cannot read other org client (404) |  |
 | PASS | SECURITY | ISOLATION | setter | setter org_id/role query spoof does not elevate (403) |  |
 | PASS | SECURITY | ISOLATION | closer | Closer refused hiring endpoint (404) |  |
 | PASS | SECURITY | ISOLATION | forged | Forged bearer token is refused | src/auth/session.mjs |
@@ -866,7 +850,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 - **FAIL** Finance OS loadSimulatedClient works against current schema — `src/demo/simulate-client.mjs:103`
   - column "name" of relation "clients" does not exist — INSERT uses clients.name/status which do not exist (schema has first_name/last_name). Finance OS 'Load simulated data' is broken for a real operator today.
 - **FAIL** Funding-path bus replay completes without throwing — `src/events/bus.mjs`
-  - insert or update on table "sale_attributions" violates foreign key constraint "sale_attributions_staff_id_fkey" — replay walks historical events; orphaned closerId/staff refs fail the attribution write. Loud failure is better than silent wrong money, but a morning replay job would stop cold.
+  - sale f863de89-d93b-4702-a167-95cbeb24ea7a front_end split would total %200.0000 (max 100%). Reduce an existing share first. — replay walks historical events; orphaned closerId/staff refs fail the attribution write. Loud failure is better than silent wrong money, but a morning replay job would stop cold.
 - **FAIL** status=draft agents do nothing — `src/agents/runtime.mjs`
   - Got reason=ambiguous_agents
 - **FAIL** Full bus replay completes without throwing — `src/events/bus.mjs`
@@ -880,24 +864,10 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
   - {"ok":false,"error":"not_found","path":"read/hiring/applications"}
 - **FAIL** owner should access hiring-write but got 404 — `netlify/functions/api.mjs`
   - {"ok":false,"error":"not_found","path":"hiring"}
-- **FAIL** P0: owner read another ORG's client by id — `api/dashboard/client.mjs`
-  - status=200
 - **FAIL** admin should access hiring but got 404 — `netlify/functions/api.mjs`
   - {"ok":false,"error":"not_found","path":"read/hiring/applications"}
 - **FAIL** admin should access hiring-write but got 404 — `netlify/functions/api.mjs`
   - {"ok":false,"error":"not_found","path":"hiring"}
-- **FAIL** P0: admin read another ORG's client by id — `api/dashboard/client.mjs`
-  - status=200
-- **FAIL** P0: sales_manager read another ORG's client by id — `api/dashboard/client.mjs`
-  - status=200
-- **FAIL** P0: funding_advisor read another ORG's client by id — `api/dashboard/client.mjs`
-  - status=200
-- **FAIL** P0: closer read another ORG's client by id — `api/dashboard/client.mjs`
-  - status=200
-- **FAIL** P0: inquiry_specialist read another ORG's client by id — `api/dashboard/client.mjs`
-  - status=200
-- **FAIL** P0: setter read another ORG's client by id — `api/dashboard/client.mjs`
-  - status=200
 - **FAIL** Template EMAIL-C06-DECLINE is not DRAFT placeholder copy — `src/messaging/seed/workflow-keys.mjs`
   - Any workflow hitting this key sends placeholder text to a real client.
 - **FAIL** Template EMAIL-DS01-REPAIR-REFERRAL is not DRAFT placeholder copy — `src/messaging/seed/workflow-keys.mjs`
@@ -1042,6 +1012,8 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
   - Wanted 1; persisted value is empty/zero: 0.
 - **SILENTLY-DID-NOTHING** Identical deposit.paid twice → one front-end ledger row — `src/handlers/money-chain.mjs`
   - Operation returned ok but found 0 rows (wanted 1).
+- **SILENTLY-DID-NOTHING** Two concurrent identical deposit.paid → one sale — `src/handlers/money-chain.mjs`
+  - Wanted 1; persisted value is empty/zero: 0.
 
 ## 6. Unverifiable without a real external credential
 
@@ -1069,14 +1041,14 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 - NO — system / E. Idempotency, replay, ordering — see journey account
 - UNKNOWN — system / F. Negative / adversarial — partial
 - YES — system / G. Workflow engine — money/data spine held in this run
-- NO — owner / security isolation — 1 P0 leak(s)
-- NO — admin / security isolation — 1 P0 leak(s)
-- NO — sales_manager / security isolation — 1 P0 leak(s)
-- NO — funding_advisor / security isolation — 1 P0 leak(s)
-- NO — closer / security isolation — 1 P0 leak(s)
-- NO — inquiry_specialist / security isolation — 1 P0 leak(s)
-- NO — setter / security isolation — 1 P0 leak(s)
-- NO — system / PART 3 — Security & isolation — see journey account
+- YES — owner / security isolation — no P0 leak in probes
+- YES — admin / security isolation — no P0 leak in probes
+- YES — sales_manager / security isolation — no P0 leak in probes
+- YES — funding_advisor / security isolation — no P0 leak in probes
+- YES — closer / security isolation — no P0 leak in probes
+- YES — inquiry_specialist / security isolation — no P0 leak in probes
+- YES — setter / security isolation — no P0 leak in probes
+- YES — system / PART 3 — Security & isolation — money/data spine held in this run
 - YES — system / PART 4 — Cross-cutting — money/data spine held in this run
 - YES — owner / daily UI screens — screens load under mocked API; live backend not proven here
 - YES — admin / daily UI screens — screens load under mocked API; live backend not proven here

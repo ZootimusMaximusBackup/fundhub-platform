@@ -73,7 +73,12 @@ export default async function handler(req, res) {
   if (!principal) return;
   // requirePrincipal returns staffId; the queries below key ?mine=1 and claim on
   // it, and reading principal.id would silently be undefined.
+  // orgId stays on the principal — every task query must bind the caller's org.
   const staff = { id: principal.staffId, role: principal.role };
+  const orgId = principal.orgId;
+  if (!orgId || !isUuid(orgId)) {
+    return res.status(403).json({ ok: false, error: "no_org_on_session" });
+  }
 
   if (req.method === "GET") {
     const q = req.query || {};
@@ -81,6 +86,10 @@ export default async function handler(req, res) {
     const where = [];
     const params = [];
     const add = (sql, val) => { params.push(val); where.push(sql.replace("?", `$${params.length}`)); };
+
+    // Always scope to the session org. Without this, ?client_id=<foreign uuid>
+    // and unfiltered queue reads leaked other companies' work.
+    add("t.org_id = ?", orgId);
 
     const done = (q.done ?? "false").toLowerCase();
     if (done === "false") where.push("t.done = false");
@@ -174,15 +183,16 @@ export default async function handler(req, res) {
       if (claim === true) {
         const { rows } = await db.query(
           `UPDATE tasks SET assignee_staff_id = $2, updated_at = now()
-            WHERE id = $1 AND assignee_staff_id IS NULL
+            WHERE id = $1 AND org_id = $3 AND assignee_staff_id IS NULL
             RETURNING ${RET}`,
-          [id, staff.id]
+          [id, staff.id, orgId]
         );
         if (rows[0]) return res.status(200).json({ ok: true, task: rows[0] });
 
-        // Distinguish "gone" from "somebody got there first".
+        // Distinguish "gone" from "somebody got there first". Always org-scoped
+        // so a foreign id never confirms existence or returns the row.
         const cur = await db.query(
-          `SELECT ${RET} FROM tasks WHERE id = $1`, [id]);
+          `SELECT ${RET} FROM tasks WHERE id = $1 AND org_id = $2`, [id, orgId]);
         if (!cur.rows[0]) return res.status(404).json({ ok: false, error: "not_found" });
         if (cur.rows[0].assignee_staff_id === staff.id) {
           return res.status(200).json({ ok: true, task: cur.rows[0] });  // already mine
@@ -196,8 +206,8 @@ export default async function handler(req, res) {
       if (assignee_staff_id !== undefined) {
         const { rows } = await db.query(
           `UPDATE tasks SET assignee_staff_id = $2, updated_at = now()
-            WHERE id = $1 RETURNING ${RET}`,
-          [id, assignee_staff_id || null]
+            WHERE id = $1 AND org_id = $3 RETURNING ${RET}`,
+          [id, assignee_staff_id || null, orgId]
         );
         if (!rows[0]) return res.status(404).json({ ok: false, error: "not_found" });
         return res.status(200).json({ ok: true, task: rows[0] });
@@ -207,9 +217,10 @@ export default async function handler(req, res) {
         return res.status(400).json({ ok: false, error: "done_claim_or_assignee_required" });
       }
       const { rows } = await db.query(
-        `UPDATE tasks SET done = $2, updated_at = now() WHERE id = $1
+        `UPDATE tasks SET done = $2, updated_at = now()
+          WHERE id = $1 AND org_id = $3
          RETURNING ${RET}`,
-        [id, done]
+        [id, done, orgId]
       );
       if (!rows[0]) return res.status(404).json({ ok: false, error: "not_found" });
       return res.status(200).json({ ok: true, task: rows[0] });

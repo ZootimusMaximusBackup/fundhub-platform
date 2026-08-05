@@ -6,6 +6,8 @@ import { db } from "../../src/db.mjs";
 import { clientDetailExtras } from "../../src/http/client-detail.mjs";
 import { redact, isUuid, requireRole, ROLE_SETS, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
+import { requireClientInOrg } from "../../src/http/client-scope.mjs";
+import { requireSessionOrg } from "../../src/http/session-org.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import { getActiveCaseForClient } from "../../src/inquiry-ops/cases.mjs";
 
@@ -21,12 +23,23 @@ export default async function handler(req, res) {
      'partner' and denies unknown roles by default.
      `true` is the DASHBOARD_SECRET fallback caller, which has no role to check. */
   if (staff !== true && !requireRole(res, staff, ROLE_SETS.STAFF)) return;
+
+  // Org from the session ONLY. A shared-secret caller has no org — refuse rather
+  // than open every company's client book. Confirmed P0 (2026-08-04): this
+  // endpoint used to SELECT FROM clients WHERE id = $1 with no org filter, so
+  // any staff who knew a UUID could read another company's file.
+  const orgId = requireSessionOrg(res, staff);
+  if (!orgId) return;
+
   const { id } = req.query ?? {};
   if (!id) return res.status(400).json({ ok: false, error: "?id= required" });
   // A malformed id is a bad request, not a server fault. Without this the seven
   // queries below all fail on SQLSTATE 22P02 and the screen was told the whole
   // backend was unreachable.
   if (!isUuid(id)) return res.status(400).json({ ok: false, error: "invalid_id" });
+
+  // 404 (not 403) for cross-org — same oracle defence as requireClientInOrg.
+  if (!await requireClientInOrg(res, db, staff, id)) return;
 
   try {
     const [clientRes, txRes, crsRes, msgRes, taskRes, roundRes, invRes] = await Promise.all([
@@ -36,46 +49,46 @@ export default async function handler(req, res) {
                 channel_source, tags, pipeline_ids,
                 dnd_sms, dnd_email, dnd_voice, consent_sms,
                 custom_fields, created_at, updated_at
-         FROM clients WHERE id = $1`,
-        [id]
+         FROM clients WHERE id = $1 AND org_id = $2`,
+        [id, orgId]
       ),
       db.query(
         `SELECT id, product_name, amount_paid, status, provider, provider_ref, created_at
-         FROM transactions WHERE client_id = $1 ORDER BY created_at DESC`,
-        [id]
+         FROM transactions WHERE client_id = $1 AND org_id = $2 ORDER BY created_at DESC`,
+        [id, orgId]
       ),
       db.query(
         `SELECT id, outcome_tier, result, created_at
-         FROM crs_results WHERE client_id = $1 ORDER BY created_at DESC`,
-        [id]
+         FROM crs_results WHERE client_id = $1 AND org_id = $2 ORDER BY created_at DESC`,
+        [id, orgId]
       ),
       db.query(
         `SELECT id, direction, channel, template_key, rendered_body,
                 provider, status, created_at
-         FROM messages WHERE client_id = $1 ORDER BY created_at DESC LIMIT 100`,
-        [id]
+         FROM messages WHERE client_id = $1 AND org_id = $2
+         ORDER BY created_at DESC LIMIT 100`,
+        [id, orgId]
       ),
       db.query(
         `SELECT id, assignee_role, assignee_staff_id, title, body, due_at, done,
                 source_workflow, created_at
-         FROM tasks WHERE client_id = $1 ORDER BY created_at DESC`,
-        [id]
+         FROM tasks WHERE client_id = $1 AND org_id = $2 ORDER BY created_at DESC`,
+        [id, orgId]
       ),
-      // Two more reads, for the derived fields the Closer Dashboard needs:
-      // a funding hold and an outstanding balance are blockers, and neither was
-      // reachable from this endpoint before.
       db.query(
         `SELECT id, round_number, status, product, submitted_amount, approved_amount,
                 funded_amount, hold_reason, conditions, created_at
-         FROM funding_rounds WHERE client_id = $1 ORDER BY round_number DESC`,
-        [id]
+         FROM funding_rounds WHERE client_id = $1 AND org_id = $2
+         ORDER BY round_number DESC`,
+        [id, orgId]
       ),
       db.query(
         `SELECT invoice_id AS id, status, currency, amount_due, amount_paid,
                 balance_due, due_at, paid_at, created_at
-         FROM v_invoice_balance WHERE client_id = $1 ORDER BY created_at DESC`,
-        [id]
-      ),
+         FROM v_invoice_balance WHERE client_id = $1 AND org_id = $2
+         ORDER BY created_at DESC`,
+        [id, orgId]
+      )
     ]);
 
     if (!clientRes.rows.length) {
@@ -95,13 +108,10 @@ export default async function handler(req, res) {
     // Table may be absent before migration — never break the dashboard.
     let inquiry_removal_case = null;
     try {
-      const orgId = client.org_id || (staff && staff.org_id) || null;
-      if (orgId && isUuid(orgId)) {
-        inquiry_removal_case = await getActiveCaseForClient(db, {
-          orgId,
-          clientId: id
-        });
-      }
+      inquiry_removal_case = await getActiveCaseForClient(db, {
+        orgId,
+        clientId: id
+      });
     } catch (_) {
       inquiry_removal_case = null;
     }

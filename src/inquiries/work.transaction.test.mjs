@@ -60,7 +60,7 @@ test("logAttempt given the shared production handle never writes through it", as
   const watch = watchSharedHandle();
   let error = null;
   try {
-    await logAttempt(sharedDb, { inquiryId: INQUIRY, staffId: STAFF, kind: "call" });
+    await logAttempt(sharedDb, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind: "call" });
   } catch (e) {
     error = e;
   } finally {

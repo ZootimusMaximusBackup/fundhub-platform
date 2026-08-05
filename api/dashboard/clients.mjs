@@ -5,6 +5,7 @@
 import { db } from "../../src/db.mjs";
 import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
 import { boundedLimit, requireRole, ROLE_SETS } from "../../src/http/read-api.mjs";
+import { requireSessionOrg } from "../../src/http/session-org.mjs";
 
 const SQL = `
   SELECT
@@ -35,13 +36,14 @@ const SQL = `
     (ARRAY_AGG(m.direction ORDER BY m.created_at DESC))[1] AS last_msg_direction,
     (ARRAY_AGG(m.created_at ORDER BY m.created_at DESC))[1] AS last_msg_at
   FROM clients c
-  LEFT JOIN transactions t   ON t.client_id = c.id
-  LEFT JOIN crs_results  cr  ON cr.client_id = c.id
-  LEFT JOIN tasks        tk  ON tk.client_id = c.id
-  LEFT JOIN messages     m   ON m.client_id  = c.id
+  LEFT JOIN transactions t   ON t.client_id = c.id AND t.org_id = c.org_id
+  LEFT JOIN crs_results  cr  ON cr.client_id = c.id AND cr.org_id = c.org_id
+  LEFT JOIN tasks        tk  ON tk.client_id = c.id AND tk.org_id = c.org_id
+  LEFT JOIN messages     m   ON m.client_id  = c.id AND m.org_id = c.org_id
+  WHERE c.org_id = $1
   GROUP BY c.id
   ORDER BY c.created_at DESC
-  LIMIT $1
+  LIMIT $2
 `;
 
 export default async function handler(req, res) {
@@ -61,9 +63,13 @@ export default async function handler(req, res) {
      by default; this endpoint simply never called it.
      `true` is the DASHBOARD_SECRET fallback caller, which has no role to check. */
   if (staff !== true && !requireRole(res, staff, ROLE_SETS.STAFF)) return;
+  // Org from the session ONLY. Shared-secret callers have no org — refuse rather
+  // than dump every company's client book. Confirmed class of the P0 client leak.
+  const orgId = requireSessionOrg(res, staff);
+  if (!orgId) return;
   try {
     const limit = boundedLimit(req.query?.limit, { fallback: 50, cap: 500 });
-    const { rows } = await db.query(SQL, [limit]);
+    const { rows } = await db.query(SQL, [orgId, limit]);
     const clients = rows.map((r) => ({
       id:           r.id,
       first_name:   r.first_name,

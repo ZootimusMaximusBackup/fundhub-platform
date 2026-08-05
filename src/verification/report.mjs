@@ -40,10 +40,12 @@ export function writeReport({ collector, meta = {}, journeyNotes = [], credentia
   lines.push("## Operator headline");
   lines.push("");
   if (p0Fails.length) {
+    const leak = p0Fails.find((i) => /another ORG|cross-org|isolation/i.test(i.title || i.id || ""));
     lines.push(
-      `**Do not put a real client on this platform today.** ${p0Fails.length} P0 isolation finding(s) — ` +
-      `at least one staff session can read another company's client record by guessing a UUID ` +
-      `(\`GET /api/dashboard/client?id=\`). That is credit-file / PII leakage across orgs.`
+      `**Do not put a real client on this platform today.** ${p0Fails.length} P0 isolation finding(s).` +
+      (leak
+        ? ` At least one confirmed cross-company data access attempt failed the isolation check.`
+        : ` Review the P0 list below before treating this as a ship gate.`)
     );
   } else if ((tallies.FAIL || 0) + (tallies["SILENTLY-DID-NOTHING"] || 0) > 0) {
     lines.push(

@@ -149,13 +149,13 @@ export default async function handler(req, res) {
       if (String(body.status) === "published") {
         await db.query(
           `UPDATE partner_pages SET published_at = COALESCE(published_at, now())
-            WHERE id = $1`,
-          [body.id]
+            WHERE id = $1 AND org_id = $2`,
+          [body.id, staff.org_id]
         ).catch(() => null);
       } else if (body.status != null) {
         await db.query(
-          `UPDATE partner_pages SET published_at = NULL WHERE id = $1`,
-          [body.id]
+          `UPDATE partner_pages SET published_at = NULL WHERE id = $1 AND org_id = $2`,
+          [body.id, staff.org_id]
         ).catch(() => null);
       }
       return res.status(200).json({ ok: true, page: r.rows[0] });

@@ -12,9 +12,14 @@ import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { readHandler, ROLE_SETS } from "../../src/http/read-api.mjs";
 
-export const fetchRows = async (db, { query }) => {
+export const fetchRows = async (db, { query, staff }) => {
   const id = query.id;
   if (!id) { const e = new Error("id is required"); e.code = "BAD_REQUEST"; throw e; }
+  // Org from the session ONLY. Previously this used the default org for every
+  // caller, so any hiring-role session that knew an application uuid in the
+  // default company could read that candidate's PII.
+  const orgId = staff && staff.org_id;
+  if (!orgId) { const e = new Error("no_org_on_session"); e.code = "FORBIDDEN"; throw e; }
 
   const { rows } = await db.query(
     `SELECT a.id AS application_id, a.status, a.answers, a.applied_at, a.entered_stage_at,
@@ -30,8 +35,8 @@ export const fetchRows = async (db, { query }) => {
        JOIN pipeline_stages s ON s.id = a.stage_id
        LEFT JOIN hiring_job_postings p ON p.id = a.job_posting_id
       WHERE a.id = $1
-        AND a.org_id = (SELECT id FROM orgs WHERE is_default LIMIT 1)`,
-    [id]);
+        AND a.org_id = $2`,
+    [id, orgId]);
   const application = rows[0];
   if (!application) return null;
 
