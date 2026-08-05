@@ -117,6 +117,15 @@ export async function ensureSale(db, event, { productBucket = null } = {}) {
       [orgId, ext]
     );
     if (existing.rows[0]) {
+      // Same external_ref belonging to a different client is a conflict — never
+      // silently attach money to the wrong person. Refuse without throwing so a
+      // bus replay of historical stamp collisions can continue.
+      if (String(existing.rows[0].client_id) !== String(clientId)) {
+        console.warn(
+          `[money-chain] sale external_ref ${ext} already belongs to another client — refusing attach`
+        );
+        return { sale: null, created: false, product, clientId, conflict: true };
+      }
       return { sale: existing.rows[0], created: false, product, clientId };
     }
   }
@@ -132,9 +141,18 @@ export async function ensureSale(db, event, { productBucket = null } = {}) {
   }
 
   const amount = p.amount != null && p.amount !== "" ? Number(p.amount) : null;
-  const agreed = (amount != null && !Number.isNaN(amount) && amount >= 0)
+  // Zero / negative / absurd amounts must not invent a sale.
+  // Align with src/commissions/money.mjs MAX_CENTS ($1bn).
+  const MAX_SALE = 1_000_000_000;
+  if (amount != null && !Number.isNaN(amount) && (amount <= 0 || Math.abs(amount) >= MAX_SALE)) {
+    return { sale: null, created: false, product, clientId };
+  }
+  const agreed = (amount != null && !Number.isNaN(amount) && amount > 0)
     ? amount
     : (product.default_price != null ? Number(product.default_price) : 0);
+  if (!(agreed > 0) || Math.abs(agreed) >= MAX_SALE) {
+    return { sale: null, created: false, product, clientId };
+  }
   const feePct = p.agreedSuccessFeePercent != null
     ? Number(p.agreedSuccessFeePercent)
     : (product.default_success_fee_percent != null
@@ -226,6 +244,17 @@ export async function ensureAttributions(db, { orgId, saleId, event, basisHint =
       [saleId, a.staffId, a.role, a.basis]
     );
     if (exists.rows[0]) continue;
+
+    // Replay / second staff at 100%: if this basis already sums to ~100%, skip
+    // rather than throwing and killing a morning replay job.
+    const basisSum = await db.query(
+      `SELECT COALESCE(SUM(split_percent), 0)::float AS s
+         FROM sale_attributions
+        WHERE sale_id = $1 AND basis = $2`,
+      [saleId, a.basis]
+    );
+    const already = Number(basisSum.rows[0]?.s) || 0;
+    if (already + Number(a.split) > 100.0001) continue;
 
     const r = await db.query(
       `INSERT INTO sale_attributions (org_id, sale_id, staff_id, role, basis, split_percent)
@@ -429,7 +458,19 @@ async function recordPurchase(event, db, { productBucket, paymentKind }) {
     kind: paymentKind
   });
 
-  const commission = await writeFrontEndCommissions(db, { saleId: sale.id, event });
+  let commission = { inserted: 0, warnings: [] };
+  try {
+    commission = await writeFrontEndCommissions(db, { saleId: sale.id, event });
+  } catch (err) {
+    // Replay of adversarial / typo'd huge amounts must not kill the bus.
+    if (err && (err.name === "RangeError" || /out of range/i.test(String(err.message || "")))) {
+      console.warn(
+        `[money-chain] commission refused for sale ${sale.id}: ${err.message}`
+      );
+      return { done: false, reason: "amount_out_of_range", saleId: sale.id };
+    }
+    throw err;
+  }
   const entitlements = await grantForPurchase(db, event, { clientId, product });
 
   return {
@@ -635,6 +676,9 @@ export async function onRoundFundedMoney(event, db) {
   const p = event.payload || {};
   let round = null;
 
+  // round.funded UPDATES an existing round. It must never INSERT a funded row
+  // from nothing — that invented phantom rounds when events arrived out of
+  // order (verified 2026-08-04). Fail loudly; require round.started first.
   if (p.fundingRoundId) {
     round = (await db.query(
       `SELECT * FROM funding_rounds WHERE id = $1 LIMIT 1`,
@@ -642,10 +686,29 @@ export async function onRoundFundedMoney(event, db) {
     )).rows[0] || null;
   }
   if (!round) {
-    const ensured = await ensureFundingRound(db, event, { status: "funded" });
-    round = ensured.round;
+    const clientId = await resolveClient(db, event);
+    const roundNumber = Number(p.roundNumber ?? p.round_number ?? 1);
+    if (clientId) {
+      round = (await db.query(
+        `SELECT * FROM funding_rounds
+          WHERE client_id = $1 AND round_number = $2
+          LIMIT 1`,
+        [clientId, roundNumber]
+      )).rows[0] || null;
+    }
   }
-  if (!round) return { done: false, reason: "no_round" };
+  if (!round) {
+    console.error(
+      `[money-chain] round.funded refused: no prior funding_rounds row ` +
+      `(org=${event.orgId} client=${event.clientId || "?"} ` +
+      `fundingRoundId=${p.fundingRoundId || "none"}). Emit round.started first.`
+    );
+    return {
+      done: false,
+      reason: "no_prior_round",
+      detail: "round.funded requires an existing round from round.started"
+    };
+  }
 
   const fundedAmount = p.fundedAmount != null ? Number(p.fundedAmount)
     : (p.approvedAmount != null ? Number(p.approvedAmount) : null);

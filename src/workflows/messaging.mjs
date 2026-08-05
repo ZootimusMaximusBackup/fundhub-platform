@@ -25,6 +25,7 @@ import { renderTemplate } from "../lib/render-template.mjs";
 import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
 import { emit } from "../events/bus.mjs";
+import { isDraftTemplateRow } from "../messaging/draft-guard.mjs";
 
 /* Which column on the client record is the destination for a channel.
    The destination is recorded in the terms of the CHANNEL, not of whichever
@@ -76,11 +77,27 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
   }
 
   const tpl = await db.query(
-    `SELECT body, subject FROM message_templates WHERE org_id = $1 AND template_key = $2 AND compliance_passed = true LIMIT 1`,
+    `SELECT body, subject, compliance_passed
+       FROM message_templates
+      WHERE org_id = $1 AND template_key = $2
+      LIMIT 1`,
     [orgId, templateKey]
   );
   const row = tpl.rows[0];
+  // Keep reason "template_pending" for missing OR unapproved — every workflow
+  // test and call site already keys on that string. Draft is a separate refuse.
   if (!row) return { sent: false, reason: "template_pending" };
+
+  // Hard DRAFT guard — before compliance_passed. Flipping compliance must not
+  // ship placeholder [DRAFT] copy to a real client.
+  if (isDraftTemplateRow(row)) {
+    console.warn(
+      `[sendTemplated] blocked DRAFT template ${templateKey} for org ${orgId} — ` +
+      `replace the body in the template editor before sending`
+    );
+    return { sent: false, reason: "draft_template" };
+  }
+  if (!row.compliance_passed) return { sent: false, reason: "template_pending" };
 
   // Loaded only once a real template exists — a template_pending no-op costs no query.
   // An explicitly-passed `context` wins over the record, so a caller can still override.

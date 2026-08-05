@@ -18,7 +18,8 @@
     "journeys:check": "node scripts/journeys/generate.mjs --check",
     "test": "node scripts/run-suite.mjs",
     "guard:db": "node --test src/security/superuser-guard.test.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "verify:e2e": "node scripts/run-e2e-verification.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "^10.7.11",

@@ -12,16 +12,17 @@
 // Read-only. SELECT only. Mirrors api/dashboard/clients.mjs style.
 import { db } from "../../src/db.mjs";
 import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
-import { boundedLimit, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
+import { boundedLimit, CLIENT_DATA_ERRORS, requireRole, ROLE_SETS } from "../../src/http/read-api.mjs";
+import { requireSessionOrg } from "../../src/http/session-org.mjs";
 import { safeError } from "../../src/http/health.mjs";
 
 // Stages first, so a stage with no cards still renders as an empty column
-// rather than vanishing from the board.
+// rather than vanishing from the board. Org always from the session.
 const STAGES_SQL = `
   SELECT s.id, s.key, s.name, s.sort_order
     FROM pipeline_stages s
     JOIN pipelines p ON p.id = s.pipeline_id
-   WHERE p.key = $1
+   WHERE p.key = $1 AND p.org_id = $2
    ORDER BY s.sort_order ASC, s.name ASC
 `;
 
@@ -40,10 +41,10 @@ const CARDS_SQL = `
     (c.custom_fields->>'total_funding_estimate') AS total_funding_estimate
   FROM cards cd
   JOIN pipelines p ON p.id = cd.pipeline_id
-  JOIN clients   c ON c.id = cd.client_id
-  WHERE p.key = $1
+  JOIN clients   c ON c.id = cd.client_id AND c.org_id = p.org_id
+  WHERE p.key = $1 AND p.org_id = $2 AND cd.org_id = $2
   ORDER BY cd.entered_at DESC
-  LIMIT $2
+  LIMIT $3
 `;
 
 export default async function handler(req, res) {
@@ -56,16 +57,21 @@ export default async function handler(req, res) {
   }
   const staff = await requireDashboardAccess(req, res, { db });
   if (!staff) return;
+  if (staff !== true && !requireRole(res, staff, ROLE_SETS.STAFF)) return;
+  // Org from the session ONLY. Pipeline key alone used to cross every company
+  // that shared a key name (e.g. "sales").
+  const orgId = requireSessionOrg(res, staff);
+  if (!orgId) return;
 
   const key = String(req.query?.key || "sales");
   const limit = boundedLimit(req.query?.limit, { fallback: 500, cap: 2000 });
 
   try {
-    const stagesRes = await db.query(STAGES_SQL, [key]);
+    const stagesRes = await db.query(STAGES_SQL, [key, orgId]);
     if (stagesRes.rows.length === 0) {
       return res.status(404).json({ ok: false, error: "unknown_pipeline", key });
     }
-    const cardsRes = await db.query(CARDS_SQL, [key, limit]);
+    const cardsRes = await db.query(CARDS_SQL, [key, orgId, limit]);
 
     // Group in one pass; a card whose stage was filtered out is dropped rather
     // than silently re-homed into the first column.

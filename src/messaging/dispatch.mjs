@@ -31,6 +31,7 @@ import {
 } from "./gate.mjs";
 import { resolve, addressFieldFor } from "./providers/index.mjs";
 import { isSynthetic } from "./live-fence.mjs";
+import { isDraftTemplateCopy, isDraftTemplateRow } from "./draft-guard.mjs";
 
 /* A clock value, resolved to whatever a `::timestamptz` bind param accepts.
    `now` arrives here as null, a Date, an ISO string, or — from a virtual
@@ -357,6 +358,31 @@ export async function dispatchOne(db, message, options = {}) {
     if (verdict.state !== "allowed") {
       // gateAndRecord already set status='blocked'. Nothing further to write.
       return { id: message.id, outcome: OUTCOME.BLOCKED, detail: verdict.reasons.map((x) => x.code) };
+    }
+
+    // ---- 1b. DRAFT TEMPLATE HARD GUARD ------------------------------------
+    // Even if compliance_passed was flipped true, placeholder [DRAFT] copy
+    // must never transmit. Check the source template and the rendered body.
+    if (isDraftTemplateCopy(message.rendered_body) || isDraftTemplateCopy(message.subject)) {
+      console.warn(
+        `[dispatch] blocked message ${message.id}: rendered body/subject still carries [DRAFT]`
+      );
+      return await finalise(db, message, "blocked", OUTCOME.BLOCKED,
+        "draft_template", null);
+    }
+    if (message.template_key) {
+      const { rows: tplRows } = await db.query(
+        `SELECT body, subject FROM message_templates
+          WHERE org_id = $1 AND template_key = $2 LIMIT 1`,
+        [message.org_id, message.template_key]
+      );
+      if (tplRows[0] && isDraftTemplateRow(tplRows[0])) {
+        console.warn(
+          `[dispatch] blocked message ${message.id}: template ${message.template_key} is DRAFT`
+        );
+        return await finalise(db, message, "blocked", OUTCOME.BLOCKED,
+          "draft_template", null);
+      }
     }
 
     // ---- 2. Routing --------------------------------------------------------

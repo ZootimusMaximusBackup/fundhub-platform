@@ -74,33 +74,36 @@ async function quietly(fn) {
 
 test("logAttempt requires an inquiry and a staff member", async () => {
   const db = stubDb();
-  await assert.rejects(() => logAttempt(db, { staffId: STAFF }), InquiryWriteError);
-  await assert.rejects(() => logAttempt(db, { inquiryId: INQUIRY }), (e) => e.status === 401);
+  await assert.rejects(() => logAttempt(db, { orgId: ORG, staffId: STAFF }), InquiryWriteError);
+  await assert.rejects(() => logAttempt(db, { orgId: ORG, inquiryId: INQUIRY }), (e) => e.status === 401);
 });
 
 test("logAttempt refuses an unknown kind rather than storing it", async () => {
   const db = stubDb();
   await assert.rejects(
-    () => logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "telepathy" }),
+    () => logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind: "telepathy" }),
     /unknown attempt kind/
   );
 });
 
 test("logAttempt runs in a transaction and locks the row first", async () => {
   const db = stubDb();
-  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, outcome: "No answer" });
+  await logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, outcome: "No answer" });
 
   const sqls = db.calls.map((c) => c.sql);
   assert.equal(sqls[0], "BEGIN");
   assert.match(sqls[1], /FOR UPDATE/);
+  assert.match(sqls[1], /org_id = \$2/);
+  assert.deepEqual(db.calls[1].params, [INQUIRY, ORG]);
   assert.match(sqls[2], /INSERT INTO inquiry_attempts/);
   assert.match(sqls[3], /UPDATE inquiry_log/);
+  assert.match(sqls[3], /org_id = \$4/);
   assert.equal(sqls[4], "COMMIT");
 });
 
 test("the counter is recomputed from the attempt rows, never incremented", async () => {
   const db = stubDb();
-  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF });
+  await logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF });
   const update = db.calls.find((c) => /UPDATE inquiry_log/.test(c.sql));
   assert.match(update.sql, /call_attempts = \( SELECT count\(\*\) FROM inquiry_attempts/);
   assert.doesNotMatch(update.sql, /call_attempts \+ 1/);
@@ -108,47 +111,58 @@ test("the counter is recomputed from the attempt rows, never incremented", async
 
 test("a note does not carry an outcome onto the row", async () => {
   const db = stubDb();
-  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "note", outcome: "Removed" });
+  await logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind: "note", outcome: "Removed" });
   const update = db.calls.find((c) => /UPDATE inquiry_log/.test(c.sql));
   assert.equal(update.params[1], null, "a working note must not rewrite the row's outcome");
 });
 
 test("a real attempt does carry its outcome", async () => {
   const db = stubDb();
-  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", outcome: "Left voicemail" });
+  await logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind: "call", outcome: "Left voicemail" });
   const update = db.calls.find((c) => /UPDATE inquiry_log/.test(c.sql));
   assert.equal(update.params[1], "Left voicemail");
 });
 
 test("a missing inquiry is a 404 and rolls back", async () => {
   const db = stubDb({ found: false });
-  await assert.rejects(() => logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF }), (e) => e.status === 404);
+  await assert.rejects(() => logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF }), (e) => e.status === 404);
   assert.ok(db.calls.some((c) => c.sql === "ROLLBACK"), "a failed attempt must not leave a partial write");
 });
 
 test("confirmRemoval attributes the confirmation and defaults the wording", async () => {
   const db = stubDb();
-  await confirmRemoval(db, { inquiryId: INQUIRY, staffId: STAFF });
+  await confirmRemoval(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF });
   const call = db.calls.find((c) => /UPDATE inquiry_log/.test(c.sql) && /confirmed_at/.test(c.sql));
   assert.ok(call, "expected inquiry_log confirmation update");
   assert.match(call.sql, /confirmed_at = now\(\)/);
-  assert.deepEqual(call.params, [INQUIRY, STAFF, "Removed"]);
+  assert.match(call.sql, /org_id = \$4/);
+  assert.match(call.sql, /is_open = false/);
+  assert.deepEqual(call.params, [INQUIRY, STAFF, "Removed", ORG]);
   assert.equal(db.calls.some((c) => /INSERT INTO events/.test(c.sql)), false,
     "standalone inquiry confirm must not emit inquiry.removed (case-level only)");
 });
 
 test("setStatus clears confirmed_at when a row moves off a confirmed state", async () => {
   const db = stubDb();
-  await setStatus(db, { inquiryId: INQUIRY, staffId: STAFF, status: "Pending Removal" });
+  await setStatus(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, status: "Pending Removal" });
   assert.equal(db.calls.at(-1).params[3], false, "reopening must not keep a stale confirmation");
+  assert.equal(db.calls.at(-1).params[4], ORG);
 
-  await setStatus(db, { inquiryId: INQUIRY, staffId: STAFF, status: "Removed" });
+  await setStatus(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, status: "Removed" });
   assert.equal(db.calls.at(-1).params[3], true);
 });
 
 test("setStatus requires a non-empty status", async () => {
   const db = stubDb();
-  await assert.rejects(() => setStatus(db, { inquiryId: INQUIRY, staffId: STAFF, status: "  " }), /status is required/);
+  await assert.rejects(() => setStatus(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, status: "  " }), /status is required/);
+});
+
+test("logAttempt refuses a missing orgId", async () => {
+  const db = stubDb();
+  await assert.rejects(
+    () => logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF }),
+    (e) => e.status === 403
+  );
 });
 
 // =============================================================================
@@ -166,7 +180,7 @@ test("setStatus requires a non-empty status", async () => {
 test("a call attempt emits call_made, and a letter attempt emits letter_issued", async () => {
   for (const [attemptKind, eventKind] of [["call", "call_made"], ["letter", "letter_issued"]]) {
     const db = stubDb();
-    await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: attemptKind, shiftId: SHIFT });
+    await logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind: attemptKind, shiftId: SHIFT });
     const ev = telemetryCalls(db);
     assert.equal(ev.length, 1, `${attemptKind}: expected exactly one staff_events write`);
     assert.equal(ev[0].params[3], eventKind);
@@ -179,7 +193,7 @@ test("a portal filing and a working note emit nothing — neither has a kind in 
   // issued" a number nobody can trust. `note` is not an attempt at all.
   for (const kind of ["portal", "note"]) {
     const db = stubDb();
-    await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind, shiftId: SHIFT });
+    await logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind, shiftId: SHIFT });
     assert.equal(telemetryCalls(db).length, 0, `${kind} must not be filed under one of the other four kinds`);
   }
 });
@@ -189,7 +203,7 @@ test("the telemetry row is written AFTER the commit, never inside the transactio
   // attempt it describes, and a rolled-back attempt would still have said
   // "called". Both are one-way mistakes, so the position is asserted.
   const db = stubDb();
-  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: SHIFT });
+  await logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: SHIFT });
   const sqls = db.calls.map((c) => c.sql);
   const commit = sqls.indexOf("COMMIT");
   const emit = sqls.findIndex((s) => /INSERT INTO staff_events/.test(s));
@@ -199,7 +213,7 @@ test("the telemetry row is written AFTER the commit, never inside the transactio
 
 test("the caller's open shift is stamped on the event", async () => {
   const db = stubDb();
-  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: SHIFT });
+  await logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: SHIFT });
   assert.equal(telemetryCalls(db)[0].params[2], SHIFT, "shift_id must be the shift the caller named");
   assert.equal(db.calls.filter((c) => /FROM shifts/.test(c.sql)).length, 0,
     "the HTTP layer already resolved the shift — looking it up again is a wasted query per action");
@@ -207,7 +221,7 @@ test("the caller's open shift is stamped on the event", async () => {
 
 test("with no shift named, the open shift is looked up and used", async () => {
   const db = stubDb({ openShift: SHIFT });
-  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call" });
+  await logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind: "call" });
   assert.equal(telemetryCalls(db)[0].params[2], SHIFT);
 });
 
@@ -215,7 +229,7 @@ test("work done off the clock is logged with a NULL shift, not refused", async (
   // NULL is a legitimate state: somebody worked a row without clocking in. A
   // telemetry writer that refuses it loses the record of the work entirely.
   const db = stubDb({ openShift: null });
-  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call" });
+  await logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind: "call" });
   const ev = telemetryCalls(db);
   assert.equal(ev.length, 1, "an unlinked event is still an event");
   assert.equal(ev[0].params[2], null);
@@ -223,14 +237,14 @@ test("work done off the clock is logged with a NULL shift, not refused", async (
 
 test("an explicit shiftId of null is taken at its word and skips the lookup", async () => {
   const db = stubDb({ openShift: SHIFT });
-  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: null });
+  await logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: null });
   assert.equal(telemetryCalls(db)[0].params[2], null);
   assert.equal(db.calls.filter((c) => /FROM shifts/.test(c.sql)).length, 0);
 });
 
 test("org_id comes off the inquiry row that was just written, never off the caller", async () => {
   const db = stubDb();
-  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: SHIFT });
+  await logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: SHIFT });
   // params: [staffId, orgId-filter, shiftId, kind, detail]
   assert.equal(telemetryCalls(db)[0].params[1], ORG);
   assert.equal(telemetryCalls(db)[0].params[0], STAFF);
@@ -238,7 +252,7 @@ test("org_id comes off the inquiry row that was just written, never off the call
 
 test("the detail carries the ids and the outcome, and never the free-text note", async () => {
   const db = stubDb();
-  await logAttempt(db, {
+  await logAttempt(db, { orgId: ORG,
     inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: SHIFT,
     outcome: "Left voicemail", note: "consumer said her SSN ends 1234"
   });
@@ -254,7 +268,7 @@ test("the detail carries the ids and the outcome, and never the free-text note",
 
 test("an unknown outcome stays NULL rather than being recorded as a result", async () => {
   const db = stubDb();
-  await logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: SHIFT });
+  await logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind: "call", shiftId: SHIFT });
   assert.equal(JSON.parse(telemetryCalls(db)[0].params[4]).outcome, null);
 });
 
@@ -268,7 +282,7 @@ test("a database error on the telemetry write does NOT fail the attempt it obser
   const db = stubDb({ failOn: /INSERT INTO staff_events/ });
 
   const { value: updated, lines } = await quietly(() =>
-    logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call", outcome: "removed", shiftId: SHIFT })
+    logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind: "call", outcome: "removed", shiftId: SHIFT })
   );
 
   assert.equal(updated.id, INQUIRY, "the attempt must still be returned when telemetry is broken");
@@ -285,7 +299,7 @@ test("a database error on the open-shift lookup does NOT fail the attempt either
   const db = stubDb({ failOn: /FROM shifts/ });
 
   const { value: updated, lines } = await quietly(() =>
-    logAttempt(db, { inquiryId: INQUIRY, staffId: STAFF, kind: "call" })
+    logAttempt(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, kind: "call" })
   );
 
   assert.equal(updated.id, INQUIRY);

@@ -246,6 +246,13 @@ export function readHandler({ roles, fetch, single = false, principals = null })
           .slice(0, 200);
         return res.status(400).json({ ok: false, error: "bad_request", message: safe });
       }
+      if (err && err.code === "FORBIDDEN") {
+        return res.status(403).json({
+          ok: false,
+          error: "no_org_on_session",
+          message: "this endpoint needs a staff session that belongs to a company"
+        });
+      }
       // The message can quote a DSN on a connection failure, same as health.
       const safe = String(err && err.message || "query failed")
         .replace(/postgres(ql)?:\/\/[^\s"']+/gi, "postgres://[redacted]")

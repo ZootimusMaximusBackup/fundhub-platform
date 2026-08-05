@@ -14,7 +14,7 @@ export const DEFAULT_MAX_TOKENS = 600;
  * callModel({ system, user, env?, fetchImpl?, model?, maxTokens? })
  * → {
  *     mode: 'live' | 'shadow',
- *     text: string | null,          // assistant reply text (null in keyless shadow)
+ *     text: string | null,          // assistant reply (synthetic marker when keyless)
  *     raw: object | null,
  *     request: { model, system, user, max_tokens },
  *     error: string | null
@@ -33,9 +33,12 @@ export async function callModel({
 
   const key = env && env.ANTHROPIC_API_KEY;
   if (!key) {
+    // Intended reply is unavailable without a key — still return a non-empty
+    // shadow body so agent_shadow_log is inspectable (empty log = unverifiable).
+    const inbound = String(user || "").slice(0, 280);
     return {
       mode: "shadow",
-      text: null,
+      text: `[SHADOW — no API key] Model was not called. Inbound: ${inbound || "(empty)"}`,
       raw: null,
       request,
       error: null,

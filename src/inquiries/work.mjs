@@ -76,14 +76,16 @@ export class InquiryWriteError extends Error {
  * shift looked up, pass null to state that this work is off the clock. It has
  * no effect on the inquiry write itself.
  */
-export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcome = null, note = null, shiftId }) {
+export async function logAttempt(db, { inquiryId, staffId, orgId, kind = "call", outcome = null, note = null, shiftId }) {
   if (!inquiryId) throw new InquiryWriteError("inquiryId is required");
   if (!staffId) throw new InquiryWriteError("staffId is required", { status: 401 });
+  if (!orgId) throw new InquiryWriteError("orgId is required", { status: 403 });
   if (!ATTEMPT_KINDS.has(kind)) throw new InquiryWriteError(`unknown attempt kind: ${kind}`);
 
   const updated = await withTransaction(db, async (tx) => {
     const inquiry = (await tx.query(
-      `SELECT id, org_id FROM inquiry_log WHERE id = $1 FOR UPDATE`, [inquiryId]
+      `SELECT id, org_id FROM inquiry_log WHERE id = $1 AND org_id = $2 FOR UPDATE`,
+      [inquiryId, orgId]
     )).rows[0];
     if (!inquiry) throw new InquiryWriteError("inquiry not found", { status: 404 });
 
@@ -106,9 +108,9 @@ export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcom
               worked_by  = $3,
               worked_at  = now(),
               updated_at = now()
-        WHERE id = $1
+        WHERE id = $1 AND org_id = $4
         RETURNING *`,
-      [inquiryId, COUNTING_KINDS.has(kind) ? outcome : null, staffId]
+      [inquiryId, COUNTING_KINDS.has(kind) ? outcome : null, staffId, orgId]
     )).rows[0];
 
     return updated;
@@ -154,8 +156,9 @@ export async function logAttempt(db, { inquiryId, staffId, kind = "call", outcom
  * sends what the desk actually uses, and the default here matches the wording
  * already present in the live data rather than a new vocabulary.
  */
-export async function confirmRemoval(db, { inquiryId, staffId, status = "Removed" }) {
+export async function confirmRemoval(db, { inquiryId, staffId, orgId, status = "Removed" }) {
   if (!staffId) throw new InquiryWriteError("staffId is required", { status: 401 });
+  if (!orgId) throw new InquiryWriteError("orgId is required", { status: 403 });
 
   const res = await db.query(
     `UPDATE inquiry_log
@@ -164,9 +167,9 @@ export async function confirmRemoval(db, { inquiryId, staffId, status = "Removed
             cleared_at = COALESCE(cleared_at, now()),
             is_open = false,
             worked_by = $2, worked_at = now(), updated_at = now()
-      WHERE id = $1
+      WHERE id = $1 AND org_id = $4
       RETURNING *`,
-    [inquiryId, staffId, status]
+    [inquiryId, staffId, status, orgId]
   );
   if (!res.rows[0]) throw new InquiryWriteError("inquiry not found", { status: 404 });
   const row = res.rows[0];
@@ -219,8 +222,9 @@ export async function confirmRemoval(db, { inquiryId, staffId, status = "Removed
  * nobody can act on. Reopening is legitimate — bureaus re-report — and the
  * timestamp must follow the reopening rather than outlive it.
  */
-export async function setStatus(db, { inquiryId, staffId, status }) {
+export async function setStatus(db, { inquiryId, staffId, orgId, status }) {
   if (!staffId) throw new InquiryWriteError("staffId is required", { status: 401 });
+  if (!orgId) throw new InquiryWriteError("orgId is required", { status: 403 });
   if (!status || !String(status).trim()) throw new InquiryWriteError("status is required");
 
   const confirmed = /removed|confirmed|deleted|cleared/i.test(status);
@@ -229,24 +233,26 @@ export async function setStatus(db, { inquiryId, staffId, status }) {
         SET status = $3,
             confirmed_at = CASE WHEN $4::boolean THEN COALESCE(confirmed_at, now()) ELSE NULL END,
             worked_by = $2, worked_at = now(), updated_at = now()
-      WHERE id = $1
+      WHERE id = $1 AND org_id = $5
       RETURNING *`,
-    [inquiryId, staffId, String(status).trim(), confirmed]
+    [inquiryId, staffId, String(status).trim(), confirmed, orgId]
   );
   if (!res.rows[0]) throw new InquiryWriteError("inquiry not found", { status: 404 });
   return res.rows[0];
 }
 
-/** listAttempts — the expand row's history, newest first. */
-export async function listAttempts(db, { inquiryId }) {
+/** listAttempts — the expand row's history, newest first. Org from the session. */
+export async function listAttempts(db, { inquiryId, orgId }) {
+  if (!orgId) throw new InquiryWriteError("orgId is required", { status: 403 });
   const res = await db.query(
     `SELECT a.id, a.kind, a.outcome, a.note, a.created_at, a.staff_id,
             TRIM(COALESCE(s.name,'')) AS staff_name
        FROM inquiry_attempts a
+       JOIN inquiry_log il ON il.id = a.inquiry_id AND il.org_id = $2
        LEFT JOIN staff s ON s.id = a.staff_id
-      WHERE a.inquiry_id = $1
+      WHERE a.inquiry_id = $1 AND a.org_id = $2
       ORDER BY a.created_at DESC`,
-    [inquiryId]
+    [inquiryId, orgId]
   );
   return res.rows;
 }

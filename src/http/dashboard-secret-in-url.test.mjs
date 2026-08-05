@@ -153,14 +153,19 @@ describe("M2: GET /api/dashboard/clients with the secret in the URL", () => {
     assert.ok(!JSON.stringify(r.body).includes(PII_ROW.email), "PII leaked in the refusal body");
   });
 
-  test("the same secret in the header is still served", async () => {
+  test("the same secret in the header authenticates but cannot read the client book", async () => {
+    // DASHBOARD_SECRET proves operator access, not which company. Org-scoped
+    // reads require a real staff session. Serving the full book to a shared
+    // secret was the multi-tenant leak class this suite exists to prevent.
     const r = res();
     await clientsHandler(
       { method: "GET", headers: { "x-dashboard-key": SECRET }, query: {} },
       r
     );
-    assert.equal(r.code, 200, "the header carrier broke. Body was: " + JSON.stringify(r.body));
-    assert.equal(r.body.count, 1);
+    assert.equal(r.code, 403, "secret-only caller must be refused. Body was: " + JSON.stringify(r.body));
+    assert.equal(r.body.error, "no_org_on_session");
+    assert.ok(!("clients" in (r.body || {})), "refusal must not carry client rows");
+    assert.ok(!JSON.stringify(r.body).includes(PII_ROW.email), "PII leaked in the refusal body");
   });
 
   test("requireDashboardAccess itself answers 401, not 503, for a URL-borne secret", async () => {

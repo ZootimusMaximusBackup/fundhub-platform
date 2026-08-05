@@ -65,6 +65,15 @@ export default async function handler(req, res, deps = {}) {
       if (!isUuid(body.client_id)) {
         return res.status(400).json({ ok: false, error: "client_id required" });
       }
+      // Client must belong to the session org. Without this, a staff member
+      // could attach another company's client id to a case in their own org.
+      const owned = await database.query(
+        `SELECT 1 FROM clients WHERE id = $1 AND org_id = $2`,
+        [body.client_id, orgId]
+      );
+      if (!owned.rows.length) {
+        return res.status(404).json({ ok: false, error: "not_found" });
+      }
       const c = await createCase(database, {
         orgId,
         row: {
