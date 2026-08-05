@@ -83,6 +83,12 @@ import readCompanyBrainAffiliate from "../../api/read/company-brain-affiliate.mj
 import companyBrainReviews from "../../api/company-brain/reviews.mjs";
 import readWorkflows from "../../api/read/workflows.mjs";
 import readTransactions from "../../api/read/transactions.mjs";
+import readCloserCall from "../../api/read/closer-call.mjs";
+import readMyNumbers from "../../api/read/my-numbers.mjs";
+import readSalesFloor from "../../api/read/sales-floor.mjs";
+import readCallOutcomes from "../../api/read/call-outcomes.mjs";
+import callOutcomesWrite from "../../api/call-outcomes.mjs";
+import marketingFlagsWrite from "../../api/marketing-flags.mjs";
 import bankingSyncAccounts from "../../api/banking/sync-accounts.mjs";
 import inquiries from "../../api/inquiries.mjs";
 import pii from "../../api/pii.mjs";
@@ -376,6 +382,13 @@ export const ROUTES = {
   // screen. Same ROLE_SETS.STAFF gate and same org-scoped-from-the-session
   // rule as its neighbours above — it serves nothing they do not already.
   "read/transactions": readTransactions,
+  /* Sales dashboards — call cockpit, closer my-numbers, manager floor. */
+  "read/closer-call": readCloserCall,
+  "read/my-numbers": readMyNumbers,
+  "read/sales-floor": readSalesFloor,
+  "read/call-outcomes": readCallOutcomes,
+  "call-outcomes": callOutcomesWrite,
+  "marketing-flags": marketingFlagsWrite,
 
   // banking/sync-accounts is the FIRST WRITER `bank_accounts` has ever had —
   // until it, the only INSERT into that table in the whole repository was inside

@@ -1,3 +1,4 @@
+2026-08-04 | role-closer, role-sales-manager | actual regenerated — call cockpit, my-numbers, sales-floor screens + call_outcomes APIs | sales dashboards build | pending
 # Journey changelog
 
 One line per journey change, newest at top. This is the human-readable record —

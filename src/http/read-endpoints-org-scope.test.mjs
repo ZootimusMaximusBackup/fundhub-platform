@@ -76,6 +76,13 @@ const NO_ORG_COLUMN = new Map([
      Verified by reading those files, not assumed from the filename. */
   ["company-brain.mjs", "scoped in src/company-brain/retrieve.mjs retrieveChunks(), which binds c.org_id = $1 and refuses without an org"],
   ["company-brain-affiliate.mjs", "scoped in src/company-brain/retrieve.mjs retrieveAffiliateChunks(), which binds c.org_id = $1 and refuses without an org"],
+  /* Sales dashboards — handlers write no SQL. They pass session orgId into
+     src/sales/cockpit.mjs and src/sales/metrics.mjs, which bind org_id on every
+     query and refuse a missing org at the handler (403). Verified by reading
+     those modules, not assumed from the filename. */
+  ["closer-call.mjs", "scoped in src/sales/cockpit.mjs buildCockpit() — every query binds org_id from the session"],
+  ["my-numbers.mjs", "scoped in src/sales/metrics.mjs closerMyNumbers() — every query binds org_id from the session"],
+  ["sales-floor.mjs", "scoped in src/sales/metrics.mjs salesFloor() — every query binds org_id from the session"],
   /* Lender reads write no SQL in the handler. listLenders / matchForClient /
      listObservations in src/lenders/store.mjs always bind org_id = $1::uuid from
      the session org passed by the handler (which also 403s when org is missing). */

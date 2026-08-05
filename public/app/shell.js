@@ -14,7 +14,8 @@
   var PAGE = location.pathname.split("/").pop();
 
   var ALL = [
-    "closer-dashboard.html", "pipeline.html", "client-control-panel.html",
+    "closer-dashboard.html", "closer-call.html", "my-numbers.html", "sales-floor.html",
+    "pipeline.html", "client-control-panel.html",
     "messaging.html", "calendar.html", "documents.html", "company-brain.html",
     "ops-admin.html", "command-center.html", "galaxy.html",
     "agent-editor.html", "automations.html", "products-commissions.html",
@@ -188,7 +189,7 @@
     inquiry_specialist: "inquiry-remover.html",
     setter: "pipeline.html",
     // The Sales pipeline is the thing they own, so it is where they land.
-    sales_manager: "pipeline.html",
+    sales_manager: "sales-floor.html",
     client: "client-portal.html",
     affiliate: "affiliate.html",
     partner: "partner-galaxy.html"
@@ -293,6 +294,7 @@
     "finance-os.html":           "client_id",
     "subscriptions.html":        "client_id",
     "closer-dashboard.html":     "client_id",
+    "closer-call.html":          "client_id",
     "client-control-panel.html": "id"
   };
 

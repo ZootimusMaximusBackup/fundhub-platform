@@ -277,7 +277,7 @@ describe("nothing is invented", () => {
     // bounces to the shared staff tabs.
     const shell = fs.readFileSync(path.join(REPO, "public/app/shell.js"), "utf8");
     assert.match(shell, /sales_manager:\s*"staff"/, "shell.js ROLE_TABS has no sales_manager row");
-    assert.match(shell, /sales_manager:\s*"pipeline\.html"/, "shell.js HOME has no sales_manager landing screen");
+    assert.match(shell, /sales_manager:\s*"sales-floor\.html"/, "shell.js HOME has no sales_manager landing screen");
   });
 
   test("every journey names the code that establishes what it maps to", () => {

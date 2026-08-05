@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sales manager · Fundhub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
+  --paper:#FCFCFC; --ink:#0A0A0A; --ink2:#18181B;
+  --gray:#52525B; --gray2:#A1A1AA;
+  --line:#E4E4E7; --soft:#F4F4F5;
+  --card:#111113; --cardline:#26262B; --cardtext:#E4E4E7;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --ok:#A8D8B0; --warn:#F5CE8F; --alert:#F2A69B; --info:#A9C6E8; --accent:#C4B3E5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray)}
+.eyebrow::before{content:"";display:inline-block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;margin-right:9px;vertical-align:middle}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border:1px solid var(--line);border-radius:20px;color:var(--gray);white-space:nowrap}
+.chip .cd{width:6px;height:6px;border-radius:50%}
+.chip.on .cd{background:var(--ok)} .chip.wip .cd{background:var(--warn)} .chip.bad .cd{background:var(--alert)}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--ok);position:relative;flex:0 0 auto}
+.pulse::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--ok);animation:pulse 2s ease-out infinite}
+@keyframes pulse{to{transform:scale(1.9);opacity:0}}
+
+header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;position:sticky;top:0;background:var(--paper);z-index:20}
+.hl,.hr{display:flex;align-items:center;gap:12px}
+
+.shell{padding:24px 22px;max-width:1280px;margin:0 auto}
+.sec{margin-bottom:26px}
+.sech{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.note{font-size:11.5px;color:var(--gray2)}
+.say{font-size:12.5px;color:var(--gray);margin-top:11px;padding-left:13px;border-left:2px solid var(--warn)}
+.say b{color:var(--ink);font-weight:500}
+
+/* today hero */
+.hero{background:var(--card);color:var(--cardtext);border-radius:12px;padding:22px 24px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:56px 56px}
+.herorow{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;position:relative}
+.hl2{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
+.big{font-size:44px;font-weight:500;letter-spacing:-.035em;line-height:1;margin-top:7px;font-variant-numeric:tabular-nums}
+.sub{font-size:12.5px;color:var(--gray2);margin-top:6px}
+.bar{height:7px;border-radius:4px;background:rgba(255,255,255,.09);margin-top:18px;position:relative;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px;background:var(--spectrum)}
+.marks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--gray2);margin-top:7px;position:relative}
+
+/* funnel */
+.funnel{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.f{background:var(--paper);padding:15px 16px}
+.f .lb{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
+.f .vl{font-size:25px;font-weight:500;letter-spacing:-.025em;margin-top:5px;font-variant-numeric:tabular-nums}
+.f .cv{font-size:11.5px;margin-top:3px;color:var(--gray)}
+.dn{color:#C25B4E} .up{color:#4F8A5B}
+
+/* roster */
+.rost{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.rhead,.rrow{display:grid;grid-template-columns:1.5fr 68px 74px 86px 92px 1.4fr;gap:12px;align-items:center;padding:12px 16px;font-size:13px}
+.rhead{background:var(--soft);font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray)}
+.rrow{border-top:1px solid var(--line)}
+.rrow .nm b{font-weight:500;display:block}
+.rrow .nm em{font-style:normal;color:var(--gray2);font-size:11px}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.act{font-size:12px;color:var(--gray)}
+.act b{color:var(--ink);font-weight:500}
+
+/* two col */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.panel{border:1px solid var(--line);border-radius:10px;padding:17px 18px;background:var(--paper)}
+.panel h3{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:13px}
+
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px}
+.row:first-of-type{border-top:none}
+.row .l b{font-weight:500;display:block}
+.row .l em{font-style:normal;color:var(--gray);font-size:11.5px}
+.row .r{flex:0 0 auto;font-variant-numeric:tabular-nums;text-align:right}
+
+/* objections bars */
+.ob{padding:8px 0;border-top:1px solid var(--line)}
+.ob:first-of-type{border-top:none}
+.obt{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+.obt em{font-style:normal;color:var(--gray2);font-size:11.5px}
+.obb{height:5px;border-radius:3px;background:var(--soft);overflow:hidden}
+.obb i{display:block;height:100%;border-radius:3px;background:var(--ink)}
+.obb.hot i{background:var(--alert)}
+
+.flagbox{background:rgba(242,166,155,.11);border-left:2px solid var(--alert);border-radius:7px;padding:11px 13px;font-size:12.5px;margin-top:12px}
+.flagbox b{font-weight:500}
+
+@media(max-width:1080px){.funnel{grid-template-columns:repeat(3,1fr)}.rhead,.rrow{grid-template-columns:1.4fr 62px 70px 82px 1fr}.rhead .h5,.rrow .c5{display:none}}
+@media(max-width:860px){.two{grid-template-columns:1fr}}
+@media(max-width:640px){.funnel{grid-template-columns:1fr}.rhead,.rrow{grid-template-columns:1fr 70px 84px}.rhead .h2,.rrow .c2,.rhead .h4,.rrow .c4{display:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hl">
+    <span class="eyebrow">M-01 / Sales floor</span>
+    <span class="chip on"><span class="cd"></span>3 closers on shift</span>
+  </div>
+  <div class="hr">
+    <span class="chip"><span class="cd" style="background:var(--info)"></span>Sarah Whitfield</span>
+    <span class="pulse"></span>
+  </div>
+</header>
+
+<div class="shell">
+
+  <div class="sec">
+    <div class="hero">
+      <div class="herorow">
+        <div>
+          <div class="hl2">Cash collected · August</div>
+          <div class="big">$74,200</div>
+          <div class="sub">Target $90,000 · 9 working days left · needs $1,750/day</div>
+        </div>
+        <div style="text-align:right">
+          <div class="hl2">Funded, not just sold</div>
+          <div class="big">69%</div>
+          <div class="sub">Of deposits taken this quarter</div>
+        </div>
+      </div>
+      <div class="bar"><i style="width:82%"></i></div>
+      <div class="marks"><span>0</span><span>Target 90k</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sech"><span class="eyebrow">Where the funnel leaks</span><span class="note">This month</span></div>
+    <div class="funnel">
+      <div class="f"><div class="lb">Booked</div><div class="vl">58</div><div class="cv">&nbsp;</div></div>
+      <div class="f"><div class="lb">Held</div><div class="vl">41</div><div class="cv"><span class="dn">71% show</span></div></div>
+      <div class="f"><div class="lb">Deposits</div><div class="vl">24</div><div class="cv">59% of held</div></div>
+      <div class="f"><div class="lb">Funded</div><div class="vl">16</div><div class="cv"><span class="dn">67% of deposits</span></div></div>
+      <div class="f"><div class="lb">Downsells</div><div class="vl">6</div><div class="cv">$12,000 recovered</div></div>
+    </div>
+    <p class="say"><b>The leak is after the sale, not before it.</b> Eight deposits haven't funded. That's roughly $54k of success fees sitting in limbo — worth more than fixing show rate.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sech"><span class="eyebrow">Your closers</span><span class="note">Cash · close rate · funded rate · what to do</span></div>
+    <div class="rost">
+      <div class="rhead">
+        <span>Closer</span>
+        <span class="num h2">Calls</span>
+        <span class="num">Close</span>
+        <span class="num h4">Funded</span>
+        <span class="num h5">Cash</span>
+        <span>Do this</span>
+      </div>
+      <div class="rrow">
+        <span class="nm"><b>Marcus Webb</b><em>On shift · 3h 12m</em></span>
+        <span class="num c2">26</span>
+        <span class="num">43%</span>
+        <span class="num c4"><span class="dn">64%</span></span>
+        <span class="num c5">$34,000</span>
+        <span class="act"><b>Chase his docs.</b> Sells the most, funds the least.</span>
+      </div>
+      <div class="rrow">
+        <span class="nm"><b>Elena Voss</b><em>On shift · 4h 40m</em></span>
+        <span class="num c2">24</span>
+        <span class="num">38%</span>
+        <span class="num c4"><span class="up">78%</span></span>
+        <span class="num c5">$28,000</span>
+        <span class="act"><b>Leave her alone.</b> Best funded rate on the floor.</span>
+      </div>
+      <div class="rrow">
+        <span class="nm"><b>Devon Marsh</b><em>On shift · 2h 05m</em></span>
+        <span class="num c2">25</span>
+        <span class="num"><span class="dn">21%</span></span>
+        <span class="num c4">72%</span>
+        <span class="num c5">$12,200</span>
+        <span class="act"><b>Sit on his next call.</b> He talks 68% of the time.</span>
+      </div>
+    </div>
+    <p class="say"><b>Same call volume, half the closes.</b> Devon isn't lazy, he's talking through the discovery. That's coachable this week, not a hiring problem.</p>
+  </div>
+
+  <div class="sec two">
+
+    <div class="panel">
+      <h3>Which belief failed</h3>
+      <div class="ob">
+        <div class="obt"><span>Desire · "less than I expected"</span><em>9 · was 4</em></div>
+        <div class="obb hot"><i style="width:100%"></i></div>
+      </div>
+      <div class="ob">
+        <div class="obt"><span>Money · "can't afford it"</span><em>7 · was 8</em></div>
+        <div class="obb"><i style="width:78%"></i></div>
+      </div>
+      <div class="ob">
+        <div class="obt"><span>Trust · "how do I know"</span><em>5 · was 2</em></div>
+        <div class="obb hot"><i style="width:56%"></i></div>
+      </div>
+      <div class="ob">
+        <div class="obt"><span>Support · "need to ask my wife"</span><em>4 · was 4</em></div>
+        <div class="obb"><i style="width:44%"></i></div>
+      </div>
+      <div class="ob">
+        <div class="obt"><span>Cost · "not right now"</span><em>2 · was 3</em></div>
+        <div class="obb"><i style="width:22%"></i></div>
+      </div>
+      <div class="ob">
+        <div class="obt"><span>Doubt · "I could do this myself"</span><em>1 · was 1</em></div>
+        <div class="obb"><i style="width:11%"></i></div>
+      </div>
+      <p class="say"><b>Desire and Trust both spiked. Neither is a closer problem.</b> Desire failing means the ad promised more than the pull delivers. Trust failing means there is not enough proof before the call.</p>
+    </div>
+
+    <div class="panel">
+      <h3>Where it is coming from</h3>
+      <div class="rhead" style="grid-template-columns:1.5fr 60px 60px 62px;border-radius:7px;margin-bottom:2px">
+        <span>Source</span><span class="num">Held</span><span class="num">Close</span><span class="num">Desire</span>
+      </div>
+      <div class="rrow" style="grid-template-columns:1.5fr 60px 60px 62px;padding:10px 0;border-top:none">
+        <span class="nm"><b>Equipment ad</b><em>Meta · set by Josh</em></span>
+        <span class="num">17</span>
+        <span class="num"><span class="dn">29%</span></span>
+        <span class="num"><span class="dn">7</span></span>
+      </div>
+      <div class="rrow" style="grid-template-columns:1.5fr 60px 60px 62px;padding:10px 0">
+        <span class="nm"><b>General funding ad</b><em>Meta · set by Josh</em></span>
+        <span class="num">15</span>
+        <span class="num">47%</span>
+        <span class="num">1</span>
+      </div>
+      <div class="rrow" style="grid-template-columns:1.5fr 60px 60px 62px;padding:10px 0">
+        <span class="nm"><b>Affiliate · Blake</b><em>Referral</em></span>
+        <span class="num">9</span>
+        <span class="num">44%</span>
+        <span class="num">1</span>
+      </div>
+      <div class="flagbox" style="background:rgba(245,206,143,.14);border-left-color:var(--warn)"><b>Seven of nine Desire objections came off the equipment ad.</b> Same setter, same closers, half the close rate. The creative is promising a number the soft pull cannot support. Send this to marketing today.</div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button style="font-family:var(--sans);font-size:12.5px;padding:7px 13px;border:1px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:7px;cursor:pointer">Flag to marketing</button>
+        <button style="font-family:var(--sans);font-size:12.5px;padding:7px 13px;border:1px solid var(--line);background:var(--paper);border-radius:7px;cursor:pointer">Pull the 7 call recordings</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec two">
+
+    <div class="panel">
+      <h3>Compliance</h3>
+      <div class="row">
+        <span class="l"><b>"Guaranteed" said on a call</b><em>Devon, twice · Marcus, once</em></span>
+        <span class="r"><span class="chip bad"><span class="cd"></span>3</span></span>
+      </div>
+      <div class="row">
+        <span class="l"><b>Amount quoted before the pull</b><em>Devon, both times</em></span>
+        <span class="r"><span class="chip bad"><span class="cd"></span>2</span></span>
+      </div>
+      <div class="row">
+        <span class="l"><b>Month-14 cliff not disclosed</b><em>Across all closers</em></span>
+        <span class="r"><span class="chip wip"><span class="cd"></span>5 of 24</span></span>
+      </div>
+      <div class="row">
+        <span class="l"><b>Recording disclosure missed</b><em>None this month</em></span>
+        <span class="r"><span class="chip on"><span class="cd"></span>0</span></span>
+      </div>
+      <div class="flagbox"><b>Listen to Devon's three flagged calls today.</b> "Guaranteed" and quoting before the pull are the two claims that ended Seek Capital — a $48M FTC judgment. This is a same-day conversation, not a Friday one.</div>
+    </div>
+
+  </div>
+
+  <div class="sec two">
+
+    <div class="panel">
+      <h3>Deals going cold</h3>
+      <div class="row">
+        <span class="l"><b>Bianca Souza</b><em>Marcus · deposit paid, no docs</em></span>
+        <span class="r">11d</span>
+      </div>
+      <div class="row">
+        <span class="l"><b>Felix Ndiaye</b><em>Devon · follow-up never made</em></span>
+        <span class="r">9d</span>
+      </div>
+      <div class="row">
+        <span class="l"><b>Grace Kowalski</b><em>Elena · deposit paid, docs partial</em></span>
+        <span class="r">8d</span>
+      </div>
+      <p class="say"><b>Flagged at 7 days of silence.</b> After two days without contact the odds of converting drop about threefold, so these three need a call today, not a text.</p>
+    </div>
+
+    <div class="panel">
+      <h3>Floor discipline</h3>
+      <div class="row">
+        <span class="l"><b>Calls not logged</b><em>Marcus 1 · Devon 5</em></span>
+        <span class="r"><span class="chip bad"><span class="cd"></span>6</span></span>
+      </div>
+      <div class="row">
+        <span class="l"><b>Shifts started late</b><em>Devon, three times this week</em></span>
+        <span class="r"><span class="chip wip"><span class="cd"></span>3</span></span>
+      </div>
+      <div class="row">
+        <span class="l"><b>Follow-ups overdue</b><em>Set by them, missed by them</em></span>
+        <span class="r"><span class="chip wip"><span class="cd"></span>4</span></span>
+      </div>
+      <div class="row">
+        <span class="l"><b>Avg time to log after a call</b><em>Target is same day</em></span>
+        <span class="r">1.4d</span>
+      </div>
+      <p class="say"><b>Devon has five unlogged calls.</b> Everything on this screen is downstream of logging — if he doesn't log, you're coaching him blind.</p>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>

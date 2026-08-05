@@ -34,10 +34,10 @@ flowchart TD
     CAN --> A_privacy[privacy — 1 route]
     CAN --> A_proxy[proxy — 2 routes]
     CAN --> A_public[public — 1 route]
-    CAN --> A_read[Reading data — 36 routes]
+    CAN --> A_read[Reading data — 40 routes]
     CAN --> A_social[social — 3 routes]
     CAN --> A_staff[staff — 2 routes]
-    CAN --> A_top_level[Everything else — 25 routes]
+    CAN --> A_top_level[Everything else — 27 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 2 routes]
     CANT --> B_chat[chat — 1 blocked]
@@ -46,7 +46,7 @@ flowchart TD
 
 ## What they can reach
 
-**128 of 130 routes.**
+**134 of 136 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -63,6 +63,7 @@ flowchart TD
 | `/api/banking/accounts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/banking/sync-accounts` | POST | owner, admin, sales_manager |
+| `/api/call-outcomes` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/campaigns/action-log` | GET | partner, staff |
 | `/api/campaigns/connections` | GET | partner, staff |
 | `/api/campaigns/detail` | GET | partner, staff |
@@ -119,6 +120,7 @@ flowchart TD
 | `/api/journeys/run` | POST | owner, admin, sales_manager |
 | `/api/lender-observations` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/lenders` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/marketing-flags` | POST | owner, admin, sales_manager |
 | `/api/message-templates` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/messages` | POST | staff |
 | `/api/messages-outbound` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -140,6 +142,8 @@ flowchart TD
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/ai-bureau-config` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/banking-surface` | GET | owner, admin, sales_manager |
+| `/api/read/call-outcomes` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/closer-call` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/commissions` | GET | owner, admin, sales_manager |
 | `/api/read/company-brain` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/contracts` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -161,9 +165,11 @@ flowchart TD
 | `/api/read/message-templates` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/messages` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/my-numbers` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
 | `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/proxy-sessions` | GET | owner, funding_advisor |
+| `/api/read/sales-floor` | GET | owner, admin, sales_manager |
 | `/api/read/search` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/staff` | GET | owner, admin, sales_manager |
 | `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -187,7 +193,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**2 of 130 routes.**
+**2 of 136 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

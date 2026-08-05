@@ -365,6 +365,9 @@
       </div></div>
 <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="closer-call.html"><span class="ico">☎</span><span class="lbl">Call cockpit</span></a>
+        <a class="navitem" href="my-numbers.html"><span class="ico">＃</span><span class="lbl">My numbers</span></a>
+        <a class="navitem" href="sales-floor.html"><span class="ico">▣</span><span class="lbl">Sales floor</span></a>
         <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
         <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
       </div></div>
@@ -1549,10 +1552,13 @@ restore();
       "<div style=\"font-weight:600;margin-top:6px\"></div>" +
       "<div class=\"fh-mm-body\" style=\"margin-top:8px;color:#71717A\">Loading…</div>" +
       "<div class=\"fh-mm-apply\" style=\"margin-top:10px;display:flex;flex-direction:column;gap:6px\"></div>" +
-      "<div style=\"margin-top:10px\"><a class=\"fh-mm-lenders\" href=\"#\" style=\"font-size:12px\">Open Lenders for this client ↗</a></div>";
+      "<div style=\"margin-top:10px\"><a class=\"fh-mm-lenders\" href=\"#\" style=\"font-size:12px\">Open Lenders for this client ↗</a></div>" +
+      "<div style=\"margin-top:6px\"><a class=\"fh-mm-call\" href=\"#\" style=\"font-size:12px\">Open call cockpit ↗</a></div>";
     matchPanel.querySelector("div[style*=\"font-weight\"]").textContent = c.name || "Client";
     matchPanel.querySelector(".fh-mm-lenders").href =
       "lenders.html?client_id=" + encodeURIComponent(c.client_id);
+    matchPanel.querySelector(".fh-mm-call").href =
+      "closer-call.html?client_id=" + encodeURIComponent(c.client_id);
     var body = matchPanel.querySelector(".fh-mm-body");
     var applyBox = matchPanel.querySelector(".fh-mm-apply");
     var q = "client_id=" + encodeURIComponent(c.client_id);
