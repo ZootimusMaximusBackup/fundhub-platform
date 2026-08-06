@@ -9,16 +9,13 @@
 <style>
 :root{--line:#E4E4E7;--soft:#FAFAFA;--gray:#71717A;--gray2:#A1A1AA;--ink2:#27272A}
 *{box-sizing:border-box}body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--ink)}
-.app{display:flex;min-height:100vh}.fh-dead-side{width:232px;flex:0 0 232px;border-right:1px solid var(--line);background:#fff;display:flex;flex-direction:column}
-.fh-dead-side-top{height:57px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid var(--line)}
+.app{display:flex;min-height:100vh}
 .logo{display:block;width:110px;height:22px;background:var(--logo,#111) center/contain no-repeat}
-.fh-dead-burger{border:0;background:transparent;cursor:pointer;font-size:14px;color:var(--gray)}
-.fh-dead-side-scroll{flex:1;overflow:auto;padding:10px 0 20px}
-.fh-dead-navgroup{margin:6px 0}.fh-dead-navhead{width:100%;display:flex;justify-content:space-between;align-items:center;border:0;background:transparent;padding:6px 16px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);cursor:pointer}
-.fh-dead-navitem{display:flex;align-items:center;gap:10px;padding:8px 16px;color:var(--ink);text-decoration:none;font-size:13px}
-.fh-dead-navitem:hover{background:var(--soft)}.fh-dead-navitem.on{background:var(--soft);font-weight:600}
-.fh-dead-navitem .ico{width:16px;text-align:center;color:var(--gray)}
-.fh-dead-side-foot{padding:12px 16px;border-top:1px solid var(--line);font-size:11px;color:var(--gray);display:flex;gap:8px;align-items:center}
+
+
+
+
+
 .pulse{width:7px;height:7px;border-radius:50%;background:var(--ok,#A8D8B0)}
 .shell{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{height:57px;display:flex;align-items:center;gap:12px;padding:0 22px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:5}
@@ -55,7 +52,7 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
 .import-box textarea{width:100%;min-height:140px;border:1px solid var(--line);border-radius:8px;padding:10px;font-family:var(--mono);font-size:11.5px}
 .mismatch{color:#6E2A22;font-weight:600}
 .hide{display:none!important}
-@media(max-width:860px){.side{position:fixed;z-index:30;height:100%;transform:translateX(0)}.fh-dead-side.mini{transform:translateX(-100%)}}
+@media(max-width:860px){.side{position:fixed;z-index:30;height:100%;transform:translateX(0)}}
 </style>
 <script src="shell.js"></script>
 <script src="proxy-apply.js"></script>
@@ -126,7 +123,6 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
   </nav>
   <div class="side-foot"><span class="pulse"></span><span class="who">fundhub</span></div>
 </aside>
-  <div class="side-scrim" id="sideScrim"></div>
   <div class="shell">
     <header class="topbar">
       <div class="brand"><div class="name">Fundhub</div><div class="sep">/</div><div class="sub">Lenders</div></div>

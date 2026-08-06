@@ -41,67 +41,22 @@
      SHARED CHROME — collapsible grouped sidebar. Identical across every file.
      ══════════════════════════════════════════════════════════════════════════ */
   .app{display:flex;height:100vh;overflow:hidden;}
-  .fh-dead-side{width:228px;flex:0 0 228px;background:var(--ink);color:var(--paper);
-    display:flex;flex-direction:column;position:relative;z-index:20;
-    transition:width .18s ease,flex-basis .18s ease;}
-  .fh-dead-side::after{content:"";position:absolute;top:0;right:0;width:2px;height:100%;
-    background:var(--spectrum);opacity:.9;}
-  .fh-dead-side.mini{width:60px;flex:0 0 60px;}
-  .fh-dead-side-top{height:44px;flex:0 0 44px;display:flex;align-items:center;gap:10px;
-    padding:0 16px;border-bottom:1px solid var(--dark-line);}
-  .fh-dead-side-top .logo{width:118px;height:24px;flex:0 0 118px;}
-  .fh-dead-side.mini .side-top{padding:0 12px;}
-  .fh-dead-side.mini .side-top .logo{display:none;}
-  .fh-dead-burger{margin-left:auto;width:26px;height:26px;flex:0 0 26px;border:1px solid var(--dark-line);
-    background:transparent;color:var(--gray2);border-radius:5px;cursor:pointer;
-    font-family:var(--mono);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;}
-  .fh-dead-burger:hover{border-color:#3F3F46;color:var(--paper);}
-  .fh-dead-side.mini .burger{margin:0 auto;}
-  .fh-dead-side-scroll{flex:1;overflow-y:auto;padding:12px 0 8px;}
-  .fh-dead-side-scroll::-webkit-scrollbar{width:6px;}
-  .fh-dead-side-scroll::-webkit-scrollbar-thumb{background:#27272A;border-radius:3px;}
-  .fh-dead-navgroup{margin-bottom:3px;}
-  .fh-dead-navhead{width:100%;background:transparent;border:0;cursor:pointer;text-align:left;
-    display:flex;align-items:center;gap:8px;padding:9px 18px 6px;
-    font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#71717A;}
-  .fh-dead-navhead:hover{color:var(--gray2);}
-  .fh-dead-navhead .chev{margin-left:auto;font-size:9px;transition:transform .16s;color:var(--gray);}
-  .fh-dead-navgroup.closed .chev{transform:rotate(-90deg);}
-  .fh-dead-navgroup.closed .navlist{display:none;}
-  .fh-dead-side.mini .navhead{justify-content:center;padding:10px 0 6px;font-size:0;letter-spacing:0;}
-  .fh-dead-side.mini .navhead::after{content:"";display:block;width:16px;height:2px;background:var(--spectrum);
-    border-radius:1px;opacity:.5;}
-  .fh-dead-side.mini .navhead .chev{display:none;}
-  .fh-dead-navlist{display:flex;flex-direction:column;}
-  .fh-dead-navitem{display:flex;align-items:center;gap:11px;padding:7px 18px;font-size:12.5px;
-    color:var(--gray2);text-decoration:none;position:relative;transition:color .12s,background .12s;}
-  .fh-dead-navitem:hover{color:var(--paper);background:#161619;}
-  .fh-dead-navitem .ico{font-family:var(--mono);font-size:12px;width:16px;flex:0 0 16px;text-align:center;opacity:.75;}
-  .fh-dead-navitem.on{color:var(--paper);background:#161619;font-weight:500;}
-  .fh-dead-navitem.on::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;
-    background:var(--spectrum);border-radius:0 2px 2px 0;}
-  .fh-dead-navitem.on .ico{opacity:1;}
-  .fh-dead-navitem.soon{opacity:.38;}
-  .fh-dead-side.mini .navitem{justify-content:center;padding:9px 0;}
-  .fh-dead-side.mini .navitem .lbl{display:none;}
-  .fh-dead-side-foot{padding:10px 16px;border-top:1px solid var(--dark-line);font-family:var(--mono);
-    font-size:10px;color:var(--gray);letter-spacing:.08em;display:flex;align-items:center;gap:7px;}
-  .fh-dead-side.mini .side-foot{justify-content:center;padding:10px 0;}
-  .fh-dead-side.mini .side-foot .who{display:none;}
-
-  /* ---------- mobile: the sidebar defaults to the same slim icon rail the
-     desktop collapse button already produces, so it never eats the screen,
-     and the same button expands it — as a floating overlay here instead of
-     an in-flow column, since a phone has no spare width to give it. No new
-     UI element: the existing collapse/expand toggle just means something
-     slightly different below this width. ---------- */
-  @media (max-width:860px){
-    .side:not(.mini){position:fixed;top:0;left:0;height:100vh;width:250px;flex:0 0 250px;
-      z-index:500;box-shadow:12px 0 34px rgba(0,0,0,.45);}
-    .fh-dead-side.mini .navitem{padding:11px 0;}
-    .fh-dead-side-scrim{display:none;}
-    .fh-dead-side-scrim.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:490;}
-  }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   @media (max-width:480px){
     /* .topbar-right ran past the right edge of a phone screen and clipped
        the LIVE pill off entirely — same fix as pipeline.html: the clock is
@@ -451,8 +406,6 @@
   </nav>
   <div class="side-foot"><span class="pulse"></span><span class="who">fundhub</span></div>
 </aside>
-  <div class="side-scrim" id="sideScrim"></div>
-
   <div class="shell">
 
   <header class="topbar">
@@ -600,45 +553,22 @@
 </div>
 
 <script>
-/* ══════════════════════════════════════════════════════════════════════════
-   SHARED CHROME BEHAVIOUR — identical across every wireframe
-   ══════════════════════════════════════════════════════════════════════════ */
+/* The demo-zone disclosure. The sidebar wiring that used to sit alongside it
+   here — burger, scrim, .navhead, and forcing .mini below 860px — is gone:
+   shell.js replaces the whole <aside> on mount, so listeners bound to the
+   markup this file ships died with the element they were attached to, and the
+   forced .mini fought the off-canvas drawer shell.js now owns. This is the
+   only part of the old block that ever did anything. */
 (function(){
-  var side=document.getElementById('side'), burger=document.getElementById('burger');
-  var scrim=document.getElementById('sideScrim');
-  var mobileQ=window.matchMedia('(max-width:860px)');
-  // A phone starts with the sidebar in its compact rail, not the full column
-  // desktop opens with — there is no room to spare on first paint.
-  if(mobileQ.matches && !side.classList.contains('mini')){
-    side.classList.add('mini'); burger.textContent='››';
-  }
-  function syncScrim(){
-    if(scrim) scrim.classList.toggle('show', mobileQ.matches && !side.classList.contains('mini'));
-  }
-  burger.addEventListener('click',function(){
-    side.classList.toggle('mini');
-    burger.textContent=side.classList.contains('mini')?'››':'‹‹';
-    syncScrim();
-  });
-  if(scrim) scrim.addEventListener('click',function(){
-    side.classList.add('mini'); burger.textContent='››'; syncScrim();
-  });
   var demoToggle=document.getElementById('demoToggle'),
       demoBody=document.getElementById('demoBody'),
       demozone=document.getElementById('demozone');
-  if(demoToggle){
-    demoToggle.addEventListener('click',function(){
-      var open=demoBody.hasAttribute('hidden');
-      if(open){demoBody.removeAttribute('hidden');}else{demoBody.setAttribute('hidden','');}
-      demozone.classList.toggle('open',open);
-      demoToggle.setAttribute('aria-expanded',open?'true':'false');
-    });
-  }
-  document.querySelectorAll('.navhead').forEach(function(h){
-    h.addEventListener('click',function(){
-      if(side.classList.contains('mini')) return;
-      h.parentElement.classList.toggle('closed');
-    });
+  if(!demoToggle) return;
+  demoToggle.addEventListener('click',function(){
+    var open=demoBody.hasAttribute('hidden');
+    if(open){demoBody.removeAttribute('hidden');}else{demoBody.setAttribute('hidden','');}
+    demozone.classList.toggle('open',open);
+    demoToggle.setAttribute('aria-expanded',open?'true':'false');
   });
 })();
 
