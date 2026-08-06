@@ -29,9 +29,11 @@ bite under a rebrand are closed or downgraded below — see 3 and 6.
 | 6 | Brand defined in 23 places | **LOW** — drift risk only, no rebrand |
 | 7 | Faux-bold from missing font weight | **FIXED** |
 | 8 | `sidebar.fragment.html` dead | **HELD** — deletion, needs owner answer |
-| 9 | `contract.html` signature overlay colors | **FIXED** — fields themselves still unseen |
+| 9 | `contract.html` signature overlay colors | **FIXED + SEEN** |
 | 10 | `lenders.html` button font reset (specificity) | **FIXED** — found by rendering |
 | 11 | Warm palette surviving as `rgba()` on 5 headers | **FIXED** — found by rendering |
+| 12 | `pipeline.html` `.filter-btn` vs `.select` a pixel apart | **FIXED** — found by rendering |
+| 13 | `finance-os.html` `.fos-pre` stray 13px radius | **FIXED** |
 
 ---
 
@@ -434,6 +436,72 @@ unconfirmed in-browser.
 Caveat: the font CDN is unreachable from this environment, so screenshots render
 in fallback faces. Colors, radii, spacing and weights are real; the typeface in
 the images is not.
+
+---
+
+## Round 4 — closed the remaining verification gaps
+
+Round 3 left three things unconfirmed. All three are now resolved, and closing
+them surfaced one more real bug.
+
+### Contract signature fields — now seen, not just reasoned
+
+The page needs a PDF and a signed token, so it cannot be loaded directly. What
+changed was CSS, so the exact markup `overlayFields()` builds was injected into
+the real loaded page and measured. All six assertions pass:
+
+| Element | Computed | Expected |
+|---|---|---|
+| `.fld` border | `rgb(34, 65, 95)` | `#22415F` |
+| `.fld.done` border | `rgb(44, 81, 56)` | `#2C5138` |
+| `.fld .tag` color | `rgb(34, 65, 95)` | `#22415F` |
+| `.fld.sig` color | `rgb(34, 65, 95)` | `#22415F` |
+| signed dot | `rgb(44, 81, 56)` | `#2C5138` |
+| "signing now" dot | `rgb(107, 74, 18)` | `#6B4A12` |
+
+Screenshotted and inspected. Active field reads as dark navy on pale blue,
+completed as dark green on pale green, locked as dashed gray. The three status
+dots read as a coherent family — green, brown, gray. Legibility is better than
+the colors it replaced, as predicted.
+
+`app/contracts.html` `.box` and `.box.s2` verified the same way.
+
+### 12. `pipeline.html` — `.filter-btn` and `.select` were a pixel apart
+
+Found while closing the round-3 skips. The round-1 sweep tested `.btn` on
+`pipeline.html`; that page **does not define `.btn` at all**. Testing what it
+actually uses exposed this:
+
+```css
+.select     {…background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:5px 9px …}
+.filter-btn {…background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 10px…}
+```
+
+Identical construction, sitting side by side in the same toolbar, one at 6px and
+one at 7px. **Fixed** `.filter-btn` to 7px. Both verified in-browser.
+
+Padding left alone at `5px 10px` vs `5px 9px` — one pixel, on controls with
+different content, and changing it risks reflowing the label.
+
+`hiring.html` `.panel` also confirmed at 10px.
+
+### 13. One last stray radius
+
+`finance-os.html:174` `.fos-pre` — a dark card-style block at `13px`, the only
+13px in the app. **Fixed** to 10px to match the card standard.
+
+### Honest note on radius consistency
+
+Do not read the above as "every corner in the app now matches." A full sweep
+finds **18 distinct radius values** across roughly 1,000 declarations. Most of
+that spread is legitimate — a 999px avatar, a 20px pill, a 3px checkbox and a
+1px bar should not share a number.
+
+What was normalized is the **component families that had genuine drift**:
+buttons (19, all 7px), cards/panels/tiles (24, all 10px), inputs and selects
+(all 7px). Chips, badges, bars, pills, modals and avatars were not touched and
+still vary. `client-portal.html` `.modal` at 16px was left deliberately — a
+modal legitimately carries a larger radius than a card.
 
 ---
 
