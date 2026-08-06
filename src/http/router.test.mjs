@@ -136,3 +136,79 @@ test("twilio route reaches the twilio adapter (no secret → 401, not 404)", asy
   const out = await handleWebhook({ db: fakeDb(), provider: "twilio", rawBody: "MessageSid=SM1&From=%2B15551234567&Body=hi", headers: {}, url: "https://x/api/webhooks/twilio", env: {} });
   assert.notEqual(out.status, 404, "router recognized twilio");
 });
+
+test("postgrid webhook route RESOLVES (not 404) — delivery clock entry point", async () => {
+  reset();
+  const out = await handleWebhook({
+    db: fakeDb(),
+    provider: "postgrid",
+    rawBody: "{}",
+    headers: {},
+    url: "https://x/api/webhooks/postgrid",
+    env: {}
+  });
+  assert.notEqual(out.status, 404, "/api/webhooks/postgrid must resolve in the router");
+  assert.equal(out.status, 401, "unsigned PostGrid webhook fails closed");
+});
+
+test("postgrid delivery.confirmed starts call clock off webhook timestamp", async () => {
+  reset();
+  const secret = "pg_router_secret";
+  const deliveredAt = "2026-08-07T14:00:00.000Z";
+  const raw = JSON.stringify({
+    event: "delivery.confirmed",
+    job_id: "letter_router_1",
+    status: "delivered",
+    timestamp: deliveredAt
+  });
+  const sig = crypto.createHmac("sha256", secret).update(raw).digest("hex");
+  const queries = [];
+  const db = {
+    async query(sql, params) {
+      queries.push({ sql: String(sql), params });
+      if (/FROM inquiry_removal_cases/.test(sql) && /SELECT/i.test(sql)) {
+        return {
+          rows: [{
+            id: "case-1",
+            org_id: "org-1",
+            client_id: "cl-1",
+            selected_bureaus_raw: "EX",
+            first_delivery_at: null,
+            case_id: "IG-1"
+          }]
+        };
+      }
+      if (/FROM ai_bureau_config/.test(sql)) {
+        return { rows: [{ portal_wait_business_days: 1, mail_wait_business_days: 3 }] };
+      }
+      if (/UPDATE inquiry_removal_cases/.test(sql)) {
+        return {
+          rows: [{
+            id: "case-1",
+            org_id: "org-1",
+            client_id: "cl-1",
+            selected_bureaus_raw: "EX",
+            first_delivery_at: params[1],
+            first_delivery_channel: params[2],
+            call_due_at: params[3]
+          }]
+        };
+      }
+      return { rows: [] };
+    }
+  };
+  const out = await handleWebhook({
+    db,
+    provider: "postgrid",
+    rawBody: raw,
+    headers: { "postgrid-signature": sig },
+    url: "https://x/api/webhooks/postgrid",
+    env: { POSTGRID_WEBHOOK_SECRET: secret }
+  });
+  assert.equal(out.status, 200);
+  assert.equal(out.body.ok, true);
+  assert.equal(out.body.scheduled, true);
+  assert.equal(out.body.waitDays, 3);
+  // Fri + 3 business days → Wed; never off send time.
+  assert.equal(new Date(out.body.callDueAt).toISOString(), "2026-08-12T14:00:00.000Z");
+});

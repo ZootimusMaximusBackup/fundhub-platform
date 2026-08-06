@@ -18,48 +18,82 @@ ALTER TABLE inquiry_removal_cases
   ADD COLUMN IF NOT EXISTS draft_letter_document_id uuid REFERENCES documents(id) ON DELETE SET NULL;
 
 COMMENT ON COLUMN inquiry_removal_cases.first_delivery_at IS
-  'Whichever delivery landed first (Lob delivered or Experian portal upload). Starts the call clock.';
+  'Whichever delivery landed first (PostGrid delivery.confirmed or Experian portal upload). Starts the call clock.';
 COMMENT ON COLUMN inquiry_removal_cases.first_delivery_channel IS
   'portal | mail — which channel set first_delivery_at; selects wait days from ai_bureau_config.';
 COMMENT ON COLUMN inquiry_removal_cases.call_due_at IS
   'first_delivery_at + configured business-day wait for that bureau/channel, hour-preserved. No statutory window.';
+COMMENT ON COLUMN inquiry_removal_cases.letter_provider_id IS
+  'PostGrid letter id (or swap). Set on send; delivery webhook matches on this.';
 COMMENT ON COLUMN inquiry_removal_cases.gate_override_by IS
   'Owner-only override that clears this bureau for lender matching. Never silent.';
 
--- Per-bureau / per-channel delivery→call wait (owner-tunable; not hardcoded).
+-- Per-bureau wait + USPS mail class + hard-coded dispute P.O. Boxes.
 ALTER TABLE ai_bureau_config
   ADD COLUMN IF NOT EXISTS portal_wait_business_days integer NOT NULL DEFAULT 1
     CHECK (portal_wait_business_days >= 0),
   ADD COLUMN IF NOT EXISTS mail_wait_business_days integer NOT NULL DEFAULT 3
     CHECK (mail_wait_business_days >= 0),
-  ADD COLUMN IF NOT EXISTS mail_service_level text NOT NULL DEFAULT 'priority_express'
-    CHECK (mail_service_level IN ('priority', 'priority_express'));
+  ADD COLUMN IF NOT EXISTS mail_service_level text NOT NULL DEFAULT 'first_class',
+  ADD COLUMN IF NOT EXISTS mail_company_name text,
+  ADD COLUMN IF NOT EXISTS mail_address_line1 text,
+  ADD COLUMN IF NOT EXISTS mail_address_line2 text,
+  ADD COLUMN IF NOT EXISTS mail_address_city text,
+  ADD COLUMN IF NOT EXISTS mail_address_state text,
+  ADD COLUMN IF NOT EXISTS mail_address_zip text,
+  ADD COLUMN IF NOT EXISTS mail_address_country text NOT NULL DEFAULT 'US';
+
+-- Widen / replace mail_service_level check for PostGrid USPS classes.
+ALTER TABLE ai_bureau_config DROP CONSTRAINT IF EXISTS ai_bureau_config_mail_service_level_check;
+ALTER TABLE ai_bureau_config
+  ADD CONSTRAINT ai_bureau_config_mail_service_level_check
+  CHECK (mail_service_level IN ('first_class', 'priority', 'priority_express'));
+
+-- Migrate any prior Lob defaults.
+UPDATE ai_bureau_config
+   SET mail_service_level = 'first_class'
+ WHERE mail_service_level IS NULL
+    OR mail_service_level NOT IN ('first_class', 'priority', 'priority_express');
 
 COMMENT ON COLUMN ai_bureau_config.portal_wait_business_days IS
   'Business days after portal delivery before AI call. Default 1; tune per bureau.';
 COMMENT ON COLUMN ai_bureau_config.mail_wait_business_days IS
-  'Business days after mailed-letter delivery before AI call. Default 3 (placeholder).';
+  'Business days after PostGrid delivery.confirmed before AI call. Default 3 (placeholder).';
 COMMENT ON COLUMN ai_bureau_config.mail_service_level IS
-  'Lob service level for mailed dispute letters: priority | priority_express. Default priority_express.';
+  'USPS mail class for dispute letters via PostGrid: first_class | priority | priority_express. Default first_class. Never FedEx/UPS.';
 
--- Ensure the three bureau rows exist per org that has inquiry_removal (empty
--- config shell — no phone numbers invented). ON CONFLICT keeps owner edits.
+-- Seed EX/EQ/TU with USPS P.O. Box addresses (hardcoded destinations).
 INSERT INTO ai_bureau_config (
   org_id, bureau_code, bureau_name,
-  portal_wait_business_days, mail_wait_business_days, mail_service_level
+  portal_wait_business_days, mail_wait_business_days, mail_service_level,
+  mail_company_name, mail_address_line1, mail_address_city, mail_address_state, mail_address_zip, mail_address_country
 )
-SELECT p.org_id, v.code, v.name, 1, 3, 'priority_express'
+SELECT p.org_id, v.code, v.name, 1, 3, 'first_class',
+       v.company, v.line1, v.city, v.state, v.zip, 'US'
   FROM pipelines p
   JOIN (VALUES
-    ('EX', 'Experian'),
-    ('EQ', 'Equifax'),
-    ('TU', 'TransUnion')
-  ) AS v(code, name) ON true
+    ('EX', 'Experian',
+     'Experian', 'P.O. Box 4500', 'Allen', 'TX', '75013'),
+    ('EQ', 'Equifax',
+     'Equifax Information Services LLC', 'P.O. Box 740256', 'Atlanta', 'GA', '30374-0256'),
+    ('TU', 'TransUnion',
+     'TransUnion LLC Consumer Dispute Center', 'P.O. Box 2000', 'Chester', 'PA', '19016')
+  ) AS v(code, name, company, line1, city, state, zip) ON true
  WHERE p.key = 'inquiry_removal'
 ON CONFLICT (org_id, bureau_code) DO UPDATE
   SET portal_wait_business_days = COALESCE(ai_bureau_config.portal_wait_business_days, 1),
       mail_wait_business_days = COALESCE(ai_bureau_config.mail_wait_business_days, 3),
-      mail_service_level = COALESCE(ai_bureau_config.mail_service_level, 'priority_express'),
+      mail_service_level = CASE
+        WHEN ai_bureau_config.mail_service_level IN ('first_class', 'priority', 'priority_express')
+          THEN ai_bureau_config.mail_service_level
+        ELSE 'first_class'
+      END,
+      mail_company_name = COALESCE(ai_bureau_config.mail_company_name, EXCLUDED.mail_company_name),
+      mail_address_line1 = COALESCE(ai_bureau_config.mail_address_line1, EXCLUDED.mail_address_line1),
+      mail_address_city = COALESCE(ai_bureau_config.mail_address_city, EXCLUDED.mail_address_city),
+      mail_address_state = COALESCE(ai_bureau_config.mail_address_state, EXCLUDED.mail_address_state),
+      mail_address_zip = COALESCE(ai_bureau_config.mail_address_zip, EXCLUDED.mail_address_zip),
+      mail_address_country = COALESCE(ai_bureau_config.mail_address_country, 'US'),
       updated_at = now();
 
 -- Renumber existing inquiry_removal stages, then insert the two new ones.

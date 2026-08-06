@@ -24,13 +24,17 @@ test("loadWaitBusinessDays reads per-bureau config", async () => {
 test("loadMailServiceLevel: config default and per-send override", async () => {
   const db = {
     async query() {
-      return { rows: [{ mail_service_level: "priority_express" }] };
+      return { rows: [{ mail_service_level: "first_class" }] };
     }
   };
-  assert.equal(await loadMailServiceLevel(db, { orgId: "o", bureau: "EX" }), "priority_express");
+  assert.equal(await loadMailServiceLevel(db, { orgId: "o", bureau: "EX" }), "first_class");
   assert.equal(
-    await loadMailServiceLevel(db, { orgId: "o", bureau: "EX", override: "priority" }),
-    "priority"
+    await loadMailServiceLevel(db, { orgId: "o", bureau: "EX", override: "priority_express" }),
+    "priority_express"
+  );
+  assert.equal(
+    await loadMailServiceLevel(db, { orgId: "o", bureau: "EX", override: "ups_express_overnight" }),
+    "first_class"
   );
 });
 

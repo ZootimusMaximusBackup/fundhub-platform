@@ -1800,12 +1800,13 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
             ? '<p style="font-size:12px;color:var(--red)">Send disabled — identity packet incomplete. Collection is chasing uploads.</p>'
             : '') +
           '<label style="display:flex;gap:6px;align-items:center;font-size:12px;margin:6px 0">' +
-            '<input type="checkbox" class="want-mail" ' + (blocked ? "disabled" : "checked") + '> Mail via Lob</label>' +
+            '<input type="checkbox" class="want-mail" ' + (blocked ? "disabled" : "checked") + '> Mail letter (PostGrid)</label>' +
           '<label style="display:flex;gap:6px;align-items:center;font-size:12px;margin:6px 0">' +
             'Mail service <select class="mail-service" ' + (blocked ? "disabled" : "") + '>' +
-              '<option value="">Bureau default (priority express)</option>' +
+              '<option value="">Bureau default (first class)</option>' +
+              '<option value="first_class">First class</option>' +
+              '<option value="priority">Priority</option>' +
               '<option value="priority_express">Priority express</option>' +
-              '<option value="priority">Priority (downgrade)</option>' +
             '</select></label>' +
           portalBlock +
           '<div class="case-actions">' +

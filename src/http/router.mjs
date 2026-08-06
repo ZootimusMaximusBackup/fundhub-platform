@@ -18,7 +18,10 @@ import {
   handleInquiryRemovalWebhook,
   SIGNATURE_HEADER as INQUIRY_REMOVAL_SIG
 } from "../adapters/inquiry-removal.mjs";
-import { verifyLobWebhook, parseLobDeliveryEvent } from "../messaging/providers/lob-letter.mjs";
+import {
+  verifyMailWebhook,
+  parseMailDeliveryEvent
+} from "../messaging/providers/mail-letter.mjs";
 import { onMailDelivered } from "../inquiry-ops/call-scheduler.mjs";
 
 // Standard HMAC-body adapters: same {db, rawBody, signatureHeader, secret} shape.
@@ -93,15 +96,15 @@ export async function handleWebhook({ db, provider, rawBody, headers = {}, url, 
     return norm(await handleMailgunWebhook({ db, body, signingKey: env.MAILGUN_SIGNING_KEY }));
   }
 
-  // Lob letter delivery — starts the inquiry call clock off delivered, never send.
-  if (provider === "lob") {
-    if (!verifyLobWebhook(rawBody, headers, env)) {
+  // PostGrid letter delivery — call clock starts on delivery.confirmed only.
+  if (provider === "postgrid") {
+    if (!verifyMailWebhook(rawBody, headers, env)) {
       return { status: 401, body: { ok: false, error: "invalid_signature" } };
     }
     let body;
     try { body = rawBody ? JSON.parse(rawBody) : {}; }
     catch { return { status: 400, body: { ok: false, error: "invalid_json" } }; }
-    const parsed = parseLobDeliveryEvent(body);
+    const parsed = parseMailDeliveryEvent(body);
     if (!parsed.delivered) {
       return { status: 200, body: { ok: true, ignored: true, eventType: parsed.eventType } };
     }

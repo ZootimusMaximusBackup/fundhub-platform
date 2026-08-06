@@ -11,7 +11,7 @@
 | W1 Trigger + letter draft | this session | done | |
 | W2 Doc gate + send gate | this session | done | |
 | W3 Lender gate | this session | done | |
-| W4 Delivery + call scheduler | this session | done | + configurable mail_service_level |
+| W4 Delivery + call scheduler | this session | done | PostGrid (not Lob); mail_service_level first_class\|priority\|priority_express |
 | W5 Remover screen | this session | done | extend inquiry-remover.html only |
 
 ## Shared context brief
@@ -20,11 +20,11 @@
 
 | Column | Type | Meaning |
 |---|---|---|
-| `first_delivery_at` | timestamptz | First delivery land (portal upload ts OR Lob delivered webhook) |
+| `first_delivery_at` | timestamptz | First delivery land (portal upload ts OR PostGrid `delivery.confirmed`) |
 | `first_delivery_channel` | text | `portal` \| `mail` — which channel won; picks wait days |
 | `call_due_at` | timestamptz | delivery + `ai_bureau_config` wait for that bureau/channel, business days, hour-preserved |
 | `call_fired_at` | timestamptz | When AI bureau call was enqueued |
-| `letter_provider_id` | text | Lob (or swap) tracking id |
+| `letter_provider_id` | text | PostGrid letter id (provider-agnostic column) |
 | `portal_confirmation` | text | Experian portal reference — required to complete portal send |
 | `gate_override_by` | uuid → staff | Owner-only override for lender matching |
 | `gate_override_at` | timestamptz | When override was set |
@@ -68,12 +68,15 @@ Keep `optimization` (Repair) separate. Never move cards across.
 | Column | Default | Meaning |
 |---|---|---|
 | `portal_wait_business_days` | 1 | Business days after portal upload before AI call |
-| `mail_wait_business_days` | 3 | Business days after Lob delivered before AI call (placeholder) |
-| `mail_service_level` | `priority_express` | Lob service: `priority` \| `priority_express` |
+| `mail_wait_business_days` | 3 | Business days after PostGrid `delivery.confirmed` before AI call (placeholder) |
+| `mail_service_level` | `first_class` | USPS via PostGrid: `first_class` \| `priority` \| `priority_express`. Never FedEx/UPS (PO Boxes). |
+| `mail_*` address cols | seeded | Hardcoded bureau USPS P.O. Boxes (EX/EQ/TU) |
 
-`call_due_at = first_delivery_at + wait(bureau, channel)`, business days, hour-preserved. Missing config row → use defaults above.
+`call_due_at = first_delivery_at + wait(bureau, channel)`, business days, hour-preserved. Missing config row → use defaults above. **Never schedule off send time — only confirmed delivery.**
 
-Mail service level is read from config on send; send body may pass `mail_service_level` to override per case (e.g. downgrade to `priority`).
+Mail service level is read from config on send; send body may pass `mail_service_level` to override per case.
+
+Env (names only, do not set until wiring): `POSTGRID_API_KEY`, `POSTGRID_WEBHOOK_SECRET`.
 
 ### Doc packet subtypes (`client_upload` + `authorization`)
 
@@ -133,12 +136,14 @@ Remover attaches FTC/police report they obtained. No generation, no pre-fill, no
 - `src/inquiry-ops/gate.mjs` — gate status, owner override, round attach + closer task
 - `src/handlers/money-chain.mjs` — `attachGateToRound` on `round.started`
 
-### W4
-- `src/messaging/providers/lob-letter.mjs` (+ test) — Lob letter send + webhook verify; `service` from config
+### W4 (PostGrid)
+- `src/messaging/providers/mail-letter.mjs` (+ test) — provider-agnostic mail interface; PostGrid first impl; fake provider for unit tests
 - `src/inquiry-ops/business-days.mjs` (+ test) — hour-preserving business days + holidays
-- `src/inquiry-ops/call-scheduler.mjs` (+ test) — first delivery → `call_due_at` from config wait
+- `src/inquiry-ops/call-scheduler.mjs` (+ unit + pg test) — first delivery → `call_due_at`; load bureau P.O. Box + client return address
 - `src/workflows/inquiry-call-sweeper.mjs` — defined, not registered
-- `src/http/router.mjs` — `/api/webhooks/lob` delivery → starts call clock
+- `src/http/router.mjs` — `/api/webhooks/postgrid` `delivery.confirmed` → starts call clock (route must resolve)
+- Envelope: closed-face (`envelopeType: flat`); return address = client, not Fundhub
+- Deleted: `lob-letter.mjs`
 
 ### W5
 - `public/app/inquiry-remover.html` — expandable case rows (same route, no new page/nav)
@@ -148,11 +153,11 @@ Remover attaches FTC/police report they obtained. No generation, no pre-fill, no
 
 ## Batch status
 
-**Complete** (W0–W5). Not pushed. Migration 155 not applied to prod from this session (`DATABASE_URL` unset; Netlify API blocked here).
+**Complete** (W0–W5 + PostGrid W4 swap). Not pushed. Migration 155 not applied to prod from this session (`DATABASE_URL` unset; Netlify API blocked here).
 
 ### Still for humans
-1. Apply `155_inquiry_gate.sql` on prod
-2. Set `LOB_API_KEY` / `LOB_WEBHOOK_SECRET` when wiring mail (not before)
+1. Apply `155_inquiry_gate.sql` on prod (includes PostGrid service levels + bureau P.O. Boxes)
+2. Set `POSTGRID_API_KEY` / `POSTGRID_WEBHOOK_SECRET` when wiring mail (not before)
 3. Register `inquiry-call-sweeper` when ready to fire calls on a schedule
 4. Smoke Inquiry Remover expand → send on a demo client
 

@@ -8,8 +8,12 @@ import { createCase, updateCase, closeCase, CASE_STATUSES } from "../src/inquiry
 import { clearInquiry as clearBridgeInquiry } from "../src/inquiry-removal/cases.mjs";
 import { sendCase, SendGateError } from "../src/inquiry-ops/send.mjs";
 import { overrideBureauGate } from "../src/inquiry-ops/gate.mjs";
-import { sendLetter } from "../src/messaging/providers/lob-letter.mjs";
-import { loadMailServiceLevel } from "../src/inquiry-ops/call-scheduler.mjs";
+import { sendLetter } from "../src/messaging/providers/mail-letter.mjs";
+import {
+  loadMailServiceLevel,
+  loadBureauMailAddress,
+  loadClientReturnAddress
+} from "../src/inquiry-ops/call-scheduler.mjs";
 import { emit } from "../src/events/bus.mjs";
 import { dbDown } from "../src/http/db-down.mjs";
 
@@ -127,26 +131,40 @@ export default async function handler(req, res, deps = {}) {
           body.mail_service_level || body.mailServiceLevel || null;
         const mailSender = wantMail
           ? async ({ caseRow }) => {
-              const html = caseRow.letter_draft_html || "<p>Dispute letter</p>";
+              const bureau = caseRow.selected_bureaus_raw;
               const serviceLevel = await loadMailServiceLevel(database, {
                 orgId,
-                bureau: caseRow.selected_bureaus_raw,
+                bureau,
                 override: mailServiceOverride
               });
+              const to = body.mail_to || body.mailTo
+                || await loadBureauMailAddress(database, { orgId, bureau });
+              const from = body.mail_from || body.mailFrom
+                || await loadClientReturnAddress(database, {
+                  orgId,
+                  clientId: caseRow.client_id
+                });
+              if (!from) {
+                return {
+                  providerId: null,
+                  outcome: "mail_failed:return_address_required"
+                };
+              }
+              const html = caseRow.letter_draft_html || "<p>Dispute letter</p>";
               const sent = await sendLetter({
                 description: `Inquiry case ${caseRow.case_id || caseRow.id}`,
-                file: `<html>${html}</html>`,
+                html: `<html>${html}</html>`,
+                pdf: body.letter_pdf || body.letterPdf || undefined,
                 serviceLevel,
-                to: body.mail_to || body.mailTo || {
-                  name: body.recipient_name || "Bureau",
-                  address_line1: body.address_line1 || "PO Box",
-                  address_city: body.address_city || "Allen",
-                  address_state: body.address_state || "TX",
-                  address_zip: body.address_zip || "75013"
-                }
+                bureau,
+                to,
+                from
               });
               if (!sent.ok) {
-                return { providerId: null, outcome: `mail_failed:${sent.error || "unknown"}` };
+                return {
+                  providerId: null,
+                  outcome: `mail_failed:${sent.error || "unknown"}`
+                };
               }
               return {
                 providerId: sent.providerId,

@@ -105,7 +105,7 @@ export async function ensureCaseInquiries(db, caseRow) {
  * @param {string} opts.caseId
  * @param {string} opts.staffId
  * @param {string} opts.orgId
- * @param {boolean} [opts.mail] — mail via Lob
+ * @param {boolean} [opts.mail] — mail via PostGrid (provider-agnostic sender)
  * @param {boolean} [opts.portal] — Experian portal only
  * @param {string|null} [opts.portalConfirmation] — REQUIRED when portal
  * @param {string|null} [opts.portalUploadedAt] — upload timestamp

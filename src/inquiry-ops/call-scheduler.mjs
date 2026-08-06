@@ -6,8 +6,9 @@ import { moveCardToStage } from "../workflows/cards.mjs";
 import { logAttempt } from "../inquiries/work.mjs";
 import {
   normalizeMailServiceLevel,
-  DEFAULT_MAIL_SERVICE_LEVEL
-} from "../messaging/providers/lob-letter.mjs";
+  DEFAULT_MAIL_SERVICE_LEVEL,
+  bureauMailAddress
+} from "../messaging/providers/mail-letter.mjs";
 
 const DEFAULT_WAIT = Object.freeze({ portal: 1, mail: 3 });
 
@@ -33,8 +34,8 @@ export async function loadWaitBusinessDays(db, { orgId, bureau, channel }) {
 }
 
 /**
- * Lob mail service level for a bureau. Per-send override wins when valid.
- * @returns {Promise<'priority'|'priority_express'>}
+ * PostGrid USPS mail class for a bureau. Per-send override wins when valid.
+ * @returns {Promise<'first_class'|'priority'|'priority_express'>}
  */
 export async function loadMailServiceLevel(db, { orgId, bureau, override = null } = {}) {
   if (override != null && String(override).trim() !== "") {
@@ -49,6 +50,80 @@ export async function loadMailServiceLevel(db, { orgId, bureau, override = null 
     [orgId, code]
   );
   return normalizeMailServiceLevel(r.rows[0]?.mail_service_level, DEFAULT_MAIL_SERVICE_LEVEL);
+}
+
+/** Load seeded P.O. Box address for a bureau; fall back to hardcoded constants. */
+export async function loadBureauMailAddress(db, { orgId, bureau } = {}) {
+  const code = String(bureau || "").toUpperCase();
+  const hardcoded = bureauMailAddress(code);
+  if (!orgId) return hardcoded;
+  const r = await db.query(
+    `SELECT bureau_code, bureau_name, mail_company_name, mail_address_line1,
+            mail_address_line2, mail_address_city, mail_address_state,
+            mail_address_zip, mail_address_country
+       FROM ai_bureau_config
+      WHERE org_id = $1::uuid AND bureau_code = $2
+      LIMIT 1`,
+    [orgId, code]
+  );
+  const row = r.rows[0];
+  if (!row?.mail_address_line1) return hardcoded;
+  return {
+    bureau_code: row.bureau_code,
+    bureau_name: row.bureau_name,
+    company_name: row.mail_company_name || hardcoded?.company_name,
+    address_line1: row.mail_address_line1,
+    address_line2: row.mail_address_line2,
+    address_city: row.mail_address_city,
+    address_state: row.mail_address_state,
+    address_zip: row.mail_address_zip,
+    address_country: row.mail_address_country || "US"
+  };
+}
+
+/**
+ * Client return address for mailed disputes — client's own name + address,
+ * never Fundhub. Reads clients + pii_identity.addresses[0].
+ */
+export async function loadClientReturnAddress(db, { orgId, clientId } = {}) {
+  if (!orgId || !clientId) return null;
+  const clientR = await db.query(
+    `SELECT first_name, last_name
+       FROM clients
+      WHERE id = $1::uuid AND org_id = $2::uuid
+      LIMIT 1`,
+    [clientId, orgId]
+  );
+  const client = clientR.rows[0];
+  if (!client) return null;
+
+  const idR = await db.query(
+    `SELECT addresses
+       FROM pii_identity
+      WHERE client_id = $1::uuid AND org_id = $2::uuid
+      LIMIT 1`,
+    [clientId, orgId]
+  );
+  const addresses = idR.rows[0]?.addresses;
+  const list = Array.isArray(addresses)
+    ? addresses
+    : (typeof addresses === "string" ? JSON.parse(addresses || "[]") : []);
+  const addr = list[0] || null;
+  if (!addr) return null;
+
+  const line1 = addr.address_line1 || addr.addressLine1 || addr.line1 || addr.street || null;
+  if (!line1) return null;
+
+  return {
+    first_name: client.first_name || null,
+    last_name: client.last_name || null,
+    address_line1: line1,
+    address_line2: addr.address_line2 || addr.addressLine2 || addr.line2 || null,
+    address_city: addr.address_city || addr.city || null,
+    address_state: addr.address_state || addr.state || null,
+    address_zip: addr.address_zip || addr.zip || addr.zip5 || addr.postal || null,
+    address_country: addr.address_country || addr.country || "US"
+  };
 }
 
 /**
@@ -195,7 +270,7 @@ export async function fireDueCalls(db, {
   return { fired, count: fired.length };
 }
 
-/** Resolve case by Lob letter provider id and mark mail delivered. */
+/** Resolve case by PostGrid letter id and mark mail delivered (never off send). */
 export async function onMailDelivered(db, { orgId, providerId, deliveredAt }) {
   if (!providerId) return { ok: false, reason: "no_provider_id" };
   const r = await db.query(
