@@ -8,8 +8,8 @@
 | Unit | Owner | Status | Notes |
 |---|---|---|---|
 | W0 Migration + brief | this session | done | + configurable wait columns |
-| W1 Trigger + letter draft | this session | claimed | |
-| W2 Doc gate + send gate | this session | pending | |
+| W1 Trigger + letter draft | this session | done | |
+| W2 Doc gate + send gate | this session | claimed | |
 | W3 Lender gate | this session | pending | |
 | W4 Delivery + call scheduler | this session | pending | |
 | W5 Remover screen | this session | pending | |

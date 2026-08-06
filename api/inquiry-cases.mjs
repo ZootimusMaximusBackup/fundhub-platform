@@ -6,10 +6,11 @@ import { requireAuth } from "../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid } from "../src/http/read-api.mjs";
 import { createCase, updateCase, closeCase, CASE_STATUSES } from "../src/inquiry-ops/cases.mjs";
 import { clearInquiry as clearBridgeInquiry } from "../src/inquiry-removal/cases.mjs";
+import { sendCase, SendGateError } from "../src/inquiry-ops/send.mjs";
 import { emit } from "../src/events/bus.mjs";
 import { dbDown } from "../src/http/db-down.mjs";
 
-const ACTIONS = new Set(["create", "update", "close", "mark_cleared", "clear_inquiry"]);
+const ACTIONS = new Set(["create", "update", "close", "mark_cleared", "clear_inquiry", "send"]);
 
 export default async function handler(req, res, deps = {}) {
   const database = deps.db ?? db;
@@ -92,6 +93,31 @@ export default async function handler(req, res, deps = {}) {
       const c = await updateCase(database, { orgId, id: body.id, patch: body });
       if (!c) return res.status(404).json({ ok: false, error: "not_found" });
       return res.status(200).json({ ok: true, case: c });
+    }
+
+    if (action === "send") {
+      try {
+        const result = await sendCase(database, {
+          caseId: body.id,
+          staffId: staff.id,
+          orgId,
+          mail: body.mail === true || body.channels?.mail === true,
+          portal: body.portal === true || body.channels?.portal === true,
+          portalConfirmation: body.portal_confirmation || body.portalConfirmation || null,
+          portalUploadedAt: body.portal_uploaded_at || body.portalUploadedAt || null,
+          note: body.note || null
+        });
+        return res.status(200).json({ ok: true, ...result });
+      } catch (err) {
+        if (err instanceof SendGateError) {
+          return res.status(err.status || 400).json({
+            ok: false,
+            error: err.code || "send_gate",
+            message: err.message
+          });
+        }
+        throw err;
+      }
     }
 
     // close | mark_cleared
