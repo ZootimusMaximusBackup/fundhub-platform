@@ -19,6 +19,7 @@
 // COMPLIANCE REVIEW REQUIRED: payment rails + fee/commission timing.
 
 import { on } from "../events/registry.mjs";
+import { emit } from "../events/bus.mjs";
 import { resolveClient } from "./client-lifecycle.mjs";
 import {
   computeFrontEnd,
@@ -759,6 +760,27 @@ export async function onRoundFundedMoney(event, db) {
     feePercent: p.feePercent != null ? Number(p.feePercent) : undefined
   });
 
+  // Distinct from round.funded — inquiry gate (and anything else between rounds)
+  // listens here. Idempotent per funding_round_id.
+  let closeoutEvent = null;
+  if (closeout.closeout?.id) {
+    const clientId = event.clientId || (await resolveClient(db, event));
+    closeoutEvent = await emit(
+      db,
+      "round.closeout",
+      {
+        fundingRoundId: round.id,
+        closeoutId: closeout.closeout.id,
+        created: !!closeout.created
+      },
+      {
+        orgId: event.orgId,
+        clientId: clientId || null,
+        idempotencyKey: `round.closeout:${round.id}`
+      }
+    );
+  }
+
   return {
     done: true,
     fundingRoundId: round.id,
@@ -766,7 +788,8 @@ export async function onRoundFundedMoney(event, db) {
     commissionInserted: commission.inserted,
     warnings: commission.warnings,
     closeoutId: closeout.closeout?.id || null,
-    closeoutError: closeout.error || null
+    closeoutError: closeout.error || null,
+    closeoutEventId: closeoutEvent?.id || null
   };
 }
 

@@ -47,9 +47,12 @@ export const SUBTYPES = Object.freeze({
   // passes its own discriminator and these never collapse into each other.
   client_upload: Object.freeze([
     "id_document",
+    "ssn_card",
+    "proof_of_address",
     "bank_statement",
     "proof_of_income",
     "tax_return",
+    "additional_fraud_docs",
     "other"
   ])
 });
@@ -70,9 +73,12 @@ export const SUBTYPE_TITLES = Object.freeze({
   funding_snapshot: "Funding Snapshot",
   bank_lender_match_list: "Bank and Lender Match List",
   id_document: "ID Document",
+  ssn_card: "SSN Card",
+  proof_of_address: "Proof of Address",
   bank_statement: "Bank Statement",
   proof_of_income: "Proof of Income",
   tax_return: "Tax Return",
+  additional_fraud_docs: "Additional documentation — fraud / identity theft cases",
   other: "Uploaded Document"
 });
 

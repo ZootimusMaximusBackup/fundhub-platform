@@ -7,8 +7,8 @@
 
 | Unit | Owner | Status | Notes |
 |---|---|---|---|
-| W0 Migration + brief | this session | claimed | |
-| W1 Trigger + letter draft | this session | pending | |
+| W0 Migration + brief | this session | done | + configurable wait columns |
+| W1 Trigger + letter draft | this session | claimed | |
 | W2 Doc gate + send gate | this session | pending | |
 | W3 Lender gate | this session | pending | |
 | W4 Delivery + call scheduler | this session | pending | |
@@ -102,4 +102,14 @@ Remover attaches FTC/police report they obtained. No generation, no pre-fill, no
 
 ## Change manifests
 
-_(append per unit)_
+### W1
+- `src/handlers/inquiry-gate.mjs` — deposit.paid + round.closeout → per-bureau cases, draft letter, doc-gate status, pipeline move, emits
+- `src/inquiry-ops/extract-disputables.mjs` (+ test) — CRS + inquiry_log → per-bureau items
+- `src/inquiry-ops/letter-draft.mjs` — §1681i draft HTML with variance
+- `src/inquiry-ops/doc-gate.mjs` — packet check (W2 extends flip-on-upload)
+- `src/events/canonical.mjs` — round.closeout, inquiry.gate.*, inquiry.docs.needed
+- `src/register-all.mjs` — registerInquiryGate
+- `src/handlers/money-chain.mjs` — emit round.closeout after closeout write
+- `src/documents/kinds.mjs` — ssn_card, proof_of_address, additional_fraud_docs subtypes
+- Tests: `inquiry-gate.test.mjs`, `inquiry-gate.pg.test.mjs`
+
