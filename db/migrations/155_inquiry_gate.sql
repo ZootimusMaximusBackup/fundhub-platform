@@ -6,6 +6,8 @@
 
 ALTER TABLE inquiry_removal_cases
   ADD COLUMN IF NOT EXISTS first_delivery_at  timestamptz,
+  ADD COLUMN IF NOT EXISTS first_delivery_channel text
+    CHECK (first_delivery_channel IS NULL OR first_delivery_channel IN ('portal', 'mail')),
   ADD COLUMN IF NOT EXISTS call_due_at        timestamptz,
   ADD COLUMN IF NOT EXISTS call_fired_at      timestamptz,
   ADD COLUMN IF NOT EXISTS letter_provider_id text,
@@ -17,10 +19,40 @@ ALTER TABLE inquiry_removal_cases
 
 COMMENT ON COLUMN inquiry_removal_cases.first_delivery_at IS
   'Whichever delivery landed first (Lob delivered or Experian portal upload). Starts the call clock.';
+COMMENT ON COLUMN inquiry_removal_cases.first_delivery_channel IS
+  'portal | mail — which channel set first_delivery_at; selects wait days from ai_bureau_config.';
 COMMENT ON COLUMN inquiry_removal_cases.call_due_at IS
-  'first_delivery_at + 1 business day, hour-preserved. No statutory 30-day window.';
+  'first_delivery_at + configured business-day wait for that bureau/channel, hour-preserved. No statutory window.';
 COMMENT ON COLUMN inquiry_removal_cases.gate_override_by IS
   'Owner-only override that clears this bureau for lender matching. Never silent.';
+
+-- Per-bureau / per-channel delivery→call wait (owner-tunable; not hardcoded).
+ALTER TABLE ai_bureau_config
+  ADD COLUMN IF NOT EXISTS portal_wait_business_days integer NOT NULL DEFAULT 1
+    CHECK (portal_wait_business_days >= 0),
+  ADD COLUMN IF NOT EXISTS mail_wait_business_days integer NOT NULL DEFAULT 3
+    CHECK (mail_wait_business_days >= 0);
+
+COMMENT ON COLUMN ai_bureau_config.portal_wait_business_days IS
+  'Business days after portal delivery before AI call. Default 1; tune per bureau.';
+COMMENT ON COLUMN ai_bureau_config.mail_wait_business_days IS
+  'Business days after mailed-letter delivery before AI call. Default 3 (placeholder).';
+
+-- Ensure the three bureau rows exist per org that has inquiry_removal (empty
+-- config shell — no phone numbers invented). ON CONFLICT keeps owner edits.
+INSERT INTO ai_bureau_config (org_id, bureau_code, bureau_name, portal_wait_business_days, mail_wait_business_days)
+SELECT p.org_id, v.code, v.name, 1, 3
+  FROM pipelines p
+  JOIN (VALUES
+    ('EX', 'Experian'),
+    ('EQ', 'Equifax'),
+    ('TU', 'TransUnion')
+  ) AS v(code, name) ON true
+ WHERE p.key = 'inquiry_removal'
+ON CONFLICT (org_id, bureau_code) DO UPDATE
+  SET portal_wait_business_days = COALESCE(ai_bureau_config.portal_wait_business_days, 1),
+      mail_wait_business_days = COALESCE(ai_bureau_config.mail_wait_business_days, 3),
+      updated_at = now();
 
 -- Renumber existing inquiry_removal stages, then insert the two new ones.
 -- Target order:

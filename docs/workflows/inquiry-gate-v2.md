@@ -1,7 +1,7 @@
 # Inquiry Gate v2 — shared board
 
 **Spec:** Inquiry Gate BUILD SPEC v2 (2026-08-06)  
-**Owner decisions:** Grok 4.5 fast (override); serial build; commit after each W; additional-docs = upload target only (no FTC generation).
+**Owner decisions:** Grok 4.5 fast (override); serial build; commit after each W; additional-docs = upload target only (no FTC generation); delivery→call wait is configurable per bureau/channel on `ai_bureau_config` (portal default 1, mail default 3) — not hardcoded.
 
 ## Task list
 
@@ -21,7 +21,8 @@
 | Column | Type | Meaning |
 |---|---|---|
 | `first_delivery_at` | timestamptz | First delivery land (portal upload ts OR Lob delivered webhook) |
-| `call_due_at` | timestamptz | `first_delivery_at` + 1 business day, hour-preserved |
+| `first_delivery_channel` | text | `portal` \| `mail` — which channel won; picks wait days |
+| `call_due_at` | timestamptz | delivery + `ai_bureau_config` wait for that bureau/channel, business days, hour-preserved |
 | `call_fired_at` | timestamptz | When AI bureau call was enqueued |
 | `letter_provider_id` | text | Lob (or swap) tracking id |
 | `portal_confirmation` | text | Experian portal reference — required to complete portal send |
@@ -61,6 +62,15 @@ Order after migration: `requested` → `specialist_assigned` → `awaiting_docum
 | External block | `hold` |
 
 Keep `optimization` (Repair) separate. Never move cards across.
+
+### `ai_bureau_config` wait columns (W4)
+
+| Column | Default | Meaning |
+|---|---|---|
+| `portal_wait_business_days` | 1 | Business days after portal upload before AI call |
+| `mail_wait_business_days` | 3 | Business days after Lob delivered before AI call (placeholder) |
+
+`call_due_at = first_delivery_at + wait(bureau, channel)`, business days, hour-preserved. Missing config row → use defaults above.
 
 ### Doc packet subtypes (`client_upload` + `authorization`)
 
