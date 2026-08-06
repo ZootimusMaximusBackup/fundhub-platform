@@ -2,6 +2,7 @@
 // Called from seedPlatformDemo. Idempotent. Failures in one section do not abort others.
 
 import { DEMO_CLIENTS, demoClientEmail, PLATFORM_TAG } from "./roster.mjs";
+import { createTask } from "../lib/create-task.mjs";
 
 const q = async (db, sql, params = []) => {
   try { return await db.query(sql, params); }
@@ -87,11 +88,38 @@ async function seedTasksCalendar(db, { orgId, clientIds, closer, advisor }) {
   for (const t of titles) {
     const clientId = clientIds[t.n];
     if (!clientId) continue;
-    await q(db,
-      `INSERT INTO tasks (org_id, client_id, assignee, title, body, due_at, source_workflow, done, is_demo)
-       SELECT $1,$2,$3,$4,$5, now() + ($6||' days')::interval, 'platform_demo', $7, true
-       WHERE NOT EXISTS (SELECT 1 FROM tasks WHERE org_id=$1 AND title=$4 AND is_demo)`,
-      [orgId, clientId, t.who?.name || "DEMO Closer", t.title, "Platform demo calendar item.", String(t.days), t.days < 0]);
+    // Must go through createTask — a raw INSERT leaves assignee_role NULL, so
+    // the calendar item is work with no owning role (the exact hole
+    // task-routing.test.mjs guards). Demo-only columns (is_demo / done /
+    // display assignee) are stamped after; createTask does not know about them.
+    const dueAt = new Date(Date.now() + Number(t.days) * 86400000);
+    let taskId = null;
+    try {
+      const result = await createTask(db, {
+        orgId,
+        clientId,
+        title: t.title,
+        sourceWorkflow: "platform_demo",
+        assigneeRole: t.who?.role || "closer",
+        assigneeStaffId: t.who?.id || null,
+        body: "Platform demo calendar item.",
+        dueAt,
+        dedupeOn: "title"
+      });
+      taskId = result?.id || null;
+    } catch {
+      taskId = null;
+    }
+    if (taskId) {
+      await q(db,
+        `UPDATE tasks SET is_demo=true, done=$2, assignee=$3 WHERE id=$1`,
+        [taskId, t.days < 0, t.who?.name || "DEMO Closer"]);
+    } else {
+      await q(db,
+        `UPDATE tasks SET is_demo=true, done=$3, assignee=$4, due_at=$5
+          WHERE org_id=$1 AND title=$2 AND source_workflow='platform_demo'`,
+        [orgId, t.title, t.days < 0, t.who?.name || "DEMO Closer", dueAt]);
+    }
   }
 }
 

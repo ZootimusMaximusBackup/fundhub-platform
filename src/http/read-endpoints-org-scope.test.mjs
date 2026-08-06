@@ -97,6 +97,10 @@ const NO_ORG_COLUMN = new Map([
   ["proxy-sessions.mjs", "scoped in src/proxy/sessions.mjs listProxySessions/getProxySession, which bind org_id = $1::uuid"],
   /* Agent shadow log — handler delegates to listShadow which binds org_id = $1. */
   ["agent-shadow-log.mjs", "scoped in src/agents/shadow-log.mjs listShadow(), which binds org_id = $1 and throws without an org"],
+  /* Galaxy presence feed — handler writes no SQL. companyActivity() in
+     src/galaxy/company-activity.mjs binds org_id = $1 on every query and throws
+     without an org. Verified by reading that module, not assumed from the name. */
+  ["company-activity.mjs", "scoped in src/galaxy/company-activity.mjs companyActivity(), which binds org_id = $1 and throws without an org"],
 ]);
 
 /* An allow-listed endpoint must still prove it hands the SESSION's org to
