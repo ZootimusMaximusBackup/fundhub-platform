@@ -12,7 +12,7 @@
 | W2 Doc gate + send gate | this session | done | |
 | W3 Lender gate | this session | done | |
 | W4 Delivery + call scheduler | this session | done | + configurable mail_service_level |
-| W5 Remover screen | this session | claimed | extend inquiry-remover.html only |
+| W5 Remover screen | this session | done | extend inquiry-remover.html only |
 
 ## Shared context brief
 
