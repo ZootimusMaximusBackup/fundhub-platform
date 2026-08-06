@@ -173,6 +173,20 @@
   .case-detail .cd-title{font-weight:800;font-size:14px;margin-bottom:4px;}
   .case-detail .cd-meta{font-size:12px;color:var(--text-dim);margin-bottom:8px;}
   #cases-panel{margin-bottom:18px;}
+  tr.case-main{cursor:pointer;}
+  tr.case-main:hover td{background:rgba(169,198,232,.08);}
+  tr.case-detail-row > td{background:var(--paper-dim);padding:0 !important;border-bottom:1px solid var(--line);}
+  .case-expand{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:14px;padding:14px 12px 16px;}
+  @media (max-width:1100px){.case-expand{grid-template-columns:1fr;}}
+  .case-col h4{margin:0 0 8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);}
+  .case-letter{max-height:280px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px;font-size:12px;}
+  .case-letter textarea{width:100%;min-height:220px;border:0;resize:vertical;font:inherit;background:transparent;}
+  .chip{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid var(--line);margin-right:4px;}
+  .chip.on{background:var(--blue-bg);border-color:var(--blue-line);color:var(--blue);}
+  .chip.done{background:var(--green-bg);border-color:var(--green-line);color:var(--green);}
+  .fraud-slot{margin-top:10px;padding:10px;border:1px dashed var(--line);border-radius:6px;background:var(--surface);}
+  .fraud-slot label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;}
+  .fraud-slot .hint{font-size:11px;color:var(--text-dim);margin:0 0 8px;}
 
   .rowchev{display:inline-block;width:9px;color:var(--text-faint);font-size:9px;
     transition:transform .16s ease;margin-right:5px;}
@@ -403,17 +417,18 @@
     <div class="section" id="caseQueueSection">
       <div class="section-title">Inquiry removal cases</div>
       <p style="font-size:12.5px;color:var(--text-dim);margin:0 0 10px">
-        Active cases with call state and hold time. Mark cleared closes the case and fires inquiry.removed.
+        One row per client per bureau. Click a row to review the letter, identity packet, and send.
+        Nothing mails until you press send.
       </p>
       <table class="queue" id="caseQueueTable">
         <thead>
           <tr>
-            <th>Case</th><th>Status</th><th>Call state</th><th>Hold</th>
-            <th>Assigned</th><th>Open</th><th></th>
+            <th>Client</th><th>Bureau</th><th>Items</th><th>Status</th>
+            <th>Docs</th><th>Delivery</th><th>Call</th><th>Round</th>
           </tr>
         </thead>
         <tbody id="caseQueueBody">
-          <tr><td colspan="7" style="color:var(--text-dim)">Loading cases…</td></tr>
+          <tr><td colspan="8" style="color:var(--text-dim)">Loading cases…</td></tr>
         </tbody>
       </table>
     </div>
@@ -915,6 +930,56 @@ function pendingLabel(action) {
   return "saving...";
 }
 
+/* ── CASE QUEUE (inquiry gate) ───────────────────────────────────────────────
+   Expanding-row helpers for inquiry_removal_cases. Send is human-only. */
+
+function caseUiStatus(row) {
+  const r = row || {};
+  const st = String(r.case_status || "");
+  if (st === "Blocked") return { label: "Blocked (docs)", cls: "noanswer" };
+  if (st === "Completed") return { label: "Complete", cls: "confirmed" };
+  if (r.call_fired_at) return { label: "Awaiting Call", cls: "progress" };
+  if (r.call_due_at || r.first_delivery_at || r.letter_provider_id || r.portal_confirmation) {
+    return { label: "Sent", cls: "progress" };
+  }
+  if (st === "Queued" || st === "Scheduled") return { label: "Ready for Review", cls: "new" };
+  if (st === "In Progress") return { label: "Sent", cls: "progress" };
+  return { label: st || "Unknown", cls: "" };
+}
+
+function caseCallState(row, now) {
+  const r = row || {};
+  if (r.call_fired_at) return "done";
+  if (!r.call_due_at) return "not due";
+  const due = new Date(r.call_due_at).getTime();
+  const t = (now || new Date()).getTime();
+  if (Number.isFinite(due) && due <= t) return "due";
+  return "not due";
+}
+
+function buildCaseSendRequest(opts) {
+  const o = opts || {};
+  if (!isUuid(o.caseId)) throw new ViewError("case id must be a uuid");
+  const mail = o.mail === true;
+  const portal = o.portal === true;
+  if (!mail && !portal) throw new ViewError("select mail and/or portal");
+  const body = { id: o.caseId, action: "send", mail: mail, portal: portal };
+  if (portal) {
+    const ref = blankToNull(o.portalConfirmation);
+    if (ref === null) {
+      throw new ViewError("Experian portal reference number is required");
+    }
+    body.portal_confirmation = ref;
+    const uploaded = blankToNull(o.portalUploadedAt);
+    if (uploaded !== null) body.portal_uploaded_at = uploaded;
+  }
+  const note = blankToNull(o.note);
+  if (note !== null) body.note = note;
+  const serviceLevel = blankToNull(o.mailServiceLevel || o.mail_service_level);
+  if (serviceLevel !== null) body.mail_service_level = serviceLevel;
+  return { method: "POST", path: "/api/inquiry-cases", body: body };
+}
+
 const VIEW = {
   ATTEMPT_KINDS: ATTEMPT_KINDS,
   COUNTING_KINDS: COUNTING_KINDS,
@@ -943,7 +1008,10 @@ const VIEW = {
   attemptLine: attemptLine,
   formatWhen: formatWhen,
   interpretAttempts: interpretAttempts,
-  pendingLabel: pendingLabel
+  pendingLabel: pendingLabel,
+  caseUiStatus: caseUiStatus,
+  caseCallState: caseCallState,
+  buildCaseSendRequest: buildCaseSendRequest
 };
 /* ==FHVIEW-END== */
 return VIEW;
@@ -1648,8 +1716,9 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
   window.__fhInitQueue();
 }
 
-/* Inquiry removal case queue — separate from per-inquiry work rows. */
+/* Inquiry removal case queue — expanding rows on this same page (no new route). */
 (function loadCaseQueue() {
+  var EXPANDED = null;
   function token() {
     try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; }
   }
@@ -1664,45 +1733,207 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
     return String(s == null ? "" : s)
       .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   }
+  function uiStatus(C) {
+    if (window.VIEW && VIEW.caseUiStatus) return VIEW.caseUiStatus(C);
+    return { label: C.case_status || "—", cls: "" };
+  }
+  function callState(C) {
+    if (window.VIEW && VIEW.caseCallState) return VIEW.caseCallState(C);
+    return "—";
+  }
+  function deliveryChips(C) {
+    var mail = C.letter_provider_id
+      ? (C.first_delivery_channel === "mail" || C.first_delivery_at ? "delivered" : "sent")
+      : "empty";
+    var portal = C.portal_confirmation
+      ? (C.first_delivery_channel === "portal" || C.first_delivery_at ? "delivered" : "sent")
+      : "empty";
+    function chip(label, state) {
+      var cls = state === "delivered" ? "chip done" : state === "sent" ? "chip on" : "chip";
+      return '<span class="' + cls + '">' + label + (state === "empty" ? "" : " · " + state) + "</span>";
+    }
+    var bureau = String(C.selected_bureaus_raw || "").toUpperCase();
+    var html = chip("Letter", mail);
+    if (bureau === "EX") html += chip("Portal", portal);
+    return html;
+  }
+  function docsLabel(C) {
+    return C.case_status === "Blocked" ? "chasing" : "complete";
+  }
+  function detailHtml(C) {
+    var bureau = String(C.selected_bureaus_raw || "").toUpperCase();
+    var blocked = C.case_status === "Blocked";
+    var letter = C.letter_draft_html || "<p><em>No draft letter yet.</em></p>";
+    var portalBlock = bureau === "EX"
+      ? '<label style="display:block;font-size:12px;margin:8px 0 4px">Experian portal reference (required if uploading)</label>' +
+        '<input type="text" class="portal-ref" placeholder="Reference from Experian confirmation" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px">' +
+        '<label style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:12px">' +
+        '<input type="checkbox" class="want-portal"> Upload to Experian portal</label>' +
+        '<a class="qbtn" style="display:inline-block;margin-top:6px;text-decoration:none" target="_blank" rel="noopener" href="https://www.experian.com/consumer/upload/">Open Experian upload ↗</a>'
+      : '<p style="font-size:12px;color:var(--text-dim)">Portal upload is Experian-only. Mail only for this bureau.</p>';
+    return (
+      '<div class="case-expand" data-case-id="' + esc(C.id) + '">' +
+        '<div class="case-col">' +
+          '<h4>Disputable items</h4>' +
+          '<div class="cd-meta">Open count: ' + esc(C.open_inquiry_count || 0) +
+            (C.funding_round_id ? ' · Round <span class="mono">' + esc(String(C.funding_round_id).slice(0, 8)) + '</span>' : '') +
+          '</div>' +
+          '<p style="font-size:12px;color:var(--text-dim)">Inquiries and personal-info mismatches staged for this bureau. Inclusion checkboxes land with the letter editor in a follow-up polish.</p>' +
+          '<div class="fraud-slot">' +
+            '<label>Additional documentation — fraud / identity theft cases</label>' +
+            '<p class="hint">Upload an FTC or police report you obtained. The system never generates or files one.</p>' +
+            '<input type="file" class="fraud-file" accept=".pdf,image/*">' +
+            '<button type="button" class="qbtn" data-act="upload-fraud" style="margin-top:8px">Attach to case</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="case-col">' +
+          '<h4>Generated letter (draft)</h4>' +
+          '<div class="case-letter"><textarea class="letter-edit">' + esc(letter.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 8000)) + '</textarea></div>' +
+          '<p style="font-size:11px;color:var(--text-dim);margin:6px 0 0">Draft only — nothing sends until you press send below.</p>' +
+        '</div>' +
+        '<div class="case-col">' +
+          '<h4>Identity packet</h4>' +
+          '<p style="font-size:12px;color:var(--text-dim)">Docs: ' + esc(docsLabel(C)) + '. SSN stays masked; reveal uses /api/pii with an audit reason.</p>' +
+          '<button type="button" class="qbtn" data-act="packet">Download packet</button>' +
+          '<h4 style="margin-top:14px">Send</h4>' +
+          (blocked
+            ? '<p style="font-size:12px;color:var(--red)">Send disabled — identity packet incomplete. Collection is chasing uploads.</p>'
+            : '') +
+          '<label style="display:flex;gap:6px;align-items:center;font-size:12px;margin:6px 0">' +
+            '<input type="checkbox" class="want-mail" ' + (blocked ? "disabled" : "checked") + '> Mail via Lob</label>' +
+          '<label style="display:flex;gap:6px;align-items:center;font-size:12px;margin:6px 0">' +
+            'Mail service <select class="mail-service" ' + (blocked ? "disabled" : "") + '>' +
+              '<option value="">Bureau default (priority express)</option>' +
+              '<option value="priority_express">Priority express</option>' +
+              '<option value="priority">Priority (downgrade)</option>' +
+            '</select></label>' +
+          portalBlock +
+          '<div class="case-actions">' +
+            '<button type="button" class="primary" data-act="send" ' + (blocked ? "disabled" : "") + '>Send</button>' +
+            '<button type="button" data-act="cleared">Mark cleared</button>' +
+            '<button type="button" data-act="close">Close</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+  function postCase(body) {
+    return fetch("/api/inquiry-cases", {
+      method: "POST",
+      headers: headers(true),
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json(); });
+  }
+  function bindDetail(trDetail, C) {
+    trDetail.querySelectorAll("[data-act]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var act = btn.getAttribute("data-act");
+        if (act === "cleared" || act === "close") {
+          postCase({
+            action: act === "cleared" ? "mark_cleared" : "close",
+            id: C.id,
+            case_status: act === "close" ? "Canceled" : "Completed"
+          }).then(function (d) {
+            if (!d.ok) { btn.textContent = d.error || "failed"; return; }
+            load();
+          });
+          return;
+        }
+        if (act === "upload-fraud") {
+          var fileInput = trDetail.querySelector(".fraud-file");
+          var file = fileInput && fileInput.files && fileInput.files[0];
+          if (!file) { btn.textContent = "choose file"; return; }
+          if (!C.client_id) { btn.textContent = "no client"; return; }
+          if (!window.FHData || typeof FHData.uploadFiles !== "function") {
+            btn.textContent = "upload unavailable";
+            return;
+          }
+          btn.disabled = true;
+          FHData.uploadFiles("/api/documents-upload", [file], {
+            client_id: C.client_id,
+            subtype: "additional_fraud_docs",
+            title: "Additional documentation — fraud / identity theft cases"
+          }).then(function (res) {
+            btn.disabled = false;
+            btn.textContent = res && res.ok ? "attached" : (res && res.error) || "failed";
+          }).catch(function () {
+            btn.disabled = false;
+            btn.textContent = "failed";
+          });
+          return;
+        }
+        if (act === "packet") {
+          if (C.client_id) window.open("/api/read/documents?client_id=" + encodeURIComponent(C.client_id), "_blank");
+          return;
+        }
+        if (act === "send") {
+          var wantMail = !!(trDetail.querySelector(".want-mail") || {}).checked;
+          var wantPortal = !!(trDetail.querySelector(".want-portal") || {}).checked;
+          var portalRef = ((trDetail.querySelector(".portal-ref") || {}).value || "").trim();
+          var serviceSel = trDetail.querySelector(".mail-service");
+          var serviceLevel = serviceSel ? serviceSel.value : "";
+          var req;
+          try {
+            req = VIEW.buildCaseSendRequest({
+              caseId: C.id,
+              mail: wantMail,
+              portal: wantPortal,
+              portalConfirmation: portalRef || null,
+              mailServiceLevel: serviceLevel || null
+            });
+          } catch (err) {
+            btn.textContent = err.message || "invalid";
+            return;
+          }
+          btn.disabled = true;
+          postCase(req.body).then(function (d) {
+            btn.disabled = false;
+            if (!d.ok) {
+              btn.textContent = d.message || d.error || "failed";
+              return;
+            }
+            load();
+          }).catch(function () {
+            btn.disabled = false;
+            btn.textContent = "failed";
+          });
+        }
+      });
+    });
+  }
   function renderCases(cases) {
     var body = document.getElementById("caseQueueBody");
     if (!body) return;
     if (!cases || !cases.length) {
-      body.innerHTML = '<tr><td colspan="7" style="color:var(--text-dim)">No active cases.</td></tr>';
+      body.innerHTML = '<tr><td colspan="8" style="color:var(--text-dim)">No active cases.</td></tr>';
       return;
     }
     body.innerHTML = "";
     cases.forEach(function (C) {
+      var st = uiStatus(C);
       var tr = document.createElement("tr");
+      tr.className = "case-main";
+      tr.setAttribute("aria-expanded", EXPANDED === C.id ? "true" : "false");
       tr.innerHTML =
-        "<td class=\"mono\">" + esc(C.case_id) + "</td>" +
-        "<td>" + esc(C.case_status) + "</td>" +
-        "<td>" + esc(C.master_call_state || "—") + "</td>" +
-        "<td>" + esc(C.hold_duration_display || "—") + "</td>" +
-        "<td>" + esc(C.assigned_remover || "—") + "</td>" +
-        "<td>" + esc(C.open_inquiry_count) + "</td>" +
-        '<td style="white-space:nowrap">' +
-          '<button type="button" class="btn-mini" data-act="cleared">Mark cleared</button> ' +
-          '<button type="button" class="btn-mini" data-act="close">Close</button>' +
-        "</td>";
+        "<td><span class=\"rowchev\">▶</span>" + esc(C.client_name || C.client_email || C.case_id) + "</td>" +
+        "<td class=\"mono\">" + esc(C.selected_bureaus_raw || "—") + "</td>" +
+        "<td>" + esc(C.open_inquiry_count || 0) + "</td>" +
+        "<td><span class=\"status-pill " + esc(st.cls) + "\">" + esc(st.label) + "</span></td>" +
+        "<td>" + esc(docsLabel(C)) + "</td>" +
+        "<td>" + deliveryChips(C) + "</td>" +
+        "<td>" + esc(callState(C)) + "</td>" +
+        "<td class=\"mono\">" + esc(C.funding_round_id ? String(C.funding_round_id).slice(0, 8) : "—") + "</td>";
       body.appendChild(tr);
-      tr.querySelectorAll("button[data-act]").forEach(function (btn) {
-        btn.addEventListener("click", function (e) {
-          e.stopPropagation();
-          var act = btn.getAttribute("data-act") === "cleared" ? "mark_cleared" : "close";
-          fetch("/api/inquiry-cases", {
-            method: "POST",
-            headers: headers(true),
-            body: JSON.stringify({
-              action: act,
-              id: C.id,
-              case_status: act === "close" ? "Canceled" : "Completed"
-            })
-          }).then(function (r) { return r.json(); }).then(function (d) {
-            if (!d.ok) { btn.textContent = d.error || "failed"; return; }
-            load();
-          });
-        });
+      var detail = document.createElement("tr");
+      detail.className = "case-detail-row";
+      detail.hidden = EXPANDED !== C.id;
+      detail.innerHTML = '<td colspan="8">' + detailHtml(C) + "</td>";
+      body.appendChild(detail);
+      bindDetail(detail, C);
+      tr.addEventListener("click", function () {
+        EXPANDED = EXPANDED === C.id ? null : C.id;
+        renderCases(cases);
       });
     });
   }
@@ -1712,7 +1943,7 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
       .then(function (d) { renderCases((d && d.cases) || []); })
       .catch(function () {
         var body = document.getElementById("caseQueueBody");
-        if (body) body.innerHTML = '<tr><td colspan="7" style="color:var(--text-dim)">Could not load cases (sign in?).</td></tr>';
+        if (body) body.innerHTML = '<tr><td colspan="8" style="color:var(--text-dim)">Could not load cases (sign in?).</td></tr>';
       });
   }
   load();

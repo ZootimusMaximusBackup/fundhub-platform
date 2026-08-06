@@ -31,29 +31,34 @@ export async function listCases(db, {
   offset = 0
 } = {}) {
   const params = [orgId];
-  const where = ["org_id = $1::uuid"];
+  const where = ["c.org_id = $1::uuid"];
   if (case_status && CASE_SET.has(case_status)) {
     params.push(case_status);
-    where.push(`case_status = $${params.length}::inquiry_case_status`);
+    where.push(`c.case_status = $${params.length}::inquiry_case_status`);
   } else if (activeOnly) {
-    where.push(`case_status::text = ANY($2::text[])`);
     params.push([...ACTIVE]);
+    where.push(`c.case_status::text = ANY($${params.length}::text[])`);
   }
   if (assigned_remover) {
     params.push(String(assigned_remover));
-    where.push(`assigned_remover = $${params.length}`);
+    where.push(`c.assigned_remover = $${params.length}`);
   }
   if (clientId) {
     params.push(clientId);
-    where.push(`client_id = $${params.length}::uuid`);
+    where.push(`c.client_id = $${params.length}::uuid`);
   }
   params.push(Math.min(Math.max(Number(limit) || 100, 1), 500));
   params.push(Math.max(Number(offset) || 0, 0));
   const r = await db.query(
-    `SELECT *
-       FROM inquiry_removal_cases
+    `SELECT c.*,
+            cl.first_name AS client_first_name,
+            cl.last_name AS client_last_name,
+            cl.email AS client_email,
+            trim(both ' ' FROM concat_ws(' ', cl.first_name, cl.last_name)) AS client_name
+       FROM inquiry_removal_cases c
+       LEFT JOIN clients cl ON cl.id = c.client_id
       WHERE ${where.join(" AND ")}
-      ORDER BY requested_at DESC NULLS LAST, created_at DESC
+      ORDER BY c.requested_at DESC NULLS LAST, c.created_at DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   );

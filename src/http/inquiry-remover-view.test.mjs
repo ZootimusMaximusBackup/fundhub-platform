@@ -537,10 +537,27 @@ test("VIEW exposes every export the screen calls, so a rename cannot half-land",
     "interpretWrite", "interpretIdentity", "interpretReveal",
     "maskedSsnLabel", "canReveal", "formatRevealed",
     "createRowState", "beginWrite", "settleWrite", "failWrite",
-    "attemptsDelta", "pendingLabel"
+    "attemptsDelta", "pendingLabel",
+    "caseUiStatus", "caseCallState", "buildCaseSendRequest"
   ]) {
     assert.ok(VIEW[name], name + " is missing from VIEW");
   }
+});
+
+test("buildCaseSendRequest: human send only, portal needs reference", () => {
+  const r = VIEW.buildCaseSendRequest({ caseId: ID, mail: true });
+  assert.equal(r.path, "/api/inquiry-cases");
+  assert.equal(r.body.action, "send");
+  assert.equal(r.body.mail, true);
+  assert.throws(
+    () => VIEW.buildCaseSendRequest({ caseId: ID, portal: true }),
+    /reference number/
+  );
+  const p = VIEW.buildCaseSendRequest({
+    caseId: ID, portal: true, portalConfirmation: "REF-1", mailServiceLevel: "priority"
+  });
+  assert.equal(p.body.portal_confirmation, "REF-1");
+  assert.equal(p.body.mail_service_level, "priority");
 });
 
 /* ── rules that live in the HTML itself ────────────────────────────────────── */
