@@ -26,7 +26,9 @@ bite under a rebrand are closed or downgraded below — see 3 and 6.
 | 6 | Brand defined in 23 places | **LOW** — drift risk only, no rebrand |
 | 7 | Faux-bold from missing font weight | **FIXED** |
 | 8 | `sidebar.fragment.html` dead | **HELD** — deletion, needs owner answer |
-| — | `contract.html` signature overlay colors | **HELD** — needs a visual check |
+| 9 | `contract.html` signature overlay colors | **FIXED** — fields themselves still unseen |
+| 10 | `lenders.html` button font reset (specificity) | **FIXED** — found by rendering |
+| 11 | Warm palette surviving as `rgba()` on 5 headers | **FIXED** — found by rendering |
 
 ---
 
@@ -325,6 +327,110 @@ loads. Added the two preconnect hints already used on the other 42 pages.
 **Noted, not actioned** (would need restructuring, which is out of scope):
 `creative-factory.html` 196KB, `hiring.html` 180KB, `campaign-manager.html`
 164KB. All inline CSS/JS, no images.
+
+---
+
+## Round 3 — rendered the pages, found two more
+
+The first two rounds were source inspection only. This round actually started
+Chromium against a static server on `public/` and asserted computed styles.
+**That found two real bugs the source sweep had missed**, one of which was a
+"fix" from round 2 that had silently not taken effect.
+
+### 10. `lenders.html` buttons — the round-2 fix did not apply
+
+Round 2 added `font-weight:500` to `.btn` in `lenders.html`. The rendered page
+still computed `font-weight: 400`.
+
+Cause, at `lenders.html:33`:
+
+```css
+.filters select,.filters input,textarea,button.btn{font:inherit}
+```
+
+`button.btn` is specificity (0,1,1). The `.btn` rule at line 35 is (0,1,0). The
+more specific selector wins, and `font:inherit` is a shorthand — it was
+resetting `font-weight` **and `font-size`** back to the inherited values. So the
+buttons on this page were both lighter and the wrong size, and had been the
+whole time.
+
+This is the button drift that was actually visible.
+
+**Fix:** dropped `button.btn` from the reset (the other three selectors keep
+`font:inherit` unchanged) and added `font-family:inherit` to `.btn`, which is
+what including the button there was reaching for. Now verified in-browser:
+`border-radius 7px`, `padding 8px 14px`, `font-weight 500`, `font-size 12.5px`.
+
+Checked every other page for the same shape. `lenders.html` is the only one.
+The common `button,input,select,textarea{font:inherit}` pattern on ~20 other
+pages is specificity (0,0,1) — **lower** than `.btn`, so those are fine.
+
+### 11. The warm palette survived in `rgba()` form — 5 pages
+
+Round 2 swept for hex codes and reported the legal pages clean. Looking at the
+rendered Terms page showed a header still tinted warm against a corrected body.
+
+```css
+header{position:sticky;top:0;background:rgba(251,250,247,.9);backdrop-filter:blur(8px)}
+```
+
+`rgb(251,250,247)` is `#FBFAF7` — the same warm cream, written in a form the hex
+grep could not see. Present on all five legal pages. **Fixed** to
+`rgba(252,252,252,.9)`.
+
+Verified in-browser: header now computes `rgba(252, 252, 252, 0.9)`.
+
+### 9 (revisited). Contract signature colors — fixed
+
+Held in round 2 for lack of a visual check. Resolved on evidence instead:
+`contract.html` **already defines** the house dark pairs a few lines above, and
+its own badge rules show the intended pattern —
+
+```css
+.b-info{background:rgba(169,198,232,.26);border-color:var(--info);color:#22415F}
+```
+
+The signature-field rules use the **same** `rgba(169,198,232)` and
+`rgba(168,216,176)` fills as those badges, then reach outside the palette for
+the border and text. That is drift, not a design decision.
+
+| Was | Now | Why |
+|---|---|---|
+| `#6C7DD6` field border | `#22415F` | house dark blue, pairs the `--info` fill already there |
+| `#4E8B5F` done border | `#2C5138` | house dark sage, pairs the `--ok` fill already there |
+| `#4A57A8` field label | `#22415F` | same value `.b-info` uses for text |
+| `#0D1C6B` signature text | `#22415F` | same |
+| `#4E8B5F` signed dot | `#2C5138` | same |
+| `#D9A441` "now" dot | `#6B4A12` | house dark amber |
+
+Every replacement is **darker** than what it replaced, so legibility can only
+improve — that is what made this safe without eyes on it. Same two colors fixed
+in `app/contracts.html`, which carries the same overlay.
+
+**Still not visually confirmed:** `/contract.html` needs a real document token,
+so the signature fields do not render without one. The page chrome and error
+state were checked and are correct. The fields themselves are reasoned, not
+seen.
+
+### What rendering confirmed
+
+Chromium, 1280×900, static server on `public/`, auth gate stubbed so app screens
+paint. 13 computed-style assertions, all passing:
+
+- `terms`, `privacy`, `education/terms` — body `rgb(252,252,252)`, header
+  `rgba(252,252,252,0.9)`
+- `lenders` — `.btn` radius 7px, padding 8px 14px, weight 500, size 12.5px
+- `pipeline`, `ops-admin`, `client-portal` — `.card` radius 10px
+- `finance-os` — `.btn` padding 8px 14px
+- `consent-capture` — `.btn` radius 7px
+
+Two skipped: `pipeline .btn` and `hiring .panel` are rendered by script after
+data loads and are not in the initial DOM. Their CSS is correct at source but
+unconfirmed in-browser.
+
+Caveat: the font CDN is unreachable from this environment, so screenshots render
+in fallback faces. Colors, radii, spacing and weights are real; the typeface in
+the images is not.
 
 ---
 
