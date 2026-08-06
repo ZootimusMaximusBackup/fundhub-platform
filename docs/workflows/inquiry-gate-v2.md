@@ -9,10 +9,10 @@
 |---|---|---|---|
 | W0 Migration + brief | this session | done | + configurable wait columns |
 | W1 Trigger + letter draft | this session | done | |
-| W2 Doc gate + send gate | this session | claimed | |
-| W3 Lender gate | this session | pending | |
-| W4 Delivery + call scheduler | this session | pending | |
-| W5 Remover screen | this session | pending | |
+| W2 Doc gate + send gate | this session | done | |
+| W3 Lender gate | this session | done | |
+| W4 Delivery + call scheduler | this session | claimed | |
+| W5 Remover screen | this session | pending | extend inquiry-remover.html only |
 
 ## Shared context brief
 

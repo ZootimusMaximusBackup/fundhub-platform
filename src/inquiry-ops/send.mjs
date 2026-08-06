@@ -8,6 +8,7 @@
 import { evaluateDocGate } from "./doc-gate.mjs";
 import { logAttempt } from "../inquiries/work.mjs";
 import { moveCardToStage } from "../workflows/cards.mjs";
+import { scheduleFromDelivery } from "./call-scheduler.mjs";
 
 export class SendGateError extends Error {
   constructor(message, { status = 400, code = "send_gate" } = {}) {
@@ -228,16 +229,13 @@ export async function sendCase(db, {
         WHERE id = $1`,
       [caseId, ref]
     );
-    // First-delivery clock may start from portal upload (W4 scheduler owns math).
-    await db.query(
-      `UPDATE inquiry_removal_cases
-          SET first_delivery_at = COALESCE(first_delivery_at, $2::timestamptz),
-              first_delivery_channel = COALESCE(first_delivery_channel, 'portal'),
-              updated_at = now()
-        WHERE id = $1
-          AND first_delivery_at IS NULL`,
-      [caseId, uploadedAt.toISOString()]
-    );
+    // Portal upload timestamp starts the call clock if it lands first.
+    await scheduleFromDelivery(db, {
+      caseId,
+      orgId,
+      deliveredAt: uploadedAt.toISOString(),
+      channel: "portal"
+    });
   }
 
   await db.query(

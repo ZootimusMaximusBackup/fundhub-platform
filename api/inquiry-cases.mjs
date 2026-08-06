@@ -8,6 +8,7 @@ import { createCase, updateCase, closeCase, CASE_STATUSES } from "../src/inquiry
 import { clearInquiry as clearBridgeInquiry } from "../src/inquiry-removal/cases.mjs";
 import { sendCase, SendGateError } from "../src/inquiry-ops/send.mjs";
 import { overrideBureauGate } from "../src/inquiry-ops/gate.mjs";
+import { sendLetter } from "../src/messaging/providers/lob-letter.mjs";
 import { emit } from "../src/events/bus.mjs";
 import { dbDown } from "../src/http/db-down.mjs";
 
@@ -118,15 +119,37 @@ export default async function handler(req, res, deps = {}) {
 
     if (action === "send") {
       try {
+        const wantMail = body.mail === true || body.channels?.mail === true;
+        const mailSender = wantMail
+          ? async ({ caseRow }) => {
+              const html = caseRow.letter_draft_html || "<p>Dispute letter</p>";
+              const sent = await sendLetter({
+                description: `Inquiry case ${caseRow.case_id || caseRow.id}`,
+                file: `<html>${html}</html>`,
+                to: body.mail_to || body.mailTo || {
+                  name: body.recipient_name || "Bureau",
+                  address_line1: body.address_line1 || "PO Box",
+                  address_city: body.address_city || "Allen",
+                  address_state: body.address_state || "TX",
+                  address_zip: body.address_zip || "75013"
+                }
+              });
+              if (!sent.ok) {
+                return { providerId: null, outcome: `mail_failed:${sent.error || "unknown"}` };
+              }
+              return { providerId: sent.providerId, outcome: "sent" };
+            }
+          : null;
         const result = await sendCase(database, {
           caseId: body.id,
           staffId: staff.id,
           orgId,
-          mail: body.mail === true || body.channels?.mail === true,
+          mail: wantMail,
           portal: body.portal === true || body.channels?.portal === true,
           portalConfirmation: body.portal_confirmation || body.portalConfirmation || null,
           portalUploadedAt: body.portal_uploaded_at || body.portalUploadedAt || null,
-          note: body.note || null
+          note: body.note || null,
+          mailSender
         });
         return res.status(200).json({ ok: true, ...result });
       } catch (err) {
