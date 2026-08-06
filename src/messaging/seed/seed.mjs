@@ -4,8 +4,9 @@
 //   …                          node src/messaging/seed/seed.mjs --dry-run
 //   …                          node src/messaging/seed/seed.mjs --docs=/path/to/fundhub-docs/sources
 //
-// Reads the three source docs in fundhub-docs/sources, parses them, and upserts
-// one message_templates row per template. It is a PARSER, not a transcription:
+// Reads the source docs in fundhub-docs/sources (SMS-TEMPLATES-CURRENT.md +
+// EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md), parses them, and upserts one
+// message_templates row per template. It is a PARSER, not a transcription:
 // edit the copy in the doc, re-run, and the rows follow. Copy is verbatim.
 //
 // Idempotent — ON CONFLICT (org_id, template_key) DO UPDATE. Re-running is safe

@@ -7,8 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  parseSmsRewrites,
-  parseWorkflowInlineSms,
+  parseSmsCurrent,
   workflowTemplateKey,
   blockquoteBlocks,
   slugifyKey,
@@ -35,43 +34,43 @@ test("blockquoteBlocks: strips exactly one space after '>', keeps the rest verba
   assert.deepEqual(blockquoteBlocks([">"])[0].lines, [""]);
 });
 
-// ------------------------------------------------------------- SMS rewrites
+// ------------------------------------------------------------- SMS current
 
-test("parseSmsRewrites: one row per ### header, group headers are not templates", () => {
-  const rows = parseSmsRewrites(read("SMS-Compliant-Rewrites.md"), "fixture");
+test("parseSmsCurrent: one row per ## KEY header", () => {
+  const rows = parseSmsCurrent(read("SMS-TEMPLATES-CURRENT.md"), "fixture");
   assert.deepEqual(rows.map((r) => r.templateKey), [
-    "SMS-FIX-01-REWORDED",
-    "SMS-FIX-02-AFTER-ONLY",
-    "SMS-CLEAN-01-NO-MARKER",
+    "SMS-FIX-01-PLAIN",
+    "SMS-FIX-02-SINGLE",
+    "SMS-CLEAN-01-PLAIN",
     "SMS-BROKEN-01-EMPTY",
+    "SMS-F03-01-ROUND-SUBMITTED",
   ]);
 });
 
-test("parseSmsRewrites: takes the After body, never the Before", () => {
-  const rows = parseSmsRewrites(read("SMS-Compliant-Rewrites.md"), "fixture");
-  const r = rows.find((x) => x.templateKey === "SMS-FIX-01-REWORDED");
+test("parseSmsCurrent: plain-text body under the header, multi-line preserved", () => {
+  const rows = parseSmsCurrent(read("SMS-TEMPLATES-CURRENT.md"), "fixture");
+  const r = rows.find((x) => x.templateKey === "SMS-FIX-01-PLAIN");
   assert.equal(
     r.body,
     "Hey {{contact.first_name}}, line one.\nLine two with {{custom_values.booking_link}}. Reply STOP to opt out."
   );
-  assert.ok(!r.body.includes("Old wording"));
 });
 
-test("parseSmsRewrites: body directly under the header when there is no After marker", () => {
-  const rows = parseSmsRewrites(read("SMS-Compliant-Rewrites.md"), "fixture");
+test("parseSmsCurrent: single-line body", () => {
+  const rows = parseSmsCurrent(read("SMS-TEMPLATES-CURRENT.md"), "fixture");
   assert.equal(
-    rows.find((x) => x.templateKey === "SMS-CLEAN-01-NO-MARKER").body,
+    rows.find((x) => x.templateKey === "SMS-CLEAN-01-PLAIN").body,
     "Body sits directly under the header. Reply STOP to opt out."
   );
 });
 
-test("parseSmsRewrites: a header with no blockquote yields an empty body, not a throw", () => {
-  const rows = parseSmsRewrites(read("SMS-Compliant-Rewrites.md"), "fixture");
+test("parseSmsCurrent: a header with no body yields an empty body, not a throw", () => {
+  const rows = parseSmsCurrent(read("SMS-TEMPLATES-CURRENT.md"), "fixture");
   assert.equal(rows.find((x) => x.templateKey === "SMS-BROKEN-01-EMPTY").body, "");
 });
 
-test("parseSmsRewrites: sms channel, no subject, compliance_passed true", () => {
-  for (const r of parseSmsRewrites(read("SMS-Compliant-Rewrites.md"), "doc.md")) {
+test("parseSmsCurrent: sms channel, no subject, compliance_passed true", () => {
+  for (const r of parseSmsCurrent(read("SMS-TEMPLATES-CURRENT.md"), "doc.md")) {
     assert.equal(r.channel, "sms");
     assert.equal(r.subject, null);
     assert.equal(r.compliancePassed, true);
@@ -79,7 +78,7 @@ test("parseSmsRewrites: sms channel, no subject, compliance_passed true", () => 
   }
 });
 
-// -------------------------------------------------------- workflow-inline SMS
+// -------------------------------------------------------- key helpers
 
 test("slugifyKey: uppercases and collapses punctuation, em-dashes included", () => {
   assert.equal(slugifyKey("AI-SET-03 — No-Answer SMS Cadence"), "AI-SET-03-NO-ANSWER-SMS-CADENCE");
@@ -103,23 +102,6 @@ test("workflowTemplateKey: is deterministic — same header always yields the sa
   const b = workflowTemplateKey("Round Started — Client Notify", 0);
   assert.equal(a, b);
   assert.equal(a, "SMS-WF-ROUND-STARTED-CLIENT-NOTIFY-01");
-});
-
-test("parseWorkflowInlineSms: one row per blockquote, indexed within the section", () => {
-  const rows = parseWorkflowInlineSms(read("Workflow-SMS-Fixes-Ready-to-Paste.md"), "fixture");
-  assert.deepEqual(rows.map((r) => r.templateKey), [
-    "SMS-WF-WF-TEST-01-TWO-MESSAGE-CADENCE-01",
-    "SMS-WF-WF-TEST-01-TWO-MESSAGE-CADENCE-02",
-    "SMS-WF-WF-TEST-02-NEEDS-A-LINK-01",
-    "SMS-WF-ROUND-STARTED-CLIENT-NOTIFY-01",
-  ]);
-});
-
-test("parseWorkflowInlineSms: parenthetical notes after the quote are not body", () => {
-  const rows = parseWorkflowInlineSms(read("Workflow-SMS-Fixes-Ready-to-Paste.md"), "fixture");
-  const r = rows.find((x) => x.templateKey === "SMS-WF-WF-TEST-02-NEEDS-A-LINK-01");
-  assert.equal(r.body, "Hi {{contact.first_name}}, here is the link: [PASTE LINK]. Reply STOP to opt out.");
-  assert.ok(!r.body.includes("parenthetical"));
 });
 
 // ------------------------------------------------------------------- emails

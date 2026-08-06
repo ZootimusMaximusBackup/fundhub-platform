@@ -280,14 +280,16 @@ test("the real source docs parse to the counts the docs themselves claim", async
   }
   const { perDoc, seedable, problems } = collect(docsDir);
   const byFile = Object.fromEntries(perDoc.map((d) => [d.file, d.found]));
-  assert.equal(byFile["SMS-Compliant-Rewrites.md"], 18);
+  assert.equal(byFile["SMS-TEMPLATES-CURRENT.md"], 18);
   assert.equal(byFile["EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md"], 158);
   assert.equal(problems.emptyBody.length, 0);
   assert.equal(new Set(seedable.map((x) => x.templateKey)).size, seedable.length);
   assert.ok(seedable.some((x) => x.templateKey === "SMS-F03-01-ROUND-SUBMITTED"));
   // Copy is verbatim: this line must survive the parser exactly as written.
   const f03 = seedable.find((x) => x.templateKey === "SMS-F03-01-ROUND-SUBMITTED");
-  assert.ok(f03.body.startsWith("Hey {{contact.first_name}} — quick update ✅"));
-  assert.ok(f03.body.endsWith("Questions? Reply HELP. Reply STOP to opt out."));
+  assert.ok(
+    f03.body.startsWith("Fundhub update, {{contact.first_name}}: Round {{custom_fields.funding_round_number}} has been submitted.")
+  );
+  assert.ok(f03.body.endsWith("Reply STOP to opt out."));
   assert.equal(f03.compliancePassed, true);
 });

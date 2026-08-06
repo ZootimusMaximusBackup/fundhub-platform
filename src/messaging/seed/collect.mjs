@@ -1,4 +1,4 @@
-// Reads the three source docs, parses them, and validates the result before a
+// Reads the two source docs, parses them, and validates the result before a
 // single row is written.
 //
 // Validation exists because the source docs are hand-maintained and DO contain
@@ -9,7 +9,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseSmsRewrites, parseWorkflowInlineSms } from "./parse-sms.mjs";
+import { parseSmsCurrent } from "./parse-sms.mjs";
 import { parseEmailTemplates } from "./parse-email.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -23,18 +23,14 @@ export const DOCS_CANDIDATES = [
   path.resolve(REPO, "fundhub-docs/sources"),
 ];
 
+// Owner decision 2026-08-06: SMS-TEMPLATES-CURRENT.md supersedes both
+// SMS-Compliant-Rewrites.md and Workflow-SMS-Fixes-Ready-to-Paste.md.
 export const SOURCES = [
   {
-    file: "SMS-Compliant-Rewrites.md",
-    parse: parseSmsRewrites,
+    file: "SMS-TEMPLATES-CURRENT.md",
+    parse: parseSmsCurrent,
     expected: 18,
-    note: "snippet-library SMS (compliance-audited rewrites)",
-  },
-  {
-    file: "Workflow-SMS-Fixes-Ready-to-Paste.md",
-    parse: parseWorkflowInlineSms,
-    expected: 11,
-    note: "workflow-inline SMS (compliance-audited rewrites)",
+    note: "post-compliance SMS source of truth (## KEY + plain body)",
   },
   {
     file: "EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md",
