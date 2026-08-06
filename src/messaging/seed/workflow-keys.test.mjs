@@ -15,7 +15,7 @@ const DOC = [
     subject: null,
     body: "Hey {{contact.first_name}} — round submitted. Reply STOP to opt out.",
     compliancePassed: true,
-    sourceDoc: "fundhub-docs/sources/SMS-Compliant-Rewrites.md",
+    sourceDoc: "fundhub-docs/sources/SMS-TEMPLATES-CURRENT.md",
     label: "SMS-F03-01-ROUND-SUBMITTED",
   },
   {
@@ -33,7 +33,7 @@ const DOC = [
     subject: null,
     body: "Msg1 body. Reply STOP to opt out.",
     compliancePassed: true,
-    sourceDoc: "fundhub-docs/sources/Workflow-SMS-Fixes-Ready-to-Paste.md",
+    sourceDoc: "fundhub-docs/sources/SMS-TEMPLATES-CURRENT.md",
     label: "AI-SET-03 msg1",
   },
 ];

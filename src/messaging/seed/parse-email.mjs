@@ -1,5 +1,5 @@
-// Parser for fundhub-docs/sources/EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md (158 emails
-// extracted from the GHL builder).
+// Parser for fundhub-docs/sources/EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md (162 emails
+// extracted from the GHL builder, plus owner-supplied DRAFT fill-ins).
 //
 // Each template is fenced:
 //
@@ -42,7 +42,7 @@ export function parseEmailTemplates(markdown, sourceDoc) {
       channel: "email",
       subject,
       body,
-      compliancePassed: false, // the 158 emails have never been compliance-audited
+      compliancePassed: false, // emails are never auto-marked compliance_passed
       sourceDoc,
       label: header.name ? `${header.key} — ${header.name}` : header.key,
       folder: header.folder,

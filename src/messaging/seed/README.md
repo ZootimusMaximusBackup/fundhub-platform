@@ -21,8 +21,7 @@ and converges the rows on whatever the docs currently say.
 
 | Doc | Channel | Notes |
 |---|---|---|
-| `SMS-Compliant-Rewrites.md` | sms | audited + reworded |
-| `Workflow-SMS-Fixes-Ready-to-Paste.md` | sms | audited + reworded |
+| `SMS-TEMPLATES-CURRENT.md` | sms | post-compliance source of truth (`## KEY` + plain body); supersedes the old Compliant-Rewrites + Workflow-SMS-Fixes docs |
 | `EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md` | email | never compliance-audited |
 
 **`compliance_passed` is always written `false`.** Owner decision 2026-08-04:

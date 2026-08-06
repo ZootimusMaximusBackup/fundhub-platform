@@ -15,6 +15,13 @@
 // emits. Refreshing from upstream is: copy the two files, change the commit sha
 // above, run the tests. Nothing else in this repo imports ./vendor/ — that is the
 // whole point of this module existing.
+//
+// 2026-08-06 REVIEW — full upstream tree was vendored to vendor/underwriteiq/
+// for inspection. Owner decision: KEEP THIS LIVE SNAPSHOT. The fresh
+// api/lite/underwriter.js had restored `liteBannerFunding = 15000`; this live
+// copy keeps `null` (fixtures.test.mjs enforces it). Duplicate underwriter.js
+// and suggestions.js were deleted from vendor/underwriteiq/ so they cannot be
+// imported by mistake. All other files under vendor/underwriteiq/ stay, unwired.
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 // WHY VERBATIM .cjs FILES AND A STATIC IMPORT, RATHER THAN A HAND-PORT TO ESM OR
