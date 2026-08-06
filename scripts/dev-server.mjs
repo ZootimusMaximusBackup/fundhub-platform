@@ -19,6 +19,10 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadEnv } from "./load-env.mjs";
+
+// Local secrets live in repo-root .env (gitignored). Production uses Netlify.
+loadEnv();
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../public");
 const argv = process.argv;

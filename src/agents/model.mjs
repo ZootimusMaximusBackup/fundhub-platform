@@ -7,7 +7,7 @@
 //
 // No new npm dependency — raw fetch, same posture as src/messaging/providers/*.
 
-export const DEFAULT_MODEL = "claude-sonnet-4-20250514";
+export const DEFAULT_MODEL = "claude-sonnet-4-5-20250929";
 export const DEFAULT_MAX_TOKENS = 600;
 
 /**
