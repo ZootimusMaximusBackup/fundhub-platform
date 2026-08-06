@@ -105,6 +105,11 @@ Remover attaches FTC/police report they obtained. No generation, no pre-fill, no
 
 ## Change manifests
 
+### W0
+- `db/migrations/155_inquiry_gate.sql` — case delivery/call columns, pipeline stages, `ai_bureau_config` wait + `mail_service_level`
+- `db/expected-migrations.mjs` — lists 155
+- `docs/workflows/inquiry-gate-v2.md` — this board
+
 ### W1
 - `src/handlers/inquiry-gate.mjs` — deposit.paid + round.closeout → per-bureau cases, draft letter, doc-gate status, pipeline move, emits
 - `src/inquiry-ops/extract-disputables.mjs` (+ test) — CRS + inquiry_log → per-bureau items
@@ -115,4 +120,39 @@ Remover attaches FTC/police report they obtained. No generation, no pre-fill, no
 - `src/handlers/money-chain.mjs` — emit round.closeout after closeout write
 - `src/documents/kinds.mjs` — ssn_card, proof_of_address, additional_fraud_docs subtypes
 - Tests: `inquiry-gate.test.mjs`, `inquiry-gate.pg.test.mjs`
+
+### W2
+- `src/inquiry-ops/send.mjs` (+ tests) — human send gate; portal needs Experian ref; EX-only portal
+- `src/handlers/inquiry-docs.mjs` (+ test) — `inquiry.docs.needed` chase via F-06 templates; `docs.received` flip
+- `api/inquiry-cases.mjs` — `send` + `gate_override` actions
+- `src/register-all.mjs` — registerInquiryDocs
+
+### W3
+- `src/lenders/match.mjs` (+ tests) — `sensitiveBureaus` takes case rows; override clears bureau
+- `src/lenders/store.mjs` — `matchForClient` loads active cases
+- `src/inquiry-ops/gate.mjs` — gate status, owner override, round attach + closer task
+- `src/handlers/money-chain.mjs` — `attachGateToRound` on `round.started`
+
+### W4
+- `src/messaging/providers/lob-letter.mjs` (+ test) — Lob letter send + webhook verify; `service` from config
+- `src/inquiry-ops/business-days.mjs` (+ test) — hour-preserving business days + holidays
+- `src/inquiry-ops/call-scheduler.mjs` (+ test) — first delivery → `call_due_at` from config wait
+- `src/workflows/inquiry-call-sweeper.mjs` — defined, not registered
+- `src/http/router.mjs` — `/api/webhooks/lob` delivery → starts call clock
+
+### W5
+- `public/app/inquiry-remover.html` — expandable case rows (same route, no new page/nav)
+- `src/http/inquiry-remover-view.mjs` (+ test) — `buildCaseSendRequest`, case UI labels
+- `src/inquiry-ops/cases.mjs` — listCases joins client name
+- Journeys: `role-inquiry-remover-actual` regenerated; CHANGELOG `890f1ba`
+
+## Batch status
+
+**Complete** (W0–W5). Not pushed. Migration 155 not applied to prod from this session (`DATABASE_URL` unset; Netlify API blocked here).
+
+### Still for humans
+1. Apply `155_inquiry_gate.sql` on prod
+2. Set `LOB_API_KEY` / `LOB_WEBHOOK_SECRET` when wiring mail (not before)
+3. Register `inquiry-call-sweeper` when ready to fire calls on a schedule
+4. Smoke Inquiry Remover expand → send on a demo client
 
