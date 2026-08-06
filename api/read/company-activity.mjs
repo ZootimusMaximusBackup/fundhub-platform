@@ -19,13 +19,14 @@ export default async function handler(req, res, deps = {}) {
   if (!staff) return;
   if (!requireRole(res, staff, ROLE_SETS.STAFF)) return;
 
-  const orgId = staff.org_id;
-  if (!isUuid(orgId)) {
+  if (!isUuid(staff.org_id)) {
     return res.status(403).json({ ok: false, error: "forbidden" });
   }
 
   try {
-    const data = await companyActivity(database, { orgId });
+    // Session org only — never from the query string. companyActivity binds
+    // org_id = $1 on every query and throws without an org.
+    const data = await companyActivity(database, { orgId: staff.org_id });
     return res.status(200).json({ ok: true, ...data });
   } catch (e) {
     if (dbDown(res, e)) return;
