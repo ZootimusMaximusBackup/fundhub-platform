@@ -205,18 +205,130 @@ html.fh-side-mini .app-shell {
   z-index: 390;
 }
 
+/* ---------------------------------------------------------------------------
+   MOBILE — added 2026-08-05, workflow 1 of the mobile-CRM batch.
+   See docs/workflows/mobile-crm.md.
+
+   Two breakpoints for the whole app. Do not invent others.
+     860px — sidebar goes off-canvas, content takes the full width
+     640px — phone: single column, tables become cards
+
+   The old rule here shrank the rail to a 60px icon strip below 860px and left
+   it there, permanently eating 60px of a 390px phone and showing nav as
+   unlabelled glyphs. Off-canvas instead: hidden until asked for, full width for
+   the content, which is what a phone needs.
+   --------------------------------------------------------------------------- */
+
 @media (max-width: 860px) {
-  aside.side:not(.mini),
-  .side:not(.mini) {
-    width: 250px !important;
+  /* NOTE ON WHERE THESE RULES REALLY LIVE.
+     The width and the content padding-left are set by the lock stylesheet that
+     shell.js injects, NOT here — that sheet is appended to <head> at runtime,
+     so at equal specificity it beats this file on source order. Declaring the
+     width here as well only produced a stylesheet that disagreed with the
+     rendered page. What stays here is everything the lock does not touch:
+     the transition, the shadow, and the label/padding restoration. */
+  aside.side,
+  .side {
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+    box-shadow: none;
+    will-change: transform;
+  }
+  aside.side.open,
+  .side.open {
+    transform: translateX(0);
     box-shadow: 12px 0 34px rgba(0, 0, 0, .45);
   }
-  html:not(.fh-side-mini) .app,
-  html:not(.fh-side-mini) .app-shell {
-    padding-left: 0;
+  /* Labels always show on mobile — a 60px glyph rail is not navigation. */
+  .side.mini .side-top .logo,
+  .side.mini .navitem .lbl,
+  .side.mini .side-foot .who { display: initial; }
+  .side.mini .side-top .logo { display: inline-block; }
+  .side.mini .navitem { justify-content: flex-start; padding: 7px 18px; }
+  .side.mini .navhead { justify-content: flex-start; padding: 9px 18px 6px; font-size: 10px; letter-spacing: .18em; }
+  .side.mini .navhead::after { display: none; }
+  .side.mini .navhead .chev { display: initial; }
+  .side.mini .side-foot { justify-content: flex-start; padding: 10px 16px; }
+
+  /* Content owns the full width, mini state or not. */
+  .app,
+  .app-shell,
+  html.fh-side-mini .app,
+  html.fh-side-mini .app-shell {
+    padding-left: 0 !important;
   }
-  html:not(.fh-side-mini) .app,
-  html:not(.fh-side-mini) .app-shell {
-    /* expanded overlay — content full width underneath */
+
+  /* Deliberately NOT setting overflow-x:hidden on html/body here.
+     It was tried and removed the same day: it stops the page scrolling
+     sideways, but it does that by CLIPPING whatever is too wide, so a 577px
+     table in a 390px viewport silently loses 187px and the layout check
+     reports the screen as passing. Hiding the symptom would have made the
+     remaining four workflows untestable. Overflow stays visible so
+     docs/workflows/mobile-check.mjs can fail on it and someone fixes the
+     element that is actually too wide. */
+
+  /* Bigger touch targets for the nav itself. */
+  .navitem { padding-top: 11px; padding-bottom: 11px; }
+}
+
+/* Floating menu button — injected by shell.js, only exists below 860px. */
+.fh-menu-btn { display: none; }
+@media (max-width: 860px) {
+  .fh-menu-btn {
+    display: flex;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 401;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line, #E4E4E7);
+    background: var(--paper, #FCFCFC);
+    color: var(--ink, #0A0A0A);
+    border-radius: 7px;
+    cursor: pointer;
+    font-family: var(--mono, ui-monospace, monospace);
+    font-size: 15px;
+    line-height: 1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
   }
+  .fh-menu-btn:active { background: var(--soft, #F4F4F5); }
+  /* Once the rail is open it carries its own close affordance. */
+  .side.open ~ .fh-menu-btn { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  aside.side, .side { transition: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   SHARED RESPONSIVE HELPERS
+   Available on every gated screen. Workflows 2-5 use these instead of rolling
+   their own. Documented in docs/workflows/mobile-crm.md section 2.
+   --------------------------------------------------------------------------- */
+
+/* Wrap a table that has to stay a table. It scrolls inside its own box so the
+   page body never does. */
+.fh-scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+.fh-scroll-x > table { min-width: max-content; }
+
+/* Any multi-column row. Collapses to one column on a phone. */
+@media (max-width: 640px) {
+  .fh-stack {
+    display: block !important;
+    grid-template-columns: none !important;
+  }
+  .fh-stack > * { width: auto !important; max-width: 100% !important; }
+  .fh-hide-phone { display: none !important; }
+}
+
+/* Minimum comfortable touch target. */
+@media (max-width: 860px) {
+  .fh-tap { min-height: 44px; min-width: 44px; }
 }

@@ -560,7 +560,26 @@
       "margin:0!important;max-height:none!important;z-index:400!important}" +
       ".side.mini{width:var(--fh-side-w-mini,60px)!important}" +
       ".app,.app-shell{padding-left:var(--fh-side-w,228px)!important;box-sizing:border-box}" +
-      "html.fh-side-mini .app,html.fh-side-mini .app-shell{padding-left:var(--fh-side-w-mini,60px)!important}";
+      "html.fh-side-mini .app,html.fh-side-mini .app-shell{padding-left:var(--fh-side-w-mini,60px)!important}" +
+      /* MOBILE. This block has to live here, not in crm-sidebar.css.
+         This stylesheet is injected at runtime and appended to <head>, so it
+         comes after the linked crm-sidebar.css. Both sides use !important at
+         the same specificity, so source order decides and this one wins. The
+         mobile rules were first written in crm-sidebar.css and silently lost:
+         every screen kept 228px of left padding on a 390px phone, leaving
+         162px of usable width. Measured, not guessed — the layout check reports
+         it. Keep the mobile override in the same sheet as the rule it beats. */
+      "@media (max-width:860px){" +
+        "aside.side,.side{width:var(--fh-side-w,228px)!important;" +
+          "transform:translateX(-100%);transition:transform .22s ease}" +
+        "aside.side.open,.side.open{transform:translateX(0)}" +
+        ".side.mini{width:var(--fh-side-w,228px)!important}" +
+        ".app,.app-shell,html.fh-side-mini .app,html.fh-side-mini .app-shell{" +
+          "padding-left:0!important}" +
+        /* see setDrawer() — floating chrome outranks the rail on z-index */
+        "html.fh-drawer-open #fh-shell-chip," +
+        "html.fh-drawer-open #fh-shell-search-btn{display:none!important}" +
+      "}";
     (document.head || document.documentElement).appendChild(lock);
   }
 
@@ -589,22 +608,94 @@
     if (!side || side.getAttribute("data-fh-wired") === "1") return;
     side.setAttribute("data-fh-wired", "1");
     var burger = side.querySelector("#burger") || document.getElementById("burger");
+
+    function isMobile() {
+      return !!(window.matchMedia && window.matchMedia("(max-width:860px)").matches);
+    }
+
+    /* The scrim used to be looked up as "side-scrim" while the ten pages that
+       shipped one called it "sideScrim", so getElementById always returned null
+       and the backdrop never appeared. The other 27 pages had no scrim element
+       at all. Own it here instead: one element, created on demand, present on
+       every screen. */
+    function getScrim() {
+      var scrim = document.getElementById("side-scrim") ||
+                  document.getElementById("sideScrim") ||
+                  document.querySelector(".side-scrim");
+      if (!scrim) {
+        scrim = document.createElement("div");
+        scrim.className = "side-scrim";
+        document.body.appendChild(scrim);
+      }
+      scrim.id = "side-scrim";
+      if (!scrim.getAttribute("data-fh-wired")) {
+        scrim.setAttribute("data-fh-wired", "1");
+        scrim.addEventListener("click", function () { closeMobile(); });
+      }
+      return scrim;
+    }
+
+    /* Below 860px the rail is off-canvas, so it needs a way back in. */
+    function getMenuBtn() {
+      var btn = document.getElementById("fh-menu-btn");
+      if (!btn) {
+        btn = document.createElement("button");
+        btn.id = "fh-menu-btn";
+        btn.className = "fh-menu-btn";
+        btn.type = "button";
+        btn.setAttribute("aria-label", "Open menu");
+        btn.setAttribute("aria-controls", "side");
+        btn.textContent = "☰";
+        btn.addEventListener("click", function () { openMobile(); });
+        if (side.parentNode) side.parentNode.insertBefore(btn, side.nextSibling);
+        else document.body.appendChild(btn);
+      }
+      return btn;
+    }
+
+    /* The session chip and the search button are position:fixed at z-index
+       ~2147483000, three orders of magnitude above the rail's 400, so with the
+       drawer open they sit on top of the navigation and cover menu entries.
+       Raising the rail above them would start a z-index war with the search
+       overlay, which legitimately has to cover everything. Hiding the two
+       floating controls while the drawer is open is the smaller change: they
+       are chrome for the screen underneath, which you cannot interact with
+       anyway while the scrim is up. */
+    function setDrawer(open) {
+      side.classList.toggle("open", open);
+      getScrim().classList.toggle("show", open);
+      getMenuBtn().setAttribute("aria-expanded", open ? "true" : "false");
+      document.documentElement.classList.toggle("fh-drawer-open", open);
+    }
+    function openMobile() { setDrawer(true); }
+    function closeMobile() { setDrawer(false); }
+
     function syncMini() {
       var mini = side.classList.contains("mini");
-      document.documentElement.classList.toggle("fh-side-mini", mini);
-      if (burger) burger.textContent = mini ? "››" : "‹‹";
-      var scrim = document.getElementById("side-scrim");
-      if (scrim) {
-        var mobile = window.matchMedia && window.matchMedia("(max-width:860px)").matches;
-        scrim.classList.toggle("show", mobile && !mini);
-      }
+      document.documentElement.classList.toggle("fh-side-mini", mini && !isMobile());
+      if (burger) burger.textContent = isMobile() ? "✕" : (mini ? "››" : "‹‹");
+      getMenuBtn();
+      if (!isMobile()) closeMobile();
     }
+
     if (burger) {
       burger.addEventListener("click", function () {
+        /* On a phone the same control closes the drawer; on desktop it still
+           collapses the rail to the icon strip. */
+        if (isMobile()) { closeMobile(); return; }
         side.classList.toggle("mini");
         syncMini();
       });
     }
+
+    /* Tapping a destination should not leave the drawer sitting over it. */
+    side.addEventListener("click", function (ev) {
+      if (isMobile() && ev.target && ev.target.closest && ev.target.closest("a.navitem")) closeMobile();
+    });
+
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape" && side.classList.contains("open")) closeMobile();
+    });
     var heads = side.querySelectorAll(".navhead");
     for (var h = 0; h < heads.length; h++) {
       heads[h].addEventListener("click", function (ev) {
@@ -615,8 +706,16 @@
     if (window.matchMedia) {
       var mq = window.matchMedia("(max-width:860px)");
       function onMq() {
-        if (mq.matches && !side.classList.contains("mini")) {
-          side.classList.add("mini");
+        /* Was: force .mini below 860, which left a 60px unlabelled glyph rail
+           permanently docked on a 390px phone. Now the rail is off-canvas and
+           starts closed; the ☰ button brings it in. */
+        if (mq.matches) {
+          /* Drop .mini so a rail collapsed on desktop does not carry over as a
+             60px glyph strip after a resize or rotate. Mobile is one state:
+             off-canvas, full labels. */
+          side.classList.remove("mini");
+          document.documentElement.classList.remove("fh-side-mini");
+          closeMobile();
         }
         syncMini();
       }
@@ -888,7 +987,15 @@
       }
       st.textContent =
         ".topbar,.top,.page-hd,.hdr-actions,.screen-actions{" +
-        "padding-right:max(16px,var(--fh-shell-top-clearance,360px)) !important}";
+        "padding-right:max(16px,var(--fh-shell-top-clearance,360px)) !important}" +
+        /* The clearance above reserves room for the floating Search + client
+           chip, which is ~360px. On a 390px phone that padding alone is wider
+           than the screen, and every topbar on every screen overflowed
+           sideways because of it. Below 860px the chip wraps to its own row
+           instead of sitting beside the actions, so no clearance is needed. */
+        "@media (max-width:860px){" +
+        ".topbar,.top,.page-hd,.hdr-actions,.screen-actions{" +
+        "padding-right:16px !important}}";
     } catch (e) { /* ignore */ }
   }
 
