@@ -507,6 +507,56 @@ export function pendingLabel(action) {
   return "saving...";
 }
 
+/* ── CASE QUEUE (inquiry gate) ───────────────────────────────────────────────
+   Expanding-row helpers for inquiry_removal_cases. Send is human-only. */
+
+export function caseUiStatus(row) {
+  const r = row || {};
+  const st = String(r.case_status || "");
+  if (st === "Blocked") return { label: "Blocked (docs)", cls: "noanswer" };
+  if (st === "Completed") return { label: "Complete", cls: "confirmed" };
+  if (r.call_fired_at) return { label: "Awaiting Call", cls: "progress" };
+  if (r.call_due_at || r.first_delivery_at || r.letter_provider_id || r.portal_confirmation) {
+    return { label: "Sent", cls: "progress" };
+  }
+  if (st === "Queued" || st === "Scheduled") return { label: "Ready for Review", cls: "new" };
+  if (st === "In Progress") return { label: "Sent", cls: "progress" };
+  return { label: st || "Unknown", cls: "" };
+}
+
+export function caseCallState(row, now) {
+  const r = row || {};
+  if (r.call_fired_at) return "done";
+  if (!r.call_due_at) return "not due";
+  const due = new Date(r.call_due_at).getTime();
+  const t = (now || new Date()).getTime();
+  if (Number.isFinite(due) && due <= t) return "due";
+  return "not due";
+}
+
+export function buildCaseSendRequest(opts) {
+  const o = opts || {};
+  if (!isUuid(o.caseId)) throw new ViewError("case id must be a uuid");
+  const mail = o.mail === true;
+  const portal = o.portal === true;
+  if (!mail && !portal) throw new ViewError("select mail and/or portal");
+  const body = { id: o.caseId, action: "send", mail: mail, portal: portal };
+  if (portal) {
+    const ref = blankToNull(o.portalConfirmation);
+    if (ref === null) {
+      throw new ViewError("Experian portal reference number is required");
+    }
+    body.portal_confirmation = ref;
+    const uploaded = blankToNull(o.portalUploadedAt);
+    if (uploaded !== null) body.portal_uploaded_at = uploaded;
+  }
+  const note = blankToNull(o.note);
+  if (note !== null) body.note = note;
+  const serviceLevel = blankToNull(o.mailServiceLevel || o.mail_service_level);
+  if (serviceLevel !== null) body.mail_service_level = serviceLevel;
+  return { method: "POST", path: "/api/inquiry-cases", body: body };
+}
+
 export const VIEW = {
   ATTEMPT_KINDS: ATTEMPT_KINDS,
   COUNTING_KINDS: COUNTING_KINDS,
@@ -535,5 +585,8 @@ export const VIEW = {
   attemptLine: attemptLine,
   formatWhen: formatWhen,
   interpretAttempts: interpretAttempts,
-  pendingLabel: pendingLabel
+  pendingLabel: pendingLabel,
+  caseUiStatus: caseUiStatus,
+  caseCallState: caseCallState,
+  buildCaseSendRequest: buildCaseSendRequest
 };

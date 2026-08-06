@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { loadWaitBusinessDays, scheduleFromDelivery } from "./call-scheduler.mjs";
+import { loadWaitBusinessDays, loadMailServiceLevel, scheduleFromDelivery } from "./call-scheduler.mjs";
 import { addBusinessDays } from "./business-days.mjs";
 
 test("loadWaitBusinessDays uses defaults when no config row", async () => {
@@ -19,6 +19,19 @@ test("loadWaitBusinessDays reads per-bureau config", async () => {
   };
   assert.equal(await loadWaitBusinessDays(db, { orgId: "o", bureau: "TU", channel: "portal" }), 2);
   assert.equal(await loadWaitBusinessDays(db, { orgId: "o", bureau: "TU", channel: "mail" }), 5);
+});
+
+test("loadMailServiceLevel: config default and per-send override", async () => {
+  const db = {
+    async query() {
+      return { rows: [{ mail_service_level: "priority_express" }] };
+    }
+  };
+  assert.equal(await loadMailServiceLevel(db, { orgId: "o", bureau: "EX" }), "priority_express");
+  assert.equal(
+    await loadMailServiceLevel(db, { orgId: "o", bureau: "EX", override: "priority" }),
+    "priority"
+  );
 });
 
 test("scheduleFromDelivery sets call_due_at from channel wait, not send", async () => {

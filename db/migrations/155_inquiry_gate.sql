@@ -31,17 +31,24 @@ ALTER TABLE ai_bureau_config
   ADD COLUMN IF NOT EXISTS portal_wait_business_days integer NOT NULL DEFAULT 1
     CHECK (portal_wait_business_days >= 0),
   ADD COLUMN IF NOT EXISTS mail_wait_business_days integer NOT NULL DEFAULT 3
-    CHECK (mail_wait_business_days >= 0);
+    CHECK (mail_wait_business_days >= 0),
+  ADD COLUMN IF NOT EXISTS mail_service_level text NOT NULL DEFAULT 'priority_express'
+    CHECK (mail_service_level IN ('priority', 'priority_express'));
 
 COMMENT ON COLUMN ai_bureau_config.portal_wait_business_days IS
   'Business days after portal delivery before AI call. Default 1; tune per bureau.';
 COMMENT ON COLUMN ai_bureau_config.mail_wait_business_days IS
   'Business days after mailed-letter delivery before AI call. Default 3 (placeholder).';
+COMMENT ON COLUMN ai_bureau_config.mail_service_level IS
+  'Lob service level for mailed dispute letters: priority | priority_express. Default priority_express.';
 
 -- Ensure the three bureau rows exist per org that has inquiry_removal (empty
 -- config shell — no phone numbers invented). ON CONFLICT keeps owner edits.
-INSERT INTO ai_bureau_config (org_id, bureau_code, bureau_name, portal_wait_business_days, mail_wait_business_days)
-SELECT p.org_id, v.code, v.name, 1, 3
+INSERT INTO ai_bureau_config (
+  org_id, bureau_code, bureau_name,
+  portal_wait_business_days, mail_wait_business_days, mail_service_level
+)
+SELECT p.org_id, v.code, v.name, 1, 3, 'priority_express'
   FROM pipelines p
   JOIN (VALUES
     ('EX', 'Experian'),
@@ -52,6 +59,7 @@ SELECT p.org_id, v.code, v.name, 1, 3
 ON CONFLICT (org_id, bureau_code) DO UPDATE
   SET portal_wait_business_days = COALESCE(ai_bureau_config.portal_wait_business_days, 1),
       mail_wait_business_days = COALESCE(ai_bureau_config.mail_wait_business_days, 3),
+      mail_service_level = COALESCE(ai_bureau_config.mail_service_level, 'priority_express'),
       updated_at = now();
 
 -- Renumber existing inquiry_removal stages, then insert the two new ones.

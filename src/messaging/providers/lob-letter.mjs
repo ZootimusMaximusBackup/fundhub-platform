@@ -10,16 +10,28 @@ export const LETTER_PROVIDER = "lob";
 
 const DEFAULT_BASE = "https://api.lob.com/v1";
 
+export const MAIL_SERVICE_LEVELS = Object.freeze(["priority", "priority_express"]);
+export const DEFAULT_MAIL_SERVICE_LEVEL = "priority_express";
+
+/** Normalize to a Lob service level; unknown → default. */
+export function normalizeMailServiceLevel(raw, fallback = DEFAULT_MAIL_SERVICE_LEVEL) {
+  const v = String(raw || "").trim().toLowerCase();
+  if (MAIL_SERVICE_LEVELS.includes(v)) return v;
+  const fb = String(fallback || "").trim().toLowerCase();
+  return MAIL_SERVICE_LEVELS.includes(fb) ? fb : DEFAULT_MAIL_SERVICE_LEVEL;
+}
+
 /**
  * @param {{
  *   to: { name: string, address_line1: string, address_city: string, address_state: string, address_zip: string },
  *   from?: object,
  *   file: string,  // HTML or URL
  *   description?: string,
+ *   serviceLevel?: 'priority'|'priority_express',
  *   env?: object,
  *   fetchImpl?: typeof fetch
  * }} opts
- * @returns {Promise<{ ok: boolean, providerId?: string, error?: string, raw?: object }>}
+ * @returns {Promise<{ ok: boolean, providerId?: string, error?: string, raw?: object, serviceLevel?: string }>}
  */
 export async function sendLetter(opts = {}) {
   const env = opts.env || process.env;
@@ -40,12 +52,16 @@ export async function sendLetter(opts = {}) {
     address_zip: env.LOB_FROM_ZIP || "94105"
   };
 
+  const serviceLevel = normalizeMailServiceLevel(opts.serviceLevel);
+
   const body = {
     description: opts.description || "Inquiry dispute letter",
     to: opts.to,
     from,
     file: opts.file,
-    color: false
+    color: false,
+    // Lob letter service level — from ai_bureau_config, overridable per send.
+    service: serviceLevel
   };
 
   try {
@@ -61,9 +77,14 @@ export async function sendLetter(opts = {}) {
     if (!res.ok) {
       return { ok: false, error: raw?.error?.message || `lob_http_${res.status}`, raw };
     }
-    return { ok: true, providerId: raw.id || raw.tracking_number || null, raw };
+    return {
+      ok: true,
+      providerId: raw.id || raw.tracking_number || null,
+      serviceLevel,
+      raw
+    };
   } catch (err) {
-    return { ok: false, error: String(err?.message || err) };
+    return { ok: false, error: String(err?.message || err), serviceLevel };
   }
 }
 

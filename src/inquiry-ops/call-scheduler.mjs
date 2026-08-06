@@ -4,6 +4,10 @@
 import { addBusinessDays } from "./business-days.mjs";
 import { moveCardToStage } from "../workflows/cards.mjs";
 import { logAttempt } from "../inquiries/work.mjs";
+import {
+  normalizeMailServiceLevel,
+  DEFAULT_MAIL_SERVICE_LEVEL
+} from "../messaging/providers/lob-letter.mjs";
 
 const DEFAULT_WAIT = Object.freeze({ portal: 1, mail: 3 });
 
@@ -26,6 +30,25 @@ export async function loadWaitBusinessDays(db, { orgId, bureau, channel }) {
     ? Number(row.portal_wait_business_days)
     : Number(row.mail_wait_business_days);
   return Number.isFinite(n) && n >= 0 ? n : DEFAULT_WAIT[ch];
+}
+
+/**
+ * Lob mail service level for a bureau. Per-send override wins when valid.
+ * @returns {Promise<'priority'|'priority_express'>}
+ */
+export async function loadMailServiceLevel(db, { orgId, bureau, override = null } = {}) {
+  if (override != null && String(override).trim() !== "") {
+    return normalizeMailServiceLevel(override, DEFAULT_MAIL_SERVICE_LEVEL);
+  }
+  const code = String(bureau || "").toUpperCase();
+  const r = await db.query(
+    `SELECT mail_service_level
+       FROM ai_bureau_config
+      WHERE org_id = $1::uuid AND bureau_code = $2
+      LIMIT 1`,
+    [orgId, code]
+  );
+  return normalizeMailServiceLevel(r.rows[0]?.mail_service_level, DEFAULT_MAIL_SERVICE_LEVEL);
 }
 
 /**

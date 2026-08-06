@@ -9,6 +9,7 @@ import { clearInquiry as clearBridgeInquiry } from "../src/inquiry-removal/cases
 import { sendCase, SendGateError } from "../src/inquiry-ops/send.mjs";
 import { overrideBureauGate } from "../src/inquiry-ops/gate.mjs";
 import { sendLetter } from "../src/messaging/providers/lob-letter.mjs";
+import { loadMailServiceLevel } from "../src/inquiry-ops/call-scheduler.mjs";
 import { emit } from "../src/events/bus.mjs";
 import { dbDown } from "../src/http/db-down.mjs";
 
@@ -120,12 +121,22 @@ export default async function handler(req, res, deps = {}) {
     if (action === "send") {
       try {
         const wantMail = body.mail === true || body.channels?.mail === true;
+        // Per-case override on the send row (e.g. downgrade to priority).
+        // Otherwise ai_bureau_config.mail_service_level for that bureau.
+        const mailServiceOverride =
+          body.mail_service_level || body.mailServiceLevel || null;
         const mailSender = wantMail
           ? async ({ caseRow }) => {
               const html = caseRow.letter_draft_html || "<p>Dispute letter</p>";
+              const serviceLevel = await loadMailServiceLevel(database, {
+                orgId,
+                bureau: caseRow.selected_bureaus_raw,
+                override: mailServiceOverride
+              });
               const sent = await sendLetter({
                 description: `Inquiry case ${caseRow.case_id || caseRow.id}`,
                 file: `<html>${html}</html>`,
+                serviceLevel,
                 to: body.mail_to || body.mailTo || {
                   name: body.recipient_name || "Bureau",
                   address_line1: body.address_line1 || "PO Box",
@@ -137,7 +148,11 @@ export default async function handler(req, res, deps = {}) {
               if (!sent.ok) {
                 return { providerId: null, outcome: `mail_failed:${sent.error || "unknown"}` };
               }
-              return { providerId: sent.providerId, outcome: "sent" };
+              return {
+                providerId: sent.providerId,
+                outcome: "sent",
+                serviceLevel: sent.serviceLevel || serviceLevel
+              };
             }
           : null;
         const result = await sendCase(database, {

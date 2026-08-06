@@ -69,8 +69,11 @@ Keep `optimization` (Repair) separate. Never move cards across.
 |---|---|---|
 | `portal_wait_business_days` | 1 | Business days after portal upload before AI call |
 | `mail_wait_business_days` | 3 | Business days after Lob delivered before AI call (placeholder) |
+| `mail_service_level` | `priority_express` | Lob service: `priority` \| `priority_express` |
 
 `call_due_at = first_delivery_at + wait(bureau, channel)`, business days, hour-preserved. Missing config row → use defaults above.
+
+Mail service level is read from config on send; send body may pass `mail_service_level` to override per case (e.g. downgrade to `priority`).
 
 ### Doc packet subtypes (`client_upload` + `authorization`)
 
