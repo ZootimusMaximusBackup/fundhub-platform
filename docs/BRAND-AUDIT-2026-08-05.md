@@ -1,13 +1,16 @@
 # Brand audit — 2026-08-05
 
 Method: every file under `public/` checked against `fundhub-brand.css` and
-`docs/BRAND-THEMING-SPEC.md`. Read-only. No app was run — this is a code-truth
-audit of colors, fonts and tokens, not a visual design review.
+`docs/BRAND-THEMING-SPEC.md`, then — in round 3 — the changed pages were
+rendered in Chromium and their computed styles asserted. Rounds 1 and 2 were
+source inspection only; round 3 caught two things that inspection had missed,
+including one round-2 "fix" that never took effect. Source reading alone was
+not sufficient, and that is the main lesson of this audit.
 
 Scope: 52 HTML pages, 4 stylesheets, `shell.js`.
 
 Verdict: **the brand is mostly right. Fonts are perfect. Two whole pages are on
-a different brand, and the legal pages are on a warm off-palette.**
+a different brand; everything else found has been fixed and verified.**
 
 Owner decision 2026-08-05: **Fundhub is not rebranding.** Findings that only
 bite under a rebrand are closed or downgraded below — see 3 and 6.
