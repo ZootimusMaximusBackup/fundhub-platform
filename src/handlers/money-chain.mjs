@@ -36,6 +36,7 @@ import {
 } from "../commissions/index.mjs";
 import { grantFromTransaction } from "../entitlements/entitlements.mjs";
 import { createFundingCloseoutSafe } from "../funding/closeout.mjs";
+import { attachGateToRound } from "../inquiry-ops/gate.mjs";
 
 /** Semantic product bucket → products.code when name/alias resolve fails. */
 export const BUCKET_TO_CODE = Object.freeze({
@@ -670,7 +671,25 @@ export async function onRoundStartedMoney(event, db) {
     });
   }
 
-  return { done: true, fundingRoundId: round.id, saleId, clientId };
+  // Per-bureau inquiry gate — attach status; if all blocked, task the closer.
+  // Never refuses to start the round.
+  let bureauGate = null;
+  if (clientId) {
+    bureauGate = await attachGateToRound(db, {
+      orgId: event.orgId,
+      clientId,
+      fundingRoundId: round.id
+    });
+  }
+
+  return {
+    done: true,
+    fundingRoundId: round.id,
+    saleId,
+    clientId,
+    bureauGate: bureauGate?.status || null,
+    bureauGateTaskId: bureauGate?.task?.id || null
+  };
 }
 
 export async function onRoundFundedMoney(event, db) {

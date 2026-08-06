@@ -360,10 +360,20 @@ export async function matchForClient(db, {
     limit: 500
   });
 
+  const cases = await db.query(
+    `SELECT id, selected_bureaus_raw, case_status, gate_override_by, gate_override_at
+       FROM inquiry_removal_cases
+      WHERE org_id = $1::uuid
+        AND client_id = $2::uuid
+        AND case_status::text = ANY($3::text[])`,
+    [orgId, clientId, ["Queued", "Scheduled", "In Progress", "Escalated", "Blocked"]]
+  );
+
   return matchLenders({
     lenders,
     clientState,
     inquiryLog: inq.rows,
+    cases: cases.rows,
     lenderTable,
     recentInquiryDays
   });

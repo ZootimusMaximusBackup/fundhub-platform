@@ -7,10 +7,13 @@ import { ROLE_SETS, requireRole, isUuid } from "../src/http/read-api.mjs";
 import { createCase, updateCase, closeCase, CASE_STATUSES } from "../src/inquiry-ops/cases.mjs";
 import { clearInquiry as clearBridgeInquiry } from "../src/inquiry-removal/cases.mjs";
 import { sendCase, SendGateError } from "../src/inquiry-ops/send.mjs";
+import { overrideBureauGate } from "../src/inquiry-ops/gate.mjs";
 import { emit } from "../src/events/bus.mjs";
 import { dbDown } from "../src/http/db-down.mjs";
 
-const ACTIONS = new Set(["create", "update", "close", "mark_cleared", "clear_inquiry", "send"]);
+const ACTIONS = new Set([
+  "create", "update", "close", "mark_cleared", "clear_inquiry", "send", "gate_override"
+]);
 
 export default async function handler(req, res, deps = {}) {
   const database = deps.db ?? db;
@@ -93,6 +96,24 @@ export default async function handler(req, res, deps = {}) {
       const c = await updateCase(database, { orgId, id: body.id, patch: body });
       if (!c) return res.status(404).json({ ok: false, error: "not_found" });
       return res.status(200).json({ ok: true, case: c });
+    }
+
+    if (action === "gate_override") {
+      try {
+        const c = await overrideBureauGate(database, {
+          orgId,
+          caseId: body.id,
+          staffId: staff.id,
+          staffRole: staff.role
+        });
+        return res.status(200).json({ ok: true, case: c });
+      } catch (err) {
+        return res.status(err.status || 400).json({
+          ok: false,
+          error: err.code || "gate_override_failed",
+          message: err.message
+        });
+      }
     }
 
     if (action === "send") {

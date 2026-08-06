@@ -53,9 +53,36 @@ export function stateEligible(eligibleStates, clientState) {
   return tokens.some((t) => t === state || t.includes(state) || state.includes(t));
 }
 
+const TERMINAL_CASE_STATUSES = new Set([
+  "Completed", "Canceled", "Cancelled", "Cleared", "Closed"
+]);
+
+/**
+ * Active inquiry_removal_case rows mark their bureau hot, unless an owner
+ * override is present (gate_override_by + gate_override_at).
+ * Pure — pass case rows in; no queries.
+ *
+ * @param {object[]} cases
+ * @returns {Set<string>}
+ */
+export function bureausFromActiveCases(cases = []) {
+  const out = new Set();
+  for (const row of Array.isArray(cases) ? cases : []) {
+    if (!row) continue;
+    const status = String(row.case_status || row.status || "Queued");
+    if (TERMINAL_CASE_STATUSES.has(status)) continue;
+    if (/complete|cancel|clear|close/i.test(status)) continue;
+    if (row.gate_override_by && row.gate_override_at) continue;
+    const raw = row.selected_bureaus_raw || row.bureau || "";
+    for (const c of parseBureaus(raw)) out.add(c);
+  }
+  return out;
+}
+
 /**
  * @param {object[]} inquiryLog  rows with { bureau, status?, created_at? }
- * @param {{ sensitiveStatuses?: string[], recentDays?: number, now?: Date }} [opts]
+ * @param {{ sensitiveStatuses?: string[], recentDays?: number, now?: Date,
+ *           cases?: object[] }} [opts]
  * @returns {Set<string>} normalized bureau codes that should be avoided
  */
 export function sensitiveBureaus(inquiryLog, opts = {}) {
@@ -76,6 +103,7 @@ export function sensitiveBureaus(inquiryLog, opts = {}) {
     }
     if (hot) for (const c of codes) out.add(c);
   }
+  for (const c of bureausFromActiveCases(opts.cases || [])) out.add(c);
   return out;
 }
 
@@ -97,12 +125,13 @@ export function matchLenders({
   lenders = [],
   clientState = null,
   inquiryLog = [],
+  cases = [],
   lenderTable = null,
   includeInactive = false,
   recentInquiryDays = 30,
   now = new Date()
 } = {}) {
-  const avoid = sensitiveBureaus(inquiryLog, { recentDays: recentInquiryDays, now });
+  const avoid = sensitiveBureaus(inquiryLog, { recentDays: recentInquiryDays, now, cases });
   const bureauUse = new Map(); // code → count among accepted so far (rotation)
   const matches = [];
   const skipped = [];
