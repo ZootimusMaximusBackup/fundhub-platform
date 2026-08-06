@@ -588,16 +588,10 @@
            inquiry-remover and ops-admin. Wrapping lets that group drop to a
            second line instead of overflowing. Harmless on a topbar that is not
            a flex row. */
-        /* KNOWN GAP — the session chip (#fh-shell-chip) is fixed at top-right
-           and on a 390px screen it sits over page content.
-           Re-docking it to the bottom was tried and reverted: the element is
-           built with an inline style.cssText flex row, and overriding its
-           top/bottom/max-width from here blew its height out to most of the
-           screen. It is not simply a matter of moving it, and it holds the
-           only Sign out control in the app, so it cannot just be hidden.
-           Left alone deliberately rather than guessed at a third time.
-           Whoever picks this up: change it where it is built (search
-           fh-shell-chip-style), not from this sheet. */
+        /* The session chip is NOT positioned from here. It owns its own
+           breakpoints in CHIP_BREAKPOINT_CSS — see the note there about why
+           setting bottom from a second stylesheet stretches it instead of
+           moving it. */
       "}";
     (document.head || document.documentElement).appendChild(lock);
   }
@@ -992,7 +986,21 @@
   // available width instead of running off it.
   var CHIP_BREAKPOINT_CSS =
     "@media (max-width:1200px){#fh-shell-chip{top:66px !important;right:10px !important}}" +
-    "@media (max-width:480px){#fh-shell-chip{top:135px !important;left:10px !important;right:10px !important;" +
+    /* Phones: dock it to the bottom instead of hanging it at top:135px.
+       135px was picked to clear the tallest page header, but it only clears
+       the HEADER — on any screen whose content starts right below one (the
+       Lenders tab strip, the first row of KPI cards on Hiring) the chip lands
+       squarely on top of it. There is nothing at the bottom of these screens.
+
+       top:auto has to be stated here, in this rule. Setting bottom from
+       another stylesheet while this rule still pins top:135px !important does
+       not move the chip, it STRETCHES it — top 135 and bottom 10 together
+       resolve to a ~700px-tall black panel over most of the screen. That was
+       tried and reverted before landing here.
+
+       right:110px keeps it clear of the chat launcher in the bottom corner. */
+    "@media (max-width:480px){#fh-shell-chip{top:auto !important;bottom:10px !important;" +
+    "left:10px !important;right:110px !important;" +
     "flex-wrap:wrap;gap:6px !important;padding:6px 9px !important;font-size:10px !important}}";
 
   /* Search sits fixed to the LEFT of the Sign-out chip. Pages that put action
@@ -1021,10 +1029,18 @@
       // top of it. Phone: chip wraps full width lower; Search stays above chip
       // on the right so it does not cover sidebar / topbar actions.
       if (phone) {
-        search.style.top = "135px";
+        /* The chip is docked to the bottom on phones now (CHIP_BREAKPOINT_CSS),
+           so Search no longer has to sit above it. top:135px put this pill on
+           top of whatever the screen renders below its header — the Lenders
+           notice box, for one. Park it bottom-right, above the chat launcher,
+           where the chip and the launcher already live and nothing else does.
+           clear stays at the edge: neither control is beside the topbar any
+           more, so topbars need no horizontal clearance from them. */
+        search.style.top = "auto";
+        search.style.bottom = "78px";
         search.style.left = "auto";
         search.style.right = edge + "px";
-        clear = Math.max(clear, edge + (search.offsetWidth || 110) + gap);
+        clear = edge;
       } else if (narrow) {
         search.style.top = "66px";
         search.style.left = "auto";

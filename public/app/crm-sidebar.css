@@ -66,6 +66,24 @@ html.fh-side-mini .app-shell {
   padding-left: var(--fh-side-w-mini);
 }
 
+/* Page CSS must not be able to change the rail's rhythm.
+   line-height was the one metric left unset here, so it inherited from each
+   page's own body rule. Screens that set line-height:1.5 (hiring, finance-os,
+   contracts, staff-teams and others) rendered every nav row 4px taller than
+   screens that did not, which pushed the bottom of the nav 150px further down
+   and made the sidebar visibly resettle when moving between tabs. Padding and
+   font-size were already pinned; this closes the gap.
+   An explicit declaration always beats an inherited one, so no !important and
+   no specificity games are needed — the value just has to exist. */
+.side,
+.side-top,
+.side-scroll,
+.navhead,
+.navitem,
+.side-foot {
+  line-height: 1.2;
+}
+
 .side-top {
   height: 44px;
   flex: 0 0 44px;
