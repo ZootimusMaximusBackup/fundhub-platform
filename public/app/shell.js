@@ -579,8 +579,71 @@
         /* see setDrawer() — floating chrome outranks the rail on z-index */
         "html.fh-drawer-open #fh-shell-chip," +
         "html.fh-drawer-open #fh-shell-search-btn{display:none!important}" +
+        /* The menu button is fixed at top-left, which is exactly where a page
+           title sits. Without this the ☰ lands on top of "Hiring", "Pipeline"
+           and so on. 58px = 10 left + 40 button + 8 gap. */
+        ".topbar,.top,.page-hd{padding-left:58px!important;flex-wrap:wrap!important}" +
+        /* The 58px above is real width taken out of a 390px row, which pushed
+           the right-hand action group (.topbar-right) off the edge on
+           inquiry-remover and ops-admin. Wrapping lets that group drop to a
+           second line instead of overflowing. Harmless on a topbar that is not
+           a flex row. */
+        /* KNOWN GAP — the session chip (#fh-shell-chip) is fixed at top-right
+           and on a 390px screen it sits over page content.
+           Re-docking it to the bottom was tried and reverted: the element is
+           built with an inline style.cssText flex row, and overriding its
+           top/bottom/max-width from here blew its height out to most of the
+           screen. It is not simply a matter of moving it, and it holds the
+           only Sign out control in the app, so it cannot just be hidden.
+           Left alone deliberately rather than guessed at a third time.
+           Whoever picks this up: change it where it is built (search
+           fh-shell-chip-style), not from this sheet. */
       "}";
     (document.head || document.documentElement).appendChild(lock);
+  }
+
+  /* Wide data tables — mobile.
+     Ten screens render a <table class="grid"> that is 450-1340px wide. On a
+     390px phone each one dragged the whole page sideways.
+
+     Cards were the stated preference and are not used here, deliberately: the
+     card pattern needs data-label="" on every <td> to keep the value labelled,
+     no cell in the app has one, and most of these rows are built inside JS
+     template strings across ten files. Editing all of that to reflow a grid
+     nobody reads column-by-column on a phone is a poor trade. Contained
+     sideways scroll keeps the columns intact and stops the PAGE moving, which
+     is the actual complaint.
+
+     Done here rather than per page because the rows arrive after shell.js runs
+     — the observer catches tables that do not exist yet. */
+  function wrapWideTables(root) {
+    var tables = (root || document).querySelectorAll("table.grid,table.queue");
+    for (var i = 0; i < tables.length; i++) {
+      var t = tables[i];
+      var p = t.parentNode;
+      if (!p || (p.classList && p.classList.contains("fh-scroll-x"))) continue;
+      var w = document.createElement("div");
+      w.className = "fh-scroll-x";
+      p.insertBefore(w, t);
+      w.appendChild(t);
+    }
+  }
+
+  function watchWideTables() {
+    if (window.__fhTableWatch) return;
+    window.__fhTableWatch = 1;
+    wrapWideTables(document);
+    if (!window.MutationObserver) return;
+    var queued = false;
+    var obs = new MutationObserver(function () {
+      if (queued) return;
+      queued = true;
+      (window.requestAnimationFrame || setTimeout)(function () {
+        queued = false;
+        wrapWideTables(document);
+      }, 0);
+    });
+    obs.observe(document.body || document.documentElement, { childList: true, subtree: true });
   }
 
   function mountSidebar() {
@@ -730,9 +793,13 @@
   /* Mount before first paint when possible — head script + documentElement. */
   ensureSidebarCss();
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", mountSidebar);
+    document.addEventListener("DOMContentLoaded", function () {
+      mountSidebar();
+      watchWideTables();
+    });
   } else {
     mountSidebar();
+    watchWideTables();
   }
 
   function hold() {

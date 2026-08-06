@@ -114,14 +114,13 @@ Write your manifest into section 6 when done, before reporting complete.
 | # | Task | Screens | Status |
 |---|---|---|---|
 | 1 | Ground + shell | sidebar, viewport metas, shared helpers, harness | **done** |
-| 2 | Sales | pipeline, closer-dashboard, closer-call, my-numbers, sales-floor, calendar | pending |
-| 3 | Funding + client ops | lenders, finance-os, contracts, subscriptions, client-control-panel, messaging, documents, inquiry-remover, company-brain | pending |
-| 4 | Watch + automation | command-center, galaxy, partner-galaxy, ops-admin, agent-editor, automations, journeys, template-editor | pending |
-| 5 | Marketing + admin + portals | campaign-manager, social-studio, creative-factory, content-admin, staff-teams, hiring, products-commissions, brand-studio, sample-data, client-portal, affiliate, consent-capture | pending |
+| 2 | Sales | pipeline, closer-dashboard, closer-call, my-numbers, sales-floor, calendar | **done** |
+| 3 | Funding + client ops | lenders, finance-os, contracts, subscriptions, client-control-panel, messaging, documents, inquiry-remover, company-brain | **done** |
+| 4 | Watch + automation | command-center, galaxy, partner-galaxy, ops-admin, agent-editor, automations, journeys, template-editor | **done** |
+| 5 | Marketing + admin + portals | campaign-manager, social-studio, creative-factory, content-admin, staff-teams, hiring, products-commissions, brand-studio, sample-data, client-portal, affiliate, consent-capture | **done** |
 
-**Workflow 1 must finish before 2–5 start.** It owns the sidebar, the
-breakpoints and the helpers everything else builds on. Once it is marked `done`,
-2–5 run in parallel with no dependency on each other.
+**All five are done, 2026-08-05.** Workflows 2-5 were run in the same session
+rather than in parallel, at the owner's request. See section 6.
 
 ---
 
@@ -267,3 +266,80 @@ truth. Do not re-add it.
 ## 7. Blockers and open questions
 
 _none yet_
+
+### Workflows 2-5 — all screens — **DONE 2026-08-05**
+
+Run in one session at the owner's request rather than as four parallel
+sessions. **All 36 screens pass the layout check at 390px. Zero sideways
+overflow.**
+
+Most of it did not need per-screen work. Three shared fixes cleared 34 of the
+36; only one screen needed its own rule.
+
+**Wide data tables — `shell.js` now wraps them (`wrapWideTables`)**
+
+Ten screens rendered a `table.grid` between 450px and 1340px wide. Rather than
+edit ten files, `shell.js` wraps `table.grid` and `table.queue` in a
+`.fh-scroll-x` container, with a `MutationObserver` because the rows are drawn
+by page scripts after the shell has run.
+
+**Cards were the stated preference and are not what shipped.** The card pattern
+needs `data-label=""` on every `<td>`; no cell in the app has one, and the rows
+are built inside JS template strings across ten files. The trade was not worth
+it for grids nobody reads column-by-column on a phone. Contained scroll keeps
+the columns and stops the page moving, which was the actual problem. Revisit if
+someone wants true cards on a specific screen.
+
+**Menu button vs page titles**
+
+The ☰ is fixed at top-left, exactly where every page title sits — it landed on
+top of "Hiring", "Pipeline" and the rest. Topbars now get `padding-left:58px`
+below 860px. That padding then pushed `.topbar-right` off the edge on
+inquiry-remover and ops-admin, so topbars also wrap now.
+
+**inquiry-remover `.stat-tiles`** — the one per-screen fix. A non-wrapping flex
+row of `min-width:88px` tiles. Wraps below 640px.
+
+### Two corrections to the harness
+
+The first two runs were wrong and would have sent four workflows chasing
+non-bugs:
+
+1. It counted elements inside a scroll container as overflowing. A table you
+   can swipe is not lost content, and containment is the fix — so the harness
+   was failing the very thing that fixes the problem. Now skips any element
+   under an `overflow-x: auto/scroll/hidden` ancestor.
+2. It counted the children of closed off-canvas panels. `.editor` is
+   `position:fixed; transform:translateX(102%)` — parked off-screen on purpose.
+   The panel was skipped for being fixed; its children were not, so every closed
+   drawer header reported as an overflow. Now skips anything under a
+   `position:fixed` ancestor.
+
+Between them these accounted for 20 of the 21 "failures" after the shell work.
+The count went 21 → 7 → 1 → 0 with almost no additional CSS. **If this harness
+reports a failure, read the element before changing anything.**
+
+### Known gap — not fixed
+
+The session chip (`#fh-shell-chip`) is `position:fixed` at top-right and on a
+390px screen it overlaps page content. Re-docking it to the bottom was tried and
+reverted: the element is built from an inline `style.cssText` flex row, and
+overriding its `top`/`bottom`/`max-width` from the lock sheet blew its height
+out to most of the screen. It also holds the only Sign out control in the app,
+so hiding it is not an option. Left alone rather than guessed at a third time.
+Fix it where it is built — search `fh-shell-chip-style` in `shell.js`.
+
+### Verified
+
+- `node docs/workflows/mobile-check.mjs` — 36 checked, **0 failing**.
+- Desktop regression at 1280px — 13 computed-style assertions, 0 fail. The
+  brand/geometry work from earlier in the day is intact.
+- `npm run lint` clean. `npm test` 4536 pass / 2 fail — baseline.
+- Screenshots inspected for hiring, lenders, pipeline. The ☰-over-title and
+  chip-over-cards problems were both found by looking, not by measuring.
+
+### Not covered
+
+- Only tested at 390×844. No tablet width, no landscape, no 320px.
+- Tables scroll rather than reflow. Reachable, not redesigned.
+- No real device testing, and no touch-gesture testing beyond tap.

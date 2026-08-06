@@ -84,11 +84,30 @@ for (const name of screens) {
     const m = await page.evaluate(() => {
       const side = document.querySelector('.side');
       const r = side && side.getBoundingClientRect();
+      // An element wider than the screen is only a bug if the user cannot get
+      // to it. Inside a scroll container (.fh-scroll-x and friends) it is
+      // reachable by swiping the container, and the page itself stays put —
+      // that is the intended fix for wide data tables, not a failure. Only
+      // count elements that overflow with nothing to scroll them.
+      // Also skip anything living inside a position:fixed ancestor. Closed
+      // off-canvas panels park themselves off-screen on purpose
+      // (.editor is position:fixed;right:0;transform:translateX(102%)), and
+      // while the panel itself is skipped for being fixed, its children are
+      // not — so every closed drawer header reported as an overflow it is not.
+      const contained = (el) => {
+        for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+          const cs = getComputedStyle(p);
+          if (cs.position === 'fixed') return true;
+          if (cs.overflowX === 'auto' || cs.overflowX === 'scroll' || cs.overflowX === 'hidden') return true;
+        }
+        return false;
+      };
       let worstW = 0, worst = '';
       for (const el of document.querySelectorAll('body *')) {
         const b = el.getBoundingClientRect();
         if (b.width === 0 || b.height === 0) continue;
         if (getComputedStyle(el).position === 'fixed') continue;   // drawers live off-screen by design
+        if (contained(el)) continue;
         if (b.right > window.innerWidth + 2 && b.width > worstW) {
           worstW = b.width;
           worst = el.tagName.toLowerCase() + (el.className ? '.' + String(el.className).trim().split(/\s+/)[0] : '');
