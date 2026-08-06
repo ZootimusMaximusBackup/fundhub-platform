@@ -1,6 +1,6 @@
 # FundHub SMS Templates — Current (pulled 2026-08-05)
 
-18 standalone templates. All compliant: prohibited-wording scrubbed, "Reply STOP to opt out." on every template.
+26 standalone templates. All compliant: prohibited-wording scrubbed, "Reply STOP to opt out." on every template.
 
 ## SMS-BLK-01-NEW-NEGATIVE-PAUSED
 
@@ -73,3 +73,35 @@ Hey {{contact.first_name}}, it's Fundhub. Looks like we missed you today. No str
 ## SMS-S05-02-NOSHOW-NUDGE
 
 Hey {{contact.first_name}}, Fundhub checking in. Still want help getting this handled? Book a time here: {{custom_values.booking_link}} Reply STOP to opt out.
+
+## SMS-C06-DECLINE
+
+Hey {{contact.first_name}}, it's Fundhub. We finished reviewing your profile and capital isn't the right move today — approvals right now would be small and expensive, and we won't put you in that spot. The good news: we know exactly what's holding it back and it's fixable. Your advisor is sending the details to your email now. Questions? Just reply here. Reply STOP to opt out.
+
+## SMS-DS01-REPAIR-REFERRAL
+
+Hey {{contact.first_name}}, it's Fundhub. Based on your review, profile optimization is the step that unlocks your funding — we've mapped exactly what needs to move and in what order. Details are in your email. When you're ready, your advisor can get you started today: {{custom_values.booking_link}} Reply STOP to opt out.
+
+## SMS-S05A-NOSHOW-RECOVERY
+
+Hey {{contact.first_name}}, it's Fundhub. Looks like we missed each other at {{appointment.start_time}}. No problem — things come up. Your analysis is done and still sitting here waiting on you. Grab a new time whenever works: {{custom_values.booking_link}} Reply STOP to opt out.
+
+## SMS-N01-COLD-NURTURE
+
+Hey {{contact.first_name}}, Fundhub here. Most owners we talk to assume their credit profile is the problem. Usually it's the order they applied in. Same file, different sequence, very different result. If you want to see what yours actually supports: {{custom_values.booking_link}} Reply STOP to opt out.
+
+## SMS-N02-WARM-NURTURE
+
+Hey {{contact.first_name}}, it's Fundhub. You looked at funding with us a while back. Profiles move — and so do the banks. What your file supported then isn't what it supports now. Worth a fresh look: {{custom_values.booking_link}} Reply STOP to opt out.
+
+## SMS-N03-HOT-NURTURE
+
+Hey {{contact.first_name}}, Fundhub. You were one step from moving on your funding and it stalled out. Your analysis is still on file and still good. Want to pick it back up? {{custom_values.booking_link}} Reply STOP to opt out.
+
+## SMS-N04-POST-FUNDING
+
+Hey {{contact.first_name}}, it's Fundhub. Checking in now that your capital's in place — how's the deployment going? When you're ready to look at the next round, your file is already built and the second pass moves faster. Just reply here or grab time: {{custom_values.booking_link}} Reply STOP to opt out.
+
+## SMS-N06-RENEWAL
+
+Hey {{contact.first_name}}, Fundhub here. Your profile has had time to season since your last round, which usually means a higher ceiling this time. We can re-run it and tell you where you'd land: {{custom_values.booking_link}} Reply STOP to opt out.

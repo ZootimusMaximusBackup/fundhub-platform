@@ -1,5 +1,5 @@
 # GHL EMAIL TEMPLATES — SOURCE OF TRUTH
-158 email templates (copy extracted from GHL builder). Raw HTML in ghl-emails/pages/.
+162 email templates (copy extracted from GHL builder). Raw HTML in ghl-emails/pages/.
 
 
 
@@ -7233,3 +7233,105 @@ RP3 – Fix This → Unlock Funding Faster
  FundHub.ai • Funding Intelligence for Entrepreneurs
 
  Unsubscribe
+
+================================================================================
+## EMAIL-C06-DECLINE   Decline — not funding today      [folder: (root)]
+================================================================================
+Your Fundhub review — what we found
+
+Hey {{contact.first_name}},
+
+We finished the review of your profile, and I want to be straight with you: going after capital today isn't the right move.
+
+Here's why. Based on what came back on your pull, the approvals available to you right now would be small, expensive, and they'd burn inquiries you'll want later. We could submit anyway and collect a fee. We're not going to do that.
+
+What we found instead is that your file has specific, fixable items sitting between you and real approval numbers. Not vague credit advice — specific items, with a specific order to address them.
+
+That's the work we do in our optimization program. Same team, same engine, aimed at getting your profile to where the funding conversation is actually worth having.
+
+Your advisor will walk you through what that looks like and what your projected position is on the other side of it. No pressure either way — but I'd rather you fund well in a few months than badly today.
+
+{{sender_name}} FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
+
+Unsubscribe
+
+================================================================================
+## EMAIL-DS01-REPAIR-REFERRAL   Repair referral — unlocks funding      [folder: (root)]
+================================================================================
+The step that unlocks your funding
+
+Hey {{contact.first_name}},
+
+Following up on your review with a clear picture of where you stand.
+
+Your profile isn't in a position to pull the funding numbers you're after — yet. What's in the way is a defined set of items on your report, and we've mapped them: which ones move the needle most, what order to work them in, and what your position looks like once they're handled.
+
+That's our optimization program. Here's what it actually is:
+
+We work your file directly with the bureaus and the furnishers. You get the correction requests, the tracking, and the reporting. You're not writing letters or sitting on hold — our team runs it.
+
+And critically, we're not handing you off to a stranger at the end. The same engine that scored your file today re-scores it when the work is done, and the same team takes you into funding.
+
+The realistic timeline is set at the start, not guessed at. Your advisor will walk you through what your file specifically needs and what the projection is on the other side.
+
+Get started here: {{custom_values.booking_link}}
+
+{{sender_name}} FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
+
+Unsubscribe
+
+================================================================================
+## EMAIL-DS02-DIY-LETTERS-READY   DIY correction letters ready      [folder: (root)]
+================================================================================
+Your correction letters are ready
+
+Hey {{contact.first_name}},
+
+As promised — your correction letters are attached and ready to send.
+
+These aren't templates. They were generated off your actual report: the specific items we identified, addressed to the specific bureaus reporting them, in the order that makes sense to work them.
+
+How to use them:
+
+Print and sign each one. Include a copy of your government-issued ID and one proof of current address — a utility bill or bank statement works.
+
+Send them certified mail with return receipt. That gives you a timestamp, which matters if a bureau misses the response window.
+
+Expect a response in about 30 days. Keep everything they send back.
+
+If items come off and you want to see where that puts you, run your file through our analyzer again and we'll tell you straight: {{custom_values.booking_link}}
+
+And if at any point you'd rather have our team run this instead of doing it yourself, that door's open.
+
+{{sender_name}} FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
+
+Unsubscribe
+
+================================================================================
+## EMAIL-S05A-NOSHOW-RECOVERY   No-show recovery — analysis waiting      [folder: (root)]
+================================================================================
+We missed you — your analysis is still here
+
+Hey {{contact.first_name}},
+
+We had you down for {{appointment.start_time}} and didn't connect. No problem, things come up.
+
+Worth saying: the work on your file is already done. Your profile has been run and your funding position is sitting in front of us — we just need fifteen minutes to walk you through what it says.
+
+That's the whole call. What your file supports today, what's holding back the rest, and what the path looks like. No pitch deck.
+
+Pick a time that actually works: {{custom_values.booking_link}}
+
+If your situation changed and now isn't the right time, just reply and let me know — I'll close out the file so we're not chasing you.
+
+{{sender_name}} FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
+
+Unsubscribe

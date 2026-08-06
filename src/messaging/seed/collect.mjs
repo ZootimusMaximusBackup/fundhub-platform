@@ -29,13 +29,13 @@ export const SOURCES = [
   {
     file: "SMS-TEMPLATES-CURRENT.md",
     parse: parseSmsCurrent,
-    expected: 18,
+    expected: 26,
     note: "post-compliance SMS source of truth (## KEY + plain body)",
   },
   {
     file: "EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md",
     parse: parseEmailTemplates,
-    expected: 158,
+    expected: 162,
     note: "GHL email templates (never compliance-audited)",
   },
 ];

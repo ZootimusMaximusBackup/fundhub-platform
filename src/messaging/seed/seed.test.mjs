@@ -280,8 +280,8 @@ test("the real source docs parse to the counts the docs themselves claim", async
   }
   const { perDoc, seedable, problems } = collect(docsDir);
   const byFile = Object.fromEntries(perDoc.map((d) => [d.file, d.found]));
-  assert.equal(byFile["SMS-TEMPLATES-CURRENT.md"], 18);
-  assert.equal(byFile["EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md"], 158);
+  assert.equal(byFile["SMS-TEMPLATES-CURRENT.md"], 26);
+  assert.equal(byFile["EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md"], 162);
   assert.equal(problems.emptyBody.length, 0);
   assert.equal(new Set(seedable.map((x) => x.templateKey)).size, seedable.length);
   assert.ok(seedable.some((x) => x.templateKey === "SMS-F03-01-ROUND-SUBMITTED"));
