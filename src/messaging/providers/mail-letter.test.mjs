@@ -41,7 +41,9 @@ test("bureau P.O. Boxes are hardcoded", () => {
 test("sendLetter posts PostGrid body with flat envelope and client return address", async () => {
   let posted = null;
   const sent = await sendLetter({
-    env: { POSTGRID_API_KEY: "test-key" },
+    // The fence defaults to blocked; a test that expects a letter to go out
+    // has to say so. See src/lib/dry-run.mjs.
+    env: { POSTGRID_API_KEY: "test-key", MESSAGING_DRY_RUN: "0" },
     serviceLevel: "priority",
     bureau: "EX",
     from: {

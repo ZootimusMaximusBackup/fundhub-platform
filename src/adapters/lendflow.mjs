@@ -34,6 +34,7 @@
 
 import crypto from "node:crypto";
 import { emit } from "../events/bus.mjs";
+import { postJsonTo, ADAPTERS } from "../lib/outbound-fetch.mjs";
 
 // Header the router should hand to verifyLendflowSignature(); secret env key.
 // (Wiring lives in src/http/router.mjs STD — not this module's file to touch.)
@@ -506,32 +507,33 @@ export async function submitApplication({
     };
   }
 
-  if (typeof fetchImpl !== "function") {
-    return { ok: false, status: 0, reason: "no_fetch", payload, applicationId: null };
+  /* Behind the adapters fence — see src/lib/outbound-fetch.mjs. This is a real
+     application submitted to a real lender under a real client's name, so it is
+     held unless ADAPTERS_DRY_RUN is explicitly off. transmit() never throws, so
+     the network try/catch is gone with the bare fetch. */
+  const sent = await postJsonTo(`${cfg.baseUrl}${SUBMIT_PATH}`, {
+    headers: {
+      authorization: `Bearer ${cfg.apiKey}`,
+      accept: "application/json"
+    },
+    body: JSON.stringify(payload),
+    fetchImpl,
+    env,
+    fence: ADAPTERS,
+    what: "lendflow application submit"
+  });
+
+  if (sent.blocked) {
+    return { ok: false, status: 0, reason: `dry_run_blocked:${sent.error}`, payload, applicationId: null };
+  }
+  if (!sent.ok && sent.status === 0) {
+    return { ok: false, status: 0, reason: `network_error:${sent.error || "unknown"}`, payload, applicationId: null };
   }
 
-  let res;
-  try {
-    res = await fetchImpl(`${cfg.baseUrl}${SUBMIT_PATH}`, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${cfg.apiKey}`,
-        "content-type": "application/json",
-        accept: "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-  } catch (err) {
-    return { ok: false, status: 0, reason: `network_error:${err?.message || "unknown"}`, payload, applicationId: null };
-  }
-
-  const status = res?.status ?? 0;
-  let json = null;
-  try {
-    json = typeof res?.json === "function" ? await res.json() : null;
-  } catch {
-    json = null; // non-JSON body — status still decides the outcome
-  }
+  const status = sent.status;
+  // transmit() already read the body once and parsed it defensively; a non-JSON
+  // body arrives as null and the status still decides the outcome.
+  const json = sent.body;
 
   if (status < 200 || status >= 300) {
     return {

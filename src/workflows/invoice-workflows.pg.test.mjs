@@ -25,7 +25,13 @@ import { handle as ds02, EMAIL_TEMPLATE_KEY as DS02_EMAIL } from "./ds-02-diy-le
 import { fakeStep, ev } from "./test-support.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
-const okFetch = async () => ({ ok: true, status: 200 });
+/* DS-02 delivers letters through the adapters fence, which defaults to blocked
+   and reads the process environment here because handle() takes no env. This
+   test asserts delivery happens, so it has to declare the fence down. */
+process.env.ADAPTERS_DRY_RUN = "0";
+
+// text() is required: outbound calls read the body once as text.
+const okFetch = async () => ({ ok: true, status: 200, text: async () => "{}" });
 
 describe("invoice-writing workflows against real Postgres",
   { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {

@@ -118,7 +118,9 @@ async function attempt(message, { fetchImpl, timeoutMs, signal, env = process.en
     body: JSON.stringify({ type: "SMS", contactId, message: body }),
     timeoutMs,
     fetchImpl,
-    signal
+    signal,
+    env,
+    what: "ghl relay sms"
   });
 
   if (res.status === 0) return failure(res.error || "ghl_relay request failed");

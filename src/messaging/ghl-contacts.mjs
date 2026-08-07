@@ -3,12 +3,15 @@
 // (./providers/ghl-relay.mjs) has a `clients.ghl_contact_id` to address
 // (db/schema/001_init.sql:47 is where that column already lives).
 //
-// THIS FILE MAKES OUTBOUND HTTP CALLS, on purpose and within the rule that
-// confines that to src/messaging/providers/*. ghl-contacts.mjs sits next to
-// providers/, not inside src/lib or src/handlers, for the same reason
-// providers/http.mjs exists: contact resolution against GHL is a live network
-// call to the same LeadConnector API the SMS provider already speaks to, not a
-// domain read.
+// THIS FILE MAKES OUTBOUND HTTP CALLS, on purpose, and they now go through the
+// one chokepoint (src/lib/outbound-fetch.mjs) behind the ADAPTERS fence.
+//
+// They did not used to. Creating a contact writes a real person's name, email
+// and phone into the company's GoHighLevel account — a vendor side effect on a
+// real client — and it ran on every new client with no fence in front of it at
+// all, because the fence lived in the calling handler and sat below an early
+// return. Guarding the caller was never enough; the guard belongs here, at the
+// wire, where nothing can go around it.
 //
 // CONFIGURATION, read at call time — NEVER cached at import time:
 //   GHL_API_KEY          preferred name (the one asked for)
@@ -26,6 +29,8 @@
 // { ok:false, reason:"not_configured" } rather than throwing — a client that
 // never gets a GHL contact id simply cannot receive SMS through ghl_relay yet.
 
+import { transmit, ADAPTERS } from "../lib/outbound-fetch.mjs";
+
 export const DEFAULT_BASE_URL = "https://services.leadconnectorhq.com";
 export const DEFAULT_VERSION = "2021-07-28";
 
@@ -39,12 +44,6 @@ export function config(env = process.env) {
     baseUrl: String(env.GHL_BASE_URL || env.GHL_RELAY_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, ""),
     version: String(env.GHL_VERSION || env.GHL_RELAY_VERSION || DEFAULT_VERSION)
   };
-}
-
-async function readJson(res) {
-  const text = await res.text().catch(() => "");
-  if (!text) return null;
-  try { return JSON.parse(text); } catch { return null; }
 }
 
 /**
@@ -70,9 +69,6 @@ export async function findOrCreateGhlContact(
   const cleanPhone = phone ? String(phone).trim() : null;
   if (!cleanEmail && !cleanPhone) return { ok: false, reason: "no_identifier" };
 
-  const fetchFn = fetchImpl || globalThis.fetch;
-  if (typeof fetchFn !== "function") return { ok: false, reason: "no_fetch_implementation" };
-
   const headers = {
     Authorization: `Bearer ${cfg.apiKey}`,
     Version: cfg.version,
@@ -88,62 +84,77 @@ export async function findOrCreateGhlContact(
     ...(loc ? { locationId: loc } : {})
   };
 
-  try {
-    const res = await fetchFn(`${cfg.baseUrl}/contacts/upsert`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(upsertBody)
-    });
+  /* Behind the adapters fence. Creating a contact writes a real person's name,
+     email and phone into the company's GoHighLevel account, which is a vendor
+     side effect on a real client — so it is held exactly like a send is.
+     transmit() never throws, so the try/catch that used to wrap these went with
+     the bare fetch. */
+  const res = await transmit(`${cfg.baseUrl}/contacts/upsert`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(upsertBody)
+  }, { fence: ADAPTERS, env, fetchImpl, what: "ghl contact upsert" });
 
-    if (res.ok) {
-      const parsed = await readJson(res);
-      const contact = parsed?.contact || parsed || {};
-      const id = contact.id || parsed?.id;
-      if (!id) return { ok: false, reason: "no_contact_id_in_response" };
-      return { ok: true, contactId: String(id), created: contact.new === true || parsed?.new === true };
-    }
+  if (res.blocked) return { ok: false, reason: "dry_run_blocked", detail: res.error };
 
-    // Upsert not available on this account/deployment — fall back.
-    if (res.status === 404 || res.status === 405) {
-      return await searchThenCreate(
-        { email: cleanEmail, phone: cleanPhone, firstName, lastName, locationId: loc },
-        { fetchFn, headers, baseUrl: cfg.baseUrl }
-      );
-    }
-    return { ok: false, reason: `upsert_http_${res.status}` };
-  } catch (err) {
-    return { ok: false, reason: `request_failed: ${String((err && err.message) || err)}` };
+  if (res.ok) {
+    const parsed = res.body;
+    const contact = parsed?.contact || parsed || {};
+    const id = contact.id || parsed?.id;
+    if (!id) return { ok: false, reason: "no_contact_id_in_response" };
+    return { ok: true, contactId: String(id), created: contact.new === true || parsed?.new === true };
   }
+
+  // Upsert not available on this account/deployment — fall back.
+  if (res.status === 404 || res.status === 405) {
+    return await searchThenCreate(
+      { email: cleanEmail, phone: cleanPhone, firstName, lastName, locationId: loc },
+      { headers, baseUrl: cfg.baseUrl, env, fetchImpl }
+    );
+  }
+  if (res.status === 0) return { ok: false, reason: `request_failed: ${res.error}` };
+  return { ok: false, reason: `upsert_http_${res.status}` };
 }
 
-async function searchThenCreate({ email, phone, firstName, lastName, locationId }, { fetchFn, headers, baseUrl }) {
-  try {
-    if (email) {
-      const qs = new URLSearchParams({ email });
-      const searchRes = await fetchFn(`${baseUrl}/contacts/?${qs.toString()}`, { method: "GET", headers });
-      if (searchRes.ok) {
-        const parsed = await readJson(searchRes);
-        const found = Array.isArray(parsed?.contacts) ? parsed.contacts[0] : null;
-        if (found?.id) return { ok: true, contactId: String(found.id), created: false };
-      }
+async function searchThenCreate(
+  { email, phone, firstName, lastName, locationId },
+  { headers, baseUrl, env, fetchImpl }
+) {
+  if (email) {
+    const qs = new URLSearchParams({ email });
+    const searchRes = await transmit(`${baseUrl}/contacts/?${qs.toString()}`, {
+      method: "GET",
+      headers
+    }, { fence: ADAPTERS, env, fetchImpl, what: "ghl contact search" });
+    if (searchRes.blocked) return { ok: false, reason: "dry_run_blocked", detail: searchRes.error };
+    if (searchRes.ok) {
+      const found = Array.isArray(searchRes.body?.contacts) ? searchRes.body.contacts[0] : null;
+      if (found?.id) return { ok: true, contactId: String(found.id), created: false };
     }
-
-    const createBody = {
-      ...(email ? { email } : {}),
-      ...(phone ? { phone } : {}),
-      ...(firstName ? { firstName } : {}),
-      ...(lastName ? { lastName } : {}),
-      ...(locationId ? { locationId } : {})
-    };
-    const createRes = await fetchFn(`${baseUrl}/contacts/`, { method: "POST", headers, body: JSON.stringify(createBody) });
-    if (!createRes.ok) return { ok: false, reason: `create_http_${createRes.status}` };
-    const parsed = await readJson(createRes);
-    const id = parsed?.contact?.id || parsed?.id;
-    if (!id) return { ok: false, reason: "no_contact_id_in_response" };
-    return { ok: true, contactId: String(id), created: true };
-  } catch (err) {
-    return { ok: false, reason: `request_failed: ${String((err && err.message) || err)}` };
   }
+
+  const createBody = {
+    ...(email ? { email } : {}),
+    ...(phone ? { phone } : {}),
+    ...(firstName ? { firstName } : {}),
+    ...(lastName ? { lastName } : {}),
+    ...(locationId ? { locationId } : {})
+  };
+  const createRes = await transmit(`${baseUrl}/contacts/`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(createBody)
+  }, { fence: ADAPTERS, env, fetchImpl, what: "ghl contact create" });
+
+  if (createRes.blocked) return { ok: false, reason: "dry_run_blocked", detail: createRes.error };
+  if (!createRes.ok) {
+    return createRes.status === 0
+      ? { ok: false, reason: `request_failed: ${createRes.error}` }
+      : { ok: false, reason: `create_http_${createRes.status}` };
+  }
+  const id = createRes.body?.contact?.id || createRes.body?.id;
+  if (!id) return { ok: false, reason: "no_contact_id_in_response" };
+  return { ok: true, contactId: String(id), created: true };
 }
 
 /**

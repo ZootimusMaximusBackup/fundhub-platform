@@ -15,6 +15,7 @@ import { on } from "../events/registry.mjs";
 import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
 import { ensureGhlContactId, config as ghlConfig } from "../messaging/ghl-contacts.mjs";
+import { adaptersBlocked } from "../lib/dry-run.mjs";
 
 // --- helpers ----------------------------------------------------------------
 
@@ -51,8 +52,9 @@ async function markGhlMissing(db, clientId, reason) {
  * Decision (2026-08-04): never leave ghl_contact_id null silently.
  *   1. When GHL_API_KEY is set — find-or-create regardless of sms routing
  *      (relay may turn on later; the contact should already exist).
- *   2. When ADAPTERS_DRY_RUN / MESSAGING_DRY_RUN — stamp a local placeholder
- *      so verification and CRM screens are not blank.
+ *   2. When the ADAPTERS_DRY_RUN fence is up — stamp a local placeholder so
+ *      verification and CRM screens are not blank. Checked FIRST, before the
+ *      key, because checking it after meant it never ran in production.
  *   3. Otherwise — console.warn + custom_fields.ghl_link_missing so an
  *      operator can see the client cannot receive SMS via the relay.
  *
@@ -69,6 +71,27 @@ async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, la
   }
 
   try {
+    /* THE FENCE COMES FIRST. It used to sit below the `cfg.ok` branch, which
+       returns whenever GHL_API_KEY is set — so in production, where the key is
+       set, the dry-run branch was unreachable and the sync called GoHighLevel
+       no matter what the flag said. Order was the whole bug. */
+    if (adaptersBlocked(env)) {
+      const placeholder = `dry-ghl-${String(clientId).replace(/-/g, "").slice(0, 12)}`;
+      await db.query(
+        `UPDATE clients
+            SET ghl_contact_id = COALESCE(ghl_contact_id, $1),
+                custom_fields = COALESCE(custom_fields, '{}'::jsonb)
+                  || jsonb_build_object('ghl_link_dry_run', true)
+          WHERE id = $2`,
+        [placeholder, clientId]
+      );
+      console.warn(
+        `[client-lifecycle] client ${clientId}: ADAPTERS_DRY_RUN fence is up — ` +
+        `stamped placeholder ${placeholder} and did not call GoHighLevel`
+      );
+      return;
+    }
+
     const cfg = ghlConfig(env);
     if (cfg.ok) {
       const result = await ensureGhlContactId(
@@ -82,23 +105,6 @@ async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, la
         `SMS via ghl_relay will not work until this is fixed.`
       );
       await markGhlMissing(db, clientId, result.reason);
-      return;
-    }
-
-    if (env.ADAPTERS_DRY_RUN === "1" || env.MESSAGING_DRY_RUN === "1") {
-      const placeholder = `dry-ghl-${String(clientId).replace(/-/g, "").slice(0, 12)}`;
-      await db.query(
-        `UPDATE clients
-            SET ghl_contact_id = COALESCE(ghl_contact_id, $1),
-                custom_fields = COALESCE(custom_fields, '{}'::jsonb)
-                  || jsonb_build_object('ghl_link_dry_run', true)
-          WHERE id = $2`,
-        [placeholder, clientId]
-      );
-      console.warn(
-        `[client-lifecycle] client ${clientId}: dry-run GHL placeholder ${placeholder} ` +
-        `(no GHL_API_KEY — replace before live SMS relay)`
-      );
       return;
     }
 

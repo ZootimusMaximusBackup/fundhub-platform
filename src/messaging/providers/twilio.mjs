@@ -148,7 +148,9 @@ async function attempt(message, { fetchImpl, timeoutMs, signal, env = process.en
     contentType: "application/x-www-form-urlencoded",
     timeoutMs,
     fetchImpl,
-    signal
+    signal,
+    env,
+    what: "twilio sms"
   });
 
   // A transport failure never reached Twilio. Retryable — see classify().

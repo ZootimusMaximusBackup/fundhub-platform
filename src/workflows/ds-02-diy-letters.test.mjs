@@ -4,7 +4,14 @@ import { handle, EMAIL_TEMPLATE_KEY } from "./ds-02-diy-letters.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 const withTemplate = () => [{ org_id: "org-1", template_key: EMAIL_TEMPLATE_KEY, channel: "email", body: "letters ready", compliance_passed: true }];
-const fakeFetch = (ok = true) => async () => ({ ok, status: ok ? 200 : 500 });
+/* These tests assert that letters ARE delivered, so the adapters fence has to be
+   named as down. It defaults to blocked (src/lib/dry-run.mjs), and handle()
+   takes no env, so the fence reads the process environment. Node runs each test
+   file in its own process, so this cannot leak into another file. */
+process.env.ADAPTERS_DRY_RUN = "0";
+
+// text() is required: outbound calls now read the body once as text.
+const fakeFetch = (ok = true) => async () => ({ ok, status: ok ? 200 : 500, text: async () => "{}" });
 
 // HARD RULE 1 — the whole point of this file: prove BOTH directions.
 test("HARD RULE 1 — fires on the not-qualified downsell path (DIY product, non-funding tier)", async () => {
@@ -76,7 +83,7 @@ test("duplicate delivery: replaying the same event does not double-send, double-
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }], templates: withTemplate() });
   const event = ev("payment.received", { productName: "Consulting Services Package" }, { id: "evt-dup-ds02", clientId: "cl-1" });
   let fetchCallCount = 0;
-  const countingFetch = async () => { fetchCallCount++; return { ok: true, status: 200 }; };
+  const countingFetch = async () => { fetchCallCount++; return { ok: true, status: 200, text: async () => "{}" }; };
   await handle({ event, db, step: fakeStep(), fetchImpl: countingFetch });
   await handle({ event, db, step: fakeStep(), fetchImpl: countingFetch });
   // The delivery guard must block the re-POST — fetch called exactly once across both runs.

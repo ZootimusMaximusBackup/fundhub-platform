@@ -10,7 +10,12 @@ import { pgFake, fakeStep, ev } from "./test-support.mjs";
 // Every funding-branch test now also fires the deliver-letters webhook (row 20), so a
 // fake fetch is required — the default `fetchImpl` is global fetch, and a real network
 // call has no place in a unit test (mirrors ds-02's own fakeFetch pattern).
-const fakeFetch = (ok = true) => async () => ({ ok, status: ok ? 200 : 500 });
+/* Same as ds-02: these assert delivery happens, so the adapters fence must be
+   declared down. It defaults to blocked and handle() takes no env. */
+process.env.ADAPTERS_DRY_RUN = "0";
+
+// text() is required: outbound calls now read the body once as text.
+const fakeFetch = (ok = true) => async () => ({ ok, status: ok ? 200 : 500, text: async () => "{}" });
 
 test("happy path: funding-path CRS results tag path:funding", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING", custom_fields: {} }] });
@@ -150,7 +155,7 @@ test("row 20: the FUNDING branch fires the deliver-letters webhook with the fund
   const fetchImpl = async (url, opts) => {
     calledUrl = url;
     calledBody = JSON.parse(opts.body);
-    return { ok: true, status: 200 };
+    return { ok: true, status: 200, text: async () => "{}" };
   };
   const res = await handle({
     event: ev("analysis.completed", { source: "crs", scores: { ex: 650 } }, { id: "evt-c06-funding", clientId: "cl-1" }),
@@ -167,7 +172,7 @@ test("row 20: the FUNDING branch fires the deliver-letters webhook with the fund
 test("row 20: replaying the same event does not double-POST the deliver-letters webhook", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING", custom_fields: {} }] });
   let fetchCallCount = 0;
-  const countingFetch = async () => { fetchCallCount++; return { ok: true, status: 200 }; };
+  const countingFetch = async () => { fetchCallCount++; return { ok: true, status: 200, text: async () => "{}" }; };
   const event = ev("analysis.completed", { source: "crs", scores: { ex: 650 } }, { id: "evt-dup-c06-funding", clientId: "cl-1" });
   await handle({ event, db, step: fakeStep(), fetchImpl: countingFetch });
   await handle({ event, db, step: fakeStep(), fetchImpl: countingFetch });

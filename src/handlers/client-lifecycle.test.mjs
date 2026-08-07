@@ -302,7 +302,7 @@ test("resolveClient: GHL_API_KEY stores the found-or-created contact id", async 
   const id = await resolveClient(
     db,
     ev("entry.captured", { email: "ghl@x.com", name: "Ghl Contact" }),
-    { fetchImpl, env: { GHL_API_KEY: "test-key" } }
+    { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "test-key" } }
   );
   assert.equal(db.clients.find((c) => c.id === id).ghl_contact_id, "ghl-abc123");
   assert.equal(fetchImpl.calls.length, 1, "exactly one GHL call for one new client");
@@ -314,7 +314,7 @@ test("resolveClient: GHL_API_KEY still syncs when sms is not routed to ghl_relay
   await resolveClient(
     db,
     ev("entry.captured", { email: "any-route@x.com" }),
-    { fetchImpl, env: { GHL_API_KEY: "test-key" } }
+    { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "test-key" } }
   );
   assert.equal(db.clients[0].ghl_contact_id, "ghl-any-route");
   assert.equal(fetchImpl.calls.length, 1);
@@ -332,16 +332,36 @@ test("resolveClient: dry-run without a key stamps a local placeholder", async ()
   assert.equal(fetchImpl.calls.length, 0);
 });
 
-test("resolveClient: no key and no dry-run leaves null with a warning stamp", async () => {
+test("resolveClient: no key and the fence explicitly down leaves null with a warning stamp", async () => {
+  /* The fence has to be named as down here. It defaults to BLOCKED, and with it
+     up this path stamps a dry-run placeholder instead — so "no key" and "fence
+     up" are two different outcomes and the test has to say which one it means.
+     Before the fence defaulted to blocked, `env: {}` meant this case; now it
+     means the one below. */
   const db = pgFake({ smsRouting: "ghl_relay" });
   const id = await resolveClient(
     db,
     ev("entry.captured", { email: "nokey@x.com" }),
-    { env: {} } // neither GHL_API_KEY nor GHL_RELAY_API_KEY set — not invented
+    { env: { ADAPTERS_DRY_RUN: "0" } } // no GHL key of either name — not invented
   );
   assert.ok(id, "the client is still created");
   assert.equal(db.clients[0].ghl_contact_id, null);
   assert.equal(db.clients[0].custom_fields.ghl_link_missing, true);
+});
+
+test("resolveClient: with the fence up, a placeholder is stamped and GHL is never called", async () => {
+  // The regression this whole change exists for: the placeholder branch used to
+  // sit below an early return and could not run in production at all.
+  const db = pgFake({ smsRouting: "ghl_relay" });
+  let called = 0;
+  const id = await resolveClient(
+    db,
+    ev("entry.captured", { email: "fenced@x.com" }),
+    { env: { GHL_API_KEY: "a-real-key" }, fetchImpl: async () => { called += 1; return { ok: true, status: 200, text: async () => "{}" }; } }
+  );
+  assert.ok(id, "the client is still created");
+  assert.equal(called, 0, "GOHIGHLEVEL WAS CALLED WITH THE FENCE UP");
+  assert.equal(db.clients[0].custom_fields.ghl_link_dry_run, true);
 });
 
 test("resolveClient: a GHL request failure never blocks or breaks client creation", async () => {
@@ -350,7 +370,7 @@ test("resolveClient: a GHL request failure never blocks or breaks client creatio
   const id = await resolveClient(
     db,
     ev("entry.captured", { email: "ghlfail@x.com" }),
-    { fetchImpl, env: { GHL_API_KEY: "test-key" } }
+    { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "test-key" } }
   );
   assert.ok(id, "client creation must survive a GHL transport failure");
   assert.equal(db.clients[0].ghl_contact_id, null);
@@ -359,7 +379,7 @@ test("resolveClient: a GHL request failure never blocks or breaks client creatio
 test("resolveClient: existing client with a GHL id is not re-synced", async () => {
   const db = pgFake({ smsRouting: "ghl_relay" });
   const fetchImpl = fakeGhlFetch({ status: 200, body: { contact: { id: "ghl-once" } } });
-  const opts = { fetchImpl, env: { GHL_API_KEY: "test-key" } };
+  const opts = { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "test-key" } };
   const id1 = await resolveClient(db, ev("entry.captured", { email: "repeat@x.com" }), opts);
   const id2 = await resolveClient(db, ev("survey.submitted", { email: "repeat@x.com" }), opts);
   assert.equal(id1, id2);
@@ -378,7 +398,7 @@ test("resolveClient: existing client with null ghl_contact_id gets a backfill sy
   const id = await resolveClient(
     db,
     ev("entry.captured", { email: "pre@x.com", name: "Pre Existing" }),
-    { fetchImpl, env: { GHL_API_KEY: "test-key" } }
+    { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "test-key" } }
   );
   assert.equal(id, "cl-pre");
   assert.equal(db.clients[0].ghl_contact_id, "ghl-backfill");

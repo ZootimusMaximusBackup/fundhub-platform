@@ -9,12 +9,15 @@
 // choice: it means a bug in the routing code cannot produce a send, because the
 // provider module has not been loaded yet at the moment any block is decided.
 //
-// NOTHING IS SCHEDULED. This module exports functions. There is no cron, no
-// Inngest registration, no timer, and no import of it from any route or
-// workflow — dispatchDue() runs when something calls it, and today nothing does.
-// Turning sending on is a separate, deliberate act (and INNGEST_EVENT_KEY is one
-// of the three things CLAUDE.md §11 says to ask about first). Building the
-// dispatcher did not start it.
+// SOMETHING IS SCHEDULED NOW. This header used to say nothing was, and that
+// stopped being true when netlify/functions/staff-message-sweeper.mjs shipped:
+// it calls dispatchDue({ senderStaffOnly: true }) every five minutes against
+// production. Staff-typed replies are therefore a live send path. The legacy
+// workflow backlog is still not drained by anything — see senderStaffOnly in
+// claimDue below — but "nothing dispatches" is no longer a true sentence and
+// reading it here talked at least one person out of checking.
+//
+// MESSAGING_DRY_RUN is what actually holds the door now. See step 2c.
 //
 // WHAT PROTECTS AGAINST DOUBLE SENDS. Three things, in order of reliability:
 //   1. messages (org_id, provider_ref) unique index, migration 004 — the real
@@ -32,6 +35,7 @@ import {
 import { resolve, addressFieldFor } from "./providers/index.mjs";
 import { isSynthetic } from "./live-fence.mjs";
 import { isDraftTemplateCopy, isDraftTemplateRow } from "./draft-guard.mjs";
+import { fenceVerdict, MESSAGING_DRY_RUN } from "../lib/dry-run.mjs";
 
 /* A clock value, resolved to whatever a `::timestamptz` bind param accepts.
    `now` arrives here as null, a Date, an ISO string, or — from a virtual
@@ -69,7 +73,8 @@ export const OUTCOME = Object.freeze({
   RETRY: "retry",               // provider says try again
   GAVE_UP: "gave_up",           // out of attempts
   DEFERRED: "deferred",         // inside quiet hours; due again when it opens
-  SYNTHETIC: "synthetic"        // a test record, and the provider is real
+  SYNTHETIC: "synthetic",       // a test record, and the provider is real
+  DRY_RUN: "dry_run"            // the fence is up; held, not failed
 });
 
 /* ── QUIET HOURS ARE A DEFERRAL, NOT A BLOCK ────────────────────────────────
@@ -437,6 +442,43 @@ export async function dispatchOne(db, message, options = {}) {
         return await finalise(db, message, "failed", OUTCOME.SYNTHETIC,
           "this is a test record from a journey run and the provider is real — refused",
           route.provider);
+      }
+    }
+
+    /* ---- 2c. THE DRY-RUN FENCE -------------------------------------------
+       MESSAGING_DRY_RUN stops anything that can reach a real person. Checked
+       here because it needs the resolved provider's TRANSMITS flag, and before
+       addressFor() so a held message costs no client lookup.
+
+       IT IS A HOLD, NOT A FAILURE, and that distinction is the whole design.
+       Dry run is a property of the deployment, not of the message: the message
+       is fine, this box is simply not allowed to send today. hold() puts it
+       back on 'queued' and refunds the attempt, so switching the flag off
+       releases the backlog instead of leaving a day's messages stranded at the
+       attempt ceiling with no way back. Recording these as permanent failures
+       would quietly destroy the queue every time somebody tested safely.
+
+       IT DOES NOT TOUCH NON-TRANSMITTING PROVIDERS. `internal` and `memory`
+       exist to be exercised with the fence up — that is what they are for —
+       so gating them would make dry run mean "nothing works" rather than
+       "nothing leaves the building", and journey runs would stop dead.
+
+       ORDER MATTERS: this sits after the synthetic check, not before it. A
+       synthetic record is permanently refused because the message itself is
+       wrong, and that verdict should be recorded once and for good rather than
+       deferred behind a flag that will be switched off later.
+
+       THIS IS NOT THE THING THAT MAKES THE FENCE SAFE. src/lib/outbound-fetch.mjs
+       is — the provider physically cannot reach the network with the fence up,
+       whether or not this check exists. What this adds is the right BOOKKEEPING:
+       caught here, a held message is re-queued with its attempt refunded, where
+       caught at the wire it would come back as a provider failure and burn the
+       retry budget. Belt and braces, with the braces doing the real work. */
+    if (provider.TRANSMITS === true) {
+      const fence = fenceVerdict(MESSAGING_DRY_RUN, env);
+      if (!fence.allowed) {
+        return await hold(db, message, OUTCOME.DRY_RUN,
+          `${fence.reason} (${message.channel} via ${route.provider})`);
       }
     }
 

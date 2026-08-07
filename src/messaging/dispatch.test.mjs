@@ -93,6 +93,8 @@ function spy(result = { status: "sent", providerMessageId: "prov1", error: null,
 }
 
 const ENV = {
+  // The fence defaults to blocked; a send test must say it is down.
+  MESSAGING_DRY_RUN: "0",
   MAILGUN_SEND_API_KEY: "key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   MAILGUN_SEND_DOMAIN: "mg.example.com",
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>",

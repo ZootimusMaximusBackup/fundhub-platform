@@ -7,7 +7,7 @@
 //   - fail closed: caller keeps live access_tier at owner until auto/approve
 
 import { ACCESS_TIERS } from "./access.mjs";
-import { postJson } from "../messaging/providers/http.mjs";
+import { postJsonTo, INTERNAL } from "../lib/outbound-fetch.mjs";
 
 export const AUTO_TIERS = new Set(["public", "sales", "staff"]);
 export const REVIEW_TIERS = new Set(["owner", "affiliate"]);
@@ -145,11 +145,13 @@ export async function classifyWithModel(input = {}, {
     ]
   };
 
-  const res = await postJson(`${baseUrl}/v1/chat/completions`, {
+  const res = await postJsonTo(`${baseUrl}/v1/chat/completions`, {
     headers: { authorization: `Bearer ${apiKey}` },
     body: JSON.stringify(prompt),
     timeoutMs: 30_000,
-    fetchImpl
+    fetchImpl,
+    fence: INTERNAL,
+    what: "document classify"
   });
 
   if (!res.ok || !res.body) return heuristic;

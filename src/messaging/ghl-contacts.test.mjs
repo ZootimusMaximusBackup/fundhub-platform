@@ -80,7 +80,7 @@ test("findOrCreate: not_configured without any key — never throws", async () =
 });
 
 test("findOrCreate: no_identifier when neither email nor phone is given", async () => {
-  const r = await findOrCreateGhlContact({}, { env: { GHL_API_KEY: "k" } });
+  const r = await findOrCreateGhlContact({}, { env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "k" } });
   assert.equal(r.ok, false);
   assert.equal(r.reason, "no_identifier");
 });
@@ -89,7 +89,7 @@ test("findOrCreate: upsert success returns the contact id and created flag", asy
   const fetchImpl = fakeFetch({ status: 200, body: { contact: { id: "ghl-99", new: true } } });
   const r = await findOrCreateGhlContact(
     { email: "Pat@Example.com", firstName: "Pat" },
-    { env: { GHL_API_KEY: "k" }, fetchImpl }
+    { env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "k" }, fetchImpl }
   );
   assert.equal(r.ok, true);
   assert.equal(r.contactId, "ghl-99");
@@ -104,21 +104,21 @@ test("findOrCreate: upsert success returns the contact id and created flag", asy
 
 test("findOrCreate: phone-only contact (no email) still resolves", async () => {
   const fetchImpl = fakeFetch({ status: 200, body: { id: "ghl-phone-1" } });
-  const r = await findOrCreateGhlContact({ phone: "+15551234567" }, { env: { GHL_API_KEY: "k" }, fetchImpl });
+  const r = await findOrCreateGhlContact({ phone: "+15551234567" }, { env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "k" }, fetchImpl });
   assert.equal(r.ok, true);
   assert.equal(r.contactId, "ghl-phone-1");
 });
 
 test("findOrCreate: a non-2xx, non-404/405 upsert response is reported, not guessed at", async () => {
   const fetchImpl = fakeFetch({ status: 500, body: { message: "boom" } });
-  const r = await findOrCreateGhlContact({ email: "a@b.com" }, { env: { GHL_API_KEY: "k" }, fetchImpl });
+  const r = await findOrCreateGhlContact({ email: "a@b.com" }, { env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "k" }, fetchImpl });
   assert.equal(r.ok, false);
   assert.equal(r.reason, "upsert_http_500");
 });
 
 test("findOrCreate: an upsert response with no contact id is reported, not invented", async () => {
   const fetchImpl = fakeFetch({ status: 200, body: { ok: true } });
-  const r = await findOrCreateGhlContact({ email: "a@b.com" }, { env: { GHL_API_KEY: "k" }, fetchImpl });
+  const r = await findOrCreateGhlContact({ email: "a@b.com" }, { env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "k" }, fetchImpl });
   assert.equal(r.ok, false);
   assert.equal(r.reason, "no_contact_id_in_response");
 });
@@ -128,7 +128,7 @@ test("findOrCreate: upsert 404 falls back to search — finds an existing contac
     { status: 404, body: {} }, // POST /contacts/upsert unavailable
     { status: 200, body: { contacts: [{ id: "ghl-found" }] } } // GET /contacts/?email=...
   ]);
-  const r = await findOrCreateGhlContact({ email: "existing@b.com" }, { env: { GHL_API_KEY: "k" }, fetchImpl });
+  const r = await findOrCreateGhlContact({ email: "existing@b.com" }, { env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "k" }, fetchImpl });
   assert.equal(r.ok, true);
   assert.equal(r.contactId, "ghl-found");
   assert.equal(r.created, false);
@@ -142,7 +142,7 @@ test("findOrCreate: upsert 405 falls back to search-then-create when search find
     { status: 200, body: { contacts: [] } },        // search: no match
     { status: 200, body: { contact: { id: "ghl-created" } } } // create
   ]);
-  const r = await findOrCreateGhlContact({ email: "new@b.com", lastName: "Doe" }, { env: { GHL_API_KEY: "k" }, fetchImpl });
+  const r = await findOrCreateGhlContact({ email: "new@b.com", lastName: "Doe" }, { env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "k" }, fetchImpl });
   assert.equal(r.ok, true);
   assert.equal(r.contactId, "ghl-created");
   assert.equal(r.created, true);
@@ -151,7 +151,7 @@ test("findOrCreate: upsert 405 falls back to search-then-create when search find
 
 test("findOrCreate: a transport failure (fetch throws) is reported, never thrown", async () => {
   const fetchImpl = async () => { throw new Error("ECONNRESET"); };
-  const r = await findOrCreateGhlContact({ email: "a@b.com" }, { env: { GHL_API_KEY: "k" }, fetchImpl });
+  const r = await findOrCreateGhlContact({ email: "a@b.com" }, { env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "k" }, fetchImpl });
   assert.equal(r.ok, false);
   assert.match(r.reason, /^request_failed:/);
 });
@@ -160,7 +160,7 @@ test("findOrCreate: GHL_LOCATION_ID is sent when the env carries one", async () 
   const fetchImpl = fakeFetch({ status: 200, body: { id: "ghl-loc" } });
   await findOrCreateGhlContact(
     { email: "a@b.com" },
-    { env: { GHL_API_KEY: "k", GHL_LOCATION_ID: "loc-123" }, fetchImpl }
+    { env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "k", GHL_LOCATION_ID: "loc-123" }, fetchImpl }
   );
   const sent = JSON.parse(fetchImpl.calls[0].init.body);
   assert.equal(sent.locationId, "loc-123");
@@ -174,7 +174,7 @@ test("ensureGhlContactId: writes clients.ghl_contact_id by default", async () =>
   const r = await ensureGhlContactId(
     db,
     { id: "cl-1", email: "a@b.com", phone: null, first_name: "A", last_name: "B" },
-    { fetchImpl, env: { GHL_API_KEY: "k" } }
+    { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "k" } }
   );
   assert.equal(r.ok, true);
   assert.equal(r.contactId, "ghl-write-1");
@@ -188,7 +188,7 @@ test("ensureGhlContactId: dryRun finds/creates but never writes — this is the 
   const r = await ensureGhlContactId(
     db,
     { id: "cl-2", email: "dry@b.com" },
-    { fetchImpl, env: { GHL_API_KEY: "k" }, dryRun: true }
+    { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "k" }, dryRun: true }
   );
   assert.equal(r.ok, true);
   assert.equal(r.contactId, "ghl-dry-1");
@@ -199,7 +199,7 @@ test("ensureGhlContactId: dryRun finds/creates but never writes — this is the 
 test("ensureGhlContactId: no email/phone on the row — no_identifier, no GHL call", async () => {
   const db = dbFake();
   const fetchImpl = fakeFetch({ status: 200, body: { id: "should-not-be-called" } });
-  const r = await ensureGhlContactId(db, { id: "cl-3" }, { fetchImpl, env: { GHL_API_KEY: "k" } });
+  const r = await ensureGhlContactId(db, { id: "cl-3" }, { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "k" } });
   assert.equal(r.ok, false);
   assert.equal(r.reason, "no_identifier");
   assert.equal(fetchImpl.calls.length, 0);
@@ -211,7 +211,7 @@ test("ensureGhlContactId: never throws, even if the db write itself fails", asyn
   const r = await ensureGhlContactId(
     throwingDb,
     { id: "cl-4", email: "a@b.com" },
-    { fetchImpl, env: { GHL_API_KEY: "k" } }
+    { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "k" } }
   );
   assert.equal(r.ok, false);
   assert.match(r.reason, /^unexpected_error:/);

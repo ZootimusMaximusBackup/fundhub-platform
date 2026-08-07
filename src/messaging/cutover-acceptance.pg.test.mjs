@@ -54,6 +54,11 @@ function spy() {
 }
 
 const ENV = {
+  /* This whole file is the cutover acceptance run — its entire job is to prove
+     messages DO go out under the right conditions. The dry-run fence defaults
+     to blocked, so it has to be declared down here or every assertion below
+     would pass by sending nothing, which is the opposite of acceptance. */
+  MESSAGING_DRY_RUN: "0",
   MAILGUN_SEND_API_KEY: "key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   MAILGUN_SEND_DOMAIN: "mg.example.com",
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>",

@@ -1,20 +1,20 @@
 // Shared HTTP plumbing for outbound message providers.
 //
 // ═══════════════════════════════════════════════════════════════════════════
-// THIS IS THE FIRST OUTBOUND `fetch` IN THIS CODEBASE, AND THAT IS DELIBERATE.
+// THE OUTBOUND `fetch` NO LONGER LIVES HERE. It moved to
+// src/lib/outbound-fetch.mjs, which is now the single chokepoint for every
+// transmit in the repository, messaging and adapters alike.
 //
-// CLAUDE.md §12 records "Nothing transmits — there is no outbound fetch in
-// src/adapters/ or src/lib/". That statement is still true of those two
-// directories: both existing adapters (mailgun, twilio) are INBOUND webhook
-// receivers, and the tests that assert "nothing transmits" are scoped to
-// specific modules (src/alerts/store.mjs, src/banking/plaid.mjs,
-// src/http/bank-accounts*.mjs, src/finance/soft-pulls.mjs) — none of them
-// sweep this directory.
+// This file used to hold the only outbound fetch and say so. That was true when
+// providers were the only thing that transmitted, but it stopped being true
+// once adapters started posting to vendors, and a fence that only covers one of
+// two doors is not a fence. Everything routes through the one function now, and
+// src/lib/no-unfenced-transmit.test.mjs fails the build if a module finds
+// another way out.
 //
-// src/messaging/providers/ is the one place in the repository allowed to make
-// an outbound call, and only for a message that src/messaging/gate.mjs has
-// already returned `allowed` for. Nothing here decides whether to send. If you
-// are adding a fetch anywhere else, that is almost certainly the wrong place.
+// What is unchanged: nothing in this directory decides WHETHER to send. The
+// gate (src/messaging/gate.mjs) decides that, the dispatcher enforces the
+// order, and providers only carry a message the gate already allowed.
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // WHY PROVIDERS SHARE THIS RATHER THAN EACH CARRYING THEIR OWN.
@@ -24,95 +24,57 @@
 // identical across providers or the dispatcher's backoff behaves differently
 // depending on which channel a message went out on.
 
-export const DEFAULT_TIMEOUT_MS = 10_000;
+import { postJsonTo, MESSAGING, redact as redactText, DEFAULT_TIMEOUT_MS as TIMEOUT, MAX_ERROR_CHARS as MAXERR }
+  from "../../lib/outbound-fetch.mjs";
+
+export const DEFAULT_TIMEOUT_MS = TIMEOUT;
 
 /** How much of a provider's error text is kept. Operator-facing, and it lands
     in messages.last_error, so it is bounded rather than a whole HTML error page. */
-export const MAX_ERROR_CHARS = 300;
+export const MAX_ERROR_CHARS = MAXERR;
 
-/* redact — strip anything credential-shaped out of text bound for the database.
+/** Re-exported from the chokepoint so there is one redactor, not two that
+    drift. Providers and their tests keep importing it from here. */
+export const redact = redactText;
 
-   Provider errors echo back request context, and a misconfigured request can
-   echo back the Authorization header with it. messages.last_error is read by
-   operators and dumped into support threads, so a key that reaches it is a
-   leaked key. CLAUDE.md §8: never a secret in code, fixtures, or logs.
+/* postJson — one HTTP POST with a hard timeout, behind the messaging fence.
 
-   Deliberately aggressive — a redacted error that is harder to read is a
-   cheaper mistake than a live API key in a database column. */
-export function redact(text) {
-  return String(text ?? "")
-    .replace(/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]+/gi, "$1 [redacted]")
-    .replace(/\b(api[_-]?key|apikey|token|secret|password|authorization)"?\s*[:=]\s*"?[^\s",}]+/gi,
-      "$1=[redacted]")
-    .replace(/\bkey-[A-Za-z0-9]{8,}/g, "[redacted]")
-    .slice(0, MAX_ERROR_CHARS);
-}
+   THIS IS NOW A THIN WRAPPER, AND THAT IS THE POINT. The transport, the
+   timeout and the fence all live in src/lib/outbound-fetch.mjs. A provider
+   cannot reach the network except through this function, and this function
+   cannot reach the network except through transmit(), which refuses unless
+   MESSAGING_DRY_RUN is explicitly off. So a provider written next year is
+   fenced whether or not its author has heard of the fence.
 
-/* postJson — one HTTP POST with a hard timeout.
+   Returns { ok, status, body, error } as before, plus `blocked: true` when the
+   fence held it. NEVER THROWS.
 
-   Returns { ok, status, body, error } and NEVER THROWS. A provider's job is to
-   classify an outcome, not to handle transport exceptions, and an exception
-   escaping into the dispatcher would be caught there and turned into a
-   less-informative failure anyway.
-
-   `fetchImpl` is an argument so tests drive real code paths without network
-   access. That is the whole reason no provider needs a bypass flag: the seam
-   is the transport, not the compliance logic. */
-export async function postJson(url, {
+   `fetchImpl` is still injectable for tests, and it still does NOT bypass the
+   fence — a test that wants to observe a real send must turn the fence off
+   explicitly via `env`. That is deliberate: an injected transport used to be an
+   implicit "this is a test, let it through", and an implicit bypass is exactly
+   the hole this work exists to close. */
+export function postJson(url, {
   headers = {},
   body,
   contentType = "application/json",
   timeoutMs = DEFAULT_TIMEOUT_MS,
   fetchImpl,
-  signal
+  signal,
+  env,
+  what
 } = {}) {
-  const doFetch = fetchImpl || globalThis.fetch;
-  if (typeof doFetch !== "function") {
-    return { ok: false, status: 0, body: null, error: "no fetch implementation available" };
-  }
-
-  // AbortController rather than Promise.race: race leaves the request running
-  // and the socket open, which under load is a connection leak that presents
-  // as the provider rate-limiting us.
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  // A caller-supplied signal composes with ours — either can cancel.
-  const onOuterAbort = () => controller.abort();
-  if (signal) signal.addEventListener("abort", onOuterAbort, { once: true });
-
-  try {
-    const res = await doFetch(url, {
-      method: "POST",
-      headers: { "Content-Type": contentType, ...headers },
-      body,
-      signal: controller.signal
-    });
-
-    // Read as text and parse defensively. A gateway returning an HTML error page
-    // with a JSON content-type is ordinary, and res.json() throwing there would
-    // lose the status code — which is the part that decides retryable.
-    const text = await res.text().catch(() => "");
-    let parsed = null;
-    try { parsed = text ? JSON.parse(text) : null; } catch { /* not JSON; keep text */ }
-
-    return {
-      ok: res.ok,
-      status: res.status,
-      body: parsed,
-      error: res.ok ? null : redact(text || `HTTP ${res.status}`)
-    };
-  } catch (err) {
-    const aborted = err && (err.name === "AbortError" || err.name === "TimeoutError");
-    return {
-      ok: false,
-      status: 0,
-      body: null,
-      error: redact(aborted ? `timed out after ${timeoutMs}ms` : String((err && err.message) || err))
-    };
-  } finally {
-    clearTimeout(timer);
-    if (signal) signal.removeEventListener("abort", onOuterAbort);
-  }
+  return postJsonTo(url, {
+    headers,
+    body,
+    contentType,
+    timeoutMs,
+    fetchImpl,
+    signal,
+    env,
+    what,
+    fence: MESSAGING
+  });
 }
 
 /* classify — HTTP status → the SendResult verdict, identically for every provider.

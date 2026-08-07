@@ -2,7 +2,7 @@
 // Outbound HTTP goes through src/messaging/providers/http.mjs (the only
 // directory allowed to transmit). This module does not call fetch itself.
 
-import { postJson } from "../messaging/providers/http.mjs";
+import { postJsonTo, INTERNAL } from "../lib/outbound-fetch.mjs";
 
 export const DEFAULT_EMBED_MODEL = "text-embedding-3-small";
 export const EMBEDDING_DIMS = 1536;
@@ -41,11 +41,13 @@ export async function embedTexts(texts, {
     return { ok: false, embeddings: [], error: `not_configured:${cfg.missing.join(",")}` };
   }
 
-  const res = await postJson(`${cfg.baseUrl}/v1/embeddings`, {
+  const res = await postJsonTo(`${cfg.baseUrl}/v1/embeddings`, {
     headers: { authorization: `Bearer ${cfg.apiKey}` },
     body: JSON.stringify({ model: cfg.model, input: list }),
     timeoutMs,
-    fetchImpl
+    fetchImpl,
+    fence: INTERNAL,
+    what: "embeddings"
   });
 
   if (!res.ok) {

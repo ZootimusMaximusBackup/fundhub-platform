@@ -18,6 +18,7 @@ import { mergeCustomFields } from "./custom-fields.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { DELIVER_LETTERS_URL } from "./ds-02-diy-letters.mjs";
 import { createTask } from "../lib/create-task.mjs";
+import { postJsonTo, ADAPTERS } from "../lib/outbound-fetch.mjs";
 
 export const DECLINE_EMAIL_TEMPLATE_KEY = "EMAIL-C06-DECLINE";
 export const DECLINE_SMS_TEMPLATE_KEY = "SMS-C06-DECLINE";
@@ -80,18 +81,17 @@ async function createDeclineTaskOnce(db, { orgId, clientId, eventId }) {
 // Row 20 (workflow-migration-table.md): the FUNDING branch never fired the deliver-
 // letters webhook with the funding letter set. Reuses ds-02's DELIVER_LETTERS_URL —
 // same webhook, `letterSet` is what tells UnderwriteIQ-lite which pack to send.
-async function deliverFundingLetters(fetchImpl, { clientId, orgId }) {
-  if (typeof fetchImpl !== "function") return { delivered: false, reason: "no_fetch_available" };
-  try {
-    const res = await fetchImpl(DELIVER_LETTERS_URL, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ clientId, orgId, letterSet: "funding" })
-    });
-    return { delivered: Boolean(res && res.ok), status: res?.status };
-  } catch (err) {
-    return { delivered: false, error: String(err?.message || err) };
-  }
+async function deliverFundingLetters(fetchImpl, { clientId, orgId, env } = {}) {
+  // Behind the adapters fence — see src/lib/outbound-fetch.mjs.
+  const res = await postJsonTo(DELIVER_LETTERS_URL, {
+    body: JSON.stringify({ clientId, orgId, letterSet: "funding" }),
+    fetchImpl,
+    env,
+    fence: ADAPTERS,
+    what: "funding letter delivery"
+  });
+  if (res.blocked) return { delivered: false, blocked: true, reason: res.error };
+  return { delivered: res.ok, status: res.status, error: res.error };
 }
 
 async function deliverFundingLettersOnce(db, fetchImpl, { clientId, orgId, eventId }) {

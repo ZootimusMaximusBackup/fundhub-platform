@@ -500,7 +500,7 @@ test("submitApplication: incomplete client fails before spending a call", async 
   const res = await submitApplication({
     client: { id: "c" },
     round: {},
-    env: { LENDFLOW_API_KEY: "k", LENDFLOW_WEBHOOK_SECRET: "s" },
+    env: { ADAPTERS_DRY_RUN: "0", LENDFLOW_API_KEY: "k", LENDFLOW_WEBHOOK_SECRET: "s" },
     fetchImpl: () => { called = true; }
   });
   assert.equal(res.ok, false);
@@ -514,17 +514,22 @@ test("submitApplication: posts to the submit endpoint with bearer auth and the J
     client: CLIENT,
     round: ROUND,
     business: BUSINESS,
-    env: { LENDFLOW_API_BASE: "https://sandbox.lendflow.com", LENDFLOW_API_KEY: "k_123", LENDFLOW_WEBHOOK_SECRET: "s" },
+    env: { ADAPTERS_DRY_RUN: "0", LENDFLOW_API_BASE: "https://sandbox.lendflow.com", LENDFLOW_API_KEY: "k_123", LENDFLOW_WEBHOOK_SECRET: "s" },
+    /* Responses are read with text() now, not json(): the submit goes through
+       src/lib/outbound-fetch.mjs, which reads the body once as text and parses
+       it defensively so an HTML error page under a JSON content-type cannot
+       throw away the status code. */
     fetchImpl: async (url, opts) => {
       seen.url = url;
       seen.opts = opts;
-      return { status: 201, json: async () => ({ data: { application_id: "lf_app_new" } }) };
+      return { ok: true, status: 201, text: async () => JSON.stringify({ data: { application_id: "lf_app_new" } }) };
     }
   });
   assert.equal(seen.url, `https://sandbox.lendflow.com${SUBMIT_PATH}`);
   assert.equal(seen.opts.method, "POST");
   assert.equal(seen.opts.headers.authorization, "Bearer k_123");
-  assert.equal(seen.opts.headers["content-type"], "application/json");
+  // Header names are case-insensitive; the shared helper sets the canonical form.
+  assert.equal(seen.opts.headers["Content-Type"], "application/json");
   assert.equal(JSON.parse(seen.opts.body).external_id, "client-1");
   assert.equal(res.ok, true);
   assert.equal(res.status, 201);
@@ -536,8 +541,8 @@ test("submitApplication: non-2xx surfaces the provider error, never throws", asy
     client: CLIENT,
     round: ROUND,
     business: BUSINESS,
-    env: { LENDFLOW_API_KEY: "k", LENDFLOW_WEBHOOK_SECRET: "s" },
-    fetchImpl: async () => ({ status: 422, json: async () => ({ message: "ein invalid" }) })
+    env: { ADAPTERS_DRY_RUN: "0", LENDFLOW_API_KEY: "k", LENDFLOW_WEBHOOK_SECRET: "s" },
+    fetchImpl: async () => ({ ok: false, status: 422, text: async () => JSON.stringify({ message: "ein invalid" }) })
   });
   assert.equal(res.ok, false);
   assert.equal(res.status, 422);
@@ -549,7 +554,7 @@ test("submitApplication: non-2xx surfaces the provider error, never throws", asy
 test("submitApplication: network failure and unparseable body both degrade cleanly", async () => {
   const netErr = await submitApplication({
     client: CLIENT, round: ROUND, business: BUSINESS,
-    env: { LENDFLOW_API_KEY: "k", LENDFLOW_WEBHOOK_SECRET: "s" },
+    env: { ADAPTERS_DRY_RUN: "0", LENDFLOW_API_KEY: "k", LENDFLOW_WEBHOOK_SECRET: "s" },
     fetchImpl: async () => { throw new Error("ECONNRESET"); }
   });
   assert.equal(netErr.ok, false);
@@ -557,8 +562,8 @@ test("submitApplication: network failure and unparseable body both degrade clean
 
   const badJson = await submitApplication({
     client: CLIENT, round: ROUND, business: BUSINESS,
-    env: { LENDFLOW_API_KEY: "k", LENDFLOW_WEBHOOK_SECRET: "s" },
-    fetchImpl: async () => ({ status: 200, json: async () => { throw new Error("not json"); } })
+    env: { ADAPTERS_DRY_RUN: "0", LENDFLOW_API_KEY: "k", LENDFLOW_WEBHOOK_SECRET: "s" },
+    fetchImpl: async () => ({ ok: true, status: 200, text: async () => "not json at all" })
   });
   assert.equal(badJson.ok, true, "2xx with an unreadable body is still a success");
   assert.equal(badJson.applicationId, null);
@@ -572,7 +577,7 @@ test("submitApplication: outbound never emits — Alt-Fin cards move only on web
     client: CLIENT,
     round: ROUND,
     business: BUSINESS,
-    env: { LENDFLOW_API_KEY: "k", LENDFLOW_WEBHOOK_SECRET: "s" },
+    env: { ADAPTERS_DRY_RUN: "0", LENDFLOW_API_KEY: "k", LENDFLOW_WEBHOOK_SECRET: "s" },
     fetchImpl: async () => ({ status: 201, json: async () => ({ data: { id: "lf_1" } }) })
   });
   assert.equal(fired, 0);

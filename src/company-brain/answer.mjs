@@ -3,7 +3,7 @@
 // If no API key (or the model fails), fall back to an extractive answer —
 // never invent a document that was not retrieved.
 
-import { postJson } from "../messaging/providers/http.mjs";
+import { postJsonTo, INTERNAL } from "../lib/outbound-fetch.mjs";
 
 function citationsFrom(chunks) {
   return (chunks || []).map((c, i) => ({
@@ -66,7 +66,7 @@ export async function synthesizeAnswer({
     `[${c.n}] file="${c.fileName}" tier=${c.accessTier || "?"}\n${c.excerpt}`
   ).join("\n\n");
 
-  const res = await postJson(`${baseUrl}/v1/chat/completions`, {
+  const res = await postJsonTo(`${baseUrl}/v1/chat/completions`, {
     headers: { authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model,
@@ -86,7 +86,9 @@ export async function synthesizeAnswer({
       ]
     }),
     timeoutMs: 45_000,
-    fetchImpl
+    fetchImpl,
+    fence: INTERNAL,
+    what: "staff answer"
   });
 
   if (!res.ok || !res.body?.choices?.[0]?.message?.content) {

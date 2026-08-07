@@ -38,12 +38,19 @@ function seededRouting() {
   return Object.fromEntries(rows.map((m) => [m[1], m[2]]));
 }
 
+/* MESSAGING_DRY_RUN: "0" is required, not decoration. The dry-run fence
+   (src/lib/outbound-fetch.mjs) defaults to BLOCKED, so a provider test that did
+   not say this out loud would transmit nothing and pass for the wrong reason.
+   Every env below that expects a real send declares the fence down. */
+const LIVE = { MESSAGING_DRY_RUN: "0" };
+
 const MG_ENV = {
+  ...LIVE,
   MAILGUN_SEND_API_KEY: "key-0123456789abcdef0123456789abcdef",
   MAILGUN_SEND_DOMAIN: "mg.example.com",
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>"
 };
-const GHL_ENV = { GHL_RELAY_API_KEY: "ghl-secret-token-value" };
+const GHL_ENV = { ...LIVE, GHL_RELAY_API_KEY: "ghl-secret-token-value" };
 
 const emailMsg = {
   id: "m1", orgId: "o1", clientId: "c1", channel: "email",
@@ -409,6 +416,7 @@ describe("ghl relay provider", () => {
 
 describe("twilio provider", () => {
   const TW_ENV = {
+    ...LIVE,
     TWILIO_SEND_ACCOUNT_SID: "AC0123456789abcdef0123456789abcdef",
     TWILIO_SEND_AUTH_TOKEN: "twilio-secret-token-value",
     TWILIO_SEND_FROM: "+15005550006"
@@ -631,18 +639,18 @@ describe("provider contract, structurally", () => {
 
 describe("postJson", () => {
   test("returns a structured failure instead of throwing when fetch is absent", async () => {
-    const res = await postJson("https://example.com", { fetchImpl: null, body: "{}" });
+    const res = await postJson("https://example.com", { env: LIVE, fetchImpl: null, body: "{}" });
     // globalThis.fetch exists on Node 22, so force the absent path explicitly.
     assert.ok(res.ok === true || res.ok === false, "always returns a result object");
   });
 
   test("parses a JSON body", async () => {
-    const res = await postJson("https://x", { fetchImpl: fakeFetch({ status: 200, body: { a: 1 } }), body: "{}" });
+    const res = await postJson("https://x", { env: LIVE, fetchImpl: fakeFetch({ status: 200, body: { a: 1 } }), body: "{}" });
     assert.deepStrictEqual(res.body, { a: 1 });
   });
 
   test("keeps the status when the body is not JSON", async () => {
-    const res = await postJson("https://x", { fetchImpl: fakeFetch({ status: 503, text: "<html>" }), body: "{}" });
+    const res = await postJson("https://x", { env: LIVE, fetchImpl: fakeFetch({ status: 503, text: "<html>" }), body: "{}" });
     assert.strictEqual(res.status, 503);
     assert.strictEqual(res.ok, false);
   });

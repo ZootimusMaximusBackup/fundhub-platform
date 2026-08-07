@@ -214,7 +214,9 @@ export async function sendLetter(opts = {}) {
       "x-api-key": key
     },
     body: JSON.stringify(body),
-    fetchImpl: opts.fetchImpl
+    fetchImpl: opts.fetchImpl,
+    env,
+    what: "postgrid letter"
   });
 
   if (!res.ok) {
