@@ -199,6 +199,21 @@ html.fh-side-mini .app-shell {
 .side.mini .navitem { justify-content: center; padding: 9px 0; }
 .side.mini .navitem .lbl { display: none; }
 
+/* Driven by BETA_PAGES in shell.js — do not add this markup by hand. */
+.navitem .beta-badge {
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: #3A2A0A;
+  background: var(--warn, #F5CE8F);
+}
+.side.mini .navitem .beta-badge { display: none; }
+
 .side-foot {
   padding: 10px 16px;
   border-top: 1px solid var(--dark-line, #26262B);

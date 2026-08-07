@@ -15,6 +15,18 @@
   // never in ALL. Anything not in the role's list gets sent to its home.
   var PAGE = location.pathname.split("/").pop();
 
+  /* Single source of truth for "not on the money path yet": every screen here
+     gets a BETA badge on its nav row (mountSidebar) and a dismissible banner
+     on the page itself (mountBetaBanner). Add or remove a screen by editing
+     this one list — nothing else to touch, no per-page edits. */
+  var BETA_PAGES = [
+    "finance-os.html", "subscriptions.html", "company-brain.html",
+    "command-center.html", "galaxy.html", "ops-admin.html",
+    "agent-editor.html", "journeys.html", "campaign-manager.html",
+    "social-studio.html", "creative-factory.html", "content-admin.html",
+    "hiring.html", "sample-data.html", "brand-studio.html", "affiliate.html"
+  ];
+
   /* ==SIDEBAR_HTML_START== */
   var SIDEBAR_HTML = "<aside class=\"side\" id=\"side\">\n  <div class=\"side-top\"><a class=\"logo inv\" href=\"command-center.html\" aria-label=\"fundhub\"></a><button class=\"burger\" id=\"burger\" type=\"button\" title=\"Collapse sidebar\">‹‹</button></div>\n  <nav class=\"side-scroll\" id=\"fh-side-nav\">\n\n<div class=\"navgroup\" data-fh-section=\"sales\"><button class=\"navhead\" type=\"button\">Sales<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"pipeline.html\"><span class=\"ico\">▤</span><span class=\"lbl\">Pipeline</span></a>\n        <a class=\"navitem\" href=\"closer-dashboard.html\"><span class=\"ico\">★</span><span class=\"lbl\">Closer Dashboard</span></a>\n        <a class=\"navitem\" href=\"closer-call.html\"><span class=\"ico\">☎</span><span class=\"lbl\">Call cockpit</span></a>\n        <a class=\"navitem\" href=\"my-numbers.html\"><span class=\"ico\">＃</span><span class=\"lbl\">My numbers</span></a>\n        <a class=\"navitem\" href=\"sales-floor.html\"><span class=\"ico\">▣</span><span class=\"lbl\">Sales floor</span></a>\n        <a class=\"navitem\" href=\"calendar.html\"><span class=\"ico\">▦</span><span class=\"lbl\">Calendar</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"funding\"><button class=\"navhead\" type=\"button\">Funding<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"lenders.html\"><span class=\"ico\">⬡</span><span class=\"lbl\">Lenders</span></a>\n        <a class=\"navitem\" href=\"finance-os.html\"><span class=\"ico\">▩</span><span class=\"lbl\">Finance OS</span></a>\n        <a class=\"navitem\" href=\"contracts.html\"><span class=\"ico\">✒</span><span class=\"lbl\">Contracts</span></a>\n        <a class=\"navitem\" href=\"subscriptions.html\"><span class=\"ico\">◍</span><span class=\"lbl\">Subscriptions</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"client-ops\"><button class=\"navhead\" type=\"button\">Client ops<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"client-control-panel.html\"><span class=\"ico\">◎</span><span class=\"lbl\">Client Control Panel</span></a>\n        <a class=\"navitem\" href=\"messaging.html\"><span class=\"ico\">✉</span><span class=\"lbl\">Messaging</span></a>\n        <a class=\"navitem\" href=\"documents.html\"><span class=\"ico\">▧</span><span class=\"lbl\">Documents</span></a>\n        <a class=\"navitem\" href=\"inquiry-remover.html\"><span class=\"ico\">⊘</span><span class=\"lbl\">Inquiry Remover</span></a>\n        <a class=\"navitem\" href=\"company-brain.html\"><span class=\"ico\">◎</span><span class=\"lbl\">Company Brain</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"watch\"><button class=\"navhead\" type=\"button\">Watch<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"command-center.html\"><span class=\"ico\">⌘</span><span class=\"lbl\">Command Center</span></a>\n        <a class=\"navitem\" href=\"galaxy.html\"><span class=\"ico\">✷</span><span class=\"lbl\">Galaxy</span></a>\n        <a class=\"navitem\" href=\"ops-admin.html\"><span class=\"ico\">⚙</span><span class=\"lbl\">Ops &amp; Admin</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"automation\"><button class=\"navhead\" type=\"button\">Automation<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"agent-editor.html\"><span class=\"ico\">◈</span><span class=\"lbl\">Agent Editor</span></a>\n        <a class=\"navitem\" href=\"automations.html\"><span class=\"ico\">⇄</span><span class=\"lbl\">Workflows</span></a>\n        <a class=\"navitem\" href=\"journeys.html\"><span class=\"ico\">⇝</span><span class=\"lbl\">Journeys</span></a>\n        <a class=\"navitem\" href=\"template-editor.html\"><span class=\"ico\">✎</span><span class=\"lbl\">Message Copy</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"marketing\"><button class=\"navhead\" type=\"button\">Marketing<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"campaign-manager.html\"><span class=\"ico\">◇</span><span class=\"lbl\">Campaigns</span></a>\n        <a class=\"navitem\" href=\"social-studio.html\"><span class=\"ico\">◉</span><span class=\"lbl\">Social Studio</span></a>\n        <a class=\"navitem\" href=\"creative-factory.html\"><span class=\"ico\">✳</span><span class=\"lbl\">Creative Factory</span></a>\n        <a class=\"navitem\" href=\"content-admin.html\"><span class=\"ico\">▶</span><span class=\"lbl\">Content</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"admin\"><button class=\"navhead\" type=\"button\">Admin<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"staff-teams.html\"><span class=\"ico\">⚇</span><span class=\"lbl\">Staff &amp; Teams</span></a>\n        <a class=\"navitem\" href=\"hiring.html\"><span class=\"ico\">⊕</span><span class=\"lbl\">Hiring</span></a>\n        <a class=\"navitem\" href=\"products-commissions.html\"><span class=\"ico\">⛁</span><span class=\"lbl\">Products &amp; Commissions</span></a>\n        <a class=\"navitem\" href=\"sample-data.html\"><span class=\"ico\">⌗</span><span class=\"lbl\">Demo Mode</span></a>\n        <a class=\"navitem\" href=\"brand-studio.html\"><span class=\"ico\">◆</span><span class=\"lbl\">Brand Studio</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"portals\"><button class=\"navhead\" type=\"button\">Portals<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"client-portal.html\"><span class=\"ico\">◐</span><span class=\"lbl\">Client Portal</span></a>\n        <a class=\"navitem\" href=\"affiliate.html\"><span class=\"ico\">⇗</span><span class=\"lbl\">Affiliate</span></a>\n</div></div>\n\n  </nav>\n  <div class=\"side-foot\"><span class=\"pulse\"></span><span class=\"who\">fundhub</span></div>\n</aside>";
   /* ==SIDEBAR_HTML_END== */
@@ -650,6 +662,12 @@
       var href = (a.getAttribute("href") || "").split("?")[0];
       if (href === page) a.classList.add("on");
       else a.classList.remove("on");
+      if (BETA_PAGES.indexOf(href) !== -1 && !a.querySelector(".beta-badge")) {
+        var badge = document.createElement("span");
+        badge.className = "beta-badge";
+        badge.textContent = "BETA";
+        a.appendChild(badge);
+      }
     }
     wireSidebarChrome(fresh);
   }
@@ -782,10 +800,12 @@
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
       mountSidebar();
+      mountBetaBanner();
       watchWideTables();
     });
   } else {
     mountSidebar();
+    mountBetaBanner();
     watchWideTables();
   }
 
@@ -1481,6 +1501,47 @@
     s.async = true;
     s.onload = go;
     (document.head || document.documentElement).appendChild(s);
+  }
+
+  /* Driven by BETA_PAGES above — nothing else decides this. No storage: the
+     dismiss button just removes the element, so it is gone for the rest of
+     this page view and back the moment the page reloads or is reopened. */
+  function mountBetaBanner() {
+    if (BETA_PAGES.indexOf(PAGE) === -1) return;
+    if (document.getElementById("fh-beta-banner")) return;
+    var bar = document.createElement("div");
+    bar.id = "fh-beta-banner";
+    bar.setAttribute("role", "status");
+    bar.setAttribute("data-fh-beta-banner", "1");
+    bar.style.cssText = [
+      "position:relative", "top:0", "z-index:2147482990", "width:100%",
+      "flex:0 0 auto", "box-sizing:border-box", "padding:10px 16px",
+      "background:#3A2A0A", "color:#FDE9C4",
+      "font:600 13px/1.35 'JetBrains Mono',ui-monospace,monospace",
+      "letter-spacing:.04em", "text-align:center",
+      "border-bottom:2px solid var(--warn,#F5CE8F)",
+      "display:flex", "gap:12px", "align-items:center", "justify-content:center",
+      "flex-wrap:wrap"
+    ].join(";");
+    bar.innerHTML =
+      "<span>Beta \u2014 under development. Data may be incomplete or inaccurate. Do not use for client decisions.</span>" +
+      "<button type=\"button\" data-fh-beta-dismiss=\"1\" aria-label=\"Dismiss\" style=\"" +
+      "background:none;border:1px solid var(--warn,#F5CE8F);color:#FDE9C4;border-radius:3px;" +
+      "font:700 11px/1 'JetBrains Mono',ui-monospace,monospace;padding:3px 8px;cursor:pointer\">Dismiss</button>";
+    /* Same host-resolution as the demo banner: prefer .shell so Galaxy (and
+       any flex-column .app) keeps the canvas. */
+    var shell = document.querySelector(".app > .shell") || document.querySelector(".shell");
+    var app = document.querySelector(".app");
+    var host = shell || app || document.body;
+    host.insertBefore(bar, host.firstChild);
+    var dismiss = bar.querySelector("[data-fh-beta-dismiss]");
+    if (dismiss) {
+      dismiss.addEventListener("click", function () {
+        bar.remove();
+        try { window.dispatchEvent(new Event("resize")); } catch (e) { /* ignore */ }
+      });
+    }
+    try { window.dispatchEvent(new Event("resize")); } catch (e) { /* ignore */ }
   }
 
   /* Persistent Demo Mode banner — not a chip. Every CRM screen when the org
