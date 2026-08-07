@@ -60,7 +60,7 @@ flowchart LR
   adp_bland -- "call.completed" --> BUS
   adp_calcom -- "booking.created<br/>booking.rescheduled<br/>booking.cancelled<br/>booking.noshow" --> BUS
   adp_clickfunnels -- "entry.captured<br/>survey.submitted<br/>booking.created<br/>booking.rescheduled<br/>booking.cancelled" --> BUS
-  adp_commas -- "diagnostic.paid<br/>deposit.paid<br/>sale.closed<br/>payment.received<br/>payment.failed" --> BUS
+  adp_commas -- "diagnostic.paid<br/>deposit.paid<br/>sale.closed<br/>payment.received<br/>payment.failed<br/>payment.expired<br/>payment.canceled<br/>payment.refunded<br/>payment.disputed" --> BUS
   adp_crs -- "analysis.completed<br/>decision.rendered" --> BUS
   adp_hubstaff -- "—" --> BUS
   adp_inquiry_removal -- "inquiry.removed" --> BUS
@@ -141,6 +141,10 @@ flowchart LR
 | `file.finalized` | journey spine | — | 0 |
 | `payment.received` | side events | `onPaymentReceived`, `onPaymentReceivedMoney`, `onPaymentReceivedForLink` | 1 |
 | `payment.failed` | side events | `onPaymentFailed` | 0 |
+| `payment.expired` | side events | — | 0 |
+| `payment.canceled` | side events | — | 0 |
+| `payment.refunded` | side events | `onPaymentRefunded` | 0 |
+| `payment.disputed` | side events | `onPaymentDisputed` | 0 |
 | `docs.received` | side events | `onDocsReceivedFlipInquiryGate` | 1 |
 | `inquiry.removed` | side events | — | 1 |
 | `inquiry.gate.raised` | side events | — | 0 |

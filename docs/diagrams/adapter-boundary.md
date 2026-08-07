@@ -72,7 +72,7 @@ flowchart TB
 | `bland` | inbound webhook | `verifyBlandSignature` (HMAC-SHA256) | `call.completed` | ⚠️ **no** — carries a CONFIRM banner |
 | `calcom` | inbound webhook | `verifyCalcomSignature` (HMAC-SHA256) | `booking.created`<br/>`booking.rescheduled`<br/>`booking.cancelled`<br/>`booking.noshow` | yes |
 | `clickfunnels` | inbound webhook | `verifyClickFunnelsSignature` (HMAC-SHA256) | `entry.captured`<br/>`survey.submitted`<br/>`booking.created`<br/>`booking.rescheduled`<br/>`booking.cancelled` | ⚠️ **no** — carries a CONFIRM banner |
-| `commas` | inbound webhook | `verifyCommasSignature` (HMAC-SHA256) | `diagnostic.paid`<br/>`deposit.paid`<br/>`sale.closed`<br/>`payment.received`<br/>`payment.failed` | ⚠️ **no** — carries a CONFIRM banner |
+| `commas` | inbound webhook | `verifyCommasSignature` (HMAC-SHA256) | `diagnostic.paid`<br/>`deposit.paid`<br/>`sale.closed`<br/>`payment.received`<br/>`payment.failed`<br/>`payment.expired`<br/>`payment.canceled`<br/>`payment.refunded`<br/>`payment.disputed` | ⚠️ **no** — carries a CONFIRM banner |
 | `crs` | direct call | none — not a webhook | `analysis.completed`<br/>`decision.rendered` | yes |
 | `hubstaff` | direct call | none — not a webhook | — | yes |
 | `inquiry-removal` | inbound webhook | `verifyInquiryRemovalSignature` (HMAC-SHA256) | `inquiry.removed` | yes |

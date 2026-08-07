@@ -56,6 +56,12 @@
 [functions."hubstaff-poll-sweeper"]
   schedule = "*/10 * * * *"
 
+# Every minute, not every five. This one drains the Commas payment queue: the
+# webhook only stores the bytes and answers, so nothing a client pays reaches
+# the money chain until a pass runs. That delay is visible to a human.
+[functions."commas-inbox-sweeper"]
+  schedule = "* * * * *"
+
 # ---------------------------------------------------------------------------
 # Routing
 #

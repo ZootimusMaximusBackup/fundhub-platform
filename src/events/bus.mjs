@@ -154,6 +154,13 @@ async function dispatch(db, event, { throwOnHandlerError = false } = {}) {
   return { handlers: handlers.length, failed: failures.length, recorded };
 }
 
+/* The default org id, cached, for callers that must write an org-scoped row
+   BEFORE any event is emitted. The Commas inbox is the case that needs it: it
+   persists the raw webhook ahead of the 200 and long before anything is
+   interpreted, so it cannot get an org id back from emit(). Exported rather
+   than duplicated so there is one lookup and one cache. */
+export const defaultOrgId = (db) => resolveDefaultOrg(db);
+
 let _orgCache = null;
 async function resolveDefaultOrg(db) {
   if (_orgCache) return _orgCache;

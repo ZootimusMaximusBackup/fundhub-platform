@@ -263,7 +263,11 @@ Config lives in Netlify env vars. Schema lives in `db/schema`, `db/migrations`, 
   `netlify env:set KEY "value" --context production --context deploy-preview --context branch-deploy --secret`.
   Generate strong random values for secrets. Do not hand me a form to fill out.
 * **`--secret` on anything holding a credential.** Always.
-* **Deploy after any env var change:** `netlify deploy --build --prod`
+* **Batch env vars. ONE deploy at the end.** Set every variable first, then deploy once: `netlify deploy --build --prod`.
+
+  `netlify env:set` does not build anything by itself — there is no `--no-restart` flag and none is needed. A new value simply sits there until the next build picks it up. So setting ten variables costs nothing; it is the deploy after each one that costs a build.
+
+  Deploying per-variable on 2026-08-06 burned the month's build credits and paused the live site. Never do it again. The same applies to any credential or config work: collect the whole set, verify with `netlify env:list --context production --plain`, then deploy exactly once.
 * **Apply new SQL yourself** when it lands in `db/schema`, `db/migrations` or `db/seed`:
   `DATABASE_URL="$(netlify env:get DATABASE_URL --context production)" node db/migrate.mjs`
 * **Never print a secret value back to me.** Confirm by name only.

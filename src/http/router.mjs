@@ -6,7 +6,10 @@
 // wires the reactions before dispatching.
 
 import { ensureRegistered } from "../register-all.mjs";
-import { handleCommasWebhook } from "../adapters/commas.mjs";
+import {
+  handleCommasWebhook,
+  SIGNATURE_HEADERS as COMMAS_SIG_HEADERS
+} from "../adapters/commas.mjs";
 import { handleClickFunnelsWebhook } from "../adapters/clickfunnels.mjs";
 import { handleBlandWebhook } from "../adapters/bland.mjs";
 import { handleCalcomWebhook } from "../adapters/calcom.mjs";
@@ -26,7 +29,11 @@ import { onMailDelivered } from "../inquiry-ops/call-scheduler.mjs";
 
 // Standard HMAC-body adapters: same {db, rawBody, signatureHeader, secret} shape.
 const STD = {
-  commas: { fn: handleCommasWebhook, sig: "x-commas-signature", env: "COMMAS_WEBHOOK_SECRET" },
+  /* `sig` may be a LIST, tried in order. Commas signs with
+     `x-webhook-signature`; this table named `x-commas-signature`, which no
+     delivery has ever carried, so every real payment webhook failed
+     verification and answered 401. The old name is kept as a fallback. */
+  commas: { fn: handleCommasWebhook, sig: COMMAS_SIG_HEADERS, env: "COMMAS_WEBHOOK_SECRET" },
   clickfunnels: { fn: handleClickFunnelsWebhook, sig: "x-clickfunnels-signature", env: "CLICKFUNNELS_WEBHOOK_SECRET" },
   bland: { fn: handleBlandWebhook, sig: "x-bland-signature", env: "BLAND_WEBHOOK_SECRET" },
   calcom: { fn: handleCalcomWebhook, sig: "x-cal-signature-256", env: "CALCOM_WEBHOOK_SECRET" },
@@ -117,5 +124,11 @@ export async function handleWebhook({ db, provider, rawBody, headers = {}, url, 
 
   const cfg = STD[provider];
   if (!cfg) return { status: 404, body: { ok: false, error: `unknown provider: ${provider}` } };
-  return norm(await cfg.fn({ db, rawBody, signatureHeader: h(cfg.sig), secret: env[cfg.env] }));
+  /* cfg.sig is one header name or a list of them, tried in order. First one
+     actually present on the request wins; a provider that renamed its header
+     keeps working through the old name without a second code path. */
+  const signatureHeader = [].concat(cfg.sig).map((name) => h(name)).find(Boolean);
+  return norm(await cfg.fn({
+    db, rawBody, signatureHeader, secret: env[cfg.env], headers
+  }));
 }

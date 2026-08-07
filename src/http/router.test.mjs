@@ -7,15 +7,32 @@ import { clearHandlers } from "../events/registry.mjs";
 import { _resetRegistered } from "../register-all.mjs";
 
 // Fake db: enough for emit() to insert+dispatch; permissive for handler writes.
+// Also models commas_inbox, because the Commas webhook now stores the raw bytes
+// before answering rather than emitting on the request path.
 function fakeDb() {
   let n = 0;
-  return {
-    async query(sql) {
+  let i = 0;
+  const inbox = [];
+  const db = {
+    inbox,
+    async query(sql, params) {
       if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
+      if (/INSERT INTO commas_inbox/.test(sql)) {
+        const [orgId, dedupeKey] = params;
+        if (inbox.some((r) => r.org_id === orgId && r.dedupe_key === dedupeKey)) return { rows: [] };
+        const row = { id: `inbox-${++i}`, org_id: orgId, dedupe_key: dedupeKey, raw_body: params[4] };
+        inbox.push(row);
+        return { rows: [{ id: row.id }] };
+      }
+      if (/^\s*SELECT id FROM commas_inbox/.test(sql)) {
+        const hit = inbox.find((r) => r.dedupe_key === params[1]);
+        return { rows: hit ? [{ id: hit.id }] : [] };
+      }
       if (/INSERT INTO events/.test(sql)) return { rows: [{ id: `evt-${++n}` }] };
       return { rows: [] };
     }
   };
+  return db;
 }
 
 function reset() { _resetOrgCache(); clearHandlers(); _resetRegistered(); }
@@ -23,16 +40,65 @@ function reset() { _resetOrgCache(); clearHandlers(); _resetRegistered(); }
 const SECRET = "whsec_router";
 const hmac256 = (raw) => crypto.createHmac("sha256", SECRET).update(raw).digest("hex");
 
-test("routes a valid Commas webhook to the adapter → 200 + emitted events", async () => {
+const COMMAS_BODY = JSON.stringify({
+  id: "txn_r1",
+  type: "payment.succeeded",
+  data: {
+    payment_id: "pay_r1",
+    product: { title: "Consulting Services Deposit", price: 3000 },
+    fan: { email: "a@b.com" }
+  }
+});
+
+/* THE HEADER THAT WAS WRONG. Commas signs with `x-webhook-signature`; the
+   router named `x-commas-signature`, which no delivery has ever carried, so
+   every real payment webhook failed verification and answered 401. */
+test("routes a Commas webhook signed with x-webhook-signature → 200, bytes stored", async () => {
   reset();
-  const raw = JSON.stringify({ type: "payment.succeeded", id: "txn_r1", data: { product: { title: "Consulting Services Deposit", price: 3000 }, fan: { email: "a@b.com" } } });
+  const db = fakeDb();
   const out = await handleWebhook({
-    db: fakeDb(), provider: "commas", rawBody: raw,
-    headers: { "x-commas-signature": hmac256(raw) },
+    db, provider: "commas", rawBody: COMMAS_BODY,
+    headers: { "x-webhook-signature": hmac256(COMMAS_BODY) },
     env: { COMMAS_WEBHOOK_SECRET: SECRET }
   });
   assert.equal(out.status, 200);
-  assert.deepEqual(out.body.emitted.map((e) => e.name), ["payment.received", "deposit.paid"]);
+  assert.equal(out.body.queued, true);
+  assert.equal(db.inbox.length, 1, "the raw bytes were not made durable");
+  assert.equal(db.inbox[0].raw_body, COMMAS_BODY);
+});
+
+test("the old x-commas-signature header still works as a fallback", async () => {
+  reset();
+  const db = fakeDb();
+  const out = await handleWebhook({
+    db, provider: "commas", rawBody: COMMAS_BODY,
+    headers: { "x-commas-signature": hmac256(COMMAS_BODY) },
+    env: { COMMAS_WEBHOOK_SECRET: SECRET }
+  });
+  assert.equal(out.status, 200);
+  assert.equal(out.body.queued, true);
+});
+
+/* The at-most-once contract, asserted at the router: answering must not
+   require the money chain to have run. */
+test("the Commas route answers without emitting anything on the request path", async () => {
+  reset();
+  const db = fakeDb();
+  let emitted = 0;
+  const counting = {
+    inbox: db.inbox,
+    async query(sql, params) {
+      if (/INSERT INTO events/.test(sql)) emitted += 1;
+      return db.query(sql, params);
+    }
+  };
+  const out = await handleWebhook({
+    db: counting, provider: "commas", rawBody: COMMAS_BODY,
+    headers: { "x-webhook-signature": hmac256(COMMAS_BODY) },
+    env: { COMMAS_WEBHOOK_SECRET: SECRET }
+  });
+  assert.equal(out.status, 200);
+  assert.equal(emitted, 0, "an event was emitted before the webhook answered");
 });
 
 test("bad Commas signature → 401 from the adapter", async () => {

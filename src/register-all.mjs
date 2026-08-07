@@ -9,6 +9,7 @@ import { register as registerPaymentLinks } from "./handlers/payment-links.mjs";
 import { register as registerMoneyChain } from "./handlers/money-chain.mjs";
 import { register as registerInquiryGate } from "./handlers/inquiry-gate.mjs";
 import { register as registerInquiryDocs } from "./handlers/inquiry-docs.mjs";
+import { register as registerCommasDisputes } from "./handlers/commas-disputes.mjs";
 import { register as registerAgentRuntime } from "./agents/runtime.mjs";
 
 let _done = false;
@@ -20,6 +21,11 @@ export function registerAll() {
   registerMoneyChain();
   registerInquiryGate();
   registerInquiryDocs();
+  /* Chargebacks and refunds → tasks. Registered after the money chain so a
+     disputed payment's original payment.received has already been handled;
+     these two events never reverse it, but the task text reads better when the
+     payment it refers to is on file. */
+  registerCommasDisputes();
   // After comms: the inbound message row must exist before the runtime
   // looks it up by provider_ref. Handler order on the bus is registration order.
   registerAgentRuntime();

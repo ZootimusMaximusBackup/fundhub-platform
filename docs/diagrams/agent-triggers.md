@@ -115,6 +115,10 @@ Declared in `canonical.mjs`, emitted or emittable, with no Inngest function list
 - `round.closeout`
 - `file.finalized`
 - `payment.failed`
+- `payment.expired`
+- `payment.canceled`
+- `payment.refunded`
+- `payment.disputed`
 - `inquiry.gate.raised`
 - `inquiry.gate.clear`
 - `inquiry.docs.needed`

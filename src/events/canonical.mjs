@@ -23,6 +23,24 @@ export const CANONICAL_EVENTS = [
   // side events
   "payment.received",
   "payment.failed",
+  /* The four below are Commas payment outcomes that are NOT declines and must
+     never be mapped onto payment.failed.
+
+     `expired` and `canceled` are abandoned checkouts — a link that timed out
+     or a customer who backed out. Folding them into payment.failed would
+     inflate the decline rate with people who were never declined, and decline
+     rate is a number the sales floor is managed on. They carry no money and
+     have no money handler; they exist so the abandonment is visible.
+
+     `refunded` and `disputed` DO concern money that already moved. Neither
+     reverses the ledger on its own — a refund's accounting treatment and a
+     chargeback's are different questions with different answers, and guessing
+     one here would silently rewrite commission. payment.disputed drives an
+     urgent task instead, because a dispute has a response deadline. */
+  "payment.expired",
+  "payment.canceled",
+  "payment.refunded",
+  "payment.disputed",
   "docs.received",
   "inquiry.removed",
   "inquiry.gate.raised",

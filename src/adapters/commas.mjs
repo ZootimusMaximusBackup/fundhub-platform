@@ -20,7 +20,18 @@
 // └───────────────────────────────────────────────────────────────────────────┘
 
 import crypto from "node:crypto";
-import { emit } from "../events/bus.mjs";
+import { emit, defaultOrgId } from "../events/bus.mjs";
+import { enqueue } from "../payments/commas-inbox.mjs";
+
+/* The signature header, in the order we look for it.
+ *
+ * Commas sends `x-webhook-signature`. This adapter was wired to
+ * `x-commas-signature`, which no delivery has ever carried, so every real
+ * webhook failed verification and answered 401 — the 401s that were being
+ * treated as a secret problem. The old name stays as a fallback because it
+ * costs nothing and something may still be pointed at it, but the documented
+ * name is checked first. */
+export const SIGNATURE_HEADERS = ["x-webhook-signature", "x-commas-signature"];
 
 // Product routing — name match only. Same strings as the live handler.
 export const PRODUCT = {
@@ -45,6 +56,38 @@ export function verifyCommasSignature(rawBody, providedHeader, secret) {
   } catch {
     return false;
   }
+}
+
+/* TWO PAYLOAD SHAPES, AND ONLY ONE OF THEM IS REAL TRAFFIC.
+ *
+ * A real delivery is always enveloped: { id, type, data, created_at }. The
+ * dashboard's "Test Webhook" button sends payment.succeeded and the core
+ * subscription events FLAT, with no envelope at all. Validating the parser
+ * against the test button therefore proves nothing about production, which is
+ * how a parser can look correct and still miss every live payment.
+ *
+ * `body.data || body` below is what absorbs the difference, and the fixtures
+ * in commas.test.mjs cover both shapes deliberately. */
+const inner = (b) => (b && b.data && (b.data.object || b.data)) || b || {};
+
+/* eventTypeOf / paymentIdOf — the two fields needed BEFORE the payload is
+ * interpreted, because the inbox row has to be written and answered in the
+ * time budget of a webhook. Kept tiny and total: neither throws, and either
+ * may return null, because an unparseable body must still be stored. */
+export function eventTypeOf(body) {
+  const b = body || {};
+  return String(b.type || b.event || b.event_type || inner(b).type || "").toLowerCase();
+}
+
+/* THE IDEMPOTENCY ANCHOR. Commas documents `data.payment_id` as the stable
+   identifier for a payment and the envelope `id` as per-DELIVERY. Keying on
+   the envelope means two deliveries of one payment look like two payments and
+   the money is counted twice. */
+export function paymentIdOf(body) {
+  const b = body || {};
+  const d = inner(b);
+  const id = d.payment_id ?? b.payment_id ?? d.paymentId ?? b.paymentId ?? null;
+  return id ? String(id) : null;
 }
 
 // --- 2. Normalize the webhook body into a flat event ------------------------
@@ -122,13 +165,20 @@ export function normalizeCommasEvent(body) {
     b.ref ||
     null;
 
+  /* dueBy — a dispute's response deadline. Missing it is how a chargeback is
+     lost by default, so it is carried through to the task rather than left in
+     the raw body for somebody to find. */
+  const dueByRaw = d.due_by ?? d.dueBy ?? d.respond_by ?? b.due_by ?? null;
+
   return {
     id: id ? String(id) : null,
+    paymentId: paymentIdOf(body),
     type,
     name: String(name),
     amount,
     email: String(email).trim().toLowerCase(),
-    ref: ref ? String(ref) : null
+    ref: ref ? String(ref) : null,
+    dueBy: dueByRaw ? String(dueByRaw) : null
   };
 }
 
@@ -177,12 +227,50 @@ export function productOf(evt) {
 export function mapToCanonical(evt) {
   const out = [];
   if (!evt || !evt.type) return out;
+  const t = evt.type;
 
-  if (evt.type.includes("failed")) {
+  /* ORDER MATTERS HERE, and the ordering is not cosmetic.
+     "payment.canceled" contains "cancel"; a refund or dispute type can contain
+     other words we match on. The specific outcomes are therefore tested before
+     the generic failed/succeeded pair, so a refund can never fall through into
+     "succeeded" and credit the money a second time. */
+
+  /* expired / canceled — ABANDONED CHECKOUTS, NOT DECLINES.
+     A link that timed out, or a customer who backed out before paying. No
+     money moved, so there is no money event and deliberately no
+     payment.failed: folding these into the decline path would inflate the
+     decline rate with people who were never declined, and decline rate is a
+     number the sales floor is managed on. These exist for visibility only. */
+  if (t.includes("expired")) {
+    out.push({ name: "payment.expired", product: productOf(evt) });
+    return out;
+  }
+  if (t.includes("cancel")) {
+    out.push({ name: "payment.canceled", product: productOf(evt) });
+    return out;
+  }
+
+  /* refund / dispute — money that already moved is now in question.
+     NEITHER reverses the ledger here. How a refund should be treated in
+     commission accounting, and how a chargeback should, are two different
+     questions with two different answers, and neither has been decided. An
+     adapter inventing one would silently rewrite somebody's pay. The events
+     are emitted; a dispute additionally drives an urgent task, because it has
+     a deadline (src/handlers/commas-disputes.mjs). */
+  if (t.includes("refund")) {
+    out.push({ name: "payment.refunded", product: productOf(evt) });
+    return out;
+  }
+  if (t.includes("dispute") || t.includes("chargeback")) {
+    out.push({ name: "payment.disputed", product: productOf(evt) });
+    return out;
+  }
+
+  if (t.includes("failed")) {
     out.push({ name: "payment.failed", product: null });
     return out;
   }
-  if (!evt.type.includes("succeeded")) return out; // pending/other — ignore
+  if (!t.includes("succeeded")) return out; // pending/other — ignore
 
   // Money-in fact, always.
   out.push({ name: "payment.received", product: productOf(evt) });
@@ -197,29 +285,132 @@ export function mapToCanonical(evt) {
   return out;
 }
 
-// --- Adapter entrypoint -----------------------------------------------------
-// handleCommasWebhook({ db, rawBody, signatureHeader, secret })
-//   → { ok, status, emitted: [{name, id, deduped}], reason? }
-// Verifies, parses, maps, and emits each canonical event on the bus. Idempotency
-// key = commas:<eventId>:<canonicalName> so a re-delivered webhook is a safe no-op
-// while the two distinct events from one payment each get their own key. `db` is
-// injected (pg pool or a fake) so this is unit-testable without Postgres.
-export async function handleCommasWebhook({ db, rawBody, signatureHeader, secret }) {
+// --- Adapter entrypoint: ACK FIRST, WORK LATER ------------------------------
+/* handleCommasWebhook({ db, rawBody, signatureHeader, secret })
+ *   → { ok, status, queued, deduped, inboxId, reason? }
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * WHAT CHANGED, AND WHY IT HAD TO.
+ *
+ * This function used to verify, normalise, emit every canonical event and run
+ * the entire money chain — client creation, commission accrual, entitlements,
+ * closeout — all before returning a status code. That is safe with a provider
+ * that retries. Commas does not retry. It delivers AT MOST ONCE, and a
+ * delivery that fails is logged on their side and dropped, with no way for us
+ * to learn it happened.
+ *
+ * So under the old shape, any failure anywhere in that chain lost a real
+ * payment permanently. A deposit would simply never register, and nothing in
+ * the system would be able to say a payment had ever arrived.
+ *
+ * Now it does the smallest durable thing available: verify the signature,
+ * write the exact bytes to commas_inbox, answer 200. One INSERT. Everything
+ * else — parsing, mapping, emitting, the money chain — is done afterwards by
+ * netlify/functions/commas-inbox-sweeper.mjs, and all of it is retryable
+ * because the bytes are already safe.
+ *
+ * IT NO LONGER RETURNS `emitted`. Callers cannot learn from the response what
+ * events a payment produced, because at the moment of responding nothing has
+ * been decided yet. That is the trade the at-most-once guarantee costs, and it
+ * is the right way round: a caller that wanted the answer synchronously was a
+ * caller holding a payment hostage to the money chain succeeding on the first
+ * try.
+ *
+ * A MALFORMED BODY IS STILL STORED. It is verified — it carries a valid
+ * signature, so it genuinely came from Commas — and a payload we could not
+ * parse but kept is a bug report, while one we refused is a lost payment.
+ * Only an unsigned request is refused. */
+export async function handleCommasWebhook({ db, rawBody, signatureHeader, secret, headers = {} }) {
   if (!verifyCommasSignature(rawBody, signatureHeader, secret)) {
-    return { ok: false, status: 401, reason: "bad_signature", emitted: [] };
+    return { ok: false, status: 401, reason: "bad_signature", queued: false };
   }
 
-  let body;
+  /* Parse only far enough to key the row. A body that will not parse still
+     gets stored, under a hash of its own bytes — see dedupeKeyFor. */
+  let body = null;
+  let parseError = null;
   try {
     body = rawBody ? JSON.parse(rawBody) : {};
-  } catch {
-    return { ok: false, status: 400, reason: "invalid_json", emitted: [] };
+  } catch (err) {
+    parseError = String(err?.message || err).slice(0, 200);
+  }
+
+  const eventType = body ? eventTypeOf(body) : null;
+  const paymentId = body ? paymentIdOf(body) : null;
+
+  try {
+    const orgId = await defaultOrgId(db);
+    const res = await enqueue(db, {
+      orgId,
+      rawBody: rawBody ?? "",
+      headers,
+      paymentId,
+      eventType,
+      source: "webhook"
+    });
+    return {
+      ok: true,
+      status: 200,
+      queued: !res.deduped,
+      deduped: res.deduped,
+      inboxId: res.id,
+      paymentId,
+      eventType,
+      reason: parseError ? `stored_unparseable:${parseError}` : null
+    };
+  } catch (err) {
+    /* The queue write itself failed. This is the one case the caller must hear
+       about as a failure: nothing durable happened, so answering 200 would
+       tell Commas the payment was safely received when it was not. They will
+       not retry either way, but a 5xx is at least visible in their delivery
+       log and in ours. */
+    console.error(
+      `[commas] INBOX WRITE FAILED — payment ${paymentId || "?"} ` +
+      `(${eventType || "?"}) may be lost: ${String(err?.message || err).slice(0, 300)}`
+    );
+    return {
+      ok: false,
+      status: 500,
+      reason: "inbox_write_failed",
+      queued: false,
+      paymentId,
+      eventType
+    };
+  }
+}
+
+/* processCommasInboxRow(row, db) → { ok, ignored?, reason?, emitted }
+ *
+ * Phase two. Runs from the sweeper, never from the request path. Interprets
+ * one stored row and puts its canonical events on the bus.
+ *
+ * IDEMPOTENCY IS THE ROW'S DEDUPE KEY, not a fresh guess. `row.dedupe_key` is
+ * already anchored to data.payment_id, so re-running a row — which happens
+ * whenever a pass is retried — writes no second event and dispatches no second
+ * handler.
+ *
+ * HANDLER FAILURES DO NOT FAIL THE ROW, deliberately. emit() catches each
+ * handler and records it to the dead-letter queue, which owns the retry. If
+ * this function threw on a handler error instead, the row would be marked
+ * failed and retried, and every retry would dedupe on the idempotency key and
+ * dispatch nothing — retrying forever while achieving nothing, and masking the
+ * dead-letter entry that actually describes the problem. What DOES fail a row
+ * is failing to write the event at all. */
+export async function processCommasInboxRow(row, db) {
+  let body;
+  try {
+    body = JSON.parse(row.raw_body || "{}");
+  } catch (err) {
+    /* Terminal, not retryable — the bytes will not start parsing on the next
+       pass. Marked ignored so it stops consuming attempts, with the reason on
+       the row. The raw body is retained for whoever looks. */
+    return { ok: true, ignored: true, reason: `unparseable_json: ${String(err?.message || err).slice(0, 200)}`, emitted: [] };
   }
 
   const evt = normalizeCommasEvent(body);
   const canonical = mapToCanonical(evt);
   if (canonical.length === 0) {
-    return { ok: true, status: 200, reason: `ignored:${evt.type || "unknown"}`, emitted: [] };
+    return { ok: true, ignored: true, reason: `no_canonical_mapping:${evt.type || "unknown"}`, emitted: [] };
   }
 
   const emitted = [];
@@ -229,27 +420,22 @@ export async function handleCommasWebhook({ db, rawBody, signatureHeader, secret
       productName: evt.name,
       amount: evt.amount,
       email: evt.email,
-      providerRef: evt.id, // Commas txn id — lets the payment handler dedup on replay
+      /* providerRef prefers the payment id over the envelope id. Downstream
+         money handlers use this as the provider's stable reference for a
+         payment; the envelope id changes per delivery and never should have
+         been it. Falls back to the old value when no payment id is present, so
+         existing rows and older payloads behave exactly as before. */
+      providerRef: evt.paymentId || evt.id,
+      paymentId: evt.paymentId,
       ref: evt.ref, // our own reference, if the payment came from a payment_links checkout URL
+      dueBy: evt.dueBy, // dispute response deadline, when the event carries one
       source: "commas"
     };
-    /* An event with no provider id used to get NO idempotency key at all, so a
-       redelivered webhook emitted a second payment.received and the money was
-       counted twice in transactions. evt.id already has four fallbacks and can
-       still come back null, and "the provider always sends one" is not a
-       property this code can rely on for money.
-
-       Falling back to a hash of the exact bytes: a webhook RETRY is by
-       definition byte-identical, so it dedupes, and no semantic guess is made
-       about which fields identify a payment. Two genuinely distinct payments
-       would have to be byte-identical to collide — same amount, same email,
-       same product, and no id or timestamp anywhere in the body — which is a
-       payload that could not be deduplicated by any means. */
-    const idKey = evt.id
-      ? `commas:${evt.id}:${c.name}`
-      : `commas:body:${crypto.createHash("sha256").update(rawBody || "").digest("hex")}:${c.name}`;
-    const res = await emit(db, c.name, payload, { idempotencyKey: idKey });
+    const res = await emit(db, c.name, payload, {
+      orgId: row.org_id,
+      idempotencyKey: `commas:${row.dedupe_key}:${c.name}`
+    });
     emitted.push({ name: c.name, id: res.id, deduped: res.deduped });
   }
-  return { ok: true, status: 200, emitted };
+  return { ok: true, emitted };
 }
