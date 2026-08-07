@@ -36,6 +36,7 @@ import {
   getSoftPullRequest,
   recordPull,
   coordinateCrsResult,
+  claimSoftPull,
   getLatestPull,
   SoftPullError
 } from "./soft-pulls.mjs";
@@ -830,6 +831,8 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
         orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId },
         reason: "concurrent provider delivery"
       })).request;
+      // Production claims before any provider write — the coordinator refuses bare queued.
+      await claimSoftPull(db, { requestId: firstRequest.id, orgId: org, clientId: client });
       const firstProviderId = providerId("concurrent");
 
       const [a, b] = await Promise.all([
@@ -856,6 +859,7 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
         orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId },
         reason: "later legitimate refresh"
       })).request;
+      await claimSoftPull(db, { requestId: secondRequest.id, orgId: org, clientId: client });
       const second = await coordinateCrsResult(db, {
         orgId: org, clientId: client, requestId: secondRequest.id,
         providerResultId: providerId("later"), result: CRS_PAYLOAD, outcomeTier: "FULL_FUNDING"
@@ -870,6 +874,7 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
       const original = (await requestSoftPull(db, {
         orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId }, reason: "original"
       })).request;
+      await claimSoftPull(db, { requestId: original.id, orgId: org, clientId: client });
       const resultId = providerId("ownership");
       await coordinateCrsResult(db, {
         orgId: org, clientId: client, requestId: original.id,
@@ -879,6 +884,7 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
       const later = (await requestSoftPull(db, {
         orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId }, reason: "different request"
       })).request;
+      await claimSoftPull(db, { requestId: later.id, orgId: org, clientId: client });
       await assert.rejects(
         () => coordinateCrsResult(db, {
           orgId: org, clientId: client, requestId: later.id,
@@ -890,6 +896,7 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
       const otherRequest = (await requestSoftPull(db, {
         orgId: org, clientId: otherClient, requestedBy: { kind: "staff", id: staffId }, reason: "different client"
       })).request;
+      await claimSoftPull(db, { requestId: otherRequest.id, orgId: org, clientId: otherClient });
       await assert.rejects(
         () => coordinateCrsResult(db, {
           orgId: org, clientId: otherClient, requestId: otherRequest.id,
@@ -912,6 +919,7 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
       const request = (await requestSoftPull(db, {
         orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId }, reason: "event anchor"
       })).request;
+      await claimSoftPull(db, { requestId: request.id, orgId: org, clientId: client });
       const coordinated = await coordinateCrsResult(db, {
         orgId: org, clientId: client, requestId: request.id,
         providerResultId: providerId("event"), result: CRS_PAYLOAD, outcomeTier: "FULL_FUNDING"
@@ -931,6 +939,7 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
       const request = (await requestSoftPull(db, {
         orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId }, reason: "rollback proof"
       })).request;
+      await claimSoftPull(db, { requestId: request.id, orgId: org, clientId: client });
       const resultId = providerId("rollback");
       const failingDb = {
         async connect() {
@@ -955,7 +964,8 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
       assert.equal(Number((await db.query(
         `SELECT count(*) n FROM crs_results WHERE provider_result_id = $1`, [resultId]
       )).rows[0].n), 0);
-      assert.equal((await ledgerRows())[0].status, "queued");
+      // Claimed before the write — a rolled-back fulfil leaves it processing, not queued.
+      assert.equal((await ledgerRows())[0].status, "processing");
       assert.deepEqual(await tradelineRows(), []);
     });
 

@@ -24,7 +24,7 @@
 | W2-A | Postman/contract + test identities | this session | done |
 | W2-B | Result coordinator (one write, events, no dupes) | this session | done |
 | W2-C | Client + soft-pull wiring + tests | this session | done |
-| W2-D | Sandbox Netlify secrets + one deploy | this session | claimed |
+| W2-D | Sandbox Netlify secrets + one deploy | this session | done — deploy `d42a2ff` ready; migration 157 still blocked |
 
 ## Findings / blockers
 
