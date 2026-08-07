@@ -13,7 +13,7 @@ function fakeDb({ dedup = false, store = [] } = {}) {
       if (/INSERT INTO events/.test(sql)) {
         if (dedup) return { rows: [] };
         const row = { id: `evt-${++n}` };
-        store.push({ ...row, name: params[1], payload: params[5] });
+        store.push({ ...row, name: params[1], idempotencyKey: params[3], payload: params[5] });
         return { rows: [row] };
       }
       return { rows: [] };
@@ -22,6 +22,8 @@ function fakeDb({ dedup = false, store = [] } = {}) {
 }
 
 // Representative engine result matching engine.js top-level return shape
+const RESULT_ANCHOR = { crsResultId: "result-1", requestId: "request-1" };
+
 const REPRESENTATIVE_ENGINE_RESULT = {
   ok: true,
   outcome: "FULL_FUNDING",
@@ -157,7 +159,7 @@ test("emitCrsResult: idempotent re-emit is deduped, no dispatch", async () => {
   on("decision.rendered", () => (fired += 1));
 
   const db = fakeDb({ dedup: true });
-  const res = await emitCrsResult({ db, engineResult: REPRESENTATIVE_ENGINE_RESULT, clientId: "client-1" });
+  const res = await emitCrsResult({ db, engineResult: REPRESENTATIVE_ENGINE_RESULT, clientId: "client-1", ...RESULT_ANCHOR });
   assert.ok(res.ok);
   assert.ok(res.emitted.every((e) => e.deduped === true), "all events should be deduped");
   assert.equal(fired, 0, "handlers must not fire on deduped replay");
@@ -173,7 +175,7 @@ test("emitCrsResult: dispatches to registered handlers on both events", async ()
 
   const store = [];
   const db = fakeDb({ store });
-  const res = await emitCrsResult({ db, engineResult: REPRESENTATIVE_ENGINE_RESULT, clientId: "client-42" });
+  const res = await emitCrsResult({ db, engineResult: REPRESENTATIVE_ENGINE_RESULT, clientId: "client-42", ...RESULT_ANCHOR });
 
   assert.ok(res.ok);
   assert.equal(res.emitted.length, 2);
@@ -193,7 +195,7 @@ test("emitCrsResult: dispatches to registered handlers on both events", async ()
 
 test("emitCrsResult: no outcomeTier => ok:false, no emit", async () => {
   _resetOrgCache(); clearHandlers();
-  const res = await emitCrsResult({ db: fakeDb(), engineResult: { ok: true } });
+  const res = await emitCrsResult({ db: fakeDb(), engineResult: { ok: true }, ...RESULT_ANCHOR });
   assert.equal(res.ok, false);
   assert.equal(res.emitted.length, 0);
   assert.equal(res.reason, "no_outcome_tier");
@@ -205,7 +207,51 @@ test("emitCrsResult: caller-supplied clientId overrides engine-embedded", async 
   const engineResult = { ...REPRESENTATIVE_ENGINE_RESULT, clientId: "engine-id" };
   const db = fakeDb({ store: [] });
   // Just verify it doesn't throw and emits both events
-  const res = await emitCrsResult({ db, engineResult, clientId: "caller-id" });
+  const res = await emitCrsResult({ db, engineResult, clientId: "caller-id", ...RESULT_ANCHOR });
   assert.ok(res.ok);
   assert.equal(res.emitted.length, 2);
+});
+
+
+test("emitCrsResult: payloads and replay keys are anchored to the stored result", async () => {
+  _resetOrgCache(); clearHandlers();
+  const store = [];
+  const res = await emitCrsResult({
+    db: fakeDb({ store }),
+    engineResult: REPRESENTATIVE_ENGINE_RESULT,
+    clientId: "client-anchor",
+    ...RESULT_ANCHOR
+  });
+  assert.ok(res.ok);
+  assert.deepEqual(store.map((row) => row.idempotencyKey), [
+    "crs-result:result-1:analysis.completed:v1",
+    "crs-result:result-1:decision.rendered:v1"
+  ]);
+  for (const row of store) {
+    assert.equal(row.payload.crsResultId, "result-1");
+    assert.equal(row.payload.requestId, "request-1");
+  }
+});
+
+test("emitCrsResult: two stored results for one client both emit", async () => {
+  _resetOrgCache(); clearHandlers();
+  const store = [];
+  const db = fakeDb({ store });
+  await emitCrsResult({
+    db, engineResult: REPRESENTATIVE_ENGINE_RESULT, clientId: "same-client",
+    crsResultId: "result-a", requestId: "request-a"
+  });
+  await emitCrsResult({
+    db, engineResult: REPRESENTATIVE_ENGINE_RESULT, clientId: "same-client",
+    crsResultId: "result-b", requestId: "request-b"
+  });
+  assert.equal(store.length, 4);
+  assert.equal(new Set(store.map((row) => row.idempotencyKey)).size, 4);
+});
+
+test("emitCrsResult: refuses an unanchored provider result", async () => {
+  const res = await emitCrsResult({
+    db: fakeDb(), engineResult: REPRESENTATIVE_ENGINE_RESULT, clientId: "client-1"
+  });
+  assert.deepEqual(res, { ok: false, emitted: [], reason: "missing_result_anchor" });
 });

@@ -123,13 +123,15 @@ export function normalizeCrsResult(engineResult) {
 // Two in-repo consumers already assumed this shape: client-lifecycle.mjs's
 // onAnalysisCompleted reads `payload.outcomeTier` to fill `crs_results.outcome_tier`
 // (previously always null in production), and api/dashboard/seed.mjs emits it.
-export function mapToCanonical(norm) {
+export function mapToCanonical(norm, { crsResultId = null, requestId = null } = {}) {
   if (!norm || !norm.outcomeTier) return [];
 
+  const anchor = { crsResultId, requestId };
   return [
     {
       name: "analysis.completed",
       payload: {
+        ...anchor,
         outcomeTier: norm.outcomeTier,
         scores: norm.scores,
         utilization: norm.utilization,
@@ -141,6 +143,7 @@ export function mapToCanonical(norm) {
     {
       name: "decision.rendered",
       payload: {
+        ...anchor,
         outcomeTier: norm.outcomeTier,
         fundingEstimate: norm.fundingEstimate,
         source: "crs"
@@ -150,25 +153,37 @@ export function mapToCanonical(norm) {
 }
 
 // --- Adapter entrypoint ------------------------------------------------------
-// emitCrsResult({ db, engineResult, clientId? })
+// emitCrsResult({ db, engineResult, clientId?, crsResultId, requestId })
 //   → { ok, emitted: [{name, id, deduped}] }
 // Maps the engine output to canonical events and emits each via the bus.
 // `db` is injected (pg pool or a fake) so this is unit-testable without Postgres.
 // clientId overrides any clientId embedded in engineResult.
-export async function emitCrsResult({ db, engineResult, clientId } = {}) {
+export async function emitCrsResult({
+  db,
+  engineResult,
+  clientId,
+  crsResultId,
+  requestId
+} = {}) {
   const norm = normalizeCrsResult(engineResult);
   // Caller-supplied clientId wins over engine-embedded
   const resolvedClientId = clientId != null ? String(clientId) : norm.clientId;
-  const identity = resolvedClientId || norm.email || "unknown";
 
-  const canonical = mapToCanonical(norm);
+  if (!crsResultId || !requestId) {
+    return { ok: false, emitted: [], reason: "missing_result_anchor" };
+  }
+
+  const canonical = mapToCanonical(norm, {
+    crsResultId: String(crsResultId),
+    requestId: String(requestId)
+  });
   if (canonical.length === 0) {
     return { ok: false, emitted: [], reason: "no_outcome_tier" };
   }
 
   const emitted = [];
   for (const c of canonical) {
-    const idKey = `crs:${identity}:${c.name}`;
+    const idKey = `crs-result:${crsResultId}:${c.name}:v1`;
     const res = await emit(db, c.name, c.payload, {
       idempotencyKey: idKey,
       clientId: resolvedClientId || undefined

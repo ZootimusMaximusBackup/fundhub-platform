@@ -35,9 +35,12 @@ import {
   openRequestFor,
   getSoftPullRequest,
   recordPull,
+  coordinateCrsResult,
   getLatestPull,
   SoftPullError
 } from "./soft-pulls.mjs";
+import { onAnalysisCompleted } from "../handlers/client-lifecycle.mjs";
+import { runCrsPull } from "./crs-pull.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 
@@ -814,6 +817,204 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
       const latest = await getLatestPull(db, { clientId: client });
       assert.ok("result" in latest, "the payload was dropped");
       assert.equal(latest.client_id, client);
+    });
+  });
+
+  describe("single-write provider result coordination", () => {
+    const providerId = (suffix) => `softpull-pg-${suffix}-${Date.now()}`;
+
+    test("concurrent delivery reuses one result, then a later pull still lands", async () => {
+      await wipeLedger();
+      await db.query(`DELETE FROM crs_results WHERE client_id = $1`, [client]);
+      const firstRequest = (await requestSoftPull(db, {
+        orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId },
+        reason: "concurrent provider delivery"
+      })).request;
+      const firstProviderId = providerId("concurrent");
+
+      const [a, b] = await Promise.all([
+        coordinateCrsResult(db, {
+          orgId: org, clientId: client, requestId: firstRequest.id,
+          providerResultId: firstProviderId, result: CRS_PAYLOAD, outcomeTier: "FULL_FUNDING"
+        }),
+        coordinateCrsResult(db, {
+          orgId: org, clientId: client, requestId: firstRequest.id,
+          providerResultId: firstProviderId, result: CRS_PAYLOAD, outcomeTier: "FULL_FUNDING"
+        })
+      ]);
+
+      assert.equal(a.crsResult.id, b.crsResult.id);
+      assert.deepEqual([a.replayed, b.replayed].sort(), [false, true]);
+      assert.equal(Number((await db.query(
+        `SELECT count(*) n FROM crs_results WHERE provider = 'crs_softview' AND provider_result_id = $1`,
+        [firstProviderId]
+      )).rows[0].n), 1);
+      assert.equal((await ledgerRows())[0].status, "fulfilled");
+      assert.equal((await tradelineRows()).length, 3);
+
+      const secondRequest = (await requestSoftPull(db, {
+        orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId },
+        reason: "later legitimate refresh"
+      })).request;
+      const second = await coordinateCrsResult(db, {
+        orgId: org, clientId: client, requestId: secondRequest.id,
+        providerResultId: providerId("later"), result: CRS_PAYLOAD, outcomeTier: "FULL_FUNDING"
+      });
+      assert.notEqual(second.crsResult.id, a.crsResult.id);
+      assert.equal((await ledgerRows()).filter((row) => row.status === "fulfilled").length, 2);
+    });
+
+    test("the same provider result cannot move to another request, client or org", async () => {
+      await wipeLedger();
+      await db.query(`DELETE FROM crs_results WHERE client_id = ANY($1)`, [[client, otherClient]]);
+      const original = (await requestSoftPull(db, {
+        orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId }, reason: "original"
+      })).request;
+      const resultId = providerId("ownership");
+      await coordinateCrsResult(db, {
+        orgId: org, clientId: client, requestId: original.id,
+        providerResultId: resultId, result: CRS_PAYLOAD, outcomeTier: "FULL_FUNDING"
+      });
+
+      const later = (await requestSoftPull(db, {
+        orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId }, reason: "different request"
+      })).request;
+      await assert.rejects(
+        () => coordinateCrsResult(db, {
+          orgId: org, clientId: client, requestId: later.id,
+          providerResultId: resultId, result: CRS_PAYLOAD
+        }),
+        (error) => error instanceof SoftPullError && error.status === 409
+      );
+
+      const otherRequest = (await requestSoftPull(db, {
+        orgId: org, clientId: otherClient, requestedBy: { kind: "staff", id: staffId }, reason: "different client"
+      })).request;
+      await assert.rejects(
+        () => coordinateCrsResult(db, {
+          orgId: org, clientId: otherClient, requestId: otherRequest.id,
+          providerResultId: resultId, result: CRS_PAYLOAD
+        }),
+        (error) => error instanceof SoftPullError && error.status === 409
+      );
+      await assert.rejects(
+        () => coordinateCrsResult(db, {
+          orgId: "00000000-0000-4000-8000-000000000099", clientId: client, requestId: later.id,
+          providerResultId: resultId, result: CRS_PAYLOAD
+        }),
+        (error) => error instanceof SoftPullError && error.status === 409
+      );
+    });
+
+    test("an anchored analysis event reuses the result row", async () => {
+      await wipeLedger();
+      await db.query(`DELETE FROM crs_results WHERE client_id = $1`, [client]);
+      const request = (await requestSoftPull(db, {
+        orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId }, reason: "event anchor"
+      })).request;
+      const coordinated = await coordinateCrsResult(db, {
+        orgId: org, clientId: client, requestId: request.id,
+        providerResultId: providerId("event"), result: CRS_PAYLOAD, outcomeTier: "FULL_FUNDING"
+      });
+      await onAnalysisCompleted({
+        id: "softpull-pg-anchored-event", orgId: org, clientId: client,
+        payload: { crsResultId: coordinated.crsResult.id, requestId: request.id, outcomeTier: "FULL_FUNDING" }
+      }, db);
+      assert.equal(Number((await db.query(
+        `SELECT count(*) n FROM crs_results WHERE client_id = $1`, [client]
+      )).rows[0].n), 1);
+    });
+
+    test("an ingest failure rolls back the result and request fulfillment", async () => {
+      await wipeLedger();
+      await db.query(`DELETE FROM crs_results WHERE client_id = $1`, [client]);
+      const request = (await requestSoftPull(db, {
+        orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId }, reason: "rollback proof"
+      })).request;
+      const resultId = providerId("rollback");
+      const failingDb = {
+        async connect() {
+          const clientConn = await pool().connect();
+          return {
+            query(sql, params) {
+              if (/INSERT INTO tradelines/.test(sql)) throw new Error("simulated tradeline failure");
+              return clientConn.query(sql, params);
+            },
+            release() { clientConn.release(); }
+          };
+        }
+      };
+
+      await assert.rejects(
+        () => coordinateCrsResult(failingDb, {
+          orgId: org, clientId: client, requestId: request.id,
+          providerResultId: resultId, result: CRS_PAYLOAD, outcomeTier: "FULL_FUNDING"
+        }),
+        /simulated tradeline failure/
+      );
+      assert.equal(Number((await db.query(
+        `SELECT count(*) n FROM crs_results WHERE provider_result_id = $1`, [resultId]
+      )).rows[0].n), 0);
+      assert.equal((await ledgerRows())[0].status, "queued");
+      assert.deepEqual(await tradelineRows(), []);
+    });
+
+    test("runCrsPull stores one anchored row and replays before ordering again", async () => {
+      await wipeLedger();
+      await db.query(`DELETE FROM crs_results WHERE client_id = $1`, [client]);
+      const request = (await requestSoftPull(db, {
+        orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId },
+        reason: "real database CRS pull coordinator"
+      })).request;
+      const calls = [];
+      const crsClient = {
+        host: "api-sandbox.stitchcredit.com",
+        config: { missing: [] },
+        isConfigured: () => true,
+        async orderPrequal({ bureau }) {
+          calls.push(bureau);
+          return {
+            ok: true,
+            requestId: `PG-${bureau}-${request.id}`,
+            report: { scores: [{ score: 700, modelName: "FICO9" }], tradelines: [], inquiries: [] }
+          };
+        }
+      };
+
+      try {
+        const first = await runCrsPull(db, {
+          orgId: org, clientId: client, requestId: request.id, client: crsClient,
+          bureaus: ["TU", "EX", "EQ"]
+        });
+        const replay = await runCrsPull(db, {
+          orgId: org, clientId: client, requestId: request.id, client: crsClient,
+          bureaus: ["TU", "EX", "EQ"]
+        });
+
+        assert.equal(first.ok, true);
+        assert.equal(replay.replayed, true);
+        assert.equal(replay.crsResultId, first.crsResultId);
+        assert.equal(replay.event.deduped, true);
+        assert.deepEqual(calls, ["TU", "EX", "EQ"]);
+        assert.equal(Number((await db.query(
+          `SELECT count(*) n FROM crs_results WHERE client_id = $1`, [client]
+        )).rows[0].n), 1);
+        assert.equal((await ledgerRows())[0].status, "fulfilled");
+        const stored = (await db.query(
+          `SELECT result FROM crs_results WHERE id = $1`, [first.crsResultId]
+        )).rows[0].result;
+        assert.deepEqual(Object.keys(stored.requestIds).sort(), ["EQ", "EX", "TU"]);
+        const event = (await db.query(
+          `SELECT name, payload FROM events WHERE client_id = $1 AND idempotency_key = $2`,
+          [client, `crs-result:${first.crsResultId}:analysis.completed:v1`]
+        )).rows;
+        assert.equal(event.length, 1);
+        assert.equal(event[0].name, "analysis.completed");
+        assert.equal(event[0].payload.requestId, request.id);
+        assert.equal(event[0].payload.crsResultId, first.crsResultId);
+      } finally {
+        await db.query(`DELETE FROM events WHERE client_id = $1`, [client]);
+      }
     });
   });
 });

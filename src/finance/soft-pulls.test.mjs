@@ -19,6 +19,7 @@ import {
   fulfilSoftPull,
   closeSoftPull,
   recordPull,
+  coordinateCrsResult,
   getLatestPull,
   listSoftPullRequests,
   openRequestFor,
@@ -476,7 +477,8 @@ describe("nothing transmits", () => {
 
   test("the module exports no state the schema cannot hold", () => {
     // A 'sent' status would be a promise nothing can keep — see 077's header.
-    assert.deepEqual(SOFT_PULL_STATUSES, ["queued", "fulfilled", "failed", "cancelled"]);
+    // 'processing' is the claimed-before-provider state added by migration 157.
+    assert.deepEqual(SOFT_PULL_STATUSES, ["queued", "processing", "fulfilled", "failed", "cancelled"]);
     assert.ok(!SOFT_PULL_STATUSES.includes("sent"));
     assert.deepEqual(REQUESTER_KINDS, ["staff", "client"]);
   });
@@ -606,11 +608,11 @@ describe("closing a request without an answer", () => {
       (e) => e instanceof SoftPullError && e.status === 409);
   });
 
-  test("a close only touches queued rows", async () => {
+  test("a close only touches open rows", async () => {
     const db = fakeDb([{ rows: [rowFor({ status: "failed", state_reason: "provider down", resolved_at: new Date() })] }]);
     const out = await closeSoftPull(db, { requestId: "r", status: "failed", reason: "  provider down  " });
     assert.equal(out.status, "failed");
-    assert.match(db.calls[0].text, /status = 'queued'/,
+    assert.match(db.calls[0].text, /status IN \('queued', 'processing'\)/,
       "the close could overwrite an already-resolved request");
     assert.equal(db.calls[0].params[2], "provider down");
   });
@@ -636,10 +638,11 @@ describe("reading the ledger", () => {
     }
   });
 
-  test("openRequestFor asks only for queued rows", async () => {
+  test("openRequestFor asks for unresolved rows", async () => {
     const db = fakeDb([{ rows: [] }]);
     assert.equal(await openRequestFor(db, { clientId: CLIENT }), null);
-    assert.match(db.calls[0].text, /status = 'queued'/);
+    // queued or processing — both block a second consumer-credit request.
+    assert.match(db.calls[0].text, /status IN \('queued', 'processing'\)/);
   });
 
   test("a read with no client is refused rather than returning everybody's", async () => {
@@ -749,5 +752,85 @@ describe("getLatestPull", () => {
     const row = { id: "c1", client_id: CLIENT, result: { tradelines: [{ lender: "Amex" }] } };
     const out = await getLatestPull(fakeDb([{ rows: [row] }]), { clientId: CLIENT });
     assert.deepEqual(out, row);
+  });
+});
+
+
+describe("coordinating one provider result", () => {
+  const args = {
+    orgId: ORG,
+    clientId: CLIENT,
+    requestId: "r1",
+    providerResultId: "crs-request-1",
+    result: { tradelines: [] },
+    outcomeTier: "FULL_FUNDING"
+  };
+  const crs = {
+    id: "c1", org_id: ORG, client_id: CLIENT,
+    provider: "crs_softview", provider_result_id: "crs-request-1",
+    result: args.result, outcome_tier: "FULL_FUNDING", created_at: new Date()
+  };
+
+  test("the first delivery writes, fulfills and ingests in that order", async () => {
+    const fulfilled = rowFor({
+      id: "r1", status: "fulfilled", crs_result_id: "c1", resolved_at: new Date()
+    });
+    const db = fakeDb([
+      { rows: [] },
+      { rows: [rowFor({ id: "r1", status: "processing" })] },
+      { rows: [] },
+      { rows: [crs] },
+      { rows: [fulfilled] }
+    ]);
+    const out = await coordinateCrsResult(db, args);
+    assert.equal(out.replayed, false);
+    assert.equal(out.crsResult.id, "c1");
+    assert.equal(out.request.crs_result_id, "c1");
+    assert.ok(db.calls.find((call) => /pg_advisory_xact_lock/.test(call.text)));
+    assert.ok(db.calls.find((call) => /ON CONFLICT \(org_id, provider, provider_result_id\)/.test(call.text)));
+  });
+
+  test("a retry returns the same result without another insert or ingest", async () => {
+    const db = fakeDb([
+      { rows: [] },
+      { rows: [rowFor({ id: "r1", status: "fulfilled", crs_result_id: "c1", resolved_at: new Date() })] },
+      { rows: [crs] }
+    ]);
+    const out = await coordinateCrsResult(db, args);
+    assert.equal(out.replayed, true);
+    assert.equal(out.crsResult.id, "c1");
+    assert.equal(out.ingested, 0);
+    assert.ok(!db.calls.some((call) => /INSERT INTO crs_results|INSERT INTO tradelines/.test(call.text)));
+  });
+
+  test("a request owned by another org or client is refused before insert", async () => {
+    const db = fakeDb([{ rows: [] }, { rows: [rowFor({ id: "r1", status: "processing" })] }]);
+    await assert.rejects(
+      () => coordinateCrsResult(db, { ...args, orgId: "other-org" }),
+      (error) => error instanceof SoftPullError && error.status === 409
+    );
+    assert.ok(!db.calls.some((call) => /INSERT INTO crs_results/.test(call.text)));
+  });
+
+  test("a provider result anchored to another request is refused", async () => {
+    const db = fakeDb([
+      { rows: [] },
+      { rows: [rowFor({ id: "r2", status: "processing" })] },
+      { rows: [crs] },
+      { rows: [{ id: "r1" }] }
+    ]);
+    await assert.rejects(
+      () => coordinateCrsResult(db, { ...args, requestId: "r2" }),
+      (error) => error instanceof SoftPullError && error.status === 409
+    );
+    assert.ok(!db.calls.some((call) => /INSERT INTO crs_results/.test(call.text)));
+  });
+
+  test("a queued request is refused unless allowQueued is set", async () => {
+    const db = fakeDb([{ rows: [] }, { rows: [rowFor({ id: "r1", status: "queued" })] }]);
+    await assert.rejects(
+      () => coordinateCrsResult(db, args),
+      (error) => error instanceof SoftPullError && /already queued/.test(error.message)
+    );
   });
 });

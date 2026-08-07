@@ -14,13 +14,13 @@ import {
 
 // In-memory Postgres fake: interprets the exact queries the handlers issue.
 function pgFake({ openShift = null, failOn = null, smsRouting = null } = {}) {
-  const clients = [], transactions = [], crs = [], events = [];
+  const clients = [], transactions = [], crs = [], events = [], requests = [];
   let n = 0;
   const findClient = (org, email) =>
     clients.find((c) => c.org_id === org && String(c.email || "").toLowerCase() === String(email).toLowerCase());
   const routingFor = (orgId) => (typeof smsRouting === "string" ? smsRouting : smsRouting?.[orgId]) ?? null;
   return {
-    clients, transactions, crs, events,
+    clients, transactions, crs, events, requests,
     async query(sql, params = []) {
       if (failOn && failOn.test(sql)) throw Object.assign(new Error("simulated outage"), { code: "08006" });
       if (/INSERT INTO staff_events/.test(sql)) {
@@ -98,6 +98,18 @@ function pgFake({ openShift = null, failOn = null, smsRouting = null } = {}) {
         if (ref && transactions.find((t) => t.org_id === params[0] && t.provider_ref === ref)) return { rows: [] };
         transactions.push({ org_id: params[0], client_id: params[1], product_name: params[2], amount_paid: params[3], provider_ref: ref });
         return { rows: [] };
+      }
+      if (/SELECT id, org_id, client_id FROM crs_results WHERE id/.test(sql)) {
+        const row = crs.find((r) => r.id === params[0]);
+        return { rows: row ? [row] : [] };
+      }
+      if (/FROM soft_pull_requests/.test(sql)) {
+        const row = requests.find((r) => r.id === params[0]
+          && r.crs_result_id === params[1]
+          && r.org_id === params[2]
+          && r.client_id === params[3]
+          && r.status === "fulfilled");
+        return { rows: row ? [{ id: row.id }] : [] };
       }
       if (/SELECT 1 FROM crs_results/.test(sql)) {
         return { rows: crs.find((r) => r.client_id === params[0] && r.__event_id === String(params[1])) ? [{ x: 1 }] : [] };
@@ -403,4 +415,43 @@ test("resolveClient: existing client with null ghl_contact_id gets a backfill sy
   assert.equal(id, "cl-pre");
   assert.equal(db.clients[0].ghl_contact_id, "ghl-backfill");
   assert.equal(fetchImpl.calls.length, 1);
+});
+
+
+test("analysis.completed: an anchored event reuses the coordinator result", async () => {
+  const db = pgFake();
+  db.clients.push({
+    id: "client-anchor", org_id: "org-1", email: "anchor@example.com",
+    first_name: "Anchor", last_name: "Client", ghl_contact_id: "ghl-anchor",
+    custom_fields: {}, outcome_tier: null
+  });
+  db.crs.push({ id: "result-anchor", org_id: "org-1", client_id: "client-anchor" });
+  db.requests.push({
+    id: "request-anchor", org_id: "org-1", client_id: "client-anchor",
+    crs_result_id: "result-anchor", status: "fulfilled"
+  });
+
+  const event = ev("analysis.completed", {
+    crsResultId: "result-anchor", requestId: "request-anchor", outcomeTier: "FULL_FUNDING"
+  }, { clientId: "client-anchor", id: "evt-anchor" });
+  await onAnalysisCompleted(event, db);
+  await onAnalysisCompleted(event, db);
+  assert.equal(db.crs.length, 1, "the announcement inserted a second result row");
+});
+
+test("analysis.completed: an anchor for another client is refused", async () => {
+  const db = pgFake();
+  db.clients.push({
+    id: "client-anchor", org_id: "org-1", email: "anchor@example.com",
+    first_name: "Anchor", last_name: "Client", ghl_contact_id: "ghl-anchor",
+    custom_fields: {}, outcome_tier: null
+  });
+  db.crs.push({ id: "result-anchor", org_id: "org-1", client_id: "different-client" });
+  await assert.rejects(
+    () => onAnalysisCompleted(ev("analysis.completed", {
+      crsResultId: "result-anchor", requestId: "request-anchor"
+    }, { clientId: "client-anchor" }), db),
+    /different org or client/
+  );
+  assert.equal(db.crs.length, 1);
 });

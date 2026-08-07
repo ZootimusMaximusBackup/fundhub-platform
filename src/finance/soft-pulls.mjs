@@ -90,7 +90,7 @@ export class SoftPullError extends Error {
 
 /** The states a request can be in. Mirrors the CHECK in 077 — there is no
  *  'sent', because there is nothing that sends. */
-export const SOFT_PULL_STATUSES = ["queued", "fulfilled", "failed", "cancelled"];
+export const SOFT_PULL_STATUSES = ["queued", "processing", "fulfilled", "failed", "cancelled"];
 export const REQUESTER_KINDS = ["staff", "client"];
 
 const SELECT_COLUMNS = `
@@ -221,7 +221,7 @@ export async function openRequestFor(db, { clientId }) {
   if (!clientId) throw new SoftPullError("clientId is required");
   const res = await db.query(
     `SELECT ${SELECT_COLUMNS} FROM soft_pull_requests
-      WHERE client_id = $1 AND status = 'queued'
+      WHERE client_id = $1 AND status IN ('queued', 'processing')
       ORDER BY requested_at ASC LIMIT 1`,
     [clientId]
   );
@@ -510,6 +510,143 @@ export async function recordPull(db, {
 }
 
 /**
+ * coordinateCrsResult — store one provider response, close its request and
+ * ingest its tradelines as one transaction. Provider retries return the first
+ * result without touching tradelines again.
+ */
+export async function coordinateCrsResult(db, {
+  orgId,
+  clientId,
+  requestId,
+  provider = "crs_softview",
+  providerResultId,
+  result,
+  outcomeTier = null,
+  allowQueued = false
+} = {}) {
+  if (!orgId || !clientId || !requestId || !providerResultId) {
+    throw new SoftPullError("orgId, clientId, requestId and providerResultId are required");
+  }
+  if (typeof provider !== "string" || !provider.trim()) {
+    throw new SoftPullError("provider is required");
+  }
+  if (typeof providerResultId !== "string" || !providerResultId.trim()) {
+    throw new SoftPullError("providerResultId is required");
+  }
+  if (result === null || result === undefined || typeof result !== "object" || Array.isArray(result)) {
+    throw new SoftPullError("result must be the pull payload object");
+  }
+
+  const providerName = provider.trim();
+  const resultIdentity = providerResultId.trim();
+
+  return withTransaction(db, async (tx) => {
+    // The schema's unique key is org-scoped, but a provider RequestID delivered
+    // under another org must still be refused. This transaction lock serializes
+    // that global check without widening the requested database index.
+    await tx.query(
+      `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
+      [`${providerName}:${resultIdentity}`]
+    );
+
+    const request = (await tx.query(
+      `SELECT ${SELECT_COLUMNS} FROM soft_pull_requests WHERE id = $1 FOR UPDATE`,
+      [requestId]
+    )).rows[0];
+    if (!request) throw new SoftPullError("no such soft pull request", { status: 404 });
+    if (String(request.org_id) !== String(orgId) || String(request.client_id) !== String(clientId)) {
+      throw new SoftPullError("soft pull request belongs to a different org or client", { status: 409 });
+    }
+
+    if (request.status === "fulfilled") {
+      const prior = (await tx.query(
+        `SELECT id, org_id, client_id, provider, provider_result_id, result, outcome_tier, created_at
+           FROM crs_results WHERE id = $1`,
+        [request.crs_result_id]
+      )).rows[0];
+      if (!prior
+          || String(prior.org_id) !== String(orgId)
+          || String(prior.client_id) !== String(clientId)
+          || prior.provider !== providerName
+          || prior.provider_result_id !== resultIdentity) {
+        throw new SoftPullError("request was fulfilled by a different provider result", { status: 409 });
+      }
+      return {
+        crsResult: prior,
+        request: decorate(request),
+        ingested: 0,
+        tradelines: [],
+        replayed: true
+      };
+    }
+    // Production provider work must be claimed first. allowQueued exists only
+    // for legacy/direct callers whose tests predate the processing claim.
+    const fulfilStatus = request.status === "processing"
+      ? "processing"
+      : (allowQueued && request.status === "queued" ? "queued" : null);
+    if (!fulfilStatus) {
+      throw new SoftPullError(`soft pull request is already ${request.status}`, { status: 409 });
+    }
+
+    const existing = (await tx.query(
+      `SELECT id, org_id, client_id, provider, provider_result_id, result, outcome_tier, created_at
+         FROM crs_results
+        WHERE provider = $1 AND provider_result_id = $2
+        FOR UPDATE`,
+      [providerName, resultIdentity]
+    )).rows[0];
+    if (existing) {
+      const linked = (await tx.query(
+        `SELECT id FROM soft_pull_requests WHERE crs_result_id = $1 FOR UPDATE`,
+        [existing.id]
+      )).rows[0];
+      if (String(existing.org_id) !== String(orgId)
+          || String(existing.client_id) !== String(clientId)
+          || !linked
+          || String(linked.id) !== String(requestId)) {
+        throw new SoftPullError("provider result is already anchored to another request, client or org", { status: 409 });
+      }
+      throw new SoftPullError("request and provider result are in an inconsistent state", { status: 409 });
+    }
+
+    const crsRow = (await tx.query(
+      `INSERT INTO crs_results
+         (org_id, client_id, provider, provider_result_id, result, outcome_tier)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (org_id, provider, provider_result_id)
+         WHERE provider IS NOT NULL AND provider_result_id IS NOT NULL
+       DO NOTHING
+       RETURNING id, org_id, client_id, provider, provider_result_id, result, outcome_tier, created_at`,
+      [orgId, clientId, providerName, resultIdentity, JSON.stringify(result), outcomeTier]
+    )).rows[0];
+    if (!crsRow) {
+      throw new SoftPullError("provider result already exists", { status: 409 });
+    }
+
+    const updated = (await tx.query(
+      `UPDATE soft_pull_requests
+          SET status = 'fulfilled', crs_result_id = $2,
+              resolved_at = now(), updated_at = now()
+        WHERE id = $1 AND status = $3
+        RETURNING ${SELECT_COLUMNS}`,
+      [requestId, crsRow.id, fulfilStatus]
+    )).rows[0];
+    if (!updated) {
+      throw new SoftPullError("soft pull request changed before fulfillment", { status: 409 });
+    }
+
+    const ingest = await ingestCrsResult(tx, crsRow);
+    return {
+      crsResult: crsRow,
+      request: decorate(updated),
+      ingested: ingest.ingested,
+      tradelines: ingest.rows,
+      replayed: false
+    };
+  });
+}
+
+/**
  * getLatestPull — the most recent pull output for one client, or null.
  *
  * Ordered by created_at DESC, id DESC. The id is the tiebreaker and it is not
@@ -551,14 +688,14 @@ export async function closeSoftPull(db, { requestId, status, reason } = {}) {
   const res = await db.query(
     `UPDATE soft_pull_requests
         SET status = $2, state_reason = $3, resolved_at = now(), updated_at = now()
-      WHERE id = $1 AND status = 'queued'
+      WHERE id = $1 AND status IN ('queued', 'processing')
       RETURNING ${SELECT_COLUMNS}`,
     [requestId, status, stated]
   );
   if (!res.rows[0]) {
     // Either it does not exist or it is already resolved. Both mean "this call
     // did not do what it was asked", and neither should look like success.
-    throw new SoftPullError("no queued soft pull request with that id", { status: 409 });
+    throw new SoftPullError("no queued or processing soft pull request with that id", { status: 409 });
   }
   return decorate(res.rows[0]);
 }
@@ -599,6 +736,48 @@ export async function getSoftPullRequest(db, requestId) {
     `SELECT ${SELECT_COLUMNS} FROM soft_pull_requests WHERE id = $1`, [requestId]
   );
   return res.rows[0] ? decorate(res.rows[0]) : null;
+}
+
+/** Claim one queued request before any provider login or order. */
+export async function claimSoftPull(db, { requestId, orgId, clientId } = {}) {
+  if (!requestId || !orgId || !clientId) {
+    throw new SoftPullError("requestId, orgId and clientId are required");
+  }
+
+  const claimed = (await db.query(
+    `UPDATE soft_pull_requests
+        SET status = 'processing', updated_at = now()
+      WHERE id = $1 AND org_id = $2 AND client_id = $3 AND status = 'queued'
+      RETURNING ${SELECT_COLUMNS}`,
+    [requestId, orgId, clientId]
+  )).rows[0];
+  if (claimed) return { claimed: true, reason: "claimed", request: decorate(claimed) };
+
+  const current = (await db.query(
+    `SELECT ${SELECT_COLUMNS} FROM soft_pull_requests WHERE id = $1`,
+    [requestId]
+  )).rows[0];
+  if (!current) throw new SoftPullError("no such soft pull request", { status: 404 });
+  if (String(current.org_id) !== String(orgId) || String(current.client_id) !== String(clientId)) {
+    throw new SoftPullError("soft pull request belongs to a different org or client", { status: 409 });
+  }
+  const reason = current.status === "processing" ? "already_claimed" : current.status;
+  return { claimed: false, reason, request: decorate(current) };
+}
+
+/** Keep an ambiguous provider call open and record what needs reconciliation. */
+export async function holdSoftPullForReconciliation(db, { requestId, reason } = {}) {
+  if (!requestId) throw new SoftPullError("requestId is required");
+  const stated = normalizeReason(reason);
+  const row = (await db.query(
+    `UPDATE soft_pull_requests
+        SET state_reason = $2, updated_at = now()
+      WHERE id = $1 AND status = 'processing'
+      RETURNING ${SELECT_COLUMNS}`,
+    [requestId, stated]
+  )).rows[0];
+  if (!row) throw new SoftPullError("no processing soft pull request with that id", { status: 409 });
+  return decorate(row);
 }
 
 /* withTransaction — a REAL transaction, which took catching to get right.

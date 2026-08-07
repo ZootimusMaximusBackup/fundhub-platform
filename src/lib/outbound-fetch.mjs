@@ -88,7 +88,26 @@ export function redact(text) {
     caller that ignores `blocked` still sees a clean failure rather than a
     surprise `undefined`. */
 function held(reason, fence) {
-  return { ok: false, blocked: true, status: 0, body: null, error: reason, fence: fence ?? null };
+  return { ok: false, blocked: true, status: 0, body: null, headers: {}, error: reason, fence: fence ?? null };
+}
+
+/* readHeaders — response headers as a plain lower-cased object.
+
+   Some vendors put the only copy of an identifier a caller needs in a header
+   rather than the body: CRS returns the id its retention log is keyed by as
+   `RequestID`, and nowhere else. Callers cannot reach the Response object —
+   that is the whole point of the chokepoint — so the headers have to come back
+   through here or they are unreachable.
+
+   Never logged and never stored by this module. A header block can carry a
+   Set-Cookie or an echoed Authorization, and the moment it lands somewhere
+   durable it is a credential at rest. */
+function readHeaders(res) {
+  const out = {};
+  try {
+    res?.headers?.forEach?.((value, key) => { out[String(key).toLowerCase()] = value; });
+  } catch { /* a stand-in Response with no iterable headers is not an error */ }
+  return out;
 }
 
 /**
@@ -106,7 +125,8 @@ function held(reason, fence) {
  * @param {number} [opts.timeoutMs]
  * @param {AbortSignal} [opts.signal]
  * @returns {Promise<{ok:boolean, blocked:boolean, status:number, body:any,
- *                     error:string|null, fence:string|null}>}
+ *                     headers:Record<string,string>, error:string|null,
+ *                     fence:string|null}>}
  */
 export async function transmit(url, init = {}, {
   fence,
@@ -137,7 +157,7 @@ export async function transmit(url, init = {}, {
 
   const doFetch = fetchImpl || globalThis.fetch;
   if (typeof doFetch !== "function") {
-    return { ok: false, blocked: false, status: 0, body: null,
+    return { ok: false, blocked: false, status: 0, body: null, headers: {},
       error: "no fetch implementation available", fence };
   }
 
@@ -164,6 +184,7 @@ export async function transmit(url, init = {}, {
       blocked: false,
       status: res.status,
       body: parsed,
+      headers: readHeaders(res),
       error: res.ok ? null : redact(text || `HTTP ${res.status}`),
       fence
     };
@@ -174,6 +195,7 @@ export async function transmit(url, init = {}, {
       blocked: false,
       status: 0,
       body: null,
+      headers: {},
       error: redact(aborted ? `timed out after ${timeoutMs}ms` : String((err && err.message) || err)),
       fence
     };

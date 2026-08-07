@@ -269,8 +269,43 @@ export async function onSaleClosed(event, db) {
 export async function onAnalysisCompleted(event, db) {
   const clientId = await resolveClient(db, event);
   if (!clientId) return;
+
+  const crsResultId = event.payload?.crsResultId ?? null;
+  if (crsResultId) {
+    const anchored = (await db.query(
+      `SELECT id, org_id, client_id FROM crs_results WHERE id = $1`,
+      [crsResultId]
+    )).rows[0];
+    if (!anchored) throw new Error("analysis.completed names a missing crs_results row");
+    if (String(anchored.org_id) !== String(event.orgId)
+        || String(anchored.client_id) !== String(clientId)) {
+      throw new Error("analysis.completed crs_results row belongs to a different org or client");
+    }
+
+
+    // Reuse the durable row. Canonical analysis fields are merged into the raw
+    // provider object because downstream underwriting reads them there; the
+    // provider payload remains intact and no second history row is created.
+    const canonical = {
+      scores: event.payload?.scores,
+      utilization: event.payload?.utilization,
+      reasonCodes: event.payload?.reasonCodes,
+      newInquiries: event.payload?.newInquiries,
+      source: event.payload?.source
+    };
+    await db.query(
+      `UPDATE crs_results
+          SET result = result || $2::jsonb,
+              outcome_tier = COALESCE(outcome_tier, $3),
+              updated_at = now()
+        WHERE id = $1`,
+      [crsResultId, JSON.stringify(canonical), event.payload?.outcomeTier ?? null]
+    );
+    return;
+  }
+
   const result = { ...(event.payload || {}), __event_id: event.id };
-  // Idempotent: skip if we already stored this exact event for the client.
+  // Legacy unanchored events keep their event-id replay guard and insert path.
   const dup = await db.query(
     `SELECT 1 FROM crs_results WHERE client_id = $1 AND result->>'__event_id' = $2 LIMIT 1`,
     [clientId, String(event.id)]

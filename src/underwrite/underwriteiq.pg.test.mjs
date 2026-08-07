@@ -49,6 +49,9 @@ before(async () => {
 
 after(async () => {
   if (!HAS_DB) return;
+  // Anchored CRS events no longer repeat the email in their payload. Remove
+  // this test's event rows by client before teardown removes the result anchor.
+  if (clientId) await db.query(`DELETE FROM events WHERE client_id = $1`, [clientId]).catch(() => null);
   if (orgId) await teardownSimulated(db, { orgId, clientId }).catch(() => null);
   await close();
 });
@@ -66,7 +69,14 @@ test("UnderwriteIQ chain: sim client → CRS emit → decision stamp → engine 
   //    adapter entrypoint, the way a live pull's result would arrive.
   const payload = buildSimulatedCrsPayload({ email: loaded.email, name: "Simulated Client" });
 
-  const emitted = await emitCrsResult({ db, engineResult: payload, clientId });
+  const crsResultId = (await db.query(
+    `SELECT id FROM crs_results WHERE client_id = $1 ORDER BY created_at DESC, id DESC LIMIT 1`,
+    [clientId]
+  )).rows[0]?.id;
+  assert.ok(crsResultId, "simulated pull must have a stored CRS result anchor");
+  const emitted = await emitCrsResult({
+    db, engineResult: payload, clientId, crsResultId, requestId: "simulated-underwrite-request"
+  });
   assert.equal(emitted.ok, true, JSON.stringify(emitted));
   const emittedNames = emitted.emitted.map((e) => e.name);
   assert.ok(emittedNames.includes("analysis.completed"), "adapter must emit analysis.completed");
@@ -101,10 +111,9 @@ test("UnderwriteIQ chain: sim client → CRS emit → decision stamp → engine 
     )
   ]);
   assert.ok(tradelinesRes.rows.length > 0, "tradelines must be stored for this client");
-  // The event pipeline writes its own normalized crs_results row (top-level
-  // scores.ex/eq/tu) on top of the one loadSimulatedClient inserted directly
-  // (raw engine shape) — toBureaus/triMerge needs at least one row shaped that way.
-  assert.ok(crsRes.rows.length >= 2, "both the simulated pull and the emitted analysis.completed result must be stored");
+  // analysis.completed is now anchored to the stored pull. It announces that
+  // row instead of making a second history entry for the same provider result.
+  assert.equal(crsRes.rows.length, 1, "the anchored event duplicated the stored CRS result");
 
   const adapter = toBureaus({
     tradelines: tradelinesRes.rows,
