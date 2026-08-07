@@ -59,7 +59,7 @@ flowchart LR
   ext_twilio --> adp_twilio
   adp_bland -- "call.completed" --> BUS
   adp_calcom -- "booking.created<br/>booking.rescheduled<br/>booking.cancelled<br/>booking.noshow" --> BUS
-  adp_clickfunnels -- "entry.captured<br/>survey.submitted" --> BUS
+  adp_clickfunnels -- "entry.captured<br/>survey.submitted<br/>booking.created<br/>booking.rescheduled<br/>booking.cancelled" --> BUS
   adp_commas -- "diagnostic.paid<br/>deposit.paid<br/>sale.closed<br/>payment.received<br/>payment.failed" --> BUS
   adp_crs -- "analysis.completed<br/>decision.rendered" --> BUS
   adp_hubstaff -- "—" --> BUS
