@@ -132,6 +132,60 @@ test("mapToCanonical: no email => empty array", () => {
   assert.deepEqual(mapToCanonical(null), []);
 });
 
+test("mapToCanonical: appointment created => booking.created only (no entry.captured)", () => {
+  const names = mapToCanonical({
+    email: "a@b.com",
+    type: "appointments/scheduled_event.created",
+    answers: null
+  }).map((c) => c.name);
+  assert.deepEqual(names, ["booking.created"]);
+});
+
+test("mapToCanonical: appointment rescheduled => booking.rescheduled only", () => {
+  const names = mapToCanonical({
+    email: "a@b.com",
+    type: "appointments/scheduled_event.rescheduled"
+  }).map((c) => c.name);
+  assert.deepEqual(names, ["booking.rescheduled"]);
+});
+
+test("mapToCanonical: appointment canceled => booking.cancelled only", () => {
+  const names = mapToCanonical({
+    email: "a@b.com",
+    type: "appointments/scheduled_event.canceled"
+  }).map((c) => c.name);
+  assert.deepEqual(names, ["booking.cancelled"]);
+});
+
+test("normalizeClickFunnelsEvent: appointment reads data.primary_contact + slot fields", () => {
+  const evt = normalizeClickFunnelsEvent({
+    id: "appt_99",
+    event: "appointments/scheduled_event.created",
+    data: {
+      start_on: "2026-08-10T15:00:00Z",
+      end_on: "2026-08-10T15:30:00Z",
+      tzid: "America/Los_Angeles",
+      event_type: { name: "Strategy Session" },
+      primary_contact: {
+        email_address: "BOOK@EXAMPLE.COM",
+        first_name: "Book",
+        last_name: "Me",
+        phone_number: "555-222-3333"
+      }
+    }
+  });
+  assert.equal(evt.email, "book@example.com");
+  assert.equal(evt.name, "Book Me");
+  assert.equal(evt.phone, "555-222-3333");
+  assert.equal(evt.type, "appointments/scheduled_event.created");
+  assert.equal(evt.startTime, "2026-08-10T15:00:00Z");
+  assert.equal(evt.endTime, "2026-08-10T15:30:00Z");
+  assert.equal(evt.tzid, "America/Los_Angeles");
+  assert.equal(evt.funnel, "Strategy Session");
+  assert.equal(evt.bookingUid, "appt_99");
+  assert.equal(evt.answers, null);
+});
+
 // --- full adapter ------------------------------------------------------------
 test("handleClickFunnelsWebhook: bad signature => 401, no emit", async () => {
   _resetOrgCache(); clearHandlers();
@@ -205,6 +259,80 @@ test("handleClickFunnelsWebhook: a1/a2 referral params flow into entry.captured 
   const entryPayload = store.find((r) => r.name === "entry.captured")?.payload;
   assert.equal(entryPayload?.a1, "tier1-aff");
   assert.equal(entryPayload?.a2, "tier2-aff");
+});
+
+test("handleClickFunnelsWebhook: appointment created => booking.created, calcom-shaped payload, no entry.captured", async () => {
+  _resetOrgCache(); clearHandlers();
+  const store = [];
+  const seen = [];
+  on("booking.created", (e) => seen.push(e.name));
+  on("entry.captured", (e) => seen.push(e.name));
+  const db = {
+    query(sql, params) {
+      if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
+      if (/INSERT INTO events/.test(sql)) {
+        store.push({ name: params[1], payload: params[5] });
+        return { rows: [{ id: "evt-1" }] };
+      }
+      return { rows: [] };
+    }
+  };
+  const raw = JSON.stringify({
+    id: "cf_appt_1",
+    event: "appointments/scheduled_event.created",
+    data: {
+      start_on: "2026-08-12T18:00:00Z",
+      end_on: "2026-08-12T18:30:00Z",
+      tzid: "America/New_York",
+      event_type: { name: "Closer Call" },
+      primary_contact: {
+        email_address: "appt@example.com",
+        first_name: "Appt",
+        last_name: "Lead",
+        phone_number: "555-444-5555"
+      }
+    }
+  });
+  const res = await handleClickFunnelsWebhook({ db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.emitted.map((e) => e.name), ["booking.created"]);
+  assert.deepEqual(seen, ["booking.created"]);
+  const payload = store.find((r) => r.name === "booking.created")?.payload;
+  assert.deepEqual(payload, {
+    bookingUid: "cf_appt_1",
+    startTime: "2026-08-12T18:00:00Z",
+    endTime: "2026-08-12T18:30:00Z",
+    email: "appt@example.com",
+    name: "Appt Lead",
+    meetingUrl: null,
+    rescheduleUid: null,
+    source: "clickfunnels"
+  });
+});
+
+test("handleClickFunnelsWebhook: appointment canceled => booking.cancelled only", async () => {
+  _resetOrgCache(); clearHandlers();
+  const seen = [];
+  on("booking.cancelled", (e) => seen.push(e.name));
+  on("entry.captured", (e) => seen.push(e.name));
+  const raw = JSON.stringify({
+    id: "cf_appt_cancel",
+    event: "appointments/scheduled_event.canceled",
+    data: {
+      start_on: "2026-08-12T18:00:00Z",
+      end_on: "2026-08-12T18:30:00Z",
+      primary_contact: { email_address: "cancel@example.com", first_name: "C" }
+    }
+  });
+  const res = await handleClickFunnelsWebhook({
+    db: fakeDb(),
+    rawBody: raw,
+    signatureHeader: sign(raw),
+    secret: SECRET
+  });
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.emitted.map((e) => e.name), ["booking.cancelled"]);
+  assert.deepEqual(seen, ["booking.cancelled"]);
 });
 
 test("handleClickFunnelsWebhook: no_email => 200, no emit", async () => {

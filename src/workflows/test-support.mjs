@@ -132,10 +132,34 @@ export function pgFake(seed = {}) {
         return { rows: [] };
       }
 
-      // --- events (lead-temperature classification) ---
+      // --- events (lead-temperature classification + bus emit) ---
       if (/SELECT DISTINCT name FROM events/.test(sql)) {
         const [clientId, names] = params;
         return { rows: events.filter((e) => e.client_id === clientId && names.includes(e.name)).map((e) => ({ name: e.name })) };
+      }
+      if (/INSERT INTO events/.test(sql)) {
+        const [orgId, name, version, idem, clientId, payload] = params;
+        if (idem && events.find((e) => e.org_id === orgId && e.idempotency_key === idem)) {
+          return { rows: [] }; // ON CONFLICT DO NOTHING
+        }
+        const id = "evt-" + ++n;
+        events.push({
+          id, org_id: orgId, name, version, idempotency_key: idem,
+          client_id: clientId, payload
+        });
+        return { rows: [{ id }] };
+      }
+      // Card Stacking round emitter — latest / next round number
+      if (/SELECT \* FROM funding_rounds[\s\S]*ORDER BY round_number DESC/.test(sql)) {
+        const rounds = fundingRounds
+          .filter((r) => r.org_id === params[0] && r.client_id === params[1])
+          .sort((a, b) => b.round_number - a.round_number);
+        return { rows: rounds[0] ? [rounds[0]] : [] };
+      }
+      if (/SELECT COALESCE\(MAX\(round_number\), 0\)/.test(sql)) {
+        const rounds = fundingRounds.filter((r) => r.org_id === params[0] && r.client_id === params[1]);
+        const max = rounds.reduce((m, r) => Math.max(m, Number(r.round_number) || 0), 0);
+        return { rows: [{ max }] };
       }
 
       // --- message_templates prefix lookup (BS-01 grid cell -> real template_key) ---

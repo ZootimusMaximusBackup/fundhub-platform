@@ -15,6 +15,10 @@ test("happy path: APPROVED creates a task and moves the card to Approvals", asyn
   assert.equal(res.task.created, true);
   assert.equal(res.card.moved, true);
   assert.equal(db.cards[0].stage_id, "st-approved");
+  // Card Stacking emitter: bank-mail path must fire round.approved, not only move the card.
+  assert.equal(res.card.roundEvent?.eventName, "round.approved");
+  assert.equal(res.card.roundEvent?.payload?.product, "card_stacking");
+  assert.equal(db.events.filter((e) => e.name === "round.approved").length, 1);
 });
 
 test("branch: DENIED creates the routing task but does not move any card", async () => {

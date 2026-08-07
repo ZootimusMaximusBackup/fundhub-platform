@@ -1,7 +1,7 @@
 # End-to-End Verification Report
 
-Generated: 2026-08-07T03:31:06.465Z
-Run id: verify-1786073465120
+Generated: 2026-08-07T03:39:26.226Z
+Run id: verify-1786073965279
 Node: v22.21.1
 DATABASE_URL: 127.0.0.1/fundhub_verify
 Stance: skeptical operator / business architect. Prefer SILENTLY-DID-NOTHING and UNVERIFIED over a false pass.
@@ -158,28 +158,28 @@ _None recorded in this run._
 
 **Usable for a real person today: YES**
 
-Primary client (lead): 985b1685-5453-4f0e-833d-85a8182620ca / e2e_verify.funding.1786073465127@verify.local
-Simulated funding client: b8dfc088-a659-4ed7-a005-ee1fc55a4495 / sim+1786073465149@demo.fundhub.local
+Primary client (lead): 18cfd774-f155-49ab-b458-82373bf79a5c / e2e_verify.funding.1786073965286@verify.local
+Simulated funding client: bd32a5a7-9bbe-4f2e-8a8f-bb8a0f244103 / sim+1786073965312@demo.fundhub.local
 Sale amount: 3000.00 (want 3000)
 Closer front commission: 500.00 (want 500)
 Advisor back commission: 125.00 (want 125)
 Closeout fee: 5000.00 (want 5000)
-GHL link: dry-ghl-985b16855453
-Contract: a70263c0-c21e-448d-960c-bd32fad41eb0
+GHL link: dry-ghl-18cfd774f155
+Contract: eb0af0e8-3a38-495a-9cda-4b08cc2deff7
 Messages queued: 2
 
 Operator verdict: YES for the money spine; still check GHL link, contract send, and live webhooks separately.
 
 | Step | Status | Persisted |
 |---|---|---|
-| Lead captured → client row | PASS | client.id=985b1685-5453-4f0e-833d-85a8182620ca email=e2e_verify.funding.1786073465127@verify.local |
-| GHL linkage | PASS | dry-ghl-985b16855453 |
-| Booking → closer task | PASS | task.id=8732e6c6-9c0f-4da5-b34d-1cc2c05cca87 title=Strategy session booked |
-| Consent captured | PASS | kind=soft_pull_consent id=9263b5e6-cf7d-4b07-88a3-08fce4758a17 |
+| Lead captured → client row | PASS | client.id=18cfd774-f155-49ab-b458-82373bf79a5c email=e2e_verify.funding.1786073965286@verify.local |
+| GHL linkage | PASS | dry-ghl-18cfd774f155 |
+| Booking → closer task | PASS | task.id=8630ed87-c4d9-4147-b8f1-d91634be04ee title=Strategy session booked |
+| Consent captured | PASS | kind=soft_pull_consent id=72a10621-259d-4fd4-8ac8-6f3ad1543c5d |
 | CRS → tradelines | PASS | funding_client_tls=4 sim_tls=4 ingested=4 |
-| Pipeline card | PASS | card=1afca98e-1e22-46f4-8fbd-b8e2db4c6560 stage=new_lead |
+| Pipeline card | PASS | card=b7fa6b34-c65a-41e6-aee6-6a9d8019cc3e stage=new_lead |
 | Sale + $500 closer commission + entitlement | PASS | sales=2 front=500.00 ents=credit-analysis-report,funding-snapshot |
-| Contract | PASS | id=a70263c0-c21e-448d-960c-bd32fad41eb0 status=draft hash=none |
+| Contract | PASS | id=eb0af0e8-3a38-495a-9cda-4b08cc2deff7 status=draft hash=none |
 | Round funded + closeout 10% | PASS | fee=5000.00 balance_due=5000.00 basis=50000.00 |
 | Messages queued | PASS | total=2 queued=2 keys=EMAIL-F07-FUNDING-LOCKED,SMS-F07-FUNDING-LOCKED |
 
@@ -187,7 +187,7 @@ Operator verdict: YES for the money spine; still check GHL link, contract send, 
 
 **Usable for a real person today: YES**
 
-Client 79bbea7b-2629-4e35-96a6-67051f2b9c32
+Client ddbadfd8-4624-4a2b-873d-d095a212b764
 DIY sale: 1000.00
 Entitlements: metro2-letter-pack
 Ledger rows: 0
@@ -203,15 +203,15 @@ Operator verdict: YES for sale/entitlement separation; letter delivery still ven
 
 **Usable for a real person today: YES**
 
-Inquiry ac337c1a-ccd7-4183-b8f3-1d3d3201f040; case a0db5f9c-8edc-494c-b7e7-90b8eba23b8d
+Inquiry a42e2f8c-9f51-4fb1-bb36-90ce433fbe8e; case 064cfbe7-49c4-4d1d-8f76-b06c9d47be75
 call_state machine: 11 states exercised
 Status bleed on call_state: no
 Operator verdict: YES for status separation; real Bland voice still credential-gated.
 
 | Step | Status | Persisted |
 |---|---|---|
-| Inquiry logged | PASS | id=ac337c1a-ccd7-4183-b8f3-1d3d3201f040 status=open call_state=not_started |
-| Case created | PASS | case=a0db5f9c-8edc-494c-b7e7-90b8eba23b8d |
+| Inquiry logged | PASS | id=a42e2f8c-9f51-4fb1-bb36-90ce433fbe8e status=open call_state=not_started |
+| Case created | PASS | case=064cfbe7-49c4-4d1d-8f76-b06c9d47be75 |
 | All 11 call_states without status bleed | PASS | status remained open |
 | cleared → inquiry.removed → C-03 | PASS | {"done":true,"branch":"resume","task":{"created":true}} |
 
@@ -219,7 +219,7 @@ Operator verdict: YES for status separation; real Bland voice still credential-g
 
 **Usable for a real person today: NO**
 
-Agents in org: draft=GHL-RECON shadow=VF-SHADOW live=VF-LIVE
+Agents in org: draft=AG-01 shadow=VF-SHADOW live=VF-LIVE
 handleInbound result: {"ok":true,"reason":"no_api_key","agent":"VF-LIVE","shadowed":true,"wouldSend":"[SHADOW — no API key] Model was not called. Inbound: Hi, what are my next steps?"}
 Shadow logs: 2; agent outbound: 0
 Operator verdict: NO for live client conversations — runtime has never sent a real reply; without ANTHROPIC_API_KEY it shadows. Do not put a client on an agent today.
@@ -271,8 +271,8 @@ Operator note: Inngest does not schedule anything without INNGEST_EVENT_KEY. Thi
 
 **Usable for a real person today: YES**
 
-Victim client 22d558eb-f0f3-4228-85d2-857344ff0b33 in org 35b667b7-a5ab-4371-9a8b-7f4aa2e31dce
-Other-org client 870097c6-f34c-4d74-8833-45aaa28675dc
+Victim client 7db66e5c-34c3-4dd1-abad-29aac8b23d4a in org 209ea23c-6b89-48d8-b6e3-51399835caee
+Other-org client b3185b8b-be8e-4950-9b71-ea7de50351d3
 Document id: none
 Attacker stance: direct URL/API, id swap, org_id spoof, forged token, affiliate reach.
 
@@ -377,7 +377,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | DATA | ADVERSARIAL | attacker | Expired payment link status is expired | src/payment-links/index.mjs |
 | PASS | DATA | ADVERSARIAL | attacker | booking.cancelled emits without throwing | src/events/canonical.mjs |
 | PASS | DATA | ADVERSARIAL | attacker | payment.failed emits without creating a sale | src/handlers/money-chain.mjs |
-| PASS | DATA | ADVERSARIAL | attacker | Malformed currency amount refused (no sale) |  |
+| PASS | DATA | ADVERSARIAL | attacker | String amount coerced safely to 3000 or refused |  |
 | PASS | DATA | ADVERSARIAL | attacker | Tampered contract fails integrity check | src/contracts/sign.mjs |
 | UNVERIFIED | DATA | ADVERSARIAL | attacker | Quiet-hours message holds then releases |  |
 | PASS | DATA | WORKFLOWS | system | Workflow registry has 49–50 functions (contract chaser + sweeper included) | src/workflows/index.mjs |

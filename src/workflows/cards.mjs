@@ -2,7 +2,27 @@
 // find-or-create against cards/pipelines/pipeline_stages (seeded in
 // db/seed/002_pipelines.sql — pipeline/stage keys must match that seed exactly).
 // Idempotent: find-or-create + a plain UPDATE, safe to run twice.
-export async function moveCardToStage(db, { orgId, clientId, pipelineKey, stageKey }) {
+//
+// Card Stacking (funding_card_stacking): after a successful move, emits the
+// matching round.* event so money-chain + funding workflows fire. Funded moves
+// are refused when funded_amount is missing/zero/negative (CLOSEOUT-FEE-BASIS).
+
+import {
+  PIPELINE_KEY as CARD_STACKING_PIPELINE,
+  eventForStage,
+  guardFundedAmount,
+  emitCardStackingRoundTransition
+} from "../funding/card-stacking-rounds.mjs";
+
+export async function moveCardToStage(db, {
+  orgId,
+  clientId,
+  pipelineKey,
+  stageKey,
+  approvedAmount = null,
+  fundedAmount = null,
+  roundNumber = null
+} = {}) {
   // Org is required. Looking up by key alone used to pick another company's
   // pipeline when two orgs shared the same key names (every org has "sales"),
   // then INSERT a card with this org_id and that foreign pipeline_id. The
@@ -20,18 +40,80 @@ export async function moveCardToStage(db, { orgId, clientId, pipelineKey, stageK
   const row = stage.rows[0];
   if (!row) return { moved: false, reason: "stage_not_found" };
 
+  let resolvedFunded = null;
+  let resolvedApproved = approvedAmount != null ? Number(approvedAmount) : null;
+  let resolvedRoundNumber = roundNumber != null ? Number(roundNumber) : null;
+
+  // Hard guard BEFORE the card moves — never park a card on funded with no dollars.
+  if (pipelineKey === CARD_STACKING_PIPELINE && stageKey === "funded") {
+    const guard = await guardFundedAmount(db, {
+      orgId,
+      clientId,
+      fundedAmount,
+      approvedAmount,
+      roundNumber: resolvedRoundNumber
+    });
+    if (!guard.ok) {
+      return {
+        moved: false,
+        reason: guard.reason,
+        message: guard.message,
+        suggestedFundedAmount: guard.suggestedFundedAmount ?? null
+      };
+    }
+    resolvedFunded = guard.fundedAmount;
+    if (resolvedApproved == null && guard.approvedAmount != null) {
+      resolvedApproved = guard.approvedAmount;
+    }
+    if (guard.round && resolvedRoundNumber == null) {
+      resolvedRoundNumber = Number(guard.round.round_number);
+    }
+  }
+
   const existing = await db.query(
     `SELECT id FROM cards WHERE client_id = $1 AND pipeline_id = $2 LIMIT 1`,
     [clientId, row.pipeline_id]
   );
+  let created = false;
   if (existing.rows[0]) {
     await db.query(`UPDATE cards SET stage_id = $2 WHERE id = $1`, [existing.rows[0].id, row.stage_id]);
-    return { moved: true, created: false };
+  } else {
+    await db.query(
+      `INSERT INTO cards (org_id, client_id, pipeline_id, stage_id) VALUES ($1,$2,$3,$4)
+       ON CONFLICT (client_id, pipeline_id) DO UPDATE SET stage_id = EXCLUDED.stage_id`,
+      [orgId, clientId, row.pipeline_id, row.stage_id]
+    );
+    created = true;
   }
-  await db.query(
-    `INSERT INTO cards (org_id, client_id, pipeline_id, stage_id) VALUES ($1,$2,$3,$4)
-     ON CONFLICT (client_id, pipeline_id) DO UPDATE SET stage_id = EXCLUDED.stage_id`,
-    [orgId, clientId, row.pipeline_id, row.stage_id]
-  );
-  return { moved: true, created: true };
+
+  let roundEvent = null;
+  if (pipelineKey === CARD_STACKING_PIPELINE && eventForStage(stageKey)) {
+    try {
+      // Dynamic import avoids cards ↔ register-all ↔ inquiry-gate ↔ cards cycle.
+      const { ensureRegistered } = await import("../register-all.mjs");
+      ensureRegistered();
+      roundEvent = await emitCardStackingRoundTransition(db, {
+        orgId,
+        clientId,
+        stageKey,
+        roundNumber: resolvedRoundNumber,
+        approvedAmount: resolvedApproved,
+        fundedAmount: resolvedFunded ?? (fundedAmount != null ? Number(fundedAmount) : null)
+      });
+    } catch (err) {
+      // Card position is already correct — never undo the move for an emit failure.
+      console.warn(
+        `[cards] card_stacking emit failed after move ` +
+        `(client=${clientId} stage=${stageKey}): ${String(err?.message || err).slice(0, 200)}`
+      );
+      roundEvent = { emitted: false, reason: "emit_failed", error: String(err?.message || err) };
+    }
+  }
+
+  return {
+    moved: true,
+    created,
+    fundedAmount: resolvedFunded,
+    roundEvent
+  };
 }

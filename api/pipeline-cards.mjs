@@ -83,18 +83,36 @@ export default async function handler(req, res) {
       });
     }
 
+    const numOrNull = (v) => {
+      if (v === undefined || v === null || v === "") return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    };
+
     const result = await moveCardToStage(db, {
       orgId,
       clientId: String(body.client_id).trim(),
       pipelineKey,
-      stageKey
+      stageKey,
+      approvedAmount: numOrNull(body.approved_amount ?? body.approvedAmount),
+      fundedAmount: numOrNull(body.funded_amount ?? body.fundedAmount),
+      roundNumber: numOrNull(body.round_number ?? body.roundNumber)
     });
 
     if (!result.moved) {
+      if (result.reason === "funded_amount_required") {
+        return res.status(400).json({
+          ok: false,
+          error: "funded_amount_required",
+          message: result.message ||
+            "Cannot move to funded without funded_amount greater than zero.",
+          suggested_funded_amount: result.suggestedFundedAmount ?? null
+        });
+      }
       return res.status(404).json({
         ok: false,
         error: result.reason || "stage_not_found",
-        message: "That pipeline stage was not found."
+        message: result.message || "That pipeline stage was not found."
       });
     }
 
@@ -104,7 +122,15 @@ export default async function handler(req, res) {
       client_id: String(body.client_id).trim(),
       pipeline_key: pipelineKey,
       stage_key: stageKey,
-      created: !!result.created
+      created: !!result.created,
+      funded_amount: result.fundedAmount ?? null,
+      round_event: result.roundEvent
+        ? {
+            event: result.roundEvent.eventName || null,
+            deduped: !!result.roundEvent.deduped,
+            round_number: result.roundEvent.roundNumber ?? null
+          }
+        : null
     });
   } catch (err) {
     if (dbDown(res, err)) return;

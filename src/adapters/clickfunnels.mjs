@@ -1,4 +1,4 @@
-// ClickFunnels webhook adapter — lead capture + survey submission events.
+// ClickFunnels webhook adapter — lead capture, survey submission, appointments.
 //
 // ClickFunnels is the funnel front-end. This adapter translates opt-in / form
 // submissions into canonical bus events so downstream handlers (GHL contact
@@ -34,6 +34,19 @@ export function verifyClickFunnelsSignature(rawBody, header, secret) {
   }
 }
 
+// Appointment webhook types (ClickFunnels booking calendar — not Cal.com).
+const APPOINTMENT_CREATED = "appointments/scheduled_event.created";
+const APPOINTMENT_RESCHEDULED = "appointments/scheduled_event.rescheduled";
+const APPOINTMENT_CANCELED = "appointments/scheduled_event.canceled";
+
+function isAppointmentType(type) {
+  return (
+    type === APPOINTMENT_CREATED ||
+    type === APPOINTMENT_RESCHEDULED ||
+    type === APPOINTMENT_CANCELED
+  );
+}
+
 // --- 2. Normalize the webhook body into a flat event ------------------------
 // Reads defensively from CF Classic + 2.0 shapes. Returns null when no usable
 // data is found (caller treats as no-op).
@@ -43,10 +56,28 @@ export function normalizeClickFunnelsEvent(body) {
   // CF 2.0 wraps everything under `data`; Classic may have a top-level contact.
   const d = (b.data && typeof b.data === "object" ? b.data : null) || b;
 
-  // Contact block: CF Classic = contact at top or data.contact; 2.0 = data.contact.
+  // Event type / hook type (needed before contact pick — appointments use
+  // data.primary_contact, not data.contact).
+  const type = String(
+    b.type ||
+    b.event ||
+    b.event_type ||
+    b.hook ||
+    d.type ||
+    d.event ||
+    d.event_type ||
+    ""
+  ).toLowerCase();
+
+  // Contact block: appointments → data.primary_contact; otherwise CF Classic /
+  // 2.0 contact shapes.
+  const primary =
+    d.primary_contact && typeof d.primary_contact === "object" ? d.primary_contact : null;
   const contact =
+    (isAppointmentType(type) && primary) ||
     (d.contact && typeof d.contact === "object" ? d.contact : null) ||
     (b.contact && typeof b.contact === "object" ? b.contact : null) ||
+    primary ||
     d ||
     b;
 
@@ -82,7 +113,11 @@ export function normalizeClickFunnelsEvent(body) {
     ""
   ).trim();
 
-  // Funnel name / page name for tracing.
+  // Funnel name / page name for tracing. Appointments: event_type.name.
+  const eventTypeName =
+    (d.event_type && typeof d.event_type === "object" && d.event_type.name) ||
+    (b.event_type && typeof b.event_type === "object" && b.event_type.name) ||
+    "";
   const funnel = String(
     b.funnel_name ||
     b.funnel ||
@@ -90,20 +125,9 @@ export function normalizeClickFunnelsEvent(body) {
     d.funnel ||
     b.page_name ||
     d.page_name ||
+    eventTypeName ||
     ""
   ).trim();
-
-  // Event type / hook type.
-  const type = String(
-    b.type ||
-    b.event ||
-    b.event_type ||
-    b.hook ||
-    d.type ||
-    d.event ||
-    d.event_type ||
-    ""
-  ).toLowerCase();
 
   // Stable ID for idempotency: prefer CF's own event/contact/submission id.
   const id =
@@ -117,15 +141,17 @@ export function normalizeClickFunnelsEvent(body) {
 
   // Survey answers: CF Classic → contact.survey_answers or data.survey_answers.
   // CF 2.0 → data.formData, data.answers, data.fields, contact.custom_fields.
-  const answers =
-    contact.survey_answers ||
-    d.survey_answers ||
-    d.formData ||
-    d.form_data ||
-    d.answers ||
-    d.fields ||
-    contact.custom_fields ||
-    null;
+  // Skip for appointments — formData-style keys must not turn a booking into a survey.
+  const answers = isAppointmentType(type)
+    ? null
+    : contact.survey_answers ||
+      d.survey_answers ||
+      d.formData ||
+      d.form_data ||
+      d.answers ||
+      d.fields ||
+      contact.custom_fields ||
+      null;
 
   // Referral attribution params (a1=tier1 affiliate, a2=tier2 affiliate).
   // CF appends these as query params on the funnel URL; they appear either at top-
@@ -137,6 +163,12 @@ export function normalizeClickFunnelsEvent(body) {
     b.a2 || d.a2 || contact.a2 || contact.custom_fields?.a2 || ""
   ).trim() || null;
 
+  // Appointment slot fields — same names the Cal.com adapter emits downstream.
+  const startTime = d.start_on || d.startTime || b.start_on || null;
+  const endTime = d.end_on || d.endTime || b.end_on || null;
+  const tzid = d.tzid || b.tzid || null;
+  const bookingUid = id ? String(id) : null;
+
   return {
     id: id ? String(id) : null,
     type,
@@ -146,16 +178,27 @@ export function normalizeClickFunnelsEvent(body) {
     funnel,
     answers,
     a1,
-    a2
+    a2,
+    bookingUid,
+    startTime,
+    endTime,
+    tzid,
+    meetingUrl: null,
+    rescheduleUid: null
   };
 }
 
 // --- 3. Map a normalized event to canonical events (pure) -------------------
-// Every opt-in / form submission emits `entry.captured`.
-// If the payload also carries survey answers, emit `survey.submitted` too.
+// Appointments → booking.* only (never entry.captured).
+// Opt-in / form submissions → entry.captured (+ survey.submitted when answers).
 // Returns [] when there is no email (nothing to emit).
 export function mapToCanonical(evt) {
   if (!evt || !evt.email) return [];
+
+  const type = String(evt.type || "").toLowerCase();
+  if (type === APPOINTMENT_CREATED) return [{ name: "booking.created" }];
+  if (type === APPOINTMENT_RESCHEDULED) return [{ name: "booking.rescheduled" }];
+  if (type === APPOINTMENT_CANCELED) return [{ name: "booking.cancelled" }];
 
   const out = [];
   out.push({ name: "entry.captured" });
@@ -212,10 +255,45 @@ export async function handleClickFunnelsWebhook({ db, rawBody, signatureHeader, 
 
   const emitted = [];
   for (const c of canonical) {
-    const payload =
-      c.name === "survey.submitted"
-        ? { email: evt.email, name: evt.name, phone: evt.phone, funnel: evt.funnel, source: "clickfunnels", answers: evt.answers, a1: evt.a1, a2: evt.a2 }
-        : { email: evt.email, name: evt.name, phone: evt.phone, funnel: evt.funnel, source: "clickfunnels", a1: evt.a1, a2: evt.a2 };
+    let payload;
+    if (c.name === "survey.submitted") {
+      payload = {
+        email: evt.email,
+        name: evt.name,
+        phone: evt.phone,
+        funnel: evt.funnel,
+        source: "clickfunnels",
+        answers: evt.answers,
+        a1: evt.a1,
+        a2: evt.a2
+      };
+    } else if (
+      c.name === "booking.created" ||
+      c.name === "booking.rescheduled" ||
+      c.name === "booking.cancelled"
+    ) {
+      // Same shape as src/adapters/calcom.mjs so booking handlers stay unchanged.
+      payload = {
+        bookingUid: evt.bookingUid,
+        startTime: evt.startTime,
+        endTime: evt.endTime,
+        email: evt.email,
+        name: evt.name,
+        meetingUrl: evt.meetingUrl,
+        rescheduleUid: evt.rescheduleUid,
+        source: "clickfunnels"
+      };
+    } else {
+      payload = {
+        email: evt.email,
+        name: evt.name,
+        phone: evt.phone,
+        funnel: evt.funnel,
+        source: "clickfunnels",
+        a1: evt.a1,
+        a2: evt.a2
+      };
+    }
 
     const idKey = evt.id ? `clickfunnels:${evt.id}:${c.name}` : undefined;
     const res = await emit(db, c.name, payload, { idempotencyKey: idKey });
