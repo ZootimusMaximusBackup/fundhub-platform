@@ -2,6 +2,7 @@
 
 import { sensitiveBureaus, parseBureaus } from "../lenders/match.mjs";
 import { moveCardToStage } from "../workflows/cards.mjs";
+import { createTask } from "../lib/create-task.mjs";
 
 const BUREAUS = ["EX", "EQ", "TU"];
 const ACTIVE = ["Queued", "Scheduled", "In Progress", "Escalated", "Blocked"];
@@ -110,28 +111,20 @@ export async function attachGateToRound(db, {
 
   let task = null;
   if (status.allBlocked) {
-    const existing = await db.query(
-      `SELECT id FROM tasks
-        WHERE org_id = $1::uuid
-          AND client_id = $2::uuid
-          AND source_workflow = 'inquiry-gate-all-blocked'
-          AND done = false
-        LIMIT 1`,
-      [orgId, clientId]
-    );
-    if (!existing.rows[0]) {
-      const t = await db.query(
-        `INSERT INTO tasks (org_id, client_id, title, body, source_workflow, done)
-         VALUES (
-           $1::uuid, $2::uuid,
-           'All bureaus gated — inquiry removal blocking lender match',
-           'Every bureau has an active inquiry-removal case. Round may still start; decide whether to override or wait.',
-           'inquiry-gate-all-blocked',
-           false
-         ) RETURNING *`,
-        [orgId, clientId]
-      );
-      task = t.rows[0];
+    const created = await createTask(db, {
+      orgId,
+      clientId,
+      title: "All bureaus gated — inquiry removal blocking lender match",
+      body: "Every bureau has an active inquiry-removal case. Round may still start; decide whether to override or wait.",
+      sourceWorkflow: "inquiry-gate-all-blocked",
+      assigneeRole: "inquiry_specialist",
+      // One open gate task per client — title-key, not event-key.
+      dedupeOn: "title"
+    });
+    if (created?.created && created.id) {
+      task = { id: created.id };
+    } else if (created?.id) {
+      task = { id: created.id };
     }
   }
 

@@ -112,8 +112,12 @@ Declared in `canonical.mjs`, emitted or emittable, with no Inngest function list
 - `booking.cancelled`
 - `decision.rendered`
 - `sale.closed`
+- `round.closeout`
 - `file.finalized`
 - `payment.failed`
+- `inquiry.gate.raised`
+- `inquiry.gate.clear`
+- `inquiry.docs.needed`
 - `letter.generated`
 - `message.queued`
 - `message.sent`

@@ -1,14 +1,14 @@
 # End-to-End Verification Report
 
-Generated: 2026-08-05T02:39:24.033Z
-Run id: verify-1785897562839
+Generated: 2026-08-07T03:31:06.465Z
+Run id: verify-1786073465120
 Node: v22.21.1
 DATABASE_URL: 127.0.0.1/fundhub_verify
 Stance: skeptical operator / business architect. Prefer SILENTLY-DID-NOTHING and UNVERIFIED over a false pass.
 
 ## Operator headline
 
-No FAIL/SILENT/P0 in this run — still treat UNVERIFIED rows as unproven.
+**Not ready for real money.** No confirmed P0 isolation leak in this run, but 29 FAIL and 0 silent no-ops remain.
 
 Re-run: `DATABASE_URL=... npm run verify:e2e` (Playwright UI + data-layer). Data only: `node src/verification/run-all.mjs`.
 
@@ -16,12 +16,12 @@ Re-run: `DATABASE_URL=... npm run verify:e2e` (Playwright UI + data-layer). Data
 
 | Status | Count |
 |---|---:|
-| PASS | 370 |
-| FAIL | 0 |
+| PASS | 344 |
+| FAIL | 29 |
 | SILENTLY-DID-NOTHING | 0 |
-| UNVERIFIED | 27 |
+| UNVERIFIED | 30 |
 | SKIP | 0 |
-| **Total** | **397** |
+| **Total** | **403** |
 | P0 non-passes | 0 |
 
 ## 1. SECURITY (read this first)
@@ -142,7 +142,7 @@ No P0 isolation failures recorded in this run. That is not a claim that none exi
 | PASS | partner | partner direct-URL to pipeline.html: static HTML may load; API isolation enforced server-side | Static files cannot enforce role. Verified via pg security journey ROLE_SET probes. | public/app/pipeline.html |
 | PASS | partner | partner direct-URL to finance-os.html: static HTML may load; API isolation enforced server-side | Static files cannot enforce role. Verified via pg security journey ROLE_SET probes. | public/app/finance-os.html |
 | PASS | partner | partner direct-URL to hiring.html: static HTML may load; API isolation enforced server-side | Static files cannot enforce role. Verified via pg security journey ROLE_SET probes. | public/app/hiring.html |
-| PASS | closer | Closer direct-URL to owner screens triggers 403 on gated APIs | denied=7 allowed=9 | e2e/verification-security.spec.mjs |
+| PASS | closer | Closer direct-URL to owner screens triggers 403 on gated APIs | denied=7 allowed=14 | e2e/verification-security.spec.mjs |
 | PASS | owner | Owner can open ops-admin without console death |  | public/app/ops-admin.html |
 
 ## 2. SILENTLY-DID-NOTHING (hunt results)
@@ -158,60 +158,60 @@ _None recorded in this run._
 
 **Usable for a real person today: YES**
 
-Primary client (lead): 1ec95190-0e07-41a3-a6e7-3d152e3f3641 / e2e_verify.funding.1785897562850@verify.local
-Simulated funding client: bf591cde-1616-4916-b724-d399305140dc / sim+1785897562894@demo.fundhub.local
+Primary client (lead): 985b1685-5453-4f0e-833d-85a8182620ca / e2e_verify.funding.1786073465127@verify.local
+Simulated funding client: b8dfc088-a659-4ed7-a005-ee1fc55a4495 / sim+1786073465149@demo.fundhub.local
 Sale amount: 3000.00 (want 3000)
 Closer front commission: 500.00 (want 500)
 Advisor back commission: 125.00 (want 125)
 Closeout fee: 5000.00 (want 5000)
-GHL link: dry-ghl-1ec951900e07
-Contract: 8f5903a5-b732-4a69-8604-76d1b367fbe4
-Messages queued: 3
+GHL link: dry-ghl-985b16855453
+Contract: a70263c0-c21e-448d-960c-bd32fad41eb0
+Messages queued: 2
 
 Operator verdict: YES for the money spine; still check GHL link, contract send, and live webhooks separately.
 
 | Step | Status | Persisted |
 |---|---|---|
-| Lead captured → client row | PASS | client.id=1ec95190-0e07-41a3-a6e7-3d152e3f3641 email=e2e_verify.funding.1785897562850@verify.local |
-| GHL linkage | PASS | dry-ghl-1ec951900e07 |
-| Booking → closer task | PASS | task.id=d31a5e69-2afe-4081-b757-49e55b2674cc title=Strategy session booked |
-| Consent captured | PASS | kind=soft_pull_consent id=e745a2cb-df3d-4812-af0b-75ac9e7550a5 |
+| Lead captured → client row | PASS | client.id=985b1685-5453-4f0e-833d-85a8182620ca email=e2e_verify.funding.1786073465127@verify.local |
+| GHL linkage | PASS | dry-ghl-985b16855453 |
+| Booking → closer task | PASS | task.id=8732e6c6-9c0f-4da5-b34d-1cc2c05cca87 title=Strategy session booked |
+| Consent captured | PASS | kind=soft_pull_consent id=9263b5e6-cf7d-4b07-88a3-08fce4758a17 |
 | CRS → tradelines | PASS | funding_client_tls=4 sim_tls=4 ingested=4 |
-| Pipeline card | PASS | card=f2ad35d5-536c-4d04-bbeb-05e291806059 stage=new_lead |
+| Pipeline card | PASS | card=1afca98e-1e22-46f4-8fbd-b8e2db4c6560 stage=new_lead |
 | Sale + $500 closer commission + entitlement | PASS | sales=2 front=500.00 ents=credit-analysis-report,funding-snapshot |
-| Contract | PASS | id=8f5903a5-b732-4a69-8604-76d1b367fbe4 status=draft hash=none |
+| Contract | PASS | id=a70263c0-c21e-448d-960c-bd32fad41eb0 status=draft hash=none |
 | Round funded + closeout 10% | PASS | fee=5000.00 balance_due=5000.00 basis=50000.00 |
-| Messages queued | PASS | total=3 queued=3 keys=SMS-ROUND-STARTED-NOTIFY,EMAIL-F07-FUNDING-LOCKED,SMS-F07-FUNDING-LOCKED |
+| Messages queued | PASS | total=2 queued=2 keys=EMAIL-F07-FUNDING-LOCKED,SMS-F07-FUNDING-LOCKED |
 
 ### B. Credit-repair / DIY downsell
 
 **Usable for a real person today: YES**
 
-Client 27ff74ec-39d8-4176-aaec-a6ef72637d99
+Client 79bbea7b-2629-4e35-96a6-67051f2b9c32
 DIY sale: 1000.00
 Entitlements: metro2-letter-pack
 Ledger rows: 0
-Messages: 0
+Messages: 1
 Operator verdict: YES for sale/entitlement separation; letter delivery still vendor-gated.
 
 | Step | Status | Persisted |
 |---|---|---|
 | DIY sale (not funding) | PASS | diy=1 funding=0 price=1000.00 |
-| Letters / delivery message | PASS | ds02=done; msgs=0 |
+| Letters / delivery message | PASS | EMAIL-DS02-DIY-LETTERS-READY/queued |
 
 ### C. Inquiry removal
 
 **Usable for a real person today: YES**
 
-Inquiry 71e49387-a37d-4881-ae79-dbdd57c073bc; case 7ff76f87-ca5b-4c88-abf6-f66dc6c9898b
+Inquiry ac337c1a-ccd7-4183-b8f3-1d3d3201f040; case a0db5f9c-8edc-494c-b7e7-90b8eba23b8d
 call_state machine: 11 states exercised
 Status bleed on call_state: no
 Operator verdict: YES for status separation; real Bland voice still credential-gated.
 
 | Step | Status | Persisted |
 |---|---|---|
-| Inquiry logged | PASS | id=71e49387-a37d-4881-ae79-dbdd57c073bc status=open call_state=not_started |
-| Case created | PASS | case=7ff76f87-ca5b-4c88-abf6-f66dc6c9898b |
+| Inquiry logged | PASS | id=ac337c1a-ccd7-4183-b8f3-1d3d3201f040 status=open call_state=not_started |
+| Case created | PASS | case=a0db5f9c-8edc-494c-b7e7-90b8eba23b8d |
 | All 11 call_states without status bleed | PASS | status remained open |
 | cleared → inquiry.removed → C-03 | PASS | {"done":true,"branch":"resume","task":{"created":true}} |
 
@@ -219,7 +219,7 @@ Operator verdict: YES for status separation; real Bland voice still credential-g
 
 **Usable for a real person today: NO**
 
-Agents in org: draft=AG-06 shadow=null live=VF-LIVE
+Agents in org: draft=GHL-RECON shadow=VF-SHADOW live=VF-LIVE
 handleInbound result: {"ok":true,"reason":"no_api_key","agent":"VF-LIVE","shadowed":true,"wouldSend":"[SHADOW — no API key] Model was not called. Inbound: Hi, what are my next steps?"}
 Shadow logs: 2; agent outbound: 0
 Operator verdict: NO for live client conversations — runtime has never sent a real reply; without ANTHROPIC_API_KEY it shadows. Do not put a client on an agent today.
@@ -260,19 +260,19 @@ Registered workflows: 50
 Reacted: 48
 Errored: none
 Never invoked this run: 2
-Canonical events with no workflow listener: booking.rescheduled, booking.cancelled, decision.rendered, sale.closed, file.finalized, payment.failed, docs.received, letter.generated, message.queued, message.sent, message.failed, message.blocked, commission.earned, commission.approved, commission.paid, invoice.created, invoice.sent, invoice.paid, invoice.voided, contract.sent, contract.signed
+Canonical events with no workflow listener: booking.rescheduled, booking.cancelled, decision.rendered, sale.closed, round.closeout, file.finalized, payment.failed, docs.received, inquiry.gate.raised, inquiry.gate.clear, inquiry.docs.needed, letter.generated, message.queued, message.sent, message.failed, message.blocked, commission.earned, commission.approved, commission.paid, invoice.created, invoice.sent, invoice.paid, invoice.voided, contract.sent, contract.signed
 Operator note: Inngest does not schedule anything without INNGEST_EVENT_KEY. This run invokes handles directly.
 
 | Step | Status | Persisted |
 |---|---|---|
-| Drive workflows from canonical events | PASS | reacted=48 errored=0 never=2 orphanEvents=21 |
+| Drive workflows from canonical events | PASS | reacted=48 errored=0 never=2 orphanEvents=25 |
 
 ### PART 3 — Security & isolation
 
 **Usable for a real person today: YES**
 
-Victim client 7d4e03ad-679e-41f8-813e-82a993fc05bb in org 35b667b7-a5ab-4371-9a8b-7f4aa2e31dce
-Other-org client fa8ed5b8-f24a-4fe4-880f-a5128dd4afc0
+Victim client 22d558eb-f0f3-4228-85d2-857344ff0b33 in org 35b667b7-a5ab-4371-9a8b-7f4aa2e31dce
+Other-org client 870097c6-f34c-4d74-8833-45aaa28675dc
 Document id: none
 Attacker stance: direct URL/API, id swap, org_id spoof, forged token, affiliate reach.
 
@@ -282,19 +282,19 @@ Attacker stance: direct URL/API, id swap, org_id spoof, forged token, affiliate 
 
 ### PART 4 — Cross-cutting
 
-**Usable for a real person today: YES**
+**Usable for a real person today: NO**
 
 Workflow keys: 43
-Missing rows: none
-DRAFT keys (blocked by hard guard; rewrite before live send): EMAIL-C06-DECLINE, EMAIL-DS01-REPAIR-REFERRAL, EMAIL-DS02-DIY-LETTERS-READY, EMAIL-S05A-NOSHOW-RECOVERY, SMS-C06-DECLINE, SMS-N01-COLD-NURTURE, SMS-N02-WARM-NURTURE, SMS-N03-HOT-NURTURE, SMS-N04-POST-FUNDING, SMS-N06-RENEWAL, SMS-S05A-NOSHOW-RECOVERY
-Template table: {"total":231,"drafts":11,"compliant":48}
+Missing rows: EMAIL-AX07-FUNDING-PAUSED, EMAIL-DPC05-NO-PROGRESS-72H, EMAIL-F02-ID-PORTAL-NEEDED, EMAIL-F02-ID-PORTAL-NEEDED-FOLLOWUP, EMAIL-F03-ROUND-SUBMITTED, EMAIL-F04-ROUND-APPROVALS, EMAIL-F06-MISSING-DOCS, EMAIL-F10-INBOX-SETUP, EMAIL-N01-COLD-NURTURE, EMAIL-N02-WARM-NURTURE, EMAIL-N03-HOT-NURTURE, EMAIL-N04-POST-FUNDING, EMAIL-N06-RENEWAL, EMAIL-S02-FINISH-APPLICATION, EMAIL-U02-ANALYZER-FUNDING-DELIVERY, EMAIL-U02-ANALYZER-REPAIR-DELIVERY, SMS-AISET03-MSG1, SMS-AISET03-MSG2, SMS-AISET03-MSG3, SMS-AISET04-HANDOFF, SMS-AX07-FUNDING-PAUSED, SMS-DPC04-RESCHEDULE-REBOOKING, SMS-DPC05-NO-PROGRESS-72H, SMS-F02-ID-PORTAL-NEEDED, SMS-F03-ROUND-SUBMITTED, SMS-F04-ROUND-APPROVALS, SMS-F06-MISSING-DOCS, SMS-F10-INBOX-SETUP, SMS-ROUND-STARTED-NOTIFY
+DRAFT keys (blocked by hard guard; rewrite before live send): none
+Template table: {"total":189,"drafts":0,"compliant":32}
 Canonical orphans (no emit site found): none
 Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 
 | Step | Status | Persisted |
 |---|---|---|
-| Workflow template keys → DB rows | PASS | keys=43 missing=0 drafts=11 |
-| Canonical event emit sites | PASS | emitted=37 orphans=0:  |
+| Workflow template keys → DB rows | FAIL | keys=43 missing=29 drafts=0 |
+| Canonical event emit sites | PASS | emitted=41 orphans=0:  |
 
 ## 4. Full assertion table
 
@@ -332,8 +332,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | DATA | FUNDING | system | Closeout total_fee is $5000 (10% of round funded_amount $50000) | src/funding/closeout.mjs |
 | PASS | DATA | FUNDING | system | Closeout balance_due equals total_fee | src/funding/closeout.mjs |
 | PASS | DATA | FUNDING | system | Success-fee invoice row exists | src/workflows/f-07-funding-locked.mjs |
-| PASS | DATA | FUNDING | system | Messages queued along funding path (3) | src/workflows/messaging.mjs |
-| PASS | DATA | FUNDING | system | Template SMS-ROUND-STARTED-NOTIFY resolves to a real non-DRAFT row |  |
+| PASS | DATA | FUNDING | system | Messages queued along funding path (2) | src/workflows/messaging.mjs |
 | PASS | DATA | FUNDING | system | Template EMAIL-F07-FUNDING-LOCKED resolves to a real non-DRAFT row |  |
 | PASS | DATA | FUNDING | system | Template SMS-F07-FUNDING-LOCKED resolves to a real non-DRAFT row |  |
 | PASS | DATA | FUNDING | system | Replay does not duplicate sales | src/events/bus.mjs |
@@ -341,7 +340,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | DATA | DIY_DOWNSELL | system | DIY path wrote its OWN consulting-package sale | src/handlers/money-chain.mjs |
 | PASS | DATA | DIY_DOWNSELL | system | DIY path did NOT write a funding (card-stacking-dfy) sale | src/handlers/money-chain.mjs |
 | PASS | DATA | DIY_DOWNSELL | system | DIY entitlement metro2-letter-pack granted (not funding-snapshot) | src/handlers/money-chain.mjs |
-| PASS | DATA | DIY_DOWNSELL | system | DIY letters path ran; email refused by DRAFT hard guard (correct) | src/workflows/ds-02-diy-letters.mjs |
+| PASS | DATA | DIY_DOWNSELL | system | DIY letters path queued a DIY-keyed message |  |
 | PASS | DATA | INQUIRY_REMOVAL | inquiry_specialist | Inquiry logged with business status=open and call_state=not_started |  |
 | PASS | DATA | INQUIRY_REMOVAL | inquiry_specialist | Inquiry removal case created |  |
 | PASS | DATA | INQUIRY_REMOVAL | inquiry_specialist | call_state=not_started leaves business status=open |  |
@@ -357,7 +356,6 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | DATA | INQUIRY_REMOVAL | inquiry_specialist | call_state=retry_scheduled leaves business status=open |  |
 | PASS | DATA | INQUIRY_REMOVAL | inquiry_specialist | Business status cleared only when explicitly set | api/inquiries.mjs |
 | PASS | DATA | INQUIRY_REMOVAL | inquiry_specialist | C-03 reacted to inquiry.removed |  |
-| UNVERIFIED | DATA | AGENT_RUNTIME | system | Can ensure a shadow agent exists |  |
 | PASS | DATA | AGENT_RUNTIME | system | ANTHROPIC_API_KEY unset so runtime stays in shadow/model-dry mode | src/agents/runtime.mjs |
 | PASS | DATA | AGENT_RUNTIME | system | With ANTHROPIC_API_KEY unset, agent runtime sent nothing | src/agents/runtime.mjs |
 | PASS | DATA | AGENT_RUNTIME | system | Shadow mode logged the intended reply | src/agents/shadow-log.mjs |
@@ -437,9 +435,13 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event booking.cancelled has no workflow listener |  |
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event decision.rendered has no workflow listener |  |
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event sale.closed has no workflow listener |  |
+| UNVERIFIED | DATA | WORKFLOWS | system | Canonical event round.closeout has no workflow listener |  |
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event file.finalized has no workflow listener |  |
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event payment.failed has no workflow listener |  |
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event docs.received has no workflow listener |  |
+| UNVERIFIED | DATA | WORKFLOWS | system | Canonical event inquiry.gate.raised has no workflow listener |  |
+| UNVERIFIED | DATA | WORKFLOWS | system | Canonical event inquiry.gate.clear has no workflow listener |  |
+| UNVERIFIED | DATA | WORKFLOWS | system | Canonical event inquiry.docs.needed has no workflow listener |  |
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event letter.generated has no workflow listener |  |
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event message.queued has no workflow listener |  |
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event message.sent has no workflow listener |  |
@@ -544,50 +546,50 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | SECURITY | ISOLATION | affiliate | Affiliate refused internal client (403) |  |
 | UNVERIFIED | SECURITY | ISOLATION | funding_advisor | Proxy session credential isolation between advisors |  |
 | PASS | CROSS | CROSS_CUTTING | system | Workflow template keys discovered (43; spec said 41) | src/messaging/seed/workflow-keys.mjs |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-AX07-FUNDING-PAUSED exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-C06-DECLINE is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-DPC05-NO-PROGRESS-72H exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-DS01-REPAIR-REFERRAL is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-DS02-DIY-LETTERS-READY is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-F02-ID-PORTAL-NEEDED exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-F02-ID-PORTAL-NEEDED-FOLLOWUP exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-F03-ROUND-SUBMITTED exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-F04-ROUND-APPROVALS exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-F06-MISSING-DOCS exists (compliance_passed=true) |  |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-AX07-FUNDING-PAUSED resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-C06-DECLINE exists (compliance_passed=true) |  |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-DPC05-NO-PROGRESS-72H resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-DS01-REPAIR-REFERRAL exists (compliance_passed=true) |  |
+| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-DS02-DIY-LETTERS-READY exists (compliance_passed=true) |  |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-F02-ID-PORTAL-NEEDED resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-F02-ID-PORTAL-NEEDED-FOLLOWUP resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-F03-ROUND-SUBMITTED resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-F04-ROUND-APPROVALS resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-F06-MISSING-DOCS resolves to a message_templates row | src/messaging/seed/seed.mjs |
 | PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-F07-FUNDING-LOCKED exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-F10-INBOX-SETUP exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-N01-COLD-NURTURE exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-N02-WARM-NURTURE exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-N03-HOT-NURTURE exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-N04-POST-FUNDING exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-N06-RENEWAL exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-S02-FINISH-APPLICATION exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-S05A-NOSHOW-RECOVERY is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-U02-ANALYZER-FUNDING-DELIVERY exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-U02-ANALYZER-REPAIR-DELIVERY exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-AISET03-MSG1 exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-AISET03-MSG2 exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-AISET03-MSG3 exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-AISET04-HANDOFF exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-AX07-FUNDING-PAUSED exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-C06-DECLINE is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-DPC04-RESCHEDULE-REBOOKING exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-DPC05-NO-PROGRESS-72H exists (compliance_passed=true) |  |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-F10-INBOX-SETUP resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-N01-COLD-NURTURE resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-N02-WARM-NURTURE resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-N03-HOT-NURTURE resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-N04-POST-FUNDING resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-N06-RENEWAL resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-S02-FINISH-APPLICATION resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template EMAIL-S05A-NOSHOW-RECOVERY exists (compliance_passed=true) |  |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-U02-ANALYZER-FUNDING-DELIVERY resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key EMAIL-U02-ANALYZER-REPAIR-DELIVERY resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key SMS-AISET03-MSG1 resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key SMS-AISET03-MSG2 resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key SMS-AISET03-MSG3 resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key SMS-AISET04-HANDOFF resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key SMS-AX07-FUNDING-PAUSED resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template SMS-C06-DECLINE exists (compliance_passed=true) |  |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key SMS-DPC04-RESCHEDULE-REBOOKING resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key SMS-DPC05-NO-PROGRESS-72H resolves to a message_templates row | src/messaging/seed/seed.mjs |
 | PASS | CROSS | CROSS_CUTTING | system | Template SMS-DS01-REPAIR-REFERRAL exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-F02-ID-PORTAL-NEEDED exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-F03-ROUND-SUBMITTED exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-F04-ROUND-APPROVALS exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-F06-MISSING-DOCS exists (compliance_passed=true) |  |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key SMS-F02-ID-PORTAL-NEEDED resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key SMS-F03-ROUND-SUBMITTED resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key SMS-F04-ROUND-APPROVALS resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key SMS-F06-MISSING-DOCS resolves to a message_templates row | src/messaging/seed/seed.mjs |
 | PASS | CROSS | CROSS_CUTTING | system | Template SMS-F07-FUNDING-LOCKED exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-F10-INBOX-SETUP exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N01-COLD-NURTURE is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N02-WARM-NURTURE is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N03-HOT-NURTURE is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N04-POST-FUNDING is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N06-RENEWAL is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-ROUND-STARTED-NOTIFY exists (compliance_passed=true) |  |
-| PASS | CROSS | CROSS_CUTTING | system | Template SMS-S05A-NOSHOW-RECOVERY is DRAFT inventory (send path must refuse) | src/messaging/draft-guard.mjs |
-| PASS | CROSS | CROSS_CUTTING | system | sendTemplated refuses DRAFT template (reason=draft_template) | src/workflows/messaging.mjs |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key SMS-F10-INBOX-SETUP resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N01-COLD-NURTURE exists (compliance_passed=true) |  |
+| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N02-WARM-NURTURE exists (compliance_passed=true) |  |
+| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N03-HOT-NURTURE exists (compliance_passed=true) |  |
+| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N04-POST-FUNDING exists (compliance_passed=true) |  |
+| PASS | CROSS | CROSS_CUTTING | system | Template SMS-N06-RENEWAL exists (compliance_passed=true) |  |
+| FAIL | CROSS | CROSS_CUTTING | system | Template key SMS-ROUND-STARTED-NOTIFY resolves to a message_templates row | src/messaging/seed/seed.mjs |
+| PASS | CROSS | CROSS_CUTTING | system | Template SMS-S05A-NOSHOW-RECOVERY exists (compliance_passed=true) |  |
+| PASS | CROSS | CROSS_CUTTING | system | No DRAFT workflow templates in inventory (guard unexercised) | src/messaging/draft-guard.mjs |
 | PASS | CROSS | CROSS_CUTTING | system | compliance_passed=false blocks queue/send | src/workflows/messaging.mjs |
 | PASS | CROSS | CROSS_CUTTING | system | Hand-calc closer flat deposit = $500 |  |
 | PASS | CROSS | CROSS_CUTTING | system | Hand-calc 0.25% of $50,000 = $125 |  |
@@ -601,6 +603,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | CROSS | CROSS_CUTTING | system | campaign-manager.html has no obvious fabricated sample dollars in static markup | public/app/campaign-manager.html |
 | PASS | CROSS | CROSS_CUTTING | system | client-control-panel.html has no obvious fabricated sample dollars in static markup | public/app/client-control-panel.html |
 | PASS | CROSS | CROSS_CUTTING | system | client-portal.html has no obvious fabricated sample dollars in static markup | public/app/client-portal.html |
+| PASS | CROSS | CROSS_CUTTING | system | closer-call.html has no obvious fabricated sample dollars in static markup | public/app/closer-call.html |
 | PASS | CROSS | CROSS_CUTTING | system | closer-dashboard.html has no obvious fabricated sample dollars in static markup | public/app/closer-dashboard.html |
 | PASS | CROSS | CROSS_CUTTING | system | command-center.html has no obvious fabricated sample dollars in static markup | public/app/command-center.html |
 | PASS | CROSS | CROSS_CUTTING | system | company-brain.html has no obvious fabricated sample dollars in static markup | public/app/company-brain.html |
@@ -617,16 +620,19 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | PASS | CROSS | CROSS_CUTTING | system | journeys.html has no obvious fabricated sample dollars in static markup | public/app/journeys.html |
 | PASS | CROSS | CROSS_CUTTING | system | lenders.html has no obvious fabricated sample dollars in static markup | public/app/lenders.html |
 | PASS | CROSS | CROSS_CUTTING | system | messaging.html has no obvious fabricated sample dollars in static markup | public/app/messaging.html |
+| PASS | CROSS | CROSS_CUTTING | system | my-numbers.html has no obvious fabricated sample dollars in static markup | public/app/my-numbers.html |
 | PASS | CROSS | CROSS_CUTTING | system | ops-admin.html has no obvious fabricated sample dollars in static markup | public/app/ops-admin.html |
 | PASS | CROSS | CROSS_CUTTING | system | partner-galaxy.html has no obvious fabricated sample dollars in static markup | public/app/partner-galaxy.html |
 | PASS | CROSS | CROSS_CUTTING | system | pipeline.html has no obvious fabricated sample dollars in static markup | public/app/pipeline.html |
 | PASS | CROSS | CROSS_CUTTING | system | products-commissions.html has no obvious fabricated sample dollars in static markup | public/app/products-commissions.html |
+| PASS | CROSS | CROSS_CUTTING | system | sales-floor.html has no obvious fabricated sample dollars in static markup | public/app/sales-floor.html |
 | PASS | CROSS | CROSS_CUTTING | system | sample-data.html is an explicit demo screen (allowed) | public/app/sample-data.html |
+| PASS | CROSS | CROSS_CUTTING | system | sidebar.fragment.html has no obvious fabricated sample dollars in static markup | public/app/sidebar.fragment.html |
 | PASS | CROSS | CROSS_CUTTING | system | social-studio.html has no obvious fabricated sample dollars in static markup | public/app/social-studio.html |
 | PASS | CROSS | CROSS_CUTTING | system | staff-teams.html has no obvious fabricated sample dollars in static markup | public/app/staff-teams.html |
 | PASS | CROSS | CROSS_CUTTING | system | subscriptions.html has no obvious fabricated sample dollars in static markup | public/app/subscriptions.html |
 | PASS | CROSS | CROSS_CUTTING | system | template-editor.html has no obvious fabricated sample dollars in static markup | public/app/template-editor.html |
-| PASS | CROSS | CROSS_CUTTING | system | message_templates inventory: total=231 drafts=11 compliant=48 |  |
+| PASS | CROSS | CROSS_CUTTING | system | message_templates inventory: total=189 drafts=0 compliant=32 |  |
 | PASS | UI | ROLE_SCREENS | owner | owner opened command-center.html with no console errors | public/app/command-center.html |
 | PASS | UI | ROLE_SCREENS | owner | owner opened finance-os.html with no console errors | public/app/finance-os.html |
 | PASS | UI | ROLE_SCREENS | owner | owner opened ops-admin.html with no console errors | public/app/ops-admin.html |
@@ -700,7 +706,35 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 
 ## 5. Breaks (FAIL + SILENT) with file and line
 
-_None recorded._
+- **FAIL** Template key EMAIL-AX07-FUNDING-PAUSED resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-DPC05-NO-PROGRESS-72H resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-F02-ID-PORTAL-NEEDED resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-F02-ID-PORTAL-NEEDED-FOLLOWUP resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-F03-ROUND-SUBMITTED resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-F04-ROUND-APPROVALS resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-F06-MISSING-DOCS resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-F10-INBOX-SETUP resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-N01-COLD-NURTURE resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-N02-WARM-NURTURE resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-N03-HOT-NURTURE resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-N04-POST-FUNDING resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-N06-RENEWAL resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-S02-FINISH-APPLICATION resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-U02-ANALYZER-FUNDING-DELIVERY resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key EMAIL-U02-ANALYZER-REPAIR-DELIVERY resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key SMS-AISET03-MSG1 resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key SMS-AISET03-MSG2 resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key SMS-AISET03-MSG3 resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key SMS-AISET04-HANDOFF resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key SMS-AX07-FUNDING-PAUSED resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key SMS-DPC04-RESCHEDULE-REBOOKING resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key SMS-DPC05-NO-PROGRESS-72H resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key SMS-F02-ID-PORTAL-NEEDED resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key SMS-F03-ROUND-SUBMITTED resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key SMS-F04-ROUND-APPROVALS resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key SMS-F06-MISSING-DOCS resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key SMS-F10-INBOX-SETUP resolves to a message_templates row — `src/messaging/seed/seed.mjs`
+- **FAIL** Template key SMS-ROUND-STARTED-NOTIFY resolves to a message_templates row — `src/messaging/seed/seed.mjs`
 
 ## 6. Unverifiable without a real external credential
 
@@ -737,7 +771,7 @@ _None recorded._
 - YES — inquiry_specialist / security isolation — no P0 leak in probes
 - YES — setter / security isolation — no P0 leak in probes
 - YES — system / PART 3 — Security & isolation — money/data spine held in this run
-- YES — system / PART 4 — Cross-cutting — money/data spine held in this run
+- NO — system / PART 4 — Cross-cutting — see journey account
 - YES — owner / daily UI screens — screens load under mocked API; live backend not proven here
 - YES — admin / daily UI screens — screens load under mocked API; live backend not proven here
 - YES — sales_manager / daily UI screens — screens load under mocked API; live backend not proven here
@@ -765,7 +799,6 @@ Money checked via src/verification/fixtures.mjs MONEY constants (hand-calc), not
 ## 9. UNVERIFIED inventory
 
 - Closer also earns 0.25% of funded — No closer back-end ledger row. Attribution may require closerId on round.funded payload — operator risk if assumed.
-- Can ensure a shadow agent exists — new row for relation "agents" violates check constraint "agents_retired_ck"
 - Quiet-hours message holds then releases — Requires controlling clock + dispatcher drain; dispatcher sends only with provider creds. Exercised in unit tests; not end-to-end here.
 - Workflow contract-chaser never fired from a live/canonical path in this run — No trigger event discovered on the Inngest function object
 - Workflow message-dispatch-sweeper never fired from a live/canonical path in this run — No trigger event discovered on the Inngest function object
@@ -773,9 +806,13 @@ Money checked via src/verification/fixtures.mjs MONEY constants (hand-calc), not
 - Canonical event booking.cancelled has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
 - Canonical event decision.rendered has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
 - Canonical event sale.closed has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
+- Canonical event round.closeout has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
 - Canonical event file.finalized has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
 - Canonical event payment.failed has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
 - Canonical event docs.received has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
+- Canonical event inquiry.gate.raised has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
+- Canonical event inquiry.gate.clear has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
+- Canonical event inquiry.docs.needed has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
 - Canonical event letter.generated has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
 - Canonical event message.queued has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
 - Canonical event message.sent has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.

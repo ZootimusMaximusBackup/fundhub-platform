@@ -52,6 +52,10 @@ header.topbar{background:var(--ink);color:var(--dark-text);display:flex;align-it
 .statesw .lb{font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#71717A}
 .statesw button{background:transparent;border:0;border-radius:14px;padding:4px 10px;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dark-text-dim)}
 .statesw button.on{background:var(--paper);color:var(--ink);font-weight:700}
+/* Designer STATE toggle — staff only. Clients must never see it. */
+body:not(.portal-staff) .statesw{display:none}
+/* Funding sample blocks — hidden when this client has no funding-snapshot. */
+body.no-funding .funding-only{display:none !important}
 
 main{flex:1;overflow-y:auto;background:var(--paper);padding:26px 0 44px;display:flex;justify-content:center}
 main::-webkit-scrollbar{width:9px}
@@ -323,10 +327,10 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
     <div class="page">
 
       <div class="welcome" id="greeting">Welcome back, Derek</div>
-      <div class="welcome-sub" id="greeting-sub">Here's where things stand on your funding.</div>
+      <div class="welcome-sub funding-only" id="greeting-sub">Here's where things stand on your funding.</div>
 
       <!-- ══ 1 · WELCOME VIDEO (compact) ═════════════════════════════════ -->
-      <section class="card video-card" aria-labelledby="video-title">
+      <section class="card video-card funding-only" aria-labelledby="video-title">
         <div class="player" id="player">
           <div class="ghost"><div class="logo" role="presentation"></div></div>
           <button class="playbtn" id="playbtn" type="button" aria-label="Play welcome video">▶</button>
@@ -348,7 +352,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       </section>
 
       <!-- ══ 2 · WHERE YOUR FUNDING IS — status line + stepper, one card ══ -->
-      <section class="card prog-card" aria-labelledby="sb-main">
+      <section class="card prog-card funding-only" aria-labelledby="sb-main">
         <div class="status-line">
           <div class="sb-eyebrow" id="sb-eyebrow">Current Status</div>
           <div class="sb-main" id="sb-main">You're approved for <b>$46,500</b>. Getting that money to you is the next step.</div>
@@ -366,7 +370,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       </section>
 
       <!-- ══ PROMOTED OFFER — funded state only, under the status ════════ -->
-      <section class="promo" id="promo" aria-labelledby="promo-title">
+      <section class="promo funding-only" id="promo" aria-labelledby="promo-title">
         <div class="ph"></div>
         <div class="promo-bd">
           <div class="promo-main">
@@ -608,7 +612,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <button class="btn-unlock" id="um-go" type="button">Unlock — pay now</button>
       <button class="contact-btn" id="um-talk" type="button">Talk to an advisor first</button>
     </div>
-    <div class="modal-note">Wireframe — no payment is taken.</div>
+    <p class="modal-note" id="um-pay-msg">Online checkout is not available yet. Talk to an advisor and we will send you a payment link.</p>
   </div>
 </div>
 
@@ -699,16 +703,62 @@ var PRODUCTS = {
     document.getElementById('um-price').textContent = p.price;
     document.getElementById('um-go').textContent    = 'Unlock — ' + p.price;
     document.getElementById('um-go').disabled = false;
+    document.getElementById('um-go').dataset.product = key;
     document.getElementById('um-talk').dataset.book = p.name;
+    var msg = document.getElementById('um-pay-msg');
+    if (msg) {
+      msg.textContent = 'Online checkout is not available yet. Talk to an advisor and we will send you a payment link.';
+      msg.hidden = false;
+    }
     openM(unlockM);
   }
   document.addEventListener('click', function(e){
+    var statusBtn = e.target.closest('[data-status]');
+    if (statusBtn) {
+      var sk = statusBtn.dataset.status;
+      var sp = PRODUCTS[sk];
+      if (!sp) return;
+      document.getElementById('um-title').textContent = sp.name;
+      document.getElementById('um-desc').textContent =
+        'This is included on your account. Progress updates will show here when they are available.';
+      document.getElementById('um-price').textContent = 'Included';
+      document.getElementById('um-go').textContent = 'Close';
+      document.getElementById('um-go').disabled = false;
+      document.getElementById('um-go').dataset.product = '';
+      document.getElementById('um-go').dataset.statusClose = '1';
+      document.getElementById('um-talk').dataset.book = sp.name;
+      var sm = document.getElementById('um-pay-msg');
+      if (sm) sm.hidden = true;
+      openM(unlockM);
+      return;
+    }
     var t = e.target.closest('[data-unlock]');
     if(t) openUnlock(t.dataset.unlock);
   });
   document.getElementById('um-go').addEventListener('click', function(){
+    if (this.dataset.statusClose === '1') {
+      this.dataset.statusClose = '';
+      closeAll();
+      return;
+    }
+    var key = this.dataset.product;
+    var p = key && PRODUCTS[key];
+    var checkout = p && p.checkoutUrl;
+    var msg = document.getElementById('um-pay-msg');
+    if (!checkout) {
+      this.disabled = true;
+      this.textContent = 'Checkout not available';
+      if (msg) {
+        msg.hidden = false;
+        msg.textContent = 'Online checkout is not available yet. Talk to an advisor and we will send you a payment link.';
+      }
+      var talk = document.getElementById('um-talk');
+      if (talk) talk.focus();
+      return;
+    }
     this.textContent = 'Opening secure checkout…';
     this.disabled = true;
+    window.location.href = checkout;
   });
   document.getElementById('um-talk').addEventListener('click', function(){
     closeAll();
@@ -1115,7 +1165,11 @@ var PRODUCTS = {
    the upsell surface, so a tile with no grant stays locked rather than hidden.
 
    Requires a CLIENT principal session (Unit 12) to resolve a client id; a staff
-   member opening this screen without ?id= sees the sample markup, correctly. */
+   member opening this screen without ?id= sees the sample markup, correctly.
+
+   Funding sample blocks (approval amount, Card Stacking DFY video, progress
+   stepper) are suppressed when the client has no funding-snapshot entitlement.
+   That is a hide-only rule — not a letter journey. */
 (function () {
   "use strict";
   // Screen tile keys → entitlement codes from 032's catalog.
@@ -1124,6 +1178,54 @@ var PRODUCTS = {
     roadmap:    "credit-optimization-roadmap",
     consulting: "funding-snapshot"
   };
+  var FUNDING_CODE = "funding-snapshot";
+  var STAFF_ROLES = {
+    owner: 1, admin: 1, sales_manager: 1, closer: 1,
+    funding_advisor: 1, inquiry_specialist: 1, setter: 1
+  };
+
+  function roleHint() {
+    try { return String(localStorage.getItem("fh_role") || "").toLowerCase(); }
+    catch (e) { return ""; }
+  }
+
+  function markStaffChrome() {
+    if (STAFF_ROLES[roleHint()]) document.body.classList.add("portal-staff");
+    else document.body.classList.remove("portal-staff");
+  }
+
+  function setFundingVisible(hasFunding) {
+    document.body.classList.toggle("no-funding", !hasFunding);
+  }
+
+  function paintTile(tile, included) {
+    var lockrow = tile.querySelector(".lockrow");
+    var unlockBtn = tile.querySelector("[data-unlock], [data-status]");
+    var key = tile.getAttribute("data-tile");
+    if (included) {
+      tile.classList.remove("locked");
+      if (lockrow) lockrow.textContent = "Included";
+      if (unlockBtn && key) {
+        unlockBtn.textContent = "View status";
+        unlockBtn.removeAttribute("data-unlock");
+        unlockBtn.setAttribute("data-status", key);
+        unlockBtn.classList.remove("btn-unlock");
+        unlockBtn.classList.add("btn-advise");
+      }
+    } else {
+      tile.classList.add("locked");
+      if (lockrow) lockrow.innerHTML = '<span class="lk">🔒</span> Locked';
+      if (unlockBtn && key) {
+        unlockBtn.textContent = "Unlock";
+        unlockBtn.removeAttribute("data-status");
+        unlockBtn.setAttribute("data-unlock", key);
+        unlockBtn.classList.add("btn-unlock");
+        unlockBtn.classList.remove("btn-advise");
+      }
+    }
+  }
+
+  markStaffChrome();
 
   var clientId = FHData.param("id");
   try {
@@ -1132,30 +1234,33 @@ var PRODUCTS = {
   } catch (e) {}
 
   if (!clientId) {
+    // Sample / designer walkthrough — keep funding markup; staff toggle only.
+    setFundingVisible(true);
     FHData.banner("sample", "sample portal — sign in as a client, or open with ?id=<client id>");
     return;
   }
 
+  // Real client file: hide funding claims until entitlements confirm funding-snapshot.
+  setFundingVisible(false);
+
   FHData.wire(FHData.entitlements({ client_id: clientId, limit: 200 }),
     "entitlements", function (data) {
       var rows = data.items || [];
-      if (!rows.length) return null;
       var active = {};
       rows.forEach(function (e) { if (e.active) active[e.entitlement_code] = e; });
+
+      setFundingVisible(!!active[FUNDING_CODE]);
 
       var unlocked = 0, locked = 0;
       var tiles = document.querySelectorAll("[data-tile]");
       for (var i = 0; i < tiles.length; i++) {
         var code = MAP[tiles[i].getAttribute("data-tile")];
-        if (!code) continue;                       // a tile with no mapping is left alone
-        var lockrow = tiles[i].querySelector(".lockrow");
+        if (!code) continue;
         if (active[code]) {
-          tiles[i].classList.remove("locked");
-          if (lockrow) lockrow.textContent = "Included";
+          paintTile(tiles[i], true);
           unlocked++;
         } else {
-          tiles[i].classList.add("locked");
-          if (lockrow) lockrow.innerHTML = '<span class="lk">🔒</span> Locked';
+          paintTile(tiles[i], false);
           locked++;
         }
       }

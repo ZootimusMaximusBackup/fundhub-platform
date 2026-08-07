@@ -791,7 +791,7 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
         : cf.deposit_paid ? "Deposit paid"
         : cf.crs_paid ? "Diagnostic paid" : "New");
     }
-    banner("real", "live record · " + (name || c.id) + " · " + (d.transactions || []).length +
+    banner("real", "live record · " + (name || c.id || "unknown client") + " · " + (d.transactions || []).length +
                    " transactions · " + (d.messages || []).length + " messages");
   }
 

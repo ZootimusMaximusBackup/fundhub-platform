@@ -111,8 +111,10 @@ flowchart LR
   s13 --> s14
   s15["round.funded"]
   s14 --> s15
-  s16["file.finalized"]
+  s16["round.closeout"]
   s15 --> s16
+  s17["file.finalized"]
+  s16 --> s17
 ```
 
 ## Reactions per event
@@ -129,17 +131,21 @@ flowchart LR
 | `booking.noshow` | journey spine | `onBookingNoshow` | 1 |
 | `call.completed` | journey spine | `onCallCompleted` | 4 |
 | `decision.rendered` | journey spine | `onDecisionRendered` | 0 |
-| `deposit.paid` | journey spine | `onDepositPaid`, `onDepositPaidMoney` | 2 |
+| `deposit.paid` | journey spine | `onDepositPaid`, `onDepositPaidGate`, `onDepositPaidMoney` | 2 |
 | `sale.closed` | journey spine | `onSaleClosed`, `onSaleClosedMoney` | 0 |
 | `round.started` | journey spine | `onRoundStartedMoney` | 7 |
 | `round.submitted` | journey spine | — | 1 |
 | `round.approved` | journey spine | — | 3 |
 | `round.funded` | journey spine | `onRoundFundedMoney` | 5 |
+| `round.closeout` | journey spine | `onRoundCloseoutGate` | 0 |
 | `file.finalized` | journey spine | — | 0 |
 | `payment.received` | side events | `onPaymentReceived`, `onPaymentReceivedMoney`, `onPaymentReceivedForLink` | 1 |
 | `payment.failed` | side events | `onPaymentFailed` | 0 |
-| `docs.received` | side events | — | 1 |
+| `docs.received` | side events | `onDocsReceivedFlipInquiryGate` | 1 |
 | `inquiry.removed` | side events | — | 1 |
+| `inquiry.gate.raised` | side events | — | 0 |
+| `inquiry.gate.clear` | side events | — | 0 |
+| `inquiry.docs.needed` | side events | `onInquiryDocsNeeded` | 0 |
 | `letter.generated` | side events | — | 0 |
 | `message.inbound` | side events | `onMessageInbound` | 1 |
 | `mail.response` | side events | `onMailResponse` | 3 |
