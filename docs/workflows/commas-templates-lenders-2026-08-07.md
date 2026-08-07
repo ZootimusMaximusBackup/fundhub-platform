@@ -143,11 +143,38 @@ exactly one thing rather than loosening the diagram test.
 #### Checks
 
 `npm run lint` clean (1008 files). Full suite **0 failures** without a
-database (4660 + 631, 583 pg tests skipped). Against local Postgres 16.14
-`fundhub_ci`: 66 failing assertions across 31 suites — **being diffed against
-the baseline commit before any claim is made about them** (CLAUDE.md §12: the
-count has never been stable and pre-existing failures are expected). None of
-the 31 names touch Commas, payments, the router or webhooks.
+database (4660 + 631, 583 pg tests skipped).
+
+**Postgres measurement — read this before quoting a failure count.**
+Measured on local **PostgreSQL 16.14 (Homebrew, aarch64-darwin)**, each run on
+a freshly created and migrated database, baseline `ccbda63` vs this commit
+`0a85bf9`, both as clean worktrees.
+
+| Run | Code | Unique failing suites |
+|---|---|---|
+| 1 | baseline `ccbda63` | 27 |
+| 2 | baseline `ccbda63` **again** | 27 |
+| 3 | HEAD `0a85bf9` | 32 |
+
+**The baseline disagrees with itself.** Runs 1 and 2 are the same commit on
+identical fresh databases and both report 27 — but **six different suite names
+swap in and out** between them. So a difference in the failing *set* is not
+evidence of a regression, and CLAUDE.md §12's warning that this number has
+never been stable is now demonstrated rather than inherited.
+
+What can be said cleanly:
+
+* **No Commas, payment, inbox, dispute, refund, router or webhook test fails
+  in any of the five runs performed.** Checked explicitly against every run's
+  output.
+* The 61 tests added or rewritten here pass **3 out of 3** consecutive runs.
+* The suites that move between runs are time- and race-dependent by nature —
+  message-dispatch claim races, an SMS quiet-hours window, a nurture sleep.
+
+An earlier comparison that shared ONE database between the baseline and head
+runs reported "3 new failures". That was contamination: run in isolation those
+three suites pass at HEAD and one of them fails at baseline. Do not share a
+database between comparison runs.
 
 `npx tsc --noEmit` is a **no-op in this repo — there is no tsconfig.json**, so
 it prints its own help text and exits 0. It has never checked anything. Worth
