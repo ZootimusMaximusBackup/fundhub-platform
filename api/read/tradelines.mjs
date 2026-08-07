@@ -21,6 +21,7 @@ import {
   UTILIZATION_THRESHOLD_REFUSALS
 } from "../../src/calculators/deal-funding.mjs";
 import { listLenders } from "../../src/lenders/store.mjs";
+import { orgDemoModeEnabled } from "../../src/demo/exclude-demo.mjs";
 
 // THE ROLE GATE IS TWO CALLS, NOT ONE ARGUMENT. requireAuth's third parameter
 // is { db, env } — src/http/middleware/requireAuth.mjs passes it straight to
@@ -149,8 +150,13 @@ export default async function handler(req, res, deps = {}) {
     let lenders = [];
     let clientState = null;
     let inquiryLog = [];
+    let demoMode = false;
     try {
-      lenders = await listLenders(db, { orgId: staff.org_id, active: true, limit: 500 });
+      // Resolved once and passed to both gates. calcFunding excludes demo
+      // lenders by default, so without this the count here would disagree with
+      // the lender list while Demo Mode is on.
+      demoMode = await orgDemoModeEnabled(db, staff.org_id);
+      lenders = await listLenders(db, { orgId: staff.org_id, active: true, limit: 500, includeDemo: demoMode });
       const clientRow = await db.query(
         `SELECT custom_fields FROM clients
           WHERE org_id = $1::uuid AND id = $2::uuid`,
@@ -178,7 +184,8 @@ export default async function handler(req, res, deps = {}) {
       ...(utilizationThreshold === undefined ? {} : { utilizationThreshold }),
       lenders,
       clientState,
-      inquiryLog
+      inquiryLog,
+      includeDemo: demoMode
     });
 
     return res.status(200).json({

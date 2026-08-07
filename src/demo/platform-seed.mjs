@@ -50,9 +50,18 @@ export async function seedPlatformDemo(db, { orgId } = {}) {
 
   const lenderIds = {};
   for (const L of DEMO_LENDERS) {
-    await q(db, `INSERT INTO lenders (org_id,lender_table,name,product_name,active,priority_tier,typical_approval_range,external_row_id,notes,is_demo)
-      SELECT $1,$2::lender_table,$3,$4,true,2,$5,$6,'demo',true WHERE NOT EXISTS (SELECT 1 FROM lenders WHERE org_id=$1 AND external_row_id=$6)`,
-      [orgId, L.table, L.name, L.product, L.typical, L.key]);
+    await q(db, `INSERT INTO lenders (org_id,lender_table,name,product_name,active,priority_tier,bureaus_pulled,eligible_states,minimum_revenue_threshold,minimum_time_in_business_years,typical_approval_range,external_row_id,notes,is_demo)
+      SELECT $1,$2::lender_table,$3,$4,true,$5,$6,$7,$8,$9,$10,$11,'demo',true WHERE NOT EXISTS (SELECT 1 FROM lenders WHERE org_id=$1 AND external_row_id=$11)`,
+      [orgId, L.table, L.name, L.product, L.tier, L.bureaus, L.states, L.min_revenue, L.min_tib, L.typical, L.key]);
+    /* Demo rows seeded before the roster carried bureau data have NULL
+       bureaus_pulled, and matchLenders reads that as "pulls nothing", so an
+       open inquiry never drops them and the rotation demo shows a list that
+       never shrinks. Re-assert the matcher columns every run so an org that
+       already has demo lenders self-heals without needing a wipe. */
+    await q(db, `UPDATE lenders SET priority_tier=$3, bureaus_pulled=$4, eligible_states=$5,
+                        minimum_revenue_threshold=$6, minimum_time_in_business_years=$7
+                  WHERE org_id=$1 AND external_row_id=$2 AND is_demo`,
+      [orgId, L.key, L.tier, L.bureaus, L.states, L.min_revenue, L.min_tib]);
     const id = (await q(db, `SELECT id FROM lenders WHERE org_id=$1 AND external_row_id=$2`, [orgId, L.key])).rows[0]?.id;
     if (id) lenderIds[L.key] = id;
   }
@@ -98,7 +107,9 @@ export async function seedPlatformDemo(db, { orgId } = {}) {
       [orgId, clientId, close?"funded":"open", amt, close?amt:null, close?amt:null])).rows[0];
     if (!((await q(db, `SELECT count(*)::int n FROM applications WHERE funding_round_id=$1 AND is_demo`, [round.id])).rows[0]?.n) && lenderList.length) {
       for (let i=0;i<3;i++) {
-        const [lKey,lId]=lenderList[i%lenderList.length]; const L=DEMO_LENDERS.find(x=>x.key===lKey);
+        // Stride by 3: the roster holds 3 rows per lender_table, so a stride of
+        // 1 would put all three demo applications on the same product type.
+        const [lKey,lId]=lenderList[(i*3)%lenderList.length]; const L=DEMO_LENDERS.find(x=>x.key===lKey);
         const st = close && i<2 ? "Approved" : statuses[(n+i)%statuses.length];
         await q(db, `INSERT INTO applications (org_id,funding_round_id,client_id,lender_id,bank,lender_name,product_name,lender_table,status,approved_amount,requested_amount,is_demo)
           VALUES ($1,$2,$3,$4,$5,$5,$6,$7::lender_table,$8,$9,$10,true)`,

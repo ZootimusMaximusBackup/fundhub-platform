@@ -151,3 +151,36 @@ test('lenderMatchCount reads the real lenders list when provided', () => {
   assert.equal(r.lenderMatchCount, 1);
   assert.equal(r.lenderMatches[0].name, 'Fit');
 });
+
+test('calcFunding excludes demo lenders by default and includes them on request', () => {
+  const lenders = [
+    { id: '1', name: 'Real', lender_table: 'OnlineBizCC', active: true, priority_tier: 1, bureaus_pulled: 'EQ', eligible_states: 'AZ' },
+    { id: '2', name: 'Sample', lender_table: 'OnlineBizCC', active: true, priority_tier: 1, bureaus_pulled: 'EQ', eligible_states: 'AZ', is_demo: true }
+  ];
+  const off = calcFunding({ cards: CARDS, lenders, clientState: 'AZ' });
+  assert.equal(off.lenderMatchCount, 1);
+  assert.deepEqual(off.lenderMatches.map((m) => m.name), ['Real']);
+
+  const on = calcFunding({ cards: CARDS, lenders, clientState: 'AZ', includeDemo: true });
+  assert.equal(on.lenderMatchCount, 2);
+});
+
+test('a demo lender cannot move any money figure', () => {
+  // Every dollar in this output comes from `cards`. Adding a demo lender, or
+  // admitting it via Demo Mode, must leave all four money blocks byte-identical.
+  const base = { cards: CARDS, requestedAmount: 20000, clientState: 'AZ' };
+  const money = (r) => JSON.stringify([
+    r.totalAvailableCredit, r.allocation, r.payMethodComparison, r.guardrail
+  ]);
+
+  const demo = [{ id: 'd', name: 'Sample', lender_table: 'OnlineBizCC', active: true, priority_tier: 1, bureaus_pulled: 'EQ', eligible_states: 'AZ', is_demo: true }];
+  const noLenders = calcFunding(base);
+  const withDemoExcluded = calcFunding({ ...base, lenders: demo });
+  const withDemoIncluded = calcFunding({ ...base, lenders: demo, includeDemo: true });
+
+  assert.equal(money(withDemoExcluded), money(noLenders));
+  assert.equal(money(withDemoIncluded), money(noLenders));
+  // …and the demo row is still gated out of the non-money block by default.
+  assert.equal(withDemoExcluded.lenderMatchCount, 0);
+  assert.equal(withDemoIncluded.lenderMatchCount, 1);
+});

@@ -353,11 +353,17 @@ export async function matchForClient(db, {
     [orgId, clientId]
   );
 
+  // Resolved once and handed to both gates. listLenders would otherwise look
+  // it up again, and matchLenders now defaults to excluding demo rows, which
+  // would drop them even with Demo Mode on unless it is told.
+  const demoMode = await orgDemoModeEnabled(db, orgId);
+
   const lenders = await listLenders(db, {
     orgId,
     lender_table: lenderTable,
     active: true,
-    limit: 500
+    limit: 500,
+    includeDemo: demoMode
   });
 
   const cases = await db.query(
@@ -375,7 +381,8 @@ export async function matchForClient(db, {
     inquiryLog: inq.rows,
     cases: cases.rows,
     lenderTable,
-    recentInquiryDays
+    recentInquiryDays,
+    includeDemo: demoMode
   });
 }
 

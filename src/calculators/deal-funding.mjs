@@ -13,6 +13,10 @@
  * Optional lender-database inputs (lenders, clientState, inquiryLog) attach a
  * real match_count from src/lenders/match.mjs. When those inputs are omitted,
  * lenderMatchCount is null — never a fabricated number.
+ *
+ * Demo lenders are excluded unless includeDemo is true. They only ever reach
+ * lenderMatchCount / lenderMatches; every money figure above is computed from
+ * `cards` alone, so a demo lender cannot move a dollar amount either way.
  */
 
 import { matchLenders } from "../lenders/match.mjs";
@@ -126,6 +130,7 @@ function num(v) {
  * @param {number} opts.utilizationThreshold default 0.30 (per-org configurable)
  * @param {number} opts.minPaymentPct        default 0.02, for the min-payment pay method
  * @param {number[]} opts.horizons           months to compare cost of capital over; default [12, 24, 36]
+ * @param {boolean} opts.includeDemo         Demo Mode; default false = demo lenders excluded
  */
 export function calcFunding({
   cards = [],
@@ -137,6 +142,7 @@ export function calcFunding({
   clientState = null,
   inquiryLog = null,
   lenderTable = null,
+  includeDemo = false,
 } = {}) {
   const clean = Array.isArray(cards) ? cards.filter((c) => c && num(c.creditLimit) != null) : [];
 
@@ -262,7 +268,8 @@ export function calcFunding({
       lenders,
       clientState,
       inquiryLog: inquiryLog || [],
-      lenderTable
+      lenderTable,
+      includeDemo
     });
     lenderMatchCount = matched.summary.match_count;
     lenderMatches = matched.matches;

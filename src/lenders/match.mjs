@@ -118,6 +118,7 @@ function bureauOverlap(lenderBureaus, avoid) {
  * @param {object[]} [opts.inquiryLog]
  * @param {string|null} [opts.lenderTable]
  * @param {boolean} [opts.includeInactive]
+ * @param {boolean} [opts.includeDemo]  Demo Mode. Default false = exclude.
  * @param {number} [opts.recentInquiryDays]
  * @returns {{ matches: object[], skipped: object[], summary: object }}
  */
@@ -128,6 +129,7 @@ export function matchLenders({
   cases = [],
   lenderTable = null,
   includeInactive = false,
+  includeDemo = false,
   recentInquiryDays = 30,
   now = new Date()
 } = {}) {
@@ -136,7 +138,19 @@ export function matchLenders({
   const matches = [];
   const skipped = [];
 
-  const list = Array.isArray(lenders) ? lenders : [];
+  /* DEMO MODE, EXCLUDED BY DEFAULT.
+
+     listLenders() already applies this gate in SQL, so the normal path never
+     hands a demo row down here. This is the second layer: matchLenders is
+     exported directly and any caller can pass it an array it assembled
+     itself, and a real client on a real call must never see a sample lender
+     no matter which caller built the list.
+
+     Dropped rows do NOT go into `skipped`. `skipped` is shown on the round
+     planner, and a row listed there by name is still a demo lender disclosed
+     to a real client. With Demo Mode off they are absent, not refused. */
+  const list = (Array.isArray(lenders) ? lenders : [])
+    .filter((L) => includeDemo || !L?.is_demo);
   for (const L of list) {
     if (!L) continue;
     if (lenderTable && L.lender_table !== lenderTable) {
@@ -177,6 +191,7 @@ export function matchLenders({
       max_known_loc: L.max_known_loc,
       insider_tips: L.insider_tips,
       stated_requirements: L.stated_requirements,
+      is_demo: !!L.is_demo,
       rotation_cost: rotationCost,
       sort_tier: tier
     });
