@@ -59,24 +59,51 @@ test("CRS client: missing configuration fails before transport", async () => {
   assert.equal(called, false);
 });
 
-test("CRS client: production and unknown hosts are refused before login", async () => {
-  for (const host of [CRS_PRODUCTION_HOST, "unknown.example"]) {
-    let called = false;
-    const client = createCrsClient({
-      env: { ...LIVE_ENV, CRS_API_HOST: host },
-      fetchImpl: async () => {
-        called = true;
-        return response(200, {});
-      }
-    });
-    await assert.rejects(
-      client.login(),
-      (error) => error.code === (
-        host === CRS_PRODUCTION_HOST ? "production_host_refused" : "unknown_host"
-      )
-    );
-    assert.equal(called, false);
-  }
+test("CRS client: production host without CRS_ALLOW_LIVE is refused before login", async () => {
+  let called = false;
+  const client = createCrsClient({
+    env: { ...LIVE_ENV, CRS_API_HOST: CRS_PRODUCTION_HOST },
+    fetchImpl: async () => {
+      called = true;
+      return response(200, {});
+    }
+  });
+  await assert.rejects(client.login(), (error) => error.code === "production_host_refused");
+  assert.equal(called, false);
+});
+
+test("CRS client: unknown hosts are refused before login", async () => {
+  let called = false;
+  const client = createCrsClient({
+    env: { ...LIVE_ENV, CRS_API_HOST: "unknown.example" },
+    fetchImpl: async () => {
+      called = true;
+      return response(200, {});
+    }
+  });
+  await assert.rejects(client.login(), (error) => error.code === "unknown_host");
+  assert.equal(called, false);
+});
+
+test("CRS client: production host + CRS_ALLOW_LIVE on reaches login", async () => {
+  const calls = [];
+  const client = createCrsClient({
+    env: {
+      ...LIVE_ENV,
+      CRS_API_HOST: CRS_PRODUCTION_HOST,
+      CRS_ALLOW_LIVE: "1"
+    },
+    fetchImpl: async (url, init) => {
+      calls.push({ url, init });
+      return response(200, {
+        token: "unit-bearer-prod",
+        refreshToken: "unit-refresh-prod",
+        expires: 3600
+      });
+    }
+  });
+  assert.equal(await client.getToken(), "unit-bearer-prod");
+  assert.equal(calls[0].url, `https://${CRS_PRODUCTION_HOST}/api/users/login`);
 });
 
 test("CRS client: a wrong sandbox identity is refused before login", async () => {

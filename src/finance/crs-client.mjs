@@ -33,6 +33,7 @@ import {
   CRS_PRODUCTION_HOST,
   CRS_SANDBOX_HOST,
   assertIdentityAllowed,
+  livePullAllowed,
   normalizeHost
 } from "./crs-identities.mjs";
 
@@ -156,14 +157,17 @@ export function createCrsClient({ env = process.env, fetchImpl, now = Date.now }
       );
     }
     if (config.host === CRS_PRODUCTION_HOST) {
+      // TWO KEYS. Host alone is never enough — see CRS_ALLOW_LIVE.
+      if (!livePullAllowed(env)) {
+        throw new CrsError(
+          "CRS production host refused — CRS_ALLOW_LIVE is not explicitly on",
+          { status: 503, code: "production_host_refused" }
+        );
+      }
+    } else if (config.host !== CRS_SANDBOX_HOST) {
       throw new CrsError(
-        "CRS production host refused — this client is sandbox-only",
-        { status: 503, code: "production_host_refused" }
-      );
-    }
-    if (config.host !== CRS_SANDBOX_HOST) {
-      throw new CrsError(
-        `CRS host refused — CRS_API_HOST must be ${CRS_SANDBOX_HOST}`,
+        `CRS host refused — CRS_API_HOST must be ${CRS_SANDBOX_HOST}` +
+        ` (or ${CRS_PRODUCTION_HOST} with CRS_ALLOW_LIVE on)`,
         { status: 503, code: "unknown_host" }
       );
     }
@@ -319,7 +323,7 @@ export function createCrsClient({ env = process.env, fetchImpl, now = Date.now }
     const product = productFor(bureau);
 
     // THE GATE. Before a body is built, before anything is on the wire.
-    assertIdentityAllowed({ host: config.host, bureau, identity });
+    assertIdentityAllowed({ host: config.host, bureau, identity, env });
 
     const res = await authed(product.order, { body: orderBody(identity) });
 
@@ -360,7 +364,7 @@ export function createCrsClient({ env = process.env, fetchImpl, now = Date.now }
       throw new CrsError("requestId is required to retrieve a report",
         { status: 400, code: "request_id_required" });
     }
-    assertIdentityAllowed({ host: config.host, bureau, identity });
+    assertIdentityAllowed({ host: config.host, bureau, identity, env });
 
     const res = await authed(product.retrieve(requestId), { body: orderBody(identity) });
 

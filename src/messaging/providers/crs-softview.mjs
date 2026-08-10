@@ -1,6 +1,9 @@
-// CRS sandbox transport. This is the only CRS module allowed to touch the
-// outbound chokepoint. URL construction and authentication stay in the finance
-// client; this module owns the final host check and the ADAPTERS fence.
+// CRS transport. This is the only CRS module allowed to touch the outbound
+// chokepoint. URL construction and authentication stay in the finance client;
+// this module owns the final host check and the ADAPTERS fence.
+//
+// Sandbox is always allowed. Production needs CRS_ALLOW_LIVE explicitly on
+// AND the production hostname — either one alone fails closed.
 
 import {
   ADAPTERS,
@@ -8,8 +11,10 @@ import {
   transmit
 } from "../../lib/outbound-fetch.mjs";
 import {
+  CRS_PRODUCTION_HOST,
   CRS_SANDBOX_HOST,
-  assertIdentityAllowed
+  assertIdentityAllowed,
+  livePullAllowed
 } from "../../finance/crs-identities.mjs";
 
 export const TRANSMITS = true;
@@ -77,14 +82,21 @@ export function requestCrsSandbox({
     return Promise.resolve(refused("CRS request refused: invalid sandbox URL"));
   }
 
+  const host = target.hostname.toLowerCase();
+  const sandboxOk = host === CRS_SANDBOX_HOST;
+  const productionOk = host === CRS_PRODUCTION_HOST && livePullAllowed(env);
   if (
     target.protocol !== "https:"
-    || target.hostname.toLowerCase() !== CRS_SANDBOX_HOST
+    || (!sandboxOk && !productionOk)
     || (target.port && target.port !== "443")
     || target.username
     || target.password
   ) {
-    return Promise.resolve(refused("CRS request refused: sandbox host required"));
+    return Promise.resolve(refused(
+      productionOk === false && host === CRS_PRODUCTION_HOST
+        ? "CRS request refused: CRS_ALLOW_LIVE is not explicitly on"
+        : "CRS request refused: allowed CRS host required"
+    ));
   }
   if (method !== "POST" || target.search || target.hash) {
     return Promise.resolve(refused("CRS request refused: unsupported request shape"));
@@ -98,9 +110,9 @@ export function requestCrsSandbox({
     let identity;
     try {
       identity = typeof body === "string" ? JSON.parse(body) : body;
-      assertIdentityAllowed({ host: target.hostname, bureau, identity });
+      assertIdentityAllowed({ host: target.hostname, bureau, identity, env });
     } catch {
-      return Promise.resolve(refused("CRS request refused: sandbox identity not allowed"));
+      return Promise.resolve(refused("CRS request refused: identity not allowed for host"));
     }
   }
 

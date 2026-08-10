@@ -64,9 +64,23 @@ test("CRS provider: explicit fence-off uses only the injected transport", async 
   assert.equal(calls[0].init.body, "{\"safe\":true}");
 });
 
-test("CRS provider: production and unknown hosts never reach transport", async () => {
+test("CRS provider: production without CRS_ALLOW_LIVE never reaches transport", async () => {
+  let called = false;
+  const result = await requestCrsSandbox({
+    url: "https://mware.crscreditapi.com/api/users/login",
+    env: { ADAPTERS_DRY_RUN: "0" },
+    fetchImpl: async () => {
+      called = true;
+      return response();
+    }
+  });
+  assert.equal(result.blocked, true);
+  assert.match(result.error, /CRS_ALLOW_LIVE/);
+  assert.equal(called, false);
+});
+
+test("CRS provider: unknown and non-https hosts never reach transport", async () => {
   for (const url of [
-    "https://mware.crscreditapi.com/api/users/login",
     "https://example.invalid/api/users/login",
     "http://api-sandbox.stitchcredit.com/api/users/login"
   ]) {
@@ -80,9 +94,23 @@ test("CRS provider: production and unknown hosts never reach transport", async (
       }
     });
     assert.equal(result.blocked, true);
-    assert.equal(result.error, "CRS request refused: sandbox host required");
+    assert.match(result.error, /allowed CRS host required/);
     assert.equal(called, false);
   }
+});
+
+test("CRS provider: production + CRS_ALLOW_LIVE on reaches transport", async () => {
+  const calls = [];
+  const result = await requestCrsSandbox({
+    url: "https://mware.crscreditapi.com/api/users/login",
+    env: { ADAPTERS_DRY_RUN: "0", CRS_ALLOW_LIVE: "1" },
+    fetchImpl: async (url) => {
+      calls.push(url);
+      return response({ token: "fake" });
+    }
+  });
+  assert.equal(result.ok, true);
+  assert.equal(calls.length, 1);
 });
 
 test("CRS provider: report routes accept only the exact bureau fixture", async () => {

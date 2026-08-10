@@ -1,9 +1,14 @@
-// THE CRS SANDBOX IDENTITY GATE.
+// THE CRS IDENTITY GATE.
 //
-// This project is sandbox-only. The production host and every unknown host are
-// refused. The sandbox host accepts only the three exact synthetic identities
-// from the vendor's Postman fixtures. A changed name, birth date, Social
-// Security number, email, or address fails before login or an order can leave.
+// Two keys open a live pull: CRS_API_HOST must be the production host, AND
+// CRS_ALLOW_LIVE must be an explicit on value (1 / true / yes / on). Missing
+// either one fails closed. Same shape as the messaging fence — one forgotten
+// env value is how a real pull happens on someone's file by mistake.
+//
+// The sandbox host never needs CRS_ALLOW_LIVE. It accepts only the three exact
+// synthetic identities from the vendor's Postman fixtures. A changed name,
+// birth date, Social Security number, email, or address fails before login or
+// an order can leave.
 //
 // The fixture Social Security numbers are in the 666-xx-xxxx range, which the
 // Social Security Administration has never issued. Tests pin that invariant so
@@ -149,6 +154,22 @@ export function sandboxBureauFor(identity) {
   return null;
 }
 
+/** Env var that must be an explicit on value before the production host is reachable. */
+export const CRS_ALLOW_LIVE = "CRS_ALLOW_LIVE";
+
+/** Explicit on values only. Missing, empty, or anything else fails closed. */
+const MEANS_LIVE = new Set(["1", "true", "yes", "on"]);
+
+/**
+ * livePullAllowed — true only when CRS_ALLOW_LIVE is an explicit on value.
+ * Unset, empty, "0", "false", "maybe", or typos all mean no.
+ */
+export function livePullAllowed(env = process.env) {
+  const raw = env?.[CRS_ALLOW_LIVE];
+  if (raw === undefined || raw === null || String(raw).trim() === "") return false;
+  return MEANS_LIVE.has(String(raw).trim().toLowerCase());
+}
+
 /**
  * assertIdentityAllowed — the gate. Throws, or returns nothing.
  *
@@ -156,23 +177,29 @@ export function sandboxBureauFor(identity) {
  * identity. That is deliberate: the chooser can be bypassed by a new caller,
  * and the point of this function is that no caller can reach the network
  * without passing it.
+ *
+ * Production also requires CRS_ALLOW_LIVE. Host alone is never enough.
  */
-export function assertIdentityAllowed({ host, bureau, identity } = {}) {
+export function assertIdentityAllowed({
+  host, bureau, identity, env = process.env
+} = {}) {
   const h = normalizeHost(host);
 
   if (isProductionHost(h)) {
-    throw new CrsIdentityError(
-      "refusing the CRS production host — this client is sandbox-only",
-      { status: 500, code: "production_host_refused" }
-    );
-  }
-  if (!isSandboxHost(h)) {
+    if (!livePullAllowed(env)) {
+      throw new CrsIdentityError(
+        "refusing the CRS production host — CRS_ALLOW_LIVE is not explicitly on",
+        { status: 500, code: "production_host_refused" }
+      );
+    }
+  } else if (!isSandboxHost(h)) {
     throw new CrsIdentityError(
       `refusing an unrecognised CRS host ${JSON.stringify(h || "")} — ` +
-      `CRS_API_HOST must be ${CRS_SANDBOX_HOST}`,
+      `CRS_API_HOST must be ${CRS_SANDBOX_HOST} (or ${CRS_PRODUCTION_HOST} with CRS_ALLOW_LIVE on)`,
       { status: 500, code: "unknown_host" }
     );
   }
+
   if (!BUREAUS.includes(bureau)) {
     throw new CrsIdentityError(
       `bureau must be one of: ${BUREAUS.join(", ")}`,
@@ -185,17 +212,36 @@ export function assertIdentityAllowed({ host, bureau, identity } = {}) {
       { status: 400, code: "identity_required" }
     );
   }
-  if (!matchesSandboxIdentity(bureau, identity)) {
+
+  if (isSandboxHost(h)) {
+    if (!matchesSandboxIdentity(bureau, identity)) {
+      throw new CrsIdentityError(
+        `refusing a non-test identity on the CRS sandbox — only the exact ` +
+        `published ${bureau} fixture is allowed`,
+        { status: 400, code: "identity_not_allowed_on_sandbox" }
+      );
+    }
+    return;
+  }
+
+  // Production host + CRS_ALLOW_LIVE on. Test fixtures must never leave sandbox.
+  if (sandboxBureauFor(identity)) {
     throw new CrsIdentityError(
-      `refusing a non-test identity on the CRS sandbox — only the exact ` +
-      `published ${bureau} fixture is allowed`,
-      { status: 400, code: "identity_not_allowed_on_sandbox" }
+      "refusing a sandbox test identity on the CRS production host",
+      { status: 400, code: "test_identity_on_production" }
     );
   }
 }
 
-/** Select the vendor fixture for a sandbox bureau. Every other host fails. */
-export function identityForBureau({ host, bureau } = {}) {
+/**
+ * identityForBureau — sandbox fixture, or the real identity on a live host.
+ *
+ * Sandbox ignores any provided identity and returns the vendor fixture.
+ * Production returns the provided identity only when CRS_ALLOW_LIVE is on.
+ */
+export function identityForBureau({
+  host, bureau, identity = null, env = process.env
+} = {}) {
   if (!BUREAUS.includes(bureau)) {
     throw new CrsIdentityError(
       `bureau must be one of: ${BUREAUS.join(", ")}`,
@@ -204,10 +250,15 @@ export function identityForBureau({ host, bureau } = {}) {
   }
   if (isSandboxHost(host)) return SANDBOX_TEST_IDENTITIES[bureau];
   if (isProductionHost(host)) {
-    throw new CrsIdentityError(
-      "refusing the CRS production host — this client is sandbox-only",
-      { status: 500, code: "production_host_refused" }
-    );
+    if (!livePullAllowed(env)) {
+      throw new CrsIdentityError(
+        "refusing the CRS production host — CRS_ALLOW_LIVE is not explicitly on",
+        { status: 500, code: "production_host_refused" }
+      );
+    }
+    if (!identity || !ssnDigits(identity.ssn)) return null;
+    assertIdentityAllowed({ host, bureau, identity, env });
+    return identity;
   }
   throw new CrsIdentityError(
     `unrecognised CRS host ${JSON.stringify(normalizeHost(host) || "")}`,
