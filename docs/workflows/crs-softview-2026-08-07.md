@@ -67,3 +67,15 @@
 - Metro 2 (`docs/metro2/`, `src/metro2/`) — out of scope
 - Production CRS host/creds — not set
 - Turning the outbound fence off permanently — left on
+
+## 2026-08-10 — dual live gate (owner option C)
+
+Live pulls need **two** keys: `CRS_API_HOST` = production host **and**
+`CRS_ALLOW_LIVE` explicitly on (`1` / `true` / `yes` / `on`). Either missing
+fails closed.
+
+- `src/finance/crs-identities.mjs` — `livePullAllowed()`, gate, `identityForBureau`
+- `src/finance/crs-client.mjs` — config respects both keys
+- `src/messaging/providers/crs-softview.mjs` — transport allows production only when live is on
+- Netlify: `CRS_ALLOW_LIVE=0` on production / deploy-preview / branch-deploy
+- Tests: identities, client, map, provider, c-00
