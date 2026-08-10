@@ -45,7 +45,9 @@ export function extractCanonicalGroups(src = read("src/events/canonical.mjs")) {
     // Section labels are the INDENTED comments inside the array literal; the
     // file-header comments start at column 0 and are not group headings.
     const heading = line.match(/^ {2,}\/\/\s*(.+?)\s*$/);
-    const entry = line.match(/^\s*"([a-z.]+)",?/);
+    // Event names are dotted snake segments — allow underscores so names like
+    // repair.parse.low_confidence are not dropped from the diagram groups.
+    const entry = line.match(/^\s*"([a-z._]+)",?/);
     if (heading && !entry) {
       // Drop a trailing parenthetical aside — "commission + billing (proposed
       // in ...)" is the group "commission + billing".

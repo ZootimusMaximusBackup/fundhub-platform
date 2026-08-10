@@ -22,7 +22,7 @@ flowchart TD
     CAN --> A_public[public — 1 route]
     CAN --> A_top_level[Everything else — 3 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 125 routes]
+    WHO -->|Yes| CANT[Blocked — 126 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_campaigns[Campaigns — 8 blocked]
@@ -39,6 +39,7 @@ flowchart TD
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
     CANT --> B_read[Reading data — 42 blocked]
+    CANT --> B_repair[repair — 1 blocked]
     CANT --> B_social[social — 3 blocked]
     CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 24 blocked]
@@ -46,7 +47,7 @@ flowchart TD
 
 ## What they can reach
 
-**13 of 138 routes.**
+**13 of 139 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -71,7 +72,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**125 of 138 routes.**
+**126 of 139 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -193,6 +194,7 @@ flowchart TD
 | `/api/read/transactions` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/workflows` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/repair/exceptions` | GET, POST | staff |
 | `/api/shifts` | GET, POST | staff |
 | `/api/social/oauth` | — | staff |
 | `/api/social/publish` | POST | partner, staff |

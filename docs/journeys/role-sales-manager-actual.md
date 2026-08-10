@@ -28,6 +28,7 @@ flowchart TD
     CAN --> A_journeys[journeys — 1 route]
     CAN --> A_public[public — 1 route]
     CAN --> A_read[Reading data — 39 routes]
+    CAN --> A_repair[repair — 1 route]
     CAN --> A_social[social — 3 routes]
     CAN --> A_staff[staff — 1 route]
     CAN --> A_top_level[Everything else — 21 routes]
@@ -52,7 +53,7 @@ flowchart TD
 
 ## What they can reach
 
-**109 of 138 routes.**
+**110 of 139 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -158,6 +159,7 @@ flowchart TD
 | `/api/read/transactions` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/workflows` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/repair/exceptions` | GET, POST | staff |
 | `/api/shifts` | GET, POST | staff |
 | `/api/social/oauth` | — | staff |
 | `/api/social/publish` | POST | partner, staff |
@@ -174,7 +176,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**29 of 138 routes.**
+**29 of 139 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

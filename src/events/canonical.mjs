@@ -87,8 +87,11 @@ export const CANONICAL_EVENTS = [
   // contracts
   "contract.sent",
   "contract.signed",
-  // Metro 2 / credit repair (DFY) — CREDIT-REPAIR-PIPELINE-SPEC §3
-  // Retires the unused N-05 proposal names (repair.round_sent etc.).
+  /* Metro 2 / DFY credit repair — CREDIT-REPAIR-PIPELINE-SPEC §3.
+     Retires the unused N-05 proposal names (repair.round_sent etc.).
+     Keep the line below short — scripts/diagrams/generate.mjs uses the comment
+     line immediately above a group as that group's section name in the table. */
+  // credit repair
   "repair.enrolled",
   "repair.docs.needed",
   "repair.docs.complete",
@@ -109,7 +112,7 @@ export const CANONICAL_EVENTS = [
   "repair.program.complete",
   "repair.stalled",
   "repair.cancelled",
-  // DIY package delivery spine
+  // diy package
   "diy.package.requested",
   "diy.package.generating",
   "diy.package.ready",

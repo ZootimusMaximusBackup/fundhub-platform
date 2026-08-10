@@ -166,6 +166,31 @@ flowchart LR
 | `invoice.voided` | commission + billing | — | 0 |
 | `contract.sent` | contracts | — | 0 |
 | `contract.signed` | contracts | — | 0 |
+| `repair.enrolled` | credit repair | — | 0 |
+| `repair.docs.needed` | credit repair | — | 0 |
+| `repair.docs.complete` | credit repair | — | 0 |
+| `repair.analysis.complete` | credit repair | — | 0 |
+| `repair.analysis.empty` | credit repair | — | 0 |
+| `repair.letters.ready` | credit repair | — | 0 |
+| `repair.letters.sent` | credit repair | — | 0 |
+| `repair.letters.delivered` | credit repair | — | 0 |
+| `repair.response.received` | credit repair | — | 0 |
+| `repair.response.parsed` | credit repair | — | 0 |
+| `repair.parse.low_confidence` | credit repair | — | 0 |
+| `repair.item.deleted` | credit repair | — | 0 |
+| `repair.item.verified` | credit repair | — | 0 |
+| `repair.item.updated` | credit repair | — | 0 |
+| `repair.item.unaddressed` | credit repair | — | 0 |
+| `repair.round.complete` | credit repair | — | 0 |
+| `repair.round.escalated` | credit repair | — | 0 |
+| `repair.program.complete` | credit repair | — | 0 |
+| `repair.stalled` | credit repair | — | 0 |
+| `repair.cancelled` | credit repair | — | 0 |
+| `diy.package.requested` | diy package | — | 0 |
+| `diy.package.generating` | diy package | — | 0 |
+| `diy.package.ready` | diy package | — | 0 |
+| `diy.package.delivered` | diy package | — | 0 |
+| `diy.package.downloaded` | diy package | — | 0 |
 
 An event with no handler and no function is declared but inert — it can be emitted and stored,
 and nothing happens. That is a real state in this repo, not an omission in the diagram.

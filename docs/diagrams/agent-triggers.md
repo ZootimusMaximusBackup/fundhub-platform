@@ -136,6 +136,31 @@ Declared in `canonical.mjs`, emitted or emittable, with no Inngest function list
 - `invoice.voided`
 - `contract.sent`
 - `contract.signed`
+- `repair.enrolled`
+- `repair.docs.needed`
+- `repair.docs.complete`
+- `repair.analysis.complete`
+- `repair.analysis.empty`
+- `repair.letters.ready`
+- `repair.letters.sent`
+- `repair.letters.delivered`
+- `repair.response.received`
+- `repair.response.parsed`
+- `repair.parse.low_confidence`
+- `repair.item.deleted`
+- `repair.item.verified`
+- `repair.item.updated`
+- `repair.item.unaddressed`
+- `repair.round.complete`
+- `repair.round.escalated`
+- `repair.program.complete`
+- `repair.stalled`
+- `repair.cancelled`
+- `diy.package.requested`
+- `diy.package.generating`
+- `diy.package.ready`
+- `diy.package.delivered`
+- `diy.package.downloaded`
 
 Some are handled synchronously by a bus handler instead (see [event-flow](./event-flow.md)); the
 commission and billing events are proposed-but-unbuilt. Either way, nothing durable reacts to them.

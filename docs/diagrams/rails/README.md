@@ -11,6 +11,6 @@ The pipelines seeded by `002_pipelines.sql`, one state machine each.
 | [Sales](./sales.md) | `sales` | 10 | 6 |
 | [Funding: Card Stacking](./funding_card_stacking.md) | `funding_card_stacking` | 6 | 1 |
 | [Funding: Alt-Fin (Lendflow)](./funding_altfin.md) | `funding_altfin` | 7 | — |
-| [Optimization (Repair) Rounds](./optimization.md) | `optimization` | 5 | — |
+| [Optimization (Repair) Rounds](./optimization.md) | `optimization` | 17 | — |
 | [Inquiry Removal](./inquiry_removal.md) | `inquiry_removal` | 6 | — |
 | [AR / Collections](./ar_collections.md) | `ar_collections` | 5 | — |
