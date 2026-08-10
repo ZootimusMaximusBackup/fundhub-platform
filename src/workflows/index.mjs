@@ -1,3 +1,5 @@
+import { registerRepairHandlers } from '../repair/register.mjs';
+registerRepairHandlers();
 import { af02ReferralOwnershipCapture } from './af-02-referral-ownership-capture.mjs';
 import { aiSet03NoAnswerCadence } from './ai-set-03-no-answer-cadence.mjs';
 import { aiSet043WayHandoff } from './ai-set-04-3way-handoff.mjs';

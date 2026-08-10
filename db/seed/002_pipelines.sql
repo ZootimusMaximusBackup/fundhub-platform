@@ -39,9 +39,16 @@ JOIN (VALUES
   ('funding_altfin','underwriting','Underwriting',2),('funding_altfin','offers','Offers',3),
   ('funding_altfin','offer_accepted','Offer Accepted',4),('funding_altfin','funded','Funded',5),('funding_altfin','closed','Closed',6),
   -- Optimization (Repair) — DS-02 letters attach here and ONLY here
-  ('optimization','round_sent','Round Sent',0),('optimization','bureau_processing','Bureau Processing',1),
-  ('optimization','portal_updated','Portal Updated',2),('optimization','round_complete','Round Complete',3),
-  ('optimization','upgrade_invite','Upgrade Invite',4),
+  ('optimization','intake','Intake',0),('optimization','awaiting_documents','Awaiting Documents',1),
+  ('optimization','analysis','Analysis',2),('optimization','letters_generated','Letters Generated',3),
+  ('optimization','ready_to_send','Ready to Send',4),('optimization','in_transit','In Transit',5),
+  ('optimization','awaiting_response','Awaiting Response',6),('optimization','response_received','Response Received',7),
+  ('optimization','round_complete','Round Complete',8),('optimization','program_complete','Program Complete',9),
+  ('optimization','on_hold','On Hold',100),('optimization','stalled','Stalled',101),
+  ('optimization','cancelled','Cancelled',102),
+  -- legacy aliases kept for remap safety on old seeds
+  ('optimization','round_sent','Round Sent (legacy)',900),('optimization','bureau_processing','Bureau Processing (legacy)',901),
+  ('optimization','portal_updated','Portal Updated (legacy)',902),('optimization','upgrade_invite','Upgrade Invite (legacy)',903),
   -- Inquiry Removal (fraud gate resolvable per Chris)
   ('inquiry_removal','requested','Requested',0),('inquiry_removal','specialist_assigned','Specialist Assigned',1),
   ('inquiry_removal','calls_in_progress','Calls In Progress',2),('inquiry_removal','removed','Removed',3),

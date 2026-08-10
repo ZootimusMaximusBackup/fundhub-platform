@@ -92,6 +92,7 @@ import callOutcomesWrite from "../../api/call-outcomes.mjs";
 import marketingFlagsWrite from "../../api/marketing-flags.mjs";
 import bankingSyncAccounts from "../../api/banking/sync-accounts.mjs";
 import inquiries from "../../api/inquiries.mjs";
+import repairExceptions from "../../api/repair/exceptions.mjs";
 import pii from "../../api/pii.mjs";
 import shifts from "../../api/shifts.mjs";
 import campaignsList from "../../api/campaigns/list.mjs";
@@ -422,6 +423,7 @@ export const ROUTES = {
   // and deliberately so: a setter or closer has no reason to read a social
   // security number. Left exactly as written; routing it does not widen it.
   "inquiries": inquiries,
+  "repair/exceptions": repairExceptions,
   "pii": pii,
   "shifts": shifts,
 

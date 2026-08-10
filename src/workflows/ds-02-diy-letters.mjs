@@ -22,6 +22,7 @@ import { mergeCustomFields } from "./custom-fields.mjs";
 import { createInvoice, depositKey } from "../invoices/index.mjs";
 import { createTask } from "../lib/create-task.mjs";
 import { postJsonTo, ADAPTERS } from "../lib/outbound-fetch.mjs";
+import { deliverDiyPackageInRepo } from "../metro2/diy/deliver.mjs";
 
 export const EMAIL_TEMPLATE_KEY = "EMAIL-DS02-DIY-LETTERS-READY";
 const SOURCE_WORKFLOW = "ds-02-diy-letters";
@@ -46,11 +47,7 @@ async function createInvoiceTaskOnce(db, { orgId, clientId, eventId }) {
   return { created: true };
 }
 
-async function deliverLetters(fetchImpl, { clientId, orgId, env } = {}) {
-  /* Behind the adapters fence — see src/lib/outbound-fetch.mjs. transmit()
-     never throws and returns { blocked: true } rather than sending when
-     ADAPTERS_DRY_RUN is not explicitly off, so the try/catch that used to wrap
-     a bare fetch is gone along with the bare fetch. */
+async function deliverLettersUiq(fetchImpl, { clientId, orgId, env } = {}) {
   const res = await postJsonTo(DELIVER_LETTERS_URL, {
     body: JSON.stringify({ clientId, orgId }),
     fetchImpl,
@@ -62,12 +59,30 @@ async function deliverLetters(fetchImpl, { clientId, orgId, env } = {}) {
   return { delivered: res.ok, status: res.status, error: res.error };
 }
 
-async function deliverLettersOnce(db, fetchImpl, { clientId, orgId, eventId }) {
+/** In-repo Metro 2 package when violations are present; otherwise legacy UIQ. */
+async function deliverLetters(fetchImpl, {
+  clientId, orgId, env, db, identity, violationsByBureau
+} = {}) {
+  const vmap = violationsByBureau || {};
+  const hasViolations = Object.values(vmap).some((a) => Array.isArray(a) && a.length > 0);
+  if (hasViolations || env?.DIY_IN_REPO === "1") {
+    return deliverDiyPackageInRepo(db, {
+      clientId, orgId, identity, violationsByBureau: vmap, seed: `${orgId}:${clientId}`
+    });
+  }
+  return deliverLettersUiq(fetchImpl, { clientId, orgId, env });
+}
+
+async function deliverLettersOnce(db, fetchImpl, {
+  clientId, orgId, eventId, env, identity, violationsByBureau
+}) {
   const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
   if (r.rows[0]?.custom_fields?.diy_delivered_event_id === eventId) {
     return { delivered: true, skipped: true };
   }
-  const result = await deliverLetters(fetchImpl, { clientId, orgId });
+  const result = await deliverLetters(fetchImpl, {
+    clientId, orgId, env, db, identity, violationsByBureau
+  });
   if (result.delivered) {
     await db.query(`UPDATE clients SET custom_fields = custom_fields || $2::jsonb WHERE id = $1`,
       [clientId, JSON.stringify({ diy_delivered_event_id: eventId })]);
@@ -111,7 +126,14 @@ export async function handle({ event, db, step, fetchImpl = globalThis.fetch }) 
       notes: "DS-02 DIY Consulting Services Package",
     }));
   const invoiceTask = await step.run("create-invoice-task", () => createInvoiceTaskOnce(db, { orgId, clientId, eventId }));
-  const delivery = await step.run("deliver-letters", () => deliverLettersOnce(db, fetchImpl, { clientId, orgId, eventId }));
+  const delivery = await step.run("deliver-letters", () => deliverLettersOnce(db, fetchImpl, {
+    clientId,
+    orgId,
+    eventId,
+    env: event.env,
+    identity: event.payload?.identity,
+    violationsByBureau: event.payload?.violationsByBureau
+  }));
   const email = await step.run("send-email", () =>
     sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
   await step.run("tag-diy-letters", () => addTags(db, clientId, ["client:diy-letters"]));

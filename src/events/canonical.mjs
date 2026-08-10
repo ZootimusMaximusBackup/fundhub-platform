@@ -86,7 +86,35 @@ export const CANONICAL_EVENTS = [
      line immediately above a group as that group's section name in the table. */
   // contracts
   "contract.sent",
-  "contract.signed"
+  "contract.signed",
+  // Metro 2 / credit repair (DFY) — CREDIT-REPAIR-PIPELINE-SPEC §3
+  // Retires the unused N-05 proposal names (repair.round_sent etc.).
+  "repair.enrolled",
+  "repair.docs.needed",
+  "repair.docs.complete",
+  "repair.analysis.complete",
+  "repair.analysis.empty",
+  "repair.letters.ready",
+  "repair.letters.sent",
+  "repair.letters.delivered",
+  "repair.response.received",
+  "repair.response.parsed",
+  "repair.parse.low_confidence",
+  "repair.item.deleted",
+  "repair.item.verified",
+  "repair.item.updated",
+  "repair.item.unaddressed",
+  "repair.round.complete",
+  "repair.round.escalated",
+  "repair.program.complete",
+  "repair.stalled",
+  "repair.cancelled",
+  // DIY package delivery spine
+  "diy.package.requested",
+  "diy.package.generating",
+  "diy.package.ready",
+  "diy.package.delivered",
+  "diy.package.downloaded"
 ];
 
 export const isCanonical = (name) => CANONICAL_EVENTS.includes(name);
