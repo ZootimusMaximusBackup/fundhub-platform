@@ -75,3 +75,9 @@ the "don't edit 17 pages" requirement.
 ## Blockers / open questions
 
 None.
+
+## Closed
+
+2026-08-10 — Thread finished. Code committed (`b4a90ab`), on `origin/main`,
+and verified live on https://fundhub.ai (`shell.js` has `BETA_PAGES` /
+`mountBetaBanner`; `crm-sidebar.css` has `.beta-badge`). No remaining tasks.
