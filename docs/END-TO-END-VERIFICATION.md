@@ -1,9 +1,9 @@
 # End-to-End Verification Report
 
-Generated: 2026-08-07T03:39:26.226Z
-Run id: verify-1786073965279
+Generated: 2026-08-08T22:32:26.521Z
+Run id: verify-1786228345586
 Node: v22.21.1
-DATABASE_URL: 127.0.0.1/fundhub_verify
+DATABASE_URL: localhost/fundhub_crs_result_final_20260807
 Stance: skeptical operator / business architect. Prefer SILENTLY-DID-NOTHING and UNVERIFIED over a false pass.
 
 ## Operator headline
@@ -19,9 +19,9 @@ Re-run: `DATABASE_URL=... npm run verify:e2e` (Playwright UI + data-layer). Data
 | PASS | 344 |
 | FAIL | 29 |
 | SILENTLY-DID-NOTHING | 0 |
-| UNVERIFIED | 30 |
+| UNVERIFIED | 34 |
 | SKIP | 0 |
-| **Total** | **403** |
+| **Total** | **407** |
 | P0 non-passes | 0 |
 
 ## 1. SECURITY (read this first)
@@ -158,28 +158,28 @@ _None recorded in this run._
 
 **Usable for a real person today: YES**
 
-Primary client (lead): 18cfd774-f155-49ab-b458-82373bf79a5c / e2e_verify.funding.1786073965286@verify.local
-Simulated funding client: bd32a5a7-9bbe-4f2e-8a8f-bb8a0f244103 / sim+1786073965312@demo.fundhub.local
+Primary client (lead): ed08826d-6299-4d90-9ac5-dde5d2eb0f7c / e2e_verify.funding.1786228345597@verify.local
+Simulated funding client: 82097e5a-ada7-4d09-bf80-7590218aeba6 / sim+1786228345621@demo.fundhub.local
 Sale amount: 3000.00 (want 3000)
 Closer front commission: 500.00 (want 500)
 Advisor back commission: 125.00 (want 125)
 Closeout fee: 5000.00 (want 5000)
-GHL link: dry-ghl-18cfd774f155
-Contract: eb0af0e8-3a38-495a-9cda-4b08cc2deff7
+GHL link: dry-ghl-ed08826d6299
+Contract: c646a9ec-7c9d-4700-b362-67203eb6c564
 Messages queued: 2
 
 Operator verdict: YES for the money spine; still check GHL link, contract send, and live webhooks separately.
 
 | Step | Status | Persisted |
 |---|---|---|
-| Lead captured → client row | PASS | client.id=18cfd774-f155-49ab-b458-82373bf79a5c email=e2e_verify.funding.1786073965286@verify.local |
-| GHL linkage | PASS | dry-ghl-18cfd774f155 |
-| Booking → closer task | PASS | task.id=8630ed87-c4d9-4147-b8f1-d91634be04ee title=Strategy session booked |
-| Consent captured | PASS | kind=soft_pull_consent id=72a10621-259d-4fd4-8ac8-6f3ad1543c5d |
+| Lead captured → client row | PASS | client.id=ed08826d-6299-4d90-9ac5-dde5d2eb0f7c email=e2e_verify.funding.1786228345597@verify.local |
+| GHL linkage | PASS | dry-ghl-ed08826d6299 |
+| Booking → closer task | PASS | task.id=b55a06b7-b979-4a06-849c-d12695bce5ae title=Strategy session booked |
+| Consent captured | PASS | kind=soft_pull_consent id=b3a7e54e-1194-4b84-9002-edb9bfe0569c |
 | CRS → tradelines | PASS | funding_client_tls=4 sim_tls=4 ingested=4 |
-| Pipeline card | PASS | card=b7fa6b34-c65a-41e6-aee6-6a9d8019cc3e stage=new_lead |
+| Pipeline card | PASS | card=20d82840-848e-485d-b0d3-d262e638ffdb stage=new_lead |
 | Sale + $500 closer commission + entitlement | PASS | sales=2 front=500.00 ents=credit-analysis-report,funding-snapshot |
-| Contract | PASS | id=eb0af0e8-3a38-495a-9cda-4b08cc2deff7 status=draft hash=none |
+| Contract | PASS | id=c646a9ec-7c9d-4700-b362-67203eb6c564 status=draft hash=none |
 | Round funded + closeout 10% | PASS | fee=5000.00 balance_due=5000.00 basis=50000.00 |
 | Messages queued | PASS | total=2 queued=2 keys=EMAIL-F07-FUNDING-LOCKED,SMS-F07-FUNDING-LOCKED |
 
@@ -187,7 +187,7 @@ Operator verdict: YES for the money spine; still check GHL link, contract send, 
 
 **Usable for a real person today: YES**
 
-Client ddbadfd8-4624-4a2b-873d-d095a212b764
+Client 92799fba-516c-42c7-8114-7a187b3ca5c2
 DIY sale: 1000.00
 Entitlements: metro2-letter-pack
 Ledger rows: 0
@@ -203,15 +203,15 @@ Operator verdict: YES for sale/entitlement separation; letter delivery still ven
 
 **Usable for a real person today: YES**
 
-Inquiry a42e2f8c-9f51-4fb1-bb36-90ce433fbe8e; case 064cfbe7-49c4-4d1d-8f76-b06c9d47be75
+Inquiry fe783f47-8372-4673-828e-7599b581d14b; case 498f60ee-9248-445f-b3f3-73ee14471c31
 call_state machine: 11 states exercised
 Status bleed on call_state: no
 Operator verdict: YES for status separation; real Bland voice still credential-gated.
 
 | Step | Status | Persisted |
 |---|---|---|
-| Inquiry logged | PASS | id=a42e2f8c-9f51-4fb1-bb36-90ce433fbe8e status=open call_state=not_started |
-| Case created | PASS | case=064cfbe7-49c4-4d1d-8f76-b06c9d47be75 |
+| Inquiry logged | PASS | id=fe783f47-8372-4673-828e-7599b581d14b status=open call_state=not_started |
+| Case created | PASS | case=498f60ee-9248-445f-b3f3-73ee14471c31 |
 | All 11 call_states without status bleed | PASS | status remained open |
 | cleared → inquiry.removed → C-03 | PASS | {"done":true,"branch":"resume","task":{"created":true}} |
 
@@ -260,19 +260,19 @@ Registered workflows: 50
 Reacted: 48
 Errored: none
 Never invoked this run: 2
-Canonical events with no workflow listener: booking.rescheduled, booking.cancelled, decision.rendered, sale.closed, round.closeout, file.finalized, payment.failed, docs.received, inquiry.gate.raised, inquiry.gate.clear, inquiry.docs.needed, letter.generated, message.queued, message.sent, message.failed, message.blocked, commission.earned, commission.approved, commission.paid, invoice.created, invoice.sent, invoice.paid, invoice.voided, contract.sent, contract.signed
+Canonical events with no workflow listener: booking.rescheduled, booking.cancelled, decision.rendered, sale.closed, round.closeout, file.finalized, payment.failed, payment.expired, payment.canceled, payment.refunded, payment.disputed, docs.received, inquiry.gate.raised, inquiry.gate.clear, inquiry.docs.needed, letter.generated, message.queued, message.sent, message.failed, message.blocked, commission.earned, commission.approved, commission.paid, invoice.created, invoice.sent, invoice.paid, invoice.voided, contract.sent, contract.signed
 Operator note: Inngest does not schedule anything without INNGEST_EVENT_KEY. This run invokes handles directly.
 
 | Step | Status | Persisted |
 |---|---|---|
-| Drive workflows from canonical events | PASS | reacted=48 errored=0 never=2 orphanEvents=25 |
+| Drive workflows from canonical events | PASS | reacted=48 errored=0 never=2 orphanEvents=29 |
 
 ### PART 3 — Security & isolation
 
 **Usable for a real person today: YES**
 
-Victim client 7db66e5c-34c3-4dd1-abad-29aac8b23d4a in org 209ea23c-6b89-48d8-b6e3-51399835caee
-Other-org client b3185b8b-be8e-4950-9b71-ea7de50351d3
+Victim client 491c0938-7137-4106-bca0-ead2a9e75bfc in org 674a9295-7999-4f55-8751-4ad8810fadbf
+Other-org client 7aa07e9e-a3e6-462f-acef-75c00e8e1a45
 Document id: none
 Attacker stance: direct URL/API, id swap, org_id spoof, forged token, affiliate reach.
 
@@ -294,7 +294,7 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | Step | Status | Persisted |
 |---|---|---|
 | Workflow template keys → DB rows | FAIL | keys=43 missing=29 drafts=0 |
-| Canonical event emit sites | PASS | emitted=41 orphans=0:  |
+| Canonical event emit sites | PASS | emitted=45 orphans=0:  |
 
 ## 4. Full assertion table
 
@@ -438,6 +438,10 @@ Hand-calcs: closer $500 / back $125 / fee $5000 / hourly $6.25
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event round.closeout has no workflow listener |  |
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event file.finalized has no workflow listener |  |
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event payment.failed has no workflow listener |  |
+| UNVERIFIED | DATA | WORKFLOWS | system | Canonical event payment.expired has no workflow listener |  |
+| UNVERIFIED | DATA | WORKFLOWS | system | Canonical event payment.canceled has no workflow listener |  |
+| UNVERIFIED | DATA | WORKFLOWS | system | Canonical event payment.refunded has no workflow listener |  |
+| UNVERIFIED | DATA | WORKFLOWS | system | Canonical event payment.disputed has no workflow listener |  |
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event docs.received has no workflow listener |  |
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event inquiry.gate.raised has no workflow listener |  |
 | UNVERIFIED | DATA | WORKFLOWS | system | Canonical event inquiry.gate.clear has no workflow listener |  |
@@ -809,6 +813,10 @@ Money checked via src/verification/fixtures.mjs MONEY constants (hand-calc), not
 - Canonical event round.closeout has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
 - Canonical event file.finalized has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
 - Canonical event payment.failed has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
+- Canonical event payment.expired has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
+- Canonical event payment.canceled has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
+- Canonical event payment.refunded has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
+- Canonical event payment.disputed has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
 - Canonical event docs.received has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
 - Canonical event inquiry.gate.raised has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
 - Canonical event inquiry.gate.clear has no workflow listener — May still have a bus handler in src/handlers/*.mjs — check emitters separately in cross-cutting.
