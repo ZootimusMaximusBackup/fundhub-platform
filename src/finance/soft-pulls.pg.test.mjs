@@ -41,7 +41,16 @@ import {
   SoftPullError
 } from "./soft-pulls.mjs";
 import { onAnalysisCompleted } from "../handlers/client-lifecycle.mjs";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { runCrsPull } from "./crs-pull.mjs";
+
+const SANDBOX_DIR = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../vendor/underwriteiq-full/api/lite/crs/sandbox"
+);
+const sandboxReport = (file) => JSON.parse(readFileSync(path.join(SANDBOX_DIR, file), "utf8"));
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 
@@ -972,11 +981,17 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
     test("runCrsPull stores one anchored row and replays before ordering again", async () => {
       await wipeLedger();
       await db.query(`DELETE FROM crs_results WHERE client_id = $1`, [client]);
+      await db.query(`UPDATE clients SET outcome_tier = NULL WHERE id = $1`, [client]);
       const request = (await requestSoftPull(db, {
         orgId: org, clientId: client, requestedBy: { kind: "staff", id: staffId },
         reason: "real database CRS pull coordinator"
       })).request;
       const calls = [];
+      const reports = {
+        TU: sandboxReport("tu.json"),
+        EX: sandboxReport("exp.json"),
+        EQ: sandboxReport("efx.json")
+      };
       const crsClient = {
         host: "api-sandbox.stitchcredit.com",
         config: { missing: [] },
@@ -986,7 +1001,7 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
           return {
             ok: true,
             requestId: `PG-${bureau}-${request.id}`,
-            report: { scores: [{ score: 700, modelName: "FICO9" }], tradelines: [], inquiries: [] }
+            report: reports[bureau]
           };
         }
       };
@@ -1002,26 +1017,54 @@ describe("soft pull ledger", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
         });
 
         assert.equal(first.ok, true);
+        assert.ok(first.outcomeTier, "sandbox pull must produce a non-null outcome_tier");
         assert.equal(replay.replayed, true);
         assert.equal(replay.crsResultId, first.crsResultId);
         assert.equal(replay.event.deduped, true);
+        assert.equal(replay.events.decision.deduped, true);
+        assert.equal(replay.outcomeTier, first.outcomeTier);
         assert.deepEqual(calls, ["TU", "EX", "EQ"]);
         assert.equal(Number((await db.query(
           `SELECT count(*) n FROM crs_results WHERE client_id = $1`, [client]
         )).rows[0].n), 1);
         assert.equal((await ledgerRows())[0].status, "fulfilled");
+
         const stored = (await db.query(
-          `SELECT result FROM crs_results WHERE id = $1`, [first.crsResultId]
-        )).rows[0].result;
-        assert.deepEqual(Object.keys(stored.requestIds).sort(), ["EQ", "EX", "TU"]);
-        const event = (await db.query(
+          `SELECT result, outcome_tier FROM crs_results WHERE id = $1`, [first.crsResultId]
+        )).rows[0];
+        assert.deepEqual(Object.keys(stored.result.requestIds).sort(), ["EQ", "EX", "TU"]);
+        assert.equal(stored.outcome_tier, first.outcomeTier);
+
+        const clientTier = (await db.query(
+          `SELECT outcome_tier FROM clients WHERE id = $1`, [client]
+        )).rows[0].outcome_tier;
+        assert.equal(clientTier, first.outcomeTier);
+
+        const analysis = (await db.query(
           `SELECT name, payload FROM events WHERE client_id = $1 AND idempotency_key = $2`,
           [client, `crs-result:${first.crsResultId}:analysis.completed:v1`]
         )).rows;
-        assert.equal(event.length, 1);
-        assert.equal(event[0].name, "analysis.completed");
-        assert.equal(event[0].payload.requestId, request.id);
-        assert.equal(event[0].payload.crsResultId, first.crsResultId);
+        const decision = (await db.query(
+          `SELECT name, payload FROM events WHERE client_id = $1 AND idempotency_key = $2`,
+          [client, `crs-result:${first.crsResultId}:decision.rendered:v1`]
+        )).rows;
+        assert.equal(analysis.length, 1);
+        assert.equal(decision.length, 1);
+        assert.equal(analysis[0].name, "analysis.completed");
+        assert.equal(decision[0].name, "decision.rendered");
+        assert.equal(analysis[0].payload.outcomeTier, first.outcomeTier);
+        assert.equal(decision[0].payload.outcomeTier, first.outcomeTier);
+        assert.equal(analysis[0].payload.requestId, request.id);
+        assert.equal(analysis[0].payload.crsResultId, first.crsResultId);
+
+        const eventNames = (await db.query(
+          `SELECT name FROM events
+            WHERE client_id = $1
+              AND idempotency_key LIKE $2
+            ORDER BY name`,
+          [client, `crs-result:${first.crsResultId}:%`]
+        )).rows.map((r) => r.name);
+        assert.deepEqual(eventNames, ["analysis.completed", "decision.rendered"]);
       } finally {
         await db.query(`DELETE FROM events WHERE client_id = $1`, [client]);
       }

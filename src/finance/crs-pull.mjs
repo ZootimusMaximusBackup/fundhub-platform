@@ -15,14 +15,12 @@
 // request and ingests the tradelines in ONE transaction, and refuses a second
 // result for the same request. This file uses it and adds nothing of its own.
 //
-// emitCrsResult() IS DELIBERATELY NOT CALLED. It also emits decision.rendered,
-// which stamps a six-tier outcome on the client and drives funding-letter
-// delivery, and it refuses to emit at all without an outcome tier. Nothing in a
-// bureau report says which tier a client is in and this build has no engine that
-// decides, so inventing one would move a real client down a real product path on
-// a guess. This coordinator emits "here is what the bureaus said" and stops. The
-// tier stays null, and every downstream router reads a null tier as a hold
-// rather than a claim.
+// THE TIER ENGINE RUNS AFTER THE ROW IS STORED. crs-tier.mjs unwraps the raw
+// Softview bodies under result.bureaus.TU|EX|EQ and calls the vendored
+// runCRSEngine (normalizeSoftPull → routeOutcome). analysis.completed still
+// means "the bureaus answered"; decision.rendered means "we chose a tier".
+// emitCrsResult() is not used here — it would emit analysis.completed a second
+// time on top of finishStored.
 //
 // PARTIAL PULLS ARE REAL RESULTS. Two bureaus answering and one failing is a
 // worse answer than three, but it is still an answer, and the failure is stored
@@ -45,9 +43,15 @@ import {
   CrsIdentityError,
   identityForBureau,
   isSandboxHost,
-  isProductionHost
+  isProductionHost,
+  SANDBOX_TEST_IDENTITIES
 } from "./crs-identities.mjs";
 import { mergeBureauReports, newInquiriesFor } from "./crs-map.mjs";
+import {
+  runTierEngineFromCrsResult,
+  submittedAddressFromIdentity,
+  submittedNameFromIdentity
+} from "./crs-tier.mjs";
 import { revealSsn, PiiError } from "../pii/index.mjs";
 
 /** The provider namespace for `crs_results.provider`. The vendor, not the
@@ -85,20 +89,79 @@ export function providerResultIdFor({ requestIds = {} } = {}) {
   return `crs-request-bundle:${digest}`;
 }
 
-async function finishStored(db, { orgId, clientId, requestId, stored }) {
+function identityForTier({ identity, realIdentity, merged }) {
+  if (realIdentity) return realIdentity;
+  if (identity) return identity;
+  const first = Array.isArray(merged?.bureausPulled) ? merged.bureausPulled[0] : null;
+  if (first && SANDBOX_TEST_IDENTITIES[first]) return SANDBOX_TEST_IDENTITIES[first];
+  return null;
+}
+
+async function persistOutcomeTier(db, { clientId, crsResultId, outcomeTier }) {
+  await db.query(`UPDATE clients SET outcome_tier = $2 WHERE id = $1`, [clientId, outcomeTier]);
+  await db.query(
+    `UPDATE crs_results
+        SET outcome_tier = COALESCE(outcome_tier, $2),
+            updated_at = now()
+      WHERE id = $1`,
+    [crsResultId, outcomeTier]
+  );
+}
+
+async function finishStored(db, {
+  orgId,
+  clientId,
+  requestId,
+  stored,
+  identity = null,
+  realIdentity = null,
+  runTierEngine = runTierEngineFromCrsResult
+}) {
   const merged = stored.crsResult.result || {};
+  const tierIdentity = identityForTier({ identity, realIdentity, merged });
+  const tierResult = runTierEngine(merged, {
+    submittedName: submittedNameFromIdentity(tierIdentity),
+    submittedAddress: submittedAddressFromIdentity(tierIdentity),
+    formData: {
+      name: submittedNameFromIdentity(tierIdentity) || null,
+      email: tierIdentity?.email || null,
+      phone: null
+    }
+  });
+  const outcomeTier = tierResult.outcome;
+  const fundingEstimate = tierResult.preapprovals?.totalCombined ?? null;
+
+  await persistOutcomeTier(db, {
+    clientId,
+    crsResultId: stored.crsResult.id,
+    outcomeTier
+  });
+
   const inquiries = newInquiriesFor(merged);
-  const emitted = await emit(db, "analysis.completed", {
+  const analysis = await emit(db, "analysis.completed", {
     crsResultId: stored.crsResult.id,
     requestId,
     source: "crs",
     scores: merged.scores || { ex: null, eq: null, tu: null },
     bureaus: merged.bureaus || {},
-    inquiries
+    inquiries,
+    outcomeTier
   }, {
     orgId,
     clientId,
     idempotencyKey: `crs-result:${stored.crsResult.id}:analysis.completed:v1`
+  });
+
+  const decision = await emit(db, "decision.rendered", {
+    crsResultId: stored.crsResult.id,
+    requestId,
+    source: "crs",
+    outcomeTier,
+    fundingEstimate
+  }, {
+    orgId,
+    clientId,
+    idempotencyKey: `crs-result:${stored.crsResult.id}:decision.rendered:v1`
   });
 
   return {
@@ -109,8 +172,14 @@ async function finishStored(db, { orgId, clientId, requestId, stored }) {
     bureausPulled: merged.bureausPulled || [],
     bureauErrors: merged.bureauErrors || {},
     scores: merged.scores || { ex: null, eq: null, tu: null },
+    outcomeTier,
+    fundingEstimate,
     tradelinesIngested: stored.ingested,
-    event: { id: emitted.id, deduped: !!emitted.deduped }
+    event: { id: analysis.id, deduped: !!analysis.deduped },
+    events: {
+      analysis: { id: analysis.id, deduped: !!analysis.deduped },
+      decision: { id: decision.id, deduped: !!decision.deduped }
+    }
   };
 }
 
@@ -185,7 +254,8 @@ export async function runCrsPull(db, {
   env = process.env,
   fetchImpl,
   bureaus = BUREAUS,
-  accessedBy = PULL_ACTOR
+  accessedBy = PULL_ACTOR,
+  runTierEngine = runTierEngineFromCrsResult
 } = {}) {
   if (!orgId || !clientId) throw new TypeError("runCrsPull: orgId and clientId are required");
   /* REQUIRED, not optional. The ledger row is what makes a pull attributable and
@@ -219,7 +289,15 @@ export async function runCrsPull(db, {
       result: prior.result,
       outcomeTier: prior.outcome_tier
     });
-    return finishStored(db, { orgId, clientId, requestId, stored: replayed });
+    return finishStored(db, {
+      orgId,
+      clientId,
+      requestId,
+      stored: replayed,
+      identity,
+      realIdentity: null,
+      runTierEngine
+    });
   }
 
   /* CLAIM BEFORE ANY PROVIDER CALL. coordinateCrsResult only fulfils a
@@ -274,7 +352,9 @@ export async function runCrsPull(db, {
   for (const bureau of bureaus) {
     let bureauIdentity;
     try {
-      bureauIdentity = identityForBureau({ host, bureau, identity: realIdentity });
+      bureauIdentity = identityForBureau({
+        host, bureau, identity: realIdentity, env
+      });
     } catch (e) {
       if (e instanceof CrsIdentityError) {
         return finishFailed(db, { requestId, code: e.code, reason: e.message });
@@ -355,7 +435,15 @@ export async function runCrsPull(db, {
     throw e;
   }
 
-  return finishStored(db, { orgId, clientId, requestId, stored });
+  return finishStored(db, {
+    orgId,
+    clientId,
+    requestId,
+    stored,
+    identity,
+    realIdentity,
+    runTierEngine
+  });
 }
 
 /* finishFailed — record why nothing was stored, then say so.

@@ -35,12 +35,14 @@ function fakeDb(initialRequest) {
   const results = [];
   const events = [];
   const eventKeys = new Set();
+  const clients = new Map([[CLIENT, { id: CLIENT, outcome_tier: null }]]);
   let resultNumber = 0;
 
   return {
     requests,
     results,
     events,
+    clients,
     async query(sql, params = []) {
       if (/pg_advisory_xact_lock/.test(sql)) return { rows: [] };
 
@@ -85,6 +87,18 @@ function fakeDb(initialRequest) {
           created_at: new Date()
         };
         results.push(row);
+        return { rows: [row] };
+      }
+      if (/UPDATE clients SET outcome_tier/.test(sql)) {
+        const row = clients.get(params[0]) || { id: params[0], outcome_tier: null };
+        row.outcome_tier = params[1];
+        clients.set(params[0], row);
+        return { rows: [row] };
+      }
+      if (/UPDATE crs_results\s+SET outcome_tier = COALESCE/.test(sql)) {
+        const row = results.find((item) => item.id === params[0]);
+        if (!row) return { rows: [] };
+        if (row.outcome_tier == null) row.outcome_tier = params[1];
         return { rows: [row] };
       }
       if (/SET status = 'fulfilled'/.test(sql)) {
@@ -172,15 +186,21 @@ test("runCrsPull stores one tri-bureau result and replays without another order"
   assert.equal(db.results[0].provider_result_id, expectedIdentity);
   assert.doesNotMatch(expectedIdentity, /REQ-[AZM]/);
 
-  assert.equal(db.events.length, 1);
-  assert.equal(db.events[0].name, "analysis.completed");
+  assert.equal(db.events.length, 2);
+  assert.deepEqual(db.events.map((e) => e.name), ["analysis.completed", "decision.rendered"]);
   assert.equal(db.events[0].key, `crs-result:${first.crsResultId}:analysis.completed:v1`);
+  assert.equal(db.events[1].key, `crs-result:${first.crsResultId}:decision.rendered:v1`);
   assert.equal(db.events[0].payload.crsResultId, first.crsResultId);
   assert.equal(db.events[0].payload.requestId, "request-1");
   assert.equal(db.events[0].payload.source, "crs");
   assert.ok(db.events[0].payload.scores);
   assert.ok(db.events[0].payload.bureaus);
   assert.ok(Array.isArray(db.events[0].payload.inquiries));
+  assert.ok(first.outcomeTier);
+  assert.equal(db.events[0].payload.outcomeTier, first.outcomeTier);
+  assert.equal(db.events[1].payload.outcomeTier, first.outcomeTier);
+  assert.equal(db.clients.get(CLIENT).outcome_tier, first.outcomeTier);
+  assert.equal(db.results[0].outcome_tier, first.outcomeTier);
   assert.equal("softPullRequestId" in db.events[0].payload, false);
 
   const replay = await runCrsPull(db, {
@@ -191,8 +211,11 @@ test("runCrsPull stores one tri-bureau result and replays without another order"
   assert.equal(replay.replayed, true);
   assert.equal(replay.crsResultId, first.crsResultId);
   assert.equal(replay.event.deduped, true);
+  assert.equal(replay.events.decision.deduped, true);
+  assert.equal(replay.outcomeTier, first.outcomeTier);
   assert.deepEqual(client.calls, ["TU", "EX", "EQ"], "replay ordered the bureaus again");
   assert.equal(db.results.length, 1);
+  assert.equal(db.events.length, 2, "replay must not emit a second analysis/decision pair");
 });
 
 test("runCrsPull stores a partial bureau result when one RequestID exists", async () => {
@@ -253,7 +276,11 @@ test("runCrsPull permits a later ledger request for the same client", async () =
   assert.equal(db.results.length, 2);
   assert.notEqual(db.results[0].id, db.results[1].id);
   assert.equal(db.requests.get("request-second").status, "fulfilled");
-  assert.equal(db.events.length, 2);
+  assert.equal(db.events.length, 4);
+  assert.deepEqual(
+    db.events.map((e) => e.name),
+    ["analysis.completed", "decision.rendered", "analysis.completed", "decision.rendered"]
+  );
 });
 
 test("runCrsPull requires a ledger request before touching the client", async () => {
