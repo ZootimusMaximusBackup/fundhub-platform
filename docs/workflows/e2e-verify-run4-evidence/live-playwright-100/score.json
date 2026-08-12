@@ -1,0 +1,14 @@
+{
+  "score": 100,
+  "passed": 19,
+  "required": 19,
+  "failed": 0,
+  "command": "npm run test:e2e:live",
+  "playwright_stats": {
+    "expected": 19,
+    "unexpected": 0,
+    "passed": null,
+    "failed": null,
+    "skipped": 0
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "ok": true,
+  "logs": [
+    "DB_HOST aws-1-us-west-2.pooler.supabase.com",
+    "DB_PROVIDER supabase",
+    "DB_USER postgres.oqpnlusrotpxfenysfxz",
+    "CONNECTED",
+    "MIGRATIONS_PRESENT migrations/160_metro2_dispute_engine.sql,migrations/161_optimization_repair_pipeline.sql",
+    "TABLES dispute_cases,dispute_items,dispute_letters,dispute_responses,furnisher_mail_addresses,repair_decision_log",
+    "ORG fundhub",
+    "CLIENT_CREATED w4c+test.repair@fundhub.ai",
+    "CLIENT_ID c0221fe4-80f6-43d5-9047-d1103ab8f5b5",
+    "CLIENT_TIER REPAIR_ONLY",
+    "CASE_ID aa0f8b95-0750-4d5d-9d7c-98e9c5b05cfa",
+    "ITEMS 1 a46e90af-007d-4c80-8c70-010e5d5be993",
+    "LETTER_TEXT_LEN 682",
+    "LETTER_ID 0b2b7c5b-73c8-4002-b5a7-f27bd549ea46",
+    "VERIFY {\"cases\":1,\"items\":1,\"letters_r1\":1,\"decisions\":1,\"letter_prefix\":\"\\nW4c Smoke\\n1 Test Street\\nPhoenix, AZ, 85001\\n\\nExperian\\n\\nRe: Dispute of inaccurate\"}",
+    "W4C_PROD PASS"
+  ],
+  "clientId": "c0221fe4-80f6-43d5-9047-d1103ab8f5b5",
+  "email": "w4c+test.repair@fundhub.ai",
+  "caseId": "aa0f8b95-0750-4d5d-9d7c-98e9c5b05cfa",
+  "itemId": "a46e90af-007d-4c80-8c70-010e5d5be993",
+  "letterId": "0b2b7c5b-73c8-4002-b5a7-f27bd549ea46",
+  "verify": {
+    "cases": 1,
+    "items": 1,
+    "letters_r1": 1,
+    "decisions": 1
+  }
+}

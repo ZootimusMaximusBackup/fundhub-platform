@@ -55,8 +55,8 @@ Evidence pointers are on the board tables unless a file path is named.
 | `land:cf_svy_carbon_copy_typed` | **FAIL** | `client_custom_fields` rows=0; no writer in repo |
 | `wh:clickfunnels→client` live | **BLOCKED** | No signed CF + prod DB masked |
 | `route:clean_funding_zero_letters` | **PASS** (local law) | Board W2 · ds-02 blocked for FULL_FUNDING |
-| `route:dirty_downsell_ds02` | **PASS** (local) | Board W2 · diy delivered, invoice pointer |
-| `route:dirty_letter_artifact` | **FAIL** | No durable `documents` / `dispute_letters`; PDF only ephemeral |
+| `route:dirty_downsell_ds02` | **PASS-smoke** | Local law PASS + W4c prod `+test` REPAIR_ONLY wrote dispute rows + R1 letter |
+| `route:dirty_letter_artifact` | **PASS-smoke** | W4c: `+test` REPAIR_ONLY `w4c+test.repair@fundhub.ai` → case `aa0f8b95-…` / letter `0b2b7c5b-…` via `buildLetterText`+`saveLetter`. PDF binary storage still open. |
 | `appt:same_client_no_dup` | **PASS** (local) | Board W2 · task on same client |
 | `pg:client-lifecycle` | **PASS** | 48/48 local pg/unit slice |
 
@@ -123,7 +123,7 @@ Evidence pointers are on the board tables unless a file path is named.
 |------|--------|
 | Allowlisted `normalizeClickFunnelsEvent` path mapping | **NOT applied** (W1: no real CF payload shapes captured) |
 | “Guessed paths” banner in `src/adapters/clickfunnels.mjs` | **Kept** |
-| Schema / migrations 160 & 161 | **Untouched** (owner order) |
+| Schema / migrations 160 & 161 | **Applied to prod** (owner go 2026-08-12) — W4b PASS |
 | Any other code from Run 4 threads | **None** (observe-only) |
 
 ---
@@ -133,15 +133,13 @@ Evidence pointers are on the board tables unless a file path is named.
 1. **ClickFunnels → platform ingress unproven** — zero CF bus events on prod; signature accept still blocked (secret masked / match UNKNOWN). Unsigned POST stays **401**. Do **not** invent signed CF. Paste secret **or** rotate Netlify + update CF + one deploy, then re-probe.
 2. **Pay-links create still 503** — `commas_not_configured` / checkout-session rewire ticketed. Keep fail-closed until rewire ships.
 3. **~~`commas_inbox` RLS~~ FIXED (migration 162)** — Track D **PASS-synthetic**. Remaining money gap: checkout rewire + first real payment shape confirm.
-4. **Pending migrations (leave untouched until owner allows — W4 apply queued but DO NOT RUN yet):**
-   - `migrations/160_metro2_dispute_engine.sql` — dispute letter store
-   - `migrations/161_optimization_repair_pipeline.sql` — repair/optimization pipeline
+4. **~~Pending migrations 160/161~~ APPLIED (W4b 2026-08-12):** dispute letter store + optimization remap live. Health `pending:0`.
 5. **Transmit gap** — no platform booking confirm / appointment reminders; dry-run blocks all queues (see §5). Show-rate depends on CF/Google only.
 6. **Closer/advisor staff passwords** — `chris@` / `owner@` / `admin@` **PASS** with known password; founding closers/advisors still **401** until reset (W4b). CRM counts + Staff & Teams filter survival **PASS** after demo off (W3 resume).
 7. **Lender catalog 100% demo** — matches must not be sold as real until non-demo lenders exist.
 8. **`inquiry-call-sweeper` DEAD** — scheduled inquiry calls will not fire via Inngest.
 9. **`client_custom_fields` carbon-copy never written** — typed survey columns empty (jsonb on `clients` works locally).
-10. **Letter PDFs not persisted** — durable row/file store missing until 160 (+ deliver path) exist.
+10. **Letter PDF binary storage** — `dispute_letters` table live (160); PDF file/key deliver path still to wire.
 11. **Underwrite download + six-tier not on production read surface** — engine path live; file/ladder not.
 
 ---
@@ -196,7 +194,7 @@ Evidence pointers are on the board tables unless a file path is named.
 | 3 | ~~Fix `commas_inbox` RLS~~ **done** (migration 162) | Confirm with first **real** Commas payment shape |
 | 4 | Reset **closer/advisor** passwords (chris/owner/admin already work) | Full role coverage for CRM RBAC |
 | 5 | Keep **`MESSAGING_DRY_RUN=1`** until you explicitly want real client sends; then build reminder send before relying on ads for show-rate | Avoid silent no-shows |
-| 6 | Decide when to apply **`160_metro2_dispute_engine.sql`** and **`161_optimization_repair_pipeline.sql`** (queued on board — **DO NOT RUN** until you say go) | Letter store + repair pipeline |
+| 6 | ~~Apply 160/161~~ **done** (W4b PASS) | Letter store + repair pipeline live |
 | 7 | Load **non-demo lenders** (or clear demo-only catalog) | Matches safe to show clients |
 | 8 | Optional: register **`inquiry-call-sweeper`** or accept DEAD | Inquiry call schedule |
 | 9 | Confirm CF↔Netlify secret match after unblock (owner Q3 was UNKNOWN) | Close the funnel seam |
@@ -209,9 +207,9 @@ Evidence pointers are on the board tables unless a file path is named.
 |-------------|----------------|
 | `MESSAGING_DRY_RUN` | `1` (not flipped) |
 | `INNGEST_EVENT_KEY` | LIVE — **no thread emitted real Inngest events** |
-| Migrations 160 / 161 | Untouched |
+| Migrations 160 / 161 | **Applied** (W4b) |
 | Adapter path fix | Not applied |
-| Health | `db:up`, `state:behind`, `pending:2` |
+| Health | `db:up`, `state:up`, `pending:0` |
 | Demo mode | **OFF** (`demo_mode_enabled:false`) — W2 flip + W3 resume verified |
 
 ---
@@ -236,3 +234,33 @@ Documented `payment.succeeded` envelope (`buyer.email` / `item.title` / `api_met
 - Adapter normalize: email `test+crs@fundhub.ai`, product **crs** (title contains Business Financial Assessment), amount `32`
 
 Verdict: **PASS-synthetic**. Known gap: live payload shape unconfirmed until first real payment.
+
+---
+
+## W4b addendum (2026-08-12)
+
+Owner **go** → applied `160_metro2_dispute_engine` + `161_optimization_repair_pipeline` on prod via `MIGRATION_DATABASE_URL`.
+
+- Remap: `upgrade_invite` 1 → `program_complete` 1; flags 0/0
+- REPAIR_ONLY R1 smoke write **PASS** (dispute case/item/letter/decision)
+- Evidence: `docs/workflows/e2e-verify-run4-evidence/w4b/prod-apply.json`
+- Downsell durable letter store: **PASS-smoke** (table + R1 row); PDF binary deliver still open
+
+## W4c addendum (2026-08-12)
+
+**PASS.** Created `w4c+test.repair@fundhub.ai` (`REPAIR_ONLY`), generated Round 1 letter via Metro 2 letter builder, stored dispute case/item/letter + decision log on prod.
+
+- Client `c0221fe4-…` · Case `aa0f8b95-…` · Letter `0b2b7c5b-…`
+- Evidence: `docs/workflows/e2e-verify-run4-evidence/w4c/prod-smoke.json`
+- W4b apply already done earlier same day (health `pending:0`); W4c did not re-apply migrations
+
+## Live Playwright 100 (2026-08-12)
+
+**Score: 100/100** — `npm run test:e2e:live` against `https://fundhub.ai` + `https://apply.fundhub.ai` (19/19).
+
+Evidence: `docs/workflows/e2e-verify-run4-evidence/live-playwright-100/`  
+Board: `docs/workflows/live-playwright-100.md`  
+Gate: Chris may do **one** manual pass now (rule: no manual review before 100).
+
+Also fixed live CRM search: `api/read/search.mjs` no longer references missing `clients.business_name`.
+

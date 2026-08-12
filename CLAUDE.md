@@ -257,6 +257,8 @@ If you catch yourself writing a sentence I would have to look up, rewrite it.
 
 Config lives in Netlify env vars. Schema lives in `db/schema`, `db/migrations`, `db/seed` and is applied by `db/migrate.mjs`. The app reads `DATABASE_URL`.
 
+**Env law (owner-set):** Real env values are gitignored (`.env`, `.env.*` except `.env.example`, `credentials/`) or live on Netlify. Agents **read** local `.env` when it exists. Never commit secrets. Never ask me to paste or rotate a key that is already set unless that exact key is proven broken right now.
+
 ### Do these without asking
 
 * **A new env var is yours to set.** When code you write or review reads one:

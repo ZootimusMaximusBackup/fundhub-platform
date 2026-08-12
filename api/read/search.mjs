@@ -125,7 +125,7 @@ async function searchClients(database, orgId, pattern, limit) {
             TRIM(BOTH ' ' FROM COALESCE(c.first_name, '') || ' ' || COALESCE(c.last_name, '')) AS title,
             c.email,
             c.phone,
-            c.business_name
+            COALESCE(b.name, c.custom_fields->>'business_name') AS business_name
        FROM clients c
        LEFT JOIN businesses b ON b.client_id = c.id AND b.org_id = c.org_id
       WHERE c.org_id = $1::uuid
@@ -136,7 +136,7 @@ async function searchClients(database, orgId, pattern, limit) {
              ILIKE $2 ESCAPE '\\'
           OR c.email ILIKE $2 ESCAPE '\\'
           OR c.phone ILIKE $2 ESCAPE '\\'
-          OR c.business_name ILIKE $2 ESCAPE '\\'
+          OR c.custom_fields->>'business_name' ILIKE $2 ESCAPE '\\'
           OR b.name ILIKE $2 ESCAPE '\\'
         )
       ORDER BY c.id, c.updated_at DESC NULLS LAST
@@ -246,7 +246,7 @@ async function searchCards(database, orgId, pattern, limit) {
           OR c.last_name ILIKE $2 ESCAPE '\\'
           OR TRIM(BOTH ' ' FROM COALESCE(c.first_name, '') || ' ' || COALESCE(c.last_name, ''))
              ILIKE $2 ESCAPE '\\'
-          OR c.business_name ILIKE $2 ESCAPE '\\'
+          OR c.custom_fields->>'business_name' ILIKE $2 ESCAPE '\\'
           OR s.name ILIKE $2 ESCAPE '\\'
           OR p.name ILIKE $2 ESCAPE '\\'
           OR cd.owner ILIKE $2 ESCAPE '\\'

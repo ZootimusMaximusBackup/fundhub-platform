@@ -34,11 +34,11 @@
 | W5 Report merge → `E2E-REPORT.md` | W5 session | **done** |
 | W2 Demo flip (orgs.demo_mode_enabled off + verify) | parallel agent | **done** |
 | W3 RUN4 resume (after demo off) | parallel agent | **done** |
-| W4 Apply migrations 160/161 (scratch → prod) | — | **W4a PASS** · prod apply **queued — wait owner go** |
+| W4 Apply migrations 160/161 (scratch → prod) | this session | **W4a PASS** · **W4b PASS** · **W4c PASS** |
 
-### W4 migrations 160/161 — queued (2026-08-12)
+### W4 migrations 160/161 — applied to prod (2026-08-12)
 
-**Do not apply yet.** RUN4 resume is **done**; still waiting on owner **go**.
+**Owner go received.** W4a scratch PASS → W4b prod apply **PASS**. Health now `pending:0` / `state:up`.
 
 **Why they were blockers:** never-applied pending files (health `pending:2`). Owner left them untouched during Run 4.
 
@@ -52,7 +52,7 @@
 - **161 UPDATEs: APPROVED**
 - **W4a smoke condition:** card-count-per-stage **before and after** remap; **flag** any card whose stage is not one of the intended new keys
 - **Neon:** create branch via Neon if agent has access; else owner hands connection string
-- **Still gated** on owner **go** (do not start apply without it)
+- **Owner go:** received 2026-08-12 — prod applied
 
 **Neon access:** no Neon MCP, no `neon`/`neonctl` CLI, no local Neon credentials. Agent **cannot** create a Neon branch. Owner: create branch + paste connection string (never commit it).
 
@@ -990,5 +990,49 @@ Evidence: `docs/workflows/e2e-verify-run4-evidence/w3-run4-resume/banner-filter-
 - Smoke write: dispute case + item + R1 letter + `repair_decision_log` → **OK**
 
 **Evidence:** `docs/workflows/e2e-verify-run4-evidence/w4a/scratch-smoke.json`  
-**Next:** owner **go** for prod apply via `MIGRATION_DATABASE_URL` (161 UPDATEs already approved).
+**Next:** done — see W4b prod apply below.
+
+## W4b prod apply — manifest (2026-08-12) **PASS**
+
+**Owner go:** yes. **URL:** `MIGRATION_DATABASE_URL` (Supabase pooler, admin). One-shot function removed after run.
+
+### Apply
+- `migrations/160_metro2_dispute_engine.sql` → **APPLIED** + recorded in `schema_migrations`
+- `migrations/161_optimization_repair_pipeline.sql` → **APPLIED** + recorded
+- Health after: `ok:true`, `db:up`, `state:up`, `migrations:145`, `pending:0`
+
+### Card counts (prod optimization)
+| Stage | Before | After |
+|-------|--------|-------|
+| `upgrade_invite` | **1** | **0** |
+| `program_complete` | 0 | **1** |
+| Flags retired / unexpected | — | **0 / 0** |
+
+### REPAIR_ONLY R1 smoke
+- Client (apply-time smoke): `demo.client.10@…` · tier `REPAIR_ONLY`
+- Case `e8245bb5-3187-4eda-bd43-81c3964a837e` → cases1 / items1 / letters_r1 1 / decisions1
+- Tables live: dispute_* + furnisher_mail_addresses + repair_decision_log
+- **W4c supersedes** with dedicated `+test` client (see W4c below)
+
+**Evidence:** `docs/workflows/e2e-verify-run4-evidence/w4b/prod-apply.json`
+
+## W4c prod smoke — manifest (2026-08-12) **PASS**
+
+**Gate:** W4b already applied (`schema_migrations` has 160+161; health `pending:0`). No re-apply.
+
+### +test REPAIR_ONLY → Round 1 letters
+| Field | Value |
+|-------|-------|
+| Email | `w4c+test.repair@fundhub.ai` |
+| Client | `c0221fe4-80f6-43d5-9047-d1103ab8f5b5` |
+| Tier | `REPAIR_ONLY` |
+| Case | `aa0f8b95-0750-4d5d-9d7c-98e9c5b05cfa` |
+| Item | `a46e90af-007d-4c80-8c70-010e5d5be993` (rule `M2-011`) |
+| Letter R1 | `0b2b7c5b-73c8-4002-b5a7-f27bd549ea46` via `buildLetterText` → `saveLetter` |
+| Decision | `W4C_PROD_SMOKE` |
+| Counts | cases1 / items1 / letters_r1 1 / decisions1 |
+
+**Path used:** `src/metro2/letters/generate.mjs` + `src/metro2/rounds/store.mjs` (not raw ad-hoc SQL for letter body).
+
+**Evidence:** `docs/workflows/e2e-verify-run4-evidence/w4c/prod-smoke.json`
 
