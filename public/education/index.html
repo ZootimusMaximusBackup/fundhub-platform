@@ -10,7 +10,16 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  html,body{margin:0!important;padding:0!important;overflow-x:hidden}
+/* single fixed grid layer — one paint, survives zoom */
+  html,body{margin:0!important;padding:0!important;background:transparent!important;overflow-x:hidden}
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background-color:#FCFCFC;
+    background-image:
+      linear-gradient(rgba(10,10,10,.048) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(10,10,10,.048) 1px,transparent 1px);
+    background-size:44px 44px;
+  }
   .fh-root{width:100vw;margin-left:calc(50% - 50vw)}
   :root{
     --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
@@ -21,7 +30,7 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
-  body{background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+  body{background:transparent;color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
   a{color:inherit;text-decoration:none}
   :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   .wrap{max-width:1120px;margin:0 auto;padding:0 28px}

@@ -17,9 +17,18 @@
     --sans:'Inter',system-ui,-apple-system,sans-serif;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0;min-height:100%}
+  /* single fixed grid layer — one paint, survives zoom */
+  html,body{margin:0;padding:0;min-height:100%;background:transparent}
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background-color:#FCFCFC;
+    background-image:
+      linear-gradient(rgba(10,10,10,.048) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(10,10,10,.048) 1px,transparent 1px);
+    background-size:44px 44px;
+  }
   body{
-    background:var(--paper);color:var(--ink2);font-family:var(--sans);
+    background:transparent;color:var(--ink2);font-family:var(--sans);
     display:flex;flex-direction:column;
   }
   .spectrum{height:3px;background:var(--spectrum);flex:0 0 3px}
