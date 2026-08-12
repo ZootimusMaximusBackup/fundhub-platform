@@ -59,3 +59,6 @@ Zip: `fundhub-funnel-dropins-v3.zip`
 - `02a` / `04a`: removed flatten, zoom dial, Confirm/slot/form/survey interior rules. Kept page chrome + floating card shell.
 - `04a`: kept add-to-calendar capture script (not CSS).
 - Live CF already stripped the same; repo matched.
+
+## V3.2 — thank-you live sync (2026-08-11)
+- Replaced `05-thank-you.html` with current live fragment: always-visible calendar CTA, Google favicon, inbox deep-link by email domain, .ics shown when booking handoff exists.
