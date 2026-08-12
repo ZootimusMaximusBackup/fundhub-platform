@@ -8,21 +8,19 @@ Separate from RUN4 / W4a.
 |------|-------|--------|
 | Fixed paper grid on marketing pages | this session | done |
 
+## Scope (owner-set)
+
+Fixed paper grid **only** on pages that already show the grid:
+- `public/index.html` (homepage)
+- `public/education/index.html`
+- `public/affiliates/index.html`
+
+**Not** on legal pages or 404.
+
 ## Change manifest
 
-**Files**
-- `public/index.html`
-- `public/affiliates/index.html`
-- `public/education/index.html`
-- `public/terms/index.html`
-- `public/privacy/index.html`
-- `public/education/terms/index.html`
-- `public/education/privacy/index.html`
-- `public/education/refund/index.html`
-- `public/404.html`
+**Keep fixed `body::before` paper grid** (`#FCFCFC`, 44px `rgba(10,10,10,.048)`):
+- homepage, education, affiliates
 
-**Change**
-- `body::before` fixed paper grid (`#FCFCFC`, 44px `rgba(10,10,10,.048)`).
-- `html`/`body` background transparent so the fixed layer is the only page-grid paint.
-
-**Shipped** live on fundhub.ai; W4a smoke artifacts deleted from `public/`.
+**No page grid** (solid paper/bg as before):
+- terms, privacy, education legal/refund, 404
