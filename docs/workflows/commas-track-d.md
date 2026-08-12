@@ -11,7 +11,7 @@ Status as of 2026-08-12.
 | Register webhook `https://fundhub.ai/api/webhooks/commas` + refresh `COMMAS_WEBHOOK_SECRET` | agent | done (id 24702) |
 | Payment-link checkout-session rewire | — | **ticketed** (keep 503) |
 | `commas_inbox` bare RLS fix (migration 162) | agent | done (applied via MIGRATION_DATABASE_URL) |
-| Test webhook + $1 real payment | agent | claimed — test webhook re-fired after RLS |
+| Test webhook + $1 real payment | agent | **PASS-synthetic** (live $1 skipped — no card). Inbox `e6bedafc-…` / `ORD-SYNTH-C18117792FFE` · CRS normalize · gap: real payload unconfirmed |
 | Note at-most-once ⇒ reconciliation poller is launch requirement | agent | done (E2E-REPORT) |
 | Flip demo mode off (separate) | — | deferred |
 

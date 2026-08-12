@@ -18,7 +18,7 @@ Ads send people to ClickFunnels. The thank-you / calendar piece works. But the p
 **Biggest holes (in order):**
 
 1. **Funnel → CRM is not proven.** Secret match blocked; zero live ClickFunnels landings.
-2. **Pay links and payment landing broken.** Checkout base URL missing; Commas inbox cannot write (RLS on, zero policies).
+2. **Pay links still blocked.** CRM create stays 503 until checkout-session rewire. **Webhook landing is fixed** (Track D): signed synthetic envelope queues into `commas_inbox`.
 3. **Staff CRM not verified.** Most staff screens need a session; W4 could not log in as staff (W3 could with `owner@fundhub.ai` for money probes only).
 4. **Platform does not remind people about calls.** Booking confirm may ride ClickFunnels/Google; platform reminders do not exist; all sends are dry-run blocked.
 5. **Two database upgrades still pending** (letters store + repair pipeline). Leave them alone until you say otherwise.
@@ -67,10 +67,10 @@ Evidence pointers are on the board tables unless a file path is named.
 | `api:read/products` | **PASS** | Board W3 · 5 products |
 | `api:products` | **PASS** | Board W3 · write path reaches DB |
 | `api:read/entitlements` | **PASS** | Board W3 · 9 rows |
-| `api:payment-links` create | **BLOCKED** | 503 `commas_not_configured` |
+| `api:payment-links` create | **BLOCKED** | 503 — checkout-session rewire ticketed (keep fail-closed) |
 | `api:payment-links` list | **PASS** | Empty list honest |
-| `wh:commas` signature | **PASS** | Unsigned/bad 401; good sig past verify |
-| `wh:commas` inbox+invoices | **FAIL** | 500 `inbox_write_failed`; RLS bare table |
+| `wh:commas` signature | **PASS** | Unsigned 401; live HMAC with `COMMAS_WEBHOOK_SECRET` accepted |
+| `wh:commas` inbox + CRS normalize | **PASS-synthetic** | Documented envelope POST 200 · `inboxId` `e6bedafc-…` · payment `ORD-SYNTH-C18117792FFE` · local+adapter `email=test+crs@fundhub.ai` · `productOf=crs` · replay `deduped:true`. **Known gap:** live Commas payload shape unconfirmed until first real payment. |
 | `api:read/commissions` | **PASS** | Empty ledger honest |
 | `api:read/underwrite` ×2 +test | **PASS** | Clients `08f322eb-…`, `92096b69-…` |
 | `api:read/underwrite` download | **FAIL** | No PDF/download affordance |
@@ -130,7 +130,7 @@ Evidence pointers are on the board tables unless a file path is named.
 
 1. **ClickFunnels → platform ingress unproven** — zero CF bus events on prod; signature accept blocked (secret masked). Paste secret **or** rotate Netlify + update CF + one deploy, then re-probe. Without this, ads may never land in CRM.
 2. **`COMMAS_CHECKOUT_BASE_URL` unset** — pay-link create returns 503. Set on Netlify (all contexts) → one deploy.
-3. **`commas_inbox` RLS on + zero policies** — signed payment webhook cannot write; invoices stay empty. Needs policy (or app-role) fix — code/migration work.
+3. **~~`commas_inbox` RLS~~ fixed (migration 162)** — synthetic signed webhook now queues. Remaining money gap: checkout-session rewire + first real payment shape confirm.
 4. **Pending migrations (leave untouched until owner allows):**
    - `migrations/160_metro2_dispute_engine.sql` — dispute letter store
    - `migrations/161_optimization_repair_pipeline.sql` — repair/optimization pipeline
@@ -218,3 +218,13 @@ Evidence pointers are on the board tables unless a file path is named.
 ## Commas delivery model (Track D, 2026-08-12)
 
 Commas webhooks are **at-most-once** (no retry). A dropped delivery is gone. A reconciliation poller that uses `COMMAS_API_KEY` is a **launch requirement**, not optional hardening.
+
+### Synthetic money verify (2026-08-12, no card)
+
+Documented `payment.succeeded` envelope (`buyer.email` / `item.title` / `api_metadata`) HMAC-signed with live `COMMAS_WEBHOOK_SECRET` → `POST https://fundhub.ai/api/webhooks/commas`:
+
+- HTTP **200** · `queued:true` · `inboxId=e6bedafc-60e8-4557-81ac-b6b5f054325c` · `paymentId=ORD-SYNTH-C18117792FFE`
+- Replay → `deduped:true` (same inbox id)
+- Adapter normalize: email `test+crs@fundhub.ai`, product **crs** (title contains Business Financial Assessment), amount `32`
+
+Verdict: **PASS-synthetic**. Known gap: live payload shape unconfirmed until first real payment.
