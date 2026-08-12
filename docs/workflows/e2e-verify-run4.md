@@ -34,11 +34,11 @@
 | W5 Report merge → `E2E-REPORT.md` | W5 session | **done** |
 | W2 Demo flip (orgs.demo_mode_enabled off + verify) | parallel agent | **done** |
 | W3 RUN4 resume (after demo off) | parallel agent | **done** |
-| W4 Apply migrations 160/161 (Neon branch → prod) | — | **queued — DO NOT RUN** until RUN4 complete + owner go |
+| W4 Apply migrations 160/161 (Neon branch → prod) | — | **queued — DO NOT RUN** until owner **go** |
 
-### W4 migrations 160/161 — queued (review only, 2026-08-12)
+### W4 migrations 160/161 — queued (2026-08-12)
 
-**Do not apply yet.** Owner: run after RUN4 completes.
+**Do not apply yet.** RUN4 resume is **done**; still waiting on owner **go**.
 
 **Why they were blockers:** never-applied pending files (health `pending:2`). Owner left them untouched during Run 4.
 
@@ -48,9 +48,13 @@
 1. Remap cards from old stage keys (`round_sent`→`in_transit`, `bureau_processing`→`awaiting_response`, `portal_updated`→`response_received`, `upgrade_invite`→`program_complete`)
 2. Bump old stage `sort_order` to 900+ (hide from boards; keep rows)
 
-→ **Owner must approve those UPDATEs before any apply** (CLAUDE.md §11 delete/data risk posture + owner's W4 rule).
+**Owner decisions (2026-08-12) — recorded:**
+- **161 UPDATEs: APPROVED**
+- **W4a smoke condition:** card-count-per-stage **before and after** remap; **flag** any card whose stage is not one of the intended new keys
+- **Neon:** create branch via Neon if agent has access; else owner hands connection string
+- **Still gated** on owner **go** (do not start apply without it)
 
-**Neon:** no Neon branch config found in-repo yet — will need a branch `DATABASE_URL` when this runs.
+**Neon access:** no Neon MCP, no `neon`/`neonctl` CLI, no local Neon credentials. Agent **cannot** create a Neon branch. Owner: create branch + paste connection string (never commit it).
 
 Protocol: claim before work; write manifest when done; coordinate only through this file.
 
