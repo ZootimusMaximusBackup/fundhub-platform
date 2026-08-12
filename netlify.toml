@@ -26,7 +26,7 @@
   #
   # If this ever blocks a deploy you need to make, the escape is to revert this
   # line to the old `echo` — not to weaken src/security/superuser-guard.test.mjs.
-  command = "echo ok"
+  command = "npm run guard:db"
 
 [build.environment]
   NODE_VERSION = "22"
@@ -59,6 +59,8 @@
 # Every minute, not every five. This one drains the Commas payment queue: the
 # webhook only stores the bytes and answers, so nothing a client pays reaches
 # the money chain until a pass runs. That delay is visible to a human.
+
+
 [functions."commas-inbox-sweeper"]
   schedule = "* * * * *"
 

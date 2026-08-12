@@ -34,7 +34,7 @@
 | W5 Report merge → `E2E-REPORT.md` | W5 session | **done** |
 | W2 Demo flip (orgs.demo_mode_enabled off + verify) | parallel agent | **done** |
 | W3 RUN4 resume (after demo off) | parallel agent | **done** |
-| W4 Apply migrations 160/161 (Neon branch → prod) | — | **queued — DO NOT RUN** until owner **go** |
+| W4 Apply migrations 160/161 (scratch → prod) | — | **W4a PASS** · prod apply **queued — wait owner go** |
 
 ### W4 migrations 160/161 — queued (2026-08-12)
 
@@ -967,4 +967,28 @@ Evidence: `docs/workflows/e2e-verify-run4-evidence/w3-run4-resume/banner-filter-
 ### Verdict for parent
 
 **PASS** — gate wait ~369s; demo `enabled:false`; counts **5 / 20 / 22 / 6**; banner gone; chris filter survives; pay-links still fail-closed; CF still BLOCKED (no invent).
+
+## W4a scratch smoke — manifest (2026-08-12) **PASS**
+
+**Provider:** Supabase (`aws-1-us-west-2.pooler.supabase.com`, project `oqpnlusrotpxfenysfxz`) — not Neon.  
+**Scratch:** schema `w4a_scratch` (cloned optimization tables from prod, applied 160+161, dropped). Prod public tables **untouched** (`PROD_PUBLIC_STILL_HAS_RETIRED_CARDS=1`).
+
+### Card counts (optimization pipeline)
+
+| Stage | Before 161 | After 161 |
+|-------|------------|-----------|
+| `upgrade_invite` (retired) | **1** | **0** |
+| `program_complete` (target) | 0 | **1** |
+| other retired keys | 0 | 0 |
+
+**Remap check:** `upgrade_invite` → `program_complete` moved **1** card.  
+**Flags:** `FLAG_STILL_ON_RETIRED=0` · `FLAG_UNEXPECTED_STAGE=0`
+
+### 160 / repair write
+
+- Tables: `dispute_cases`, `dispute_items`, `dispute_letters`, `dispute_responses`, `furnisher_mail_addresses`, `repair_decision_log`
+- Smoke write: dispute case + item + R1 letter + `repair_decision_log` → **OK**
+
+**Evidence:** `docs/workflows/e2e-verify-run4-evidence/w4a/scratch-smoke.json`  
+**Next:** owner **go** for prod apply via `MIGRATION_DATABASE_URL` (161 UPDATEs already approved).
 
