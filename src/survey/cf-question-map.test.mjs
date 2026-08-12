@@ -15,6 +15,17 @@ test("CF order has contact first; homepage has contact last", () => {
   assert.notEqual(home[0].id, "contact");
 });
 
+test("payload keys are cf_svy_* from OWNER checklist", () => {
+  const byId = Object.fromEntries(
+    CF_SURVEY_QUESTIONS.filter((q) => q.type !== "contact").map((q) => [q.id, q.payloadKey])
+  );
+  assert.equal(byId.funding_target_amount, "cf_svy_funding_target_amount");
+  assert.equal(byId.current_score, "cf_svy_self_reported_fico");
+  assert.equal(byId.annual_personal_income, "cf_svy_annual_income_range");
+  assert.equal(byId.verify_income, "cf_svy_income_verifiable");
+  assert.equal(byId.has_negatives, "cf_svy_has_negatives");
+});
+
 test("business path shows revenue steps, not personal income", () => {
   const steps = visibleQuestions({ has_business: "Yes, 1-2 years" });
   const ids = steps.map((s) => s.id);
@@ -32,13 +43,13 @@ test("personal path shows income steps, not business revenue", () => {
   assert.ok(!ids.includes("annual_business_revenue"));
 });
 
-test("payload keys default to question titles (CF attribute None assumption)", () => {
-  const q = CF_SURVEY_QUESTIONS.find((x) => x.id === "funding_target_amount");
-  assert.equal(q.payloadKey, "Set Your Target Amount");
+test("answersByPayloadKey emits cf_svy_* keys", () => {
   const keyed = answersByPayloadKey({
     funding_target_amount: "Less than $50k",
     current_score: "750+",
+    has_negatives: "No",
   });
-  assert.equal(keyed["Set Your Target Amount"], "Less than $50k");
-  assert.equal(keyed["Your Current Score"], "750+");
+  assert.equal(keyed.cf_svy_funding_target_amount, "Less than $50k");
+  assert.equal(keyed.cf_svy_self_reported_fico, "750+");
+  assert.equal(keyed.cf_svy_has_negatives, "No");
 });

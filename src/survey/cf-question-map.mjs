@@ -1,38 +1,37 @@
-// ClickFunnels survey question map — single place for payload-key assumptions.
-// Ground truth: docs/clickfunnels/cf-survey-ground-truth.md
+// ClickFunnels survey question map — single place for payload keys.
+// Question titles/options: docs/clickfunnels/cf-survey-ground-truth.md
+// Attribute keys: docs/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md (owner mapping in CF)
 //
-// ASSUMPTION (owner 2026-08-12): CF Contact Attribute = None on every question.
-// Until attributes are mapped, payloadKey === question title (verbatim).
-// When Chris confirms real attribute keys, change ONLY the payloadKey fields below.
+// payloadKey = Contact Attribute key Chris is mapping in CF (cf_svy_*).
+// Change ONLY payloadKey here if a CF attribute name differs.
 
 /** @typedef {'single'|'multi'|'contact'} QuestionType */
 /**
  * @typedef {object} CfSurveyQuestion
- * @property {string} id stable internal id (not a CF attribute)
+ * @property {string} id stable internal id
  * @property {string} title question title verbatim from CF
- * @property {string} payloadKey ASSUMED webhook/answer key — title until CF maps attributes
+ * @property {string} payloadKey CF Contact Attribute / answer key (cf_svy_*)
  * @property {QuestionType} type
  * @property {string[]} [options] verbatim option labels
  * @property {boolean} [otherEnabled] CF "Other" enabled
- * @property {'business'|'personal'|null} [branch] which branch this step belongs to
- * @property {string} [showWhenBusiness] exact option on has_business that shows this step
+ * @property {'business'|'personal'|null} [branch]
  */
 
 /** Branch sentinel — exact CF option that takes the personal-funding path. */
 export const PERSONAL_FUNDING_OPTION = "No, personal funding only";
 
-/** @type {CfSurveyQuestion[]} CF order (contact first). */
+/** @type {CfSurveyQuestion[]} CF order (contact first). has_negatives after capital (Part C). */
 export const CF_SURVEY_QUESTIONS = Object.freeze([
   {
     id: "contact",
     title: "Let's Start With Your Info",
-    payloadKey: "Let's Start With Your Info",
+    payloadKey: "contact",
     type: "contact",
   },
   {
     id: "funding_target_amount",
     title: "Set Your Target Amount",
-    payloadKey: "Set Your Target Amount",
+    payloadKey: "cf_svy_funding_target_amount",
     type: "single",
     options: [
       "Less than $50k",
@@ -45,7 +44,7 @@ export const CF_SURVEY_QUESTIONS = Object.freeze([
   {
     id: "planned_use",
     title: "Planned Use",
-    payloadKey: "Planned Use",
+    payloadKey: "cf_svy_planned_use",
     type: "single",
     otherEnabled: true,
     options: [
@@ -60,7 +59,7 @@ export const CF_SURVEY_QUESTIONS = Object.freeze([
   {
     id: "money_change_now",
     title: "What Would This Money Change Right Now?",
-    payloadKey: "What Would This Money Change Right Now?",
+    payloadKey: "cf_svy_money_change_now",
     type: "multi",
     options: [
       "Peace of mind (stop stressing about cash)",
@@ -73,14 +72,14 @@ export const CF_SURVEY_QUESTIONS = Object.freeze([
   {
     id: "current_score",
     title: "Your Current Score",
-    payloadKey: "Your Current Score",
+    payloadKey: "cf_svy_self_reported_fico",
     type: "single",
     options: ["500-579", "580-649", "650-699", "700-749", "750+", "Not sure"],
   },
   {
     id: "has_business",
     title: "Do You Have a Business?",
-    payloadKey: "Do You Have a Business?",
+    payloadKey: "cf_svy_has_business",
     type: "single",
     options: [
       "Yes, less than 6 months old",
@@ -94,7 +93,7 @@ export const CF_SURVEY_QUESTIONS = Object.freeze([
   {
     id: "annual_business_revenue",
     title: "Annual Business Revenue",
-    payloadKey: "Annual Business Revenue",
+    payloadKey: "cf_svy_business_revenue",
     type: "single",
     branch: "business",
     options: [
@@ -108,7 +107,7 @@ export const CF_SURVEY_QUESTIONS = Object.freeze([
   {
     id: "verify_revenue",
     title: "Can You Verify Revenue?",
-    payloadKey: "Can You Verify Revenue?",
+    payloadKey: "cf_svy_revenue_verifiable",
     type: "single",
     branch: "business",
     options: [
@@ -121,7 +120,7 @@ export const CF_SURVEY_QUESTIONS = Object.freeze([
   {
     id: "annual_personal_income",
     title: "Annual Personal Income",
-    payloadKey: "Annual Personal Income",
+    payloadKey: "cf_svy_annual_income_range",
     type: "single",
     branch: "personal",
     options: [
@@ -135,7 +134,7 @@ export const CF_SURVEY_QUESTIONS = Object.freeze([
   {
     id: "verify_income",
     title: "Can You Verify Income?",
-    payloadKey: "Can You Verify Income?",
+    payloadKey: "cf_svy_income_verifiable",
     type: "single",
     branch: "personal",
     options: [
@@ -148,7 +147,7 @@ export const CF_SURVEY_QUESTIONS = Object.freeze([
   {
     id: "available_capital",
     title: "Available Capital",
-    payloadKey: "Available Capital",
+    payloadKey: "cf_svy_available_capital",
     type: "single",
     options: [
       "Less than $1k",
@@ -157,6 +156,13 @@ export const CF_SURVEY_QUESTIONS = Object.freeze([
       "$25k - $100k",
       "$100k+",
     ],
+  },
+  {
+    id: "has_negatives",
+    title: "Any negatives on your credit report? (collections, charge-offs, late payments)",
+    payloadKey: "cf_svy_has_negatives",
+    type: "single",
+    options: ["Yes", "No"],
   },
 ]);
 
@@ -195,7 +201,7 @@ export function questionById(id) {
 }
 
 /**
- * Build answer object for storage/emit: keys = payloadKey (title assumption).
+ * Build answer object for storage/emit: keys = payloadKey (cf_svy_*).
  * @param {Record<string, unknown>} answersById
  */
 export function answersByPayloadKey(answersById = {}) {

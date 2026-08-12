@@ -35,16 +35,16 @@ test("parseSurveySubmitBody requires name email phone", () => {
     phone: "555-0100",
     business: "Analytical Engines",
     answers: {
-      "Your Current Score": "750+",
-      "Set Your Target Amount": "Less than $50k",
+      cf_svy_self_reported_fico: "750+",
+      cf_svy_funding_target_amount: "Less than $50k",
       ignore_me: "x",
     },
   });
   assert.equal(ok.ok, true);
   assert.equal(ok.email, "ada@example.com");
   assert.deepEqual(ok.answers, {
-    "Your Current Score": "750+",
-    "Set Your Target Amount": "Less than $50k",
+    cf_svy_self_reported_fico: "750+",
+    cf_svy_funding_target_amount: "Less than $50k",
   });
 });
 
@@ -80,7 +80,7 @@ test("runSurveySubmit emits entry + survey and returns PASS redirect", async () 
   assert.equal(names[1].payload.answers.cf_svy_has_negatives, "No");
 });
 
-test("runSurveySubmit title-keyed ground-truth answers → MANUAL_REVIEW (no remapping)", async () => {
+test("runSurveySubmit score without negatives → MANUAL_REVIEW", async () => {
   const result = await runSurveySubmit(
     {
       name: "Bob",
@@ -90,14 +90,34 @@ test("runSurveySubmit title-keyed ground-truth answers → MANUAL_REVIEW (no rem
       source: "website:home",
       sms_consent: false,
       answers: {
-        "Your Current Score": "750+",
-        "Do You Have a Business?": "Yes, 1-2 years",
+        cf_svy_self_reported_fico: "750+",
+        cf_svy_has_business: "Yes, 1-2 years",
       },
     },
     { emit: async () => ({ id: "x", deduped: false }), ensureRegistered: () => {}, db: {} }
   );
-  // Classifier still reads cf_svy_* / has_negatives — not silently remapped.
+  // Missing has_negatives → MANUAL_REVIEW (gate 2 absent)
   assert.equal(result.qualification, MANUAL_REVIEW);
+});
+
+test("runSurveySubmit cf_svy keys with score+negatives → PASS", async () => {
+  const result = await runSurveySubmit(
+    {
+      name: "Pat",
+      email: "pat@example.com",
+      phone: "555",
+      business: "",
+      source: "website:home",
+      sms_consent: false,
+      answers: {
+        cf_svy_self_reported_fico: "750+",
+        cf_svy_has_negatives: "No",
+      },
+    },
+    { emit: async () => ({ id: "x", deduped: false }), ensureRegistered: () => {}, db: {} }
+  );
+  assert.equal(result.qualification, PASS);
+  assert.match(result.redirect, /funding-book-call/);
 });
 
 test("runSurveySubmit MANUAL_REVIEW when gate answers missing", async () => {

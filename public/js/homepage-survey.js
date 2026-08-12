@@ -1,7 +1,7 @@
-/* Homepage multi-step survey — verbatim CF ground truth.
-   Source: docs/clickfunnels/cf-survey-ground-truth.md
-   Map: src/survey/cf-question-map.mjs (keep options/titles in sync).
-   Homepage: contact LAST. Legal Business Name optional. */
+/* Homepage multi-step survey — CF ground truth + OWNER attribute keys.
+   docs/clickfunnels/cf-survey-ground-truth.md
+   docs/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md
+   Contact LAST. Legal Business Name optional. */
 (function () {
   var PERSONAL = "No, personal funding only";
 
@@ -128,6 +128,12 @@
       ],
     },
     {
+      id: "has_negatives",
+      title: "Any negatives on your credit report? (collections, charge-offs, late payments)",
+      type: "single",
+      options: ["Yes", "No"],
+    },
+    {
       id: "contact",
       title: "Let's Start With Your Info",
       subtitle: "Tell us how to reach you. Soft inquiry. No obligation.",
@@ -135,18 +141,19 @@
     },
   ];
 
-  // payloadKey === title until CF Contact Attributes are mapped
+  // Keep in sync with src/survey/cf-question-map.mjs payloadKey
   var PAYLOAD_KEY = {
-    funding_target_amount: "Set Your Target Amount",
-    planned_use: "Planned Use",
-    money_change_now: "What Would This Money Change Right Now?",
-    current_score: "Your Current Score",
-    has_business: "Do You Have a Business?",
-    annual_business_revenue: "Annual Business Revenue",
-    verify_revenue: "Can You Verify Revenue?",
-    annual_personal_income: "Annual Personal Income",
-    verify_income: "Can You Verify Income?",
-    available_capital: "Available Capital",
+    funding_target_amount: "cf_svy_funding_target_amount",
+    planned_use: "cf_svy_planned_use",
+    money_change_now: "cf_svy_money_change_now",
+    current_score: "cf_svy_self_reported_fico",
+    has_business: "cf_svy_has_business",
+    annual_business_revenue: "cf_svy_business_revenue",
+    verify_revenue: "cf_svy_revenue_verifiable",
+    annual_personal_income: "cf_svy_annual_income_range",
+    verify_income: "cf_svy_income_verifiable",
+    available_capital: "cf_svy_available_capital",
+    has_negatives: "cf_svy_has_negatives",
   };
 
   function visibleSteps(answers) {
