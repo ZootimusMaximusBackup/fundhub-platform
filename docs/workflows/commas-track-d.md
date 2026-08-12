@@ -8,11 +8,11 @@ Status as of 2026-08-12.
 | --- | --- | --- |
 | Set `COMMAS_API_KEY` on Netlify (all contexts, secret) | agent | done |
 | Fix `normalizeCommasEvent` for `buyer.email` / `item.title` / `api_metadata` + tests | agent | done (code) |
-| Register webhook `https://fundhub.ai/api/webhooks/commas` + refresh `COMMAS_WEBHOOK_SECRET` | agent | claimed |
+| Register webhook `https://fundhub.ai/api/webhooks/commas` + refresh `COMMAS_WEBHOOK_SECRET` | agent | done (id 24702) |
 | Payment-link checkout-session rewire | — | **ticketed** (keep 503) |
-| `commas_inbox` bare RLS fix (migration 162) | agent | claimed |
-| Test webhook + $1 real payment | agent | pending |
-| Note at-most-once ⇒ reconciliation poller is launch requirement | agent | pending |
+| `commas_inbox` bare RLS fix (migration 162) | agent | done (applied via MIGRATION_DATABASE_URL) |
+| Test webhook + $1 real payment | agent | claimed — test webhook re-fired after RLS |
+| Note at-most-once ⇒ reconciliation poller is launch requirement | agent | done (E2E-REPORT) |
 | Flip demo mode off (separate) | — | deferred |
 
 ## Ticket: payment links via checkout-session API
