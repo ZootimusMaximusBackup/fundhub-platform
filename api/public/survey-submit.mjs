@@ -6,7 +6,15 @@ import { emit } from "../../src/events/bus.mjs";
 import { ensureRegistered } from "../../src/register-all.mjs";
 import { classifySurvey } from "../../src/config/survey-qualification.mjs";
 import { SURVEY_REDIRECTS } from "../../src/config/homepage-survey-steps.mjs";
+import {
+  CF_SURVEY_QUESTIONS,
+  answersByPayloadKey,
+} from "../../src/survey/cf-question-map.mjs";
 import { safeError } from "../../src/http/health.mjs";
+
+const KNOWN_PAYLOAD_KEYS = new Set(
+  CF_SURVEY_QUESTIONS.filter((q) => q.type !== "contact").map((q) => q.payloadKey)
+);
 
 function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
@@ -46,16 +54,24 @@ export function parseSurveySubmitBody(body) {
   const business = cleanStr(body.business || body.business_name, 160);
   const source = cleanStr(body.source, 80) || "website:home";
   const answersIn = body.answers && typeof body.answers === "object" ? body.answers : {};
+  const byId =
+    body.answers_by_id && typeof body.answers_by_id === "object" ? body.answers_by_id : null;
 
   if (!name || !isEmail(email) || !phone) {
     return { ok: false, error: "name_email_phone_required" };
   }
 
+  // Prefer title-keyed answers (CF attribute = None assumption in cf-question-map).
+  // Also accept answers_by_id (stable ids) and legacy cf_svy_* until attributes land.
   const answers = {};
+  if (byId) {
+    Object.assign(answers, answersByPayloadKey(byId));
+  }
   for (const [k, v] of Object.entries(answersIn)) {
-    if (!k.startsWith("cf_svy_")) continue;
     if (v == null || v === "") continue;
-    answers[k] = v;
+    if (KNOWN_PAYLOAD_KEYS.has(k) || k.startsWith("cf_svy_")) {
+      answers[k] = v;
+    }
   }
 
   return {

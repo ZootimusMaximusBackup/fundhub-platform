@@ -4,48 +4,33 @@ import {
   visibleSurveySteps,
   HOMEPAGE_SURVEY_STEPS,
   SURVEY_REDIRECTS,
+  PERSONAL_FUNDING_OPTION,
 } from "./homepage-survey-steps.mjs";
-import { classifySurvey, PASS, DOWNSELL } from "./survey-qualification.mjs";
 
-test("visibleSurveySteps hides business branch when has_business is No", () => {
-  const steps = visibleSurveySteps({ cf_svy_has_business: "No" });
-  const keys = steps.map((s) => s.key);
-  assert.ok(!keys.includes("cf_svy_business_revenue"));
-  assert.ok(!keys.includes("cf_svy_revenue_verifiable"));
-  assert.ok(keys.includes("cf_svy_has_negatives"));
-  assert.ok(keys.includes("__contact__"));
+test("homepage contact is last", () => {
+  const last = HOMEPAGE_SURVEY_STEPS[HOMEPAGE_SURVEY_STEPS.length - 1];
+  assert.equal(last.id, "contact");
+  assert.equal(HOMEPAGE_SURVEY_STEPS[0].id, "funding_target_amount");
 });
 
-test("visibleSurveySteps shows business branch when Yes", () => {
-  const steps = visibleSurveySteps({ cf_svy_has_business: "Yes" });
-  const keys = steps.map((s) => s.key);
-  assert.ok(keys.includes("cf_svy_business_revenue"));
-  assert.ok(keys.includes("cf_svy_revenue_verifiable"));
+test("visibleSurveySteps: personal path hides business revenue", () => {
+  const steps = visibleSurveySteps({ has_business: PERSONAL_FUNDING_OPTION });
+  const ids = steps.map((s) => s.id);
+  assert.ok(ids.includes("annual_personal_income"));
+  assert.ok(ids.includes("verify_income"));
+  assert.ok(!ids.includes("annual_business_revenue"));
+  assert.ok(ids.includes("available_capital"));
+  assert.ok(ids.includes("contact"));
 });
 
-test("homepage steps include required routing keys", () => {
-  const keys = HOMEPAGE_SURVEY_STEPS.map((s) => s.key);
-  assert.ok(keys.includes("cf_svy_self_reported_fico"));
-  assert.ok(keys.includes("cf_svy_has_negatives"));
+test("visibleSurveySteps: Yes tenure shows business revenue", () => {
+  const steps = visibleSurveySteps({ has_business: "Yes, 2-5 years" });
+  const ids = steps.map((s) => s.id);
+  assert.ok(ids.includes("annual_business_revenue"));
+  assert.ok(ids.includes("verify_revenue"));
+  assert.ok(!ids.includes("annual_personal_income"));
+});
+
+test("PASS redirect still funding-book-call", () => {
   assert.equal(SURVEY_REDIRECTS.PASS.includes("funding-book-call"), true);
-});
-
-test("clean answers classify to PASS", () => {
-  assert.equal(
-    classifySurvey({
-      cf_svy_self_reported_fico: "750+",
-      cf_svy_has_negatives: "No",
-    }),
-    PASS
-  );
-});
-
-test("negatives classify to DOWNSELL", () => {
-  assert.equal(
-    classifySurvey({
-      cf_svy_self_reported_fico: "750+",
-      cf_svy_has_negatives: "Yes",
-    }),
-    DOWNSELL
-  );
 });

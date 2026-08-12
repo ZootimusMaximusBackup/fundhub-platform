@@ -1,110 +1,176 @@
-/* Homepage multi-step survey — keep step keys/options in sync with
-   src/config/homepage-survey-steps.mjs (server classify + redirects). */
+/* Homepage multi-step survey — verbatim CF ground truth.
+   Source: docs/clickfunnels/cf-survey-ground-truth.md
+   Map: src/survey/cf-question-map.mjs (keep options/titles in sync).
+   Homepage: contact LAST. Legal Business Name optional. */
 (function () {
+  var PERSONAL = "No, personal funding only";
+
   var STEPS = [
     {
-      key: "cf_svy_funding_target_amount",
+      id: "funding_target_amount",
       title: "Set Your Target Amount",
-      subtitle: "Required to continue.",
-      type: "single",
-      options: ["Less than $50k", "$50k - $100k", "$100k - $200k", "$200k - $400k", "$400k+"],
-    },
-    {
-      key: "cf_svy_planned_use",
-      title: "What will you use the funding for?",
       type: "single",
       options: [
-        "Working capital / payroll",
-        "Inventory or supplies",
-        "Equipment",
-        "Marketing / growth",
-        "Refinance existing debt",
+        "Less than $50k",
+        "$50k - $100k",
+        "$100k - $200k",
+        "$200k - $400k",
+        "$400k+",
+      ],
+    },
+    {
+      id: "planned_use",
+      title: "Planned Use",
+      type: "single",
+      otherEnabled: true,
+      options: [
+        "Growth (marketing, inventory, hiring)",
+        "Equipment or buildout",
+        "Debt consolidation",
+        "Payroll or rent",
+        "Covering a shortfall right now",
+        "Not sure yet",
         "Other",
       ],
     },
     {
-      key: "cf_svy_money_change_now",
-      title: "What needs to change with money right now?",
+      id: "money_change_now",
+      title: "What Would This Money Change Right Now?",
       subtitle: "Select all that apply.",
       type: "multi",
       options: [
-        "Cash flow is tight",
-        "Need to grow faster",
-        "Catch up on obligations",
-        "Invest in the business",
-        "Not sure yet",
+        "Peace of mind (stop stressing about cash)",
+        "Grow faster (more customers / more reach)",
+        "Pay off pressure (wipe out high-interest debt)",
+        "Stability (cover bills / buffer slow weeks)",
+        "Fresh start (new business / startup launch)",
       ],
     },
     {
-      key: "cf_svy_self_reported_fico",
-      title: "What is your current credit score?",
+      id: "current_score",
+      title: "Your Current Score",
       type: "single",
       options: ["500-579", "580-649", "650-699", "700-749", "750+", "Not sure"],
     },
     {
-      key: "cf_svy_annual_income_range",
-      title: "What is your annual personal income range?",
+      id: "has_business",
+      title: "Do You Have a Business?",
       type: "single",
-      options: ["Under $50k", "$50k - $100k", "$100k - $150k", "$150k - $250k", "$250k+"],
-    },
-    {
-      key: "cf_svy_income_verifiable",
-      title: "Can that income be verified (paystubs, tax returns, or bank deposits)?",
-      type: "single",
-      options: ["Yes", "No", "Not sure"],
-    },
-    {
-      key: "cf_svy_has_business",
-      title: "Do you currently own a business?",
-      type: "single",
-      options: ["Yes", "No"],
-    },
-    {
-      key: "cf_svy_business_revenue",
-      title: "What is your approximate annual business revenue?",
-      type: "single",
-      showIf: { key: "cf_svy_has_business", equals: "Yes" },
       options: [
-        "Pre-revenue / just starting",
+        "Yes, less than 6 months old",
+        "Yes, 6-12 months",
+        "Yes, 1-2 years",
+        "Yes, 2-5 years",
+        "Yes, 5+ years",
+        PERSONAL,
+      ],
+    },
+    {
+      id: "annual_business_revenue",
+      title: "Annual Business Revenue",
+      type: "single",
+      branch: "business",
+      options: [
         "Under $100k",
-        "$100k - $250k",
-        "$250k - $500k",
-        "$500k - $1M",
+        "$100k - $249k",
+        "$250k - $499k",
+        "$500k - $999k",
         "$1M+",
       ],
     },
     {
-      key: "cf_svy_revenue_verifiable",
-      title: "Can business revenue be verified (bank statements or tax returns)?",
+      id: "verify_revenue",
+      title: "Can You Verify Revenue?",
       type: "single",
-      showIf: { key: "cf_svy_has_business", equals: "Yes" },
-      options: ["Yes", "No", "Not sure"],
+      branch: "business",
+      options: [
+        "Yes, bank statements",
+        "Yes, tax returns",
+        "Yes, both",
+        "Not right now",
+      ],
     },
     {
-      key: "cf_svy_available_capital",
-      title: "How much capital do you have available right now?",
+      id: "annual_personal_income",
+      title: "Annual Personal Income",
       type: "single",
-      options: ["Under $5k", "$5k - $15k", "$15k - $50k", "$50k+", "Prefer not to say"],
+      branch: "personal",
+      options: [
+        "Less than $50k",
+        "$50k-$99k",
+        "$100k-$199k",
+        "$200k-$499k",
+        "$500k+",
+      ],
     },
     {
-      key: "cf_svy_has_negatives",
-      title: "Any negatives on your credit report? (collections, charge-offs, late payments)",
+      id: "verify_income",
+      title: "Can You Verify Income?",
       type: "single",
-      options: ["Yes", "No"],
+      branch: "personal",
+      options: [
+        "Yes, pay stubs",
+        "Yes, W-2 or tax returns",
+        "Yes, both",
+        "Not right now",
+      ],
     },
     {
-      key: "__contact__",
-      title: "Begin your application",
+      id: "available_capital",
+      title: "Available Capital",
+      type: "single",
+      options: [
+        "Less than $1k",
+        "$1k - $5k",
+        "$5k - $25k",
+        "$25k - $100k",
+        "$100k+",
+      ],
+    },
+    {
+      id: "contact",
+      title: "Let's Start With Your Info",
       subtitle: "Tell us how to reach you. Soft inquiry. No obligation.",
       type: "contact",
     },
   ];
 
+  // payloadKey === title until CF Contact Attributes are mapped
+  var PAYLOAD_KEY = {
+    funding_target_amount: "Set Your Target Amount",
+    planned_use: "Planned Use",
+    money_change_now: "What Would This Money Change Right Now?",
+    current_score: "Your Current Score",
+    has_business: "Do You Have a Business?",
+    annual_business_revenue: "Annual Business Revenue",
+    verify_revenue: "Can You Verify Revenue?",
+    annual_personal_income: "Annual Personal Income",
+    verify_income: "Can You Verify Income?",
+    available_capital: "Available Capital",
+  };
+
   function visibleSteps(answers) {
+    var biz = answers.has_business;
+    var onPersonal = biz === PERSONAL;
+    var onBusiness = typeof biz === "string" && biz.indexOf("Yes") === 0;
     return STEPS.filter(function (s) {
-      if (!s.showIf) return true;
-      return String(answers[s.showIf.key] || "") === s.showIf.equals;
+      if (!s.branch) return true;
+      if (s.branch === "business") return onBusiness;
+      if (s.branch === "personal") return onPersonal;
+      return true;
     });
+  }
+
+  function toPayloadAnswers(answers) {
+    var out = {};
+    Object.keys(answers).forEach(function (id) {
+      var key = PAYLOAD_KEY[id];
+      if (!key) return;
+      var v = answers[id];
+      if (v == null || v === "") return;
+      out[key] = v;
+    });
+    return out;
   }
 
   function init() {
@@ -114,6 +180,7 @@
     var answers = {};
     var idx = 0;
     var multiPick = {};
+    var otherText = "";
 
     function steps() {
       return visibleSteps(answers);
@@ -139,7 +206,7 @@
         (idx + 1) +
         " of " +
         list.length +
-        '</span></div>' +
+        "</span></div>" +
         '<div class="sv-q">' +
         step.title +
         "</div>" +
@@ -149,7 +216,7 @@
         html +=
           '<div class="field"><label for="sv-name">Full name</label>' +
           '<input type="text" id="sv-name" name="name" autocomplete="name" required></div>' +
-          '<div class="field"><label for="sv-business">Business name</label>' +
+          '<div class="field"><label for="sv-business">Legal Business Name <span style="text-transform:none;letter-spacing:0;color:var(--gray2)">(optional)</span></label>' +
           '<input type="text" id="sv-business" name="business" autocomplete="organization"></div>' +
           '<div class="field"><label for="sv-email">Email address</label>' +
           '<input type="email" id="sv-email" name="email" autocomplete="email" required></div>' +
@@ -159,18 +226,20 @@
           '<label for="sv-sms">I expressly consent to receive transactional SMS messages from FUNDHUB LLC about my application and account status at the number provided, including messages sent using automated technology. Checking this box constitutes my electronic signature. Message and data rates may apply. Message frequency varies. Reply STOP to opt out, HELP for help. Consent is not a condition of any purchase or service. See our <a href="/privacy/">Privacy Policy</a> and <a href="/terms/#sms">SMS Terms</a>.</label></div>' +
           '<p class="sv-err" role="alert"></p>' +
           '<div class="sv-nav">' +
-          (idx > 0 ? '<button type="button" class="btn btn-ghost" data-act="back">Back</button>' : "") +
+          (idx > 0
+            ? '<button type="button" class="btn btn-ghost" data-act="back">Back</button>'
+            : "") +
           '<button type="button" class="btn" data-act="submit">Submit application</button></div>' +
           '<p class="disclaim">By submitting, you confirm the information provided is accurate and that you are the subscriber or authorized user of the phone number entered. Fundhub is not a direct lender and does not guarantee approval or specific terms.</p>';
       } else {
-        var selected = answers[step.key];
-        var picked = multiPick[step.key] || {};
-        html += '<div class="sv-opts" role="listbox" aria-label="' + step.title.replace(/"/g, "") + '">';
+        var selected = answers[step.id];
+        var picked = multiPick[step.id] || {};
+        html +=
+          '<div class="sv-opts" role="listbox" aria-label="' +
+          step.title.replace(/"/g, "") +
+          '">';
         (step.options || []).forEach(function (opt) {
-          var on =
-            step.type === "multi"
-              ? !!picked[opt]
-              : selected === opt;
+          var on = step.type === "multi" ? !!picked[opt] : selected === opt;
           html +=
             '<button type="button" class="sv-opt' +
             (on ? " on" : "") +
@@ -181,10 +250,20 @@
             "</button>";
         });
         html += "</div>";
+        if (step.otherEnabled && selected === "Other") {
+          html +=
+            '<div class="field" style="margin-top:8px"><label for="sv-other">Other</label>' +
+            '<input type="text" id="sv-other" value="' +
+            String(otherText || "").replace(/"/g, "&quot;") +
+            '"></div>';
+        }
         html += '<p class="sv-err" role="alert"></p>';
         html += '<div class="sv-nav">';
-        if (idx > 0) html += '<button type="button" class="btn btn-ghost" data-act="back">Back</button>';
-        html += '<button type="button" class="btn" data-act="next">Next</button></div>';
+        if (idx > 0)
+          html +=
+            '<button type="button" class="btn btn-ghost" data-act="back">Back</button>';
+        html +=
+          '<button type="button" class="btn" data-act="next">Next</button></div>';
       }
 
       root.innerHTML = html;
@@ -196,15 +275,21 @@
         btn.addEventListener("click", function () {
           var val = btn.getAttribute("data-opt");
           if (step.type === "multi") {
-            multiPick[step.key] = multiPick[step.key] || {};
-            multiPick[step.key][val] = !multiPick[step.key][val];
+            multiPick[step.id] = multiPick[step.id] || {};
+            multiPick[step.id][val] = !multiPick[step.id][val];
             render();
           } else {
-            answers[step.key] = val;
+            answers[step.id] = val;
             render();
           }
         });
       });
+      var otherInput = document.getElementById("sv-other");
+      if (otherInput) {
+        otherInput.addEventListener("input", function () {
+          otherText = otherInput.value;
+        });
+      }
       var back = root.querySelector('[data-act="back"]');
       if (back)
         back.addEventListener("click", function () {
@@ -216,21 +301,37 @@
       if (next)
         next.addEventListener("click", function () {
           if (step.type === "multi") {
-            var picks = Object.keys(multiPick[step.key] || {}).filter(function (k) {
-              return multiPick[step.key][k];
+            var picks = Object.keys(multiPick[step.id] || {}).filter(function (
+              k
+            ) {
+              return multiPick[step.id][k];
             });
             if (!picks.length) {
               setErr("Select at least one option.");
               return;
             }
-            answers[step.key] = picks;
-          } else if (!answers[step.key]) {
+            answers[step.id] = picks;
+          } else if (!answers[step.id]) {
             setErr("Please select an option to continue.");
             return;
+          } else if (step.otherEnabled && answers[step.id] === "Other") {
+            var ot = (document.getElementById("sv-other") || {}).value || "";
+            ot = String(ot).trim();
+            if (!ot) {
+              setErr("Please describe Other.");
+              return;
+            }
+            otherText = ot;
+            answers[step.id] = ot;
           }
-          if (step.key === "cf_svy_has_business" && answers[step.key] === "No") {
-            delete answers.cf_svy_business_revenue;
-            delete answers.cf_svy_revenue_verifiable;
+          if (step.id === "has_business") {
+            if (answers[step.id] === PERSONAL) {
+              delete answers.annual_business_revenue;
+              delete answers.verify_revenue;
+            } else {
+              delete answers.annual_personal_income;
+              delete answers.verify_income;
+            }
           }
           idx += 1;
           setErr("");
@@ -271,7 +372,8 @@
           business: business,
           sms_consent: sms,
           source: "website:home",
-          answers: answers,
+          answers: toPayloadAnswers(answers),
+          answers_by_id: answers,
           page_url: location.href,
           submitted_at: new Date().toISOString(),
         }),
@@ -285,7 +387,10 @@
           if (!res.ok || !res.body || !res.body.redirect) {
             btn.disabled = false;
             btn.textContent = "Submit application";
-            setErr((res.body && res.body.error) || "Something went wrong. Please try again.");
+            setErr(
+              (res.body && res.body.error) ||
+                "Something went wrong. Please try again."
+            );
             return;
           }
           window.location.href = res.body.redirect;

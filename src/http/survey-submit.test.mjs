@@ -35,16 +35,16 @@ test("parseSurveySubmitBody requires name email phone", () => {
     phone: "555-0100",
     business: "Analytical Engines",
     answers: {
-      cf_svy_self_reported_fico: "750+",
-      cf_svy_has_negatives: "No",
+      "Your Current Score": "750+",
+      "Set Your Target Amount": "Less than $50k",
       ignore_me: "x",
     },
   });
   assert.equal(ok.ok, true);
   assert.equal(ok.email, "ada@example.com");
   assert.deepEqual(ok.answers, {
-    cf_svy_self_reported_fico: "750+",
-    cf_svy_has_negatives: "No",
+    "Your Current Score": "750+",
+    "Set Your Target Amount": "Less than $50k",
   });
 });
 
@@ -62,6 +62,7 @@ test("runSurveySubmit emits entry + survey and returns PASS redirect", async () 
       business: "AE",
       source: "website:home",
       sms_consent: true,
+      // Legacy cf_svy_* still classifies; title-keyed answers alone do not (see audit).
       answers: {
         cf_svy_self_reported_fico: "750+",
         cf_svy_has_negatives: "No",
@@ -79,7 +80,7 @@ test("runSurveySubmit emits entry + survey and returns PASS redirect", async () 
   assert.equal(names[1].payload.answers.cf_svy_has_negatives, "No");
 });
 
-test("runSurveySubmit DOWNSELL when negatives Yes", async () => {
+test("runSurveySubmit title-keyed ground-truth answers → MANUAL_REVIEW (no remapping)", async () => {
   const result = await runSurveySubmit(
     {
       name: "Bob",
@@ -89,14 +90,14 @@ test("runSurveySubmit DOWNSELL when negatives Yes", async () => {
       source: "website:home",
       sms_consent: false,
       answers: {
-        cf_svy_self_reported_fico: "750+",
-        cf_svy_has_negatives: "Yes",
+        "Your Current Score": "750+",
+        "Do You Have a Business?": "Yes, 1-2 years",
       },
     },
     { emit: async () => ({ id: "x", deduped: false }), ensureRegistered: () => {}, db: {} }
   );
-  assert.equal(result.qualification, DOWNSELL);
-  assert.match(result.redirect, /thank-you/);
+  // Classifier still reads cf_svy_* / has_negatives — not silently remapped.
+  assert.equal(result.qualification, MANUAL_REVIEW);
 });
 
 test("runSurveySubmit MANUAL_REVIEW when gate answers missing", async () => {
@@ -108,7 +109,7 @@ test("runSurveySubmit MANUAL_REVIEW when gate answers missing", async () => {
       business: "",
       source: "website:home",
       sms_consent: false,
-      answers: { cf_svy_funding_target_amount: "$50k - $100k" },
+      answers: { "Set Your Target Amount": "$50k - $100k" },
     },
     { emit: async () => ({ id: "x", deduped: false }), ensureRegistered: () => {}, db: {} }
   );
