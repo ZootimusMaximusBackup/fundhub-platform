@@ -31,18 +31,17 @@ Chris maps Contact Attribute on all survey questions:
 | `cf_svy_business_revenue` | NEW |
 | `cf_svy_revenue_verifiable` | NEW |
 | `cf_svy_available_capital` | NEW |
-| `cf_svy_has_negatives` | NEW — Yes/No — routing gate 2 |
 
-Add question: "Any negatives on your credit report? (collections, charge-offs, late payments)" Yes/No → `cf_svy_has_negatives`.
+**Owner 2026-08-12:** do **not** add `cf_svy_has_negatives` / negatives Yes/No to the survey. Not in current CF ground truth.
 
-**Owner signal:** reply `attributes set` when done. Phase 1 waits on that.
+**Owner signal:** reply `attributes set` when CF attribute mapping (Parts A–B) is done. Phase 1 waits on that.
 
 ## Task list
 
 | id | unit | owner | status |
 |---|---|---|---|
-| p0-cf | CF attributes + has_negatives question | Chris | pending ⛔ (Phase 1 still waits; Phase 2 built with owner-set keys) |
-| p0-mig | Migration 163: add 5 typed `cf_svy_*` columns | agent | done (code pushed; **prod migrate blocked** — Netlify CLI returns redacted DATABASE_URL locally) |
+| p0-cf | CF attributes (no has_negatives question) | Chris | pending ⛔ — checklist: `docs/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md` |
+| p0-mig | Migration 163: add 5 typed `cf_svy_*` columns | agent | **done on prod** (2026-08-12; health `pending:0`) |
 | p0-writer | Carbon-copy writer + wire `survey.submitted` + pg tests | agent | done (unit tests green; pg test needs DATABASE_URL) |
 | p1-seam | Funnel seam proof (watch → payload → adapter → land → classify) | — | blocked on p0-cf |
 | p2-home | Homepage survey widget | agent | done (live API PASS/DOWNSELL verified 2026-08-12) |
