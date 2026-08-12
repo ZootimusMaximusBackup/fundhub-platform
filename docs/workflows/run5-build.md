@@ -42,8 +42,8 @@ Add question: "Any negatives on your credit report? (collections, charge-offs, l
 | id | unit | owner | status |
 |---|---|---|---|
 | p0-cf | CF attributes + has_negatives question | Chris | pending ⛔ |
-| p0-mig | Migration 163: add 5 typed `cf_svy_*` columns | agent | claimed |
-| p0-writer | Carbon-copy writer + wire `survey.submitted` + pg tests | agent | claimed |
+| p0-mig | Migration 163: add 5 typed `cf_svy_*` columns | agent | done (code pushed; **prod migrate blocked** — Netlify CLI returns redacted DATABASE_URL locally) |
+| p0-writer | Carbon-copy writer + wire `survey.submitted` + pg tests | agent | done (unit tests green; pg test needs DATABASE_URL) |
 | p1-seam | Funnel seam proof (watch → payload → adapter → land → classify) | — | blocked on p0-cf |
 | p2-home | Homepage survey widget | — | pending |
 | p2-other | Other marketing page capture forms | — | pending |
