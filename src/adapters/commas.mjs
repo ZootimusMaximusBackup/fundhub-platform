@@ -117,6 +117,7 @@ export function normalizeCommasEvent(body) {
     (Array.isArray(d.items) && d.items[0]) ||
     {};
   const name =
+    (d.item && d.item.title) ||
     d.product_name ||
     (d.product && (d.product.name || d.product.title)) ||
     li.name ||
@@ -127,6 +128,7 @@ export function normalizeCommasEvent(body) {
     "";
 
   const email =
+    (d.buyer && d.buyer.email) ||
     (d.fan && (d.fan.email || d.fan.email_address)) ||
     d.customer_email ||
     (d.customer && (d.customer.email || d.customer.email_address)) ||
@@ -157,6 +159,8 @@ export function normalizeCommasEvent(body) {
      integration is most likely to carry it: an explicit reference id, then a
      generic metadata bag, then a bare `ref` some processors use verbatim. */
   const ref =
+    (d.api_metadata && d.api_metadata.data &&
+      (d.api_metadata.data.link_ref || d.api_metadata.data.ref)) ||
     d.client_reference_id ||
     (d.metadata && (d.metadata.link_ref || d.metadata.ref)) ||
     d.reference ||

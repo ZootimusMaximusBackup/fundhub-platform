@@ -210,6 +210,43 @@ test("normalizeCommasEvent: reads FanBasis SDK shape (data.product / data.fan)",
   assert.equal(evt.id, "txn_123");
 });
 
+/* Documented live envelope (apidocs.fan payment.succeeded): buyer.email,
+   item.title, api_metadata.data — not product/fan. Prefer these first so a
+   real delivery is not routed unmatched while older fixtures still pass. */
+test("normalizeCommasEvent: reads documented envelope (buyer.email / item.title / api_metadata)", () => {
+  const evt = normalizeCommasEvent({
+    id: "9b2f5c1e-4a7d-4c9e-b1f3-2d8e6a1c0f45",
+    type: "payment.succeeded",
+    created_at: "2026-07-13T21:42:47+00:00",
+    data: {
+      payment_id: "ORD-8F3K-2MQ9-X7LP",
+      amount: 29.0,
+      buyer: { id: "user_4Kd9mQ2xZ7Lp", name: "Alex Johnson", email: "ALEX@EXAMPLE.com" },
+      item: { id: "NLxj6", title: "Business Financial Assessment", type: "onetime" },
+      api_metadata: { data: { link_ref: "pl_abc123", plan: "monthly" } }
+    }
+  });
+  assert.equal(evt.paymentId, "ORD-8F3K-2MQ9-X7LP");
+  assert.equal(evt.name, "Business Financial Assessment");
+  assert.equal(evt.email, "alex@example.com");
+  assert.equal(evt.ref, "pl_abc123");
+  assert.equal(evt.amount, 29);
+});
+
+test("normalizeCommasEvent: api_metadata.data.ref is accepted when link_ref absent", () => {
+  const evt = normalizeCommasEvent({
+    type: "payment.succeeded",
+    data: {
+      payment_id: "ORD-REF-ONLY",
+      amount: 100,
+      buyer: { email: "ref@example.com" },
+      item: { title: "Consulting Services Deposit" },
+      api_metadata: { data: { ref: "pl_ref_only" } }
+    }
+  });
+  assert.equal(evt.ref, "pl_ref_only");
+});
+
 test("normalizeCommasEvent: amount_cents downscales, missing amount => null", () => {
   assert.equal(normalizeCommasEvent({ data: { amount_cents: 300000 } }).amount, 3000);
   assert.equal(normalizeCommasEvent({ data: { product: { title: "x" } } }).amount, null);
