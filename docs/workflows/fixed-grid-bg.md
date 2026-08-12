@@ -1,26 +1,14 @@
-# Fixed paper grid (marketing site)
-
-Separate from RUN4 / W4a.
-
-## Task list
-
-| unit | owner | status |
-|------|-------|--------|
-| Fixed paper grid on marketing pages | this session | done |
+# Fixed dark grid (marketing hero/CTA)
 
 ## Scope (owner-set)
 
-Fixed paper grid **only** on pages that already show the grid:
-- `public/index.html` (homepage)
-- `public/education/index.html`
-- `public/affiliates/index.html`
+Homepage, education, affiliates only.
 
-**Not** on legal pages or 404.
+Grid lived on the **dark** bands only (hero + CTA) — not the light paper sections.
 
-## Change manifest
+## Change
 
-**Keep fixed `body::before` paper grid** (`#FCFCFC`, 44px `rgba(10,10,10,.048)`):
-- homepage, education, affiliates
-
-**No page grid** (solid paper/bg as before):
-- terms, privacy, education legal/refund, 404
+- One fixed `body::before` layer: ink `#0A0A0A`, 56px `rgba(255,255,255,.035)` lines.
+- `.hero` / `.cta-band` backgrounds transparent so that layer shows through.
+- Light `section.blk` opaque paper; footer / `.blk.dark` stay solid ink (no grid).
+- Removed scrolling `.hero::before` / `.cta-band::before` paints.
