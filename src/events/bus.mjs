@@ -43,8 +43,13 @@ export async function emit(db, name, payload = {}, opts = {}) {
     { id, name, version, orgId, clientId: opts.clientId || null, payload },
     { throwOnHandlerError: opts.throwOnHandlerError === true }
   );
-  if (process.env.INNGEST_EVENT_KEY) {
-    try { await inngest.send({ name, data: { id, payload, orgId, clientId: opts.clientId || null } }); } catch (_) { /* non-fatal */ }
+  // Do not await Inngest — it added multi-second latency to website survey
+  // submit and webhook responses. Event row + local handlers already ran;
+  // Inngest fan-out is best-effort and must not block the HTTP response.
+  if (process.env.INNGEST_EVENT_KEY && opts.skipInngest !== true) {
+    void inngest
+      .send({ name, data: { id, payload, orgId, clientId: opts.clientId || null } })
+      .catch(() => {});
   }
   return { id, deduped: false, dispatched };
 }

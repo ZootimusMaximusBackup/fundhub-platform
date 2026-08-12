@@ -92,6 +92,10 @@ export async function runSurveySubmit(parsed, deps = {}) {
   const database = deps.db || db;
   const ensure = deps.ensureRegistered || ensureRegistered;
 
+  // Classify first so redirect is ready even if capture work is slow.
+  const qualification = classifySurvey(parsed.answers);
+  const redirect = SURVEY_REDIRECTS[qualification] || SURVEY_REDIRECTS.MANUAL_REVIEW;
+
   ensure();
   const idemBase = `website-survey:${parsed.email}:${Date.now()}`;
   const entryPayload = {
@@ -118,9 +122,6 @@ export async function runSurveySubmit(parsed, deps = {}) {
     },
     { idempotencyKey: `${idemBase}:survey` }
   );
-
-  const qualification = classifySurvey(parsed.answers);
-  const redirect = SURVEY_REDIRECTS[qualification] || SURVEY_REDIRECTS.MANUAL_REVIEW;
 
   return {
     ok: true,

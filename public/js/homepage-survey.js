@@ -359,7 +359,7 @@
         return;
       }
       btn.disabled = true;
-      btn.textContent = "Processing…";
+      btn.textContent = "Redirecting…";
       setErr("");
 
       fetch("/api/public/survey-submit", {
@@ -393,7 +393,8 @@
             );
             return;
           }
-          window.location.href = res.body.redirect;
+          btn.textContent = "Redirecting…";
+          window.location.assign(res.body.redirect);
         })
         .catch(function () {
           btn.disabled = false;
