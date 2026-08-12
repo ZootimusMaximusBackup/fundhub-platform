@@ -501,8 +501,9 @@ describe("GET /api/auth/login — the switcher's roster, gated server-side", () 
     const { logins } = (await getOptions("1")).body.demo;
     for (const d of logins) {
       assert.ok(HOME[d.role], `shell.js HOME has no entry for ${d.role}`);
-      assert.equal(d.home, "/app/" + HOME[d.role],
-        `the ${d.role} button opens ${d.home} but shell.js sends ${d.role} to /app/${HOME[d.role]}`);
+      const expected = HOME[d.role].startsWith("/") ? HOME[d.role] : "/app/" + HOME[d.role];
+      assert.equal(d.home, expected,
+        `the ${d.role} button opens ${d.home} but shell.js sends ${d.role} to ${expected}`);
     }
     // And the reverse: a role the shell has a home for, with no button to reach
     // it, is a portal the owner still cannot open.
@@ -515,9 +516,11 @@ describe("GET /api/auth/login — the switcher's roster, gated server-side", () 
   test("every home is a real screen file that exists on disk", async () => {
     // shell.js:isScreen() only checks the SHAPE of the href. A typo'd filename
     // passes that and 404s in the browser, so the file is checked here.
+    // Closer lands outside /app/ on /dashboard.html (read-only client list).
     const { logins } = (await getOptions("1")).body.demo;
     for (const d of logins) {
-      assert.match(d.home, /^\/app\/[a-z0-9-]+\.html$/, `${d.home} is not an /app/ screen path`);
+      assert.match(d.home, /^\/(?:app\/[a-z0-9-]+|dashboard)\.html$/,
+        `${d.home} is not an allowed home path`);
       assert.ok(fs.existsSync(path.join(ROOT, "public", d.home.replace(/^\//, ""))),
         `${d.role} opens ${d.home}, which does not exist`);
     }

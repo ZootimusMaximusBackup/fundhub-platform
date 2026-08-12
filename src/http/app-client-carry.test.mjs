@@ -366,17 +366,15 @@ describe("shell.js — a query string does not open a hole in the gate", () => {
     assert.equal(r.click(a).defaultPrevented, false);
   });
 
-  test("being bounced off a forbidden screen still arrives holding the client", async () => {
-    // A closer typing /app/subscriptions.html into the bar is sent home. The
-    // redirect target this file builds is ABSOLUTE ("/app/closer-dashboard.html"),
-    // which is why screenOf() strips a leading path — without that the carry
-    // looked at the whole path, saw no screen in it, and dropped the client at
-    // the exact moment the user least expected it.
+  test("closer bounced off a forbidden screen lands on /dashboard.html", async () => {
+    // Closer home is /dashboard.html (outside /app/, not in CLIENT_SCREENS),
+    // so the bounce does not append client_id. Absolute /app/ + client carry
+    // is still covered by the gateLinks rewrite tests in this file.
     const r = await runShell({
       role: "closer", page: "subscriptions.html", search: "?client_id=" + CID
     });
     assert.ok(r.navigations.length > 0, "a forbidden screen was not routed away from");
-    assert.equal(r.navigations[0].to, "/app/closer-dashboard.html?client_id=" + CID);
+    assert.equal(r.navigations[0].to, "/dashboard.html");
   });
 
   test("an allowed row keeps its client and stays visible", async () => {

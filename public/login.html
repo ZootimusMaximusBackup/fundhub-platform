@@ -410,11 +410,12 @@ async function openAs(d, password, btn) {
   }
   storeSession(out.data, d.role);
   // Straight to the role's own screen. `home` is server-supplied, so it is
-  // checked before it becomes a navigation: a same-origin /app/ path and
-  // nothing else. A value that failed this would be a bug in the roster, but
-  // "it came from our own API" is not a reason to hand an unchecked string to
-  // location.href.
-  location.href = /^\/app\/[a-z0-9-]+\.html$/.test(d.home) ? d.home : "/app/";
+  // checked before it becomes a navigation: a same-origin /app/ path, or the
+  // closer landing at /dashboard.html, and nothing else. A value that failed
+  // this would be a bug in the roster, but "it came from our own API" is not a
+  // reason to hand an unchecked string to location.href.
+  location.href = (/^\/app\/[a-z0-9-]+\.html$/.test(d.home) || d.home === "/dashboard.html")
+    ? d.home : "/app/";
 }
 
 loadSwitcher();

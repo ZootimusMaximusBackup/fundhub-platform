@@ -228,7 +228,7 @@
     owner: "command-center.html",
     admin: "command-center.html",
     funding_advisor: "command-center.html",
-    closer: "closer-dashboard.html",
+    closer: "/dashboard.html",
     inquiry_specialist: "inquiry-remover.html",
     setter: "pipeline.html",
     // The Sales pipeline is the thing they own, so it is where they land.
@@ -269,7 +269,16 @@
 
   function homeFor(role, ok) {
     var h = HOME[role];
-    return h && ok.indexOf(h) !== -1 ? h : ok[0];
+    if (!h) return ok[0];
+    /* Absolute homes (e.g. /dashboard.html) are landing pages outside /app/,
+       not gated tabs — do not require them in the role's screen list. */
+    if (h.charAt(0) === "/") return h;
+    return ok.indexOf(h) !== -1 ? h : ok[0];
+  }
+
+  function homeUrl(role, ok) {
+    var h = homeFor(role, ok);
+    return h && h.charAt(0) === "/" ? h : "/app/" + h;
   }
 
   /* screenOf — the screen file a link points at, or "" if it does not point at
@@ -495,7 +504,7 @@
     // Bounced off a screen you may not open — but you were working on somebody,
     // and arriving home having silently lost them is the loss this pass exists
     // to stop. currentClient() reads the bar of the page being left.
-    return withClient("/app/" + homeFor(role, ok), currentClient());
+    return withClient(homeUrl(role, ok), currentClient());
   }
 
   /* allowedNow is null until we know the role. Every click on a screen link is
@@ -907,7 +916,7 @@
      come back if the session turns out to allow it. The original href is kept
      on the element the first time through, because the logo's is rewritten. */
   function gateLinks(ok, role) {
-    var home = "/app/" + homeFor(role, ok);
+    var home = homeUrl(role, ok);
     /* Read ONCE per pass, not once per link: currentClient() writes the address
        bar's client back to localStorage, and doing that inside the loop would
        repeat the same write for every anchor on the page. */
@@ -1633,7 +1642,7 @@
       // replace(), not href: the router page must not sit in history, or
       // Back from a screen bounces straight forward again. The client rides
       // along for the same reason routeAway() carries it.
-      location.replace(withClient("/app/" + homeFor(role, ok), currentClient()));
+      location.replace(withClient(homeUrl(role, ok), currentClient()));
       return;
     }
     settleClicks(ok);
