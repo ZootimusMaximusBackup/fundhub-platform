@@ -1,11 +1,11 @@
 # E2E Verify Run 4 — Report
 
-**Branch / SHA:** `main` @ `09c526b`  
+**Branch / SHA:** `main` @ `ae7a537` (demo flip + build guard restore; Track D earlier)  
 **Canonical URL:** `https://fundhub.ai`  
-**Mode:** observe-only (allowlisted ClickFunnels adapter fix **not** applied)  
+**Mode:** observe-only (Track D + demo flip already shipped; no new code in W3 resume)  
 **Board:** `docs/workflows/e2e-verify-run4.md`  
-**Evidence:** `docs/workflows/e2e-verify-run4-evidence/` (W1 present)  
-**Date:** 2026-08-12
+**Evidence:** `docs/workflows/e2e-verify-run4-evidence/` (W1 + W2 demo flip + W3 resume)  
+**Date:** 2026-08-12 · **W3 resume:** demo off confirmed
 
 ---
 
@@ -15,14 +15,16 @@
 
 Ads send people to ClickFunnels. The thank-you / calendar piece works. But the platform has **never** recorded a real ClickFunnels lead on production (zero ClickFunnels bus events). We also could not prove the webhook secret on Netlify matches ClickFunnels. Until that is fixed and re-checked, paid traffic may never show up in the CRM.
 
+**What improved (W2 demo flip + W3 resume):** Demo mode is **off** on live. Staff CRM now shows filtered real rows (clients **5**, not 18). The “DEMO MODE ON” banner is gone. `chris@` / `owner@` / `admin@` can sign in. Payment webhook landing stays **PASS-synthetic**.
+
 **Biggest holes (in order):**
 
-1. **Funnel → CRM is not proven.** Secret match blocked; zero live ClickFunnels landings.
-2. **Pay links still blocked.** CRM create stays 503 until checkout-session rewire. **Webhook landing is fixed** (Track D): signed synthetic envelope queues into `commas_inbox`.
-3. **Staff CRM not verified.** Most staff screens need a session; W4 could not log in as staff (W3 could with `owner@fundhub.ai` for money probes only).
-4. **Platform does not remind people about calls.** Booking confirm may ride ClickFunnels/Google; platform reminders do not exist; all sends are dry-run blocked.
-5. **Two database upgrades still pending** (letters store + repair pipeline). Leave them alone until you say otherwise.
-6. **Lender list is all demo.** Matches look real but every lender is marked demo.
+1. **Funnel → CRM is not proven.** Secret match still unknown; zero live ClickFunnels landings. Do not invent signed CF traffic.
+2. **Pay links still blocked.** Create stays **503** until checkout-session rewire (fail-closed). Webhook inbox path is fixed (Track D).
+3. **Platform does not remind people about calls.** Booking confirm may ride ClickFunnels/Google; platform reminders do not exist; all sends are dry-run blocked.
+4. **Two database upgrades still pending** (letters store + repair pipeline). Leave them alone until you say otherwise.
+5. **Lender list is all demo.** Matches look real but every lender is marked demo.
+6. **Closer/advisor logins still broken** until password reset on those accounts (owner/admin/chris work).
 
 ---
 
@@ -95,10 +97,10 @@ Evidence pointers are on the board tables unless a file path is named.
 | `api:auth/magic-link-verify` | **PASS** | token_required |
 | `api:auth/reset` | **PASS** (honest) | No email; ask admin |
 | `screen:portal-login` isolation | **PASS** (page) | Board W4 |
-| `auth:staff_session` live | **BLOCKED** | No staff password / DB unmask for W4 |
-| CRM shells static 200 | **PASS** (static) | Board W4 |
-| CRM rows+filters / RBAC / portal session | **BLOCKED** | No staff session |
-| documents / inquiry / journeys / agent-context / pipeline writes / proxy | **BLOCKED** | Auth or missing Oxylabs |
+| `auth:staff_session` live | **PASS** (chris/owner/admin) · closers **FAIL** | W4b + W3 resume: known staff password works for three; closers need reset |
+| CRM shells static 200 | **PASS** (static) | Board W4 / W3 resume |
+| CRM rows+filters / demo banner | **PASS** (after demo off) | W3 resume: clients **5**/20/22/6; banner gone; chris filter no Dana |
+| documents / inquiry / journeys / agent-context / pipeline writes / proxy | **PARTIAL** | Auth reached for several; proxy/Oxylabs + write→read still deferred |
 | Playwright e2e vs deploy | **BETA-EXCLUDED** / harness-only | 22/22 not against live |
 
 ### Cross-cutting / inventory (W0)
@@ -128,14 +130,14 @@ Evidence pointers are on the board tables unless a file path is named.
 
 ## 4. Blockers ranked for ad launch
 
-1. **ClickFunnels → platform ingress unproven** — zero CF bus events on prod; signature accept blocked (secret masked). Paste secret **or** rotate Netlify + update CF + one deploy, then re-probe. Without this, ads may never land in CRM.
-2. **`COMMAS_CHECKOUT_BASE_URL` unset** — pay-link create returns 503. Set on Netlify (all contexts) → one deploy.
-3. **~~`commas_inbox` RLS~~ fixed (migration 162)** — synthetic signed webhook now queues. Remaining money gap: checkout-session rewire + first real payment shape confirm.
-4. **Pending migrations (leave untouched until owner allows):**
+1. **ClickFunnels → platform ingress unproven** — zero CF bus events on prod; signature accept still blocked (secret masked / match UNKNOWN). Unsigned POST stays **401**. Do **not** invent signed CF. Paste secret **or** rotate Netlify + update CF + one deploy, then re-probe.
+2. **Pay-links create still 503** — `commas_not_configured` / checkout-session rewire ticketed. Keep fail-closed until rewire ships.
+3. **~~`commas_inbox` RLS~~ FIXED (migration 162)** — Track D **PASS-synthetic**. Remaining money gap: checkout rewire + first real payment shape confirm.
+4. **Pending migrations (leave untouched until owner allows — W4 apply queued but DO NOT RUN yet):**
    - `migrations/160_metro2_dispute_engine.sql` — dispute letter store
    - `migrations/161_optimization_repair_pipeline.sql` — repair/optimization pipeline
 5. **Transmit gap** — no platform booking confirm / appointment reminders; dry-run blocks all queues (see §5). Show-rate depends on CF/Google only.
-6. **Staff session / CRM survival unverified at scale** — W4 blocked on credentials; W3 proved `owner@fundhub.ai` for money only. Paste passwords, set `STAFF_INITIAL_PASSWORD`, or unmask `DATABASE_URL` for session mint.
+6. **Closer/advisor staff passwords** — `chris@` / `owner@` / `admin@` **PASS** with known password; founding closers/advisors still **401** until reset (W4b). CRM counts + Staff & Teams filter survival **PASS** after demo off (W3 resume).
 7. **Lender catalog 100% demo** — matches must not be sold as real until non-demo lenders exist.
 8. **`inquiry-call-sweeper` DEAD** — scheduled inquiry calls will not fire via Inngest.
 9. **`client_custom_fields` carbon-copy never written** — typed survey columns empty (jsonb on `clients` works locally).
@@ -190,11 +192,11 @@ Evidence pointers are on the board tables unless a file path is named.
 | # | Action | Why |
 |---|--------|-----|
 | 1 | **Paste** `CLICKFUNNELS_WEBHOOK_SECRET` (or CF signing secret) **or authorize rotate** + update CF “Fundhub platform” endpoint to the same value + **one** deploy | Prove signature accept; then capture +test survey/appointment under dry-run |
-| 2 | Set **`COMMAS_CHECKOUT_BASE_URL`** on Netlify (production + preview + branch) → **one** deploy | Pay links stop returning 503 |
-| 3 | Fix **`commas_inbox` RLS** (policies for `fundhub_app`, or stop bare RLS) | Payments can land → invoices |
-| 4 | Paste **staff passwords** / set `STAFF_INITIAL_PASSWORD` + reset **or** unmask `DATABASE_URL` for magic-link session mint | Unblock CRM filters, RBAC, documents, journeys, write→read |
+| 2 | Ship **checkout-session rewire** / set whatever pay-link config it needs → **one** deploy | Pay links stop returning 503 (keep fail-closed until then) |
+| 3 | ~~Fix `commas_inbox` RLS~~ **done** (migration 162) | Confirm with first **real** Commas payment shape |
+| 4 | Reset **closer/advisor** passwords (chris/owner/admin already work) | Full role coverage for CRM RBAC |
 | 5 | Keep **`MESSAGING_DRY_RUN=1`** until you explicitly want real client sends; then build reminder send before relying on ads for show-rate | Avoid silent no-shows |
-| 6 | Decide when to apply **`160_metro2_dispute_engine.sql`** and **`161_optimization_repair_pipeline.sql`** | Letter store + repair pipeline |
+| 6 | Decide when to apply **`160_metro2_dispute_engine.sql`** and **`161_optimization_repair_pipeline.sql`** (queued on board — **DO NOT RUN** until you say go) | Letter store + repair pipeline |
 | 7 | Load **non-demo lenders** (or clear demo-only catalog) | Matches safe to show clients |
 | 8 | Optional: register **`inquiry-call-sweeper`** or accept DEAD | Inquiry call schedule |
 | 9 | Confirm CF↔Netlify secret match after unblock (owner Q3 was UNKNOWN) | Close the funnel seam |
@@ -210,10 +212,16 @@ Evidence pointers are on the board tables unless a file path is named.
 | Migrations 160 / 161 | Untouched |
 | Adapter path fix | Not applied |
 | Health | `db:up`, `state:behind`, `pending:2` |
+| Demo mode | **OFF** (`demo_mode_enabled:false`) — W2 flip + W3 resume verified |
 
 ---
 
-*Merged by W5 from board manifests W0–W4 only. No live re-probe.*
+*Merged by W5 from board manifests W0–W4 only. No live re-probe.*  
+*Updated by W3 RUN4 resume (2026-08-12): demo-off CRM re-probe + blocker refresh.*
+
+## W3 RUN4 resume note (2026-08-12)
+
+Gate wait **~369s**; live demo **enabled:false**; CRM counts **5 / 20 / 22 / 6**; Staff & Teams banner **absent**; filter `chris` → Chris Stanbridge, no Dana. Evidence under `docs/workflows/e2e-verify-run4-evidence/w3-run4-resume/`. Ad-launch still **No** (CF + pay-links).
 
 ## Commas delivery model (Track D, 2026-08-12)
 

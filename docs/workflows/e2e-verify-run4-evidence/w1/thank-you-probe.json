@@ -1,0 +1,19 @@
+{
+  "info": {
+    "url": "https://apply.fundhub.ai/thank-you",
+    "hasFhRoot": true,
+    "calCtaExists": true,
+    "calCtaOn": true,
+    "whenText": "Thursday, August 20, 2026 at 9:00 AM – 9:30 AM (America/Phoenix)",
+    "googleHref": "https://calendar.google.com/calendar/render?action=TEMPLATE&text=Funding%20Strategy%20Meeting%20%E2%80%94%20Fundhub&dates=20260820T160000Z/20260820T163000Z&details=Google%20Meet%20details%20are%20in%20your%20confirmation%20email.%5Cnhttps%3A%2F%2Ffundhub.ai&ctz=America%2FPhoenix",
+    "icsDisplay": "block",
+    "icsVisible": true,
+    "htmlHasCalCta": true,
+    "customHtmlCount": 1
+  },
+  "expectDates": "20260820T160000Z/20260820T163000Z",
+  "datesOk": true,
+  "icsValid": true,
+  "icsHead": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Fundhub//Booking//EN\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\nBEGIN:VEVENT\r\nUID:fh-2026-08-20T16:00:00.000Z@fundhub.ai\r\nDTSTAMP:20260812T132331Z\r\nDTSTART:20260820T160000Z\r\nDTEND:20260820T163000Z\r\nSUMMARY:Funding Strategy Meeting — Fundhub\r\nDESCRIPTION:Google Meet ",
+  "shot": "/tmp/w1-run4/evidence/thank-you-live-with-booking.png"
+}
