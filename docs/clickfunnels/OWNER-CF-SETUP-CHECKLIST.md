@@ -5,7 +5,7 @@
 **Keys we use in the database / homepage:** same list as RUN5 board.
 
 **Already done on our side:** migration `163` on prod · typed columns exist · `src/survey/cf-question-map.mjs` + homepage widget use these `cf_svy_*` keys.  
-**Still on you in ClickFunnels:** Contact Attributes + webhook + negatives question (Part C).
+**Still on you in ClickFunnels:** Contact Attributes (Parts A–B) + webhook. No negatives question.
 
 When finished, reply in chat: **`attributes set`**
 
@@ -28,9 +28,10 @@ Names must match **exactly** (copy-paste):
 | 8 | `cf_svy_annual_income_range` | Annual personal income |
 | 9 | `cf_svy_income_verifiable` | Can verify personal income? |
 | 10 | `cf_svy_available_capital` | Available capital |
-| 11 | `cf_svy_has_negatives` | Credit negatives Yes/No (**new**) |
 
 Built-in contact fields (do **not** rename): First Name, Last Name, Email, Phone.
+
+**Do not create / do not map:** `cf_svy_has_negatives` — owner removed that question from the current survey spec (2026-08-12).
 
 ---
 
@@ -56,19 +57,7 @@ Leave option text alone. Only change the attribute mapping.
 
 ---
 
-## Part C — Add the negatives question (required for routing)
-
-Add a new single-choice question **before** the end of survey (after Available Capital is fine):
-
-- **Title:** `Any negatives on your credit report? (collections, charge-offs, late payments)`
-- **Options:** `Yes` · `No`
-- **Contact Attribute:** `cf_svy_has_negatives`
-
-Without this, FundHub treats the lead as **manual review** (not a clear pass/fail).
-
----
-
-## Part D — Webhook (so leads reach FundHub)
+## Part C — Webhook (so leads reach FundHub)
 
 1. CF workspace → **Webhooks** / Automations → webhook endpoint.  
 2. URL: `https://fundhub.ai/api/webhooks/clickfunnels`  
@@ -81,7 +70,7 @@ Opening that URL in a browser will say “Method not allowed.” That is normal 
 
 ---
 
-## Part E — Quick test
+## Part D — Quick test
 
 1. Use a fresh email: `Bakerskater987+test.cfsetup@gmail.com`  
 2. Complete survey + book a call.  
@@ -96,8 +85,8 @@ Opening that URL in a browser will say “Method not allowed.” That is normal 
 Repo: fundhub-platform. Help Chris in ClickFunnels only (no code).
 
 Source of truth for question titles/options: docs/clickfunnels/cf-survey-ground-truth.md
-Attribute keys (exact): docs/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md Parts A–C
+Attribute keys (exact): docs/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md Parts A–B (no has_negatives)
 Webhook: https://fundhub.ai/api/webhooks/clickfunnels (POST). Secret already on Netlify as CLICKFUNNELS_WEBHOOK_SECRET — do not rotate.
 
-Walk Chris click-by-click through: create attributes → map each survey question → add has_negatives Yes/No → verify webhook. Stop when he can reply "attributes set".
+Walk Chris click-by-click through: create attributes → map each survey question → verify webhook. Do **not** add a negatives question. Stop when he can reply "attributes set".
 ```

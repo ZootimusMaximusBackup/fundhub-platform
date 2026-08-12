@@ -128,12 +128,6 @@
       ],
     },
     {
-      id: "has_negatives",
-      title: "Any negatives on your credit report? (collections, charge-offs, late payments)",
-      type: "single",
-      options: ["Yes", "No"],
-    },
-    {
       id: "contact",
       title: "Let's Start With Your Info",
       subtitle: "Tell us how to reach you. Soft inquiry. No obligation.",
@@ -153,7 +147,6 @@
     annual_personal_income: "cf_svy_annual_income_range",
     verify_income: "cf_svy_income_verifiable",
     available_capital: "cf_svy_available_capital",
-    has_negatives: "cf_svy_has_negatives",
   };
 
   function visibleSteps(answers) {

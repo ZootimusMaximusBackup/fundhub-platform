@@ -3,12 +3,10 @@
 **Source:** live ClickFunnels survey editor for `https://apply.fundhub.ai/apply` (owner dump 2026-08-12).  
 **This file is the only survey source of truth.** Do not invent, paraphrase, reorder, or “improve” options. Every future session reads this before touching survey code.
 
-**Known gap (cleared for keys):** Contact Attribute mapping is the owner checklist  
-`docs/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md` — titles → `cf_svy_*`.  
+**Attribute keys:** `docs/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md` Parts A–B (titles → `cf_svy_*`).  
 `src/survey/cf-question-map.mjs` stores those keys as `payloadKey`.
 
-**Routing question (Part C):** after Available Capital, CF (and homepage) include  
-“Any negatives on your credit report? …” → `cf_svy_has_negatives` (Yes/No).
+**Not in this survey:** there is no negatives Yes/No question. Do not add one unless the owner changes this file.
 
 ---
 
@@ -124,16 +122,8 @@ All other questions, options, and the business/personal branch are identical.
 - $25k - $100k
 - $100k+
 
-### Any negatives on your credit report? (collections, charge-offs, late payments)
-
-- Yes
-- No
-
-Attribute: `cf_svy_has_negatives` (OWNER checklist Part C — required for PASS/DOWNSELL routing).
-
 ---
 
-## Not invented here
+## Not in this survey (owner 2026-08-12)
 
-Option strings for steps 2–Available Capital come only from the CF editor dump above.  
-`has_negatives` is owner-required for Stage-2 routing (checklist Part C); add it in CF if missing.
+Do **not** add “Any negatives on your credit report?” / `cf_svy_has_negatives` to CF or the homepage widget. Not in the live CF editor dump and not in the current owner spec.

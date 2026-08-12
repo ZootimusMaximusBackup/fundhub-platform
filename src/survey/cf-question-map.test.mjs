@@ -23,7 +23,8 @@ test("payload keys are cf_svy_* from OWNER checklist", () => {
   assert.equal(byId.current_score, "cf_svy_self_reported_fico");
   assert.equal(byId.annual_personal_income, "cf_svy_annual_income_range");
   assert.equal(byId.verify_income, "cf_svy_income_verifiable");
-  assert.equal(byId.has_negatives, "cf_svy_has_negatives");
+  assert.equal(byId.available_capital, "cf_svy_available_capital");
+  assert.equal(byId.has_negatives, undefined);
 });
 
 test("business path shows revenue steps, not personal income", () => {
@@ -47,9 +48,8 @@ test("answersByPayloadKey emits cf_svy_* keys", () => {
   const keyed = answersByPayloadKey({
     funding_target_amount: "Less than $50k",
     current_score: "750+",
-    has_negatives: "No",
   });
   assert.equal(keyed.cf_svy_funding_target_amount, "Less than $50k");
   assert.equal(keyed.cf_svy_self_reported_fico, "750+");
-  assert.equal(keyed.cf_svy_has_negatives, "No");
+  assert.equal(keyed.cf_svy_has_negatives, undefined);
 });

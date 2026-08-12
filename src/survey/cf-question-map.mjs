@@ -20,7 +20,7 @@
 /** Branch sentinel — exact CF option that takes the personal-funding path. */
 export const PERSONAL_FUNDING_OPTION = "No, personal funding only";
 
-/** @type {CfSurveyQuestion[]} CF order (contact first). has_negatives after capital (Part C). */
+/** @type {CfSurveyQuestion[]} CF order (contact first). */
 export const CF_SURVEY_QUESTIONS = Object.freeze([
   {
     id: "contact",
@@ -156,13 +156,6 @@ export const CF_SURVEY_QUESTIONS = Object.freeze([
       "$25k - $100k",
       "$100k+",
     ],
-  },
-  {
-    id: "has_negatives",
-    title: "Any negatives on your credit report? (collections, charge-offs, late payments)",
-    payloadKey: "cf_svy_has_negatives",
-    type: "single",
-    options: ["Yes", "No"],
   },
 ]);
 

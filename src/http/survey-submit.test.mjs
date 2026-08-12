@@ -96,28 +96,8 @@ test("runSurveySubmit score without negatives → MANUAL_REVIEW", async () => {
     },
     { emit: async () => ({ id: "x", deduped: false }), ensureRegistered: () => {}, db: {} }
   );
-  // Missing has_negatives → MANUAL_REVIEW (gate 2 absent)
+  // Survey has no has_negatives question; classifier gate 2 absent → MANUAL_REVIEW
   assert.equal(result.qualification, MANUAL_REVIEW);
-});
-
-test("runSurveySubmit cf_svy keys with score+negatives → PASS", async () => {
-  const result = await runSurveySubmit(
-    {
-      name: "Pat",
-      email: "pat@example.com",
-      phone: "555",
-      business: "",
-      source: "website:home",
-      sms_consent: false,
-      answers: {
-        cf_svy_self_reported_fico: "750+",
-        cf_svy_has_negatives: "No",
-      },
-    },
-    { emit: async () => ({ id: "x", deduped: false }), ensureRegistered: () => {}, db: {} }
-  );
-  assert.equal(result.qualification, PASS);
-  assert.match(result.redirect, /funding-book-call/);
 });
 
 test("runSurveySubmit MANUAL_REVIEW when gate answers missing", async () => {
@@ -129,7 +109,7 @@ test("runSurveySubmit MANUAL_REVIEW when gate answers missing", async () => {
       business: "",
       source: "website:home",
       sms_consent: false,
-      answers: { "Set Your Target Amount": "$50k - $100k" },
+      answers: { cf_svy_funding_target_amount: "$50k - $100k" },
     },
     { emit: async () => ({ id: "x", deduped: false }), ensureRegistered: () => {}, db: {} }
   );
