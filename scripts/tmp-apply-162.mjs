@@ -6,19 +6,23 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 
-const url = process.env.DATABASE_URL || "";
+const url = process.env.MIGRATION_DATABASE_URL || process.env.DATABASE_URL || "";
 if (!url) {
-  console.error("FAIL: DATABASE_URL missing");
+  console.error("FAIL: MIGRATION_DATABASE_URL/DATABASE_URL missing");
   process.exit(1);
 }
 if (url.includes("****") || /^[*]+$/.test(url.replace(/\s/g, "")) || /@base(\/|:|$)/.test(url)) {
-  console.error("FAIL: DATABASE_URL looks masked or host=base");
+  console.error("FAIL: database URL looks masked or host=base");
   process.exit(1);
 }
 if (!/^postgres(ql)?:\/\//i.test(url)) {
-  console.error("FAIL: DATABASE_URL is not a postgres URL shape");
+  console.error("FAIL: database URL is not a postgres URL shape");
   process.exit(1);
 }
+console.log(
+  "USING",
+  process.env.MIGRATION_DATABASE_URL ? "MIGRATION_DATABASE_URL" : "DATABASE_URL"
+);
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const sqlPath = path.join(HERE, "../db/migrations/162_commas_inbox_no_bare_rls.sql");
