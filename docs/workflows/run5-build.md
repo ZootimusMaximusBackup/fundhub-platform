@@ -41,11 +41,11 @@ Add question: "Any negatives on your credit report? (collections, charge-offs, l
 
 | id | unit | owner | status |
 |---|---|---|---|
-| p0-cf | CF attributes + has_negatives question | Chris | pending ⛔ |
+| p0-cf | CF attributes + has_negatives question | Chris | pending ⛔ (Phase 1 still waits; Phase 2 built with owner-set keys) |
 | p0-mig | Migration 163: add 5 typed `cf_svy_*` columns | agent | done (code pushed; **prod migrate blocked** — Netlify CLI returns redacted DATABASE_URL locally) |
 | p0-writer | Carbon-copy writer + wire `survey.submitted` + pg tests | agent | done (unit tests green; pg test needs DATABASE_URL) |
 | p1-seam | Funnel seam proof (watch → payload → adapter → land → classify) | — | blocked on p0-cf |
-| p2-home | Homepage survey widget | — | pending |
+| p2-home | Homepage survey widget | agent | done (live API PASS/DOWNSELL verified 2026-08-12) |
 | p2-other | Other marketing page capture forms | — | pending |
 | p3-pay | Checkout-session + Commas poller | — | pending |
 | p4-tx | Transmit MVP (dry-run queue) | — | pending |
@@ -61,8 +61,16 @@ Add question: "Any negatives on your credit report? (collections, charge-offs, l
 
 ## Change manifests
 
-_(append per phase)_
+### p2-home (2026-08-12)
+
+- **Owner-set keys** (built without waiting on CF map): same 11 `cf_svy_*` + Yes/No negatives.
+- **Option lists:** funding target + FICO verified from harness/qualification; other options owner-set stand-ins (UNVERIFIED vs live CF).
+- **API:** `POST /api/public/survey-submit` → `entry.captured` + `survey.submitted` → `classifySurvey` → redirect (`PASS` → funding-book-call; `DOWNSELL`/`MANUAL_REVIEW` → thank-you).
+- **Files:** `src/config/homepage-survey-steps.mjs`, `api/public/survey-submit.mjs`, `netlify/functions/api.mjs` ROUTES, `public/js/homepage-survey.js`, `public/index.html` (#appform widget).
+- **Redirects:** DOWNSELL/MANUAL_REVIEW both → `https://apply.fundhub.ai/thank-you` until a dedicated downsell URL is confirmed.
+- **Tests:** `homepage-survey-steps.test.mjs`, `homepage-survey-js-sync.test.mjs`, `src/http/survey-submit.test.mjs`.
 
 ## Blockers
 
 - Phase 1 blocked until owner says `attributes set`.
+- Prod migrate 163 still needs Chris to run with real `MIGRATION_DATABASE_URL`.

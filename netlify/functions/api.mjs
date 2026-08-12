@@ -115,6 +115,7 @@ import demoMode from "../../api/demo/mode.mjs";
 import partnerPages from "../../api/partner-pages.mjs";
 import partnerBrandVerifyDomain from "../../api/partner-brand/verify-domain.mjs";
 import publicPartnerPage from "../../api/public/partner-page.mjs";
+import publicSurveySubmit from "../../api/public/survey-submit.mjs";
 import creativeGenerate from "../../api/creative/generate.mjs";
 import creativeLibrary from "../../api/creative/library.mjs";
 import creativeBrandKits from "../../api/creative/brand-kits.mjs";
@@ -450,6 +451,7 @@ export const ROUTES = {
   "partner-pages": partnerPages,
   "partner-brand/verify-domain": partnerBrandVerifyDomain,
   "public/partner-page": publicPartnerPage,
+  "public/survey-submit": publicSurveySubmit,
   "creative/generate": creativeGenerate,
   "creative/library": creativeLibrary,
   "creative/brand-kits": creativeBrandKits,
