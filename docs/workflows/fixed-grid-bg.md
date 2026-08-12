@@ -1,14 +1,13 @@
-# Fixed dark grid (marketing hero/CTA)
+# Fixed dark grid (hero + CTA only)
 
 ## Scope (owner-set)
 
-Homepage, education, affiliates only.
+Homepage, education, affiliates.
 
-Grid lived on the **dark** bands only (hero + CTA) — not the light paper sections.
+**Only** the black hero and black CTA bands. Not header, footer, buttons, or light sections.
 
 ## Change
 
-- One fixed `body::before` layer: ink `#0A0A0A`, 56px `rgba(255,255,255,.035)` lines.
-- `.hero` / `.cta-band` backgrounds transparent so that layer shows through.
-- Light `section.blk` opaque paper; footer / `.blk.dark` stay solid ink (no grid).
-- Removed scrolling `.hero::before` / `.cta-band::before` paints.
+- Grid painted on `.hero` and `.cta-band` with `background-attachment: fixed`
+- No `body::before` page grid
+- Body stays paper; footer / other dark blocks unchanged
