@@ -1,0 +1,211 @@
+// ClickFunnels survey question map — single place for payload-key assumptions.
+// Ground truth: docs/clickfunnels/cf-survey-ground-truth.md
+//
+// ASSUMPTION (owner 2026-08-12): CF Contact Attribute = None on every question.
+// Until attributes are mapped, payloadKey === question title (verbatim).
+// When Chris confirms real attribute keys, change ONLY the payloadKey fields below.
+
+/** @typedef {'single'|'multi'|'contact'} QuestionType */
+/**
+ * @typedef {object} CfSurveyQuestion
+ * @property {string} id stable internal id (not a CF attribute)
+ * @property {string} title question title verbatim from CF
+ * @property {string} payloadKey ASSUMED webhook/answer key — title until CF maps attributes
+ * @property {QuestionType} type
+ * @property {string[]} [options] verbatim option labels
+ * @property {boolean} [otherEnabled] CF "Other" enabled
+ * @property {'business'|'personal'|null} [branch] which branch this step belongs to
+ * @property {string} [showWhenBusiness] exact option on has_business that shows this step
+ */
+
+/** Branch sentinel — exact CF option that takes the personal-funding path. */
+export const PERSONAL_FUNDING_OPTION = "No, personal funding only";
+
+/** @type {CfSurveyQuestion[]} CF order (contact first). */
+export const CF_SURVEY_QUESTIONS = Object.freeze([
+  {
+    id: "contact",
+    title: "Let's Start With Your Info",
+    payloadKey: "Let's Start With Your Info",
+    type: "contact",
+  },
+  {
+    id: "funding_target_amount",
+    title: "Set Your Target Amount",
+    payloadKey: "Set Your Target Amount",
+    type: "single",
+    options: [
+      "Less than $50k",
+      "$50k - $100k",
+      "$100k - $200k",
+      "$200k - $400k",
+      "$400k+",
+    ],
+  },
+  {
+    id: "planned_use",
+    title: "Planned Use",
+    payloadKey: "Planned Use",
+    type: "single",
+    otherEnabled: true,
+    options: [
+      "Growth (marketing, inventory, hiring)",
+      "Equipment or buildout",
+      "Debt consolidation",
+      "Payroll or rent",
+      "Covering a shortfall right now",
+      "Not sure yet",
+    ],
+  },
+  {
+    id: "money_change_now",
+    title: "What Would This Money Change Right Now?",
+    payloadKey: "What Would This Money Change Right Now?",
+    type: "multi",
+    options: [
+      "Peace of mind (stop stressing about cash)",
+      "Grow faster (more customers / more reach)",
+      "Pay off pressure (wipe out high-interest debt)",
+      "Stability (cover bills / buffer slow weeks)",
+      "Fresh start (new business / startup launch)",
+    ],
+  },
+  {
+    id: "current_score",
+    title: "Your Current Score",
+    payloadKey: "Your Current Score",
+    type: "single",
+    options: ["500-579", "580-649", "650-699", "700-749", "750+", "Not sure"],
+  },
+  {
+    id: "has_business",
+    title: "Do You Have a Business?",
+    payloadKey: "Do You Have a Business?",
+    type: "single",
+    options: [
+      "Yes, less than 6 months old",
+      "Yes, 6-12 months",
+      "Yes, 1-2 years",
+      "Yes, 2-5 years",
+      "Yes, 5+ years",
+      PERSONAL_FUNDING_OPTION,
+    ],
+  },
+  {
+    id: "annual_business_revenue",
+    title: "Annual Business Revenue",
+    payloadKey: "Annual Business Revenue",
+    type: "single",
+    branch: "business",
+    options: [
+      "Under $100k",
+      "$100k - $249k",
+      "$250k - $499k",
+      "$500k - $999k",
+      "$1M+",
+    ],
+  },
+  {
+    id: "verify_revenue",
+    title: "Can You Verify Revenue?",
+    payloadKey: "Can You Verify Revenue?",
+    type: "single",
+    branch: "business",
+    options: [
+      "Yes, bank statements",
+      "Yes, tax returns",
+      "Yes, both",
+      "Not right now",
+    ],
+  },
+  {
+    id: "annual_personal_income",
+    title: "Annual Personal Income",
+    payloadKey: "Annual Personal Income",
+    type: "single",
+    branch: "personal",
+    options: [
+      "Less than $50k",
+      "$50k-$99k",
+      "$100k-$199k",
+      "$200k-$499k",
+      "$500k+",
+    ],
+  },
+  {
+    id: "verify_income",
+    title: "Can You Verify Income?",
+    payloadKey: "Can You Verify Income?",
+    type: "single",
+    branch: "personal",
+    options: [
+      "Yes, pay stubs",
+      "Yes, W-2 or tax returns",
+      "Yes, both",
+      "Not right now",
+    ],
+  },
+  {
+    id: "available_capital",
+    title: "Available Capital",
+    payloadKey: "Available Capital",
+    type: "single",
+    options: [
+      "Less than $1k",
+      "$1k - $5k",
+      "$5k - $25k",
+      "$25k - $100k",
+      "$100k+",
+    ],
+  },
+]);
+
+/**
+ * Homepage order: same questions/options/branch, contact LAST.
+ * @returns {CfSurveyQuestion[]}
+ */
+export function homepageSurveyQuestions() {
+  const contact = CF_SURVEY_QUESTIONS.find((q) => q.id === "contact");
+  const rest = CF_SURVEY_QUESTIONS.filter((q) => q.id !== "contact");
+  return [...rest, contact];
+}
+
+/**
+ * Visible steps given answers keyed by question `id`.
+ * @param {Record<string, unknown>} answersById
+ * @param {{ contactLast?: boolean }} [opts]
+ */
+export function visibleQuestions(answersById = {}, opts = {}) {
+  const list = opts.contactLast ? homepageSurveyQuestions() : CF_SURVEY_QUESTIONS;
+  const biz = answersById.has_business;
+  const onPersonal = biz === PERSONAL_FUNDING_OPTION;
+  const onBusiness = typeof biz === "string" && biz.startsWith("Yes");
+
+  return list.filter((q) => {
+    if (!q.branch) return true;
+    if (q.branch === "business") return onBusiness;
+    if (q.branch === "personal") return onPersonal;
+    return true;
+  });
+}
+
+/** Lookup by stable id. */
+export function questionById(id) {
+  return CF_SURVEY_QUESTIONS.find((q) => q.id === id) || null;
+}
+
+/**
+ * Build answer object for storage/emit: keys = payloadKey (title assumption).
+ * @param {Record<string, unknown>} answersById
+ */
+export function answersByPayloadKey(answersById = {}) {
+  const out = {};
+  for (const q of CF_SURVEY_QUESTIONS) {
+    if (q.type === "contact") continue;
+    if (!Object.prototype.hasOwnProperty.call(answersById, q.id)) continue;
+    const v = answersById[q.id];
+    if (v == null || v === "") continue;
+    out[q.payloadKey] = v;
+  }
+  return out;
+}
