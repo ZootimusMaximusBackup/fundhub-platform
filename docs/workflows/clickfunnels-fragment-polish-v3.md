@@ -1,6 +1,6 @@
 # ClickFunnels fragment polish V3 — shared board
 
-**Status:** done (local pack + screenshots)  
+**Status:** done — V3.1 stripped interior widget CSS from 02a/04a (match live)  
 **Pack:** `clickfunnels-fragments/`  
 **Baseline:** V2 live on apply.fundhub.ai
 

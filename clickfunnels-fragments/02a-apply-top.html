@@ -32,7 +32,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   background:transparent!important;border:none!important;border-radius:0!important;
 }
 
-/* floating card for native CF widgets (Survey + AppointmentScheduler) */
+/* floating card shell only — no interior widget CSS (CF owns the insides) */
 [data-page-element="Survey/V1"],
 [data-page-element="AppointmentScheduler/V1"],
 .fh-widget-slot{
@@ -40,7 +40,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   box-sizing:border-box!important;
   max-width:900px!important;
   width:calc(100% - 48px)!important;
-  margin:28px auto!important;
+  margin:20px auto!important;
   background:#FCFCFC!important;
   border:1px solid #E4E4E7!important;
   border-radius:14px!important;
@@ -48,11 +48,6 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   overflow:hidden!important;
   padding:12px!important;
 }
-[data-page-element="Survey/V1"] #calContainer,
-[data-page-element="AppointmentScheduler/V1"] #calContainer{
-  max-width:100%!important;margin:0!important;box-shadow:none!important;
-}
-
 
 .fh-a{
   --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
@@ -80,85 +75,6 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-a .hero{text-align:center;padding:30px 0 6px}
 .fh-a h1{font-family:var(--sans);font-size:clamp(27px,4.6vw,42px);font-weight:700;letter-spacing:-.045em;line-height:.98;margin:18px auto 0;max-width:22ch}
 .fh-a .lede{margin:16px auto 0;font-size:16px;color:var(--gray);max-width:46ch;line-height:1.6}
-/* Inter scoped in V2 polish below */
-
-/* === V2 survey polish (live-DOM selectors 2026-08-11) — NO flatten on Survey === */
-
-/* Progress bar stays visible */
-[data-page-element="Survey/V1"] .elProgressBar,
-[data-page-element="Survey/V1"] .progress{
-  display:block!important;
-  visibility:visible!important;
-  opacity:1!important;
-}
-[data-page-element="Survey/V1"] .progress{background:#E4E4E7!important}
-[data-page-element="Survey/V1"] .progress-bar{background:#188bf6!important}
-
-/* Inputs: Inter + V3 field chrome (same stock elInput treatment as book form) */
-[data-page-element="Survey/V1"] input,
-[data-page-element="Survey/V1"] textarea,
-[data-page-element="Survey/V1"] select,
-[data-page-element="Survey/V1"] .elInput,
-[data-page-element="Survey/V1"] .elSurveyContactInput,
-[data-page-element="Survey/V1"] .elRadioText,
-[data-page-element="Survey/V1"] .elHeadline,
-[data-page-element="Survey/V1"] .elSubheadline{
-  font-family:'Inter',system-ui,-apple-system,sans-serif!important;
-}
-[data-page-element="Survey/V1"] label,
-[data-page-element="Survey/V1"] .elFormItemWrapper > label{
-  font-family:'Inter',system-ui,-apple-system,sans-serif!important;
-  font-weight:600!important;
-}
-[data-page-element="Survey/V1"] input.elInput,
-[data-page-element="Survey/V1"] input.elSurveyContactInput,
-[data-page-element="Survey/V1"] textarea.elInput,
-[data-page-element="Survey/V1"] textarea.elSurveyContactInput,
-[data-page-element="Survey/V1"] input.elFormItem,
-[data-page-element="Survey/V1"] textarea.elFormItem{
-  font-weight:400!important;
-  box-shadow:none!important;
-  border:1px solid #E4E4E7!important;
-  border-radius:9px!important;
-  background:#fff!important;
-  background-color:#fff!important;
-}
-[data-page-element="Survey/V1"] input.elInput:focus,
-[data-page-element="Survey/V1"] input.elSurveyContactInput:focus,
-[data-page-element="Survey/V1"] textarea.elInput:focus,
-[data-page-element="Survey/V1"] textarea.elSurveyContactInput:focus{
-  border-color:#188bf6!important;
-  outline:none!important;
-  box-shadow:none!important;
-}
-
-/* Radio options: hover soft, selected CTA blue */
-[data-page-element="Survey/V1"] .elRadioWrapper{
-  border-radius:9px!important;
-  transition:background-color .15s ease!important;
-}
-[data-page-element="Survey/V1"] .elRadioWrapper:hover{
-  background:#F4F4F5!important;
-}
-[data-page-element="Survey/V1"] .elRadioWrapper:has(input:checked),
-[data-page-element="Survey/V1"] .elRadioWrapper:has(.elRadioInput:checked){
-  background:#188bf6!important;
-  color:#fff!important;
-}
-[data-page-element="Survey/V1"] .elRadioWrapper:has(input:checked) .elRadioText,
-[data-page-element="Survey/V1"] .elRadioWrapper:has(.elRadioInput:checked) .elRadioText{
-  color:#fff!important;
-}
-
-/* Next / survey buttons */
-[data-page-element="Survey/V1"] a.elButton{
-  background-color:#188bf6!important;
-  border-radius:9px!important;
-}
-[data-page-element="Survey/V1"] a.elButton .elButtonMainText,
-[data-page-element="Survey/V1"] a.elButton .elButtonText{
-  color:#fff!important;
-}
 
 </style>
 

@@ -54,3 +54,8 @@
 3. `/apply` TOP → `02a-apply-top.html` (optional but included)
 
 Zip: `fundhub-funnel-dropins-v3.zip`
+
+## V3.1 — strip interior widget CSS (2026-08-11)
+- `02a` / `04a`: removed flatten, zoom dial, Confirm/slot/form/survey interior rules. Kept page chrome + floating card shell.
+- `04a`: kept add-to-calendar capture script (not CSS).
+- Live CF already stripped the same; repo matched.
