@@ -16,6 +16,7 @@ import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
 import { ensureGhlContactId, config as ghlConfig } from "../messaging/ghl-contacts.mjs";
 import { adaptersBlocked } from "../lib/dry-run.mjs";
+import { upsertSurveyCarbonCopy } from "./client-custom-fields.mjs";
 
 // --- helpers ----------------------------------------------------------------
 
@@ -209,12 +210,16 @@ export async function onEntryCaptured(event, db) {
   await resolveClient(db, event);
 }
 
-// survey.submitted — fold the survey answers into the client's custom_fields.
+// survey.submitted — fold answers into clients.custom_fields (jsonb) and the
+// typed client_custom_fields carbon-copy (sales/agent joins).
 export async function onSurveySubmitted(event, db) {
   const clientId = await resolveClient(db, event);
   const answers = event.payload && event.payload.answers;
   if (clientId && answers && typeof answers === "object") {
     await mergeCustomFields(db, clientId, answers);
+    if (event.orgId) {
+      await upsertSurveyCarbonCopy(db, { clientId, orgId: event.orgId, answers });
+    }
   }
 }
 
