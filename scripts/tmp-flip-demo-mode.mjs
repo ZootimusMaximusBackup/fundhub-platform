@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 import pg from "pg";
 
-const url = process.env.DATABASE_URL || "";
-if (!url) { console.error("FAIL: DATABASE_URL missing"); process.exit(1); }
+const url = process.env.MIGRATION_DATABASE_URL || process.env.DATABASE_URL || "";
+if (!url) { console.error("FAIL: MIGRATION_DATABASE_URL/DATABASE_URL missing"); process.exit(1); }
+console.log(
+  "USING",
+  process.env.MIGRATION_DATABASE_URL ? "MIGRATION_DATABASE_URL" : "DATABASE_URL"
+);
 if (url.includes("****") || /^[*]+$/.test(url.replace(/\s/g,"")) || /@base(\/|:|$)/.test(url)) {
   console.error("FAIL: DATABASE_URL looks masked or host=base");
   process.exit(1);

@@ -285,14 +285,21 @@ export async function seedPlatformDemo(db, { orgId } = {}) {
 
 export async function setDemoMode(db, { orgId, enabled } = {}) {
   if (!orgId) throw new TypeError("setDemoMode: orgId required");
-  if (enabled) {
-    // Flip the toggle first so CRM lists show is_demo rows even if a later
-    // seed step hits a transient error. Seed is idempotent — re-click fixes gaps.
-    await db.query(`UPDATE orgs SET demo_mode_enabled=true, updated_at=now() WHERE id=$1`, [orgId]);
+  const want = !!enabled;
+  const upd = await db.query(
+    `UPDATE orgs SET demo_mode_enabled=$2, updated_at=now() WHERE id=$1 RETURNING demo_mode_enabled`,
+    [orgId, want]
+  );
+  if (upd.rowCount !== 1 || upd.rows[0]?.demo_mode_enabled !== want) {
+    // App role / RLS can turn this into a silent no-op; never echo intent.
+    throw new Error("demo_mode_update_failed");
+  }
+  if (want) {
+    // Seed after the toggle sticks so CRM lists show is_demo rows. Seed is
+    // idempotent — re-click fixes gaps.
     const seed = await seedPlatformDemo(db, { orgId });
     return { demo_mode_enabled: true, ...seed };
   }
-  await db.query(`UPDATE orgs SET demo_mode_enabled=false, updated_at=now() WHERE id=$1`, [orgId]);
   return { demo_mode_enabled: false, seeded: false };
 }
 
