@@ -187,11 +187,12 @@
   .success .chk{font-family:var(--mono);color:var(--ink);font-size:12px;letter-spacing:.14em}
 
   /* boot veil */
-  .boot{position:fixed;inset:0;background:var(--ink);z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .45s ease,visibility .45s ease}
+  .boot{position:fixed;inset:0;background:var(--ink);z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .22s ease,visibility .22s ease}
   .boot .bl{width:180px;height:2px;background:var(--cardline);border-radius:1px;overflow:hidden}
-  .boot .bl span{display:block;height:100%;width:0;background:var(--spectrum);animation:bootfill .8s ease forwards}
+  .boot .bl span{display:block;height:100%;width:0;background:var(--spectrum);animation:bootfill .4s ease forwards}
   @keyframes bootfill{to{width:100%}}
   .boot.done{opacity:0;visibility:hidden}
+  html.fh-seen .boot{display:none!important}
 
   /* headline word reveal */
   .hero h1 .w{display:inline-block;overflow:hidden;vertical-align:top}
@@ -301,6 +302,7 @@
   .trust-row{margin-top:26px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray)}
   .trust-row i{width:10px;height:2px;background:var(--spectrum);border-radius:1px}
 </style>
+<script>(function(){try{if(sessionStorage.getItem('fh_boot_seen')==='1')document.documentElement.classList.add('fh-seen')}catch(e){}})();</script>
 </head>
 <body>
 <div class="fh-root">
@@ -675,8 +677,11 @@
       }).join(' ');
     }
     if(reduce){ if(boot) boot.remove(); document.body.classList.add('loaded'); return; }
-    setTimeout(function(){ if(boot) boot.classList.add('done'); document.body.classList.add('loaded'); },950);
-    setTimeout(function(){ if(boot) boot.remove(); },1600);
+    var seen=false; try{ seen=sessionStorage.getItem('fh_boot_seen')==='1'; }catch(e){}
+    if(seen){ if(boot) boot.remove(); document.body.classList.add('loaded'); return; }
+    try{ sessionStorage.setItem('fh_boot_seen','1'); }catch(e){}
+    setTimeout(function(){ if(boot) boot.classList.add('done'); document.body.classList.add('loaded'); },475);
+    setTimeout(function(){ if(boot) boot.remove(); },800);
   })();
 
   // terminal reveal + replay

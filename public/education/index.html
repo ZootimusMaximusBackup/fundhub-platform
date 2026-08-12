@@ -218,11 +218,12 @@
   .faq .fa-a{padding:0 24px 20px;color:var(--gray);font-size:14.5px;max-width:78ch}
   .faq .fa-a a{text-decoration:underline}
 
-  .boot{position:fixed;inset:0;background:var(--ink);z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .45s ease,visibility .45s ease}
+  .boot{position:fixed;inset:0;background:var(--ink);z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .22s ease,visibility .22s ease}
   .boot .bl{width:180px;height:2px;background:var(--cardline);border-radius:1px;overflow:hidden}
-  .boot .bl span{display:block;height:100%;width:0;background:var(--spectrum);animation:bootfill .8s ease forwards}
+  .boot .bl span{display:block;height:100%;width:0;background:var(--spectrum);animation:bootfill .4s ease forwards}
   @keyframes bootfill{to{width:100%}}
   .boot.done{opacity:0;visibility:hidden}
+  html.fh-seen .boot{display:none!important}
   .boot .lockup{display:flex;align-items:center}
   .hero h1 .w{display:inline-block;overflow:hidden;vertical-align:top}
   .hero h1 .w i{display:inline-block;font-style:normal;transform:translateY(112%);transition:transform .7s cubic-bezier(.2,.7,.2,1)}
@@ -271,6 +272,7 @@
   .foot-bottom{margin-top:24px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;font-size:12.5px;color:var(--gray)}
   .foot-bottom .mono{font-family:var(--mono)}
 </style>
+<script>(function(){try{if(sessionStorage.getItem('fh_boot_seen')==='1')document.documentElement.classList.add('fh-seen')}catch(e){}})();</script>
 </head>
 <body>
 <div class="fh-root">
@@ -597,8 +599,11 @@
       }).join(' ');
     }
     if(reduce){ if(boot) boot.remove(); document.body.classList.add('loaded'); return; }
-    setTimeout(function(){ if(boot) boot.classList.add('done'); document.body.classList.add('loaded'); },950);
-    setTimeout(function(){ if(boot) boot.remove(); },1600);
+    var seen=false; try{ seen=sessionStorage.getItem('fh_boot_seen')==='1'; }catch(e){}
+    if(seen){ if(boot) boot.remove(); document.body.classList.add('loaded'); return; }
+    try{ sessionStorage.setItem('fh_boot_seen','1'); }catch(e){}
+    setTimeout(function(){ if(boot) boot.classList.add('done'); document.body.classList.add('loaded'); },475);
+    setTimeout(function(){ if(boot) boot.remove(); },800);
   })();
   function runTerm(){
     var lines = Array.prototype.slice.call(document.querySelectorAll('#term .tl'));
