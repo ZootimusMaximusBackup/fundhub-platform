@@ -1,14 +1,9 @@
 #!/usr/bin/env node
-// One-shot: flip orgs.demo_mode_enabled off using Netlify-injected DATABASE_URL.
-// NEVER logs the connection string. Delete after use.
 import pg from "pg";
 
 const url = process.env.DATABASE_URL || "";
-if (!url) {
-  console.error("FAIL: DATABASE_URL missing in build env");
-  process.exit(1);
-}
-if (url.includes("****") || setOfStars(url) || /@base(\/|:|$)/.test(url) || url === "base") {
+if (!url) { console.error("FAIL: DATABASE_URL missing"); process.exit(1); }
+if (url.includes("****") || /^[*]+$/.test(url.replace(/\s/g,"")) || /@base(\/|:|$)/.test(url)) {
   console.error("FAIL: DATABASE_URL looks masked or host=base");
   process.exit(1);
 }
@@ -17,64 +12,43 @@ if (!/^postgres(ql)?:\/\//i.test(url)) {
   process.exit(1);
 }
 
-function setOfStars(s) {
-  const t = s.replace(/\s/g, "");
-  return t.length > 0 && /^[*]+$/.test(t);
-}
-
-const client = new pg.Client({
-  connectionString: url,
-  connectionTimeoutMillis: 10000,
-  statement_timeout: 15000
-});
-
+const client = new pg.Client({ connectionString: url, connectionTimeoutMillis: 15000, statement_timeout: 20000 });
 try {
   await client.connect();
-  const ping = await client.query("SELECT 1 AS ok");
-  if (ping.rows[0]?.ok !== 1) throw new Error("SELECT 1 failed");
+  await client.query("SELECT 1 AS ok");
   console.log("PING: ok");
 
-  const before = await client.query(
-    "SELECT id, slug, demo_mode_enabled FROM orgs ORDER BY slug"
-  );
+  const before = await client.query("SELECT id, slug, name, is_default, demo_mode_enabled FROM orgs ORDER BY slug");
   console.log("ORGS_BEFORE_COUNT", before.rows.length);
   for (const r of before.rows) {
-    console.log(
-      "ORG_ROW",
-      JSON.stringify({
-        id: r.id,
-        slug: r.slug,
-        demo_mode_enabled: r.demo_mode_enabled
-      })
-    );
+    console.log("ORG_ROW", JSON.stringify({ id: r.id, slug: r.slug, name: r.name, is_default: r.is_default, demo_mode_enabled: r.demo_mode_enabled }));
   }
 
-  const fundhub = before.rows.find((r) => r.slug === "fundhub");
-  if (!fundhub) {
-    console.error("STOP: no slug=fundhub — slugs=", before.rows.map((r) => r.slug).join(","));
+  let target = before.rows.find((r) => r.slug === "fundhub");
+  if (!target) target = before.rows.find((r) => r.is_default === true);
+  if (!target) target = before.rows.find((r) => String(r.name || "").toLowerCase().includes("fundhub"));
+  if (!target) {
+    console.error("STOP: no fundhub/default org; see ORG_ROW lines");
     process.exit(2);
   }
+  console.log("TARGET", JSON.stringify({ id: target.id, slug: target.slug }));
 
   const upd = await client.query(
-    `UPDATE orgs
-        SET demo_mode_enabled = false, updated_at = now()
-      WHERE slug = 'fundhub'
-      RETURNING id, slug, demo_mode_enabled`
+    `UPDATE orgs SET demo_mode_enabled = false, updated_at = now()
+     WHERE id = $1
+     RETURNING id, slug, is_default, demo_mode_enabled`,
+    [target.id]
   );
   console.log("UPDATE_ROWCOUNT", upd.rowCount);
-  if (upd.rowCount !== 1) {
-    console.error("STOP: expected 1 row updated");
+  console.log("ORGS_AFTER_UPDATE", JSON.stringify(upd.rows[0] || null));
+  if (upd.rowCount !== 1 || upd.rows[0]?.demo_mode_enabled !== false) {
+    console.error("STOP: update did not leave demo_mode_enabled=false");
     process.exit(3);
-  }
-  console.log("ORGS_AFTER_UPDATE", JSON.stringify(upd.rows[0]));
-  if (upd.rows[0].demo_mode_enabled !== false) {
-    console.error("STOP: demo_mode_enabled still not false");
-    process.exit(4);
   }
   console.log("FLIP_OK");
 } catch (err) {
   console.error("FAIL:", err && err.message ? err.message : String(err));
   process.exit(1);
 } finally {
-  try { await client.end(); } catch { /* ignore */ }
+  try { await client.end(); } catch {}
 }
