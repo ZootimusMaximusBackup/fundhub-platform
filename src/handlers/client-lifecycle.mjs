@@ -18,7 +18,17 @@ import { ensureGhlContactId, config as ghlConfig } from "../messaging/ghl-contac
 import { adaptersBlocked } from "../lib/dry-run.mjs";
 import { upsertSurveyCarbonCopy } from "./client-custom-fields.mjs";
 import { addTags } from "../workflows/tags.mjs";
-import { moveCardToStage } from "../workflows/cards.mjs";
+import { advanceCardToStage } from "../workflows/cards.mjs";
+
+// Last question on the CF apply survey (Available Capital).
+// docs/clickfunnels/cf-survey-ground-truth.md — Survey Complete only when this lands.
+const CF_SURVEY_COMPLETE_KEY = "cf_svy_available_capital";
+
+function answersIncludeSurveyComplete(answers) {
+  if (!answers || typeof answers !== "object") return false;
+  const v = answers[CF_SURVEY_COMPLETE_KEY];
+  return v != null && String(v).trim() !== "";
+}
 
 // --- helpers ----------------------------------------------------------------
 
@@ -230,13 +240,14 @@ async function mergeCustomFields(db, clientId, patch) {
 // entry.captured — ensure client + Sales board card (new_lead).
 // Card placement is sync here so Pipeline UI updates even when Inngest cannot
 // invoke functions (missing INNGEST_SIGNING_KEY / sync failure). s-01 also
-// places the card; moveCardToStage is idempotent.
+// places the card; advanceCardToStage never demotes.
 export async function onEntryCaptured(event, db) {
   const clientId = await resolveClient(db, event);
   if (!clientId || !event.orgId) return;
   await mergeCustomFields(db, clientId, { lifecycle_status: "New Lead" });
   await addTags(db, clientId, ["lead:new"]);
-  await moveCardToStage(db, {
+  // advance only — later CF contact.updated must not yank a booked card back.
+  await advanceCardToStage(db, {
     orgId: event.orgId,
     clientId,
     pipelineKey: "sales",
@@ -245,7 +256,8 @@ export async function onEntryCaptured(event, db) {
 }
 
 // survey.submitted — fold answers into clients.custom_fields (jsonb) and the
-// typed client_custom_fields carbon-copy (sales/agent joins).
+// typed client_custom_fields carbon-copy (sales/agent joins). When the CF last
+// question (cf_svy_available_capital) is present, advance to survey_complete.
 export async function onSurveySubmitted(event, db) {
   const clientId = await resolveClient(db, event);
   const answers = event.payload && event.payload.answers;
@@ -254,6 +266,15 @@ export async function onSurveySubmitted(event, db) {
     if (event.orgId) {
       await upsertSurveyCarbonCopy(db, { clientId, orgId: event.orgId, answers });
     }
+  }
+  if (clientId && event.orgId && answersIncludeSurveyComplete(answers)) {
+    await mergeCustomFields(db, clientId, { lifecycle_status: "Survey Complete" });
+    await advanceCardToStage(db, {
+      orgId: event.orgId,
+      clientId,
+      pipelineKey: "sales",
+      stageKey: "survey_complete"
+    });
   }
 }
 

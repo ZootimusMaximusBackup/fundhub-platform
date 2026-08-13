@@ -117,3 +117,50 @@ export async function moveCardToStage(db, {
     roundEvent
   };
 }
+
+/**
+ * Move a card forward only. Uses pipeline_stages.sort_order so a later
+ * webhook (entry after book, mid-survey after complete) cannot shove the
+ * card backward on the board.
+ */
+export async function advanceCardToStage(db, {
+  orgId,
+  clientId,
+  pipelineKey,
+  stageKey,
+  ...rest
+} = {}) {
+  if (!orgId) return { moved: false, reason: "org_required" };
+  if (!clientId) return { moved: false, reason: "client_required" };
+
+  const target = await db.query(
+    `SELECT ps.id AS stage_id, ps.pipeline_id, ps.sort_order
+       FROM pipeline_stages ps
+       JOIN pipelines p ON p.id = ps.pipeline_id
+      WHERE p.key = $1 AND ps.key = $2 AND p.org_id = $3 AND ps.org_id = $3
+      LIMIT 1`,
+    [pipelineKey, stageKey, orgId]
+  );
+  const targetRow = target.rows[0];
+  if (!targetRow) return { moved: false, reason: "stage_not_found" };
+
+  const current = await db.query(
+    `SELECT ps.key AS stage_key, ps.sort_order
+       FROM cards c
+       JOIN pipeline_stages ps ON ps.id = c.stage_id
+       JOIN pipelines p ON p.id = c.pipeline_id
+      WHERE c.client_id = $1 AND p.key = $2 AND p.org_id = $3
+      LIMIT 1`,
+    [clientId, pipelineKey, orgId]
+  );
+  const cur = current.rows[0];
+  if (cur && Number(cur.sort_order) >= Number(targetRow.sort_order)) {
+    return {
+      moved: false,
+      reason: "already_at_or_past",
+      stageKey: cur.stage_key
+    };
+  }
+
+  return moveCardToStage(db, { orgId, clientId, pipelineKey, stageKey, ...rest });
+}

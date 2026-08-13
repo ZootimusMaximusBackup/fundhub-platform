@@ -5,7 +5,7 @@ import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 const SALES_STAGES = [
   { org_id: "org-1", pipeline_key: "sales", stage_key: "new_lead",
-    pipeline_id: "pipe-sales", stage_id: "stage-new-lead" }
+    pipeline_id: "pipe-sales", stage_id: "stage-new-lead", sort_order: 0 }
 ];
 
 test("happy path: entry.captured sets lifecycle status + lead:new tag and a board card", async () => {

@@ -37,13 +37,41 @@ export function pgFake(seed = {}) {
         behaviorScores.push({ org_id: params[0], client_id: params[1], friction: params[2] });
         return { rows: [] };
       }
-      // --- pipeline_stages/pipelines lookup + cards find-or-create (moveCardToStage) ---
-      if (/SELECT ps\.id AS stage_id, ps\.pipeline_id FROM pipeline_stages/.test(sql)) {
+      // --- pipeline_stages/pipelines lookup + cards find-or-create (move/advance) ---
+      if (/SELECT ps\.id AS stage_id, ps\.pipeline_id/.test(sql) && /FROM pipeline_stages/.test(sql)) {
         const [pipelineKey, stageKey, orgId] = params;
         const row = pipelineStages.find((r) =>
           r.pipeline_key === pipelineKey && r.stage_key === stageKey &&
           (orgId == null || r.org_id == null || r.org_id === orgId));
-        return { rows: row ? [{ stage_id: row.stage_id, pipeline_id: row.pipeline_id }] : [] };
+        return {
+          rows: row
+            ? [{
+              stage_id: row.stage_id,
+              pipeline_id: row.pipeline_id,
+              sort_order: row.sort_order ?? 0
+            }]
+            : []
+        };
+      }
+      // advanceCardToStage — current card stage + sort_order
+      if (/SELECT ps\.key AS stage_key, ps\.sort_order/.test(sql) && /FROM cards c/.test(sql)) {
+        const [clientId, pipelineKey, orgId] = params;
+        const card = cards.find((c) => {
+          if (c.client_id !== clientId) return false;
+          const stage = pipelineStages.find((r) =>
+            r.pipeline_id === c.pipeline_id && r.stage_id === c.stage_id &&
+            r.pipeline_key === pipelineKey &&
+            (orgId == null || r.org_id == null || r.org_id === orgId));
+          return Boolean(stage);
+        });
+        if (!card) return { rows: [] };
+        const stage = pipelineStages.find((r) =>
+          r.pipeline_id === card.pipeline_id && r.stage_id === card.stage_id);
+        return {
+          rows: stage
+            ? [{ stage_key: stage.stage_key, sort_order: stage.sort_order ?? 0 }]
+            : []
+        };
       }
       if (/SELECT id FROM cards WHERE client_id/.test(sql)) {
         const [clientId, pipelineId] = params;

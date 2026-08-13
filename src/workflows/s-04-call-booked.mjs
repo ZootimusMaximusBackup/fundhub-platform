@@ -9,7 +9,7 @@ import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
-import { moveCardToStage } from "./cards.mjs";
+import { advanceCardToStage } from "./cards.mjs";
 
 export async function handle({ event, db, step }) {
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
@@ -19,7 +19,7 @@ export async function handle({ event, db, step }) {
   await step.run("tag-call-booked", () => addTags(db, clientId, ["call:booked"]));
   await step.run("set-call-outcome", () => mergeCustomFields(db, clientId, { call_outcome: "booked" }));
   const card = await step.run("move-to-booked-stage", () =>
-    moveCardToStage(db, { orgId, clientId, pipelineKey: "sales", stageKey: "booked" }));
+    advanceCardToStage(db, { orgId, clientId, pipelineKey: "sales", stageKey: "booked" }));
 
   return { done: true, card };
 }

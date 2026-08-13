@@ -13,6 +13,10 @@
 | Portal magic-link | **PASS** — verify → client account/session (rate-limited on re-issue) |
 | Live Playwright | **100/100** reconfirmed |
 | Messaging inbox | no thread yet (expected; dry-run) |  
+**Sales board (owner 2026-08-12):**  
+`entry.captured` → **New Lead** · last CF field `cf_svy_available_capital` → **Survey Complete** · `booking.created` → **Booked**.  
+Advances only (never demote). Confirmed left alone for now.
+
 **Owner command:** agent in control (2026-08-12)  
 **Canonical webhook:** `https://fundhub.ai/api/webhooks/clickfunnels`  
 **Owner:** Contact Attributes **all mapped**. Secret last4 matches Netlify (`4f97`).  

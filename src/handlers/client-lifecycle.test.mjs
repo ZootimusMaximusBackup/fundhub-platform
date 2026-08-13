@@ -13,16 +13,62 @@ import {
 } from "./client-lifecycle.mjs";
 
 // In-memory Postgres fake: interprets the exact queries the handlers issue.
-function pgFake({ openShift = null, failOn = null, smsRouting = null } = {}) {
+function pgFake({ openShift = null, failOn = null, smsRouting = null, pipelineStages = [], cards = [] } = {}) {
   const clients = [], transactions = [], crs = [], events = [], requests = [];
   let n = 0;
   const findClient = (org, email) =>
     clients.find((c) => c.org_id === org && String(c.email || "").toLowerCase() === String(email).toLowerCase());
   const routingFor = (orgId) => (typeof smsRouting === "string" ? smsRouting : smsRouting?.[orgId]) ?? null;
   return {
-    clients, transactions, crs, events, requests,
+    clients, transactions, crs, events, requests, pipelineStages, cards,
     async query(sql, params = []) {
       if (failOn && failOn.test(sql)) throw Object.assign(new Error("simulated outage"), { code: "08006" });
+      // advanceCardToStage / moveCardToStage
+      if (/SELECT ps\.id AS stage_id, ps\.pipeline_id/.test(sql) && /FROM pipeline_stages/.test(sql)) {
+        const [pipelineKey, stageKey, orgId] = params;
+        const row = pipelineStages.find((r) =>
+          r.pipeline_key === pipelineKey && r.stage_key === stageKey &&
+          (orgId == null || r.org_id == null || r.org_id === orgId));
+        return {
+          rows: row
+            ? [{ stage_id: row.stage_id, pipeline_id: row.pipeline_id, sort_order: row.sort_order ?? 0 }]
+            : []
+        };
+      }
+      if (/SELECT ps\.key AS stage_key, ps\.sort_order/.test(sql) && /FROM cards c/.test(sql)) {
+        const [clientId, pipelineKey, orgId] = params;
+        const card = cards.find((c) => c.client_id === clientId);
+        if (!card) return { rows: [] };
+        const stage = pipelineStages.find((r) =>
+          r.pipeline_id === card.pipeline_id && r.stage_id === card.stage_id &&
+          r.pipeline_key === pipelineKey &&
+          (orgId == null || r.org_id == null || r.org_id === orgId));
+        return {
+          rows: stage
+            ? [{ stage_key: stage.stage_key, sort_order: stage.sort_order ?? 0 }]
+            : []
+        };
+      }
+      if (/SELECT id FROM cards WHERE client_id/.test(sql)) {
+        const [clientId, pipelineId] = params;
+        const c = cards.find((c) => c.client_id === clientId && c.pipeline_id === pipelineId);
+        return { rows: c ? [{ id: c.id }] : [] };
+      }
+      if (/UPDATE cards SET stage_id/.test(sql)) {
+        const c = cards.find((c) => c.id === params[0]);
+        if (c) c.stage_id = params[1];
+        return { rows: [] };
+      }
+      if (/INSERT INTO cards/.test(sql)) {
+        const id = "card-" + ++n;
+        cards.push({ id, org_id: params[0], client_id: params[1], pipeline_id: params[2], stage_id: params[3] });
+        return { rows: [] };
+      }
+      if (/UPDATE clients SET tags = array\(SELECT DISTINCT unnest\(tags \|\|/.test(sql)) {
+        const c = clients.find((c) => c.id === params[0]);
+        if (c) c.tags = Array.from(new Set([...(c.tags || []), ...params[1]]));
+        return { rows: [] };
+      }
       if (/INSERT INTO staff_events/.test(sql)) {
         const e = { staff_id: params[0], org_id: params[1], shift_id: params[2], kind: params[3], detail: JSON.parse(params[4]) };
         events.push(e);
@@ -174,6 +220,51 @@ test("survey.submitted merges answers; diagnostic.paid + decision.rendered stamp
   assert.equal(c.custom_fields.crs_paid, true);
   assert.equal(c.custom_fields.total_funding_estimate, 50000);
   assert.equal(c.outcome_tier, "FULL_FUNDING");
+});
+
+const SALES_STAGES = [
+  { org_id: "org-1", pipeline_key: "sales", stage_key: "new_lead", pipeline_id: "pipe-sales", stage_id: "st-new", sort_order: 0 },
+  { org_id: "org-1", pipeline_key: "sales", stage_key: "survey_complete", pipeline_id: "pipe-sales", stage_id: "st-survey", sort_order: 1 },
+  { org_id: "org-1", pipeline_key: "sales", stage_key: "booked", pipeline_id: "pipe-sales", stage_id: "st-booked", sort_order: 2 }
+];
+
+test("survey.submitted mid-survey (no available capital) stays off survey_complete", async () => {
+  const db = pgFake({ pipelineStages: SALES_STAGES });
+  await onEntryCaptured(ev("entry.captured", { email: "mid@b.com", name: "Mid" }), db);
+  await onSurveySubmitted(ev("survey.submitted", {
+    email: "mid@b.com",
+    answers: { cf_svy_funding_target_amount: "Less than $50k" }
+  }), db);
+  assert.equal(db.cards[0].stage_id, "st-new");
+  assert.notEqual(db.clients[0].custom_fields.lifecycle_status, "Survey Complete");
+});
+
+test("survey.submitted with cf_svy_available_capital advances to survey_complete", async () => {
+  const db = pgFake({ pipelineStages: SALES_STAGES });
+  await onEntryCaptured(ev("entry.captured", { email: "done@b.com", name: "Done" }), db);
+  await onSurveySubmitted(ev("survey.submitted", {
+    email: "done@b.com",
+    answers: {
+      cf_svy_funding_target_amount: "Less than $50k",
+      cf_svy_available_capital: "Less than $1k"
+    }
+  }), db);
+  assert.equal(db.cards[0].stage_id, "st-survey");
+  assert.equal(db.clients[0].custom_fields.lifecycle_status, "Survey Complete");
+});
+
+test("entry.captured after survey_complete does not demote the card", async () => {
+  const db = pgFake({
+    pipelineStages: SALES_STAGES,
+    cards: [{ id: "card-1", org_id: "org-1", client_id: "cl-keep", pipeline_id: "pipe-sales", stage_id: "st-survey" }],
+    // resolveClient will create via email unless we seed — seed client with matching id via INSERT path
+  });
+  // Place via handlers so client id matches card
+  await onEntryCaptured(ev("entry.captured", { email: "keep@b.com", name: "Keep" }), db);
+  // Force card ahead of new_lead
+  db.cards[0].stage_id = "st-survey";
+  await onEntryCaptured(ev("entry.captured", { email: "keep@b.com", name: "Keep" }), db);
+  assert.equal(db.cards[0].stage_id, "st-survey");
 });
 
 // workflow-migration-table.md, "Adjacent bug": analyzer_prequal_amount had NO writer

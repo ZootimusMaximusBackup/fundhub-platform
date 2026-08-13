@@ -30,7 +30,7 @@ import { recordOptOut, recordOptIn } from "../lib/opt-out.mjs";
 import { createTask } from "../lib/create-task.mjs";
 import { addTags } from "../workflows/tags.mjs";
 import { mergeCustomFields } from "../workflows/custom-fields.mjs";
-import { moveCardToStage } from "../workflows/cards.mjs";
+import { advanceCardToStage } from "../workflows/cards.mjs";
 import { upsertConversation, linkMessage } from "../conversations/store.mjs";
 
 // TCPA standard opt-out and opt-in keyword sets (case-insensitive, trimmed).
@@ -232,10 +232,11 @@ export async function onBookingCreated(event, db) {
     });
   }
   // Mirror s-04 sync so Pipeline shows "booked" without waiting on Inngest.
+  // advance only — never demote a later sales stage.
   await addTags(db, clientId, ["call:booked"]);
   await mergeCustomFields(db, clientId, { call_outcome: "booked" });
   if (event.orgId) {
-    await moveCardToStage(db, {
+    await advanceCardToStage(db, {
       orgId: event.orgId,
       clientId,
       pipelineKey: "sales",

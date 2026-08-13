@@ -7,7 +7,7 @@ import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
-import { moveCardToStage } from "./cards.mjs";
+import { advanceCardToStage } from "./cards.mjs";
 
 export async function handle({ event, db, step }) {
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
@@ -20,7 +20,7 @@ export async function handle({ event, db, step }) {
   let card = null;
   if (orgId) {
     card = await step.run("place-on-new-lead", () =>
-      moveCardToStage(db, { orgId, clientId, pipelineKey: "sales", stageKey: "new_lead" }));
+      advanceCardToStage(db, { orgId, clientId, pipelineKey: "sales", stageKey: "new_lead" }));
   }
 
   return { done: true, card };
