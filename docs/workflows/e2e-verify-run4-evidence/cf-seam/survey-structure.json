@@ -1,0 +1,77 @@
+{
+  "radios": [
+    {
+      "id": "",
+      "name": "DzKkGV",
+      "value": "JobnqM",
+      "checked": false,
+      "label": "Less than $50k",
+      "display": "block",
+      "visibility": "visible",
+      "w": 0,
+      "h": 0,
+      "x": 283,
+      "y": 446.1875,
+      "parentClass": "elRadioLabel"
+    },
+    {
+      "id": "",
+      "name": "DzKkGV",
+      "value": "YgKLyG",
+      "checked": false,
+      "label": "$50k - $100k",
+      "display": "block",
+      "visibility": "visible",
+      "w": 0,
+      "h": 0,
+      "x": 283,
+      "y": 494.75,
+      "parentClass": "elRadioLabel"
+    },
+    {
+      "id": "",
+      "name": "DzKkGV",
+      "value": "YnBnle",
+      "checked": false,
+      "label": "$100k - $200k",
+      "display": "block",
+      "visibility": "visible",
+      "w": 0,
+      "h": 0,
+      "x": 283,
+      "y": 543.3125,
+      "parentClass": "elRadioLabel"
+    },
+    {
+      "id": "",
+      "name": "DzKkGV",
+      "value": "YELnKp",
+      "checked": false,
+      "label": "$200k - $400k",
+      "display": "block",
+      "visibility": "visible",
+      "w": 0,
+      "h": 0,
+      "x": 283,
+      "y": 591.875,
+      "parentClass": "elRadioLabel"
+    },
+    {
+      "id": "",
+      "name": "DzKkGV",
+      "value": "JOAPpV",
+      "checked": false,
+      "label": "$400k+",
+      "display": "block",
+      "visibility": "visible",
+      "w": 0,
+      "h": 0,
+      "x": 283,
+      "y": 640.4375,
+      "parentClass": "elRadioLabel"
+    }
+  ],
+  "buttons": [],
+  "surveyHtml": "<div data-page-element=\"Survey/V1\" class=\"elSurvey id-6Z-4Lr4ed-874\" data-liquid-replace=\"item\" data-param-design_style=\"classic\" data-param-buttonstate=\"true\" data-param-workflow_id=\"1924936\" data-param-target=\"_self\" data-param-showids=\"null\" data-param-hideids=\"null\" data-param-survey_progress=\"5\" data-param-survey_progress_enabled=\"true\" data-param-survey_end_text=\"You're qualified. Pick a time below.\" data-param-initialload=\"true\" data-param-survey_end_href=\"?next_funnel_step=true\" data-param-surveytexts=\"{&quot;name&quot;:&quot;Name&quot;,&quot;firstName&quot;:&quot;First Name&quot;,&quot;lastName&quot;:&quot;Last Name&quot;,&quot;email&quot;:&quot;Email&quot;,&quot;phoneNumber&quot;:&quot;Phone Number&quot;,&quot;selectAtLeastOneOption&quot;:&quot;Please select at least one of the options&quot;,&quot;selectOneOption&quot;:&quot;Please select one of the options&quot;,&quot;providedAnswerTooLong&quot;:&quot;Provided answer is too long&quot;,&quot;next&quot;:&quot;Next&quot;}\" data-state-node-script-id=\"state-node-script-2\"><div data-page-element=\"Spinner/V1\" class=\"elSpinnerWrapper layer-behind-modal-backdrop id-Spinner/V1\"><div class=\"elSpinner\"></div></div><form data-ak-monitored=\"true\"><div class=\"elSurveyQuestion\"><div data-page-element=\"Headline/V1\" class=\"elHeadlineWrapper elSurveyFieldLabel id-Headline/V1\"><h1 class=\"elHeadline\"><span>Set Your Target Amount</span></h1></div><div data-page-element=\"SubHeadline/V1\" class=\"elSubheadlineWrapper elSurveyFieldDescription id-SubHeadline/V1\"><h2 class=\"elSubheadline\"><span>Enter the capital you want to access.</span></h2></div><div data-page-element=\"ProgressBar/V1\" class=\"elProgressBar id-ProgressBar/V1\" data-liquid-replace=\"item\"><p class=\"progress-label hide\"></p><div class=\"progress\"><div style=\"width:22.22222222222222%;\" class=\"progress-bar\" role=\"progressbar\"><p class=\"progress-label\"></p></div></div></div><div class=\"elSurveyList\"><div data-option-image-size=\"undefined\" class=\"\"><div class=\"elSurveyItem\">",
+  "url": "https://apply.fundhub.ai/apply"
+}

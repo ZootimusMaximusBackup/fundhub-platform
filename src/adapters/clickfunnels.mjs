@@ -18,20 +18,44 @@ import crypto from "node:crypto";
 import { emit } from "../events/bus.mjs";
 
 // --- 1. Signature verification (fail-closed) --------------------------------
-// ClickFunnels signs with HMAC-SHA256 of the raw body. Some versions prefix the
-// header with "sha256=". Mirrors verifyCommasSignature exactly. Returns false on
-// any mismatch / missing input — caller MUST refuse when false.
-export function verifyClickFunnelsSignature(rawBody, header, secret) {
+// ClickFunnels 2.0 (official): HMAC-SHA256(secret, `${timestamp}.${rawBody}`)
+// Headers: X-Webhook-ClickFunnels-Signature + X-Webhook-ClickFunnels-Timestamp
+// (see https://developers.myclickfunnels.com/docs/signature-verification).
+// Timestamp must be within 600s. Optional "sha256=" prefix on the signature.
+// Legacy fallback (no timestamp): HMAC of raw body only — kept for internal
+// probes / older tests. Live CF V2 always sends the timestamp header.
+export function verifyClickFunnelsSignature(rawBody, header, secret, timestamp) {
   if (!secret) return false;
   const provided = String(header || "").trim();
   if (!provided) return false;
-  const expected = crypto.createHmac("sha256", secret).update(rawBody || "").digest("hex");
   const providedHex = provided.includes("=") ? provided.split("=").pop().trim() : provided;
+
+  const ts = String(timestamp ?? "").trim();
+  let expected;
+  if (ts) {
+    const tsInt = Number(ts);
+    if (!Number.isFinite(tsInt)) return false;
+    const skew = Math.abs(Math.floor(Date.now() / 1000) - tsInt);
+    if (skew > 600) return false;
+    expected = crypto.createHmac("sha256", secret).update(`${ts}.${rawBody || ""}`).digest("hex");
+  } else {
+    expected = crypto.createHmac("sha256", secret).update(rawBody || "").digest("hex");
+  }
+
   try {
     return crypto.timingSafeEqual(Buffer.from(providedHex, "hex"), Buffer.from(expected, "hex"));
   } catch {
     return false;
   }
+}
+
+function headerValue(headers, name) {
+  if (!headers || typeof headers !== "object") return undefined;
+  const want = String(name).toLowerCase();
+  for (const [k, v] of Object.entries(headers)) {
+    if (String(k).toLowerCase() === want) return Array.isArray(v) ? v[0] : v;
+  }
+  return undefined;
 }
 
 // Appointment webhook types (ClickFunnels booking calendar — not Cal.com).
@@ -47,6 +71,18 @@ function isAppointmentType(type) {
   );
 }
 
+/** Pull only FundHub survey keys from a CF attributes/fields object. */
+function pickSurveyAnswers(obj) {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return null;
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (!String(k).startsWith("cf_svy_")) continue;
+    if (v == null || v === "") continue;
+    out[k] = v;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 // --- 2. Normalize the webhook body into a flat event ------------------------
 // Reads defensively from CF Classic + 2.0 shapes. Returns null when no usable
 // data is found (caller treats as no-op).
@@ -55,6 +91,16 @@ export function normalizeClickFunnelsEvent(body) {
 
   // CF 2.0 wraps everything under `data`; Classic may have a top-level contact.
   const d = (b.data && typeof b.data === "object" ? b.data : null) || b;
+  // form_submission.created nests contact + booking under data.data.
+  const nested =
+    d.data && typeof d.data === "object" && !Array.isArray(d.data) ? d.data : null;
+  const schedule =
+    (nested && nested.appointments_schedule_request && typeof nested.appointments_schedule_request === "object"
+      ? nested.appointments_schedule_request
+      : null) ||
+    (d.appointments_schedule_request && typeof d.appointments_schedule_request === "object"
+      ? d.appointments_schedule_request
+      : null);
 
   // Event type / hook type (needed before contact pick — appointments use
   // data.primary_contact, not data.contact).
@@ -69,15 +115,20 @@ export function normalizeClickFunnelsEvent(body) {
     ""
   ).toLowerCase();
 
-  // Contact block: appointments → data.primary_contact; otherwise CF Classic /
-  // 2.0 contact shapes.
+  // Contact block: appointments → data.primary_contact; form_submission →
+  // data.data.contact; otherwise CF Classic / 2.0 contact shapes (contact.* or
+  // the contact row itself as `data` with email_address).
   const primary =
     d.primary_contact && typeof d.primary_contact === "object" ? d.primary_contact : null;
+  const nestedContact =
+    nested && nested.contact && typeof nested.contact === "object" ? nested.contact : null;
   const contact =
     (isAppointmentType(type) && primary) ||
     (d.contact && typeof d.contact === "object" ? d.contact : null) ||
+    nestedContact ||
     (b.contact && typeof b.contact === "object" ? b.contact : null) ||
     primary ||
+    schedule ||
     d ||
     b;
 
@@ -85,6 +136,8 @@ export function normalizeClickFunnelsEvent(body) {
   const email = String(
     contact.email ||
     contact.email_address ||
+    schedule?.email ||
+    nestedContact?.email ||
     d.email ||
     d.email_address ||
     b.email ||
@@ -97,6 +150,8 @@ export function normalizeClickFunnelsEvent(body) {
   const name = String(
     contact.full_name ||
     contact.fullName ||
+    contact.name ||
+    schedule?.name ||
     d.full_name ||
     b.full_name ||
     (firstName || lastName ? `${firstName} ${lastName}`.trim() : "")
@@ -107,6 +162,8 @@ export function normalizeClickFunnelsEvent(body) {
     contact.phone ||
     contact.phone_number ||
     contact.phoneNumber ||
+    schedule?.phone_number ||
+    schedule?.phone ||
     d.phone ||
     d.phone_number ||
     b.phone ||
@@ -118,13 +175,16 @@ export function normalizeClickFunnelsEvent(body) {
     (d.event_type && typeof d.event_type === "object" && d.event_type.name) ||
     (b.event_type && typeof b.event_type === "object" && b.event_type.name) ||
     "";
+  const funnelObj = b.funnel || d.funnel || (d.page && d.page.funnel) || null;
   const funnel = String(
     b.funnel_name ||
-    b.funnel ||
+    (typeof b.funnel === "string" ? b.funnel : "") ||
+    (funnelObj && typeof funnelObj === "object" ? funnelObj.name : "") ||
     d.funnel_name ||
-    d.funnel ||
+    (typeof d.funnel === "string" ? d.funnel : "") ||
     b.page_name ||
     d.page_name ||
+    (d.page && d.page.name) ||
     eventTypeName ||
     ""
   ).trim();
@@ -140,9 +200,10 @@ export function normalizeClickFunnelsEvent(body) {
     null;
 
   // Survey answers: CF Classic → contact.survey_answers or data.survey_answers.
-  // CF 2.0 → data.formData, data.answers, data.fields, contact.custom_fields.
+  // CF 2.0 → data.formData / answers / fields, or Contact Attributes on
+  // custom_attributes / custom_fields (only cf_svy_* keys count).
   // Skip for appointments — formData-style keys must not turn a booking into a survey.
-  const answers = isAppointmentType(type)
+  const rawAnswers = isAppointmentType(type)
     ? null
     : contact.survey_answers ||
       d.survey_answers ||
@@ -150,23 +211,28 @@ export function normalizeClickFunnelsEvent(body) {
       d.form_data ||
       d.answers ||
       d.fields ||
-      contact.custom_fields ||
       null;
+  const fromAttrs =
+    pickSurveyAnswers(contact.custom_attributes) ||
+    pickSurveyAnswers(d.custom_attributes) ||
+    pickSurveyAnswers(contact.custom_fields) ||
+    pickSurveyAnswers(d.custom_fields);
+  const answers = pickSurveyAnswers(rawAnswers) || fromAttrs || (rawAnswers && typeof rawAnswers === "object" ? rawAnswers : null);
 
   // Referral attribution params (a1=tier1 affiliate, a2=tier2 affiliate).
   // CF appends these as query params on the funnel URL; they appear either at top-
   // level, under data, or in contact.custom_fields. af-02 gates on these.
   const a1 = String(
-    b.a1 || d.a1 || contact.a1 || contact.custom_fields?.a1 || ""
+    b.a1 || d.a1 || contact.a1 || contact.custom_fields?.a1 || contact.custom_attributes?.a1 || ""
   ).trim() || null;
   const a2 = String(
-    b.a2 || d.a2 || contact.a2 || contact.custom_fields?.a2 || ""
+    b.a2 || d.a2 || contact.a2 || contact.custom_fields?.a2 || contact.custom_attributes?.a2 || ""
   ).trim() || null;
 
   // Appointment slot fields — same names the Cal.com adapter emits downstream.
-  const startTime = d.start_on || d.startTime || b.start_on || null;
-  const endTime = d.end_on || d.endTime || b.end_on || null;
-  const tzid = d.tzid || b.tzid || null;
+  const startTime = d.start_on || d.startTime || schedule?.start_on || b.start_on || null;
+  const endTime = d.end_on || d.endTime || schedule?.end_on || b.end_on || null;
+  const tzid = d.tzid || schedule?.tzid || b.tzid || null;
   const bookingUid = id ? String(id) : null;
 
   return {
@@ -209,12 +275,25 @@ export function mapToCanonical(evt) {
 }
 
 // --- Adapter entrypoint -----------------------------------------------------
-// handleClickFunnelsWebhook({ db, rawBody, signatureHeader, secret })
+// handleClickFunnelsWebhook({ db, rawBody, signatureHeader, secret, headers })
 //   → { ok, status, emitted: [{name, id, deduped}], reason? }
 // Verifies signature (fail-closed), parses JSON, maps to canonical events, and
 // emits each via the bus. Idempotency key: `clickfunnels:<eventId>:<canonicalName>`.
-export async function handleClickFunnelsWebhook({ db, rawBody, signatureHeader, secret }) {
-  if (!verifyClickFunnelsSignature(rawBody, signatureHeader, secret)) {
+export async function handleClickFunnelsWebhook({
+  db,
+  rawBody,
+  signatureHeader,
+  secret,
+  headers
+}) {
+  const sig =
+    signatureHeader ||
+    headerValue(headers, "x-webhook-clickfunnels-signature") ||
+    headerValue(headers, "x-clickfunnels-signature");
+  const timestamp =
+    headerValue(headers, "x-webhook-clickfunnels-timestamp") ||
+    headerValue(headers, "x-clickfunnels-timestamp");
+  if (!verifyClickFunnelsSignature(rawBody, sig, secret, timestamp)) {
     return { ok: false, status: 401, reason: "bad_signature", emitted: [] };
   }
 
@@ -279,6 +358,7 @@ export async function handleClickFunnelsWebhook({ db, rawBody, signatureHeader, 
         endTime: evt.endTime,
         email: evt.email,
         name: evt.name,
+        phone: evt.phone,
         meetingUrl: evt.meetingUrl,
         rescheduleUid: evt.rescheduleUid,
         source: "clickfunnels"

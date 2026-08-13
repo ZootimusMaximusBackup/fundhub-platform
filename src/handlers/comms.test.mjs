@@ -185,7 +185,7 @@ test("booking.cancelled: marks the open task done, tags call:cancelled, sets cal
   const cancelled = ev("booking.cancelled", { clientId, bookingUid: "bk_4", source: "calcom" }, { clientId });
   await onBookingCancelled(cancelled, db);
   assert.equal(db.tasks[0].done, true);
-  assert.deepEqual(db.clients[0].tags, ["call:cancelled"]);
+  assert.deepEqual(db.clients[0].tags, ["call:booked", "call:cancelled"]);
   assert.equal(db.clients[0].custom_fields.call_outcome, "cancelled");
 });
 
@@ -198,7 +198,7 @@ test("booking.cancelled: replay is idempotent (task stays done, tag not duplicat
   await onBookingCancelled(cancelled, db);
   await onBookingCancelled(cancelled, db);
   assert.equal(db.tasks.length, 1);
-  assert.deepEqual(db.clients[0].tags, ["call:cancelled"]);
+  assert.deepEqual(db.clients[0].tags, ["call:booked", "call:cancelled"]);
 });
 
 // booking.noshow — closes the open task, tags call:no_show, sets call_outcome.
@@ -210,7 +210,7 @@ test("booking.noshow: marks the open task done, tags call:no_show, sets call_out
   const noshow = ev("booking.noshow", { clientId, bookingUid: "bk_6", source: "calcom" }, { clientId });
   await onBookingNoshow(noshow, db);
   assert.equal(db.tasks[0].done, true);
-  assert.deepEqual(db.clients[0].tags, ["call:no_show"]);
+  assert.deepEqual(db.clients[0].tags, ["call:booked", "call:no_show"]);
   assert.equal(db.clients[0].custom_fields.call_outcome, "no_show");
 });
 

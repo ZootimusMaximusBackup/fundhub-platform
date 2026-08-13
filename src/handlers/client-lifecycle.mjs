@@ -17,6 +17,8 @@ import { resolveShiftId } from "../shifts/attribution.mjs";
 import { ensureGhlContactId, config as ghlConfig } from "../messaging/ghl-contacts.mjs";
 import { adaptersBlocked } from "../lib/dry-run.mjs";
 import { upsertSurveyCarbonCopy } from "./client-custom-fields.mjs";
+import { addTags } from "../workflows/tags.mjs";
+import { moveCardToStage } from "../workflows/cards.mjs";
 
 // --- helpers ----------------------------------------------------------------
 
@@ -151,12 +153,30 @@ async function backfillGhlIfMissing(db, clientId, orgId, p, opts = {}) {
   return clientId;
 }
 
+/** Fill phone / name when a later webhook has them and the row is still blank. */
+async function patchClientContact(db, clientId, p = {}) {
+  if (!clientId) return;
+  const { firstName, lastName } = splitName(p.name);
+  const phone = p.phone ? String(p.phone).trim() : null;
+  if (!phone && !firstName && !lastName) return;
+  await db.query(
+    `UPDATE clients SET
+       phone = COALESCE(NULLIF(phone, ''), $2),
+       first_name = COALESCE(NULLIF(first_name, ''), $3),
+       last_name = COALESCE(NULLIF(last_name, ''), $4),
+       updated_at = now()
+     WHERE id = $1`,
+    [clientId, phone, firstName, lastName]
+  );
+}
+
 export async function resolveClient(db, event, opts = {}) {
   const orgId = event.orgId;
   const p = event.payload || {};
   if (event.clientId) {
     // Explicit id still needs a GHL link when missing — lead capture often
     // creates the row first, then emits with clientId set.
+    await patchClientContact(db, event.clientId, p);
     return backfillGhlIfMissing(db, event.clientId, orgId, p, opts);
   }
   const email = String(p.email || "").trim().toLowerCase();
@@ -167,6 +187,7 @@ export async function resolveClient(db, event, opts = {}) {
     [orgId, email]
   );
   if (found.rows[0]) {
+    await patchClientContact(db, found.rows[0].id, p);
     // Existing row with a null GHL id is the silent-null hazard — backfill.
     return backfillGhlIfMissing(db, found.rows[0].id, orgId, p, opts);
   }
@@ -191,6 +212,7 @@ export async function resolveClient(db, event, opts = {}) {
     [orgId, email]
   );
   if (!re.rows[0]) return null;
+  await patchClientContact(db, re.rows[0].id, p);
   return backfillGhlIfMissing(db, re.rows[0].id, orgId, p, opts);
 }
 
@@ -205,9 +227,21 @@ async function mergeCustomFields(db, clientId, patch) {
 
 // --- handlers ---------------------------------------------------------------
 
-// entry.captured — a new lead entered the funnel: ensure the client exists.
+// entry.captured — ensure client + Sales board card (new_lead).
+// Card placement is sync here so Pipeline UI updates even when Inngest cannot
+// invoke functions (missing INNGEST_SIGNING_KEY / sync failure). s-01 also
+// places the card; moveCardToStage is idempotent.
 export async function onEntryCaptured(event, db) {
-  await resolveClient(db, event);
+  const clientId = await resolveClient(db, event);
+  if (!clientId || !event.orgId) return;
+  await mergeCustomFields(db, clientId, { lifecycle_status: "New Lead" });
+  await addTags(db, clientId, ["lead:new"]);
+  await moveCardToStage(db, {
+    orgId: event.orgId,
+    clientId,
+    pipelineKey: "sales",
+    stageKey: "new_lead"
+  });
 }
 
 // survey.submitted — fold answers into clients.custom_fields (jsonb) and the

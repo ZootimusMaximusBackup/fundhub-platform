@@ -1,0 +1,22 @@
+{
+  "email": "Bakerskater987+test.cfseam.1786576104257@gmail.com",
+  "phone": "6025550148",
+  "name": "Chris Seam",
+  "log": [
+    "2026-08-12T23:08:24.606Z email=Bakerskater987+test.cfseam.1786576104257@gmail.com",
+    "2026-08-12T23:08:28.030Z url1=https://apply.fundhub.ai/apply",
+    "2026-08-12T23:08:28.036Z dom dump start n=31",
+    "2026-08-12T23:08:28.052Z FAIL fill name",
+    "2026-08-12T23:08:28.054Z FAIL fill email",
+    "2026-08-12T23:08:28.057Z FAIL fill phone",
+    "2026-08-12T23:08:28.064Z pressed Enter",
+    "2026-08-12T23:08:29.272Z dom dump after-contact n=31",
+    "2026-08-12T23:08:30.123Z clicked: $50k - $100k",
+    "2026-08-12T23:08:30.131Z dom dump step n=31",
+    "2026-08-12T23:08:45.135Z miss Growth (marketing, inventory, hiring): locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByText('Growth (marketing, inventory, hiring)', ",
+    "2026-08-12T23:08:50.138Z partial fail Growth (marketing, inventory, hiring)",
+    "2026-08-12T23:08:50.145Z dom dump miss n=31",
+    "2026-08-12T23:08:53.147Z finalUrl=https://apply.fundhub.ai/apply",
+    "2026-08-12T23:08:53.230Z endUrl=https://apply.fundhub.ai/apply"
+  ]
+}

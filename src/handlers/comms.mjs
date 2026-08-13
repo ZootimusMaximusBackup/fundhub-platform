@@ -30,6 +30,7 @@ import { recordOptOut, recordOptIn } from "../lib/opt-out.mjs";
 import { createTask } from "../lib/create-task.mjs";
 import { addTags } from "../workflows/tags.mjs";
 import { mergeCustomFields } from "../workflows/custom-fields.mjs";
+import { moveCardToStage } from "../workflows/cards.mjs";
 import { upsertConversation, linkMessage } from "../conversations/store.mjs";
 
 // TCPA standard opt-out and opt-in keyword sets (case-insensitive, trimmed).
@@ -218,17 +219,29 @@ export async function onBookingCreated(event, db) {
     `SELECT 1 FROM tasks WHERE client_id=$1 AND source_workflow='calcom' AND body=$2 LIMIT 1`,
     [clientId, uid]
   );
-  if (uid && dup.rows[0]) return;
-  await createTask(db, {
-    orgId: event.orgId,
-    clientId,
-    title: "Strategy session booked",
-    sourceWorkflow: "calcom",
-    assigneeRole: "closer",
-    dueAt: p.startTime || null,
-    eventId: uid,
-    meetingUrl: p.meetingUrl || null
-  });
+  if (!(uid && dup.rows[0])) {
+    await createTask(db, {
+      orgId: event.orgId,
+      clientId,
+      title: "Strategy session booked",
+      sourceWorkflow: "calcom",
+      assigneeRole: "closer",
+      dueAt: p.startTime || null,
+      eventId: uid,
+      meetingUrl: p.meetingUrl || null
+    });
+  }
+  // Mirror s-04 sync so Pipeline shows "booked" without waiting on Inngest.
+  await addTags(db, clientId, ["call:booked"]);
+  await mergeCustomFields(db, clientId, { call_outcome: "booked" });
+  if (event.orgId) {
+    await moveCardToStage(db, {
+      orgId: event.orgId,
+      clientId,
+      pipelineKey: "sales",
+      stageKey: "booked"
+    });
+  }
 }
 
 export async function onBookingRescheduled(event, db) {

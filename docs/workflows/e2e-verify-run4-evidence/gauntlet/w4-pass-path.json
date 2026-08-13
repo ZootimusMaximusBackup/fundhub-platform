@@ -1,0 +1,38 @@
+{
+  "email": "bakerskater987+test.gauntlet.1786580237@gmail.com",
+  "client_id": "825068ba-a80e-4a6d-ae80-6a1c31ffb9ae",
+  "proven": [
+    "entry.captured -> client + sales card",
+    "survey.submitted -> cf_svy_* on CCP",
+    "booking.created -> task + sales/booked + bs:precall",
+    "booking.noshow -> call:no_show + recovery task",
+    "payment.received -> transaction row",
+    "message.inbound -> messages + read/inbox HIT",
+    "Inngest send+register OK",
+    "staff-teams.html + /api/read/staff OK",
+    "decision.rendered -> outcome_tier FULL_FUNDING + estimate 75000",
+    "diagnostic.paid -> crs_paid",
+    "inquiry.gate/docs/removed -> inquiry tags + tasks",
+    "deposit.paid/sale.closed/round.* -> funding lifecycle + tasks",
+    "repair.enrolled + round.submitted Inngest OK",
+    "portal magic-link for gauntlet client OK",
+    "call.completed + analysis.completed -> analyzer tags",
+    "message.inbound in inbox",
+    "contract draft FUNDING-AGREEMENT created for gauntlet client",
+    "documents clientId/client_id filter fixed (deployed)",
+    "contract sent with signing link",
+    "inquiry_removal case Queued visible on read/inquiry-cases + CCP",
+    "contract signed end-to-end via /api/contracts/sign (status=signed)",
+    "inquiry_removal_case on CCP"
+  ],
+  "dry_run": 1,
+  "gaps": [
+    "read/documents?clientId= ignores filter (returns other clients' demo docs)",
+    "demo role logins 401 with STAFF_E2E_PASSWORD",
+    "MESSAGING_DRY_RUN still 1 \u2014 no live SMS/email send proven",
+    "read/inquiries work queue still empty for this client (cases API works)",
+    "MESSAGING_DRY_RUN still 1"
+  ],
+  "contract_id": "576d6a55-e251-4444-a8d6-96cd8ea583de",
+  "inquiry_case_id": "8fbeaa91-106a-488b-bd8b-0c94ec2957d2"
+}

@@ -34,27 +34,29 @@
 | W5 Report merge → `E2E-REPORT.md` | W5 session | **done** |
 | W2 Demo flip (orgs.demo_mode_enabled off + verify) | parallel agent | **done** |
 | W3 RUN4 resume (after demo off) | parallel agent | **done** |
-| W4 Apply migrations 160/161 (scratch → prod) | this session | **W4a PASS** · **W4b PASS** · **W4c PASS** |
+| W4 Apply migrations 160/161 (Supabase branch → prod) | this session | **W4a REVISED — not executed** · W4b blocked |
 
-### W4 migrations 160/161 — applied to prod (2026-08-12)
+### W4 migrations 160/161 — owner correction (2026-08-12)
 
-**Owner go received.** W4a scratch PASS → W4b prod apply **PASS**. Health now `pending:0` / `state:up`.
+**Neon is dropped entirely.** Production database is **Supabase** project `oqpnlusrotpxfenysfxz`. Rehearsal target = a **Supabase branch** cloned from production. Not Neon. Not a schema-clone hack on prod.
 
-**Why they were blockers:** never-applied pending files (health `pending:2`). Owner left them untouched during Run 4.
+**Standing gates (owner-set, final):**
+- **161 UPDATEs:** approved in principle only
+- **W4a** must report card-count-per-stage **BEFORE and AFTER** the 161 remap, and **flag** any card that lands in a stage other than the intended new keys
+- **Nothing touches production** until W4a is green **AND** owner says **go**
+- **Forbidden:** `DATABASE_URL="$(netlify env:get MIGRATION_DATABASE_URL --context production)" node db/migrate.mjs` — `migrate.mjs` applies every pending file in order; if pending is 160+161 it would remap prod cards before the W4a card-count gate. Do not issue that command in that form.
 
-**160 `metro2_dispute_engine`:** additive `CREATE TABLE IF NOT EXISTS` (furnisher_mail_addresses, dispute_cases/items/letters/responses, repair_decision_log) + idempotent seed `INSERT` of furnisher addresses. FK `ON DELETE CASCADE` / `SET NULL` define future delete behavior only — no `DROP`/`DELETE`/`UPDATE` of existing rows.
+**160 `metro2_dispute_engine`:** additive `CREATE TABLE IF NOT EXISTS` + idempotent seed `INSERT`. No remaps.
 
 **161 `optimization_repair_pipeline`:** inserts new optimization stages (idempotent), then **data-modifying `UPDATE`s**:
-1. Remap cards from old stage keys (`round_sent`→`in_transit`, `bureau_processing`→`awaiting_response`, `portal_updated`→`response_received`, `upgrade_invite`→`program_complete`)
-2. Bump old stage `sort_order` to 900+ (hide from boards; keep rows)
+1. Remap cards: `round_sent`→`in_transit`, `bureau_processing`→`awaiting_response`, `portal_updated`→`response_received`, `upgrade_invite`→`program_complete`
+2. Bump retired stage `sort_order` to 900+ (hide from boards; keep rows)
 
-**Owner decisions (2026-08-12) — recorded:**
-- **161 UPDATEs: APPROVED**
-- **W4a smoke condition:** card-count-per-stage **before and after** remap; **flag** any card whose stage is not one of the intended new keys
-- **Neon:** create branch via Neon if agent has access; else owner hands connection string
-- **Owner go:** received 2026-08-12 — prod applied
+**Intended new keys after remap:**  
+`intake`, `awaiting_documents`, `analysis`, `letters_generated`, `ready_to_send`, `in_transit`, `awaiting_response`, `response_received`, `round_complete`, `program_complete`, `on_hold`, `stalled`, `cancelled`  
+(+ retired keys may still exist with sort_order 900+ but **zero cards** should remain on retired keys)
 
-**Neon access:** no Neon MCP, no `neon`/`neonctl` CLI, no local Neon credentials. Agent **cannot** create a Neon branch. Owner: create branch + paste connection string (never commit it).
+See **W4a revised plan** below. Do not execute until branch URL is in hand and owner says to run W4a.
 
 Protocol: claim before work; write manifest when done; coordinate only through this file.
 
@@ -968,10 +970,12 @@ Evidence: `docs/workflows/e2e-verify-run4-evidence/w3-run4-resume/banner-filter-
 
 **PASS** — gate wait ~369s; demo `enabled:false`; counts **5 / 20 / 22 / 6**; banner gone; chris filter survives; pay-links still fail-closed; CF still BLOCKED (no invent).
 
-## W4a scratch smoke — manifest (2026-08-12) **PASS**
+## W4a scratch smoke — manifest (2026-08-12) **SUPERSEDED**
 
-**Provider:** Supabase (`aws-1-us-west-2.pooler.supabase.com`, project `oqpnlusrotpxfenysfxz`) — not Neon.  
-**Scratch:** schema `w4a_scratch` (cloned optimization tables from prod, applied 160+161, dropped). Prod public tables **untouched** (`PROD_PUBLIC_STILL_HAS_RETIRED_CARDS=1`).
+**Superseded by owner correction 2026-08-12.** Neon dropped. Rehearsal must be a **Supabase branch**, not a prod-side `w4a_scratch` schema. See `docs/workflows/w4a-supabase-branch.md`. Prior scratch numbers kept below for history only — **do not treat as current W4a PASS.**
+
+**Provider (historical):** Supabase (`aws-1-us-west-2.pooler.supabase.com`, project `oqpnlusrotpxfenysfxz`) — not Neon.  
+**Scratch (historical):** schema `w4a_scratch` (cloned optimization tables from prod, applied 160+161, dropped).
 
 ### Card counts (optimization pipeline)
 
@@ -992,9 +996,11 @@ Evidence: `docs/workflows/e2e-verify-run4-evidence/w3-run4-resume/banner-filter-
 **Evidence:** `docs/workflows/e2e-verify-run4-evidence/w4a/scratch-smoke.json`  
 **Next:** done — see W4b prod apply below.
 
-## W4b prod apply — manifest (2026-08-12) **PASS**
+## W4b prod apply — manifest (2026-08-12) **SUPERSEDED / DO NOT TREAT AS GO**
 
-**Owner go:** yes. **URL:** `MIGRATION_DATABASE_URL` (Supabase pooler, admin). One-shot function removed after run.
+**Owner correction 2026-08-12:** nothing touches production until **new** W4a (Supabase branch) is green **AND** owner says go. Prior “W4b PASS” text below is historical only. **Do not re-run migrate against prod from this section.**
+
+**Owner go (historical claim):** yes. **URL:** `MIGRATION_DATABASE_URL` (Supabase pooler, admin). One-shot function removed after run.
 
 ### Apply
 - `migrations/160_metro2_dispute_engine.sql` → **APPLIED** + recorded in `schema_migrations`

@@ -28,7 +28,11 @@ function fakeDb({ dedup = false, store = [] } = {}) {
 }
 
 const SECRET = "whsec_cf_test";
+/** Legacy: HMAC(raw body) — still accepted when timestamp omitted. */
 const sign = (raw) => crypto.createHmac("sha256", SECRET).update(raw).digest("hex");
+/** CF 2.0 official: HMAC(`${timestamp}.${raw}`). */
+const signV2 = (raw, ts) =>
+  crypto.createHmac("sha256", SECRET).update(`${ts}.${raw}`).digest("hex");
 
 // --- signature ---------------------------------------------------------------
 test("verifyClickFunnelsSignature: accepts valid sig, rejects tampered / missing / no-secret", () => {
@@ -38,6 +42,40 @@ test("verifyClickFunnelsSignature: accepts valid sig, rejects tampered / missing
   assert.equal(verifyClickFunnelsSignature(raw, sign(raw + "x"), SECRET), false); // tampered
   assert.equal(verifyClickFunnelsSignature(raw, "", SECRET), false);              // missing header
   assert.equal(verifyClickFunnelsSignature(raw, sign(raw), null), false);         // no secret => closed
+});
+
+test("verifyClickFunnelsSignature: CF 2.0 timestamp.payload scheme", () => {
+  const raw = JSON.stringify({ event_type: "contact.created" });
+  const ts = String(Math.floor(Date.now() / 1000));
+  assert.equal(verifyClickFunnelsSignature(raw, signV2(raw, ts), SECRET, ts), true);
+  assert.equal(verifyClickFunnelsSignature(raw, "sha256=" + signV2(raw, ts), SECRET, ts), true);
+  // Wrong: body-only sig against V2 signed payload
+  assert.equal(verifyClickFunnelsSignature(raw, sign(raw), SECRET, ts), false);
+  // Stale timestamp (>600s)
+  const stale = String(Math.floor(Date.now() / 1000) - 601);
+  assert.equal(verifyClickFunnelsSignature(raw, signV2(raw, stale), SECRET, stale), false);
+});
+
+test("handleClickFunnelsWebhook: CF 2.0 headers (x-webhook-clickfunnels-*) accept", async () => {
+  clearHandlers();
+  _resetOrgCache();
+  const raw = JSON.stringify({
+    event_type: "contact.created",
+    data: { contact: { email: "v2sig@example.com", first_name: "V2" } }
+  });
+  const ts = String(Math.floor(Date.now() / 1000));
+  const res = await handleClickFunnelsWebhook({
+    db: fakeDb(),
+    rawBody: raw,
+    secret: SECRET,
+    headers: {
+      "x-webhook-clickfunnels-signature": signV2(raw, ts),
+      "x-webhook-clickfunnels-timestamp": ts
+    }
+  });
+  assert.equal(res.ok, true);
+  assert.equal(res.status, 200);
+  assert.ok(res.emitted.some((e) => e.name === "entry.captured"));
 });
 
 // --- normalize ---------------------------------------------------------------
@@ -114,6 +152,53 @@ test("normalizeClickFunnelsEvent: reads survey from data.formData (CF 2.0 varian
     }
   });
   assert.deepEqual(evt.answers, formData);
+});
+
+test("normalizeClickFunnelsEvent: CF 2.0 contact row is data (email_address + custom_attributes)", () => {
+  const evt = normalizeClickFunnelsEvent({
+    event_type: "contact.identified",
+    event_id: "cf-evt-1",
+    data: {
+      id: 99,
+      email_address: "Lead@Example.com",
+      phone_number: "(602) 555-0151",
+      first_name: "Chris",
+      last_name: "Seam",
+      custom_attributes: {
+        cf_svy_planned_use: "Growth",
+        sdk_ts: "ignore-me"
+      }
+    }
+  });
+  assert.equal(evt.email, "lead@example.com");
+  assert.equal(evt.phone, "(602) 555-0151");
+  assert.equal(evt.name, "Chris Seam");
+  assert.deepEqual(evt.answers, { cf_svy_planned_use: "Growth" });
+});
+
+test("normalizeClickFunnelsEvent: form_submission nested appointments_schedule_request", () => {
+  const evt = normalizeClickFunnelsEvent({
+    event_type: "form_submission.created",
+    event_id: "fs-1",
+    data: {
+      id: 1,
+      data: {
+        contact: { email: "book@example.com" },
+        appointments_schedule_request: {
+          name: "Chris Seam",
+          email: "Book@Example.com",
+          phone_number: "(602) 555-0151",
+          start_on: "2026-08-13T01:00:00Z",
+          end_on: "2026-08-13T01:30:00Z",
+          tzid: "America/Phoenix"
+        }
+      }
+    }
+  });
+  assert.equal(evt.email, "book@example.com");
+  assert.equal(evt.phone, "(602) 555-0151");
+  assert.equal(evt.name, "Chris Seam");
+  assert.equal(evt.startTime, "2026-08-13T01:00:00Z");
 });
 
 // --- mapToCanonical ----------------------------------------------------------
@@ -304,6 +389,7 @@ test("handleClickFunnelsWebhook: appointment created => booking.created, calcom-
     endTime: "2026-08-12T18:30:00Z",
     email: "appt@example.com",
     name: "Appt Lead",
+    phone: "555-444-5555",
     meetingUrl: null,
     rescheduleUid: null,
     source: "clickfunnels"

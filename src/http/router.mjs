@@ -34,7 +34,13 @@ const STD = {
      delivery has ever carried, so every real payment webhook failed
      verification and answered 401. The old name is kept as a fallback. */
   commas: { fn: handleCommasWebhook, sig: COMMAS_SIG_HEADERS, env: "COMMAS_WEBHOOK_SECRET" },
-  clickfunnels: { fn: handleClickFunnelsWebhook, sig: "x-clickfunnels-signature", env: "CLICKFUNNELS_WEBHOOK_SECRET" },
+  /* CF 2.0 docs: X-Webhook-ClickFunnels-Signature (+ Timestamp). Legacy
+     x-clickfunnels-signature kept as fallback for internal probes. */
+  clickfunnels: {
+    fn: handleClickFunnelsWebhook,
+    sig: ["x-webhook-clickfunnels-signature", "x-clickfunnels-signature"],
+    env: "CLICKFUNNELS_WEBHOOK_SECRET"
+  },
   bland: { fn: handleBlandWebhook, sig: "x-bland-signature", env: "BLAND_WEBHOOK_SECRET" },
   calcom: { fn: handleCalcomWebhook, sig: "x-cal-signature-256", env: "CALCOM_WEBHOOK_SECRET" },
   /* lendflow was written, tested and documented as live — and never registered

@@ -1,0 +1,191 @@
+{
+  "url": "https://apply.fundhub.ai/apply",
+  "texts": [
+    {
+      "tag": "H1",
+      "text": "Let's See What You Qualify For",
+      "type": null,
+      "name": null
+    },
+    {
+      "tag": "P",
+      "text": "A few quick questions, then pick a time for your call. Soft pull only. Zero scor",
+      "type": null,
+      "name": null
+    },
+    {
+      "tag": "H1",
+      "text": "Set Your Target Amount",
+      "type": null,
+      "name": null
+    },
+    {
+      "tag": "H2",
+      "text": "Enter the capital you want to access.",
+      "type": null,
+      "name": null
+    },
+    {
+      "tag": "LABEL",
+      "text": "Less than $50k",
+      "type": null,
+      "name": null
+    },
+    {
+      "tag": "INPUT",
+      "text": "JobnqM",
+      "type": "radio",
+      "name": "DzKkGV"
+    },
+    {
+      "tag": "LABEL",
+      "text": "$50k - $100k",
+      "type": null,
+      "name": null
+    },
+    {
+      "tag": "INPUT",
+      "text": "YgKLyG",
+      "type": "radio",
+      "name": "DzKkGV"
+    },
+    {
+      "tag": "LABEL",
+      "text": "$100k - $200k",
+      "type": null,
+      "name": null
+    },
+    {
+      "tag": "INPUT",
+      "text": "YnBnle",
+      "type": "radio",
+      "name": "DzKkGV"
+    },
+    {
+      "tag": "LABEL",
+      "text": "$200k - $400k",
+      "type": null,
+      "name": null
+    },
+    {
+      "tag": "INPUT",
+      "text": "YELnKp",
+      "type": "radio",
+      "name": "DzKkGV"
+    },
+    {
+      "tag": "LABEL",
+      "text": "$400k+",
+      "type": null,
+      "name": null
+    },
+    {
+      "tag": "INPUT",
+      "text": "JOAPpV",
+      "type": "radio",
+      "name": "DzKkGV"
+    },
+    {
+      "tag": "P",
+      "text": "FUNDING DISCLAIMER: Fundhub LLC is not a bank or a lender. We are a funding advi",
+      "type": null,
+      "name": null
+    },
+    {
+      "tag": "P",
+      "text": "NOT AFFILIATED WITH META: This site is not part of Facebook, Instagram, or Meta ",
+      "type": null,
+      "name": null
+    },
+    {
+      "tag": "INPUT",
+      "text": "name",
+      "type": null,
+      "name": "contact[name]"
+    },
+    {
+      "tag": "INPUT",
+      "text": "first_name",
+      "type": null,
+      "name": "contact[first_name]"
+    },
+    {
+      "tag": "INPUT",
+      "text": "last_name",
+      "type": null,
+      "name": "contact[last_name]"
+    },
+    {
+      "tag": "INPUT",
+      "text": "email",
+      "type": null,
+      "name": "contact[email]"
+    },
+    {
+      "tag": "INPUT",
+      "text": "phone_number",
+      "type": null,
+      "name": "contact[phone_number]"
+    },
+    {
+      "tag": "INPUT",
+      "text": "shipping_id",
+      "type": null,
+      "name": "contact[shipping_addresses_attributes][][physical_address_attributes][id]"
+    },
+    {
+      "tag": "INPUT",
+      "text": "shipping_address",
+      "type": null,
+      "name": "contact[shipping_addresses_attributes][][physical_address_attributes][address_one]"
+    },
+    {
+      "tag": "INPUT",
+      "text": "shipping_address_2",
+      "type": null,
+      "name": "contact[shipping_addresses_attributes][][physical_address_attributes][address_two]"
+    },
+    {
+      "tag": "INPUT",
+      "text": "shipping_city",
+      "type": null,
+      "name": "contact[shipping_addresses_attributes][][physical_address_attributes][city]"
+    },
+    {
+      "tag": "INPUT",
+      "text": "shipping_state",
+      "type": null,
+      "name": "contact[shipping_addresses_attributes][][physical_address_attributes][region_name]"
+    },
+    {
+      "tag": "INPUT",
+      "text": "shipping_country",
+      "type": null,
+      "name": "contact[shipping_addresses_attributes][][physical_address_attributes][country_id]"
+    },
+    {
+      "tag": "INPUT",
+      "text": "shipping_ZIP",
+      "type": null,
+      "name": "contact[shipping_addresses_attributes][][physical_address_attributes][postal_code]"
+    },
+    {
+      "tag": "INPUT",
+      "text": "time_zone",
+      "type": null,
+      "name": "time_zone"
+    },
+    {
+      "tag": "INPUT",
+      "text": "Webinar Delay",
+      "type": "text",
+      "name": "webinar_delay"
+    },
+    {
+      "tag": "H2",
+      "text": "Working...",
+      "type": null,
+      "name": null
+    }
+  ]
+}

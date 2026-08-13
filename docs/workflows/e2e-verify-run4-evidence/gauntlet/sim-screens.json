@@ -1,0 +1,166 @@
+{
+  "score": "32/32",
+  "fail": [],
+  "results": [
+    {
+      "k": "page /app/pipeline.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/client-control-panel.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/messaging.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/calendar.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/contracts.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/inquiry-remover.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/documents.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/staff-teams.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/hiring.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/sales-floor.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/my-numbers.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/closer-dashboard.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/automations.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/products-commissions.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/finance-os.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/affiliate.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/command-center.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/journeys.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/agent-editor.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/lenders.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/staff",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/contracts",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/inquiry-cases",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/inbox",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/my-numbers",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/sales-floor",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/hiring/candidates",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/products",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/commissions",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/dashboard/client?id=73c8f720-5b18-4661-b0eb-8d18e1881e85",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/dashboard/pipeline?pipeline=sales",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/health",
+      "ok": true,
+      "status": 200
+    }
+  ]
+}

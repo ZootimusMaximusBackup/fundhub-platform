@@ -1,0 +1,28 @@
+{
+  "goal": "Re-test CF → CRM after attribute mapping",
+  "ran_at": "2026-08-13T01:44:00.000Z",
+  "email": "bakerskater987+test.cfcrm2.1786585320@gmail.com",
+  "client_id": "99c513fb-fae9-4f1d-bfde-d8e5fc4e26f4",
+  "crm_events": [
+    "entry.captured",
+    "survey.submitted",
+    "booking.created"
+  ],
+  "task": "Strategy session booked",
+  "cf_svy_seen_in_webhooks": {
+    "cf_svy_funding_target_amount": 207881,
+    "cf_svy_funding_target_amount_label": "$50k - $100k"
+  },
+  "missing_cf_svy_keys": [
+    "cf_svy_planned_use",
+    "cf_svy_money_change_now",
+    "cf_svy_self_reported_fico",
+    "cf_svy_has_business",
+    "cf_svy_business_revenue",
+    "cf_svy_revenue_verifiable",
+    "cf_svy_annual_income_range",
+    "cf_svy_income_verifiable",
+    "cf_svy_available_capital"
+  ],
+  "verdict": "PARTIAL — survey.submitted fires; only Target Amount attribute is mapped in CF. Map the other 9 questions, then retest."
+}

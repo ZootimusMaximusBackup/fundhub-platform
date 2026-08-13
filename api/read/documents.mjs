@@ -33,7 +33,14 @@ const run = readHandler({
        AND ($3::uuid IS NULL OR d.client_id = $3)
        AND ($4::text IS NULL OR d.kind = $4)
      ORDER BY d.created_at DESC
-     LIMIT $1 OFFSET $2`, [limit + 1, offset, query.client_id || null, query.kind || null, orgOf(staff)]).then((r) => r.rows)
+     LIMIT $1 OFFSET $2`, [
+      limit + 1,
+      offset,
+      // UI + staff callers often send camelCase clientId.
+      query.client_id || query.clientId || null,
+      query.kind || null,
+      orgOf(staff)
+    ]).then((r) => r.rows)
 });
 
 export default (req, res) => run(req, res, { db, requireAuth });
