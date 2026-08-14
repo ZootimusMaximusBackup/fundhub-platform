@@ -44,10 +44,37 @@
 | B29 Smash DS-01 repair referral | Grok 4.5 high | ds-01-repair-referral + tests | **done** |
 
 | B32 Smash C-05 pre-funding review | Grok 4.5 high | c-05-pre-funding-review + tests | **done** |
+| S-S01 Smash S-01 new lead intake | Grok 4.5 high | s-01-new-lead-intake + tests | **done** |
 
 Do not `--prod`. Do not drain outbox. Do not commit unless Chris asks. Do not cross file fences.
 
 ## Manifests
+
+### S-S01 — Smash S-01 new lead intake (2026-08-14)
+
+**Status:** done  
+**Model:** Grok 4.5 high
+
+**What broke (pre-fix):**
+- Null / non-object event called `resolveClient` and threw (`event.orgId` on null).
+- Missing client already returned `{ done: false, reason: "no_client" }` — held, no smash test.
+- Duplicate replay already kept one tag + one card — held, no fetch trap.
+- No source grep against live CRS / outbox drain.
+
+**Fixes:**
+- Null / non-object event → `{ done: false, reason: "no_event" }` (no throw).
+- Smash tests lock missing client, null event, duplicate (one tag + one card), fetch trap, and source grep (no `fetch`, CRS pull, `CRS_ALLOW_LIVE`, outbox `drain` / `dispatchDue`, Vercel / Bland / GHL hosts).
+
+**Files touched:**
+- `src/workflows/s-01-new-lead-intake.mjs`
+- `src/workflows/s-01-new-lead-intake.test.mjs`
+- `docs/workflows/gold-break-gauntlet.md` (board only)
+
+**Not touched:** other sales workflows, messaging, GHL. No `--prod`. `CRS_ALLOW_LIVE` stays 0. No outbox drain.
+
+**Verify:** `CRS_ALLOW_LIVE=0 node --test src/workflows/s-01-new-lead-intake.test.mjs` → **6 pass** (2 prior + 4 smash). 0 fail, 0 skip.
+
+**Leftover:** none in fence. Card placement still skips when `orgId` is missing (by design).
 
 ### B25 — Smash lender-match missing scores (2026-08-14)
 
@@ -197,6 +224,32 @@ Do not `--prod`. Do not drain outbox. Do not commit unless Chris asks. Do not cr
 **Not touched:** c-02, c-02b, c-03. No commit, no `--prod`. `CRS_ALLOW_LIVE` stays 0.
 
 **Verify:** `CRS_ALLOW_LIVE=0 node --test src/workflows/f-05-inquiry-cleanup-gate.test.mjs` → **7 pass** (3 prior + 4 smash). 0 fail, 0 skip.
+
+**Leftover:** none in fence.
+
+### S-F01 — Smash F-01 funding intake (2026-08-14)
+
+**Status:** done  
+**Model:** Grok 4.5 high
+
+**What broke (pre-fix):**
+- Null / non-object event called `resolveClient` and threw (`event.orgId` on null).
+- Missing client already returned `{ done: false, reason: "no_client" }` — held, no smash test.
+- Duplicate replay already kept one pod task — held, no fetch / drain fences.
+- No source grep against live CRS / outbox drain / `dispatchDue`.
+
+**Fixes:**
+- Null / non-object event → `{ done: false, reason: "no_event" }` (no throw).
+- Smash tests lock missing client, duplicate (`podTask.created: false` second pass), null event, fetch trap, and source grep (no `fetch`, `CRS_ALLOW_LIVE`, `dispatchDue`).
+
+**Files touched:**
+- `src/workflows/f-01-funding-intake.mjs`
+- `src/workflows/f-01-funding-intake.test.mjs`
+- `docs/workflows/gold-break-gauntlet.md` (board only)
+
+**Not touched:** f-02–f-11. No `--prod`. `CRS_ALLOW_LIVE` stays 0.
+
+**Verify:** `CRS_ALLOW_LIVE=0 node --test src/workflows/f-01-funding-intake.test.mjs` → **8 pass** (4 prior + 4 smash). 0 fail, 0 skip.
 
 **Leftover:** none in fence.
 
