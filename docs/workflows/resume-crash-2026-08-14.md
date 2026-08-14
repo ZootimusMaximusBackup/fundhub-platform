@@ -20,9 +20,9 @@ Gold look: `docs/workflows/gold-deliverables-v5.md` (W8 parked).
 | id | unit | files | status |
 |----|------|-------|--------|
 | R0 | Recover crashed snapshot onto this branch + this board | this file | **done** |
-| R1 | CI: regenerate stale journeys | `docs/journeys/*-actual.md` | claimed — parent |
-| R2 | CI: outbound fence | `src/finance/crs-pull.mjs`; delete `netlify/functions/tmp-cf-seam-watch.mjs` | claimed — parent |
-| R3 | CI: SMS tests after GHL stub | `src/messaging/dispatch.test.mjs`, `dispatch-fence.test.mjs` (and helpers in those files only) | claimed — parent |
+| R1 | CI: regenerate stale journeys | `docs/journeys/*-actual.md` | **done** — parent |
+| R2 | CI: outbound fence | `src/finance/crs-pull.mjs` allowlisted as wrap; deleted `netlify/functions/tmp-cf-seam-watch.mjs` | **done** — parent |
+| R3 | CI: SMS tests after GHL stub | `src/messaging/dispatch.test.mjs`, `dispatch-fence.test.mjs` | **done** — parent |
 | R4 | Smash remaining registered workflows (one agent each) | see smash table | launching |
 | R5 | C-06 in-repo funding pack (kill Vercel 401) | `src/workflows/c-06-crs-results-router.mjs` + test | pending — after R3; file fence c-06 |
 | R6 | CRM inbox + docs re-check after W2/W3 mail | live `fundhub.ai` only; evidence under `e2e-verify-run4-evidence/w4-crm-ui/` | pending — no product write |

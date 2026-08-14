@@ -64,6 +64,8 @@ async function createTaskOnce(db, { orgId, clientId, eventId }) {
 }
 
 export async function handle({ event, db, step }) {
+  if (!event || typeof event !== "object") return { done: false, reason: "no_event" };
+
   if (event.payload?.classification !== "DENIED") return { done: false, reason: "not_denied" };
 
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));

@@ -21,6 +21,7 @@ export const EMAIL_TEMPLATE_KEY = "EMAIL-N04-POST-FUNDING";
 export const SMS_TEMPLATE_KEY = "SMS-N04-POST-FUNDING";
 
 export async function handle({ event, db, step }) {
+  if (!event || typeof event !== "object") return { sent: false, reason: "no_event" };
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { sent: false, reason: "no_client" };
 

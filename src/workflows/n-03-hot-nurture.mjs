@@ -21,6 +21,7 @@ export const EMAIL_TEMPLATE_KEY = "EMAIL-N03-HOT-NURTURE";
 export const SMS_TEMPLATE_KEY = "SMS-N03-HOT-NURTURE";
 
 export async function handle({ event, db, step }) {
+  if (!event || typeof event !== "object") return { sent: false, reason: "no_event" };
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { sent: false, reason: "no_client" };
 

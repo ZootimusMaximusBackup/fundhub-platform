@@ -194,6 +194,17 @@ async function run(db, message, { now = () => new Date(), timeZone = QUIET_HOURS
   const reasons = [];
   let task = null;
 
+  // ---- 0. Body must be real text -------------------------------------------
+  // A null, missing, whitespace-only, or non-string body is junk. Sending it
+  // would put an empty bubble on someone's phone. Compose refuses these before
+  // they queue; the gate refuses them again at send time so a bad row that
+  // somehow landed in messages never reaches a provider. Held, not sent.
+  const text = typeof body === "string" ? body.trim() : "";
+  if (!text) {
+    reasons.push(r("empty_body", "engine",
+      "This message has no usable text, so it was not sent."));
+  }
+
   // ---- 1. Opt-out ----------------------------------------------------------
   // Read now, from the database, per channel. A missing clientId is a block and
   // not a pass: a message with nobody attached has no opt-out record to check,
@@ -231,7 +242,7 @@ async function run(db, message, { now = () => new Date(), timeZone = QUIET_HOURS
   // offer_types. That is the fail-closed direction: more rules, never fewer.
   // It also excludes the TikTok row automatically, whose `.*` pattern matches
   // everything and which is scoped to a platform no message is sent on.
-  const haystack = String(body || "");
+  const haystack = text;
   const rules = await loadRules(db, orgId);
 
   for (const rule of rules) {

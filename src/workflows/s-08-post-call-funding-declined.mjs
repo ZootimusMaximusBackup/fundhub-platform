@@ -27,6 +27,9 @@ async function createFollowupTaskOnce(db, { orgId, clientId, eventId }) {
 }
 
 export async function handle({ event, db, step }) {
+  // Soft-skip: null / non-object event must not throw (Inngest can deliver junk).
+  if (!event || typeof event !== "object") return { done: false, reason: "no_event" };
+
   if (event.payload?.outcome !== "declined") return { done: false, reason: "not_declined" };
 
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));

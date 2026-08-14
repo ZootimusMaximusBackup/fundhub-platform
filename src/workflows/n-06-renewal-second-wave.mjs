@@ -57,6 +57,7 @@ async function createRenewalTask(db, { orgId, clientId, eventId }) {
 // happens inside step.sleep before this runs its post-wait half; tests call handle()
 // already "post-wait" since fakeStep().sleep is a no-op.
 export async function handle({ event, db, step }) {
+  if (!event || typeof event !== "object") return { sent: false, reason: "no_event" };
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { sent: false, reason: "no_client" };
 
