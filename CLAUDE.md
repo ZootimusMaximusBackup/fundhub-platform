@@ -149,7 +149,7 @@ The split proposal is section 0. It happens before anything else. This section c
 * Fan out only on independent units — one workflow per screen or module. Never parallelize steps that depend on each other's output.
 * Ground once, fan out. One agent reads shared context and writes a brief. Other agents consume the brief. Never have four agents independently read the same modules.
 * Pipeline, don't barrier. Each unit runs ground → build → verify on its own. Do not hold a whole phase for the slowest agent.
-* Cap at 5 concurrent agents. Past that: rate limits and merge conflicts, not speed.
+* **Max agents (owner-set 2026-08-14).** Fill every independent unit in one turn. One agent per file fence. Do not sit serial when a second agent could work. The old “cap at 5” is repealed — merge conflicts come from two writers on one file, not from too many workflows.
 
 ### How workflows coordinate
 

@@ -1,0 +1,434 @@
+{
+  "at": "2026-08-13T07:22:05.021Z",
+  "prior_client": "c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+  "homepage": {
+    "status": 200,
+    "ok": true,
+    "qualification": "DOWNSELL",
+    "error": null,
+    "client_id": "b95c449b-5ca4-4c8a-a23e-02d66d41240e",
+    "found": true,
+    "stage": "survey_complete",
+    "capital": "Less than $1k",
+    "svy": [
+      "cf_svy_planned_use",
+      "cf_svy_has_business",
+      "cf_svy_business_revenue",
+      "cf_svy_money_change_now",
+      "cf_svy_available_capital",
+      "cf_svy_revenue_verifiable",
+      "cf_svy_self_reported_fico",
+      "cf_svy_funding_target_amount"
+    ]
+  },
+  "commas": {
+    "unsigned": {
+      "status": 401,
+      "ok": true
+    },
+    "signed": {
+      "skipped": true,
+      "reason": "no local COMMAS webhook secret"
+    }
+  },
+  "correlate": {
+    "ccp_ok": true,
+    "tags": [
+      "call:booked",
+      "inquiry:completed",
+      "ops:action-required",
+      "bs:precall",
+      "path:funding",
+      "lead:new",
+      "analyzer:complete",
+      "analyzer:data-incomplete",
+      "inquiry:docs_needed",
+      "inquiry-removal-queued",
+      "docs:missing",
+      "client:funding"
+    ],
+    "tasks": [
+      "Provision funding inbox: confirm forwarding + bank-only filter",
+      "Cannot start funding — CRS incomplete",
+      "Assign pod roles for funding client",
+      "Fix UnderwriteIQ mapping — critical fields missing",
+      "Funding intake — pull CRS",
+      "Start next funding round — clean file",
+      "Fix fee lock/percent before invoicing",
+      "30-day check-in + prep for next wave",
+      "Strategy session booked"
+    ],
+    "messages": 6,
+    "tx": 1,
+    "inquiry_case": true,
+    "ir_list_has": true,
+    "ir_status": 200,
+    "contracts_status": 200,
+    "contract_signed": false,
+    "inbox": {
+      "status": 200,
+      "ok": true
+    },
+    "docs": {
+      "status": 200,
+      "ok": true,
+      "n": 0
+    },
+    "automations": {
+      "status": 200,
+      "ok": true,
+      "n": 50
+    },
+    "floor": {
+      "status": 200,
+      "ok": true
+    },
+    "numbers": {
+      "status": 200,
+      "ok": true
+    },
+    "search": true
+  },
+  "portal": {
+    "issue": {
+      "ok": true,
+      "limited": false,
+      "has_token": true
+    },
+    "verify": {
+      "status": 200,
+      "ok": true,
+      "next": "/app/client-portal.html"
+    },
+    "session": {
+      "status": 200
+    },
+    "staff_api_blocked": true,
+    "entitlements": {
+      "status": 200,
+      "ok": true
+    },
+    "page": 200
+  },
+  "upload": {
+    "status": 200,
+    "ok": true,
+    "error": null,
+    "n": 1,
+    "after": 0
+  },
+  "hiring": {
+    "candidates": {
+      "status": 200,
+      "ok": true,
+      "n": 0
+    },
+    "postings": {
+      "status": 200,
+      "ok": true,
+      "n": 0
+    }
+  },
+  "roles": [
+    {
+      "email": "closer@fundhub.ai",
+      "status": 200,
+      "ok": true,
+      "kind": "closer"
+    },
+    {
+      "email": "advisor@fundhub.ai",
+      "status": 200,
+      "ok": true,
+      "kind": "funding_advisor"
+    },
+    {
+      "email": "inquiry@fundhub.ai",
+      "status": 200,
+      "ok": true,
+      "kind": "inquiry_specialist"
+    },
+    {
+      "email": "setter@fundhub.ai",
+      "status": 200,
+      "ok": true,
+      "kind": "setter"
+    },
+    {
+      "email": "sales@fundhub.ai",
+      "status": 401,
+      "ok": false,
+      "kind": null
+    },
+    {
+      "email": "client@fundhub.ai",
+      "status": 200,
+      "ok": true,
+      "kind": null
+    },
+    {
+      "email": "affiliate@fundhub.ai",
+      "status": 200,
+      "ok": true,
+      "kind": null
+    },
+    {
+      "email": "partner@fundhub.ai",
+      "status": 200,
+      "ok": true,
+      "kind": null
+    },
+    {
+      "email": "jordan@fundhub.ai",
+      "status": 401,
+      "ok": false,
+      "kind": null
+    },
+    {
+      "email": "nina@fundhub.ai",
+      "status": 401,
+      "ok": false,
+      "kind": null
+    }
+  ],
+  "pages": [
+    {
+      "k": "/app/closer-call.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/app/template-editor.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/app/subscriptions.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/app/company-brain.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/app/galaxy.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/app/ops-admin.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/app/campaign-manager.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/app/social-studio.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/app/creative-factory.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/app/content-admin.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/app/brand-studio.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/app/partner-galaxy.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/app/sample-data.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/app/consent-capture.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/app/client-portal.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/login.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/contract.html",
+      "ok": true,
+      "status": 200
+    }
+  ],
+  "apis": [
+    {
+      "k": "/api/read/staff",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/api/hiring/funnel",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/api/hiring/bench",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/api/read/failed-events",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/api/org-brand",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "/api/read/entitlements",
+      "ok": true,
+      "status": 200
+    }
+  ],
+  "extra_emits": [
+    {
+      "name": "entry.captured",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "booking.created",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "booking.noshow",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "entry.captured",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "booking.created",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "payment.failed",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "booking.rescheduled",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "docs.received",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "diy.package.requested",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "repair.docs.needed",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "invoice.sent",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    }
+  ],
+  "scenarios": {
+    "noshow": {
+      "client_id": "11b57b04-9ea1-4430-a8a1-122fe4af372e",
+      "tags": [
+        "call:booked",
+        "call:no_show",
+        "lead:new"
+      ],
+      "has_noshow": true
+    },
+    "decline": {
+      "client_id": "c93770b6-f986-4085-afc8-3e2cf070548c",
+      "found": true
+    }
+  },
+  "stubs": [],
+  "gaps": [
+    "commas signed webhook skipped — secret not in local .env"
+  ],
+  "summary": {
+    "homepage": true,
+    "homepage_stage": "survey_complete",
+    "commas_unsigned_401": true,
+    "commas_signed": {
+      "skipped": true,
+      "reason": "no local COMMAS webhook secret"
+    },
+    "search": true,
+    "ir": true,
+    "upload": true,
+    "hiring_candidates": true,
+    "extra_pages": "17/17",
+    "roles_ok": [
+      "closer@fundhub.ai",
+      "advisor@fundhub.ai",
+      "inquiry@fundhub.ai",
+      "setter@fundhub.ai",
+      "client@fundhub.ai",
+      "affiliate@fundhub.ai",
+      "partner@fundhub.ai"
+    ],
+    "roles_fail": [
+      "sales@fundhub.ai",
+      "jordan@fundhub.ai",
+      "nina@fundhub.ai"
+    ],
+    "portal_blocked_staff": true,
+    "noshow_tag": true,
+    "extra_emits": "11/11",
+    "gaps": [
+      "commas signed webhook skipped — secret not in local .env"
+    ]
+  }
+}

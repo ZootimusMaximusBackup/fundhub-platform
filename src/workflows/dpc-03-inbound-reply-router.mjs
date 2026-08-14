@@ -73,6 +73,9 @@ async function createTaskOnce(db, { orgId, clientId, eventId, title, source }) {
 }
 
 export async function handle({ event, db, step }) {
+  // Soft-skip: null / non-object event must not throw (Inngest can deliver junk).
+  if (!event || typeof event !== "object") return { done: false, reason: "no_event" };
+
   const decision = parseDecision(event.payload?.body);
   if (!decision) return { done: false, reason: "no_decision_keyword" };
 

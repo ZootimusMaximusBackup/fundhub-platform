@@ -15,6 +15,73 @@ export const CODE_TO_NAME = Object.freeze({
   EQ: "equifax"
 });
 
+/** Exact 6-tier ladder. No aliases, no trim, no case-fold. Do not invent tiers. */
+export const OUTCOME_TIERS = Object.freeze([
+  "FRAUD_HOLD",
+  "MANUAL_REVIEW",
+  "REPAIR_ONLY",
+  "FUNDING_PLUS_REPAIR",
+  "FULL_FUNDING",
+  "PREMIUM_STACK"
+]);
+
+const OUTCOME_TIER_SET = new Set(OUTCOME_TIERS);
+
+export function isKnownOutcomeTier(value) {
+  return typeof value === "string" && OUTCOME_TIER_SET.has(value);
+}
+
+/**
+ * stampOutcomeTier — CRS-row outcome_tier vs engine guess.
+ *
+ * Winner: an exact known 6-tier stamp ALWAYS wins. The engine guess is used
+ * only when the stamp is missing or not an exact known name.
+ *
+ * Why stamp wins:
+ * - Funding samples (FULL_FUNDING / FUNDING_PLUS_REPAIR / PREMIUM_STACK)
+ *   must not become MANUAL_REVIEW when the engine guesses review.
+ * - MANUAL_REVIEW / FRAUD_HOLD stamps must stay review/hold even if the
+ *   engine guesses a funding path.
+ *
+ * Fail closed: unknown/garbage stamp + unknown/missing guess -> MANUAL_REVIEW,
+ * never FULL_FUNDING.
+ */
+export function stampOutcomeTier(engineGuess, explicitStamp) {
+  if (isKnownOutcomeTier(explicitStamp)) return explicitStamp;
+  if (isKnownOutcomeTier(engineGuess)) return engineGuess;
+  return "MANUAL_REVIEW";
+}
+
+function bureauLooksEmpty(report) {
+  if (!report || typeof report !== "object") return true;
+  const scores = report.scores;
+  const tradelines = report.tradelines;
+  const hasScores = Array.isArray(scores)
+    ? scores.length > 0
+    : Boolean(
+      scores && typeof scores === "object" && !Array.isArray(scores)
+      && Object.keys(scores).length > 0
+    );
+  const hasTradelines = Array.isArray(tradelines) && tradelines.length > 0;
+  return !hasScores && !hasTradelines;
+}
+
+function failClosedResult(explicitStamp, reason, engine = null) {
+  const guess = engine?.ok && isKnownOutcomeTier(engine.outcome) ? engine.outcome : null;
+  const outcome = stampOutcomeTier(guess, explicitStamp);
+  const outcomeSource = isKnownOutcomeTier(explicitStamp)
+    ? "stamp"
+    : (guess ? "engine" : "fail_closed");
+  const base = engine && typeof engine === "object" && !Array.isArray(engine) ? { ...engine } : {};
+  return {
+    ...base,
+    ok: outcomeSource !== "fail_closed",
+    outcome,
+    outcomeSource,
+    reason: reason || null
+  };
+}
+
 /**
  * rawResponsesFromMerged — unwrap Fundhub's stored pull into the array
  * normalizeSoftPullPayload / runCRSEngine expect.
@@ -48,6 +115,7 @@ export function rawResponsesFromMerged(merged) {
  * @param {string} [opts.submittedAddress]
  * @param {object} [opts.formData]
  * @param {object|null} [opts.businessReport]
+ * @param {string|null} [opts.outcomeTier]  exact CRS-row stamp; wins over engine guess
  * @param {object} [deps]
  * @param {Function} [deps.runEngine]  test seam; defaults to vendored runCRSEngine
  */
@@ -57,32 +125,54 @@ export function runTierEngineFromCrsResult(
     submittedName = "",
     submittedAddress = "",
     formData = null,
-    businessReport = null
+    businessReport = null,
+    outcomeTier = null
   } = {},
   { runEngine = runCRSEngine } = {}
 ) {
-  const rawResponses = rawResponsesFromMerged(merged);
+  let rawResponses;
+  try {
+    rawResponses = rawResponsesFromMerged(merged);
+  } catch {
+    return failClosedResult(outcomeTier, "no_bureau_reports");
+  }
+
+  if (rawResponses.every(bureauLooksEmpty) && !isKnownOutcomeTier(outcomeTier)) {
+    return failClosedResult(outcomeTier, "missing_scores_or_tradelines");
+  }
+
   const expectedBureaus = (Array.isArray(merged.bureausPulled) ? merged.bureausPulled : [])
     .map((code) => CODE_TO_NAME[code])
     .filter(Boolean);
 
-  const result = runEngine({
-    rawResponses,
-    businessReport,
-    submittedName,
-    submittedAddress,
-    expectedBureaus: expectedBureaus.length ? expectedBureaus : undefined,
-    formData: formData || {
-      name: submittedName || null,
-      email: null,
-      phone: null
-    }
-  });
-
-  if (!result?.ok || !result.outcome) {
-    throw new Error("runTierEngineFromCrsResult: engine returned no outcome tier");
+  let result;
+  try {
+    result = runEngine({
+      rawResponses,
+      businessReport,
+      submittedName,
+      submittedAddress,
+      expectedBureaus: expectedBureaus.length ? expectedBureaus : undefined,
+      formData: formData || {
+        name: submittedName || null,
+        email: null,
+        phone: null
+      }
+    });
+  } catch {
+    return failClosedResult(outcomeTier, "engine_threw");
   }
-  return result;
+
+  if (!result || typeof result !== "object" || !result.ok || !isKnownOutcomeTier(result.outcome)) {
+    return failClosedResult(outcomeTier, "engine_no_outcome", result);
+  }
+
+  const outcome = stampOutcomeTier(result.outcome, outcomeTier);
+  return {
+    ...result,
+    outcome,
+    outcomeSource: isKnownOutcomeTier(outcomeTier) ? "stamp" : "engine"
+  };
 }
 
 /** Format helpers for the identity object runCrsPull already holds. */

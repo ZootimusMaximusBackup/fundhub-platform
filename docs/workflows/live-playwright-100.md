@@ -1,6 +1,6 @@
 # Live Playwright 100 — shared board
 
-**Status:** **100/100 PASS** (2026-08-12)
+**Status:** **100/100 PASS** (2026-08-14 P4 reconfirmed)
 **Canonical:** `https://fundhub.ai` · funnel `https://apply.fundhub.ai`
 **Gate law:** No manual review from Chris until AI-run Playwright scores **100/100** against live; then exactly one manual pass.
 **Command:** `npm run test:e2e:live`
@@ -25,29 +25,31 @@
 
 `score = (passed_required / required) * 100`
 
-**Final:** **100/100** (19/19) — evidence `docs/workflows/e2e-verify-run4-evidence/live-playwright-100/`
+**Final:** **100/100** (19/19) — evidence `docs/workflows/e2e-verify-run4-evidence/live-playwright-100/` (P4 reconfirm 2026-08-14; score unchanged)
 
 ## Required live test ids
 
-| id | Covered by |
-|----|------------|
-| `auth:staff_session` (chris/owner/admin) | live-run4-pass auth |
-| `api:auth/login` bad password | live-run4-pass |
-| `api:auth/session` anon | live-run4-pass |
-| `api:auth/login` demo off | live-run4-pass |
-| `CRM shells static 200` | live-run4-pass |
-| `CRM rows+filters / demo banner` | live-run4-pass (UI + `/api/read/search`) |
-| `route:dirty_letter_artifact` | live-run4-pass search `w4c+test` |
-| `wh:clickfunnels` fail-closed | live-run4-pass |
-| `wh:commas` signature unsigned | live-run4-pass |
-| `api:dashboard/*` anonymous refuse | live-run4-pass |
-| `api:read/products` | live-run4-pass |
-| `api:payment-links` list | live-run4-pass |
-| `api:read/commissions` | live-run4-pass |
-| `screen:thank-you` calendar | live-run4-pass → apply.fundhub.ai |
-| `screen:thank-you` no booking | live-run4-pass |
-| `funnel:fixed-grid` | live-run4-pass `/watch` |
-| `api:health` pending0 | live-run4-pass |
+| id | Covered by | 2026-08-13 live |
+|----|------------|-----------------|
+| `auth:staff_session` (chris/owner/admin) | live-run4-pass auth | **PASS** |
+| `api:auth/login` bad password | live-run4-pass | **PASS** |
+| `api:auth/session` anon | live-run4-pass | **PASS** |
+| `api:auth/login` demo off | live-run4-pass | **PASS** |
+| `CRM shells static 200` | live-run4-pass | **PASS** |
+| `CRM rows+filters / demo banner` | live-run4-pass (UI + `/api/read/search`) | **PASS** |
+| `route:dirty_letter_artifact` | live-run4-pass search `w4c+test` | **PASS** |
+| `wh:clickfunnels` fail-closed | live-run4-pass | **PASS** |
+| `wh:commas` signature unsigned | live-run4-pass | **PASS** |
+| `api:dashboard/*` anonymous refuse | live-run4-pass | **PASS** |
+| `api:read/products` | live-run4-pass | **PASS** |
+| `api:payment-links` list | live-run4-pass | **PASS** |
+| `api:read/commissions` | live-run4-pass | **PASS** |
+| `screen:thank-you` calendar | live-run4-pass → apply.fundhub.ai | **PASS** |
+| `screen:thank-you` no booking | live-run4-pass | **PASS** |
+| `funnel:fixed-grid` | live-run4-pass `/watch` | **PASS** |
+| `api:health` pending0 | live-run4-pass | **PASS** |
+
+Those 19 ids are the **site** gate. They do **not** cover the five sample-pack emails. Email roster: `docs/workflows/sample-roster-usable-packs.md`.
 
 ## Harness-only inventory (excluded from live score)
 
@@ -69,6 +71,7 @@ All non-`live-*` specs under `e2e/` use `e2e/harness.mjs` + static server (`npm 
 | 3 | 17/19 | `/api/read/search` 503 `c.business_name` | fix `api/read/search.mjs` + deploy |
 | 4–5 | 18/19 | Meta+k / force click flaky | evaluate open overlay; skip flaky re-goto |
 | 6 | **19/19 = 100** | — | — |
+| 7 (P4 2026-08-14) | **19/19 = 100** | — | reconfirm only |
 
 ## Product fix shipped
 

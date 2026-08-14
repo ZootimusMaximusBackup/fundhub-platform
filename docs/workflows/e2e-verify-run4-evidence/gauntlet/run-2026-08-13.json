@@ -1,0 +1,554 @@
+{
+  "at": "2026-08-13T07:15:17.839Z",
+  "email": "bakerskater987+test.gauntlet.1786605317839@gmail.com",
+  "dry_run": 1,
+  "client_id": "c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+  "emits": [
+    {
+      "name": "entry.captured",
+      "ok": true,
+      "event_id": "f539d553-aba6-49a0-842a-55235330c5de",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "survey.submitted",
+      "ok": true,
+      "event_id": "411a8a8a-4e69-4155-8a76-ee33d1699c94",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "booking.created",
+      "ok": true,
+      "event_id": "c924ea5b-3069-4540-8c0e-b71ed307e06f",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "payment.received",
+      "ok": true,
+      "event_id": "d4f389d9-84fe-4605-8565-a2341ca2b39b",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "diagnostic.paid",
+      "ok": true,
+      "event_id": "f6dade9c-3c18-4168-a4a6-af71a2ef9601",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "decision.rendered",
+      "ok": true,
+      "event_id": "054edfae-8a99-4d8a-b8d7-9e145fe3c4c9",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "analysis.completed",
+      "ok": true,
+      "event_id": "fcc0edea-d0c5-41e1-8fff-17a80f4dc3a6",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "call.completed",
+      "ok": true,
+      "event_id": "fa08fbec-053d-4582-b222-80e16c4a3ed6",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "deposit.paid",
+      "ok": true,
+      "event_id": "45c167f8-7d05-461a-a3d5-b97aca2fd0ec",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "sale.closed",
+      "ok": true,
+      "event_id": "66bce885-967d-4041-8579-c5e7b936a387",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "inquiry.gate.raised",
+      "ok": true,
+      "event_id": "c349b11f-a1c4-41ed-8b25-f2064f2175da",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "inquiry.docs.needed",
+      "ok": true,
+      "event_id": "6af20840-3d24-418e-be68-ad488c69b59f",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "inquiry.removed",
+      "ok": true,
+      "event_id": "dd342785-7088-4304-91af-c218e614f7ac",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "message.inbound",
+      "ok": true,
+      "event_id": "f2ce16c2-6e49-422a-b773-b22f5969991b",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "round.started",
+      "ok": true,
+      "event_id": "7d0fb6a3-329d-4441-b5ea-fc8d0b3b13f8",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "round.submitted",
+      "ok": true,
+      "event_id": "c5a3da0d-1211-4a25-8a59-8eed180aa103",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "round.approved",
+      "ok": true,
+      "event_id": "f0f25564-1826-42f4-b78b-d534883c8385",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "repair.enrolled",
+      "ok": true,
+      "event_id": "d418682a-8620-4624-86e4-8e892fb1c945",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "file.finalized",
+      "ok": true,
+      "event_id": "f45e4f54-7c52-41e7-85bc-06f143713e5b",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "round.funded",
+      "ok": true,
+      "event_id": "56c3487d-10c8-46c1-b199-3b708b73cf94",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "letter.generated",
+      "ok": true,
+      "event_id": "2f23bab2-ba36-48f2-baa3-31491bafd19a",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "repair.letters.ready",
+      "ok": true,
+      "event_id": "b8d10f83-ef9a-45de-8644-d0f87e075148",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "invoice.created",
+      "ok": true,
+      "event_id": "05e158f8-030f-46a5-b42a-1007bf796d58",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "docs.received",
+      "ok": true,
+      "event_id": "b6743af8-dc9c-49da-be5d-efee70f5ecc4",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "contract.sent",
+      "ok": true,
+      "event_id": "e9fdda01-2882-42ae-aa4d-6547e94e45b0",
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "contract.signed",
+      "ok": true,
+      "event_id": "0fd81715-2ab3-4f5e-b98c-2e304efd17eb",
+      "inngest": true,
+      "error": null
+    }
+  ],
+  "correlate": {
+    "after_entry": "new_lead",
+    "after_survey": "survey_complete",
+    "after_book": "booked",
+    "ccp": {
+      "ok": true,
+      "email": "bakerskater987+test.gauntlet.1786605317839@gmail.com",
+      "phone": "(602) 555-0199",
+      "lifecycle": "Funding Client",
+      "capital": "Less than $1k",
+      "outcome": "FULL_FUNDING",
+      "crs_paid": true,
+      "tags": [
+        "call:booked",
+        "inquiry:completed",
+        "ops:action-required",
+        "bs:precall",
+        "lead:new",
+        "path:funding",
+        "analyzer:data-incomplete",
+        "analyzer:complete",
+        "inquiry:docs_needed",
+        "docs:missing",
+        "inquiry-removal-queued",
+        "client:funding"
+      ],
+      "svyKeys": [
+        "cf_svy_planned_use",
+        "cf_svy_has_business",
+        "cf_svy_business_revenue",
+        "cf_svy_money_change_now",
+        "cf_svy_available_capital",
+        "cf_svy_revenue_verifiable",
+        "cf_svy_self_reported_fico",
+        "cf_svy_funding_target_amount"
+      ],
+      "tasks": [
+        "Funding intake — pull CRS",
+        "Start next funding round — clean file",
+        "Fix fee lock/percent before invoicing",
+        "30-day check-in + prep for next wave",
+        "Strategy session booked"
+      ],
+      "tx": 1,
+      "messages": 2
+    },
+    "pipeline_sales": {
+      "status": 200,
+      "stage": "booked",
+      "keys": [
+        "new_lead",
+        "survey_complete",
+        "booked",
+        "confirmed",
+        "showed",
+        "diagnostic_paid",
+        "decision_rendered",
+        "closed_won"
+      ]
+    },
+    "pipeline_funding_card_stacking": {
+      "status": 200,
+      "stage": "booked",
+      "keys": [
+        "new_lead",
+        "survey_complete",
+        "booked",
+        "confirmed",
+        "showed",
+        "diagnostic_paid",
+        "decision_rendered",
+        "closed_won"
+      ]
+    },
+    "pipeline_optimization": {
+      "status": 200,
+      "stage": "booked",
+      "keys": [
+        "new_lead",
+        "survey_complete",
+        "booked",
+        "confirmed",
+        "showed",
+        "diagnostic_paid",
+        "decision_rendered",
+        "closed_won"
+      ]
+    },
+    "inbox": {
+      "status": 200,
+      "ok": true
+    }
+  },
+  "portal": {
+    "issue": {
+      "ok": true,
+      "outcome": "issued",
+      "limited": false,
+      "has_token": true,
+      "sent": true
+    },
+    "verify": {
+      "status": 405,
+      "location": null
+    },
+    "peek": {
+      "accounts": 0,
+      "links": 0,
+      "messages": 0
+    },
+    "verify_post": {
+      "ok": true,
+      "next": "/app/client-portal.html"
+    }
+  },
+  "screens": [
+    {
+      "k": "page /app/pipeline.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/client-control-panel.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/messaging.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/calendar.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/contracts.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/inquiry-remover.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/documents.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/staff-teams.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/hiring.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/sales-floor.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/my-numbers.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/closer-dashboard.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/automations.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/products-commissions.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/finance-os.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/affiliate.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/command-center.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/journeys.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/agent-editor.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "page /app/lenders.html",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/staff",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/contracts",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/inquiry-cases",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/inbox",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/my-numbers",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/sales-floor",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/hiring/candidates",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/products",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/read/commissions",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/dashboard/client?id=c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/dashboard/pipeline?pipeline=sales",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "k": "api /api/health",
+      "ok": true,
+      "status": 200
+    }
+  ],
+  "roles": [
+    {
+      "email": "chris@fundhub.ai",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "email": "owner@fundhub.ai",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "email": "admin@fundhub.ai",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "email": "jordan@fundhub.ai",
+      "status": 401,
+      "ok": false
+    },
+    {
+      "email": "nina@fundhub.ai",
+      "status": 401,
+      "ok": false
+    }
+  ],
+  "extra": {
+    "health": {
+      "status": 200,
+      "ok": true,
+      "pending": 0
+    },
+    "cf_sign": {
+      "http": 200,
+      "ok": true,
+      "webhook_http": 200,
+      "response_ok": {
+        "ok": true,
+        "status": 200,
+        "reason": "no_email",
+        "emitted": []
+      }
+    },
+    "inquiry": {
+      "status": 200,
+      "ok": true,
+      "id": "978fcb7a-72a1-4f2c-b54d-8424dc9fd2db"
+    },
+    "template_id": "a51dcfe2-c56c-411a-b4bc-2768f6ed78c4",
+    "contract_draft": {
+      "status": 200,
+      "ok": true,
+      "id": "4944198d-49e3-4dc0-a7df-dbe8284a4360"
+    },
+    "contract_sent": {
+      "status": 200,
+      "ok": true
+    },
+    "contract_sign": {
+      "status": 200,
+      "ok": true,
+      "complete": true,
+      "status_field": "signed",
+      "error": null
+    }
+  },
+  "gaps": [],
+  "summary": {
+    "client_id": "c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+    "emit": "26/26",
+    "emit_fail": [],
+    "after_entry": "new_lead",
+    "after_survey": "survey_complete",
+    "after_book": "booked",
+    "screens": "32/32",
+    "roles_ok": [
+      "chris@fundhub.ai",
+      "owner@fundhub.ai",
+      "admin@fundhub.ai"
+    ],
+    "roles_fail": [
+      "jordan@fundhub.ai",
+      "nina@fundhub.ai"
+    ],
+    "gaps": []
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "at": "2026-08-13T17:04:35.625Z",
+  "email": "stanbridgejchris+test.live@gmail.com",
+  "phone": "+16616180865",
+  "steps": [
+    {
+      "survey": 200,
+      "qualification": "PASS",
+      "ok": true
+    },
+    {
+      "search_client": "51550bc7-69e6-4fd9-9bb2-cca8fbdbef9c"
+    },
+    {
+      "email_http": 200,
+      "outcome": "retry",
+      "detail": "{\"message\":\"Domain mg.fundhub.ai is not allowed to send: Subscription Canceled\"}\n",
+      "message_id": "f3ca84d7-ee0b-4b11-b2f7-47796ed5ae87"
+    },
+    {
+      "sms_http": 200,
+      "outcome": "no_address",
+      "detail": "the client has no ghl_contact_id to send to"
+    },
+    {
+      "pipeline_stage": null
+    },
+    {
+      "client_email": "stanbridgejchris+test.live@gmail.com",
+      "client_phone": "+16616180865",
+      "ghl": null,
+      "msgs": [
+        {
+          "ch": "sms",
+          "st": "failed",
+          "tpl": null,
+          "err": ""
+        },
+        {
+          "ch": "email",
+          "st": "queued",
+          "tpl": null,
+          "err": ""
+        }
+      ]
+    }
+  ],
+  "client_id": "51550bc7-69e6-4fd9-9bb2-cca8fbdbef9c"
+}

@@ -152,3 +152,95 @@ test("replayed soft-pull request does not order again", async () => {
   assert.equal(res.requestId, "spr-existing");
   assert.equal(pulled, false);
 });
+
+test("smash: missing client → no throw, no pull", async () => {
+  let pulled = false;
+  const res = await handle({
+    event: ev("diagnostic.paid", {}),
+    db: pgFake({ clients: [] }),
+    step: fakeStep(),
+    env: { CRS_ALLOW_LIVE: "0" },
+    runPull: async () => { pulled = true; return { ok: true }; }
+  });
+  assert.equal(res.done, false);
+  assert.equal(res.reason, "no_client");
+  assert.equal(pulled, false);
+});
+
+test("smash: already_open duplicate → no throw, no second pull", async () => {
+  const db = dbWithAccount();
+  let pulled = false;
+  const res = await handle({
+    event: ev("diagnostic.paid", {}, { clientId: "cl-1" }),
+    db,
+    step: stepWithRequest({
+      created: false,
+      reason: "already_open",
+      request: { id: "spr-open" }
+    }),
+    env: { CRS_ALLOW_LIVE: "0" },
+    runPull: async () => { pulled = true; return { ok: true }; }
+  });
+  assert.equal(res.done, true);
+  assert.equal(res.pulled, false);
+  assert.equal(res.reason, "already_open");
+  assert.equal(res.requestId, "spr-open");
+  assert.equal(pulled, false);
+});
+
+test("smash: CRS_ALLOW_LIVE=0 → env forwarded, live refuse, no throw", async () => {
+  const db = dbWithAccount();
+  let runPullCalls = 0;
+  let inventedLiveOk = false;
+  const res = await handle({
+    event: ev("diagnostic.paid", {}, { clientId: "cl-1" }),
+    db,
+    step: stepWithRequest({ created: true, request: { id: "spr-1" } }),
+    env: { CRS_ALLOW_LIVE: "0", CRS_API_HOST: "api.stitchcredit.com" },
+    runPull: async (_db, opts) => {
+      runPullCalls += 1;
+      assert.equal(opts.env.CRS_ALLOW_LIVE, "0");
+      // Owner law: live off. Refuse production — never invent a successful live order.
+      if (opts.env.CRS_ALLOW_LIVE === "1") inventedLiveOk = true;
+      return {
+        ok: false,
+        code: "production_host_refused",
+        reason: "CRS production host refused — CRS_ALLOW_LIVE is not explicitly on"
+      };
+    }
+  });
+  assert.equal(res.done, true);
+  assert.equal(res.pulled, false);
+  assert.equal(res.reason, "production_host_refused");
+  assert.equal(res.requestId, "spr-1");
+  assert.equal(runPullCalls, 1);
+  assert.equal(inventedLiveOk, false);
+});
+
+test("smash: SoftPullError from runPull → no throw, no pulled", async () => {
+  const db = dbWithAccount();
+  const res = await handle({
+    event: ev("diagnostic.paid", {}, { clientId: "cl-1" }),
+    db,
+    step: stepWithRequest({ created: true, request: { id: "spr-1" } }),
+    env: { CRS_ALLOW_LIVE: "0" },
+    runPull: async () => {
+      throw new SoftPullError("soft pull request is already failed", {
+        status: 409,
+        code: "already_failed"
+      });
+    }
+  });
+  assert.equal(res.done, true);
+  assert.equal(res.pulled, false);
+  assert.equal(res.reason, "already_failed");
+  assert.equal(res.requestId, "spr-1");
+});
+
+test("smash: c-00 source never calls live CRS itself", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const src = await readFile(new URL("./c-00-crs-soft-pull-request.mjs", import.meta.url), "utf8");
+  assert.equal(/\bfetch\s*\(/.test(src), false);
+  assert.equal(/stitchcredit\.com/.test(src), false);
+  assert.equal(/CRS_ALLOW_LIVE\s*=\s*["']1["']/.test(src), false);
+});

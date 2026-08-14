@@ -30,7 +30,7 @@ export const CF_SURVEY_QUESTIONS = Object.freeze([
   },
   {
     id: "funding_target_amount",
-    title: "Set Your Target Amount",
+    title: "How much are you looking for?",
     payloadKey: "cf_svy_funding_target_amount",
     type: "single",
     options: [
@@ -71,7 +71,7 @@ export const CF_SURVEY_QUESTIONS = Object.freeze([
   },
   {
     id: "current_score",
-    title: "Your Current Score",
+    title: "Roughly where is your credit?",
     payloadKey: "cf_svy_self_reported_fico",
     type: "single",
     options: ["500-579", "580-649", "650-699", "700-749", "750+", "Not sure"],

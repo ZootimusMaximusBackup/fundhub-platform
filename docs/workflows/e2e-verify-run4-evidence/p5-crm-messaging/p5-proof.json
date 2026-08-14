@@ -1,0 +1,88 @@
+{
+  "unit": "P5",
+  "proven_at": "2026-08-14T20:55:00Z",
+  "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+  "method": "Supabase MCP execute_sql read-only; no send; no --prod",
+  "crm_visibility_rules": {
+    "ccp_dashboard_client": "GET /api/dashboard/client loads messages WHERE client_id — conversation_id not required",
+    "messaging_inbox": "GET /api/read/inbox lists conversations only; thread needs message.conversation_id — all sample outbound rows have conversation_id NULL and zero conversations rows"
+  },
+  "clients": [
+    {
+      "plus_alias": "+full",
+      "client_id": "d56838a7-3d62-4dfd-8ed0-ead5dd76cbab",
+      "outcome_tier": "FULL_FUNDING",
+      "outbound_count": 3,
+      "latest": {
+        "status": "sent",
+        "template_key": "EMAIL-U02-ANALYZER-FUNDING-DELIVERY",
+        "subject": "Your Underwrite IQ analysis pack is ready",
+        "attachment_count": 11
+      },
+      "pack_email": true,
+      "ccp_messages_would_include": true,
+      "messaging_inbox_would_list": false,
+      "verdict": "PASS"
+    },
+    {
+      "plus_alias": "+fpr",
+      "client_id": "54bdc228-d4ca-4192-8811-6cecbaf62ede",
+      "outcome_tier": "FUNDING_PLUS_REPAIR",
+      "outbound_count": 2,
+      "latest": {
+        "status": "sent",
+        "template_key": "EMAIL-U02-ANALYZER-FUNDING-DELIVERY",
+        "subject": "Your Underwrite IQ analysis pack is ready",
+        "attachment_count": 10
+      },
+      "pack_email": true,
+      "ccp_messages_would_include": true,
+      "messaging_inbox_would_list": false,
+      "verdict": "PASS"
+    },
+    {
+      "plus_alias": "+prem",
+      "client_id": "dad186ff-9dce-4f59-966c-6e3db2ed503d",
+      "outcome_tier": "PREMIUM_STACK",
+      "outbound_count": 2,
+      "latest": {
+        "status": "sent",
+        "template_key": "EMAIL-U02-ANALYZER-FUNDING-DELIVERY",
+        "subject": "Your Underwrite IQ analysis pack is ready",
+        "attachment_count": 10
+      },
+      "pack_email": true,
+      "ccp_messages_would_include": true,
+      "messaging_inbox_would_list": false,
+      "verdict": "PASS"
+    },
+    {
+      "plus_alias": "+repair",
+      "client_id": "929fc1cb-9ea0-4267-8152-28662b799173",
+      "outcome_tier": "REPAIR_ONLY",
+      "outbound_count": 2,
+      "latest": {
+        "status": "sent",
+        "template_key": "EMAIL-DS02-DIY-LETTERS-READY",
+        "subject": "Your correction letters are ready",
+        "attachment_count": 12
+      },
+      "pack_email": true,
+      "ccp_messages_would_include": true,
+      "messaging_inbox_would_list": false,
+      "verdict": "PASS"
+    },
+    {
+      "plus_alias": "+review",
+      "client_id": "754ab724-6a02-417a-ae7c-deb0c7ad2d3b",
+      "outcome_tier": "MANUAL_REVIEW",
+      "outbound_count": 0,
+      "latest": null,
+      "pack_email": false,
+      "ccp_messages_would_include": false,
+      "messaging_inbox_would_list": false,
+      "verdict": "PASS"
+    }
+  ],
+  "finding": "Workflow/one-shot outbound rows are not linked to conversations, so Messaging inbox will not list a thread even when CCP message count is non-zero."
+}

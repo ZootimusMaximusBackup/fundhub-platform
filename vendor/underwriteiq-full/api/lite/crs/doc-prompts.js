@@ -40,24 +40,32 @@ const CREDIT_ANALYSIS_PROMPT =
   `
 Generate a Financial Profile Assessment for this client.
 
-Structure:
-1. Opening paragraph - warm, personal, summarize their situation
-2. Bureau health summary - which bureaus are clean vs dirty
-3. Score breakdown by bureau with plain English verdict
-4. Primary revolving cards table + analysis paragraph
-5. AU cards table + which are hurting vs neutral
-6. Negative items table + what each means
-7. Inquiries - emphasize zero funding impact, cleanup only
-8. Personal data cleanup items
-9. Bottom line - current vs projected pre-approval with the delta
+Open with one warm personal paragraph that summarizes their situation.
+Then cover only the gold sections below — do not invent other H2 headings.
+Under each heading: tables and plain English. One finding per negative item.
+Inquiries: zero funding impact, cleanup only.
+Bottom line: current vs projected pre-approval with the delta.
 
 Tone: mix of data analysis and sales copy. Make them feel like
 this report is worth $3,000. They should finish reading it and
 think 'holy shit, nobody has ever broken my credit down like this.'
 
-Output as JSON with sections array. Each section has:
-{ type: 'heading'|'paragraph'|'table'|'callout'|'metric_row',
-  content: string|object, style: 'green'|'red'|'blue'|'neutral' }
+The outcome field in the data is the stamped decision. Use it. Never substitute MANUAL_REVIEW when the data says FULL_FUNDING, FUNDING_PLUS_REPAIR, PREMIUM_STACK, or REPAIR_ONLY.
+
+Do NOT write dispute letter bodies, inquiry-removal letter bodies, or personal-info letter bodies. Those are separate deliverables. Reference Round 1 / Round 2 / Round 3 only by name.
+
+OUTPUT FORMAT — markdown only. Never JSON. Never a JSON object. Never a sections array. Never \`\`\`json fences. Never code fences. Never dump raw data.
+Section headings MUST use this exact order and numbering (do not invert):
+## 01 / PICTURE — Where this file stands
+## 02 / SCORES — Three bureaus, not one
+## 03 / UTILIZATION — What is eating the file
+## 04 / AU ACCOUNTS — Authorized users
+## 05 / NEGATIVES — What actually hurts
+## 06 / INQUIRIES — Cleanup only, zero funding impact
+## 07 / PERSONAL DATA — Names and addresses to clean
+## 08 / BOTTOM LINE — Current vs projected pre-approval
+
+Use markdown tables with | columns |, > for callouts, and **$12,345** Label for big numbers.
 `;
 
 // ---------------------------------------------------------------------------
@@ -75,23 +83,23 @@ personal game plan written by someone who believes in them.
 Paint the journey month by month. Show them where they will be
 in 6 months. Mix hard data with motivation.
 
-Structure:
-- Hero number: projected pre-approval in huge text
-- Current vs projected comparison
-- Month 1: Launch (disputes, paydown plan, AU removal, CLI requests)
-- Month 2-3: Results (what to expect, Round 2 escalation)
-- Month 4: Final push (Round 3, settlement negotiation)
-- Month 5: Business milestone (LLC age)
-- Month 6: Re-pull and new number reveal
-- Before/after transformation table
-- CTA (outcome-specific, see CTA field in data)
+The outcome field in the data is the stamped decision. Use it. Never substitute MANUAL_REVIEW when the data says otherwise.
 
-For paydown plan: give EXACT card-by-card paydown amounts to
-reach 10% utilization on each card.
+Do NOT write free dispute-letter copy as this pack. Reference dispute letters by round number only. Mail-ready letter bodies are separate deliverables.
 
+OUTPUT FORMAT — markdown only. Never JSON. Never a JSON object. Never a sections array. Never \`\`\`json fences. Never code fences.
+Section headings MUST use this exact order and numbering (do not invert):
+## 01 / PROJECTION — Where the number goes
+## 02 / MONTH 1 — Launch
+## 03 / MONTHS 2-3 — Results
+## 04 / MONTH 4 — Final push
+## 05 / MONTH 5 — Business milestone
+## 06 / MONTH 6 — Re-pull and the new number
+## 07 / BEFORE / AFTER — Transformation
+
+For paydown plan: give EXACT card-by-card paydown amounts to reach 10% utilization on each card.
 Reference 'Fundhub Academy' for course modules.
-
-Reference dispute letters by round number.
+Use markdown tables, > for callouts, and **$12,345** Label for the hero number.
 `;
 
 // ---------------------------------------------------------------------------
@@ -232,16 +240,19 @@ const FUNDING_SNAPSHOT_PROMPT =
   `
 Generate a Capital Readiness Snapshot document for this client.
 
-Structure:
-1. Current vs projected pre-approval (hero numbers)
-2. Breakdown by category (personal cards, loans, business)
-3. What is costing them money (modifier breakdown in plain English)
-4. What does NOT affect their funding (inquiries, AUs, score alone)
-5. CTA (outcome-specific)
+The outcome field in the data is the stamped decision. Use it. Never substitute MANUAL_REVIEW when the data says otherwise.
+
+This is a funding snapshot, not a letter pack. Do NOT write dispute letter bodies, inquiry-removal letter bodies, or personal-info letter bodies.
+
+OUTPUT FORMAT — markdown only. Never JSON. Never a JSON object. Never a sections array. Never \`\`\`json fences. Never code fences.
+Section headings MUST use this exact order and numbering (do not invert):
+## 01 / NUMBERS — Current vs projected
+## 02 / BREAKDOWN — Personal, loans, business
+## 03 / COSTING YOU — What is holding the number down
+## 04 / DOES NOT AFFECT — Inquiries, AUs, score alone
 
 Tone: urgent but not pushy. 'You are leaving $69,400 on the table.'
-
-Make the gap between current and projected feel tangible and real.
+Use markdown tables, > for callouts, and **$12,345** Label for hero numbers.
 `;
 
 // ---------------------------------------------------------------------------
@@ -262,7 +273,18 @@ in one sentence of plain English.
 CRITICAL: warn them about application order. Applying to the
 wrong lender first can burn inquiries and trigger declines.
 
+The outcome field in the data is the stamped decision. Use it.
+
+This is a lender shortlist, not a letter pack. Do NOT write dispute letter bodies or free dispute-letter copy.
+
+OUTPUT FORMAT — markdown only. Never JSON. Never a JSON object. Never a sections array. Never \`\`\`json fences. Never code fences.
+Section headings MUST use this exact order and numbering (do not invert):
+## 01 / AVAILABLE NOW — Lenders you can apply to today
+## 02 / AFTER OPTIMIZATION — What unlocks after the work
+## 03 / APPLICATION ORDER — The order protects your score
+
 Reference Fundhub Academy for application strategy.
+Use markdown tables and > for callouts.
 `;
 
 // ---------------------------------------------------------------------------

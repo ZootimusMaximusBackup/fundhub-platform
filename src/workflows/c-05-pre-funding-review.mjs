@@ -1,11 +1,14 @@
 // C-05 — Pre-Funding Review Logic.
 // Source: GHL-System-Map.md CREDIT OPS WORKFLOWS section.
-// Trigger: round.started. If CRS is already complete, raises the pre-funding review
-// task; otherwise flags that CRS still needs to be pulled before funding can start.
+// Trigger: round.started. Funding-path only (Rule 4). If CRS is already complete,
+// raises the pre-funding review task; otherwise flags that CRS still needs to be
+// pulled before funding can start. MANUAL_REVIEW / FRAUD_HOLD / REPAIR_ONLY /
+// unknown tiers never enter a funding review and never send a letter pack.
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
+import { clientOutcomeTier, isFundingPath } from "../config/product-path.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
 import { createTask } from "../lib/create-task.mjs";
@@ -27,8 +30,18 @@ async function createTaskOnce(db, { orgId, clientId, eventId, title }) {
 }
 
 export async function handle({ event, db, step }) {
+  if (event == null || typeof event !== "object") {
+    return { done: false, reason: "no_event" };
+  }
+
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
+
+  // round.* is past decision.rendered — clients.outcome_tier is authoritative (product-path.mjs).
+  const outcomeTier = await step.run("check-product-path", () => clientOutcomeTier(db, clientId));
+  if (!isFundingPath(outcomeTier)) {
+    return { done: false, reason: `not_funding_path:${outcomeTier}`, branch: "not_funding", outcomeTier };
+  }
 
   const r = await step.run("check-crs-status", () => db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]));
   const crsComplete = r.rows[0]?.custom_fields?.crs_status === "Complete";

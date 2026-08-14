@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert";
 
 import { runCrsPull, providerResultIdFor } from "./crs-pull.mjs";
+import { CRS_PRODUCTION_HOST } from "./crs-identities.mjs";
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const CLIENT = "22222222-2222-4222-8222-222222222222";
@@ -290,5 +291,168 @@ test("runCrsPull requires a ledger request before touching the client", async ()
     () => runCrsPull(db, { orgId: ORG, clientId: CLIENT, client }),
     /requestId is required/
   );
+  assert.deepEqual(client.calls, []);
+});
+
+const UNIT_USER = "unit-user-not-real";
+const UNIT_PASS = "unit-password-not-real";
+
+function prodEnvLiveOff(allowLive) {
+  const env = {
+    CRS_API_USERNAME: UNIT_USER,
+    CRS_API_PASSWORD: UNIT_PASS,
+    CRS_API_HOST: CRS_PRODUCTION_HOST
+  };
+  if (allowLive !== undefined) env.CRS_ALLOW_LIVE = allowLive;
+  return env;
+}
+
+function fetchSpy() {
+  const urls = [];
+  const fetchImpl = async (url) => {
+    const href = String(url);
+    urls.push(href);
+    let host = "";
+    try {
+      host = new URL(href).hostname;
+    } catch {
+      host = href;
+    }
+    if (host === CRS_PRODUCTION_HOST || href.includes(CRS_PRODUCTION_HOST)) {
+      assert.fail(`live CRS host was called: ${href}`);
+    }
+    throw new Error(`fetch must not run when CRS live is off: ${href}`);
+  };
+  return {
+    fetchImpl,
+    urls,
+    callCount: () => urls.length
+  };
+}
+
+async function smashLiveOff(label, allowLive) {
+  test(`runCrsPull: CRS_ALLOW_LIVE ${label} never fetches live CRS`, async () => {
+    const db = fakeDb(request(`request-live-off-${label}`));
+    const spy = fetchSpy();
+    const out = await runCrsPull(db, {
+      orgId: ORG,
+      clientId: CLIENT,
+      requestId: `request-live-off-${label}`,
+      client: null,
+      env: prodEnvLiveOff(allowLive),
+      fetchImpl: spy.fetchImpl,
+      bureaus: ["TU"]
+    });
+    assert.equal(out.ok, false);
+    assert.equal(out.code, "production_host_refused");
+    assert.equal(spy.callCount(), 0);
+    assert.equal(db.results.length, 0);
+    assert.equal(db.requests.get(`request-live-off-${label}`).status, "failed");
+  });
+}
+
+smashLiveOff("missing", undefined);
+smashLiveOff("'0'", "0");
+smashLiveOff("'false'", "false");
+smashLiveOff("empty", "");
+
+test("runCrsPull: unset CRS_ALLOW_LIVE never fetches live CRS", async () => {
+  const db = fakeDb(request("request-live-unset"));
+  const spy = fetchSpy();
+  const env = prodEnvLiveOff(undefined);
+  assert.equal("CRS_ALLOW_LIVE" in env, false);
+  const out = await runCrsPull(db, {
+    orgId: ORG,
+    clientId: CLIENT,
+    requestId: "request-live-unset",
+    env,
+    fetchImpl: spy.fetchImpl,
+    bureaus: ["TU"]
+  });
+  assert.equal(out.ok, false);
+  assert.equal(out.code, "production_host_refused");
+  assert.equal(spy.callCount(), 0);
+});
+
+test("runCrsPull: null client and missing host do not throw", async () => {
+  const db = fakeDb(request("request-null-client"));
+  const spy = fetchSpy();
+  const out = await runCrsPull(db, {
+    orgId: ORG,
+    clientId: CLIENT,
+    requestId: "request-null-client",
+    client: null,
+    env: {},
+    fetchImpl: spy.fetchImpl,
+    bureaus: ["TU"]
+  });
+  assert.equal(out.ok, false);
+  assert.ok(out.code);
+  assert.equal(spy.callCount(), 0);
+  assert.equal(db.results.length, 0);
+});
+
+test("runCrsPull: missing CRS env does not live-pull", async () => {
+  const db = fakeDb(request("request-missing-env"));
+  const spy = fetchSpy();
+  const out = await runCrsPull(db, {
+    orgId: ORG,
+    clientId: CLIENT,
+    requestId: "request-missing-env",
+    env: {},
+    fetchImpl: spy.fetchImpl,
+    bureaus: ["TU", "EX", "EQ"]
+  });
+  assert.equal(out.ok, false);
+  assert.equal(out.code, "not_configured");
+  assert.equal(spy.callCount(), 0);
+  assert.equal(db.results.length, 0);
+  assert.equal(db.requests.get("request-missing-env").status, "failed");
+});
+
+test("runCrsPull: all three bureau failures do not store an empty success row", async () => {
+  const db = fakeDb(request("request-all-fail"));
+  const client = fakeClient({
+    TU: { ok: false, error: "TransUnion unavailable" },
+    EX: { ok: false, error: "Experian unavailable" },
+    EQ: { ok: false, error: "Equifax unavailable" }
+  });
+  const out = await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-all-fail", client,
+    bureaus: ["TU", "EX", "EQ"]
+  });
+  assert.equal(out.ok, false);
+  assert.equal(out.code, "no_reports");
+  assert.equal(db.results.length, 0);
+  assert.equal(db.events.length, 0);
+  assert.equal(db.requests.get("request-all-fail").status, "failed");
+  assert.match(out.reason, /no bureau returned a report/);
+  assert.equal(out.crsResultId, null);
+});
+
+test("crs-pull source never calls fetch or hardcodes the live host", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const src = await readFile(new URL("./crs-pull.mjs", import.meta.url), "utf8");
+  assert.doesNotMatch(src, /\bfetch\s*\(/);
+  assert.doesNotMatch(src, /mware\.crscreditapi\.com/);
+  assert.doesNotMatch(src, /CRS_ALLOW_LIVE\s*=\s*["']1["']/);
+});
+
+test("runCrsPull: injected production client with live off never orders", async () => {
+  const db = fakeDb(request("request-injected-prod"));
+  const client = fakeClient({
+    TU: { ok: true, requestId: "SHOULD-NOT-ORDER", report: report(700) }
+  });
+  client.host = CRS_PRODUCTION_HOST;
+  const out = await runCrsPull(db, {
+    orgId: ORG,
+    clientId: CLIENT,
+    requestId: "request-injected-prod",
+    client,
+    env: prodEnvLiveOff("0"),
+    bureaus: ["TU"]
+  });
+  assert.equal(out.ok, false);
+  assert.equal(out.code, "production_host_refused");
   assert.deepEqual(client.calls, []);
 });

@@ -1,0 +1,45 @@
+{
+  "at": "2026-08-13T17:25:30.300Z",
+  "ghl": {
+    "relay_last4": "9c03",
+    "api_key_netlify": "SET last4=cd61",
+    "checks": {
+      "search": {
+        "http": 200,
+        "err": null
+      },
+      "upsert": {
+        "http": 401,
+        "err": "The token is not authorized for this scope."
+      },
+      "sms": {
+        "http": 400,
+        "err": "\"Bad Request\""
+      },
+      "conv_search": {
+        "http": 401,
+        "err": "The token is not authorized for this scope."
+      }
+    }
+  },
+  "mailgun": {
+    "domain_http": 200,
+    "domain_state": "active",
+    "from_set": true,
+    "from_preview": "****************.ai>",
+    "send_http": 400,
+    "send_msg": "from parameter is not a valid address. please check documentation"
+  },
+  "bland": {
+    "key_set": true,
+    "last4": "6669",
+    "me_http": 401,
+    "me_body": "{\"data\":null,\"errors\":[{\"error\":\"AUTH_FAILURE\",\"message\":\"Unauthorized\"}]}",
+    "me_bearer_http": 401
+  },
+  "twilio": {
+    "from": "MISSING",
+    "send_acct_http": 401,
+    "send_err": "Authentication Error - invalid username"
+  }
+}

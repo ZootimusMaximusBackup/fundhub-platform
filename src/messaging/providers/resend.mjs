@@ -29,6 +29,69 @@ export const TRANSMITS = true;
 
 const DEFAULT_BASE_URL = "https://api.resend.com";
 
+/** Cap after sanitize — Resend/OS path limits; a multi-KB name is abuse. */
+const MAX_ATTACHMENT_NAME = 180;
+
+/**
+ * Safe PDF filename only. Strips path traversal (`../`, absolute paths),
+ * forces a `.pdf` extension, and caps length. Never invents pack.pdf for junk.
+ */
+function safePdfFilename(name) {
+  let base = String(name ?? "letter.pdf").replace(/\\/g, "/").split("/").pop() || "letter.pdf";
+  base = base.replace(/[^\w.\- ()[\]]+/g, "_").replace(/^\.+/, "");
+  if (!base) base = "letter.pdf";
+  if (!/\.pdf$/i.test(base)) {
+    base = `${base.replace(/\.[^.]+$/, "") || "letter"}.pdf`;
+  }
+  if (base.length > MAX_ATTACHMENT_NAME) {
+    base = `${base.slice(0, MAX_ATTACHMENT_NAME - 4)}.pdf`;
+  }
+  return base;
+}
+
+/**
+ * PDF bytes as base64, or null. Missing/empty/whitespace/non-PDF → drop.
+ * Must not throw. Must not ship a 0-byte fake PDF.
+ */
+function asPdfBase64(raw) {
+  let b64 = null;
+  if (Buffer.isBuffer(raw)) {
+    if (!raw.length) return null;
+    b64 = raw.toString("base64");
+  } else if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    b64 = trimmed;
+  } else {
+    return null;
+  }
+  let bytes;
+  try {
+    bytes = Buffer.from(b64, "base64");
+  } catch {
+    return null;
+  }
+  if (!bytes.length) return null;
+  if (bytes.toString("latin1", 0, 4) !== "%PDF") return null;
+  return b64;
+}
+
+/**
+ * Encode attachments for Resend: `{ filename, content }` base64 only.
+ * Empty list stays empty (non-pack mail). Bad files are dropped, never faked.
+ */
+function encodeAttachments(list) {
+  if (!Array.isArray(list) || list.length === 0) return [];
+  const out = [];
+  for (const item of list) {
+    if (!item || typeof item !== "object") continue;
+    const content = asPdfBase64(item.contentBase64 ?? item.content);
+    if (!content) continue;
+    out.push({ filename: safePdfFilename(item.filename), content });
+  }
+  return out;
+}
+
 function config(env) {
   const apiKey = env.RESEND_API_KEY;
   const from = env.RESEND_FROM;
@@ -74,6 +137,8 @@ async function attempt(message, { fetchImpl, timeoutMs, signal, env = process.en
   if (message.providerRef) {
     payload.headers = { "X-Fundhub-Ref": String(message.providerRef) };
   }
+  const files = encodeAttachments(message.attachments);
+  if (files.length) payload.attachments = files;
 
   const res = await postJson(`${cfg.baseUrl}/emails`, {
     headers: {

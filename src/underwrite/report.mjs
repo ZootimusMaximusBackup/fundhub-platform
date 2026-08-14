@@ -116,13 +116,33 @@ const ENGINE_THRESHOLDS = Object.freeze({
   fundable_min_score: 700
 });
 
+/* A suggestion that is not a plain sentence — object payloads, ```json fences,
+   or parseable JSON — must not ship as advice text. The API body is JSON; the
+   product sentences inside it must stay human lines, never a dumped blob. */
+function isJsonDump(text) {
+  if (typeof text !== "string") return true;
+  const t = text.trim();
+  if (!t) return true;
+  if (/```\s*json\b/i.test(t)) return true;
+  if ((t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]"))) {
+    try {
+      JSON.parse(t);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
 /* Flatten the adapter's missing record into one set of field names, so a
    dependsOn lookup is a single membership test. A field missing on ANY bureau
    counts as missing — a suggestion built on the primary bureau's null is no more
    trustworthy because a different bureau happened to have the number. */
 function missingFieldNames(missing = {}) {
   const names = new Set();
-  for (const [, entries] of Object.entries(missing || {})) {
+  const record = missing && typeof missing === "object" && !Array.isArray(missing) ? missing : {};
+  for (const [, entries] of Object.entries(record)) {
     for (const entry of Array.isArray(entries) ? entries : []) {
       // Informational gaps (per-bureau attribution, unread identity arrays)
       // change no output and must not make every sentence look unreliable.
@@ -137,7 +157,8 @@ function missingFieldNames(missing = {}) {
  *  the field AND say what entering it would change. */
 function detailsFor(missing = {}, field) {
   const out = [];
-  for (const [scope, entries] of Object.entries(missing || {})) {
+  const record = missing && typeof missing === "object" && !Array.isArray(missing) ? missing : {};
+  for (const [scope, entries] of Object.entries(record)) {
     for (const entry of Array.isArray(entries) ? entries : []) {
       if (entry?.field === field && !entry?.informational) out.push({ scope, ...entry });
     }
@@ -249,43 +270,46 @@ function basisFor(topic, uw) {
  */
 export function annotateSuggestions(suggestions = [], uw = {}, missing = {}) {
   const missingNames = missingFieldNames(missing);
+  const engine = uw && typeof uw === "object" ? uw : {};
 
-  return (Array.isArray(suggestions) ? suggestions : []).map((text) => {
-    const entry = SUGGESTION_CATALOGUE[text] ?? null;
+  return (Array.isArray(suggestions) ? suggestions : [])
+    .filter((text) => typeof text === "string" && !isJsonDump(text))
+    .map((text) => {
+      const entry = SUGGESTION_CATALOGUE[text] ?? null;
 
-    if (!entry) {
-      // An unrecognised string means the vendored engine changed and this
-      // catalogue did not. Say so on the response rather than guessing a topic —
-      // a wrong label on credit advice is worse than an admitted gap.
+      if (!entry) {
+        // An unrecognised string means the vendored engine changed and this
+        // catalogue did not. Say so on the response rather than guessing a topic —
+        // a wrong label on credit advice is worse than an admitted gap.
+        return {
+          text,
+          id: null,
+          topic: null,
+          engine: ENGINES.UNDERWRITE_IQ,
+          recognised: false,
+          basis: null,
+          restsOnMissingData: null,
+          missingFields: [],
+          note: "this sentence is not in the catalogue — the vendored engine may have changed; " +
+                "src/underwrite/fixtures.test.mjs is the check that should have caught it"
+        };
+      }
+
+      const unmet = entry.dependsOn.filter((f) => missingNames.has(f));
       return {
         text,
-        id: null,
-        topic: null,
+        id: entry.id,
+        topic: entry.topic,
         engine: ENGINES.UNDERWRITE_IQ,
-        recognised: false,
-        basis: null,
-        restsOnMissingData: null,
-        missingFields: [],
-        note: "this sentence is not in the catalogue — the vendored engine may have changed; " +
-              "src/underwrite/fixtures.test.mjs is the check that should have caught it"
+        recognised: true,
+        basis: basisFor(entry.topic, engine),
+        // The honest-partial rule. True means at least one number this sentence
+        // rests on was never entered, so the sentence is running on the engine's
+        // zero-default rather than on a measurement.
+        restsOnMissingData: unmet.length > 0,
+        missingFields: unmet.flatMap((f) => detailsFor(missing, f))
       };
-    }
-
-    const unmet = entry.dependsOn.filter((f) => missingNames.has(f));
-    return {
-      text,
-      id: entry.id,
-      topic: entry.topic,
-      engine: ENGINES.UNDERWRITE_IQ,
-      recognised: true,
-      basis: basisFor(entry.topic, uw),
-      // The honest-partial rule. True means at least one number this sentence
-      // rests on was never entered, so the sentence is running on the engine's
-      // zero-default rather than on a measurement.
-      restsOnMissingData: unmet.length > 0,
-      missingFields: unmet.flatMap((f) => detailsFor(missing, f))
-    };
-  });
+    });
 }
 
 /**
@@ -300,9 +324,20 @@ export function annotateSuggestions(suggestions = [], uw = {}, missing = {}) {
  *        of utilization appear in `utilizationVoices`, each stamped with the
  *        engine that produced it.
  */
-export function buildReport({ underwrite, suggestions, adapter, fundhubUtilization = null } = {}) {
-  const uw = underwrite ?? {};
-  const missing = adapter?.missing ?? {};
+export function buildReport(input = {}) {
+  // Null / non-object input (including a null "client" payload) must not throw.
+  const safe = input && typeof input === "object" && !Array.isArray(input) ? input : {};
+  const underwrite = safe.underwrite;
+  const suggestions = safe.suggestions;
+  const adapter = safe.adapter && typeof safe.adapter === "object" ? safe.adapter : {};
+  const fundhubUtilization =
+    safe.fundhubUtilization && typeof safe.fundhubUtilization === "object"
+      ? safe.fundhubUtilization
+      : null;
+
+  const uw = underwrite && typeof underwrite === "object" ? underwrite : {};
+  const missing = adapter.missing && typeof adapter.missing === "object" ? adapter.missing : {};
+  const available = Array.isArray(adapter.available) ? adapter.available : null;
 
   // ── The two engines, side by side, each speaking for itself. ──
   //
@@ -323,7 +358,7 @@ export function buildReport({ underwrite, suggestions, adapter, fundhubUtilizati
       value: uw.metrics?.utilization_pct ?? null,
       unit: "percent",
       scope: `primary bureau (${uw.primary_bureau ?? "none"})`,
-      partial: adapter?.utilization?.partial ?? null,
+      partial: adapter.utilization?.partial ?? null,
       says: uw.optimization?.needs_util_reduction === true
         ? "above the engine's 30% target"
         : uw.optimization?.needs_util_reduction === false
@@ -374,14 +409,14 @@ export function buildReport({ underwrite, suggestions, adapter, fundhubUtilizati
     utilizationVoices,
     dataCompleteness: {
       // Which bureaus the engine actually assessed, and which it was not given.
-      bureausAssessed: adapter?.available ?? [],
-      bureausUnavailable: (adapter?.available
-        ? ["experian", "equifax", "transunion"].filter((b) => !adapter.available.includes(b))
-        : []),
+      bureausAssessed: available ?? [],
+      bureausUnavailable: available
+        ? ["experian", "equifax", "transunion"].filter((b) => !available.includes(b))
+        : [],
       missing,
-      tradelineGaps: adapter?.tradelineGaps ?? [],
-      scoreSource: adapter?.scoreSource ?? null,
-      scoreAsOf: adapter?.scoreAsOf ?? null
+      tradelineGaps: Array.isArray(adapter.tradelineGaps) ? adapter.tradelineGaps : [],
+      scoreSource: adapter.scoreSource ?? null,
+      scoreAsOf: adapter.scoreAsOf ?? null
     },
     caveats: {
       bannerFundingIsFallback: bannerIsFallback,

@@ -89,8 +89,8 @@ test("deliverLetters generates correct number of letters for repair path", async
   // Restore
   if (originalToken) process.env.BLOB_READ_WRITE_TOKEN = originalToken;
 
-  // Repair path: 9 dispute + 3 personal info (one per bureau) = 12 letters
-  assert.equal(result.letters.generated, 12);
+  // Repair path with no accounts: suppression emits no letters
+  assert.equal(result.letters.generated, 0);
 });
 
 test("deliverLetters generates correct number of letters for fundable path", async () => {
@@ -107,8 +107,8 @@ test("deliverLetters generates correct number of letters for fundable path", asy
   // Restore
   if (originalToken) process.env.BLOB_READ_WRITE_TOKEN = originalToken;
 
-  // Fundable path: 3 inquiry + 3 personal info (one per bureau) = 6 letters
-  assert.equal(result.letters.generated, 6);
+  // Fundable path with no inquiries or personal-info items: no letters
+  assert.equal(result.letters.generated, 0);
 });
 
 // ============================================================================
@@ -129,7 +129,7 @@ test("deliverLetters reports upload failures when token missing", async () => {
   if (originalToken) process.env.BLOB_READ_WRITE_TOKEN = originalToken;
 
   assert.equal(result.letters.uploaded, 0);
-  assert.equal(result.letters.failed, 6); // All 6 fundable letters should fail
+  assert.equal(result.letters.failed, 0);
 });
 
 // ============================================================================
@@ -253,9 +253,9 @@ test("deliverLetters handles null bureaus gracefully", async () => {
   // Restore
   if (originalToken) process.env.BLOB_READ_WRITE_TOKEN = originalToken;
 
-  // Should still work, using empty bureaus
+  // Empty bureaus → W1 suppression → no letters
   assert.equal(result.ok, true);
-  assert.ok(result.letters.generated > 0);
+  assert.equal(result.letters.generated, 0);
 });
 
 test("deliverLetters handles null personal gracefully", async () => {
@@ -272,9 +272,9 @@ test("deliverLetters handles null personal gracefully", async () => {
   // Restore
   if (originalToken) process.env.BLOB_READ_WRITE_TOKEN = originalToken;
 
-  // Should still work, using empty personal
+  // Empty personal + empty bureaus → no letters
   assert.equal(result.ok, true);
-  assert.ok(result.letters.generated > 0);
+  assert.equal(result.letters.generated, 0);
 });
 
 test("deliverLetters handles null underwrite gracefully", async () => {
@@ -299,6 +299,18 @@ test("deliverLetters handles null underwrite gracefully", async () => {
 // ============================================================================
 // CRS Letter Delivery Tests
 // ============================================================================
+
+const SIGNET = {
+  creditorName: "SIGNET BANK/VIRGINIA",
+  accountIdentifier: "4443",
+  status: "closed",
+  isDerogatory: true,
+  currentBalance: 4798,
+  reportedDate: "2021-09-03",
+  closedDate: "2021-10-28",
+  currentRatingType: "ChargeOff",
+  comments: []
+};
 
 test("deliverLetters uses CRS path when crsDocuments provided", async () => {
   const originalToken = process.env.BLOB_READ_WRITE_TOKEN;
@@ -328,17 +340,38 @@ test("deliverLetters uses CRS path when crsDocuments provided", async () => {
     ]
   };
 
-  const result = await deliverLetters({
+  // Specs alone (no tradelines/inquiries) → 0 letters, never header-only
+  const emptyResult = await deliverLetters({
     contactId: "test-crs",
     crsDocuments,
     personal: { name: "Test User", address: "123 Main St" }
+  });
+
+  assert.equal(emptyResult.ok, true);
+  assert.equal(emptyResult.path, "fundable");
+  assert.equal(emptyResult.letters.generated, 0);
+
+  const result = await deliverLetters({
+    contactId: "test-crs",
+    crsDocuments,
+    personal: { name: "Jordan Sample", address: "123 Main St" },
+    bureaus: {
+      experian: {
+        inquiryList: [{ creditorName: "GECS", date: "2024-04-01" }],
+        names: ["Jordan Sample"]
+      },
+      transunion: {
+        names: ["BARBARA M DOTY"]
+      }
+    }
   });
 
   if (originalToken) process.env.BLOB_READ_WRITE_TOKEN = originalToken;
 
   assert.equal(result.ok, true);
   assert.equal(result.path, "fundable");
-  assert.equal(result.letters.generated, 3);
+  // inquiry ex + personal tu (ex name matches → no personal_info_ex)
+  assert.equal(result.letters.generated, 2);
 });
 
 test("deliverLetters uses CRS repair path correctly", async () => {
@@ -393,17 +426,49 @@ test("deliverLetters uses CRS repair path correctly", async () => {
     ]
   };
 
-  const result = await deliverLetters({
+  // Specs with no accounts → 0 (do not invent Round 1–3 header PDFs)
+  const emptyResult = await deliverLetters({
     contactId: "test-crs-repair",
     crsDocuments,
     personal: { name: "Test User" }
+  });
+  assert.equal(emptyResult.ok, true);
+  assert.equal(emptyResult.path, "repair");
+  assert.equal(emptyResult.letters.generated, 0);
+
+  const result = await deliverLetters({
+    contactId: "test-crs-repair",
+    crsDocuments,
+    personal: { name: "Jordan Sample" },
+    bureaus: {
+      experian: { tradelines: [SIGNET], names: ["Jordan Sample"] },
+      transunion: {
+        tradelines: [{ ...SIGNET, priorOutcome: "verified" }],
+        names: ["BARBARA M DOTY"]
+      },
+      equifax: { tradelines: [SIGNET], names: ["Jordan Sample"] }
+    }
   });
 
   if (originalToken) process.env.BLOB_READ_WRITE_TOKEN = originalToken;
 
   assert.equal(result.ok, true);
   assert.equal(result.path, "repair");
-  assert.equal(result.letters.generated, 12);
+  // Round 1 ex + eq; Round 2 tu (verified); personal tu only
+  assert.equal(result.letters.generated, 4);
+});
+
+test("generateLettersFromCRS empty item list emits 0 letters", async () => {
+  const specs = [
+    { type: "dispute", bureau: "experian", round: 1, fieldKey: "r1" },
+    { type: "inquiry_removal", bureau: "experian", round: null, fieldKey: "inq" },
+    { type: "personal_info", bureau: "experian", round: null, fieldKey: "pi" }
+  ];
+
+  const { letters, fieldKeyMap } = await generateLettersFromCRS(specs, { name: "Test" }, {});
+
+  assert.equal(letters.length, 0);
+  assert.deepEqual(fieldKeyMap, {});
 });
 
 test("generateLettersFromCRS produces correct filenames and fieldKeyMap", async () => {
@@ -423,7 +488,17 @@ test("generateLettersFromCRS produces correct filenames and fieldKeyMap", async 
     { type: "dispute", bureau: "equifax", round: 2, fieldKey: "repair_letter_url__round_2__eq" }
   ];
 
-  const { letters, fieldKeyMap } = await generateLettersFromCRS(specs, { name: "Test" });
+  const { letters, fieldKeyMap } = await generateLettersFromCRS(
+    specs,
+    { name: "Jordan Sample" },
+    {
+      experian: { inquiryList: [{ creditorName: "GECS", date: "2024-04-01" }] },
+      transunion: { names: ["BARBARA M DOTY"] },
+      equifax: {
+        tradelines: [{ ...SIGNET, priorOutcome: "verified" }]
+      }
+    }
+  );
 
   assert.equal(letters.length, 3);
   // Order: disputes first, then inquiry, then personal
@@ -439,10 +514,16 @@ test("generateLettersFromCRS produces correct filenames and fieldKeyMap", async 
 test("generateLettersFromCRS produces valid PDF buffers", async () => {
   const specs = [{ type: "inquiry_removal", bureau: "experian", round: null, fieldKey: "test" }];
 
-  const { letters } = await generateLettersFromCRS(specs, {
-    name: "Jane Doe",
-    address: "456 Oak Ave"
-  });
+  const { letters } = await generateLettersFromCRS(
+    specs,
+    {
+      name: "Jane Doe",
+      address: "456 Oak Ave"
+    },
+    {
+      experian: { inquiryList: [{ creditorName: "GECS", date: "2024-04-01" }] }
+    }
+  );
 
   assert.equal(letters.length, 1);
   assert.ok(Buffer.isBuffer(letters[0].buffer));
@@ -457,7 +538,13 @@ test("generateLettersFromCRS skips unknown bureaus", async () => {
     { type: "inquiry_removal", bureau: "experian", round: null, fieldKey: "test2" }
   ];
 
-  const { letters } = await generateLettersFromCRS(specs, {});
+  const { letters } = await generateLettersFromCRS(
+    specs,
+    {},
+    {
+      experian: { inquiryList: [{ creditorName: "GECS", date: "2024-04-01" }] }
+    }
+  );
 
   assert.equal(letters.length, 1); // only experian letter generated
   assert.equal(letters[0].filename, "inquiry_ex.pdf");
@@ -480,7 +567,7 @@ test("deliverLetters ignores crsDocuments when letters array is empty", async ()
   // Should fall back to legacy path since crsDocuments.letters is empty
   assert.equal(result.ok, true);
   assert.equal(result.path, "fundable");
-  assert.equal(result.letters.generated, 6); // legacy fundable = 6 letters
+  assert.equal(result.letters.generated, 0);
 });
 
 // ============================================================================

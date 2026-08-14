@@ -23,6 +23,7 @@ import { sendTemplated } from "./messaging.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
 import { createTask } from "../lib/create-task.mjs";
+import { hasFundingAnalysisPdfs } from "../underwrite/letter-pack-filter.mjs";
 
 export const FUNDING_EMAIL_TEMPLATE_KEY = "EMAIL-U02-ANALYZER-FUNDING-DELIVERY";
 export const REPAIR_EMAIL_TEMPLATE_KEY = "EMAIL-U02-ANALYZER-REPAIR-DELIVERY";
@@ -42,7 +43,7 @@ async function createIncompleteTaskOnce(db, { orgId, clientId, eventId }) {
   return { created: true };
 }
 
-export async function handle({ event, db, step }) {
+export async function handle({ event, db, step, generatePack = null }) {
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
 
@@ -60,12 +61,42 @@ export async function handle({ event, db, step }) {
   const orgId = event.orgId;
   const eventId = event.id;
 
+  if (outcomeTier === "MANUAL_REVIEW") {
+    return { done: true, branch: "manual_review", email: { sent: false, reason: "manual_review" } };
+  }
+
   if (isFundingPath(outcomeTier)) {
     await step.run("tag-path-funding", () => addTags(db, clientId, ["path:funding"]));
+    const pack = await step.run("build-funding-letter-pack", async () => {
+      try {
+        const build = generatePack || (await import("../underwrite/letter-pack.mjs")).buildLetterPackForClient;
+        return await build(db, { clientId, pack: "funding" });
+      } catch (err) {
+        return {
+          files: [],
+          reason: "pack_error",
+          error: String(err && err.message || err).slice(0, 240)
+        };
+      }
+    });
+    if (!pack?.files?.length) {
+      return { done: true, branch: "funding", email: { sent: false, reason: pack?.reason || "no_letter_pack" }, pack };
+    }
+    if (!hasFundingAnalysisPdfs(pack.files)) {
+      return { done: true, branch: "funding", email: { sent: false, reason: "missing_funding_analysis" }, pack };
+    }
     const email = await step.run("send-funding-delivery", () =>
-      sendTemplated(db, { orgId, clientId, channel: "email", templateKey: FUNDING_EMAIL_TEMPLATE_KEY, eventId }));
+      sendTemplated(db, {
+        orgId,
+        clientId,
+        channel: "email",
+        templateKey: FUNDING_EMAIL_TEMPLATE_KEY,
+        eventId,
+        attachments: pack.files,
+        subject: "Your funding letter pack is ready"
+      }));
     await step.run("set-funding-delivery-sent", () => mergeCustomFields(db, clientId, { funding_delivery_sent: true }));
-    return { done: true, branch: "funding", email };
+    return { done: true, branch: "funding", email, attachmentCount: pack.files.length };
   }
 
   // REPAIR IS NOT DELIVERED HERE. Under 05/30 the repair letter pack is the paid DIY

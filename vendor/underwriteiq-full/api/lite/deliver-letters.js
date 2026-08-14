@@ -3,19 +3,18 @@
 /**
  * POST /api/lite/deliver-letters
  *
- * Downsell-triggered letter delivery. Per the customer journey (2026-06-30): the
- * CRS soft pull produces DATA ONLY — it no longer dishes out letters. Letters are
- * a downstream deliverable that fires on a trigger:
- *   - repair dispute letters  → the on-call credit-repair DOWNSELL (client passed
- *     on funding) — this is the primary use.
- *   - funding cleanup letters → on funding purchase (future trigger).
+ * LEFTOVER Vercel HTTP handler. Live Fundhub mail does NOT POST here —
+ * letters ship from in-repo letter-pack (U-02 / DS-02). C-06 no longer
+ * hits this URL.
  *
- * A GHL workflow (the downsell flow) POSTs here with the contactId. We look up the
- * client's name/address off their GHL record, generate the letters, upload them,
- * and write the letter-URL fields back to the GHL contact (same path the pull used
- * to use — so the 422 fix applies here too).
+ * Historical behavior: GHL workflow POSTed contactId; this handler invented
+ * letter specs and called deliverLetters with personal only (no bureau
+ * tradelines). After W6, specs-only correctly emits 0 letters inside
+ * letter-delivery — this smash refuses the call earlier so we never invent
+ * bureau data or chase header-only PDFs / outbound GHL+upload work.
  *
- * Request body: { contactId: string, type?: "repair"|"funding", bureaus?: string[] }
+ * Request body (legacy): { contactId, type?, bureaus?: string[] }
+ * Optional real data (only path that may deliver): { bureauData | crsResult }
  * Auth: Authorization: Bearer <DELIVER_LETTERS_SECRET || CONTEXT_FETCHER_SECRET>.
  */
 
@@ -48,6 +47,35 @@ function validateAuth(req) {
   return { ok: false };
 }
 
+/**
+ * Real credit payload only — never invent tradelines/inquiries/identity.
+ * `body.bureaus` as string[] is a bureau-name filter, not credit data.
+ */
+function extractBureauPayload(body) {
+  if (!body || typeof body !== "object") return null;
+  const data = body.bureauData;
+  if (data && typeof data === "object" && !Array.isArray(data) && Object.keys(data).length > 0) {
+    return { bureaus: data, crsResult: null };
+  }
+  const crs = body.crsResult;
+  if (crs && typeof crs === "object" && !Array.isArray(crs)) {
+    const normalized = crs.normalized;
+    if (normalized && typeof normalized === "object" && !Array.isArray(normalized)) {
+      return { bureaus: null, crsResult: crs };
+    }
+  }
+  return null;
+}
+
+function zeroDelivery(res, extra = {}) {
+  return res.status(200).json({
+    ok: true,
+    delivered: 0,
+    letters: { generated: 0, uploaded: 0, failed: 0 },
+    ...extra
+  });
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader(
@@ -63,9 +91,26 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
 
-  const body = req.body || {};
+  const body = req.body && typeof req.body === "object" ? req.body : {};
   const contactId =
-    body.contactId || body.contact_id || (body.customData && body.customData.contactId);
+    body.contactId || body.contact_id || (body.customData && body.customData.contactId) || null;
+
+  // Empty body / no real credit data → 0 files. Do not invent bureau rows.
+  // Specs-only (contactId + type only) is the W6 leftover: emit 0, no outbound.
+  const payload = extractBureauPayload(body);
+  if (!payload) {
+    logInfo("deliver-letters: specs-only or empty — emitting 0 letters", {
+      hasContactId: !!contactId,
+      keys: Object.keys(body)
+    });
+    return zeroDelivery(res, {
+      contactId: contactId || null,
+      type: body.type === "funding" ? "funding" : body.type ? "repair" : null,
+      note: "specs_only_no_bureau_data",
+      ghlUpdated: false
+    });
+  }
+
   if (!contactId) {
     return res.status(400).json({ ok: false, error: "contactId is required" });
   }
@@ -74,12 +119,12 @@ module.exports = async function handler(req, res) {
   }
 
   const type = body.type === "funding" ? "funding" : "repair";
-  const bureaus =
+  const bureauNames =
     Array.isArray(body.bureaus) && body.bureaus.length
       ? body.bureaus
           .map(b => String(b).toLowerCase())
           .filter(b => ALL_BUREAUS.includes(b))
-          .filter((b, i, arr) => arr.indexOf(b) === i) // dedup — avoid double blob uploads
+          .filter((b, i, arr) => arr.indexOf(b) === i)
       : ALL_BUREAUS;
 
   // Look up the client's name/address off their GHL record (needed on the letters).
@@ -110,13 +155,10 @@ module.exports = async function handler(req, res) {
     return res.status(502).json({ ok: false, error: "Contact lookup failed" });
   }
 
-  // Build the exact letter sets each downsell trigger expects (2026-07-01):
-  //   funding (C-06 branch): Personal Info Cleanup + Inquiry Cleanup per bureau (6)
-  //   repair  (DS-02 DIY):   Personal Info Dispute + Round 1/2/3 per bureau (12)
-  // Field keys use the tu/ex/eq abbreviations (transunion → "tu", bug #51). CRS
-  // already ran on the call, so no re-pull is needed here.
+  // Specs describe which PDFs to attempt; bureau payload supplies accounts.
+  // Empty item lists inside letter-delivery still emit 0 (W6) — never header-only.
   const letters = [];
-  for (const b of bureaus) {
+  for (const b of bureauNames) {
     const ab = BUREAU_ABBR[b] || b.slice(0, 2);
     if (type === "funding") {
       letters.push({
@@ -156,31 +198,44 @@ module.exports = async function handler(req, res) {
   };
 
   if (!crsDocuments.letters?.length) {
-    return res
-      .status(200)
-      .json({ ok: true, contactId, type, delivered: 0, note: "no letters for this type/bureaus" });
+    return zeroDelivery(res, {
+      contactId,
+      type,
+      note: "no letters for this type/bureaus",
+      ghlUpdated: false
+    });
   }
 
   logInfo("deliver-letters: delivering", {
     contactId,
     type,
-    bureaus,
-    letterCount: crsDocuments.letters.length
+    bureauNames,
+    letterCount: crsDocuments.letters.length,
+    hasBureauData: !!payload.bureaus,
+    hasCrsResult: !!payload.crsResult
   });
 
   try {
-    const result = await deliverLetters({ contactId, personal, crsDocuments });
+    const result = await deliverLetters({
+      contactId,
+      personal,
+      crsDocuments,
+      bureaus: payload.bureaus || undefined,
+      crsResult: payload.crsResult || undefined
+    });
     if (!result.ok) {
       logError("deliver-letters: delivery failed", { contactId, error: result.error });
       return res.status(502).json({ ok: false, error: result.error || "Delivery failed" });
     }
+    const generated = (result.letters && result.letters.generated) || 0;
     return res.status(200).json({
       ok: true,
       contactId,
       type,
-      bureaus,
+      bureaus: bureauNames,
+      delivered: generated,
       letters: result.letters,
-      uploadErrors: result.uploadErrors, // surface per-file upload failures for diagnosis
+      uploadErrors: result.uploadErrors,
       ghlUpdated: result.ghlUpdated
     });
   } catch (err) {

@@ -27,6 +27,11 @@
 // beside the data. All three failing is not a result: the request is closed as
 // failed and no row is written, because a row with no payload would read as "we
 // pulled and they have no credit".
+//
+// LIVE PULLS NEED TWO KEYS. The production host alone is not enough.
+// CRS_ALLOW_LIVE must be an explicit on value. Unset, 0, and false refuse
+// before any bureau is ordered, before any Social Security number is read, and
+// before any HTTP. Missing CRS env is the same refusal: no live pull.
 
 import { createHash } from "node:crypto";
 import { emit } from "../events/bus.mjs";
@@ -44,6 +49,7 @@ import {
   identityForBureau,
   isSandboxHost,
   isProductionHost,
+  livePullAllowed,
   SANDBOX_TEST_IDENTITIES
 } from "./crs-identities.mjs";
 import { mergeBureauReports, newInquiriesFor } from "./crs-map.mjs";
@@ -71,6 +77,40 @@ export function environmentFor(host) {
   if (isSandboxHost(host)) return "sandbox";
   if (isProductionHost(host)) return "production";
   return null;
+}
+
+function livePullRefused(host, env) {
+  if (isSandboxHost(host)) return null;
+  if (isProductionHost(host) && livePullAllowed(env)) return null;
+  if (isProductionHost(host)) {
+    return {
+      code: "production_host_refused",
+      reason: "CRS production host refused — CRS_ALLOW_LIVE is not explicitly on"
+    };
+  }
+  return {
+    code: "unknown_host",
+    reason: "CRS host refused — not the sandbox, and live pull is not allowed"
+  };
+}
+
+function fenceLiveFetch(fetchImpl, env) {
+  if (typeof fetchImpl !== "function") return fetchImpl;
+  return async function fencedLiveFetch(url, init) {
+    let host = "";
+    try {
+      host = new URL(String(url)).hostname;
+    } catch {
+      host = "";
+    }
+    if (isProductionHost(host) && !livePullAllowed(env)) {
+      throw new CrsError(
+        "CRS production host refused — CRS_ALLOW_LIVE is not explicitly on",
+        { status: 503, code: "production_host_refused" }
+      );
+    }
+    return fetchImpl(url, init);
+  };
 }
 
 /**
@@ -313,29 +353,75 @@ export async function runCrsPull(db, {
     throw new SoftPullError(`soft pull request is already ${ledger.status}`, { status: 409 });
   }
 
-  const crs = client || createCrsClient({ env, fetchImpl });
+  const envBag = env != null && typeof env === "object" ? env : {};
+  const resolvedHost = (client && client.host) || envBag.CRS_API_HOST || "";
+
+  /* LIVE FENCE. Production host + CRS_ALLOW_LIVE not explicitly on means no
+     HTTP, no SSN reveal, no client construction that could login. Missing,
+     "0", "false", empty, and unset all fail closed. Sandbox is unchanged. */
+  if (isProductionHost(resolvedHost) && !livePullAllowed(envBag)) {
+    return finishFailed(db, {
+      requestId,
+      code: "production_host_refused",
+      reason: "CRS production host refused — CRS_ALLOW_LIVE is not explicitly on"
+    });
+  }
+
+  let crs;
+  try {
+    crs = client ?? createCrsClient({
+      env: envBag,
+      fetchImpl: fenceLiveFetch(fetchImpl, envBag)
+    });
+  } catch {
+    return finishFailed(db, {
+      requestId,
+      code: "not_configured",
+      reason: "CRS client could not be created"
+    });
+  }
+  if (!crs || typeof crs.isConfigured !== "function") {
+    return finishFailed(db, {
+      requestId,
+      code: "not_configured",
+      reason: "CRS is not configured — missing client"
+    });
+  }
 
   // A configuration fault is permanent until configuration changes. Failing the
   // request rather than throwing keeps a workflow from retrying a condition no
   // retry can fix, and leaves the reason where a human will read it.
-  if (!crs.isConfigured()) {
+  let configured = false;
+  try {
+    configured = !!crs.isConfigured();
+  } catch {
+    configured = false;
+  }
+  if (!configured) {
+    const missing = Array.isArray(crs.config?.missing) ? crs.config.missing.join(", ") : "configuration";
     return finishFailed(db, {
       requestId,
       code: "not_configured",
-      reason: `CRS is not configured — missing ${crs.config.missing.join(", ")}`
+      reason: `CRS is not configured — missing ${missing}`
     });
   }
 
   const host = crs.host;
+  const refusedLive = livePullRefused(host, envBag);
+  if (refusedLive) {
+    return finishFailed(db, { requestId, ...refusedLive });
+  }
   const environment = environmentFor(host);
 
   /* The real client is loaded ONLY when the host is production. On sandbox the
      vendor's canned people are used and the client's SSN is never decrypted,
      never logged as accessed, and never sent anywhere. That is the difference
-     between "we do not send it" and "we cannot send it". */
+     between "we do not send it" and "we cannot send it". Live-off already
+     returned above, so this decrypt cannot run against production unless the
+     owner flag is explicitly on. */
   let realIdentity = identity;
   if (isProductionHost(host) && !realIdentity) {
-    realIdentity = await loadClientIdentity(db, { clientId, env, accessedBy });
+    realIdentity = await loadClientIdentity(db, { clientId, env: envBag, accessedBy });
     if (!realIdentity) {
       return finishFailed(db, {
         requestId,
@@ -353,7 +439,7 @@ export async function runCrsPull(db, {
     let bureauIdentity;
     try {
       bureauIdentity = identityForBureau({
-        host, bureau, identity: realIdentity, env
+        host, bureau, identity: realIdentity, env: envBag
       });
     } catch (e) {
       if (e instanceof CrsIdentityError) {
@@ -377,7 +463,11 @@ export async function runCrsPull(db, {
          pull, not weather at one bureau. Stopping means the same refused
          identity is never offered to the other two. */
       if (e instanceof CrsIdentityError
-          || (e instanceof CrsError && e.code === "not_configured")) {
+          || (e instanceof CrsError && (
+            e.code === "not_configured"
+            || e.code === "production_host_refused"
+            || e.code === "unknown_host"
+          ))) {
         return finishFailed(db, { requestId, code: e.code, reason: e.message });
       }
       if (e instanceof CrsError) { errors[bureau] = e.message; continue; }

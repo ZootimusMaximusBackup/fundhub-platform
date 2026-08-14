@@ -215,7 +215,8 @@ export async function claimDue(db, { orgId = null, limit = DEFAULT_BATCH, now = 
        ) due
       WHERE m.id = due.id
   RETURNING m.id, m.org_id, m.client_id, m.channel, m.rendered_body,
-            m.template_key, m.provider_ref, m.attempts, m.to_address, m.subject`,
+            m.template_key, m.provider_ref, m.attempts, m.to_address, m.subject,
+            m.attachments`,
     [orgId, limit, at, MAX_ATTEMPTS, senderStaffOnly === true]
   );
   return rows;
@@ -499,7 +500,8 @@ export async function dispatchOne(db, message, options = {}) {
       to: address,
       subject: await subjectFor(db, message),
       body: message.rendered_body,
-      providerRef: message.provider_ref
+      providerRef: message.provider_ref,
+      attachments: options.attachments || message.attachments || []
     }, { fetchImpl, timeoutMs, signal, env });
 
     // ---- 4. Record ---------------------------------------------------------
@@ -593,7 +595,7 @@ async function claimOne(db, messageId) {
         AND status = 'queued'
         AND attempts < $2
   RETURNING id, org_id, client_id, channel, rendered_body,
-            template_key, provider_ref, attempts, to_address, subject`,
+            template_key, provider_ref, attempts, to_address, subject, attachments`,
     [messageId, MAX_ATTEMPTS]
   );
   return rows[0] || null;

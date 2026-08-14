@@ -206,6 +206,13 @@ export function pgFake(seed = {}) {
         const t = templates.find((t) => t.org_id === orgId && t.template_key === key);
         return { rows: t ? [{ body: t.body, subject: t.subject || null, compliance_passed: !!t.compliance_passed }] : [] };
       }
+      if (/SELECT result FROM crs_results/.test(sql)) {
+        return { rows: [] };
+      }
+      if (/SELECT first_name, last_name, custom_fields FROM clients/.test(sql)) {
+        const c = clients.find((row) => row.id === params[0]);
+        return { rows: c ? [{ first_name: c.first_name, last_name: c.last_name, custom_fields: c.custom_fields || {} }] : [] };
+      }
       if (/INSERT INTO messages/.test(sql)) {
         const providerRef = params[5];
         if (providerRef && messages.find((m) => m.org_id === params[0] && m.provider_ref === providerRef)) return { rows: [] };

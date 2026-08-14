@@ -42,6 +42,8 @@ async function createTaskOnce(db, { orgId, clientId, eventId }) {
 }
 
 export async function handle({ event, db, step }) {
+  if (!event || typeof event !== "object") return { done: false, reason: "no_event" };
+
   const inquiries = event.payload?.newInquiries;
   if (!Array.isArray(inquiries) || inquiries.length === 0) return { done: false, reason: "no_new_inquiries" };
 

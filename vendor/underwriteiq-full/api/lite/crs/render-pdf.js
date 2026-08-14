@@ -15,6 +15,14 @@ const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
 const fs = require("fs");
 const path = require("path");
 const { logInfo, logWarn } = require("../logger");
+const { APPLY_PAGE_URL } = require("./apply-qr");
+const {
+  DRAW_QR_HERE,
+  stampedOutcome,
+  goldDocToNodes,
+  renderGoldDocument,
+  DOC_TITLES
+} = require("./gold-report-shell");
 
 // Logo image — loaded once, cached
 let _logoPngBytes = null;
@@ -67,6 +75,19 @@ const PARA_SPACE = 6;
 // MARKDOWN PARSER
 // ============================================================================
 
+const MAX_CONTENT_CHARS = 256 * 1024;
+const MAX_MD_LINES = 12000;
+const MAX_NODES = 8000;
+const UNUSABLE_NODE = {
+  type: "callout",
+  style: "amber",
+  text: "This report could not be formatted. Please regenerate the analysis pack."
+};
+
+function unusableNodes() {
+  return [{ ...UNUSABLE_NODE }];
+}
+
 /**
  * Parse Claude markdown into flat render-node array.
  *
@@ -85,14 +106,25 @@ const PARA_SPACE = 6;
  */
 function parseMarkdown(markdown) {
   if (!markdown || typeof markdown !== "string") return [];
+  let src = markdown;
+  if (src.length > MAX_CONTENT_CHARS) src = src.slice(0, MAX_CONTENT_CHARS);
 
   const nodes = [];
-  const lines = markdown.split("\n");
+  const lines = src.split("\n");
+  if (lines.length > MAX_MD_LINES) lines.length = MAX_MD_LINES;
   let i = 0;
 
   while (i < lines.length) {
     const raw = lines[i];
     const line = raw.trimEnd();
+
+    // Never print fenced dumps (```json) as body text.
+    if (line.trim().startsWith("```")) {
+      i++;
+      while (i < lines.length && !lines[i].trim().startsWith("```")) i++;
+      if (i < lines.length) i++;
+      continue;
+    }
 
     // Blank line
     if (line.trim() === "") {
@@ -216,6 +248,343 @@ function stripInline(text) {
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/\*(.*?)\*/g, "$1")
     .trim();
+}
+
+/**
+ * If Claude returned JSON (prompt drift or old credit_analysis format),
+ * turn it into the same render nodes markdown would produce. Never dump
+ * raw JSON into a client PDF.
+ */
+function looksLikeReportJson(s) {
+  const t = String(s || "");
+  return /"(?:t|type|sections|body|blocks)"\s*:/.test(t);
+}
+
+function parseJsonLenient(s) {
+  if (typeof s !== "string") return { ok: false };
+  const trimmed = s.trim();
+  if (!trimmed) return { ok: false };
+  const attempts = [trimmed];
+  let prev = trimmed;
+  for (let i = 0; i < 6; i++) {
+    const next = prev.replace(/,\s*([}\]])/g, "$1");
+    if (next === prev) break;
+    prev = next;
+    attempts.push(next);
+  }
+  for (const a of attempts) {
+    try {
+      return { ok: true, value: JSON.parse(a) };
+    } catch {
+      /* next */
+    }
+  }
+  return { ok: false };
+}
+
+function matchBalanced(text, start) {
+  const open = text[start];
+  const close = open === "{" ? "}" : open === "[" ? "]" : "";
+  if (!close) return -1;
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (inStr) {
+      if (esc) {
+        esc = false;
+        continue;
+      }
+      if (c === "\\") {
+        esc = true;
+        continue;
+      }
+      if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') {
+      inStr = true;
+      continue;
+    }
+    if (c === open) depth++;
+    else if (c === close) {
+      depth--;
+      if (depth === 0) return i + 1;
+    }
+  }
+  return -1;
+}
+
+function splitFences(text) {
+  const parts = [];
+  const n = text.length;
+  let i = 0;
+  while (i < n) {
+    const fence = text.indexOf("```", i);
+    if (fence === -1) {
+      parts.push({ kind: "text", text: text.slice(i) });
+      break;
+    }
+    if (fence > i) parts.push({ kind: "text", text: text.slice(i, fence) });
+    let k = fence + 3;
+    while (k < n && text[k] !== "\n" && text[k] !== "\r") k++;
+    const info = text.slice(fence + 3, k).trim().toLowerCase();
+    if (text[k] === "\r" && text[k + 1] === "\n") k += 2;
+    else if (text[k] === "\n" || text[k] === "\r") k += 1;
+    const close = text.indexOf("```", k);
+    const body = text.slice(k, close === -1 ? n : close);
+    const isJson = /^json\b/.test(info) || (info === "" && /^\s*[{[]/.test(body));
+    parts.push({ kind: isJson ? "json" : "text", text: body });
+    i = close === -1 ? n : close + 3;
+    if (text[i] === "\r" && text[i + 1] === "\n") i += 2;
+    else if (text[i] === "\n" || text[i] === "\r") i += 1;
+  }
+  return parts;
+}
+
+function extractJsonRegions(text) {
+  const regions = [];
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    const ch = text[i];
+    if (ch === "{" || ch === "[") {
+      const lineStart = text.lastIndexOf("\n", i - 1) + 1;
+      const prefix = text.slice(lineStart, i);
+      if (/^\s*$/.test(prefix)) {
+        const end = matchBalanced(text, i);
+        if (end !== -1) {
+          const slice = text.slice(i, end);
+          if (looksLikeReportJson(slice)) {
+            regions.push({ start: lineStart, end, json: slice });
+            i = end;
+            continue;
+          }
+        } else {
+          const rest = text.slice(i);
+          if (looksLikeReportJson(rest)) {
+            regions.push({ start: lineStart, end: n, json: rest });
+            break;
+          }
+        }
+      }
+    }
+    i++;
+  }
+  return regions;
+}
+
+function sectionToNode(section) {
+  if (!section || typeof section !== "object") return null;
+  const type = String(section.type || "").toLowerCase();
+  const style = section.style || "neutral";
+  const content = section.content;
+
+  if (type === "heading" || type === "h1" || type === "h2" || type === "h3") {
+    const text = typeof content === "string" ? content : String(section.text || "");
+    const level = type === "h1" || type === "heading" ? "h2" : type;
+    return { type: level === "heading" ? "h2" : level, text: stripInline(text) };
+  }
+  if (type === "paragraph" || type === "text") {
+    const text = typeof content === "string" ? content : String(section.text || "");
+    return { type: "paragraph", runs: parseInlineRuns(text) };
+  }
+  if (type === "callout") {
+    const text = typeof content === "string" ? content : String(section.text || "");
+    return { type: "callout", style, text: stripInline(text) };
+  }
+  if (type === "metric" || type === "metric_row") {
+    const value =
+      (content && typeof content === "object" && (content.value || content.number)) ||
+      section.value ||
+      "";
+    const label =
+      (content && typeof content === "object" && (content.label || content.title)) ||
+      section.label ||
+      "";
+    return { type: "metric", value: String(value), label: String(label) };
+  }
+  if (type === "table") {
+    const headers =
+      (content && content.headers) || section.headers || [];
+    const rows = (content && content.rows) || section.rows || [];
+    return { type: "table", headers, rows };
+  }
+  if (type === "bullet" || type === "list_item") {
+    const text = typeof content === "string" ? content : String(section.text || "");
+    return { type: "bullet", depth: 0, runs: parseInlineRuns(text) };
+  }
+  return null;
+}
+
+function nodesFromJsonDoc(parsed, depth) {
+  if (depth > 6 || parsed == null || typeof parsed !== "object") return null;
+  const gold = goldDocToNodes(parsed);
+  if (gold) return gold;
+
+  if (Array.isArray(parsed)) {
+    const nodes = [];
+    for (const section of parsed) {
+      const fromGold = goldDocToNodes(section);
+      if (fromGold) {
+        nodes.push(...fromGold);
+        continue;
+      }
+      const node = sectionToNode(section);
+      if (node) {
+        nodes.push(node);
+        continue;
+      }
+      const nested = nodesFromJsonDoc(section, depth + 1);
+      if (nested) nodes.push(...nested);
+    }
+    return nodes.length ? nodes : null;
+  }
+
+  if (Array.isArray(parsed.sections)) {
+    const fromSecs = nodesFromJsonDoc(parsed.sections, depth + 1);
+    if (fromSecs) return fromSecs;
+  }
+
+  const single = sectionToNode(parsed);
+  if (single) return [single];
+
+  const preferredKeys = ["document", "doc", "report", "data", "content", "payload", "result"];
+  for (const k of preferredKeys) {
+    if (parsed[k] && typeof parsed[k] === "object") {
+      const inner = nodesFromJsonDoc(parsed[k], depth + 1);
+      if (inner) return inner;
+    }
+  }
+  for (const [k, v] of Object.entries(parsed)) {
+    if (k === "sections" || k === "body" || preferredKeys.includes(k)) continue;
+    if (v && typeof v === "object") {
+      const inner = nodesFromJsonDoc(v, depth + 1);
+      if (inner) return inner;
+    }
+  }
+  return null;
+}
+
+function jsonTextToNodes(s) {
+  let parsed = parseJsonLenient(s);
+  if (!parsed.ok) return null;
+  let value = parsed.value;
+  for (let i = 0; i < 3 && typeof value === "string"; i++) {
+    const inner = parseJsonLenient(value);
+    if (!inner.ok) break;
+    value = inner.value;
+  }
+  return nodesFromJsonDoc(value, 0);
+}
+
+function nodeVisibleText(node) {
+  if (!node) return "";
+  if (typeof node.text === "string") return node.text;
+  if (Array.isArray(node.runs)) return node.runs.map((r) => r.text || "").join("");
+  return "";
+}
+
+function looksDumpedJson(s) {
+  const t = String(s || "").trim();
+  if (/```json/i.test(t)) return true;
+  if (/[{[]/.test(t) && /["']t["']\s*:\s*["']sec["']/.test(t)) return true;
+  if (/[{[]/.test(t) && /["']sections["']\s*:/.test(t) && /["']type["']\s*:/.test(t)) return true;
+  return false;
+}
+
+function filterDump(nodes) {
+  const out = [];
+  for (const n of nodes) {
+    if (n.type === "callout" && n.text === UNUSABLE_NODE.text) {
+      out.push(n);
+      continue;
+    }
+    const vis = nodeVisibleText(n);
+    if ((n.type === "paragraph" || n.type === "bullet" || n.type === "lead") && looksDumpedJson(vis)) {
+      const recovered = jsonTextToNodes(vis.replace(/```json/gi, "").replace(/```/g, ""));
+      if (recovered && recovered.length) out.push(...recovered);
+      else out.push({ ...UNUSABLE_NODE });
+      continue;
+    }
+    out.push(n);
+  }
+  return out;
+}
+
+function markdownWithBareJsonToNodes(md) {
+  if (!md || !String(md).trim()) return [];
+  const regions = extractJsonRegions(md);
+  if (!regions.length) return parseMarkdown(pdfSafeText(md));
+  const out = [];
+  let pos = 0;
+  for (const r of regions) {
+    if (r.start > pos) out.push(...parseMarkdown(pdfSafeText(md.slice(pos, r.start))));
+    const nodes = jsonTextToNodes(r.json);
+    if (nodes && nodes.length) out.push(...nodes);
+    else out.push({ ...UNUSABLE_NODE });
+    pos = r.end;
+  }
+  if (pos < md.length) out.push(...parseMarkdown(pdfSafeText(md.slice(pos))));
+  return out;
+}
+
+function capNodes(nodes) {
+  if (!Array.isArray(nodes)) return unusableNodes();
+  return nodes.length > MAX_NODES ? nodes.slice(0, MAX_NODES) : nodes;
+}
+
+/**
+ * Prefer markdown. If Claude returned JSON sections, render those.
+ * Never fall through to printing raw JSON as body text.
+ */
+function contentToNodes(raw) {
+  try {
+    return capNodes(filterDump(contentToNodesUnsafe(raw)));
+  } catch {
+    return unusableNodes();
+  }
+}
+
+function contentToNodesUnsafe(raw) {
+  if (raw == null) return [];
+  if (typeof raw === "object") {
+    const nodes = nodesFromJsonDoc(raw, 0);
+    return nodes && nodes.length ? nodes : unusableNodes();
+  }
+  if (typeof raw !== "string") return [];
+  const text = raw.length > MAX_CONTENT_CHARS ? raw.slice(0, MAX_CONTENT_CHARS) : raw;
+  if (!text.trim()) return [];
+
+  const parts = splitFences(text);
+  const meaningful = parts.filter((p) => p.text.trim());
+  if (meaningful.length === 1 && meaningful[0].kind === "json") {
+    const nodes = jsonTextToNodes(meaningful[0].text);
+    return nodes && nodes.length ? nodes : unusableNodes();
+  }
+  if (meaningful.length === 1 && meaningful[0].kind === "text") {
+    const t = meaningful[0].text.trim();
+    if (t.startsWith("{") || t.startsWith("[")) {
+      const nodes = jsonTextToNodes(t);
+      if (nodes && nodes.length) return nodes;
+      if (looksLikeReportJson(t)) return unusableNodes();
+    }
+    return markdownWithBareJsonToNodes(meaningful[0].text);
+  }
+
+  const out = [];
+  for (const part of parts) {
+    if (!part.text.trim()) continue;
+    if (part.kind === "json") {
+      const nodes = jsonTextToNodes(part.text);
+      if (nodes && nodes.length) out.push(...nodes);
+      else out.push({ ...UNUSABLE_NODE });
+    } else {
+      out.push(...markdownWithBareJsonToNodes(part.text));
+    }
+  }
+  return out;
 }
 
 /** Parse a block of pipe-delimited lines into a table node */
@@ -686,31 +1055,18 @@ function drawCTAPage(ctx, title, cta) {
     ctx.y -= 20;
   }
 
-  // QR Code placeholder box
-  const qrSize = 100;
+  const qrSize = 128;
   const qrX = (PAGE_W - qrSize) / 2;
-  activePage(ctx).drawRectangle({
+  DRAW_QR_HERE(activePage(ctx), {
     x: qrX,
     y: ctx.y - qrSize,
-    width: qrSize,
-    height: qrSize,
-    borderColor: BRAND.grayBorder,
-    borderWidth: 1,
-    color: BRAND.grayLight
-  });
-  const qrLabel = "[ QR CODE ]";
-  const qrLabelWidth = ctx.font.widthOfTextAtSize(qrLabel, 10);
-  activePage(ctx).drawText(qrLabel, {
-    x: (PAGE_W - qrLabelWidth) / 2,
-    y: ctx.y - qrSize / 2 - 4,
-    size: 10,
-    font: ctx.font,
-    color: BRAND.gray
+    size: qrSize,
+    black: BRAND.black,
+    white: BRAND.white
   });
   ctx.y -= qrSize + 10;
 
-  // Caption
-  const caption = "Scan to book your call instantly";
+  const caption = "Scan to open the application";
   const capWidth = ctx.font.widthOfTextAtSize(caption, 9);
   activePage(ctx).drawText(caption, {
     x: (PAGE_W - capWidth) / 2,
@@ -721,8 +1077,7 @@ function drawCTAPage(ctx, title, cta) {
   });
   ctx.y -= 20;
 
-  // Booking URL
-  const bookingUrl = process.env.BOOKING_URL || "www.fundhubbookingurl.template";
+  const bookingUrl = process.env.BOOKING_URL || APPLY_PAGE_URL.replace(/^https:\/\//, "");
   const urlWidth = ctx.bold.widthOfTextAtSize(bookingUrl, 12);
   activePage(ctx).drawText(bookingUrl, {
     x: (PAGE_W - urlWidth) / 2,
@@ -889,6 +1244,8 @@ async function initPdfDoc() {
   const pdfDoc = await PDFDocument.create();
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const mono = await pdfDoc.embedFont(StandardFonts.Courier);
+  const monoBold = await pdfDoc.embedFont(StandardFonts.CourierBold);
   // Embed logo if available
   let logoImage = null;
   const logoBytes = getLogoBytes();
@@ -899,7 +1256,7 @@ async function initPdfDoc() {
       logoImage = null;
     }
   }
-  return { pdfDoc, font, bold, logoImage };
+  return { pdfDoc, font, bold, mono, monoBold, logoImage };
 }
 
 // ============================================================================
@@ -941,49 +1298,19 @@ function pdfSafeText(s) {
 }
 
 async function renderDocumentPDF(markdownContent, type, personal, engineData) {
-  const { pdfDoc, font, bold, logoImage } = await initPdfDoc();
-  const firstPage = pdfDoc.addPage([PAGE_W, PAGE_H]);
-  const ctx = makeCtx(pdfDoc, firstPage, font, bold);
-  ctx._logoImage = logoImage;
-
-  const titles = {
-    credit_analysis: "Financial Profile Assessment",
-    roadmap: "Business Readiness Roadmap",
-    funding_snapshot: "Capital Readiness Snapshot",
-    lender_match: "Capital Partner Shortlist",
-    repair_plan_summary: "Optimization Plan Summary",
-    funding_summary: "Capital Readiness Summary",
-    business_prep_summary: "Business Readiness Guide",
-    issue_priority_sheet: "Priority Action Sheet",
-    hold_notice: "Application Hold Notice",
-    operator_checklist: "Operator Checklist"
-  };
-
-  const title = titles[type] || type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-  const today = new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric"
-  });
-  const subtitle =
-    personal && personal.name ? personal.name + "  \u00b7  Prepared " + today : "Prepared " + today;
-
-  drawPageHeader(ctx, title, subtitle);
-  drawMetadataStrip(ctx, personal, engineData);
-
-  const nodes = parseMarkdown(pdfSafeText(markdownContent || ""));
-  for (const node of nodes) {
-    renderNode(ctx, node);
-  }
-
-  // Add CTA page at the end of each document
+  const { pdfDoc, font, bold, mono, monoBold } = await initPdfDoc();
   const { getCTA } = require("./build-suggestions");
-  const outcome = engineData?.outcome || engineData?.outcomeResult?.outcome;
+  const outcome = stampedOutcome(engineData);
   const ctaText = outcome ? getCTA(outcome) : null;
-  drawCTAPage(ctx, null, ctaText);
-
-  drawFooters(ctx, title);
-
+  const nodes = contentToNodes(markdownContent || "");
+  const ctx = await renderGoldDocument(pdfDoc, {
+    type,
+    personal,
+    engineData,
+    nodes,
+    fonts: { font, bold, mono, monoBold },
+    cta: ctaText
+  });
   const bytes = await pdfDoc.save();
   logInfo("render-pdf: document rendered", { type, pages: ctx.pages.length });
   return Buffer.from(bytes);
@@ -1333,9 +1660,13 @@ module.exports = {
   renderLetterPDF,
   renderLetterBundlePDF,
   parseMarkdown,
+  contentToNodes,
   parseInlineRuns,
   wrapText,
   formatSsn,
+  DRAW_QR_HERE,
+  stampedOutcome,
+  DOC_TITLES,
   BRAND,
   BUREAU_ADDRESSES,
   LETTER_SUBJECTS

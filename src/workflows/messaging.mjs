@@ -26,6 +26,7 @@ import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
 import { emit } from "../events/bus.mjs";
 import { isDraftTemplateRow } from "../messaging/draft-guard.mjs";
+import { upsertConversation, linkMessage } from "../conversations/store.mjs";
 
 /* Which column on the client record is the destination for a channel.
    The destination is recorded in the terms of the CHANNEL, not of whichever
@@ -66,7 +67,82 @@ async function clientContext(db, clientId) {
   };
 }
 
-export async function sendTemplated(db, { orgId, clientId, channel, templateKey, eventId, context = {}, staffId, shiftId }) {
+/** Cap after sanitize — avoids path bombs and absurd DB jsonb rows. */
+const MAX_ATTACHMENT_NAME = 180;
+
+/**
+ * Safe PDF filename only. Strips path traversal (`../`, absolute paths),
+ * forces a `.pdf` extension, and caps length. Never invents pack.pdf for junk.
+ */
+function safePdfFilename(name) {
+  let base = String(name ?? "letter.pdf").replace(/\\/g, "/").split("/").pop() || "letter.pdf";
+  base = base.replace(/[^\w.\- ()[\]]+/g, "_").replace(/^\.+/, "");
+  if (!base) base = "letter.pdf";
+  if (!/\.pdf$/i.test(base)) {
+    base = `${base.replace(/\.[^.]+$/, "") || "letter"}.pdf`;
+  }
+  if (base.length > MAX_ATTACHMENT_NAME) {
+    base = `${base.slice(0, MAX_ATTACHMENT_NAME - 4)}.pdf`;
+  }
+  return base;
+}
+
+/**
+ * PDF bytes as base64, or null. Missing/empty/whitespace/non-PDF → drop.
+ * Must not throw. Must not ship a 0-byte fake PDF.
+ */
+function asPdfBase64(raw) {
+  let b64 = null;
+  if (Buffer.isBuffer(raw)) {
+    if (!raw.length) return null;
+    b64 = raw.toString("base64");
+  } else if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    b64 = trimmed;
+  } else {
+    return null;
+  }
+  let bytes;
+  try {
+    bytes = Buffer.from(b64, "base64");
+  } catch {
+    return null;
+  }
+  if (!bytes.length) return null;
+  if (bytes.toString("latin1", 0, 4) !== "%PDF") return null;
+  return b64;
+}
+
+/**
+ * Queue-time attachment encode.
+ *
+ * OWNER: empty `attachments: []` still queues — that is correct for ordinary
+ * (non-pack) mail. Pack / funding "no PDF → no email" gates live in U-02 /
+ * letter-pack (B3), not here. When callers do pass files, bad ones are dropped
+ * (missing content, non-PDF pretending to be pdf, path-traversal names) so the
+ * jsonb row never stores junk that Resend would later attach.
+ */
+function encodeAttachments(list) {
+  if (!Array.isArray(list) || list.length === 0) return [];
+  const out = [];
+  for (const item of list) {
+    if (!item || typeof item !== "object") continue;
+    const contentBase64 = asPdfBase64(item.contentBase64 ?? item.content);
+    if (!contentBase64) continue;
+    out.push({
+      filename: safePdfFilename(item.filename),
+      contentType: "application/pdf",
+      contentBase64
+    });
+  }
+  return out;
+}
+
+export async function sendTemplated(db, {
+  orgId, clientId, channel, templateKey, eventId, context = {}, staffId, shiftId,
+  attachments = [], subject: subjectOverride = null
+}) {
   // TCPA / suppression guard: skip opted-out contacts before touching any template.
   if (clientId && channel === "sms") {
     const suppressed = await isOptedOut(db, clientId, "sms");
@@ -114,7 +190,9 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
   // a client sees before they open it. Templates for SMS have no subject and the
   // column stays NULL. renderTemplate on null would produce the string "null",
   // so the guard is on the value rather than the channel.
-  const subject = row.subject ? renderTemplate(row.subject, mergeContext) : null;
+  const subject = subjectOverride != null
+    ? String(subjectOverride)
+    : (row.subject ? renderTemplate(row.subject, mergeContext) : null);
 
   // Where this is addressed, as of now. Recorded rather than resolved at send
   // time so a message that waits in the queue still goes where it was written
@@ -127,12 +205,13 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
   // nothing about what is written — ON CONFLICT DO NOTHING returns no row — and
   // the return value below is deliberately unchanged, because every existing
   // caller reads `sent` and a replay has always reported sent:true.
+  const files = encodeAttachments(attachments);
   const ins = await db.query(
-    `INSERT INTO messages (org_id, client_id, direction, channel, template_key, rendered_body, provider, provider_ref, status, compliance_check_passed, to_address, subject)
-     VALUES ($1,$2,'outbound',$3,$4,$5,'internal',$6,'queued',true,$7,$8)
+    `INSERT INTO messages (org_id, client_id, direction, channel, template_key, rendered_body, provider, provider_ref, status, compliance_check_passed, to_address, subject, attachments)
+     VALUES ($1,$2,'outbound',$3,$4,$5,'internal',$6,'queued',true,$7,$8,$9::jsonb)
      ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING
-     RETURNING id`,
-    [orgId, clientId, channel, templateKey, rendered, providerRef, toAddress, subject]
+     RETURNING id, created_at`,
+    [orgId, clientId, channel, templateKey, rendered, providerRef, toAddress, subject, JSON.stringify(files)]
   );
 
   /* message.queued — announced only when a row was really written.
@@ -153,6 +232,30 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
       }, { orgId, clientId: clientId || null, idempotencyKey: `message.queued:${providerRef}` });
     } catch (err) {
       console.warn(`[sendTemplated] message.queued not emitted: ${String(err?.message || err)}`);
+    }
+
+    /* Thread into Messaging inbox — same seam as inbound (comms.mjs threadMessage)
+       and staff compose. Workflow outbound used to leave conversation_id NULL, so
+       the inbox never listed these packs even though CCP showed them by client_id.
+
+       Only on a real INSERT (RETURNING row). A DO NOTHING replay must not emit a
+       second thread write. Channel is the exact messages.channel value — no case
+       fold. Failure must NOT lose the queue row: try/catch, log, swallow. */
+    if (clientId) {
+      try {
+        const convo = await upsertConversation(db, {
+          orgId,
+          clientId,
+          channel,
+          lastPulseAt: ins.rows[0].created_at || null
+        });
+        await linkMessage(db, { messageId: ins.rows[0].id, conversationId: convo.id });
+      } catch (err) {
+        console.error(
+          `[sendTemplated] conversation threading failed for ${channel} message ` +
+          `(provider_ref=${providerRef}): ${err && err.message}`
+        );
+      }
     }
   }
 
@@ -178,5 +281,5 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
     });
   }
 
-  return { sent: true };
+  return { sent: true, messageId: ins?.rows?.[0]?.id ?? null, attachmentCount: files.length };
 }
