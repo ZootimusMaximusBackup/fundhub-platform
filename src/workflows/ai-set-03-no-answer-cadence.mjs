@@ -25,6 +25,7 @@ async function rebooked(db, clientId) {
 }
 
 export async function handle({ event, db, step }) {
+  if (!event || typeof event !== "object") return { done: false, reason: "no_event" };
   if (!["no_answer", "no-answer", "voicemail"].includes(event.payload?.disposition)) {
     return { done: false, reason: "not_no_answer" };
   }
