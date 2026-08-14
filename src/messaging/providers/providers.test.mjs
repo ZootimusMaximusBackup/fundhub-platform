@@ -19,23 +19,27 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import * as mailgun from "./mailgun.mjs";
+import * as resend from "./resend.mjs";
 import * as ghl from "./ghl-relay.mjs";
 import * as twilio from "./twilio.mjs";
 import { resolve, addressFieldFor, PROVIDERS } from "./index.mjs";
 import { redact, classify, postJson } from "./http.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const MIGRATION = path.join(HERE, "../../../db/migrations/110_messages_outbound.sql");
+const MIGRATION_110 = path.join(HERE, "../../../db/migrations/110_messages_outbound.sql");
+const MIGRATION_164 = path.join(HERE, "../../../db/migrations/164_resend_twilio_routing.sql");
 
-/* The channel → provider defaults, parsed out of migration 110's VALUES block
-   rather than restated here. Same approach as src/messaging/gate.test.mjs: a
-   copy of the seed in a test can agree with itself while disagreeing with the
-   database, which is the failure the seed test exists to catch. */
-function seededRouting() {
-  const sql = fs.readFileSync(MIGRATION, "utf8");
+/* Historical seed from migration 110 (still applied on fresh DBs). */
+function seededRouting110() {
+  const sql = fs.readFileSync(MIGRATION_110, "utf8");
   const block = sql.slice(sql.indexOf("INSERT INTO message_channel_routing"));
   const rows = [...block.matchAll(/\(\s*'([a-z_]+)'\s*,\s*'([a-z_]+)'\s*\)/g)];
   return Object.fromEntries(rows.map((m) => [m[1], m[2]]));
+}
+
+/** Current shipped defaults after migration 164. */
+function currentRouting() {
+  return { email: "resend", sms: "twilio" };
 }
 
 /* MESSAGING_DRY_RUN: "0" is required, not decoration. The dry-run fence
@@ -120,29 +124,33 @@ describe("the provider registry", () => {
      wrong company, and that is a question about which provider is ENABLED, not
      how many exist. Narrowed to enabled providers, then tied to the migration so
      the code's idea of the default cannot drift from the database's. */
-  test("each seeded channel has exactly one ENABLED provider", () => {
-    for (const channel of Object.keys(seededRouting())) {
+  test("each current channel has exactly one ENABLED provider", () => {
+    for (const channel of Object.keys(currentRouting())) {
       const live = Object.values(PROVIDERS).filter((p) => p.ENABLED && p.CHANNELS.has(channel));
       assert.strictEqual(live.length, 1,
         `${channel} should have exactly one enabled provider, found ${live.map((p) => p.PROVIDER)}`);
     }
   });
 
-  test("the ENABLED provider for each channel is the one migration 110 seeds", () => {
-    const seed = seededRouting();
-    assert.deepStrictEqual(seed, { email: "mailgun", sms: "ghl_relay" },
-      "migration 110's seed changed — the enabled flags must move with it");
+  test("the ENABLED provider for each channel matches post-164 routing", () => {
+    const seed = currentRouting();
+    assert.deepStrictEqual(seed, { email: "resend", sms: "twilio" });
+    assert.ok(fs.existsSync(MIGRATION_164), "migration 164 must exist");
     for (const [channel, provider] of Object.entries(seed)) {
       const live = Object.values(PROVIDERS).find((p) => p.ENABLED && p.CHANNELS.has(channel));
       assert.strictEqual(live.PROVIDER, provider,
-        `${channel} is seeded to ${provider} but ${live.PROVIDER} is the enabled provider`);
+        `${channel} should enable ${provider} but ${live?.PROVIDER} is enabled`);
     }
   });
 
-  test("twilio is built but not the shipped default — sms stays on the GHL relay", () => {
-    assert.strictEqual(twilio.ENABLED, false);
-    assert.strictEqual(ghl.ENABLED, true);
-    assert.strictEqual(seededRouting().sms, "ghl_relay");
+  test("ghl_relay is stubbed; twilio is the SMS default; 110 historical seed unchanged", () => {
+    assert.strictEqual(twilio.ENABLED, true);
+    assert.strictEqual(ghl.ENABLED, false);
+    assert.strictEqual(ghl.TRANSMITS, false);
+    assert.strictEqual(mailgun.ENABLED, false);
+    assert.strictEqual(resend.ENABLED, true);
+    assert.deepStrictEqual(seededRouting110(), { email: "mailgun", sms: "ghl_relay" },
+      "migration 110 historical seed must stay for already-applied installs");
   });
 
   /* The design decision this locks: ENABLED is a declaration, not a switch.
@@ -329,80 +337,66 @@ describe("mailgun provider", () => {
 // ---------------------------------------------------------------------------
 
 describe("ghl relay provider", () => {
-  test("sends to a contact id and returns the message id", async () => {
-    const f = fakeFetch({ status: 201, body: { messageId: "ghlmsg1", conversationId: "conv1" } });
+  test("is a no-op stub — never hits the network", async () => {
+    const f = fakeFetch({ status: 201, body: { messageId: "should-not-send" } });
     const res = await ghl.send(smsMsg, { fetchImpl: f, env: GHL_ENV });
+    assert.strictEqual(res.status, "rejected");
+    assert.match(res.error, /removed|twilio/i);
+    assert.strictEqual(f.calls.length, 0);
+  });
+
+  test("never throws", async () => {
+    const res = await ghl.send(smsMsg, { fetchImpl: async () => { throw new Error("nope"); }, env: GHL_ENV });
+    assert.strictEqual(res.status, "rejected");
+  });
+});
+
+describe("resend provider", () => {
+  const RS_ENV = {
+    ...LIVE,
+    RESEND_API_KEY: "re_test_0123456789abcdef",
+    RESEND_FROM: "Fundhub <onboarding@resend.dev>"
+  };
+
+  test("posts JSON to /emails and returns the id", async () => {
+    const f = fakeFetch({ status: 200, body: { id: "re_msg_1" } });
+    const res = await resend.send(emailMsg, { fetchImpl: f, env: RS_ENV });
     assert.strictEqual(res.status, "sent");
-    assert.strictEqual(res.providerMessageId, "ghlmsg1");
-
+    assert.strictEqual(res.providerMessageId, "re_msg_1");
+    assert.ok(f.calls[0].url.endsWith("/emails"), f.calls[0].url);
     const sent = JSON.parse(f.calls[0].init.body);
-    assert.deepStrictEqual(sent, { type: "SMS", contactId: "ghlContact123", message: smsMsg.body });
+    assert.strictEqual(sent.to[0], emailMsg.to);
+    assert.strictEqual(sent.text, emailMsg.body);
+    assert.strictEqual(sent.from, RS_ENV.RESEND_FROM);
   });
 
-  test("uses the auth scheme and version header this repo already proved against GHL", async () => {
-    const f = fakeFetch({ status: 201, body: { messageId: "x" } });
-    await ghl.send(smsMsg, { fetchImpl: f, env: GHL_ENV });
-    const h = f.calls[0].init.headers;
-    assert.strictEqual(h.Authorization, `Bearer ${GHL_ENV.GHL_RELAY_API_KEY}`);
-    assert.strictEqual(h.Version, "2021-07-28");
-    assert.ok(f.calls[0].url.endsWith("/conversations/messages"), f.calls[0].url);
-  });
-
-  test("sends the body exactly as approved", async () => {
-    const f = fakeFetch({ status: 201, body: { messageId: "x" } });
-    const body = "Reply STOP to opt out.";
-    await ghl.send({ ...smsMsg, body }, { fetchImpl: f, env: GHL_ENV });
-    assert.strictEqual(JSON.parse(f.calls[0].init.body).message, body);
-  });
-
-  // The contract detail most likely to be got wrong by a caller, so it fails
-  // loudly and locally rather than as an opaque 4xx from GHL.
-  test("refuses a phone number where a contact id belongs", async () => {
-    const f = fakeFetch({ status: 201, body: { messageId: "x" } });
-    const res = await ghl.send({ ...smsMsg, to: "+15551234567" }, { fetchImpl: f, env: GHL_ENV });
-    assert.strictEqual(res.status, "rejected");
-    assert.match(res.error, /contact id/i);
-    assert.strictEqual(f.calls.length, 0, "nothing may be sent to a misresolved destination");
-  });
-
-  test("a client never synced to GHL is a permanent rejection", async () => {
-    const res = await ghl.send({ ...smsMsg, to: null }, { fetchImpl: fakeFetch({}), env: GHL_ENV });
-    assert.strictEqual(res.status, "rejected");
-    assert.match(res.error, /ghl_contact_id/);
-  });
-
-  test("accepts either id spelling in the response", async () => {
-    const res = await ghl.send(smsMsg, { fetchImpl: fakeFetch({ status: 200, body: { id: "alt1" } }), env: GHL_ENV });
-    assert.strictEqual(res.providerMessageId, "alt1");
+  test("Bearer auth uses the API key", async () => {
+    const f = fakeFetch({ status: 200, body: { id: "x" } });
+    await resend.send(emailMsg, { fetchImpl: f, env: RS_ENV });
+    assert.strictEqual(f.calls[0].init.headers.Authorization, `Bearer ${RS_ENV.RESEND_API_KEY}`);
   });
 
   test("missing configuration is retryable", async () => {
-    const res = await ghl.send(smsMsg, { fetchImpl: fakeFetch({}), env: {} });
+    const res = await resend.send(emailMsg, { fetchImpl: fakeFetch({}), env: { ...LIVE } });
     assert.strictEqual(res.status, "failed");
     assert.strictEqual(res.retryable, true);
-    assert.match(res.error, /GHL_RELAY_API_KEY/);
+    assert.match(res.error, /RESEND_API_KEY/);
   });
 
   test("never throws when the transport explodes", async () => {
-    const res = await ghl.send(smsMsg, { fetchImpl: async () => { throw new Error("EAI_AGAIN"); }, env: GHL_ENV });
-    assert.strictEqual(res.status, "failed");
-    assert.strictEqual(res.retryable, true);
-  });
-
-  test("never leaks the token into the error text", async () => {
-    const res = await ghl.send(smsMsg, {
-      fetchImpl: fakeFetch({ status: 401, text: `denied for Bearer ${GHL_ENV.GHL_RELAY_API_KEY}` }),
-      env: GHL_ENV
-    });
-    assert.ok(!res.error.includes(GHL_ENV.GHL_RELAY_API_KEY), `token leaked: ${res.error}`);
-  });
-
-  test("survives a non-JSON error page without losing the status", async () => {
-    const res = await ghl.send(smsMsg, {
-      fetchImpl: fakeFetch({ status: 502, text: "<html>Bad Gateway</html>" }), env: GHL_ENV
+    const res = await resend.send(emailMsg, {
+      fetchImpl: async () => { throw new Error("EAI_AGAIN"); },
+      env: RS_ENV
     });
     assert.strictEqual(res.status, "failed");
-    assert.strictEqual(res.retryable, true);
+  });
+
+  test("never leaks the API key into the error text", async () => {
+    const res = await resend.send(emailMsg, {
+      fetchImpl: fakeFetch({ status: 401, text: `denied ${RS_ENV.RESEND_API_KEY}` }),
+      env: RS_ENV
+    });
+    assert.ok(!String(res.error || "").includes(RS_ENV.RESEND_API_KEY), `key leaked: ${res.error}`);
   });
 });
 
@@ -567,7 +561,7 @@ describe("twilio provider", () => {
 });
 
 describe("provider contract, structurally", () => {
-  const files = ["mailgun.mjs", "ghl-relay.mjs", "twilio.mjs", "http.mjs", "index.mjs"];
+  const files = ["mailgun.mjs", "resend.mjs", "ghl-relay.mjs", "twilio.mjs", "http.mjs", "index.mjs"];
   const sourceOf = (f) => fs.readFileSync(path.join(HERE, f), "utf8");
   const codeOf = (f) => sourceOf(f)
     .replace(/\/\*[\s\S]*?\*\//g, "")
@@ -615,21 +609,23 @@ describe("provider contract, structurally", () => {
   });
 
   test("no credential is hardcoded — they come from the environment only", () => {
-    for (const f of ["mailgun.mjs", "ghl-relay.mjs", "twilio.mjs"]) {
+    for (const f of ["mailgun.mjs", "resend.mjs", "ghl-relay.mjs", "twilio.mjs"]) {
       const code = codeOf(f);
-      // Every credential read must go through an env lookup.
       assert.ok(!/key-[A-Za-z0-9]{8,}/.test(code), `${f} contains something key-shaped`);
       assert.ok(!/\bsk_(live|test)_/.test(code), `${f} contains something token-shaped`);
+      assert.ok(!/\bre_[A-Za-z0-9_]{10,}/.test(code), `${f} contains a resend-shaped key`);
     }
   });
 
-  test("both providers reach the network through the shared helper", () => {
-    // A hand-rolled fetch would mean a request with no timeout and no redaction.
-    for (const f of ["mailgun.mjs", "ghl-relay.mjs", "twilio.mjs"]) {
+  test("transmitting providers reach the network through the shared helper", () => {
+    // GHL is a no-op stub (owner 2026-08-14) — it must NOT call the network.
+    for (const f of ["mailgun.mjs", "resend.mjs", "twilio.mjs"]) {
       const code = codeOf(f);
       assert.ok(!/\bfetch\s*\(/.test(code), `${f} must call postJson, not fetch directly`);
       assert.ok(/postJson\s*\(/.test(code), `${f} should use postJson`);
     }
+    assert.ok(!/postJson\s*\(/.test(codeOf("ghl-relay.mjs")),
+      "ghl-relay stub must not call the network");
   });
 });
 

@@ -35,7 +35,7 @@
 // No location id is needed: the contact id identifies the location implicitly,
 // and passing a mismatched one is a 401 that looks like an auth problem.
 
-import { postJson, classify, success, failure, rejection } from "./http.mjs";
+import { failure, rejection } from "./http.mjs";
 
 /** Must equal the `provider` value in message_channel_routing. */
 export const PROVIDER = "ghl_relay";
@@ -46,15 +46,12 @@ export const CHANNELS = new Set(["sms"]);
 /** GHL addresses by contact, so the dispatcher resolves clients.ghl_contact_id. */
 export const ADDRESS_FIELD = "ghl_contact_id";
 
-/** True: migration 110 seeds `sms` to ghl_relay, so this is the shipped default.
-    It stops being true the day A2P 10DLC clears and sms is repointed at twilio —
-    at which point this file is deleted and that flag moves. See index.mjs. */
-export const ENABLED = true;
+/** False: owner 2026-08-14 — GHL account canceled. SMS routes to Twilio.
+    This module stays registered so old rows do not crash; send() is a no-op. */
+export const ENABLED = false;
 
-/** True: this provider makes a real outbound HTTP request. Read by
-    src/messaging/live-fence.mjs, which refuses to let a journey run reach a
-    provider that can leave the building. */
-export const TRANSMITS = true;
+/** False: no longer transmits — send() is a no-op stub. */
+export const TRANSMITS = false;
 
 const DEFAULT_BASE_URL = "https://services.leadconnectorhq.com";
 // The same version scripts/gen-custom-field-migration.mjs pins. GHL requires the
@@ -72,75 +69,16 @@ function config(env) {
   };
 }
 
-/* send(message, options) → SendResult — identical contract to every provider. */
-export async function send(message = {}, options = {}) {
+/* send — GHL is dead (owner 2026-08-14). Log and no-op so nothing crashes.
+   Permanent rejection: do not retry into a canceled account. */
+export async function send(message = {}, _options = {}) {
   try {
-    return await attempt(message, options);
+    const id = message?.id || message?.providerRef || "unknown";
+    console.info(`[ghl_relay] no-op — GHL removed; message=${id} not sent`);
+    return rejection("ghl_relay removed — SMS routes to twilio (owner 2026-08-14)");
   } catch (err) {
     return failure(`ghl_relay provider error: ${String((err && err.message) || err)}`);
   }
-}
-
-async function attempt(message, { fetchImpl, timeoutMs, signal, env = process.env } = {}) {
-  const cfg = config(env);
-  if (!cfg.ok) {
-    return failure(`ghl_relay is not configured: ${cfg.missing.join(", ")} not set`);
-  }
-
-  // `to` is a GHL contact id here, not a phone number. A client that was never
-  // synced to GHL has none, and no retry will produce one — so this is
-  // permanent for this message rather than a transient failure that spins.
-  const contactId = String(message.to || "").trim();
-  if (!contactId) {
-    return rejection("no GHL contact id on the message — the client has no ghl_contact_id");
-  }
-
-  // Guard against the confusion this contract invites: a phone number passed
-  // where a contact id belongs would otherwise be sent to GHL and come back as
-  // an opaque 4xx. Naming it here makes the dispatcher bug obvious.
-  if (/^\+?[0-9][0-9\s().-]{6,}$/.test(contactId)) {
-    return rejection(
-      "destination looks like a phone number, but this provider addresses GHL contact ids"
-    );
-  }
-
-  const body = String(message.body ?? "");
-  if (!body) return rejection("message body is empty");
-
-  const res = await postJson(`${cfg.baseUrl}/conversations/messages`, {
-    headers: {
-      Authorization: `Bearer ${cfg.apiKey}`,
-      Version: cfg.version,
-      Accept: "application/json"
-    },
-    // Sent exactly as the gate approved it. No footer is appended here — the
-    // STOP language belongs in the template, where the gate can see it.
-    body: JSON.stringify({ type: "SMS", contactId, message: body }),
-    timeoutMs,
-    fetchImpl,
-    signal,
-    env,
-    what: "ghl relay sms"
-  });
-
-  if (res.status === 0) return failure(res.error || "ghl_relay request failed");
-
-  const verdict = classify(res.status);
-  if (verdict.status === "rejected") {
-    return rejection(res.error || `ghl_relay rejected the message (HTTP ${res.status})`);
-  }
-  if (verdict.status === "failed") {
-    return failure(res.error || `ghl_relay returned HTTP ${res.status}`, { retryable: true });
-  }
-
-  // GHL returns { messageId, conversationId, ... }. Accept either spelling of
-  // the id field; some v2 responses use `messageId` and some `id`.
-  const id = res.body && (res.body.messageId || res.body.id);
-  const providerMessageId = typeof id === "string" && id ? id : null;
-  if (!providerMessageId) {
-    return failure(`ghl_relay accepted the message but returned no id (HTTP ${res.status})`);
-  }
-  return success(providerMessageId);
 }
 
 export default send;

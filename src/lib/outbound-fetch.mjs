@@ -81,6 +81,7 @@ export function redact(text) {
     .replace(/\b(api[_-]?key|apikey|token|secret|password|authorization)"?\s*[:=]\s*"?[^\s",}]+/gi,
       "$1=[redacted]")
     .replace(/\bkey-[A-Za-z0-9]{8,}/g, "[redacted]")
+    .replace(/\bre_[A-Za-z0-9_]{8,}/g, "[redacted]")
     .slice(0, MAX_ERROR_CHARS);
 }
 

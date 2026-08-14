@@ -46,9 +46,11 @@ export const CHANNELS = new Set(["sms"]);
 /** Twilio addresses an E.164 phone number; clients.phone (001_init.sql:53). */
 export const ADDRESS_FIELD = "phone";
 
-/** False: migration 110 seeds `sms` to ghl_relay, so nothing routes here yet.
+/** True: owner 2026-08-14 — GHL out, SMS = Twilio (migration 164).
+    Prove on device Monday when A2P / number clears; until then sends fail
+    with a clear Twilio error rather than calling GHL.
     A declaration of the shipped default, not an enforcement point — see header. */
-export const ENABLED = false;
+export const ENABLED = true;
 
 /** True: this provider makes a real outbound HTTP request. Read by
     src/messaging/live-fence.mjs, which refuses to let a journey run reach a

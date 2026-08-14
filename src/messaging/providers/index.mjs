@@ -27,12 +27,13 @@
 // flip in api/journeys/run.mjs, inside a transaction that is rolled back.
 
 import * as mailgun from "./mailgun.mjs";
+import * as resend from "./resend.mjs";
 import * as ghlRelay from "./ghl-relay.mjs";
 import * as twilio from "./twilio.mjs";
 import * as internal from "./internal.mjs";
 import * as memory from "./memory.mjs";
 
-const REGISTERED = [mailgun, ghlRelay, twilio, internal, memory];
+const REGISTERED = [mailgun, resend, ghlRelay, twilio, internal, memory];
 
 /* Every provider must expose the same three things. Checked here, once, at
    import time: a provider missing `send` would otherwise fail at the moment of

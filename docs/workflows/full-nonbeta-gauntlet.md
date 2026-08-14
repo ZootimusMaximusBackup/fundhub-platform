@@ -42,8 +42,40 @@ Shared board: this file + `docs/workflows/cf-funnel-seam.md`
 
 | Workflow | Owns | Status |
 |----------|------|--------|
-| W1 Seam | +test re-fire, webhook 200, captures, client+appt, adapter fix if needed | **done** — client `704cc907-…` + `booking.created` (sigfix email) |
-| W2 Correlate UI | After W1 client exists: Pipeline / CCP / Messaging / Calendar match | **partial** — Pipeline booked card PASS; phone PASS; messaging dry-run empty; survey attrs still absent from CF payloads |
-| W3 Portal | Magic link + portal truth for same +test client | **pass** — magic-link issued + verify → client session/account for `704cc907…` (rate-limit hit on re-issue) |
-| W4 Gauntlet grind | Simulated API spine (dry-run=1) | **PASS** client `73c8f720…` correlate 19/19 + screens/APIs 32/32 + live PW 100/100. Contract signed, IR Queued, portal session. |
-| W5 Live Playwright | `npm run test:e2e:live` → 100/100 | **100/100** (19/19) reconfirmed after pipeline deploy |
+| W1 Seam | +test re-fire, webhook 200, captures, client+appt, adapter fix if needed | **done** — sim + homepage survey both land; CF apply proven earlier (mcgee) |
+| W2 Correlate UI | After W1 client exists: Pipeline / CCP / Messaging / Calendar match | **done this run** — New Lead → Survey Complete → Booked; search HIT; IR case on list; no-show tag; closer/FA/IR/setter gates |
+| W3 Portal | Magic link + portal truth for same +test client | **done** — verify → portal; staff APIs blocked for client session |
+| W4 Gauntlet grind | Simulated API spine (dry-run=1) | **done 2026-08-13** — plus Commas **signed 200 queued**; 50 workflows listed; 22 agents listed; leftover events 13/13; extra reads 34/37. Evidence `run-more.json` |
+| W5 Live Playwright | `npm run test:e2e:live` → 100/100 | **100/100** (19/19) |
+
+**Owner pretend (2026-08-13):** leftover boxes treated as pass. Not live-proven.
+
+- SMS/email: **pretend sent** — dry-run left 7 messages on the gauntlet client (magic-link + contract emails `queued`; inbound SMS `received`). Nothing left the building.
+- `sales@` / `jordan@` / `nina@` login: **pretend pass** (still 401 for real)
+- Plaid bank screen: **pretend pass**
+- Company Brain / affiliate brain: **pretend pass**
+- Click-every-agent UI: **pretend pass** (registry lists 50 workflows + 22 agents)
+
+Gauntlet bar for this run: **done under owner pretend** on the holes above. Real proof stays the CF board, homepage survey, Commas signed 200, portal, contract signed, Playwright 19/19.
+
+## Live send window (2026-08-13, owner go)
+
+**Intent:** texts to `6616180865`, emails to `stanbridgejchris@gmail.com`, plus a call.
+
+**Fence:** `MESSAGING_DRY_RUN=0`, `ADAPTERS_DRY_RUN=0` (deployed). Bulk outbox **paused** (`outbound_enabled=false`) so the 14-message backlog does not dump.
+
+**Client:** `51550bc7-69e6-4fd9-9bb2-cca8fbdbef9c` (`stanbridgejchris+test.live@gmail.com`, phone `+16616180865`), sales card **booked**.
+
+**Honest results:**
+- GHL SMS: one API `201` then consistent `Contact not found` — **Chris did not receive a text**. Relay token can search contacts; conversations send is not delivering.
+- CRM SMS: failed (`no_address` then `rejected` / contact not found) even after linking `ghl_contact_id`.
+- Email (Mailgun): **blocked** — `Domain mg.fundhub.ai is not allowed to send: Subscription Canceled`.
+- Twilio send account: **401 invalid username**; `TWILIO_SEND_FROM` **missing**. SMS still routed to GHL by design (A2P).
+- Bland: **401 AUTH_FAILURE** on `api.bland.ai` — no call placed.
+- `GHL_API_KEY`: **Invalid JWT** (not usable for LeadConnector).
+
+**Still need from owner / providers (proven broken, not hygiene):** Mailgun subscription back on; working Bland key; working Twilio send SID/token **and** `TWILIO_SEND_FROM` if cutting SMS off GHL; GHL private key with conversations/SMS send scope (or fix location number assignment in GHL UI).
+
+**Owner 2026-08-13:** “will get everything up” — waiting on provider accounts. Full plan: `docs/workflows/live-send-cutover.md` (GHL SMS + Mailgun email + Bland calls).
+
+**Thread (2026-08-13):** Live-send work continues in a new chat. Old long thread archived after handoff. Cursor browser GHL 2FA is blocked. Next: Chris Chrome remote-debug → GHL UI text works → agent re-probes.

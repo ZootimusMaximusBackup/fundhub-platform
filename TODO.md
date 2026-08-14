@@ -12,6 +12,7 @@
 - [ ] Documentation clarity — no jargon without explanation
 
 ## Ops / Infrastructure
+- [ ] **PAUSED 2026-08-14 — Mailgun bank-inbox → Netlify.** Route already moved: catch-all `F-10R-IN Bank Inbox → Netlify CRM` now forwards to `https://fundhub.ai/api/webhooks/mailgun` (was Vercel inquiry-removal). `MAILGUN_SIGNING_KEY` is set on Netlify. **Blocked on unpaid Mailgun balance** (red banner — pay + retry charge). After pay: prove one bank/forwarded email lands in CRM (`mail.response` / bank inbox), then document closer 5-sec latch + keyword sorter in `docs/sops/` (keywords live in `src/adapters/mailgun.mjs`, not Mailgun UI). Keep Mailgun for inbound; Resend stays outbound.
 - [ ] Seed initial partner row (partners table is empty)
 - [ ] Plaid API key + environment secrets setup
 - [ ] Verify Netlify deploy includes latest shell.js (cache-buster test)

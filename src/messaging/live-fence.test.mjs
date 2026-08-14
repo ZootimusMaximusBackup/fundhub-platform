@@ -7,7 +7,8 @@
  *
  * "Live mode" is not simulated with a flag: these tests stand up a provider
  * whose TRANSMITS is true — the same thing that is true of the real mailgun,
- * ghl_relay and twilio modules — and assert the fence closes around it.
+ * resend and twilio modules — and assert the fence closes around it.
+ * (ghl_relay is a removed stub: TRANSMITS=false.)
  */
 
 import { test } from "node:test";
@@ -178,11 +179,11 @@ test("preflight allows a run whose every route is a non-transmitting provider", 
 test("preflight refuses a run routed at a provider that can transmit", async () => {
   const r = await preflight(routingDb([
     { channel: "email", provider: "memory" },
-    { channel: "sms", provider: "ghl_relay" }
+    { channel: "sms", provider: "twilio" }
   ]), { orgId: ORG });
   assert.strictEqual(r.allowed, false);
   assert.strictEqual(r.reason, "live_mode_refused_transmitting_route");
-  assert.deepStrictEqual(r.transmitting, ["sms:ghl_relay"]);
+  assert.deepStrictEqual(r.transmitting, ["sms:twilio"]);
 });
 
 test("preflight treats an unknown provider as transmitting — it fails closed", async () => {
@@ -214,9 +215,10 @@ test("memory and internal cannot transmit", () => {
 });
 
 /* The mirror of the test above, and the reason the fence exists at all: the
-   three vendor providers CAN transmit, so a run must never be routed at one. */
+   live vendor providers CAN transmit, so a run must never be routed at one. */
 test("the vendor providers declare that they transmit", () => {
-  for (const name of ["mailgun", "ghl_relay", "twilio"]) {
+  for (const name of ["mailgun", "resend", "twilio"]) {
     assert.strictEqual(resolve(name).TRANSMITS, true, `${name} must declare TRANSMITS = true`);
   }
+  assert.strictEqual(resolve("ghl_relay").TRANSMITS, false, "ghl_relay is a removed stub");
 });

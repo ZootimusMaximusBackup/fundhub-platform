@@ -41,9 +41,10 @@ export const CHANNELS = new Set(["email"]);
     resolves it; see the contract amendment on the batch board. */
 export const ADDRESS_FIELD = "email";
 
-/** True: migration 110 seeds `email` to mailgun, so this is the shipped default.
-    A declaration of what routing ships as, not a switch — see index.mjs. */
-export const ENABLED = true;
+/** False: owner 2026-08-14 moved outbound email to Resend (migration 164).
+    Mailgun stays registered for inbound webhook signing only — do not route
+    outbound email here. */
+export const ENABLED = false;
 
 /** True: this provider makes a real outbound HTTP request. Read by
     src/messaging/live-fence.mjs, which refuses to let a journey run reach a
