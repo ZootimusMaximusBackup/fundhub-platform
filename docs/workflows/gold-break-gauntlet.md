@@ -42,6 +42,7 @@
 | B36 Smash F-05 inquiry cleanup gate | Grok 4.5 high | f-05-inquiry-cleanup-gate + tests | **done** |
 | B33 Smash DPC-01 analyzer lock | Grok 4.5 high | dpc-01-analyzer-lock + tests | **done** |
 | B29 Smash DS-01 repair referral | Grok 4.5 high | ds-01-repair-referral + tests | **done** |
+| S-AI03 Smash AI-SET-03 no-answer cadence | Grok 4.5 high | ai-set-03-no-answer-cadence + tests | **done** |
 
 | B32 Smash C-05 pre-funding review | Grok 4.5 high | c-05-pre-funding-review + tests | **done** |
 | S-S01 Smash S-01 new lead intake | Grok 4.5 high | s-01-new-lead-intake + tests | **done** |
@@ -50,6 +51,36 @@
 Do not `--prod`. Do not drain outbox. Do not commit unless Chris asks. Do not cross file fences.
 
 ## Manifests
+
+### S-AI03 — Smash AI-SET-03 no-answer cadence (2026-08-14)
+
+**Status:** done  
+**Model:** Grok 4.5 high
+
+**What broke (pre-fix):**
+- Null / non-object event threw on `event.payload` (`Cannot read properties of null`).
+- Missing client already returned `{ done: false, reason: "no_client" }` — held, no smash test.
+- Duplicate replay already kept 3 queued SMS — held, no fetch trap.
+- Empty / missing disposition already returned `not_no_answer` — held, no smash test.
+- No source grep against live CRS / outbox drain / GHL.
+
+**Fixes:**
+- Null / non-object event → `{ done: false, reason: "no_event" }` (no throw).
+- Missing client → `{ done: false, reason: "no_client" }` (held); locked with fetch trap + no messages / no events.
+- Empty / missing disposition (`null` / `{}` / null / `""` / whitespace) → `not_no_answer`; no SMS queue, no fetch.
+- Duplicate replay: still 3 queued SMS once (`sendTemplated` idempotent); no fetch; no drain.
+- Source grep + runtime `fetch` trap: no pull, no `CRS_ALLOW_LIVE`, no outbox `drain` / `dispatchDue`, no Bland/GHL host.
+
+**Files touched:**
+- `src/workflows/ai-set-03-no-answer-cadence.mjs`
+- `src/workflows/ai-set-03-no-answer-cadence.test.mjs`
+- `docs/workflows/gold-break-gauntlet.md` (board only)
+
+**Not touched:** ai-set-04, messaging providers, GHL. No `--prod`. `CRS_ALLOW_LIVE` stays 0. No outbox drain.
+
+**Verify:** `CRS_ALLOW_LIVE=0 node --test src/workflows/ai-set-03-no-answer-cadence.test.mjs` → **9 pass** (4 prior + 5 smash). 0 fail, 0 skip.
+
+**Leftover:** none in fence. Cadence still queues via `sendTemplated` (by design; does not drain).
 
 ### S-N01 — Smash N-01 cold nurture (2026-08-14)
 
@@ -102,6 +133,7 @@ Do not `--prod`. Do not drain outbox. Do not commit unless Chris asks. Do not cr
 **Verify:** `CRS_ALLOW_LIVE=0 node --test src/workflows/s-01-new-lead-intake.test.mjs` → **6 pass** (2 prior + 4 smash). 0 fail, 0 skip.
 
 **Leftover:** none in fence. Card placement still skips when `orgId` is missing (by design).
+
 
 ### B25 — Smash lender-match missing scores (2026-08-14)
 
