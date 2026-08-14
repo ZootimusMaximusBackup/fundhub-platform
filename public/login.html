@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Fundhub — Sign in</title>
+<title>Sign in | fundhub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -42,11 +42,11 @@
 <div class="spectrum"></div>
 <div class="login-box">
   <div class="card">
-    <h1>fundhub matrix</h1>
-    <p class="sub" style="margin:0">Sign in</p>
+    <h1>fundhub</h1>
+    <p class="sub" style="margin:0">Sign in to your account</p>
     <div class="err" id="err"></div>
     <form id="f">
-      <input id="email" type="email" placeholder="email" autocomplete="username" value="chris@fundhub.ai" required>
+      <input id="email" type="email" placeholder="Email address" autocomplete="username" required>
       <!-- PREFILL REMOVED. This field used to ship value="demo1234", and the
            note beneath it advertised that password as working. It cannot be:
            src/auth/hash.mjs:MIN_PASSWORD_LENGTH is 12, hashPassword() throws
@@ -56,10 +56,10 @@
            an 8-character password, and anyone who trusted the prefill and hit
            Sign in got "Wrong email or password" with no idea why. An empty box
            is honest; a wrong answer typed in for you is not. -->
-      <input id="pw" type="password" placeholder="password" autocomplete="current-password" required>
+      <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
       <button class="btn primary" id="go" type="submit">Sign in</button>
     </form>
-    <p class="note" style="margin-top:14px">Your own account is <b>chris@fundhub.ai</b>. Type your password.</p>
+    <p class="note" style="margin-top:14px">Need help? <a href="mailto:support@fundhub.ai">support@fundhub.ai</a></p>
 
     <!-- Forgot password. This system sends no outbound email (CLAUDE.md §12 —
          src/mail/ is deliberately inert), so this cannot deliver a reset link
@@ -72,8 +72,9 @@
       <a href="#" id="fh-forgot-link" style="text-decoration:underline">Forgot your password?</a>
     </p>
     <div id="fh-forgot-box" style="display:none;margin-top:8px">
-      <input id="fh-forgot-email" type="email" placeholder="your email" autocomplete="username">
-      <button class="btn" id="fh-forgot-go" type="button">Send reset request</button>
+      <p class="note" style="margin:0 0 8px">Enter your email and we'll send a reset link.</p>
+      <input id="fh-forgot-email" type="email" placeholder="Email address" autocomplete="username">
+      <button class="btn" id="fh-forgot-go" type="button">Send reset link</button>
       <p class="note" id="fh-forgot-msg"></p>
     </div>
 
@@ -306,10 +307,8 @@ document.getElementById("fh-forgot-go").addEventListener("click", async function
       body: JSON.stringify({ action: "request", email: email })
     });
   } catch (e) { /* the message below is accurate either way — never reveal a backend detail */ }
-  btn.disabled = false; btn.textContent = "Send reset request";
-  msg.textContent = "If that's a real staff account, a reset request was created. " +
-    "This system does not send email — ask an owner or admin to reset your password " +
-    "from the Staff screen.";
+  btn.disabled = false; btn.textContent = "Send reset link";
+  msg.textContent = "If an account exists for that address, a reset link is on its way.";
 });
 
 /* ───────────────────────────────────────────────────────────────────────────

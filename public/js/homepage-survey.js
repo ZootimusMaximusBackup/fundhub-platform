@@ -1,14 +1,14 @@
 /* Homepage multi-step survey — CF ground truth + OWNER attribute keys.
    docs/clickfunnels/cf-survey-ground-truth.md
    docs/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md
-   Contact LAST. Legal Business Name optional. */
+   Contact LAST. Business name optional. */
 (function () {
   var PERSONAL = "No, personal funding only";
 
   var STEPS = [
     {
       id: "funding_target_amount",
-      title: "Set Your Target Amount",
+      title: "How much are you looking for?",
       type: "single",
       options: [
         "Less than $50k",
@@ -48,7 +48,7 @@
     },
     {
       id: "current_score",
-      title: "Your Current Score",
+      title: "Roughly where is your credit?",
       type: "single",
       options: ["500-579", "580-649", "650-699", "700-749", "750+", "Not sure"],
     },
@@ -215,13 +215,13 @@
       if (step.type === "contact") {
         html +=
           '<div class="field"><label for="sv-name">Full name</label>' +
-          '<input type="text" id="sv-name" name="name" autocomplete="name" required></div>' +
-          '<div class="field"><label for="sv-business">Legal Business Name <span style="text-transform:none;letter-spacing:0;color:var(--gray2)">(optional)</span></label>' +
-          '<input type="text" id="sv-business" name="business" autocomplete="organization"></div>' +
+          '<input type="text" id="sv-name" name="name" autocomplete="name" placeholder="First and last" required></div>' +
+          '<div class="field"><label for="sv-business">Business name <span style="text-transform:none;letter-spacing:0;color:var(--gray2)">(optional)</span></label>' +
+          '<input type="text" id="sv-business" name="business" autocomplete="organization" placeholder="As registered"></div>' +
           '<div class="field"><label for="sv-email">Email address</label>' +
-          '<input type="email" id="sv-email" name="email" autocomplete="email" required></div>' +
+          '<input type="email" id="sv-email" name="email" autocomplete="email" placeholder="you@company.com" required></div>' +
           '<div class="field"><label for="sv-phone">Mobile phone</label>' +
-          '<input type="tel" id="sv-phone" name="phone" autocomplete="tel" required></div>' +
+          '<input type="tel" id="sv-phone" name="phone" autocomplete="tel" placeholder="(555) 555-5555" required></div>' +
           '<div class="consent"><input type="checkbox" id="sv-sms" name="sms_consent">' +
           '<label for="sv-sms">I expressly consent to receive transactional SMS messages from FUNDHUB LLC about my application and account status at the number provided, including messages sent using automated technology. Checking this box constitutes my electronic signature. Message and data rates may apply. Message frequency varies. Reply STOP to opt out, HELP for help. Consent is not a condition of any purchase or service. See our <a href="/privacy/">Privacy Policy</a> and <a href="/terms/#sms">SMS Terms</a>.</label></div>' +
           '<p class="sv-err" role="alert"></p>' +
@@ -307,18 +307,18 @@
               return multiPick[step.id][k];
             });
             if (!picks.length) {
-              setErr("Select at least one option.");
+              setErr("We need this one to continue.");
               return;
             }
             answers[step.id] = picks;
           } else if (!answers[step.id]) {
-            setErr("Please select an option to continue.");
+            setErr("We need this one to continue.");
             return;
           } else if (step.otherEnabled && answers[step.id] === "Other") {
             var ot = (document.getElementById("sv-other") || {}).value || "";
             ot = String(ot).trim();
             if (!ot) {
-              setErr("Please describe Other.");
+              setErr("We need this one to continue.");
               return;
             }
             otherText = ot;
@@ -354,12 +354,34 @@
       email = String(email).trim();
       phone = String(phone).trim();
       business = String(business).trim();
-      if (!name || !email || !phone) {
-        setErr("Please complete name, email, and phone.");
+      if (!name) {
+        setErr("We need this one to continue.");
+        return;
+      }
+      if (!email) {
+        setErr("We need this one to continue.");
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setErr("That address doesn't look complete — check for a typo.");
+        return;
+      }
+      if (!phone) {
+        setErr("We need this one to continue.");
+        return;
+      }
+      var digits = phone.replace(/\D/g, "");
+      if (digits.length === 11 && digits.charAt(0) === "1") digits = digits.slice(1);
+      if (digits.length !== 10) {
+        setErr("We need 10 digits, including area code.");
+        return;
+      }
+      if (!sms) {
+        setErr("Check the box so we can text you application updates.");
         return;
       }
       btn.disabled = true;
-      btn.textContent = "Redirecting…";
+      btn.textContent = "Sending…";
       setErr("");
 
       fetch("/api/public/survey-submit", {
@@ -388,18 +410,27 @@
             btn.disabled = false;
             btn.textContent = "Submit application";
             setErr(
-              (res.body && res.body.error) ||
-                "Something went wrong. Please try again."
+              "That didn't go through. Try once more, or email support@fundhub.ai."
             );
             return;
           }
-          btn.textContent = "Redirecting…";
+          if (res.body.deduped) {
+            btn.disabled = false;
+            btn.textContent = "Submit application";
+            setErr(
+              "We already have this one. Your advisor will reach out shortly."
+            );
+            return;
+          }
+          btn.textContent = "Received";
           window.location.assign(res.body.redirect);
         })
         .catch(function () {
           btn.disabled = false;
           btn.textContent = "Submit application";
-          setErr("Network error. Please try again.");
+          setErr(
+            "That didn't go through. Try once more, or email support@fundhub.ai."
+          );
         });
     }
 

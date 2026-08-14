@@ -333,7 +333,7 @@
   <div class="scrollprog" aria-hidden="true"><span id="prog"></span></div>
   <div class="wrap">
     <nav>
-      <a href="/" class="brand"><span class="logo" role="img" aria-label="fundhub" style="width:128px;height:26px"></span></a>
+      <a href="/affiliates/" class="brand"><span class="logo" role="img" aria-label="fundhub" style="width:128px;height:26px"></span></a>
       <div class="navlinks">
         <a href="/">Funding</a>
         <a href="/education/">Education</a>
@@ -352,7 +352,7 @@
       <div>
         <div class="eyebrow">Partner program</div>
         <h1>Two ways to build on fundhub.</h1>
-        <p class="lede">Refer business owners as an affiliate, or run your own funding brand as a white-label partner. Either way, our team runs the fulfillment — underwriting, funding operations, and compliance rails — end to end.</p>
+        <p class="lede">Refer business owners as an affiliate, or run your own funding brand as a white-label partner. Either way, our team runs fulfillment — underwriting, funding operations, and compliance rails — end to end.</p>
         <div class="hero-cta">
           <a href="#apply" class="btn-inv">Apply to partner</a>
           <a href="#tracks" class="ghost">SEE THE TRACKS →</a>
@@ -499,10 +499,10 @@
       </div>
       <div>
         <form class="appform" id="pform" novalidate>
-          <div class="field"><label for="p-name">Full name</label><input type="text" id="p-name" autocomplete="name" required></div>
-          <div class="field"><label for="p-email">Email address</label><input type="email" id="p-email" autocomplete="email" required></div>
-          <div class="field"><label for="p-phone">Mobile phone</label><input type="tel" id="p-phone" autocomplete="tel" required></div>
-          <div class="field"><label for="p-co">Company or brand (optional)</label><input type="text" id="p-co" autocomplete="organization"></div>
+          <div class="field"><label for="p-name">Full name</label><input type="text" id="p-name" autocomplete="name" placeholder="First and last" required></div>
+          <div class="field"><label for="p-email">Email address</label><input type="email" id="p-email" autocomplete="email" placeholder="you@company.com" required></div>
+          <div class="field"><label for="p-phone">Mobile phone</label><input type="tel" id="p-phone" autocomplete="tel" placeholder="(555) 555-5555" required></div>
+          <div class="field"><label for="p-co">Business name <span style="text-transform:none;letter-spacing:0;color:var(--gray)">(optional)</span></label><input type="text" id="p-co" autocomplete="organization" placeholder="As registered"></div>
           <div class="field"><label for="p-track">Track</label><select id="p-track" required><option value="">Select a track</option><option value="affiliate">Affiliate</option><option value="white_label">White-Label Partner</option></select></div>
           <div class="field"><label for="p-aud">How will you refer clients?</label><input type="text" id="p-aud" placeholder="Audience, list, community, book of clients…" required></div>
           <div class="consent">
@@ -638,12 +638,18 @@
     var email=document.getElementById('p-email').value.trim();
     var phone=document.getElementById('p-phone').value.trim();
     var track=document.getElementById('p-track').value;
-    if(!name||!email||!phone||!track){alert('Please complete name, email, phone, and track.');return;}
+    var sms=document.getElementById('p-sms').checked;
+    if(!name||!email||!phone||!track){alert('We need this one to continue.');return;}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert("That address doesn't look complete — check for a typo.");return;}
+    var digits=phone.replace(/\D/g,'');
+    if(digits.length===11&&digits.charAt(0)==='1')digits=digits.slice(1);
+    if(digits.length!==10){alert('We need 10 digits, including area code.');return;}
+    if(!sms){alert('Check the box so we can text you application updates.');return;}
     var b=this.querySelector('button[type=submit]');
-    b.disabled=true;b.textContent='Processing…';
+    b.disabled=true;b.textContent='Sending…';
     // PASTE YOUR GHL INBOUND WEBHOOK URL BELOW
     var GHL_WEBHOOK='PASTE_WEBHOOK_URL_HERE';
-    var payload={full_name:name,email:email,phone:phone,company:document.getElementById('p-co').value.trim(),track:track,audience:document.getElementById('p-aud').value.trim(),sms_consent:document.getElementById('p-sms').checked,page_url:location.href,submitted_at:new Date().toISOString()};
+    var payload={full_name:name,email:email,phone:phone,company:document.getElementById('p-co').value.trim(),track:track,audience:document.getElementById('p-aud').value.trim(),sms_consent:sms,page_url:location.href,submitted_at:new Date().toISOString()};
     if(GHL_WEBHOOK.indexOf('http')===0){fetch(GHL_WEBHOOK,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(function(){});}
     setTimeout(function(){
       document.getElementById('pform').style.display='none';
