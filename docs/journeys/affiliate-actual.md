@@ -19,7 +19,7 @@ flowchart TD
     CAN --> A_auth[Signing in and out — 6 routes]
     CAN --> A_contracts[contracts — 1 route]
     CAN --> A_documents[Documents — 1 route]
-    CAN --> A_public[public — 1 route]
+    CAN --> A_public[public — 2 routes]
     CAN --> A_top_level[Everything else — 3 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 126 routes]
@@ -47,7 +47,7 @@ flowchart TD
 
 ## What they can reach
 
-**13 of 139 routes.**
+**14 of 140 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -63,16 +63,17 @@ flowchart TD
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
 | `/api/public/partner-page` | GET | anyone |
+| `/api/public/survey-submit` | POST | anyone |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
 ### Worth knowing
 
-- **9 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/contracts/sign`, `/api/health`, `/api/public/partner-page`. These are the sign-in routes and the health check.
+- **10 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/contracts/sign`, `/api/health`, `/api/public/partner-page`, `/api/public/survey-submit`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**126 of 139 routes.**
+**126 of 140 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

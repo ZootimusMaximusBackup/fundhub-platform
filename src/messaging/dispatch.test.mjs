@@ -41,7 +41,7 @@ const claimed = (over = {}) => ({
    `updates` records every write so a test can assert what was persisted. */
 function fakeDb({
   optedOut = new Set(),
-  routing = { email: { provider: "mailgun", enabled: true }, sms: { provider: "ghl_relay", enabled: true } },
+  routing = { email: { provider: "mailgun", enabled: true }, sms: { provider: "twilio", enabled: true } },
   client = { email: "person@example.com", ghl_contact_id: "ghlContact123", phone: "+15551234567" },
   rules = [],
   subject = "Your file",
@@ -98,7 +98,9 @@ const ENV = {
   MAILGUN_SEND_API_KEY: "key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   MAILGUN_SEND_DOMAIN: "mg.example.com",
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>",
-  GHL_RELAY_API_KEY: "ghl-token"
+  TWILIO_SEND_ACCOUNT_SID: "ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  TWILIO_SEND_AUTH_TOKEN: "twilio-secret-token-value",
+  TWILIO_SEND_FROM: "+15551230000"
 };
 
 beforeEach(() => clearRuleCache());
@@ -217,13 +219,24 @@ describe("routing", () => {
     assert.ok(f.calls[0].url.includes("mailgun.net"), f.calls[0].url);
   });
 
-  test("sms routes to the GHL relay, addressed by contact id", async () => {
+  test("sms routes to twilio, addressed by E.164 phone", async () => {
     const f = spy();
+    f.calls.length = 0;
+    const fetchImpl = async (url, init) => {
+      f.calls.push({ url, init });
+      return {
+        ok: true,
+        status: 201,
+        text: async () => JSON.stringify({ sid: "SMaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", status: "queued" })
+      };
+    };
+    fetchImpl.calls = f.calls;
     const db = fakeDb();
-    const res = await dispatchOne(db, claimed({ channel: "sms" }), { fetchImpl: f, env: ENV, now: MIDDAY });
+    const res = await dispatchOne(db, claimed({ channel: "sms" }), { fetchImpl, env: ENV, now: MIDDAY });
     assert.strictEqual(res.outcome, OUTCOME.SENT);
-    assert.ok(f.calls[0].url.includes("leadconnectorhq.com"), f.calls[0].url);
-    assert.strictEqual(JSON.parse(f.calls[0].init.body).contactId, "ghlContact123");
+    assert.ok(fetchImpl.calls[0].url.includes("api.twilio.com"), fetchImpl.calls[0].url);
+    const body = String(fetchImpl.calls[0].init.body);
+    assert.match(body, /To=%2B15551234567/);
   });
 
   // No route is a HOLD. The alternative — picking a provider — would send a
@@ -352,9 +365,9 @@ describe("addressing", () => {
     assert.strictEqual(f.calls.length, 0);
   });
 
-  test("a client never synced to GHL cannot be texted", async () => {
+  test("a client with no phone cannot be texted", async () => {
     const f = spy();
-    const db = fakeDb({ client: { ghl_contact_id: null } });
+    const db = fakeDb({ client: { email: "person@example.com", phone: null } });
     const res = await dispatchOne(db, claimed({ channel: "sms" }), { fetchImpl: f, env: ENV, now: MIDDAY });
     assert.strictEqual(res.outcome, OUTCOME.NO_ADDRESS);
     assert.strictEqual(f.calls.length, 0);

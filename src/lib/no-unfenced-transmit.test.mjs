@@ -94,6 +94,9 @@ const ALLOWED_RAW_FETCH = {
     "folding into the one fence later.",
   "src/hiring/linkedin.mjs":
     "Job posting to a company-owned LinkedIn account. No client contact.",
+  "src/finance/crs-pull.mjs":
+    "Wraps an injected fetch with the CRS_ALLOW_LIVE host gate and hands it to " +
+    "createCrsClient. The wire call lives in src/messaging/providers/crs-softview.mjs.",
 
   /* ── SPENDS MONEY, REACHES NO CLIENT — flagged, deliberately not fenced ───
      These can change live ad campaigns, and therefore spend, but they cannot

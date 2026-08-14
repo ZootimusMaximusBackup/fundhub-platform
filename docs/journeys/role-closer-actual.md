@@ -26,7 +26,7 @@ flowchart TD
     CAN --> A_dashboard[The dashboard — 5 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 5 routes]
-    CAN --> A_public[public — 1 route]
+    CAN --> A_public[public — 2 routes]
     CAN --> A_read[Reading data — 32 routes]
     CAN --> A_repair[repair — 1 route]
     CAN --> A_social[social — 3 routes]
@@ -51,7 +51,7 @@ flowchart TD
 
 ## What they can reach
 
-**94 of 139 routes.**
+**95 of 140 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -110,6 +110,7 @@ flowchart TD
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
 | `/api/pipeline-cards` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/public/partner-page` | GET | anyone |
+| `/api/public/survey-submit` | POST | anyone |
 | `/api/read/agent-context` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/agent-shadow-log` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -153,12 +154,12 @@ flowchart TD
 ### Worth knowing
 
 - **5 routes also accept a shared secret instead of a sign-in** (`DASHBOARD_SECRET`), so a caller holding that value reaches them without being anybody in particular: `/api/dashboard/client`, `/api/dashboard/clients`, `/api/dashboard/kpis`, `/api/dashboard/pipeline`, `/api/dashboard/seed`.
-- **9 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/contracts/sign`, `/api/health`, `/api/public/partner-page`. These are the sign-in routes and the health check.
+- **10 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/contracts/sign`, `/api/health`, `/api/public/partner-page`, `/api/public/survey-submit`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**45 of 139 routes.**
+**45 of 140 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

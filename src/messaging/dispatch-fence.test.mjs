@@ -33,7 +33,7 @@ const claimed = (over = {}) => ({
 });
 
 function fakeDb({
-  routing = { email: { provider: "mailgun", enabled: true }, sms: { provider: "ghl_relay", enabled: true } },
+  routing = { email: { provider: "mailgun", enabled: true }, sms: { provider: "twilio", enabled: true } },
   client = { email: "person@example.com", ghl_contact_id: "ghlContact123", phone: "+15551234567" }
 } = {}) {
   const updates = [];
@@ -76,7 +76,9 @@ const CREDS = {
   MAILGUN_SEND_API_KEY: "key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   MAILGUN_SEND_DOMAIN: "mg.example.com",
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>",
-  GHL_RELAY_API_KEY: "ghl-token"
+  TWILIO_SEND_ACCOUNT_SID: "ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  TWILIO_SEND_AUTH_TOKEN: "twilio-secret-token-value",
+  TWILIO_SEND_FROM: "+15551230000"
 };
 
 const withFence = (value) =>
