@@ -45,10 +45,37 @@
 
 | B32 Smash C-05 pre-funding review | Grok 4.5 high | c-05-pre-funding-review + tests | **done** |
 | S-S01 Smash S-01 new lead intake | Grok 4.5 high | s-01-new-lead-intake + tests | **done** |
+| S-N01 Smash N-01 cold nurture | Grok 4.5 high | n-01-cold-nurture + tests | **done** |
 
 Do not `--prod`. Do not drain outbox. Do not commit unless Chris asks. Do not cross file fences.
 
 ## Manifests
+
+### S-N01 — Smash N-01 cold nurture (2026-08-14)
+
+**Status:** done  
+**Model:** Grok 4.5 high
+
+**What broke (pre-fix):**
+- Null / non-object event called `resolveClient` and threw (`event.orgId` on null).
+- Missing client already returned `{ sent: false, reason: "no_client" }` — held, no smash / fetch fence.
+- Duplicate replay already kept one email + one SMS — held, no fetch trap.
+- No source grep against live CRS / outbox drain.
+
+**Fixes:**
+- Null / non-object event → `{ sent: false, reason: "no_event" }` (no throw).
+- Smash tests lock missing client, null event, duplicate (one email + one SMS), fetch trap, and source grep (no `fetch`, CRS pull, `CRS_ALLOW_LIVE`, outbox `drain` / `dispatchDue`, Vercel / Bland / GHL hosts).
+
+**Files touched:**
+- `src/workflows/n-01-cold-nurture.mjs`
+- `src/workflows/n-01-cold-nurture.test.mjs`
+- `docs/workflows/gold-break-gauntlet.md` (board only)
+
+**Not touched:** other N-series, messaging, GHL. No `--prod`. `CRS_ALLOW_LIVE` stays 0. No outbox drain.
+
+**Verify:** `CRS_ALLOW_LIVE=0 node --test src/workflows/n-01-cold-nurture.test.mjs` → **10 pass** (6 prior + 4 smash). 0 fail, 0 skip.
+
+**Leftover:** none in fence. Replay still reports `sent: true` from `sendTemplated` (by design); row count is the double-send fence.
 
 ### S-S01 — Smash S-01 new lead intake (2026-08-14)
 
