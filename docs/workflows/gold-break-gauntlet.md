@@ -1175,3 +1175,29 @@ Do not `--prod`. Do not drain outbox. Do not commit unless Chris asks. Do not cr
 **Verify:** `node --test src/workflows/c-00-crs-soft-pull-request.test.mjs` → **12 pass** (7 prior + 5 smash). 0 fail, 0 skip.
 
 **Leftover:** Production-host fence still lives in crs-client / crs-identities / crs-pull (B18). C-00 only forwards `env` and refuses throws.
+
+### S-AF02 — Smash AF-02 referral ownership capture (2026-08-14)
+
+**Status:** done  
+**Model:** Grok 4.5 high
+
+**What broke (pre-fix):**
+- Null / undefined event threw (`Cannot read properties of null (reading 'orgId')`).
+- Missing client already returned `{ done: false, reason: "no_client" }` — held, no smash test or fetch trap.
+- Duplicate replay already kept the first owner lock — held, no fetch trap.
+- No source grep against live CRS / outbox drain / GHL hosts.
+
+**Fixes:**
+- Null / non-object event → `{ done: false, reason: "no_event" }` (no throw).
+- Smash tests lock missing client, duplicate replay (second pass `ownership_already_locked`), null event, fetch trap, and source grep (no `fetch`, no `CRS_ALLOW_LIVE`, no outbox `drain` / `dispatchDue`, no GHL host).
+
+**Files touched:**
+- `src/workflows/af-02-referral-ownership-capture.mjs`
+- `src/workflows/af-02-referral-ownership-capture.test.mjs`
+- `docs/workflows/gold-break-gauntlet.md` (board only)
+
+**Not touched:** AF-01/03/04/05, messaging providers, GHL. No `--prod`. `CRS_ALLOW_LIVE` stays 0. No outbox drain.
+
+**Verify:** `CRS_ALLOW_LIVE=0 node --test src/workflows/af-02-referral-ownership-capture.test.mjs` → **8 pass** (4 prior + 4 smash). 0 fail, 0 skip.
+
+**Leftover:** none in fence.
