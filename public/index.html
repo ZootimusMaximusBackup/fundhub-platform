@@ -660,7 +660,7 @@
       var txt=h1.textContent.trim();
       h1.setAttribute('aria-label',txt);
       h1.innerHTML=txt.split(/\s+/).map(function(w,i){
-        var g=(w.replace(/[^a-z]/gi,'').toLowerCase()==='matched')?' grad':'';
+        var g=(w.replace(/[^a-z]/gi,'').toLowerCase()==='qualify')?' grad':'';
         return '<span class="w" aria-hidden="true"><i class="'+g+'" style="transition-delay:'+(i*55)+'ms">'+w+'</i></span>';
       }).join(' ');
     }
