@@ -44,6 +44,7 @@
 | B29 Smash DS-01 repair referral | Grok 4.5 high | ds-01-repair-referral + tests | **done** |
 
 | B32 Smash C-05 pre-funding review | Grok 4.5 high | c-05-pre-funding-review + tests | **done** |
+| S-CC Smash contract-chaser | Grok 4.5 high | contract-chaser + tests | **done** |
 
 Do not `--prod`. Do not drain outbox. Do not commit unless Chris asks. Do not cross file fences.
 
@@ -1095,3 +1096,30 @@ Do not `--prod`. Do not drain outbox. Do not commit unless Chris asks. Do not cr
 **Verify:** `node --test src/workflows/c-00-crs-soft-pull-request.test.mjs` → **12 pass** (7 prior + 5 smash). 0 fail, 0 skip.
 
 **Leftover:** Production-host fence still lives in crs-client / crs-identities / crs-pull (B18). C-00 only forwards `env` and refuses throws.
+
+### S-CC — Smash contract-chaser (2026-08-14)
+
+**Status:** done  
+**Model:** Grok 4.5 high
+
+**What broke (pre-fix):**
+- Missing `orgId` on `runChase` threw (`runChase: orgId is required`).
+- Null / junk `db` or `step` on `handle` threw (`step.run` / `db.query` on null).
+- No smash locks for empty outstanding list, duplicate quiet pass, missing org, or source grep against live CRS / outbox drain / providers.
+
+**Fixes:**
+- Missing `orgId` → `{ considered: 0, reminded: 0, tasked: 0, reason: "no_org" }` (no throw).
+- Null / junk `db` or `step` → `{ orgs: 0, reminded: 0, tasked: 0, reason: "no_db" | "no_step" }` (no throw).
+- Empty outstanding / org with nothing due → quiet zeros; duplicate pass stays zero.
+- Source grep + runtime `fetch` trap: no `fetch`, no CRS pull, no `CRS_ALLOW_LIVE`, no outbox `drain` / `dispatchDue`, no `sendTemplated` / providers in this file.
+
+**Files touched:**
+- `src/workflows/contract-chaser.mjs`
+- `src/workflows/contract-chaser.test.mjs` (new)
+- `docs/workflows/gold-break-gauntlet.md` (board only)
+
+**Not touched:** notify.mjs, contracts API, Inngest registry, messaging providers. No new Inngest registration. No live mail. No `--prod`. `CRS_ALLOW_LIVE` stays 0. No outbox drain.
+
+**Verify:** `CRS_ALLOW_LIVE=0 node --test src/workflows/contract-chaser.test.mjs` → **10 pass** (4 prior-style + 6 smash). 0 fail, 0 skip.
+
+**Leftover:** none in fence. Real chase still goes through `chaseContracts` → `notifySigners` (queues + may deliver when outbound is on) — that path stays in `src/contracts/notify.mjs`, outside this smash.
