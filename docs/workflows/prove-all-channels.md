@@ -11,7 +11,7 @@
 | P1 Email one-shots (workflow EMAIL-* + 4 remaining passed) | Grok 4.6 extra-high | `scripts/tmp-email-channel-prove.mjs` only | done |
 | P2 Bland one live call | this chat (Grok 4.6) | `scripts/tmp-bland-prove.mjs` + local `.env` name `BLAND_API_KEY` | **done** — call_id `326e71c0-86f3-4c76-ba8e-de0627a9c30d` |
 | P3 Gold letter layout (not typeface) | Grok 4.6 extra-high | `vendor/underwriteiq-full/api/lite/letter-generator.js` + its tests | done |
-| P4 Live Playwright reconfirm | Grok 4.5 high | `e2e/live-*.spec.mjs` + `docs/workflows/live-playwright-100.md` | done |
+| P4 Live Playwright reconfirm | Grok 4.5 high | `e2e/live-*.spec.mjs` + `docs/workflows/live-playwright-100.md` | **done 2026-08-14 100/100**; **2026-08-15 re-run BLOCKED** (no `.env` / `STAFF_E2E_PASSWORD` in this workspace) |
 | P5 CRM messaging rows for 5 sample clients | Grok 4.5 high | read-only CRM / SQL evidence | done |
 | P6 Link sendTemplated to Messaging inbox | Grok 4.5 high | messaging.mjs + tests | **done** |
 | P7 Funding pack missing bureau letters | this chat | letter-pack.mjs + tests + one-shot resend | **done + sent** — 2:08pm packs include `ex_round1.pdf` + `eq_round1.pdf` |
@@ -55,6 +55,13 @@ Old key was 20 chars and returned **401 AUTH_FAILURE**. Owner made a new `org_�
 - **Product source touched:** none
 - **Fixes / re-runs:** none (first run green)
 - **At:** 2026-08-14T20:51:04Z · commit `d85eadf`
+
+### P4 re-run 2026-08-15 (this workspace)
+
+- **Score this run:** **0/100** (0/19 required ids executed). Setup fail in `staffPassword()` / `beforeAll`.
+- **Blocker:** gitignored `.env` missing. Names needed: `STAFF_E2E_PASSWORD` (or `STAFF_INITIAL_PASSWORD`). Also unset here: `BASE_URL`, `FUNNEL_URL` (defaults still point at live sites).
+- **Not a product bug.** Tests not weakened. No password guessed. No `--prod`. No outbox drain.
+- **Last PASS unchanged:** 100/100 on 2026-08-14. Do not send Chris to look at the site.
 
 ## P5 manifest
 

@@ -1,10 +1,10 @@
 # Live Playwright 100 — shared board
 
-**Status:** **100/100 PASS** (2026-08-14 P4 reconfirmed)
+**Status:** **BLOCKED this run (2026-08-15)** — last live PASS still **100/100** (2026-08-14 P4)
 **Canonical:** `https://fundhub.ai` · funnel `https://apply.fundhub.ai`
 **Gate law:** No manual review from Chris until AI-run Playwright scores **100/100** against live; then exactly one manual pass.
 **Command:** `npm run test:e2e:live`
-**Branch:** `main`
+**Branch:** `cursor/resume-gold-break-1dea`
 
 ### Hard rules
 - Never print secrets. Read local `.env` / Netlify runtime. Never ask to rotate keys.
@@ -19,13 +19,15 @@
 | R Rule + scoreboard + docs commit | this thread | **done** |
 | C Config + live auth fixture | this thread | **done** |
 | S Specs for RUN4 PASS surfaces | this thread | **done** |
-| L Loop run → fix → 100/100 | this thread | **done — 19/19** |
+| L Loop run → fix → 100/100 | this thread | **blocked 2026-08-15** — no gitignored `.env`; `STAFF_E2E_PASSWORD` unset in this workspace. Last PASS **19/19** on 2026-08-14. |
 
 ## Score
 
 `score = (passed_required / required) * 100`
 
-**Final:** **100/100** (19/19) — evidence `docs/workflows/e2e-verify-run4-evidence/live-playwright-100/` (P4 reconfirm 2026-08-14; score unchanged)
+**Last PASS:** **100/100** (19/19) — evidence `docs/workflows/e2e-verify-run4-evidence/live-playwright-100/` (P4 reconfirm 2026-08-14)
+
+**This run (2026-08-15, `cursor/resume-gold-break-1dea`):** **0/19 = 0/100** — not a site failure. `npm run test:e2e:live` exited in `beforeAll`: gitignored `.env` is **absent**, `STAFF_E2E_PASSWORD` / `STAFF_INITIAL_PASSWORD` **UNSET**. 1 test failed (setup), 18 did not run. Chrome binary present. Did not guess a password. Did not `--prod`. Did not drain outbox. Did not ask to rotate keys.
 
 ## Required live test ids
 
@@ -72,6 +74,7 @@ All non-`live-*` specs under `e2e/` use `e2e/harness.mjs` + static server (`npm 
 | 4–5 | 18/19 | Meta+k / force click flaky | evaluate open overlay; skip flaky re-goto |
 | 6 | **19/19 = 100** | — | — |
 | 7 (P4 2026-08-14) | **19/19 = 100** | — | reconfirm only |
+| 8 (2026-08-15 resume) | **0/19 = 0** (blocked) | missing `STAFF_E2E_PASSWORD` — no `.env` in this workspace | none (env, not product). Last PASS remains run 7. |
 
 ## Product fix shipped
 
