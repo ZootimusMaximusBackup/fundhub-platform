@@ -21,8 +21,7 @@ const { buildSuggestions } = require("./suggestions");
 
 // Parser endpoint
 const PARSE_ENDPOINT =
-  process.env.PARSE_ENDPOINT ||
-  "https://underwrite-iq-lite.vercel.app/api/lite/parse-report";
+  process.env.PARSE_ENDPOINT || ""  /* no external UIQ — set PARSE_ENDPOINT if this handler is used */;
 
 const MIN_PDF_BYTES = 40 * 1024;
 const AFFILIATE_ENABLED = process.env.AFFILIATE_DASHBOARD_ENABLED === "true";

@@ -8,9 +8,6 @@ const {
   BUREAUS
 } = require("../letter-generator");
 
-// ============================================================================
-// BUREAUS constant tests
-// ============================================================================
 test("BUREAUS contains all three bureaus", () => {
   assert.ok(BUREAUS.experian);
   assert.ok(BUREAUS.transunion);
@@ -35,124 +32,67 @@ test("BUREAUS has addresses", () => {
   assert.ok(BUREAUS.equifax.address.includes("Atlanta, GA"));
 });
 
-// ============================================================================
-// generateLetters tests (Dec 2025 - updated letter counts)
-// ============================================================================
-test("generateLetters generates 12 letters for repair path", async () => {
-  const result = await generateLetters({
+test("generateLetters suppresses empty item lists", async () => {
+  const repair = await generateLetters({
     path: "repair",
-    bureaus: {
-      experian: { score: 600, tradelines: [] },
-      transunion: { score: 610, tradelines: [] },
-      equifax: { score: 620, tradelines: [] }
-    },
+    bureaus: {},
     personal: { name: "John Doe" },
     underwrite: { fundable: false }
   });
+  assert.equal(repair.length, 0);
 
-  // 9 dispute letters + 3 personal info letters (one per bureau) = 12
-  assert.equal(result.length, 12);
-});
-
-test("generateLetters generates 6 letters for fundable path", async () => {
-  const result = await generateLetters({
+  const fundable = await generateLetters({
     path: "fundable",
     bureaus: {
-      experian: { score: 750, inquiries: 2 },
-      transunion: { score: 760, inquiries: 1 },
-      equifax: { score: 770, inquiries: 0 }
+      experian: { inquiries: 0 },
+      transunion: { inquiries: 0 },
+      equifax: { inquiries: 0 }
     },
     personal: { name: "Jane Doe" },
     underwrite: { fundable: true }
   });
-
-  // 3 inquiry letters + 3 personal info letters (one per bureau) = 6
-  assert.equal(result.length, 6);
+  assert.equal(fundable.length, 0);
 });
 
-test("generateLetters returns buffers for each letter", async () => {
+test("generateLetters returns buffers for each letter it does emit", async () => {
   const result = await generateLetters({
     path: "fundable",
-    bureaus: {},
-    personal: {},
+    bureaus: {
+      experian: { inquiryList: [{ creditorName: "GECS", date: "2024-04-01" }] }
+    },
+    personal: { name: "Jane Doe", address: "1 Main St" },
     underwrite: {}
   });
 
+  assert.ok(result.length >= 1);
   result.forEach(letter => {
     assert.ok(letter.filename);
     assert.ok(Buffer.isBuffer(letter.buffer));
+    assert.equal(letter.buffer.slice(0, 4).toString(), "%PDF");
   });
 });
 
-test("generateLetters handles empty bureaus", async () => {
-  const result = await generateLetters({
-    path: "repair",
+test("generateDisputeLetters emits Round 1 only when accounts exist", async () => {
+  const empty = await generateDisputeLetters({
     bureaus: {},
-    personal: {},
-    underwrite: {}
-  });
-
-  assert.equal(result.length, 12);
-});
-
-test("generateLetters handles null personal info", async () => {
-  const result = await generateLetters({
-    path: "fundable",
-    bureaus: {},
-    personal: null,
-    underwrite: {}
-  });
-
-  assert.equal(result.length, 6);
-});
-
-// ============================================================================
-// generateDisputeLetters tests
-// ============================================================================
-test("generateDisputeLetters generates 9 letters", async () => {
-  const result = await generateDisputeLetters({
-    bureaus: {
-      experian: {},
-      transunion: {},
-      equifax: {}
-    },
     personal: { name: "Test User" },
     underwrite: {}
   });
+  assert.equal(empty.length, 0);
 
-  assert.equal(result.length, 9);
-});
-
-test("generateDisputeLetters uses correct filenames", async () => {
-  const result = await generateDisputeLetters({
-    bureaus: {},
-    personal: {},
-    underwrite: {}
-  });
-
-  const filenames = result.map(r => r.filename);
-  assert.ok(filenames.includes("ex_round1.pdf"));
-  assert.ok(filenames.includes("ex_round2.pdf"));
-  assert.ok(filenames.includes("ex_round3.pdf"));
-  assert.ok(filenames.includes("tu_round1.pdf"));
-  assert.ok(filenames.includes("tu_round2.pdf"));
-  assert.ok(filenames.includes("tu_round3.pdf"));
-  assert.ok(filenames.includes("eq_round1.pdf"));
-  assert.ok(filenames.includes("eq_round2.pdf"));
-  assert.ok(filenames.includes("eq_round3.pdf"));
-});
-
-test("generateDisputeLetters distributes accounts across rounds", async () => {
   const result = await generateDisputeLetters({
     bureaus: {
       experian: {
         tradelines: [
-          { creditor: "Account1", status: "collection" },
-          { creditor: "Account2", status: "charge-off" },
-          { creditor: "Account3", status: "late" },
-          { creditor: "Account4", status: "collection" },
-          { creditor: "Account5", status: "derogatory" },
-          { creditor: "Account6", status: "closed" }
+          {
+            creditorName: "SIGNET BANK/VIRGINIA",
+            status: "closed",
+            isDerogatory: true,
+            currentBalance: 4798,
+            reportedDate: "2021-09-03",
+            closedDate: "2021-10-28",
+            accountIdentifier: "4443"
+          }
         ]
       }
     },
@@ -160,140 +100,260 @@ test("generateDisputeLetters distributes accounts across rounds", async () => {
     underwrite: {}
   });
 
-  assert.equal(result.length, 9);
-  // Each PDF should be a valid buffer
-  result.forEach(r => {
-    assert.ok(Buffer.isBuffer(r.buffer));
-    assert.ok(r.buffer.length > 0);
-  });
+  assert.equal(result.length, 1);
+  assert.equal(result[0].filename, "ex_round1.pdf");
+  assert.ok(Buffer.isBuffer(result[0].buffer));
 });
 
-// ============================================================================
-// generateInquiryLetters tests (Dec 2025 - one per bureau)
-// ============================================================================
-test("generateInquiryLetters generates 3 letters (one per bureau)", async () => {
+test("generateInquiryLetters skips a bureau with zero inquiries", async () => {
   const result = await generateInquiryLetters({
     bureaus: {
-      experian: { inquiries: 5 },
-      transunion: { inquiries: 3 },
-      equifax: { inquiries: 2 }
+      experian: { inquiryList: [{ creditorName: "GECS", date: "2024-04-01" }] },
+      transunion: { inquiryList: [] },
+      equifax: { inquiryList: [{ creditorName: "CAPONE", date: "2024-05-01" }] }
     },
     personal: { name: "Test User" }
   });
 
-  assert.equal(result.length, 3);
+  const filenames = result.map(r => r.filename).sort();
+  assert.deepEqual(filenames, ["inquiry_eq.pdf", "inquiry_ex.pdf"]);
 });
 
-test("generateInquiryLetters uses correct filenames (per bureau)", async () => {
-  const result = await generateInquiryLetters({
-    bureaus: {},
-    personal: {}
-  });
-
-  const filenames = result.map(r => r.filename);
-  assert.ok(filenames.includes("inquiry_ex.pdf"));
-  assert.ok(filenames.includes("inquiry_tu.pdf"));
-  assert.ok(filenames.includes("inquiry_eq.pdf"));
-});
-
-test("generateInquiryLetters handles empty bureaus", async () => {
-  const result = await generateInquiryLetters({
-    bureaus: {},
-    personal: {}
-  });
-
-  assert.equal(result.length, 3);
-  result.forEach(r => {
-    assert.ok(Buffer.isBuffer(r.buffer));
-  });
-});
-
-// ============================================================================
-// generatePersonalInfoLetters tests (Dec 2025 - one per bureau)
-// ============================================================================
-test("generatePersonalInfoLetters generates 3 letters (one per bureau)", async () => {
+test("generatePersonalInfoLetters skips a bureau with no variations", async () => {
   const result = await generatePersonalInfoLetters({
     bureaus: {
-      experian: {
-        names: ["John Doe", "J Doe"],
-        addresses: ["123 Main St", "456 Oak Ave"],
-        employers: ["Acme Corp"]
-      }
+      experian: { names: ["Jordan Sample"] },
+      transunion: { names: ["BARBARA M DOTY"] },
+      equifax: {}
     },
-    personal: { name: "John Doe" }
+    personal: { name: "Jordan Sample" }
   });
 
-  assert.equal(result.length, 3);
+  assert.ok(result.some(r => r.filename === "personal_info_tu.pdf"));
+  assert.ok(!result.some(r => r.filename === "personal_info_ex.pdf"));
 });
 
-test("generatePersonalInfoLetters uses correct filenames (per bureau)", async () => {
-  const result = await generatePersonalInfoLetters({
-    bureaus: {},
-    personal: {}
-  });
-
-  const filenames = result.map(r => r.filename);
-  assert.ok(filenames.includes("personal_info_ex.pdf"));
-  assert.ok(filenames.includes("personal_info_tu.pdf"));
-  assert.ok(filenames.includes("personal_info_eq.pdf"));
-});
-
-test("generatePersonalInfoLetters gets variations per bureau", async () => {
-  const result = await generatePersonalInfoLetters({
-    bureaus: {
-      experian: { names: ["Name1"], addresses: ["Addr1"] },
-      transunion: { names: ["Name2"], addresses: ["Addr2"] },
-      equifax: { names: ["Name3"], employers: ["Employer1"] }
-    },
-    personal: {}
-  });
-
-  assert.equal(result.length, 3);
-  result.forEach(r => {
-    assert.ok(Buffer.isBuffer(r.buffer));
-    assert.ok(r.buffer.length > 0);
-  });
-});
-
-test("generatePersonalInfoLetters handles missing arrays", async () => {
-  const result = await generatePersonalInfoLetters({
-    bureaus: {
-      experian: { score: 700 } // No names, addresses, employers
-    },
-    personal: {}
-  });
-
-  assert.equal(result.length, 3);
-});
-
-// ============================================================================
-// PDF content validation tests
-// ============================================================================
 test("generated PDFs have valid PDF header", async () => {
   const result = await generateLetters({
     path: "fundable",
-    bureaus: {},
-    personal: { name: "Test" },
+    bureaus: {
+      experian: { inquiryList: [{ creditorName: "GECS", date: "2024-04-01" }] }
+    },
+    personal: { name: "Test", address: "1 Main" },
     underwrite: {}
   });
 
   result.forEach(letter => {
-    // PDF files start with %PDF
     const header = letter.buffer.slice(0, 4).toString();
     assert.equal(header, "%PDF");
   });
 });
 
-test("generated PDFs are non-trivial size", async () => {
-  const result = await generateLetters({
+function emptyBureau() {
+  return {
+    tradelines: [],
+    inquiryList: [],
+    inquiries: 0,
+    names: [],
+    addresses: [],
+    employers: [],
+    ssns: [],
+    dobs: []
+  };
+}
+
+test("smash: three empty bureaus emit zero PDFs", async () => {
+  const bureaus = {
+    experian: emptyBureau(),
+    equifax: emptyBureau(),
+    transunion: emptyBureau()
+  };
+  const repair = await generateLetters({
     path: "repair",
-    bureaus: {},
-    personal: { name: "John Doe", address: "123 Main St" },
-    underwrite: {}
+    bureaus,
+    personal: { name: "Jordan Sample" }
+  });
+  assert.equal(repair.length, 0);
+  const fundable = await generateLetters({
+    path: "fundable",
+    bureaus,
+    personal: { name: "Jordan Sample" }
+  });
+  assert.equal(fundable.length, 0);
+});
+
+test("smash: TransUnion empty inquiries must not emit inquiry_tu", async () => {
+  const letters = await generateInquiryLetters({
+    bureaus: {
+      transunion: { inquiryList: [] },
+      experian: { inquiryList: [{ creditorName: "GECS", date: "2024-04-01" }] },
+      equifax: { inquiryList: [] }
+    },
+    personal: { name: "Jordan Sample" }
+  });
+  assert.ok(!letters.some(l => l.filename === "inquiry_tu.pdf"));
+  const ex = letters.find(l => l.filename === "inquiry_ex.pdf");
+  assert.ok(ex);
+  assert.equal(ex.buffer.slice(0, 4).toString(), "%PDF");
+  assert.ok(ex.buffer.length > 200);
+});
+
+test("smash: matching personal info emits zero personal_info PDFs", async () => {
+  const personal = {
+    name: "Jordan Sample",
+    address: "5815 Knoll Krest St, San Antonio, TX 78242",
+    ssn: "111223333",
+    dob: "1963-11-12",
+    employer: "Current Co"
+  };
+  const id = {
+    tradelines: [],
+    inquiryList: [],
+    names: [personal.name],
+    addresses: [personal.address],
+    employers: [personal.employer],
+    ssns: [personal.ssn],
+    dobs: [personal.dob]
+  };
+  const letters = await generatePersonalInfoLetters({
+    bureaus: { experian: { ...id }, equifax: { ...id }, transunion: { ...id } },
+    personal
+  });
+  assert.equal(letters.length, 0);
+});
+
+test("smash: missing personal null or empty object must not throw", async () => {
+  const bureaus = {
+    experian: {
+      tradelines: [
+        {
+          creditorName: "SIGNET BANK/VIRGINIA",
+          status: "closed",
+          isDerogatory: true,
+          currentBalance: 4798,
+          reportedDate: "2021-09-03",
+          closedDate: "2021-10-28",
+          accountIdentifier: "4443"
+        }
+      ],
+      inquiryList: [{ creditorName: "GECS", date: "2024-04-01" }],
+      names: ["WILLIE L BOOZE"],
+      addresses: ["1234 MAIN ST"]
+    }
+  };
+  for (const personal of [null, {}, undefined]) {
+    const letters = await generateLetters({ path: "repair", bureaus, personal });
+    assert.ok(Array.isArray(letters));
+    letters.forEach(letter => {
+      assert.equal(letter.buffer.slice(0, 4).toString(), "%PDF");
+    });
+  }
+  for (const fn of [generateLetters, generateDisputeLetters, generateInquiryLetters, generatePersonalInfoLetters]) {
+    const none = await fn(null);
+    assert.ok(Array.isArray(none));
+  }
+});
+
+test("smash: malformed bureau lists must not throw", async () => {
+  const fromStringTrades = await generateDisputeLetters({
+    bureaus: { experian: { tradelines: "nope" } },
+    personal: { name: "Jordan Sample" }
+  });
+  assert.equal(fromStringTrades.length, 0);
+
+  const inquiry = await generateInquiryLetters({
+    bureaus: {
+      experian: {
+        tradelines: "nope",
+        inquiryList: [{ creditorName: "GECS", date: "2024-04-01" }]
+      }
+    },
+    personal: { name: "Jordan Sample" }
+  });
+  assert.equal(inquiry.length, 1);
+  assert.equal(inquiry[0].buffer.slice(0, 4).toString(), "%PDF");
+
+  const info = await generatePersonalInfoLetters({
+    bureaus: { experian: { names: "WILLIE L BOOZE", addresses: "1234 MAIN ST" } },
+    personal: { name: "Jordan Sample" }
+  });
+  assert.ok(Array.isArray(info));
+});
+
+test("smash: unicode and apostrophe names still render a PDF", async () => {
+  for (const name of ["O'Brien", "José García", "李", "O’Brien"]) {
+    const letters = await generateInquiryLetters({
+      bureaus: {
+        experian: { inquiryList: [{ creditorName: "GECS", date: "2024-04-01" }] }
+      },
+      personal: { name, address: "1 Main St" }
+    });
+    assert.equal(letters.length, 1, `no letter for name ${name}`);
+    assert.equal(letters[0].buffer.slice(0, 4).toString(), "%PDF");
+  }
+});
+
+test("smash: 80 inquiries still render under 15s", async () => {
+  const inquiryList = Array.from({ length: 80 }, (_, i) => ({
+    creditorName: `INQUIRER ${String(i + 1).padStart(2, "0")}`,
+    date: "2024-06-01"
+  }));
+  const t0 = Date.now();
+  const letters = await generateInquiryLetters({
+    bureaus: { experian: { inquiryList } },
+    personal: { name: "Jordan Sample" }
+  });
+  const elapsed = Date.now() - t0;
+  assert.ok(elapsed < 15000, `inquiry render hung ${elapsed}ms`);
+  assert.equal(letters.length, 1);
+  assert.equal(letters[0].buffer.slice(0, 4).toString(), "%PDF");
+  assert.ok(letters[0].buffer.length > 200);
+});
+
+test("smash: derogatory tradeline missing name dates balance is not a blank PDF", async () => {
+  const letters = await generateDisputeLetters({
+    bureaus: { experian: { tradelines: [{ isDerogatory: true }] } },
+    personal: { name: "Jordan Sample" }
+  });
+  letters.forEach(letter => {
+    assert.equal(letter.buffer.slice(0, 4).toString(), "%PDF");
+    assert.ok(letter.buffer.length > 200, `${letter.filename} looks empty`);
+    assert.ok(/round1/.test(letter.filename));
+  });
+});
+
+test("smash: round 2/3 with no priorOutcome never emits R2", async () => {
+  const signet = {
+    creditorName: "SIGNET BANK/VIRGINIA",
+    status: "closed",
+    isDerogatory: true,
+    currentBalance: 4798,
+    reportedDate: "2021-09-03",
+    closedDate: "2021-10-28",
+    accountIdentifier: "4443"
+  };
+  const letters = await generateDisputeLetters({
+    bureaus: {
+      experian: { tradelines: [signet] },
+      transunion: { tradelines: [{ ...signet, priorOutcome: "" }] }
+    },
+    personal: { name: "Jordan Sample" }
+  });
+  assert.ok(!letters.some(l => /round[23]/.test(l.filename)));
+  assert.ok(letters.length >= 1);
+  letters.forEach(letter => {
+    assert.equal(letter.buffer.slice(0, 4).toString(), "%PDF");
   });
 
-  result.forEach(letter => {
-    // PDFs should be at least 1KB
-    assert.ok(letter.buffer.length > 1000, `${letter.filename} is too small`);
+  const blankOutcome = await generateDisputeLetters({
+    bureaus: { experian: { tradelines: [{ ...signet, priorOutcome: "   " }] } },
+    personal: { name: "Jordan Sample" }
   });
+  assert.deepEqual(blankOutcome.map(l => l.filename), ["ex_round1.pdf"]);
+
+  const padded = await generateDisputeLetters({
+    bureaus: { experian: { tradelines: [{ ...signet, priorOutcome: " verified " }] } },
+    personal: { name: "Jordan Sample" }
+  });
+  assert.ok(padded.some(l => l.filename === "ex_round2.pdf"));
 });

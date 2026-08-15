@@ -8,12 +8,16 @@ import { createCase, updateCase, closeCase, CASE_STATUSES } from "../src/inquiry
 import { clearInquiry as clearBridgeInquiry } from "../src/inquiry-removal/cases.mjs";
 import { sendCase, SendGateError } from "../src/inquiry-ops/send.mjs";
 import { overrideBureauGate } from "../src/inquiry-ops/gate.mjs";
-import { sendLetter } from "../src/messaging/providers/mail-letter.mjs";
 import {
   loadMailServiceLevel,
   loadBureauMailAddress,
   loadClientReturnAddress
 } from "../src/inquiry-ops/call-scheduler.mjs";
+import {
+  mailBureauLetter,
+  resolveInquiryLetterContent
+} from "../src/metro2/delivery/send.mjs";
+import { storeFromEnv } from "../src/underwrite/funding-letter-pdf.mjs";
 import { emit } from "../src/events/bus.mjs";
 import { dbDown } from "../src/http/db-down.mjs";
 
@@ -150,15 +154,29 @@ export default async function handler(req, res, deps = {}) {
                   outcome: "mail_failed:return_address_required"
                 };
               }
-              const html = caseRow.letter_draft_html || "<p>Dispute letter</p>";
-              const sent = await sendLetter({
+              // PDF preferred. resolveFundingLetterPdf picks funding-stack
+              // PDFs only (inquiry_removal + personal_info — never dispute).
+              const content = await resolveInquiryLetterContent(caseRow, body, {
+                db: database,
+                orgId,
+                clientId: caseRow.client_id,
+                store: deps.store || storeFromEnv()
+              });
+              const sent = await mailBureauLetter({
                 description: `Inquiry case ${caseRow.case_id || caseRow.id}`,
-                html: `<html>${html}</html>`,
-                pdf: body.letter_pdf || body.letterPdf || undefined,
+                html: content.html,
+                pdf: content.pdf,
                 serviceLevel,
                 bureau,
                 to,
-                from
+                from,
+                metadata: {
+                  orgId,
+                  clientId: caseRow.client_id,
+                  caseId: caseRow.id,
+                  stack: "funding",
+                  letterSource: content.source
+                }
               });
               if (!sent.ok) {
                 return {
@@ -169,7 +187,8 @@ export default async function handler(req, res, deps = {}) {
               return {
                 providerId: sent.providerId,
                 outcome: "sent",
-                serviceLevel: sent.serviceLevel || serviceLevel
+                serviceLevel: sent.serviceLevel || serviceLevel,
+                letterSource: content.source
               };
             }
           : null;

@@ -84,6 +84,8 @@ import companyBrainReviews from "../../api/company-brain/reviews.mjs";
 import readWorkflows from "../../api/read/workflows.mjs";
 import readTransactions from "../../api/read/transactions.mjs";
 import readCloserCall from "../../api/read/closer-call.mjs";
+import readCloserDeck from "../../api/read/closer-deck.mjs";
+import closerDeckWrite from "../../api/closer-deck.mjs";
 import readMyNumbers from "../../api/read/my-numbers.mjs";
 import readSalesFloor from "../../api/read/sales-floor.mjs";
 import readCompanyActivity from "../../api/read/company-activity.mjs";
@@ -93,6 +95,7 @@ import marketingFlagsWrite from "../../api/marketing-flags.mjs";
 import bankingSyncAccounts from "../../api/banking/sync-accounts.mjs";
 import inquiries from "../../api/inquiries.mjs";
 import repairExceptions from "../../api/repair/exceptions.mjs";
+import repairSend from "../../api/repair/send.mjs";
 import pii from "../../api/pii.mjs";
 import shifts from "../../api/shifts.mjs";
 import campaignsList from "../../api/campaigns/list.mjs";
@@ -388,6 +391,8 @@ export const ROUTES = {
   "read/transactions": readTransactions,
   /* Sales dashboards — call cockpit, closer my-numbers, manager floor. */
   "read/closer-call": readCloserCall,
+  "read/closer-deck": readCloserDeck,
+  "closer-deck": closerDeckWrite,
   "read/my-numbers": readMyNumbers,
   "read/sales-floor": readSalesFloor,
   "read/company-activity": readCompanyActivity,
@@ -425,6 +430,7 @@ export const ROUTES = {
   // security number. Left exactly as written; routing it does not widen it.
   "inquiries": inquiries,
   "repair/exceptions": repairExceptions,
+  "repair/send": repairSend,
   "pii": pii,
   "shifts": shifts,
 

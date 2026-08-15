@@ -272,13 +272,14 @@ Classification rules are in `src/lib/email-classifier.js`. First match wins (pri
 | Variable | Description |
 |---|---|
 | `BLAND_API_KEY` | Bland AI API key |
+| `BLAND_WEBHOOK_URL` | Call completion callback. Default `https://fundhub.ai/api/webhooks/bland` |
 | `API_SECRET` | Bearer token for protected endpoints |
 | `CRON_SECRET` | Bearer token for `/api/dispatch-scheduled` |
 | `AIRTABLE_API_KEY` | Airtable Personal Access Token |
 | `AIRTABLE_BASE_ID` | FUNDHUB MATRIX base ID |
 | `GHL_PRIVATE_API_KEY` | GHL Private Integration Token (location-level) |
 | `GHL_LOCATION_ID` | GHL location ID (`ORh91GeY4acceSASSnLR`) |
-| `WEBHOOK_BASE_URL` | Full deployment URL, e.g. `https://inquiry-removal-ai-sigma.vercel.app` |
+| `WEBHOOK_BASE_URL` | _(deprecated)_ | Old Vercel base; prompts no longer append `/api/*-webhook`. Use `BLAND_WEBHOOK_URL`. |
 | `FUNDHUB_REP_NUMBER` | FundHub rep phone for warm transfers (E.164) |
 
 ### Optional / System Defaults
@@ -383,9 +384,10 @@ vercel --prod
 
 Set all env vars in Vercel dashboard (Settings → Environment Variables). The cron job (`/api/dispatch-scheduled`) is configured in `vercel.json` and runs automatically on the Vercel Pro plan.
 
-Bland AI webhook URL must be configured in the Bland dashboard to point at:
-- Bureau calls: `https://inquiry-removal-ai-sigma.vercel.app/api/call-webhook`
-- Setter calls: `https://inquiry-removal-ai-sigma.vercel.app/api/setter-webhook`
+Bland AI webhook URL on each outbound call is:
+- `https://fundhub.ai/api/webhooks/bland` (override with `BLAND_WEBHOOK_URL`)
+
+Legacy Vercel paths `/api/call-webhook` and `/api/setter-webhook` remain in this vendor tree for local debugging only — live prove callbacks go to Fundhub.
 
 ---
 

@@ -171,3 +171,18 @@ describe("bland-client — Authorization header", () => {
     expect(options.headers.Authorization).toBe("test-bland-key");
   });
 });
+
+describe("bland-client — resolveBlandWebhookUrl", () => {
+  afterEach(() => {
+    delete process.env.BLAND_WEBHOOK_URL;
+  });
+
+  test("defaults to Fundhub inbound webhook", () => {
+    expect(bland.resolveBlandWebhookUrl()).toBe("https://fundhub.ai/api/webhooks/bland");
+  });
+
+  test("honors BLAND_WEBHOOK_URL", () => {
+    process.env.BLAND_WEBHOOK_URL = "https://example.com/hook";
+    expect(bland.resolveBlandWebhookUrl()).toBe("https://example.com/hook");
+  });
+});

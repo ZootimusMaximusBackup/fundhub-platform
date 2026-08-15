@@ -6254,44 +6254,11 @@ S-01 – New Lead Intake
 
 
 ================================================================================
-## S-02  Incomplete Analyzer   [folder: S - Series Sales Emails]
+## S-02  Incomplete Underwrite IQ   [folder: S - Series Sales Emails]
 ================================================================================
-S-02 – Incomplete Analyzer 
+[DRAFT — KILLED] S-02 retired
 
- You stopped right before the good part 👀
-
- Hey {{contact.first_name}},
-
- You started the Analyzer… and then bounced.
-
- This is the one part of the process that instantly tells us:
-
- Where you’re fundable right now
-
- Where you’re exposed (negatives, utilization, inquiries)
-
- What would actually move the needle fastest
-
- Without the Analyzer, we’re guessing. 
- With it, we can give you an honest “here’s what’s possible” answer.
-
- 👉 Pick up where you left off here:
-
- {{analyzer_link}}
-
- Continue your Analyzer
-
- It takes just a couple minutes. 
- And it prevents you from spinning your wheels, applying blind, or fixing the wrong things.
-
- Talk soon,
-
- {{sender_name}}
-FundHub.ai
-
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
+[DRAFT — KILLED] Owner 2026-08-14: S-02 incomplete nudge retired. Underwrite IQ is a CRS soft-pull engine — there is no customer “incomplete Underwrite IQ” state. Do not approve or send.
 
 
 ================================================================================
@@ -6774,51 +6741,68 @@ FundHub.ai
 
 
 ================================================================================
-## U-02   Analyzer Funding Delivery   [folder: U - Series (Underwrite IQ)]
+## U-02   UnderwriteIQ Funding Delivery   [folder: U - Series (Underwrite IQ)]
 ================================================================================
-EMAIL — Analyzer Funding Delivery 
-
- Your Funding Letter Pack is ready ✅
+Your Fundhub file is complete — audit, letters, roadmap, and portal access inside
 
  Hey {{contact.first_name}},
 
- Your UnderwriteIQ results are complete. Here are your cleanup letters organized by bureau.
+ Your UnderwriteIQ audit is done.
 
- Personal Info Cleanup
+ This isn't a credit report with some highlighting on it. Your file was pulled from all three bureaus and run through UnderwriteIQ — our own underwriting engine — which reads it the way a lender's system reads it, then models what changes when each item moves. Every document below came out of that analysis. Nothing in this pack is boilerplate.
 
- Experian 
+ 1. Your Credit Analysis Report
+ The full read on your file. What's helping you, what's costing you, and exactly which items are standing between you and an approval right now.
 
- Equifax 
+ 2. Your Cleanup Letters — 9 total, ready to send
+ Built line by line off your report, not pulled off a shelf. Personal info corrections, inquiry removals, and formal disputes, split by bureau:
 
- TransUnion 
+ Experian — personal info, inquiries, accounts
+ Equifax — personal info, inquiries, accounts
+ TransUnion — personal info, inquiries, accounts
 
- Inquiry Cleanup
+ 3. Your 6-Month Optimization Roadmap
+ The actual sequence. What to do in week one, what to do in month two, and what has to be true before you apply for anything. Most "game plans" are three bullets and a sales pitch. This one has dates on it.
 
- Experian 
+ 4. Your Lender Match List
+ The specific lenders and products your file lines up with, plus the approval criteria for each — so you know what you're walking into before you apply.
 
- Equifax 
+ 5. Your Capital Readiness Summary
+ Where you stand today, what you're realistically approved for right now, and what that number becomes once the roadmap is executed.
 
- TransUnion 
+ Why this looks different from anything else you've been sent
 
- Credit Suggestions
+ Most funding companies are a spreadsheet and a guy. They eyeball your report, run your name through a lender list they bought, and send you a PDF that says "improve your utilization."
 
- {{REPLACE_CREDIT_SUGGESTIONS}}
+ We built the engine.
 
- View My Letter Pack
+ UnderwriteIQ parses every tradeline, inquiry, and data field on your file, cross-references it against live approval criteria from the lenders we actually work with, and models the outcome of each move before you make it. Machine learning ranks which actions produce the biggest fundability gain per week of effort — because the order you do things in matters more than the things themselves. Then a real underwriter reviews the output before it reaches you.
 
- – {{sender_name}}
+ That's why your roadmap has dates on it. That's why your lender list has your name attached to it instead of being a generic top-20. And that's why your dispute letters cite the specific reporting violations on your file rather than "please verify this account."
 
- FundHub.ai
+ Software this specific doesn't exist anywhere else in this industry. We know, because we tried to buy it before we built it.
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+ And your course access
+ Every deliverable above has a walkthrough waiting in your portal. Short modules showing you exactly how to execute each piece — how to send the letters, how to sequence applications, how to move fastest without tanking your file. The documents tell you what. The course shows you how.
 
- Unsubscribe
+ Access Your Portal → {{portal_login_url}}
+
+ First time in? Create your login using this email address. Already set up? Log in and everything's in your dashboard.
+
+ Start here: open the Capital Readiness Summary, then watch Module 1. That's your first 20 minutes.
+
+ Anything in the pack you want walked through — reply to this email.
+
+ — The Fundhub Team
+ Fundhub.ai • Funding Intelligence for Entrepreneurs
+
+ (HTML send body lives in db/seed/009_u02_funding_delivery_template.sql — table layout + button for Gmail/Outlook/Apple Mail.)
 
 
 ================================================================================
-## U-02   Analyzer Repair Delivery   [folder: U - Series (Underwrite IQ)]
+## U-02   UnderwriteIQ Repair Delivery   [folder: U - Series (Underwrite IQ)]
 ================================================================================
-EMAIL — Analyzer Repair Delivery 
+EMAIL — UnderwriteIQ Repair Delivery 
 
  Your Repair Letter Pack is ready ✅
 

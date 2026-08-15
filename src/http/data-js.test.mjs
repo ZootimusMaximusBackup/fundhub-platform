@@ -224,10 +224,17 @@ describe("public/app/data.js — result classification", () => {
   });
 
   test("a demo session never touches the network", async () => {
-    const { FH, calls } = load(ok({ clients: [] }), { demo: true });
+    const { FH, calls } = load(ok({ clients: [] }), { demo: true, token: "demo-token" });
     const r = await FH.clients();
     assert.equal(r.source, "demo");
     assert.equal(calls.length, 0, "demo mode issued a real request");
+  });
+
+  test("a live token is not trapped by a leftover fh_demo flag", async () => {
+    const { FH, calls } = load(ok({ clients: [{ id: "1" }] }), { demo: true, token: "live-jwt-not-demo" });
+    const r = await FH.clients();
+    assert.equal(r.source, "api");
+    assert.equal(calls.length, 1, "live session must query the API even if fh_demo is stuck on");
   });
 
   test("a 200 with rows is the only 'api' result", async () => {

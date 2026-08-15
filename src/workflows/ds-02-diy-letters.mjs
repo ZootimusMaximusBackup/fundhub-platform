@@ -21,12 +21,13 @@ import { sendTemplated } from "./messaging.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { createInvoice, depositKey } from "../invoices/index.mjs";
 import { createTask } from "../lib/create-task.mjs";
-import { postJsonTo, ADAPTERS } from "../lib/outbound-fetch.mjs";
 import { deliverDiyPackageInRepo } from "../metro2/diy/deliver.mjs";
+import { buildLetterPackForClient } from "../underwrite/letter-pack.mjs";
 
 export const EMAIL_TEMPLATE_KEY = "EMAIL-DS02-DIY-LETTERS-READY";
 const SOURCE_WORKFLOW = "ds-02-diy-letters";
-export const DELIVER_LETTERS_URL = process.env.UIQ_DELIVER_LETTERS_URL || "https://underwrite-iq-lite.vercel.app/api/lite/deliver-letters";
+/** @deprecated external UIQ removed — in-repo letter-pack only */
+export const DELIVER_LETTERS_URL = null;
 
 function isDiyProduct(productName) {
   const n = String(productName || "").toLowerCase();
@@ -47,40 +48,52 @@ async function createInvoiceTaskOnce(db, { orgId, clientId, eventId }) {
   return { created: true };
 }
 
-async function deliverLettersUiq(fetchImpl, { clientId, orgId, env } = {}) {
-  const res = await postJsonTo(DELIVER_LETTERS_URL, {
-    body: JSON.stringify({ clientId, orgId }),
-    fetchImpl,
-    env,
-    fence: ADAPTERS,
-    what: "diy letter delivery"
-  });
-  if (res.blocked) return { delivered: false, blocked: true, reason: res.error };
-  return { delivered: res.ok, status: res.status, error: res.error };
-}
-
-/** In-repo Metro 2 package when violations are present; otherwise legacy UIQ. */
-async function deliverLetters(fetchImpl, {
-  clientId, orgId, env, db, identity, violationsByBureau
+/** In-repo only — Fundhub letter-pack (gold templates + UIQ data). No external UIQ. */
+async function deliverLettersInRepo(db, {
+  clientId, orgId, identity, violationsByBureau
 } = {}) {
   const vmap = violationsByBureau || {};
   const hasViolations = Object.values(vmap).some((a) => Array.isArray(a) && a.length > 0);
-  if (hasViolations || env?.DIY_IN_REPO === "1") {
+  if (hasViolations) {
     return deliverDiyPackageInRepo(db, {
       clientId, orgId, identity, violationsByBureau: vmap, seed: `${orgId}:${clientId}`
     });
   }
-  return deliverLettersUiq(fetchImpl, { clientId, orgId, env });
+  const pack = await buildLetterPackForClient(db, { clientId, pack: "repair" });
+  const files = pack.files || [];
+  if (!files.length) {
+    return {
+      delivered: false,
+      reason: pack.reason || pack.engineSkip || "empty_pack",
+      event: "diy.package.generating"
+    };
+  }
+  return {
+    delivered: true,
+    letterCount: files.length,
+    files: files.map((f) => ({
+      path: f.filename || f.name || f.path,
+      bytes: f.buffer?.byteLength || f.pdf?.byteLength || f.bytes?.byteLength || 0
+    })),
+    event: "diy.package.ready",
+    engineSkip: pack.engineSkip || null
+  };
+}
+
+async function deliverLetters(fetchImpl, {
+  clientId, orgId, env, db, identity, violationsByBureau
+} = {}) {
+  return deliverLettersInRepo(db, { clientId, orgId, identity, violationsByBureau });
 }
 
 async function deliverLettersOnce(db, fetchImpl, {
-  clientId, orgId, eventId, env, identity, violationsByBureau
+  clientId, orgId, eventId, env, identity, violationsByBureau, deliverLettersFn = deliverLetters
 }) {
   const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
   if (r.rows[0]?.custom_fields?.diy_delivered_event_id === eventId) {
     return { delivered: true, skipped: true };
   }
-  const result = await deliverLetters(fetchImpl, {
+  const result = await deliverLettersFn(fetchImpl, {
     clientId, orgId, env, db, identity, violationsByBureau
   });
   if (result.delivered) {
@@ -92,7 +105,7 @@ async function deliverLettersOnce(db, fetchImpl, {
 
 // handle — pure business logic. `fetchImpl` is injected (defaults to global fetch)
 // so tests can supply a fake instead of making a real network call.
-export async function handle({ event, db, step, fetchImpl = globalThis.fetch }) {
+export async function handle({ event, db, step, fetchImpl = globalThis.fetch, deliverLettersFn = null }) {
   if (!isDiyProduct(event.payload?.productName ?? event.payload?.product)) {
     return { done: false, reason: "not_diy_product" };
   }
@@ -107,6 +120,7 @@ export async function handle({ event, db, step, fetchImpl = globalThis.fetch }) 
   const orgId = event.orgId;
   const eventId = event.id;
 
+  // Human still mails via /api/repair/send (shared bureau mail helper). Never print-mail on pay.
   await step.run("set-diy-status-processing", () => mergeCustomFields(db, clientId, { diy_status: "Processing" }));
   const { saleId, amount } = event.payload || {};
   const invoice = await step.run("create-deposit-invoice", () =>
@@ -132,7 +146,8 @@ export async function handle({ event, db, step, fetchImpl = globalThis.fetch }) 
     eventId,
     env: event.env,
     identity: event.payload?.identity,
-    violationsByBureau: event.payload?.violationsByBureau
+    violationsByBureau: event.payload?.violationsByBureau,
+    deliverLettersFn: deliverLettersFn || deliverLetters
   }));
   const email = await step.run("send-email", () =>
     sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));

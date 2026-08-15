@@ -55,7 +55,8 @@ export const RESOLVABLE_TAGS = Object.freeze([
   "contact.name",
   "contact.full_name",
   "contact.email",
-  "contact.phone"
+  "contact.phone",
+  "portal_login_url"
 ]);
 
 /* Roots that are known-used and known-unresolved. Warned, never blocked — the
@@ -178,7 +179,8 @@ export const AVAILABLE_TAGS = Object.freeze([
   { tag: "contact.name", label: "Full name", example: "Marcus Webb" },
   { tag: "contact.full_name", label: "Full name (same as above)", example: "Marcus Webb" },
   { tag: "contact.email", label: "Email address", example: "marcus@example.com" },
-  { tag: "contact.phone", label: "Phone number", example: "+15551234567" }
+  { tag: "contact.phone", label: "Phone number", example: "+15551234567" },
+  { tag: "portal_login_url", label: "Portal sign-in URL (email prefilled)", example: "https://fundhub.ai/portal-login.html?email=marcus%40example.com" }
 ]);
 
 /* SAMPLE_CONTEXT — what Preview fills the tags with. Deliberately obvious fake

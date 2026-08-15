@@ -85,6 +85,14 @@ var elLede = document.getElementById("lede");
 var elGo   = document.getElementById("go");
 var elEmail = document.getElementById("email");
 
+/* Prefill from ?email= on the funding-delivery CTA (and any portal deep link). */
+(function prefillEmailFromQuery() {
+  try {
+    var q = new URLSearchParams(window.location.search).get("email") || "";
+    if (q && elEmail && !elEmail.value) elEmail.value = q;
+  } catch (_e) { /* ignore */ }
+})();
+
 function showError(msg) {
   elErr.innerHTML = esc(msg);
   elErr.style.display = "block";

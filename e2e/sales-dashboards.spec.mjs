@@ -131,6 +131,7 @@ test("closer-call requires client_id and shows disposition hotkeys", async ({ pa
   await expect(page.locator("h1").first()).toBeVisible();
   await expect(page.locator('[data-outcome="deposit"]').first()).toBeVisible();
   await expect(page.locator('[data-belief="desire"]').first()).toBeVisible();
+  await expect(page.locator("#fh-present")).toBeVisible();
 });
 
 test("closer-call without client_id shows the honest gate", async ({ page }) => {

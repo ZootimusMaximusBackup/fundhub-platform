@@ -4,7 +4,6 @@ import {
   handle, isHardDecline, HARD_DECLINE_SIGNALS_DEFERRED,
   DECLINE_EMAIL_TEMPLATE_KEY, DECLINE_SMS_TEMPLATE_KEY
 } from "./c-06-crs-results-router.mjs";
-import { DELIVER_LETTERS_URL } from "./ds-02-diy-letters.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 // Every funding-branch test now also fires the deliver-letters webhook (row 20), so a
@@ -144,37 +143,35 @@ test("flipping HARD_DECLINE_SIGNALS_DEFERRED off (via isHardDecline's own gate, 
   assert.equal(db.tasks.length, 1);
 });
 
-// --- FUNDING branch deliver-letters webhook (row 20) -------------------------
-// C-06's FUNDING branch never fired the deliver-letters webhook with the funding letter
-// set — reuses ds-02's DELIVER_LETTERS_URL, same webhook, `letterSet` picks the pack.
+// --- FUNDING branch in-repo letter-pack (row 20) -------------------------
 
-test("row 20: the FUNDING branch fires the deliver-letters webhook with the funding letter set", async () => {
+test("row 20: the FUNDING branch delivers funding letters in-repo", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING", custom_fields: {} }] });
-  let calledUrl = null;
-  let calledBody = null;
-  const fetchImpl = async (url, opts) => {
-    calledUrl = url;
-    calledBody = JSON.parse(opts.body);
-    return { ok: true, status: 200, text: async () => "{}" };
+  let deliverCount = 0;
+  const deliverFundingLettersFn = async (_db, { clientId }) => {
+    deliverCount++;
+    assert.equal(clientId, "cl-1");
+    return { delivered: true, letterCount: 2, files: [{ path: "a.pdf", bytes: 10 }] };
   };
   const res = await handle({
     event: ev("analysis.completed", { source: "crs", scores: { ex: 650 } }, { id: "evt-c06-funding", clientId: "cl-1" }),
-    db, step: fakeStep(), fetchImpl
+    db, step: fakeStep(), deliverFundingLettersFn
   });
   assert.equal(res.branch, "funding");
   assert.equal(res.delivery.delivered, true);
-  assert.equal(calledUrl, DELIVER_LETTERS_URL, "must reuse ds-02's DELIVER_LETTERS_URL, not a new one");
-  assert.equal(calledBody.letterSet, "funding");
-  assert.equal(calledBody.clientId, "cl-1");
+  assert.equal(deliverCount, 1);
   assert.equal(db.clients[0].custom_fields.funding_letters_delivered_event_id, "evt-c06-funding");
 });
 
-test("row 20: replaying the same event does not double-POST the deliver-letters webhook", async () => {
+test("row 20: replaying the same event does not double-deliver funding letters", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING", custom_fields: {} }] });
-  let fetchCallCount = 0;
-  const countingFetch = async () => { fetchCallCount++; return { ok: true, status: 200, text: async () => "{}" }; };
+  let deliverCount = 0;
+  const deliverFundingLettersFn = async () => {
+    deliverCount++;
+    return { delivered: true, letterCount: 1 };
+  };
   const event = ev("analysis.completed", { source: "crs", scores: { ex: 650 } }, { id: "evt-dup-c06-funding", clientId: "cl-1" });
-  await handle({ event, db, step: fakeStep(), fetchImpl: countingFetch });
-  await handle({ event, db, step: fakeStep(), fetchImpl: countingFetch });
-  assert.equal(fetchCallCount, 1, "webhook POST must not fire on replay");
+  await handle({ event, db, step: fakeStep(), deliverFundingLettersFn });
+  await handle({ event, db, step: fakeStep(), deliverFundingLettersFn });
+  assert.equal(deliverCount, 1, "in-repo deliver must not run twice on replay");
 });

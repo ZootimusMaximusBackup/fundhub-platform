@@ -29,6 +29,24 @@ export const TRANSMITS = true;
 
 const DEFAULT_BASE_URL = "https://api.resend.com";
 
+/** Rough plain-text fallback when the template body is HTML (multipart text part). */
+function htmlToText(html) {
+  return String(html)
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/(div|tr|h[1-6]|li)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, "'")
+    .replace(/&#39;/gi, "'")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function config(env) {
   const apiKey = env.RESEND_API_KEY;
   const from = env.RESEND_FROM;
@@ -65,12 +83,18 @@ async function attempt(message, { fetchImpl, timeoutMs, signal, env = process.en
   const body = String(message.body ?? "");
   if (!body) return rejection("message body is empty");
 
+  const looksHtml = /<!DOCTYPE\s+html|<html[\s>]|<table[\s>]/i.test(body);
   const payload = {
     from: cfg.from,
     to: [to],
-    subject: message.subject ? String(message.subject) : "(no subject)",
-    text: body
+    subject: message.subject ? String(message.subject) : "(no subject)"
   };
+  if (looksHtml) {
+    payload.html = body;
+    payload.text = htmlToText(body);
+  } else {
+    payload.text = body;
+  }
   if (message.providerRef) {
     payload.headers = { "X-Fundhub-Ref": String(message.providerRef) };
   }

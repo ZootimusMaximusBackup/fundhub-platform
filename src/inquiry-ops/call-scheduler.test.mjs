@@ -90,6 +90,60 @@ test("scheduleFromDelivery sets call_due_at from channel wait, not send", async 
   assert.equal(res.case.call_due_at, expected);
 });
 
+test("scheduleFromDelivery portal channel: first_delivery_channel=portal + 1bd wait", async () => {
+  const deliveredAt = "2026-08-04T16:00:00.000Z";
+  const caseRow = {
+    id: "c1",
+    org_id: "o1",
+    client_id: "cl1",
+    selected_bureaus_raw: "EX",
+    first_delivery_at: null,
+    case_id: "IG-1"
+  };
+  const updates = [];
+  const db = {
+    async query(sql, params) {
+      const s = String(sql);
+      if (s.includes("FROM ai_bureau_config")) {
+        return { rows: [{ portal_wait_business_days: 1, mail_wait_business_days: 3 }] };
+      }
+      if (s.includes("FROM inquiry_removal_cases") && s.includes("SELECT")) {
+        return { rows: [caseRow] };
+      }
+      if (s.includes("UPDATE inquiry_removal_cases")) {
+        updates.push(params);
+        return {
+          rows: [{
+            ...caseRow,
+            first_delivery_at: params[1],
+            first_delivery_channel: params[2],
+            call_due_at: params[3]
+          }]
+        };
+      }
+      if (s.includes("pipeline_stages") || s.includes("cards")) {
+        return { rows: [{ stage_id: "s", pipeline_id: "p", id: "card" }] };
+      }
+      return { rows: [] };
+    }
+  };
+
+  const res = await scheduleFromDelivery(db, {
+    caseId: "c1",
+    orgId: "o1",
+    deliveredAt,
+    channel: "portal"
+  });
+  assert.equal(res.scheduled, true);
+  assert.equal(res.waitDays, 1);
+  const expected = addBusinessDays(deliveredAt, 1).toISOString();
+  assert.equal(res.callDueAt.toISOString(), expected);
+  assert.equal(updates[0][1], deliveredAt);
+  assert.equal(updates[0][2], "portal");
+  assert.equal(updates[0][3], expected);
+  assert.equal(res.case.first_delivery_channel, "portal");
+});
+
 test("scheduleFromDelivery ignores second delivery (first wins)", async () => {
   const caseRow = {
     id: "c1",

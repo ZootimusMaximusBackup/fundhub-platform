@@ -3,6 +3,8 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-14 | role-closer, role-owner, role-sales-manager | Regenerated actuals — `GET /api/read/closer-deck` and `POST /api/closer-deck` (closer desk). Present button on the call cockpit opens the 24-screen closer deck with live contact data. COMPLIANCE REVIEW REQUIRED — dispute letters, fee timing, payment rails | Plug closer deck into CRM | (this commit)
+2026-08-14 | all eight | Regenerated actuals — `POST /api/repair/send` (STAFF) human PostGrid mail for repair DIY/DFY | Bureau letter mail W2 — shared send helper; COMPLIANCE REVIEW REQUIRED | (uncommitted)
 2026-08-10 | all eight | Regenerated actuals after Metro 2 / DFY repair events and `repair/exceptions` route landed | Credit-repair spine commit a50ed59 left journeys/diagrams stale; CI suite failed | (this commit)
 2026-08-06 | role-inquiry-remover | Regenerated actual after inquiry-gate build; remover queue expands into case detail (letter review, send, fraud-docs upload) on same page | Inquiry Gate v2 W5 — no new HTML/nav | 890f1ba
 2026-08-05 | all eight | Regenerated actuals — `GET /api/read/company-activity` (STAFF) for Galaxy presence feed | Hook Galaxy to real shifts/agents activity; Demo Mode seeds open shifts | 403085b

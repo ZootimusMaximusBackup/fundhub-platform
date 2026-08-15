@@ -826,7 +826,13 @@
       if (!r.ok) throw 0;
       return r.json();
     }).then(function (d) {
-      if (d && d.ok && d.staff) return { staff: d.staff, demo: false };
+      if (d && d.ok && d.staff) {
+        try {
+          localStorage.removeItem("fh_demo");
+          localStorage.removeItem("fh_demo_staff");
+        } catch (e) {}
+        return { staff: d.staff, demo: false };
+      }
       throw 0;
     });
     return real.catch(function () {

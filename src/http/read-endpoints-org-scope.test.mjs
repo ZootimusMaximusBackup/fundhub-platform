@@ -83,6 +83,7 @@ const NO_ORG_COLUMN = new Map([
   ["closer-call.mjs", "scoped in src/sales/cockpit.mjs buildCockpit() — every query binds org_id from the session"],
   ["my-numbers.mjs", "scoped in src/sales/metrics.mjs closerMyNumbers() — every query binds org_id from the session"],
   ["sales-floor.mjs", "scoped in src/sales/metrics.mjs salesFloor() — every query binds org_id from the session"],
+  ["closer-deck.mjs", "scoped in src/sales/closer-deck.mjs buildCloserDeck() — every query binds org_id from the session"],
   /* Lender reads write no SQL in the handler. listLenders / matchForClient /
      listObservations in src/lenders/store.mjs always bind org_id = $1::uuid from
      the session org passed by the handler (which also 403s when org is missing). */

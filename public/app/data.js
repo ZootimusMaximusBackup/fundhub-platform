@@ -55,7 +55,15 @@ window.FHData = (function () {
   // Signing in through demo mode stores a sentinel token; it is not a real
   // credential and must not be presented as one.
   function isDemo() {
-    try { return localStorage.getItem("fh_demo") === "1"; } catch (e) { return false; }
+    try {
+      if (localStorage.getItem("fh_demo") !== "1") return false;
+      var t = localStorage.getItem("fh_token") || "";
+      // A live staff token must hit the API. The old /crm.html pack set
+      // fh_demo=1 while leaving a real token in place, which painted fake
+      // people on fundhub.ai. Offline demo still uses token "demo" / "demo-token".
+      if (t && t !== "demo" && t !== "demo-token") return false;
+      return true;
+    } catch (e) { return false; }
   }
 
   function fail(source, error) {

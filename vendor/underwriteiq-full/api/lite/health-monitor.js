@@ -106,7 +106,7 @@ async function checkGHL(fetchImpl) {
 async function checkContextFetcher(fetchImpl) {
   const start = Date.now();
   try {
-    const selfBase = process.env.SELF_BASE_URL || "https://underwrite-iq-lite.vercel.app";
+    const selfBase = process.env.SELF_BASE_URL || "https://fundhub.ai";
     const secret = process.env.CONTEXT_FETCHER_SECRET;
     const resp = await fetchImpl(
       `${selfBase}/api/lite/context-fetcher`,

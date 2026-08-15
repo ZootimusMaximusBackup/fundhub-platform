@@ -155,9 +155,7 @@ function buildSetterCallConfig(requestData, overrides = {}) {
       primary_fico,
       closer_name
     },
-    webhookUrl: process.env.WEBHOOK_BASE_URL
-      ? `${process.env.WEBHOOK_BASE_URL}/api/setter-webhook`
-      : undefined,
+    webhookUrl: require("../lib/bland-client").resolveBlandWebhookUrl(),
     ...overrides
   };
 

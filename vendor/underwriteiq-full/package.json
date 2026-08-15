@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@google-cloud/vision": "^5.3.4",
+    "@pdf-lib/fontkit": "^1.1.1",
     "@upstash/ratelimit": "2.0.0",
     "@upstash/redis": "1.30.0",
     "@vercel/blob": "^2.0.0",

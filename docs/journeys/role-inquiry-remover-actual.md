@@ -25,13 +25,13 @@ flowchart TD
     CAN --> A_dashboard[The dashboard — 5 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 4 routes]
-    CAN --> A_public[public — 1 route]
+    CAN --> A_public[public — 2 routes]
     CAN --> A_read[Reading data — 32 routes]
-    CAN --> A_repair[repair — 1 route]
+    CAN --> A_repair[repair — 2 routes]
     CAN --> A_social[social — 3 routes]
     CAN --> A_top_level[Everything else — 20 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 45 routes]
+    WHO -->|Yes| CANT[Blocked — 47 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_chat[chat — 1 blocked]
@@ -44,14 +44,14 @@ flowchart TD
     CANT --> B_partner_brand[partner-brand — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
-    CANT --> B_read[Reading data — 10 blocked]
+    CANT --> B_read[Reading data — 11 blocked]
     CANT --> B_staff[staff — 2 blocked]
-    CANT --> B_top_level[Everything else — 7 blocked]
+    CANT --> B_top_level[Everything else — 8 blocked]
 ```
 
 ## What they can reach
 
-**94 of 139 routes.**
+**96 of 143 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -110,6 +110,7 @@ flowchart TD
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/pipeline-cards` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/public/partner-page` | GET | anyone |
+| `/api/public/survey-submit` | POST | anyone |
 | `/api/read/agent-context` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/agent-shadow-log` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -143,6 +144,7 @@ flowchart TD
 | `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/workflows` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/repair/exceptions` | GET, POST | staff |
+| `/api/repair/send` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
 | `/api/social/oauth` | — | staff |
 | `/api/social/publish` | POST | partner, staff |
@@ -153,12 +155,12 @@ flowchart TD
 ### Worth knowing
 
 - **5 routes also accept a shared secret instead of a sign-in** (`DASHBOARD_SECRET`), so a caller holding that value reaches them without being anybody in particular: `/api/dashboard/client`, `/api/dashboard/clients`, `/api/dashboard/kpis`, `/api/dashboard/pipeline`, `/api/dashboard/seed`.
-- **9 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/contracts/sign`, `/api/health`, `/api/public/partner-page`. These are the sign-in routes and the health check.
+- **10 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/contracts/sign`, `/api/health`, `/api/public/partner-page`, `/api/public/survey-submit`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**45 of 139 routes.**
+**47 of 143 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -167,6 +169,7 @@ flowchart TD
 | `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/banking/sync-accounts` | POST | owner, admin, sales_manager |
 | `/api/chat/portal-message` | POST | client |
+| `/api/closer-deck` | POST | closer, sales_manager, owner, admin |
 | `/api/company-brain/reviews` | GET, POST | owner |
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/demo/mode` | DELETE, GET, POST | owner, admin |
@@ -197,6 +200,7 @@ flowchart TD
 | `/api/proxy/launch` | POST | owner, funding_advisor |
 | `/api/read/affiliates` | GET | owner, admin, sales_manager |
 | `/api/read/banking-surface` | GET | owner, admin, sales_manager |
+| `/api/read/closer-deck` | GET | closer, sales_manager, owner, admin |
 | `/api/read/commissions` | GET | owner, admin, sales_manager |
 | `/api/read/company-brain-affiliate` | POST | affiliate, partner |
 | `/api/read/failed-events` | GET | owner, admin |

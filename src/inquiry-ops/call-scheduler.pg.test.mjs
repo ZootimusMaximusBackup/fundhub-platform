@@ -1,5 +1,5 @@
-// Real-Postgres: PostGrid delivery.confirmed → first_delivery_at + call_due_at
-// across a weekend. SKIPS without DATABASE_URL.
+// Real-Postgres: PostGrid delivery.confirmed + portal scheduleFromDelivery
+// → first_delivery_at + call_due_at. SKIPS without DATABASE_URL.
 
 import { test, before, after, describe } from "node:test";
 import assert from "node:assert/strict";
@@ -7,7 +7,7 @@ import { createHmac } from "node:crypto";
 import { db, close } from "../db.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
 import { createCase } from "./cases.mjs";
-import { onMailDelivered } from "./call-scheduler.mjs";
+import { onMailDelivered, scheduleFromDelivery } from "./call-scheduler.mjs";
 import { addBusinessDays } from "./business-days.mjs";
 import { handleWebhook } from "../http/router.mjs";
 
@@ -42,7 +42,8 @@ describe("PostGrid delivery webhook → call clock", { skip: !HAS_DB ? "no DATAB
          'Experian', 'P.O. Box 4500', 'Allen', 'TX', '75013', 'US'
        )
        ON CONFLICT (org_id, bureau_code) DO UPDATE
-         SET mail_wait_business_days = 3,
+         SET portal_wait_business_days = 1,
+             mail_wait_business_days = 3,
              mail_service_level = 'first_class',
              updated_at = now()`,
       [orgId]
@@ -148,5 +149,46 @@ describe("PostGrid delivery webhook → call clock", { skip: !HAS_DB ? "no DATAB
 
     const expected = addBusinessDays(deliveredAt, 3).toISOString();
     assert.equal(new Date(out.body.callDueAt).toISOString(), expected);
+  });
+
+  // W4: portal confirm clock (no live bureau) — mirrors mail webhook prove.
+  test("portal scheduleFromDelivery → first_delivery_channel=portal + call_due_at", async () => {
+    const clientId = (await db.query(
+      `INSERT INTO clients (org_id, email, first_name, last_name)
+       VALUES ($1,$2,'Portal','Clock') RETURNING id`,
+      [orgId, `${MARK}.portal@example.com`]
+    )).rows[0].id;
+
+    const c = await createCase(db, {
+      orgId,
+      row: {
+        client_id: clientId,
+        case_status: "In Progress",
+        selected_bureaus_raw: "EX",
+        open_inquiry_count: 1
+      }
+    });
+
+    const deliveredAt = "2026-08-04T16:00:00.000Z";
+    const result = await scheduleFromDelivery(db, {
+      caseId: c.id,
+      orgId,
+      deliveredAt,
+      channel: "portal"
+    });
+    assert.equal(result.scheduled, true);
+    assert.equal(result.waitDays, 1);
+
+    const expected = addBusinessDays(deliveredAt, 1).toISOString();
+    assert.equal(result.callDueAt.toISOString(), expected);
+
+    const row = (await db.query(
+      `SELECT first_delivery_at, first_delivery_channel, call_due_at
+         FROM inquiry_removal_cases WHERE id = $1`,
+      [c.id]
+    )).rows[0];
+    assert.equal(new Date(row.first_delivery_at).toISOString(), deliveredAt);
+    assert.equal(row.first_delivery_channel, "portal");
+    assert.equal(new Date(row.call_due_at).toISOString(), expected);
   });
 });

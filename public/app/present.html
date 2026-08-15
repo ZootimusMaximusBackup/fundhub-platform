@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Closer · Present</title>
+<link rel="stylesheet" href="fundhub-brand.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="data.js"></script>
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--paper);color:var(--ink);font-family:var(--sans)}
+button{font-family:inherit}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+input::placeholder{color:var(--gray2)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--line)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+@keyframes fh-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#app{height:100vh;overflow:hidden;display:flex;flex-direction:column;color:var(--ink);font-family:var(--sans);background:var(--paper)}
+.topbar{display:flex;align-items:center;gap:12px;padding:6px 14px;border-bottom:1px solid var(--line);flex-shrink:0}
+.topbar .sp{flex:1}
+.mono{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray2)}
+.btn-ghost{font-family:var(--mono);font-size:9.5px;padding:5px 9px;background:transparent;color:var(--gray);border:1px solid var(--line);cursor:pointer}
+.stage{display:flex;flex:1;min-height:0;overflow:hidden}
+.client{flex:1 1 auto;min-width:0;position:relative;background:var(--paper);border-right:1px solid var(--line);overflow:hidden}
+.client.solo{border-right:none}
+.cockpit{flex:0 0 340px;position:relative;overflow:hidden;background:var(--soft);border-left:1px solid var(--line)}
+.slide{position:absolute;inset:0;padding:clamp(14px,2.4vw,26px) clamp(16px,3vw,34px) clamp(24px,3vw,32px);display:flex;flex-direction:column;overflow:hidden;animation:fh-in 240ms cubic-bezier(.2,.7,.3,1)}
+.slide-hd{display:flex;align-items:center;gap:12px;margin-bottom:5px}
+.slide-hd .rule{flex:1;height:1px;background:var(--line)}
+.brand{font-family:var(--sans);font-size:12px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+.brand span{color:var(--gray)}
+.hair{height:2px;background:var(--spectrum);border-radius:2px;opacity:.9}
+.slide-body{flex:1;min-height:0;margin-top:clamp(10px,1.6vw,16px);overflow:hidden;display:flex;flex-direction:column}
+.h1{font-family:var(--sans);line-height:1.06;font-weight:700;letter-spacing:-.03em;color:var(--ink);margin:0;font-size:clamp(18px,2.4vw,30px)}
+.kicker{margin-bottom:8px}
+.sub{font-family:var(--sans);font-size:clamp(11px,1.05vw,13px);line-height:1.5;color:var(--gray);margin:8px 0 0;max-width:620px}
+.fine{font-family:var(--sans);font-size:9.5px;line-height:1.45;color:var(--gray2);margin:10px 0 0;max-width:620px}
+.row{display:flex;gap:14px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line)}
+.row .l{flex:1;min-width:0;font-size:clamp(11.5px,1.15vw,13.5px);color:var(--ink);font-weight:500}
+.row .l.strong{font-weight:650}
+.row .subl{font-size:clamp(9.5px,.95vw,11px);color:var(--gray2);margin-top:2px}
+.row .r{font-family:var(--mono);font-size:clamp(11px,1.1vw,13px);color:var(--gray);white-space:nowrap}
+.row .r.strong{color:var(--ink)}
+.bar{display:flex;gap:11px;padding:7px 0;border-bottom:1px solid var(--line)}
+.bar i{width:3;align-self:stretch;background:var(--spectrum);opacity:.85;flex:0 0 3px}
+.stat{flex:1;min-width:120px;border:1px solid var(--line);background:var(--soft);padding:10px 12px;border-radius:10px}
+.stat .v{font-family:var(--mono);font-size:clamp(14px,1.7vw,19px);color:var(--ink)}
+.score{flex:1;min-width:96px;border:1px solid var(--line);background:var(--soft);padding:9px 11px;border-radius:10px}
+.score .v{font-family:var(--mono);font-size:clamp(15px,1.8vw,20px);color:var(--ink);margin-top:3px}
+.prog{display:flex;align-items:center;gap:10px;padding:6px 0}
+.prog .nm{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);width:84px;flex-shrink:0}
+.prog .track{flex:1;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.prog .fill{height:100%;border-radius:4px}
+.prog .n{font-family:var(--mono);font-size:13px;color:var(--ink);width:34px;text-align:right}
+.dots{position:absolute;bottom:8px;left:clamp(16px,3vw,34px);right:clamp(16px,3vw,34px);display:flex;gap:3px}
+.dots i{flex:1;height:2px;background:var(--line)}
+.dots i.on{background:var(--gray)}
+.unavail{border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:14px 16px;max-width:620px}
+.ck{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.ck-hd{padding:9px 13px;border-bottom:1px solid var(--line);flex-shrink:0}
+.ck-hd .t{font-family:var(--sans);font-size:13.5px;font-weight:650;color:var(--ink);margin-top:4px;letter-spacing:-.02em}
+.ck-bd{flex:1;min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}
+.ck-btn{font-family:var(--sans);font-size:11.5px;font-weight:600;padding:8px 11px;background:transparent;color:var(--ink);border:1px solid var(--line);cursor:pointer;text-align:left;width:100%}
+.ck-btn.k{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.say{font-family:var(--sans);font-size:11.5px;color:var(--ink);line-height:1.45;padding-left:9px;border-left:2px solid var(--line)}
+.watch{border:1px solid var(--line);padding:9px}
+.ck-ft{padding:10px;border-top:1px solid var(--line);display:flex;gap:7px;flex-shrink:0}
+.ck-ph{padding:6px 10px 0;display:flex;gap:4px;flex-shrink:0;border-top:1px solid var(--line)}
+.toast{position:absolute;bottom:62px;right:12px;left:12px;background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:10.5px;padding:9px 11px;animation:fh-in 200ms ease}
+.gate{padding:28px 22px;max-width:520px}
+.fin{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--gray);margin-top:10px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="present.js"></script>
+</body>
+</html>

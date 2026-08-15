@@ -39,7 +39,6 @@ import { n04PostFundingNurture } from './n-04-post-funding-nurture.mjs';
 import { n06RenewalSecondWave } from './n-06-renewal-second-wave.mjs';
 import { roundStartedClientNotify } from './round-started-client-notify.mjs';
 import { s01NewLeadIntake } from './s-01-new-lead-intake.mjs';
-import { s02IncompleteSurveyNudge } from './s-02-incomplete-survey-nudge.mjs';
 import { s04CallBooked } from './s-04-call-booked.mjs';
 import { s05aNoShowRecovery } from './s-05a-no-show-recovery.mjs';
 import { s06PostCallFundingPurchased } from './s-06-post-call-funding-purchased.mjs';
@@ -119,7 +118,6 @@ export const functions = [
   n06RenewalSecondWave,
   roundStartedClientNotify,
   s01NewLeadIntake,
-  s02IncompleteSurveyNudge,
   s04CallBooked,
   s05aNoShowRecovery,
   s06PostCallFundingPurchased,

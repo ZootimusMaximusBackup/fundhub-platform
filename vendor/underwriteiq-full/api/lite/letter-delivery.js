@@ -84,7 +84,12 @@ async function deliverLetters({
       logInfo("Generating CRS letters", { specs: crsDocuments.letters.length });
       // Renamed from crsResult to avoid shadowing the crsResult PARAMETER (the CRS
       // engine result) that summary-doc generation below reads at line ~102.
-      const letterGenResult = await generateLettersFromCRS(crsDocuments.letters, personal || {});
+      // Same generateLetters item lists as W1 — empty bureau/items → no PDF.
+      const letterGenResult = await generateLettersFromCRS(
+        crsDocuments.letters,
+        personal || {},
+        bureaus || bureausFromCrsResult(crsResult) || {}
+      );
       letters = letterGenResult.letters;
       fieldKeyMap = letterGenResult.fieldKeyMap;
     } else {
@@ -211,264 +216,178 @@ async function deliverLetters({
 }
 
 // ---------------------------------------------------------------------------
-// CRS-specific letter generation
+// CRS-specific letter generation (W1 generateLetters item lists — no invent)
 // ---------------------------------------------------------------------------
 
 /**
- * Generate letters from CRS document specs.
- * Uses existing PDF generators but driven by CRS letter specs instead of raw bureau data.
+ * Build the same bureaus shape letter-generator expects from a CRS engine result.
+ * Specs alone never invent accounts — empty/missing normalized → empty bureaus.
+ */
+function bureausFromCrsResult(crsResult) {
+  const empty = () => ({
+    tradelines: [],
+    inquiries: 0,
+    inquiryList: [],
+    names: [],
+    addresses: [],
+    employers: [],
+    ssns: [],
+    dobs: []
+  });
+  const by = { experian: empty(), transunion: empty(), equifax: empty() };
+  if (!crsResult?.normalized) return by;
+
+  const tradelines = crsResult.normalized.tradelines || [];
+  const inquiries = crsResult.normalized.inquiries || [];
+  const identity = crsResult.normalized.identity || {};
+
+  for (const t of tradelines) {
+    const key = t.source;
+    if (!by[key]) continue;
+    by[key].tradelines.push({
+      creditor: t.creditorName || t.creditor,
+      creditorName: t.creditorName || t.creditor,
+      status: t.status,
+      is_negative: !!(t.isDerogatory || t.is_negative),
+      isDerogatory: !!(t.isDerogatory || t.is_negative),
+      balance: t.currentBalance ?? t.balance ?? null,
+      currentBalance: t.currentBalance ?? t.balance ?? null,
+      pastDue: t.pastDue ?? t.past_due ?? null,
+      accountId: t.accountIdentifier || t.accountId || t.accountNumber,
+      accountIdentifier: t.accountIdentifier || t.accountId || t.accountNumber,
+      dateReported: t.reportedDate || t.dateReported || t.lastReported,
+      reportedDate: t.reportedDate || t.dateReported || t.lastReported,
+      openedDate: t.openedDate || t.dateOpened || null,
+      closedDate: t.closedDate || t.dateClosed || null,
+      accountType: t.accountType ?? null,
+      currentRatingType: t.currentRatingType || null,
+      comments: t.comments || [],
+      chargeOffAmount: t.chargeOffAmount ?? null,
+      complianceConditionCode: t.complianceConditionCode || null,
+      inferredDofd: t.inferredDofd || t.dofd || null,
+      ownership: t.ownership || null,
+      isAU: !!t.isAU,
+      priorOutcome: t.priorOutcome || null
+    });
+  }
+
+  for (const i of inquiries) {
+    if (!by[i.source]) continue;
+    by[i.source].inquiries += 1;
+    by[i.source].inquiryList.push({
+      creditor: i.creditorName || i.creditor || i.subscriber || "Unknown",
+      creditorName: i.creditorName || i.creditor || i.subscriber || "Unknown",
+      date: i.date || i.inquiryDate || ""
+    });
+  }
+
+  const idSource = identity.bySource || {};
+  const formatIdentityName = n => {
+    if (!n || typeof n !== "object") return typeof n === "string" ? n : "";
+    return n.full || n.display || [n.first, n.middle, n.last].filter(Boolean).join(" ").trim();
+  };
+  for (const key of Object.keys(by)) {
+    const named = (arr, pick) =>
+      (arr || [])
+        .filter(row => !row || !row.source || row.source === key)
+        .map(pick)
+        .filter(Boolean);
+    const slice = idSource[key];
+    by[key].names = slice
+      ? (slice.names || [])
+          .map(n => (typeof n === "string" ? n : n.full || n.display || ""))
+          .filter(Boolean)
+      : named(identity.names, n => (typeof n === "string" ? n : formatIdentityName(n)));
+    by[key].addresses = slice
+      ? (slice.addresses || [])
+          .map(a =>
+            typeof a === "string" ? a : [a.line1, a.city, a.state, a.zip].filter(Boolean).join(", ")
+          )
+          .filter(Boolean)
+      : named(identity.addresses, a =>
+          typeof a === "string"
+            ? a
+            : [a.line1 || a.addressLine1, a.city, a.state, a.zip || a.postalCode]
+                .filter(Boolean)
+                .join(", ")
+        );
+    by[key].employers = slice
+      ? (slice.employers || [])
+          .map(e => (typeof e === "string" ? e : e.name || ""))
+          .filter(Boolean)
+      : named(identity.employers, e =>
+          typeof e === "string" ? e : e.name || e.employerName || ""
+        );
+    by[key].ssns = slice
+      ? (slice.ssns || []).map(s => (typeof s === "string" ? s : s.value || "")).filter(Boolean)
+      : named(identity.ssns, s => (typeof s === "string" ? s : s.value || s.ssn || ""));
+    by[key].dobs = slice
+      ? (slice.dobs || []).map(d => (typeof d === "string" ? d : d.value || "")).filter(Boolean)
+      : named(identity.dobs, d => (typeof d === "string" ? d : d.value || d.dob || ""));
+  }
+
+  return by;
+}
+
+function matchCrsSpec(letterSpecs, letter) {
+  return (letterSpecs || []).find(spec => {
+    if (!spec || spec.bureau !== letter.bureau) return false;
+    if (letter.type === "dispute") {
+      return spec.type === "dispute" && Number(spec.round) === Number(letter.round);
+    }
+    if (letter.type === "inquiry_removal") return spec.type === "inquiry_removal";
+    if (letter.type === "personal_info") return spec.type === "personal_info";
+    return false;
+  });
+}
+
+/**
+ * Generate letters from CRS document specs using W1 generateLetters helpers.
+ * Empty item lists → no letter (never a header-only PDF). Specs alone do not invent accounts.
  *
  * @param {Array<{type, bureau, round, fieldKey}>} letterSpecs - From buildDocuments()
  * @param {Object} personal - { name, address }
+ * @param {Object} [bureaus] - Parsed bureau data (tradelines / inquiries / identity)
  * @returns {Promise<{ letters: Array<{filename, buffer}>, fieldKeyMap: Object }>}
  */
-async function generateLettersFromCRS(letterSpecs, personal) {
-  const { BUREAUS } = require("./letter-generator");
+async function generateLettersFromCRS(letterSpecs, personal, bureaus) {
+  const {
+    BUREAUS,
+    generateDisputeLetters,
+    generateInquiryLetters,
+    generatePersonalInfoLetters
+  } = require("./letter-generator");
 
+  const specs = Array.isArray(letterSpecs) ? letterSpecs : [];
+  const who = personal || {};
+  const data = bureaus || {};
   const letters = [];
   const fieldKeyMap = {}; // filename (no .pdf) → GHL field key
 
-  // Group specs by type for efficient generation
-  const disputeSpecs = letterSpecs.filter(s => s.type === "dispute");
-  const inquirySpecs = letterSpecs.filter(s => s.type === "inquiry_removal");
-  const personalSpecs = letterSpecs.filter(s => s.type === "personal_info");
+  const wantDispute = specs.some(s => s.type === "dispute" && BUREAUS[s.bureau]);
+  const wantInquiry = specs.some(s => s.type === "inquiry_removal" && BUREAUS[s.bureau]);
+  const wantPersonal = specs.some(s => s.type === "personal_info" && BUREAUS[s.bureau]);
 
-  // Generate dispute letters (repair path)
-  for (const spec of disputeSpecs) {
-    const bureauKey = spec.bureau;
-    const bureauInfo = BUREAUS[bureauKey];
-    if (!bureauInfo) continue;
-
-    const filename = `${bureauInfo.prefix}_round${spec.round}.pdf`;
-    const buffer = await createCRSDisputeLetter({
-      bureau: bureauInfo,
-      personal,
-      round: spec.round
-    });
-    letters.push({ filename, buffer });
-    fieldKeyMap[filename.replace(".pdf", "")] = spec.fieldKey;
+  const generated = [];
+  if (wantDispute) {
+    generated.push(...(await generateDisputeLetters({ bureaus: data, personal: who })));
+  }
+  if (wantInquiry) {
+    generated.push(...(await generateInquiryLetters({ bureaus: data, personal: who })));
+  }
+  if (wantPersonal) {
+    generated.push(...(await generatePersonalInfoLetters({ bureaus: data, personal: who })));
   }
 
-  // Generate inquiry removal letters (funding path)
-  for (const spec of inquirySpecs) {
-    const bureauKey = spec.bureau;
-    const bureauInfo = BUREAUS[bureauKey];
-    if (!bureauInfo) continue;
-
-    const filename = `inquiry_${bureauInfo.prefix}.pdf`;
-    const buffer = await createCRSInquiryLetter({ bureau: bureauInfo, personal });
-    letters.push({ filename, buffer });
-    fieldKeyMap[filename.replace(".pdf", "")] = spec.fieldKey;
-  }
-
-  // Generate personal info letters
-  for (const spec of personalSpecs) {
-    const bureauKey = spec.bureau;
-    const bureauInfo = BUREAUS[bureauKey];
-    if (!bureauInfo) continue;
-
-    const filename = `personal_info_${bureauInfo.prefix}.pdf`;
-    const buffer = await createCRSPersonalInfoLetter({ bureau: bureauInfo, personal });
-    letters.push({ filename, buffer });
-    fieldKeyMap[filename.replace(".pdf", "")] = spec.fieldKey;
+  // Keep only letters that both have real items (W1) and match a requested CRS spec.
+  for (const letter of generated) {
+    const spec = matchCrsSpec(specs, letter);
+    if (!spec) continue;
+    letters.push({ filename: letter.filename, buffer: letter.buffer });
+    fieldKeyMap[letter.filename.replace(".pdf", "")] = spec.fieldKey;
   }
 
   return { letters, fieldKeyMap };
-}
-
-/**
- * Create a CRS dispute letter PDF (uses same format as legacy, but without parsed bureau data).
- */
-async function createCRSDisputeLetter({ bureau, personal, round }) {
-  const { PDFDocument, StandardFonts } = require("pdf-lib");
-  const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([612, 792]);
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
-  let y = 740;
-  const leftMargin = 50;
-  const lineHeight = 14;
-  const name = personal?.name || "[CONSUMER NAME]";
-  const address = personal?.address || "[CONSUMER ADDRESS]";
-
-  const today = new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric"
-  });
-  page.drawText(today, { x: leftMargin, y, size: 11, font });
-  y -= lineHeight * 2;
-  page.drawText(name, { x: leftMargin, y, size: 11, font });
-  y -= lineHeight;
-  page.drawText(address, { x: leftMargin, y, size: 11, font });
-  y -= lineHeight * 2;
-  page.drawText(bureau.name, { x: leftMargin, y, size: 11, font: boldFont });
-  y -= lineHeight;
-  for (const line of bureau.address.split("\n")) {
-    page.drawText(line, { x: leftMargin, y, size: 11, font });
-    y -= lineHeight;
-  }
-  y -= lineHeight;
-  page.drawText(`Re: Dispute of Inaccurate Information - Round ${round}`, {
-    x: leftMargin,
-    y,
-    size: 12,
-    font: boldFont
-  });
-  y -= lineHeight * 2;
-
-  const body = [
-    "To Whom It May Concern:",
-    "",
-    "I am writing to dispute inaccurate information appearing on my credit report. Under the Fair Credit Reporting Act (FCRA), I have the right to dispute incomplete or inaccurate information.",
-    "",
-    "I am requesting that you investigate all accounts on my credit file that contain inaccurate, incomplete, or unverifiable information and remove or correct them within 30 days as required by the FCRA.",
-    "",
-    "Please send me written notification of the results of your investigation.",
-    "",
-    "Sincerely,",
-    "",
-    name
-  ];
-
-  for (const line of body) {
-    if (line === "") {
-      y -= lineHeight;
-      continue;
-    }
-    page.drawText(line, { x: leftMargin, y, size: 11, font });
-    y -= lineHeight;
-  }
-
-  return Buffer.from(await pdfDoc.save());
-}
-
-/**
- * Create a CRS inquiry removal letter PDF.
- */
-async function createCRSInquiryLetter({ bureau, personal }) {
-  const { PDFDocument, StandardFonts } = require("pdf-lib");
-  const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([612, 792]);
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
-  let y = 740;
-  const leftMargin = 50;
-  const lineHeight = 14;
-  const name = personal?.name || "[CONSUMER NAME]";
-  const address = personal?.address || "[CONSUMER ADDRESS]";
-
-  const today = new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric"
-  });
-  page.drawText(today, { x: leftMargin, y, size: 11, font });
-  y -= lineHeight * 2;
-  page.drawText(name, { x: leftMargin, y, size: 11, font });
-  y -= lineHeight;
-  page.drawText(address, { x: leftMargin, y, size: 11, font });
-  y -= lineHeight * 2;
-  page.drawText(bureau.name, { x: leftMargin, y, size: 11, font: boldFont });
-  y -= lineHeight;
-  for (const line of bureau.address.split("\n")) {
-    page.drawText(line, { x: leftMargin, y, size: 11, font });
-    y -= lineHeight;
-  }
-  y -= lineHeight;
-  page.drawText("Re: Inquiry Removal Request", { x: leftMargin, y, size: 12, font: boldFont });
-  y -= lineHeight * 2;
-
-  const body = [
-    "To Whom It May Concern:",
-    "",
-    `I am writing to request the removal of unauthorized inquiries from my ${bureau.name} credit report. Under the FCRA, inquiries made without my consent or permissible purpose should be removed.`,
-    "",
-    "Please investigate and remove any unauthorized inquiries within 30 days as required by the FCRA.",
-    "",
-    "Sincerely,",
-    "",
-    name
-  ];
-
-  for (const line of body) {
-    if (line === "") {
-      y -= lineHeight;
-      continue;
-    }
-    page.drawText(line, { x: leftMargin, y, size: 11, font });
-    y -= lineHeight;
-  }
-
-  return Buffer.from(await pdfDoc.save());
-}
-
-/**
- * Create a CRS personal info dispute letter PDF.
- */
-async function createCRSPersonalInfoLetter({ bureau, personal }) {
-  const { PDFDocument, StandardFonts } = require("pdf-lib");
-  const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([612, 792]);
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
-  let y = 740;
-  const leftMargin = 50;
-  const lineHeight = 14;
-  const name = personal?.name || "[CONSUMER NAME]";
-  const address = personal?.address || "[CONSUMER ADDRESS]";
-
-  const today = new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric"
-  });
-  page.drawText(today, { x: leftMargin, y, size: 11, font });
-  y -= lineHeight * 2;
-  page.drawText(name, { x: leftMargin, y, size: 11, font });
-  y -= lineHeight;
-  page.drawText(address, { x: leftMargin, y, size: 11, font });
-  y -= lineHeight * 2;
-  page.drawText(bureau.name, { x: leftMargin, y, size: 11, font: boldFont });
-  y -= lineHeight;
-  for (const line of bureau.address.split("\n")) {
-    page.drawText(line, { x: leftMargin, y, size: 11, font });
-    y -= lineHeight;
-  }
-  y -= lineHeight;
-  page.drawText("Re: Personal Information Correction Request", {
-    x: leftMargin,
-    y,
-    size: 12,
-    font: boldFont
-  });
-  y -= lineHeight * 2;
-
-  const body = [
-    "To Whom It May Concern:",
-    "",
-    `I am writing to request correction of inaccurate personal information on my ${bureau.name} credit file.`,
-    "",
-    "Please update my file to reflect only my correct personal information and remove any outdated or inaccurate variations within 30 days as required by the FCRA.",
-    "",
-    "Sincerely,",
-    "",
-    name
-  ];
-
-  for (const line of body) {
-    if (line === "") {
-      y -= lineHeight;
-      continue;
-    }
-    page.drawText(line, { x: leftMargin, y, size: 11, font });
-    y -= lineHeight;
-  }
-
-  return Buffer.from(await pdfDoc.save());
 }
 
 /**

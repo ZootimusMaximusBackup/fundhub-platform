@@ -31,8 +31,9 @@ const APP = path.resolve(HERE, "../../public/app");
 /* Screens with no inline sidebar at all, and why:
    index.html      — a 22-line forwarder, shell.js sends each role to its home
    client-portal   — client-facing, deliberately carries no staff navigation
+   present.html    — fullscreen closer deck; opened from the call cockpit, no shell.js
    *.fragment.html — a fragment, not a screen */
-const NO_SIDEBAR = new Set(["index.html", "client-portal.html"]);
+const NO_SIDEBAR = new Set(["index.html", "client-portal.html", "present.html"]);
 
 function navHrefs(html) {
   return [...html.matchAll(/class="navitem"[^>]*href="([^"]+)"/g)].map((m) => m[1]);

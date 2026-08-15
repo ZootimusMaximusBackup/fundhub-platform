@@ -53,6 +53,8 @@ async function clientContext(db, clientId) {
   const c = r.rows[0];
   if (!c) return {};
   const fullName = [c.first_name, c.last_name].filter(Boolean).join(" ") || null;
+  const base = String(process.env.APP_BASE_URL || process.env.URL || "https://fundhub.ai").replace(/\/+$/, "");
+  const portalLoginUrl = `${base}/portal-login.html?email=${encodeURIComponent(c.email || "")}`;
   return {
     contact: {
       ...(c.custom_fields || {}),
@@ -62,7 +64,9 @@ async function clientContext(db, clientId) {
       full_name: fullName,
       email: c.email ?? null,
       phone: c.phone ?? null
-    }
+    },
+    // Used by U-02 funding delivery CTA (and any later portal buttons).
+    portal_login_url: portalLoginUrl
   };
 }
 

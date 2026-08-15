@@ -9,6 +9,19 @@
 
 const BLAND_API_BASE = "https://api.bland.ai/v1";
 
+/** Fundhub inbound Bland webhook (not Vercel /api/*-webhook). */
+const DEFAULT_BLAND_WEBHOOK_URL = "https://fundhub.ai/api/webhooks/bland";
+
+/**
+ * Callback URL Bland POSTs when a call finishes.
+ * Prefer BLAND_WEBHOOK_URL. Do not use WEBHOOK_BASE_URL + /api/*-webhook.
+ */
+function resolveBlandWebhookUrl() {
+  const explicit = (process.env.BLAND_WEBHOOK_URL || "").trim();
+  if (explicit) return explicit;
+  return DEFAULT_BLAND_WEBHOOK_URL;
+}
+
 function authHeaders() {
   return {
     Authorization: process.env.BLAND_API_KEY,
@@ -147,5 +160,7 @@ module.exports = {
   listCalls,
   getCallTranscript,
   stopCall,
-  analyzeCall
+  analyzeCall,
+  resolveBlandWebhookUrl,
+  DEFAULT_BLAND_WEBHOOK_URL
 };

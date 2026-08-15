@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@netlify/blobs": "^10.7.11",
+    "@pdf-lib/fontkit": "^1.1.1",
     "inngest": "^3.21.2",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.10.38",

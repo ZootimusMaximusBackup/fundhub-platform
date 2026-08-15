@@ -201,9 +201,7 @@ function buildExperianCallConfig(requestData, overrides = {}) {
     voice: process.env.BLAND_VOICE || "mason",
     waitForGreeting: true,
     maxDuration: 90,  // Fraud dept holds can run 30+ min; full dispute completion adds time
-    webhookUrl: process.env.WEBHOOK_BASE_URL
-      ? `${process.env.WEBHOOK_BASE_URL}/api/call-webhook`
-      : undefined,
+    webhookUrl: require("../lib/bland-client").resolveBlandWebhookUrl(),
     ...overrides
   };
 }

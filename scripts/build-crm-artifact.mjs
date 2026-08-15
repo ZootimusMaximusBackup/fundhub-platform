@@ -8,12 +8,13 @@
  * to it. The three asset tags become placeholders so the shell, the data layer
  * and the stylesheet are stored once instead of twenty times.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const APP = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "app");
-const OUT = join(APP, "..", "crm.html");
+// Do not publish this onto fundhub.ai. public/crm.html is a live redirect.
+const OUT = join(APP, "..", "..", "docs", "artifacts", "crm-offline-bundle.html");
 
 // Sidebar order, then the two screens the sidebar does not link to.
 const SCREENS = [
@@ -205,5 +206,6 @@ ${RUNTIME}
 <\/script>
 `;
 
+mkdirSync(join(OUT, ".."), { recursive: true });
 writeFileSync(OUT, page);
 console.log("wrote", OUT, (page.length / 1024).toFixed(0) + " KB,", SCREENS.length, "screens");

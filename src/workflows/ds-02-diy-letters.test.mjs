@@ -8,17 +8,16 @@ const withTemplate = () => [{ org_id: "org-1", template_key: EMAIL_TEMPLATE_KEY,
    named as down. It defaults to blocked (src/lib/dry-run.mjs), and handle()
    takes no env, so the fence reads the process environment. Node runs each test
    file in its own process, so this cannot leak into another file. */
-process.env.ADAPTERS_DRY_RUN = "0";
-
-// text() is required: outbound calls now read the body once as text.
 const fakeFetch = (ok = true) => async () => ({ ok, status: ok ? 200 : 500, text: async () => "{}" });
+const deliverOk = async () => ({ delivered: true, letterCount: 1, event: "diy.package.ready" });
+const deliverFail = async () => ({ delivered: false, reason: "empty_pack" });
 
 // HARD RULE 1 — the whole point of this file: prove BOTH directions.
 test("HARD RULE 1 — fires on the not-qualified downsell path (DIY product, non-funding tier)", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }], templates: withTemplate() });
   const res = await handle({
     event: ev("payment.received", { productName: "Consulting Services Package", amount: 1000 }, { clientId: "cl-1" }),
-    db, step: fakeStep(), fetchImpl: fakeFetch(true)
+    db, step: fakeStep(), fetchImpl: fakeFetch(true), deliverLettersFn: deliverOk
   });
   assert.equal(res.done, true);
   assert.equal(res.delivery.delivered, true);
@@ -74,20 +73,43 @@ test("branch: non-DIY product is ignored regardless of path", async () => {
 
 test("branch: letter delivery failure still tags + tasks, marks status for retry", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }], templates: withTemplate() });
-  const res = await handle({ event: ev("payment.received", { productName: "Consulting Services Package" }, { clientId: "cl-1" }), db, step: fakeStep(), fetchImpl: fakeFetch(false) });
+  const res = await handle({ event: ev("payment.received", { productName: "Consulting Services Package" }, { clientId: "cl-1" }), db, step: fakeStep(), fetchImpl: fakeFetch(false), deliverLettersFn: deliverFail });
   assert.equal(res.delivery.delivered, false);
   assert.equal(db.clients[0].custom_fields.diy_status, "Delivery Failed — Retry");
+});
+
+test("HARD RULE — DIY pay never calls PostGrid / mailBureauLetter", async () => {
+  const src = await import("node:fs").then((fs) =>
+    fs.readFileSync(new URL("./ds-02-diy-letters.mjs", import.meta.url), "utf8")
+  );
+  assert.equal(/from\s+["'][^"']*(mail-letter|delivery\/send)/.test(src), false,
+    "ds-02 must not import the bureau mail helper");
+  assert.equal(/\b(mailBureauLetter|deliverDisputeLetter|sendLetter)\s*\(/.test(src), false,
+    "ds-02 must not call PostGrid send on payment.received");
+
+  let postgridHits = 0;
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }], templates: withTemplate() });
+  await handle({
+    event: ev("payment.received", { productName: "Consulting Services Package", amount: 1000 }, { clientId: "cl-1" }),
+    db,
+    step: fakeStep(),
+    fetchImpl: async (url) => {
+      if (/postgrid/i.test(String(url))) postgridHits++;
+      return { ok: true, status: 200, text: async () => "{}" };
+    },
+    deliverLettersFn: deliverOk
+  });
+  assert.equal(postgridHits, 0, "DIY pay must not hit PostGrid");
 });
 
 test("duplicate delivery: replaying the same event does not double-send, double-task, or double-tag", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }], templates: withTemplate() });
   const event = ev("payment.received", { productName: "Consulting Services Package" }, { id: "evt-dup-ds02", clientId: "cl-1" });
-  let fetchCallCount = 0;
-  const countingFetch = async () => { fetchCallCount++; return { ok: true, status: 200, text: async () => "{}" }; };
-  await handle({ event, db, step: fakeStep(), fetchImpl: countingFetch });
-  await handle({ event, db, step: fakeStep(), fetchImpl: countingFetch });
-  // The delivery guard must block the re-POST — fetch called exactly once across both runs.
-  assert.equal(fetchCallCount, 1, "webhook POST must not fire on replay");
+  let deliverCount = 0;
+  const countingDeliver = async () => { deliverCount++; return { delivered: true, letterCount: 1, event: "diy.package.ready" }; };
+  await handle({ event, db, step: fakeStep(), fetchImpl: fakeFetch(true), deliverLettersFn: countingDeliver });
+  await handle({ event, db, step: fakeStep(), fetchImpl: fakeFetch(true), deliverLettersFn: countingDeliver });
+  assert.equal(deliverCount, 1, "in-repo deliver must not run twice on replay");
   assert.equal(db.messages.length, 1);
   assert.equal(db.tasks.length, 1);
   assert.deepEqual(db.clients[0].tags, ["client:diy-letters"]);

@@ -18,7 +18,14 @@ function sanitizeScore(score) {
 
 function toNumberOrNull(v) {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string" && v.trim().toLowerCase() === "null") return null;
+  if (typeof v === "boolean") return null;
+  if (typeof v === "string") {
+    const t = v.trim();
+    if (t === "" || t.toLowerCase() === "null") return null;
+    v = t;
+  } else if (typeof v !== "number") {
+    return null;
+  }
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 }
@@ -26,6 +33,33 @@ function toNumberOrNull(v) {
 function numOrZero(v) {
   const n = toNumberOrNull(v);
   return n == null ? 0 : n;
+}
+
+/** Counts that gate fundable / cleanup. Unknown stays null — never 0. */
+function measuredCount(v) {
+  const n = toNumberOrNull(v);
+  if (n == null || n < 0) return null;
+  return n;
+}
+
+/** Utilization %. Unknown / negative stays null — never 0 (0% looks paid-down). */
+function measuredPct(v) {
+  const n = toNumberOrNull(v);
+  if (n == null || n < 0) return null;
+  return n;
+}
+
+/** Missing bureau slot is 0 so a pulled bureau's count is not swallowed.
+ *  Available bureau with no count stays null. */
+function inquirySlot(b) {
+  const n = measuredCount(b.inquiries);
+  if (n != null) return n;
+  return b.available ? null : 0;
+}
+
+function sumInquirySlots(ex, eq, tu) {
+  if (ex == null || eq == null || tu == null) return null;
+  return ex + eq + tu;
 }
 
 function monthsSince(dateStr) {
@@ -99,16 +133,16 @@ function computeUnderwrite(bureaus, businessAgeMonthsRaw) {
   eq.score = sanitizeScore(eq.score);
   tu.score = sanitizeScore(tu.score);
 
-  const exInq = numOrZero(ex.inquiries);
-  const eqInq = numOrZero(eq.inquiries);
-  const tuInq = numOrZero(tu.inquiries);
-  const totalInq = exInq + eqInq + tuInq;
+  const exInq = inquirySlot(ex);
+  const eqInq = inquirySlot(eq);
+  const tuInq = inquirySlot(tu);
+  const totalInq = sumInquirySlots(exInq, eqInq, tuInq);
 
   function buildBureauSummary(key, label, b) {
     const score = sanitizeScore(b.score);
-    const util = toNumberOrNull(b.utilization_pct);
-    const neg = numOrZero(b.negatives);
-    const lates = numOrZero(b.late_payment_events);
+    const util = measuredPct(b.utilization_pct);
+    const neg = measuredCount(b.negatives);
+    const lates = measuredCount(b.late_payment_events);
     const tradelines = Array.isArray(b.tradelines) ? b.tradelines : [];
 
     let highestRevolvingLimit = 0;
@@ -185,7 +219,7 @@ function computeUnderwrite(bureaus, businessAgeMonthsRaw) {
       util,
       neg,
       lates,
-      inquiries: numOrZero(b.inquiries),
+      inquiries: inquirySlot(b),
       tradelines,
       highestRevolvingLimit,
       highestInstallmentAmount,

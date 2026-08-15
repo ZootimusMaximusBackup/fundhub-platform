@@ -325,6 +325,14 @@
         location.href = "calendar.html?client_id=" + encodeURIComponent(clientId);
       });
     }
+    var present = document.getElementById("fh-present");
+    if (present && clientId) {
+      present.addEventListener("click", function () {
+        location.href = "present.html?contact=" + encodeURIComponent(clientId);
+      });
+    } else if (present) {
+      present.remove();
+    }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

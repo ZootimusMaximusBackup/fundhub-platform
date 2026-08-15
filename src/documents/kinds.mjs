@@ -40,7 +40,10 @@ export const SUBTYPES = Object.freeze({
     "metro2_dispute_letter_pack",   // Metro 2 Dispute Letter Pack
     "credit_optimization_roadmap",  // Credit Optimization Roadmap
     "funding_snapshot",             // Funding Snapshot
-    "bank_lender_match_list"        // Bank and Lender Match List
+    "bank_lender_match_list",       // Bank and Lender Match List
+    // Between-rounds / funding mail stack (discriminator = EX|EQ|TU)
+    "funding_inquiry_removal",
+    "funding_personal_info"
   ]),
   // what a client hands us through the upload endpoint (docs/UPLOADS-SPEC.md).
   // One document PER FILE — never one-per-client — so uploads.mjs always
@@ -72,6 +75,8 @@ export const SUBTYPE_TITLES = Object.freeze({
   credit_optimization_roadmap: "Credit Optimization Roadmap",
   funding_snapshot: "Funding Snapshot",
   bank_lender_match_list: "Bank and Lender Match List",
+  funding_inquiry_removal: "Funding Inquiry Removal Letter",
+  funding_personal_info: "Funding Personal Info Letter",
   id_document: "ID Document",
   ssn_card: "SSN Card",
   proof_of_address: "Proof of Address",

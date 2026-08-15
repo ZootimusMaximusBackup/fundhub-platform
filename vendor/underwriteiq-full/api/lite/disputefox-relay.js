@@ -36,9 +36,7 @@ const { logInfo, logWarn, logError } = require("./logger");
 //   "https://services.leadconnectorhq.com/hooks/ORh91GeY4acceSASSnLR/webhook-trigger/193227ed-46ff-4cab-be7f-0d482e3571e4";
 
 // Code-based R-WH-01 replacement — handles contact lookup, field writes, pipeline routing
-const GHL_WEBHOOK_URL =
-  process.env.DISPUTEFOX_INTAKE_URL ||
-  "https://underwrite-iq-lite.vercel.app/api/lite/disputefox-intake";
+const GHL_WEBHOOK_URL = process.env.DISPUTEFOX_INTAKE_URL || "";
 
 function getDestination() {
   const mode = (process.env.DISPUTEFOX_RELAY_MODE || "direct").toLowerCase();

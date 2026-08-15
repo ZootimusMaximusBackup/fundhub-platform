@@ -1,0 +1,695 @@
+/* closer present — vanilla port of fundhub-closer-deck-v5. Copy stays verbatim. */
+(function () {
+  "use strict";
+
+  var DECK = [
+    { code: "S-01", phase: "01 Intro" }, { code: "S-02", phase: "01 Intro" },
+    { code: "S-03", phase: "02 Discovery" }, { code: "S-04", phase: "02 Discovery" },
+    { code: "S-05", phase: "03 Soft pull" }, { code: "S-06", phase: "03 Soft pull" },
+    { code: "S-07", phase: "03 Soft pull" },
+    { code: "S-08", phase: "04 Pitch" }, { code: "S-09", phase: "04 Pitch" },
+    { code: "S-10", phase: "04 Pitch" }, { code: "S-11", phase: "04 Pitch" },
+    { code: "S-12", phase: "04 Pitch" }, { code: "S-13", phase: "04 Pitch" },
+    { code: "S-14", phase: "04 Pitch" }, { code: "S-15", phase: "04 Pitch" },
+    { code: "S-16", phase: "04 Pitch" },
+    { code: "S-17", phase: "05 Commit" }, { code: "S-18", phase: "05 Commit" },
+    { code: "S-19", phase: "05 Commit" }, { code: "S-20", phase: "05 Commit" },
+    { code: "S-21", phase: "05 Commit" }, { code: "S-22", phase: "05 Commit" },
+    { code: "S-23", phase: "07 Close" }, { code: "S-24", phase: "07 Close" }
+  ];
+  var EDU_SKIP = ["S-11", "S-12", "S-13", "S-14", "S-15", "S-16"];
+  var DISCOVERY = [
+    ["Pain", "Biggest challenge right now? What's not working at the level it should be?"],
+    ["Desire", "If capital wasn't an issue, what does the business look like in 6 to 12 months? Why that number?"],
+    ["Doubt", "What are you currently doing to get funding? How's that been working out?"],
+    ["Cost", "What is this costing you every month? Put a number on it."],
+    ["Support", "Does your spouse know you're exploring funding options?"],
+    ["Money", "If the pull comes back strong, are you ready to move now, or still researching?"],
+    ["Trust", "Worked with any other funding companies before? How did that go?"]
+  ];
+  var GUARANTEES = [
+    ["G-01 / 24 HOURS", "24-Hour Action Guarantee", "Once you're signed on, a funding advisor begins working your file within 24 business hours. If we don't act in that window, you're protected and you don't pay."],
+    ["G-02 / 72 HOURS", "72-Hour Application Guarantee", "Once you're signed on, your applications go out within 72 business hours. If we don't act in that window, you're protected and you don't pay."],
+    ["G-03 / FUNDING", "Funding Guarantee", "If you qualify and we don't secure funding for you, you don't pay. If you get nothing, we earn nothing."]
+  ];
+  var MENU = [
+    ["F-01", "Business lines of credit", "Revolving access for operating needs."],
+    ["F-02", "Term financing", "Fixed amount, set repayment schedule."],
+    ["F-03", "Equipment financing", "Tied to business equipment purchases."],
+    ["F-04", "SBA-backed options", "Through participating SBA partners."],
+    ["F-05", "Revenue-based financing", "Structured around business revenue."],
+    ["F-06", "Business card funding", "Coordinated 0% intro APR lines across issuers."]
+  ];
+  var TERMINAL = [
+    "$ underwrite --diagnostic", "> application received", "> profile review initiated",
+    "> soft inquiry · no score impact", "> scanning experian · transunion · equifax",
+    "> matching against partner lender network", "> structuring options for review"
+  ];
+  var TALK = {
+    "S-01": { title: "Rapport", lines: ["Hey [First Name]! It's [Your Name] over at Fundhub. How's your week been so far?", "Mirror their energy. Let them answer. Do not rush.", "I know we've got a limited amount of time, so are you ready to jump in? Are you in front of a computer with a card handy for the soft-pull assessment?"], watch: "The first 60 seconds decide whether they trust you or have their guard up." },
+    "S-02": { title: "The Frame", lines: ["First, I'd like to dive into the specifics of your business, what you're building, where you're at with capital, and what's keeping you from scaling.", "Then we'll run your soft-pull assessment right here on the call, so we can see exactly what our AI system can pre-approve you for.", "And if it's not the right fit, we'll figure out the best next step. Does that sound fair?"], watch: "Get the 'sounds fair' before moving. It stops price-hijacking later." },
+    "S-03": { title: "Discovery 1. Isolate the challenge.", lines: ["What's the biggest reason you're looking for funding right now? What's going on in the business?", "Probe: tell me more. When you say X, what do you mean exactly? How has that impacted the business specifically?", "Aside from that, any other challenge or roadblock in the way right now?"], watch: "Do not accept surface-level answers. Busy professional, not telemarketer." },
+    "S-04": { title: "Discovery 2. The goal and the cost.", lines: ["Begin with the end in mind. If capital wasn't an issue, what does the business look like 6 to 12 months from now? How much capital do you realistically need?", "Cost anchor: what is this costing you every month? Reflect it back: about $X a month, roughly $Y left on the table. Feel accurate?", "Pre-frame: if the pull comes back strong and I can show a clear path, are you ready to move on this now, or still in the research phase?"], watch: "The cost number is what the $3,000 gets anchored against. Do not skip it." },
+    "S-05": { title: "Transition to the pull", lines: ["I feel like we've covered a lot of ground. Anything else I need to know?", "Based on everything you've told me, I'm pretty confident we can help. The most appropriate next step is to see what you qualify for.", "So let's run that soft-pull assessment real quick. You've got a card handy?"], watch: "Do NOT jump from pain straight into pitching. Process the $32, then advance." },
+    "S-06": { title: "While it runs", lines: ["Our Underwrite IQ system is scanning all three credit bureaus and matching your profile against our network of thousands of lenders.", "It's finding the exact banks and products with the highest approval probability for you.", "Same system that's helped us deploy over $25 million in funding for our clients."], watch: "Confident, matter-of-fact. Routine professional step." },
+    "S-07": { title: "The reveal + the sort", lines: ["FUND: Alright [First Name], the results are in. We can get you pre-approved for approximately [Amount] across multiple credit lines with 0 percent introductory rates.", "FUND: Pause. Let the number land. Then: how does that sound?", "REPAIR: The results came back, and here's what the AI found. Some factors are limiting your approval potential. The good news: all fixable.", "EDU: If their ask is 'teach me to do this myself', route Education below. The sort still gets named first."], watch: "Name the sort before moving: 'based on what the system found, here's where you are, and here's the path that fits.' They must accept the sort before they hear any offer. Route buttons below." },
+    "S-08": { title: "Permission, then the map", lines: ["FUND: Where do you want to go from here? I can walk you through exactly how we secure that [Amount] in the next two weeks. But you tell me.", "FUND: Everything is completely done-for-you. Three steps, stuck to funded, about two weeks. Cool?", "REPAIR: I'd recommend we clean your credit up first, so when we run the full funding process you're in the strongest position. Want me to walk you through it?", "EDU: Two ways to own this: your complete file deliverables with the ranked bank list, or the Funding Mastery program, A to Z. Which sounds more like you?"], watch: "Sort-acceptance gate. Reverse Selling: ask permission. If they push back on the sort itself, handle it HERE, never at the price." },
+    "S-09": { title: "Pitch. The problem.", lines: ["FUND: You know how you tried applying on your own and got denied or didn't know which banks to go to? Most people, and most funding companies, are guessing.", "FUND: They spray and pray. Every denial is a hard inquiry that tanks your score.", "REPAIR: Walk the flags one at a time. Read each item. Don't editorialize, the screen is the proof.", "EDU: Course one is everything the system built from your file today. Walk the six items on screen, one by one."], watch: "Slow down. The contrast here is what sells the system." },
+    "S-10": { title: "Step 1. AI Lender Matching.", lines: ["FUND: Underwrite IQ, the same AI that just scanned your profile, matches you with the exact lenders that want to approve you right now.", "FUND: We already know which banks will say yes before we ever submit. Make sense?", "REPAIR: The law does the heavy lifting. FCRA requires accuracy, forces an investigation of every dispute in 30 to 45 days, puts duties on the creditors themselves, and pays damages when they violate. Your letters are built on FCRA and Metro 2.", "EDU: Course two is the full Funding Mastery. A to Z. The complete credit and funding system, start to finish, on your own file."], watch: "'Make sense?' is a tie-down. Wait for the yes." },
+    "S-11": { title: "Pitch. The second problem.", lines: ["FUND: Most companies submit everything at once. The banks see the inquiries stack, and they start denying you.", "FUND: It's called inquiry stacking, and it kills your approval odds.", "REPAIR: We dispute Metro 2, straight at the creditor. Their response becomes the proof, and it goes back to all three bureaus. Not fixed? We escalate through the administrative process, CFPB, state AG. Done for you, or you run the same pack yourself."], watch: "REPAIR compliance: describe the process only. Never promise removal, scores, or results." },
+    "S-12": { title: "Step 2. Rounds + Inquiry Sweeps.", lines: ["FUND: We deploy in strategic rounds. Round 1 goes out, you get approved. Before Round 2, we run an Inquiry Sweep and remove those hard inquiries. Clean slate.", "FUND: Up to 12 rounds until we hit [Amount]. Your score stays protected the whole time.", "REPAIR: Round one is out today. Bureaus have 30 to 45 days to respond each round. Most files resolve in one to two rounds, and round three is already mapped if it's needed."], watch: "FPR: the dirty bureaus get the full dispute process in parallel. Never delays a round." },
+    "S-13": { title: "The proof point", lines: ["FUND: This is why our clients get approved for 2 to 3 times more than the average funding company, in a fraction of the time.", "FUND: Does that make sense? What questions do you have?", "REPAIR: And you watch every move happen in real time in your dashboard."], watch: "Let the number sit. Inviting questions surfaces resistance early." },
+    "S-14": { title: "Step 3. Done-for-you team.", lines: ["FUND: A dedicated funding team, three specialists whose only job is getting you funded. Every application, every follow-up, every sweep. You don't lift a finger.", "FUND: You run the business. We handle the capital side. Make sense?", "REPAIR: Once the file is clean, this is the position we project you're funding from. This is why we clean up first."], watch: "REPAIR: say 'projected position', never 'guaranteed'." },
+    "S-15": { title: "The timeline", lines: ["FUND: Average client goes from signing to capital deployed in about two weeks. First approvals typically within 72 hours.", "REPAIR: Everything on this screen already exists. The letters are staged, the plan is mapped, the dashboard is waiting. All that's left is the button."], watch: "Slow down and let it land. On repair: the dinner is on the table — everything shown is already built from their pull. Sell the button-press, not the service." },
+    "S-16": { title: "The menu. Take their order.", lines: ["FUND: This is everything we can open for you through the partner network. Which matter most for what you're building?", "FUND: Fulfill the ask FIRST. Then, only if the file supports it: you're also pre-qualified for [product], want me to include that?", "REPAIR: A little fear here protects them. So-called credit sweeps — fake FTC identity-theft reports, fake police reports — are federal crimes, and even when they 'work', the creditor just re-reports the account next month. Two wrongs don't make a right.", "REPAIR: Then flip it: our deletions stick, because they're documented and FCRA-grounded. And if a bureau reinserts without 5-day written notice and certification, THEY are in violation, not you."], watch: "FUND: it's a menu, not a pitch — nothing gets submitted they didn't order. REPAIR: warn, don't teach. Name the schemes and the consequences, never the mechanics." },
+    "S-17": { title: "Temperature check", lines: ["So just curious, in terms of the process specifically, how do you feel?", "What's important to me is alignment. When you come in, our team is ALL IN, in the trenches with you. So it matters that you feel GOOD about the process."], watch: "If they hesitate here, dig in now. Don't carry hesitation into the price." },
+    "S-18": { title: "Scale of 1 to 10", lines: ["1 being this sounds terrible, I want off the phone. 10 being this is exactly what I need to finally get the capital to scale. Where do you fall?"], watch: "8 or above, proceed. Below 8: what's keeping you from a 9 or 10? Handle it first." },
+    "S-19": { title: "The investment", lines: ["FUND: Based on your pre-approval, I genuinely believe we get you to [Amount] in two weeks. To activate the system today, it's a $3,000 deposit.", "FUND: That $3,000 is not an additional fee. It goes directly toward your 10 percent success fee on the back end.", "REPAIR: Top down. Onboard now, full done-for-you, $1,000, letters fire today. If that's a no: trial round, we run your first round so you see it work, $200. Still a no: $1,000, the full deliverables plus course, you execute it.", "EDU: Lead with the $5,000 full program. Only if that's a no: the $1,000 deliverables package plus the how-to course."], watch: "Rung buttons below on repair. Do NOT lead with the cheaper one." },
+    "S-20": { title: "The math", lines: ["FUND: Walk it line by line off the screen. Deposit credits against the fee. Back end only charges once capital is in your hands.", "FUND: So we only make our money when you get funded. Our success is literally tied to yours.", "REPAIR: Put their own number in their face. You told me this costs you [$X] a month. That's [$X times 12] a year of staying exactly where you are. The fix starts on this call.", "EDU: Two courses, one skill set. Anchor the $5,000 against what they told you being stuck costs them every month."], watch: "Anchor against their own monthly cost number from discovery." },
+    "S-21": { title: "The guarantees", lines: ["FUND: Read all three off the screen, verbatim. Then: so the risk is stacked entirely on our side.", "REPAIR: Round one goes out today. You watch every dispute and response in your dashboard. Rounds escalate until the file is clean.", "EDU: Access gets set up on this call, and the deliverables generate from today's pull. They leave with it in hand."], watch: "Site-verbatim guarantees. Do not improvise promises beyond the screen." },
+    "S-22": { title: "The ask", lines: ["FUND: Are you ready to get this started so we can get you funded?", "REPAIR: Want me to get that set up for you?", "EDU: Want me to get you set up right now?", "Then stop talking. First person to speak loses."], watch: "Calm, direct, assumptive. Guide to the natural next step." },
+    "S-23": { title: "The close. Logistics.", lines: ["Awesome. Let's get this going. I'm sending the agreement right now. Best email for that?", "Review it while I get your billing info. What's your billing address?", "Collect the card. Fire the pay link. Keep them on the line until it posts."], watch: "Do not celebrate. Do not over-explain. No time to second-guess." },
+    "S-24": { title: "Wrap", lines: ["Within 24 business hours your advisor reaches out and starts on your file. Within 72 business hours your first applications are submitted.", "Any questions before we wrap? ... Congratulations, [First Name]. You made a great decision. We're going to get you funded. Talk soon."], watch: "Confirm the payment posted before ending the call. Then log the disposition." }
+  };
+  var OBJECTIONS = [
+    { t: "Think about it", jump: "S-08", jumpLabel: "Show the process", lines: ["I want you to make the best decision for your business. Can I ask, when you say you need to think about it, is it the process you're unsure about, or the $3,000 deposit?", "Isolate it. 'Think about it' is never the real objection.", "If they can't articulate it: you told me you're a 9 on the process, you need [Amount] for [goal], and this has held you back [X time]. What's really going on? Pause. Let them fill the silence."] },
+    { t: "$3K is a lot", jump: "S-20", jumpLabel: "Show the math", lines: ["Isolate: finances aside, anything else keeping you from being 100 percent certain?", "Should vs how: you're not in a SHOULD I place, you're in a HOW can I place. Right?", "Context: you just saw the system pre-approve you for [Amount]. The $3,000 is an advance on a fee you'd pay anyway. Is $3,000 a lot compared to [Amount] deployed in two weeks?"] },
+    { t: "What if it fails", jump: "S-21", jumpLabel: "Show guarantees", lines: ["We ran the soft-pull together. You saw the pre-approval with your own eyes. We're not guessing.", "Our fee is 10 percent of what we actually secure. No funding, no money for us. Zero incentive to take you on unless we're certain.", "And if we don't hit your target, we keep working your file at no additional cost. So what specifically are you worried won't work?"] },
+    { t: "Spouse", jump: "S-21", jumpLabel: "Show guarantees", lines: ["Aside from letting your spouse know, anything else keeping you from 100 percent?", "Respect vs permission: doing it regardless and letting them know? Or need their sign-off?", "If respect: 'this company wants $3K, thoughts?' versus 'I found the company getting us [Amount] in two weeks, I've decided, wanted you to know first.' Which one gets them on board? If permission: book the 3-way."] },
+    { t: "Burned before", jump: "S-10", jumpLabel: "Show the system", lines: ["I'm sorry that happened. What exactly went wrong with the last company? Listen.", "That's way too common, and it's exactly why we built Fundhub this way. Most companies are manual, guessing, no score protection, no accountability.", "The question isn't whether to trust a funding company again. It's whether to trust THIS one: different process, hundreds funded, $25 million deployed."] },
+    { t: "DIY", jump: "S-12", jumpLabel: "Show the rounds", lines: ["You absolutely can. How long have you been trying? And how much capital have you secured in that time?", "Our clients get 2 to 3x more because of the AI matching and the sweeps between rounds. You'd need our lender network, our AI, and the sweep expertise.", "Is saving $3,000 worth another [X months] stuck? Or invest it today and have [Amount] in two weeks?"] }
+  ];
+  var REFRAMES = [
+    ["Truth Hammer", "You just told me [X], now you're saying [Y]. What's really going on?"],
+    ["Simple Decision", "Do you want to keep [pain] or do you want [outcome]?"],
+    ["Circumstance vs Vision", "Decisions from current circumstances, or from your vision?"],
+    ["Cost Reframe", "Too much compared to what? Compared to [Amount] and finally [goal]?"],
+    ["Risk Reframe", "Riskier: $3K into a proven system with three guarantees, or the same spot in 6 months?"]
+  ];
+
+  var q = new URLSearchParams(location.search);
+  var contactId = q.get("contact") || q.get("client_id") || "";
+  var state = {
+    idx: 0, tier: null, edu: false, forceRepair: false, rung: 0, temp: 0,
+    checks: {}, costNum: "", obj: null, showRef: false, toast: "", clientOnly: false,
+    survey: {}, engine: { available: false, reason: "engine data unavailable", fico: {}, reasons: [] },
+    offers: [], loaded: false, error: null
+  };
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function dash(v) { return v == null || v === "" ? "—" : String(v); }
+  function money(n) {
+    if (n == null || !Number.isFinite(Number(n))) return "—";
+    return "$" + Number(n).toLocaleString("en-US");
+  }
+  function offer(key) {
+    var list = state.offers || [];
+    for (var i = 0; i < list.length; i++) if (list[i].key === key) return list[i];
+    return null;
+  }
+  function price(key) {
+    var o = offer(key);
+    return (o && o.priceDisplay) ? o.priceDisplay : "—";
+  }
+  function financingNote(key) {
+    var o = offer(key);
+    return o && o.financing ? '<div class="fin">Financing available</div>' : "";
+  }
+  function contents() {
+    var o = offer("UWIQ_DELIVERABLES");
+    return (o && o.contents) || [];
+  }
+  function isFunding() {
+    return (state.tier === "FULL_FUNDING" || state.tier === "FUNDING_PLUS_REPAIR") && !state.forceRepair;
+  }
+  function selectedOfferKey() {
+    if (state.edu) return state.rung === 1 ? "UWIQ_DELIVERABLES" : "FUNDING_MASTERY";
+    if (!isFunding()) {
+      if (state.rung === 1) return "REPAIR_TRIAL";
+      if (state.rung === 2) return "UWIQ_DELIVERABLES";
+      return "REPAIR_DFY";
+    }
+    return "FUNDING_DFY";
+  }
+  function lettersOk() {
+    var o = offer(selectedOfferKey());
+    return !!(o && o.letters);
+  }
+  function code() { return DECK[Math.min(state.idx, DECK.length - 1)].code; }
+  function phase() { return DECK[state.idx].phase; }
+  function firstName() {
+    var n = (state.survey && state.survey.name) || "";
+    return n.split(" ")[0] || "there";
+  }
+
+  function slide(c, label, inner) {
+    return '<div class="slide"><div class="slide-hd"><span class="mono">' + esc(c) + " / " + esc(label) +
+      '</span><div class="rule"></div><span class="brand">fundhub<span>.</span></span></div><div class="hair"></div>' +
+      '<div class="slide-body">' + inner + "</div></div>";
+  }
+  function kicker(t) { return '<div class="kicker"><span class="mono" style="color:var(--gray)">' + esc(t) + "</span></div>"; }
+  function h1(t, size) { return '<h1 class="h1"' + (size ? ' style="font-size:' + size + '"' : "") + ">" + t + "</h1>"; }
+  function sub(t) { return '<p class="sub">' + t + "</p>"; }
+  function fine(t) { return '<p class="fine">' + t + "</p>"; }
+  function row(left, right, subl, strong) {
+    return '<div class="row"><div class="l' + (strong ? " strong" : "") + '">' + left +
+      (subl ? '<div class="subl">' + subl + "</div>" : "") + '</div><div class="r' + (strong ? " strong" : "") + '">' + right + "</div></div>";
+  }
+  function bars(lines) {
+    return '<div style="margin-top:12px;max-width:620px">' + lines.map(function (l) {
+      return '<div class="bar"><i></i><div style="font-size:clamp(11.5px,1.15vw,13.5px);color:var(--ink);line-height:1.45">' + l + "</div></div>";
+    }).join("") + "</div>";
+  }
+  function stats(items) {
+    return '<div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">' + items.map(function (it) {
+      return '<div class="stat"><div class="v">' + it[0] + '</div><span class="mono" style="color:var(--gray)">' + esc(it[1]) + "</span></div>";
+    }).join("") + "</div>";
+  }
+  function scores(fico) {
+    var rows = [["Experian", fico && fico.ex], ["TransUnion", fico && fico.tu], ["Equifax", fico && fico.eq]];
+    return '<div style="display:flex;gap:9px;margin-top:12px;flex-wrap:wrap">' + rows.map(function (r) {
+      return '<div class="score"><span class="mono">' + r[0] + '</span><div class="v">' + dash(r[1]) + "</div></div>";
+    }).join("") + "</div>";
+  }
+  function scoreBars(fico) {
+    var stops = ["var(--alert)", "var(--ok)", "var(--info)"];
+    var rows = [["Experian", fico && fico.ex], ["TransUnion", fico && fico.tu], ["Equifax", fico && fico.eq]];
+    return '<div style="margin-top:12px;max-width:600px">' + rows.map(function (r, i) {
+      var v = r[1];
+      var w = v == null ? 0 : Math.max(4, ((Number(v) - 300) / 550) * 100);
+      return '<div class="prog"><span class="nm">' + r[0] + '</span><div class="track"><div class="fill" style="width:' + w + "%;background:" + stops[i] + '"></div></div><span class="n">' + dash(v) + "</span></div>";
+    }).join("") + '<div style="display:flex;justify-content:space-between;padding-left:94px;padding-right:44px;margin-top:2px"><span class="mono" style="color:var(--gray2)">300</span><span class="mono" style="color:var(--gray2)">850</span></div></div>';
+  }
+  function stepsHtml(steps, current) {
+    return '<div style="display:flex;margin-top:14px;max-width:620px">' + steps.map(function (s, i) {
+      var on = i === current;
+      var done = i < current;
+      return '<div style="flex:1;position:relative;text-align:center">' +
+        (i > 0 ? '<div style="position:absolute;top:12px;left:-50%;width:100%;height:2px;background:' + (i <= current ? "var(--ink)" : "var(--line)") + '"></div>' : "") +
+        '<div style="position:relative;z-index:1;width:24px;height:24px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;background:' + (done ? "var(--ink)" : "#fff") + ";color:" + (done ? "#fff" : "var(--ink)") + ";border:" + (on ? "3px solid transparent" : "2px solid " + (done ? "var(--ink)" : "var(--line)")) + ";" + (on ? "background-image:linear-gradient(#fff,#fff),var(--spectrum);background-origin:border-box;background-clip:padding-box,border-box" : "") + '">' + (done ? "✓" : (i + 1)) + "</div>" +
+        '<div style="font-size:10.5px;font-weight:650;color:' + (i <= current ? "var(--ink)" : "var(--gray2)") + ';margin-top:6px">' + s[0] + '</div><div style="font-size:9.5px;color:var(--gray2);margin-top:1px">' + s[1] + "</div></div>";
+    }).join("") + "</div>";
+  }
+  function lettersGrid() {
+    var bureaus = ["EX", "TU", "EQ"];
+    var rounds = ["R1", "R2", "R3"];
+    return '<div style="margin-top:12px;max-width:620px">' + rounds.map(function (r, ri) {
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px"><span class="mono" style="color:' + (ri === 0 ? "var(--ink)" : "var(--gray2)") + ';width:70px;flex-shrink:0">' + (r === "R1" ? "R1 · CREDITOR FIRST" : r) + "</span>" +
+        bureaus.map(function (b) {
+          return '<div style="flex:1;border:1px solid ' + (ri === 0 ? "var(--ink)" : "var(--line)") + ";background:" + (ri === 0 ? "var(--soft)" : "transparent") + ';border-radius:8px;padding:7px 10px;display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--mono);font-size:10.5px">' + b + " · " + r + '</span><span class="mono" style="font-size:8.5px;color:' + (ri === 0 ? "var(--ink)" : "var(--gray2)") + '">STAGED</span></div>';
+        }).join("") + "</div>";
+    }).join("") + '<span class="mono" style="color:var(--gray)">9 bureau letters + furnisher letters · pre-filled from today\'s pull</span></div>';
+  }
+  function beforeAfter(now, after) {
+    var unlocked = (now != null && after != null) ? money(after - now) : "—";
+    return '<div style="display:flex;align-items:stretch;gap:12px;margin-top:14px;max-width:620px"><div style="flex:1;border:1px solid var(--line);border-radius:10px;padding:13px 15px"><span class="mono" style="color:var(--gray2)">Today</span><div style="font-family:var(--mono);font-size:clamp(18px,2.4vw,26px);color:var(--gray);margin-top:4px">' + money(now) + '</div><span class="mono" style="color:var(--gray2)">in approvals</span></div><div style="align-self:center;font-family:var(--mono);font-size:18px">→</div><div style="flex:1.2;border:1px solid var(--line);border-radius:10px;padding:13px 15px;background:var(--soft);position:relative;overflow:hidden"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--spectrum)"></div><span class="mono" style="color:var(--gray)">After cleanup, projected</span><div style="font-family:var(--mono);font-size:clamp(22px,3vw,32px);margin-top:4px">' + money(after) + '</div><span class="mono" style="color:var(--gray)">+' + unlocked + " unlocked</span></div></div>";
+  }
+  function pathRows(items) {
+    return '<div style="margin-top:12px">' + items.map(function (it) {
+      return '<div style="display:flex;gap:14px;padding:9px 0;border-bottom:1px solid var(--line)"><span class="mono" style="color:var(--gray2);width:96px;padding-top:3px">' + it[0] + '</span><div><div style="font-size:clamp(12px,1.25vw,14px);font-weight:600">' + it[1] + '</div><div style="font-size:clamp(10.5px,1.05vw,12px);color:var(--gray);margin-top:2px;line-height:1.45">' + it[2] + "</div></div></div>";
+    }).join("") + "</div>";
+  }
+  function deliverableRows() {
+    return contents().map(function (name, i) {
+      var n = String(i + 1).padStart(2, "0");
+      var subs = [
+        "Your profile the way lenders actually see it",
+        "Pre-filled, bureaus and creditors, escalating rounds",
+        "Which accounts, what order, by how much",
+        "What you qualify for now, and what's in the way",
+        "Ranked in the order you should apply",
+        "How to send everything, what to do, what not to do"
+      ];
+      return row(esc(name), n, subs[i] || "");
+    }).join("");
+  }
+  function unavail() {
+    return '<div class="unavail"><span class="mono">Engine data unavailable</span><p class="sub" style="margin-top:6px">No UnderwriteIQ payload is on this contact yet. Nothing here is guessed.</p></div>';
+  }
+  function reasonsList(d, withPlan) {
+    return (d.reasons || []).map(function (pair, i) {
+      var plan = withPlan && d.plan && d.plan[i] ? '<span class="mono" style="font-size:8.5px;border:1px solid var(--line);background:var(--soft);border-radius:6px;padding:4px 8px;white-space:nowrap">' + esc(d.plan[i]) + "</span>" : "";
+      return '<div style="display:flex;gap:11px;padding:6px 0;border-bottom:1px solid var(--line);align-items:flex-start"><i style="width:3px;align-self:stretch;background:var(--spectrum);opacity:.85;flex:0 0 3px"></i><div style="min-width:0;flex:1"><span class="mono" style="color:var(--gray)">' + esc(pair[0]) + '</span><div style="font-size:clamp(11px,1.1vw,12.5px);margin-top:2px;line-height:1.35">' + esc(pair[1]) + "</div></div>" + plan + "</div>";
+    }).join("");
+  }
+
+  function clientSlide() {
+    var c = code();
+    var d = state.engine || {};
+    var sv = state.survey || {};
+    var funding = isFunding() && !state.edu;
+    var edu = state.edu;
+    var rung = state.rung;
+    var costN = parseInt(String(state.costNum || "").replace(/[^0-9]/g, ""), 10) || 0;
+    var feePct = (offer("FUNDING_DFY") && offer("FUNDING_DFY").successFeePercent) || 10;
+    var fee = d.total != null ? Math.round(d.total * (feePct / 100)) : null;
+    var deposit = offer("FUNDING_DFY") ? offer("FUNDING_DFY").priceCents / 100 : null;
+    var backEnd = (fee != null && deposit != null) ? fee - deposit : null;
+    var needsEngine = c !== "S-01" && c !== "S-02" && c !== "S-03" && c !== "S-04" && c !== "S-05" && c !== "S-06";
+
+    if (c === "S-07" && !d.available) {
+      return slide("S-07", "Your results", kicker("Assessment") + h1("Engine data unavailable") + sub("The UnderwriteIQ payload is not on this contact yet. No amounts or scores are shown."));
+    }
+
+    if (c === "S-01") {
+      return slide("S-01", "Session", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("Funding strategy session") + h1(esc(dash(sv.name)), "clamp(28px,4.2vw,52px)") + '<div style="font-family:var(--mono);font-size:clamp(11px,1.15vw,13px);color:var(--gray);margin-top:10px">' + esc(dash(sv.entity)) + '</div><div class="mono" style="margin-top:16px;letter-spacing:.06em">Customer-initiated · Soft inquiry · No obligation</div><div style="margin-top:18px;max-width:180px" class="hair"></div></div>');
+    }
+    if (c === "S-02") {
+      return slide("S-02", "How this call works", kicker("Process") + h1("A defined path. No obligation at any step.") + pathRows([
+        ["01 / BUSINESS", "Your business", "What you're building, where you're at with capital, what's keeping you from scaling."],
+        ["02 / ASSESSMENT", "Your assessment", "Soft-pull right here on the call, so we see exactly what the AI can pre-approve you for."],
+        ["03 / PATH", "Your path", "Strong fit: I walk you through exactly how. Not a fit: we figure out the best next step."]
+      ]) + sub("Sound fair?"));
+    }
+    if (c === "S-03") {
+      return slide("S-03", "Your answers", kicker("Discovery") + h1("This is what you told us. Anything change?") + '<div style="margin-top:8px">' +
+        row("Funding target", esc(dash(sv.target))) +
+        row("Planned use", esc(dash(sv.use))) +
+        row("Business", esc(dash(sv.hasBiz)), esc(sv.entity || "")) +
+        row("Monthly revenue", esc(dash(sv.revenue))) +
+        row("Annual income", esc(dash(sv.income))) +
+        row("Capital on hand", esc(dash(sv.capital))) +
+        row("What changes with the money", esc(dash(sv.motivation))) + "</div>");
+    }
+    if (c === "S-04") {
+      return slide("S-04", "The goal", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("Begin with the end in mind") + h1(esc(dash(sv.target)), "clamp(32px,5.2vw,64px)") + sub(esc(dash(sv.use)) + ". What does the business look like 6 to 12 months from now with this deployed?") + '<div style="margin-top:16px;max-width:200px" class="hair"></div></div>');
+    }
+    if (c === "S-05") {
+      return slide("S-05", "The assessment", kicker("Next step") + h1("See exactly what you qualify for.") + sub("One soft-pull assessment. The engine reads your profile the way funding partners do, before you commit to anything.") + stats([[price("SOFT_PULL"), "one-time assessment"], ["Soft inquiry", "no score impact"], ["60 seconds", "results on this call"]]));
+    }
+    if (c === "S-06") {
+      return slide("S-06", "UnderwriteIQ", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center"><div style="display:flex;justify-content:space-between;align-items:center;max-width:600px">' + kicker("The engine") + '<span class="mono" style="color:var(--gray)">UnderwriteIQ · Operational</span></div><div style="border:1px solid var(--line);background:var(--soft);padding:12px 16px;max-width:600px;border-radius:10px">' +
+        TERMINAL.map(function (l, i) { return '<div style="font-family:var(--mono);font-size:clamp(10px,1.05vw,12px);color:' + (i === 0 ? "var(--ink)" : "var(--gray)") + ';line-height:1.85">' + esc(l) + "</div>"; }).join("") +
+        '<div style="font-family:var(--mono);font-size:clamp(10px,1.05vw,12px);color:var(--gray2);line-height:1.85">&gt; monitoring for updates _</div></div>' +
+        stats([["$25M+", "deployed for clients"], ["Thousands", "of lenders in network"]]) + "</div>");
+    }
+    if (c === "S-07") {
+      if (funding) {
+        return slide("S-07", "Your results", kicker("Pre-approved for approximately") + h1(money(d.total), "clamp(32px,5.2vw,64px)") + sub("Across multiple credit lines with 0 percent introductory rates.") + scores(d.fico));
+      }
+      return slide("S-07", "Your results", kicker(dash(d.negItems) + " negative items found · read the way lenders read it") + h1("Here's what the AI found.") + scoreBars(d.fico) + '<div style="margin-top:8px">' + reasonsList(d, false) + "</div>" + sub("All fixable. Cleaned up, this file projects to " + money(d.afterFix) + " in approvals."));
+    }
+    if (c === "S-08") {
+      if (edu) {
+        return slide("S-08", "The education path", kicker("Learn it. Run it yourself.") + h1("Two ways to own this skill.") + pathRows([
+          ["01 / FILE", "Your file, in your hands", "The complete UnderwriteIQ deliverables package, generated from today's pull."],
+          ["02 / LIST", "The bank list", "Your lender match list, ranked in the order you should apply."],
+          ["03 / PROGRAM", "Funding Mastery, A to Z", "The complete Fundhub credit and funding program, start to finish."]
+        ]));
+      }
+      return slide("S-08", funding ? "The process" : "The plan", kicker(funding ? "Completely done-for-you" : "Recommended path") + h1(funding ? "Three steps. About two weeks." : "Cleaned up first. Funded second.") + pathRows(funding ? [
+        ["01 / MATCH", "AI Lender Matching", "The exact lenders that want to approve you right now."],
+        ["02 / DEPLOY", "Sequential Round Deployment", "Applications in strategic rounds, Inquiry Sweeps between."],
+        ["03 / EXECUTE", "Done-For-You Execution", "A dedicated US-based team runs everything. You don't touch an application."]
+      ] : [
+        ["01 / CLEAN", "Clean the file", "Every limiting factor addressed, disputes to bureaus and creditors."],
+        ["02 / TRACK", "Watch it live", "Every move in real time in your dashboard."],
+        ["03 / FUND", "Then we fund you", "Full funding process from the strongest possible position."]
+      ]));
+    }
+    if (c === "S-09") {
+      if (edu) return slide("S-09", "Course one", kicker("Everything the system built from your file today") + h1("Your complete deliverables.") + '<div style="margin-top:6px;max-width:580px">' + deliverableRows() + "</div>");
+      if (funding) return slide("S-09", "The problem", kicker("Why applying on your own fails") + h1("Everyone else is guessing.") + bars(["Spray and pray. Applications fired at banks that were never going to say yes.", "Every denial is a hard inquiry that tanks your score.", "The lower the score drops, the more the next bank says no."]));
+      return slide("S-09", "The findings", kicker("Item by item") + h1(dash(d.negItems) + " items are limiting your approvals.") + '<div style="margin-top:10px">' + reasonsList(d, true) + "</div>" + sub("Every item already has a round assigned. This is the plan, not a promise of what happens later."));
+    }
+    if (c === "S-10") {
+      if (edu) return slide("S-10", "Course two", kicker("The full program") + h1("Funding Mastery. A to Z.") + bars(["The complete Fundhub credit and funding system, taught start to finish.", "Credit, optimization, and funding execution — the whole picture, not pieces.", "Paired with your own file, so you're working on real data, not theory."]));
+      if (funding) return slide("S-10", "Step 1 of 3", kicker("Step 1 of 3") + h1("AI Lender Matching.") + bars(["Underwrite IQ, the same AI that just scanned your profile, matches you with the exact lenders that want to approve you right now.", "We already know which banks are going to say yes before we ever submit an application.", "You only apply where you have the highest probability of approval."]));
+      return slide("S-10", "Already generated", kicker("FCRA · Metro 2") + h1("The law is on your side.") + '<div style="margin-top:8px;max-width:620px">' +
+        row("Maximum possible accuracy", "FCRA §607", "Bureaus are required by federal law to report your file accurately") +
+        row("Every dispute investigated", "30–45 days", "FCRA §611 — they must investigate and respond, every round") +
+        row("Creditors carry duties too", "FCRA §623", "Furnishers must investigate and correct what they can't verify") +
+        row("Deletion tier", "BK §524", "A balance on a discharged debt violates a federal court order, not just a reporting rule") +
+        row("Violations pay you", "$100–$1,000+", "Statutory damages for willful violations, plus actual damages and fees", true) + "</div>" +
+        sub("Metro 2 is the industry reporting standard. The FCRA is the federal law that makes accuracy enforceable. Every letter carries its statute citations, checked byte for byte."));
+    }
+    if (c === "S-11") {
+      if (funding) return slide("S-11", "The second problem", kicker("What kills approval odds") + h1("Inquiry stacking.") + bars(["Most funding companies submit all your applications at once.", "The banks see all those inquiries hit your report simultaneously, and they start denying you.", "It kills your approval odds before the round is even finished."]));
+      return slide("S-11", "Done for you", kicker("How the dispute actually runs") + h1("Straight at the creditor.") + stepsHtml([["Furnisher round", "Metro 2, direct to creditor"], ["Response", "creditor on the record"], ["Proof", "to all 3 bureaus"], ["Escalate", "CFPB · state AG"]], 0) + sub("The creditor's own response becomes the evidence. It goes back to all three bureaus, and if the file still isn't right, we escalate through the administrative process. Done for you, or you run the exact same pack yourself."));
+    }
+    if (c === "S-12") {
+      if (funding) {
+        return slide("S-12", "Step 2 of 3", kicker("Step 2 of 3") + h1("Sequential rounds. Inquiry Sweeps.") +
+          '<div style="margin-top:12px;max-width:620px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + ["Round 1", "Sweep", "Round 2", "Sweep", "Round 3"].map(function (s, i) {
+            return '<div style="font-family:var(--mono);font-size:10.5px;padding:7px 11px;border:1px solid var(--line);background:' + (s === "Sweep" ? "transparent" : "var(--soft)") + ";color:" + (s === "Sweep" ? "var(--gray)" : "var(--ink)") + '">' + s + "</div>" + (i < 4 ? '<span style="font-family:var(--mono);color:var(--gray2)">→</span>' : "");
+          }).join("") + '<span class="mono" style="color:var(--gray2)">… up to 12</span></div>' +
+          bars(["Round 1 goes out. You get approved.", "Before Round 2, an Inquiry Sweep removes those hard inquiries. Clean slate.", "Repeat until we hit your target of " + money(d.total) + ". Score protected the entire time."]) +
+          (state.tier === "FUNDING_PLUS_REPAIR" ? fine("In parallel: your other two bureaus get the full dispute process at the same time, bureaus and creditors. It never delays a round.") : ""));
+      }
+      return slide("S-12", "The rounds", kicker("Escalating, round after round") + h1("Each round builds on the last.") + stepsHtml([["Round 1", "fires today"], ["Responses", "30–45 days"], ["Round 2", "typical close"], ["Round 3", "if needed"]], 0) + sub("Bureaus must investigate and respond every round, 30 to 45 days. Most files resolve in one to two rounds. Round three is already mapped from your file."));
+    }
+    if (c === "S-13") {
+      if (funding) return slide("S-13", "The result", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("Versus the average funding company") + h1("2 to 3x more.", "clamp(36px,5.8vw,72px)") + sub("Approved for 2 to 3 times more, in a fraction of the time, with your score protected the entire way.") + '<div style="margin-top:16px;max-width:200px" class="hair"></div></div>');
+      return slide("S-13", "Your dashboard", kicker("Real time") + h1("Watch every move happen.") + '<div style="margin-top:10px">' + row("Every dispute", "Live", "The moment it goes out") + row("Every response", "Logged", "Bureau and creditor replies, as they land") + row("Every round", "Tracked", "Where the file stands, at any moment") + "</div>");
+    }
+    if (c === "S-14") {
+      if (funding) return slide("S-14", "Step 3 of 3", kicker("Step 3 of 3") + h1("Done for you. Start to finish.") + bars(["A dedicated funding team. Three specialists whose only job is getting you funded.", "Every application, every follow-up with the banks, every inquiry sweep. You literally don't lift a finger.", "You focus on running and scaling the business. We handle the capital side."]));
+      return slide("S-14", "After cleanup", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("Why we clean up first") + h1("The same file, two positions.", "clamp(22px,3.2vw,40px)") + beforeAfter(d.total, d.afterFix) + fine("Projection based on your current file. Not a guarantee of approval, amounts, rates, or terms.") + "</div>");
+    }
+    if (c === "S-15") {
+      if (funding) return slide("S-15", "The timeline", kicker("Signing to capital") + h1("About two weeks.") + '<div style="margin-top:10px;max-width:620px">' + row("Within 24 business hours", "Advisor", "Your dedicated funding advisor begins working your file") + row("Within 72 business hours", "Round 1", "Your first applications are submitted") + row("~72 hours after", "Approvals", "First approvals typically start rolling in") + row("~2 weeks", "Deployed", "Average client, signing to capital deployed", true) + "</div>");
+      return slide("S-15", "The timeline", kicker("Already built from today's pull") + h1("It's sitting in the queue.") + lettersGrid() + '<div style="margin-top:6px">' + row("All that's left", "The button", "Say the word and Round 1 is out today", true) + "</div>");
+    }
+    if (c === "S-16") {
+      if (!funding && !edu) {
+        return slide("S-16", "The wrong way", kicker("What we will never do") + h1("Two wrongs don't make a right.") + '<div style="margin-top:8px;max-width:620px">' +
+          row('So-called "credit sweeps"', "Fraud", "Fake FTC identity-theft and police reports to wipe a file — a federal crime, up to 5 years") +
+          row('Even when it "works"', "It bounces", "The creditor just re-reports the account next month. Fraud deletions don't stick.") +
+          row("Real deletions stick", "FCRA §611", "Reinsertion without 5-day written notice and certification is itself a violation", true) + "</div>" +
+          sub("That's the difference. Disputes filed here are documented and FCRA-grounded, so what comes off stays off — and if a bureau ever slips one back in, the law puts them in deep trouble, not you.") +
+          fine("Not to be confused with Fundhub Inquiry Sweeps — documented inquiry disputes filed on the record as part of funding rounds."));
+      }
+      return slide("S-16", "Financing we help you access", kicker(funding ? "The menu" : "What opens up after cleanup") + h1("Built around what you actually need.") +
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px">' + MENU.map(function (m) {
+          return '<div style="border:1px solid var(--line);background:var(--soft);padding:9px 11px;border-radius:10px"><span class="mono" style="color:var(--gray2)">' + m[0] + '</span><div style="font-size:clamp(11px,1.1vw,12.5px);font-weight:650;margin-top:4px">' + m[1] + '</div><div style="font-size:clamp(9.5px,.95vw,10.5px);color:var(--gray);margin-top:3px;line-height:1.4">' + m[2] + "</div></div>";
+        }).join("") + "</div>" +
+        fine("Intro APR offers are set by card issuers, apply for limited promotional periods, and revert to issuer standard rates. All amounts, rates, and terms are determined by funding partners based on qualification."));
+    }
+    if (c === "S-17") {
+      return slide("S-17", "Alignment", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("How we work") + h1("Our team is all in.", "clamp(24px,3.6vw,44px)") + sub("We're rolling up our sleeves and getting in the trenches with you on this. So it matters to us that you feel good about the process.") + '<div style="margin-top:16px;max-width:200px" class="hair"></div></div>');
+    }
+    if (c === "S-18") {
+      return slide("S-18", "Where do you fall", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("Scale of 1 to 10") + h1("Where do you feel like you fall?", "clamp(24px,3.6vw,44px)") + '<div style="margin-top:18px;display:flex;align-items:center;gap:12px;max-width:480px"><span class="mono" style="color:var(--gray2)">1</span><div style="flex:1"><div class="hair"></div></div><span class="mono">10</span></div><div style="display:flex;justify-content:space-between;max-width:480px;margin-top:6px"><span class="mono" style="color:var(--gray2)">Not for me</span><span class="mono" style="color:var(--gray)">Exactly what I need</span></div></div>');
+    }
+    if (c === "S-19") {
+      if (edu) {
+        if (rung === 0) return slide("S-19", "The investment", kicker("Funding Mastery, A to Z") + h1(price("FUNDING_MASTERY"), "clamp(28px,4.4vw,52px)") + '<div style="margin-top:8px;max-width:560px">' + row("The full Fundhub program", "A to Z", "Credit, optimization, and funding execution, start to finish") + row("Your own file", "Included data", "You work on your real reports, not examples") + "</div>" + financingNote("FUNDING_MASTERY"));
+        return slide("S-19", "The investment", kicker("Course one, everything from your file") + h1(price("UWIQ_DELIVERABLES"), "clamp(24px,3.8vw,44px)") + '<div style="margin-top:6px;max-width:580px">' + deliverableRows() + "</div>" + financingNote("UWIQ_DELIVERABLES"));
+      }
+      if (funding) {
+        return slide("S-19", "The investment", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("To activate the system today") + '<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">' + h1(price("FUNDING_DFY"), "clamp(32px,5.2vw,60px)") + '<span style="font-family:var(--mono);font-size:clamp(12px,1.3vw,15px);color:var(--gray)">deposit</span></div>' + sub("Not an additional fee. It goes directly toward your 10 percent success fee on the back end.") + '<div style="margin-top:14px;max-width:200px" class="hair"></div></div>');
+      }
+      if (rung === 0) return slide("S-19", "The investment", kicker("Done-for-you credit repair") + h1(price("REPAIR_DFY"), "clamp(28px,4.4vw,52px)") + '<div style="margin-top:8px;max-width:560px">' + row("Forensic audit", "Included", "Your full file, the way lenders see it") + row("Disputes", "All rounds", "Both the bureaus and the creditors, escalating") + row("Your dashboard", "Real time", "Watch every move happen. You don't touch a thing.") + "</div>" + financingNote("REPAIR_DFY"));
+      if (rung === 1) return slide("S-19", "The investment", kicker("Try it first, done for you") + h1(price("REPAIR_TRIAL"), "clamp(28px,4.4vw,52px)") + '<div style="margin-top:8px;max-width:560px">' + row("Round 1", "We run it", "Our team fires your first full round, bureaus and creditors") + row("You watch", "Dashboard", "Every dispute and response, live") + row("Then decide", "Your call", "Continue full done-for-you, or take it from here") + "</div>" + financingNote("REPAIR_TRIAL"));
+      return slide("S-19", "The investment", kicker("Do it yourself, everything from your file") + h1(price("UWIQ_DELIVERABLES"), "clamp(24px,3.8vw,44px)") + '<div style="margin-top:6px;max-width:580px">' + deliverableRows() + "</div>" + financingNote("UWIQ_DELIVERABLES"));
+    }
+    if (c === "S-20") {
+      if (edu) return slide("S-20", "Two courses", kicker("Side by side") + h1("Two courses. One skill set.") + '<div style="margin-top:10px;max-width:620px">' + row("Course 1 — UWIQ deliverables + bank list", price("UWIQ_DELIVERABLES"), "Everything from your file. You execute it with the how-to course.") + row("Course 2 — Funding Mastery, A to Z", price("FUNDING_MASTERY"), "The complete program, start to finish, on your own data", true) + "</div>");
+      if (funding) return slide("S-20", "The math", kicker("Line by line") + h1("We only make money when you get funded.") + '<div style="margin-top:10px;max-width:560px">' + row("Your funding", money(d.total), "Pre-approval from today's scan") + row("Total success fee, " + feePct + " percent", money(fee)) + row("Your deposit, credited", deposit != null ? ("- " + money(deposit)) : "—") + row("Back end balance", money(backEnd), "Only charged once the capital is actually in your hands", true) + "</div>" + sub("Our success is literally tied to yours."));
+      if (costN > 0) return slide("S-20", "Then we fund you", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("What staying stuck costs") + h1(money(costN) + " a month.", "clamp(28px,4.4vw,52px)") + '<div style="margin-top:10px;max-width:560px">' + row("Every month this file sits", money(costN), "Your number, from earlier on this call") + row("Over a year", money(costN * 12), "Gone, without the file moving an inch", true) + row("The fix", "Starts today", "Cleaned up first, funded second, strongest position") + "</div></div>");
+      return slide("S-20", "Then we fund you", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("What staying stuck costs") + h1("Cleaned up first. Funded second.", "clamp(24px,3.6vw,44px)") + sub("We get your credit cleaned up first, so when we run the full funding process you're in the strongest possible position and we can maximize your approval amount.") + "</div>");
+    }
+    if (c === "S-21") {
+      if (edu) return slide("S-21", "When we start", kicker("Set up on this call") + h1("You leave with it today.") + '<div style="margin-top:10px;max-width:620px">' + row("On this call", "Access", "Account and access squared away before we hang up") + row("Today", "Your file", "Deliverables generate from the pull we just ran") + row("When you're ready", "Funding", "Run the full funding process whenever you want") + "</div>");
+      if (funding) return slide("S-21", "Three guarantees. In writing.", kicker("Guarantees") + h1("You're protected three ways.") + '<div style="display:flex;gap:9px;margin-top:12px">' + GUARANTEES.map(function (g) {
+        return '<div style="flex:1;min-width:0;border:1px solid var(--line);background:var(--soft);padding:11px 13px;border-radius:10px"><div class="hair"></div><div style="margin-top:9px"><span class="mono" style="color:var(--gray)">' + g[0] + '</span></div><div style="font-size:clamp(11.5px,1.2vw,13.5px);font-weight:700;margin-top:5px;letter-spacing:-.01em;line-height:1.2">' + g[1] + '</div><div style="font-size:clamp(9.5px,1vw,11px);color:var(--gray);margin-top:5px;line-height:1.45">' + g[2] + "</div></div>";
+      }).join("") + "</div>" + fine("These guarantees are not a guarantee of credit approval, funding amounts, rates, or terms, which are determined by funding partners."));
+      return slide("S-21", "When we start", kicker("What happens when we start") + h1("Round one goes out today.") + '<div style="margin-top:10px;max-width:620px">' + row("Today", "Letters out", "Generated from the pull we just ran, in your email") + row("Your dashboard", "Live", "Track every dispute and every response") + row("Round by round", "Escalate", "Until the file is where it needs to be") + "</div>");
+    }
+    if (c === "S-22") {
+      return slide("S-22", "Ready when you are", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + h1("Ready when you are.", "clamp(28px,4.6vw,56px)") + '<div class="mono" style="margin-top:12px;letter-spacing:.06em">' + (funding ? "Customer-initiated · Three guarantees · Two weeks" : "Customer-initiated · Starts today · Tracked live") + '</div><div style="margin-top:16px;max-width:200px" class="hair"></div></div>');
+    }
+    if (c === "S-23") {
+      return slide("S-23", "Getting you set up", kicker("Right now, on this call") + h1("Let's get this going.") + '<div style="margin-top:10px;max-width:620px">' + row("Agreement", "Sent", "Review it while we handle billing") + row("Billing", "On this call", "Secure payment, processed now") + row("Welcome email", "Incoming", "Advisor contact, timeline, and what we need from you") + "</div>");
+    }
+    if (c === "S-24") {
+      var next = edu
+        ? row("Today", "Deliverables", "Everything from your file lands in your email") + row("Your pace", "Program", "Work through it on your own schedule") + row("When you're ready", "Funding", "We run the full process whenever you want")
+        : funding
+          ? row("Within 24 business hours", "Advisor", "Your dedicated funding advisor reaches out and starts on your file") + row("Within 72 business hours", "Round 1", "Your first round of applications is submitted") + row("A few days after", "Approvals", "You should start seeing your first approvals")
+          : row("Today", "Round 1", "Your letters generate from this pull and land in your email") + row("Your dashboard", "Live", "Track every dispute and every response") + row("When it's clean", "Funding", "We run the full process at maximum strength");
+      return slide("S-24", "Welcome aboard", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + h1("Here's what happens next.", "clamp(22px,3.4vw,42px)") + '<div style="margin-top:10px;max-width:560px">' + next + '</div><div style="margin-top:16px;display:flex;align-items:center;gap:12px"><span class="brand">fundhub<span>.</span></span><div style="flex:1;max-width:140px" class="hair"></div><span class="mono">systems nominal</span></div></div>');
+    }
+    return needsEngine && !d.available ? slide(c, "Session", unavail()) : "";
+  }
+
+  function ckBtn(label, action, primary, extra) {
+    return '<button type="button" class="ck-btn' + (primary ? " k" : "") + '" data-act="' + esc(action) + '"' + (extra || "") + ">" + esc(label) + "</button>";
+  }
+
+  function cockpit() {
+    var t = TALK[code()] || { title: "", lines: [], watch: "" };
+    var d = state.engine || {};
+    var funding = isFunding() && !state.edu;
+    var ph = phase();
+    var showEngine = ph !== "01 Intro" && ph !== "02 Discovery";
+    var html = '<div class="ck"><div class="ck-hd"><div style="display:flex;justify-content:space-between"><span class="mono" style="color:var(--gray)">' + esc(ph) + '</span><span class="mono">' + (state.idx + 1) + " / " + DECK.length + '</span></div><div class="t">' + esc(t.title) + "</div></div><div class=\"ck-bd\">";
+
+    if (state.obj !== null) {
+      var ob = OBJECTIONS[state.obj];
+      html += '<div style="display:flex;justify-content:space-between"><span class="mono" style="color:var(--gray)">Objection</span><button type="button" class="btn-ghost" data-act="obj-back">Back</button></div>';
+      html += '<div style="font-size:14px;font-weight:700">' + esc(ob.t) + "</div>";
+      html += ob.lines.map(function (l) { return '<div class="say">' + esc(l) + "</div>"; }).join("");
+      html += ckBtn(ob.jumpLabel, "obj-jump:" + ob.jump, true);
+    } else if (state.showRef) {
+      html += '<div style="display:flex;justify-content:space-between"><span class="mono" style="color:var(--gray)">Reframing patterns</span><button type="button" class="btn-ghost" data-act="ref-back">Back</button></div>';
+      html += REFRAMES.map(function (r) { return "<div><div style=\"font-size:11.5px;font-weight:700\">" + esc(r[0]) + '</div><div style="font-size:11px;color:var(--gray);margin-top:2px">' + esc(r[1]) + "</div></div>"; }).join("");
+    } else {
+      html += '<div><span class="mono">Say this</span><div style="margin-top:6px;display:flex;flex-direction:column;gap:6px">';
+      t.lines.filter(function (l) {
+        if (l.indexOf("EDU:") === 0) return state.edu;
+        if (l.indexOf("FUND:") === 0) return funding && !state.edu;
+        if (l.indexOf("REPAIR:") === 0) return !funding && !state.edu;
+        return true;
+      }).forEach(function (l) {
+        html += '<div class="say">' + esc(l.replace(/^FUND: |^REPAIR: |^EDU: /, "")) + "</div>";
+      });
+      html += '</div></div><div class="watch"><span class="mono">Watch for</span><div style="font-size:11px;color:var(--gray);margin-top:4px">' + esc(t.watch) + "</div></div>";
+
+      if (ph === "02 Discovery") {
+        html += '<div><span class="mono">7 beliefs — check when THEY say it</span><div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">';
+        DISCOVERY.forEach(function (b) {
+          var on = !!state.checks[b[0]];
+          html += '<button type="button" data-act="check:' + b[0] + '" style="display:flex;gap:8px;align-items:flex-start;text-align:left;background:' + (on ? "var(--paper)" : "transparent") + ";border:1px solid var(--line);padding:5px 8px;cursor:pointer\"><span style=\"width:12px;height:12px;margin-top:2px;flex-shrink:0;border:1px solid var(--ink);background:" + (on ? "var(--ink)" : "transparent") + '"></span><span><span style="font-size:11px;font-weight:650">' + b[0] + '</span><span style="display:block;font-size:9.5px;color:var(--gray2);margin-top:1px">' + esc(b[1]) + "</span></span></button>";
+        });
+        html += '</div><div style="margin-top:7px"><span class="mono">Their monthly cost of inaction</span><input id="fh-cost" value="' + esc(state.costNum) + '" placeholder="$ per month, in their words" style="margin-top:4px;width:100%;background:transparent;border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:11px;padding:7px 9px;outline:none"></div></div>';
+      }
+
+      if (code() === "S-07") {
+        html += '<div><span class="mono">Route the call</span><div style="font-size:10.5px;color:var(--gray2);margin:4px 0 6px">Engine returned ' + esc(d.label || "unavailable") + ". Education is client-driven — route it only if that's their ask.</div><div style=\"display:flex;flex-direction:column;gap:5px\">";
+        [["FULL_FUNDING", "FULL FUNDING"], ["FUNDING_PLUS_REPAIR", "FUNDING PLUS REPAIR"], ["REPAIR_ONLY", "REPAIR ONLY"]].forEach(function (pair) {
+          html += ckBtn(pair[1], "tier:" + pair[0], pair[0] === state.tier && !state.edu);
+        });
+        html += ckBtn("EDUCATION PATH", "edu", state.edu);
+        html += "</div></div>";
+      }
+
+      if (code() === "S-18") {
+        html += '<div><span class="mono">Their number</span><div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">';
+        for (var n = 1; n <= 10; n++) {
+          html += '<button type="button" data-act="temp:' + n + '" style="font-family:var(--mono);font-size:10.5px;width:27px;height:27px;background:' + (state.temp === n ? "var(--ink)" : "transparent") + ";color:" + (state.temp === n ? "var(--paper)" : "var(--gray)") + ";border:1px solid var(--line);cursor:pointer\">" + n + "</button>";
+        }
+        html += "</div>";
+        if (state.temp > 0 && state.temp < 8) html += '<div style="font-size:10.5px;margin-top:6px;border:1px solid var(--line);padding:8px">Below 8. Ask: what\'s keeping you from a 9 or 10? Handle it before the investment.</div>';
+        html += "</div>";
+      }
+
+      if (code() === "S-19" && (!funding || state.edu)) {
+        html += '<div><span class="mono">Ladder — lead with the top rung</span><div style="margin-top:6px;display:flex;flex-direction:column;gap:5px">';
+        if (state.edu) {
+          html += ckBtn("Course 2: Funding Mastery  " + price("FUNDING_MASTERY"), "rung:0", state.rung === 0);
+          html += ckBtn("Course 1: UWIQ deliverables + bank list  " + price("UWIQ_DELIVERABLES"), "rung:1", state.rung === 1);
+        } else {
+          html += ckBtn("Onboard now: full done-for-you  " + price("REPAIR_DFY"), "rung:0", state.rung === 0);
+          html += ckBtn("Trial: first round done-for-you  " + price("REPAIR_TRIAL"), "rung:1", state.rung === 1);
+          html += ckBtn("DIY deliverables + course  " + price("UWIQ_DELIVERABLES"), "rung:2", state.rung === 2);
+        }
+        html += '</div><div style="font-size:10.5px;color:var(--gray2);margin-top:6px">' + (state.edu ? "Lead with the " + price("FUNDING_MASTERY") + ". Only offer the " + price("UWIQ_DELIVERABLES") + " if it's a no." : "Top down. Only step down on a no.") + "</div>";
+        if (!state.edu) html += '<div style="margin-top:7px">' + ckBtn("UnderwriteIQ package → repair + funding", "bridge") + '<div style="font-size:10px;color:var(--gray2);margin-top:4px">Bridges them to the combined package. Jumps to the funding pitch.</div></div>';
+        html += "</div>";
+      }
+
+      if (code() === "S-23") {
+        html += '<div><span class="mono">Live actions</span><div style="margin-top:6px;display:flex;flex-direction:column;gap:5px">';
+        html += ckBtn("Send agreement + pay link", "pay", true);
+        if (lettersOk() || state.edu) html += ckBtn(state.edu ? "Send deliverables package now" : "Generate letters and email now", "letters");
+        html += ckBtn("Log disposition and close", "disp");
+        html += "</div></div>";
+      }
+
+      if (ph === "05 Commit" || ph === "07 Close") {
+        html += '<div><span class="mono">Descent ladder — every call monetizes</span><div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">';
+        var ladder = [
+          ["fund", "Funding · " + price("FUNDING_DFY") + " deposit", "desc:fund", funding && !state.edu],
+          ["dfy", "Repair DFY · " + price("REPAIR_DFY"), "desc:dfy", !funding && !state.edu && state.rung === 0],
+          ["trial", "Repair trial round · " + price("REPAIR_TRIAL"), "desc:trial", !funding && !state.edu && state.rung === 1],
+          ["diy", "DIY letters + course · " + price("UWIQ_DELIVERABLES"), "desc:diy", !funding && !state.edu && state.rung === 2],
+          ["eduTop", "Funding Mastery · " + price("FUNDING_MASTERY"), "desc:eduTop", state.edu && state.rung === 0],
+          ["eduLow", "Education deliverables · " + price("UWIQ_DELIVERABLES"), "desc:eduLow", state.edu && state.rung === 1]
+        ];
+        ladder.forEach(function (row) {
+          html += '<button type="button" data-act="' + row[2] + '" style="font-family:var(--mono);font-size:10px;text-align:left;padding:7px 10px;border-radius:7px;background:' + (row[3] ? "var(--ink)" : "transparent") + ";color:" + (row[3] ? "var(--paper)" : "var(--gray)") + ";border:1px solid var(--line);cursor:pointer\">" + esc(row[1]) + "</button>";
+        });
+        html += '</div><div style="font-size:10px;color:var(--gray2);margin-top:5px">One click reshapes the price screen. Descend only on a no. Financing available on everything except the soft pull and the funding deposit.</div></div>';
+        html += '<div><div style="display:flex;justify-content:space-between"><span class="mono">Objections</span><button type="button" class="btn-ghost" data-act="reframes">Reframes</button></div><div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:5px">';
+        OBJECTIONS.forEach(function (o, i) {
+          html += '<button type="button" class="btn-ghost" data-act="obj:' + i + '">' + esc(o.t) + "</button>";
+        });
+        html += "</div></div>";
+      }
+
+      if (showEngine) {
+        var beliefs = Object.keys(state.checks).filter(function (k) { return state.checks[k]; }).length;
+        html += '<div style="border-top:1px solid var(--line);padding-top:9px"><span class="mono">Engine data</span><div style="margin-top:5px;font-family:var(--mono);font-size:10px;color:var(--gray);line-height:1.6">';
+        if (!d.available) html += "<div>engine data unavailable</div>";
+        else {
+          html += "<div>" + esc(state.tier || "—") + (state.edu ? " · route EDU" : state.forceRepair ? " · DESCENT" : "") + " · " + money(d.total) + " · " + dash(d.fico.ex) + "/" + dash(d.fico.tu) + "/" + dash(d.fico.eq) + "</div>";
+          html += "<div>afterFix " + money(d.afterFix) + " · beliefs " + beliefs + "/7" + (state.temp > 0 ? " · temp " + state.temp + "/10" : "") + "</div>";
+        }
+        html += "</div></div>";
+      }
+    }
+
+    html += '</div><div class="ck-ph">';
+    ["01", "02", "03", "04", "05", "07"].forEach(function (p) {
+      var active = ph.indexOf(p) === 0;
+      html += '<button type="button" data-act="phase:' + p + '" style="flex:1;font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:5px 0;background:' + (active ? "var(--ink)" : "transparent") + ";color:" + (active ? "var(--paper)" : "var(--gray2)") + ";border:1px solid var(--line);cursor:pointer\">" + p + "</button>";
+    });
+    html += '</div><div class="ck-ft"><button type="button" class="ck-btn" data-act="back" style="width:auto"' + (state.idx === 0 ? " disabled" : "") + ">Back</button><button type=\"button\" class=\"ck-btn k\" data-act=\"next\" style=\"flex:1\" " + (state.idx === DECK.length - 1 ? "disabled" : "") + ">Next screen</button></div>";
+    if (state.toast) html += '<div class="toast">' + esc(state.toast) + "</div>";
+    html += "</div>";
+    return html;
+  }
+
+  function render() {
+    var root = document.getElementById("app");
+    if (!root) return;
+    if (state.error) {
+      root.innerHTML = '<div class="gate"><span class="mono">Present</span><h1 class="h1" style="margin-top:10px">' + esc(state.error) + "</h1><p class=\"sub\"><a href=\"closer-call.html" + (contactId ? ("?client_id=" + encodeURIComponent(contactId)) : "") + '">Back to the call cockpit</a></p></div>';
+      return;
+    }
+    if (!state.loaded) {
+      root.innerHTML = '<div class="gate"><span class="mono">Present</span><p class="sub">Loading this contact…</p></div>';
+      return;
+    }
+    var dots = DECK.map(function (s, i) { return '<i class="' + (i <= state.idx ? "on" : "") + '"></i>'; }).join("");
+    root.innerHTML =
+      '<div class="topbar"><span class="mono">' + esc((state.survey && state.survey.name) || "Present") + "</span>" +
+      (state.engine && !state.engine.available ? '<span class="mono" style="color:var(--gray)">engine data unavailable</span>' : "") +
+      '<div class="sp"></div><button type="button" class="btn-ghost" data-act="client-only">' +
+      (state.clientOnly ? "Show cockpit" : "Client screen only") + "</button></div>" +
+      '<div class="stage"><div class="client' + (state.clientOnly ? " solo" : "") + '">' + clientSlide() +
+      '<div class="dots">' + dots + "</div></div>" +
+      (state.clientOnly ? "" : '<div class="cockpit">' + cockpit() + "</div>") + "</div>";
+    var cost = document.getElementById("fh-cost");
+    if (cost) {
+      cost.addEventListener("input", function (e) { state.costNum = e.target.value; });
+      cost.addEventListener("keydown", function (e) { e.stopPropagation(); });
+    }
+  }
+
+  function go(n) {
+    state.obj = null; state.showRef = false;
+    var j = Math.max(0, Math.min(DECK.length - 1, state.idx + n));
+    while (state.edu && EDU_SKIP.indexOf(DECK[j].code) >= 0 && j > 0 && j < DECK.length - 1) {
+      j = j + (n > 0 ? 1 : -1);
+    }
+    state.idx = Math.max(0, Math.min(DECK.length - 1, j));
+    render();
+  }
+  function jumpTo(c) {
+    for (var i = 0; i < DECK.length; i++) if (DECK[i].code === c) { state.idx = i; state.obj = null; state.showRef = false; render(); return; }
+  }
+  function toast(m) {
+    state.toast = m;
+    render();
+    setTimeout(function () { state.toast = ""; render(); }, 2600);
+  }
+  function setTier(k) {
+    state.tier = k; state.rung = 0; state.edu = false; state.forceRepair = false; render();
+  }
+
+  async function fire(action) {
+    if (!window.FHData || !contactId) { toast("No contact on this deck."); return; }
+    var body = {
+      action: action,
+      client_id: contactId,
+      offer_key: action === "generate_letters" && state.edu ? "UWIQ_DELIVERABLES" : selectedOfferKey(),
+      edu: state.edu,
+      force_repair: state.forceRepair,
+      tier: state.tier,
+      route: state.edu ? "EDUCATION" : (state.forceRepair ? "DESCENT" : (state.tier || "")),
+      temperature: state.temp,
+      beliefs_count: Object.keys(state.checks).filter(function (k) { return state.checks[k]; }).length,
+      cost_of_inaction: state.costNum || null
+    };
+    var r = await window.FHData.write("/api/closer-deck", body);
+    if (!r.ok) {
+      toast((r.error && (r.error.message || r.error)) || "Could not complete that action");
+      return;
+    }
+    if (action === "send_pay_link") toast("Agreement and pay link sent.");
+    else if (action === "generate_letters") toast(state.edu ? "Deliverables sent to client." : "Letters generating. Client emailed.");
+    else toast("Disposition written to contact record.");
+  }
+
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    var a = btn.getAttribute("data-act");
+    if (a === "client-only") { state.clientOnly = !state.clientOnly; render(); return; }
+    if (a === "back") { go(-1); return; }
+    if (a === "next") { go(1); return; }
+    if (a === "edu") { state.edu = true; state.rung = 0; render(); return; }
+    if (a.indexOf("tier:") === 0) { setTier(a.slice(5)); return; }
+    if (a.indexOf("rung:") === 0) { state.rung = Number(a.slice(5)); render(); return; }
+    if (a.indexOf("temp:") === 0) { state.temp = Number(a.slice(5)); render(); return; }
+    if (a.indexOf("check:") === 0) { var k = a.slice(6); state.checks[k] = !state.checks[k]; render(); return; }
+    if (a.indexOf("phase:") === 0) {
+      var p = a.slice(6);
+      var target = DECK.filter(function (s) { return s.phase.indexOf(p) === 0; })[0];
+      if (target) jumpTo(target.code);
+      return;
+    }
+    if (a === "bridge") { state.tier = "FUNDING_PLUS_REPAIR"; state.edu = false; state.forceRepair = false; jumpTo("S-08"); return; }
+    if (a === "desc:fund") { state.forceRepair = false; state.edu = false; jumpTo("S-19"); return; }
+    if (a === "desc:dfy") { state.edu = false; state.forceRepair = true; state.rung = 0; jumpTo("S-19"); return; }
+    if (a === "desc:trial") { state.edu = false; state.forceRepair = true; state.rung = 1; jumpTo("S-19"); return; }
+    if (a === "desc:diy") { state.edu = false; state.forceRepair = true; state.rung = 2; jumpTo("S-19"); return; }
+    if (a === "desc:eduTop") { state.forceRepair = false; state.edu = true; state.rung = 0; jumpTo("S-19"); return; }
+    if (a === "desc:eduLow") { state.forceRepair = false; state.edu = true; state.rung = 1; jumpTo("S-19"); return; }
+    if (a === "reframes") { state.showRef = true; render(); return; }
+    if (a === "ref-back") { state.showRef = false; render(); return; }
+    if (a === "obj-back") { state.obj = null; render(); return; }
+    if (a.indexOf("obj:") === 0) { state.obj = Number(a.slice(4)); render(); return; }
+    if (a.indexOf("obj-jump:") === 0) { jumpTo(a.slice(9)); return; }
+    if (a === "pay") { fire("send_pay_link"); return; }
+    if (a === "letters") { fire("generate_letters"); return; }
+    if (a === "disp") { fire("log_disposition"); return; }
+  });
+  window.addEventListener("keydown", function (e) {
+    if (e.target && e.target.tagName === "INPUT") return;
+    if (e.key === "ArrowRight") go(1);
+    if (e.key === "ArrowLeft") go(-1);
+  });
+
+  async function boot() {
+    if (!contactId) {
+      state.error = "Open Present from a contact. This page needs ?contact= on the URL.";
+      state.loaded = true;
+      render();
+      return;
+    }
+    if (!window.FHData) {
+      state.error = "data.js failed to load";
+      state.loaded = true;
+      render();
+      return;
+    }
+    render();
+    var r = await window.FHData.read("closer-deck", { contact: contactId });
+    if (!r.ok) {
+      if (r.source === "unauthorized") {
+        location.href = "/login.html?next=" + encodeURIComponent(location.pathname + location.search);
+        return;
+      }
+      state.error = (r.error && (r.error.message || r.error)) || "Could not load this contact.";
+      state.loaded = true;
+      render();
+      return;
+    }
+    var d = r.data || r;
+    state.survey = d.survey || {};
+    state.engine = d.engine || { available: false, reason: "engine data unavailable", fico: {}, reasons: [] };
+    state.offers = d.offers || [];
+    state.tier = (state.engine && state.engine.tier) || null;
+    state.loaded = true;
+    render();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();

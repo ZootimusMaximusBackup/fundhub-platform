@@ -20,6 +20,8 @@ same commit as the rule-table change a new edition forces.
 
 Sample letters used as reference output live in `fixtures/`.
 
+**Inbox (not live):** `AI-CREDIT-REPAIR-LETTER-GENERATION-PROMPT.md` — captured 2026-08-14. Candidate prompt for a later repair-system / education update. See `TODO.md`. Do not wire it until owner review. **COMPLIANCE REVIEW REQUIRED.**
+
 ## What is here
 
 | Path | What it is |

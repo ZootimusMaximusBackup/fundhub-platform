@@ -68,7 +68,7 @@ try {
 
 // Parser endpoint
 const PARSE_ENDPOINT =
-  process.env.PARSE_ENDPOINT || "https://underwrite-iq-lite.vercel.app/api/lite/parse-report";
+  process.env.PARSE_ENDPOINT || ""  /* no external UIQ — set PARSE_ENDPOINT if this handler is used */;
 
 const MIN_PDF_BYTES = 40 * 1024;
 // Max 10MB per file to prevent memory exhaustion (base64 adds 33% overhead)

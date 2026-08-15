@@ -17,6 +17,7 @@ const BASE_REQUEST_DATA = {
 beforeEach(() => {
   delete process.env.BLAND_VOICE;
   delete process.env.WEBHOOK_BASE_URL;
+  delete process.env.BLAND_WEBHOOK_URL;
   delete process.env.BLAND_TOOL_SLOTS_ID;
   delete process.env.BLAND_TOOL_BOOK_ID;
   delete process.env.FUNDHUB_REP_NUMBER;
@@ -61,15 +62,22 @@ describe("buildSetterCallConfig", () => {
 
   // ---- Webhook URL ----
 
-  test("sets webhook when WEBHOOK_BASE_URL env is set", () => {
-    process.env.WEBHOOK_BASE_URL = "https://inquiry-removal.vercel.app";
+  test("defaults webhook to Fundhub Bland inbound URL", () => {
     const config = buildSetterCallConfig(BASE_REQUEST_DATA);
-    expect(config.webhookUrl).toBe("https://inquiry-removal.vercel.app/api/setter-webhook");
+    expect(config.webhookUrl).toBe("https://fundhub.ai/api/webhooks/bland");
   });
 
-  test("webhook is undefined when WEBHOOK_BASE_URL env is not set", () => {
+  test("uses BLAND_WEBHOOK_URL when set", () => {
+    process.env.BLAND_WEBHOOK_URL = "https://fundhub.ai/api/webhooks/bland";
     const config = buildSetterCallConfig(BASE_REQUEST_DATA);
-    expect(config.webhookUrl).toBeUndefined();
+    expect(config.webhookUrl).toBe("https://fundhub.ai/api/webhooks/bland");
+  });
+
+  test("ignores WEBHOOK_BASE_URL Vercel path pattern", () => {
+    process.env.WEBHOOK_BASE_URL = "https://inquiry-removal.vercel.app";
+    const config = buildSetterCallConfig(BASE_REQUEST_DATA);
+    expect(config.webhookUrl).toBe("https://fundhub.ai/api/webhooks/bland");
+    expect(config.webhookUrl).not.toContain("/api/setter-webhook");
   });
 
   // ---- Metadata ----
