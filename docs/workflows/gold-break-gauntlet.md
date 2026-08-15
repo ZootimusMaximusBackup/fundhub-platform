@@ -49,7 +49,7 @@
 | S-S01 Smash S-01 new lead intake | Grok 4.5 high | s-01-new-lead-intake + tests | **done** |
 | S-N01 Smash N-01 cold nurture | Grok 4.5 high | n-01-cold-nurture + tests | **done** |
 | S-CC Smash contract-chaser | Grok 4.5 high | contract-chaser + tests | **done** |
-| S-VOICE Bland outbound voicemail | Grok 4.6 | bland-voice + call-scheduler | **claimed** |
+| S-VOICE Bland outbound voicemail | Grok 4.6 | bland-voice + call-scheduler | **done** |
 | S-TMP Delete unused tmp scripts/functions | Grok 4.5 high | leftover tmp netlify functions + unused tmp scripts | **done** |
 | S-ICS Smash inquiry-call-sweeper | Grok 4.5 high | inquiry-call-sweeper + tests | **done** |
 
@@ -1325,3 +1325,20 @@ Do not `--prod`. Do not drain outbox. Do not commit unless Chris asks. Do not cr
 **Verify:** `CRS_ALLOW_LIVE=0 node --test src/workflows/af-02-referral-ownership-capture.test.mjs` → **8 pass** (4 prior + 4 smash). 0 fail, 0 skip.
 
 **Leftover:** none in fence.
+
+### S-VOICE — Bland outbound voicemail (2026-08-15)
+
+**Status:** done (code + tests). Live ring **did not go out** — this VM has no gitignored `.env` and `BLAND_API_KEY` is unset. The key is already on Netlify from P2. Do not paste. Do not rotate.
+
+**What broke:** Prove script greeted and hung up. No answering-machine detect, no voicemail text. Product `fireDueCalls` wrote cards only — never called Bland.
+
+**Fixes:**
+- New `src/messaging/providers/bland-voice.mjs` — POST `/v1/calls` through the messaging fence. Refuses to send without voicemail. AMD on. Not on the email/SMS registry.
+- `fireDueCalls` places that call when the client has an E.164 phone; missing phone stamps `failed` so the sweeper does not loop.
+- Prove script uses the same provider.
+- Inquiry call sweeper stays unregistered.
+
+**Verify:** bland-voice + call-scheduler tests pass. inquiry-call-sweeper tests still 9 pass.
+
+**Not done:** live voicemail prove to +16616180865. No `--prod`. No Inngest. No outbox drain.
+
