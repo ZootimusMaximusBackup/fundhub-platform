@@ -205,7 +205,11 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        # Company brain (migration 130) needs CREATE EXTENSION vector.
+        # Stock postgres:16 does not ship pgvector, so migrate died there and
+        # isolation never saw a finished schema. This image is Postgres 16 plus
+        # the vector add-on. Same user/password/db as before.
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
