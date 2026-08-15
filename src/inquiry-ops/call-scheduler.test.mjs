@@ -115,8 +115,9 @@ test("scheduleFromDelivery ignores second delivery (first wins)", async () => {
   assert.equal(res.reason, "already_scheduled");
 });
 
-test("fireDueCalls places a Bland call that includes voicemail", async () => {
+test("fireDueCalls places a Bland call to the bureau, not the client", async () => {
   const { fireDueCalls } = await import("./call-scheduler.mjs");
+  const { BUREAU_DISPUTE_DEFAULTS } = await import("../messaging/providers/bland-voice.mjs");
   const placed = [];
   const updates = [];
   const caseRow = {
@@ -136,7 +137,7 @@ test("fireDueCalls places a Bland call that includes voicemail", async () => {
       }
       if (s.includes("FROM inquiry_log")) return { rows: [] };
       if (s.includes("SELECT phone FROM clients")) {
-        return { rows: [{ phone: "+16616180865" }] };
+        throw new Error("inquiry due calls must not dial the client");
       }
       if (s.includes("UPDATE inquiry_removal_cases")) {
         updates.push(params);
@@ -156,22 +157,24 @@ test("fireDueCalls places a Bland call that includes voicemail", async () => {
   });
   assert.equal(out.count, 1);
   assert.equal(placed.length, 1);
-  assert.equal(placed[0].phone, "+16616180865");
+  assert.equal(placed[0].phone, BUREAU_DISPUTE_DEFAULTS.EX);
+  assert.notEqual(placed[0].phone, "+16616180865");
+  assert.equal(placed[0].kind, "inquiry_bureau");
+  assert.ok(String(placed[0].task || "").length > 40);
   assert.ok(String(placed[0].voicemailMessage || "").length > 10);
   assert.equal(updates[0][2], "queued");
 });
 
-test("fireDueCalls stamps failed and does not loop when phone is missing", async () => {
+test("fireDueCalls stamps failed when the bureau is unknown", async () => {
   const { fireDueCalls } = await import("./call-scheduler.mjs");
   let placed = 0;
   const db = {
     async query(sql, params) {
       const s = String(sql);
       if (s.includes("FROM inquiry_removal_cases") && s.includes("call_due_at")) {
-        return { rows: [{ id: "c2", org_id: "o1", client_id: "cl2", selected_bureaus_raw: "TU" }] };
+        return { rows: [{ id: "c2", org_id: "o1", client_id: "cl2", selected_bureaus_raw: "NOPE" }] };
       }
       if (s.includes("FROM inquiry_log")) return { rows: [] };
-      if (s.includes("SELECT phone FROM clients")) return { rows: [{ phone: null }] };
       if (s.includes("UPDATE inquiry_removal_cases")) {
         return { rows: [{ id: "c2", ai_call_status: params[2], call_fired_at: params[1] }] };
       }

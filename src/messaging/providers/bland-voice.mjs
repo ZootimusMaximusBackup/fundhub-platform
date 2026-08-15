@@ -1,4 +1,7 @@
-// Bland AI outbound voice. Inquiry follow-up and owner prove calls.
+// Bland AI outbound voice. Every Fundhub phone call goes through Bland.
+// Inquiry-remover bureau agents (Experian / Equifax / TransUnion) already
+// live in vendor/inquiry-remover and dial via BLAND_API_KEY. Client prove
+// calls use the same sender. There is no second voice vendor.
 //
 // THIS FILE IS THE ONLY PLACE FUNDHUB POSTS TO Bland TO PLACE A CALL.
 // The inbound webhook stays in src/adapters/bland.mjs. Same vendor, opposite
@@ -14,8 +17,14 @@
 //
 // Copy must not claim credit outcomes (scores, approvals, removals). Owner law.
 
+import { createRequire } from "node:module";
 import { postJson, classify, success, failure, rejection } from "./http.mjs";
 import { recordDispatch } from "../../lib/outbound-calls.mjs";
+
+const require = createRequire(import.meta.url);
+const { EXPERIAN_TASK } = require("../../../vendor/inquiry-remover/src/agents/experian-prompt.js");
+const { EQUIFAX_TASK } = require("../../../vendor/inquiry-remover/src/agents/equifax-prompt.js");
+const { TRANSUNION_TASK } = require("../../../vendor/inquiry-remover/src/agents/transunion-prompt.js");
 
 export const PROVIDER = "bland_voice";
 export const CHANNELS = new Set(["voice"]);
@@ -45,6 +54,61 @@ export const DEFAULT_PROVE_FIRST_SENTENCE =
 
 export const DEFAULT_PROVE_VOICEMAIL =
   "Hey Chris, this is Fundhub. We just tried to reach you to prove the phone line. Call us back when you can. Talk soon.";
+
+/** Bureau IVR / hold. Not a consumer pitch. No scores, no approvals. */
+export const DEFAULT_BUREAU_VOICEMAIL =
+  "This is Fundhub calling about a credit file dispute. We will call again.";
+
+/** Same numbers the inquiry-remover Bland agents already dial. Env wins. */
+export const BUREAU_DISPUTE_DEFAULTS = Object.freeze({
+  EX: "+18554146048",
+  EQ: "+18665495097",
+  TU: "+18009168800"
+});
+
+const BUREAU_ENV = Object.freeze({
+  EX: "EXPERIAN_DISPUTE_NUMBER",
+  EQ: "EQUIFAX_DISPUTE_NUMBER",
+  TU: "TRANSUNION_DISPUTE_NUMBER"
+});
+
+const BUREAU_TASK = Object.freeze({
+  EX: EXPERIAN_TASK,
+  EQ: EQUIFAX_TASK,
+  TU: TRANSUNION_TASK
+});
+
+const BUREAU_MAX_DURATION = Object.freeze({ EX: 90, EQ: 30, TU: 60 });
+
+/** Voice provider stored on inquiry_log. Bland only. */
+export const INQUIRY_VOICE_PROVIDER = "bland_ai";
+
+export function resolveBureauCode(raw) {
+  const m = String(raw || "").toUpperCase().match(/\b(EX|EQ|TU)\b/);
+  return m ? m[1] : null;
+}
+
+/**
+ * Where the inquiry-remover Bland agent should dial.
+ * Uses the existing bureau dispute numbers, not the client's phone.
+ */
+export function resolveBureauDial(bureauRaw, env = process.env) {
+  const code = resolveBureauCode(bureauRaw);
+  if (!code) return { ok: false, error: "unknown_bureau" };
+  const phone = String(env[BUREAU_ENV[code]] || BUREAU_DISPUTE_DEFAULTS[code])
+    .replace(/\\n/g, "")
+    .trim();
+  if (!E164.test(phone)) return { ok: false, error: "bad_bureau_number", code };
+  return {
+    ok: true,
+    code,
+    phone,
+    task: BUREAU_TASK[code],
+    maxDuration: BUREAU_MAX_DURATION[code],
+    voicemailMessage: DEFAULT_BUREAU_VOICEMAIL,
+    kind: "inquiry_bureau"
+  };
+}
 
 function config(env) {
   const apiKey = env.BLAND_API_KEY;

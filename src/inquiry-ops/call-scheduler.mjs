@@ -11,9 +11,8 @@ import {
 } from "../messaging/providers/mail-letter.mjs";
 import {
   placeCall as blandPlaceCall,
-  DEFAULT_VOICEMAIL_MESSAGE,
-  DEFAULT_INQUIRY_TASK,
-  DEFAULT_INQUIRY_FIRST_SENTENCE
+  resolveBureauDial,
+  INQUIRY_VOICE_PROVIDER
 } from "../messaging/providers/bland-voice.mjs";
 
 const DEFAULT_WAIT = Object.freeze({ portal: 1, mail: 3 });
@@ -194,13 +193,10 @@ export async function scheduleFromDelivery(db, {
   return { case: row, scheduled: true, waitDays, callDueAt: due };
 }
 
-const E164 = /^\+[1-9]\d{7,14}$/;
-
 /**
  * Fire AI bureau calls for cases whose call_due_at has elapsed.
- * Writes kind=call attempts, then places a Bland call that MUST leave a
- * voicemail if nobody picks up. Sweeper stays unregistered — this function
- * is the product path tests and a future cron will call.
+ * Places a Bland call to the bureau dispute line (inquiry-remover agents).
+ * Does not dial the client. Sweeper stays unregistered.
  */
 export async function fireDueCalls(db, {
   orgId,
@@ -267,26 +263,23 @@ export async function fireDueCalls(db, {
       }
     }
 
-    const clientR = await db.query(
-      `SELECT phone FROM clients WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`,
-      [caseRow.client_id, caseRow.org_id]
-    );
-    const phone = String(clientR.rows[0]?.phone || "").trim();
+    const dial = resolveBureauDial(caseRow.selected_bureaus_raw, env);
 
     let callStatus = "failed";
-    let callNote = "no_e164_phone";
-    if (E164.test(phone)) {
+    let callNote = dial.ok ? "bland_place_failed" : (dial.error || "unknown_bureau");
+    if (dial.ok) {
       const placed = await placeCallImpl({
-        phone,
-        task: DEFAULT_INQUIRY_TASK,
-        firstSentence: DEFAULT_INQUIRY_FIRST_SENTENCE,
-        voicemailMessage: DEFAULT_VOICEMAIL_MESSAGE,
+        phone: dial.phone,
+        task: dial.task,
+        voicemailMessage: dial.voicemailMessage,
+        maxDuration: dial.maxDuration,
         clientId: caseRow.client_id,
         orgId: caseRow.org_id,
-        kind: "inquiry_removal",
+        kind: dial.kind,
         metadata: {
           case_id: caseRow.id,
-          bureau: caseRow.selected_bureaus_raw,
+          bureau: dial.code,
+          voice_provider: INQUIRY_VOICE_PROVIDER,
           source: "fireDueCalls"
         },
         db,

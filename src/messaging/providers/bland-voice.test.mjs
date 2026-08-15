@@ -158,8 +158,21 @@ describe("bland-voice", () => {
   test("source has no GHL and uses the fenced helper", () => {
     const src = fs.readFileSync(path.join(HERE, "bland-voice.mjs"), "utf8");
     assert.ok(!/GHL_/i.test(src));
+    assert.ok(!/\bretell\b/i.test(src));
     assert.ok(src.includes("postJson"));
     assert.ok(src.includes("amd: true"));
     assert.ok(src.includes("voicemail_message"));
+  });
+
+  test("inquiry bureau dial uses Experian/Equifax/TransUnion numbers, not the client", async () => {
+    const { resolveBureauDial, BUREAU_DISPUTE_DEFAULTS, INQUIRY_VOICE_PROVIDER } =
+      await import("./bland-voice.mjs");
+    const ex = resolveBureauDial("EX");
+    assert.equal(ex.ok, true);
+    assert.equal(ex.phone, BUREAU_DISPUTE_DEFAULTS.EX);
+    assert.equal(ex.kind, "inquiry_bureau");
+    assert.match(ex.task, /Experian|experian/i);
+    assert.equal(INQUIRY_VOICE_PROVIDER, "bland_ai");
+    assert.equal(resolveBureauDial("NOPE").ok, false);
   });
 });
