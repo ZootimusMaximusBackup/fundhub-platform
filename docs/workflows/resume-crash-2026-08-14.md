@@ -24,10 +24,10 @@ Gold look: `docs/workflows/gold-deliverables-v5.md` (W8 parked).
 | R2 | CI: outbound fence | `src/finance/crs-pull.mjs` allowlisted as wrap; deleted `netlify/functions/tmp-cf-seam-watch.mjs` | **done** — parent |
 | R3 | CI: SMS tests after GHL stub | `src/messaging/dispatch.test.mjs`, `dispatch-fence.test.mjs` | **done** — parent |
 | R4 | Smash remaining registered workflows (one agent each) | see smash table | launching |
-| R5 | C-06 in-repo funding pack (kill Vercel 401) | `src/workflows/c-06-crs-results-router.mjs` + test | pending — after R3; file fence c-06 |
-| R6 | CRM inbox + docs re-check after W2/W3 mail | live `fundhub.ai` only; evidence under `e2e-verify-run4-evidence/w4-crm-ui/` | pending — no product write |
-| R7 | Delete leftover tmp prove scripts | `scripts/tmp-*`, `netlify/functions/tmp-*` except anything R2 already deleted | pending |
-| R8 | Live Playwright 100 | `npm run test:e2e:live` vs fundhub.ai | waits on R1–R3 green |
+| R5 | C-06 in-repo funding pack (kill Vercel 401) | `src/workflows/c-06-crs-results-router.mjs` + test | **done** |
+| R6 | CRM inbox + docs re-check after W2/W3 mail | live `fundhub.ai` only; evidence under `e2e-verify-run4-evidence/w4-crm-ui/` | pending — needs live login `.env` |
+| R7 | Delete leftover tmp prove scripts | `scripts/tmp-*`, `netlify/functions/tmp-*` except anything R2 already deleted | **done** |
+| R8 | Live Playwright 100 | `npm run test:e2e:live` vs fundhub.ai | **blocked** — no `.env` on this VM. Last PASS 100/100 on 2026-08-14 |
 | W8 | Letter typeface Inter + JetBrains Mono | letter-generator fonts only | **parked — Claude session** |
 
 ## Smash remaining (not on gold-break as done)

@@ -108,6 +108,10 @@ const PORT = Number(process.env.E2E_PORT || 43117);
 
 export default defineConfig({
   testDir: "./e2e",
+  // Live specs hit fundhub.ai and need gitignored passwords. They belong to
+  // `npm run test:e2e:live`, not CI screens. If they run here, CI fails for a
+  // missing .env that is not supposed to exist on GitHub.
+  testIgnore: ["**/live-*.spec.mjs"],
   // A UI test that hangs is worse than one that fails: it is a red build with
   // no message. Fail fast and say what timed out.
   timeout: 30_000,
