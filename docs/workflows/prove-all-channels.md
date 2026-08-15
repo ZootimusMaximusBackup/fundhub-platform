@@ -9,7 +9,8 @@
 | Unit | Model | Files | Status |
 |------|-------|-------|--------|
 | P1 Email one-shots (workflow EMAIL-* + 4 remaining passed) | Grok 4.6 extra-high | `scripts/tmp-email-channel-prove.mjs` only | done |
-| P2 Bland one live call | this chat (Grok 4.6) | `scripts/tmp-bland-prove.mjs` + local `.env` name `BLAND_API_KEY` | **done** — call_id `326e71c0-86f3-4c76-ba8e-de0627a9c30d` |
+| P2 Bland one live call | this chat (Grok 4.6) | `scripts/tmp-bland-prove.mjs` + local `.env` name `BLAND_API_KEY` | **done** (no VM) — next: **P2b voicemail prove** pending live ring |
+| P2b Bland voicemail prove | this chat | bland-voice + tmp-bland-prove | **code done — live ring next** |
 | P3 Gold letter layout (not typeface) | Grok 4.6 extra-high | `vendor/underwriteiq-full/api/lite/letter-generator.js` + its tests | done |
 | P4 Live Playwright reconfirm | Grok 4.5 high | `e2e/live-*.spec.mjs` + `docs/workflows/live-playwright-100.md` | **done 2026-08-14 100/100**; **2026-08-15 re-run BLOCKED** (no `.env` / `STAFF_E2E_PASSWORD` in this workspace) |
 | P5 CRM messaging rows for 5 sample clients | Grok 4.5 high | read-only CRM / SQL evidence | done |

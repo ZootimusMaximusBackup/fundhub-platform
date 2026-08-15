@@ -114,3 +114,78 @@ test("scheduleFromDelivery ignores second delivery (first wins)", async () => {
   assert.equal(res.scheduled, false);
   assert.equal(res.reason, "already_scheduled");
 });
+
+test("fireDueCalls places a Bland call that includes voicemail", async () => {
+  const { fireDueCalls } = await import("./call-scheduler.mjs");
+  const placed = [];
+  const updates = [];
+  const caseRow = {
+    id: "c-due",
+    org_id: "o1",
+    client_id: "cl1",
+    selected_bureaus_raw: "EX",
+    first_delivery_channel: "mail",
+    call_due_at: "2026-08-01T12:00:00.000Z",
+    case_status: "In Progress"
+  };
+  const db = {
+    async query(sql, params) {
+      const s = String(sql);
+      if (s.includes("FROM inquiry_removal_cases") && s.includes("call_due_at")) {
+        return { rows: [caseRow] };
+      }
+      if (s.includes("FROM inquiry_log")) return { rows: [] };
+      if (s.includes("SELECT phone FROM clients")) {
+        return { rows: [{ phone: "+16616180865" }] };
+      }
+      if (s.includes("UPDATE inquiry_removal_cases")) {
+        updates.push(params);
+        return { rows: [{ ...caseRow, call_fired_at: params[1], ai_call_status: params[2] }] };
+      }
+      return { rows: [] };
+    }
+  };
+  const out = await fireDueCalls(db, {
+    orgId: "o1",
+    staffId: "staff-1",
+    now: new Date("2026-08-10T12:00:00.000Z"),
+    placeCallImpl: async (opts) => {
+      placed.push(opts);
+      return { status: "sent", providerMessageId: "call_vm_due", error: null };
+    }
+  });
+  assert.equal(out.count, 1);
+  assert.equal(placed.length, 1);
+  assert.equal(placed[0].phone, "+16616180865");
+  assert.ok(String(placed[0].voicemailMessage || "").length > 10);
+  assert.equal(updates[0][2], "queued");
+});
+
+test("fireDueCalls stamps failed and does not loop when phone is missing", async () => {
+  const { fireDueCalls } = await import("./call-scheduler.mjs");
+  let placed = 0;
+  const db = {
+    async query(sql, params) {
+      const s = String(sql);
+      if (s.includes("FROM inquiry_removal_cases") && s.includes("call_due_at")) {
+        return { rows: [{ id: "c2", org_id: "o1", client_id: "cl2", selected_bureaus_raw: "TU" }] };
+      }
+      if (s.includes("FROM inquiry_log")) return { rows: [] };
+      if (s.includes("SELECT phone FROM clients")) return { rows: [{ phone: null }] };
+      if (s.includes("UPDATE inquiry_removal_cases")) {
+        return { rows: [{ id: "c2", ai_call_status: params[2], call_fired_at: params[1] }] };
+      }
+      return { rows: [] };
+    }
+  };
+  const out = await fireDueCalls(db, {
+    staffId: "staff-1",
+    placeCallImpl: async () => {
+      placed += 1;
+      return { status: "sent", providerMessageId: "nope" };
+    }
+  });
+  assert.equal(out.count, 1);
+  assert.equal(placed, 0);
+  assert.equal(out.fired[0].ai_call_status, "failed");
+});

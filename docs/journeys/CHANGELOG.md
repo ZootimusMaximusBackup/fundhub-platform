@@ -3,6 +3,8 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-15 | role-inquiry-remover | fireDueCalls now places a Bland call with required voicemail (AMD + voicemail_message). Sweeper still unregistered. Route-only actual mermaid unchanged. | Owner: missed calls must leave voicemail | (this commit)
+
 2026-08-14 | all eight | Regenerated actuals after gold-break / GHL-out snapshot — routes and secrets lists drifted vs code | Crash resume CI: generate.test stale | (this commit)
 2026-08-14 | u-02-analyzer-complete-delivery | Added hand-traced actual mermaid: no email without PDFs, funding needs four analysis PDFs, MANUAL_REVIEW no pack, REPAIR_ONLY tags only | B3 no-mail gates; role actuals are route-only and never covered U-02 | uncommitted
 2026-08-10 | all eight | Regenerated actuals after Metro 2 / DFY repair events and `repair/exceptions` route landed | Credit-repair spine commit a50ed59 left journeys/diagrams stale; CI suite failed | (this commit)

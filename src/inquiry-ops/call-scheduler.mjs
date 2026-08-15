@@ -9,6 +9,12 @@ import {
   DEFAULT_MAIL_SERVICE_LEVEL,
   bureauMailAddress
 } from "../messaging/providers/mail-letter.mjs";
+import {
+  placeCall as blandPlaceCall,
+  DEFAULT_VOICEMAIL_MESSAGE,
+  DEFAULT_INQUIRY_TASK,
+  DEFAULT_INQUIRY_FIRST_SENTENCE
+} from "../messaging/providers/bland-voice.mjs";
 
 const DEFAULT_WAIT = Object.freeze({ portal: 1, mail: 3 });
 
@@ -188,16 +194,22 @@ export async function scheduleFromDelivery(db, {
   return { case: row, scheduled: true, waitDays, callDueAt: due };
 }
 
+const E164 = /^\+[1-9]\d{7,14}$/;
+
 /**
  * Fire AI bureau calls for cases whose call_due_at has elapsed.
- * Writes kind=call attempts. Does not invent a new agent runtime — enqueues
- * via inquiry_log call_state + attempt row for the existing voice path.
+ * Writes kind=call attempts, then places a Bland call that MUST leave a
+ * voicemail if nobody picks up. Sweeper stays unregistered — this function
+ * is the product path tests and a future cron will call.
  */
 export async function fireDueCalls(db, {
   orgId,
   now = new Date(),
   staffId = null,
-  limit = 50
+  limit = 50,
+  placeCallImpl = blandPlaceCall,
+  env = process.env,
+  fetchImpl
 } = {}) {
   const params = [now.toISOString(), Math.min(Math.max(Number(limit) || 50, 1), 200)];
   let orgClause = "";
@@ -255,17 +267,51 @@ export async function fireDueCalls(db, {
       }
     }
 
+    const clientR = await db.query(
+      `SELECT phone FROM clients WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`,
+      [caseRow.client_id, caseRow.org_id]
+    );
+    const phone = String(clientR.rows[0]?.phone || "").trim();
+
+    let callStatus = "failed";
+    let callNote = "no_e164_phone";
+    if (E164.test(phone)) {
+      const placed = await placeCallImpl({
+        phone,
+        task: DEFAULT_INQUIRY_TASK,
+        firstSentence: DEFAULT_INQUIRY_FIRST_SENTENCE,
+        voicemailMessage: DEFAULT_VOICEMAIL_MESSAGE,
+        clientId: caseRow.client_id,
+        orgId: caseRow.org_id,
+        kind: "inquiry_removal",
+        metadata: {
+          case_id: caseRow.id,
+          bureau: caseRow.selected_bureaus_raw,
+          source: "fireDueCalls"
+        },
+        db,
+        fetchImpl,
+        env
+      });
+      if (placed?.status === "sent" && placed.providerMessageId) {
+        callStatus = "queued";
+        callNote = `bland:${placed.providerMessageId}`;
+      } else {
+        callNote = placed?.error || placed?.status || "bland_place_failed";
+      }
+    }
+
     const upd = await db.query(
       `UPDATE inquiry_removal_cases
           SET call_fired_at = $2::timestamptz,
-              ai_call_status = 'queued',
-              master_call_state = 'queued',
+              ai_call_status = $3,
+              master_call_state = $3,
               updated_at = now()
         WHERE id = $1
         RETURNING *`,
-      [caseRow.id, now.toISOString()]
+      [caseRow.id, now.toISOString(), callStatus]
     );
-    fired.push(upd.rows[0]);
+    fired.push({ ...upd.rows[0], place_note: callNote });
   }
   return { fired, count: fired.length };
 }
