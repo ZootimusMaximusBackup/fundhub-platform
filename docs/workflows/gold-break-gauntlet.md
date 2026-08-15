@@ -49,10 +49,41 @@
 | S-S01 Smash S-01 new lead intake | Grok 4.5 high | s-01-new-lead-intake + tests | **done** |
 | S-N01 Smash N-01 cold nurture | Grok 4.5 high | n-01-cold-nurture + tests | **done** |
 | S-CC Smash contract-chaser | Grok 4.5 high | contract-chaser + tests | **done** |
+| S-TMP Delete unused tmp scripts/functions | Grok 4.5 high | leftover tmp netlify functions + unused tmp scripts | **done** |
 
 Do not `--prod`. Do not drain outbox. Do not commit unless Chris asks. Do not cross file fences.
 
 ## Manifests
+
+### S-TMP — Delete unused tmp scripts/functions (2026-08-15)
+
+**Status:** done  
+**Model:** Grok 4.5 high
+
+**What changed:** Deleted leftover unused tmp Netlify functions and unused one-shot tmp scripts. Tests that still import gauntlet / email-channel prove were left in place. `scripts/tmp-bland-prove.mjs` was not touched (parent rewrite).
+
+**Deleted:**
+- `netlify/functions/tmp-letter-gauntlet-status.mjs`
+- `netlify/functions/tmp-letter-gauntlet-background.mjs`
+- `netlify/functions/tmp-email-channel-prove-background.mjs`
+- `scripts/tmp-ghl-pit-fix.mjs`
+- `scripts/tmp-apply-162.mjs`
+- `scripts/tmp-backfill-sample-threads.mjs`
+- `scripts/tmp-verify-live-letter.mjs`
+- `scripts/tmp-resend-bureau-packs.mjs`
+
+**Kept:**
+- `scripts/tmp-bland-prove.mjs` (untouched)
+- `scripts/tmp-letter-gauntlet.mjs` + `scripts/tmp-letter-gauntlet.test.mjs` (tests import)
+- `scripts/tmp-email-channel-prove.mjs` + `scripts/tmp-email-channel-prove.test.mjs` (tests import)
+
+**Routes:** no `ROUTES` / `ALLOWED_UNROUTED` change. Deleted files were standalone Netlify functions, not `api/` handlers.
+
+**Post-delete grep:** no code imports remain. Historical mentions stay in `docs/workflows/prove-all-channels.md` only.
+
+**Not touched:** bland prove, letter-gauntlet script body, email-channel prove script body. No `--prod`. No outbox drain. No live CRS. No `.env`.
+
+**Verify:** `node --test src/http/routes.test.mjs scripts/tmp-letter-gauntlet.test.mjs scripts/tmp-email-channel-prove.test.mjs` → **42 pass**, 0 fail, 0 skip.
 
 ### S-CC — Smash contract-chaser (2026-08-14)
 
