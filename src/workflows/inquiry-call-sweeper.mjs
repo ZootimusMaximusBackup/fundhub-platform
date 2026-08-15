@@ -7,11 +7,18 @@ import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { fireDueCalls } from "../inquiry-ops/call-scheduler.mjs";
 
-export async function handle({ db: database = db, step } = {}) {
-  const run = step?.run
-    ? (name, fn) => step.run(name, fn)
-    : (_n, fn) => fn();
-  return run("fire-due-inquiry-calls", () => fireDueCalls(database, {}));
+export async function handle({ db: database, step, event } = {}) {
+  // Soft-skip: cron wiring can arrive without a db or step. Never throw.
+  if (event !== undefined && (event === null || typeof event !== "object" || Array.isArray(event))) {
+    return { fired: [], count: 0, reason: "no_event" };
+  }
+  if (!database || typeof database.query !== "function") {
+    return { fired: [], count: 0, reason: "no_db" };
+  }
+  if (!step || typeof step.run !== "function") {
+    return { fired: [], count: 0, reason: "no_step" };
+  }
+  return step.run("fire-due-inquiry-calls", () => fireDueCalls(database, {}));
 }
 
 export const inquiryCallSweeper = inngest.createFunction(

@@ -49,11 +49,43 @@
 | S-S01 Smash S-01 new lead intake | Grok 4.5 high | s-01-new-lead-intake + tests | **done** |
 | S-N01 Smash N-01 cold nurture | Grok 4.5 high | n-01-cold-nurture + tests | **done** |
 | S-CC Smash contract-chaser | Grok 4.5 high | contract-chaser + tests | **done** |
+| S-VOICE Bland outbound voicemail | Grok 4.6 | bland-voice + call-scheduler | **claimed** |
 | S-TMP Delete unused tmp scripts/functions | Grok 4.5 high | leftover tmp netlify functions + unused tmp scripts | **done** |
+| S-ICS Smash inquiry-call-sweeper | Grok 4.5 high | inquiry-call-sweeper + tests | **done** |
 
 Do not `--prod`. Do not drain outbox. Do not commit unless Chris asks. Do not cross file fences.
 
 ## Manifests
+
+### S-ICS — Smash inquiry-call-sweeper (2026-08-15)
+
+**Status:** done  
+**Model:** Grok 4.5 high
+
+**What broke (pre-fix):**
+- Missing `db` or `step` still ran `fireDueCalls` (or used a default database) and could throw.
+- Junk `event` was ignored rather than fail-closed.
+- No smash tests, so a later register in `src/workflows/index.mjs` would not fail this unit.
+
+**Fixes:**
+- Missing / junk `db` → `{ fired: [], count: 0, reason: "no_db" }` (no throw).
+- Missing / junk `step` → `{ fired: [], count: 0, reason: "no_step" }` (no throw).
+- Junk `event` (`null` / string / number / array) → `{ fired: [], count: 0, reason: "no_event" }` (no throw). Cron with no event still runs.
+- Mocked `db` exercises `fireDueCalls` (due case with no phone → stamp fired, no live call). Duplicate pass stays zero.
+- Source grep: no `fetch`, no `CRS_ALLOW_LIVE`, no outbox drain / `dispatchDue`, no GHL, no `sendTemplated`.
+- Index grep: `inquiryCallSweeper` / `inquiry-call-sweeper` stay out of the functions array and are not imported.
+
+**Files touched:**
+- `src/workflows/inquiry-call-sweeper.mjs`
+- `src/workflows/inquiry-call-sweeper.test.mjs` (new)
+- `docs/workflows/gold-break-gauntlet.md` (board row + this manifest)
+
+**Not touched:** `call-scheduler.mjs`, bland-voice, messaging providers, Inngest registry. No `--prod`. `CRS_ALLOW_LIVE` stays 0. No outbox drain.
+
+**Verify:** `CRS_ALLOW_LIVE=0 node --test src/workflows/inquiry-call-sweeper.test.mjs` → **9 pass**. 0 fail, 0 skip.
+
+**Leftover:** sweeper stays unregistered on purpose. Real Bland place is inside `fireDueCalls` (parent-owned); this smash mocks the database so that path never hits the network.
+
 
 ### S-TMP — Delete unused tmp scripts/functions (2026-08-15)
 
