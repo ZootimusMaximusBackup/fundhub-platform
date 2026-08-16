@@ -2,14 +2,16 @@ import { test } from "node:test";
 import assert from "node:assert";
 import { sendTemplated } from "./messaging.mjs";
 
-// In-memory DB fake covering message_templates, messages, opt_outs, and the client
-// record sendTemplated reads merge-tag context from.
+// In-memory DB fake covering message_templates, messages, opt_outs, conversations,
+// and the client record sendTemplated reads merge-tag context from.
 function pgFake({ templates = [], optOuts = [], clients = [], openShift = null, failOn = null } = {}) {
   const messages = [];
+  const conversations = [];   // (client_id, channel) threads for Messaging inbox
   const events = [];          // staff_events, the telemetry seam's output
   const sql = [];             // every statement issued, so a test can assert one was NOT
   return {
     messages,
+    conversations,
     events,
     sql,
     optOuts,
@@ -43,8 +45,51 @@ function pgFake({ templates = [], optOuts = [], clients = [], openShift = null, 
         // the same event writes nothing and RETURNS no row.
         const dup = messages.some((m) => m.org_id === params[0] && m.provider_ref === params[5]);
         if (dup) return { rows: [] };
-        messages.push({ org_id: params[0], client_id: params[1], channel: params[2], template_key: params[3], rendered_body: params[4], provider_ref: params[5] });
-        return { rows: [{ id: "msg-" + messages.length }] };
+        let attachments = [];
+        if (params[8] != null) {
+          try { attachments = JSON.parse(params[8]); } catch { attachments = []; }
+        }
+        const created_at = new Date("2026-08-14T12:00:00.000Z");
+        const msg = {
+          id: "msg-" + (messages.length + 1),
+          org_id: params[0], client_id: params[1], channel: params[2],
+          template_key: params[3], rendered_body: params[4], provider_ref: params[5],
+          to_address: params[6], subject: params[7], attachments,
+          conversation_id: null, created_at
+        };
+        messages.push(msg);
+        return { rows: [{ id: msg.id, created_at }] };
+      }
+      // upsertConversation — one row per (client_id, channel); conflict refreshes pulse.
+      if (/INSERT INTO conversations/.test(sql)) {
+        const [orgId, clientId, channel, summary, lastPulseAt] = params;
+        let existing = conversations.find((c) => c.client_id === clientId && c.channel === channel);
+        if (existing) {
+          if (summary != null) existing.summary = summary;
+          if (lastPulseAt != null) {
+            existing.last_pulse_at = existing.last_pulse_at && existing.last_pulse_at > lastPulseAt
+              ? existing.last_pulse_at
+              : lastPulseAt;
+          }
+          return { rows: [existing] };
+        }
+        existing = {
+          id: "convo-" + (conversations.length + 1),
+          org_id: orgId, client_id: clientId, channel,
+          summary: summary ?? null, last_pulse_at: lastPulseAt ?? null
+        };
+        conversations.push(existing);
+        return { rows: [existing] };
+      }
+      // linkMessage — set conversation_id when org + client match the thread.
+      if (/UPDATE messages m[\s\S]*SET conversation_id/.test(sql)) {
+        const [messageId, conversationId] = params;
+        const msg = messages.find((m) => m.id === messageId);
+        const convo = conversations.find((c) => c.id === conversationId);
+        if (!msg || !convo) return { rows: [] };
+        if (convo.org_id !== msg.org_id || convo.client_id !== msg.client_id) return { rows: [] };
+        msg.conversation_id = conversationId;
+        return { rows: [{ id: msg.id }] };
       }
       return { rows: [] };
     }
@@ -68,6 +113,7 @@ test("sendTemplated: normal send queues a message with rendered body", async () 
   assert.equal(res.sent, true);
   assert.equal(db.messages.length, 1);
   assert.equal(db.messages[0].rendered_body, "Hi Alice, apply now!");
+  assert.ok(db.messages[0].conversation_id, "queued row must join a Messaging thread");
 });
 
 test("sendTemplated: opted-out contact is suppressed (not dispatched)", async () => {
@@ -303,4 +349,176 @@ test("the rendered body is never copied into the telemetry detail", async () => 
   await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS", staffId: STAFF, shiftId: SHIFT });
   const detail = JSON.stringify(db.events[0].detail);
   assert.ok(!/512|denied/.test(detail), `client-facing copy leaked into telemetry: ${detail}`);
+});
+
+// =============================================================================
+// ATTACHMENTS (B5 smash) — queue-time encode
+//
+// Empty [] still queues (non-pack mail). Pack "no PDF → no email" is U-02.
+// Bad files must be dropped: no throw, no 0-byte pack.pdf, no path bombs.
+// =============================================================================
+
+const PDF_B64 = Buffer.from("%PDF-1.4\n% smash\n").toString("base64");
+const emailTpl = (key, body = "Your file.") =>
+  ({ org_id: "org-1", template_key: key, body, subject: "Docs", compliance_passed: true });
+const EMAIL_BASE = { ...BASE, channel: "email", templateKey: "F-ATT-EMAIL" };
+
+test("attachments: [] still queues — ordinary non-pack mail", async () => {
+  const db = pgFake({ templates: [emailTpl("F-ATT-EMAIL")], clients: [client()] });
+  const res = await sendTemplated(db, { ...EMAIL_BASE, attachments: [] });
+  assert.equal(res.sent, true);
+  assert.equal(res.attachmentCount, 0);
+  assert.deepEqual(db.messages[0].attachments, []);
+});
+
+test("attachments: missing content is dropped — never a 0-byte pack.pdf", async () => {
+  const db = pgFake({ templates: [emailTpl("F-ATT-EMAIL")], clients: [client()] });
+  const res = await sendTemplated(db, {
+    ...EMAIL_BASE,
+    attachments: [
+      { filename: "pack.pdf" },
+      { filename: "pack.pdf", contentBase64: "" },
+      { filename: "pack.pdf", content: null },
+      { filename: "pack.pdf", contentBase64: "   " }
+    ]
+  });
+  assert.equal(res.sent, true, "non-pack queue still succeeds with junk dropped");
+  assert.equal(res.attachmentCount, 0);
+  assert.deepEqual(db.messages[0].attachments, []);
+  assert.ok(!JSON.stringify(db.messages[0].attachments).includes("pack.pdf"));
+});
+
+test("attachments: path traversal and huge names are sanitized", async () => {
+  const db = pgFake({ templates: [emailTpl("F-ATT-EMAIL")], clients: [client()] });
+  const huge = `${"A".repeat(500)}.pdf`;
+  const res = await sendTemplated(db, {
+    ...EMAIL_BASE,
+    attachments: [
+      { filename: "../../etc/passwd.pdf", contentBase64: PDF_B64 },
+      { filename: huge, contentBase64: PDF_B64 }
+    ]
+  });
+  assert.equal(res.sent, true);
+  assert.equal(res.attachmentCount, 2);
+  const names = db.messages[0].attachments.map((a) => a.filename);
+  assert.ok(!names.some((n) => n.includes("..") || n.includes("/")), names);
+  assert.equal(names[0], "passwd.pdf");
+  assert.ok(names[1].length <= 180, names[1].length);
+  assert.ok(names[1].endsWith(".pdf"));
+});
+
+test("attachments: non-PDF pretending to be pdf is dropped", async () => {
+  const db = pgFake({ templates: [emailTpl("F-ATT-EMAIL")], clients: [client()] });
+  const res = await sendTemplated(db, {
+    ...EMAIL_BASE,
+    attachments: [
+      { filename: "pack.pdf", contentBase64: Buffer.from("not a pdf at all").toString("base64") },
+      { filename: "real.pdf", contentBase64: PDF_B64 }
+    ]
+  });
+  assert.equal(res.attachmentCount, 1);
+  assert.equal(db.messages[0].attachments[0].filename, "real.pdf");
+  assert.equal(db.messages[0].attachments[0].contentType, "application/pdf");
+});
+
+test("attachments: never throws on garbage list entries", async () => {
+  const db = pgFake({ templates: [emailTpl("F-ATT-EMAIL")], clients: [client()] });
+  const res = await sendTemplated(db, {
+    ...EMAIL_BASE,
+    attachments: [null, undefined, "string", 42, { filename: "x.pdf", contentBase64: PDF_B64 }]
+  });
+  assert.equal(res.sent, true);
+  assert.equal(res.attachmentCount, 1);
+});
+
+// =============================================================================
+// MESSAGING INBOX THREADING — upsertConversation + linkMessage after INSERT
+//
+// P6: workflow outbound used to leave conversation_id NULL, so Messaging inbox
+// never listed packs that CCP already showed by client_id. Same seam as
+// comms.mjs threadMessage / compose.mjs — swallow thread failures, never lose
+// the queue row. Replay (DO NOTHING) must not emit a second thread write.
+// =============================================================================
+
+test("threading: queues a message AND sets conversation_id on a new (client, channel) thread", async () => {
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")], clients: [client()] });
+  const res = await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS" });
+  assert.equal(res.sent, true);
+  assert.equal(db.messages.length, 1);
+  assert.equal(db.conversations.length, 1);
+  assert.equal(db.conversations[0].client_id, "cl-1");
+  assert.equal(db.conversations[0].channel, "sms");
+  assert.equal(db.messages[0].conversation_id, db.conversations[0].id);
+});
+
+test("threading: second send on the same channel reuses the one thread", async () => {
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")], clients: [client()] });
+  await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS", eventId: "evt-a" });
+  await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS", eventId: "evt-b" });
+  assert.equal(db.messages.length, 2);
+  assert.equal(db.conversations.length, 1, "one (client, channel) thread only");
+  assert.equal(db.messages[0].conversation_id, db.conversations[0].id);
+  assert.equal(db.messages[1].conversation_id, db.conversations[0].id);
+});
+
+test("threading: email and sms are separate threads — channel is exact, no case fold", async () => {
+  const db = pgFake({
+    templates: [tpl("N-01-SMS", "Hey!"), emailTpl("F-07-EMAIL", "Funded.")],
+    clients: [client()]
+  });
+  await sendTemplated(db, { ...BASE, channel: "sms", templateKey: "N-01-SMS", eventId: "evt-sms" });
+  await sendTemplated(db, { ...BASE, channel: "email", templateKey: "F-07-EMAIL", eventId: "evt-email" });
+  assert.equal(db.conversations.length, 2);
+  const channels = db.conversations.map((c) => c.channel).sort();
+  assert.deepEqual(channels, ["email", "sms"]);
+});
+
+test("threading: DO NOTHING replay does not emit a second thread write", async () => {
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")], clients: [client()] });
+  const args = { ...BASE, templateKey: "N-01-SMS" };
+  await sendTemplated(db, args);
+  const upserts = db.sql.filter((s) => /INSERT INTO conversations/.test(s)).length;
+  const links = db.sql.filter((s) => /UPDATE messages m[\s\S]*SET conversation_id/.test(s)).length;
+  await sendTemplated(db, args);
+  assert.equal(db.messages.length, 1);
+  assert.equal(
+    db.sql.filter((s) => /INSERT INTO conversations/.test(s)).length,
+    upserts,
+    "replay must not upsert again"
+  );
+  assert.equal(
+    db.sql.filter((s) => /UPDATE messages m[\s\S]*SET conversation_id/.test(s)).length,
+    links,
+    "replay must not link again"
+  );
+});
+
+test("threading: upsert/link throw still returns sent:true and keeps the queue row", async () => {
+  const db = pgFake({
+    templates: [tpl("N-01-SMS", "Hey!")],
+    clients: [client()],
+    failOn: /INSERT INTO conversations/
+  });
+  const realErr = console.error;
+  const lines = [];
+  console.error = (...a) => lines.push(a.join(" "));
+  let res;
+  try {
+    res = await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS" });
+  } finally {
+    console.error = realErr;
+  }
+  assert.equal(res.sent, true, "thread failure must not fail the send");
+  assert.equal(db.messages.length, 1, "queue row must survive");
+  assert.equal(db.messages[0].conversation_id, null);
+  assert.ok(lines.some((l) => /conversation threading failed/.test(l)), JSON.stringify(lines));
+});
+
+test("threading: no clientId skips thread write (message still queues)", async () => {
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")] });
+  const res = await sendTemplated(db, { ...BASE, clientId: null, templateKey: "N-01-SMS" });
+  assert.equal(res.sent, true);
+  assert.equal(db.messages.length, 1);
+  assert.equal(db.conversations.length, 0);
+  assert.ok(!db.sql.some((s) => /INSERT INTO conversations/.test(s)));
 });

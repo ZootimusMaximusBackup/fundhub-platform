@@ -9,6 +9,11 @@ import {
   DEFAULT_MAIL_SERVICE_LEVEL,
   bureauMailAddress
 } from "../messaging/providers/mail-letter.mjs";
+import {
+  placeCall as blandPlaceCall,
+  resolveBureauDial,
+  INQUIRY_VOICE_PROVIDER
+} from "../messaging/providers/bland-voice.mjs";
 
 const DEFAULT_WAIT = Object.freeze({ portal: 1, mail: 3 });
 
@@ -190,14 +195,17 @@ export async function scheduleFromDelivery(db, {
 
 /**
  * Fire AI bureau calls for cases whose call_due_at has elapsed.
- * Writes kind=call attempts. Does not invent a new agent runtime — enqueues
- * via inquiry_log call_state + attempt row for the existing voice path.
+ * Places a Bland call to the bureau dispute line (inquiry-remover agents).
+ * Does not dial the client. Sweeper stays unregistered.
  */
 export async function fireDueCalls(db, {
   orgId,
   now = new Date(),
   staffId = null,
-  limit = 50
+  limit = 50,
+  placeCallImpl = blandPlaceCall,
+  env = process.env,
+  fetchImpl
 } = {}) {
   const params = [now.toISOString(), Math.min(Math.max(Number(limit) || 50, 1), 200)];
   let orgClause = "";
@@ -255,17 +263,48 @@ export async function fireDueCalls(db, {
       }
     }
 
+    const dial = resolveBureauDial(caseRow.selected_bureaus_raw, env);
+
+    let callStatus = "failed";
+    let callNote = dial.ok ? "bland_place_failed" : (dial.error || "unknown_bureau");
+    if (dial.ok) {
+      const placed = await placeCallImpl({
+        phone: dial.phone,
+        task: dial.task,
+        voicemailMessage: dial.voicemailMessage,
+        maxDuration: dial.maxDuration,
+        clientId: caseRow.client_id,
+        orgId: caseRow.org_id,
+        kind: dial.kind,
+        metadata: {
+          case_id: caseRow.id,
+          bureau: dial.code,
+          voice_provider: INQUIRY_VOICE_PROVIDER,
+          source: "fireDueCalls"
+        },
+        db,
+        fetchImpl,
+        env
+      });
+      if (placed?.status === "sent" && placed.providerMessageId) {
+        callStatus = "queued";
+        callNote = `bland:${placed.providerMessageId}`;
+      } else {
+        callNote = placed?.error || placed?.status || "bland_place_failed";
+      }
+    }
+
     const upd = await db.query(
       `UPDATE inquiry_removal_cases
           SET call_fired_at = $2::timestamptz,
-              ai_call_status = 'queued',
-              master_call_state = 'queued',
+              ai_call_status = $3,
+              master_call_state = $3,
               updated_at = now()
         WHERE id = $1
         RETURNING *`,
-      [caseRow.id, now.toISOString()]
+      [caseRow.id, now.toISOString(), callStatus]
     );
-    fired.push(upd.rows[0]);
+    fired.push({ ...upd.rows[0], place_note: callNote });
   }
   return { fired, count: fired.length };
 }

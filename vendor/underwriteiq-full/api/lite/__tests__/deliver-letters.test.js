@@ -10,16 +10,23 @@ const ldPath = require.resolve("../letter-delivery");
 let ghlResult;
 let deliverResult;
 let deliverCalledWith;
+let ghlCalled;
 
 function loadHandler() {
   delete require.cache[handlerPath];
   delete require.cache[ghlPath];
   delete require.cache[ldPath];
+  ghlCalled = false;
   require.cache[ghlPath] = {
     id: ghlPath,
     filename: ghlPath,
     loaded: true,
-    exports: { getGHLContact: async () => ghlResult }
+    exports: {
+      getGHLContact: async () => {
+        ghlCalled = true;
+        return ghlResult;
+      }
+    }
   };
   require.cache[ldPath] = {
     id: ldPath,
@@ -75,6 +82,7 @@ describe("deliver-letters handler", () => {
     };
     deliverResult = { ok: true, letters: { generated: 6, uploaded: 6 }, ghlUpdated: true };
     deliverCalledWith = null;
+    ghlCalled = false;
     delete process.env.DELIVER_LETTERS_SECRET;
     delete process.env.CONTEXT_FETCHER_SECRET;
   });
@@ -90,10 +98,15 @@ describe("deliver-letters handler", () => {
     assert.equal(res.statusCode, 405);
   });
 
-  it("400 when contactId missing", async () => {
+  it("empty body → 0 files (no invent, no outbound)", async () => {
     const res = makeRes();
     await loadHandler()(makeReq({}), res);
-    assert.equal(res.statusCode, 400);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.ok, true);
+    assert.equal(res.body.delivered, 0);
+    assert.equal(res.body.letters.generated, 0);
+    assert.equal(deliverCalledWith, null);
+    assert.equal(ghlCalled, false);
   });
 
   it("FAILS CLOSED (401) in production with no secret", async () => {
@@ -109,31 +122,68 @@ describe("deliver-letters handler", () => {
     }
   });
 
-  it("delivers repair letters and writes GHL (default = repair, all 3 bureaus)", async () => {
+  it("specs-only (contactId, no bureau data) → 0 letters, never calls deliverLetters", async () => {
     const res = makeRes();
-    await loadHandler()(makeReq({ contactId: "GrpVLpkbfK0SxVuSYWMT" }), res);
+    await loadHandler()(makeReq({ contactId: "GrpVLpkbfK0SxVuSYWMT", type: "repair" }), res);
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.ok, true);
-    assert.equal(res.body.type, "repair");
-    assert.equal(res.body.ghlUpdated, true);
-    // deliverLetters got a CRS repair documents package + the GHL-derived personal.
+    assert.equal(res.body.delivered, 0);
+    assert.equal(res.body.letters.generated, 0);
+    assert.equal(res.body.note, "specs_only_no_bureau_data");
+    assert.equal(deliverCalledWith, null);
+    assert.equal(ghlCalled, false);
+  });
+
+  it("bureau name filter alone is not credit data → 0 letters", async () => {
+    const res = makeRes();
+    await loadHandler()(
+      makeReq({ contactId: "c1", type: "funding", bureaus: ["experian", "equifax"] }),
+      res
+    );
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.delivered, 0);
+    assert.equal(deliverCalledWith, null);
+    assert.equal(ghlCalled, false);
+  });
+
+  it("with bureauData passes real bureaus into deliverLetters (no invent)", async () => {
+    const bureauData = {
+      experian: {
+        tradelines: [{ creditor: "Cap One", balance: 100, limit: 500 }],
+        inquiries: [],
+        personalInfo: {}
+      }
+    };
+    const res = makeRes();
+    await loadHandler()(
+      makeReq({ contactId: "Abc123_id", type: "repair", bureauData }),
+      res
+    );
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.ok, true);
     assert.ok(deliverCalledWith);
-    assert.equal(deliverCalledWith.contactId, "GrpVLpkbfK0SxVuSYWMT");
+    assert.equal(deliverCalledWith.contactId, "Abc123_id");
     assert.equal(deliverCalledWith.personal.name, "Chris S");
-    // address MUST be a string ("line, city, state zip") — an object crashes the
-    // pdf-lib letter generators (drawText needs a string).
     assert.equal(typeof deliverCalledWith.personal.address, "string");
     assert.match(deliverCalledWith.personal.address, /Gilbert, AZ 85233/);
     assert.equal(deliverCalledWith.crsDocuments.package, "repair");
     assert.ok(deliverCalledWith.crsDocuments.letters.length > 0);
-    // TransUnion must map to the "tu" suffix (bug #51) in the generated specs.
     assert.ok(deliverCalledWith.crsDocuments.letters.some(l => l.fieldKey.endsWith("__tu")));
+    assert.deepEqual(deliverCalledWith.bureaus, bureauData);
+    assert.equal(ghlCalled, true);
   });
 
-  it("502 when GHL lookup fails", async () => {
+  it("502 when GHL lookup fails (only when bureau data present)", async () => {
     ghlResult = { ok: false, error: "nope" };
     const res = makeRes();
-    await loadHandler()(makeReq({ contactId: "c1" }), res);
+    await loadHandler()(
+      makeReq({
+        contactId: "c1",
+        bureauData: { experian: { tradelines: [{ id: "1" }] } }
+      }),
+      res
+    );
     assert.equal(res.statusCode, 502);
+    assert.equal(deliverCalledWith, null);
   });
 });

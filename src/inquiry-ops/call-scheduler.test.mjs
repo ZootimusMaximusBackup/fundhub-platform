@@ -168,3 +168,81 @@ test("scheduleFromDelivery ignores second delivery (first wins)", async () => {
   assert.equal(res.scheduled, false);
   assert.equal(res.reason, "already_scheduled");
 });
+
+test("fireDueCalls places a Bland call to the bureau, not the client", async () => {
+  const { fireDueCalls } = await import("./call-scheduler.mjs");
+  const { BUREAU_DISPUTE_DEFAULTS } = await import("../messaging/providers/bland-voice.mjs");
+  const placed = [];
+  const updates = [];
+  const caseRow = {
+    id: "c-due",
+    org_id: "o1",
+    client_id: "cl1",
+    selected_bureaus_raw: "EX",
+    first_delivery_channel: "mail",
+    call_due_at: "2026-08-01T12:00:00.000Z",
+    case_status: "In Progress"
+  };
+  const db = {
+    async query(sql, params) {
+      const s = String(sql);
+      if (s.includes("FROM inquiry_removal_cases") && s.includes("call_due_at")) {
+        return { rows: [caseRow] };
+      }
+      if (s.includes("FROM inquiry_log")) return { rows: [] };
+      if (s.includes("SELECT phone FROM clients")) {
+        throw new Error("inquiry due calls must not dial the client");
+      }
+      if (s.includes("UPDATE inquiry_removal_cases")) {
+        updates.push(params);
+        return { rows: [{ ...caseRow, call_fired_at: params[1], ai_call_status: params[2] }] };
+      }
+      return { rows: [] };
+    }
+  };
+  const out = await fireDueCalls(db, {
+    orgId: "o1",
+    staffId: "staff-1",
+    now: new Date("2026-08-10T12:00:00.000Z"),
+    placeCallImpl: async (opts) => {
+      placed.push(opts);
+      return { status: "sent", providerMessageId: "call_vm_due", error: null };
+    }
+  });
+  assert.equal(out.count, 1);
+  assert.equal(placed.length, 1);
+  assert.equal(placed[0].phone, BUREAU_DISPUTE_DEFAULTS.EX);
+  assert.notEqual(placed[0].phone, "+16616180865");
+  assert.equal(placed[0].kind, "inquiry_bureau");
+  assert.ok(String(placed[0].task || "").length > 40);
+  assert.ok(String(placed[0].voicemailMessage || "").length > 10);
+  assert.equal(updates[0][2], "queued");
+});
+
+test("fireDueCalls stamps failed when the bureau is unknown", async () => {
+  const { fireDueCalls } = await import("./call-scheduler.mjs");
+  let placed = 0;
+  const db = {
+    async query(sql, params) {
+      const s = String(sql);
+      if (s.includes("FROM inquiry_removal_cases") && s.includes("call_due_at")) {
+        return { rows: [{ id: "c2", org_id: "o1", client_id: "cl2", selected_bureaus_raw: "NOPE" }] };
+      }
+      if (s.includes("FROM inquiry_log")) return { rows: [] };
+      if (s.includes("UPDATE inquiry_removal_cases")) {
+        return { rows: [{ id: "c2", ai_call_status: params[2], call_fired_at: params[1] }] };
+      }
+      return { rows: [] };
+    }
+  };
+  const out = await fireDueCalls(db, {
+    staffId: "staff-1",
+    placeCallImpl: async () => {
+      placed += 1;
+      return { status: "sent", providerMessageId: "nope" };
+    }
+  });
+  assert.equal(out.count, 1);
+  assert.equal(placed, 0);
+  assert.equal(out.fired[0].ai_call_status, "failed");
+});

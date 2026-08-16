@@ -1,0 +1,368 @@
+{
+  "at": "2026-08-13T07:32:31.723Z",
+  "commas": {
+    "http": 200,
+    "ok": true,
+    "webhook_http": 200,
+    "inner_http": 200,
+    "response_keys": [
+      "ok",
+      "status",
+      "queued",
+      "deduped",
+      "inboxId",
+      "paymentId",
+      "eventType",
+      "reason"
+    ],
+    "secret_len": 69,
+    "error": null
+  },
+  "apis": [
+    {
+      "p": "/api/read/closer-call?client_id=c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/conversations?client_id=c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/agent-context?client_id=c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/agents",
+      "status": 200,
+      "ok": true,
+      "err": null,
+      "n": 0
+    },
+    {
+      "p": "/api/read/agent-shadow-log?limit=5",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/workflows",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/message-templates",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/call-outcomes",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/lenders",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/lender-matches?client_id=c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/lender-observations",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/tradelines?client_id=c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/underwrite?client_id=c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/finance-os?client_id=c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/finance-command?days=30",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/money-map?client_id=c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/banking-surface?client_id=c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+      "status": 403,
+      "ok": false,
+      "err": "banking surface requires plaid configuration"
+    },
+    {
+      "p": "/api/read/transactions?client_id=c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/invoices",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/funding-rounds",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/entitlements",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/affiliates",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/partners",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/inquiries",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/company-activity",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/ai-bureau-config",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/proxy-sessions",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/failed-events",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/staff",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/payment-links",
+      "status": 400,
+      "ok": false,
+      "err": "client_id must be a uuid"
+    },
+    {
+      "p": "/api/tasks?client_id=c9ea0df6-46fb-4499-a480-ba5aeb41f3a0",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/shifts",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/journeys?key=client",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "/api/read/inbox",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "POST /api/read/company-brain",
+      "status": 502,
+      "ok": false,
+      "err": "embed_http_401:{\n  \"error\": {\n    \"message\": \"Your authentication token is not from a valid issuer.\",\n    \"type\": \"invalid_request_error\",\n    \"code\": \"invalid_issuer\",\n    \"param\": null\n  },\n  \"status\": 401\n}"
+    },
+    {
+      "p": "POST /api/read/finance-ask",
+      "status": 200,
+      "ok": true,
+      "err": null
+    },
+    {
+      "p": "POST /api/contracts",
+      "status": 200,
+      "ok": true,
+      "err": null
+    }
+  ],
+  "emits": [
+    {
+      "name": "booking.cancelled",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "payment.expired",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "payment.canceled",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "payment.refunded",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "payment.disputed",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "inquiry.gate.clear",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "round.closeout",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "commission.earned",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "invoice.paid",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "repair.docs.complete",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "repair.analysis.complete",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "diy.package.ready",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    },
+    {
+      "name": "message.queued",
+      "ok": true,
+      "inngest": true,
+      "error": null
+    }
+  ],
+  "extras": {
+    "affiliate_brain": {
+      "status": 401,
+      "ok": false,
+      "err": "unauthorized"
+    }
+  },
+  "gaps": [],
+  "summary": {
+    "commas_ok": true,
+    "commas_webhook_http": {
+      "http": 200,
+      "ok": true,
+      "webhook_http": 200,
+      "inner_http": 200,
+      "response_keys": [
+        "ok",
+        "status",
+        "queued",
+        "deduped",
+        "inboxId",
+        "paymentId",
+        "eventType",
+        "reason"
+      ],
+      "secret_len": 69,
+      "error": null
+    },
+    "apis_200": 34,
+    "apis_fail": [
+      "403 /api/read/banking-surface?client_id=c9ea0df6-46fb-4499-a480-ba5aeb41f3a0 banking surface requires plaid configuration",
+      "400 /api/payment-links client_id must be a uuid",
+      "502 POST /api/read/company-brain embed_http_401:{\n  \"error\": {\n    \"message\": \"Your authentication token is not from a valid issuer.\",\n    \"type\": \"invalid_request_error\",\n    \"code\": \"invalid_issuer\",\n    \"param\": null\n  },\n  \"status\": 401\n}"
+    ],
+    "agents_n": 0,
+    "emits": "13/13",
+    "affiliate_brain": {
+      "status": 401,
+      "ok": false,
+      "err": "unauthorized"
+    }
+  }
+}

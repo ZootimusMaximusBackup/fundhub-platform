@@ -123,8 +123,8 @@ test("sales-floor loads for sales_manager and shell bounces a closer home", asyn
   await expect(page.getByRole("heading", { name: "Today's recordings" })).toBeVisible();
   await expect(page.locator("text=Google Drive is not connected yet")).toBeVisible();
 
-  // Closers are not on the sales-floor allow list — shell.js replaces them
-  // to their home before the page (or its API 403 banner) can paint.
+  // Closers are not on the sales-floor allow list. shell.js HOME.closer is
+  // /dashboard.html (same as demo-roster). Bounce there, not /app/closer-dashboard.html.
   const errors = await openScreen(page, "/app/sales-floor.html", CLOSER, salesHandlers({ floorStatus: 403 }));
   await expect(page).toHaveURL(/dashboard\.html/);
   expect(errors).toEqual([]);

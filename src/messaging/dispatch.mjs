@@ -501,7 +501,11 @@ export async function dispatchOne(db, message, options = {}) {
       subject: await subjectFor(db, message),
       body: message.rendered_body,
       providerRef: message.provider_ref,
-      attachments: message.attachments || null
+      // options.attachments lets a caller override what's on the row; message.attachments
+      // is what claimDue()/claimOne() read off messages.attachments (169_message_attachments.sql
+      // migration note: nullable, so this can be a real array, [], or null from the DB —
+      // normalize to [] so every provider always receives an array, never null).
+      attachments: options.attachments || message.attachments || []
     }, { fetchImpl, timeoutMs, signal, env });
 
     // ---- 4. Record ---------------------------------------------------------

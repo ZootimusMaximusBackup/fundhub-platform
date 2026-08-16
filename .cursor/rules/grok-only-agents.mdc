@@ -1,0 +1,14 @@
+---
+description: Subagents use Grok only. Design work follows CLAUDE.md model rule.
+alwaysApply: true
+---
+
+# Model law (owner-set 2026-08-14)
+
+Chris picks the family. The agent picks Grok strength and speed.
+
+- **All subagents / parallel workflows: Grok only.** Never Composer. Never GPT.
+- **Grok 4.6 extra-high** — expensive if wrong: QR, dispute letters, report look, anything that must match gold.
+- **Grok 4.5 high** — faster mechanical: wiring, extracts, tests, copy-paste ports.
+- **Design work** (typeface, page chrome, “looks exactly like gold”): follow **CLAUDE.md §1** (Haiku / Sonnet / Opus). Do not run design on Grok. If Claude is not in the subagent picker, do not swap in Grok — leave design in a Claude session or this chat after saying so.
+- Speak to Chris as “Grok 4.6” / “Grok 4.5” / “Claude rule”. Do not dump slug names.

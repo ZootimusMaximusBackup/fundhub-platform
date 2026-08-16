@@ -24,35 +24,78 @@ function bureauAbbr(bureau) {
   return BUREAU_ABBR[String(bureau).toLowerCase()] || String(bureau).slice(0, 2).toLowerCase();
 }
 
+const FUNDING_OUTCOMES = new Set([
+  "FULL_FUNDING",
+  "PREMIUM_STACK",
+  "FUNDING_PLUS_REPAIR"
+]);
+
+function holdPackage(outcome) {
+  return {
+    package: "hold",
+    letters: [],
+    summaryDocuments: [
+      {
+        type: "hold_notice",
+        description: "Application hold notification",
+        fieldKey: null
+      },
+      {
+        type: "operator_checklist",
+        description: "Internal review checklist",
+        fieldKey: null
+      }
+    ],
+    summary:
+      outcome === "FRAUD_HOLD"
+        ? "Analysis suspended due to identity verification requirements."
+        : "Application requires manual review. No documents generated."
+  };
+}
+
+/** Coerce normalized CRS bag so null / holes never throw. */
+function safeNormalized(normalized) {
+  if (!normalized || typeof normalized !== "object") {
+    return { meta: { availableBureaus: [] }, inquiries: [] };
+  }
+  const meta =
+    normalized.meta && typeof normalized.meta === "object" && !Array.isArray(normalized.meta)
+      ? normalized.meta
+      : {};
+  const availableBureaus = Array.isArray(meta.availableBureaus) ? meta.availableBureaus : [];
+  const inquiries = Array.isArray(normalized.inquiries) ? normalized.inquiries : [];
+  return {
+    ...normalized,
+    meta: { ...meta, availableBureaus },
+    inquiries
+  };
+}
+
 /**
  * buildDocuments(outcome, findings, normalized, consumerSignals)
  *
- * @returns {{ package, letters[], summary }}
+ * Package matrix (fail closed):
+ *   MANUAL_REVIEW / FRAUD_HOLD / unknown / null → hold (no funding letters)
+ *   REPAIR_ONLY → repair (not the four funding analysis docs as primary)
+ *   FULL_FUNDING / PREMIUM_STACK / FUNDING_PLUS_REPAIR → funding
+ *
+ * Null normalized / empty findings never throw.
+ *
+ * @returns {{ package, letters[], summaryDocuments[], summary }}
  */
 function buildDocuments(outcome, findings, normalized, consumerSignals) {
-  const availableBureaus = normalized.meta.availableBureaus || [];
+  // findings is reserved for callers; empty / null must not throw
+  void findings;
+
+  const norm = safeNormalized(normalized);
+  const availableBureaus = norm.meta.availableBureaus;
+  const signals =
+    consumerSignals && typeof consumerSignals === "object" && !Array.isArray(consumerSignals)
+      ? consumerSignals
+      : {};
 
   if (outcome === "FRAUD_HOLD" || outcome === "MANUAL_REVIEW") {
-    const summaryDocs = [];
-    summaryDocs.push({
-      type: "hold_notice",
-      description: "Application hold notification",
-      fieldKey: null
-    });
-    summaryDocs.push({
-      type: "operator_checklist",
-      description: "Internal review checklist",
-      fieldKey: null
-    });
-    return {
-      package: "hold",
-      letters: [],
-      summaryDocuments: summaryDocs,
-      summary:
-        outcome === "FRAUD_HOLD"
-          ? "Analysis suspended due to identity verification requirements."
-          : "Application requires manual review. No documents generated."
-    };
+    return holdPackage(outcome);
   }
 
   if (outcome === "REPAIR_ONLY") {
@@ -105,12 +148,16 @@ function buildDocuments(outcome, findings, normalized, consumerSignals) {
     };
   }
 
-  // FULL_FUNDING, FUNDING_PLUS_REPAIR, PREMIUM_STACK → funding package
+  // Only the three funding tiers ship a funding package. Unknown / null → hold.
+  if (!FUNDING_OUTCOMES.has(outcome)) {
+    return holdPackage(outcome);
+  }
+
   const letters = [];
 
   // Inquiry removal letters (1 per bureau with inquiries)
   for (const bureau of availableBureaus) {
-    const hasInquiries = normalized.inquiries.some(i => i.source === bureau);
+    const hasInquiries = norm.inquiries.some(i => i && i.source === bureau);
     if (hasInquiries) {
       letters.push({
         type: "inquiry_removal",
@@ -134,7 +181,7 @@ function buildDocuments(outcome, findings, normalized, consumerSignals) {
   // FUNDING_PLUS_REPAIR: also generate dispute letter specs for dirty bureaus
   // (bureaus with negatives get Round 1 bundled dispute letters alongside funding docs)
   if (outcome === "FUNDING_PLUS_REPAIR") {
-    const bureauNegatives = consumerSignals?.bureauNegatives || {};
+    const bureauNegatives = signals.bureauNegatives || {};
     for (const bureau of availableBureaus) {
       const bureauInfo = bureauNegatives[bureau];
       if (bureauInfo && !bureauInfo.clean) {
@@ -160,7 +207,7 @@ function buildDocuments(outcome, findings, normalized, consumerSignals) {
     description: "Internal funding workflow checklist",
     fieldKey: null
   });
-  if (consumerSignals?.tradelines?.thinFile || consumerSignals?.tradelines?.auDominance > 0.6) {
+  if (signals.tradelines?.thinFile || signals.tradelines?.auDominance > 0.6) {
     summaryDocs.push({
       type: "business_prep_summary",
       description: "Business credit preparation guide",

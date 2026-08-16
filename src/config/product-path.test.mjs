@@ -17,18 +17,72 @@ function fakeDb(outcomeTier, counter = {}) {
   };
 }
 
-test("isFundingPath: the three funding tiers only", () => {
-  assert.equal(isFundingPath("FUNDING_PLUS_REPAIR"), true);
+// Matrix (exact CRS strings only — no trim, no case-fold, no aliases):
+//   tier                  isFundingPath  isRepairOnlyPath
+//   FULL_FUNDING          true           false
+//   FUNDING_PLUS_REPAIR   true           false
+//   PREMIUM_STACK         true           false
+//   REPAIR_ONLY           false          true
+//   MANUAL_REVIEW         false          false
+//   FRAUD_HOLD            false          false
+//   null / undefined / "" false          false
+//   typo / lower / spaces false          false
+
+test("isFundingPath: FULL_FUNDING, FUNDING_PLUS_REPAIR, PREMIUM_STACK only", () => {
   assert.equal(isFundingPath("FULL_FUNDING"), true);
+  assert.equal(isFundingPath("FUNDING_PLUS_REPAIR"), true);
   assert.equal(isFundingPath("PREMIUM_STACK"), true);
-  assert.equal(isFundingPath("REPAIR_ONLY"), false);
+});
+
+test("isFundingPath: MANUAL_REVIEW is not funding (review silence)", () => {
   assert.equal(isFundingPath("MANUAL_REVIEW"), false);
 });
 
-test("isFundingPath / isRepairOnlyPath: null and unrecognized fail closed", () => {
-  for (const bad of [null, undefined, "", "NOT_A_TIER"]) {
+test("isFundingPath: REPAIR_ONLY and FRAUD_HOLD are not funding", () => {
+  assert.equal(isFundingPath("REPAIR_ONLY"), false);
+  assert.equal(isFundingPath("FRAUD_HOLD"), false);
+});
+
+test("isRepairOnlyPath: REPAIR_ONLY only", () => {
+  assert.equal(isRepairOnlyPath("REPAIR_ONLY"), true);
+  assert.equal(isRepairOnlyPath("FULL_FUNDING"), false);
+  assert.equal(isRepairOnlyPath("FUNDING_PLUS_REPAIR"), false);
+  assert.equal(isRepairOnlyPath("PREMIUM_STACK"), false);
+  assert.equal(isRepairOnlyPath("MANUAL_REVIEW"), false);
+  assert.equal(isRepairOnlyPath("FRAUD_HOLD"), false);
+});
+
+test("isFundingPath / isRepairOnlyPath: null, undefined, empty string fail closed", () => {
+  for (const bad of [null, undefined, ""]) {
+    assert.equal(isFundingPath(bad), false, `isFundingPath(${JSON.stringify(bad)})`);
+    assert.equal(isRepairOnlyPath(bad), false, `isRepairOnlyPath(${JSON.stringify(bad)})`);
+  }
+});
+
+test("isFundingPath / isRepairOnlyPath: unknown tier names fail closed", () => {
+  for (const bad of ["NOT_A_TIER", "FUNDING", "REVIEW", "DENIED"]) {
     assert.equal(isFundingPath(bad), false, `isFundingPath(${bad})`);
     assert.equal(isRepairOnlyPath(bad), false, `isRepairOnlyPath(${bad})`);
+  }
+});
+
+test("typos / lowercase / extra spaces: exact match only — no normalize", () => {
+  // Documented behavior: helpers do not trim or case-fold. Wrong shape ≠ a known tier.
+  const noisy = [
+    "full_funding",
+    "Full_Funding",
+    "FULL_FUNDING ",
+    " FULL_FUNDING",
+    "FULL FUNDING",
+    "repair_only",
+    "REPAIR_ONLY ",
+    " manual_review",
+    "MANUAL_REVIEW\n",
+    "PREMIUM_STACK\t",
+  ];
+  for (const bad of noisy) {
+    assert.equal(isFundingPath(bad), false, `isFundingPath(${JSON.stringify(bad)})`);
+    assert.equal(isRepairOnlyPath(bad), false, `isRepairOnlyPath(${JSON.stringify(bad)})`);
   }
 });
 
@@ -65,4 +119,11 @@ test("resolveOutcomeTier: falls back to the column when the payload has no tier"
 
 test("resolveOutcomeTier: null when neither payload nor column has a tier", async () => {
   assert.equal(await resolveOutcomeTier(fakeDb(null), "cl-1", {}), null);
+});
+
+test("resolveOutcomeTier: MANUAL_REVIEW from payload is not funding when helpers run", async () => {
+  const tier = await resolveOutcomeTier(fakeDb("FULL_FUNDING"), "cl-1", { outcomeTier: "MANUAL_REVIEW" });
+  assert.equal(tier, "MANUAL_REVIEW");
+  assert.equal(isFundingPath(tier), false);
+  assert.equal(isRepairOnlyPath(tier), false);
 });

@@ -132,42 +132,160 @@ export const UPSTREAM = Object.freeze({
  * ./report.mjs flags it as such whenever no figure was computed, so no screen
  * can print the null as $0, NaN, or blank.
  */
-export const computeUnderwrite = underwriter.computeUnderwrite;
+/** Safe empty underwrite — used when the vendored engine throws or gets a
+ *  non-object result. utilization_pct stays null (never 0). No lender list is
+ *  invented. Charts that suppress on missing data stay honest. */
+const SAFE_EMPTY_UNDERWRITE = Object.freeze({
+  fundable: false,
+  primary_bureau: "experian",
+  metrics: Object.freeze({
+    score: 0,
+    utilization_pct: null,
+    negative_accounts: 0,
+    late_payment_events: 0,
+    inquiries: Object.freeze({ ex: 0, eq: 0, tu: 0, total: 0 })
+  }),
+  per_bureau: Object.freeze({
+    experian: Object.freeze({ available: false, score: 0, util: null, tradelines: Object.freeze([]) }),
+    equifax: Object.freeze({ available: false, score: 0, util: null, tradelines: Object.freeze([]) }),
+    transunion: Object.freeze({ available: false, score: 0, util: null, tradelines: Object.freeze([]) })
+  }),
+  personal: Object.freeze({
+    highest_revolving_limit: 0,
+    highest_installment_amount: 0,
+    can_card_stack: false,
+    can_loan_stack: false,
+    can_dual_stack: false,
+    card_funding: 0,
+    loan_funding: 0,
+    total_personal_funding: 0
+  }),
+  business: Object.freeze({
+    business_age_months: null,
+    can_business_fund: false,
+    business_multiplier: 0,
+    business_funding: 0
+  }),
+  totals: Object.freeze({
+    total_personal_funding: 0,
+    total_business_funding: 0,
+    total_combined_funding: 0
+  }),
+  optimization: Object.freeze({
+    needs_util_reduction: false,
+    target_util_pct: null,
+    needs_new_primary_revolving: true,
+    needs_inquiry_cleanup: false,
+    needs_negative_cleanup: false,
+    needs_file_buildout: true,
+    thin_file: true,
+    file_all_negative: false
+  }),
+  lite_banner_funding: null,
+  /** Never invent a lender shortlist when CRS data was bad or missing. */
+  lenders: Object.freeze([])
+});
+
+const SAFE_EMPTY_BUREAU = Object.freeze({
+  available: false,
+  score: null,
+  utilization_pct: null,
+  inquiries: null,
+  negatives: null,
+  late_payment_events: null,
+  names: Object.freeze([]),
+  addresses: Object.freeze([]),
+  employers: Object.freeze([]),
+  tradelines: Object.freeze([])
+});
+
+/** Fallback suggestion when uw is missing — no utilization / lender claims. */
+const SAFE_EMPTY_SUGGESTIONS = Object.freeze([
+  "You're close to approval. A few targeted improvements will push you into approval range."
+]);
 
 /**
- * normalizeBureau(raw) — one bureau's data into the engine's fixed shape.
- * Returns `{ available: false }` plus all-null measures and empty arrays for a
- * missing or non-object bureau. `available: true` means A BUREAU OBJECT WAS
- * SUPPLIED — not that any field inside it is populated.
+ * computeUnderwrite — never throws. Hostile or corrupt CRS shapes (throwing
+ * getters, broken tradelines) return SAFE_EMPTY_UNDERWRITE instead of crashing
+ * the deliverables path.
  */
-export const normalizeBureau = underwriter.normalizeBureau;
+export function computeUnderwrite(bureaus, businessAgeMonthsRaw) {
+  try {
+    const result = underwriter.computeUnderwrite(bureaus, businessAgeMonthsRaw);
+    if (!result || typeof result !== "object") return SAFE_EMPTY_UNDERWRITE;
+
+    // Charts suppress on missing util — never ship NaN/Infinity as a measured %.
+    const util = result.metrics?.utilization_pct;
+    if (util != null && !Number.isFinite(Number(util))) {
+      return {
+        ...result,
+        metrics: { ...result.metrics, utilization_pct: null }
+      };
+    }
+
+    // Vendor does not emit lenders. If a bad shape somehow stamped a non-array
+    // "lender list", strip it — never invent names for unlock_ladder.
+    if (Object.prototype.hasOwnProperty.call(result, "lenders") && !Array.isArray(result.lenders)) {
+      return { ...result, lenders: [] };
+    }
+    return result;
+  } catch {
+    return SAFE_EMPTY_UNDERWRITE;
+  }
+}
 
 /**
- * getNumberField(fields, key) — read one numeric value out of a form-fields bag,
- * tolerating the `{ key: [value] }` shape multipart parsers produce. Returns null
- * for absent, non-numeric or non-finite. Used here to read business age.
+ * normalizeBureau — never throws. Missing / hostile bureau → unavailable empty.
  */
-export const getNumberField = underwriter.getNumberField;
+export function normalizeBureau(raw) {
+  try {
+    const b = underwriter.normalizeBureau(raw);
+    if (!b || typeof b !== "object") return { ...SAFE_EMPTY_BUREAU, names: [], addresses: [], employers: [], tradelines: [] };
+    // NaN / non-finite utilization must not become a chartable number.
+    const util = b.utilization_pct;
+    if (util != null && !Number.isFinite(Number(util))) {
+      return { ...b, utilization_pct: null };
+    }
+    return b;
+  } catch {
+    return { ...SAFE_EMPTY_BUREAU, names: [], addresses: [], employers: [], tradelines: [] };
+  }
+}
 
 /**
- * buildSuggestions(uw, user = {}) — the engine's own English sentences.
- *
- * @param {object} uw  a computeUnderwrite return value
- * @param {object} [user]  { hasLLC, llcAgeMonths }
- * @returns {string[]} never empty — it has a fallback line
- *
- * ⚠️ `user` DEFAULTS ARE NOT MEASUREMENTS. Omitted, `hasLLC` is false and
- * `llcAgeMonths` is 0, and the LLC branch always emits a sentence on that basis.
- * fundhub stores no LLC field at all, so that sentence would rest entirely on a
- * default. ./report.mjs marks it accordingly rather than letting it read as a
- * finding about the client.
+ * getNumberField — never throws. Absent / hostile → null.
  */
-export const buildSuggestions = suggestions.buildSuggestions;
+export function getNumberField(fields, key) {
+  try {
+    return underwriter.getNumberField(fields, key);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * buildSuggestions — never throws. null/undefined uw → safe fallback line only
+ * (no utilization or lender-list claims invented from missing data).
+ */
+export function buildSuggestions(uw, user = {}) {
+  try {
+    if (uw == null || typeof uw !== "object") {
+      return [...SAFE_EMPTY_SUGGESTIONS];
+    }
+    const out = suggestions.buildSuggestions(uw, user);
+    return Array.isArray(out) && out.length > 0 ? out : [...SAFE_EMPTY_SUGGESTIONS];
+  } catch {
+    return [...SAFE_EMPTY_SUGGESTIONS];
+  }
+}
+
+export { SAFE_EMPTY_UNDERWRITE };
 
 export default {
   UPSTREAM,
   computeUnderwrite,
   normalizeBureau,
   getNumberField,
-  buildSuggestions
+  buildSuggestions,
+  SAFE_EMPTY_UNDERWRITE
 };

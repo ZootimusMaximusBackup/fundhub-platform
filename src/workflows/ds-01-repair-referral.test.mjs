@@ -1,7 +1,25 @@
 import { test } from "node:test";
 import assert from "node:assert";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { handle, isRepairReferral, EMAIL_TEMPLATE_KEY, SMS_TEMPLATE_KEY } from "./ds-01-repair-referral.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
+
+const SRC = fileURLToPath(new URL("./ds-01-repair-referral.mjs", import.meta.url));
+
+async function withFetchTrap(fn) {
+  const calls = [];
+  const prior = globalThis.fetch;
+  globalThis.fetch = async (...args) => {
+    calls.push(args);
+    throw new Error(`DS-01 must not POST via fetch (${String(args[0])})`);
+  };
+  try {
+    return await fn({ calls });
+  } finally {
+    globalThis.fetch = prior;
+  }
+}
 
 const withTemplates = () => [
   { org_id: "org-1", template_key: EMAIL_TEMPLATE_KEY, channel: "email", body: "repair referral email", compliance_passed: true },
@@ -101,4 +119,101 @@ test("duplicate delivery: replaying the same event does not double-send", async 
   await handle({ event, db, step: fakeStep() });
   await handle({ event, db, step: fakeStep() });
   assert.equal(db.messages.length, 2);
+});
+
+// --- B29 smash: missing client / funding lane / null event / no Vercel / no drain ---
+
+test("smash: Funding Didn't Buy declineReason is never a repair referral", () => {
+  assert.equal(
+    isRepairReferral(referral({ declineReason: "Funding Didn't Buy" })),
+    false,
+    "funding-lane decline must not become a partner referral"
+  );
+  assert.equal(isRepairReferral(referral({ reason: "funding_didnt_buy" })), false);
+});
+
+test("smash: missing client does not throw, does not send, does not fetch", async () => {
+  await withFetchTrap(async ({ calls }) => {
+    const db = pgFake({ clients: [], templates: withTemplates() });
+    const res = await handle({
+      event: ev("call.completed", referral(), { clientId: null }),
+      db,
+      step: fakeStep()
+    });
+    assert.equal(res.done, false);
+    assert.equal(res.reason, "no_client");
+    assert.equal(db.messages.length, 0);
+    assert.equal(db.tasks.length, 0);
+    assert.equal(calls.length, 0);
+  });
+});
+
+test("smash: null event does not throw", async () => {
+  await withFetchTrap(async ({ calls }) => {
+    const db = pgFake({ clients: client(), templates: withTemplates() });
+    const res = await handle({ event: null, db, step: fakeStep() });
+    assert.equal(res.done, false);
+    assert.equal(res.reason, "no_event");
+    assert.equal(db.messages.length, 0);
+    assert.equal(calls.length, 0);
+  });
+});
+
+test("smash: funding-path client (all funding tiers) never sends or tags as repair referral", async () => {
+  await withFetchTrap(async ({ calls }) => {
+    for (const tier of ["FULL_FUNDING", "FUNDING_PLUS_REPAIR", "PREMIUM_STACK"]) {
+      const db = pgFake({ clients: client({ outcome_tier: tier }), templates: withTemplates() });
+      const res = await handle({
+        event: ev("call.completed", referral(), { clientId: "cl-1" }),
+        db,
+        step: fakeStep()
+      });
+      assert.equal(res.done, false, tier);
+      assert.equal(res.reason, `blocked_funding_route:${tier}`, tier);
+      assert.equal(db.messages.length, 0, tier);
+      assert.ok(!(db.clients[0].tags || []).includes("client:repair-referral"), tier);
+      assert.equal(db.clients[0].custom_fields.product_path, undefined, tier);
+    }
+    assert.equal(calls.length, 0);
+  });
+});
+
+test("smash: Funding Didn't Buy payload reaches handle and sends nothing", async () => {
+  await withFetchTrap(async ({ calls }) => {
+    const db = pgFake({ clients: client(), templates: withTemplates() });
+    const res = await handle({
+      event: ev("call.completed", referral({ declineReason: "Funding Didn't Buy" }), { clientId: "cl-1" }),
+      db,
+      step: fakeStep()
+    });
+    assert.equal(res.done, false);
+    assert.equal(res.reason, "not_repair_referral");
+    assert.equal(db.messages.length, 0);
+    assert.equal(calls.length, 0);
+  });
+});
+
+test("smash: duplicate replay does not double-send, fetch, or drain outbox", async () => {
+  await withFetchTrap(async ({ calls }) => {
+    const db = pgFake({ clients: client(), templates: withTemplates() });
+    const event = ev("call.completed", referral(), { id: "evt-dup-ds01-smash", clientId: "cl-1" });
+    const first = await handle({ event, db, step: fakeStep() });
+    const second = await handle({ event, db, step: fakeStep() });
+    assert.equal(first.done, true);
+    assert.equal(second.done, true);
+    assert.equal(db.messages.length, 2, "queued once per channel; replay must not double");
+    // sendTemplated only inserts rows — DS-01 never dispatches / drains (source + fetch fence).
+    assert.equal(calls.length, 0);
+  });
+});
+
+test("smash: source must not POST Vercel or drain the outbox", () => {
+  const code = readFileSync(SRC, "utf8");
+  assert.ok(code.includes("isRepairReferral"), "canary: DS-01 source was actually read");
+  assert.doesNotMatch(code, /vercel\.app/i);
+  assert.doesNotMatch(code, /\bfetch\s*\(/);
+  assert.doesNotMatch(code, /\bfetchImpl\b/);
+  assert.doesNotMatch(code, /\bdispatch\b/);
+  assert.doesNotMatch(code, /\bdrainOutbox\b/);
+  assert.doesNotMatch(code, /\bmessage-dispatch/);
 });

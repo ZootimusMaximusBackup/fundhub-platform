@@ -43,6 +43,53 @@ function getCTAConfig(outcome) {
   };
 }
 
+function emptyLenderMatches() {
+  return { availableNow: [], afterOptimization: [], totalMatched: 0 };
+}
+
+function hasScoreData(consumerSignals) {
+  const scores = consumerSignals?.scores;
+  return scores != null && typeof scores === "object";
+}
+
+/** null = skip the lender-match doc (missing scores or matchLenders threw). */
+function safeMatchLenders(consumerSignals, businessSignals, outcome) {
+  if (!hasScoreData(consumerSignals)) {
+    logError("generate-deliverables: lender-match skipped", {
+      reason: "missing_scores"
+    });
+    return null;
+  }
+  try {
+    return matchLenders(consumerSignals, businessSignals, outcome);
+  } catch (err) {
+    logError("generate-deliverables: lender-match skipped", {
+      reason: "match_threw",
+      error: err.message
+    });
+    return null;
+  }
+}
+
+/** null = a violation check threw — skip that furnisher letter. */
+function collectViolations(tradelines) {
+  const all = [];
+  for (const tl of tradelines || []) {
+    try {
+      const result = detectViolations(tl);
+      if (Array.isArray(result?.violations)) {
+        all.push(...result.violations);
+      }
+    } catch (err) {
+      logError("generate-deliverables: detectViolations failed", {
+        error: err.message
+      });
+      return null;
+    }
+  }
+  return all;
+}
+
 /**
  * Build the structured data payload that gets sent to Claude as context.
  */
@@ -55,22 +102,22 @@ function buildEngineDataPayload(crsResult, personal, lenderMatches) {
     projectedPreapproval,
     suggestions,
     normalized
-  } = crsResult;
+  } = crsResult || {};
 
   return JSON.stringify(
     {
       client: {
-        name: personal.name,
-        address: personal.address
+        name: personal?.name,
+        address: personal?.address
       },
       outcome,
-      scores: consumerSignals.scores,
-      utilization: consumerSignals.utilization,
-      tradelines: normalized.tradelines,
-      auImpact: consumerSignals.auImpact,
-      bureauNegatives: consumerSignals.bureauNegatives,
-      inquiries: normalized.inquiries,
-      personalInfo: normalized.identity,
+      scores: consumerSignals?.scores ?? null,
+      utilization: consumerSignals?.utilization ?? null,
+      tradelines: normalized?.tradelines ?? [],
+      auImpact: consumerSignals?.auImpact ?? null,
+      bureauNegatives: consumerSignals?.bureauNegatives ?? null,
+      inquiries: normalized?.inquiries ?? [],
+      personalInfo: normalized?.identity ?? null,
       preapprovals,
       projectedPreapproval,
       findings: suggestions?.fullSuggestions || [],
@@ -84,15 +131,39 @@ function buildEngineDataPayload(crsResult, personal, lenderMatches) {
 }
 
 /**
- * Safe Claude call — returns null on failure instead of throwing
+ * Drop empty replies and fenced JSON. Render-pdf owns JSON→nodes.
+ * Storing a ```json blob here would ship it as the PDF body.
  */
+function usableClaudeContent(text) {
+  if (typeof text !== "string") return null;
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  if (/```json/i.test(trimmed)) return null;
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    try {
+      JSON.parse(trimmed);
+      return null;
+    } catch {
+      // not JSON — keep as markdown
+    }
+  }
+  return trimmed;
+}
+
 async function safeCallClaude(opts, docType) {
   try {
     const result = await callClaude(opts);
+    const usable = usableClaudeContent(result);
+    if (!usable) {
+      logError(`generate-deliverables: ${docType} skipped`, {
+        reason: "empty_or_json_fence"
+      });
+      return null;
+    }
     logInfo(`generate-deliverables: ${docType} generated`, {
-      length: result.length
+      length: usable.length
     });
-    return result;
+    return usable;
   } catch (err) {
     logError(`generate-deliverables: ${docType} failed`, {
       error: err.message
@@ -120,13 +191,15 @@ function groupByFurnisher(tradelines) {
  * High = 3, Medium = 2, Low = 1
  */
 function prioritizeFurnishers(furnisherEntries, maxCount) {
-  const scored = furnisherEntries.map(([name, tradelines]) => {
-    const allViolations = tradelines.flatMap(tl => detectViolations(tl).violations);
+  const scored = [];
+  for (const [name, tradelines] of furnisherEntries) {
+    const allViolations = collectViolations(tradelines);
+    if (allViolations === null) continue;
     const severityScore = allViolations.reduce((sum, v) => {
       return sum + (v.severity === "high" ? 3 : v.severity === "medium" ? 2 : 1);
     }, 0);
-    return { name, tradelines, violations: allViolations, severityScore };
-  });
+    scored.push({ name, tradelines, violations: allViolations, severityScore });
+  }
 
   scored.sort((a, b) => b.severityScore - a.severityScore);
   return scored.slice(0, maxCount).map(s => [s.name, s.tradelines]);
@@ -145,9 +218,10 @@ async function generateFurnisherLetter(
   personal,
   existingLetters
 ) {
+  try {
   // 1. Detect violations for all tradelines in this furnisher group
-  const violations = tradelines.flatMap(tl => detectViolations(tl).violations);
-  if (violations.length === 0) return null;
+  const violations = collectViolations(tradelines);
+  if (!violations || violations.length === 0) return null;
 
   // 2. Get the prompt template and replace placeholders
   const promptKey = `DISPUTE_ROUND${round}_PROMPT`;
@@ -200,31 +274,42 @@ async function generateFurnisherLetter(
   // 4. Call Claude (Round 1 = default Sonnet, Rounds 2/3 = Opus).
   // Use the current Opus (4.8); opus-4-6 was retired. Env-overridable.
   const model = round === 1 ? undefined : process.env.CLAUDE_OPUS_MODEL || "claude-opus-4-8";
-  const text = await callClaude({
-    system: systemPrompt,
-    user: JSON.stringify(userPayload),
-    maxTokens: 3000,
-    model,
-    temperature: 0.4
-  });
+  const text = await safeCallClaude(
+    {
+      system: systemPrompt,
+      user: JSON.stringify(userPayload),
+      maxTokens: 3000,
+      model,
+      temperature: 0.4
+    },
+    `dispute-${furnisher}-${bureau}`
+  );
 
   if (!text) return null;
 
-  // 5. Validate pre-send
+  // 5. Validate pre-send — a throw skips this letter, not the pack
   const furnisherAddress = lookupFurnisherAddress(furnisher);
-  const validation = validatePreSend(text, {
-    violations,
-    round,
-    furnisher,
-    bureau,
-    accountIdentifier: tradelines[0]?.accountIdentifier?.slice(-4) || null,
-    furnisherAddress,
-    priorRoundText: null
-  });
+  let validation;
+  try {
+    validation = validatePreSend(text, {
+      violations,
+      round,
+      furnisher,
+      bureau,
+      accountIdentifier: tradelines[0]?.accountIdentifier?.slice(-4) || null,
+      furnisherAddress,
+      priorRoundText: null
+    });
+  } catch (err) {
+    logError(`generate-deliverables: pre-send validation threw for ${furnisher}/${bureau}`, {
+      error: err.message
+    });
+    return null;
+  }
 
-  if (!validation.valid) {
+  if (!validation || !validation.valid) {
     logError(`generate-deliverables: pre-send validation failed for ${furnisher}/${bureau}`, {
-      failures: validation.failures.map(f => f.name)
+      failures: (validation?.failures || []).map(f => f.name)
     });
     return null;
   }
@@ -235,15 +320,18 @@ async function generateFurnisherLetter(
 
   if (similarity.similar) {
     // Regenerate once with variation instruction
-    const retryText = await callClaude({
-      system:
-        systemPrompt +
-        "\n\nIMPORTANT: Your previous output was too similar to another letter. Vary your sentence structure, word choice, and argument ordering significantly. Use different opening paragraphs and citation patterns.",
-      user: JSON.stringify(userPayload),
-      maxTokens: 3000,
-      model,
-      temperature: 0.4
-    });
+    const retryText = await safeCallClaude(
+      {
+        system:
+          systemPrompt +
+          "\n\nIMPORTANT: Your previous output was too similar to another letter. Vary your sentence structure, word choice, and argument ordering significantly. Use different opening paragraphs and citation patterns.",
+        user: JSON.stringify(userPayload),
+        maxTokens: 3000,
+        model,
+        temperature: 0.4
+      },
+      `dispute-retry-${furnisher}-${bureau}`
+    );
 
     if (retryText) {
       const retryCheck = checkCROSimilarity(retryText, existingTexts);
@@ -258,6 +346,14 @@ async function generateFurnisherLetter(
   }
 
   return { type: "dispute", bureau, round, furnisher, violations, text };
+  } catch (err) {
+    logError(`generate-deliverables: dispute letter skipped`, {
+      furnisher,
+      bureau,
+      error: err.message
+    });
+    return null;
+  }
 }
 
 /**
@@ -302,7 +398,14 @@ async function generateDisputeLetters(crsResult, personal) {
             kbSection,
             personal,
             letters
-          )
+          ).catch(err => {
+            logError(`generate-deliverables: dispute letter skipped`, {
+              furnisher,
+              bureau: bureauName,
+              error: err.message
+            });
+            return null;
+          })
         )
       );
       letters.push(...results.filter(Boolean));
@@ -356,22 +459,34 @@ async function generateDisputeLetters(crsResult, personal) {
  * @param {Object} personal - { name, address }
  * @returns {Object} Generated documents + letters
  */
-async function generateDeliverables(crsResult, personal) {
-  const { consumerSignals, businessSignals, outcome } = crsResult;
+async function generateDeliverables(crsResult, personal, opts = {}) {
+  const { consumerSignals, businessSignals, outcome } = crsResult || {};
 
-  // Step 1: Match lenders
-  const lenderMatches = matchLenders(consumerSignals, businessSignals, outcome);
+  // Step 1: Match lenders — missing scores skip this doc, do not crash the pack
+  const matched = safeMatchLenders(consumerSignals, businessSignals, outcome);
+  const lenderMatches = matched || emptyLenderMatches();
 
   // Step 2: Build engine data payload for Claude
   const engineData = buildEngineDataPayload(crsResult, personal, lenderMatches);
 
   logInfo("generate-deliverables: starting document generation", {
     outcome,
-    findingsCount: crsResult.suggestions?.fullSuggestions?.length || 0,
+    findingsCount: crsResult?.suggestions?.fullSuggestions?.length || 0,
     lendersMatched: lenderMatches.totalMatched
   });
 
-  // Step 3: Generate 4 main documents in parallel
+  // Step 3: Generate 4 main documents in parallel (lender-match omitted when scores missing)
+  const lenderListPromise = matched
+    ? safeCallClaude(
+        {
+          system: LENDER_MATCH_PROMPT,
+          user: engineData,
+          maxTokens: 4000
+        },
+        "lender-match"
+      )
+    : Promise.resolve(null);
+
   const [analysis, roadmap, snapshot, lenderList] = await Promise.all([
     safeCallClaude(
       {
@@ -397,18 +512,21 @@ async function generateDeliverables(crsResult, personal) {
       },
       "funding-snapshot"
     ),
-    safeCallClaude(
-      {
-        system: LENDER_MATCH_PROMPT,
-        user: engineData,
-        maxTokens: 4000
-      },
-      "lender-match"
-    )
+    lenderListPromise
   ]);
 
-  // Step 4: Generate dispute letters (sequential for rate limits)
-  const letters = await generateDisputeLetters(crsResult, personal);
+  // Step 4: Dispute letters only when this is not a funding-docs-only pack.
+  let letters = [];
+  if (opts.pack !== "funding") {
+    try {
+      letters = await generateDisputeLetters(crsResult, personal);
+    } catch (err) {
+      logError("generate-deliverables: dispute letters failed", {
+        error: err.message
+      });
+      letters = [];
+    }
+  }
 
   logInfo("generate-deliverables: complete", {
     documents: {

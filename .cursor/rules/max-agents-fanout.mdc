@@ -1,0 +1,14 @@
+---
+description: Always max out parallel agents across independent workflows.
+alwaysApply: true
+---
+
+# Max agents (owner-set 2026-08-14)
+
+Always fill every independent workflow with its own agent. Goal: about **3×** wall-clock vs one serial session.
+
+- **Max out.** Do not sit at one agent when a second could work. Launch the full set in one turn.
+- **Spread.** One agent per screen, module, or file fence. Never two writers on the same file.
+- **No fake parallel.** If B needs A’s output, B waits. Everything else runs now.
+- **Grok only** (see grok-only-agents). Design stays Claude rule — still its own session, not a Grok stand-in.
+- Shared board in `docs/workflows/`. Claim before write. Cap is “all independent units,” not 5.

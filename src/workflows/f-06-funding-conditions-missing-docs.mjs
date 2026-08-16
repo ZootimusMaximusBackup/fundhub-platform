@@ -81,6 +81,7 @@ async function clearHoldIfMissingDocs(db, clientId) {
 }
 
 export async function handle({ event, db, step }) {
+  if (!event || typeof event !== "object") return { done: false, reason: "no_event" };
   if (event.name === "docs.received") return handleDocsReceived({ event, db, step });
   return handleMissingDocs({ event, db, step });
 }

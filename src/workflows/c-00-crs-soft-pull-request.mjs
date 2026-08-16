@@ -115,12 +115,32 @@ export async function handle({ event, db, step, runPull = runCrsPull, env = proc
     };
   }
 
-  const pull = await step.run("run-crs-pull", () => runPull(db, {
-    orgId: event.orgId,
-    clientId,
-    requestId: requested.request.id,
-    env
-  }));
+  /* SoftPullError from the pull coordinator is a permanent ledger condition
+     (already failed / wrong org / missing row). Throwing would make Inngest
+     retry a state only a human can fix. Live-host refusal with CRS_ALLOW_LIVE
+     off returns { ok: false } from runCrsPull and never reaches here as a
+     throw — but SoftPullError still can, so catch it the same way as consent. */
+  let pull;
+  try {
+    pull = await step.run("run-crs-pull", () => runPull(db, {
+      orgId: event.orgId,
+      clientId,
+      requestId: requested.request.id,
+      env
+    }));
+  } catch (e) {
+    if (e instanceof SoftPullError) {
+      return {
+        done: true,
+        scope,
+        pulled: false,
+        reason: e.code || "soft_pull_refused",
+        detail: e.message,
+        requestId: requested.request.id
+      };
+    }
+    throw e;
+  }
 
   return {
     done: true,

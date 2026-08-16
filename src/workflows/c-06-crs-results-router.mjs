@@ -17,11 +17,6 @@ import { addTags } from "./tags.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { createTask } from "../lib/create-task.mjs";
-import { buildLetterPackForClient } from "../underwrite/letter-pack.mjs";
-import {
-  persistFundingLetterFiles,
-  storeFromEnv
-} from "../underwrite/funding-letter-pdf.mjs";
 
 export const DECLINE_EMAIL_TEMPLATE_KEY = "EMAIL-C06-DECLINE";
 export const DECLINE_SMS_TEMPLATE_KEY = "SMS-C06-DECLINE";
@@ -81,67 +76,13 @@ async function createDeclineTaskOnce(db, { orgId, clientId, eventId }) {
   return { created: true };
 }
 
-// Row 20: funding letters from in-repo letter-pack only. No external UIQ.
-// Persists inquiry_removal + personal_info PDFs into documents so inquiry
-// send (W3) can mail them later. Never stores Metro 2 dispute letters here.
-async function deliverFundingLetters(db, { clientId, orgId, store } = {}) {
-  const pack = await buildLetterPackForClient(db, { clientId, pack: "funding" });
-  const files = pack.files || [];
-  if (!files.length) {
-    return {
-      delivered: false,
-      reason: pack.reason || pack.engineSkip || "empty_pack",
-      engineSkip: pack.engineSkip || null
-    };
-  }
-  let org = orgId;
-  if (!org && clientId) {
-    const r = await db.query(`SELECT org_id FROM clients WHERE id = $1`, [clientId]);
-    org = r.rows?.[0]?.org_id || null;
-  }
-  let persisted = null;
-  if (org) {
-    try {
-      persisted = await persistFundingLetterFiles(db, store || storeFromEnv(), {
-        orgId: org,
-        clientId,
-        files,
-        generatedBy: SOURCE_WORKFLOW
-      });
-    } catch (err) {
-      persisted = { stored: [], skipped: String(err && err.message || err).slice(0, 240) };
-    }
-  }
-  return {
-    delivered: true,
-    letterCount: files.length,
-    files: files.map((f) => ({
-      path: f.filename || f.name || f.path,
-      bytes: f.buffer?.byteLength || f.content?.byteLength || f.pdf?.byteLength || f.bytes?.byteLength || 0
-    })),
-    fundingLettersStored: persisted?.stored?.length || 0,
-    engineSkip: pack.engineSkip || null
-  };
-}
-
-async function deliverFundingLettersOnce(db, fetchImpl, { clientId, orgId, eventId, deliverFundingLettersFn = deliverFundingLetters }) {
-  const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
-  if (r.rows[0]?.custom_fields?.funding_letters_delivered_event_id === eventId) {
-    return { delivered: true, skipped: true };
-  }
-  const result = await deliverFundingLettersFn(db, { clientId, orgId });
-  if (result.delivered) {
-    await db.query(`UPDATE clients SET custom_fields = custom_fields || $2::jsonb WHERE id = $1`,
-      [clientId, JSON.stringify({ funding_letters_delivered_event_id: eventId })]);
-  }
-  return result;
-}
-
-// `detectDecline` is injectable purely so the wiring below can be proven under test
-// without inventing a threshold in production code. Default is the deferred no-op.
-// `fetchImpl` defaults to global fetch (mirrors ds-02) so tests can supply a fake
-// instead of making a real network call.
-export async function handle({ event, db, step, detectDecline = isHardDecline, fetchImpl = globalThis.fetch, deliverFundingLettersFn = null }) {
+// Funding letter PDFs ship from U-02 (in-repo Claude pack + Resend attachments).
+// C-06 only tags the path. The old Vercel deliver-letters POST is gone.
+//
+// `detectDecline` is injectable purely so the wiring above can be proven under
+// test without inventing a threshold in production code. Default is the
+// deferred no-op (see isHardDecline).
+export async function handle({ event, db, step, detectDecline = isHardDecline }) {
   if (event.payload?.source !== "crs") return { done: false, reason: "not_crs_source" };
 
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
@@ -172,14 +113,7 @@ export async function handle({ event, db, step, detectDecline = isHardDecline, f
   const outcomeTier = await step.run("check-product-path", () => resolveOutcomeTier(db, clientId, event.payload));
   if (isFundingPath(outcomeTier)) {
     await step.run("tag-path-funding", () => addTags(db, clientId, ["path:funding"]));
-    const delivery = await step.run("deliver-funding-letters", () =>
-      deliverFundingLettersOnce(db, fetchImpl, {
-        clientId,
-        orgId: event.orgId,
-        eventId: event.id,
-        deliverFundingLettersFn: deliverFundingLettersFn || deliverFundingLetters
-      }));
-    return { done: true, branch: "funding", delivery };
+    return { done: true, branch: "funding", delivery: { delivered: false, reason: "letters_ship_from_u-02" } };
   }
   if (isRepairOnlyPath(outcomeTier)) {
     await step.run("tag-path-repair", () => addTags(db, clientId, ["path:repair"]));

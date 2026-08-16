@@ -41,6 +41,9 @@ export const EMAIL_TEMPLATE_KEY = "EMAIL-DS01-REPAIR-REFERRAL";
 //   - "Funding Didn't Buy" (doc line 157), which is a funding-lane outcome and gets S-08's
 //     follow-up, not a repair referral.
 const HARD_DECLINE_OUTCOMES = ["ofac", "fraud", "hard_decline", "disqualified"];
+// Funding-lane dispositions belong to S-08 — never treat them as a repair referral
+// even when a stale repairReferral flag is still on the payload.
+const FUNDING_LANE_REASONS = ["funding didn't buy", "funding_didnt_buy", "funding didnt buy"];
 
 export function isRepairReferral(payload) {
   const p = payload || {};
@@ -48,10 +51,14 @@ export function isRepairReferral(payload) {
   if (p.outcome !== "declined") return false;
   const reason = String(p.declineReason || p.reason || "").toLowerCase();
   if (HARD_DECLINE_OUTCOMES.some((r) => reason.includes(r))) return false;
+  if (FUNDING_LANE_REASONS.some((r) => reason.includes(r))) return false;
   return p.repairReferral === true;
 }
 
 export async function handle({ event, db, step }) {
+  // Soft-skip: null / non-object event must not throw (Inngest can deliver junk).
+  if (!event || typeof event !== "object") return { done: false, reason: "no_event" };
+
   if (!isRepairReferral(event.payload)) return { done: false, reason: "not_repair_referral" };
 
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));

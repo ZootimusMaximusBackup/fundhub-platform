@@ -94,6 +94,9 @@ const ALLOWED_RAW_FETCH = {
     "folding into the one fence later.",
   "src/hiring/linkedin.mjs":
     "Job posting to a company-owned LinkedIn account. No client contact.",
+  "src/finance/crs-pull.mjs":
+    "Wraps an injected fetch with the CRS_ALLOW_LIVE host gate and hands it to " +
+    "createCrsClient. The wire call lives in src/messaging/providers/crs-softview.mjs.",
 
   /* ── SPENDS MONEY, REACHES NO CLIENT — flagged, deliberately not fenced ───
      These can change live ad campaigns, and therefore spend, but they cannot
@@ -108,17 +111,6 @@ const ALLOWED_RAW_FETCH = {
     "UNFENCED SPEND: TikTok ads, via the shared client above.",
   "src/creative/providers/_http.mjs":
     "UNFENCED SPEND: paid creative-generation providers.",
-
-  /* ── CLAUDE.md §12 named exceptions — letter delivery / CRS letter POST ───
-     These default fetchImpl to globalThis.fetch and hand it to letter-delivery
-     helpers. Owner-documented exceptions, not new holes. Do not cite them to
-     justify a fourth raw-fetch call site. */
-  "src/workflows/c-06-crs-results-router.mjs":
-    "CLAUDE.md §12 exception: POST to letter-delivery URL for funding letter pack. " +
-    "fetchImpl is injectable; default is globalThis.fetch for test seams.",
-  "src/workflows/ds-02-diy-letters.mjs":
-    "CLAUDE.md §12 exception: POST to the same letter-delivery URL for DIY letters. " +
-    "fetchImpl is injectable; default is globalThis.fetch for test seams.",
 
   /* ── Market / macro data. No client contact, no vendor client record ─────── */
   "src/climate/connectors.mjs":

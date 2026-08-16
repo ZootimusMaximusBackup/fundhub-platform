@@ -33,7 +33,7 @@ const claimed = (over = {}) => ({
 });
 
 function fakeDb({
-  routing = { email: { provider: "mailgun", enabled: true }, sms: { provider: "ghl_relay", enabled: true } },
+  routing = { email: { provider: "mailgun", enabled: true }, sms: { provider: "twilio", enabled: true } },
   client = { email: "person@example.com", ghl_contact_id: "ghlContact123", phone: "+15551234567" }
 } = {}) {
   const updates = [];

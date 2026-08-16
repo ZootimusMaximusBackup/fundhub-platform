@@ -205,7 +205,11 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        # Company brain (migration 130) needs CREATE EXTENSION vector.
+        # Stock postgres:16 does not ship pgvector, so migrate died there and
+        # isolation never saw a finished schema. This image is Postgres 16 plus
+        # the vector add-on. Same user/password/db as before.
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -284,10 +288,45 @@ jobs:
       # only from inside this runner. It is written in the clear deliberately: a
       # GitHub secret here would imply it protects something, and it does not.
       # NEVER copy this pattern to an environment that outlives the job.
+      #
+      # `if: always()` is load-bearing. migrate.mjs commits each file on its own,
+      # so 104 can create the role and a later file can still fail (CI has failed
+      # that way on `vector`). The two fundhub_app steps below also use
+      # `if: always()`, so they run against a role with no password unless this
+      # ALTER still runs. APP_DATABASE_URL's password must match this ALTER —
+      # not 104, which never sets one. node/pg, not psql: the runner is not
+      # guaranteed to have a client binary, and `pg` is already a dependency.
       - name: Give fundhub_app a login for this run only
+        if: always()
         run: |
-          psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 \
-            -c "ALTER ROLE fundhub_app LOGIN PASSWORD 'ci_not_a_secret';"
+          node --input-type=module <<'EOF'
+          import pg from "pg";
+          const url = process.env.MIGRATION_DATABASE_URL;
+          if (!url) {
+            console.error("MIGRATION_DATABASE_URL is missing");
+            process.exit(1);
+          }
+          const client = new pg.Client({ connectionString: url });
+          await client.connect();
+          try {
+            const { rowCount } = await client.query(
+              "SELECT 1 FROM pg_roles WHERE rolname = 'fundhub_app'"
+            );
+            if (!rowCount) {
+              throw new Error(
+                "role fundhub_app does not exist — 104_app_role.sql did not apply"
+              );
+            }
+            await client.query(
+              "ALTER ROLE fundhub_app LOGIN PASSWORD 'ci_not_a_secret'"
+            );
+            console.log(
+              "fundhub_app LOGIN enabled for this CI database only (password matches APP_DATABASE_URL)"
+            );
+          } finally {
+            await client.end();
+          }
+          EOF
 
       - name: Run the suite against Postgres
         run: npm test

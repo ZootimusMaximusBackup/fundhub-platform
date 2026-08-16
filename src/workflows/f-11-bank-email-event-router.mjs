@@ -46,6 +46,7 @@ async function createRoutingTask(db, { orgId, clientId, eventId, title }) {
 }
 
 export async function handle({ event, db, step }) {
+  if (!event || typeof event !== "object") return { done: false, reason: "no_event" };
   const classification = event.payload?.classification;
   const title = TASK_TITLES[classification];
   if (!title) return { done: false, reason: `unclassified:${classification}` };

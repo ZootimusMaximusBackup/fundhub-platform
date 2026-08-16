@@ -90,13 +90,19 @@ const INQUIRY_FIELDS = Object.freeze({
   transunion: "crs_inquiries_tu"
 });
 
-/* A finite number, or null. Everything else — undefined, "", "null", NaN, a
-   negative count — is UNKNOWN. Deliberately does NOT accept a negative: a
-   negative inquiry count is a data error, and passing it to an engine that adds
-   it into a total would hide the error inside a plausible sum. */
+/* A finite number, or null. Everything else — undefined, "", whitespace-only,
+   "null", NaN, a negative count — is UNKNOWN. Deliberately does NOT accept a
+   negative: a negative inquiry count is a data error, and passing it to an
+   engine that adds it into a total would hide the error inside a plausible sum.
+   Whitespace-only must NOT become 0 via Number("   ") — that invents a real
+   zero (and for negatives, invents the fundable condition). */
 function count(v) {
   if (v === null || v === undefined || v === "") return null;
-  if (typeof v === "string" && v.trim().toLowerCase() === "null") return null;
+  if (typeof v === "string") {
+    const t = v.trim();
+    if (t === "" || t.toLowerCase() === "null") return null;
+    v = t;
+  }
   const n = Number(v);
   if (!Number.isFinite(n) || n < 0) return null;
   return n;
@@ -105,12 +111,27 @@ function count(v) {
 /* Integer cents -> a dollars NUMBER, via money.mjs's own converter so cents ->
    dollars is read one way in this repo. THE ONLY CENTS-TO-DOLLARS CONVERSION IN
    THIS INTEGRATION — the engine works in dollars (./engine.mjs, note 3) and
-   nothing downstream converts again. Returns null for unknown; never 0. */
+   nothing downstream converts again. Returns null for unknown; never invents 0
+   from blank/whitespace strings (Number("   ") === 0). */
 function dollars(cents) {
   if (cents === null || cents === undefined || cents === "") return null;
+  if (typeof cents === "string") {
+    const t = cents.trim();
+    if (t === "" || t.toLowerCase() === "null") return null;
+    cents = t;
+  }
   const n = Number(cents);
   if (!Number.isFinite(n) || n < 0) return null;
   return Number(fromCents(Math.round(n)));
+}
+
+/* CRS result rows only. triMerge sorts by created_at and throws on null holes
+   in the array — drop holes here so a sparse pull list cannot take down the
+   adapter. Non-objects are not pulls. */
+function crsRows(crsResults) {
+  return (Array.isArray(crsResults) ? crsResults : []).filter(
+    (r) => r != null && typeof r === "object"
+  );
 }
 
 /* fundhub `kind` -> the engine's `type`.
@@ -273,8 +294,12 @@ export function clientUtilizationPct(tradelines = []) {
  * true, and it is the side that cannot overstate.
  */
 export function toBureaus({ tradelines = [], liabilities = [], crsResults = [], customFields = {} } = {}) {
-  const cf = customFields && typeof customFields === "object" ? customFields : {};
-  const scores = triMerge(Array.isArray(crsResults) ? crsResults : []);
+  // Arrays are typeof "object" — refuse them so cf.crs_* never reads off an index.
+  const cf = customFields && typeof customFields === "object" && !Array.isArray(customFields)
+    ? customFields
+    : {};
+  const pulls = crsRows(crsResults);
+  const scores = triMerge(pulls);
   const { lines, gaps } = toEngineTradelines(tradelines, liabilities);
   const utilization = clientUtilizationPct(tradelines);
 
@@ -409,7 +434,7 @@ export function toBureaus({ tradelines = [], liabilities = [], crsResults = [], 
               "and the client's true stacking capacity may be higher than what is shown"
     });
   }
-  if (Array.isArray(crsResults) && crsResults.length === 0) {
+  if (pulls.length === 0) {
     missing.client.push({
       field: "crs_results",
       source: "crs_results rows",

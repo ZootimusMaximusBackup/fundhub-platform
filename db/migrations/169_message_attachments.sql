@@ -1,0 +1,31 @@
+-- 169: message_attachments.
+--
+-- 165_messages_attachments.sql (origin/main) already added
+-- `messages.attachments jsonb` (nullable, no default) for named-asset
+-- references: [{"asset": "...", "filename": "..."}], resolved at send time
+-- from src/messaging/assets.mjs.
+--
+-- This branch's workflows (DS-02 letters, U-02 funding delivery) instead
+-- write real-time-generated PDF bytes inline on the same column:
+-- [{"filename": "...", "contentBase64": "...", "contentType": "application/pdf"}].
+--
+-- Both shapes coexist in the same jsonb array — src/messaging/providers/
+-- resend.mjs's loadAttachments() tells them apart by which keys are present
+-- on each entry, so this does NOT need a second column. As originally
+-- written here (`ADD COLUMN IF NOT EXISTS ... NOT NULL DEFAULT '[]'`), this
+-- migration would silently no-op: the column already exists as nullable, and
+-- ADD COLUMN IF NOT EXISTS never touches an existing column's constraints.
+--
+-- Forcing NOT NULL is NOT load-bearing anywhere in this branch's code — both
+-- writers already coerce to '[]'::jsonb before insert (sendTemplated in
+-- src/workflows/messaging.mjs, composeAndSend in src/messaging/compose.mjs),
+-- and both readers already treat NULL the same as '[]' (dispatch.mjs,
+-- resend.mjs). Adding a hard NOT NULL would additionally require backfilling
+-- every existing NULL row first, which is a data change nothing here needs.
+-- So this only adds the DEFAULT 165 left out, for the several INSERT INTO
+-- messages call sites that never mention the column at all (src/agents/
+-- reply.mjs, src/invoices/notify.mjs, src/handlers/comms.mjs,
+-- src/chat/internal.mjs, src/contracts/notify.mjs) — a future omission there
+-- now gets '[]' instead of NULL, with no backfill and no risk to existing rows.
+ALTER TABLE messages
+  ALTER COLUMN attachments SET DEFAULT '[]'::jsonb;

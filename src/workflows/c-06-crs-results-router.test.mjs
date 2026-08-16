@@ -1,26 +1,59 @@
 import { test } from "node:test";
 import assert from "node:assert";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import {
   handle, isHardDecline, HARD_DECLINE_SIGNALS_DEFERRED,
   DECLINE_EMAIL_TEMPLATE_KEY, DECLINE_SMS_TEMPLATE_KEY
 } from "./c-06-crs-results-router.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
-// Every funding-branch test now also fires the deliver-letters webhook (row 20), so a
-// fake fetch is required — the default `fetchImpl` is global fetch, and a real network
-// call has no place in a unit test (mirrors ds-02's own fakeFetch pattern).
-/* Same as ds-02: these assert delivery happens, so the adapters fence must be
-   declared down. It defaults to blocked and handle() takes no env. */
-process.env.ADAPTERS_DRY_RUN = "0";
+const C06_SOURCE_PATH = fileURLToPath(new URL("./c-06-crs-results-router.mjs", import.meta.url));
+const BANNED_UIQ_URL = "https://underwrite-iq-lite.vercel.app/api/lite/deliver-letters";
 
-// text() is required: outbound calls now read the body once as text.
-const fakeFetch = (ok = true) => async () => ({ ok, status: ok ? 200 : 500, text: async () => "{}" });
+function stripCommentLines(source) {
+  return source.split("\n").filter((line) => {
+    const t = line.trim();
+    return !(t.startsWith("//") || t.startsWith("*") || t.startsWith("/*"));
+  }).join("\n");
+}
+
+async function withFetchTrap(fn) {
+  const prevFetch = globalThis.fetch;
+  const prevUrl = process.env.UIQ_DELIVER_LETTERS_URL;
+  const prevGhl = process.env.GHL_API_KEY;
+  const prevGhlRelay = process.env.GHL_RELAY_API_KEY;
+  const calls = [];
+  globalThis.fetch = async (...args) => {
+    calls.push({ url: String(args[0]), via: "globalThis.fetch" });
+    throw new Error(`C-06 must not fetch (${String(args[0])})`);
+  };
+  process.env.UIQ_DELIVER_LETTERS_URL = BANNED_UIQ_URL;
+  delete process.env.GHL_API_KEY;
+  delete process.env.GHL_RELAY_API_KEY;
+  const fetchImpl = async (...args) => {
+    calls.push({ url: String(args[0]), via: "fetchImpl" });
+    throw new Error(`C-06 must not POST via fetchImpl (${String(args[0])})`);
+  };
+  try {
+    return await fn({ calls, fetchImpl });
+  } finally {
+    globalThis.fetch = prevFetch;
+    if (prevUrl === undefined) delete process.env.UIQ_DELIVER_LETTERS_URL;
+    else process.env.UIQ_DELIVER_LETTERS_URL = prevUrl;
+    if (prevGhl === undefined) delete process.env.GHL_API_KEY;
+    else process.env.GHL_API_KEY = prevGhl;
+    if (prevGhlRelay === undefined) delete process.env.GHL_RELAY_API_KEY;
+    else process.env.GHL_RELAY_API_KEY = prevGhlRelay;
+  }
+}
 
 test("happy path: funding-path CRS results tag path:funding", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING", custom_fields: {} }] });
-  const res = await handle({ event: ev("analysis.completed", { source: "crs", scores: { ex: 650 } }, { clientId: "cl-1" }), db, step: fakeStep(), fetchImpl: fakeFetch(true) });
+  const res = await handle({ event: ev("analysis.completed", { source: "crs", scores: { ex: 650 } }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.branch, "funding");
   assert.deepEqual(db.clients[0].tags, ["path:funding"]);
+  assert.equal(db.messages.length, 0);
 });
 
 // Regression (Model drift audit): the production shape. The CRS adapter emits
@@ -31,7 +64,7 @@ test("routes from the payload tier when clients.outcome_tier is not written yet"
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: null, custom_fields: {} }] });
   const res = await handle({
     event: ev("analysis.completed", { source: "crs", outcomeTier: "FULL_FUNDING", scores: { ex: 650 } }, { clientId: "cl-1" }),
-    db, step: fakeStep(), fetchImpl: fakeFetch(true)
+    db, step: fakeStep()
   });
   assert.equal(res.branch, "funding");
   assert.deepEqual(db.clients[0].tags, ["path:funding"]);
@@ -45,13 +78,14 @@ test("routes repair from the payload tier with the column still null", async () 
   });
   assert.equal(res.branch, "repair");
   assert.deepEqual(db.clients[0].tags, ["path:repair"]);
+  assert.equal(db.messages.length, 0);
 });
 
 test("a re-pull's payload tier wins over the stale column", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }] });
   const res = await handle({
     event: ev("analysis.completed", { source: "crs", outcomeTier: "PREMIUM_STACK", scores: { ex: 780 } }, { clientId: "cl-1" }),
-    db, step: fakeStep(), fetchImpl: fakeFetch(true)
+    db, step: fakeStep()
   });
   assert.equal(res.branch, "funding");
 });
@@ -61,12 +95,15 @@ test("branch: missing results holds instead of routing", async () => {
   const res = await handle({ event: ev("analysis.completed", { source: "crs", scores: {} }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.branch, "missing_results");
   assert.deepEqual(db.clients[0].tags, ["hold:snapshot_missing"]);
+  assert.equal(db.messages.length, 0);
 });
 
 test("branch: non-CRS source is ignored", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }] });
   const res = await handle({ event: ev("analysis.completed", { source: "analyzer" }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.done, false);
+  assert.equal(res.reason, "not_crs_source");
+  assert.equal(db.messages.length, 0);
 });
 
 // --- DECLINE branch (05/30 Stage 5, doc 84-86 / 4204-4222) -------------------
@@ -143,35 +180,146 @@ test("flipping HARD_DECLINE_SIGNALS_DEFERRED off (via isHardDecline's own gate, 
   assert.equal(db.tasks.length, 1);
 });
 
-// --- FUNDING branch in-repo letter-pack (row 20) -------------------------
+// Funding letters ship from U-02 (in-repo Claude + Resend). C-06 only tags the path.
 
-test("row 20: the FUNDING branch delivers funding letters in-repo", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING", custom_fields: {} }] });
-  let deliverCount = 0;
-  const deliverFundingLettersFn = async (_db, { clientId }) => {
-    deliverCount++;
-    assert.equal(clientId, "cl-1");
-    return { delivered: true, letterCount: 2, files: [{ path: "a.pdf", bytes: 10 }] };
-  };
-  const res = await handle({
-    event: ev("analysis.completed", { source: "crs", scores: { ex: 650 } }, { id: "evt-c06-funding", clientId: "cl-1" }),
-    db, step: fakeStep(), deliverFundingLettersFn
+test("funding branch tags the path and does not POST a Vercel letter webhook", async () => {
+  await withFetchTrap(async ({ fetchImpl, calls }) => {
+    const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING", custom_fields: {} }] });
+    const res = await handle({
+      event: ev("analysis.completed", { source: "crs", scores: { ex: 650 } }, { id: "evt-c06-funding", clientId: "cl-1" }),
+      db, step: fakeStep(), fetchImpl
+    });
+    assert.equal(res.branch, "funding");
+    assert.equal(res.delivery.reason, "letters_ship_from_u-02");
+    assert.equal(res.delivery.delivered, false);
+    assert.equal(res.delivery.status, undefined);
+    assert.deepEqual(db.clients[0].tags, ["path:funding"]);
+    assert.equal(db.messages.length, 0);
+    assert.equal(calls.length, 0, "handle must not call fetch even when UIQ_DELIVER_LETTERS_URL is set");
   });
-  assert.equal(res.branch, "funding");
-  assert.equal(res.delivery.delivered, true);
-  assert.equal(deliverCount, 1);
-  assert.equal(db.clients[0].custom_fields.funding_letters_delivered_event_id, "evt-c06-funding");
 });
 
-test("row 20: replaying the same event does not double-deliver funding letters", async () => {
-  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING", custom_fields: {} }] });
-  let deliverCount = 0;
-  const deliverFundingLettersFn = async () => {
-    deliverCount++;
-    return { delivered: true, letterCount: 1 };
-  };
-  const event = ev("analysis.completed", { source: "crs", scores: { ex: 650 } }, { id: "evt-dup-c06-funding", clientId: "cl-1" });
-  await handle({ event, db, step: fakeStep(), deliverFundingLettersFn });
-  await handle({ event, db, step: fakeStep(), deliverFundingLettersFn });
-  assert.equal(deliverCount, 1, "in-repo deliver must not run twice on replay");
+test("source: C-06 has no Vercel / GHL / deliver-letters POST", () => {
+  const raw = readFileSync(C06_SOURCE_PATH, "utf8");
+  assert.ok(raw.includes("tag-path-funding"), "canary: C-06 source was actually read");
+  const code = stripCommentLines(raw);
+  assert.doesNotMatch(code, /\bfetch\s*\(/);
+  assert.doesNotMatch(code, /\bfetchImpl\b/);
+  assert.doesNotMatch(code, /\bglobalThis\.fetch\b/);
+  assert.doesNotMatch(code, /\bpostJsonTo\b/);
+  assert.doesNotMatch(code, /outbound-fetch/);
+  assert.doesNotMatch(code, /DELIVER_LETTERS/);
+  assert.doesNotMatch(code, /UIQ_DELIVER/);
+  assert.doesNotMatch(code, /vercel\.app/i);
+  assert.doesNotMatch(code, /underwrite-iq-lite/);
+  assert.doesNotMatch(code, /ds-02-diy-letters/);
+  assert.doesNotMatch(code, /\bGHL\b/);
+  assert.doesNotMatch(code, /leadconnector/i);
+  assert.doesNotMatch(code, /gohighlevel/i);
+});
+
+test("MANUAL_REVIEW is not_funding: no path tag, no send, no fetch", async () => {
+  await withFetchTrap(async ({ fetchImpl, calls }) => {
+    const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: null, custom_fields: {} }] });
+    const res = await handle({
+      event: ev("analysis.completed", { source: "crs", outcomeTier: "MANUAL_REVIEW", scores: { ex: 640 } }, { clientId: "cl-1" }),
+      db, step: fakeStep(), fetchImpl
+    });
+    assert.equal(res.branch, "not_funding");
+    assert.equal(res.outcomeTier, "MANUAL_REVIEW");
+    assert.ok(!(db.clients[0].tags || []).includes("path:funding"));
+    assert.ok(!(db.clients[0].tags || []).includes("path:repair"));
+    assert.equal(db.messages.length, 0);
+    assert.equal(calls.length, 0);
+  });
+});
+
+test("payload MANUAL_REVIEW beats a stale funding column — no funding tag, no fetch", async () => {
+  await withFetchTrap(async ({ fetchImpl, calls }) => {
+    const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING", custom_fields: {} }] });
+    const res = await handle({
+      event: ev("analysis.completed", { source: "crs", outcomeTier: "MANUAL_REVIEW", scores: { ex: 640 } }, { clientId: "cl-1" }),
+      db, step: fakeStep(), fetchImpl
+    });
+    assert.equal(res.branch, "not_funding");
+    assert.ok(!(db.clients[0].tags || []).includes("path:funding"));
+    assert.ok(!(db.clients[0].tags || []).includes("path:repair"));
+    assert.equal(db.messages.length, 0);
+    assert.equal(calls.length, 0);
+  });
+});
+
+test("FRAUD_HOLD is not_funding: no path tag, no send, no fetch", async () => {
+  await withFetchTrap(async ({ fetchImpl, calls }) => {
+    const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: null, custom_fields: {} }] });
+    const res = await handle({
+      event: ev("analysis.completed", { source: "crs", outcomeTier: "FRAUD_HOLD", scores: { ex: 480 } }, { clientId: "cl-1" }),
+      db, step: fakeStep(), fetchImpl
+    });
+    assert.equal(res.branch, "not_funding");
+    assert.equal(res.outcomeTier, "FRAUD_HOLD");
+    assert.ok(!(db.clients[0].tags || []).includes("path:funding"));
+    assert.ok(!(db.clients[0].tags || []).includes("path:repair"));
+    assert.equal(db.messages.length, 0);
+    assert.equal(calls.length, 0);
+  });
+});
+
+test("missing client does not throw and does not send", async () => {
+  await withFetchTrap(async ({ fetchImpl, calls }) => {
+    const db = pgFake({ clients: [] });
+    const res = await handle({
+      event: ev("analysis.completed", { source: "crs", scores: { ex: 650 } }),
+      db, step: fakeStep(), fetchImpl
+    });
+    assert.equal(res.done, false);
+    assert.equal(res.reason, "no_client");
+    assert.equal(db.messages.length, 0);
+    assert.equal(db.tasks.length, 0);
+    assert.equal(calls.length, 0);
+  });
+});
+
+test("CRS payload with no scores key holds and does not send or fetch", async () => {
+  await withFetchTrap(async ({ fetchImpl, calls }) => {
+    const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }] });
+    const res = await handle({
+      event: ev("analysis.completed", { source: "crs" }, { clientId: "cl-1" }),
+      db, step: fakeStep(), fetchImpl
+    });
+    assert.equal(res.branch, "missing_results");
+    assert.deepEqual(db.clients[0].tags, ["hold:snapshot_missing"]);
+    assert.equal(db.messages.length, 0);
+    assert.equal(calls.length, 0);
+  });
+});
+
+test("repair branch does not fetch deliver-letters even when UIQ_DELIVER_LETTERS_URL is set", async () => {
+  await withFetchTrap(async ({ fetchImpl, calls }) => {
+    const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} }] });
+    const res = await handle({
+      event: ev("analysis.completed", { source: "crs", scores: { ex: 600 } }, { clientId: "cl-1" }),
+      db, step: fakeStep(), fetchImpl
+    });
+    assert.equal(res.branch, "repair");
+    assert.deepEqual(db.clients[0].tags, ["path:repair"]);
+    assert.equal(db.messages.length, 0);
+    assert.equal(calls.length, 0);
+  });
+});
+
+test("FUNDING_PLUS_REPAIR tags path:funding and still does not fetch", async () => {
+  await withFetchTrap(async ({ fetchImpl, calls }) => {
+    const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: null, custom_fields: {} }] });
+    const res = await handle({
+      event: ev("analysis.completed", { source: "crs", outcomeTier: "FUNDING_PLUS_REPAIR", scores: { ex: 700, eq: 690, tu: 710 } }, { clientId: "cl-1" }),
+      db, step: fakeStep(), fetchImpl
+    });
+    assert.equal(res.branch, "funding");
+    assert.equal(res.delivery.delivered, false);
+    assert.equal(res.delivery.reason, "letters_ship_from_u-02");
+    assert.deepEqual(db.clients[0].tags, ["path:funding"]);
+    assert.equal(db.messages.length, 0);
+    assert.equal(calls.length, 0);
+  });
 });

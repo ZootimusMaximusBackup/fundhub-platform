@@ -17,6 +17,7 @@ export const EMAIL_TEMPLATE_KEY = "EMAIL-F04-ROUND-APPROVALS";
 export const SMS_TEMPLATE_KEY = "SMS-F04-ROUND-APPROVALS";
 
 export async function handle({ event, db, step }) {
+  if (!event || typeof event !== "object") return { sent: false, reason: "no_event" };
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { sent: false, reason: "no_client" };
 

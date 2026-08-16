@@ -149,7 +149,7 @@ The split proposal is section 0. It happens before anything else. This section c
 * Fan out only on independent units — one workflow per screen or module. Never parallelize steps that depend on each other's output.
 * Ground once, fan out. One agent reads shared context and writes a brief. Other agents consume the brief. Never have four agents independently read the same modules.
 * Pipeline, don't barrier. Each unit runs ground → build → verify on its own. Do not hold a whole phase for the slowest agent.
-* Cap at 5 concurrent agents. Past that: rate limits and merge conflicts, not speed.
+* **Max agents (owner-set 2026-08-14).** Fill every independent unit in one turn. One agent per file fence. Do not sit serial when a second agent could work. The old “cap at 5” is repealed — merge conflicts come from two writers on one file, not from too many workflows.
 
 ### How workflows coordinate
 
@@ -302,7 +302,7 @@ These have already cost time. Read them before you trust a green result.
 * **Money is integer cents** via `src/commissions/money.mjs`. `fromCents` returns a string; `percentOf` takes percent units (`10` = 10%). NULL means unknown and must survive — never default it to 0.
 * **Outbound transmission is permitted in `src/messaging/providers/*` and nowhere else.** That directory is the only place new outbound `fetch` may be added. `src/lib/`, `src/handlers/` and `src/mail/` contain none, and none may be added to them.
 
-  Three call sites predate this rule and are exceptions, not precedent — do not cite them to justify a fourth: `src/adapters/lendflow.mjs` (submits an application), and `src/workflows/ds-02-diy-letters.mjs` plus `src/workflows/c-06-crs-results-router.mjs` (both POST to the same letter-delivery URL). Anything new that transmits belongs behind a provider module.
+  One call site predates this rule and is an exception, not precedent — do not cite it to justify a second: `src/adapters/lendflow.mjs` (submits an application). `src/workflows/ds-02-diy-letters.mjs` and `src/workflows/c-06-crs-results-router.mjs` no longer POST to the old letter-delivery URL — both now build PDFs in-repo and send through `src/messaging/providers/resend.mjs`, so neither needs a raw-fetch exception anymore. Anything new that transmits belongs behind a provider module.
 
   `sendTemplated` still only writes `messages` rows with `status='queued'`. Handing those rows to a provider is the dispatcher's job (`src/messaging/dispatch.mjs`), and nothing schedules the dispatcher yet — see `src/workflows/message-dispatch-sweeper.mjs`, which is defined and deliberately not registered.
 * **`src/mail/` mails nothing, deliberately.** No scheduler, no send path, no activation flag. Prescreen data needs a firm offer of credit under FCRA; nothing drops until the FCRA report is in, Deluxe compliance reviews the piece, and a lawyer signs off on the broker/lender-of-record structure. The build is not gated — the drop is.

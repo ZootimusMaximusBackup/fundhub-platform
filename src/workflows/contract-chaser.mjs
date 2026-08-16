@@ -57,12 +57,20 @@ export const CHASE_CRON = "0 10 * * *";
  * Exported so the endpoint, the tests and the scheduled function all drive the
  * SAME code. A scheduled job whose logic exists only inside the scheduler is a
  * job nobody can test or run by hand.
+ *
+ * Soft-skip: missing orgId must not throw. The cron and the button both pass
+ * one; junk input returns zeros so Inngest does not retry forever.
  */
 export async function runChase(db, {
   orgId, afterDays = FIRST_CHASE_DAYS, everyDays = CHASE_EVERY_DAYS,
   maxChases = MAX_CHASES, limit = 100, now = null, baseUrl = null, secret = undefined
 } = {}) {
-  if (!orgId) throw new Error("runChase: orgId is required");
+  if (!orgId) {
+    return { considered: 0, reminded: 0, tasked: 0, skipped: [], errors: [], reason: "no_org" };
+  }
+  if (!db || typeof db.query !== "function") {
+    return { considered: 0, reminded: 0, tasked: 0, skipped: [], errors: [], reason: "no_db" };
+  }
   return chaseContracts(db, {
     orgId, listSigners, mintLinks,
     afterDays, everyDays, maxChases, limit, now, baseUrl, secret
@@ -72,21 +80,31 @@ export async function runChase(db, {
 /** Every org with a contract outstanding. The scheduled run has no session to
     take an org from, so it finds them rather than assuming the default one. */
 export async function orgsWithOutstandingContracts(db) {
+  if (!db || typeof db.query !== "function") return [];
   const { rows } = await db.query(
     `SELECT DISTINCT org_id FROM contracts WHERE status IN ('sent', 'viewed')`);
-  return rows.map((r) => r.org_id);
+  return (rows || []).map((r) => r.org_id).filter(Boolean);
 }
 
-export async function handle({ db, step }) {
+export async function handle({ db, step } = {}) {
+  // Soft-skip: null / junk wiring must not throw (cron can arrive without a db).
+  if (!db || typeof db.query !== "function") {
+    return { orgs: 0, reminded: 0, tasked: 0, reason: "no_db" };
+  }
+  if (!step || typeof step.run !== "function") {
+    return { orgs: 0, reminded: 0, tasked: 0, reason: "no_step" };
+  }
+
   const orgs = await step.run("find-orgs", () => orgsWithOutstandingContracts(db));
+  const list = Array.isArray(orgs) ? orgs.filter(Boolean) : [];
   const results = [];
-  for (const orgId of orgs) {
+  for (const orgId of list) {
     // One step per org, so a failure on one company's contracts does not stop
     // the sweep for the rest — and so a retry replays only what failed.
     results.push(await step.run(`chase-${orgId}`, () => runChase(db, { orgId })));
   }
   return {
-    orgs: orgs.length,
+    orgs: list.length,
     reminded: results.reduce((a, r) => a + (r.reminded || 0), 0),
     tasked: results.reduce((a, r) => a + (r.tasked || 0), 0)
   };

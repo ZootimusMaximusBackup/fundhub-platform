@@ -1,0 +1,80 @@
+{
+  "funding": {
+    "name": "Chris ProveFunding",
+    "kvs": [
+      {
+        "label": "Credit Status",
+        "value": "Pulled 3 days ago"
+      },
+      {
+        "label": "Missing Docs",
+        "value": "Bank statements and a voided check"
+      },
+      {
+        "label": "On Hold Because",
+        "value": "He hasn't sent his documents yet"
+      },
+      {
+        "label": "Next Action",
+        "value": "Call him and ask for the documents"
+      },
+      {
+        "label": "Email",
+        "value": "stanbridgejchris@gmail.com"
+      },
+      {
+        "label": "Phone",
+        "value": "+16616180865"
+      },
+      {
+        "label": "Personal State",
+        "value": "Ohio"
+      },
+      {
+        "label": "Business State",
+        "value": "Ohio"
+      }
+    ],
+    "banner": "live record · Chris ProveFunding · 0 transactions · 0 messages",
+    "agentPre": "CLIENT CONTEXT (read-only facts; do not invent missing values)\nName: Chris ProveFunding\nEmail: stanbridgejchris@gmail.com\nPhone: +16616180865\nTags: prove:crs-company\nOutcome tier: FUNDING_PLUS_REPAIR"
+  },
+  "dirty": {
+    "name": "Chris ProveRepair",
+    "kvs": [
+      {
+        "label": "Credit Status",
+        "value": "Pulled 3 days ago"
+      },
+      {
+        "label": "Missing Docs",
+        "value": "Bank statements and a voided check"
+      },
+      {
+        "label": "On Hold Because",
+        "value": "He hasn't sent his documents yet"
+      },
+      {
+        "label": "Next Action",
+        "value": "Call him and ask for the documents"
+      },
+      {
+        "label": "Email",
+        "value": "stanbridgejchris+repair@gmail.com"
+      },
+      {
+        "label": "Phone",
+        "value": "+16616180865"
+      },
+      {
+        "label": "Personal State",
+        "value": "Ohio"
+      },
+      {
+        "label": "Business State",
+        "value": "Ohio"
+      }
+    ],
+    "banner": "live record · Chris ProveRepair · 0 transactions · 0 messages",
+    "agentPre": "CLIENT CONTEXT (read-only facts; do not invent missing values)\nName: Chris ProveRepair\nEmail: stanbridgejchris+repair@gmail.com\nPhone: +16616180865\nTags: prove:crs-company"
+  }
+}

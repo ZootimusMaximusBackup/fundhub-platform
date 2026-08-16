@@ -33,6 +33,9 @@ async function createMappingTaskOnce(db, { orgId, clientId, eventId }) {
 }
 
 export async function handle({ event, db, step }) {
+  // Soft-skip: null / non-object event must not throw (Inngest can deliver junk).
+  if (!event || typeof event !== "object") return { done: false, reason: "no_event" };
+
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
 

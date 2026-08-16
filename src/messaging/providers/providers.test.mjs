@@ -370,6 +370,69 @@ describe("resend provider", () => {
     assert.strictEqual(sent.from, RS_ENV.RESEND_FROM);
   });
 
+  test("attaches PDF files on the Resend payload", async () => {
+    const f = fakeFetch({ status: 200, body: { id: "re_msg_att" } });
+    const res = await resend.send({
+      ...emailMsg,
+      attachments: [{ filename: "pack.pdf", contentBase64: Buffer.from("%PDF-1.4").toString("base64") }]
+    }, { fetchImpl: f, env: RS_ENV });
+    assert.strictEqual(res.status, "sent");
+    const sent = JSON.parse(f.calls[0].init.body);
+    assert.equal(sent.attachments.length, 1);
+    assert.equal(sent.attachments[0].filename, "pack.pdf");
+    assert.ok(sent.attachments[0].content.length > 0);
+    // Resend shape today: { filename, content } base64 — no contentType field.
+    assert.deepEqual(Object.keys(sent.attachments[0]).sort(), ["content", "filename"]);
+  });
+
+  test("B5: missing content does not throw and does not attach a 0-byte pack.pdf", async () => {
+    const f = fakeFetch({ status: 200, body: { id: "re_empty_att" } });
+    const res = await resend.send({
+      ...emailMsg,
+      attachments: [
+        { filename: "pack.pdf" },
+        { filename: "pack.pdf", contentBase64: "" },
+        { filename: "pack.pdf", content: Buffer.alloc(0) }
+      ]
+    }, { fetchImpl: f, env: RS_ENV });
+    assert.strictEqual(res.status, "sent");
+    const sent = JSON.parse(f.calls[0].init.body);
+    assert.equal(sent.attachments, undefined, "no junk attachments on the wire");
+  });
+
+  test("B5: path traversal / huge name sanitized; non-PDF pretending to be pdf dropped", async () => {
+    const f = fakeFetch({ status: 200, body: { id: "re_safe_att" } });
+    const pdf = Buffer.from("%PDF-1.4\nok").toString("base64");
+    const fake = Buffer.from("I am text not pdf").toString("base64");
+    const huge = `${"Z".repeat(400)}.pdf`;
+    const res = await resend.send({
+      ...emailMsg,
+      attachments: [
+        { filename: "../../../tmp/evil.pdf", contentBase64: pdf },
+        { filename: huge, contentBase64: pdf },
+        { filename: "pack.pdf", contentBase64: fake }
+      ]
+    }, { fetchImpl: f, env: RS_ENV });
+    assert.strictEqual(res.status, "sent");
+    const sent = JSON.parse(f.calls[0].init.body);
+    assert.equal(sent.attachments.length, 2);
+    assert.equal(sent.attachments[0].filename, "evil.pdf");
+    assert.ok(!sent.attachments[0].filename.includes(".."));
+    assert.ok(sent.attachments[1].filename.length <= 180);
+    assert.ok(sent.attachments.every((a) => typeof a.content === "string" && a.content.length > 0));
+    assert.ok(!sent.attachments.some((a) => a.filename === "pack.pdf"), "fake pdf dropped");
+  });
+
+  test("B5: MESSAGING_DRY_RUN=1 never calls fetch", async () => {
+    const f = fakeFetch({ status: 200, body: { id: "should_not" } });
+    const res = await resend.send({
+      ...emailMsg,
+      attachments: [{ filename: "pack.pdf", contentBase64: Buffer.from("%PDF-1.4").toString("base64") }]
+    }, { fetchImpl: f, env: { ...RS_ENV, MESSAGING_DRY_RUN: "1" } });
+    assert.equal(f.calls.length, 0, "dry-run must not hit the network");
+    assert.ok(res.status === "failed" || res.status === "rejected");
+  });
+
   test("Bearer auth uses the API key", async () => {
     const f = fakeFetch({ status: 200, body: { id: "x" } });
     await resend.send(emailMsg, { fetchImpl: f, env: RS_ENV });

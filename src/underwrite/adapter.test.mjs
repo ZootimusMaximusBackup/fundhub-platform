@@ -280,3 +280,143 @@ describe("toBureaus — which bureaus are supplied, and what is recorded missing
     assert.ok(Array.isArray(out.missing.client));
   });
 });
+
+describe("smash — CRS JSON → engine/normalized edge cases", () => {
+  test("empty arrays never throw and leave no invented scores", () => {
+    assert.doesNotThrow(() => toBureaus({
+      tradelines: [], liabilities: [], crsResults: [], customFields: {}
+    }));
+    const out = toBureaus({
+      tradelines: [], liabilities: [], crsResults: [], customFields: {}
+    });
+    assert.deepEqual(out.available, []);
+    assert.deepEqual(out.bureaus, {});
+    assert.equal(out.utilization.pct, null);
+  });
+
+  test("one missing bureau does NOT drop the other two", () => {
+    const out = toBureaus({
+      crsResults: [crs({ ex: 720, tu: 710 })],
+      tradelines: [line()]
+    });
+    assert.deepEqual(out.available, ["experian", "transunion"]);
+    assert.equal(out.bureaus.experian.score, 720);
+    assert.equal(out.bureaus.transunion.score, 710);
+    assert.equal(out.bureaus.equifax, undefined);
+    assert.equal(out.missing.equifax[0].field, "score");
+  });
+
+  test("string numbers in scores and custom fields coerce to numbers", () => {
+    const out = toBureaus({
+      crsResults: [crs({ ex: "720", eq: "705", tu: "710" })],
+      tradelines: [line({ credit_limit_cents: "1000000", balance_cents: "250000" })],
+      customFields: {
+        crs_inquiries_ex: "4",
+        crs_inquiries_eq: "2",
+        crs_inquiries_tu: "0",
+        crs_negative_items_count: "3",
+        crs_late_payments_count: "1",
+        business_age_months: "18"
+      }
+    });
+    assert.deepEqual(out.available, BUREAUS);
+    assert.equal(out.bureaus.experian.score, 720);
+    assert.equal(out.bureaus.experian.inquiries, 4);
+    assert.equal(out.bureaus.transunion.inquiries, 0, "string '0' is a real zero");
+    assert.equal(out.bureaus.experian.negatives, 3);
+    assert.equal(out.businessAgeMonths, 18);
+    assert.equal(out.bureaus.experian.tradelines[0].limit, 10000);
+    assert.equal(out.bureaus.experian.tradelines[0].balance, 2500);
+  });
+
+  test("whitespace-only numeric strings stay unknown, never invent 0", () => {
+    const { lines, gaps } = toEngineTradelines([line({
+      credit_limit_cents: "   ",
+      balance_cents: "\t"
+    })]);
+    assert.equal(lines[0].limit, null);
+    assert.equal(lines[0].balance, null);
+    assert.ok(gaps[0].missing.includes("credit_limit_cents"));
+
+    const out = toBureaus({
+      crsResults: [crs({ ex: 720 })],
+      tradelines: [line()],
+      customFields: {
+        crs_inquiries_ex: "  ",
+        crs_negative_items_count: "\n",
+        business_age_months: "   "
+      }
+    });
+    assert.equal(out.bureaus.experian.inquiries, null);
+    assert.equal(out.bureaus.experian.negatives, null,
+      "blank negatives must not become 0 — that is one of the fundable conditions");
+    assert.equal(out.businessAgeMonths, null);
+  });
+
+  test("null holes in crsResults do not throw; usable score still wins", () => {
+    let out;
+    assert.doesNotThrow(() => {
+      out = toBureaus({
+        crsResults: [null, undefined, crs({ ex: 720, eq: 700 }), { result: null }],
+        tradelines: [line()]
+      });
+    });
+    assert.deepEqual(out.available, ["experian", "equifax"]);
+    assert.equal(out.bureaus.experian.score, 720);
+    assert.equal(out.bureaus.equifax.score, 700);
+  });
+
+  test("only-null crsResults reads as no pull, not a crash", () => {
+    const out = toBureaus({ crsResults: [null, undefined], tradelines: [] });
+    assert.deepEqual(out.available, []);
+    assert.ok(out.missing.client.some((m) => m.field === "crs_results"));
+  });
+
+  test("duplicate tradeline ids do not throw and both rows map", () => {
+    const a = line({ id: "same", lender: "Chase" });
+    const b = line({ id: "same", lender: "Amex", credit_limit_cents: 500_000, balance_cents: 100_000 });
+    let mapped;
+    assert.doesNotThrow(() => {
+      mapped = toEngineTradelines([a, b]);
+    });
+    assert.equal(mapped.lines.length, 2, "duplicates are not silently dropped");
+    assert.equal(mapped.lines[0].limit, 10000);
+    assert.equal(mapped.lines[1].limit, 5000);
+
+    const out = toBureaus({ crsResults: [crs(SCORES)], tradelines: [a, b] });
+    assert.deepEqual(out.available, BUREAUS);
+    assert.equal(out.bureaus.experian.tradelines.length, 2);
+  });
+
+  test("null tradeline rows and non-array bags never throw", () => {
+    assert.doesNotThrow(() => toEngineTradelines([null, line(), undefined], null));
+    assert.doesNotThrow(() => toEngineTradelines("oops", "oops"));
+    assert.doesNotThrow(() => clientUtilizationPct(null));
+    assert.doesNotThrow(() => toBureaus({
+      tradelines: null,
+      liabilities: null,
+      crsResults: null,
+      customFields: null
+    }));
+    assert.doesNotThrow(() => toBureaus({
+      tradelines: "nope",
+      crsResults: "nope",
+      customFields: []
+    }));
+    const out = toBureaus({
+      crsResults: [crs({ ex: 720 })],
+      tradelines: [null, line({ id: "ok" }), undefined],
+      customFields: []
+    });
+    assert.deepEqual(out.available, ["experian"]);
+    assert.equal(out.bureaus.experian.tradelines.length, 1);
+  });
+
+  test("long-form bureau score keys still supply all three bureaus", () => {
+    const out = toBureaus({
+      crsResults: [crs({ experian: 720, equifax: 705, transunion: 710 })],
+      tradelines: [line()]
+    });
+    assert.deepEqual(out.available, BUREAUS);
+  });
+});

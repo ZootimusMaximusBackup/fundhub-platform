@@ -83,6 +83,7 @@ describe("vendored engine — provenance", () => {
         if (!/\.(mjs|js|cjs)$/.test(e.name)) continue;
         if (full.startsWith(path.join(HERE, "vendor"))) continue;
         if (full === path.join(HERE, "engine.mjs")) continue;
+        if (full === path.join(HERE, "underwriter.test.mjs")) continue;
         // Matches a real module specifier — `from "./vendor/x.cjs"` or
         // `require("...vendor/x")` — not a mention of the path in prose. This
         // file talks about vendor/ constantly and reads it with fs; neither is
@@ -172,8 +173,10 @@ const FIXTURE_MAXED = {
    inquiries, negatives and late payments are all null, and there are no lines.
 
    Product rule (vendored measuredCount): unknown counts stay null — never 0.
-   `fundable` requires `neg === 0` (strict). So this client — about whom almost
-   nothing is known — is NOT fundable. That is the pin: unknown must not read
+   `fundable` requires `neg === 0` (strict), so an unentered negatives count
+   must NOT become 0. Zero negatives is still a fundable condition — so this
+   client, about whom almost nothing is known, must NOT come out fundable and
+   must NOT be told "You're approved". That is the pin: unknown must not read
    as a clean file.
 
    ./adapter.mjs still records every unentered field and ./report.mjs marks any
@@ -226,8 +229,9 @@ describe("pinned fixtures — known input, known sentences", () => {
 
     // Product rule: counts that gate fundable stay null when unknown.
     assert.equal(uw.metrics.negative_accounts, null, "null negatives stay null — never 0");
-    assert.equal(uw.metrics.late_payment_events, null, "null late payments stay null");
-    assert.equal(uw.metrics.inquiries.total, null, "null inquiries stay null in total");
+    assert.equal(uw.metrics.late_payment_events, null, "null late payments stay null — never 0");
+    assert.deepEqual(uw.metrics.inquiries, { ex: null, eq: 0, tu: 0, total: null },
+      "pulled bureau with unknown inquiries stays null; unpulled slots stay 0");
     assert.equal(uw.metrics.utilization_pct, null, "utilization null survives");
 
     assert.equal(uw.fundable, false,
@@ -251,6 +255,9 @@ describe("pinned fixtures — known input, known sentences", () => {
     };
     const annotated = annotateSuggestions(buildSuggestions(uw), uw, missing);
 
+    assert.equal(annotated.find((a) => a.id === "llc_absent_fundable"), undefined,
+      "must not emit You're approved when negatives were never entered");
+
     const notFundable = annotated.find((a) => a.id === "llc_absent_not_fundable");
     assert.ok(notFundable, "the not-fundable LLC sentence must be recognised and labelled");
     assert.equal(notFundable.restsOnMissingData, true,
@@ -261,9 +268,7 @@ describe("pinned fixtures — known input, known sentences", () => {
     assert.equal(thinFile.restsOnMissingData, true);
     assert.ok(thinFile.missingFields.some((f) => f.field === "tradelines"));
 
-    // Every sentence is recognised — none falls through to the unlabelled path.
     assert.deepEqual(annotated.filter((a) => !a.recognised), []);
-    // And no sentence text was altered on the way through.
     assert.deepEqual(annotated.map((a) => a.text), buildSuggestions(uw));
   });
 

@@ -119,6 +119,37 @@ describe("a clean message", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Smash: null / junk bodies are held — never "allowed", never sent.
+// ---------------------------------------------------------------------------
+
+describe("smash: null/junk body is held, not sent", () => {
+  // Same junk set compose refuses before queueing. The gate is the second fence
+  // for rows that somehow still got into messages.
+  for (const body of [undefined, null, "", "   ", "\n\t ", 42, {}, []]) {
+    test(`holds body=${JSON.stringify(body)}`, async () => {
+      const res = await run({ body });
+      assert.strictEqual(res.state, "blocked",
+        `junk body must be held, not allowed: ${JSON.stringify(body)}`);
+      assert.ok(codes(res).includes("empty_body"), JSON.stringify(codes(res)));
+      assert.strictEqual(res.task, null, "empty body clears itself when copy is fixed — no task");
+    });
+  }
+
+  test("holds a null message object without throwing", async () => {
+    const res = await gate(fakeDb(), null, { now: MIDDAY });
+    assert.strictEqual(res.state, "blocked");
+    assert.ok(codes(res).includes("gate_error") || codes(res).includes("empty_body"),
+      JSON.stringify(codes(res)));
+  });
+
+  // Near-miss: real text next to the junk cases must still go through.
+  test("still allows a real non-empty body", async () => {
+    const res = await run({ body: "Hello, your file was updated." });
+    assert.strictEqual(res.state, "allowed", JSON.stringify(codes(res)));
+  });
+});
+
+// ---------------------------------------------------------------------------
 // 1. Opt-out
 // ---------------------------------------------------------------------------
 
