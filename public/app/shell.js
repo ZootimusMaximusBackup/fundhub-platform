@@ -1502,7 +1502,11 @@
   function mountChatWidget(staff, demo) {
     var role = normRole(staff && staff.role);
     if (CHAT_SKIP_ROLES[role]) return;
-    var isPortal = role === "client" || PAGE === "client-portal.html";
+    /* Portal chat is for a CLIENT session only. Staff opening client-portal.html
+       (owner walk / prove client) still use the staff Ask/Knowledge/Message
+       modes — otherwise "Message staff" posts to /api/chat/portal-message and
+       gets 403 forbidden (requires principal kind client). */
+    var isPortal = role === "client";
     function go() {
       if (window.FHChat && typeof window.FHChat.mount === "function") {
         var hadCall = !!(staff && staff.had_call);

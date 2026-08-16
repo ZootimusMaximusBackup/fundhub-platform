@@ -183,6 +183,15 @@ describe("pre-call chat widget", () => {
     assert.match(SHELL_SRC, /autoOpenPrecall:\s*isPortal && !hadCall/);
   });
 
+  test("shell portal mode is role=client only — not every visit to client-portal.html", () => {
+    assert.match(SHELL_SRC, /var isPortal = role === "client"/);
+    assert.doesNotMatch(
+      SHELL_SRC,
+      /isPortal = role === "client" \|\| PAGE === "client-portal\.html"/,
+      "staff on client-portal must not get portal chat (403 on portal-message)"
+    );
+  });
+
   test("stays closed on first paint, then pops open after login", () => {
     const ui = mountInVm({
       portal: true, hadCall: false, autoOpenPrecall: true, popAfterMs: 1400
