@@ -204,9 +204,10 @@ export async function suspendStaff(db, { actor, staffId } = {}) {
     return { ok: false, status: 403, error: "forbidden" };
   }
   if (actor.id === staffId) return { ok: false, status: 400, error: "cannot_suspend_self" };
+  if (!actor.org_id) return { ok: false, status: 403, error: "forbidden" };
   const staff = (await db.query(
-    `UPDATE staff SET status = 'suspended' WHERE id = $1 RETURNING id, email, status`,
-    [staffId]
+    `UPDATE staff SET status = 'suspended' WHERE id = $1 AND org_id = $2 RETURNING id, email, status`,
+    [staffId, actor.org_id]
   )).rows[0];
   if (!staff) return { ok: false, status: 404, error: "staff_not_found" };
   const revoked = await revokeAllForStaff(db, staffId);

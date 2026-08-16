@@ -8,8 +8,8 @@ const ENTRIES = [
     title: "Send a contract",
     keywords: ["contract", "send contract", "esign", "agreement", "sign"],
     answer:
-      "Open Contracts from the sidebar. Pick a template, choose the client, fill the fields, then Send. The client gets a signing link. You can watch status on the same screen.",
-    href: "/app/contracts.html"
+      "Open the call cockpit or Present for this person. Pick a wording, press Send, then copy the sign link. An email also goes if mail is on. Wordings themselves are written on the Contracts page.",
+    href: "/app/closer-call.html"
   },
   {
     id: "soft-pull",

@@ -400,7 +400,7 @@ var RULES=[
    ]},
   {id:'CR-02',name:'Closer — success fee share',side:'Back-end',scope:'Event · 10% success fee collected',who:'Role · Closer',kind:'percent',
    versions:[{v:1,rate:5,from:'2025-01-01',to:null,by:'Chris Stanbridge',why:'Original rate at launch'}]},
-  {id:'CR-03',name:'Sales manager override',side:'Front-end',scope:'All products',who:'Person · Sarah Whitfield (EMP-000014)',kind:'percent',
+  {id:'CR-03',name:'Sales manager override',side:'Front-end',scope:'All products',who:'Role · Sales Manager',kind:'percent',
    versions:[
      {v:1,rate:2,from:'2025-09-18',to:'2026-06-30',by:'Chris Stanbridge',why:'Original override on promotion'},
      {v:2,rate:2.5,from:'2026-07-01',to:null,by:'Chris Stanbridge',why:'Added Alt-Fin rail to her scope'}
@@ -441,17 +441,7 @@ function rateStr(r,v){
 }
 
 /* ══ PAYOUT LEDGER ═══════════════════════════════════════════════════════ */
-var LEDGER=[
-  {d:'2026-07-26',who:'Jordan Blake',client:'Devon Marsh',prod:'Consulting Services Deposit',rule:'CR-01',ver:2,basis:3000,rate:'10%',amt:300,st:'Paid'},
-  {d:'2026-07-26',who:'Sarah Whitfield',client:'Devon Marsh',prod:'Consulting Services Deposit',rule:'CR-03',ver:2,basis:3000,rate:'2.5%',amt:75,st:'Paid'},
-  {d:'2026-07-26',who:'Nina Castellano',client:'Marcus Ibe',prod:'Consulting Services Deposit',rule:'CR-01',ver:2,basis:3000,rate:'10%',amt:300,st:'Approved'},
-  {d:'2026-07-19',who:'Alvin Torres',client:'Ray Pulaski',prod:'Inquiry Removal ×6',rule:'CR-04',ver:1,basis:570,rate:'$25/unit',amt:150,st:'Accrued'},
-  {d:'2026-07-18',who:'Dana Kowalczyk',client:'Tabitha Nguyen',prod:'Business Financial Assessment',rule:'CR-05',ver:1,basis:32,rate:'12%',amt:3.84,st:'Accrued'},
-  {d:'2026-07-15',who:'Jordan Blake',client:'Amara Nwosu',prod:'Credit Optimization Bundle',rule:'CR-01',ver:2,basis:2000,rate:'10%',amt:200,st:'Paid'},
-  {d:'2026-07-11',who:'Nina Castellano',client:'Elena Vasquez',prod:'Consulting Services Deposit',rule:'CR-01',ver:2,basis:3000,rate:'10%',amt:300,st:'Paid'},
-  {d:'2026-06-27',who:'Marcus Webb',client:'Dwayne Okafor',prod:'Card stack funded',rule:'CR-06',ver:1,basis:117000,rate:'4%',amt:4680,st:'Paid'},
-  {d:'2026-02-14',who:'Jordan Blake',client:'Meredith Yao',prod:'Consulting Services Deposit',rule:'CR-01',ver:1,basis:3000,rate:'8%',amt:240,st:'Paid'}
-];
+var LEDGER=[];
 var ST_CLS={Paid:'b-ok',Approved:'b-info',Accrued:'b-warn'};
 
 /* ══ RENDER ══════════════════════════════════════════════════════════════ */
@@ -585,16 +575,17 @@ function renderLedger(){
   var pf=document.getElementById('perFilter').value, sf=document.getElementById('statFilter').value;
   var rows=LEDGER.filter(function(l){return (!pf||l.who===pf)&&(!sf||l.st===sf)});
   document.getElementById('ledgerBody').innerHTML=rows.map(function(l){
+    var ruleCell=(l.rule&&l.rule!=='—')?'<span class="badge b-gray">'+esc(l.rule)+(l.ver?(' v'+l.ver):'')+'</span>':'—';
     return '<tr><td class="mono" style="font-size:11.5px">'+l.d+'</td>'+
       '<td style="font-weight:500">'+esc(l.who)+'</td>'+
       '<td>'+esc(l.client)+'</td>'+
       '<td style="font-size:12px">'+esc(l.prod)+'</td>'+
-      '<td><span class="badge b-gray">'+l.rule+' v'+l.ver+'</span></td>'+
+      '<td>'+ruleCell+'</td>'+
       '<td class="money">'+money(l.basis)+'</td>'+
       '<td class="mono" style="font-size:11.5px">'+esc(l.rate)+'</td>'+
       '<td class="money" style="text-align:right">'+money(l.amt)+'</td>'+
-      '<td><span class="badge '+ST_CLS[l.st]+'">'+l.st+'</span></td></tr>';
-  }).join('')||'<tr><td colspan="9" class="empty">Nothing matches that filter.</td></tr>';
+      '<td><span class="badge '+(ST_CLS[l.st]||'b-gray')+'">'+esc(l.st)+'</span></td></tr>';
+  }).join('')||'<tr><td colspan="9" class="empty">'+(LEDGER.length?'Nothing matches that filter.':'No payouts on file.')+'</td></tr>';
   var tot=rows.reduce(function(a,l){return a+l.amt},0);
   document.getElementById('ledgerTotal').textContent=money(tot);
 }
@@ -710,11 +701,15 @@ document.getElementById('edSave').addEventListener('click',function(){
 document.getElementById('scopeFilter').addEventListener('change',renderRules);
 document.getElementById('statFilter').addEventListener('change',renderLedger);
 document.getElementById('perFilter').addEventListener('change',renderLedger);
-(function(){
-  var names=[]; LEDGER.forEach(function(l){if(names.indexOf(l.who)<0)names.push(l.who)});
-  var sel=document.getElementById('perFilter');
+function fillPersonFilter(){
+  var sel=document.getElementById('perFilter'); if(!sel) return;
+  var cur=sel.value;
+  var names=[]; LEDGER.forEach(function(l){if(l.who&&l.who!=='—'&&names.indexOf(l.who)<0)names.push(l.who)});
+  sel.innerHTML='<option value="">Everyone</option>';
   names.sort().forEach(function(n){var o=document.createElement('option');o.textContent=n;sel.appendChild(o)});
-})();
+  if(cur) sel.value=cur;
+}
+fillPersonFilter();
 
 renderProducts(); renderRules(); renderLedger(); renderStats();
 </script>
@@ -781,26 +776,42 @@ renderProducts(); renderRules(); renderLedger(); renderStats();
     return "live product ladder · " + rows.length + " products · rails have no source";
   });
 
+  function ledgerFromApi(r) {
+    var st = String(r.status || "").toLowerCase();
+    var stLabel = st === "paid" ? "Paid" : st === "approved" ? "Approved" : st === "accrued" ? "Accrued" : (r.status || "Accrued");
+    var when = r.earned_at || r.created_at || "";
+    var rate = r.split_percent != null && r.split_percent !== "" ? (Number(r.split_percent) + "%") : "—";
+    return {
+      d: when ? String(when).slice(0, 10) : "—",
+      who: r.staff_name || r.employee_code || "—",
+      client: "—",
+      prod: r.product_name_at_earning || "—",
+      rule: "—",
+      ver: "",
+      basis: Number(r.basis) || 0,
+      rate: rate,
+      amt: Number(r.amount) || 0,
+      st: stLabel
+    };
+  }
+
   FHData.wire(FHData.commissions({ limit: 200 }), "commission ledger", function (data) {
     var rows = data.items || [];
-    if (!rows.length) return null;
+    if (typeof LEDGER !== "undefined") {
+      LEDGER.length = 0;
+      Array.prototype.push.apply(LEDGER, rows.map(ledgerFromApi));
+    }
+    if (typeof fillPersonFilter === "function") fillPersonFilter();
+    if (typeof renderLedger === "function") try { renderLedger(); } catch (e) {}
+    if (typeof renderStats === "function") try { renderStats(); } catch (e) {}
+    if (typeof renderRules === "function") try { renderRules(); } catch (e) {}
+    if (!rows.length) return "no commission rows yet";
     var accrued = rows.filter(function (r) { return r.status !== "paid" && r.status !== "void"; })
                       .reduce(function (a, r) { return a + Number(r.amount || 0); }, 0);
     var paid = rows.filter(function (r) { return r.status === "paid"; })
                    .reduce(function (a, r) { return a + Number(r.amount || 0); }, 0);
     set("kAccrued", usd(accrued));
     set("kPaid", usd(paid));
-
-    var body = document.getElementById("ledgerBody");
-    if (body) {
-      body.innerHTML = rows.map(function (r) {
-        return "<tr><td>" + esc(r.staff_name || r.employee_code || "—") + "</td>" +
-               "<td>" + esc(r.role || "—") + "</td>" +
-               "<td>" + esc(r.product_name_at_earning || "—") + "</td>" +
-               "<td>" + esc(usd(r.amount)) + "</td>" +
-               "<td>" + esc(r.status) + "</td></tr>";
-      }).join("");
-    }
     return "live ledger · " + rows.length + " entries · " + usd(accrued) + " accrued";
   });
 })();

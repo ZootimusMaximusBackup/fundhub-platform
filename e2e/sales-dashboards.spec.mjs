@@ -1,6 +1,6 @@
 // Playwright: three sales dashboards + role gates.
 import { test, expect } from "@playwright/test";
-import { openScreen, OWNER, CLOSER, CLIENT_ID } from "./harness.mjs";
+import { openScreen, OWNER, CLOSER, CLIENT_ID, freezeClock } from "./harness.mjs";
 
 const SALES_MANAGER = {
   ok: true,
@@ -112,6 +112,8 @@ test("my-numbers loads for a closer and shows honest empty call quality", async 
   await expect(page.locator("body")).toBeVisible();
   await expect(page.locator("text=Call recording and transcription do not exist yet")).toBeVisible();
   await expect(page.locator("text=Deposit → funded")).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("Marcus Webb");
+  await expect(page.locator("body")).not.toContainText("Bianca Souza");
 });
 
 test("sales-floor loads for sales_manager and shell bounces a closer home", async ({ page }) => {
@@ -133,11 +135,42 @@ test("sales-floor loads for owner", async ({ page }) => {
   await expect(page.locator(".hero").first()).toBeVisible();
 });
 
+test("sales-floor Your closers shows Chris, not sample names", async ({ page }) => {
+  const floor = {
+    ...emptyFloor,
+    closers: [{
+      staff_id: "staff-chris",
+      name: "Chris Stanbridge",
+      on_shift: false,
+      calls: 2,
+      close_rate: 0,
+      funded_rate: null,
+      cash_cents: 200,
+      cash_display: "$2",
+      action: null
+    }]
+  };
+  await openScreen(page, "/app/sales-floor.html", OWNER, {
+    ...salesHandlers(),
+    "/api/read/sales-floor": floor
+  });
+  const rost = page.locator(".rost");
+  await expect(rost).toContainText("Chris Stanbridge");
+  await expect(rost).toContainText("Off shift");
+  await expect(rost).toContainText("$2");
+  await expect(rost).toContainText("0%");
+  await expect(rost).not.toContainText("Marcus Webb");
+  await expect(rost).not.toContainText("Elena Voss");
+  await expect(rost).not.toContainText("Devon Marsh");
+  await expect(rost).not.toContainText("Jordan Blake");
+  await expect(page.locator("body")).not.toContainText("Devon isn't lazy");
+});
+
 test("closer-call requires client_id and shows disposition hotkeys", async ({ page }) => {
   await openScreen(page, `/app/closer-call.html?client_id=${CLIENT_ID}`, CLOSER, salesHandlers());
   await expect(page.locator("body")).toBeVisible();
   await expect(page.locator("h1").first()).toBeVisible();
-  await expect(page.locator('[data-outcome="deposit"]').first()).toBeVisible();
+  await expect(page.locator("#fh-join")).toBeDisabled();
   await expect(page.locator('[data-belief="desire"]').first()).toBeVisible();
   await expect(page.locator("#fh-present")).toBeVisible();
 });
@@ -145,4 +178,24 @@ test("closer-call requires client_id and shows disposition hotkeys", async ({ pa
 test("closer-call without client_id shows the honest gate", async ({ page }) => {
   await openScreen(page, "/app/closer-call.html", CLOSER, salesHandlers());
   await expect(page.locator("body")).toContainText(/client_id|pipeline|cockpit/i);
+});
+
+test("my-numbers header is the session closer, not Marcus or Elena", async ({ page }) => {
+  await openScreen(page, "/app/my-numbers.html", CLOSER, salesHandlers());
+  await expect(page.locator("#staffChip")).toContainText("Casey Reed");
+  await expect(page.locator("body")).not.toContainText("Marcus Webb");
+  await expect(page.locator("body")).not.toContainText("Elena Voss");
+  await expect(page.locator("body")).not.toContainText("Devon Marsh");
+  await expect(page.locator("body")).not.toContainText("Bianca Souza");
+});
+
+test("closer-dashboard without a client is honest empty", async ({ page }) => {
+  await freezeClock(page, "2026-08-16T20:00:00Z");
+  await openScreen(page, "/app/closer-dashboard.html", CLOSER, salesHandlers());
+  await expect(page.locator("#calcGate")).toBeVisible();
+  await expect(page.locator("#calcGate")).toHaveText("Open from a client.");
+  await expect(page.locator("#whoName")).toHaveText("Casey Reed");
+  await expect(page.locator("body")).not.toContainText("Jordan Blake");
+  await expect(page.locator("body")).not.toContainText("Priya Nair");
+  await expect(page.locator(".clock")).not.toContainText("Jul 26");
 });

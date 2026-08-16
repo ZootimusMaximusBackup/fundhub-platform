@@ -1,7 +1,8 @@
 import { test, describe } from "node:test";
 import assert from "node:assert";
 import {
-  triMerge, utilisation, tierReasoning, openBlockers, clientDetailExtras
+  triMerge, utilisation, tierReasoning, openBlockers, clientDetailExtras,
+  businessCredit, latestBooking, incomeEstimates
 } from "./client-detail.mjs";
 
 const crs = (result, created_at = "2026-01-02T00:00:00Z") => ({ result, created_at });
@@ -49,6 +50,71 @@ describe("client detail derivations", () => {
   test("a jsonb string round-trip still parses", () => {
     const t = triMerge([crs(JSON.stringify({ scores: { ex: 690, eq: 700, tu: 695 } }))]);
     assert.equal(t.equifax, 700);
+  });
+
+  test("all-null newest scores fall back to the last real FICO", () => {
+    const t = triMerge([
+      crs({ scores: { ex: 630, eq: 698, tu: 725 } }, "2026-01-01T00:00:00Z"),
+      crs({ scores: { ex: null, eq: null, tu: null } }, "2026-08-16T00:00:00Z")
+    ]);
+    assert.deepEqual([t.experian, t.equifax, t.transunion], [630, 698, 725]);
+    assert.equal(t.asOf, "2026-01-01T00:00:00Z");
+  });
+
+  test("Equifax FICO 9 in the raw bureau beats a cached IncomeView score", () => {
+    const t = triMerge([crs({
+      environment: "production",
+      scores: { ex: 464, eq: 81, tu: null },
+      scoreModels: {
+        ex: "Experian/Fair Isaac Risk Model V9",
+        eq: "Consumer IncomeView+ Model"
+      },
+      bureaus: {
+        EQ: {
+          scores: [
+            { modelName: "Consumer IncomeView+ Model", scoreValue: "81", scoreMaximumValue: "300" },
+            { modelName: "FICO Score 9", scoreValue: "462", scoreMaximumValue: null }
+          ]
+        }
+      }
+    })]);
+    assert.equal(t.experian, 464);
+    assert.equal(t.equifax, 462, "the FICO 9 sitting on the bureau must paint, not IncomeView");
+    assert.equal(t.transunion, null);
+  });
+
+  test("IncomeView 42 is not a FICO; real FICO 9 stays", () => {
+    const t = triMerge([crs({
+      scores: { ex: 630, eq: 42, tu: 725 },
+      scoreModels: {
+        ex: "Experian/Fair Isaac Risk Model V9",
+        eq: "Consumer IncomeView+ Model",
+        tu: "FICO® Score 9"
+      }
+    })]);
+    assert.equal(t.experian, 630);
+    assert.equal(t.equifax, null, "IncomeView is not a credit score");
+    assert.equal(t.transunion, 725);
+  });
+
+  test("sandbox scores are never shown as a real person's FICO", () => {
+    const t = triMerge([
+      crs({
+        environment: "sandbox",
+        scores: { ex: 630, eq: 42, tu: 725 },
+        scoreModels: { ex: "FICO 9", tu: "FICO 9" }
+      }, "2026-01-01T00:00:00Z"),
+      crs({ environment: "production", scores: { ex: null, eq: null, tu: null } }, "2026-08-16T00:00:00Z")
+    ]);
+    assert.deepEqual([t.experian, t.equifax, t.transunion, t.source],
+      [null, null, null, null]);
+  });
+
+  test("a number outside 300–850 is dropped even without a model name", () => {
+    const t = triMerge([crs({ scores: { ex: 630, eq: 42, tu: 725 } })]);
+    assert.equal(t.experian, 630);
+    assert.equal(t.equifax, null);
+    assert.equal(t.transunion, 725);
   });
 
   test("utilisation bands are boundary-correct", () => {
@@ -144,5 +210,57 @@ describe("client detail derivations", () => {
     assert.equal(e.tri_merge.experian, null);
     assert.equal(e.utilisation.band, null);
     assert.equal(e.tier_reasoning.tier, null);
+    assert.deepEqual(e.business_credit, { name: null, intelliscore: null, fsr: null });
+    assert.deepEqual(e.income_estimates, { experian: null, equifax: null, asOf: null });
+    assert.deepEqual(e.latest_booking, { when: null, title: null, status: null });
+  });
+
+  test("latest booking reads the strategy-session task and a no-show flag", () => {
+    const b = latestBooking({
+      client: { custom_fields: { call_outcome: "no_show" } },
+      tasks: [{
+        title: "Strategy session booked",
+        source_workflow: "calcom",
+        due_at: "2026-08-13T18:00:00.000Z",
+        done: false
+      }]
+    });
+    assert.equal(b.title, "Strategy session booked");
+    assert.equal(b.when, "2026-08-13T18:00:00.000Z");
+    assert.equal(b.status, "no_show");
+  });
+
+  test("income estimates read Income Insight / IncomeView as yearly dollars", () => {
+    const inc = incomeEstimates([crs({
+      environment: "production",
+      bureaus: {
+        EX: { scores: [
+          { modelName: "Experian/Fair Isaac Risk Model V9", scoreValue: "464" },
+          { modelName: "Income Insight", scoreValue: "97" }
+        ]},
+        EQ: { scores: [
+          { modelName: "Consumer IncomeView+ Model", scoreValue: "81", scoreMaximumValue: "300" },
+          { modelName: "FICO Score 9", scoreValue: "462" }
+        ]}
+      }
+    })]);
+    assert.equal(inc.experian.annual, 97000);
+    assert.equal(inc.equifax.annual, 81000);
+    assert.equal(incomeEstimates([]).experian, null);
+  });
+
+  test("business credit reads stored Intelliscore and never invents one", () => {
+    const hit = businessCredit({
+      businesses: [{ name: "Acme LLC", entity_data: { scores: { intelliscore: 72, fsr: 40 } } }]
+    });
+    assert.equal(hit.name, "Acme LLC");
+    assert.equal(hit.intelliscore, 72);
+    assert.equal(hit.fsr, 40);
+    const miss = businessCredit({});
+    assert.deepEqual(miss, { name: null, intelliscore: null, fsr: null });
+    const ficoAsBiz = businessCredit({
+      businesses: [{ entity_data: { scores: { intelliscore: 720 } } }]
+    });
+    assert.equal(ficoAsBiz.intelliscore, null, "FICO is not Intelliscore");
   });
 });

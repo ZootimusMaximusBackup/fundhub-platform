@@ -42,7 +42,7 @@ export default async function handler(req, res) {
   if (!await requireClientInOrg(res, db, staff, id)) return;
 
   try {
-    const [clientRes, txRes, crsRes, msgRes, taskRes, roundRes, invRes] = await Promise.all([
+    const [clientRes, txRes, crsRes, msgRes, taskRes, roundRes, invRes, bizRes] = await Promise.all([
       db.query(
         `SELECT id, org_id, first_name, last_name, email, phone,
                 outcome_tier, funded, funded_amount, days_to_fund,
@@ -88,6 +88,14 @@ export default async function handler(req, res) {
          FROM v_invoice_balance WHERE client_id = $1 AND org_id = $2
          ORDER BY created_at DESC`,
         [id, orgId]
+      ),
+      db.query(
+        `SELECT name, age_months, entity_data
+           FROM businesses
+          WHERE client_id = $1 AND org_id = $2
+          ORDER BY updated_at DESC
+          LIMIT 5`,
+        [id, orgId]
       )
     ]);
 
@@ -101,7 +109,8 @@ export default async function handler(req, res) {
       crsResults: crsRes.rows,
       tasks: taskRes.rows,
       fundingRounds: roundRes.rows,
-      invoices: invRes.rows
+      invoices: invRes.rows,
+      businesses: bizRes.rows
     });
 
     // Active inquiry-removal case for the control panel status tile.

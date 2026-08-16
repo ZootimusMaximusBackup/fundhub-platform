@@ -250,49 +250,7 @@ var CLASSES=[
    del: na|not_sent|sent|opened|bounced
    sig: na|awaiting|signed|declined|expired
    age: days in the current pending state (0 when nothing is pending) */
-var DOCS=[
-  {doc:'Soft-Pull Authorization',cls:'auth',sub:'FCRA §604(f) · v3',client:'Priya Nair',gen:'generated',del:'opened',sig:'signed',age:0},
-  {doc:'Soft-Pull Authorization',cls:'auth',sub:'FCRA §604(f) · v3',client:'Amara Nwosu',gen:'generated',del:'sent',sig:'awaiting',age:4},
-  {doc:'Soft-Pull Authorization',cls:'auth',sub:'FCRA §604(f) · v3',client:'Carlos Bettencourt',gen:'generated',del:'sent',sig:'awaiting',age:11},
-  {doc:'Soft-Pull Authorization',cls:'auth',sub:'FCRA §604(f) · v3',client:'Victor Manzano',gen:'generated',del:'opened',sig:'declined',age:0},
-  {doc:'Soft-Pull Authorization',cls:'auth',sub:'FCRA §604(f) · v3',client:'Meredith Yao',gen:'generated',del:'bounced',sig:'awaiting',age:9},
-  {doc:'Soft-Pull Authorization',cls:'auth',sub:'FCRA §604(f) · v2 — superseded',client:'Ray Pulaski',gen:'generated',del:'opened',sig:'expired',age:34},
-  {doc:'Soft-Pull Authorization',cls:'auth',sub:'FCRA §604(f) · v3',client:'Dwayne Okafor',gen:'generated',del:'opened',sig:'signed',age:0},
-  {doc:'Soft-Pull Authorization',cls:'auth',sub:'FCRA §604(f) · v3',client:'Tabitha Nguyen',gen:'generated',del:'opened',sig:'signed',age:0},
-
-  {doc:'Funding Agreement',cls:'contract',sub:'deposit + 10% success fee',client:'Devon Marsh',gen:'generated',del:'opened',sig:'signed',age:0},
-  {doc:'Funding Agreement',cls:'contract',sub:'deposit + 10% success fee',client:'Gustavo Rincón',gen:'generated',del:'sent',sig:'awaiting',age:2},
-  {doc:'Funding Agreement',cls:'contract',sub:'deposit + 10% success fee',client:'Elena Vasquez',gen:'generated',del:'opened',sig:'awaiting',age:16},
-  {doc:'Funding Agreement',cls:'contract',sub:'deposit + 10% success fee',client:'Dwayne Okafor',gen:'generated',del:'opened',sig:'signed',age:0},
-  {doc:'Repair Engagement Letter',cls:'contract',sub:'Credit Optimization Bundle',client:'Ray Pulaski',gen:'generated',del:'opened',sig:'signed',age:0},
-  {doc:'Repair Engagement Letter',cls:'contract',sub:'DIY package',client:'Tabitha Nguyen',gen:'generated',del:'sent',sig:'awaiting',age:6},
-  {doc:'Repair Engagement Letter',cls:'contract',sub:'Credit Optimization Bundle',client:'Amara Nwosu',gen:'failed',del:'not_sent',sig:'awaiting',age:3},
-  {doc:'Partner License',cls:'contract',sub:'affiliate agreement · 12%',client:'Dana Kowalczyk',gen:'generated',del:'opened',sig:'awaiting',age:13},
-  {doc:'Partner License',cls:'contract',sub:'affiliate agreement · 12%',client:'Bellweather Advisors',gen:'generated',del:'sent',sig:'awaiting',age:21},
-
-  {doc:'Invoice — Business Financial Assessment',cls:'invoice',sub:'$32',client:'Tabitha Nguyen',gen:'generated',del:'opened',sig:'na',age:0},
-  {doc:'Invoice — Consulting Services Deposit',cls:'invoice',sub:'$3,000',client:'Devon Marsh',gen:'generated',del:'opened',sig:'na',age:0},
-  {doc:'Invoice — Consulting Services Deposit',cls:'invoice',sub:'$3,000',client:'Priya Nair',gen:'generated',del:'sent',sig:'na',age:0},
-  {doc:'Invoice — Credit Optimization Bundle',cls:'invoice',sub:'$2,000',client:'Ray Pulaski',gen:'generated',del:'bounced',sig:'na',age:8},
-  {doc:'Invoice — Inquiry Removal ×6',cls:'invoice',sub:'$570',client:'Ray Pulaski',gen:'generated',del:'not_sent',sig:'na',age:5},
-  {doc:'Invoice — Success Fee',cls:'invoice',sub:'10% of $18,500',client:'Maria Delgado',gen:'queued',del:'not_sent',sig:'na',age:0},
-  {doc:'Invoice — Consulting Services Package',cls:'invoice',sub:'$1,000 DIY',client:'Amara Nwosu',gen:'generated',del:'opened',sig:'na',age:0},
-
-  {doc:'Credit Analysis Report',cls:'deliverable',sub:'DS-01',client:'Priya Nair',gen:'generated',del:'opened',sig:'na',age:0},
-  {doc:'Metro 2 Dispute Letter Pack',cls:'deliverable',sub:'DS-02',client:'Ray Pulaski',gen:'generating',del:'not_sent',sig:'na',age:2},
-  {doc:'Credit Optimization Roadmap',cls:'deliverable',sub:'DS-03',client:'Ray Pulaski',gen:'generated',del:'sent',sig:'na',age:0},
-  {doc:'Funding Snapshot',cls:'deliverable',sub:'DS-04',client:'Dwayne Okafor',gen:'generated',del:'opened',sig:'na',age:0},
-  {doc:'Bank and Lender Match List',cls:'deliverable',sub:'DS-05',client:'Dwayne Okafor',gen:'generated',del:'opened',sig:'na',age:0},
-  {doc:'Credit Analysis Report',cls:'deliverable',sub:'DS-01',client:'Tabitha Nguyen',gen:'generated',del:'opened',sig:'na',age:0},
-  {doc:'Metro 2 Dispute Letter Pack',cls:'deliverable',sub:'DS-02',client:'Tabitha Nguyen',gen:'failed',del:'not_sent',sig:'na',age:7},
-  {doc:'Credit Optimization Roadmap',cls:'deliverable',sub:'DS-03',client:'Tabitha Nguyen',gen:'generated',del:'not_sent',sig:'na',age:7},
-  {doc:'Funding Snapshot',cls:'deliverable',sub:'DS-04',client:'Priya Nair',gen:'generated',del:'opened',sig:'na',age:0},
-  {doc:'Bank and Lender Match List',cls:'deliverable',sub:'DS-05',client:'Priya Nair',gen:'generated',del:'opened',sig:'na',age:0},
-  {doc:'Credit Analysis Report',cls:'deliverable',sub:'DS-01',client:'Amara Nwosu',gen:'generated',del:'opened',sig:'na',age:0},
-  {doc:'Credit Optimization Roadmap',cls:'deliverable',sub:'DS-03',client:'Amara Nwosu',gen:'generated',del:'opened',sig:'na',age:0},
-  {doc:'Credit Analysis Report',cls:'deliverable',sub:'DS-01',client:'Elena Vasquez',gen:'generated',del:'opened',sig:'na',age:0},
-  {doc:'Funding Snapshot',cls:'deliverable',sub:'DS-04',client:'Elena Vasquez',gen:'generated',del:'sent',sig:'na',age:0}
-];
+var DOCS=[];
 
 var GEN={queued:['b-butter','Queued'],generating:['b-warn','Generating'],generated:['b-ok','Generated'],failed:['b-alert','Failed']};
 var DEL={na:['b-info','N/A'],not_sent:['b-butter','Not sent'],sent:['b-warn','Sent'],opened:['b-ok','Opened'],bounced:['b-alert','Bounced']};

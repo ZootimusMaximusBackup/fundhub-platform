@@ -18,9 +18,12 @@ export async function handle({ event, db, step }) {
   if (!clientId) return { done: false, reason: "no_client" };
 
   const r = await step.run("check-first-touch", () => db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]));
-  if (r.rows[0]?.custom_fields?.first_touch_date) return { done: false, reason: "already_locked" };
+  const cf = r.rows[0]?.custom_fields || {};
+  if (cf.first_touch_date) return { done: false, reason: "already_locked" };
 
-  await step.run("set-first-touch", () => mergeCustomFields(db, clientId, { first_touch_date: new Date().toISOString(), lead_magnet_type: "Survey" }));
+  const patch = { first_touch_date: new Date().toISOString() };
+  if (!cf.lead_magnet_type) patch.lead_magnet_type = "Survey";
+  await step.run("set-first-touch", () => mergeCustomFields(db, clientId, patch));
   return { done: true };
 }
 

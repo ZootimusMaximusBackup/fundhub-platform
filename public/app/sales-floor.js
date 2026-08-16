@@ -105,8 +105,8 @@
           '<span class="num">' + pct(c.close_rate) + "</span>" +
           '<span class="num c4">' + pct(c.funded_rate) + "</span>" +
           '<span class="num c5">' + (c.cash_display || money(c.cash_cents)) + "</span>" +
-          '<span class="act"><b>' + (c.action || "") + "</b></span></div>";
-      }).join("") || '<div class="rrow"><span class="nm"><b>No active closers</b><em>Staff with role=closer will appear here</em></span></div>';
+          '<span class="act"><b>' + (c.action || "—") + "</b></span></div>";
+      }).join("") || '<div class="rrow"><span class="nm"><b>No closers on this board</b><em>Live staff only</em></span></div>';
       rost.querySelectorAll(".rrow").forEach(function (n) { n.remove(); });
       if (head) head.insertAdjacentHTML("afterend", rows);
     }
@@ -309,6 +309,24 @@
       return;
     }
     paint(r.data);
+    paintWho();
+  }
+
+  function paintWho() {
+    var nameChip = document.querySelector("header .hr .chip");
+    if (!nameChip) return;
+    var token = "";
+    try { token = localStorage.getItem("fh_token") || ""; } catch (e) {}
+    fetch("/api/auth/session", {
+      headers: token
+        ? { accept: "application/json", authorization: "Bearer " + token }
+        : { accept: "application/json" }
+    }).then(function (r) { return r.json(); }).then(function (s) {
+      var name = (s && s.staff && s.staff.name) || "";
+      nameChip.innerHTML = '<span class="cd" style="background:var(--info)"></span>' + (name || "—");
+    }).catch(function () {
+      nameChip.innerHTML = '<span class="cd" style="background:var(--info)"></span>—';
+    });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

@@ -87,6 +87,7 @@ All non-`live-*` specs under `e2e/` use `e2e/harness.mjs` + static server (`npm 
 | 8 | **19/19 = 100** | — | credits restored; health + login green |
 | 9 | **24/24 = 100** | — | 2026-08-16 Workflow 2 added 5 affiliate ids; full `test:e2e:live` 26/26 |
 | 10 | **31/31 = 100** | — | 2026-08-16 partner sites + Brand Studio writes; added 7 white-label ids after green |
+| 11 | **31/31 = 100** | — | 2026-08-16 Workflow 3 re-ran full `test:e2e:live` **26/26** after partner lockout wait |
 
 ## Product fix shipped
 

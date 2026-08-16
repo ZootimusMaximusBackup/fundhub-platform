@@ -194,6 +194,26 @@ test("entry.captured: creates client once, idempotent on re-run", async () => {
   assert.equal(db.clients[0].first_name, "Jane");
 });
 
+test("entry.captured: stamps Facebook UTM and marks a /watch land as VSL", async () => {
+  const db = pgFake();
+  await onEntryCaptured(ev("entry.captured", {
+    email: "ad@example.com",
+    name: "Ad Lead",
+    source: "clickfunnels",
+    attribution: {
+      utm_source: "fb_ad",
+      utm_campaign: "oSched: VSL: Funding",
+      landing_path: "/watch",
+      referrer_domain: "m.facebook.com"
+    }
+  }), db);
+  const cf = db.clients[0].custom_fields;
+  assert.equal(cf.utm_source, "fb_ad");
+  assert.equal(cf.utm_campaign, "oSched: VSL: Funding");
+  assert.equal(cf.landing_path, "/watch");
+  assert.equal(cf.lead_magnet_type, "VSL");
+});
+
 test("payment.received: inserts one transaction, replay dedupes by providerRef", async () => {
   const db = pgFake();
   const e = ev("payment.received", { email: "a@b.com", productName: "Consulting Services Deposit", amount: 3000, providerRef: "txn_1", source: "commas" });
@@ -210,8 +230,21 @@ test("payment.failed: records a failed transaction (not lost)", async () => {
   assert.equal(db.transactions.length, 1);
 });
 
+const SALES_STAGES = [
+  { org_id: "org-1", pipeline_key: "sales", stage_key: "new_lead", pipeline_id: "pipe-sales", stage_id: "st-new", sort_order: 0 },
+  { org_id: "org-1", pipeline_key: "sales", stage_key: "survey_complete", pipeline_id: "pipe-sales", stage_id: "st-survey", sort_order: 1 },
+  { org_id: "org-1", pipeline_key: "sales", stage_key: "booked", pipeline_id: "pipe-sales", stage_id: "st-booked", sort_order: 2 }
+];
+
 test("survey.submitted merges answers; diagnostic.paid + decision.rendered stamp the client", async () => {
-  const db = pgFake();
+  const db = pgFake({
+    pipelineStages: [
+      ...SALES_STAGES,
+      { org_id: "org-1", pipeline_key: "sales", stage_key: "diagnostic_paid", pipeline_id: "pipe-sales", stage_id: "st-diag", sort_order: 5 },
+      { org_id: "org-1", pipeline_key: "sales", stage_key: "decision_rendered", pipeline_id: "pipe-sales", stage_id: "st-decision", sort_order: 6 }
+    ]
+  });
+  await onEntryCaptured(ev("entry.captured", { email: "a@b.com", name: "A" }), db);
   await onSurveySubmitted(ev("survey.submitted", { email: "a@b.com", answers: { cf_svy_why: "growth", clarity: "high" } }), db);
   await onDiagnosticPaid(ev("diagnostic.paid", { email: "a@b.com" }), db);
   await onDecisionRendered(ev("decision.rendered", { email: "a@b.com", outcomeTier: "FULL_FUNDING", fundingEstimate: 50000 }), db);
@@ -220,13 +253,8 @@ test("survey.submitted merges answers; diagnostic.paid + decision.rendered stamp
   assert.equal(c.custom_fields.crs_paid, true);
   assert.equal(c.custom_fields.total_funding_estimate, 50000);
   assert.equal(c.outcome_tier, "FULL_FUNDING");
+  assert.equal(db.cards[0].stage_id, "st-decision", "decision.rendered must park the card on Decision Rendered");
 });
-
-const SALES_STAGES = [
-  { org_id: "org-1", pipeline_key: "sales", stage_key: "new_lead", pipeline_id: "pipe-sales", stage_id: "st-new", sort_order: 0 },
-  { org_id: "org-1", pipeline_key: "sales", stage_key: "survey_complete", pipeline_id: "pipe-sales", stage_id: "st-survey", sort_order: 1 },
-  { org_id: "org-1", pipeline_key: "sales", stage_key: "booked", pipeline_id: "pipe-sales", stage_id: "st-booked", sort_order: 2 }
-];
 
 test("survey.submitted mid-survey (no available capital) stays off survey_complete", async () => {
   const db = pgFake({ pipelineStages: SALES_STAGES });

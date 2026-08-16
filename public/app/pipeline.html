@@ -150,9 +150,45 @@
     background:var(--surface);border-radius:5px;padding:2px 9px;}
 
   /* ---------- board ---------- */
-  .board-wrap{flex:1;background:var(--board);overflow:auto;min-height:0;position:relative;}
+  .board-row{flex:1;display:flex;min-height:0;min-width:0;}
+  .board-wrap{flex:1;background:var(--board);overflow:auto;min-height:0;min-width:0;position:relative;}
   .board-wrap::-webkit-scrollbar{height:10px;width:10px;}
   .board-wrap::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px;}
+
+  /* Docked preview — shoves columns left instead of covering them */
+  .fh-drawer{flex:0 0 0;width:0;overflow:hidden;background:var(--surface);
+    display:flex;flex-direction:column;min-height:0;transition:flex-basis .2s ease,width .2s ease}
+  .fh-drawer.open{flex-basis:380px;width:380px;border-left:1px solid var(--line)}
+  .fh-drawer-head,.fh-drawer-body{min-width:380px}
+  .fh-drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 16px 12px;border-bottom:1px solid var(--line)}
+  .fh-drawer-head h2{margin:4px 0 0;font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+  .fh-drawer-x,.fh-drawer-del{border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:6px 10px;font:600 11px var(--sans);cursor:pointer;color:var(--ink)}
+  .fh-drawer-del{color:#6E2A22;border-color:#e8c4bf}
+  .fh-drawer-body{flex:1;overflow:auto;padding:14px 16px 28px}
+  .fh-drawer-sec{margin:0 0 16px}
+  .fh-drawer-sec h3{margin:0 0 8px;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint)}
+  .fh-drawer-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .fh-drawer-stat{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--paper)}
+  .fh-drawer-stat b{display:block;font-size:18px;font-weight:800;letter-spacing:-.02em}
+  .fh-drawer-stat span{font-size:10px;color:var(--text-faint);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em}
+  .fh-drawer-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+  .fh-drawer-row span:first-child{color:var(--text-dim)}
+  .fh-text-btn{display:inline-block;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:3px 8px;font:600 11px var(--sans);color:var(--ink);text-decoration:none;white-space:nowrap}
+  .fh-drawer-links{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .fh-drawer-links a{font-size:12.5px;color:var(--ink);font-weight:600}
+  .fh-drawer-empty{color:var(--text-faint);font-size:12.5px;line-height:1.45}
+  .c-btn.del{color:#6E2A22}
+  .fh-del-modal{position:fixed;inset:0;z-index:2147482300;display:none;align-items:center;justify-content:center;background:rgba(10,10,10,.4);padding:18px}
+  .fh-del-modal.open{display:flex}
+  .fh-del-card{width:min(400px,100%);background:#fff;border-radius:12px;border:1px solid var(--line);padding:18px}
+  .fh-del-card h3{margin:0 0 8px;font-size:16px;font-weight:800}
+  .fh-del-card p{margin:0 0 12px;font-size:13px;color:var(--text-dim);line-height:1.45}
+  .fh-del-card input{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;font:inherit;margin-bottom:12px}
+  .fh-del-actions{display:flex;gap:8px;justify-content:flex-end}
+  .fh-del-actions button{border:1px solid var(--line);border-radius:8px;padding:8px 12px;font:700 12px var(--sans);cursor:pointer;background:var(--paper)}
+  .fh-del-actions .go{background:#6E2A22;color:#fff;border-color:#6E2A22}
+  .fh-del-actions .go:disabled{opacity:.4;cursor:not-allowed}
+  #boardArchiveTop{margin-left:8px}
   .board{display:flex;gap:10px;padding:10px 14px 14px;align-items:flex-start;height:100%;position:relative;width:max-content;}
 
   .col{width:238px;flex-shrink:0;background:var(--paper-dim);border:1px solid var(--line);border-radius:8px;
@@ -180,6 +216,7 @@
 
   .c-top{display:flex;align-items:center;gap:6px;}
   .c-name{font-size:12.5px;font-weight:700;color:var(--text);line-height:1.25;flex:1;min-width:0;}
+  .c-scores{font-family:var(--mono);font-size:12px;color:var(--text);margin:4px 0 0;letter-spacing:.02em;font-weight:600;}
   /* controls ride in on hover — a resting card carries fields, not buttons */
   .c-tools{display:flex;align-items:center;gap:3px;flex-shrink:0;margin-left:auto;
     opacity:0;transition:opacity .12s;}
@@ -361,7 +398,7 @@
     </div>
     <div class="topbar-right">
       <div class="org-pill">Org: Fundhub</div>
-      <div class="clock">Sun Jul 26 · 2:47:09 PM ET</div>
+      <div class="clock">—</div>
       <div class="live-pill"><span class="live-dot"></span>LIVE</div>
     </div>
   </header>
@@ -389,6 +426,7 @@
       <span><b id="sumCount">—</b> cards</span>
       <span><b id="sumMoney">—</b> est.</span>
       <span class="held-n" id="sumHeld" title="the pipeline API does not return hold status">— held</span>
+      <button type="button" class="filter-btn" id="boardArchiveTop" hidden title="Archive selected contact">Archive</button>
     </div>
   </div>
   <div class="filterpanel" id="filterPanel" hidden>
@@ -410,6 +448,7 @@
        with real stages and zero cards — and the page looked blank. Loading,
        real columns, an honest empty message, or a named failure. Never fake
        rows that vanish. -->
+  <div class="board-row">
   <div class="board-wrap">
     <div class="empty-rail-note" id="boardStatus">Loading the board&hellip;</div>
     <div class="board" id="board" hidden></div>
@@ -474,6 +513,34 @@
         <div class="rm-foot">Or drag the card to any stage on this rail.</div>
       </div>
 
+  </div>
+
+  <aside class="fh-drawer" id="fhDrawer" aria-hidden="true">
+    <div class="fh-drawer-head">
+      <div>
+        <h2 id="fhDrawerName">—</h2>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button type="button" class="fh-drawer-del" id="fhDrawerDel">Archive</button>
+        <button type="button" class="fh-drawer-x" id="fhDrawerClose" aria-label="Close">Close</button>
+      </div>
+    </div>
+    <div class="fh-drawer-body" id="fhDrawerBody">
+      <p class="fh-drawer-empty">Select a card.</p>
+    </div>
+  </aside>
+  </div>
+
+  <div class="fh-del-modal" id="fhDelModal" role="dialog" aria-modal="true" aria-labelledby="fhDelTitle">
+    <div class="fh-del-card">
+      <h3 id="fhDelTitle">Archive this contact?</h3>
+      <p>Removes them from every pipeline board. Payments and credit pulls stay on file. Type <b>DELETE</b> to confirm.</p>
+      <input id="fhDelInput" type="text" autocomplete="off" spellcheck="false" placeholder="Type DELETE">
+      <div class="fh-del-actions">
+        <button type="button" id="fhDelCancel">Cancel</button>
+        <button type="button" class="go" id="fhDelGo" disabled>Archive</button>
+      </div>
+    </div>
   </div>
 
   <!-- ══ DEMONSTRATION STATES — collapsed by default, costs one divider row ══ -->
@@ -1053,6 +1120,11 @@ restore();
     return ((parts[0] || "?")[0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
   }
 
+  function formatScores(c) {
+    var band = c && c.survey_fico;
+    return band ? String(band) : "—";
+  }
+
   function age(iso) {
     var t = Date.parse(iso);
     if (isNaN(t)) return "in stage";
@@ -1081,11 +1153,20 @@ restore();
     var tools = div("c-tools");
     var move = document.createElement("span");
     move.className = "c-btn route"; move.textContent = "MOVE";
+    var delBtn = document.createElement("span");
+    delBtn.className = "c-btn del"; delBtn.textContent = "DEL";
+    delBtn.title = "Archive (type DELETE)";
+    delBtn.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      openDeleteConfirm(c);
+    });
     var grip = document.createElement("span");
     grip.className = "grip"; grip.textContent = "⠿";
-    tools.appendChild(move); tools.appendChild(grip);
+    tools.appendChild(move); tools.appendChild(delBtn); tools.appendChild(grip);
     top.appendChild(tools);
     card.appendChild(top);
+    card.appendChild(div("c-scores", formatScores(c)));
 
     var amt = div("c-amt", c.amount == null ? "—" : usd(c.amount) + " ");
     if (c.amount != null) {
@@ -1110,13 +1191,12 @@ restore();
     foot.appendChild(div("c-when", c.funded ? "funded" : (c.outcome_tier || "")));
     card.appendChild(foot);
 
-    // Card Stacking round planning: surface which lenders fit this client.
-    // Empty lender DB → count 0. Never invents lender names.
+    // Any rail: open right drawer with scores / survey / prequal / tier.
+    // Card stacking also keeps the lender match panel as a deep link inside.
     if (c.client_id) {
       card.addEventListener("click", function (ev) {
         if (ev.target && (ev.target.closest && (ev.target.closest(".c-btn") || ev.target.closest(".grip")))) return;
-        if (activePipelineKey !== "funding_card_stacking") return;
-        showLenderMatches(c);
+        openClientDrawer(c);
       });
     }
     return card;
@@ -1211,6 +1291,377 @@ restore();
       })
       .catch(function () { body.textContent = "Could not load matches."; });
   }
+
+  var drawerClient = null;
+  var drawerEl = document.getElementById("fhDrawer");
+  var drawerBody = document.getElementById("fhDrawerBody");
+  var drawerName = document.getElementById("fhDrawerName");
+  var boardArchiveTop = document.getElementById("boardArchiveTop");
+  var delModal = document.getElementById("fhDelModal");
+  var delInput = document.getElementById("fhDelInput");
+  var delGo = document.getElementById("fhDelGo");
+  var pendingDelete = null;
+
+  function dashHeaders() {
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
+    var headers = { accept: "application/json", "content-type": "application/json" };
+    if (t) headers.authorization = "Bearer " + t;
+    return headers;
+  }
+
+  function closeClientDrawer() {
+    if (drawerEl) {
+      drawerEl.classList.remove("open");
+      drawerEl.setAttribute("aria-hidden", "true");
+    }
+    drawerClient = null;
+    if (boardArchiveTop) boardArchiveTop.hidden = true;
+  }
+
+  function row(label, value) {
+    if (value == null || value === "") return null;
+    return rowAlways(label, value);
+  }
+
+  function fmtWhen(iso) {
+    if (!iso) return null;
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleString("en-US", {
+      timeZone: "America/Los_Angeles",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    });
+  }
+
+  function callStatus(v) {
+    if (!v) return null;
+    var s = String(v);
+    if (s === "no_show") return "No-show";
+    if (s === "past") return "Past";
+    if (s === "upcoming") return "Upcoming";
+    if (s === "booked") return "Booked";
+    if (s === "done") return "Done";
+    return s;
+  }
+
+  function phoneRow(phone, clientId) {
+    var d = document.createElement("div");
+    d.className = "fh-drawer-row";
+    var a = document.createElement("span");
+    a.textContent = "Phone";
+    var right = document.createElement("span");
+    right.style.display = "flex";
+    right.style.alignItems = "center";
+    right.style.gap = "8px";
+    var num = document.createElement("span");
+    num.textContent = phone ? String(phone) : "—";
+    right.appendChild(num);
+    if (clientId && phone) {
+      var btn = document.createElement("a");
+      btn.className = "fh-text-btn";
+      btn.textContent = "Text";
+      btn.href = "messaging.html?client_id=" + encodeURIComponent(clientId);
+      right.appendChild(btn);
+    }
+    d.appendChild(a);
+    d.appendChild(right);
+    return d;
+  }
+
+  function rowAlways(label, value) {
+    var d = document.createElement("div");
+    d.className = "fh-drawer-row";
+    var a = document.createElement("span");
+    a.textContent = label;
+    var b = document.createElement("span");
+    b.textContent = (value == null || value === "") ? "—" : String(value);
+    d.appendChild(a); d.appendChild(b);
+    return d;
+  }
+
+  function sec(title) {
+    var s = document.createElement("div");
+    s.className = "fh-drawer-sec";
+    var h = document.createElement("h3");
+    h.textContent = title;
+    s.appendChild(h);
+    return s;
+  }
+
+  function cfGet(cf, keys) {
+    if (!cf) return null;
+    for (var i = 0; i < keys.length; i++) {
+      var v = cf[keys[i]];
+      if (v != null && v !== "") return v;
+    }
+    return null;
+  }
+
+  /* CF stores option IDs on cf_svy_* and the words on *_label / *_labels.
+     Never paint a bare 6-digit ID as the answer. */
+  function isCfOptionId(v) {
+    if (typeof v === "number") return v >= 10000;
+    return typeof v === "string" && /^\d{5,}$/.test(v.trim());
+  }
+
+  function surveyAnswer(cf, key) {
+    if (!cf) return null;
+    var label = cf[key + "_label"];
+    if (label != null && label !== "") return String(label);
+    var labels = cf[key + "_labels"];
+    if (labels != null && labels !== "") {
+      if (Array.isArray(labels)) return labels.filter(Boolean).join(", ");
+      try {
+        var parsed = JSON.parse(labels);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean).join(", ");
+      } catch (e) {}
+      return String(labels);
+    }
+    var v = cf[key];
+    if (v == null || v === "") return null;
+    if (Array.isArray(v)) {
+      if (v.every(isCfOptionId)) return null;
+      return v.filter(function (x) { return x != null && x !== "" && !isCfOptionId(x); }).join(", ") || null;
+    }
+    if (isCfOptionId(v)) return null;
+    return String(v);
+  }
+
+  var SURVEY_ROWS = [
+    ["Target amount", "cf_svy_funding_target_amount"],
+    ["Planned use", "cf_svy_planned_use"],
+    ["What money changes", "cf_svy_money_change_now"],
+    ["Current score", "cf_svy_self_reported_fico"],
+    ["Has a business", "cf_svy_has_business"],
+    ["Business revenue", "cf_svy_business_revenue"],
+    ["Can verify revenue", "cf_svy_revenue_verifiable"],
+    ["Personal income", "cf_svy_annual_income_range"],
+    ["Can verify income", "cf_svy_income_verifiable"],
+    ["Available capital", "cf_svy_available_capital"]
+  ];
+
+  function paintDrawer(c, data) {
+    drawerBody.textContent = "";
+    var client = (data && data.client) || {};
+    var cf = client.custom_fields || {};
+    var tm = (data && data.tri_merge) || c.scores || {};
+    var tier = client.outcome_tier || c.outcome_tier || null;
+
+    var email = client.email || c.email || null;
+    var phone = client.phone || c.phone || null;
+    var who = sec("Contact");
+    who.appendChild(rowAlways("Email", email));
+    who.appendChild(phoneRow(phone, c.client_id || client.id));
+    drawerBody.appendChild(who);
+
+    var book = (data && data.latest_booking) || {};
+    var call = sec("Call");
+    call.appendChild(rowAlways("When", fmtWhen(book.when)));
+    call.appendChild(rowAlways("Status", callStatus(book.status || cf.call_outcome)));
+    if (book.title) call.appendChild(rowAlways("What", book.title));
+    drawerBody.appendChild(call);
+
+    var scores = sec("Scores");
+    var grid = document.createElement("div");
+    grid.className = "fh-drawer-grid";
+    [["EX", tm.experian], ["EQ", tm.equifax], ["TU", tm.transunion]].forEach(function (pair) {
+      var st = document.createElement("div");
+      st.className = "fh-drawer-stat";
+      var b = document.createElement("b");
+      b.textContent = pair[1] == null ? "—" : String(pair[1]);
+      var sp = document.createElement("span");
+      sp.textContent = pair[0];
+      st.appendChild(b); st.appendChild(sp);
+      grid.appendChild(st);
+    });
+    scores.appendChild(grid);
+    drawerBody.appendChild(scores);
+
+    var said = surveyAnswer(cf, "cf_svy_self_reported_fico") || c.survey_fico || null;
+    var biz = (data && data.business_credit) || {};
+    var inc = (data && data.income_estimates) || {};
+    function moneyYr(row) {
+      if (!row || row.annual == null) return null;
+      return "$" + Number(row.annual).toLocaleString("en-US") + "/yr";
+    }
+    var creditMore = sec("Credit");
+    creditMore.appendChild(rowAlways("They said", said));
+    creditMore.appendChild(rowAlways("Income (Experian)", moneyYr(inc.experian)));
+    creditMore.appendChild(rowAlways("Income (Equifax)", moneyYr(inc.equifax)));
+    creditMore.appendChild(rowAlways("Business score", biz.intelliscore));
+    creditMore.appendChild(rowAlways("Business FSR", biz.fsr));
+    if (biz.name) creditMore.appendChild(rowAlways("Business", biz.name));
+    drawerBody.appendChild(creditMore);
+
+    var path = sec("Path");
+    path.appendChild(rowAlways("Tier", tier));
+    path.appendChild(rowAlways("Prequal", cfGet(cf, ["analyzer_prequal_amount", "cf_reanalyzer_prequal_amount", "total_funding_estimate"])));
+    drawerBody.appendChild(path);
+
+    var attr = sec("How they got here");
+    attr.appendChild(rowAlways("Source", cf.utm_source || null));
+    attr.appendChild(rowAlways("Campaign", cf.utm_campaign || null));
+    attr.appendChild(rowAlways("Ad", cf.utm_content || null));
+    attr.appendChild(rowAlways("Landed on", cf.landing_path || null));
+    attr.appendChild(rowAlways("Magnet", cf.lead_magnet_type || null));
+    drawerBody.appendChild(attr);
+
+    var survey = sec("Survey");
+    SURVEY_ROWS.forEach(function (pair) {
+      survey.appendChild(rowAlways(pair[0], surveyAnswer(cf, pair[1])));
+    });
+    drawerBody.appendChild(survey);
+
+    var box = document.createElement("div");
+    box.className = "fh-drawer-links";
+    var a = document.createElement("a");
+    a.href = "client-control-panel.html?id=" + encodeURIComponent(c.client_id);
+    a.textContent = "Open full file ↗";
+    box.appendChild(a);
+    drawerBody.appendChild(box);
+  }
+
+  function openClientDrawer(c) {
+    drawerClient = c;
+    if (drawerName) drawerName.textContent = c.name || "Contact";
+    if (drawerBody) {
+      paintDrawer(c, { client: { email: c.email, phone: c.phone, custom_fields: {}, outcome_tier: c.outcome_tier } });
+    }
+    if (drawerEl) {
+      drawerEl.classList.add("open");
+      drawerEl.setAttribute("aria-hidden", "false");
+    }
+    if (boardArchiveTop) boardArchiveTop.hidden = false;
+
+    if (typeof FHData !== "undefined" && FHData.client) {
+      FHData.client(c.client_id).then(function (res) {
+        if (!drawerClient || drawerClient.client_id !== c.client_id) return;
+        if (res && res.ok && res.data) paintDrawer(c, res.data);
+        else if (res && res.ok) paintDrawer(c, res);
+      });
+    } else {
+      fetch("/api/dashboard/client?id=" + encodeURIComponent(c.client_id), { headers: dashHeaders() })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!drawerClient || drawerClient.client_id !== c.client_id) return;
+          if (d && d.ok) paintDrawer(c, d);
+          else {
+            drawerBody.textContent = "";
+            var err = document.createElement("p");
+            err.className = "fh-drawer-empty";
+            err.textContent = "Could not load this contact.";
+            drawerBody.appendChild(err);
+          }
+        })
+        .catch(function () {
+          drawerBody.textContent = "";
+          var err = document.createElement("p");
+          err.className = "fh-drawer-empty";
+          err.textContent = "Could not load this contact.";
+          drawerBody.appendChild(err);
+        });
+    }
+  }
+
+  function syncDelGo() {
+    if (!delGo) return;
+    delGo.disabled = !(delInput && delInput.value === "DELETE");
+  }
+
+  function openDeleteConfirm(c) {
+    pendingDelete = c;
+    if (delInput) delInput.value = "";
+    syncDelGo();
+    if (delModal) delModal.classList.add("open");
+    if (delInput) setTimeout(function () { delInput.focus(); }, 0);
+  }
+
+  function closeDeleteConfirm() {
+    pendingDelete = null;
+    if (delModal) delModal.classList.remove("open");
+  }
+
+  function runArchive() {
+    if (!pendingDelete || !pendingDelete.client_id) return;
+    if (!delInput || delInput.value !== "DELETE") return;
+    var c = pendingDelete;
+    delGo.disabled = true;
+    fetch("/api/dashboard/client-archive", {
+      method: "POST",
+      headers: dashHeaders(),
+      body: JSON.stringify({ client_id: c.client_id, confirm: "DELETE" })
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.d || !res.d.ok) {
+          banner("error", "Archive failed" + (res.d && res.d.error ? (": " + res.d.error) : ""));
+          syncDelGo();
+          return;
+        }
+        closeDeleteConfirm();
+        closeClientDrawer();
+        // Drop from local cache and re-paint current board without a full reload.
+        Object.keys(cache).forEach(function (k) {
+          cache[k] = (cache[k] || []).map(function (st) {
+            return Object.assign({}, st, {
+              cards: (st.cards || []).filter(function (card) {
+                return card.client_id !== c.client_id;
+              })
+            });
+          });
+        });
+        if (activePipelineKey && cache[activePipelineKey]) {
+          var rail = null;
+          Object.keys(PIPELINE_KEYS).forEach(function (rk) {
+            if (PIPELINE_KEYS[rk] === activePipelineKey) rail = rk;
+          });
+          applyBoard(cache[activePipelineKey], rail || "R-01", "board", activePipelineKey);
+        }
+        banner("real", "Archived " + (c.name || "contact") + " · removed from pipeline");
+      })
+      .catch(function () {
+        banner("error", "Archive failed — network");
+        syncDelGo();
+      });
+  }
+
+  if (document.getElementById("fhDrawerClose")) {
+    document.getElementById("fhDrawerClose").addEventListener("click", closeClientDrawer);
+  }
+  if (document.getElementById("fhDrawerDel")) {
+    document.getElementById("fhDrawerDel").addEventListener("click", function () {
+      if (drawerClient) openDeleteConfirm(drawerClient);
+    });
+  }
+  if (boardArchiveTop) {
+    boardArchiveTop.addEventListener("click", function () {
+      if (drawerClient) openDeleteConfirm(drawerClient);
+    });
+  }
+  if (document.getElementById("fhDelCancel")) {
+    document.getElementById("fhDelCancel").addEventListener("click", closeDeleteConfirm);
+  }
+  if (delGo) delGo.addEventListener("click", runArchive);
+  if (delInput) {
+    delInput.addEventListener("input", syncDelGo);
+    delInput.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter") runArchive();
+      if (ev.key === "Escape") closeDeleteConfirm();
+    });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" && delModal && delModal.classList.contains("open")) {
+      closeDeleteConfirm();
+      return;
+    }
+    if (ev.key === "Escape" && drawerEl && drawerEl.classList.contains("open")) {
+      closeClientDrawer();
+    }
+  });
 
   // A single reused element, not one appended per load: switching rails
   // repeatedly used to stack a fresh fixed banner at the bottom of the page
@@ -1409,6 +1860,19 @@ restore();
   loadRailCounts("R-01");
   load("R-01", "Sales");
 })();
+</script>
+<script>
+function tickClock() {
+  var el = document.querySelector(".clock");
+  if (!el) return;
+  el.textContent = new Date().toLocaleString("en-US", {
+    weekday: "short", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", second: "2-digit",
+    timeZone: "America/New_York", timeZoneName: "short"
+  });
+}
+tickClock();
+setInterval(tickClock, 1000);
 </script>
 </body>
 </html>

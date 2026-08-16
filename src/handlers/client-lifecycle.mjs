@@ -241,10 +241,25 @@ async function mergeCustomFields(db, clientId, patch) {
 // Card placement is sync here so Pipeline UI updates even when Inngest cannot
 // invoke functions (missing INNGEST_SIGNING_KEY / sync failure). s-01 also
 // places the card; advanceCardToStage never demotes.
+function attributionFields(payload) {
+  const a = payload && payload.attribution;
+  if (!a || typeof a !== "object") return {};
+  const out = {};
+  for (const key of ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "landing_path", "referrer_domain"]) {
+    if (a[key] != null && String(a[key]).trim() !== "") out[key] = String(a[key]).trim();
+  }
+  if (out.landing_path === "/watch") out.lead_magnet_type = "VSL";
+  else if (out.landing_path === "/apply") out.lead_magnet_type = "Survey";
+  return out;
+}
+
 export async function onEntryCaptured(event, db) {
   const clientId = await resolveClient(db, event);
   if (!clientId || !event.orgId) return;
-  await mergeCustomFields(db, clientId, { lifecycle_status: "New Lead" });
+  await mergeCustomFields(db, clientId, {
+    lifecycle_status: "New Lead",
+    ...attributionFields(event.payload)
+  });
   await addTags(db, clientId, ["lead:new"]);
   // advance only — later CF contact.updated must not yank a booked card back.
   await advanceCardToStage(db, {
@@ -305,7 +320,18 @@ export async function onPaymentFailed(event, db) {
 // custom_fields flags mirror the GHL fields the live system flips (crs_paid etc).
 export async function onDiagnosticPaid(event, db) {
   const clientId = await resolveClient(db, event);
+  if (!clientId) return;
   await mergeCustomFields(db, clientId, { crs_paid: true });
+  // Board card — same sync placement as entry.captured. Without this the
+  // Diagnostic Paid column stays empty even when money cleared.
+  if (event.orgId) {
+    await advanceCardToStage(db, {
+      orgId: event.orgId,
+      clientId,
+      pipelineKey: "sales",
+      stageKey: "diagnostic_paid"
+    });
+  }
 }
 export async function onDepositPaid(event, db) {
   const clientId = await resolveClient(db, event);
@@ -422,6 +448,15 @@ export async function onDecisionRendered(event, db) {
     await mergeCustomFields(db, clientId, {
       total_funding_estimate: p.fundingEstimate,
       analyzer_prequal_amount: p.fundingEstimate
+    });
+  }
+  // Soft-pull decision lands on Decision Rendered so the sales board shows the file.
+  if (event.orgId) {
+    await advanceCardToStage(db, {
+      orgId: event.orgId,
+      clientId,
+      pipelineKey: "sales",
+      stageKey: "decision_rendered"
     });
   }
 }

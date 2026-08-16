@@ -6,6 +6,7 @@
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { readHandler, ROLE_SETS } from "../../src/http/read-api.mjs";
+import { SEED_FURNITURE_EMAILS } from "../../src/auth/seed-staff.mjs";
 
 /* THE ORG COMES FROM THE SESSION AND IS REQUIRED (audit C1).
    A session with no org binds NULL, and `org_id = NULL::uuid` matches no row —
@@ -33,8 +34,16 @@ const run = readHandler({
       FROM staff s
      WHERE s.org_id = $4::uuid
        AND ($3::text IS NULL OR s.role = $3)
+       AND lower(s.email) <> ALL($5::text[])
+       AND s.name NOT ILIKE 'DEMO %'
+       AND s.name NOT ILIKE 'TEST —%'
+       AND s.email NOT LIKE '%@demo.fundhub.local'
+       AND s.email NOT LIKE '%@example.com'
      ORDER BY s.name
-     LIMIT $1 OFFSET $2`, [limit + 1, offset, query.role || null, orgOf(staff)]).then((r) => r.rows)
+     LIMIT $1 OFFSET $2`, [
+      limit + 1, offset, query.role || null, orgOf(staff),
+      SEED_FURNITURE_EMAILS.map((e) => e.toLowerCase())
+    ]).then((r) => r.rows)
 });
 
 export default (req, res) => run(req, res, { db, requireAuth });

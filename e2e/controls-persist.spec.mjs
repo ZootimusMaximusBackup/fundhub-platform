@@ -86,7 +86,7 @@ test.describe("client control panel open buttons", () => {
   });
 });
 
-test.describe("calendar Join Call and His file", () => {
+test.describe("calendar Join Call and Client file", () => {
 
   test("buttons are disabled when nothing is up next", async ({ page }) => {
     await openScreen(page, "/app/calendar.html", OWNER, {
@@ -96,7 +96,7 @@ test.describe("calendar Join Call and His file", () => {
     await expect(page.locator("#unFile")).toBeDisabled();
   });
 
-  test("His file enables when a dated task has a client_id", async ({ page }) => {
+  test("Client file enables when a dated task has a client_id", async ({ page }) => {
     const due = new Date();
     due.setHours(due.getHours() + 1);
     await openScreen(page, "/app/calendar.html", OWNER, {
@@ -111,7 +111,7 @@ test.describe("calendar Join Call and His file", () => {
     });
     await expect(page.locator("#unFile")).toBeEnabled({ timeout: 5000 });
     await page.locator("#unFile").click();
-    await expect(page).toHaveURL(new RegExp(`client-control-panel\\.html\\?id=${CLIENT_ID}`));
+    await expect(page).toHaveURL(new RegExp(`client-control-panel\\.html\\?client_id=${CLIENT_ID}`));
   });
 
   test("Join Call stays disabled without a meeting URL", async ({ page }) => {

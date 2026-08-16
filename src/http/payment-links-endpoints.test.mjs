@@ -251,13 +251,13 @@ describe("POST /api/payment-links — send", () => {
     assert.equal(r.status, 404);
   });
 
-  test("send with no template approved yet queues nothing but still marks sent, and says so", async () => {
+  test("send with no template approved yet queues nothing and does not mark the link sent", async () => {
     const r = await send();
     assert.equal(r.status, 200);
     assert.equal(r.body.message_queued, false);
     assert.equal(r.body.message_reason, "template_pending");
-    assert.equal(r.body.link.status, "sent");
-    assert.equal(ran(r.queries, "linksSetSent").length, 1);
+    assert.notEqual(r.body.link.status, "sent");
+    assert.equal(ran(r.queries, "linksSetSent").length, 0);
   });
 
   test("sending an already-paid link is refused — it would ask for settled money again", async () => {

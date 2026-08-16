@@ -23,7 +23,7 @@
   }
 
   function paint(d) {
-    var shiftChip = $("header .hl .chip");
+    var shiftChip = $("#shiftChip") || $("header .hl .chip");
     if (shiftChip) {
       if (d.shift && d.shift.on_shift) {
         shiftChip.className = "chip on";
@@ -76,9 +76,6 @@
       month.unlogged > 0 ? '<span class="dn">Log before the next call</span>' : "");
     if (cells[7] && month.unlogged > 0) cells[7].querySelector(".vl").style.color = "#C25B4E";
 
-    var job = document.querySelector(".sec .note b");
-    // leave copy; update sibling note if present
-
     var moneyBox = d.money || {};
     var mos = document.querySelectorAll(".money .mo");
     function mo(i, label, val, sb) {
@@ -91,10 +88,9 @@
     mo(1, "Pending funding", moneyBox.pending_display || money(moneyBox.pending_cents), "earned/approved");
     mo(2, "At risk", "—", moneyBox.at_risk_reason || "Not computed yet");
 
-    // Streak honest empty
     var streakNote = document.querySelectorAll(".sec .note");
     streakNote.forEach(function (n) {
-      if (/last 9|record of/i.test(n.textContent || "")) {
+      if (/last 9|record of|streak is not stored/i.test(n.textContent || "")) {
         n.textContent = (d.streak && d.streak.reason) || "Daily close streak is not stored yet.";
       }
     });
@@ -104,7 +100,6 @@
         ((d.streak && d.streak.reason) || "Streak needs a working-day calendar — not built") + "</div>";
     }
 
-    // Team leaderboard
     var team = d.team || [];
     var panel = document.querySelectorAll(".panel")[0];
     if (panel) {
@@ -112,18 +107,18 @@
         var me = t.staff_id === d.staff_id;
         return '<div class="lb-row' + (me ? " me" : "") + '">' +
           '<span class="rk' + (i === 0 ? " one" : "") + '">' + String(t.rank).padStart(2, "0") + "</span>" +
-          '<span class="nm"><b>' + (me ? "You" : (t.name || "Closer")) + "</b><em>" +
+          '<span class="nm"><b>' + (me ? "You" : (t.name || "—")) + "</b><em>" +
           (t.deposits || 0) + " deposits</em></span>" +
           '<span class="num">' + (t.cash_display || money(t.cash_cents)) + "</span>" +
           '<span class="num hide">' + pct(t.close_rate) + "</span>" +
           '<span class="num hide">—</span></div>';
       }).join("") || '<p class="note">No closer dispositions logged this month yet.</p>';
       panel.querySelectorAll(".lb-row").forEach(function (n) { n.remove(); });
+      panel.querySelectorAll(".note").forEach(function (n) { n.remove(); });
       var h = panel.querySelector("h3");
       if (h) h.insertAdjacentHTML("afterend", rows);
     }
 
-    // Call quality honest empty
     var qualPanel = document.querySelectorAll(".panel")[1];
     if (qualPanel) {
       var reason = (d.call_quality && d.call_quality.reason) ||
@@ -132,20 +127,13 @@
         "<p class=\"note\">Compliance phrase counts use the same gate — schema call_compliance_flags is ready.</p>";
     }
 
-    // Owed
-    var owed = d.owed || [];
-    var owedPanel = document.querySelectorAll(".sec .panel");
-    var last = owedPanel[owedPanel.length - 1];
-    if (last && /Owed|owed/i.test((last.previousElementSibling && last.previousElementSibling.textContent) || "") || true) {
-      // find section with Owed
-    }
     document.querySelectorAll(".todo").forEach(function (n) { n.remove(); });
+    var owed = d.owed || [];
     var owedHost = null;
     document.querySelectorAll(".sech .eyebrow").forEach(function (e) {
       if (/Owed/i.test(e.textContent || "")) owedHost = e.closest(".sec");
     });
     if (owedHost) {
-      var box = owedHost.querySelector(".panel") || owedHost;
       var html = owed.map(function (o) {
         return '<div class="todo"><span class="t">' + (o.urgency || "Now") + "</span><div><b>" +
           (o.title || "") + "</b><em>" + (o.detail || "") + "</em></div></div>";
@@ -155,7 +143,25 @@
     }
   }
 
+  function paintWho() {
+    var nameChip = document.getElementById("staffChip") || $("header .hr .chip");
+    if (!nameChip) return;
+    var token = "";
+    try { token = localStorage.getItem("fh_token") || ""; } catch (e) {}
+    fetch("/api/auth/session", {
+      headers: token
+        ? { accept: "application/json", authorization: "Bearer " + token }
+        : { accept: "application/json" }
+    }).then(function (r) { return r.json(); }).then(function (s) {
+      var name = (s && s.staff && s.staff.name) || "";
+      nameChip.innerHTML = '<span class="cd" style="background:var(--info)"></span>' + (name || "—");
+    }).catch(function () {
+      nameChip.innerHTML = '<span class="cd" style="background:var(--info)"></span>—';
+    });
+  }
+
   async function boot() {
+    paintWho();
     if (!window.FHData) return;
     var r = await window.FHData.read("my-numbers");
     if (!r.ok) {

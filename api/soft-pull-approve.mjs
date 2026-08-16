@@ -225,7 +225,7 @@ export default async function handler(req, res, deps = {}) {
     return res.status(201).json({
       ok: true,
       consent: { id: consent.id, valid: true, version: CURRENT_SOFT_PULL_VERSION },
-      next: "Pay the $32 assessment if you have not already — then stay on the call."
+      next: "Pay the $32 assessment next — your advisor sends that link separately."
     });
   } catch (err) {
     if (err instanceof ConsentError || err instanceof PiiError) {

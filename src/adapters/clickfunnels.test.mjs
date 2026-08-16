@@ -176,6 +176,35 @@ test("normalizeClickFunnelsEvent: CF 2.0 contact row is data (email_address + cu
   assert.deepEqual(evt.answers, { cf_svy_planned_use: "Growth" });
 });
 
+test("normalizeClickFunnelsEvent: keeps Facebook UTM from first_visit, drops the click id", () => {
+  const evt = normalizeClickFunnelsEvent({
+    event_type: "contact.created",
+    data: {
+      email_address: "ad@example.com",
+      first_name: "Ad",
+      last_name: "Lead",
+      visits: {
+        first_visit: {
+          landing_page: "https://apply.fundhub.ai/watch?utm_source=fb_ad&fbclid=DROPME",
+          referring_domain: "m.facebook.com",
+          utm_source: "fb_ad",
+          utm_campaign: "oSched%3A+VSL%3A+Funding",
+          utm_content: "oVid%3A+3"
+        }
+      }
+    }
+  });
+  assert.deepEqual(evt.attribution, {
+    utm_source: "fb_ad",
+    utm_medium: null,
+    utm_campaign: "oSched: VSL: Funding",
+    utm_content: "oVid: 3",
+    utm_term: null,
+    landing_path: "/watch",
+    referrer_domain: "m.facebook.com"
+  });
+});
+
 test("normalizeClickFunnelsEvent: form_submission nested appointments_schedule_request", () => {
   const evt = normalizeClickFunnelsEvent({
     event_type: "form_submission.created",

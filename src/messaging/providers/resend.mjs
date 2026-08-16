@@ -40,8 +40,11 @@ function asBase64(content, encoding) {
 
 /** Named assets, or inline { filename, content } bytes for generated files. */
 async function loadAttachments(list) {
-  if (list == null) return { files: [], error: null };
-  if (!Array.isArray(list)) return { files: [], error: "attachments must be an array" };
+  if (list == null || list === "") return { files: [], error: null };
+  if (typeof list === "string") {
+    try { list = JSON.parse(list); } catch { return { files: [], error: null }; }
+  }
+  if (!Array.isArray(list) || list.length === 0) return { files: [], error: null };
   const files = [];
   for (const item of list) {
     if (item && item.content != null && item.filename) {

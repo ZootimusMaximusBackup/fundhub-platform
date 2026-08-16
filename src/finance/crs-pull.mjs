@@ -39,9 +39,10 @@ import {
 } from "./soft-pulls.mjs";
 import { createCrsClient, CrsError } from "./crs-client.mjs";
 import {
-  BUREAUS,
+  activeBureausFromEnv,
   CrsIdentityError,
   identityForBureau,
+  isoBirthDate,
   isSandboxHost,
   isProductionHost,
   SANDBOX_TEST_IDENTITIES
@@ -224,7 +225,7 @@ export async function loadClientIdentity(db, {
     lastName: row.last_name ?? "",
     middleName: "",
     suffix: "",
-    birthDate: row.dob ? String(row.dob).slice(0, 10) : "",
+    birthDate: isoBirthDate(row.dob) || "",
     ssn,
     email: row.email ?? undefined,
     addresses: Array.isArray(row.addresses) ? row.addresses : []
@@ -253,7 +254,7 @@ export async function runCrsPull(db, {
   client,
   env = process.env,
   fetchImpl,
-  bureaus = BUREAUS,
+  bureaus,
   accessedBy = PULL_ACTOR,
   runTierEngine = runTierEngineFromCrsResult
 } = {}) {
@@ -263,6 +264,9 @@ export async function runCrsPull(db, {
      result without it, and quietly falling back to a path that does would put an
      unattributed credit pull in the history. */
   if (!requestId) throw new TypeError("runCrsPull: requestId is required");
+  const order = (Array.isArray(bureaus) && bureaus.length)
+    ? bureaus
+    : activeBureausFromEnv(env);
 
   // This check happens before client construction or any provider call. A normal
   // replay of a fulfilled ledger request reuses its stored row and event.
@@ -349,7 +353,7 @@ export async function runCrsPull(db, {
   const errors = {};
   const requestIds = {};
 
-  for (const bureau of bureaus) {
+  for (const bureau of order) {
     let bureauIdentity;
     try {
       bureauIdentity = identityForBureau({

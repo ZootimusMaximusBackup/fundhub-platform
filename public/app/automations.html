@@ -316,7 +316,7 @@
     </div>
     <div class="topbar-right">
       <div class="org-pill">Org: Fundhub</div>
-      <div class="clock">Sun Jul 26 · 2:47:09 PM ET</div>
+      <div class="clock">—</div>
       <div class="live-pill"><span class="live-dot"></span>LIVE</div>
     </div>
   </header>
@@ -566,6 +566,19 @@
 
   load();
 })();
+</script>
+<script>
+function tickClock() {
+  var el = document.querySelector(".clock");
+  if (!el) return;
+  el.textContent = new Date().toLocaleString("en-US", {
+    weekday: "short", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", second: "2-digit",
+    timeZone: "America/New_York", timeZoneName: "short"
+  });
+}
+tickClock();
+setInterval(tickClock, 1000);
 </script>
 </body>
 </html>

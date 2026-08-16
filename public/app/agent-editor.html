@@ -313,8 +313,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
                 <div class="field"><label>Channel</label><select id="a_chan"><option>SMS</option><option>Email</option><option>Voice</option><option>Internal</option></select></div>
                 <div class="field"><label>Class</label><select id="a_class"><option>Client-facing</option><option>Ops</option></select></div>
                 <div class="field"><label>Owner</label><select id="a_owner">
-                  <option>Chris Stanbridge</option><option>Sarah Whitfield</option><option>Jordan Blake</option>
-                  <option>Nina Castellano</option><option>Marcus Webb</option><option>Alvin Torres</option></select></div>
+                  <option value="">Pick a person</option></select></div>
                 <div class="field"><label>Agent code</label><input id="a_code" class="num" readonly style="background:var(--soft);color:var(--gray)"></div>
               </div>
             </div>
@@ -341,9 +340,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
             <summary class="card-hd"><div class="eyebrow">AE-05 <span class="sep">/</span> ESCALATION PATH</div></summary>
             <div class="card-bd"><div class="grid2">
               <div class="field"><label>Escalate to</label><select id="a_esc">
-                <option>Sarah Whitfield · Sales Manager</option><option>Jordan Blake · Closer</option>
-                <option>Nina Castellano · Closer</option><option>Marcus Webb · Funding Advisor</option>
-                <option>Alvin Torres · Inquiry Remover</option><option>Chris Stanbridge · Owner</option></select></div>
+                <option value="">Pick a person</option></select></div>
               <div class="field"><label>After no reply</label><select id="a_escafter">
                 <option>15 minutes</option><option>1 hour</option><option>4 hours</option><option>24 hours</option><option>48 hours</option></select></div>
               <div class="field" style="grid-column:1/-1"><label>Escalate immediately when</label><input id="a_escwhen" placeholder="e.g. client asks for a refund, or mentions bankruptcy"></div>
@@ -377,8 +374,8 @@ var EVENTS=['entry.captured','survey.submitted','payment.received','payment.fail
 
 function A(o){
   return Object.assign({
-    chan:'SMS',cls:'Client-facing',owner:'Sarah Whitfield',mode:'shadow',
-    triggers:[],prompt:'',guard:'',esc:'Sarah Whitfield · Sales Manager',escAfter:'1 hour',escWhen:'',
+    chan:'SMS',cls:'Client-facing',owner:'',mode:'shadow',
+    triggers:[],prompt:'',guard:'',esc:'',escAfter:'1 hour',escWhen:'',
     disc:0,msgcap:3,pay:false,contract:false,book:false,pull:false,
     g:{noamount:true,noscore:true,attorney:true,quiet:true},
     runs:0,breaches:0,log:[]
@@ -455,7 +452,7 @@ function agentFromRow(real){
     name: real.name || real.code,
     chan: channelLabel(real.channel),
     cls: real.agent_class === 'ops' ? 'Ops' : 'Client-facing',
-    owner: real.owner_label || 'Chris Stanbridge',
+    owner: real.owner_label || '',
     mode: real.status === 'live' ? 'live' : real.status === 'shadow' ? 'shadow' : 'draft',
     runtime: real.runtime || null,
     prompt: real.prompt || '',
@@ -619,7 +616,7 @@ function select(id){
   document.getElementById('a_name').value=cur.name;
   document.getElementById('a_chan').value=cur.chan;
   document.getElementById('a_class').value=cur.cls;
-  document.getElementById('a_owner').value=cur.owner;
+  cur.owner=setSelectOrFirst('a_owner', cur.owner);
   document.getElementById('a_code').value=cur.id;
   document.getElementById('a_prompt').value=cur.prompt;
   document.getElementById('a_guard').value=cur.guard;
@@ -793,6 +790,39 @@ function hideEmpty(){
 (function () {
   "use strict";
   if (typeof AGENTS === "undefined" || typeof renderList !== "function") return;
+
+  var ROLE_LABEL = {
+    owner: "Owner", admin: "Admin", closer: "Closer",
+    sales_manager: "Sales Manager", funding_advisor: "Funding Advisor",
+    inquiry_specialist: "Inquiry Remover", setter: "Setter"
+  };
+  function roleLabel(r) {
+    return ROLE_LABEL[r] || String(r || "").replace(/_/g, " ");
+  }
+  function fillPeople(rows) {
+    var owner = document.getElementById("a_owner");
+    var escSel = document.getElementById("a_esc");
+    var ownerHtml = '<option value="">Pick a person</option>';
+    var escHtml = '<option value="">Pick a person</option>';
+    (rows || []).forEach(function (s) {
+      var name = String(s.name || s.email || "").trim();
+      if (!name) return;
+      ownerHtml += '<option value="' + esc(name) + '">' + esc(name) + "</option>";
+      var lab = name + " · " + roleLabel(s.role);
+      escHtml += '<option value="' + esc(lab) + '">' + esc(lab) + "</option>";
+    });
+    if (owner) owner.innerHTML = ownerHtml;
+    if (escSel) escSel.innerHTML = escHtml;
+    if (typeof cur !== "undefined" && cur && typeof setSelectOrFirst === "function") {
+      cur.owner = setSelectOrFirst("a_owner", cur.owner);
+      cur.esc = setSelectOrFirst("a_esc", cur.esc);
+    }
+  }
+  FHData.wire(FHData.staff({ limit: 200 }), "agent owners", function (data) {
+    var rows = data.items || [];
+    fillPeople(rows);
+    return rows.length ? ("live staff · " + rows.length) : "no staff rows · Pick a person";
+  });
 
   FHData.read("agents", { limit: 200 }).then(function (res) {
     if (res && res.ok) {

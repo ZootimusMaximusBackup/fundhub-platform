@@ -68,15 +68,19 @@ describe("the Contracts screen (public/app/contracts.html)", () => {
     assert.match(CRM, /FHData\.write\("\/api\/contracts"/);
   });
 
-  test("it can do the whole staff job: pick, fill, preview, send", () => {
-    for (const action of ["preview", "create_draft", "send"]) {
-      assert.ok(CRM.includes(`action: "${action}"`), `the screen never sends action "${action}"`);
-    }
-    assert.match(CRM, /id="selTpl"/, "no template picker");
-    assert.match(CRM, /id="selClient"/, "no client picker");
-    assert.match(CRM, /id="blanks"/, "nowhere to fill the blanks in");
-    assert.match(CRM, /id="previewBody"/, "no preview of the finished document");
-    assert.match(CRM, /id="linkOut"/, "no link for the staff member to pass on");
+  test("this page writes wordings, it does not send to a client", () => {
+    assert.equal(/id="selClient"/.test(CRM), false, "client picker must leave this admin page");
+    assert.equal(/<h2>Send a contract<\/h2>/.test(CRM), false, "send form must leave this admin page");
+    assert.equal(/id="btnSend"/.test(CRM), false);
+    assert.match(CRM, /id="tplCard"/);
+    assert.match(CRM, /id="btnUpload"/);
+    assert.match(CRM, /id="btnNewTpl"/);
+    assert.match(CRM, /in use/);
+  });
+
+  test("it tells staff to send from the call, not from this page", () => {
+    assert.match(CRM, /Send from the call/);
+    assert.match(CRM, /call cockpit/);
   });
 
   test("it can author wording without a developer — that is the whole point", () => {
@@ -99,6 +103,13 @@ describe("the Contracts screen (public/app/contracts.html)", () => {
 
   test("void is offered only to an owner or admin, matching the endpoint's gate", () => {
     assert.match(CRM, /if \(isAdmin && c\.status !== "signed" && c\.status !== "void"\)/);
+  });
+
+  test("live wordings never paint the sample-markup banner", () => {
+    assert.match(CRM, /return "live wordings · " \+ templates\.length/);
+    assert.match(CRM, /return "live contracts · " \+ contracts\.length/);
+    assert.equal(/if \(!templates\.length\) return null/.test(CRM), false);
+    assert.equal(/if \(!contracts\.length\) return null/.test(CRM), false);
   });
 
   test("it shows the status of every contract, which the brief required", () => {
@@ -290,22 +301,9 @@ describe("the Contracts screen — uploading and placing boxes", () => {
     assert.match(CRM, /if \(b\.type === "signature" \|\| b\.type === "initials"\) b\.source = "manual"/);
   });
 
-  test("several signers can be named, in an order", () => {
-    assert.match(CRM, /id="signerRows"/);
-    assert.match(CRM, /id="selOrder"/);
-    assert.ok(CRM.includes("signing_order"));
-    assert.ok(CRM.includes("signers: sendSigners"));
-  });
-
-  test("a contact can be added without leaving the screen", () => {
-    assert.ok(CRM.includes('action: "create_client"'));
-    assert.match(CRM, /id="newContact"/);
-  });
-
-  test("every signer's own link is shown, not one shared link", () => {
-    assert.match(CRM, /function showLinks/);
-    assert.match(CRM, /data\.links/);
-    assert.match(CRM, /signs first/);
+  test("several signers can be named on an uploaded PDF", () => {
+    assert.match(CRM, /id="btnAddSigner"/);
+    assert.ok(CRM.includes("signer_roles"));
   });
 
   test("the finished document can be downloaded from the CRM", () => {

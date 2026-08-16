@@ -93,7 +93,9 @@
     idx: 0, tier: null, edu: false, forceRepair: false, rung: 0, temp: 0,
     checks: {}, costNum: "", obj: null, showRef: false, toast: "", clientOnly: false,
     survey: {}, engine: { available: false, reason: "engine data unavailable", fico: {}, reasons: [] },
-    offers: [], softPull: null, ebookDollars: "", loaded: false, error: null
+    offers: [], softPull: null, ebookDollars: "", loaded: false, error: null,
+    contractOpen: false, contractWordings: [], contractTplId: "", contractLink: "",
+    contractMsg: "", contractBusy: false
   };
 
   function esc(s) {
@@ -167,6 +169,10 @@
     return '<div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">' + items.map(function (it) {
       return '<div class="stat"><div class="v">' + it[0] + '</div><span class="mono" style="color:var(--gray)">' + esc(it[1]) + "</span></div>";
     }).join("") + "</div>";
+  }
+  function moneyYr(row) {
+    if (!row || row.annual == null) return null;
+    return "$" + Number(row.annual).toLocaleString("en-US") + "/yr";
   }
   function scores(fico) {
     var rows = [["Experian", fico && fico.ex], ["TransUnion", fico && fico.tu], ["Equifax", fico && fico.eq]];
@@ -265,12 +271,15 @@
       ]) + sub("Sound fair?"));
     }
     if (c === "S-03") {
+      var inc = state.incomeEstimates || {};
       return slide("S-03", "Your answers", kicker("Discovery") + h1("This is what you told us. Anything change?") + '<div style="margin-top:8px">' +
         row("Funding target", esc(dash(sv.target))) +
         row("Planned use", esc(dash(sv.use))) +
         row("Business", esc(dash(sv.hasBiz)), esc(sv.entity || "")) +
         row("Monthly revenue", esc(dash(sv.revenue))) +
-        row("Annual income", esc(dash(sv.income))) +
+        row("Annual income (they said)", esc(dash(sv.income))) +
+        row("Income Insight (Experian)", esc(dash(moneyYr(inc.experian)))) +
+        row("IncomeView (Equifax)", esc(dash(moneyYr(inc.equifax)))) +
         row("Capital on hand", esc(dash(sv.capital))) +
         row("What changes with the money", esc(dash(sv.motivation))) + "</div>");
     }
@@ -463,11 +472,13 @@
         html += '<div><span class="mono">Live soft pull</span>';
         html += '<div style="margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--gray);line-height:1.55">';
         html += "<div>consent: " + (sp.consent_valid ? "on file" : "waiting") + "</div>";
-        html += "<div>paid $32: " + (sp.diagnostic_paid ? "yes" : (sp.diagnostic_link_status || "not yet")) + "</div>";
+        var amt = sp.diagnostic_amount_cents != null ? ("$" + (Number(sp.diagnostic_amount_cents) / 100).toFixed(2)) : "$32";
+        html += "<div>paid " + amt + ": " + (sp.diagnostic_paid ? "yes" : (sp.diagnostic_link_status || "not yet")) + "</div>";
         html += "<div>pull: " + esc(sp.pull_status || "not started") + "</div>";
+        if (sp.outcome_tier) html += "<div>tier: " + esc(sp.outcome_tier) + "</div>";
         html += '</div><div style="margin-top:7px;display:flex;flex-direction:column;gap:5px">';
         html += ckBtn("Send soft pull ($32 + approval form)", "softpull", true);
-        html += '</div><div style="font-size:10px;color:var(--gray2);margin-top:5px">Fixed $32. Emails pay link + approval form. Stay on the Meet.</div></div>';
+        html += '</div><div style="font-size:10px;color:var(--gray2);margin-top:5px">Catalog price $32. Live prove may use $1. Stay on the Meet.</div></div>';
 
         html += '<div><span class="mono">No-pay downsell — e-book</span>';
         html += '<div style="margin-top:6px;display:flex;gap:6px;align-items:center">';
@@ -513,6 +524,37 @@
       if (code() === "S-23") {
         html += '<div><span class="mono">Live actions</span><div style="margin-top:6px;display:flex;flex-direction:column;gap:5px">';
         html += ckBtn("Send agreement + pay link", "pay", true);
+        html += ckBtn("Send contract", "contract", false);
+        if (state.contractOpen) {
+          html += '<div style="border:1px solid var(--line);padding:8px 9px;margin-top:2px">';
+          html += '<div class="mono" style="margin-bottom:6px">Wording for this client</div>';
+          if (!state.contractWordings.length && !state.contractMsg) {
+            html += '<div style="font-size:11px;color:var(--gray)">Loading wordings…</div>';
+          } else if (!state.contractWordings.length) {
+            html += '<div style="font-size:11px;color:var(--gray)">' + esc(state.contractMsg || "No wordings in use.") + "</div>";
+          } else {
+            html += '<select id="fh-contract-tpl" style="width:100%;border:1px solid var(--line);background:transparent;padding:6px 8px;font-size:12px">';
+            state.contractWordings.forEach(function (t) {
+              html += '<option value="' + esc(t.id) + '"' + (t.id === state.contractTplId ? " selected" : "") + ">" + esc(t.name || t.template_key || "Wording") + "</option>";
+            });
+            html += "</select>";
+            var picked = null;
+            for (var wi = 0; wi < state.contractWordings.length; wi++) {
+              if (state.contractWordings[wi].id === (state.contractTplId || state.contractWordings[0].id)) picked = state.contractWordings[wi];
+            }
+            var fields = (picked && picked.manual_fields) || [];
+            fields.forEach(function (f) {
+              html += '<input data-blank="' + esc(f.key) + '" placeholder="' + esc((f.label || f.key) + (f.required ? " *" : "")) + '" style="margin-top:6px;width:100%;background:transparent;border:1px solid var(--line);padding:6px 8px;font-size:12px">';
+            });
+            html += '<div style="display:flex;gap:6px;margin-top:8px">' + ckBtn(state.contractBusy ? "Sending…" : "Send this wording", "contract-go", true) +
+              (state.contractLink ? ckBtn("Copy link", "contract-copy", false) : "") + "</div>";
+          }
+          if (state.contractLink) {
+            html += '<input id="fh-contract-link" readonly value="' + esc(state.contractLink) + '" style="margin-top:7px;width:100%;border:1px solid var(--line);background:transparent;font-family:var(--mono);font-size:10px;padding:6px 8px">';
+          }
+          if (state.contractMsg) html += '<div style="font-size:10.5px;color:var(--gray);margin-top:6px">' + esc(state.contractMsg) + "</div>";
+          html += "</div>";
+        }
         if (lettersOk() || state.edu) html += ckBtn(state.edu ? "Send deliverables package now" : "Generate letters and email now", "letters");
         html += ckBtn("Log disposition and close", "disp");
         html += "</div></div>";
@@ -592,6 +634,11 @@
       ebook.addEventListener("input", function (e) { state.ebookDollars = e.target.value; });
       ebook.addEventListener("keydown", function (e) { e.stopPropagation(); });
     }
+    var tpl = document.getElementById("fh-contract-tpl");
+    if (tpl) {
+      tpl.addEventListener("change", function (e) { state.contractTplId = e.target.value; render(); });
+      tpl.addEventListener("keydown", function (e) { e.stopPropagation(); });
+    }
   }
 
   function go(n) {
@@ -613,6 +660,55 @@
   }
   function setTier(k) {
     state.tier = k; state.rung = 0; state.edu = false; state.forceRepair = false; render();
+  }
+
+  function contractBlankValues() {
+    var out = {};
+    Array.prototype.forEach.call(document.querySelectorAll("[data-blank]"), function (el) {
+      out[el.getAttribute("data-blank")] = el.value;
+    });
+    return out;
+  }
+
+  function openContractSend() {
+    state.contractOpen = !state.contractOpen;
+    if (!state.contractOpen) { render(); return; }
+    state.contractMsg = "Loading wordings…";
+    render();
+    if (!window.FHContractSend) {
+      state.contractMsg = "Send helper failed to load.";
+      render();
+      return;
+    }
+    window.FHContractSend.listWordings().then(function (r) {
+      if (!r.ok) { state.contractMsg = r.error || "Could not load wordings."; render(); return; }
+      state.contractWordings = r.items || [];
+      state.contractTplId = state.contractWordings[0] ? state.contractWordings[0].id : "";
+      state.contractMsg = state.contractWordings.length
+        ? "Pick a wording, then send. Copy the sign link after."
+        : "No wordings in use. Make one on the Contracts page.";
+      render();
+    });
+  }
+
+  function sendContractNow() {
+    if (!window.FHContractSend || !contactId) { toast("No contact on this deck."); return; }
+    var id = state.contractTplId || (state.contractWordings[0] && state.contractWordings[0].id);
+    if (!id) { toast("Pick a wording first."); return; }
+    var values = contractBlankValues();
+    state.contractBusy = true;
+    state.contractMsg = "Sending…";
+    render();
+    window.FHContractSend.sendToClient({
+      clientId: contactId, templateId: id, values: values
+    }).then(function (r) {
+      state.contractBusy = false;
+      if (!r.ok) { state.contractMsg = r.error || "Could not send."; render(); return; }
+      state.contractLink = r.link || "";
+      state.contractMsg = r.message || "Sent. Copy the link and give it to them.";
+      render();
+      if (state.contractLink) window.FHContractSend.copyText(state.contractLink);
+    });
   }
 
   async function fire(action, extra) {
@@ -679,11 +775,21 @@
       fire("send_ebook", { amount_cents: cents }); return;
     }
     if (a === "pay") { fire("send_pay_link"); return; }
+    if (a === "contract") { openContractSend(); return; }
+    if (a === "contract-go") { sendContractNow(); return; }
+    if (a === "contract-copy") {
+      if (window.FHContractSend) {
+        window.FHContractSend.copyText(state.contractLink).then(function (ok) {
+          toast(ok ? "Sign link copied." : "Copy failed — select the link and copy it.");
+        });
+      }
+      return;
+    }
     if (a === "letters") { fire("generate_letters"); return; }
     if (a === "disp") { fire("log_disposition"); return; }
   });
   window.addEventListener("keydown", function (e) {
-    if (e.target && e.target.tagName === "INPUT") return;
+    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "SELECT")) return;
     if (e.key === "ArrowRight") go(1);
     if (e.key === "ArrowLeft") go(-1);
   });
@@ -715,6 +821,7 @@
     }
     var d = r.data || r;
     state.survey = d.survey || {};
+    state.incomeEstimates = d.income_estimates || {};
     state.engine = d.engine || { available: false, reason: "engine data unavailable", fico: {}, reasons: [] };
     state.offers = d.offers || [];
     state.softPull = d.soft_pull || null;

@@ -174,6 +174,16 @@ export function normalizeCommasEvent(body) {
      the raw body for somebody to find. */
   const dueByRaw = d.due_by ?? d.dueBy ?? d.respond_by ?? b.due_by ?? null;
 
+  /* itemId — Commas product / checkout session id (e.g. "8YZPo"). Stored on
+     payment_links.commas_session_id at mint so we can settle the row when
+     api_metadata.link_ref is missing or mismatched. */
+  const itemId =
+    (d.item && (d.item.id || d.item.product_id)) ||
+    d.product_id ||
+    (d.product && d.product.id) ||
+    d.checkout_session_id ||
+    null;
+
   return {
     id: id ? String(id) : null,
     paymentId: paymentIdOf(body),
@@ -182,6 +192,7 @@ export function normalizeCommasEvent(body) {
     amount,
     email: String(email).trim().toLowerCase(),
     ref: ref ? String(ref) : null,
+    itemId: itemId ? String(itemId) : null,
     dueBy: dueByRaw ? String(dueByRaw) : null
   };
 }
@@ -432,6 +443,7 @@ export async function processCommasInboxRow(row, db) {
       providerRef: evt.paymentId || evt.id,
       paymentId: evt.paymentId,
       ref: evt.ref, // our own reference, if the payment came from a payment_links checkout URL
+      itemId: evt.itemId,
       dueBy: evt.dueBy, // dispute response deadline, when the event carries one
       source: "commas"
     };

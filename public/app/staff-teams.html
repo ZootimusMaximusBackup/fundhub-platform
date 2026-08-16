@@ -350,8 +350,8 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
       <div class="field"><label>Phone</label><input id="ed_phone" class="num"></div>
       <div class="field"><label>Employee code</label><input id="ed_code" class="num" readonly style="background:var(--soft);color:var(--gray)"><span class="hint">ASSIGNED ON CREATE · IMMUTABLE</span></div>
       <div class="field"><label>Role</label><select id="ed_role">
-        <option>Owner</option><option>Sales Manager</option><option>Closer</option>
-        <option>Funding Advisor</option><option>Inquiry Specialist</option><option>Affiliate</option>
+        <option>Owner</option><option>Admin</option><option>Sales Manager</option><option>Closer</option>
+        <option>Funding Advisor</option><option>Inquiry Specialist</option><option>Setter</option>
       </select></div>
       <div class="field"><label>Start date</label><input id="ed_start" type="date"></div>
     </div>
@@ -372,7 +372,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
     <button class="btn mono" id="edCancel">Cancel</button>
     <button class="btn mono" id="edReset" style="display:none">Reset password</button>
     <div class="spacer"></div>
-    <button class="btn mono danger" id="edDeact">Deactivate</button>
+    <button class="btn mono danger" id="edDeact">Revoke login</button>
   </div>
 </aside>
 
@@ -390,18 +390,20 @@ document.querySelectorAll('.tab').forEach(function(t){
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
 
 /* ══ DATA ════════════════════════════════════════════════════════════════ */
-var PEOPLE=[
-  {id:1,first:'Chris',last:'Stanbridge',code:'EMP-000001',role:'Owner',email:'chris@fundhub.ai',phone:'+1 480 555 0100',start:'2023-02-06',active:true,consent:true,consentAt:'2026-06-02',clock:true,since:'06:41',today:'8h 06m'},
-  {id:2,first:'Sarah',last:'Whitfield',code:'EMP-000014',role:'Sales Manager',email:'sarah@fundhub.ai',phone:'+1 480 555 0114',start:'2023-09-18',active:true,consent:true,consentAt:'2026-06-03',clock:true,since:'08:02',today:'6h 45m'},
-  {id:3,first:'Jordan',last:'Blake',code:'EMP-000037',role:'Closer',email:'jordan@fundhub.ai',phone:'+1 480 555 0137',start:'2024-04-01',active:true,consent:true,consentAt:'2026-06-04',clock:true,since:'08:15',today:'6h 32m'},
-  {id:4,first:'Nina',last:'Castellano',code:'EMP-000052',role:'Closer',email:'nina@fundhub.ai',phone:'+1 480 555 0152',start:'2024-11-12',active:true,consent:true,consentAt:'2026-06-04',clock:true,since:'08:30',today:'6h 17m'},
-  {id:5,first:'Marcus',last:'Webb',code:'EMP-000068',role:'Funding Advisor',email:'marcus@fundhub.ai',phone:'+1 480 555 0168',start:'2025-03-24',active:true,consent:true,consentAt:'2026-06-11',clock:true,since:'08:00',today:'6h 47m'},
-  {id:6,first:'Alvin',last:'Torres',code:'EMP-000081',role:'Inquiry Specialist',email:'alvin@fundhub.ai',phone:'+1 480 555 0181',start:'2025-08-05',active:true,consent:true,consentAt:'2026-06-12',clock:true,since:'08:02',today:'6h 45m'},
-  {id:7,first:'Dana',last:'Kowalczyk',code:'EMP-000123',role:'Affiliate',email:'dana@kowalczykpartners.com',phone:'+1 312 555 0223',start:'2026-07-14',active:false,consent:false,consentAt:null,clock:false,since:'—',today:'0h 00m'}
-];
+var PEOPLE=[];
 var nextCode=124, nextId=8;
 
 var ROLES=['Owner','Sales Manager','Closer','Funding Advisor','Inquiry Specialist','Affiliate'];
+var ROLE_KEY={
+  Owner:null,
+  Admin:'admin',
+  Closer:'closer',
+  'Funding Advisor':'funding_advisor',
+  'Inquiry Specialist':'inquiry_specialist',
+  Setter:'setter',
+  'Sales Manager':'sales_manager',
+  Affiliate:null
+};
 var PERMS=[
   {code:'PM-01',g:'Clients',n:'View pipeline',            d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Specialist':1,Affiliate:0}},
   {code:'PM-02',g:'Clients',n:'Edit client records',      d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Specialist':0,Affiliate:0}},
@@ -488,7 +490,9 @@ function renderRoster(){
              :p.consent?'<span class="badge b-ok">On file</span>':'<span class="badge b-alert">Missing</span>')+'</td>'+
       '<td>'+(p.clock===null?'<span class="badge b-gray" title="No clock data in the database">—</span>'
              :p.clock?'<span class="badge b-ok">In · '+p.since+'</span>':'<span class="badge b-gray">Out</span>')+'</td>'+
-      '<td>'+(p.active?'<span class="badge b-ok">Active</span>':'<span class="badge b-warn">Invited</span>')+'</td></tr>';
+      '<td>'+(p.status==='suspended'?'<span class="badge b-warn">Revoked</span>'
+             :p.status==='invited'?'<span class="badge b-warn">Invited</span>'
+             :p.active?'<span class="badge b-ok">Active</span>':'<span class="badge b-warn">Invited</span>')+'</td></tr>';
   }).join('');
   document.getElementById('rosterBody').innerHTML=rows||'<tr><td colspan="5" class="empty">No one matches that filter.</td></tr>';
   document.querySelectorAll('#rosterBody tr[data-id]').forEach(function(tr){
@@ -630,7 +634,8 @@ function openNew(){
   ['ed_first','ed_last','ed_email','ed_phone'].forEach(function(i){document.getElementById(i).value=''});
   document.getElementById('ed_code').value=code;
   document.getElementById('ed_role').value='Closer';
-  document.getElementById('ed_start').value='2026-07-27';
+  document.getElementById('ed_start').value='';
+  document.getElementById('ed_email').placeholder='made for you as name@fundhub.ai';
   setSw('ed_active',false); setSw('ed_consent',false); setSw('ed_clock',false);
   fillPerms({role:'Closer'});
   document.getElementById('edReset').style.display='none';   // no account exists yet
@@ -671,23 +676,47 @@ document.getElementById('edSave').addEventListener('click',function(){
         return;
       }
     }
-    Object.keys(rec).forEach(function(k){p[k]=rec[k]});
-    if(rec.consent && !p.consentAt) p.consentAt='2026-07-27';
-    if(!rec.consent) p.consentAt=null;
-    if(!p.clock) p.since='—';
-  }else{
-    rec.id=nextId++; rec.code='EMP-'+String(nextCode++).padStart(6,'0');
-    rec.consentAt=rec.consent?'2026-07-27':null; rec.since=rec.clock?'now':'—'; rec.today='0h 00m';
-    PEOPLE.push(rec);
+    closeEditor(); renderAll();
+    return;
   }
-  closeEditor(); renderAll();
+  var roleKey=ROLE_KEY[rec.role];
+  if(!roleKey){alert('Pick a job we can log in: closer, advisor, inquiry, setter, sales manager, or admin.');return}
+  if(typeof FHData==='undefined'||!FHData.write){alert('Not available — the data layer has not loaded.');return}
+  var btn=document.getElementById('edSave');
+  btn.disabled=true; btn.textContent='Creating…';
+  FHData.write('/api/auth/invite',{name:first+' '+last,role:roleKey}).then(function(res){
+    btn.disabled=false; btn.textContent='Save';
+    if(!res.ok){
+      alert('Could not create them: '+(res.error||'unknown error')+
+        (res.source==='unauthorized'?' — sign in as owner.':''));
+      return;
+    }
+    var email=(res.data&&res.data.email)||'';
+    var path=(res.data&&res.data.invitePath)||'';
+    var link=location.origin+path;
+    prompt('Login made: '+email+' — copy this link and send it. They set their own password (7 days):',link);
+    closeEditor();
+    location.reload();
+  });
 });
 document.getElementById('edDeact').addEventListener('click',function(){
   if(!selId){closeEditor();return}
   var p=PEOPLE.filter(function(x){return String(x.id)===String(selId)})[0];
-  if(p.role==='Owner'){alert('The Owner account cannot be deactivated.');return}
-  p.active=false; p.clock=false; p.since='—';
-  closeEditor(); renderAll();
+  if(!p){closeEditor();return}
+  if(p.role==='Owner'||p.self){alert('You cannot revoke the owner login.');return}
+  if(!p.staffId){alert('This row is not a real login.');return}
+  if(typeof FHData==='undefined'||!FHData.write){alert('Not available — the data layer has not loaded.');return}
+  if(!confirm('Revoke login for '+p.first+' '+p.last+'? They will not be able to sign in.')) return;
+  var btn=this; btn.disabled=true;
+  FHData.write('/api/auth/suspend',{staff_id:p.staffId}).then(function(res){
+    btn.disabled=false;
+    if(!res.ok){
+      alert('Could not revoke: '+(res.error||'unknown error'));
+      return;
+    }
+    closeEditor();
+    location.reload();
+  });
 });
 /* Reset password — owner/admin only, enforced server-side on the whole route
    (api/auth/admin-reset.mjs). Nothing in this system sends outbound email, so
@@ -756,9 +785,22 @@ renderAll();
   // preset it does not have.
   var ROLE_LABEL = {
     owner: "Owner",
+    admin: "Admin",
     closer: "Closer",
     funding_advisor: "Funding Advisor",
-    inquiry_specialist: "Inquiry Specialist"
+    inquiry_specialist: "Inquiry Specialist",
+    setter: "Setter",
+    sales_manager: "Sales Manager"
+  };
+  var ROLE_KEY = {
+    Owner: null,
+    Admin: "admin",
+    Closer: "closer",
+    "Funding Advisor": "funding_advisor",
+    "Inquiry Specialist": "inquiry_specialist",
+    Setter: "setter",
+    "Sales Manager": "sales_manager",
+    Affiliate: null
   };
 
   var meEmail = null;
@@ -945,6 +987,7 @@ renderAll();
         phone: "—",
         start: "—",
         active: s.status === "active",
+        status: s.status || "",
         consent: (Object.prototype.hasOwnProperty.call(s, "monitoring_consent_at") ? !!s.monitoring_consent_at : null),
         consentAt: s.monitoring_consent_at ? String(s.monitoring_consent_at).slice(0, 10) : null,
         clock: self ? false : (Object.prototype.hasOwnProperty.call(s, "open_shift") ? Number(s.open_shift) > 0 : null),

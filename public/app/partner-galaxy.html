@@ -283,6 +283,7 @@
       <div class="sub">Galaxy</div>
     </div>
     <div class="topbar-right">
+      <div class="census" id="wl-own-url">Your page · sign in to see your address</div>
       <div class="census" id="census"></div>
       <div class="clock" id="clock"></div>
       <div class="live-pill"><span class="live-dot"></span>LIVE</div>
@@ -382,244 +383,16 @@ var CLUSTERS = [
 ];
 var CL = {}; CLUSTERS.forEach(function(c){CL[c.id]=c;});
 
-var CLIENTS = ['Maria Delgado','Derek Owusu','Samuel Okafor','Wei Chen','Rachel Simmons',
-  'Andre Fontaine','Priya Nair','Tomás Reyes','Grace Kowalski','Courtney Vance',
-  'Brianna Holt','Kayla Whitmore','Gustavo Rincón','Lena Petrov','Damon Cole','Marcus Ibe'];
+var CLIENTS = [];
 
-var NODES = [
-/* ---- LEADERSHIP ---- */
-{id:'chris', c:'lead', name:'Fundhub Leadership', ini:'CS', role:'Owner', kind:'human',
- state:'active', tempo:.42, out:12, pace:null, unit:'files touched',
- act:'Reviewing Compliance Gate flags',
- pool:['Reviewing Compliance Gate flags','Reading the Alt-Fin funding queue','On with Sarah — coverage gap','Reviewing {C}’s escalation','Checking cost per funded client'],
- shift:'6:41 AM', on:'8h 06m',
- stats:[['Files touched','9'],['Flags reviewed','4'],['Escalations cleared','2'],['Target','none · owner view']],
- files:['Grace Kowalski','Andre Fontaine','Maria Delgado'],
- tl:[['7:12','Read the 7:00 AM Daily Brief'],['9:05','Cleared 2 compliance escalations'],
-     ['11:48','Reviewed Alt-Fin funding queue — 4 files'],['1:20 PM','Called Sarah re: closer coverage 3–6pm']]},
-
-/* ---- SALES & FUNDING ---- */
-{id:'sarah', c:'sales', name:'Fundhub Ops Team', ini:'SW', role:'Sales Manager', kind:'human',
- state:'active', tempo:.55, out:19, pace:1.08, unit:'team roll-up',
- act:'Reviewing team coverage — 2 gaps',
- pool:['Reviewing team coverage — 2 gaps','Listening to {C}’s call recording','Reassigning {C} to Jordan','Escalating {C}’s stalled file','1:1 with Nina — pace check'],
- shift:'8:02 AM', on:'6h 45m',
- stats:[['Team pace','108%'],['Files escalated','5'],['Coverage gaps','2'],['Calls audited','7']],
- files:['Nina’s 4pm block','Andre Fontaine','Priya Nair'],
- tl:[['7:50','Set today’s targets — closers at 3 deposits each'],['9:30','Audited 4 call recordings'],
-     ['12:05','Escalated Andre Fontaine — internal review hold'],['2:22 PM','Flagged 3–6pm coverage gap to Chris']]},
-
-{id:'jordan', c:'sales', name:'Your Closing Team', ini:'JB', role:'Closer', kind:'human',
- state:'active', tempo:.78, out:5, pace:0.60, unit:'deposits',
- act:'On a call with Priya Nair',
- pool:['On a call with {C}','Prepping for the 4:30 call','Logging call outcome — {C}','Collecting deposit — {C}','Reading {C}’s survey before dialing','Dialing {C}'],
- shift:'8:15 AM', on:'6h 32m',
- stats:[['Deposits collected','1 of 3'],['Calls made','5'],['Shows','3 of 5'],['Cash collected','$3,000']],
- files:['Priya Nair','Devon Marsh','Amara Nwosu'],
- tl:[['8:15','Shift start — 5 calls booked today'],['10:00','Call kept — Amara Nwosu, asked for pay stubs'],
-     ['12:40 PM','Deposit collected — Devon Marsh $3,000'],
-     ['2:33 PM','On a call with Priya Nair']]},
-
-{id:'nina', c:'sales', name:'Your Advisor Team', ini:'NC', role:'Closer', kind:'human',
- state:'active', tempo:.45, out:3, pace:0.33, unit:'deposits', behindFor:'2h',
- act:'Prepping for the 4:00 call — no dials since 12:40',
- pool:['Prepping for the 4:00 call — no dials since 12:40','Reading {C}’s survey','Waiting on {C} to call back','Rescheduling {C}'],
- shift:'8:30 AM', on:'6h 17m',
- stats:[['Deposits collected','1 of 3'],['Calls made','3'],['Shows','1 of 3'],['Last dial','2h 05m ago']],
- files:['Marcus Ibe','Hollis Grant'],
- tl:[['9:00','No-show — Trevor Nakamura'],['10:20','Deposit collected — Marcus Ibe $3,000'],
-     ['12:40 PM','Last outbound dial'],['2:10 PM','Prepping for the 4:00 call']]},
-
-{id:'marcus', c:'sales', name:'Your Funding Desk', ini:'MW', role:'Funding Advisor', kind:'human',
- state:'active', tempo:.72, out:31, pace:1.25, unit:'rounds submitted',
- act:'Chasing docs — Derek Owusu',
- pool:['Submitting a round — {C}','Running pulls — {C}','Reviewing offers — {C}','Building the card stack — {C}','Chasing approval — {C}','Reading Document Check flags on {C}'],
- shift:'8:00 AM', on:'6h 47m',
- stats:[['Rounds submitted','5 of 4'],['Pulls run','11'],['Approvals landed','3'],['Funded today','$80,000']],
- files:['Derek Owusu','Samuel Okafor','Maria Delgado','Rachel Simmons'],
- tl:[['8:08','Pulled 4 files from Document Check'],['11:10','Approval landed — Maria Delgado $18,500'],
-     ['1:35 PM','Round 2 approved — Derek Owusu $46,500'],['2:33 PM','Round 2 submitted — Rachel Simmons'],
-     ['2:44 PM','Chasing docs — Derek Owusu']]},
-
-/* ---- INQUIRY REMOVAL ---- */
-{id:'alvin', c:'inq', name:'Inquiry Desk', ini:'AT', role:'Inquiry Remover', kind:'human',
- state:'active', tempo:.68, out:22, pace:0.93, unit:'removals',
- act:'Calling Equifax — inquiry 7 of 11',
- pool:['Calling Equifax — inquiry 7 of 11','Calling TransUnion — {C}','Drafting removal letter — {C}','Confirming removal — {C}','Working the manual queue — 11 waiting'],
- shift:'8:02 AM', on:'6h 45m',
- stats:[['Removals confirmed','14 of 15'],['Calls attempted','22'],['Queue remaining','11'],['Letters issued','8']],
- files:['Wei Chen','Grace Kowalski','Lena Petrov'],
- tl:[['8:05','Called TransUnion — no answer'],['11:15','Escalated fraud flag — Grace Kowalski'],
-     ['1:47 PM','Took over AI queue after portal timeout'],['2:38 PM','Confirmed removal — Wei Chen'],
-     ['2:41 PM','Calling Equifax — inquiry 7 of 11']]},
-
-{id:'irai', c:'inq', name:'Inquiry Removal AI', ini:'IR', role:'Agent', kind:'agent',
- state:'blocked', tempo:.20, out:6, pace:0.15, unit:'removals', behindFor:'1h 00m',
- act:'Blocked — Equifax portal timeout, 3 retries failed',
- pool:['Blocked — Equifax portal timeout, 3 retries failed'],
- shift:'12:00 AM', on:'14h 47m',
- stats:[['Status','BLOCKED 1h 00m'],['Removals filed','6'],['Queue waiting','11'],['Retries failed','3']],
- files:['Felix Ndiaye','Damon Cole','+9 queued'],
- tl:[['12:00','Runtime start — queue 17'],['9:12','Filed 6 removals'],
-     ['1:30 PM','Equifax portal timeout — retry 1'],['1:38 PM','Retry 2 failed'],
-     ['1:47 PM','Retry 3 failed — halted, queue handed to Alvin']]},
-
-/* ---- CLIENT-FACING AGENTS ---- */
-{id:'josh', c:'cfa', name:'Setter Josh', ini:'SJ', role:'Voice Setter', kind:'agent',
- state:'active', tempo:.92, out:34, pace:1.20, unit:'bookings',
- act:'On a call with Kayla Whitmore',
- pool:['On a call with {C}','Dialing {C}','Booked {C} — 4:30 with Jordan','Left voicemail — {C}','Re-dialing no-answer queue'],
- shift:'6:00 AM', on:'8h 47m',
- stats:[['Bookings set','6 of 5'],['Calls placed','34'],['Contacts made','21'],['Queue waiting','9']],
- files:['Kayla Whitmore','Tomás Reyes','Courtney Vance'],
- tl:[['6:00','Runtime start'],['8:22','Booked Amara Nwosu — 10am Jordan'],
-     ['10:47','Booked Lena Petrov — 11:30 Nina'],['1:12 PM','Booked Priya Nair — 2:30 Jordan'],
-     ['2:45 PM','On a call with Kayla Whitmore']]},
-
-{id:'a1', c:'cfa', name:'Agent 1', ini:'A1', role:'Lead Follow-up & Booking', kind:'agent',
- state:'active', tempo:.88, out:112, pace:1.12, unit:'conversations',
- act:'Texting Tomás Reyes',
- pool:['Texting {C}','Following up — {C}, day 3','Answering {C}’s question on the diagnostic','Handing {C} to Setter Josh','Working the 24h no-reply list'],
- shift:'12:00 AM', on:'14h 47m',
- stats:[['Conversations','112'],['Replies received','47'],['Handed to Josh','9'],['Blocked by Gate','1']],
- files:['Tomás Reyes','Courtney Vance','+18 active threads'],
- tl:[['12:00','Runtime start'],['7:30','Morning follow-up burst — 41 sent'],
-     ['11:20','Handed 4 warm leads to Setter Josh'],['2:40 PM','Texting Tomás Reyes']]},
-
-{id:'a2', c:'cfa', name:'Agent 2', ini:'A2', role:'Billing & AR', kind:'agent',
- state:'idle', tempo:.30, out:14, pace:0.93, unit:'invoices',
- act:'Idle — last ran 8m ago',
- pool:['Idle — last ran 8m ago','Sending invoice — {C}','Chasing failed payment — {C}','Posting payment — {C}'],
- shift:'12:00 AM', on:'14h 47m',
- stats:[['Invoices sent','14 of 15'],['Payments posted','9'],['Failed retries','2'],['AR touched','$21,400']],
- files:['Rachel Simmons','Andre Fontaine'],
- tl:[['12:00','Runtime start'],['8:00','Morning invoice run — 11 sent'],
-     ['1:02 PM','Posted payment — Rachel Simmons $1,200'],['2:37 PM','Idle — nothing in queue']]},
-
-{id:'a3', c:'cfa', name:'Agent 3', ini:'A3', role:'Nurture', kind:'agent',
- state:'active', tempo:.62, out:89, pace:0.99, unit:'messages',
- act:'Nurturing 212 cold leads',
- pool:['Nurturing 212 cold leads','Re-warming {C} — day 21','Sending the value drip — batch 4','Re-engaged {C}, handing to Agent 1'],
- shift:'12:00 AM', on:'14h 47m',
- stats:[['Messages sent','89 of 90'],['Cold leads live','212'],['Re-engaged','6'],['Opt-outs','1']],
- files:['212 cold leads','+6 re-engaged today'],
- tl:[['12:00','Runtime start'],['9:00','Drip batch 3 — 34 sent'],
-     ['12:30 PM','Re-engaged Courtney Vance — handed to Agent 1'],['2:20 PM','Drip batch 4 running']]},
-
-{id:'a5', c:'cfa', name:'Agent 5', ini:'A5', role:'Onboarding', kind:'agent',
- state:'active', tempo:.70, out:37, pace:1.15, unit:'onboardings',
- act:'Onboarding Brianna Holt — 3 docs requested',
- pool:['Onboarding {C} — 3 docs requested','Chasing missing ID — {C}','Welcome sequence — {C}','Passing {C}’s docs to Document Check'],
- shift:'12:00 AM', on:'14h 47m',
- stats:[['Onboardings','9 of 8'],['Docs requested','37'],['Docs received','24'],['Stalled >24h','2']],
- files:['Brianna Holt','Samuel Okafor','Damon Cole'],
- tl:[['12:00','Runtime start'],['9:15','Welcome sequence — 4 new clients'],
-     ['11:50','Docs complete — Samuel Okafor, passed to Document Check'],['2:33 PM','Onboarding Brianna Holt']]},
-
-{id:'dc', c:'cfa', name:'Document Check', ini:'DC', role:'Agent', kind:'agent',
- state:'active', tempo:.75, out:27, pace:1.22, unit:'files checked',
- act:'Reviewing docs — Samuel Okafor',
- pool:['Reviewing docs — {C}','Flagging mismatch — {C}','Clearing file to funding — {C}','Requesting re-upload — {C}'],
- shift:'12:00 AM', on:'14h 47m',
- stats:[['Files checked','27 of 22'],['Flagged','4'],['Cleared to funding','19'],['Avg check time','2m 10s']],
- files:['Samuel Okafor','Derek Owusu','Brianna Holt'],
- tl:[['12:00','Runtime start'],['9:44','Flagged income mismatch — Andre Fontaine'],
-     ['11:52','Cleared Samuel Okafor → Your Funding Desk'],['2:41 PM','Reviewing docs — Samuel Okafor']]},
-
-{id:'cf', c:'cfa', name:'Context Fetcher', ini:'CF', role:'Agent', kind:'agent',
- state:'active', tempo:.66, out:48, pace:0.96, unit:'context pulls',
- act:'Prepping context — Courtney Vance call',
- pool:['Prepping context — {C} call','Summarizing {C}’s thread','Pulling snapshot state — {C}','Serving context to Setter Josh'],
- shift:'12:00 AM', on:'14h 47m',
- stats:[['Context pulls','48 of 50'],['Avg latency','340ms'],['Cache hits','71%'],['Misses','3']],
- files:['Courtney Vance','Kayla Whitmore','Priya Nair'],
- tl:[['12:00','Runtime start'],['8:20','Served 12 pulls to Setter Josh'],
-     ['1:05 PM','Rebuilt summary — Priya Nair'],['2:44 PM','Prepping context — Courtney Vance']]},
-
-/* ---- OPS AGENTS ---- */
-{id:'hb', c:'ops', name:'Heartbeat', ini:'HB', role:'Agent', kind:'agent',
- state:'active', tempo:.50, out:18, pace:null, unit:'health checks',
- act:'All systems nominal — 1 alert open',
- pool:['All systems nominal — 1 alert open','Checking Lendflow adapter','Checking Twilio send queue','Alert raised — Equifax portal'],
- shift:'12:00 AM', on:'14h 47m',
- stats:[['Interval','every 60s'],['Alerts open','1'],['Webhook failures','0'],['Queue depth','11 (inquiry)']],
- files:['Equifax portal alert'],
- tl:[['12:00','Runtime start'],['1:30 PM','Raised alert — Equifax portal timeout'],
-     ['1:47 PM','Escalated to Chris — 3 retries failed'],['2:46 PM','All other systems nominal']]},
-
-{id:'recon', c:'ops', name:'Recon', ini:'RC', role:'Agent', kind:'agent',
- state:'idle', tempo:.22, out:61, pace:1.02, unit:'files reconciled',
- act:'Idle — last scan 22m ago',
- pool:['Idle — last scan 22m ago','Reconciling GHL ↔ platform','Scanning for drift'],
- shift:'12:00 AM', on:'14h 47m',
- stats:[['Files reconciled','61 of 60'],['Drift found','3'],['Handed to Fixer','3'],['Next scan','in 38m']],
- files:['3 drifted records'],
- tl:[['12:00','Runtime start'],['6:00','Full reconcile — 61 files'],
-     ['2:24 PM','Scan complete — 3 drifted, handed to Fixer']]},
-
-{id:'fixer', c:'ops', name:'Fixer', ini:'FX', role:'Agent', kind:'agent',
- state:'idle', tempo:.18, out:3, pace:null, unit:'auto-fixes',
- act:'Standing by — 3 fixes applied today',
- pool:['Standing by — 3 fixes applied today','Applying fix — stage mismatch','Rolling back a bad write'],
- shift:'12:00 AM', on:'14h 47m',
- stats:[['Auto-fixes applied','3'],['Rollbacks','0'],['Escalated to human','0'],['Status','standing by']],
- files:['3 drifted records'],
- tl:[['12:00','Runtime start'],['2:26 PM','Applied 3 fixes from Recon scan'],['2:27 PM','Standing by']]},
-
-{id:'brief', c:'ops', name:'Daily Brief', ini:'DB', role:'Agent', kind:'agent',
- state:'idle', tempo:.10, out:1, pace:null, unit:'briefs',
- act:'Done for today — brief sent 7:00 AM',
- pool:['Done for today — brief sent 7:00 AM'],
- shift:'6:45 AM', on:'done 7h 46m ago',
- stats:[['Briefs sent','1 of 1'],['Recipients','Chris'],['Next run','6:45 AM tomorrow'],['Status','done for today']],
- files:['Morning brief — Jul 26'],
- tl:[['6:45','Assembled overnight numbers'],['7:00','Sent brief to Chris'],['7:01','Done for today']]},
-
-{id:'cg', c:'ops', name:'Compliance Gate', ini:'CG', role:'Agent', kind:'agent',
- state:'active', tempo:.58, out:214, pace:0.99, unit:'messages checked',
- act:'214 messages checked — 2 blocked',
- pool:['214 messages checked — 2 blocked','Blocked a send — Agent 1, guardrail 4','Auditing agent conversations','Cleared batch — 38 messages'],
- shift:'12:00 AM', on:'14h 47m',
- stats:[['Messages checked','214'],['Passed','212'],['Blocked','2'],['Escalated to Chris','2']],
- files:['Agent 1 — guardrail 4','Grace Kowalski — fraud flag'],
- tl:[['12:00','Runtime start'],['10:30','Blocked 1 send — Agent 1, guardrail 4'],
-     ['11:18','Escalated Grace Kowalski fraud flag to Chris'],['2:45 PM','214 checked — 212 passed']]},
-
-{id:'dm', c:'ops', name:'Data + Models', ini:'DM', role:'Agent', kind:'agent',
- state:'idle', tempo:.12, out:1, pace:null, unit:'scoring runs',
- act:'Done for today — nightly scoring 3:12 AM',
- pool:['Done for today — nightly scoring 3:12 AM'],
- shift:'2:40 AM', on:'done 11h 35m ago',
- stats:[['Scoring runs','1 of 1'],['Leads scored','1,842'],['Model','v4 · lead-quality'],['Next run','3:00 AM tomorrow']],
- files:['1,842 leads scored'],
- tl:[['2:40','Nightly scoring started'],['3:12','Scoring complete — 1,842 leads'],['3:13','Done for today']]}
-];
+var NODES = [];
 var ND = {}; NODES.forEach(function(n){ND[n.id]=n;});
 
 /* handoff routes that actually happen at Fundhub */
-var ROUTES = [
-  ['a1','josh','{C} warmed — handed off for booking'],
-  ['a3','a1','{C} re-engaged after 21 days'],
-  ['josh','jordan','{C} booked — 3:30 slot'],
-  ['josh','nina','{C} booked — 4:00 slot'],
-  ['cf','josh','context prepped for {C}’s call'],
-  ['cf','jordan','{C}’s survey + thread summary'],
-  ['a5','dc','{C}’s docs uploaded — ready to check'],
-  ['dc','marcus','{C}’s file cleared for funding'],
-  ['marcus','a5','{C} approved — start onboarding'],
-  ['a2','marcus','{C}’s deposit cleared'],
-  ['irai','alvin','{C}’s queue handed over — portal blocked'],
-  ['alvin','cg','{C}’s fraud flag escalated'],
-  ['cg','chris','send blocked — needs your read'],
-  ['hb','chris','Equifax portal alert'],
-  ['recon','fixer','3 drifted records'],
-  ['sarah','nina','{C} reassigned to your 4pm'],
-  ['jordan','marcus','{C} deposited — over to funding'],
-  ['dc','chris','{C} flagged — income mismatch']
-];
+var ROUTES = [];
 
 /* threads that just sit there — two workers on the same file */
-var STANDING = [['marcus','dc'],['alvin','irai'],['josh','cf'],['a1','a3'],['recon','fixer'],['sarah','jordan']];
+var STANDING = [];
 
 /* ---------- the seven rails ---------- */
 var RAILS = [
@@ -634,20 +407,17 @@ var RAILS = [
 
 /* ---------- company KPIs — these live on the canvas ---------- */
 var KPIS = [
-  {id:'cash',  label:'Cash Collected Today', v:29224,  fmt:'money', hist:[], glow:0, disp:29224},
-  {id:'fund',  label:'Funded Today',         v:80000,  fmt:'money', hist:[], glow:0, disp:80000},
-  {id:'close', label:'Close Rate',           v:34.2,   fmt:'pct',   hist:[], glow:0, disp:34.2},
-  {id:'show',  label:'Show Rate',            v:71.4,   fmt:'pct',   hist:[], glow:0, disp:71.4},
-  {id:'move',  label:'Movement Today',       v:87,     fmt:'int',   hist:[], glow:0, disp:87},
-  {id:'cpf',   label:'Cost / Funded Client', v:612,    fmt:'money0',hist:[], glow:0, disp:612}
+  {id:'cash',  label:'Cash Collected Today', v:0, fmt:'money', hist:[], glow:0, disp:0},
+  {id:'fund',  label:'Funded Today',         v:0, fmt:'money', hist:[], glow:0, disp:0},
+  {id:'close', label:'Close Rate',           v:0, fmt:'pct',   hist:[], glow:0, disp:0},
+  {id:'show',  label:'Show Rate',            v:0, fmt:'pct',   hist:[], glow:0, disp:0},
+  {id:'move',  label:'Movement Today',       v:0, fmt:'int',   hist:[], glow:0, disp:0},
+  {id:'cpf',   label:'Cost / Funded Client', v:0, fmt:'money0',hist:[], glow:0, disp:0}
 ];
 var KPI = {}; KPIS.forEach(function(k){KPI[k.id]=k;});
 
 function fmtK(k,v){
-  if(k.fmt==='money')  return '$'+Math.round(v).toLocaleString('en-US');
-  if(k.fmt==='money0') return '$'+Math.round(v);
-  if(k.fmt==='pct')    return v.toFixed(1)+'%';
-  return String(Math.round(v));
+  return '—';
 }
 
 /* ============================================================
@@ -746,7 +516,9 @@ function fillC(s){ return s.replace('{C}', pick(CLIENTS)); }
 
 /* -- workers change what they're doing -- */
 function evActivity(){
+  if(!NODES.length) return;
   var cands = NODES.filter(function(n){return n.state!=='blocked' && n.pool && n.pool.length>1;});
+  if(!cands.length) return;
   var n = pick(cands);
   var txt = fillC(pick(n.pool));
   if(txt===n.act) return;
@@ -759,6 +531,7 @@ function evActivity(){
 
 /* -- one worker hands something to another -- */
 function evHandoff(){
+  if(!NODES.length) return;
   if(threads.length>=5) return;
   var r = pick(ROUTES);
   var a = ND[r[0]], b = ND[r[1]];
@@ -770,6 +543,7 @@ function evHandoff(){
 
 /* -- a client advances a stage: a pulse travels its rail -- */
 function evMove(){
+  if(!CLIENTS.length) return;
   if(pulses.length>=4) return;
   var i = (Math.random()*RAILS.length)|0;
   if(RAILS[i].quiet && Math.random()<0.88) i = (Math.random()*(RAILS.length-1))|0;
@@ -782,6 +556,7 @@ function evMove(){
 
 /* -- money lands: the loudest thing on this screen -- */
 function evMoney(){
+  if(!NODES.length) return;
   if(flares.length>=2) return;
   var roll = Math.random();
   var n, amt, kid, kind, color;
@@ -811,8 +586,7 @@ function evMoney(){
 
 /* -- the soft numbers drift as calls resolve -- */
 function evRate(){
-  var k = pick([KPI.close, KPI.show]);
-  bumpKPI(k.id, (Math.random()-0.42)*1.4, false);
+  return;
 }
 
 function bumpKPI(id, d, loud){
@@ -848,10 +622,8 @@ function tickEvents(){
   histT += dt;
   if(histT >= 1.1){
     histT = 0;
-    KPIS.forEach(function(k){ k.hist.push(k.v); if(k.hist.length>52) k.hist.shift(); });
   }
 }
-KPIS.forEach(function(k){ for(var i=0;i<52;i++) k.hist.push(k.v*(1 - (52-i)/52*(k.fmt==='pct'?0.06:0.55))); });
 
 /* ============================================================
    4. PHYSICS — drift, cluster gravity, repulsion, depth
@@ -1865,27 +1637,25 @@ panel.addEventListener('click', function(e){ e.stopPropagation(); });
    7. CHROME — clock + census
    ============================================================ */
 
-/* Scene time. Every surface is frozen at the same moment — Sun Jul 26,
-   2:47:09 PM ET — so the sky, its timelines and the other screens agree.
-   It still ticks, seeded from the mock, exactly like the Command Center. */
-var SCENE_T0=new Date(2026,6,26,14,47,9).getTime(), SCENE_MOUNT=Date.now();
+/* Live clock in America/New_York. Timeline stamps use the same clock. */
 function nowClock(shortT){
-  var d=new Date(SCENE_T0+(Date.now()-SCENE_MOUNT));
-  var h=d.getHours(), m=d.getMinutes(), s=d.getSeconds();
-  var ap=h>=12?'PM':'AM'; var hh=h%12; if(hh===0)hh=12;
-  var mm=(m<10?'0':'')+m, ss=(s<10?'0':'')+s;
-  if(shortT) return hh+':'+mm+' '+ap;
-  var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  var mons=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return days[d.getDay()]+' '+mons[d.getMonth()]+' '+d.getDate()+' · '+hh+':'+mm+':'+ss+' '+ap+' ET';
+  var d = new Date();
+  if (shortT) {
+    return d.toLocaleString("en-US", {
+      hour: "numeric", minute: "2-digit",
+      timeZone: "America/New_York"
+    });
+  }
+  return d.toLocaleString("en-US", {
+    weekday: "short", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", second: "2-digit",
+    timeZone: "America/New_York", timeZoneName: "short"
+  });
 }
 var clockEl=document.getElementById('clock'), censusEl=document.getElementById('census');
+if(censusEl) censusEl.textContent = 'No partners on file';
 function chrome(){
-  clockEl.textContent = nowClock(false);
-  var a=0,i=0,b=0;
-  NODES.forEach(function(n){ if(n.state==='active')a++; else if(n.state==='blocked')b++; else i++; });
-  censusEl.innerHTML = '<b>'+NODES.length+'</b> workers · <b>'+a+'</b> working · '+
-    (b?'<span class="warn">'+b+' blocked</span> · ':'')+i+' idle';
+  if(clockEl) clockEl.textContent = nowClock(false);
 }
 chrome(); setInterval(chrome, 1000);
 
@@ -1925,18 +1695,45 @@ requestAnimationFrame(draw);
 
      This screen has no element that describes partners, and inventing one would
      be changing the approved layout. The banner is the honest place for it. */
+  (function showOwnUrl() {
+    var el = document.getElementById("wl-own-url");
+    if (!el) return;
+    var tok = "";
+    try { tok = localStorage.getItem("fh_token") || ""; } catch (e) { tok = ""; }
+    if (!tok || tok === "demo") return;
+    fetch("/api/auth/session", {
+      headers: { accept: "application/json", authorization: "Bearer " + tok }
+    }).then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (d) {
+        var id = d && d.staff && (d.staff.partner_id || d.staff.partnerId);
+        if (!id) return;
+        var path = "/sites/" + id + "/apply";
+        el.textContent = "";
+        el.appendChild(document.createTextNode("Your page · "));
+        var a = document.createElement("a");
+        a.href = "brand-studio.html?partner_id=" + encodeURIComponent(id);
+        a.textContent = (location.origin || "https://fundhub.ai") + path;
+        el.appendChild(a);
+      }).catch(function () {});
+  })();
+
   FHData.wire(FHData.partners({ limit: 200 }), "partner census", function (data) {
     var rows = data.items || [];
-    if (!rows.length) return null;
-
+    var census = document.getElementById("census");
+    if (!rows.length) {
+      if (census) census.textContent = "No partners on file";
+      return "No partners on file";
+    }
+    if (census) {
+      census.innerHTML = "<b>" + rows.length + "</b> partner" +
+        (rows.length === 1 ? "" : "s") + " on file";
+    }
     var owed = rows.reduce(function (a, p) { return a + Number(p.balance_accrued || 0); }, 0);
     var signed = rows.filter(function (p) { return p.agreement_signed; }).length;
     var unsigned = rows.length - signed;
-
     return "live partner census · " + rows.length + " partner(s) · $" +
            Math.round(owed).toLocaleString("en-US") + " accrued · " +
-           (unsigned ? unsigned + " agreement(s) unsigned" : "all agreements signed") +
-           " · the galaxy itself is still sample";
+           (unsigned ? unsigned + " agreement(s) unsigned" : "all agreements signed");
   });
 })();
 </script>

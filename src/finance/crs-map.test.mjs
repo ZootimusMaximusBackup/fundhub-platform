@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { mergeBureauReports, newInquiriesFor } from "./crs-map.mjs";
+import { mergeBureauReports, newInquiriesFor, bureauHardErrors, pickCreditScore } from "./crs-map.mjs";
 
 function report({ bureau, score, ssn = "666321120" }) {
   return {
@@ -55,4 +55,39 @@ test("mergeBureauReports: keeps partial pulls and bureau errors", () => {
   assert.deepEqual(merged.bureauErrors, { EX: "timeout", EQ: "denied" });
   assert.equal(merged.scores.tu, 700);
   assert.equal(merged.scores.ex, null);
+});
+
+test("bureauHardErrors reads E4000 invalid birth date", () => {
+  const report = {
+    errorMessages: [{
+      creditErrorMessageCode: "E4000",
+      creditErrorMessageText: "Invalid Borrower Birth Date"
+    }]
+  };
+  assert.match(bureauHardErrors(report), /E4000/);
+  const merged = mergeBureauReports({
+    reports: { EQ: report },
+    errors: {},
+    requestIds: { EQ: "r-eq" },
+    environment: "production"
+  });
+  assert.match(merged.bureauErrors.EQ, /Invalid Borrower Birth Date/);
+  assert.equal(merged.scores.eq, null);
+});
+
+test("pickCreditScore: Equifax FICO 9 wins even when max is missing", () => {
+  const picked = pickCreditScore([
+    { modelName: "Consumer IncomeView+ Model", scoreValue: "81", scoreMaximumValue: "300" },
+    { modelName: "FICO Score 9", scoreValue: "462", scoreMaximumValue: null }
+  ]);
+  assert.equal(picked.value, 462);
+  assert.equal(picked.model, "FICO Score 9");
+});
+
+test("pickCreditScore: Experian Fair Isaac wins over Income Insight", () => {
+  const picked = pickCreditScore([
+    { modelName: "Experian/Fair Isaac Risk Model V9", scoreValue: "464", scoreMaximumValue: "843" },
+    { modelName: "Income Insight", scoreValue: "97", scoreMaximumValue: "300" }
+  ]);
+  assert.equal(picked.value, 464);
 });

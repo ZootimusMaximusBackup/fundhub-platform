@@ -182,7 +182,7 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
       close_rate: held ? deposits / held : null,
       unlogged,
       commission_mtd: null,
-      commission_reason: "Use /api/read/my-numbers for commission_ledger rollup"
+      commission_reason: "Open My numbers"
     },
     client: {
       id: client.id,
@@ -218,6 +218,14 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
     },
     precall,
     templates_sent: templatesSent.rows.map((r) => r.template_key),
+    join_url: (await db.query(
+      `SELECT meeting_url FROM tasks
+        WHERE org_id = $1 AND client_id = $2
+          AND meeting_url IS NOT NULL AND btrim(meeting_url) <> ''
+        ORDER BY due_at DESC NULLS LAST
+        LIMIT 1`,
+      [orgId, clientId]
+    )).rows[0]?.meeting_url || null,
     up_next: upNext,
     gone_quiet: goneQuiet,
     compliance_checklist: {

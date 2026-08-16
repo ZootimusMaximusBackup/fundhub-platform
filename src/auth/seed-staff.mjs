@@ -1,4 +1,9 @@
-// The six founding staff logins, and the idempotent upsert that creates them.
+// The real founding staff login, and the idempotent upsert that creates it.
+//
+// Owner-set 2026-08-16: the only real staff person is Chris Stanbridge.
+// Alvin Torres and the other seed names are not staff. They stay listed in
+// SEED_FURNITURE_EMAILS so a re-seed cannot put them back, and so staff
+// lists can hide them.
 //
 // The roster is data, not script, so it can be asserted in a test without
 // running a seed. scripts/seed-staff.mjs is the CLI over this module.
@@ -11,7 +16,7 @@
 // IDEMPOTENCE — the important detail. Re-running must not reset a password
 // somebody has already changed. An existing row has its role, name and status
 // reconciled; its password_hash is left alone unless resetPasswords is set
-// explicitly. So the safe operation (make sure these six can sign in) is
+// explicitly. So the safe operation (make sure Chris can sign in) is
 // re-runnable, and the destructive one (put them all back to the seed password)
 // has to be asked for.
 
@@ -23,12 +28,16 @@ import { resolveDefaultOrg } from "./org.mjs";
 // lower(btrim()) to match the catalog — a stray case difference here would
 // reach the browser as an unrecognised role.
 export const FOUNDING_STAFF = [
-  { email: "chris@fundhub.ai",  role: "owner",              name: "Chris Stanbridge" },
-  { email: "sarah@fundhub.ai",  role: "admin",              name: "Sarah Whitfield" },
-  { email: "jordan@fundhub.ai", role: "closer",             name: "Jordan Blake" },
-  { email: "nina@fundhub.ai",   role: "closer",             name: "Nina Castellano" },
-  { email: "marcus@fundhub.ai", role: "funding_advisor",    name: "Marcus Webb" },
-  { email: "alvin@fundhub.ai",  role: "inquiry_specialist", name: "Alvin Torres" }
+  { email: "chris@fundhub.ai", role: "owner", name: "Chris Stanbridge" }
+];
+
+// Old seed names. Not staff. Do not create. Do not show on the roster.
+export const SEED_FURNITURE_EMAILS = [
+  "alvin@fundhub.ai",
+  "sarah@fundhub.ai",
+  "jordan@fundhub.ai",
+  "nina@fundhub.ai",
+  "marcus@fundhub.ai"
 ];
 
 export const PASSWORD_ENV = "STAFF_INITIAL_PASSWORD";

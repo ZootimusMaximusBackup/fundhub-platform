@@ -3,6 +3,10 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-16 | affiliate + white-label (+ all actuals regen) | Website apply is a real public door (`POST /api/public/partner-apply`). Affiliates can read their own roster row. Partners can save brand and publish funnel pages. Intended files still do not mention website apply or a personal URL. | Owner: fake affiliate and white-label come in through the site, get a login, get a URL, make a funnel | (this commit)
+
+2026-08-16 | role-owner (+ all actuals regen) | Two auth routes added — `POST /api/auth/invite`, `POST /api/auth/suspend`. Owner makes a company login and can revoke it. Intended still says 7 sign-in routes; actual is 9. | Only Chris is staff; he creates and revokes logins | (this commit)
+
 2026-08-15 | all eight | One finance route added — `GET,POST /api/company-brain/sync` (owner, admin, sales_manager). Sales floor shows today's Meet recordings from Drive. COMPLIANCE REVIEW REQUIRED — call recordings | Drive connector existed; keys were never set; SM needed a quick list | (this commit)
 
 2026-08-15 | all eight | Two staff routes added — `POST /api/customer-insights`, `GET /api/read/customer-insights`. Three collections: start (existing apply survey), mid check-in 7 days after pay (phone/AI, not Meet), ending Google Meet interview after funded. COMPLIANCE REVIEW REQUIRED — answers may later feed ads/VSL | Beta customer insight store + auto tasks | (this commit)

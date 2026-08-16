@@ -121,9 +121,11 @@ input{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8p
           }
           root.innerHTML =
             '<div class="mono">Fundhub · soft pull</div>' +
-            "<h1>You're approved</h1>" +
-            '<div class="ok">' + esc(r.body.next || "Consent saved.") + "</div>" +
-            '<p class="lede" style="margin-top:14px">Stay on the Meet. Your advisor will continue once payment clears.</p>';
+            "<h1>Consent saved</h1>" +
+            '<div class="ok">Your soft-pull authorization is on file. ' +
+            esc(r.body.next || "Pay the $32 assessment next if you have not already.") + "</div>" +
+            '<p class="lede" style="margin-top:14px">Your advisor sends the $32 pay link by email or text. ' +
+            "After payment clears, the soft pull runs automatically.</p>";
         })
         .catch(function () {
           btn.disabled = false;

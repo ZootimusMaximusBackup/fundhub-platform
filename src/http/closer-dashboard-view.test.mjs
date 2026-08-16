@@ -407,10 +407,9 @@ test("closer-dashboard.html loads data.js, without which every reader is undefin
   assert.match(HTML, /<script src="data\.js"><\/script>/);
 });
 
-test("closer-dashboard.html keeps its sample markup so a failed read degrades instead of blanking", () => {
-  // Rule 2 of the lane, and the path that actually runs while read/tradelines
-  // is absent from the ROUTES map.
-  assert.match(HTML, /Capital One Spark/);
+test("closer-dashboard.html default markup is honest empty, not sample people", () => {
+  assert.doesNotMatch(HTML, /Jordan Blake|Priya Nair|Marcus Webb/);
+  assert.match(HTML, /Open from a client\./);
   assert.match(HTML, /table class="deal"/);
   assert.match(HTML, /id="oCredit"/);
 });
@@ -456,7 +455,7 @@ test("every DOM hook the wiring writes into is still in the markup", () => {
   assert.match(HTML, /class="res-note"/);
   assert.match(HTML, /class="bd-sub"[^>]*>D-04 /);
   assert.match(HTML, /class="bd-sub"[^>]*>D-03b /);
-  assert.match(HTML, /class="section-title eyebrow">CD-02 /);
+  assert.match(HTML, /CD-02 \/ Deal Calculators/);
 });
 
 test("the loading state is scoped to an attribute the wiring sets and clears", () => {

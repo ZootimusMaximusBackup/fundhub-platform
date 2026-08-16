@@ -144,6 +144,13 @@ export default async function handler(req, res, deps = {}) {
         message: err.message
       });
     }
-    return dbDown(res, err);
+    if (dbDown(res, err)) return;
+    return res.status(500).json({
+      ok: false,
+      error: "send_failed",
+      message: err && err.message
+        ? String(err.message).slice(0, 180)
+        : "Something went wrong sending that. Try again in a moment."
+    });
   }
 }

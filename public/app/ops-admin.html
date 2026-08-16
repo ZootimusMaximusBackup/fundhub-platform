@@ -308,7 +308,7 @@
         </button>
         <div class="period-menu" id="period-menu" role="menu" hidden></div>
       </div>
-      <div class="clock">Sun Jul 26 · 2:47:09 PM ET</div>
+      <div class="clock">—</div>
     </div>
   </header>
 
@@ -433,13 +433,11 @@
 
           <div class="section">
             <div class="section-title">Staff &amp; Comp<span class="section-meta">this week</span></div>
-            <table class="admin">
-              <tr><th>Name</th><th>Role</th><th>Comp</th><th>This Week</th></tr>
-              <tr><td><span class="av human">SW</span> Sarah Whitfield</td><td>Sales Manager</td><td class="section-meta">salary + CR-03 · 2.5% override</td><td class="mono">—</td></tr>
-              <tr><td><span class="av human">JB</span> Jordan Blake</td><td>Closer</td><td class="section-meta">CR-01 · 10% of each $3K deposit</td><td class="mono">—</td></tr>
-              <tr><td><span class="av human">NC</span> Nina Castellano</td><td>Closer</td><td class="section-meta">CR-01 · 10% of each $3K deposit</td><td class="mono">—</td></tr>
-              <tr><td><span class="av human">MW</span> Marcus Webb</td><td>Funding Advisor</td><td class="section-meta">hourly + CR-06 · card-stack tiers</td><td class="mono">—</td></tr>
-              <tr><td><span class="av human">AT</span> Alvin Torres</td><td>Inquiry Remover</td><td class="section-meta">hourly + CR-04 · $25 per removal</td><td class="mono">—</td></tr>
+            <table class="admin" id="staff-comp-table">
+              <thead><tr><th>Name</th><th>Role</th><th>Comp</th><th>This Week</th></tr></thead>
+              <tbody id="staff-comp-body">
+                <tr><td colspan="4">No staff rows.</td></tr>
+              </tbody>
             </table>
           </div>
 
@@ -449,17 +447,12 @@
 
           <div class="section">
             <div class="section-title">Staff Monitoring Consent<span class="section-meta">before names show on the Galaxy</span></div>
-            <table class="admin">
-              <tr><th>Name</th><th>Consent</th></tr>
-              <tr><td><span class="av human">CS</span> Chris Stanbridge</td><td><span class="status-pill ok">Signed</span></td></tr>
-              <tr><td><span class="av human">SW</span> Sarah Whitfield</td><td><span class="status-pill ok">Signed</span></td></tr>
-              <tr><td><span class="av human">JB</span> Jordan Blake</td><td><span class="status-pill ok">Signed</span></td></tr>
-              <tr><td><span class="av human">NC</span> Nina Castellano</td><td><span class="status-pill ok">Signed</span></td></tr>
-              <tr><td><span class="av human">MW</span> Marcus Webb</td><td><span class="status-pill ok">Signed</span></td></tr>
-              <tr><td><span class="av human">AT</span> Alvin Torres</td><td><span class="status-pill ok">Signed</span></td></tr>
-              <tr class="warn"><td><span class="av human">DK</span> Dana Kowalczyk</td><td><span class="status-pill warn">Not yet signed</span></td></tr>
+            <table class="admin" id="staff-consent-table">
+              <thead><tr><th>Name</th><th>Consent</th></tr></thead>
+              <tbody id="staff-consent-body">
+                <tr><td colspan="2">No staff rows.</td></tr>
+              </tbody>
             </table>
-            <div class="empty-note"><span class="av human">DK</span> Dana Kowalczyk was invited Jul 14 and is not active yet — her name stays off the Galaxy until she signs.</div>
           </div>
 
         </div>
@@ -472,7 +465,7 @@
     <span>FUNDHUB-ADMIN · v1</span>
     <span>ORG: fundhub</span>
     <span>you're signed in as the owner</span>
-    <span id="foot-period">last 7 days · Jul 20–26, 2026</span>
+    <span id="foot-period">last 7 days</span>
   </footer>
 
 </div>
@@ -910,6 +903,56 @@
       return "live ops health · " + rows.length + " pending failure(s)" +
              (worst ? " · latest: " + esc(worst.event_name) + "/" + esc(worst.handler_name) : "");
     });
+
+  var ROLE_LABEL = {
+    owner: "Owner", admin: "Admin", closer: "Closer",
+    sales_manager: "Sales Manager", funding_advisor: "Funding Advisor",
+    inquiry_specialist: "Inquiry Remover", setter: "Setter"
+  };
+  function roleLabel(r) {
+    return ROLE_LABEL[r] || String(r || "—").replace(/_/g, " ");
+  }
+  function initials(name) {
+    var p = String(name || "").trim().split(/\s+/).filter(Boolean);
+    var a = (p[0] || "?").charAt(0);
+    var b = p.length > 1 ? p[p.length - 1].charAt(0) : "";
+    return (a + b).toUpperCase();
+  }
+  function paintStaff(rows) {
+    var comp = document.getElementById("staff-comp-body");
+    var consent = document.getElementById("staff-consent-body");
+    if (!rows.length) {
+      if (comp) comp.innerHTML = '<tr><td colspan="4">No staff rows.</td></tr>';
+      if (consent) consent.innerHTML = '<tr><td colspan="2">No staff rows.</td></tr>';
+      return;
+    }
+    if (comp) {
+      comp.innerHTML = rows.map(function (s) {
+        var name = String(s.name || s.email || "—").trim() || "—";
+        return '<tr><td><span class="av human">' + esc(initials(name)) + "</span> " +
+          esc(name) + "</td><td>" + esc(roleLabel(s.role)) +
+          '</td><td class="section-meta">—</td><td class="mono">—</td></tr>';
+      }).join("");
+    }
+    if (consent) {
+      consent.innerHTML = rows.map(function (s) {
+        var name = String(s.name || s.email || "—").trim() || "—";
+        var signed = !!s.monitoring_consent_at;
+        return '<tr' + (signed ? '' : ' class="warn"') +
+          '><td><span class="av human">' + esc(initials(name)) + '</span> ' +
+          esc(name) + '</td><td><span class="status-pill ' +
+          (signed ? 'ok">Signed' : 'warn">Not yet signed') +
+          '</span></td></tr>';
+      }).join("");
+    }
+  }
+  if (FHData.staff) {
+    FHData.wire(FHData.staff({ limit: 200 }), "staff tables", function (data) {
+      var rows = data.items || [];
+      paintStaff(rows);
+      return rows.length ? ("live staff · " + rows.length) : "No staff rows.";
+    });
+  }
 })();
 </script>
 <script>
@@ -971,6 +1014,19 @@
   if (offBtn) offBtn.onclick = function () { post(false); };
   load();
 })();
+</script>
+<script>
+function tickClock() {
+  var el = document.querySelector(".clock");
+  if (!el) return;
+  el.textContent = new Date().toLocaleString("en-US", {
+    weekday: "short", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", second: "2-digit",
+    timeZone: "America/New_York", timeZoneName: "short"
+  });
+}
+tickClock();
+setInterval(tickClock, 1000);
 </script>
 </body>
 </html>

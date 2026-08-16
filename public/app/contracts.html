@@ -205,7 +205,7 @@ tr.sel td{background:rgba(169,198,232,.13)}
 
     <div class="content">
       <div class="stats">
-        <div class="stat"><div class="eyebrow">CT-00 <span class="sep">/</span> WORDINGS</div><div class="sv" id="kTpl">—</div><div class="sd">contracts you can send</div></div>
+        <div class="stat"><div class="eyebrow">CT-00 <span class="sep">/</span> WORDINGS</div><div class="sv" id="kTpl">—</div><div class="sd">wordings in use</div></div>
         <div class="stat"><div class="eyebrow">CT-00 <span class="sep">/</span> WAITING</div><div class="sv" id="kOut">—</div><div class="sd">sent, not signed yet</div></div>
         <div class="stat"><div class="eyebrow">CT-00 <span class="sep">/</span> SIGNED</div><div class="sv" id="kSigned">—</div><div class="sd">signed and on file</div></div>
         <div class="stat"><div class="eyebrow">CT-00 <span class="sep">/</span> DRAFTS</div><div class="sv" id="kDraft">—</div><div class="sd">started, not sent</div></div>
@@ -214,93 +214,13 @@ tr.sel td{background:rgba(169,198,232,.13)}
       <div class="card" id="explainCard">
         <div class="card-hd"><span class="badge b-info">How this works</span></div>
         <div class="card-bd note">
-          <p><strong>Write the words once, send them to anyone.</strong> A wording holds the parts that never change, plus blanks like <code>{{contact.first_name}}</code> that get filled in with the client's real details, and blanks you type in yourself when you send it.</p>
-          <p style="margin-top:8px"><strong>Look before you send.</strong> Press Preview and you see the finished document exactly as the client will. Nothing goes out until you press Send.</p>
-          <p style="margin-top:8px"><strong>The words lock when you send.</strong> After that nobody can change them — not you, not anyone. If the stored copy is altered by any route at all, the client's page refuses to accept a signature and says so. That is what makes a signed contract worth something.</p>
-          <p style="margin-top:8px"><strong>You pass the link on yourself.</strong> This system does not send email or text messages. Press Send, copy the link, and give it to the client however you already talk to them.</p>
+          <p><strong>This page is for writing the words.</strong> Make a wording, upload a PDF, or take one out of use. That is company work, not a send to a client.</p>
+          <p style="margin-top:8px"><strong>Send from the call.</strong> Open Present or the call cockpit for that person. Pick a wording, press Send, then copy the sign link. An email also goes if mail is on.</p>
+          <p style="margin-top:8px"><strong>The words lock when they go out.</strong> After that nobody can change them. If the stored copy is altered, the client's page refuses to accept a signature and says so.</p>
         </div>
       </div>
 
-      <div class="layout">
-        <!-- ── send a contract ──────────────────────────────────────────── -->
-        <div>
-          <div class="card">
-            <div class="card-hd"><h2>Send a contract</h2><div class="spacer"></div><span class="badge b-gray" id="sendStep">1 of 3</span></div>
-            <div class="card-bd">
-              <div class="field">
-                <label for="selTpl">Which contract</label>
-                <select id="selTpl"><option value="">— pick a wording —</option></select>
-              </div>
-              <div class="field">
-                <label for="selClient">Which client</label>
-                <select id="selClient"><option value="">— pick a client —</option></select>
-                <span class="hint"><a href="#" id="newContactLink" style="text-decoration:underline">
-                  or add somebody who is not on file yet</a></span>
-              </div>
-
-              <!-- Adding a contact without leaving the screen. Sending to
-                   somebody who has never been entered is the ordinary case, and
-                   making a person go away and come back is the friction that
-                   makes them use a different tool. -->
-              <div id="newContact" style="display:none;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px">
-                <div class="grid2">
-                  <div class="field"><label for="ncFirst">First name</label><input id="ncFirst" type="text"></div>
-                  <div class="field"><label for="ncLast">Last name</label><input id="ncLast" type="text"></div>
-                </div>
-                <div class="grid2" style="margin-top:10px">
-                  <div class="field"><label for="ncEmail">Email</label><input id="ncEmail" type="text"></div>
-                  <div class="field"><label for="ncPhone">Phone</label><input id="ncPhone" type="text"></div>
-                </div>
-                <div style="display:flex;gap:8px;margin-top:10px">
-                  <button class="btn sm dark" id="ncSave" type="button">Add contact</button>
-                  <button class="btn sm" id="ncCancel" type="button">Cancel</button>
-                </div>
-                <div class="msg" id="ncMsg"></div>
-              </div>
-
-              <div id="blanks"></div>
-
-              <!-- Who signs, and in what order. Hidden for a one-signer
-                   contract so the simple case stays simple. -->
-              <div id="signerBox" style="display:none;margin-top:12px">
-                <label style="font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)">Who signs</label>
-                <div id="signerRows" style="margin-top:6px"></div>
-                <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap">
-                  <button class="btn sm" id="btnAddSendSigner" type="button">Add a signer</button>
-                  <select id="selOrder" style="border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:12px">
-                    <option value="sequential">One after another, in this order</option>
-                    <option value="parallel">Anyone, any time</option>
-                  </select>
-                </div>
-              </div>
-              <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-                <button class="btn" id="btnPreview">Preview</button>
-                <button class="btn dark" id="btnSend" disabled>Send</button>
-              </div>
-              <div class="msg" id="sendMsg"></div>
-              <div id="linkWrap" style="display:none">
-                <div class="hint" style="margin-top:12px;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)">Link for the client</div>
-                <div class="linkbox">
-                  <input id="linkOut" readonly>
-                  <button class="btn sm" id="btnCopy">Copy</button>
-                </div>
-                <div id="linkList"></div>
-                <div class="note" style="margin-top:6px">Give each person their own link. They work for 30 days.</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card" id="previewCard" style="display:none">
-            <div class="card-hd"><h2>Preview</h2><div class="spacer"></div><span class="badge b-warn">not sent yet</span></div>
-            <div class="card-bd">
-              <div id="previewWarn"></div>
-              <div class="doc" id="previewBody"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── the queue ────────────────────────────────────────────────── -->
-        <div>
+      <div>
           <div class="card">
             <div class="card-hd"><h2>Contracts</h2><div class="spacer"></div>
               <button class="btn sm" id="btnRemind" title="Email everyone who has not signed yet, and put it on the follow-up list">Send reminders</button>
@@ -327,7 +247,6 @@ tr.sel td{background:rgba(169,198,232,.13)}
               <div class="msg" id="dMsg"></div>
             </div>
           </div>
-        </div>
       </div>
 
       <!-- ── the wording library: owner/admin only ──────────────────────── -->
@@ -450,14 +369,13 @@ window.dispatchEvent(new Event("pdfjs-ready"));
     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function norm(v) { return String(v == null ? "" : v).trim().toLowerCase(); }
 
-  var templates = [], contracts = [], clients = [], isAdmin = false;
-  var selContract = null, editing = null, lastPreview = null, currentDraft = null;
+  var templates = [], contracts = [], isAdmin = false;
+  var selContract = null, editing = null;
 
   /* The uploaded-PDF editor's own state. `boxes` is the working copy; nothing
      is written until Save boxes is pressed, so dragging things around cannot
      half-save a layout. */
   var pdfState = { doc: null, boxes: [], roles: [], selected: null, pageEls: [], scale: 1 };
-  var sendSigners = [];
 
   var FIELD_TYPES = [
     { t: "text", label: "Text" }, { t: "date", label: "Date" },
@@ -520,132 +438,6 @@ window.dispatchEvent(new Event("pdfjs-ready"));
   function say(el, kind, text) {
     el.innerHTML = '<span class="badge ' + kind + '">' +
       (kind === "b-ok" ? "done" : "problem") + "</span> " + esc(text);
-  }
-
-  /* ── send: the blanks ──────────────────────────────────────────────────── */
-
-  function currentTemplate() {
-    var id = $("selTpl").value;
-    for (var i = 0; i < templates.length; i++) if (templates[i].id === id) return templates[i];
-    return null;
-  }
-
-  function renderBlanks() {
-    var t = currentTemplate();
-    var wrap = $("blanks");
-    if (!t || !(t.manual_fields || []).length) { wrap.innerHTML = ""; return; }
-    wrap.innerHTML = t.manual_fields.map(function (f) {
-      return '<div class="field"><label for="blank_' + esc(f.key) + '">' + esc(f.label) +
-        (f.required ? " *" : "") + "</label>" +
-        '<input id="blank_' + esc(f.key) + '" data-blank="' + esc(f.key) + '" type="text">' +
-        (f.help ? '<span class="hint">' + esc(f.help) + "</span>" : "") + "</div>";
-    }).join("");
-  }
-
-  function blankValues() {
-    var out = {};
-    Array.prototype.forEach.call(document.querySelectorAll("[data-blank]"), function (el) {
-      out[el.getAttribute("data-blank")] = el.value;
-    });
-    return out;
-  }
-
-  function doPreview() {
-    var t = currentTemplate(), cid = $("selClient").value;
-    if (!t) { say($("sendMsg"), "b-alert", "Pick a wording first."); return; }
-    /* An uploaded PDF is previewed by looking at the document itself in the
-       wording editor, where the boxes were placed. Rendering a second copy of
-       the pages here would say nothing the sender has not already seen. */
-    if (t.source_kind === "pdf") {
-      $("previewCard").style.display = "";
-      $("previewWarn").innerHTML = '<span class="badge b-info">uploaded document</span> ' +
-        esc((t.page_count || "?") + " pages, " + (t.fields || []).length + " boxes to fill in. ") +
-        "The client sees the real pages with their own boxes on them.";
-      $("previewBody").textContent =
-        (t.fields || []).map(function (f) {
-          return "page " + (f.page + 1) + "  ·  " + f.label + "  (" + f.type + ", " +
-            (f.source === "manual" ? "typed by signer " + (f.signer + 1) : "filled in for them") + ")";
-        }).join("\n") || "No boxes have been placed on this document yet.";
-      $("sendStep").textContent = "3 of 3";
-      $("btnSend").disabled = !cid;
-      if (!cid) say($("sendMsg"), "b-alert", "Pick a client before you can send this.");
-      else $("sendMsg").textContent = "";
-      return;
-    }
-    $("sendMsg").textContent = "building the preview…";
-    FHData.write("/api/contracts", {
-      action: "preview", template_id: t.id, client_id: cid || null, values: blankValues()
-    }).then(function (res) {
-      if (!res.ok) { say($("sendMsg"), "b-alert", res.error || "could not build the preview"); return; }
-      lastPreview = res.data.preview;
-      $("previewCard").style.display = "";
-      $("previewBody").textContent = lastPreview.body;
-      var warn = "";
-      if ((lastPreview.missing_required || []).length) {
-        warn += '<div style="margin-bottom:8px"><span class="badge b-alert">fill these in</span> ' +
-          esc(lastPreview.missing_required.join(", ")) + "</div>";
-      }
-      var blanks = (lastPreview.missing_tags || []);
-      if (blanks.length) {
-        warn += '<div style="margin-bottom:8px"><span class="badge b-warn">will print blank</span> ' +
-          blanks.map(function (m) { return "<code>{{" + esc(m.tag) + "}}</code>" +
-            (m.reason === "unknown" ? " (nothing fills this in — check the spelling)" : " (this client has no value)"); }).join(", ") + "</div>";
-      }
-      $("previewWarn").innerHTML = warn;
-      $("sendMsg").textContent = "";
-      $("sendStep").textContent = "3 of 3";
-      $("btnSend").disabled = !cid || (lastPreview.missing_required || []).length > 0;
-      if (!cid) say($("sendMsg"), "b-alert", "Pick a client before you can send this.");
-    });
-  }
-
-  function doSend() {
-    var t = currentTemplate(), cid = $("selClient").value;
-    if (!t || !cid) return;
-    $("btnSend").disabled = true;
-    $("sendMsg").textContent = "sending…";
-    FHData.write("/api/contracts", {
-      action: "create_draft", client_id: cid, template_id: t.id, values: blankValues(),
-      signers: sendSigners.length ? sendSigners : null,
-      signing_order: $("selOrder").value
-    }).then(function (res) {
-      if (!res.ok) { say($("sendMsg"), "b-alert", res.error || "could not start the contract"); $("btnSend").disabled = false; return; }
-      currentDraft = res.data.contract;
-      return FHData.write("/api/contracts", { action: "send", id: currentDraft.id }).then(function (r2) {
-        if (!r2.ok) { say($("sendMsg"), "b-alert", r2.error || "could not send"); $("btnSend").disabled = false; return; }
-        say($("sendMsg"), "b-ok", (r2.data && r2.data.message) || "Sent.");
-        showLinks(r2.data);
-        loadContracts();
-      });
-    });
-  }
-
-  /* Each signer gets their OWN link — a shared one would let whoever opened it
-     first sign as anybody. The single-signer case still shows one box, so the
-     simple thing stays simple. */
-  function showLinks(data) {
-    var links = (data && data.links) || [];
-    $("linkWrap").style.display = "";
-    $("linkOut").value = (data.link && (data.link.url || data.link.path)) || "";
-    if (links.length < 2) { $("linkList").innerHTML = ""; return; }
-    $("linkOut").value = links[0].url;
-    $("linkList").innerHTML = links.map(function (l, i) {
-      return '<div class="linkbox"><input readonly value="' + esc(l.url) + '">' +
-        '<button class="btn sm" data-copy="' + i + '">Copy</button></div>' +
-        '<div class="note" style="margin-top:2px">' + (i + 1) + ". " + esc(l.name) +
-        " · " + esc(l.role_label) + (i === 0 ? " — signs first" : " — signs after") + "</div>";
-    }).join("");
-    Array.prototype.forEach.call($("linkList").querySelectorAll("[data-copy]"), function (b) {
-      b.onclick = function () {
-        var inp = b.previousSibling;
-        inp.select();
-        try { document.execCommand("copy"); } catch (e) {}
-        b.textContent = "Copied";
-        setTimeout(function () { b.textContent = "Copy"; }, 1400);
-      };
-    });
-    // The one-link box above is the first signer's, so hide the duplicate.
-    $("linkOut").parentNode.style.display = "none";
   }
 
   /* ── the queue ─────────────────────────────────────────────────────────── */
@@ -731,8 +523,6 @@ window.dispatchEvent(new Event("pdfjs-ready"));
     }
 
     var acts = [];
-    if (c.status === "draft") acts.push('<button class="btn dark sm" data-act="send">Send it</button>');
-    if (c.status === "sent" || c.status === "viewed") acts.push('<button class="btn sm" data-act="send">New link</button>');
     if (isAdmin && c.status !== "signed" && c.status !== "void") {
       acts.push('<button class="btn sm" data-act="void">Void</button>');
     }
@@ -747,17 +537,6 @@ window.dispatchEvent(new Event("pdfjs-ready"));
   function detailAction(act) {
     var c = selContract;
     if (!c) return;
-    if (act === "send") {
-      $("dMsg").textContent = "sending…";
-      FHData.write("/api/contracts", { action: "send", id: c.id }).then(function (res) {
-        if (!res.ok) { say($("dMsg"), "b-alert", res.error || "could not send"); return; }
-        showLinks(res.data);
-        say($("dMsg"), "b-ok", (res.data && res.data.message) || "Sent. The links are in the panel on the left.");
-        loadContracts();
-        openContract(c.id);
-      });
-      return;
-    }
     if (act === "download") {
       FHData.read("contracts", { file: "contract", id: c.id }).then(function (res) {
         if (!res.ok || !res.data || !res.data.pdf_base64) {
@@ -1214,85 +993,15 @@ window.dispatchEvent(new Event("pdfjs-ready"));
     reader.readAsDataURL(file);
   }
 
-  /* ── who signs, on the send panel ───────────────────────────────────────── */
-
-  function defaultSigners(t) {
-    var roles = (t && t.signer_roles && t.signer_roles.length)
-      ? t.signer_roles : [{ label: "Client", fill_from_client: true }];
-    var c = clients.filter(function (x) { return x.id === $("selClient").value; })[0];
-    return roles.map(function (r, i) {
-      return {
-        role_label: r.label,
-        name: i === 0 && c ? ([c.first_name, c.last_name].filter(Boolean).join(" ") || c.email || "") : "",
-        email: i === 0 && c ? (c.email || "") : "",
-        client_id: i === 0 && c ? c.id : null
-      };
-    });
-  }
-
-  function renderSendSigners() {
-    var t = currentTemplate();
-    var many = sendSigners.length > 1 || (t && (t.signer_roles || []).length > 1);
-    $("signerBox").style.display = many ? "" : "none";
-    $("signerRows").innerHTML = sendSigners.map(function (s2, i) {
-      return '<div class="srow" data-i="' + i + '">' +
-        '<input type="text" data-k="role_label" value="' + esc(s2.role_label) + '" placeholder="Role">' +
-        '<input type="text" data-k="name" value="' + esc(s2.name) + '" placeholder="Their name">' +
-        '<input type="text" data-k="email" value="' + esc(s2.email || "") + '" placeholder="Their email">' +
-        (i === 0 ? "<span></span>" : '<button class="btn sm" type="button" data-del="' + i + '">×</button>') +
-        "</div>";
-    }).join("");
-    Array.prototype.forEach.call($("signerRows").querySelectorAll("input"), function (el) {
-      el.oninput = function () {
-        var i = Number(el.parentNode.getAttribute("data-i"));
-        sendSigners[i][el.getAttribute("data-k")] = el.value;
-      };
-    });
-    Array.prototype.forEach.call($("signerRows").querySelectorAll("[data-del]"), function (b) {
-      b.onclick = function () {
-        sendSigners.splice(Number(b.getAttribute("data-del")), 1);
-        renderSendSigners();
-      };
-    });
-  }
-
-  function addContact() {
-    $("ncMsg").textContent = "adding…";
-    FHData.write("/api/contracts", {
-      action: "create_client",
-      first_name: $("ncFirst").value, last_name: $("ncLast").value,
-      email: $("ncEmail").value, phone: $("ncPhone").value
-    }).then(function (res) {
-      if (!res.ok) { say($("ncMsg"), "b-alert", res.error || "could not add that contact"); return; }
-      say($("ncMsg"), "b-ok", (res.data && res.data.message) || "Added.");
-      var c = res.data.client;
-      loadClients().then(function () {
-        $("selClient").value = c.id;
-        sendSigners = defaultSigners(currentTemplate());
-        renderSendSigners();
-        $("newContact").style.display = "none";
-        $("ncFirst").value = $("ncLast").value = $("ncEmail").value = $("ncPhone").value = "";
-      });
-    });
-  }
-
   /* ── loading ───────────────────────────────────────────────────────────── */
-
-  function fillTemplateSelect() {
-    var live = templates.filter(function (t) { return t.active; });
-    $("selTpl").innerHTML = '<option value="">— pick a wording —</option>' +
-      live.map(function (t) { return '<option value="' + esc(t.id) + '">' + esc(t.name) + "</option>"; }).join("");
-  }
 
   function loadTemplates() {
     return FHData.wire(FHData.read("contracts", { view: "templates" }), "contract wordings", function (data) {
       templates = (data && data.items) || [];
-      fillTemplateSelect();
       renderTplList();
       if (editing) {
         for (var i = 0; i < templates.length; i++) if (templates[i].id === editing.id) editing = templates[i];
       }
-      if (!templates.length) return null;
       return "live wordings · " + templates.length;
     });
   }
@@ -1302,41 +1011,12 @@ window.dispatchEvent(new Event("pdfjs-ready"));
       contracts = (data && data.items) || [];
       renderList();
       $("liveTxt").textContent = "— live";
-      if (!contracts.length) return null;
       return "live contracts · " + contracts.length;
-    });
-  }
-
-  function loadClients() {
-    return FHData.wire(FHData.clients(200), "clients", function (data) {
-      clients = (data && data.clients) || [];
-      $("selClient").innerHTML = '<option value="">— pick a client —</option>' +
-        clients.map(function (c) {
-          var who = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email || c.id;
-          return '<option value="' + esc(c.id) + '">' + esc(who) + "</option>";
-        }).join("");
-      /* shell.js carries the client you had open from screen to screen; if it
-         put one on this URL, start with them already picked. */
-      var carried = FHData.param("client_id");
-      if (carried) $("selClient").value = carried;
-      if (!clients.length) return null;
-      return "live clients · " + clients.length;
     });
   }
 
   /* ── boot ──────────────────────────────────────────────────────────────── */
 
-  $("selTpl").addEventListener("change", function () {
-    renderBlanks(); $("sendStep").textContent = "2 of 3";
-    $("btnSend").disabled = true; $("previewCard").style.display = "none";
-    sendSigners = defaultSigners(currentTemplate());
-    renderSendSigners();
-  });
-  $("selClient").addEventListener("change", function () {
-    $("btnSend").disabled = true;
-    sendSigners = defaultSigners(currentTemplate());
-    renderSendSigners();
-  });
   $("btnUpload").onclick = function () { $("fileInput").click(); };
   $("fileInput").onchange = function () {
     if (this.files && this.files[0]) uploadPdf(this.files[0]);
@@ -1347,16 +1027,6 @@ window.dispatchEvent(new Event("pdfjs-ready"));
     pdfState.roles.push({ index: pdfState.roles.length, label: "Signer " + (pdfState.roles.length + 1) });
     renderRoles(); renderTools();
   };
-  $("btnAddSendSigner").onclick = function () {
-    sendSigners.push({ role_label: "Signer " + (sendSigners.length + 1), name: "", email: "", client_id: null });
-    renderSendSigners();
-  };
-  $("newContactLink").onclick = function (e) {
-    e.preventDefault();
-    $("newContact").style.display = $("newContact").style.display === "none" ? "" : "none";
-  };
-  $("ncSave").onclick = addContact;
-  $("ncCancel").onclick = function () { $("newContact").style.display = "none"; };
   $("selStatus").addEventListener("change", renderList);
   /* Chasing runs on a schedule too (src/workflows/contract-chaser.mjs), but
      Inngest is not switched on, so this button is how it happens today. Same
@@ -1373,14 +1043,6 @@ window.dispatchEvent(new Event("pdfjs-ready"));
       if (res.ok) loadContracts();
     });
   };
-  $("btnPreview").onclick = doPreview;
-  $("btnSend").onclick = doSend;
-  $("btnCopy").onclick = function () {
-    $("linkOut").select();
-    try { document.execCommand("copy"); } catch (e) {}
-    $("btnCopy").textContent = "Copied";
-    setTimeout(function () { $("btnCopy").textContent = "Copy"; }, 1400);
-  };
   $("btnNewTpl").onclick = newTemplate;
   $("btnSaveTpl").onclick = saveTemplate;
   $("btnArchive").onclick = archiveTemplate;
@@ -1395,7 +1057,6 @@ window.dispatchEvent(new Event("pdfjs-ready"));
   resolveRole();
   loadTemplates();
   loadContracts();
-  loadClients();
 })();
 </script>
 </body>

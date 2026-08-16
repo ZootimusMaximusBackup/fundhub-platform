@@ -10,6 +10,7 @@
 // pay Commas directly.
 import crypto from "node:crypto";
 import { buildCommasCheckoutUrl } from "../adapters/commas.mjs";
+import { createCheckoutSession, checkoutConfig } from "../payments/commas-api.mjs";
 
 const PURPOSES = new Set(["deposit", "diagnostic", "repair", "custom"]);
 const OPEN_STATUSES = ["created", "sent"];
@@ -19,13 +20,12 @@ export function generateLinkRef() {
 }
 
 /** createPaymentLink — mints a checkout URL and records the ask.
- *  amountCents must be a positive integer; there is no "unknown amount" case
- *  here, unlike a subscription price — a payment link with no amount is not a
- *  link anyone can pay. `custom` purpose requires a description, because
- *  "custom" alone tells the client nothing about what they are paying for. */
+ *  Prefer FANBASIS_CHECKOUT_API_KEY → live checkout-session API.
+ *  Fall back to COMMAS_CHECKOUT_BASE_URL query links only for tests / legacy. */
 export async function createPaymentLink(db, {
   orgId, clientId, purpose, description = null, amountCents,
-  currency = "USD", createdByStaffId = null, checkoutBaseUrl
+  currency = "USD", createdByStaffId = null, checkoutBaseUrl,
+  env = process.env, fetchImpl = fetch
 }) {
   if (!orgId) throw new TypeError("createPaymentLink: orgId is required");
   if (!clientId) throw new TypeError("createPaymentLink: clientId is required");
@@ -40,20 +40,49 @@ export async function createPaymentLink(db, {
   }
 
   const linkRef = generateLinkRef();
-  const checkoutUrl = buildCommasCheckoutUrl({
-    baseUrl: checkoutBaseUrl,
-    linkRef,
-    amountCents,
-    description: description || purpose
-  });
+  const title = String(description || purpose).trim();
+  let checkoutUrl;
+  let commasSessionId = null;
+
+  const cfg = checkoutConfig(env);
+  if (cfg.ok) {
+    const minted = await createCheckoutSession({
+      amountCents,
+      productTitle: title,
+      productDescription: purpose === "diagnostic" ? "UnderwriteIQ soft-pull assessment" : null,
+      metadata: { link_ref: linkRef, client_id: clientId, org_id: orgId },
+      env,
+      fetchImpl
+    });
+    if (!minted.ok) {
+      const err = new Error(minted.reason || "Commas checkout session failed");
+      err.code = "commas_checkout_failed";
+      err.status = minted.status || 502;
+      throw err;
+    }
+    checkoutUrl = minted.paymentLink;
+    commasSessionId = minted.productId != null ? String(minted.productId) : null;
+  } else if (checkoutBaseUrl) {
+    checkoutUrl = buildCommasCheckoutUrl({
+      baseUrl: checkoutBaseUrl,
+      linkRef,
+      amountCents,
+      description: title
+    });
+  } else {
+    const err = new Error(cfg.reason || "No Commas checkout configured");
+    err.code = "commas_not_configured";
+    err.status = 503;
+    throw err;
+  }
 
   const result = await db.query(
     `INSERT INTO payment_links
        (org_id, client_id, purpose, description, amount_cents, currency,
-        link_ref, checkout_url, created_by_staff_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+        link_ref, checkout_url, created_by_staff_id, commas_session_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
      RETURNING *`,
-    [orgId, clientId, purpose, description, amountCents, currency, linkRef, checkoutUrl, createdByStaffId]
+    [orgId, clientId, purpose, description, amountCents, currency, linkRef, checkoutUrl, createdByStaffId, commasSessionId]
   );
   return result.rows[0];
 }
@@ -85,23 +114,31 @@ export async function markExpired(db, { id, orgId, at = new Date() }) {
   return result.rows[0] ?? null;
 }
 
-/** markPaid — created/sent -> paid, keyed by the link's OWN reference (the
- *  `ref` a checkout URL is assumed to echo back — see commas.mjs), not by org:
- *  the webhook that calls this has no session and no org context, only what
- *  Commas sent. `link_ref` is globally unique (119_payment_links.sql), so that
- *  is enough to find the one row.
- *
- *  paidAmountCents is recorded SEPARATELY from amount_cents (what was asked
- *  for) rather than overwriting it — a client paying a different amount than
- *  requested is a fact to keep, not to hide by summarising it. */
+/** markPaid — created/sent -> paid, keyed by the link's OWN reference. */
 export async function markPaid(db, { linkRef, commasSessionId = null, paidAmountCents = null, paidAt = new Date() }) {
   if (!linkRef) throw new TypeError("markPaid: linkRef is required");
   const result = await db.query(
     `UPDATE payment_links
-        SET status = 'paid', paid_at = $2, commas_session_id = $3, paid_amount_cents = $4
+        SET status = 'paid', paid_at = $2, commas_session_id = COALESCE($3, commas_session_id), paid_amount_cents = $4
       WHERE link_ref = $1 AND status = ANY($5)
      RETURNING *`,
     [linkRef, paidAt, commasSessionId, paidAmountCents, OPEN_STATUSES]
+  );
+  return result.rows[0] ?? null;
+}
+
+/** markPaidBySession — fallback when webhook metadata lost link_ref but still
+ *  carries the Commas product / session id we stored at mint time. */
+export async function markPaidBySession(db, {
+  commasSessionId, paidAmountCents = null, paidAt = new Date()
+}) {
+  if (!commasSessionId) throw new TypeError("markPaidBySession: commasSessionId is required");
+  const result = await db.query(
+    `UPDATE payment_links
+        SET status = 'paid', paid_at = $2, paid_amount_cents = $3
+      WHERE commas_session_id = $1 AND status = ANY($4)
+     RETURNING *`,
+    [String(commasSessionId), paidAt, paidAmountCents, OPEN_STATUSES]
   );
   return result.rows[0] ?? null;
 }

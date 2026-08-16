@@ -16,6 +16,7 @@ import { boundedLimit, CLIENT_DATA_ERRORS, requireRole, ROLE_SETS } from "../../
 import { requireSessionOrg } from "../../src/http/session-org.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import { orgDemoModeEnabled } from "../../src/demo/exclude-demo.mjs";
+import { surveyFicoBand } from "../../src/survey/cf-question-map.mjs";
 
 // Stages first, so a stage with no cards still renders as an empty column
 // rather than vanishing from the board. Org always from the session.
@@ -36,16 +37,21 @@ const CARDS_SQL = `
     c.id            AS client_id,
     c.first_name,
     c.last_name,
+    c.email,
+    c.phone,
     c.outcome_tier,
     c.funded,
     c.funded_amount,
     c.is_demo,
-    (c.custom_fields->>'total_funding_estimate') AS total_funding_estimate
+    (c.custom_fields->>'total_funding_estimate') AS total_funding_estimate,
+    c.custom_fields->>'cf_svy_self_reported_fico' AS survey_fico_raw,
+    c.custom_fields->>'cf_svy_self_reported_fico_label' AS survey_fico_label
   FROM cards cd
   JOIN pipelines p ON p.id = cd.pipeline_id
   JOIN clients   c ON c.id = cd.client_id AND c.org_id = p.org_id
   WHERE p.key = $1 AND p.org_id = $2 AND cd.org_id = $2
     AND ($4::boolean OR COALESCE(c.is_demo, false) = false)
+    AND (c.custom_fields->>'crm_archived_at' IS NULL)
   ORDER BY cd.entered_at DESC
   LIMIT $3
 `;
@@ -88,12 +94,18 @@ export default async function handler(req, res) {
         id: r.id,
         client_id: r.client_id,
         name: (r.is_demo ? "DEMO · " : "") + ([r.first_name, r.last_name].filter(Boolean).join(" ") || "(unnamed)"),
+        email: r.email || null,
+        phone: r.phone || null,
         owner: r.owner ?? null,
         entered_at: r.entered_at,
         outcome_tier: r.outcome_tier ?? null,
         funded: r.funded ?? false,
         amount: est === null ? null : Number(est),
-        is_demo: !!r.is_demo
+        is_demo: !!r.is_demo,
+        survey_fico: surveyFicoBand({
+          cf_svy_self_reported_fico: r.survey_fico_raw,
+          cf_svy_self_reported_fico_label: r.survey_fico_label
+        })
       });
     }
 

@@ -456,9 +456,9 @@ window.FHData = (function () {
 
          real   mint  — these are database rows
          sample peach — built-in sample markup, backend not queried (demo)
-         error  rose  — backend could not answer; sample markup retained
+         error  rose  — backend could not answer; keep dashes, do not invent people
 
-       RULE: a screen NEVER blanks. It keeps its sample markup and says so.
+       RULE: a live screen never keeps sample people. Empty stays empty.
        --------------------------------------------------------------------- */
     _parts: {},
     banner: function (tone, text, key) {
@@ -562,9 +562,8 @@ window.FHData = (function () {
           try { note = paint(res.data); }
           catch (e) { self.banner("error", "sample " + what + " — render failed: " + e.message, what); return; }
           if (note) { self.banner("real", note, what); return; }
-          // Connected, queried, nothing there. Sample markup stays on screen so
-          // the layout still reads, and the banner says exactly that.
-          self.banner("sample", "no " + what + " in the database yet — showing sample markup", what);
+          // Connected, queried, nothing there. Do not keep sample people.
+          self.banner("sample", "no " + what + " in the database yet", what);
           return;
         }
         self.explain(res, what);

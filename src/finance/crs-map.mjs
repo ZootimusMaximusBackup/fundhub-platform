@@ -53,6 +53,19 @@ function isoDate(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
 }
 
+/** Bureau-refused the file (E4000 invalid DOB, etc.). Not a score. */
+export function bureauHardErrors(report) {
+  const msgs = asArray(report?.errorMessages)
+    .map((m) => {
+      const code = String(m?.creditErrorMessageCode || "").trim();
+      const text = String(m?.creditErrorMessageText || "").trim();
+      if (!code && !text) return null;
+      return [code, text].filter(Boolean).join(" ");
+    })
+    .filter(Boolean);
+  return msgs.length ? msgs.join("; ") : null;
+}
+
 /**
  * pickCreditScore — the credit score out of a bureau's `scores` array.
  *
@@ -73,20 +86,23 @@ function isoDate(value) {
  * confirm what was read instead of trusting that it was right.
  */
 export function pickCreditScore(scores) {
-  const candidates = asArray(scores)
-    .map((s) => ({
-      raw: s,
-      value: asInt(s?.scoreValue),
-      max: asInt(s?.scoreMaximumValue),
-      model: String(s?.modelName ?? "").trim()
-    }))
-    .filter((s) => s.value !== null && s.max !== null);
+  const rows = asArray(scores).map((s) => ({
+    value: asInt(s?.scoreValue),
+    max: asInt(s?.scoreMaximumValue),
+    model: String(s?.modelName ?? "").trim()
+  }));
 
+  /* FICO / Fair Isaac wins even when the bureau omits scoreMaximumValue.
+     Equifax live files do that, and the old "must have a max" filter then
+     picked IncomeView (81) over FICO 9. */
+  const fico = rows.find((s) =>
+    s.value !== null && s.value >= 300 && s.value <= 850 && /fico|fair\s*isaac/i.test(s.model)
+  );
+  if (fico) return { value: fico.value, model: fico.model || null };
+
+  const candidates = rows.filter((s) => s.value !== null && s.max !== null && s.value >= 300 && s.value <= 850);
   if (!candidates.length) return { value: null, model: null };
-
-  const fico = candidates.find((s) => /fico|fair\s*isaac/i.test(s.model));
-  const chosen = fico || candidates[0];
-  return { value: chosen.value, model: chosen.model || null };
+  return { value: candidates[0].value, model: candidates[0].model || null };
 }
 
 /* redactRequestEcho — CRS echoes the identity it was asked about, SSN included,
@@ -138,6 +154,9 @@ export function mergeBureauReports({
 
     bureausPulled.push(code);
     bureaus[code] = redactRequestEcho(report);
+
+    const hard = bureauHardErrors(report);
+    if (hard && !errors[code]) errors[code] = hard;
 
     const { value, model } = pickCreditScore(report.scores);
     scores[SCORE_KEY[code]] = value;

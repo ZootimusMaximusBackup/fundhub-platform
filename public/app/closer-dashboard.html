@@ -103,6 +103,7 @@
   table.pipe tr:last-child td{border-bottom:none;}
   .stage-pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--info-bg);color:var(--ink2);}
   .empty-slot{color:var(--text-faint);font-style:normal;}
+  #calcGate{padding:16px 0 4px;font-size:14px;}
 
   .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
   .calc-panel{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:13px 15px 15px;}
@@ -271,7 +272,7 @@
     </div>
     <div class="topbar-right">
       <div class="org-pill">Org: Fundhub</div>
-      <div class="clock">Sun Jul 26 · 2:47:09 PM ET</div>
+      <div class="clock">—</div>
       <div class="live-pill"><span class="live-dot"></span>LIVE</div>
     </div>
   </header>
@@ -279,8 +280,8 @@
 
   <div class="stat-head">
     <div class="who">
-      <div class="who-name"><span class="av human">JB</span> Jordan Blake</div>
-      <div class="who-role">Closer · on shift 6h 32m</div>
+      <div class="who-name"><span class="av human" id="whoAv">—</span> <span id="whoName">—</span></div>
+      <div class="who-role" id="whoRole">—</div>
     </div>
     <div class="stat-tiles">
       <div class="stat-tile"><div class="stat-label">Calls Today</div><div class="stat-value">—</div>
@@ -303,14 +304,15 @@
     </div>
 
     <div class="section">
-      <div class="section-title eyebrow">CD-02 / Deal Calculators — Priya Nair</div>
-      <div class="calc-grid">
+      <div class="section-title eyebrow" id="calcTitle">CD-02 / Deal Calculators</div>
+      <p id="calcGate" class="empty-slot" hidden>Open from a client.</p>
+      <div class="calc-grid" id="calcGrid">
 
         <!-- Deal Funding Calculator (1a) — input, answer, alert. Nothing else. -->
         <div class="calc-panel">
           <div class="calc-head">
             <div class="calc-title">Deal Funding Calculator</div>
-            <div class="calc-client">how much can she access</div>
+            <div class="calc-client">how much they can access</div>
           </div>
 
           <div class="big-tile">
@@ -326,16 +328,16 @@
 
           <div class="inrow">
             <div class="infield"><label for="iDraw">Requested draw</label>
-              <input id="iDraw" type="number" min="0" step="500" value="35000"></div>
+              <input id="iDraw" type="number" min="0" step="500" value="0"></div>
             <div class="infield"><label for="iGuard">Guardrail threshold %</label>
               <input id="iGuard" type="number" min="1" max="100" step="1" value="30"></div>
           </div>
-          <input class="drawrange" id="iDrawRange" type="range" min="0" max="47100" step="100" value="35000"
+          <input class="drawrange" id="iDrawRange" type="range" min="0" max="0" step="100" value="0"
                  aria-label="Requested draw">
           <div class="util-line" id="oUtil"></div>
 
           <div class="alert-box" id="guardBox">
-            <div class="a-title" id="guardTitle">⛔ Pre-Approval Guardrail — Hard Stop</div>
+            <div class="a-title" id="guardTitle">—</div>
             <div class="a-body" id="guardBody"></div>
           </div>
         </div>
@@ -344,12 +346,12 @@
         <div class="calc-panel">
           <div class="calc-head">
             <div class="calc-title">Deal Math Calculator</div>
-            <div class="calc-client">can she afford it every month</div>
+            <div class="calc-client">can they afford it every month</div>
           </div>
 
           <div class="inrow">
             <div class="infield"><label for="iDeposit">Deposit</label>
-              <input id="iDeposit" type="number" min="0" step="100" value="3000"></div>
+              <input id="iDeposit" type="number" min="0" step="100" value="0"></div>
             <div class="infield"><label for="iFee">Success fee %</label>
               <input id="iFee" type="number" min="0" max="100" step="0.5" value="10"></div>
             <div class="infield"><label for="iDebts">Debts to clear</label>
@@ -368,11 +370,10 @@
               <div class="val" id="oMonthly">—</div>
             </div>
           </div>
-          <div class="res-note">Net of deposit, success fee and debts · monthly is the minimum on all
-            five cards added together</div>
+          <div class="res-note">No deal-math endpoint — net cash and monthly stay dashes until one exists.</div>
 
           <div class="alert-box" id="cliffBox">
-            <div class="a-title" id="cliffTitle">⚠ Negative-Amortization Cliff</div>
+            <div class="a-title" id="cliffTitle">—</div>
             <div class="a-body" id="cliffBody"></div>
           </div>
         </div>
@@ -400,7 +401,7 @@
               <div class="bd-sub">CD-03 / What each way of paying it back costs her</div>
               <table class="pm">
                 <tr><th>Method</th><th>12mo</th><th>24mo</th><th>36mo</th></tr>
-                <tr><td>Lump Sum</td><td>$0</td><td>$0</td><td>$0</td></tr>
+                <tr><td>Lump Sum</td><td>—</td><td>—</td><td>—</td></tr>
                 <tr><td>Minimum Payments</td><td id="m12">—</td><td id="m24">—</td><td id="m36">—</td></tr>
                 <tr><td>Interest-Only</td><td id="i12">—</td><td id="i24">—</td><td id="i36">—</td></tr>
               </table>
@@ -409,18 +410,13 @@
               <table class="pm">
                 <tr><td>Funded Amount</td><td id="oFunded">—</td></tr>
                 <tr><td id="oFeeLabel">Deposit + 10% Success Fee</td><td id="oFees">—</td></tr>
-                <tr><td>Debts she must clear first</td><td id="oDebts">—</td></tr>
+                <tr><td>Debts they must clear first</td><td id="oDebts">—</td></tr>
               </table>
             </div>
             <div>
               <div class="bd-sub">D-04 / Minimum payment, card by card</div>
               <table class="pm">
                 <tr><th>Card</th><th>APR</th><th>Min. Payment</th></tr>
-                <tr><td>Capital One Spark</td><td>14.99%</td><td id="p0">—</td></tr>
-                <tr><td>Amex Blue Business</td><td>16.99%</td><td id="p1">—</td></tr>
-                <tr><td>Citi Costco</td><td>18.99%</td><td id="p2">—</td></tr>
-                <tr><td>Barclays View</td><td>19.99%</td><td id="p3">—</td></tr>
-                <tr><td>Chase Sapphire</td><td>22.99%</td><td id="p4">—</td></tr>
               </table>
             </div>
           </div>
@@ -435,7 +431,7 @@
     <span class="ghost"></span>
     <span>fundhub-closer · v1</span>
     <span>org: fundhub</span>
-    <span><span class="av human">JB</span> jordan blake</span>
+    <span><span class="av human" id="whoFootAv">—</span> <span id="whoFoot">—</span></span>
     <span>these numbers are estimates — confirm the final terms with the lender</span>
     <span class="nominal"><span class="pulse"></span>systems nominal · fundhub.ai</span>
   </footer>
@@ -530,6 +526,7 @@ function recompute(){
      they keep the draw box and the slider in step — but the sample math must
      not overwrite an API answer with numbers scraped out of the sample table. */
   if(window.__fhCloserLive) return;
+  if(!CARDS.length) return;
   var draw    = Math.max(0,Math.min(TOTAL_HEAD, num($('iDraw').value)));
   var guard   = Math.max(1,num($('iGuard').value)||30);
   var deposit = num($('iDeposit').value);
@@ -558,9 +555,9 @@ function recompute(){
   if(util>guard){
     gb.className='alert-box';
     $('guardTitle').textContent='⛔ Pre-Approval Guardrail — Hard Stop';
-    $('guardBody').innerHTML='This draw pushes <b>'+util.toFixed(0)+'%</b> of her total credit line, above the '+
-      guard.toFixed(0)+'% threshold. That’s enough to drop her score and jeopardize <b>Round 2</b>. '+
-      'Draw less, or tell Priya what this does to her score before she signs.';
+    $('guardBody').innerHTML='This draw pushes <b>'+util.toFixed(0)+'%</b> of their total credit line, above the '+
+      guard.toFixed(0)+'% threshold. That’s enough to drop their score and jeopardize <b>Round 2</b>. '+
+      'Draw less, or tell them what this does to their score before they sign.';
   }else{
     gb.className='alert-box clear';
     $('guardTitle').textContent='✓ Pre-Approval Guardrail — Clear';
@@ -592,16 +589,16 @@ function recompute(){
     cb.className='alert-box clear';
     $('cliffTitle').textContent='✓ No Negative-Amortization Cliff';
     $('cliffBody').innerHTML='At <b>'+minPct+'%</b> minimum payments ('+usd(monthly)+'/mo) every drawn card '+
-      'amortises down — the minimum covers the interest on all five. Her balance never exceeds the '+
-      usd(drawn)+' she drew. Blended APR '+blended.toFixed(2)+'%.';
+      'amortises down — the minimum covers the interest on all five. Their balance never exceeds the '+
+      usd(drawn)+' they drew. Blended APR '+blended.toFixed(2)+'%.';
   }else{
     var inside = cm<=18;
     cb.className = inside?'alert-box':'alert-box warn';
     $('cliffTitle').textContent='⚠ Negative-Amortization Cliff Flagged';
-    $('cliffBody').innerHTML='At minimum-only payments of <b>'+minPct+'%</b> ('+usd(monthly)+'/mo), Priya’s '+
+    $('cliffBody').innerHTML='At minimum-only payments of <b>'+minPct+'%</b> ('+usd(monthly)+'/mo), their '+
       'outstanding balance exceeds the original draw by <b>Month '+cm+'</b>'+
       (inside?' — inside the 18-month flag threshold':' — outside the 18-month flag threshold')+
-      '. Change the plan, or tell her now — not after the money lands. This is the number that prevents '+
+      '. Change the plan, or tell them now — not after the money lands. This is the number that prevents '+
       'a refund request six months from now.';
   }
 }
@@ -612,8 +609,10 @@ $('iDrawRange').addEventListener('input',function(){ $('iDraw').value=$('iDrawRa
 ['iGuard','iDeposit','iFee','iDebts','iMin'].forEach(function(id){
   $(id).addEventListener('input',recompute);
 });
-$('iDrawRange').max=TOTAL_HEAD;
-recompute();
+if(CARDS.length){
+  $('iDrawRange').max=TOTAL_HEAD;
+  recompute();
+}
 })();
 </script>
 
@@ -880,21 +879,60 @@ window.FHCloserView = (function () {
 
    THREE RULES, IN THE ORDER THEY MATTER:
 
-   1. FALL BACK, DON'T BLANK. With no ?client_id, no session, or no route, the
-      sample markup and the sample calculators are left running exactly as
-      designed and a banner says which. That path is the one that runs today —
-      "read/tradelines" is not in the ROUTES map yet, so the read 404s and
-      data.js classifies it "offline".
+   1. NO CLIENT ID IS HONEST EMPTY. The calculators stay hidden and the screen
+      says "Open from a client." It does not keep a sample person on the page.
    2. A LIVE SCREEN NEVER REVERTS. Once real figures are painted, a failed
       refresh keeps them and reports the failure. The last audit found seven
       screens that fell back to sample on the first keystroke under a green
       badge; that is worse than not wiring them.
-   3. NOTHING IS INVENTED. The deal-math panel, the per-card minimums, today's
-      pipeline and the shift stats have no source in this response. They keep
-      their sample values, are marked in the UI, and are named in the banner.
+   3. NOTHING IS INVENTED. Deal math, per-card minimums, today's pipeline and
+      the shift stats have no source here. They stay dashes, not fake dollars.
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
   "use strict";
+
+  function tickClock() {
+    var el = document.querySelector(".clock");
+    if (!el) return;
+    el.textContent = new Date().toLocaleString("en-US", {
+      weekday: "short", month: "short", day: "numeric",
+      hour: "numeric", minute: "2-digit", second: "2-digit",
+      timeZone: "America/New_York", timeZoneName: "short"
+    });
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  function initials(name) {
+    var p = String(name || "").trim().split(/\s+/).filter(Boolean);
+    if (!p.length) return "—";
+    return p.slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join("");
+  }
+  function paintStaff(staff) {
+    var name = (staff && staff.name) || "";
+    var role = staff && staff.role ? String(staff.role).replace(/_/g, " ") : "";
+    var av = document.getElementById("whoAv");
+    var nm = document.getElementById("whoName");
+    var rl = document.getElementById("whoRole");
+    var foot = document.getElementById("whoFoot");
+    var footAv = document.getElementById("whoFootAv");
+    var ini = initials(name);
+    if (av) av.textContent = ini;
+    if (nm) nm.textContent = name || "—";
+    if (rl) rl.textContent = role || "—";
+    if (foot) foot.textContent = name || "—";
+    if (footAv) footAv.textContent = ini;
+  }
+  var token = "";
+  try { token = localStorage.getItem("fh_token") || ""; } catch (e) {}
+  fetch("/api/auth/session", {
+    headers: token
+      ? { accept: "application/json", authorization: "Bearer " + token }
+      : { accept: "application/json" }
+  }).then(function (r) { return r.json(); }).then(function (s) {
+    paintStaff(s && s.staff);
+  }).catch(function () { paintStaff(null); });
+
   if (!window.FHData || !window.FHCloserView) return;
 
   var V = window.FHCloserView;
@@ -1036,26 +1074,27 @@ window.FHCloserView = (function () {
     if (marked) return;
     marked = true;
 
-    // The endpoint returns tradelines, not a client record: there is no name in
-    // the response. The id we were given is the only sourced label for this
-    // person, and leaving "Priya Nair" over another client's balances is the
-    // kind of confident nonsense this repo keeps deleting.
+    // Tradelines are not a client record. Do not invent a name for this file.
     var titles = [].slice.call(document.querySelectorAll(".section-title"));
     for (var i = 0; i < titles.length; i++) {
       if (titles[i].textContent.indexOf("CD-02") === 0) {
-        titles[i].textContent = "CD-02 / Deal Calculators — client " + clientId;
+        titles[i].textContent = "CD-02 / Deal Calculators";
       }
     }
 
     var note = document.querySelector(".res-note");
     if (note) {
-      note.textContent = "SAMPLE — no endpoint computes deal math. Net cash, monthly obligation " +
-        "and the cliff below are this screen's built-in sample figures and do not describe this client.";
+      note.textContent = "No deal-math endpoint — net cash, monthly obligation, and the cliff stay dashes.";
     }
     var d03 = subHeading("D-03b");
-    if (d03) d03.textContent = "D-03b / How the net cash is arrived at — SAMPLE, no deal-math endpoint";
+    if (d03) d03.textContent = "D-03b / How the net cash is arrived at — no deal-math endpoint";
     var d04 = subHeading("D-04");
     if (d04) d04.textContent = "D-04 / Minimum payment, card by card — the minimum has no API source";
+
+    ["oNet", "oMonthly", "oFunded", "oFees", "oDebts"].forEach(function (id) {
+      var el = $(id);
+      if (el) el.textContent = "—";
+    });
 
     var cliffBox = $("cliffBox");
     if (cliffBox) cliffBox.className = "alert-box warn";
@@ -1063,9 +1102,7 @@ window.FHCloserView = (function () {
     if (cliffTitle) cliffTitle.textContent = "⚠ Negative-Amortization Cliff — not computed";
     var cliffBody = $("cliffBody");
     if (cliffBody) {
-      cliffBody.textContent = "Not computed for this client. The cliff belongs to the deal-math " +
-        "calculator, which no endpoint returns yet, and re-deriving it in the browser is exactly " +
-        "how the funding side ended up with two answers. The figures above are sample.";
+      cliffBody.textContent = "Not computed for this client. No endpoint returns deal math.";
     }
   }
 
@@ -1095,8 +1132,7 @@ window.FHCloserView = (function () {
   function loadLenderMatches() {
     if (!clientId || !window.FHData || typeof FHData.read !== "function") return Promise.resolve();
     return FHData.read("lender-matches", { client_id: clientId }).then(function (res) {
-      /* Endpoint returns a flat { ok, match_count, summary } — not { data }. */
-      renderLenderMatches(res);
+      renderLenderMatches(res && res.data ? res.data : res);
     }).catch(function () {
       renderLenderMatches(null);
     });
@@ -1175,7 +1211,13 @@ window.FHCloserView = (function () {
   }
 
   if (!clientId) {
-    FHData.banner("sample", V.classify(null, {}).text, "tradelines");
+    var gate = document.getElementById("calcGate");
+    var grid = document.getElementById("calcGrid");
+    var br = document.getElementById("breakdown");
+    if (gate) gate.hidden = false;
+    if (grid) grid.hidden = true;
+    if (br) br.hidden = true;
+    FHData.banner("sample", "Open from a client.", "tradelines");
     return;
   }
 
@@ -1191,6 +1233,7 @@ window.FHCloserView = (function () {
   });
 
   load(false);
+  loadLenderMatches();
 })();
 </script>
 </body>

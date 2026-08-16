@@ -40,16 +40,16 @@ header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-
 .hr{display:flex;align-items:center;gap:10px}
 
 .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--line);border-bottom:1px solid var(--line)}
-.kpi{background:var(--paper);padding:13px 18px}
+.kpi{background:var(--paper);padding:14px 16px;min-width:0}
 .kpi .lb{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
-.kpi .vl{font-size:23px;font-weight:500;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}
-.kpi .sb{font-size:11px;color:var(--gray);margin-top:2px}
+.kpi .vl{font-size:22px;font-weight:500;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .sb{font-size:11px;color:var(--gray);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi.hero{background:var(--card);color:var(--cardtext)}
 .kpi.hero .lb{color:var(--gray2)} .kpi.hero .sb{color:var(--gray2)}
 
-.wrap{display:grid;grid-template-columns:1fr 296px;gap:0;min-height:70vh}
-main{padding:22px;border-right:1px solid var(--line)}
-aside.rail{padding:22px 20px;background:var(--soft)}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 280px;min-height:70vh}
+main{padding:24px 28px 28px;border-right:1px solid var(--line);min-width:0}
+aside.rail{padding:24px 20px;background:var(--paper);border-left:1px solid var(--line)}
 
 .sec{margin-bottom:24px}
 .sech{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:11px}
@@ -60,12 +60,12 @@ aside.rail{padding:22px 20px;background:var(--soft)}
 
 .bands{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .band{border:1px solid var(--line);border-radius:10px;padding:14px 15px;background:var(--paper)}
-.band.pick{border-color:var(--ink);background:var(--card);color:var(--cardtext)}
+.band.pick{border-color:var(--ink);background:var(--ink);color:var(--paper)}
 .band .bl{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
-.band .bv{font-size:26px;font-weight:500;letter-spacing:-.03em;margin-top:5px;font-variant-numeric:tabular-nums}
-.band .bn{font-size:11.5px;color:var(--gray);margin-top:3px}
-.band.pick .bn{color:var(--gray2)}
-.lever{font-size:12.5px;color:var(--gray);margin-top:11px;padding-left:13px;border-left:2px solid var(--warn)}
+.band .bv{font-size:24px;font-weight:500;letter-spacing:-.03em;margin-top:5px;font-variant-numeric:tabular-nums}
+.band .bn{font-size:12px;color:var(--gray);margin-top:4px;line-height:1.4}
+.band.pick .bl,.band.pick .bn{color:var(--gray2)}
+.lever{font-size:13px;color:var(--gray);margin-top:12px;line-height:1.45}
 
 .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .panel{border:1px solid var(--line);border-radius:10px;padding:15px 16px;background:var(--paper)}
@@ -76,13 +76,12 @@ td:first-child{color:var(--gray)}
 td:last-child{text-align:right;font-variant-numeric:tabular-nums}
 .hi{font-weight:500}
 
-.ctx{background:var(--card);color:var(--cardtext);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden}
-.ctx::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:56px 56px}
-.ctx h3{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);font-weight:500;margin-bottom:10px;position:relative}
-.ctx p{font-size:13.5px;line-height:1.65;position:relative}
-.ctxg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px;position:relative}
+.ctx{background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.ctx h3{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:10px}
+.ctx p{font-size:14px;line-height:1.6}
+.ctxg{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 18px;margin-top:14px}
 .ctxg div span{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray2);margin-bottom:3px}
-.ctxg div b{font-weight:400;font-size:13px}
+.ctxg div b{font-weight:500;font-size:14px}
 .flag{margin-top:13px;padding:9px 12px;border-radius:7px;background:rgba(245,206,143,.14);border-left:2px solid var(--warn);font-size:12.5px;position:relative}
 
 .cliff{margin-top:12px;padding:10px 13px;border-radius:7px;background:rgba(242,166,155,.13);border-left:2px solid var(--alert);font-size:12.5px}
@@ -205,7 +204,7 @@ button.k .hk{color:var(--gray2)}
     <span class="chip on"><span class="cd"></span>On shift · 3h 12m</span>
   </div>
   <div class="hr">
-    <span class="chip"><span class="cd" style="background:var(--info)"></span>Marcus Webb</span>
+    <span class="chip"><span class="cd" style="background:var(--info)"></span>Closer</span>
     <span class="pulse" title="systems nominal"></span>
   </div>
 </header>
@@ -213,32 +212,32 @@ button.k .hk{color:var(--gray2)}
 <div class="kpis">
   <div class="kpi hero">
     <div class="lb">Cash today</div>
-    <div class="vl">$9,000</div>
-    <div class="sb">3 deposits</div>
+    <div class="vl">—</div>
+    <div class="sb">live when signed in</div>
   </div>
   <div class="kpi">
     <div class="lb">Calls held</div>
-    <div class="vl">7</div>
-    <div class="sb">2 no-shows</div>
+    <div class="vl">—</div>
+    <div class="sb">—</div>
   </div>
   <div class="kpi">
     <div class="lb">Close rate</div>
-    <div class="vl">43%</div>
-    <div class="sb">team 34%</div>
+    <div class="vl">—</div>
+    <div class="sb">—</div>
   </div>
   <div class="kpi">
     <div class="lb">Commission MTD</div>
-    <div class="vl">$8,420</div>
-    <div class="sb">$500 + 0.25% funded</div>
+    <div class="vl">—</div>
+    <div class="sb">see My numbers</div>
   </div>
   <div class="kpi">
     <div class="lb">Pace to target</div>
-    <div class="vl">112%</div>
-    <div class="sb">$34k of $30k</div>
+    <div class="vl">—</div>
+    <div class="sb">—</div>
   </div>
   <div class="kpi">
     <div class="lb">Unlogged</div>
-    <div class="vl" style="color:#C25B4E">1</div>
+    <div class="vl">—</div>
     <div class="sb">clear before next call</div>
   </div>
 </div>
@@ -248,78 +247,91 @@ button.k .hk{color:var(--gray2)}
 
   <div class="who">
     <div>
-      <h1>Dana Reyes</h1>
-      <div class="meta">Reyes Fabrication LLC · Fort Lauderdale FL · 3y 2mo in business · FH-000412</div>
+      <h1 id="ccp-who-name">Loading…</h1>
+      <div class="meta" id="ccp-who-meta">Open with ?client_id=&lt;uuid&gt;</div>
     </div>
     <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
-      <span class="chip wip"><span class="cd"></span>Warm</span>
-      <span class="chip on"><span class="cd"></span>Qualified</span>
-      <button class="k">Join call</button>
+      <span class="chip wip" id="fh-temp-chip" hidden><span class="cd"></span>—</span>
+      <button type="button" class="k" id="fh-join" disabled title="No call link on this appointment">Join call</button>
       <button type="button" class="k" id="fh-present">Present</button>
+      <button type="button" class="k" id="fh-send-contract">Send contract</button>
     </div>
+  </div>
+
+  <div id="fh-contract-panel" hidden style="margin:0 0 18px;border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:var(--paper)">
+    <h3 style="font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:10px">Send a contract to this person</h3>
+    <label for="fh-contract-tpl" style="display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin-bottom:5px">Which wording</label>
+    <select id="fh-contract-tpl" style="width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:13px"></select>
+    <div id="fh-contract-blanks"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button type="button" class="k" id="fh-contract-go">Send</button>
+      <button type="button" id="fh-contract-copy" disabled>Copy link</button>
+    </div>
+    <input id="fh-contract-link" readonly style="display:none;margin-top:10px;width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-family:var(--mono);font-size:11px;background:var(--soft)">
+    <p id="fh-contract-msg" style="margin-top:8px;font-size:12.5px;color:var(--gray)"></p>
   </div>
 
   <div class="sec">
     <div class="sech">
-      <span class="eyebrow">What she can get</span>
-      <span style="font-family:var(--mono);font-size:10px;color:var(--gray2)">Pull authorized 11:42</span>
+      <span class="eyebrow">What they can get</span>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--gray2)">Pull status on file</span>
     </div>
     <div class="bands">
       <div class="band">
         <div class="bl">Conservative</div>
-        <div class="bv">$52k</div>
-        <div class="bn">Worst case, today</div>
+        <div class="bv">—</div>
+        <div class="bn">Waiting on UnderwriteIQ</div>
       </div>
-      <div class="band pick">
+      <div class="band">
         <div class="bl">Realistic · round 1</div>
-        <div class="bv">$68k</div>
-        <div class="bn">9 lenders matched</div>
+        <div class="bv">—</div>
+        <div class="bn">Waiting on UnderwriteIQ</div>
       </div>
       <div class="band">
         <div class="bl">After optimization</div>
-        <div class="bv">$104k</div>
-        <div class="bn">3 rounds · ~5 months</div>
+        <div class="bv">—</div>
+        <div class="bn">Waiting on UnderwriteIQ</div>
       </div>
     </div>
-    <p class="lever">Walk her to $104k: pay utilization down under 10%, let two inquiries age past six months, add one primary tradeline.</p>
+    <p class="lever">Live numbers only — no sample funding story.</p>
   </div>
 
   <div class="sec two">
     <div class="panel">
-      <h3>Where she stands</h3>
+      <h3>Where they stand</h3>
       <table>
-        <tr><td>Tri-merge</td><td class="hi">712</td></tr>
-        <tr><td>Utilization</td><td>24% · high</td></tr>
-        <tr><td>Inquiries · 6mo</td><td>2 · fine</td></tr>
-        <tr><td>Derogatories</td><td>none</td></tr>
-        <tr><td>Chase 5/24</td><td>clear</td></tr>
+        <tr><td>Tri-merge</td><td class="hi">—</td></tr>
+        <tr><td>Utilization</td><td>—</td></tr>
+        <tr><td>Inquiries · 6mo</td><td>—</td></tr>
+        <tr><td>Derogatories</td><td>—</td></tr>
+        <tr><td>Chase 5/24</td><td>—</td></tr>
       </table>
-      <div class="cliff" style="background:rgba(169,198,232,.15);border-left-color:var(--info)">Clean file. Utilization is the only thing holding her back.</div>
+      <div class="cliff" style="background:rgba(169,198,232,.15);border-left-color:var(--info)">Credit facts load from the live file.</div>
     </div>
     <div class="panel">
       <h3>The deal</h3>
       <table>
-        <tr><td>Deposit today</td><td class="hi">$3,000</td></tr>
-        <tr><td>Success fee · 10%</td><td>$6,800</td></tr>
-        <tr><td>Net cash to her</td><td>$61,200</td></tr>
-        <tr><td>Her monthly min</td><td>$1,840</td></tr>
-        <tr><td>Downsell</td><td>$2,000 repair</td></tr>
+        <tr><td>Deposit today</td><td class="hi">—</td></tr>
+        <tr><td>Success fee · 10%</td><td>—</td></tr>
+        <tr><td>Net cash to them</td><td>—</td></tr>
+        <tr><td>Monthly min</td><td>—</td></tr>
+        <tr><td>Downsell</td><td>—</td></tr>
       </table>
-      <div class="cliff"><b>Tell her about month 14.</b> On minimum payments her balance starts growing. Skipping this is what causes refunds.</div>
+      <div class="cliff"><b>Tell them about month 14.</b> On minimum payments the balance starts growing. Skipping this is what causes refunds.</div>
     </div>
   </div>
 
   <div class="sec">
     <div class="ctx">
-      <h3>Nine days with Josh · 14 messages</h3>
-      <p>Came in on the equipment ad. Lost a $200k contract because she couldn't scale capacity. Asked "how fast" twice — speed beats rate for her. Josh promised exact numbers on this call and quoted nothing.</p>
+      <h3>Pre-call context</h3>
+      <p>Loads from the live file when a client id is in the URL.</p>
       <div class="ctxg">
-        <div><span>Wants</span><b>$75,000</b></div>
-        <div><span>For</span><b>Equipment + hiring</b></div>
-        <div><span>Guessed FICO</span><b>"around 700"</b></div>
-        <div><span>Last message</span><b>2h ago</b></div>
+        <div><span>Wants</span><b>—</b></div>
+        <div><span>For</span><b>—</b></div>
+        <div><span>Guessed FICO</span><b>—</b></div>
+        <div><span>Last message</span><b>—</b></div>
       </div>
-      <div class="flag">She wants $75k. Round one is $68k. Name the gap before she finds it.</div>
+      <div class="flag">No sample story. Live survey + pull only.</div>
     </div>
   </div>
 
@@ -329,15 +341,12 @@ button.k .hk{color:var(--gray2)}
 
   <section>
     <h4>Up next</h4>
-    <div class="q"><span class="t">2:30</span><div><b>Andre Whitfield</b><em>Hot · $120k target</em></div></div>
-    <div class="q"><span class="t">3:15</span><div><b>Priya Raman</b><em>Warm · rebooked once</em></div></div>
-    <div class="q"><span class="t">4:00</span><div><b>Tomas Ibarra</b><em>Cold · first call</em></div></div>
+    <div class="q"><span class="t">—</span><div><b>No upcoming booked calls</b><em>Calendar tasks show here</em></div></div>
   </section>
 
   <section>
     <h4>Gone quiet</h4>
-    <div class="q"><span class="t">11d</span><div><b>Bianca Souza</b><em>$3k pending</em></div></div>
-    <div class="q"><span class="t">8d</span><div><b>Grace Kowalski</b><em>Follow-up set</em></div></div>
+    <div class="q"><span class="t">—</span><div><b>None loaded</b><em>—</em></div></div>
   </section>
 
   <section>
@@ -382,6 +391,7 @@ button.k .hk{color:var(--gray2)}
 </div>
 </div>
 <script src="data.js"></script>
+<script src="contract-send.js"></script>
 <script src="closer-call.js"></script>
 </body>
 </html>

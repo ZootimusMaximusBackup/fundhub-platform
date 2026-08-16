@@ -90,6 +90,7 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .playbtn:hover{transform:scale(1.06);background:#fff}
 .playbtn.playing{padding-left:0;font-size:16px}
 .player.playing .ghost .logo{opacity:.18}
+.video-empty{position:relative;z-index:1;margin:0 24px;max-width:28ch;text-align:center;color:var(--dark-text-dim);font-size:14px;font-weight:600}
 .vrow{display:flex;align-items:center;gap:10px;margin-top:10px}
 .vtrack{flex:1;height:3px;border-radius:2px;background:var(--line);overflow:hidden;cursor:pointer}
 .vtrack i{display:block;height:100%;width:0;background:var(--spectrum);border-radius:2px}
@@ -362,16 +363,16 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <button id="st-funded" type="button">Just funded</button>
     </div>
     <div class="who-pill">
-      <div class="avatar">DO</div>
-      Derek Owusu
+      <div class="avatar" id="who-av">—</div>
+      <span id="who-name">—</span>
     </div>
   </header>
 
   <main>
     <div class="page">
 
-      <div class="welcome" id="greeting">Welcome back, Derek</div>
-      <div class="welcome-sub precall-only" id="greeting-sub-pre">Welcome to your Fundhub portal. Your call is next.</div>
+      <div class="welcome" id="greeting">Open this from a client file</div>
+      <div class="welcome-sub precall-only" id="greeting-sub-pre">Open this from a client file.</div>
       <div class="welcome-sub funding-only" id="greeting-sub">Here's where things stand on your funding.</div>
 
       <!-- ══ 0 · FACEBOOK WINS ════════════════════════════════════════════ -->
@@ -388,7 +389,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <section class="card video-card" aria-labelledby="video-title">
         <div class="player" id="player">
           <div class="ghost"><div class="logo" role="presentation"></div></div>
-          <button class="playbtn" id="playbtn" type="button" aria-label="Play welcome video">▶</button>
+          <p class="video-empty" id="video-empty">Welcome video is not available</p>
         </div>
         <div class="video-meta">
           <div class="sec-hd" style="margin-bottom:7px">
@@ -399,9 +400,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           <div class="video-copy">A short hello: what this page is, what happens on your call, and how to
             use this portal so you are not guessing.</div>
           <div class="vrow">
-            <span class="vtime" id="vnow">0:00</span>
-            <div class="vtrack" id="vtrack"><i id="vfill"></i></div>
-            <span class="vtime">4:12</span>
+            <span class="vtime" id="vnow">—</span>
           </div>
         </div>
       </section>
@@ -490,10 +489,9 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
 
       <!-- ══ 3 · WHAT WE STILL NEED — the one thing being asked of them ══ -->
       <section class="action-card" id="action-card" aria-labelledby="action-title">
-        <div class="action-title" id="action-title">We still need 2 things from you</div>
-        <div class="action-sub">We asked 2 days ago — sending them today keeps things moving.</div>
-        <div class="doc-need"><span>Bank statements (last 2 months)</span><span class="dn-age">asked 2 days ago</span></div>
-        <div class="doc-need"><span>Voided check</span><span class="dn-age">asked 2 days ago</span></div>
+        <div class="action-title" id="action-title">Send a file</div>
+        <div class="action-sub" id="action-sub">Nothing is waiting on this page until we ask.</div>
+        <div class="doc-need" id="doc-need-empty"><span>No files waiting</span><span class="dn-age">—</span></div>
         <div class="filelist" id="filelist"></div>
         <div class="upbar" id="upbar"><i></i></div>
         <div class="upload-row">
@@ -694,8 +692,8 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
 
           <div class="tabpane" id="tp-msg" role="tabpanel" data-pane="msg">
             <div class="timeline-item"><span class="td">Today</span><span>Use chat if you have questions before your call</span></div>
-            <div class="timeline-item sample-history"><span class="td">2:32 PM</span><span>Reminder: your call with Marcus Webb is at 3:02 PM today</span></div>
-            <div class="timeline-item sample-history"><span class="td">Jul 24</span><span>We still need your bank statements and a voided check</span></div>
+            <div class="timeline-item" id="msg-empty"><span class="td">—</span><span>No messages yet.</span></div>
+            <div class="timeline-item" id="msg-live-empty" hidden><span class="td">—</span><span>No messages yet.</span></div>
             <div class="msgs-note">Nothing here needs a reply right now.</div>
           </div>
         </div>
@@ -706,9 +704,9 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
         <section class="card" aria-labelledby="adv-t">
           <div class="card-title" id="adv-t">Your Funding Advisor</div>
           <div class="advisor-row">
-            <div class="advisor-avatar">MW</div>
+            <div class="advisor-avatar" id="adv-av">—</div>
             <div>
-              <div class="advisor-name">Marcus Webb</div>
+              <div class="advisor-name" id="adv-name">—</div>
               <div class="advisor-role">Looks after your file</div>
             </div>
             <div class="contact-btns">
@@ -716,7 +714,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
               <button class="contact-btn" type="button">Call</button>
             </div>
           </div>
-          <div class="support-note">Your round, your documents, a payment — Marcus is who you want.
+          <div class="support-note" id="adv-note">Your round, your documents, a payment — your advisor is who you want.
             No charge, no pitch.</div>
         </section>
 
@@ -774,7 +772,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <h2 id="bm-title">Book a call</h2>
       <button class="xbtn" id="bm-x" type="button" aria-label="Close">✕</button>
     </div>
-    <p class="mdesc" id="bm-desc">Pick a time with Marcus Webb. 20 minutes, by phone.</p>
+    <p class="mdesc" id="bm-desc">No times to pick here. Ask your advisor if you need a call.</p>
 
     <div id="bm-pick">
       <div class="daytabs" id="daytabs"></div>
@@ -794,9 +792,8 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
-   CLIENT PORTAL — wireframe behaviour. No backend: nothing leaves the browser.
-   Uploads, the video, unlocks and bookings are all simulated so every state is
-   walkable.
+   CLIENT PORTAL — live file or honest empty. Missing facts are dashes.
+   Do not invent people. Uploads go through FHData.uploadFiles only.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── product copy, single source for the tiles and the unlock modal.
@@ -927,125 +924,53 @@ var PRODUCTS = {
     setTimeout(function(){ openBook(document.getElementById('um-talk').dataset.book); }, 180);
   });
 
-  /* ── booking / slot picker ────────────────────────────────────────────── */
-  var DAYS = [
-    {w:'Mon', n:'27', label:'Monday, Jul 27',    slots:['9:00 AM','10:30 AM','1:00 PM','2:30 PM','4:00 PM'], gone:['1:00 PM']},
-    {w:'Tue', n:'28', label:'Tuesday, Jul 28',   slots:['9:00 AM','11:00 AM','12:30 PM','3:00 PM','4:30 PM'], gone:['9:00 AM','3:00 PM']},
-    {w:'Wed', n:'29', label:'Wednesday, Jul 29', slots:['8:30 AM','10:00 AM','11:30 AM','2:00 PM','3:30 PM'], gone:[]},
-    {w:'Thu', n:'30', label:'Thursday, Jul 30',  slots:['9:30 AM','11:00 AM','1:30 PM','3:00 PM'],            gone:['11:00 AM']}
-  ];
-  var dayIdx = 0, slotPick = null, bookTopic = '';
+  /* ── booking — live times only. No invented slots or people. ── */
+  var bmPick  = document.getElementById('bm-pick');
+  var bmDone  = document.getElementById('bm-done');
+  var bmGo    = document.getElementById('bm-go');
 
-  var daytabs = document.getElementById('daytabs'),
-      slotsEl = document.getElementById('slots'),
-      bmGo    = document.getElementById('bm-go'),
-      bmPick  = document.getElementById('bm-pick'),
-      bmDone  = document.getElementById('bm-done');
-
-  function paintDays(){
-    daytabs.innerHTML = '';
-    DAYS.forEach(function(d, i){
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'daytab' + (i === dayIdx ? ' on' : '');
-      b.innerHTML = '<div class="dw">' + d.w + '</div><div class="dn">' + d.n + '</div>';
-      b.addEventListener('click', function(){ dayIdx = i; slotPick = null; paintDays(); paintSlots(); });
-      daytabs.appendChild(b);
-    });
-  }
-  function paintSlots(){
-    var d = DAYS[dayIdx];
-    slotsEl.innerHTML = '';
-    d.slots.forEach(function(s){
-      var taken = d.gone.indexOf(s) !== -1;
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'slot' + (taken ? ' gone' : '') + (slotPick === s ? ' on' : '');
-      b.textContent = s;
-      if(taken){ b.disabled = true; b.title = 'Already booked'; }
-      else b.addEventListener('click', function(){ slotPick = s; paintSlots(); syncGo(); });
-      slotsEl.appendChild(b);
-    });
-    syncGo();
-  }
-  function syncGo(){
-    if(slotPick){
-      bmGo.disabled = false; bmGo.style.opacity = '1';
-      bmGo.textContent = 'Confirm ' + DAYS[dayIdx].w + ' ' + slotPick;
-    } else {
-      bmGo.disabled = true; bmGo.style.opacity = '.5';
-      bmGo.textContent = 'Pick a time';
-    }
-  }
   function openBook(topic){
-    bookTopic = topic || 'More funding — strategy call';
+    var about = topic || 'More funding';
     document.getElementById('bm-title').textContent = 'Book a call';
-    document.getElementById('bm-desc').textContent =
-      'About: ' + bookTopic + '. 20 minutes with Marcus Webb, by phone.';
-    dayIdx = 0; slotPick = null;
-    bmPick.hidden = false; bmDone.hidden = true;
-    paintDays(); paintSlots();
+    var live = window.__portalBooking || null;
+    var desc = document.getElementById('bm-desc');
+    if (live && live.when) {
+      desc.textContent = (live.title || 'Booked call') + ' — ' + live.when +
+        (live.status ? ' (' + live.status + ')' : '') + '. About: ' + about + '.';
+    } else {
+      desc.textContent = 'No times to pick here. Ask your advisor if you need a call. About: ' + about + '.';
+    }
+    if (bmPick) bmPick.hidden = true;
+    if (bmDone) {
+      bmDone.hidden = false;
+      var doneD = document.getElementById('bm-done-d');
+      if (doneD) {
+        doneD.textContent = (live && live.when)
+          ? ('On file: ' + (live.title || 'Booked call') + ' — ' + live.when + '.')
+          : 'No booking is on file.';
+      }
+      var pulse = bmDone.querySelector('.bk-t');
+      if (pulse) pulse.textContent = (live && live.when) ? 'Booking on file' : 'No booking yet';
+    }
+    if (bmGo) bmGo.disabled = true;
     openM(bookM);
   }
   document.addEventListener('click', function(e){
     var t = e.target.closest('[data-book]');
     if(t && t.id !== 'um-talk') openBook(t.dataset.book);
   });
-  bmGo.addEventListener('click', function(){
-    if(!slotPick) return;
-    document.getElementById('bm-done-d').textContent =
-      DAYS[dayIdx].label + ' at ' + slotPick + ' with Marcus Webb — about ' + bookTopic +
-      '. A calendar invite is on its way.';
-    bmPick.hidden = true; bmDone.hidden = false;
-  });
 
   window.__openBook = openBook;
 })();
 
-/* ── welcome video: play / pause / scrub ────────────────────────────────── */
+/* ── welcome video: honest empty. Do not pretend a video played. ── */
 (function(){
-  var DUR = 252;                                   /* 4:12 */
-  var player = document.getElementById('player'),
-      btn    = document.getElementById('playbtn'),
-      fill   = document.getElementById('vfill'),
-      now    = document.getElementById('vnow'),
-      track  = document.getElementById('vtrack'),
-      t = 0, timer = null;
-
-  function clock(s){
-    var m = Math.floor(s / 60), r = Math.floor(s % 60);
-    return m + ':' + (r < 10 ? '0' : '') + r;
-  }
-  function paint(){
-    fill.style.width = (t / DUR * 100) + '%';
-    now.textContent = clock(t);
-  }
-  function pause(){
-    clearInterval(timer); timer = null;
-    btn.textContent = '▶'; btn.classList.remove('playing');
-    btn.setAttribute('aria-label','Play welcome video');
-    player.classList.remove('playing');
-  }
-  function play(){
-    btn.textContent = '❚❚'; btn.classList.add('playing');
-    btn.setAttribute('aria-label','Pause welcome video');
-    player.classList.add('playing');
-    timer = setInterval(function(){
-      t += 1;
-      if(t >= DUR){ t = DUR; paint(); pause(); return; }
-      paint();
-    }, 250);                                       /* 4x so the state is walkable */
-  }
-  btn.addEventListener('click', function(){
-    if(t >= DUR) t = 0;
-    timer ? pause() : play();
-  });
-  track.addEventListener('click', function(e){
-    var r = track.getBoundingClientRect();
-    t = Math.max(0, Math.min(DUR, (e.clientX - r.left) / r.width * DUR));
-    paint();
-  });
-  paint();
+  var btn = document.getElementById('playbtn');
+  if (btn) btn.remove();
+  var now = document.getElementById('vnow');
+  if (now) now.textContent = '—';
+  var empty = document.getElementById('video-empty');
+  if (empty) empty.textContent = 'Welcome video is not available';
 })();
 
 /* ── document upload — selected / sending / sent ────────────────────────── */
@@ -1126,9 +1051,19 @@ var PRODUCTS = {
       card.classList.remove('done');
       needed.forEach(function(n){ n.classList.remove('covered'); });
     }
+    if (!sent && !resolveClientId()) {
+      btn.disabled = true;
+      btn.textContent = 'Uploads are off';
+      more.hidden = true;
+      hint.textContent = 'Uploads are off until this page is opened from a client file.';
+    }
   }
 
   function add(files){
+    if (!resolveClientId()) {
+      hint.textContent = 'Uploads are off until this page is opened from a client file.';
+      return;
+    }
     [].slice.call(files).forEach(function(f){
       /* same name+size twice is the same pick */
       var dupe = picked.some(function(p){ return p.name===f.name && p.size===f.size; });
@@ -1138,6 +1073,10 @@ var PRODUCTS = {
   }
 
   btn.addEventListener('click', function(){
+    if (!resolveClientId()) {
+      hint.textContent = 'Uploads are off until this page is opened from a client file.';
+      return;
+    }
     if(picked.length === 0){ input.click(); return; }
     send();
   });
@@ -1161,10 +1100,13 @@ var PRODUCTS = {
      localStorage and URLSearchParams don't need them to. */
   function resolveClientId(){
     var id = null;
-    try { id = new URLSearchParams(location.search).get('id'); } catch(e){}
+    try {
+      var q = new URLSearchParams(location.search);
+      id = q.get('id') || q.get('client_id');
+    } catch(e){}
     try {
       var acct = JSON.parse(localStorage.getItem('fh_account') || 'null');
-      if (!id && acct && acct.clientId) id = acct.clientId;
+      if (!id && acct && (acct.clientId || acct.client_id)) id = acct.clientId || acct.client_id;
     } catch(e){}
     return id;
   }
@@ -1193,22 +1135,13 @@ var PRODUCTS = {
 
     var clientId = resolveClientId();
 
-    /* No client id in the URL and no signed-in client session — there is
-       nobody to upload to. Same "sample" posture as the rest of this file:
-       show what sending would look like rather than doing nothing. */
-    if (!window.FHData || !clientId) {
-      var pct = 0;
-      var tick = setInterval(function(){
-        pct = Math.min(100, pct + 20 + Math.random()*15);
-        fillEl.style.width = pct + '%';
-        if(pct >= 100){
-          clearInterval(tick);
-          setTimeout(function(){
-            bar.classList.remove('on'); fillEl.style.width = '0';
-            markSentUi();
-          }, 260);
-        }
-      }, 220);
+    if (!window.FHData || typeof FHData.uploadFiles !== 'function' || !clientId) {
+      bar.classList.remove('on');
+      if (fillEl) fillEl.style.width = '0';
+      btn.disabled = true;
+      btn.textContent = 'Uploads are off';
+      more.hidden = true;
+      hint.textContent = 'Uploads are off until this page is opened from a client file.';
       return;
     }
 
@@ -1228,6 +1161,12 @@ var PRODUCTS = {
   }
 
   paint();
+  if (!resolveClientId()) {
+    btn.disabled = true;
+    btn.textContent = 'Uploads are off';
+    more.hidden = true;
+    hint.textContent = 'Uploads are off until this page is opened from a client file.';
+  }
 })();
 
 /* ── account & history tabs ─────────────────────────────────────────────────
@@ -1343,8 +1282,8 @@ var PRODUCTS = {
    This is the screen the whole entitlements unit exists for: a locked tile IS
    the upsell surface, so a tile with no grant stays locked rather than hidden.
 
-   Requires a CLIENT principal session (Unit 12) to resolve a client id; a staff
-   member opening this screen without ?id= sees the sample markup, correctly.
+   Requires ?id= or ?client_id= (or a signed-in client account). Without an id
+   this page stays empty: "Open this from a client file." It does not invent people.
 
    Funding sample blocks (approval amount, progress stepper) are suppressed
    when the client has no funding-snapshot entitlement. The welcome video and
@@ -1438,27 +1377,193 @@ var PRODUCTS = {
     }
   }
 
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function initials(name) {
+    var parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return "—";
+    return parts.slice(0, 2).map(function (p) { return p.charAt(0).toUpperCase(); }).join("");
+  }
+  function setText(id, v) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = v;
+  }
+  function fmtWhen(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso);
+    return d.toLocaleString();
+  }
+  function paintIdentity(name, advisor) {
+    var n = name && String(name).trim();
+    setText("who-name", n ? n : "—");
+    var av = document.getElementById("who-av");
+    if (av) av.textContent = n ? initials(n) : "—";
+    var first = n ? n.split(/\s+/)[0] : "";
+    setText("greeting", first ? ("Welcome back, " + first) : "Welcome");
+    var subPre = document.getElementById("greeting-sub-pre");
+    if (subPre) subPre.textContent = "Welcome to your Fundhub portal. Your call is next.";
+    var adv = advisor && String(advisor).trim();
+    setText("adv-name", adv ? adv : "—");
+    var aav = document.getElementById("adv-av");
+    if (aav) aav.textContent = adv ? initials(adv) : "—";
+    var note = document.getElementById("adv-note");
+    if (note) {
+      note.textContent = adv
+        ? ("Your round, your documents, a payment — " + adv + " is who you want. No charge, no pitch.")
+        : "Your round, your documents, a payment — your advisor is who you want. No charge, no pitch.";
+    }
+  }
+  function paintEmptyIdentity() {
+    setText("who-name", "—");
+    var av = document.getElementById("who-av");
+    if (av) av.textContent = "—";
+    setText("greeting", "Open this from a client file");
+    setText("greeting-sub-pre", "Open this from a client file.");
+    setText("adv-name", "—");
+    var aav = document.getElementById("adv-av");
+    if (aav) aav.textContent = "—";
+    var note = document.getElementById("adv-note");
+    if (note) {
+      note.textContent = "Your round, your documents, a payment — your advisor is who you want. No charge, no pitch.";
+    }
+  }
+  function advisorFromClient(c) {
+    var cf = (c && c.custom_fields) || {};
+    var n = cf.closer_name || cf.advisor_name || cf.assigned_advisor || cf.funding_advisor;
+    if (n && String(n).trim()) return String(n).trim();
+    return "";
+  }
+  function paintBooking(booking) {
+    window.__portalBooking = null;
+    if (!booking || !booking.when) return;
+    window.__portalBooking = {
+      when: fmtWhen(booking.when),
+      title: booking.title || "Booked call",
+      status: booking.status || ""
+    };
+  }
+  function paintDocs(items) {
+    var pane = document.getElementById("tp-docs");
+    if (!pane) return;
+    if (!items || !items.length) {
+      pane.innerHTML = '<div class="doc-row"><div><div class="dr-n">No files yet</div><div class="dr-m">They show here when they are on file</div></div><span class="dr-s">—</span></div>';
+      return;
+    }
+    pane.innerHTML = items.map(function (d) {
+      var title = esc(d.title || d.document_key || "—");
+      var when = d.created_at || d.generated_at || d.delivered_at;
+      var meta = esc((when ? fmtWhen(when) : "—") + (d.mime_type ? " · " + d.mime_type : ""));
+      var url = d.download && d.download.url;
+      var nameHtml = url
+        ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + title + "</a>"
+        : title;
+      return '<div class="doc-row"><div><div class="dr-n">' + nameHtml +
+        '</div><div class="dr-m">' + meta + "</div></div>" +
+        '<span class="dr-s have">On file</span></div>';
+    }).join("");
+  }
+  function paintMessages(rows) {
+    var pane = document.getElementById("tp-msg");
+    if (!pane) return;
+    var live = (rows || []).slice(0, 20);
+    if (!live.length) {
+      pane.innerHTML = '<div class="timeline-item"><span class="td">—</span><span>No messages yet.</span></div>';
+      return;
+    }
+    pane.innerHTML = live.map(function (m) {
+      var when = m.created_at ? fmtWhen(m.created_at) : "—";
+      var body = m.rendered_body || m.template_key || "Message";
+      return '<div class="timeline-item"><span class="td">' + esc(when) +
+        "</span><span>" + esc(body) + "</span></div>";
+    }).join("");
+  }
+  function paintPays(rows) {
+    var pane = document.getElementById("tp-pay");
+    if (!pane) return;
+    var live = rows || [];
+    if (!live.length) {
+      pane.innerHTML = '<div class="pay-row"><div><div class="pn">No payments yet</div><div class="pd">They show here after you pay</div></div><div class="pv">—</div></div>';
+      return;
+    }
+    pane.innerHTML = live.map(function (t) {
+      var name = esc(t.product_name || "Payment");
+      var when = t.created_at ? fmtWhen(t.created_at) : "—";
+      var amt = t.amount_paid == null ? "—" : String(t.amount_paid);
+      var st = t.status ? String(t.status) : "—";
+      return '<div class="pay-row"><div><div class="pn">' + name +
+        '</div><div class="pd">' + esc(when) + "</div></div>" +
+        '<div class="pv">' + esc(amt) + '<span class="paid-pill">' + esc(st) + '</span></div></div>';
+    }).join("");
+  }
+  function nameFromSession() {
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
+    return fetch("/api/auth/session", {
+      headers: t ? { authorization: "Bearer " + t } : {},
+      credentials: "same-origin"
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      var s = d && d.staff;
+      return (s && s.name) ? String(s.name) : "";
+    }, function () { return ""; });
+  }
+
   markStaffChrome();
 
-  var clientId = FHData.param("id");
+  var clientId = FHData.param("id") || FHData.param("client_id");
   try {
     var acct = JSON.parse(localStorage.getItem("fh_account") || "null");
-    if (!clientId && acct && acct.clientId) clientId = acct.clientId;
+    if (!clientId && acct && (acct.clientId || acct.client_id)) {
+      clientId = acct.clientId || acct.client_id;
+    }
   } catch (e) {}
 
   if (!clientId) {
-    // Sample / designer walkthrough — default is BEFORE CALL (no fake $ / PDFs).
+    paintEmptyIdentity();
     setFundingVisible(false);
     document.body.classList.add("no-docs");
     setOwnVisible(false);
-    FHData.banner("sample", "sample portal — sign in as a client, or open with ?id=<client id>");
+    paintDocs([]);
+    paintMessages([]);
+    paintPays([]);
+    FHData.banner("sample", "Open this from a client file");
     return;
   }
 
-  // Real client file: hide funding claims until entitlements confirm funding-snapshot.
   setFundingVisible(false);
   document.body.classList.add("no-docs");
   setOwnVisible(false);
+
+  FHData.client(clientId).then(function (res) {
+    if (res.ok && res.data && res.data.client) {
+      var c = res.data.client;
+      var name = [c.first_name, c.last_name].filter(Boolean).join(" ");
+      paintIdentity(name, advisorFromClient(c));
+      paintBooking(res.data.latest_booking);
+      paintMessages(res.data.messages);
+      paintPays(res.data.transactions);
+      return;
+    }
+    paintIdentity("", "");
+    if (res.source === "unauthorized") {
+      nameFromSession().then(function (nm) {
+        paintIdentity(nm, "");
+      });
+      return;
+    }
+    if (res.source === "nodata") paintEmptyIdentity();
+  });
+
+  FHData.wire(FHData.documents({ client_id: clientId, limit: 200 }),
+    "documents", function (data) {
+      var items = data.items || [];
+      paintDocs(items);
+      if (!items.length) return "live documents · none on file";
+      return "live documents · " + items.length + " on file";
+    });
 
   FHData.wire(FHData.entitlements({ client_id: clientId, limit: 200 }),
     "entitlements", function (data) {
@@ -1523,10 +1628,13 @@ var PRODUCTS = {
 
   function resolveClientId() {
     var id = null;
-    try { id = new URLSearchParams(location.search).get("id"); } catch (e) {}
+    try {
+      var q = new URLSearchParams(location.search);
+      id = q.get("id") || q.get("client_id");
+    } catch (e) {}
     try {
       var acct = JSON.parse(localStorage.getItem("fh_account") || "null");
-      if (!id && acct && acct.clientId) id = acct.clientId;
+      if (!id && acct && (acct.clientId || acct.client_id)) id = acct.clientId || acct.client_id;
     } catch (e) {}
     return id;
   }

@@ -4,7 +4,7 @@
 import { test, before, after, describe } from "node:test";
 import assert from "node:assert";
 import { db, close } from "../db.mjs";
-import { seedStaff, upsertStaff, FOUNDING_STAFF, PASSWORD_ENV } from "./seed-staff.mjs";
+import { seedStaff, upsertStaff, PASSWORD_ENV } from "./seed-staff.mjs";
 
 /* THROWAWAY ROSTER. This suite used to run against FOUNDING_STAFF itself and
    delete those six accounts in its teardown — so a full `npm test` left the
@@ -16,9 +16,14 @@ import { seedStaff, upsertStaff, FOUNDING_STAFF, PASSWORD_ENV } from "./seed-sta
 import { resolveDefaultOrg } from "./org.mjs";
 import { verifyPassword } from "./hash.mjs";
 
-const TEST_ROSTER = FOUNDING_STAFF.map((p) => ({
-  ...p, email: p.email.replace("@fundhub.ai", "+seedtest@fundhub.ai")
-}));
+const TEST_ROSTER = [
+  { email: "chris+seedtest@fundhub.ai", role: "owner", name: "Chris Test" },
+  { email: "sarah+seedtest@fundhub.ai", role: "admin", name: "Sarah Test" },
+  { email: "jordan+seedtest@fundhub.ai", role: "closer", name: "Jordan Test" },
+  { email: "nina+seedtest@fundhub.ai", role: "closer", name: "Nina Test" },
+  { email: "marcus+seedtest@fundhub.ai", role: "funding_advisor", name: "Marcus Test" },
+  { email: "alvin+seedtest@fundhub.ai", role: "inquiry_specialist", name: "Alvin Test" }
+];
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 const GOOD = "seed-password-for-tests";

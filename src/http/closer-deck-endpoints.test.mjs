@@ -163,4 +163,23 @@ describe("POST /api/closer-deck", () => {
     }, { role: "setter" });
     assert.equal(res.statusCode, 403);
   });
+
+  test("a non-db throw still writes JSON, not a blank handler_no_response", async () => {
+    const res = await post({
+      action: "log_disposition",
+      client_id: CID,
+      offer_key: "REPAIR_DFY"
+    }, {
+      db: {
+        async query(sql) {
+          if (/SELECT 1 FROM clients/i.test(sql)) return { rows: [{}] };
+          throw new TypeError("Do not know how to serialize a BigInt");
+        }
+      }
+    });
+    assert.equal(res.statusCode, 500);
+    assert.equal(res.body.ok, false);
+    assert.equal(res.body.error, "send_failed");
+    assert.match(String(res.body.message), /BigInt/);
+  });
 });

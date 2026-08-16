@@ -21,6 +21,9 @@ function fakeDb({ client = null, crs = null } = {}) {
       if (/FROM crs_results/i.test(s)) {
         return { rows: crs ? [crs] : [] };
       }
+      if (/FROM payment_links/i.test(s)) return { rows: [] };
+      if (/FROM soft_pull_requests/i.test(s)) return { rows: [] };
+      if (/FROM client_consents/i.test(s)) return { rows: [] };
       throw new Error("unexpected sql: " + s.slice(0, 80));
     }
   };
@@ -59,13 +62,16 @@ test("no CRS row is a labeled unavailable engine, survey still fills", async () 
   assert.equal(out.engine.reason, "engine data unavailable");
   assert.equal(out.engine.fico.ex, null);
   assert.equal(out.engine.total, null);
+  assert.deepEqual(out.income_estimates, { experian: null, equifax: null, asOf: null });
   assert.equal(out.offers.length, Object.keys(OFFERS).length);
 });
 
 test("stored closer payload maps FICO, total, reasons — no invented numbers", async () => {
   const crs = {
     outcome_tier: "FUNDING_PLUS_REPAIR",
+    created_at: "2026-08-16T00:00:00Z",
     result: {
+      environment: "production",
       outcome: "FUNDING_PLUS_REPAIR",
       reasonCodes: [
         ["M2-013 · TU", "TransUnion tradeline reports paid, zero balance, while showing a balance owed"]
@@ -73,7 +79,17 @@ test("stored closer payload maps FICO, total, reasons — no invented numbers", 
       preapprovals: { totalCombined: 127500 },
       projectedPreapproval: { totalCombined: 214000 },
       scores: { perBureau: { ex: 712, tu: 648, eq: 641 } },
-      bureauNegatives: { tu: { count: 3 }, eq: { count: 2 }, ex: { count: 0 } }
+      bureauNegatives: { tu: { count: 3 }, eq: { count: 2 }, ex: { count: 0 } },
+      bureaus: {
+        EX: { scores: [
+          { modelName: "Experian/Fair Isaac Risk Model V9", scoreValue: "712" },
+          { modelName: "Income Insight", scoreValue: "97" }
+        ]},
+        EQ: { scores: [
+          { modelName: "Consumer IncomeView+ Model", scoreValue: "81", scoreMaximumValue: "300" },
+          { modelName: "FICO Score 9", scoreValue: "641" }
+        ]}
+      }
     }
   };
   const out = await buildCloserDeck(fakeDb({ client: { ...CLIENT, outcome_tier: "FUNDING_PLUS_REPAIR" }, crs }), {
@@ -87,6 +103,8 @@ test("stored closer payload maps FICO, total, reasons — no invented numbers", 
   assert.equal(out.engine.afterFix, 214000);
   assert.equal(out.engine.negItems, 5);
   assert.equal(out.engine.reasons[0][0], "M2-013 · TU");
+  assert.equal(out.income_estimates.experian.annual, 97000);
+  assert.equal(out.income_estimates.equifax.annual, 81000);
 });
 
 test("empty CRS object is unavailable, not zeros", async () => {

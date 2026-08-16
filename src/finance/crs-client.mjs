@@ -33,9 +33,11 @@ import {
   CRS_PRODUCTION_HOST,
   CRS_SANDBOX_HOST,
   assertIdentityAllowed,
+  isoBirthDate,
   livePullAllowed,
   normalizeHost
 } from "./crs-identities.mjs";
+import { bureauHardErrors } from "./crs-map.mjs";
 
 export class CrsError extends Error {
   constructor(message, { status = 502, code = null, blocked = false } = {}) {
@@ -294,7 +296,7 @@ export function createCrsClient({ env = process.env, fetchImpl, now = Date.now }
       middleName: identity.middleName ?? "",
       lastName: identity.lastName ?? "",
       suffix: identity.suffix ?? "",
-      birthDate: identity.birthDate ?? "",
+      birthDate: isoBirthDate(identity.birthDate) || "",
       ssn: String(identity.ssn ?? "").replace(/\D/g, ""),
       addresses: (Array.isArray(identity.addresses) ? identity.addresses : []).map((a) => ({
         borrowerResidencyType: a?.borrowerResidencyType ?? "Current",
@@ -346,6 +348,11 @@ export function createCrsClient({ env = process.env, fetchImpl, now = Date.now }
     // receipt instead, the report is fetched by id — the vendor's own Postman
     // collection models both steps, so neither is a guess.
     if (looksLikeReport(res.body)) {
+      const hard = bureauHardErrors(res.body);
+      if (hard) {
+        return { ok: false, bureau, report: res.body, requestId, status: res.status,
+          blocked: false, error: hard };
+      }
       return { ok: true, bureau, report: res.body, requestId, status: res.status,
         blocked: false, error: null };
     }
@@ -376,6 +383,11 @@ export function createCrsClient({ env = process.env, fetchImpl, now = Date.now }
       return { ok: false, bureau, report: null, requestId, status: res.status,
         blocked: false,
         error: safeResponseError(res, "CRS returned no report for that RequestID") };
+    }
+    const hard = bureauHardErrors(res.body);
+    if (hard) {
+      return { ok: false, bureau, report: res.body, requestId, status: res.status,
+        blocked: false, error: hard };
     }
     return { ok: true, bureau, report: res.body, requestId, status: res.status,
       blocked: false, error: null };

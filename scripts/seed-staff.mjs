@@ -1,4 +1,4 @@
-// Create the six founding staff logins, idempotently.
+// Create the founding staff login (Chris only), idempotently.
 //
 //   DATABASE_URL=postgres://... STAFF_INITIAL_PASSWORD='…' node scripts/seed-staff.mjs
 //   …                                                      node scripts/seed-staff.mjs --reset-passwords

@@ -416,7 +416,7 @@
     </div>
     <div class="topbar-right">
       <div class="org-pill">Org: Fundhub</div>
-      <div class="clock">Sun Jul 26 · 2:47:09 PM ET</div>
+      <div class="clock">—</div>
       <div class="live-pill"><span class="live-dot"></span>LIVE</div>
     </div>
   </header>
@@ -1069,6 +1069,16 @@
         V.esc(V.shortWhen(row.last_at || row.last_pulse_at, Date.now()) || "never") + " ago</span></div>" +
       '<div class="ctx-row"><span class="k">Waiting on us</span><span class="v">' +
         (row.needs_reply === true ? "yes" : "no") + "</span></div>";
+    if (row.client_id && FHData.client) {
+      FHData.client(row.client_id).then(function (res) {
+        if (state.selected !== row) return;
+        var cl = (res && res.ok && res.data && res.data.client) || {};
+        var extra = "";
+        if (cl.email) extra += '<div class="ctx-row"><span class="k">Email</span><span class="v">' + V.esc(cl.email) + "</span></div>";
+        if (cl.phone) extra += '<div class="ctx-row"><span class="k">Phone</span><span class="v">' + V.esc(cl.phone) + "</span></div>";
+        if (extra) $("ctxRows").insertAdjacentHTML("beforeend", extra);
+      });
+    }
 
     $("ctxLinks").innerHTML =
       '<a class="link-btn" href="client-control-panel.html?id=' + encodeURIComponent(row.client_id) +
@@ -1117,7 +1127,13 @@
     var key = state.sendKey || (state.sendKey = "inbox-" + row.id + "-" + Date.now() + "-" +
       Math.random().toString(36).slice(2, 10));
 
-    FHData.sendMessage({ conversation_id: row.id, body: body, idempotency_key: key })
+    var payload = { body: body, idempotency_key: key };
+    if (row.id) payload.conversation_id = row.id;
+    else {
+      payload.client_id = row.client_id;
+      payload.channel = row.channel || "sms";
+    }
+    FHData.sendMessage(payload)
       .then(function (res) {
         state.sending = false;
         $("sendBtn").disabled = false;
@@ -1193,12 +1209,49 @@
 
   clearThread();
   loadList().then(function () {
+    var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    /* Deep link from the pipeline Text button: open this person's SMS thread. */
+    var deepClient = FHData.param("client_id");
+    if (deepClient && UUID_RE.test(String(deepClient).trim())) {
+      return Promise.all([
+        FHData.conversations({ client_id: deepClient, limit: 50 }),
+        FHData.client(deepClient)
+      ]).then(function (pair) {
+        var items = (pair[0].ok && pair[0].data && pair[0].data.items) || [];
+        var cl = (pair[1].ok && pair[1].data && pair[1].data.client) || {};
+        var sms = items.filter(function (t) { return /sms|text/i.test(String(t.channel || "")); })[0];
+        var pick = sms || items[0] || null;
+        var row = {
+          id: pick ? pick.id : null,
+          client_id: deepClient,
+          channel: (pick && pick.channel) || "sms",
+          first_name: cl.first_name || null,
+          last_name: cl.last_name || null,
+          needs_reply: false
+        };
+        if (row.id) {
+          openThread(row);
+          return;
+        }
+        state.selected = row;
+        $("thName").textContent = V.displayName(row);
+        $("thSub").textContent = "SMS · no thread yet";
+        $("thAv").textContent = V.initials(row);
+        $("footName").textContent = V.displayName(row);
+        $("composeChannel").textContent = "Text";
+        paintQuietNote("sms");
+        $("composeBody").disabled = false;
+        $("composeBody").placeholder = "Write to " + V.displayName(row) + "…";
+        $("sendBtn").disabled = false;
+        $("thread").innerHTML = '<div class="empty-box">No texts with them yet. Your reply below would be the first.</div>';
+        paintContext(row);
+      });
+    }
     /* Deep link from global search: ?conversation_id=<uuid> opens that thread.
        If it is not in the loaded page (older than the newest 200), open a
        stub row so the thread endpoint still runs — the list stays honest. */
     var deepId = FHData.param("conversation_id");
     if (!deepId) return;
-    var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!UUID_RE.test(String(deepId).trim())) return;
     var found = state.rows.filter(function (r) { return r.id === deepId; })[0];
     if (found) {
@@ -1215,6 +1268,19 @@
     });
   });
 })();
+</script>
+<script>
+function tickClock() {
+  var el = document.querySelector(".clock");
+  if (!el) return;
+  el.textContent = new Date().toLocaleString("en-US", {
+    weekday: "short", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", second: "2-digit",
+    timeZone: "America/New_York", timeZoneName: "short"
+  });
+}
+tickClock();
+setInterval(tickClock, 1000);
 </script>
 </body>
 </html>

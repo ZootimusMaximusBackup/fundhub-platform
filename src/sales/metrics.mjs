@@ -4,7 +4,8 @@
 
 import { BELIEFS, BELIEF_LABELS } from "./beliefs.mjs";
 import { countUnlogged, listUnloggedCalls } from "./call-outcomes.mjs";
-import { orgDemoModeEnabled, demoClause } from "../demo/exclude-demo.mjs";
+import { isDemoEmail } from "../auth/demo-logins.mjs";
+import { demoClause } from "../demo/exclude-demo.mjs";
 import { listRecentRecordings } from "./recordings.mjs";
 
 function monthWindow(now = new Date()) {
@@ -473,9 +474,53 @@ async function floorFunnel(db, { orgId, start, end }) {
   };
 }
 
+/** Owner-set: Chris is the closer even when staff.role is owner. */
+export const OWNER_SET_CLOSER = Object.freeze({
+  name: "Chris Stanbridge",
+  email: "chris@fundhub.ai"
+});
+
+const BLOCKED_CLOSER_NAMES = new Set([
+  "jordan blake",
+  "nina castellano",
+  "marcus webb",
+  "elena voss",
+  "devon marsh",
+  "crs sandbox smoke"
+]);
+
+export function isOwnerSetCloser({ name, email } = {}) {
+  const n = String(name || "").trim().toLowerCase();
+  const e = String(email || "").trim().toLowerCase();
+  return n === OWNER_SET_CLOSER.name.toLowerCase()
+    || e === OWNER_SET_CLOSER.email;
+}
+
+export function isBlockedCloserIdentity({ name, email, is_demo } = {}) {
+  if (isOwnerSetCloser({ name, email })) return false;
+  if (is_demo === true || is_demo === "true" || is_demo === "t") return true;
+  const n = String(name || "").trim();
+  const e = String(email || "").trim().toLowerCase();
+  if (isDemoEmail(e)) return true;
+  if (BLOCKED_CLOSER_NAMES.has(n.toLowerCase())) return true;
+  if (/\bdemo\b/i.test(n) || /sandbox/i.test(n) || /sandbox/i.test(e)) return true;
+  if (/^test\b/i.test(n)) return true;
+  return false;
+}
+
+export function belongsOnCloserBoard(staff = {}) {
+  if (isBlockedCloserIdentity(staff)) return false;
+  if (isOwnerSetCloser(staff)) return true;
+  return String(staff.role || "").trim().toLowerCase() === "closer";
+}
+
+export function filterCloserRoster(rows) {
+  return (rows || []).filter(belongsOnCloserBoard);
+}
+
 async function closerRoster(db, { orgId, start, end, now }) {
   const r = await db.query(
-    `SELECT s.id AS staff_id, s.name,
+    `SELECT s.id AS staff_id, s.name, s.email, s.role, s.is_demo,
             sh.started_at AS shift_started,
             COALESCE(agg.cash_cents, 0)::bigint AS cash_cents,
             COALESCE(agg.held, 0)::int AS held,
@@ -493,21 +538,30 @@ async function closerRoster(db, { orgId, start, end, now }) {
            FROM call_outcomes
           WHERE org_id = s.org_id AND staff_id = s.id
             AND logged_at >= $2 AND logged_at < $3
+            ${demoClause()}
        ) agg ON true
-      WHERE s.org_id = $1 AND s.role = 'closer' AND s.status = 'active'
+      WHERE s.org_id = $1
+        AND s.status = 'active'
+        AND (
+          lower(btrim(s.role)) = 'closer'
+          OR lower(btrim(s.email)) = '${OWNER_SET_CLOSER.email}'
+          OR lower(btrim(s.name)) = '${OWNER_SET_CLOSER.name.toLowerCase()}'
+        )
       ORDER BY cash_cents DESC, s.name`,
     [orgId, start.toISOString(), end.toISOString()]
   );
 
   const out = [];
-  for (const row of r.rows) {
+  for (const row of filterCloserRoster(r.rows)) {
     const d2f = await depositToFunded(db, {
       orgId, staffId: row.staff_id, start, end
     });
     const held = Number(row.held || 0);
     const deposits = Number(row.deposits || 0);
+    const cashCents = Number(row.cash_cents || 0);
+    const hasLive = held > 0 || deposits > 0 || cashCents > 0;
     const closeRate = rate(deposits, held);
-    let action = "Keep working the board.";
+    let action = null;
     if (d2f.rate != null && d2f.rate < 0.7 && deposits >= 3) {
       action = "Chase docs. Sells more than funds.";
     } else if (closeRate != null && closeRate < 0.25 && held >= 10) {
@@ -526,8 +580,8 @@ async function closerRoster(db, { orgId, start, end, now }) {
       calls: held,
       close_rate: closeRate,
       funded_rate: d2f.rate,
-      cash_cents: Number(row.cash_cents || 0),
-      cash_display: formatUsdFromCents(row.cash_cents),
+      cash_cents: hasLive ? cashCents : null,
+      cash_display: hasLive ? formatUsdFromCents(cashCents) : null,
       action
     });
   }
@@ -580,4 +634,4 @@ async function lateShifts(db, { orgId, now }) {
   };
 }
 
-export { formatUsdFromCents, monthWindow };
+export { formatUsdFromCents, monthWindow, closerRoster };

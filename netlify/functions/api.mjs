@@ -35,6 +35,8 @@ import authLogout from "../../api/auth/logout.mjs";
 import authSession from "../../api/auth/session.mjs";
 import authReset from "../../api/auth/reset.mjs";
 import authAdminReset from "../../api/auth/admin-reset.mjs";
+import authInvite from "../../api/auth/invite.mjs";
+import authSuspend from "../../api/auth/suspend.mjs";
 import authMagicLink from "../../api/auth/magic-link.mjs";
 import authMagicLinkVerify from "../../api/auth/magic-link-verify.mjs";
 import journeysAsk from "../../api/journeys/ask.mjs";
@@ -49,6 +51,7 @@ import dashClient from "../../api/dashboard/client.mjs";
 import dashPipeline from "../../api/dashboard/pipeline.mjs";
 import dashSeed from "../../api/dashboard/seed.mjs";
 import dashKpis from "../../api/dashboard/kpis.mjs";
+import dashClientArchive from "../../api/dashboard/client-archive.mjs";
 import health from "../../api/health.mjs";
 import partnerBrand from "../../api/partner-brand.mjs";
 import orgBrand from "../../api/org-brand.mjs";
@@ -178,6 +181,9 @@ import readAiBureauConfig from "../../api/read/ai-bureau-config.mjs";
 import proxyLaunch from "../../api/proxy/launch.mjs";
 import proxyEnd from "../../api/proxy/end.mjs";
 import readProxySessions from "../../api/read/proxy-sessions.mjs";
+import climate from "../../api/climate.mjs";
+import climateGeocode from "../../api/climate/geocode.mjs";
+import climateConfig from "../../api/climate/config.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -190,6 +196,8 @@ export const ROUTES = {
   "auth/session": authSession,
   "auth/reset": authReset,
   "auth/admin-reset": authAdminReset,
+  "auth/invite": authInvite,
+  "auth/suspend": authSuspend,
 
   /* Portal sign-in by emailed link. Routed in the same commit as the handlers,
      the migration, the template seed and the page — this map is the file that
@@ -261,6 +269,7 @@ export const ROUTES = {
   "dashboard/pipeline": dashPipeline,
   "dashboard/seed": dashSeed,
   "dashboard/kpis": dashKpis,
+  "dashboard/client-archive": dashClientArchive,
   "health": health,
   "partner-brand": partnerBrand,
   "org-brand": orgBrand,
@@ -470,6 +479,10 @@ export const ROUTES = {
   "public/partner-page": publicPartnerPage,
   "public/survey-submit": publicSurveySubmit,
   "public/partner-apply": publicPartnerApply,
+  /* Public lending-climate lead magnet. No auth — same class as survey-submit. */
+  "climate": climate,
+  "climate/geocode": climateGeocode,
+  "climate/config": climateConfig,
   "creative/generate": creativeGenerate,
   "creative/library": creativeLibrary,
   "creative/brand-kits": creativeBrandKits,

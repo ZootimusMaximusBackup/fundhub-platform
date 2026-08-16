@@ -20,6 +20,13 @@ test("branch: already locked — never overwritten", async () => {
   assert.equal(db.clients[0].custom_fields.first_touch_date, "2026-01-01");
 });
 
+test("does not overwrite a VSL magnet already stamped on the client", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: { lead_magnet_type: "VSL" } }] });
+  const res = await handle({ event: ev("entry.captured", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(res.done, true);
+  assert.equal(db.clients[0].custom_fields.lead_magnet_type, "VSL");
+});
+
 test("duplicate delivery: replaying does not change the locked value", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }] });
   const event = ev("entry.captured", {}, { id: "evt-dup-at01", clientId: "cl-1" });

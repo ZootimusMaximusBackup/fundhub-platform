@@ -38,6 +38,16 @@ test("closer call cockpit has a Present control that deep-links the contact", ()
   assert.ok(closerJs.includes("present.html?contact="));
 });
 
+test("send contract lives on the call cockpit and Present, not the wording page", () => {
+  assert.ok(closerHtml.includes('id="fh-send-contract"'));
+  assert.ok(closerHtml.includes("contract-send.js"));
+  assert.ok(closerJs.includes("FHContractSend"));
+  assert.ok(presentHtml.includes("contract-send.js"));
+  assert.ok(presentJs.includes("Send contract"));
+  assert.ok(presentJs.includes("FHContractSend"));
+  assert.ok(presentJs.includes("sendToClient"));
+});
+
 test("present cockpit can send soft pull and variable-price e-book", () => {
   assert.ok(presentJs.includes("send_soft_pull"));
   assert.ok(presentJs.includes("send_ebook"));

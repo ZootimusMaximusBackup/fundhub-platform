@@ -29,6 +29,7 @@ Google Meet is only on the **sales call** (existing closer desk) and the **endin
 | E — Call recording | this session | done | Drive index + sales-floor "Today's recordings". Meet Record → Drive link. Keys never set. |
 | F — Auto-book Meet | this session | done | `INSIGHT_MEET_BOOKING_URL` on funded task + `booking.created` stamps Meet link. Sales call stays on apply.fundhub.ai/funding-book-call. |
 | G — Deploy | this session | done | Site live; git builds unblocked (secret scan redaction in e2e-verify-run4.md). |
+| H — Set Cal interview URL | unclaimed | later | Not needed now. Set Netlify `INSIGHT_MEET_BOOKING_URL` to the Cal.com post-funding interview link so funded tasks show the booking URL. |
 
 ## Frozen response shape (C)
 

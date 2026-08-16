@@ -268,7 +268,7 @@ export async function composeAndSend(db, input = {}, options = {}) {
      ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING
      RETURNING id, created_at`,
     [orgId, target.clientId, target.conversationId, target.channel, text,
-     providerRef, toAddress, subjectLine, staffId, att]
+     providerRef, toAddress, subjectLine, staffId, JSON.stringify(att || [])]
   );
 
   /* A deduped send is not a failure and not a second message. The caller sent

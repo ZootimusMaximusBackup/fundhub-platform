@@ -4,6 +4,8 @@
 //
 // Pure functions over rows that endpoint already fetches, so this is testable
 // without a database and adds no queries.
+
+import { pickCreditScore } from "../finance/crs-map.mjs";
 //
 // NOTHING IS INVENTED. Every value is derived from something the analyzer
 // actually stored. crs_results.result is the raw analysis.completed payload
@@ -11,22 +13,52 @@
 // from there if the analyzer sent them and reported as null if it did not — a
 // screen showing "—" is correct; a screen showing a made-up 720 is not.
 
-/* triMerge — the three bureau scores from the most recent CRS result.
-   Returns { experian, equifax, transunion, spread, asOf, source } with nulls
-   where the analyzer sent nothing. */
+/* FICO range only. IncomeView / other bureau add-ons (e.g. Equifax 42) are
+   not credit scores and must not paint on a card. */
+const FICO_MIN = 300;
+const FICO_MAX = 850;
+const FICO_MODEL = /fico|fair\s*isaac/i;
+
+function ficoOf(value, model) {
+  const n = num(value);
+  if (n === null || n < FICO_MIN || n > FICO_MAX) return null;
+  if (model && String(model).trim() && !FICO_MODEL.test(String(model))) return null;
+  return n;
+}
+
+function scoresFromResult(result) {
+  const s = (result && result.scores) || {};
+  const m = (result && (result.scoreModels || result.score_models)) || {};
+  const fromCache = {
+    experian: ficoOf(s.ex ?? s.experian, m.ex ?? m.experian),
+    equifax: ficoOf(s.eq ?? s.equifax, m.eq ?? m.equifax),
+    transunion: ficoOf(s.tu ?? s.transunion, m.tu ?? m.transunion)
+  };
+  const bureaus = result && result.bureaus;
+  if (!bureaus || typeof bureaus !== "object") return fromCache;
+  return {
+    experian: fromCache.experian ?? ficoFromBureau(bureaus.EX),
+    equifax: fromCache.equifax ?? ficoFromBureau(bureaus.EQ),
+    transunion: fromCache.transunion ?? ficoFromBureau(bureaus.TU)
+  };
+}
+
+function ficoFromBureau(report) {
+  if (!report || typeof report !== "object") return null;
+  const { value, model } = pickCreditScore(report.scores);
+  return ficoOf(value, model);
+}
+
+/* triMerge — the three bureau FICOs from the most recent CRS result that
+   actually has one. Returns { experian, equifax, transunion, spread, asOf, source }
+   with nulls where the analyzer sent nothing usable. */
 export function triMerge(crsResults = []) {
   const empty = { experian: null, equifax: null, transunion: null,
                   spread: null, asOf: null, source: null };
   const latest = latestWithScores(crsResults);
   if (!latest) return empty;
 
-  const s = latest.result.scores || {};
-  // The analyzer's own key names, and the long forms in case a later version
-  // spells them out. No other guessing: an unrecognised shape reads as null.
-  const experian   = num(s.ex ?? s.experian);
-  const equifax    = num(s.eq ?? s.equifax);
-  const transunion = num(s.tu ?? s.transunion);
-
+  const { experian, equifax, transunion } = latest.scores;
   const present = [experian, equifax, transunion].filter((v) => v !== null);
   return {
     experian, equifax, transunion,
@@ -39,8 +71,12 @@ export function triMerge(crsResults = []) {
 function latestWithScores(crsResults) {
   for (const r of [...(crsResults || [])].sort(byNewest)) {
     const result = safeObject(r.result);
-    if (result && result.scores && typeof result.scores === "object") {
-      return { ...r, result };
+    if (!result) continue;
+    // Sandbox fixtures are not this person's credit file. Never paint them.
+    if (String(result.environment || "").toLowerCase() === "sandbox") continue;
+    const scores = scoresFromResult(result);
+    if (scores.experian != null || scores.equifax != null || scores.transunion != null) {
+      return { ...r, result, scores };
     }
   }
   return null;
@@ -178,12 +214,103 @@ export function openBlockers({ client = {}, tasks = [], fundingRounds = [], invo
   return blockers;
 }
 
+/* Income Insight (Experian) / IncomeView+ (Equifax) — yearly income GUESSES
+   from the credit file. Not bank balances. Not FICO.
+   CRS returns the estimate as a short number (e.g. 97 → $97,000/year). */
+const INCOME_EX = /income\s*insight/i;
+const INCOME_EQ = /income\s*view/i;
+
+function incomeRowFromScores(scores, modelRe) {
+  for (const s of (Array.isArray(scores) ? scores : [])) {
+    const model = String(s?.modelName ?? "").trim();
+    if (!modelRe.test(model)) continue;
+    const raw = num(s?.scoreValue);
+    if (raw === null || raw <= 0) continue;
+    /* Bureau income products return thousands of dollars as the score. */
+    const annual = raw < 1000 ? Math.round(raw * 1000) : Math.round(raw);
+    if (annual < 1000 || annual > 2_000_000) continue;
+    return { annual, raw, model };
+  }
+  return null;
+}
+
+export function incomeEstimates(crsResults = []) {
+  const empty = { experian: null, equifax: null, asOf: null };
+  for (const r of [...(crsResults || [])].sort(byNewest)) {
+    const result = safeObject(r.result);
+    if (!result) continue;
+    if (String(result.environment || "").toLowerCase() === "sandbox") continue;
+    const bureaus = result.bureaus && typeof result.bureaus === "object" ? result.bureaus : {};
+    const experian = incomeRowFromScores(bureaus.EX?.scores, INCOME_EX);
+    const equifax = incomeRowFromScores(bureaus.EQ?.scores, INCOME_EQ);
+    if (experian || equifax) {
+      return { experian, equifax, asOf: r.created_at || result.pulledAt || null };
+    }
+  }
+  return empty;
+}
+
 /* clientDetailExtras — everything above, in one call, for the endpoint. */
-export function clientDetailExtras({ client, crsResults, tasks, fundingRounds, invoices } = {}) {
+/* Business credit as stored — Intelliscore / FSR are 1–100, not FICO.
+   Missing data stays null. Nothing is invented. */
+function firstScore100(values) {
+  for (const v of values) {
+    const n = num(v);
+    if (n !== null && n >= 0 && n <= 100) return n;
+  }
+  return null;
+}
+
+export function businessCredit({ client = {}, businesses = [] } = {}) {
+  const cf = client.custom_fields || {};
+  const biz = businesses[0] || null;
+  const entity = safeObject(biz && biz.entity_data) || {};
+  const scores = safeObject(entity.scores) || {};
+  const commercial = safeObject(entity.commercialScore) || {};
+  return {
+    name: biz && biz.name ? String(biz.name) : null,
+    intelliscore: firstScore100([
+      scores.intelliscore, entity.intelliscore, commercial.score,
+      cf.biz_intelliscore, cf.intelliscore
+    ]),
+    fsr: firstScore100([scores.fsr, entity.fsr, cf.biz_fsr, cf.fsr])
+  };
+}
+
+export function latestBooking({ client = {}, tasks = [] } = {}) {
+  const rows = [...(tasks || [])].filter((t) => {
+    const src = String(t.source_workflow || "");
+    const title = String(t.title || "");
+    return src === "calcom" || /booked|strategy session/i.test(title);
+  }).sort((a, b) => new Date(b.due_at || b.created_at || 0) - new Date(a.due_at || a.created_at || 0));
+  const t = rows[0] || null;
+  const when = t && t.due_at ? t.due_at : null;
+  const past = when ? new Date(when) < new Date() : false;
+  const outcome = client.custom_fields && client.custom_fields.call_outcome
+    ? String(client.custom_fields.call_outcome)
+    : null;
+  if (!t && !outcome) return { when: null, title: null, status: null };
+  let status = null;
+  if (outcome === "no_show") status = "no_show";
+  else if (t && t.done) status = "done";
+  else if (past) status = "past";
+  else if (t) status = "upcoming";
+  else if (outcome === "booked") status = "booked";
+  return {
+    when,
+    title: t ? String(t.title || "Booked call") : null,
+    status
+  };
+}
+
+export function clientDetailExtras({ client, crsResults, tasks, fundingRounds, invoices, businesses } = {}) {
   return {
     tier_reasoning: tierReasoning(client, crsResults),
     tri_merge: triMerge(crsResults),
     utilisation: utilisation(crsResults, client),
+    income_estimates: incomeEstimates(crsResults),
+    business_credit: businessCredit({ client, businesses }),
+    latest_booking: latestBooking({ client, tasks }),
     open_blockers: openBlockers({ client, tasks, fundingRounds, invoices })
   };
 }

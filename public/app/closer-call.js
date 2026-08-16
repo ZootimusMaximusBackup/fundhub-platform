@@ -24,6 +24,15 @@
     if (r == null || !Number.isFinite(Number(r))) return "—";
     return Math.round(Number(r) * 100) + "%";
   }
+  function humanNote(s) {
+    if (s == null || s === "") return "";
+    var t = String(s);
+    if (/\/api\/|_cents|staff_targets|commission_ledger|payload|band field|numbered field/i.test(t)) {
+      return "";
+    }
+    return t;
+  }
+
   function elapsed(ms) {
     if (!ms) return "";
     var m = Math.floor(ms / 60000);
@@ -72,14 +81,14 @@
       var lb = el.querySelector(".lb"); var vl = el.querySelector(".vl"); var sb = el.querySelector(".sb");
       if (lb) lb.textContent = label;
       if (vl) vl.textContent = value;
-      if (sb) sb.textContent = sub || "";
+      if (sb) sb.textContent = humanNote(sub) || "";
     }
     var today = kpis.cash_today_cents || {};
     kpi(0, "Cash today", today.display || money(today.cents), (today.deposits || 0) + " deposits");
     kpi(1, "Calls held", String(kpis.calls_held != null ? kpis.calls_held : "—"), (kpis.no_shows || 0) + " no-shows");
     kpi(2, "Close rate", pct(kpis.close_rate), "this month");
-    kpi(3, "Commission MTD", "—", kpis.commission_reason || "see My numbers");
-    kpi(4, "Pace to target", "—", "target from staff_targets on My numbers");
+    kpi(3, "Commission MTD", "—", humanNote(kpis.commission_reason) || "Open My numbers");
+    kpi(4, "Pace to target", "—", "Open My numbers");
     kpi(5, "Unlogged", String(kpis.unlogged != null ? kpis.unlogged : "—"), "clear before next call");
     if (kpiEls[5] && kpis.unlogged > 0) kpiEls[5].querySelector(".vl").style.color = "#C25B4E";
 
@@ -98,9 +107,14 @@
       if (bn) bn.textContent = "Waiting on UnderwriteIQ";
     });
     var lever = $(".lever");
-    if (lever) lever.textContent = "Projections load from /api/read/underwrite. Matched lenders: " +
-      (data.underwrite && data.underwrite.matched_lenders != null ? data.underwrite.matched_lenders : "—") +
-      (data.underwrite && data.underwrite.lenders_reason ? " — " + data.underwrite.lenders_reason : "");
+    if (lever) {
+      var n = data.underwrite && data.underwrite.matched_lenders;
+      lever.textContent = (n == null)
+        ? "Funding bands stay a dash until the report has a number."
+        : (n === 0
+          ? "No lenders match this file yet."
+          : n + " lender" + (n === 1 ? "" : "s") + " match this file.");
+    }
 
     // Credit panel
     var tables = document.querySelectorAll(".panel table");
@@ -109,7 +123,20 @@
         tables[0].innerHTML = "<tr><td colspan='2'>" + (credit.reason || "No credit pull") + "</td></tr>";
       } else {
         var rows = "";
-        if (credit.scores) rows += "<tr><td>Scores</td><td class='hi'>" + JSON.stringify(credit.scores).slice(0, 80) + "</td></tr>";
+        if (credit.scores && typeof credit.scores === "object") {
+          var ex = credit.scores.experian != null ? credit.scores.experian : credit.scores.EX;
+          var eq = credit.scores.equifax != null ? credit.scores.equifax : credit.scores.EQ;
+          var tu = credit.scores.transunion != null ? credit.scores.transunion : credit.scores.TU;
+          if (ex != null || eq != null || tu != null) {
+            rows += "<tr><td>Scores</td><td class='hi'>EX " + (ex == null ? "—" : ex) +
+              " · EQ " + (eq == null ? "—" : eq) +
+              " · TU " + (tu == null ? "—" : tu) + "</td></tr>";
+          } else {
+            rows += "<tr><td>Scores</td><td class='hi'>—</td></tr>";
+          }
+        } else {
+          rows += "<tr><td>Scores</td><td class='hi'>—</td></tr>";
+        }
         rows += "<tr><td>Utilization</td><td>" + (credit.utilization != null ? credit.utilization + "%" : "—") + "</td></tr>";
         rows += "<tr><td>Inquiries · 6mo</td><td>" + (credit.inquiries_6mo != null ? credit.inquiries_6mo : "—") + "</td></tr>";
         rows += "<tr><td>Derogatories</td><td>" + (credit.derogatories != null ? credit.derogatories : "—") + "</td></tr>";
@@ -225,6 +252,113 @@
     });
   }
 
+  function wireContractSend() {
+    var btn = document.getElementById("fh-send-contract");
+    var panel = document.getElementById("fh-contract-panel");
+    var sel = document.getElementById("fh-contract-tpl");
+    var blanks = document.getElementById("fh-contract-blanks");
+    var go = document.getElementById("fh-contract-go");
+    var copy = document.getElementById("fh-contract-copy");
+    var link = document.getElementById("fh-contract-link");
+    var msg = document.getElementById("fh-contract-msg");
+    if (!btn || !panel) return;
+    if (!clientId) {
+      btn.remove();
+      panel.remove();
+      return;
+    }
+    var wordings = [];
+    var lastLink = "";
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+
+    function setMsg(t) { if (msg) msg.textContent = t || ""; }
+
+    function selected() {
+      var id = sel && sel.value;
+      for (var i = 0; i < wordings.length; i++) if (wordings[i].id === id) return wordings[i];
+      return null;
+    }
+
+    function paintBlanks() {
+      if (!blanks) return;
+      var t = selected();
+      var fields = (t && t.manual_fields) || [];
+      if (!fields.length) { blanks.innerHTML = ""; return; }
+      blanks.innerHTML = fields.map(function (f) {
+        return '<div style="margin-top:10px"><label for="fh-blank-' + esc(f.key) + '" style="display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin-bottom:5px">' +
+          esc(f.label || f.key) + (f.required ? " *" : "") + "</label>" +
+          '<input id="fh-blank-' + esc(f.key) + '" data-blank="' + esc(f.key) + '" type="text" style="width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px"></div>';
+      }).join("");
+    }
+
+    function blankValues() {
+      var out = {};
+      if (!blanks) return out;
+      Array.prototype.forEach.call(blanks.querySelectorAll("[data-blank]"), function (el) {
+        out[el.getAttribute("data-blank")] = el.value;
+      });
+      return out;
+    }
+
+    function fillSelect(items) {
+      wordings = items || [];
+      if (!sel) return;
+      if (!wordings.length) {
+        sel.innerHTML = '<option value="">No wordings in use</option>';
+        return;
+      }
+      sel.innerHTML = wordings.map(function (t) {
+        return '<option value="' + esc(t.id) + '">' + esc(t.name || t.template_key || "Wording") + "</option>";
+      }).join("");
+      paintBlanks();
+    }
+
+    btn.addEventListener("click", function () {
+      var open = panel.hasAttribute("hidden");
+      if (!open) { panel.setAttribute("hidden", ""); return; }
+      panel.removeAttribute("hidden");
+      setMsg("Loading wordings…");
+      if (!window.FHContractSend) { setMsg("Send helper failed to load."); return; }
+      window.FHContractSend.listWordings().then(function (r) {
+        if (!r.ok) { setMsg(r.error || "Could not load wordings."); return; }
+        fillSelect(r.items);
+        setMsg(r.items.length ? "Pick a wording, then Send. Copy the link after." : "No wordings in use. Make one on the Contracts page.");
+      });
+    });
+    if (sel) sel.addEventListener("change", paintBlanks);
+    if (go) go.addEventListener("click", function () {
+      var t = selected();
+      if (!t) { setMsg("Pick a wording first."); return; }
+      go.disabled = true;
+      setMsg("Sending…");
+      window.FHContractSend.sendToClient({
+        clientId: clientId, templateId: t.id, values: blankValues()
+      }).then(function (r) {
+        go.disabled = false;
+        if (!r.ok) { setMsg(r.error || "Could not send."); return; }
+        lastLink = r.link || "";
+        if (link) {
+          link.value = lastLink;
+          link.style.display = lastLink ? "block" : "none";
+        }
+        if (copy) copy.disabled = !lastLink;
+        setMsg(r.message || "Sent. Copy the link and give it to them.");
+        if (lastLink) window.FHContractSend.copyText(lastLink);
+      });
+    });
+    if (copy) copy.addEventListener("click", function () {
+      if (!lastLink) return;
+      window.FHContractSend.copyText(lastLink).then(function (ok) {
+        copy.textContent = ok ? "Copied" : "Copy failed";
+        setTimeout(function () { copy.textContent = "Copy link"; }, 1400);
+      });
+    });
+  }
+
   async function saveOutcome() {
     if (state.saving) return;
     if (!clientId) { alert("No client on this call."); return; }
@@ -283,9 +417,9 @@
     var report = d;
     var has = report.funding || report.capacity || report.projections;
     if (!has) {
-      setBand(0, null, "UnderwriteIQ loaded — no conservative band field");
+      setBand(0, null, "No conservative number yet");
       setBand(1, null, "Open Client Control Panel for the full report");
-      setBand(2, null, "Optimization path not a numbered field on this payload");
+      setBand(2, null, "No optimized number yet");
       var lever = $(".lever");
       if (lever && Array.isArray(report.suggestions)) {
         lever.textContent = report.suggestions.slice(0, 2).map(function (s) {
@@ -303,6 +437,10 @@
     if (!window.FHData) { setEmpty("data.js failed to load"); return; }
     if (!clientId) {
       setEmpty("Pick a client from the pipeline to open the call cockpit.");
+      var sendBtn = document.getElementById("fh-send-contract");
+      var sendPanel = document.getElementById("fh-contract-panel");
+      if (sendBtn) sendBtn.remove();
+      if (sendPanel) sendPanel.remove();
       return;
     }
     try { sessionStorage.setItem("fh_pending_disposition", clientId); } catch (e) {}
@@ -317,22 +455,34 @@
     paint(r.data);
     loadUnderwrite();
 
-    var join = document.querySelector(".who button.k");
+    var join = document.getElementById("fh-join");
     if (join) {
-      join.addEventListener("click", function () {
-        var next = (state.data && state.data.up_next && state.data.up_next[0]);
-        // Prefer meeting_url on current task if we had one — open calendar otherwise.
-        location.href = "calendar.html?client_id=" + encodeURIComponent(clientId);
-      });
+      var url = (r.data && r.data.join_url) || "";
+      if (url) {
+        join.disabled = false;
+        join.removeAttribute("title");
+        join.addEventListener("click", function () {
+          window.open(url, "_blank", "noopener");
+        });
+      } else {
+        join.disabled = true;
+        join.title = "No call link on this appointment";
+      }
     }
     var present = document.getElementById("fh-present");
     if (present && clientId) {
       present.addEventListener("click", function () {
-        location.href = "present.html?contact=" + encodeURIComponent(clientId);
+        // New tab so the closer keeps the cockpit and can split-screen the deck.
+        window.open(
+          "present.html?contact=" + encodeURIComponent(clientId),
+          "_blank",
+          "noopener,noreferrer"
+        );
       });
     } else if (present) {
       present.remove();
     }
+    wireContractSend();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

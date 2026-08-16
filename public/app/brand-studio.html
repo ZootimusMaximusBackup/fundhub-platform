@@ -500,6 +500,27 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     var acct = JSON.parse(localStorage.getItem("fh_account") || "null");
     if (!partnerId && acct && acct.partnerId) partnerId = acct.partnerId;
   } catch (e) {}
+  /* Login never writes fh_account. A partner session carries partner_id on
+     GET /api/auth/session — adopt it so Brand Studio opens in partner mode
+     without a staff person pasting ?partner_id=. */
+  if (!partnerId) {
+    try {
+      var tok = localStorage.getItem("fh_token") || "";
+      if (tok && tok !== "demo") {
+        fetch("/api/auth/session", {
+          headers: { accept: "application/json", authorization: "Bearer " + tok }
+        }).then(function (r) { return r.json().catch(function () { return {}; }); })
+          .then(function (d) {
+            var id = d && d.staff && (d.staff.partner_id || d.staff.partnerId);
+            if (!id) return;
+            var u = new URL(location.href);
+            if (u.searchParams.get("partner_id") === String(id)) return;
+            u.searchParams.set("partner_id", String(id));
+            location.replace(u.pathname + u.search + u.hash);
+          }).catch(function () {});
+      }
+    } catch (e) {}
+  }
   var MODE = partnerId ? "partner" : "org";
   KEY = MODE === "partner" ? "fh_partner_brand" : "fh_org_brand";
 

@@ -95,6 +95,9 @@
   .main-col{background:var(--paper);overflow-y:auto;padding:12px 16px 16px;}
   .main-col::-webkit-scrollbar{width:8px;}
   .main-col::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px;}
+  .side-col{background:var(--paper);overflow-y:auto;padding:12px 14px 16px;}
+  .side-col::-webkit-scrollbar{width:8px;}
+  .side-col::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px;}
 
   .group{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px 14px;margin-bottom:12px;}
   .group-title{font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
@@ -142,14 +145,14 @@
   }
 
   /* ---------- sidebar: actions ---------- */
-  .side-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin:0 0 8px 0;}
+  .side-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text);margin:0 0 8px 0;}
   .action-btn{
     display:flex;align-items:center;justify-content:space-between;width:100%;
-    background:var(--ink);color:var(--dark-text);border:none;border-radius:6px;
-    padding:9px 12px;margin-bottom:7px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;
-    cursor:default;
+    background:var(--surface);color:var(--text);border:1px solid var(--ink);border-radius:6px;
+    padding:10px 12px;margin-bottom:7px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;
+    cursor:default;text-decoration:none;
   }
-  .action-btn .arrow{color:var(--dark-text-dim);}
+  .action-btn .arrow{color:var(--text);}
   .action-btn.confirm-required{background:#1C1C20;}
   .action-btn.confirm-required .arrow{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:#F5CE8F;}
   .action-error{
@@ -193,7 +196,7 @@
 
   /* ---------- interaction states ---------- */
   .action-btn{cursor:pointer;transition:background .12s,opacity .12s;}
-  .action-btn:hover{background:#1C1C20;}
+  .action-btn:hover{background:var(--soft);}
   .action-btn:focus-visible,.link-btn:focus-visible,.group-title.tog:focus-visible{
     outline:2px solid var(--blue-line);outline-offset:2px;
   }
@@ -384,7 +387,7 @@
     </div>
     <div class="topbar-right">
       <div class="org-pill">Org: Fundhub</div>
-      <div class="clock">Sun Jul 26 · 2:47:09 PM ET</div>
+      <div class="clock" id="ccp-clock">—</div>
       <div class="live-pill"><span class="live-dot"></span>LIVE</div>
     </div>
   </header>
@@ -392,19 +395,18 @@
 
   <div class="record-head">
     <div class="record-id">
-      <div class="record-name">Derek Owusu</div>
-      <div class="record-key">CLI-00482 · Funding: Card Stacking</div>
+      <div class="record-name" id="ccp-name">Loading…</div>
+      <div class="record-key" id="ccp-key">Open with ?id=&lt;client id&gt;</div>
     </div>
     <div class="record-fields">
-      <div class="rf-tile"><div class="rf-label">Main Status</div><div><span class="status-badge-lg">Docs Received</span></div></div>
-      <div class="rf-tile"><div class="rf-label">Prequal</div><div class="rf-value">Approved</div></div>
-      <div class="rf-tile"><div class="rf-label">Total Approved</div><div class="rf-value">$46,500</div></div>
-      <div class="rf-tile"><div class="rf-label">Open Inquiries</div><div class="rf-value">2</div></div>
-      <div class="rf-tile"><div class="rf-label">Inquiry Removal</div><div class="rf-value" data-ir-case>—</div></div>
-      <div class="rf-tile"><div class="rf-label">Owner</div>
-        <div class="rf-value" style="font-family:'Inter',sans-serif;font-size:12px;">
-          <span class="av human">MW</span> Marcus Webb</div></div>
-      <div class="rf-tile"><div class="rf-label">Funding Round</div><div class="rf-value">#2</div></div>
+      <div class="rf-tile"><div class="rf-label">Main Status</div><div><span class="status-badge-lg" id="ccp-status">—</span></div></div>
+      <div class="rf-tile"><div class="rf-label">Prequal</div><div class="rf-value" id="ccp-prequal">—</div></div>
+      <div class="rf-tile"><div class="rf-label">Total Approved</div><div class="rf-value" id="ccp-approved">—</div></div>
+      <div class="rf-tile"><div class="rf-label">Open Inquiries</div><div class="rf-value" id="ccp-inquiries">—</div></div>
+      <div class="rf-tile"><div class="rf-label">Inquiry Removal</div><div class="rf-value" data-ir-case id="ccp-ir">—</div></div>
+      <div class="rf-tile"><div class="rf-label">Scores</div>
+        <div class="rf-value" id="ccp-scores" style="font-family:'JetBrains Mono',monospace;font-size:12px;">—</div></div>
+      <div class="rf-tile"><div class="rf-label">Funding Round</div><div class="rf-value" id="ccp-round">—</div></div>
     </div>
   </div>
 
@@ -412,32 +414,22 @@
     <div class="main-col">
 
       <div class="group">
-        <div class="blockers-panel">
+        <div class="blockers-panel" id="ccp-blockers-panel">
           <div class="na-head">
             <div>
               <div class="na-eyebrow">Next Action</div>
-              <div class="na-main">Call Derek and ask him for the statements and the voided check</div>
+              <div class="na-main" id="ccp-next-action">—</div>
             </div>
-            <div class="blocker-age-wrap">
-              <span class="blocker-age">2d 6h</span>
+            <div class="blocker-age-wrap" id="ccp-blocker-age-wrap" hidden>
+              <span class="blocker-age" id="ccp-blocker-age"></span>
               <span class="blocker-age-label">blocked</span>
             </div>
           </div>
 
-          <div class="na-why">Why it hasn't happened — 1 active blocker</div>
-          <div class="blocker-card">
-            <div class="blocker-top">
-              <div>
-                <div class="blocker-reason">Missing Documents</div>
-                <div class="blocker-detail">Two months of bank statements and a voided check. Asked
-                  2 days ago; he hasn't sent them.</div>
-              </div>
-            </div>
-          </div>
-          <div class="status-chip-row">
-            <div class="status-chip"><span class="dot"></span>No fraud alert</div>
-            <div class="status-chip"><span class="dot"></span>No security freeze</div>
-            <div class="status-chip neutral"><span class="dot"></span>Credit pulled 3 days ago</div>
+          <div class="na-why" id="ccp-why-label" hidden>Why it hasn't happened</div>
+          <div id="ccp-blocker-list"></div>
+          <div class="status-chip-row" id="ccp-chips">
+            <div class="status-chip neutral"><span class="dot"></span><span id="ccp-chip-credit">Credit —</span></div>
           </div>
         </div>
       </div>
@@ -466,10 +458,10 @@
         </button>
         <div class="group-body" id="hold-body" hidden>
           <div class="kv-grid">
-            <div class="kv"><div class="kv-label">Credit Status</div><div class="kv-value">Pulled 3 days ago</div></div>
-            <div class="kv"><div class="kv-label">Missing Docs</div><div class="kv-value">Bank statements and a voided check</div></div>
-            <div class="kv"><div class="kv-label">On Hold Because</div><div class="kv-value">He hasn't sent his documents yet</div></div>
-            <div class="kv"><div class="kv-label">Next Action</div><div class="kv-value">Call him and ask for the documents</div></div>
+            <div class="kv"><div class="kv-label">Credit Status</div><div class="kv-value" id="ccp-credit-status">—</div></div>
+            <div class="kv"><div class="kv-label">Income (Experian)</div><div class="kv-value" id="ccp-income-ex">—</div></div>
+            <div class="kv"><div class="kv-label">On Hold Because</div><div class="kv-value" id="ccp-hold-reason">—</div></div>
+            <div class="kv"><div class="kv-label">Income (Equifax)</div><div class="kv-value" id="ccp-income-eq">—</div></div>
           </div>
         </div>
       </div>
@@ -481,10 +473,10 @@
         </button>
         <div class="group-body" id="details-body" hidden>
           <div class="details-grid">
-            <div class="kv"><div class="kv-label">Email</div><div class="kv-value">derek.owusu@outlook.com</div></div>
-            <div class="kv"><div class="kv-label">Phone</div><div class="kv-value mono">(614) 555-0148</div></div>
-            <div class="kv"><div class="kv-label">Personal State</div><div class="kv-value">Ohio</div></div>
-            <div class="kv"><div class="kv-label">Business State</div><div class="kv-value">Ohio</div></div>
+            <div class="kv"><div class="kv-label">Email</div><div class="kv-value" id="ccp-email">—</div></div>
+            <div class="kv"><div class="kv-label">Phone</div><div class="kv-value mono" id="ccp-phone">—</div></div>
+            <div class="kv"><div class="kv-label">Tier</div><div class="kv-value" id="ccp-tier">—</div></div>
+            <div class="kv"><div class="kv-label">Path</div><div class="kv-value" id="ccp-path">—</div></div>
           </div>
           <div class="kv-label" style="margin-bottom:5px;">Notes (editable)</div>
           <textarea class="notes-box" id="notes"
@@ -522,31 +514,26 @@
 
       <div class="side-title">Funding · Apply</div>
       <div id="fh-funding-apply" style="margin-bottom:14px;padding:10px 12px;border:1px solid var(--line,#E4E4E7);border-radius:10px;background:#fff">
-        <div style="font:700 10px/1 var(--mono,ui-monospace);letter-spacing:.1em;text-transform:uppercase;color:var(--gray,#71717A)">Residential proxy door</div>
+        <div style="font:700 10px/1 var(--mono,ui-monospace);letter-spacing:.1em;text-transform:uppercase;color:var(--gray,#71717A)">Apply door</div>
         <div id="fh-funding-apply-status" style="margin-top:6px;font-size:12.5px;color:var(--gray,#71717A)">Open with ?id=&lt;client&gt; to load matching lenders.</div>
         <div id="fh-funding-apply-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
-        <p style="margin:8px 0 0;font-size:11px;color:var(--gray,#71717A)">Apply verifies an exit IP near the client before the bank URL opens. Extension = one-click; without it, copyable proxy settings (routing not claimed active). Chrome proxy is profile-wide; PAC limits to the lender host.</p>
+        <p style="margin:8px 0 0;font-size:11px;color:var(--gray,#71717A)">Shows lenders that fit this file. Apply opens the bank page when a URL is on file.</p>
       </div>
 
       <div class="side-title">Actions</div>
-      <div class="action-error" id="equifax-error">
-        <span>⚠</span>
-        <span><b>Pull Equifax failed</b>Equifax isn't responding · last tried 1:47 PM · retry below</span>
-      </div>
-      <button class="action-btn" data-act data-done="pulled 2:47 PM">Pull TransUnion <span class="arrow">→</span></button>
-      <button class="action-btn" data-act data-done="pulled 2:47 PM">Pull Experian <span class="arrow">→</span></button>
-      <button class="action-btn" data-act data-done="pulled 2:47 PM" data-clears="#equifax-error">Pull Equifax <span class="arrow">retry</span></button>
-      <button class="action-btn" data-act data-done="queued 2:47 PM">Issue Inquiry Removal <span class="arrow">→</span></button>
-      <button class="action-btn confirm-required" data-act data-confirm="confirm?" data-done="6 apps generated">Generate Apps <span class="arrow">confirm</span></button>
+      <p id="ccp-actions-note" style="font-size:13px;line-height:1.45;color:var(--text);margin:0 0 10px;">Bureau pulls run from the closer deck. These buttons open the live file — they do not fake a pull.</p>
+      <a class="action-btn" id="ccp-link-pipeline" href="pipeline.html">Open Pipeline <span class="arrow">↗</span></a>
+      <a class="action-btn" id="ccp-link-present" href="present.html">Open Closer Deck <span class="arrow">↗</span></a>
+      <a class="action-btn" id="ccp-link-messaging" href="messaging.html">Open Messaging <span class="arrow">↗</span></a>
 
       <details class="more" id="more-menu">
         <summary>More <span class="arrow">⌄</span></summary>
         <div class="more-body">
-          <button class="link-btn" type="button" data-open="funding">Open Funding Matrix <span class="arrow">↗</span></button>
-          <button class="link-btn" type="button" data-open="credit">Open Credit Snapshot <span class="arrow">↗</span></button>
-          <button class="link-btn" type="button" data-open="bank">Open Bank Inbox <span class="arrow">↗</span></button>
-          <button class="link-btn" type="button" data-open="ghl" disabled title="No GHL contact link on file">GHL Contact <span class="arrow">↗</span></button>
-          <button class="link-btn" type="button" data-open="raw">Raw Report <span class="arrow">↗</span></button>
+          <a class="link-btn" id="ccp-link-lenders" href="lenders.html">Open Funding Matrix <span class="arrow">↗</span></a>
+          <a class="link-btn" id="ccp-link-present2" href="present.html">Open Credit Snapshot <span class="arrow">↗</span></a>
+          <button class="link-btn" type="button" disabled title="Not wired on this screen">Open Bank Inbox <span class="arrow">↗</span></button>
+          <button class="link-btn" type="button" disabled title="GHL cut over — use Messaging">GHL Contact <span class="arrow">↗</span></button>
+          <button class="link-btn" type="button" disabled title="Raw bureau PDF not linked here yet">Raw Report <span class="arrow">↗</span></button>
         </div>
       </details>
 
@@ -557,10 +544,10 @@
         </button>
         <div class="group-body" id="facts-body" hidden>
           <div class="facts-list">
-            <div class="fact-row"><span class="k">Last Credit Pull</span><span class="v">Jul 23, 2026</span></div>
-            <div class="fact-row"><span class="k">Primary Snapshot Source</span><span class="v">TransUnion</span></div>
-            <div class="fact-row"><span class="k">Funding Round</span><span class="v">#2</span></div>
-            <div class="fact-row"><span class="k">Finalized</span><span class="v">No</span></div>
+            <div class="fact-row"><span class="k">Last Credit Pull</span><span class="v" id="ccp-last-pull">—</span></div>
+            <div class="fact-row"><span class="k">Scores</span><span class="v" id="ccp-facts-scores">—</span></div>
+            <div class="fact-row"><span class="k">Funding Round</span><span class="v" id="ccp-facts-round">—</span></div>
+            <div class="fact-row"><span class="k">Funded</span><span class="v" id="ccp-facts-funded">—</span></div>
           </div>
         </div>
       </div>
@@ -569,10 +556,10 @@
   </main>
 
   <footer class="statusbar">
-    <span>FUNDHUB-CCP · v1</span>
-    <span>ORG: fundhub</span>
-    <span>CLI-00482</span>
-    <span>notes save as you type</span>
+    <span>FUNDHUB-CCP · live</span>
+    <span id="ccp-footer-org">ORG: —</span>
+    <span id="ccp-footer-id">—</span>
+    <span>notes do not save from this screen</span>
   </footer>
 
 </div>
@@ -584,91 +571,7 @@
 </script>
 
 <script>
-/* ───────────────────────────────────────────────────────────────────────────
-   Client Control Panel — wireframe behaviour. No backend; every result is
-   simulated locally so the states are walkable.
-   ─────────────────────────────────────────────────────────────────────────── */
-
-/* ── ACTIONS ───────────────────────────────────────────────────────────────
-   idle → (armed, only if data-confirm) → loading → done | failed
-   The button's own label never changes; the .arrow slot carries the state.  */
-(function(){
-  var armed = null;
-
-  function arrowOf(b){ return b.querySelector('.arrow'); }
-
-  function disarm(b){
-    if(!b) return;
-    b.classList.remove('armed');
-    arrowOf(b).textContent = b.dataset.rest;
-    var x = b.querySelector('.cancel');
-    if(x) x.remove();
-    if(armed === b) armed = null;
-  }
-
-  function arm(b){
-    disarm(armed);
-    armed = b;
-    b.dataset.rest = arrowOf(b).textContent;
-    b.classList.add('armed');
-    arrowOf(b).textContent = b.dataset.confirm;
-    var x = document.createElement('button');
-    x.className = 'cancel'; x.type = 'button';
-    x.setAttribute('aria-label','Cancel'); x.textContent = '✕';
-    b.appendChild(x);
-  }
-
-  function run(b){
-    disarm(b);
-    var arrow = arrowOf(b), rest = b.dataset.rest || arrow.textContent;
-    b.dataset.rest = rest;
-    b.classList.remove('done','failed');
-    b.classList.add('loading');
-    b.disabled = true;
-    arrow.innerHTML = '<span class="spin"></span>working';
-
-    setTimeout(function(){
-      b.classList.remove('loading');
-      b.disabled = false;
-      if(b.dataset.fail){
-        b.classList.add('failed');
-        arrow.textContent = b.dataset.fail;
-      } else {
-        b.classList.add('done');
-        arrow.textContent = '✓ ' + (b.dataset.done || 'done');
-        /* a successful retry clears the standing error it belongs to */
-        var sel = b.dataset.clears, box = sel && document.querySelector(sel);
-        if(box){
-          box.classList.add('clearing');
-          setTimeout(function(){ box.remove(); }, 320);
-        }
-      }
-      /* settle back to the resting affordance so the action stays repeatable */
-      setTimeout(function(){
-        b.classList.remove('done','failed');
-        arrow.textContent = rest;
-      }, 4200);
-    }, 1150);
-  }
-
-  document.querySelectorAll('.action-btn[data-act]').forEach(function(b){
-    b.dataset.rest = arrowOf(b).textContent;
-    b.addEventListener('click', function(e){
-      if(e.target.closest('.cancel')){ disarm(b); return; }
-      if(b.classList.contains('loading')) return;
-      if(b.dataset.confirm && !b.classList.contains('armed')){ arm(b); return; }
-      run(b);
-    });
-  });
-
-  /* Esc cancels an armed action; so does clicking anywhere else */
-  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') disarm(armed); });
-  document.addEventListener('click', function(e){
-    if(armed && !e.target.closest('.action-btn')) disarm(armed);
-  });
-})();
-
-/* ── COLLAPSIBLE GROUPS ─────────────────────────────────────────────────── */
+/* Groups fold. Notes are read-only — there is no notes write on this screen. */
 document.querySelectorAll('.group-title.tog').forEach(function(t){
   t.addEventListener('click', function(){
     var body = document.getElementById(t.getAttribute('aria-controls'));
@@ -677,143 +580,224 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     body.hidden = open;
   });
 });
-
-/* ── NOTES — editable, autosaving, per the status bar's promise ─────────── */
 (function(){
   var ta = document.getElementById('notes');
-  if(!ta) return;
-  var box = document.getElementById('notes-status'),
-      dot = box.querySelector('.stxt'),
-      timer = null;
-
-  function say(cls, txt){
-    box.className = 'notes-status' + (cls ? ' ' + cls : '');
-    dot.textContent = txt;
+  if (!ta) return;
+  ta.readOnly = true;
+  ta.placeholder = 'No notes on file.';
+  var box = document.getElementById('notes-status');
+  if (box) {
+    box.className = 'notes-status';
+    var txt = box.querySelector('.stxt');
+    if (txt) txt.textContent = 'notes do not save from this screen';
   }
-
-  ta.addEventListener('input', function(){
-    say('', 'saving…');
-    clearTimeout(timer);
-    timer = setTimeout(function(){
-      var t = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-      say('is-saved', ta.value.trim() ? 'saved ' + t : 'cleared ' + t);
-    }, 620);
-  });
 })();
 </script>
 
-<!-- ══ LIVE DATA ═════════════════════════════════════════════════════════════
-     Reference wiring for the app screens. The markup above is sample data; if
-     the backend can answer for a real client (/app/client-control-panel.html
-     ?id=<uuid>) the fields below are overwritten with its rows, and a banner
-     says which of the two you are looking at. When the backend cannot answer
-     the sample markup is left exactly as it is — a degraded screen still shows
-     the shape of the thing, and the banner stops it being mistaken for real.
-     ═══════════════════════════════════════════════════════════════════════ -->
+<!-- Live file only. Missing fields stay a dash. Never a sample person. -->
 <script src="data.js"></script>
 <script src="proxy-apply.js"></script>
 <script>
 (function () {
   "use strict";
 
-  /* Every write below goes through textContent. These values are client
-     records — names, notes, emails — and must never be parsed as markup. */
-  function setText(el, v) { if (el && v != null && v !== "") el.textContent = String(v); }
-
-  function byLabel(labelSel, valueSel, want) {
-    var labels = document.querySelectorAll(labelSel);
-    for (var i = 0; i < labels.length; i++) {
-      if (labels[i].textContent.trim().toLowerCase() === want.toLowerCase()) {
-        var row = labels[i].parentNode;
-        return row ? row.querySelector(valueSel) : null;
-      }
-    }
-    return null;
+  function $(id) { return document.getElementById(id); }
+  function dash(v) {
+    if (v == null || v === "") return "—";
+    var s = String(v).trim();
+    return s ? s : "—";
   }
-  var kv = function (l) { return byLabel(".kv-label", ".kv-value", l); };
-  var tile = function (l) { return byLabel(".rf-label", ".rf-value", l); };
+  function setText(id, v) {
+    var node = $(id);
+    if (node) node.textContent = dash(v);
+  }
+  function money(n) {
+    if (n == null || n === "") return "—";
+    var v = Number(n);
+    if (!isFinite(v) || v <= 0) return "—";
+    return "$" + Math.round(v).toLocaleString("en-US");
+  }
+  function moneyYr(row) {
+    if (!row || row.annual == null) return "—";
+    var m = money(row.annual);
+    return m === "—" ? "—" : m + "/yr";
+  }
+  function when(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleString("en-US", {
+      month: "short", day: "numeric", year: "numeric",
+      hour: "numeric", minute: "2-digit",
+      timeZone: "America/New_York", timeZoneName: "short"
+    });
+  }
+  function scoreLine(tm) {
+    tm = tm || {};
+    function one(k, v) { return k + " " + (v == null || v === "" ? "—" : String(v)); }
+    return one("EX", tm.experian) + " · " + one("EQ", tm.equifax) + " · " + one("TU", tm.transunion);
+  }
+
+  function tickClock() {
+    var node = $("ccp-clock");
+    if (!node) return;
+    node.textContent = new Date().toLocaleString("en-US", {
+      weekday: "short", month: "short", day: "numeric",
+      hour: "numeric", minute: "2-digit", second: "2-digit",
+      timeZone: "America/New_York", timeZoneName: "short"
+    });
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
 
   function banner(tone, text) {
-    var TONE = { real: "#A8D8B0", sample: "#F5CE8F", error: "#F2A69B" };
-    var el = document.createElement("div");
-    el.setAttribute("role", "status");
-    el.style.cssText =
+    var TONE = { real: "#A8D8B0", empty: "#F5CE8F", error: "#F2A69B" };
+    var box = document.createElement("div");
+    box.setAttribute("role", "status");
+    box.style.cssText =
       "position:fixed;left:0;right:0;bottom:0;z-index:2147482000;padding:7px 14px;" +
       "background:" + (TONE[tone] || TONE.error) + ";color:#0A0A0A;" +
       "font:600 11px/1.4 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.05em;text-align:center";
-    el.textContent = text;
-    document.body.appendChild(el);
+    box.textContent = text;
+    document.body.appendChild(box);
   }
 
-  function money(n) {
-    var v = Number(n);
-    return isNaN(v) || n === null || n === "" ? null : "$" + Math.round(v).toLocaleString("en-US");
+  function paintBlockers(blockers, holdReason) {
+    var list = $("ccp-blocker-list");
+    var why = $("ccp-why-label");
+    if (!list) return;
+    list.textContent = "";
+    var rows = Array.isArray(blockers) ? blockers.slice() : [];
+    if (holdReason && !rows.some(function (b) {
+      return String(b.detail || "") === String(holdReason);
+    })) {
+      rows.unshift({ label: "On hold", detail: holdReason });
+    }
+    if (why) why.hidden = rows.length === 0;
+    rows.forEach(function (b) {
+      var card = document.createElement("div");
+      card.className = "blocker-card";
+      var reason = document.createElement("div");
+      reason.className = "blocker-reason";
+      reason.textContent = dash(b.label);
+      card.appendChild(reason);
+      if (b.detail) {
+        var detail = document.createElement("div");
+        detail.className = "blocker-detail";
+        detail.textContent = String(b.detail);
+        card.appendChild(detail);
+      }
+      list.appendChild(card);
+    });
+  }
+
+  function wireLinks(id) {
+    if (!id) return;
+    var q = encodeURIComponent(id);
+    function href(nid, url) {
+      var a = $(nid);
+      if (a) a.setAttribute("href", url);
+    }
+    href("ccp-link-present", "present.html?contact=" + q);
+    href("ccp-link-present2", "present.html?contact=" + q);
+    href("ccp-link-messaging", "messaging.html?client_id=" + q);
+    href("ccp-link-lenders", "lenders.html?client_id=" + q);
   }
 
   function render(d) {
-    var c = d.client || {};
-    var name = [c.first_name, c.last_name].filter(Boolean).join(" ");
-    setText(document.querySelector(".record-name"), name);
-    setText(kv("Email"), c.email);
-    setText(kv("Phone"), c.phone);
-
+    var c = (d && d.client) || {};
     var cf = c.custom_fields || {};
-    setText(tile("Prequal"), cf.total_funding_estimate ? "Approved" : "Not yet");
-    setText(tile("Total Approved"), money(c.funded_amount) || money(cf.total_funding_estimate) || "—");
-    /* Active inquiry-removal case status when present; else open inquiry task count. */
+    var name = [c.first_name, c.last_name].filter(Boolean).join(" ");
+    setText("ccp-name", name);
+    setText("ccp-key", c.email || c.id);
+    setText("ccp-email", c.email);
+    setText("ccp-phone", c.phone);
+    setText("ccp-tier", c.outcome_tier);
+    setText("ccp-path", cf.analyzer_path || cf.product_path);
+
+    var status = c.funded ? "Funded"
+      : cf.lifecycle_status ? cf.lifecycle_status
+      : cf.sale_closed ? "Sale closed"
+      : cf.deposit_paid ? "Deposit paid"
+      : cf.crs_paid ? "Diagnostic paid"
+      : "";
+    setText("ccp-status", status);
+
+    var prequal = cf.analyzer_prequal_amount || cf.total_funding_estimate;
+    setText("ccp-prequal", money(prequal));
+    var approved = money(c.funded_amount);
+    setText("ccp-approved", approved === "—" ? money(prequal) : approved);
+
     var irc = d.inquiry_removal_case;
-    if (irc && irc.case_status) {
-      setText(tile("Open Inquiries"),
-        irc.case_status +
-        (irc.open_inquiry_count != null ? " · " + irc.open_inquiry_count + " open" : "") +
-        (irc.hold_duration_display ? " · hold " + irc.hold_duration_display : ""));
+    setText("ccp-inquiries", irc && irc.open_inquiry_count != null ? String(irc.open_inquiry_count) : "");
+    if (irc && (irc.case_status || irc.master_call_state)) {
+      var irBits = [];
+      if (irc.case_status) irBits.push(irc.case_status);
+      if (irc.master_call_state) irBits.push(String(irc.master_call_state).replace(/_/g, " "));
+      setText("ccp-ir", irBits.join(" · "));
     } else {
-      setText(tile("Open Inquiries"), String((d.tasks || []).filter(function (t) { return !t.done; }).length));
+      setText("ccp-ir", "");
     }
 
-    var irEl = document.querySelector("[data-ir-case]");
-    if (irEl) {
-      var ir = d.inquiry_removal_case;
-      if (ir) {
-        var bits = [ir.case_status || "Active"];
-        if (ir.master_call_state) bits.push(String(ir.master_call_state).replace(/_/g, " "));
-        if (ir.open_inquiry_count != null) bits.push(ir.open_inquiry_count + " open");
-        setText(irEl, bits.join(" · "));
-      } else {
-        setText(irEl, "None active");
-      }
-    }
+    var tm = d.tri_merge || {};
+    var scores = scoreLine(tm);
+    setText("ccp-scores", scores);
+    setText("ccp-facts-scores", scores);
+    setText("ccp-chip-credit", "Credit " + scores);
 
-    var badge = document.querySelector(".status-badge-lg");
-    if (badge) {
-      setText(badge, c.funded ? "Funded"
-        : cf.sale_closed ? "Sale closed"
-        : cf.deposit_paid ? "Deposit paid"
-        : cf.crs_paid ? "Diagnostic paid" : "New");
-    }
-    banner("real", "live record · " + (name || c.id || "unknown client") + " · " + (d.transactions || []).length +
-                   " transactions · " + (d.messages || []).length + " messages");
+    var rounds = d.funding_rounds || [];
+    var latestRound = rounds[0];
+    var roundText = latestRound
+      ? ("Round " + latestRound.round_number + (latestRound.status ? " · " + latestRound.status : ""))
+      : "";
+    setText("ccp-round", roundText);
+    setText("ccp-facts-round", roundText);
+    setText("ccp-facts-funded", c.funded === true ? "Yes" : c.funded === false ? "No" : "");
+    setText("ccp-last-pull", when(tm.asOf || (d.crs_results && d.crs_results[0] && d.crs_results[0].created_at)));
+
+    setText("ccp-next-action", cf.employee_next_action);
+    var hold = cf.round_hold_reason || (latestRound && latestRound.hold_reason) || "";
+    setText("ccp-hold-reason", hold);
+    setText("ccp-credit-status", cf.crs_status || cf.analyzer_status);
+    var inc = d.income_estimates || {};
+    setText("ccp-income-ex", moneyYr(inc.experian));
+    setText("ccp-income-eq", moneyYr(inc.equifax));
+
+    paintBlockers(d.open_blockers, hold);
+
+    setText("ccp-footer-org", c.org_id ? ("ORG: " + c.org_id) : "ORG: —");
+    setText("ccp-footer-id", c.id);
+
+    var ta = $("notes");
+    if (ta) ta.value = cf.notes || cf.staff_notes || "";
+
+    banner("real", "live file · " + (name || c.id || "this client") +
+      " · " + (d.transactions || []).length + " payments · " +
+      (d.messages || []).length + " messages");
   }
 
-  var id = FHData.param("id");
+  var id = FHData.param("id") || FHData.param("client_id");
+  wireLinks(id);
+  if (!id) setText("ccp-name", "");
+
   FHData.client(id).then(function (res) {
     if (res.ok) { render(res.data); return; }
+    setText("ccp-name", "");
     if (res.source === "nodata") {
-      banner("sample", "sample data — open with ?id=<client id> to load a real record");
+      banner("empty", "open with ?id=<client id> to load a live file");
     } else if (res.source === "demo") {
-      banner("sample", "sample data — demo session, the backend was not queried");
+      banner("empty", "demo mode — this screen did not query a live file");
     } else if (res.source === "notfound") {
-      banner("sample", "sample data — no client with that id (the backend is up)");
+      banner("empty", "no client with that id");
     } else if (res.source === "badrequest") {
-      banner("sample", "sample data — that id is not a valid client id");
+      banner("empty", "that id is not a valid client id");
     } else {
-      banner("error", "sample data — backend unavailable (" + res.source + ": " + res.error + ")");
+      banner("error", "could not load this file (" + res.source + ")");
     }
   });
 
-  /* Agent context card — same payload the runtime injects into prompts. */
   (function loadAgentContext() {
-    var pre = document.getElementById("agent-context-pre");
+    var pre = $("agent-context-pre");
     if (!pre || !id) return;
     FHData.read("agent-context", { client_id: id }).then(function (res) {
       if (res && res.ok && res.data && res.data.context) {
@@ -834,8 +818,7 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
 <!-- ══ STAFF UPLOAD — upload on this client's behalf ═══════════════════════
      Posts to the same /api/documents-upload endpoint the client portal uses;
      a staff session is what makes it a "staff upload" server-side. Needs a
-     real client id in the URL (?id=<uuid>) — the sample screen has nowhere
-     real to send a file, so the drop zone says so instead of pretending. -->
+     real client id in the URL (?id=<uuid>). Without one, the drop zone says so. -->
 <script>
 (function () {
   "use strict";
@@ -843,7 +826,7 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
       input  = document.getElementById("staff-file-input"),
       list   = document.getElementById("staff-filelist"),
       status = document.getElementById("staff-upload-status"),
-      clientId = FHData.param("id");
+      clientId = FHData.param("id") || FHData.param("client_id");
 
   if (!zone) return;
 
@@ -921,8 +904,8 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
 (function () {
   "use strict";
   var clientId = (typeof FHData !== "undefined" && FHData.param)
-    ? FHData.param("id")
-    : (new URLSearchParams(location.search).get("id") || "");
+    ? (FHData.param("id") || FHData.param("client_id") || "")
+    : (new URLSearchParams(location.search).get("id") || new URLSearchParams(location.search).get("client_id") || "");
   var statusEl = document.getElementById("fh-funding-apply-status");
   var listEl = document.getElementById("fh-funding-apply-list");
   if (!statusEl || !listEl) return;
@@ -980,51 +963,6 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
       });
     })
     .catch(function () { statusEl.textContent = "Could not load lender matches."; });
-})();
-</script>
-<script>
-/* Deep-links from this file into the screens that already hold the real
-   surfaces. GHL Contact stays disabled — there is no GHL contact URL on the
-   client record. */
-(function () {
-  "use strict";
-  var id = (typeof FHData !== "undefined" && FHData.param)
-    ? FHData.param("id")
-    : (new URLSearchParams(location.search).get("id") || "");
-
-  function needClient() {
-    if (id) return true;
-    alert("Open this screen with ?id=<client id> first.");
-    return false;
-  }
-
-  document.querySelectorAll(".link-btn[data-open]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var kind = btn.getAttribute("data-open");
-      if (kind === "ghl") {
-        alert("No GoHighLevel contact link is stored on this client yet.");
-        return;
-      }
-      if (!needClient()) return;
-      var q = encodeURIComponent(id);
-      if (kind === "funding") {
-        location.href = "finance-os.html?client_id=" + q;
-        return;
-      }
-      if (kind === "credit") {
-        location.href = "finance-os.html?client_id=" + q + "#credit";
-        return;
-      }
-      if (kind === "bank") {
-        location.href = "finance-os.html?client_id=" + q + "#banking";
-        return;
-      }
-      if (kind === "raw") {
-        location.href = "documents.html?client_id=" + q;
-        return;
-      }
-    });
-  });
 })();
 </script>
 </body>

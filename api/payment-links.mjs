@@ -20,11 +20,8 @@
 // a default for: unset, "create" answers 503 rather than minting a broken
 // link nobody can pay.
 //
-// "send" queues an SMS via the existing messaging path (sendTemplated) —
-// today that is a safe no-op until a human approves the payment_link_notice
-// template (db/seed/007), same as every other pending template in this
-// product. The screen's other option, copying checkout_url straight from the
-// create/list response, always works and needs nobody's review.
+// "send" queues an SMS via sendTemplated. If that template is not approved,
+// nothing is queued and the link stays `created` — we do not mark it sent.
 import { db } from "../src/db.mjs";
 import { requireAuth } from "../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid, CLIENT_DATA_ERRORS } from "../src/http/read-api.mjs";
@@ -173,7 +170,10 @@ export default async function handler(req, res) {
             }
           }
         });
-        const updated = (await markSent(db, { id: body.id, orgId })) || link;
+        let updated = link;
+        if (queued.sent === true) {
+          updated = (await markSent(db, { id: body.id, orgId })) || link;
+        }
         return res.status(200).json({
           ok: true,
           action: "send",

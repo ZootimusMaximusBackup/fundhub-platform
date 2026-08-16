@@ -26,8 +26,19 @@ export class CrsIdentityError extends Error {
 export const CRS_SANDBOX_HOST = "api-sandbox.stitchcredit.com";
 export const CRS_PRODUCTION_HOST = "mware.crscreditapi.com";
 
-/** The bureaus this repo orders, in the order it orders them. */
+/** The bureaus this repo can order. Live order list is `activeBureausFromEnv`. */
 export const BUREAUS = Object.freeze(["TU", "EX", "EQ"]);
+
+/** Owner-set 2026-08-16: TransUnion is off until CRS fixes E1006. */
+export function activeBureausFromEnv(env = process.env) {
+  const raw = env?.CRS_ACTIVE_BUREAUS;
+  if (raw == null || String(raw).trim() === "") return [...BUREAUS];
+  const picked = String(raw)
+    .split(",")
+    .map((s) => s.trim().toUpperCase())
+    .filter((b) => BUREAUS.includes(b));
+  return picked.length ? picked : [...BUREAUS];
+}
 
 /* normalizeHost — "https://Api-Sandbox.StitchCredit.com:443/api" → the hostname.
    Config gets pasted by hand, so a scheme, a port or a trailing path is an
@@ -114,6 +125,25 @@ export const NEVER_ISSUED_SSN_PREFIX = "666";
 
 export function ssnDigits(value) {
   return String(value ?? "").replace(/\D/g, "");
+}
+
+/** Calendar date for CRS, or null. Never "Sat Sep 02".
+ *  Postgres DATE comes back as a Date; String(date).slice(0,10) is weekday text
+ *  and the bureau rejects it. Only YYYY-MM-DD leaves this function. */
+export function isoBirthDate(value) {
+  if (value == null || value === "") return null;
+  if (typeof value === "string") {
+    const day = value.trim().slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(day)) return day;
+    return null;
+  }
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const y = value.getUTCFullYear();
+    const m = String(value.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(value.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  return null;
 }
 
 /* Exact comparison of every field that can be sent to CRS. Formatting an SSN
@@ -231,6 +261,13 @@ export function assertIdentityAllowed({
       { status: 400, code: "test_identity_on_production" }
     );
   }
+
+  if (!isoBirthDate(identity.birthDate)) {
+    throw new CrsIdentityError(
+      "refusing a credit pull — date of birth is missing or not YYYY-MM-DD",
+      { status: 400, code: "dob_invalid" }
+    );
+  }
 }
 
 /**
@@ -257,8 +294,10 @@ export function identityForBureau({
       );
     }
     if (!identity || !ssnDigits(identity.ssn)) return null;
-    assertIdentityAllowed({ host, bureau, identity, env });
-    return identity;
+    const birthDate = isoBirthDate(identity.birthDate);
+    const normalized = { ...identity, birthDate };
+    assertIdentityAllowed({ host, bureau, identity: normalized, env });
+    return normalized;
   }
   throw new CrsIdentityError(
     `unrecognised CRS host ${JSON.stringify(normalizeHost(host) || "")}`,

@@ -26,12 +26,12 @@ function fakeDb() {
       const text = String(sql);
 
       if (/^\s*INSERT INTO payment_links/i.test(text)) {
-        const [org_id, client_id, purpose, description, amount_cents, currency, link_ref, checkout_url, created_by_staff_id] = params;
+        const [org_id, client_id, purpose, description, amount_cents, currency, link_ref, checkout_url, created_by_staff_id, commas_session_id = null] = params;
         const row = {
           id: `pl-${++n}`, org_id, client_id, purpose, description,
           amount_cents, currency, status: "created",
           link_ref, checkout_url, provider: "commas",
-          commas_session_id: null, paid_amount_cents: null,
+          commas_session_id, paid_amount_cents: null,
           created_by_staff_id, created_at: new Date().toISOString(),
           sent_at: null, paid_at: null, expired_at: null
         };
@@ -134,13 +134,42 @@ describe("createPaymentLink", () => {
     );
   });
 
-  test("no checkoutBaseUrl means no link — nothing invented", async () => {
+  test("no checkout config means no link — nothing invented", async () => {
     const db = fakeDb();
     await assert.rejects(
-      createPaymentLink(db, { orgId: ORG, clientId: CLIENT, purpose: "deposit", amountCents: 500 }),
-      TypeError
+      createPaymentLink(db, {
+        orgId: ORG, clientId: CLIENT, purpose: "deposit", amountCents: 500,
+        env: {}
+      }),
+      (err) => err && err.code === "commas_not_configured" && err.status === 503
     );
     assert.equal(db.rows.length, 0);
+  });
+
+  test("FANBASIS_CHECKOUT_API_KEY mints via checkout-session API", async () => {
+    const db = fakeDb();
+    const fetchImpl = async (_url, opts) => {
+      const body = JSON.parse(opts.body);
+      assert.equal(body.amount_cents, 100);
+      assert.equal(opts.headers["x-api-key"], "fb-key");
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({
+          data: { id: "N1test", payment_link: "https://www.fanbasis.com/agency-checkout/x/N1test" }
+        })
+      };
+    };
+    const link = await createPaymentLink(db, {
+      orgId: ORG, clientId: CLIENT, purpose: "diagnostic",
+      description: "Business Financial Assessment — Fundhub",
+      amountCents: 100,
+      env: { FANBASIS_CHECKOUT_API_KEY: "fb-key" },
+      fetchImpl
+    });
+    assert.equal(link.checkout_url, "https://www.fanbasis.com/agency-checkout/x/N1test");
+    assert.equal(link.commas_session_id, "N1test");
+    assert.equal(link.amount_cents, 100);
   });
 });
 

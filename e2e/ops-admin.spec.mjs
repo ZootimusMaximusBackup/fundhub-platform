@@ -34,12 +34,16 @@ test.describe("Ops & Admin honest empty states", () => {
   });
 
   test("staff comp This Week column shows em dash", async ({ page }) => {
-    const weekCells = page.locator("#zone-people table tbody tr td.mono");
+    await page.locator('.zonetab[data-zone="people"]').click();
+    const weekCells = page.locator("#staff-comp-body tr td.mono");
+    await expect(weekCells.first()).toHaveText("—", { timeout: 10_000 });
     const n = await weekCells.count();
     expect(n).toBeGreaterThan(0);
     for (let i = 0; i < n; i++) {
       await expect(weekCells.nth(i)).toHaveText("—");
     }
+    await expect(page.locator("#zone-people")).not.toContainText("Nina Castellano");
+    await expect(page.locator("#zone-people")).not.toContainText("Marcus Webb");
   });
 
   test("People zone tab switches", async ({ page }) => {

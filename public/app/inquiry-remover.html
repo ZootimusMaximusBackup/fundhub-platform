@@ -328,7 +328,7 @@
     </div>
     <div class="topbar-right">
       <div class="org-pill">Org: Fundhub</div>
-      <div class="clock">Sun Jul 26 · 2:47:09 PM ET</div>
+      <div class="clock">—</div>
       <div class="live-pill"><span class="live-dot"></span>LIVE</div>
     </div>
   </header>
@@ -336,46 +336,38 @@
 
   <div class="stat-head">
     <div class="who">
-      <div class="who-name"><span class="av human">AT</span> Alvin Torres</div>
-      <!-- Pace is about Alvin, not about the queue — it rides with his shift
-           line instead of taking a fifth tile away from what's left to call. -->
-      <div class="who-role">Inquiry Remover · on shift 6h 45m · <b class="pace">93%</b> pace</div>
+      <div class="who-name"><span class="av human" id="whoAv">—</span> <span id="whoName">—</span></div>
+      <div class="who-role" id="whoRole">—</div>
     </div>
     <div class="stat-tiles">
-      <div class="stat-tile"><div class="stat-label">Queue Left</div><div class="stat-value" data-stat="left">6</div></div>
-      <div class="stat-tile"><div class="stat-label">Worked</div><div class="stat-value" data-stat="worked">14</div></div>
-      <div class="stat-tile"><div class="stat-label">Calls</div><div class="stat-value" data-stat="calls">22</div></div>
-      <div class="stat-tile"><div class="stat-label">Confirmed</div><div class="stat-value" data-stat="confirmed">14</div></div>
+      <div class="stat-tile"><div class="stat-label">Queue Left</div><div class="stat-value" data-stat="left">—</div></div>
+      <div class="stat-tile"><div class="stat-label">Worked</div><div class="stat-value" data-stat="worked">—</div></div>
+      <div class="stat-tile"><div class="stat-label">Calls</div><div class="stat-value" data-stat="calls">—</div></div>
+      <div class="stat-tile"><div class="stat-label">Confirmed</div><div class="stat-value" data-stat="confirmed">—</div></div>
     </div>
   </div>
 
   <main>
 
-    <div class="system-alert">
-      <span class="a-icon">⚠</span>
-      <div>
-        <div class="a-title">Equifax isn't responding — <span class="av agent">IR</span> Inquiry Removal AI can't file</div>
-        <div class="a-body">It tried three times between 1:30 and 1:47 PM and couldn't get in. 11 Equifax filings are stuck waiting on the agent. Felix Ndiaye below needs a manual call until this clears — leave Grace Kowalski alone, her file is frozen for fraud review.</div>
-      </div>
-    </div>
+    <div class="system-alert" id="systemAlert" hidden></div>
 
     <div class="section">
       <div class="section-title">Queue by Bureau</div>
       <div class="bureau-row">
-        <button type="button" class="bureau-chip blocked" data-bureau="Equifax" aria-pressed="false">
+        <button type="button" class="bureau-chip" data-bureau="Equifax" aria-pressed="false">
           <div class="bn">Equifax</div>
-          <div class="bc blocked">2</div>
-          <div class="bs">left · Equifax is down</div>
+          <div class="bc zero">0</div>
+          <div class="bs">none in queue</div>
         </button>
         <button type="button" class="bureau-chip" data-bureau="TransUnion" aria-pressed="false">
           <div class="bn">TransUnion</div>
-          <div class="bc">2</div>
-          <div class="bs">remaining</div>
+          <div class="bc zero">0</div>
+          <div class="bs">none in queue</div>
         </button>
         <button type="button" class="bureau-chip" data-bureau="Experian" aria-pressed="false">
           <div class="bn">Experian</div>
           <div class="bc zero">0</div>
-          <div class="bs">all done for today</div>
+          <div class="bs">none in queue</div>
         </button>
       </div>
       <div class="filter-note" id="filter-note" role="status" aria-live="polite"></div>
@@ -398,18 +390,8 @@
       <div class="section-title">Recent Letters Issued</div>
       <div class="letters-list">
         <div class="letter-row">
-          <div><div class="lt-name">Wei Chen</div><div class="lt-detail">Metro 2 Dispute Letter Pack — sent to Equifax</div></div>
-          <div class="lt-time">9m ago</div>
+          <div><div class="lt-name">No letters issued yet</div><div class="lt-detail">This list fills when a letter actually goes out.</div></div>
         </div>
-        <div class="letter-row">
-          <div><div class="lt-name">Theresa Lindqvist</div><div class="lt-detail">Metro 2 Dispute Letter Pack — sent to TransUnion</div></div>
-          <div class="lt-time">1h 40m ago</div>
-        </div>
-        <div class="letter-row blocked">
-          <div><div class="lt-name">Felix Ndiaye</div><div class="lt-detail">Metro 2 Dispute Letter Pack — written and ready, can't send until Equifax is back</div></div>
-          <div class="lt-time">2d 14h ago</div>
-        </div>
-        <!-- three most recent stay up; the rest of today's run is one click away -->
         <a class="letter-more" href="documents.html">All letters<span class="lm-ar">↗</span></a>
       </div>
     </div>
@@ -438,8 +420,8 @@
   <footer class="statusbar">
     <span>FUNDHUB-INQUIRY · v1</span>
     <span>ORG: fundhub</span>
-    <span><span class="av human">AT</span> Alvin Torres</span>
-    <span>updates as Alvin works the queue</span>
+    <span><span class="av human" id="whoFootAv">—</span> <span id="whoFoot">—</span></span>
+    <span>updates as the queue changes</span>
   </footer>
 
 </div>
@@ -1025,8 +1007,8 @@ return VIEW;
    table to the screen's own init so every interaction binds to real rows.
 
    Runs BEFORE the behaviour block and publishes __fhQueueReady, which that
-   block waits on. On any failure it resolves anyway, leaving the sample rows in
-   place with a banner — rule: fall back, don't blank.
+   block waits on. On any failure it resolves anyway and keeps the empty status
+   row with a banner — rule: fall back, don't invent people.
    ─────────────────────────────────────────────────────────────────────────── */
 window.__fhQueueReady = (function () {
   var table = document.querySelector('table.queue');
@@ -1043,6 +1025,25 @@ window.__fhQueueReady = (function () {
     td.textContent = msg;
     tr.appendChild(td);
     table.appendChild(tr);
+  }
+  function setStat(name, n) {
+    var el = document.querySelector('[data-stat="' + name + '"]');
+    if (el) el.textContent = String(n);
+  }
+  function paintBureaus(byBureau) {
+    byBureau = byBureau || {};
+    [].slice.call(document.querySelectorAll('.bureau-chip[data-bureau]')).forEach(function (c) {
+      var bc = c.querySelector('.bc');
+      var bs = c.querySelector('.bs');
+      var n = byBureau[c.dataset.bureau] || 0;
+      c.classList.remove('blocked');
+      if (bc) {
+        bc.textContent = String(n);
+        bc.classList.toggle('zero', n === 0);
+        bc.classList.remove('blocked');
+      }
+      if (bs) bs.textContent = n === 0 ? 'none in queue' : (n + ' left');
+    });
   }
 
 
@@ -1149,16 +1150,22 @@ window.__fhQueueReady = (function () {
     if (!items.length) {
       showQueueStatus('No inquiries in the database yet.');
       FHData.banner('sample', 'No inquiries in the database yet.', 'inquiries');
+      setStat('left', 0);
+      setStat('worked', 0);
+      setStat('calls', 0);
+      setStat('confirmed', 0);
+      paintBureaus({});
       return;
     }
 
     [].slice.call(table.querySelectorAll('tr[data-row]')).forEach(function (r) { r.remove(); });
 
-    var unknown = 0, calls = 0, left = 0, confirmed = 0, byBureau = {};
+    var unknown = 0, calls = 0, left = 0, confirmed = 0, worked = 0, byBureau = {};
     items.forEach(function (it) {
       var p = pill(it.status, it.outcome);
       if (!p.known) unknown++;
       calls += Number(it.call_attempts) || 0;
+      if (p.done || Number(it.call_attempts) > 0) worked++;
       if (p.done) confirmed++; else {
         left++;
         byBureau[it.bureau] = (byBureau[it.bureau] || 0) + 1;
@@ -1190,21 +1197,11 @@ window.__fhQueueReady = (function () {
       table.appendChild(tr);
     });
 
-    function setStat(name, n) {
-      var el = document.querySelector('[data-stat="' + name + '"]');
-      if (el) el.textContent = String(n);
-    }
     setStat('left', left);
+    setStat('worked', worked);
     setStat('calls', calls);
     setStat('confirmed', confirmed);
-
-    [].slice.call(document.querySelectorAll('.bureau-chip[data-bureau]')).forEach(function (c) {
-      var bc = c.querySelector('.bc');
-      if (!bc) return;
-      var n = byBureau[c.dataset.bureau] || 0;
-      bc.textContent = String(n);
-      bc.classList.toggle('zero', n === 0);
-    });
+    paintBureaus(byBureau);
 
     FHData.banner('real', 'live queue · ' + items.length + ' inquiries · ' +
       left + ' open' +
@@ -1949,6 +1946,49 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
   }
   load();
 })();
+</script>
+<script>
+function tickClock() {
+  var el = document.querySelector(".clock");
+  if (!el) return;
+  el.textContent = new Date().toLocaleString("en-US", {
+    weekday: "short", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", second: "2-digit",
+    timeZone: "America/New_York", timeZoneName: "short"
+  });
+}
+tickClock();
+setInterval(tickClock, 1000);
+
+function initials(name) {
+  var p = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!p.length) return "—";
+  return p.slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join("");
+}
+function paintStaff(staff) {
+  var name = (staff && staff.name) || "";
+  var role = staff && staff.role ? String(staff.role).replace(/_/g, " ") : "";
+  var av = document.getElementById("whoAv");
+  var nm = document.getElementById("whoName");
+  var rl = document.getElementById("whoRole");
+  var foot = document.getElementById("whoFoot");
+  var footAv = document.getElementById("whoFootAv");
+  var ini = initials(name);
+  if (av) av.textContent = ini;
+  if (nm) nm.textContent = name || "—";
+  if (rl) rl.textContent = role || "—";
+  if (foot) foot.textContent = name || "—";
+  if (footAv) footAv.textContent = ini;
+}
+var token = "";
+try { token = localStorage.getItem("fh_token") || ""; } catch (e) {}
+fetch("/api/auth/session", {
+  headers: token
+    ? { accept: "application/json", authorization: "Bearer " + token }
+    : { accept: "application/json" }
+}).then(function (r) { return r.json(); }).then(function (s) {
+  paintStaff(s && s.staff);
+}).catch(function () { paintStaff(null); });
 </script>
 </body>
 </html>

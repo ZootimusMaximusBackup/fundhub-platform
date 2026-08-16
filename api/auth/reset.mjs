@@ -24,7 +24,7 @@
 // Thin mount over src/auth/invite.mjs — all the real logic lives there.
 
 import { db } from "../../src/db.mjs";
-import { requestPasswordReset, resetPassword } from "../../src/auth/invite.mjs";
+import { requestPasswordReset, setPasswordWithToken } from "../../src/auth/invite.mjs";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -46,7 +46,8 @@ export default async function handler(req, res) {
   }
 
   if (action === "confirm") {
-    const result = await resetPassword(db, { token: body.token, password: body.password });
+    // Invite links and reset links share this page. Kind is on the token row.
+    const result = await setPasswordWithToken(db, { token: body.token, password: body.password });
     if (!result.ok) {
       return res.status(result.status || 400).json({ ok: false, error: result.error, detail: result.detail });
     }

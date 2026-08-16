@@ -6,6 +6,7 @@ import {
   homepageSurveyQuestions,
   visibleQuestions,
   answersByPayloadKey,
+  surveyFicoBand,
 } from "./cf-question-map.mjs";
 
 test("CF order has contact first; homepage has contact last", () => {
@@ -52,4 +53,14 @@ test("answersByPayloadKey emits cf_svy_* keys", () => {
   assert.equal(keyed.cf_svy_funding_target_amount, "Less than $50k");
   assert.equal(keyed.cf_svy_self_reported_fico, "750+");
   assert.equal(keyed.cf_svy_has_negatives, undefined);
+});
+
+test("surveyFicoBand prefers the label and never paints a CF option id", () => {
+  assert.equal(surveyFicoBand({
+    cf_svy_self_reported_fico: 207907,
+    cf_svy_self_reported_fico_label: "650-699"
+  }), "650-699");
+  assert.equal(surveyFicoBand({ cf_svy_self_reported_fico: "700-749" }), "700-749");
+  assert.equal(surveyFicoBand({ cf_svy_self_reported_fico: "207907" }), null);
+  assert.equal(surveyFicoBand({}), null);
 });

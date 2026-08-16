@@ -14,7 +14,54 @@ import { logCallOutcome } from "./call-outcomes.mjs";
 import { signSoftPullApproveUrl } from "../consent/approve-token.mjs";
 import { consentStatus } from "../consent/index.mjs";
 import { composeAndSend } from "../messaging/compose.mjs";
+import { dispatchMessage } from "../messaging/dispatch.mjs";
 import { secretFromEnv } from "../documents/signed-url.mjs";
+import { incomeEstimates } from "../http/client-detail.mjs";
+
+function jsonSafeLink(link, extra = {}) {
+  if (!link) return null;
+  const cents = Number(link.amount_cents);
+  return {
+    id: link.id || null,
+    checkout_url: link.checkout_url || null,
+    status: link.status || null,
+    amount_cents: Number.isFinite(cents) ? cents : null,
+    amount_display: extra.amount_display || formatCents(cents) || null,
+    purpose: link.purpose || null,
+    offer_key: extra.offer_key || null,
+    description: extra.description || link.description || null
+  };
+}
+
+function jsonSafeCompose(composed) {
+  if (!composed) return null;
+  return {
+    outcome: composed.outcome ?? null,
+    detail: composed.detail == null ? null : String(composed.detail).slice(0, 160),
+    deduped: !!composed.deduped,
+    status: composed.message?.status || null
+  };
+}
+
+async function dispatchQueued(db, templated) {
+  if (!templated?.messageId) return templated || null;
+  try {
+    const result = await dispatchMessage(db, templated.messageId);
+    return {
+      sent: templated.sent,
+      messageId: templated.messageId,
+      outcome: result?.outcome || null,
+      detail: result?.detail == null ? null : String(result.detail).slice(0, 160)
+    };
+  } catch (err) {
+    return {
+      sent: templated.sent,
+      messageId: templated.messageId,
+      outcome: "error",
+      detail: String(err && err.message ? err.message : err).slice(0, 160)
+    };
+  }
+}
 
 export class CloserDeckError extends Error {
   constructor(message, { status = 400, code = "bad_request" } = {}) {
@@ -216,6 +263,7 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
   }
 
   const softPull = await softPullStatus(db, { orgId, clientId });
+  const income = incomeEstimates(crsRes.rows);
 
   return {
     client_id: client.id,
@@ -230,6 +278,8 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
       capital: cf(client, "cf_svy_available_capital"),
       motivation: cf(client, "cf_svy_money_change_now")
     },
+    /* Bureau income guesses for closer leverage — not paystubs, not bank balances. */
+    income_estimates: income,
     engine,
     soft_pull: softPull,
     offers: offersForClient()
@@ -241,28 +291,40 @@ async function softPullStatus(db, { orgId, clientId }) {
     orgId, clientId, kind: "soft_pull_consent"
   });
   const paid = await db.query(
-    `SELECT id, amount_cents, status, paid_at, created_at
+    `SELECT id, amount_cents, status, paid_at, created_at, checkout_url
        FROM payment_links
       WHERE org_id = $1 AND client_id = $2 AND purpose = 'diagnostic'
       ORDER BY created_at DESC LIMIT 1`,
     [orgId, clientId]
   );
   const req = await db.query(
-    `SELECT id, status, created_at, resolved_at
+    `SELECT id, status, requested_at, resolved_at, crs_result_id
        FROM soft_pull_requests
+      WHERE org_id = $1 AND client_id = $2
+      ORDER BY requested_at DESC LIMIT 1`,
+    [orgId, clientId]
+  );
+  const crs = await db.query(
+    `SELECT id, outcome_tier, created_at
+       FROM crs_results
       WHERE org_id = $1 AND client_id = $2
       ORDER BY created_at DESC LIMIT 1`,
     [orgId, clientId]
   );
   const link = paid.rows[0] || null;
   const pull = req.rows[0] || null;
+  const result = crs.rows[0] || null;
   return {
     consent_valid: !!consent.valid,
     consent_reason: consent.reason || null,
     diagnostic_paid: !!(link && (link.status === "paid" || link.paid_at)),
     diagnostic_link_status: link ? link.status : null,
+    diagnostic_amount_cents: link ? Number(link.amount_cents) : null,
+    diagnostic_checkout_url: link ? link.checkout_url : null,
     pull_status: pull ? pull.status : null,
-    pull_id: pull ? pull.id : null
+    pull_id: pull ? pull.id : null,
+    crs_result_id: result ? result.id : (pull?.crs_result_id || null),
+    outcome_tier: result ? result.outcome_tier : null
   };
 }
 
@@ -283,9 +345,9 @@ export async function sendDeckSoftPull(db, {
   if (!offer) {
     throw new CloserDeckError("Soft-pull offer missing from catalog.", { status: 500, code: "offer_missing" });
   }
-  if (!checkoutBaseUrl) {
+  if (!checkoutBaseUrl && !String(env.FANBASIS_CHECKOUT_API_KEY || "").trim()) {
     throw new CloserDeckError(
-      "COMMAS_CHECKOUT_BASE_URL is not set — no checkout link can be built",
+      "FANBASIS_CHECKOUT_API_KEY is not set — no checkout link can be built",
       { status: 503, code: "commas_not_configured" }
     );
   }
@@ -300,15 +362,24 @@ export async function sendDeckSoftPull(db, {
     );
   }
 
-  const link = await createPaymentLink(db, {
-    orgId,
-    clientId,
-    purpose: "diagnostic",
-    description: offer.name,
-    amountCents: offer.priceCents,
-    createdByStaffId: staffId,
-    checkoutBaseUrl
-  });
+  let link;
+  try {
+    link = await createPaymentLink(db, {
+      orgId,
+      clientId,
+      purpose: "diagnostic",
+      description: offer.name,
+      amountCents: offer.priceCents,
+      createdByStaffId: staffId,
+      checkoutBaseUrl,
+      env
+    });
+  } catch (e) {
+    throw new CloserDeckError(e.message || "Could not mint checkout link", {
+      status: e.status || 502,
+      code: e.code || "commas_checkout_failed"
+    });
+  }
 
   const approve = signSoftPullApproveUrl({
     orgId,
@@ -366,21 +437,17 @@ export async function sendDeckSoftPull(db, {
   });
 
   return {
-    link: {
-      ...sent,
-      amount_display: formatCents(Number(sent.amount_cents)),
-      offer_key: "SOFT_PULL"
-    },
+    link: jsonSafeLink(sent, { offer_key: "SOFT_PULL" }),
     approve_url: approve.url,
     approve_expires_at: approve.expiresAtIso,
-    email: composed,
-    sms
+    email: jsonSafeCompose(composed),
+    sms: jsonSafeCompose(sms)
   };
 }
 
 /** E-book downsell — closer sets the price. Empty PDF placeholder until Chris swaps it. */
 export async function sendDeckEbook(db, {
-  orgId, clientId, staffId, amountCents, checkoutBaseUrl, description = null
+  orgId, clientId, staffId, amountCents, checkoutBaseUrl, description = null, env = process.env
 }) {
   const cents = Number(amountCents);
   if (!Number.isInteger(cents) || cents < 100 || cents > 50000000) {
@@ -389,23 +456,32 @@ export async function sendDeckEbook(db, {
       { status: 400, code: "bad_ebook_amount" }
     );
   }
-  if (!checkoutBaseUrl) {
+  if (!checkoutBaseUrl && !String(env.FANBASIS_CHECKOUT_API_KEY || "").trim()) {
     throw new CloserDeckError(
-      "COMMAS_CHECKOUT_BASE_URL is not set — no checkout link can be built",
+      "FANBASIS_CHECKOUT_API_KEY is not set — no checkout link can be built",
       { status: 503, code: "commas_not_configured" }
     );
   }
 
   const label = String(description || "Fundhub e-book").trim().slice(0, 120) || "Fundhub e-book";
-  const link = await createPaymentLink(db, {
-    orgId,
-    clientId,
-    purpose: "custom",
-    description: label,
-    amountCents: cents,
-    createdByStaffId: staffId,
-    checkoutBaseUrl
-  });
+  let link;
+  try {
+    link = await createPaymentLink(db, {
+      orgId,
+      clientId,
+      purpose: "custom",
+      description: label,
+      amountCents: cents,
+      createdByStaffId: staffId,
+      checkoutBaseUrl,
+      env
+    });
+  } catch (e) {
+    throw new CloserDeckError(e.message || "Could not mint checkout link", {
+      status: e.status || 502,
+      code: e.code || "commas_checkout_failed"
+    });
+  }
 
   const first = await db.query(
     `SELECT first_name FROM clients WHERE id = $1 AND org_id = $2`,
@@ -441,13 +517,8 @@ export async function sendDeckEbook(db, {
   });
 
   return {
-    link: {
-      ...sent,
-      amount_display: formatCents(Number(sent.amount_cents)),
-      offer_key: null,
-      description: label
-    },
-    email: composed,
+    link: jsonSafeLink(sent, { offer_key: null, description: label }),
+    email: jsonSafeCompose(composed),
     attachment: "ebook-placeholder"
   };
 }
@@ -457,53 +528,77 @@ function paymentPurpose(offer) {
 }
 
 export async function sendDeckPayLink(db, {
-  orgId, clientId, staffId, offerKey, checkoutBaseUrl
+  orgId, clientId, staffId, offerKey, checkoutBaseUrl, env = process.env
 }) {
   const offer = getOffer(offerKey);
   if (!offer) {
     throw new CloserDeckError("Unknown offer.", { status: 400, code: "unknown_offer" });
   }
-  if (!checkoutBaseUrl) {
+  if (!checkoutBaseUrl && !String(env.FANBASIS_CHECKOUT_API_KEY || "").trim()) {
     throw new CloserDeckError(
-      "COMMAS_CHECKOUT_BASE_URL is not set — no checkout link can be built",
+      "FANBASIS_CHECKOUT_API_KEY is not set — no checkout link can be built",
       { status: 503, code: "commas_not_configured" }
     );
   }
   const purpose = paymentPurpose(offer);
   const description = offer.name;
-  const link = await createPaymentLink(db, {
+  let link;
+  try {
+    link = await createPaymentLink(db, {
+      orgId,
+      clientId,
+      purpose,
+      description,
+      amountCents: offer.priceCents,
+      createdByStaffId: staffId,
+      checkoutBaseUrl,
+      env
+    });
+  } catch (e) {
+    throw new CloserDeckError(e.message || "Could not mint checkout link", {
+      status: e.status || 502,
+      code: e.code || "commas_checkout_failed"
+    });
+  }
+  const first = await db.query(
+    `SELECT first_name FROM clients WHERE id = $1 AND org_id = $2`,
+    [clientId, orgId]
+  );
+  const firstName = first.rows[0]?.first_name || "there";
+  const amount = formatCents(Number(link.amount_cents)) || formatPrice(link.amount_cents);
+  const emailBody =
+    `Hi ${firstName},\n\n` +
+    `Here's the ${description} pay link from our call.\n\n` +
+    `Pay ${amount} here:\n${link.checkout_url}\n\n` +
+    `Stay on the Meet with your advisor if you have questions.\n\n` +
+    `— Fundhub`;
+  const composed = await composeAndSend(db, {
     orgId,
+    staffId,
     clientId,
-    purpose,
-    description,
-    amountCents: offer.priceCents,
-    createdByStaffId: staffId,
-    checkoutBaseUrl
+    channel: "email",
+    subject: `${description} — ${amount}`,
+    body: emailBody,
+    idempotencyKey: `pay-link-send:${link.id}`
   });
-  const context = {
-    payment_link: {
-      url: link.checkout_url,
-      description: link.description || link.purpose,
-      amount: formatPrice(link.amount_cents)
-    }
-  };
-  const sms = await sendTemplated(db, {
-    orgId, clientId, channel: "sms", templateKey: "payment_link_notice",
-    eventId: `${link.id}:sms`, staffId, context
-  });
-  const email = await sendTemplated(db, {
-    orgId, clientId, channel: "email", templateKey: "payment_link_notice",
-    eventId: `${link.id}:email`, staffId, context
-  });
+  let sms = null;
+  try {
+    sms = jsonSafeCompose(await composeAndSend(db, {
+      orgId,
+      staffId,
+      clientId,
+      channel: "sms",
+      body: `Hi ${firstName}, Fundhub ${description}: pay ${amount} ${link.checkout_url}`,
+      idempotencyKey: `pay-link-sms:${link.id}`
+    }));
+  } catch {
+    sms = { outcome: null, detail: "sms_failed" };
+  }
   const sent = (await markSent(db, { id: link.id, orgId })) || link;
   return {
-    link: {
-      ...sent,
-      amount_display: formatCents(Number(sent.amount_cents)),
-      offer_key: offer.key
-    },
+    link: jsonSafeLink(sent, { offer_key: offer.key }),
     sms,
-    email
+    email: jsonSafeCompose(composed)
   };
 }
 
@@ -522,7 +617,7 @@ export async function generateDeckLetters(db, {
     );
   }
   const pack = await buildLetterPackForClient(db, { clientId, pack: "repair" });
-  const email = await sendTemplated(db, {
+  const emailQueued = await sendTemplated(db, {
     orgId,
     clientId,
     channel: "email",
@@ -530,6 +625,7 @@ export async function generateDeckLetters(db, {
     eventId: `closer-deck-letters:${clientId}:${offerKey}`,
     staffId
   });
+  const email = await dispatchQueued(db, emailQueued);
   await addTags(db, clientId, ["client:diy-letters"]);
   await mergeCustomFields(db, clientId, {
     diy_status: pack.files?.length ? "Delivered" : "Delivery Failed — Retry",

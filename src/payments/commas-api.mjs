@@ -179,3 +179,121 @@ export async function reconcilePayment(db, {
     type
   };
 }
+
+/* ── Checkout sessions (mint a client pay link) ─────────────────────────────
+ *
+ * Auth is `x-api-key` against www.fanbasis.com/public-api — NOT the Bearer
+ * reconcile client above (different product surface, different key).
+ * Spec: https://apidocs.fan / https://commasdocs.com
+ *
+ * Env: FANBASIS_CHECKOUT_API_KEY (preferred). Never invent a URL-query link
+ * when this key is present — Commas returns payment_link on the response. */
+
+export const CHECKOUT_API_KEY_ENV = "FANBASIS_CHECKOUT_API_KEY";
+export const DEFAULT_CHECKOUT_API_BASE = "https://www.fanbasis.com/public-api";
+export const CHECKOUT_API_BASE_ENV = "FANBASIS_CHECKOUT_API_BASE";
+
+export function checkoutConfig(env = process.env) {
+  const apiKey = String(env?.[CHECKOUT_API_KEY_ENV] || "").trim();
+  if (!apiKey) {
+    return {
+      ok: false,
+      reason: `${CHECKOUT_API_KEY_ENV} is not set — cannot mint a Commas checkout session`
+    };
+  }
+  return {
+    ok: true,
+    apiKey,
+    base: String(env?.[CHECKOUT_API_BASE_ENV] || DEFAULT_CHECKOUT_API_BASE).replace(/\/+$/, "")
+  };
+}
+
+/**
+ * createCheckoutSession — POST /checkout-sessions → { payment_link }.
+ * Never throws on HTTP/transport failure; callers decide how to surface it.
+ */
+export async function createCheckoutSession({
+  amountCents,
+  productTitle,
+  productDescription = null,
+  type = "onetime_non_reusable",
+  metadata = null,
+  successUrl = null,
+  env = process.env,
+  fetchImpl = fetch
+} = {}) {
+  const cfg = checkoutConfig(env);
+  if (!cfg.ok) return { ok: false, reason: cfg.reason };
+
+  if (!Number.isInteger(amountCents) || amountCents <= 0) {
+    return { ok: false, reason: "amount_cents must be a positive integer" };
+  }
+  const title = String(productTitle || "").trim();
+  if (!title) return { ok: false, reason: "product title is required" };
+
+  const body = {
+    amount_cents: amountCents,
+    product: { title },
+    type
+  };
+  if (productDescription) body.product.description = String(productDescription);
+  const success = successUrl
+    || env.COMMAS_SUCCESS_URL
+    || env.PUBLIC_BASE_URL && `${String(env.PUBLIC_BASE_URL).replace(/\/$/, "")}/app/payment-success.html`
+    || "https://fundhub.ai/app/payment-success.html";
+  if (success) body.success_url = String(success);
+  if (metadata && typeof metadata === "object") {
+    const meta = {};
+    for (const [k, v] of Object.entries(metadata)) {
+      if (v == null) continue;
+      meta[k] = String(v);
+    }
+    body.metadata = meta;
+  }
+
+  try {
+    const res = await fetchImpl(`${cfg.base}/checkout-sessions`, {
+      method: "POST",
+      headers: {
+        "x-api-key": cfg.apiKey,
+        "content-type": "application/json",
+        accept: "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      return { ok: false, status: res.status, reason: "checkout_invalid_json", body: text.slice(0, 300) };
+    }
+    if (!res.ok) {
+      return {
+        ok: false,
+        status: res.status,
+        reason: json.message || json.error || `checkout_http_${res.status}`,
+        body: text.slice(0, 300)
+      };
+    }
+    const data = json.data || {};
+    const paymentLink = data.payment_link;
+    if (!paymentLink) {
+      return { ok: false, status: res.status, reason: "checkout_missing_payment_link", body: text.slice(0, 300) };
+    }
+    return {
+      ok: true,
+      status: res.status,
+      paymentLink: String(paymentLink),
+      checkoutSessionId: data.checkout_session_id ?? data.id ?? null,
+      productId: data.id ?? null,
+      raw: json
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      status: 0,
+      reason: `checkout_unreachable: ${String(err?.message || err).slice(0, 200)}`
+    };
+  }
+}

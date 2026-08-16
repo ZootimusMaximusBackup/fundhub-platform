@@ -8,10 +8,15 @@ const BASE_REQUEST_DATA = {
   ghl_contact_id: "ghl_1",
   first_name: "John",
   appointment_time: "Thursday 2pm",
-  analyzer_recommendation: "funding",
-  prequal_amount: "85000",
-  primary_fico: "720",
-  closer_name: "Chris"
+  closer_name: "Chris",
+  funding_target_amount: "$100k - $200k",
+  planned_use: "Growth (marketing, inventory, hiring)",
+  money_change_now: "Grow faster (more customers / more reach)",
+  self_reported_fico: "700-749",
+  has_business: "Yes, 2-5 years",
+  business_revenue: "$250k - $499k",
+  revenue_verifiable: "Yes, both",
+  available_capital: "$5k - $25k"
 };
 
 beforeEach(() => {
@@ -113,9 +118,19 @@ describe("SETTER_TASK", () => {
     expect(SETTER_TASK.length).toBeGreaterThan(100);
   });
 
-  test("contains placeholder variables for first_name and prequal_amount", () => {
+  test("contains survey placeholders, not prequal merge tags", () => {
     expect(SETTER_TASK).toContain("{{first_name}}");
-    expect(SETTER_TASK).toContain("{{prequal_amount}}");
+    expect(SETTER_TASK).toContain("{{funding_target_amount}}");
+    expect(SETTER_TASK).toContain("{{planned_use}}");
+    expect(SETTER_TASK).not.toContain("{{prequal_amount}}");
+    expect(SETTER_TASK).toMatch(/YOU DO NOT HAVE:[\s\S]*UnderwriteIQ/i);
+  });
+
+  test("passes survey fields into requestData", () => {
+    const config = buildSetterCallConfig(BASE_REQUEST_DATA);
+    expect(config.requestData.funding_target_amount).toBe("$100k - $200k");
+    expect(config.requestData.planned_use).toBe("Growth (marketing, inventory, hiring)");
+    expect(config.requestData.self_reported_fico).toBe("700-749");
   });
 
   test("includes identity as Josh", () => {

@@ -22,7 +22,7 @@ On-disk `*-intended.md` files are reverse-engineered route ACLs from 2026-08-02,
 |------|-------|--------|
 | ground | Workflow 1 | done |
 | affiliate-path | Workflow 2 + this session | done |
-| white-label-path | this session | done |
+| white-label-path | Workflow 3 | done |
 | gaps | Workflow 4 | pending — intended files still omit website apply |
 
 Protocol: claim (`claimed`) before you start. Never work an unclaimed or already-claimed task. Write your manifest here when done.
@@ -268,6 +268,14 @@ Files:
 - `netlify/functions/api.mjs` (route)
 - tests + live specs updated so “Application received” is no longer the expected lie
 
+### Workflow 3 (white-label-path) — done
+
+- `public/app/partner-galaxy.html` — Your page address after sign-in
+- `public/app/brand-studio.html` — picks partner id from the signed-in session
+- `e2e/live-white-label-onboard.spec.mjs` — live path, 7 required ids
+- Live: **26/26** tests. Required ids **31/31 = 100**. No commit.
+- Full write-up and gaps are under **Blockers** → Workflow 3.
+
 ### Workflow 2 (affiliate-path) — earlier pass (login-only, form was fake)
 
 What a fake affiliate can do **today** on the live site:
@@ -316,3 +324,38 @@ COMPLIANCE: Workflow 2 did not change apply-form consent copy, fee copy, or payo
 
 - No product code changed. Gaps above are for Workflow 4.
 - Live affiliate spec is green against **today’s** site (apply is local-only; login uses the seeded test affiliate, not a new e2e+aff account).
+
+### Workflow 3 (white-label-path) — done
+
+What a fake white-label partner can do **today** on the live site:
+
+1. From fundhub.ai they click **Affiliates**, pick **White-Label Partner**, and submit. The page talks about a login.
+2. They do **not** get a new session just from the form. They still use **Log in**.
+3. A test login `partner@fundhub.ai` (already in the database) **can** sign in and land on **Your Galaxy**. That screen says it is their book only.
+4. Brand Studio shows **their page address** (`fundhub-partners.com` and `/sites/…`) and a **Create pages** button for funnels.
+5. A page that was never published is **not** live. The public page door answers “not found.”
+
+Playwright: `e2e/live-white-label-onboard.spec.mjs` — 4/4 green on live (7 required ids). Full `npm run test:e2e:live` **26/26**. Required ids already on the live-100 board: `wl:website_entry`, `wl:white_label_apply`, `wl:partner_login`, `wl:partner_galaxy`, `wl:own_url`, `wl:funnel_studio`, `wl:public_partner_page`. Score with those ids: **31/31 = 100**.
+
+Files touched (Workflow 3 only):
+
+- `public/app/partner-galaxy.html` — shows **Your page** address after sign-in
+- `public/app/brand-studio.html` — uses the signed-in partner’s id so they do not need a staff person to paste it
+- `e2e/live-white-label-onboard.spec.mjs` (created)
+- this board
+
+Not touched: affiliate files, `api/public/partner-page.mjs` (already worked), `*-intended.md`, `white-label-actual.md` (no route change), `.env`, commits.
+
+Routes: none changed.
+
+Journeys: none changed (screens only).
+
+### Gaps for Workflow 4 (from Workflow 3)
+
+- **Hosted page HTML can fail.** The public JSON door is honest (missing page = not found). Opening `/sites/…` in the browser was a broken server page (not a real site) when Workflow 3 probed it. That file is not Workflow 3’s.
+- **Pretty subdomain is preview text.** `yourbrand.fundhub-partners.com` is copy on Brand Studio. Ground did not prove a real custom domain is hooked up.
+- **Login trap.** Each partner sign-in is counted as a failed staff login first. Five of those in 15 minutes lock the address. Live tests use **one** sign-in on purpose.
+- **Intended journey file gap.** `white-label-intended.md` is an old list of API doors. It does not describe website apply, a personal URL, or building a funnel. Not edited.
+- Galaxy “Your page” and Brand Studio auto-id are **in the working files**. They are not on the live site until someone deploys.
+
+COMPLIANCE: Workflow 3 did not change apply-form consent copy, fee copy, or payout claims. Brand Studio still says Fundhub is not a direct lender.

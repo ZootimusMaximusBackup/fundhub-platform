@@ -83,6 +83,46 @@ function pickSurveyAnswers(obj) {
   return Object.keys(out).length ? out : null;
 }
 
+function decodeUtm(v) {
+  if (v == null || v === "") return null;
+  const s = String(v).trim();
+  if (!s) return null;
+  try { return decodeURIComponent(s.replace(/\+/g, " ")); } catch { return s; }
+}
+
+function landingPathOf(url) {
+  if (!url) return null;
+  try {
+    const u = new URL(String(url));
+    return u.pathname || null;
+  } catch {
+    const s = String(url);
+    const cut = s.split("?")[0];
+    const i = cut.indexOf("/", cut.indexOf("//") + 2);
+    return i >= 0 ? cut.slice(i) : null;
+  }
+}
+
+/* Facebook / UTM from CF first_visit. Never keep click ids (fbclid). */
+function pickVisitAttribution(d, b, contact) {
+  const visit =
+    (d && d.visits && d.visits.first_visit) ||
+    (b && b.visits && b.visits.first_visit) ||
+    (contact && contact.visits && contact.visits.first_visit) ||
+    {};
+  const landing = visit.landing_page || visit.url || null;
+  const out = {
+    utm_source: decodeUtm(visit.utm_source),
+    utm_medium: decodeUtm(visit.utm_medium),
+    utm_campaign: decodeUtm(visit.utm_campaign),
+    utm_content: decodeUtm(visit.utm_content),
+    utm_term: decodeUtm(visit.utm_term),
+    landing_path: landingPathOf(landing),
+    referrer_domain: visit.referring_domain || null
+  };
+  return Object.values(out).some(Boolean) ? out : null;
+}
+
 // --- 2. Normalize the webhook body into a flat event ------------------------
 // Reads defensively from CF Classic + 2.0 shapes. Returns null when no usable
 // data is found (caller treats as no-op).
@@ -229,6 +269,8 @@ export function normalizeClickFunnelsEvent(body) {
     b.a2 || d.a2 || contact.a2 || contact.custom_fields?.a2 || contact.custom_attributes?.a2 || ""
   ).trim() || null;
 
+  const attribution = pickVisitAttribution(d, b, contact);
+
   // Appointment slot fields — same names the Cal.com adapter emits downstream.
   const startTime = d.start_on || d.startTime || schedule?.start_on || b.start_on || null;
   const endTime = d.end_on || d.endTime || schedule?.end_on || b.end_on || null;
@@ -245,6 +287,7 @@ export function normalizeClickFunnelsEvent(body) {
     answers,
     a1,
     a2,
+    attribution,
     bookingUid,
     startTime,
     endTime,
@@ -344,7 +387,8 @@ export async function handleClickFunnelsWebhook({
         source: "clickfunnels",
         answers: evt.answers,
         a1: evt.a1,
-        a2: evt.a2
+        a2: evt.a2,
+        attribution: evt.attribution || null
       };
     } else if (
       c.name === "booking.created" ||
@@ -371,7 +415,8 @@ export async function handleClickFunnelsWebhook({
         funnel: evt.funnel,
         source: "clickfunnels",
         a1: evt.a1,
-        a2: evt.a2
+        a2: evt.a2,
+        attribution: evt.attribution || null
       };
     }
 

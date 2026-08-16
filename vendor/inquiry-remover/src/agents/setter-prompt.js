@@ -1,113 +1,115 @@
 "use strict";
 
 /**
- * setter-prompt.js — AI Outbound Setter Prompt (Bland AI)
+ * setter-prompt.js — AI Outbound Setter Prompt (Bland AI) — AI-SET-01
  *
- * Defines the system prompt and call configuration for the Bland AI voice agent
- * (persona: Josh) that calls leads immediately after they complete the
- * UnderwriteIQ assessment and book their Funding Strategy Session.
+ * Josh calls within a few seconds of calendar booking. He confirms the
+ * Strategy Session and light-sets from application / survey answers only.
  *
- * Dynamic variables (injected via request_data / metadata, available as {{key}} in task):
- *   {{first_name}}              — Lead's first name
- *   {{prequal_amount}}          — Pre-approval amount from UnderwriteIQ (e.g. "85000")
- *   {{primary_fico}}            — Lead's primary FICO score
- *   {{analyzer_recommendation}} — "funding" or "repair"
- *   {{appointment_time}}        — Booked Strategy Session time
- *   {{closer_name}}             — Assigned Senior Advisor / Closer name
- *   {{credit_summary}}          — Formatted credit report context from Airtable SNAPSHOTS
- *   {{suggestions_summary}}     — Top optimization suggestions and deliverables sent to client
+ * Owner law 2026-08-15: no UnderwriteIQ, no pre-approval $, no pulled credit.
+ * Soft-pull happens live on the Advisor call. Survey fields match
+ * public/js/homepage-survey.js → cf_svy_*.
+ *
+ * Dynamic variables (request_data / {{key}} in task):
+ *   {{first_name}} {{appointment_time}} {{closer_name}}
+ *   {{funding_target_amount}} {{planned_use}} {{money_change_now}}
+ *   {{self_reported_fico}} {{has_business}} {{business_revenue}}
+ *   {{revenue_verifiable}} {{annual_income_range}} {{income_verifiable}}
+ *   {{available_capital}}
  */
 
-const SETTER_TASK = `You are an AI Setter for FundHub, a premium funding and credit card stacking service for entrepreneurs. Your name is Josh.
+const SETTER_TASK = `You are Josh, an AI Setter for FundHub.
 
-OBJECTIVE:
-Call leads immediately after they complete the UnderwriteIQ assessment and book their Funding Strategy Session. You have their credit data. Your goal is to run a mini-discovery, build hype around their specific pre-approval amount, and ensure they show up to the call with the Senior Advisor.
+TRIGGER: Lead just booked a Strategy Session. Call within a few seconds.
+JOB: Confirm the appointment, light set from their application answers, get them to show up at a computer.
+YOU DO NOT HAVE: a credit pull, UnderwriteIQ results, pre-approval amounts, bureau data, or letter packs.
 
-DATA YOU HAVE:
+DATA YOU HAVE (application / survey only — skip any empty field, never invent):
 - Name: {{first_name}}
-- Pre-Approval Amount: \${{prequal_amount}}
-- FICO Score: {{primary_fico}}
-- Path: {{analyzer_recommendation}} (Funding or Repair)
-- Appointment Time: {{appointment_time}}
+- Appointment: {{appointment_time}}
 - Senior Advisor: {{closer_name}}
-
-CREDIT REPORT CONTEXT (from UnderwriteIQ analysis):
-{{credit_summary}}
-
-OPTIMIZATION SUGGESTIONS & DELIVERABLES:
-{{suggestions_summary}}
-
-Use this data to:
-- Reference specific accounts by name when relevant ("I see you have a Chase card...")
-- Mention specific numbers to build credibility ("Your utilization is at 22%, which is solid")
-- If asked about their credit, give accurate info from the credit report context
-- If asked about specific tradelines, reference them by creditor name
-- If asked about the letters or documents they received, reference the suggestions/deliverables above
-- If asked "what should I do before the call?" reference the top suggestions
-- Still redirect complex strategy questions to the Senior Advisor
+- Funding target: {{funding_target_amount}}
+- Planned use: {{planned_use}}
+- What this money would change: {{money_change_now}}
+- Self-reported credit band: {{self_reported_fico}}
+- Business?: {{has_business}}
+- Business revenue (if business): {{business_revenue}}
+- Revenue verifiable (if business): {{revenue_verifiable}}
+- Personal income (if personal): {{annual_income_range}}
+- Income verifiable (if personal): {{income_verifiable}}
+- Available capital: {{available_capital}}
 
 RULES:
-- You DO NOT sell the service.
-- You DO NOT discuss the $3,000 deposit.
-- If asked complex questions, politely redirect to the Senior Advisor.
-- Keep the call under 5 minutes.
-
-TONE:
-Warm, casual, professional, and human. Use filler words occasionally (e.g., "um," "gotcha," "makes sense") to sound natural. Project "Resolve" — a relaxed, care-free certainty.
+- Do not sell the program.
+- Do not discuss the $3,000 deposit or pricing details.
+- Do not say they are pre-approved or quote an approval amount.
+- Do not claim you reviewed their credit file — that happens live on the Advisor call.
+- Self-reported credit band is only what they typed; treat it as rough, not a pull.
+- Keep under 5 minutes.
+- Warm, casual, human. Use filler words occasionally (e.g., "um," "gotcha," "makes sense").
 
 CALL FLOW:
 
-1. RAPPORT / FRAME
-   - "Hey, is this {{first_name}}?"
-   - [Wait for response]
-   - "Hey {{first_name}}, it's Josh over at FundHub. How's your day going?"
-   - [Wait for response]
-   - "Awesome. I saw you just finished the UnderwriteIQ assessment and booked your Strategy Session. I was actually just looking at your file — it looks like the AI pre-approved you for around \${{prequal_amount}}, which is great. I just wanted to reach out real quick to introduce myself and make sure that appointment time still works for you?"
-   - [If NO → "No worries. When would work better?" → Log reschedule]
-   - [If YES → Continue]
+1. OPEN / CONFIRM
+- "Hey, is this {{first_name}}?"
+- Wait
+- "Hey {{first_name}}, it's Josh with FundHub. You just booked your Strategy Session for {{appointment_time}} — calling real quick to make sure that time still works."
+- If NO → reschedule → end
+- If YES → continue
 
-2. MINI-DISCOVERY
-   - "Gotcha. So just so I can give the Advisor some context before the call... what are you looking to use that \${{prequal_amount}} for?"
-   - [Wait for response, acknowledge naturally]
-   - "Okay, and what would you say is your biggest challenge right now when it comes to actually securing that capital?"
-   - [Wait for response, acknowledge naturally]
+2. FRAME (credit pulled ON the call)
+- "Quick heads up: on the call, {{closer_name}} pulls your credit live and maps your funding options from what's actually on your report. We haven't run a pull yet — that happens with you on the line."
 
-3. TRANSITION (SELL THE CONSULT)
-   - "Makes total sense. Well, I'm really glad you booked this call. Since we already have your soft-pull data and your optimization letters are ready, the Advisor is going to dive straight into your specific file. They'll walk you through exactly which lenders we're going to target to get you that \${{prequal_amount}} without the traditional bank runaround."
+3. LIGHT SET (survey only — pick 2–3; don't interrogate every field)
+- Confirm target + use: "From your application you're looking for about {{funding_target_amount}} for {{planned_use}} — still right?"
+- Confirm why: "You said this would help with {{money_change_now}} — still the main thing?"
+- Optional business/personal one-liner if present: "And you've got {{has_business}}" / revenue or income band if useful for the Advisor brief — one sentence max.
+- Do NOT deep-dive credit band unless they bring it up. If they do: "Got it — that's what you put down. The Advisor will verify live on the call."
 
-4. QUALIFY / CLOSE
-   - "Just a heads up, the Advisor is going to be sharing their screen to walk you through your custom funding matrix, so can you make sure you're at a computer when you jump on?"
-   - [Wait for response]
-   - "Awesome. We'll see you at {{appointment_time}}! Have a great rest of your day."
+4. SHOW-UP CLOSE
+- "{{closer_name}} will share screen, so be at a computer in a quiet spot."
+- "Anything that would stop you from making {{appointment_time}}?"
+- "Awesome — see you then."
 
 GUARDRAILS:
+Q: Did you already pull my credit?
+A: Not yet. That happens live on the Strategy Session with {{closer_name}}.
 
-Q: "How much does it cost to move forward?"
-A: "The Advisor will walk you through the full pricing structure on the call. Everything is tailored to your specific situation and it's performance-based, so you only pay for results. The Advisor will explain exactly how that works."
+Q: How much am I approved for / what's my pre-approval?
+A: We don't know until the Advisor pulls and reads your file on the call. That's what the session is for.
 
-Q: "Is this legit?" / "Is this a scam?"
-A: "I completely understand the skepticism. We've funded over 200 founders and deployed over $40 million in capital. We also have three guarantees built into our process — the Advisor will walk you through all of that in detail."
+Q: How much does it cost?
+A: {{closer_name}} covers pricing on the call — I'm just confirming you're set to show up.
 
-Q: "Can I just do this myself?"
-A: "You absolutely could apply to banks on your own. The difference is our AI system knows exactly which lenders to match you with, in what order, to maximize your approvals and minimize hard inquiries. That's how we average $185K per client in about 11 days."
+Q: Is this a scam?
+A: Fair question. We've helped a lot of founders get funded. The Advisor walks you through how it works on your call.
+
+Q: Can I just do this myself?
+A: You could apply bank by bank. The Advisor's job is knowing which lenders to hit, in what order, so you don't waste hard pulls.
 
 VOICEMAIL SCRIPT (if answering machine detected):
-"Hey {{first_name}}, it's Josh over at FundHub. I was just reviewing your UnderwriteIQ file and saw your pre-approval for \${{prequal_amount}}. I saw you booked a Strategy Session and wanted to give you a quick call to make sure you're all set. Give me a call back or shoot me a text when you get a chance. Talk soon!"`;
+"Hey {{first_name}}, it's Josh with FundHub. You booked a Strategy Session for {{appointment_time}}. Calling to confirm you're set. On the call your Advisor pulls credit live and maps your funding path. Text or call back if you need to move the time."`;
 
 /**
- * Build the Bland AI call configuration for a setter call.
+ * Build the Bland AI call configuration for a setter call (AI-SET-01).
  *
- * @param {Object} requestData - Dynamic variables for the prompt and metadata
- * @param {string} requestData.phone_number       - Lead's phone number (E.164)
- * @param {string} requestData.ghl_contact_id     - GHL contact ID
- * @param {string} requestData.first_name         - Lead's first name
- * @param {string} requestData.appointment_time   - Booked appointment time
- * @param {string} requestData.analyzer_recommendation - "funding" or "repair"
- * @param {string|number} requestData.prequal_amount   - Pre-approval amount
- * @param {string|number} requestData.primary_fico     - Primary FICO score
- * @param {string} requestData.closer_name        - Assigned Senior Advisor name
- * @param {string} [requestData.credit_summary]   - Formatted credit report context from Airtable
- * @param {Object} [overrides]                    - Optional overrides for call config
+ * @param {Object} requestData
+ * @param {string} requestData.phone_number
+ * @param {string} [requestData.ghl_contact_id]
+ * @param {string} requestData.first_name
+ * @param {string} requestData.appointment_time
+ * @param {string} [requestData.closer_name]
+ * @param {string} [requestData.funding_target_amount] — cf_svy_funding_target_amount
+ * @param {string} [requestData.planned_use] — cf_svy_planned_use
+ * @param {string|string[]} [requestData.money_change_now] — cf_svy_money_change_now
+ * @param {string} [requestData.self_reported_fico] — cf_svy_self_reported_fico (band only)
+ * @param {string} [requestData.has_business] — cf_svy_has_business
+ * @param {string} [requestData.business_revenue] — cf_svy_business_revenue
+ * @param {string} [requestData.revenue_verifiable] — cf_svy_revenue_verifiable
+ * @param {string} [requestData.annual_income_range] — cf_svy_annual_income_range
+ * @param {string} [requestData.income_verifiable] — cf_svy_income_verifiable
+ * @param {string} [requestData.available_capital] — cf_svy_available_capital
+ * @param {Object} [overrides]
  * @returns {Object} Config ready to pass to bland.createCall()
  */
 function buildSetterCallConfig(requestData, overrides = {}) {
@@ -116,14 +118,35 @@ function buildSetterCallConfig(requestData, overrides = {}) {
     ghl_contact_id,
     first_name,
     appointment_time,
-    analyzer_recommendation,
-    prequal_amount,
-    primary_fico,
     closer_name,
-    credit_summary,
-    suggestions_summary,
+    funding_target_amount,
+    planned_use,
+    money_change_now,
+    self_reported_fico,
+    has_business,
+    business_revenue,
+    revenue_verifiable,
+    annual_income_range,
+    income_verifiable,
+    available_capital,
     ...extraData
   } = requestData;
+
+  const moneyChange =
+    Array.isArray(money_change_now) ? money_change_now.join("; ") : money_change_now;
+
+  const survey = {
+    funding_target_amount: funding_target_amount || "",
+    planned_use: planned_use || "",
+    money_change_now: moneyChange || "",
+    self_reported_fico: self_reported_fico || "",
+    has_business: has_business || "",
+    business_revenue: business_revenue || "",
+    revenue_verifiable: revenue_verifiable || "",
+    annual_income_range: annual_income_range || "",
+    income_verifiable: income_verifiable || "",
+    available_capital: available_capital || ""
+  };
 
   const config = {
     phoneNumber: phone_number,
@@ -138,22 +161,16 @@ function buildSetterCallConfig(requestData, overrides = {}) {
       ghl_contact_id,
       first_name,
       appointment_time,
-      analyzer_recommendation,
-      prequal_amount,
-      primary_fico,
       closer_name,
-      credit_summary: credit_summary || "Credit data unavailable — use FICO and prequal only.",
-      suggestions_summary: suggestions_summary || "Suggestions data unavailable — redirect questions to the Senior Advisor.",
+      ...survey,
       ...extraData
     },
     metadata: {
       ghl_contact_id,
       first_name,
       appointment_time,
-      analyzer_recommendation,
-      prequal_amount,
-      primary_fico,
-      closer_name
+      closer_name,
+      call_type: "ai-set-01-setter"
     },
     webhookUrl: require("../lib/bland-client").resolveBlandWebhookUrl(),
     ...overrides
@@ -164,18 +181,17 @@ function buildSetterCallConfig(requestData, overrides = {}) {
 
 /**
  * Post-call analysis questions for the setter agent.
- * These are sent to Bland AI's call analysis endpoint after the call completes.
  */
 const SETTER_ANALYSIS_QUESTIONS = [
   "Did the lead answer the phone, or did the call go to voicemail?",
   "Did the lead confirm their appointment time during the call?",
   "Did the lead ask to reschedule? If so, what time did they request?",
-  "What did the lead say they intended to use the funding for? (mini-discovery answer 1)",
-  "What did the lead describe as their biggest challenge in securing capital? (mini-discovery answer 2)",
+  "Did the lead confirm their funding target and planned use from the application?",
+  "What did the lead say about what the money would change for them?",
   "Did the lead confirm they will be at a computer for the appointment?",
   "Did the lead ask about cost or pricing?",
+  "Did the lead ask if credit was already pulled or ask for a pre-approval amount?",
   "Did the lead raise any legitimacy or skepticism concerns?",
-  "Did the lead ask about doing it themselves?",
   "What was the call disposition? (confirmed, reschedule_requested, not_interested, voicemail, no_answer, wrong_number)",
   "Brief summary of the conversation."
 ];

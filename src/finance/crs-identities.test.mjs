@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 
 import {
   BUREAUS,
+  activeBureausFromEnv,
   CRS_ALLOW_LIVE,
   CRS_PRODUCTION_HOST,
   CRS_SANDBOX_HOST,
@@ -14,6 +15,7 @@ import {
   SANDBOX_TEST_IDENTITIES,
   assertIdentityAllowed,
   identityForBureau,
+  isoBirthDate,
   livePullAllowed,
   matchesSandboxIdentity,
   normalizeHost,
@@ -140,14 +142,14 @@ test("production host + CRS_ALLOW_LIVE on allows a real identity", () => {
     identity: REAL_PERSON,
     env: LIVE_ON
   }));
-  assert.equal(
+  assert.deepEqual(
     identityForBureau({
       host: CRS_PRODUCTION_HOST,
       bureau: "TU",
       identity: REAL_PERSON,
       env: LIVE_ON
     }),
-    REAL_PERSON
+    { ...REAL_PERSON, birthDate: "1985-06-02" }
   );
 });
 
@@ -197,6 +199,45 @@ test("host normalization cannot weaken the sandbox gate", () => {
     bureau: "EQ",
     identity: REAL_PERSON
   }), SANDBOX_TEST_IDENTITIES.EQ);
+});
+
+test("isoBirthDate never sends weekday text to a bureau", () => {
+  assert.equal(isoBirthDate("1985-06-02"), "1985-06-02");
+  assert.equal(isoBirthDate("1985-06-02T00:00:00.000Z"), "1985-06-02");
+  assert.equal(isoBirthDate(new Date("1985-06-02T00:00:00.000Z")), "1985-06-02");
+  assert.equal(isoBirthDate("Sat Sep 02"), null);
+  assert.equal(isoBirthDate(String(new Date("1985-09-02T00:00:00.000Z")).slice(0, 10)), null);
+  assert.equal(isoBirthDate(""), null);
+  assert.equal(isoBirthDate(null), null);
+});
+
+test("production pull REFUSES a weekday birth date", () => {
+  const bad = { ...REAL_PERSON, birthDate: "Sat Sep 02" };
+  assert.throws(
+    () => assertIdentityAllowed({
+      host: CRS_PRODUCTION_HOST,
+      bureau: "TU",
+      identity: bad,
+      env: LIVE_ON
+    }),
+    (error) => error.code === "dob_invalid"
+  );
+});
+
+test("identityForBureau turns a Date birth date into YYYY-MM-DD", () => {
+  const out = identityForBureau({
+    host: CRS_PRODUCTION_HOST,
+    bureau: "TU",
+    identity: { ...REAL_PERSON, birthDate: new Date("1985-06-02T00:00:00.000Z") },
+    env: LIVE_ON
+  });
+  assert.equal(out.birthDate, "1985-06-02");
+});
+
+test("activeBureausFromEnv: unset keeps all three, EX,EQ drops TransUnion", () => {
+  assert.deepEqual(activeBureausFromEnv({}), ["TU", "EX", "EQ"]);
+  assert.deepEqual(activeBureausFromEnv({ CRS_ACTIVE_BUREAUS: "EX,EQ" }), ["EX", "EQ"]);
+  assert.deepEqual(activeBureausFromEnv({ CRS_ACTIVE_BUREAUS: " tu , eq " }), ["TU", "EQ"]);
 });
 
 test("sandbox identities are frozen", () => {

@@ -267,18 +267,23 @@
   .then{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
   .then-row{display:flex;align-items:center;gap:9px;padding:7px 11px;border-bottom:1px solid var(--paper-dim);}
   .then-row:last-child{border-bottom:none;}
+  .then-row[data-task-id]{cursor:pointer;}
+  .then-row[data-task-id]:hover{background:var(--paper);}
   .then-time{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--text-dim);width:52px;flex-shrink:0;}
   .then-name{font-size:12px;font-weight:700;flex:1;min-width:0;}
   .then-sub{font-size:10px;color:var(--text-faint);margin-top:1px;font-weight:400;}
   .then-row.conflict{background:color-mix(in srgb,var(--alert) 8%,#fff);}
 
-  /* coverage */
-  .cov{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;}
-  .cov-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--paper-dim);}
+  /* coverage — name on one line, role + since on the next; Inter, never mono wrap */
+  .cov{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-family:var(--sans);}
+  .cov-row{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:7px 0;border-bottom:1px solid var(--paper-dim);font-family:var(--sans);}
   .cov-row:last-child{border-bottom:none;}
-  .cov-name{font-size:11.5px;font-weight:600;flex:1;}
+  .cov-name{font-family:var(--sans);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
+  .cov-role{font-family:var(--sans);font-size:10.5px;font-weight:400;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
   .cov-load{font-family:var(--mono);font-size:10.5px;color:var(--text-dim);}
   .cov-load.hot{color:var(--ink2);font-weight:700;}
+  .un-join:disabled,.un-alt:disabled{opacity:.45;cursor:not-allowed;}
+  .ws-day{cursor:pointer;}
 
   footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;align-items:center;
     padding:0 14px;gap:16px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;
@@ -370,7 +375,7 @@
     </div>
     <div class="topbar-right">
       <div class="org-pill">Org: Fundhub</div>
-      <div class="clock">Sun Jul 26 · 2:47:09 PM ET</div>
+      <div class="clock">—</div>
       <div class="live-pill"><span class="live-dot"></span>LIVE</div>
     </div>
   </header>
@@ -383,14 +388,14 @@
       <div class="navbtn">›</div>
       <div class="today-btn">Today</div>
     </div>
-    <div class="datelabel">Sunday, July 26</div>
+    <div class="datelabel">—</div>
     <div class="sh-spacer"></div>
     <div class="stat-tiles">
-      <div class="stat"><div class="l">Booked</div><div class="v">10</div></div>
-      <div class="stat"><div class="l">Done</div><div class="v">3</div></div>
-      <div class="stat"><div class="l">No-show</div><div class="v red">1</div></div>
-      <div class="stat"><div class="l">Show rate</div><div class="v green">75%</div></div>
-      <div class="stat"><div class="l">Left today</div><div class="v">6</div></div>
+      <div class="stat"><div class="l">Booked</div><div class="v" id="statBooked">—</div></div>
+      <div class="stat"><div class="l">Done</div><div class="v" id="statDone">—</div></div>
+      <div class="stat"><div class="l">No-show</div><div class="v" id="statNoshow">—</div></div>
+      <div class="stat"><div class="l">Show rate</div><div class="v" id="statShow">—</div></div>
+      <div class="stat"><div class="l">Left today</div><div class="v" id="statLeft">—</div></div>
     </div>
   </div>
 
@@ -401,268 +406,12 @@
 
       <!-- WEEK STRIP -->
       <div class="weekstrip">
-        <div class="ws-title eyebrow">CA-02 / This Week · Jul 26 – Aug 1</div>
-        <div class="ws-grid">
-
-          <div class="ws-day today">
-            <div class="ws-dtop"><span class="ws-dname">Sun</span><span class="ws-dnum">26</span></div>
-            <div class="ws-count">11 calls · 6 left</div>
-            <div class="ws-chip live"><span class="t">2:33</span>Priya Nair</div>
-            <div class="ws-chip"><span class="t">3:02</span>Derek Owusu</div>
-            <div class="ws-more">+8 more</div>
-          </div>
-
-          <div class="ws-day">
-            <div class="ws-dtop"><span class="ws-dname">Mon</span><span class="ws-dnum">27</span></div>
-            <div class="ws-count">11 calls</div>
-            <div class="ws-chip"><span class="t">9:00</span>Wendell Pryce</div>
-            <div class="ws-chip"><span class="t">10:30</span>Samuel Okafor</div>
-            <div class="ws-more">+9 more</div>
-          </div>
-
-          <div class="ws-day">
-            <div class="ws-dtop"><span class="ws-dname">Tue</span><span class="ws-dnum">28</span></div>
-            <div class="ws-count">7 calls</div>
-            <div class="ws-chip"><span class="t">9:30</span>Dana Whitlock</div>
-            <div class="ws-chip"><span class="t">1:00</span>Rachel Simmons</div>
-            <div class="ws-more">+5 more</div>
-          </div>
-
-          <div class="ws-day">
-            <div class="ws-dtop"><span class="ws-dname">Wed</span><span class="ws-dnum">29</span></div>
-            <div class="ws-count">4 calls</div>
-            <div class="ws-chip"><span class="t">11:00</span>Trevor Nakamura</div>
-            <div class="ws-chip"><span class="t">2:00</span>Elena Vasquez</div>
-            <div class="ws-more">+2 more</div>
-          </div>
-
-          <div class="ws-day">
-            <div class="ws-dtop"><span class="ws-dname">Thu</span><span class="ws-dnum">30</span></div>
-            <div class="ws-count">6 calls</div>
-            <div class="ws-chip"><span class="t">10:00</span>Simone Baptiste</div>
-            <div class="ws-chip"><span class="t">3:30</span>Amara Nwosu</div>
-            <div class="ws-more">+4 more</div>
-          </div>
-
-          <div class="ws-day">
-            <div class="ws-dtop"><span class="ws-dname">Fri</span><span class="ws-dnum">31</span></div>
-            <div class="ws-count">3 calls</div>
-            <div class="ws-chip"><span class="t">9:00</span>Isabel Cortez</div>
-            <div class="ws-chip"><span class="t">1:15</span>Marcus Fielding</div>
-            <div class="ws-more">+1 more</div>
-          </div>
-
-          <div class="ws-day empty">
-            <div class="ws-dtop"><span class="ws-dname">Sat</span><span class="ws-dnum">1</span></div>
-            <div class="ws-count">—</div>
-            <div class="ws-empty">Nothing booked.<br>Nobody scheduled on.</div>
-          </div>
-
-        </div>
+        <div class="ws-title eyebrow" id="wsTitle">This week</div>
+        <div class="ws-grid" id="wsGrid"></div>
       </div>
 
       <!-- DAY TIMELINE -->
-      <div class="day-wrap">
-        <div class="day-title eyebrow">CA-01 / Today — Sunday, July 26</div>
-
-        <div class="hour">
-          <div class="hour-label">9:00 AM</div>
-          <div class="hour-body">
-            <div class="evt noshow past">
-              <div class="evt-time">9:00</div>
-              <div class="evt-main">
-                <div class="evt-client">Trevor Nakamura</div>
-                <div class="evt-meta">Sales · Survey Completed <span class="rail-tag">SALES</span></div>
-                <div class="evt-outcome">Never joined. <b>Agent 1 sent a rebook link 20 minutes later — no reply yet.</b></div>
-              </div>
-              <div class="evt-right">
-                <div class="who"><span class="av human">NC</span><span class="who-name">Nina Castellano</span></div>
-                <span class="tag noshow">No show</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="hour">
-          <div class="hour-label">10:00 AM</div>
-          <div class="hour-body">
-            <div class="evt done past">
-              <div class="evt-time">10:00</div>
-              <div class="evt-main">
-                <div class="evt-client">Amara Nwosu</div>
-                <div class="evt-meta">Sales · Booked <span class="rail-tag">SALES</span></div>
-                <div class="evt-outcome">Asked her for pay stubs — <b>still waiting</b></div>
-              </div>
-              <div class="evt-right">
-                <div class="who"><span class="av human">JB</span><span class="who-name">Jordan Blake</span></div>
-                <span class="tag done">Done · 38m</span>
-              </div>
-            </div>
-
-            <div class="evt done past">
-              <div class="evt-time">10:20</div>
-              <div class="evt-main">
-                <div class="evt-client">Marcus Ibe</div>
-                <div class="evt-meta">Sales · Decision Rendered <span class="rail-tag">SALES</span></div>
-                <div class="evt-outcome">Closed — <b>$3,000 deposit collected</b></div>
-              </div>
-              <div class="evt-right">
-                <div class="who"><span class="av human">NC</span><span class="who-name">Nina Castellano</span></div>
-                <span class="tag done">Done · 34m</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="hour">
-          <div class="hour-label">11:00 AM</div>
-          <div class="hour-body">
-            <div class="evt done past">
-              <div class="evt-time">11:00</div>
-              <div class="evt-main">
-                <div class="evt-client">Maria Delgado</div>
-                <div class="evt-meta">Alt-Fin (Lendflow) · Round Funded <span class="rail-tag">ALT-FIN</span></div>
-                <div class="evt-outcome">Walked her through the wire — <b>$18,500 landed at 2:45 PM</b></div>
-              </div>
-              <div class="evt-right">
-                <div class="who"><span class="av human">MW</span><span class="who-name">Marcus Webb</span></div>
-                <span class="tag done">Done · 22m</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="hour">
-          <div class="hour-label">12:00 PM</div>
-          <div class="hour-body">
-            <div class="evt done past">
-              <div class="evt-time">12:40</div>
-              <div class="evt-main">
-                <div class="evt-client">Devon Marsh</div>
-                <div class="evt-meta">Sales · Booked <span class="rail-tag">SALES</span></div>
-                <div class="evt-outcome">Closed — <b>$3,000 deposit collected</b></div>
-              </div>
-              <div class="evt-right">
-                <div class="who"><span class="av human">JB</span><span class="who-name">Jordan Blake</span></div>
-                <span class="tag done">Done · 51m</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="hour">
-          <div class="hour-label">1:00 PM</div>
-          <div class="hour-body">
-            <div class="open-slot">Nothing booked this hour</div>
-          </div>
-        </div>
-
-        <div class="hour">
-          <div class="hour-label">2:00 PM</div>
-          <div class="hour-body">
-            <div class="evt live">
-              <div class="evt-time">2:33</div>
-              <div class="evt-main">
-                <div class="evt-client">Priya Nair</div>
-                <div class="evt-meta">Sales · Diagnostic Paid <span class="rail-tag">SALES</span></div>
-                <div class="evt-outcome">Going through the Chase card rate on her Funding Snapshot</div>
-              </div>
-              <div class="evt-right">
-                <div class="who"><span class="av human">JB</span><span class="who-name">Jordan Blake</span></div>
-                <span class="tag live"><span class="d"></span>Live · 14m</span>
-              </div>
-            </div>
-
-            <div class="nowline"><span class="lbl">2:47 PM</span><span class="ln"></span></div>
-          </div>
-        </div>
-
-        <div class="hour">
-          <div class="hour-label">3:00 PM</div>
-          <div class="hour-body">
-            <div class="evt next">
-              <div class="evt-time">3:02</div>
-              <div class="evt-main">
-                <div class="evt-client">Derek Owusu</div>
-                <div class="evt-meta">Card Stacking · Docs Received <span class="rail-tag">CARD STACK</span></div>
-                <div class="evt-outcome">Context Fetcher has his file ready — see the panel on the right</div>
-              </div>
-              <div class="evt-right">
-                <div class="who"><span class="av human">MW</span><span class="who-name">Marcus Webb</span></div>
-                <span class="tag next">Starts in 15m</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="hour">
-          <div class="hour-label">4:00 PM</div>
-          <div class="hour-body">
-            <div class="evt">
-              <div class="evt-time">4:00</div>
-              <div class="evt-main">
-                <div class="evt-client">Hollis Grant</div>
-                <div class="evt-meta">Sales · Booked <span class="rail-tag">SALES</span></div>
-              </div>
-              <div class="evt-right">
-                <div class="who"><span class="av human">NC</span><span class="who-name">Nina Castellano</span></div>
-              </div>
-            </div>
-
-            <div class="evt conflict">
-              <div class="evt-time">4:30</div>
-              <div class="evt-main">
-                <div class="evt-client">Meredith Yao</div>
-                <div class="evt-meta">Sales · Decision Rendered <span class="rail-tag">SALES</span></div>
-                <div class="evt-outcome">Booked Friday · follow-up on her roadmap</div>
-              </div>
-              <div class="evt-right">
-                <div class="who"><span class="av human">JB</span><span class="who-name">Jordan Blake</span></div>
-                <span class="tag conflict">Conflict</span>
-              </div>
-            </div>
-
-            <div class="evt conflict">
-              <div class="evt-time">4:30</div>
-              <div class="evt-main">
-                <div class="evt-client">Carlos Bettencourt</div>
-                <div class="evt-meta">Sales · Booked <span class="rail-tag">SALES</span></div>
-                <div class="evt-outcome">Setter Josh booked this 2 minutes ago — <b>clashes with Meredith Yao on Jordan's calendar</b></div>
-                <div class="evt-fix"><span>Give Carlos to Nina</span><span>Reschedule Meredith</span></div>
-              </div>
-              <div class="evt-right">
-                <div class="who"><span class="av agent">SJ</span><span class="who-name">booked by Setter Josh</span></div>
-                <span class="tag new">Just added</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="hour">
-          <div class="hour-label">5:00 PM</div>
-          <div class="hour-body">
-            <div class="evt">
-              <div class="evt-time">5:15</div>
-              <div class="evt-main">
-                <div class="evt-client">Isabel Cortez</div>
-                <div class="evt-meta">Inquiry Removal · Bureau Processing <span class="rail-tag">INQUIRY</span></div>
-                <div class="evt-outcome">Three-way call to TransUnion on the Sallie Mae inquiry</div>
-              </div>
-              <div class="evt-right">
-                <div class="who"><span class="av human">AT</span><span class="who-name">Alvin Torres</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="hour">
-          <div class="hour-label">6:00 PM</div>
-          <div class="hour-body">
-            <div class="open-slot">Nothing booked after 5:15 — 4 slots still open tonight</div>
-          </div>
-        </div>
-
-      </div>
+      <div class="day-wrap"></div>
     </div>
 
     <!-- ============ RIGHT RAIL ============ -->
@@ -681,13 +430,13 @@
         </div>
         <div class="un-body">
           <div class="un-sec">Before you dial</div>
-          <div class="un-bullet" id="unBody">No briefing is stored for calendar appointments yet. Open the client file for context.</div>
+          <div class="un-bullet" id="unBody">No briefing on file.</div>
 
           <div class="un-div"></div>
 
           <div class="un-actions">
             <button type="button" class="un-join" id="unJoin" disabled title="No call link on this appointment">Join Call</button>
-            <button type="button" class="un-alt" id="unFile" disabled title="No client linked">His file</button>
+            <button type="button" class="un-alt" id="unFile" disabled title="No client linked">Client file</button>
           </div>
         </div>
       </div>
@@ -701,6 +450,7 @@
       <div class="cov" id="covList">
         <div class="cov-row"><span class="cov-name" style="color:var(--ink2)">No coverage feed yet — shift roster is on Staff &amp; Teams.</span></div>
       </div>
+    </aside>
 
   </main>
 
@@ -745,7 +495,7 @@
     <span class="ghost"></span>
     <span>fundhub-calendar · v1</span>
     <span>org: fundhub</span>
-    <span id="footView">sun jul 26 · 10 booked · 6 left</span>
+    <span id="footView">—</span>
     <span>context loads 15 minutes before every call</span>
     <span class="nominal"><span class="pulse"></span>systems nominal · fundhub.ai</span>
   </footer>
@@ -753,344 +503,536 @@
   </div>
 </div>
 
-<script>
-
-
-/* ══════════════════════════════════════════════════════════════════════════
-   CALENDAR
-   ══════════════════════════════════════════════════════════════════════════ */
-(function(){
-"use strict";
-
-/* ---------- day / week toggle ----------
-   Day  = the week strip as context + the hour-by-hour timeline.
-   Week = the strip takes the whole pane and the timeline steps aside.  */
-var segs=[].slice.call(document.querySelectorAll('#seg span'));
-var dateLabel=document.querySelector('.datelabel');
-var foot=document.getElementById('footView');
-var DAY_LABEL=dateLabel.textContent.trim();
-var WEEK_LABEL=(document.querySelector('.ws-title').textContent.split('·')[1]||'').trim();
-var DAY_FOOT=foot.textContent.trim();
-
-function setView(v){
-  segs.forEach(function(x){ x.classList.toggle('active', x.getAttribute('data-v')===v); });
-  document.body.classList.toggle('week-view', v==='week');
-  dateLabel.textContent = v==='week' ? ('Week of '+WEEK_LABEL) : DAY_LABEL;
-  foot.textContent = v==='week' ? 'week of '+WEEK_LABEL.toLowerCase() : DAY_FOOT;
-}
-segs.forEach(function(x){
-  x.addEventListener('click',function(){ setView(x.getAttribute('data-v')); });
-});
-
-/* ---------- a week day selects into the day view ----------
-   scoped to .weekstrip: the demonstration drawer reuses .ws-day markup */
-var strip=document.querySelector('.weekstrip');
-[].slice.call(strip.querySelectorAll('.ws-day')).forEach(function(d){
-  if(d.classList.contains('empty')) return;
-  d.style.cursor='pointer';
-  d.addEventListener('click',function(){
-    strip.querySelectorAll('.ws-day').forEach(function(x){x.classList.remove('today')});
-    d.classList.add('today');
-    var nm=d.querySelector('.ws-dname'), nu=d.querySelector('.ws-dnum');
-    var FULL={Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',
-              Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
-    var label=(FULL[nm.textContent.trim()]||nm.textContent.trim())+', July '+nu.textContent.trim();
-    DAY_LABEL=label;
-    DAY_FOOT=(d.querySelector('.ws-count')||{textContent:''}).textContent.trim().toLowerCase();
-    setView('day');
-  });
-});
-
-/* ---------- date nav + today ---------- */
-var navs=[].slice.call(document.querySelectorAll('.navbtn'));
-var days=[].slice.call(strip.querySelectorAll('.ws-day:not(.empty)'));
-function step(dir){
-  var i=days.findIndex(function(d){return d.classList.contains('today')});
-  var j=Math.min(days.length-1,Math.max(0,(i<0?0:i)+dir));
-  if(days[j]) days[j].click();
-}
-if(navs[0]) navs[0].addEventListener('click',function(){step(-1)});
-if(navs[1]) navs[1].addEventListener('click',function(){step(1)});
-var todayBtn=document.querySelector('.today-btn');
-if(todayBtn) todayBtn.addEventListener('click',function(){ if(days[0]) days[0].click(); });
-
-/* ---------- a finished call is one line; rail, stage and the owner's name
-     move to the row's hover title so nothing is actually lost ---------- */
-[].slice.call(document.querySelectorAll('.evt.past')).forEach(function(e){
-  var meta=e.querySelector('.evt-meta'), who=e.querySelector('.who-name'),
-      out=e.querySelector('.evt-outcome'), bits=[];
-  if(meta) bits.push(meta.textContent.replace(/\s+/g,' ').trim());
-  if(who)  bits.push(who.textContent.trim());
-  if(out)  bits.push(out.textContent.replace(/\s+/g,' ').trim());
-  e.title=bits.join(' · ');
-});
-
-/* ---------- the double-booking is resolved on the rows that clash ---------- */
-[].slice.call(document.querySelectorAll('.evt-fix span')).forEach(function(b){
-  b.addEventListener('click',function(){
-    document.querySelectorAll('.day-wrap .evt.conflict').forEach(function(e){
-      e.classList.remove('conflict');
-      var t=e.querySelector('.tag.conflict'); if(t) t.remove();
-      var f=e.querySelector('.evt-fix'); if(f) f.remove();
-    });
-    document.querySelectorAll('.then-row.conflict').forEach(function(r){
-      r.classList.remove('conflict');
-      var s=r.querySelector('.then-sub'); if(s) s.removeAttribute('style');
-    });
-  });
-});
-
-/* ---------- demonstration states ---------- */
-var dz=document.getElementById('demozone'), dTog=document.getElementById('demoToggle'),
-    dBody=document.getElementById('demoBody');
-dTog.addEventListener('click',function(){
-  var open=dBody.hidden;
-  dBody.hidden=!open;
-  dz.classList.toggle('open',open);
-  dTog.setAttribute('aria-expanded',String(open));
-});
-})();
-</script>
 <script src="data.js"></script>
 <script>
-
-/* Calendar — dated work from /api/tasks. Bookings themselves have no endpoint
-   (Cal.com writes a task via comms.mjs, but there is no bookings table), so the
-   month grid keeps its sample markup and only the dated-task list is real. */
 (function () {
-  "use strict";
-  var esc = function (v) {
-    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
-      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
-  };
-  var day = function (d) {
-    return d ? new Date(d).toLocaleDateString("en-US",
-      { weekday: "short", month: "short", day: "numeric" }) : "—";
-  };
+"use strict";
 
-  /* Paint the VISIBLE day timeline.
+var DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+var FULL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+var MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-     This used to write <tr> rows into #demoBody — the collapsed, hidden
-     "Demonstration states" drawer, and a <div> at that. The real schedule went
-     somewhere nobody could see it while the banner turned mint and announced
-     "live schedule", so the visible calendar was 100% fabricated under a badge
-     saying it was real. That is worse than showing nothing.
+var datedTasks = [];
+var selectedDate = startOfDay(new Date());
+var selectedId = null;
+var view = "day";
+var loaded = false;
 
-     It now rebuilds .day-wrap using the screen's OWN classes and nesting
-     (.hour > .hour-label + .hour-body > .evt > .evt-time/.evt-main/.evt-right),
-     so the layout and styling are untouched and only the content is real. */
+function esc(v) {
+  return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+    return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c];
+  });
+}
+function isUuid(v) {
+  return UUID_RE.test(String(v || "").trim());
+}
+function startOfDay(d) {
+  var x = new Date(d.getTime());
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+function sameDay(a, b) {
+  return a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+function sundayOf(d) {
+  var x = startOfDay(d);
+  x.setDate(x.getDate() - x.getDay());
+  return x;
+}
+function ymd(d) {
+  var m = d.getMonth() + 1, day = d.getDate();
+  return d.getFullYear() + "-" + (m < 10 ? "0" + m : m) + "-" + (day < 10 ? "0" + day : day);
+}
+function parseYmd(s) {
+  var p = String(s).split("-");
+  return startOfDay(new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])));
+}
+function hourLabel(d) {
+  var h = d.getHours();
+  var ampm = h < 12 ? "AM" : "PM";
+  var h12 = h % 12 === 0 ? 12 : h % 12;
+  return h12 + ":00 " + ampm;
+}
+function clockTime(d) {
+  var h = d.getHours(), m = d.getMinutes();
+  var h12 = h % 12 === 0 ? 12 : h % 12;
+  return h12 + ":" + (m < 10 ? "0" + m : m);
+}
+function initials(name) {
+  var parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "??";
+  return (parts[0][0] + (parts[1] ? parts[1][0] : "")).toUpperCase();
+}
+function displayName(t) {
+  var n = String(t.client_name || "").trim();
+  if (n && !isUuid(n)) return n;
+  var title = String(t.title || "").trim();
+  if (title && !isUuid(title)) return title;
+  return "Booked work";
+}
+function briefingText(t) {
+  var title = String(t && t.title || "").trim();
+  if (title && !isUuid(title)) return title;
+  return "No briefing on file.";
+}
+function meetingUrl(t) {
+  return (t && (t.meeting_url || t.join_url)) || "";
+}
+function tasksOn(day) {
+  return datedTasks.filter(function (t) {
+    return sameDay(new Date(t.due_at), day);
+  }).sort(function (a, b) {
+    return new Date(a.due_at) - new Date(b.due_at);
+  });
+}
 
-  var hourLabel = function (d) {
-    var h = d.getHours();
-    var ampm = h < 12 ? "AM" : "PM";
-    var h12 = h % 12 === 0 ? 12 : h % 12;
-    return h12 + ":00 " + ampm;
-  };
-  var clockTime = function (d) {
-    var h = d.getHours(), m = d.getMinutes();
-    var h12 = h % 12 === 0 ? 12 : h % 12;
-    return h12 + ":" + (m < 10 ? "0" + m : m);
-  };
-  var initials = function (name) {
-    var parts = String(name || "").trim().split(/\s+/).filter(Boolean);
-    if (!parts.length) return "??";
-    return (parts[0][0] + (parts[1] ? parts[1][0] : "")).toUpperCase();
-  };
+function tickClock() {
+  var el = document.querySelector(".clock");
+  if (!el) return;
+  el.textContent = new Date().toLocaleString("en-US", {
+    weekday: "short", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", second: "2-digit"
+  });
+}
+function dateLabelText(d) {
+  return FULL[d.getDay()] + ", " + MONTHS[d.getMonth()] + " " + d.getDate();
+}
+function weekRangeLabel(sun) {
+  var sat = new Date(sun.getTime());
+  sat.setDate(sat.getDate() + 6);
+  return MONTHS_SHORT[sun.getMonth()] + " " + sun.getDate() +
+    " – " + MONTHS_SHORT[sat.getMonth()] + " " + sat.getDate();
+}
 
-  FHData.wire(FHData.taskQueue({ done: false, limit: 200 }), "scheduled work",
-    function (data) {
-      var rows = (data.tasks || []).filter(function (t) { return t.due_at; });
-      if (!rows.length) return null;
-      var wrap = document.querySelector(".day-wrap");
-      if (!wrap) return null;
+function setView(v) {
+  view = v;
+  [].slice.call(document.querySelectorAll("#seg span")).forEach(function (x) {
+    x.classList.toggle("active", x.getAttribute("data-v") === v);
+  });
+  document.body.classList.toggle("week-view", v === "week");
+  paintDateLabel();
+  paintFooter();
+}
 
-      rows.sort(function (a, b) { return new Date(a.due_at) - new Date(b.due_at); });
+function paintDateLabel() {
+  var el = document.querySelector(".datelabel");
+  if (!el) return;
+  if (view === "week") el.textContent = "Week of " + weekRangeLabel(sundayOf(selectedDate));
+  else el.textContent = dateLabelText(selectedDate);
+}
 
-      // Only today's work belongs on the day timeline; the rest is still real
-      // and is reported in the banner rather than silently dropped.
-      var now = new Date();
-      var sameDay = function (d) {
-        return d.getFullYear() === now.getFullYear() &&
-               d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
-      };
-      var today = rows.filter(function (t) { return sameDay(new Date(t.due_at)); });
-      var later = rows.length - today.length;
+function paintStats() {
+  var bookedEl = document.getElementById("statBooked");
+  var doneEl = document.getElementById("statDone");
+  var noEl = document.getElementById("statNoshow");
+  var showEl = document.getElementById("statShow");
+  var leftEl = document.getElementById("statLeft");
+  if (noEl) { noEl.textContent = "—"; noEl.className = "v"; }
+  if (showEl) { showEl.textContent = "—"; showEl.className = "v"; }
+  if (!loaded) {
+    if (bookedEl) bookedEl.textContent = "—";
+    if (doneEl) doneEl.textContent = "—";
+    if (leftEl) leftEl.textContent = "—";
+    return;
+  }
+  var dayTasks = tasksOn(selectedDate);
+  var doneN = dayTasks.filter(function (t) { return t.done; }).length;
+  var leftN = dayTasks.filter(function (t) { return !t.done; }).length;
+  if (bookedEl) bookedEl.textContent = String(dayTasks.length);
+  if (doneEl) doneEl.textContent = String(doneN);
+  if (leftEl) leftEl.textContent = String(leftN);
+}
 
-      var html = '<div class="day-title eyebrow">CA-01 / Today — ' +
-        esc(now.toLocaleDateString("en-US",
-          { weekday: "long", month: "long", day: "numeric" })) + "</div>";
+function paintWeekStrip() {
+  var grid = document.getElementById("wsGrid");
+  var title = document.getElementById("wsTitle");
+  var sun = sundayOf(selectedDate);
+  var today = startOfDay(new Date());
+  if (title) title.textContent = "This week · " + weekRangeLabel(sun);
+  if (!grid) return;
+  var html = "";
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(sun.getTime());
+    d.setDate(sun.getDate() + i);
+    var items = tasksOn(d);
+    var isToday = sameDay(d, today);
+    var isSel = sameDay(d, selectedDate);
+    var empty = items.length === 0;
+    var cls = "ws-day" + (isSel ? " today" : "") + (empty ? " empty" : "");
+    var count = "—";
+    if (loaded) {
+      if (!items.length) count = "—";
+      else {
+        count = items.length + " booked";
+        var left = items.filter(function (t) { return !t.done; }).length;
+        if (isToday && left) count += " · " + left + " left";
+      }
+    }
+    html += '<div class="' + cls + '" data-ymd="' + ymd(d) + '" role="button" tabindex="0">';
+    html += '<div class="ws-dtop"><span class="ws-dname">' + DAYS[d.getDay()] +
+      '</span><span class="ws-dnum">' + d.getDate() + "</span></div>";
+    html += '<div class="ws-count">' + esc(count) + "</div>";
+    if (items.length) {
+      items.slice(0, 2).forEach(function (t) {
+        html += '<div class="ws-chip"><span class="t">' + esc(clockTime(new Date(t.due_at))) +
+          "</span>" + esc(displayName(t)) + "</div>";
+      });
+      if (items.length > 2) html += '<div class="ws-more">+' + (items.length - 2) + " more</div>";
+    } else {
+      html += '<div class="ws-empty">Nothing booked.</div>';
+    }
+    html += "</div>";
+  }
+  grid.innerHTML = html;
+}
 
-      if (!today.length) {
-        html += '<div class="hour"><div class="hour-label">—</div><div class="hour-body">' +
-                '<div class="ws-empty">Nothing scheduled for today.</div></div></div>';
+function paintDay() {
+  var wrap = document.querySelector(".day-wrap");
+  if (!wrap) return;
+  var today = startOfDay(new Date());
+  var isToday = sameDay(selectedDate, today);
+  var label = (isToday ? "Today — " : "") + dateLabelText(selectedDate);
+  var html = '<div class="day-title eyebrow">' + esc(label) + "</div>";
+  var items = tasksOn(selectedDate);
+  if (!items.length) {
+    html += '<div class="hour"><div class="hour-label">—</div><div class="hour-body">' +
+      '<div class="open-slot">Nothing booked.</div></div></div>';
+    wrap.innerHTML = html;
+    return;
+  }
+  var byHour = [];
+  items.forEach(function (t) {
+    var due = new Date(t.due_at);
+    var key = hourLabel(due);
+    var slot = byHour.filter(function (s) { return s.key === key; })[0];
+    if (!slot) { slot = { key: key, items: [] }; byHour.push(slot); }
+    slot.items.push({ t: t, d: due });
+  });
+  var now = new Date();
+  var nowHour = hourLabel(now);
+  var nowLineDrawn = false;
+  byHour.forEach(function (slot) {
+    html += '<div class="hour"><div class="hour-label">' + esc(slot.key) + "</div>" +
+      '<div class="hour-body">';
+    slot.items.forEach(function (it) {
+      if (isToday && !nowLineDrawn && it.d > now) {
+        html += '<div class="nowline"><span class="lbl">' + esc(clockTime(now)) +
+          '</span><span class="ln"></span></div>';
+        nowLineDrawn = true;
+      }
+      var who = it.t.assignee_name || "";
+      var done = !!it.t.done;
+      var isNext = selectedId && it.t.id === selectedId;
+      var cls = "evt" + (done ? " done past" : "") + (isNext ? " next" : "");
+      html += '<div class="' + cls + '">' +
+        '<div class="evt-time">' + esc(clockTime(it.d)) + "</div>" +
+        '<div class="evt-main">' +
+          '<div class="evt-client">' + esc(displayName(it.t)) + "</div>" +
+          '<div class="evt-meta">' + esc(briefingText(it.t)) +
+            (it.t.assignee_role
+              ? ' <span class="rail-tag">' + esc(String(it.t.assignee_role).toUpperCase()) + "</span>"
+              : "") +
+          "</div>" +
+        "</div>" +
+        '<div class="evt-right">' +
+          (who
+            ? '<div class="who"><span class="av human">' + esc(initials(who)) +
+              '</span><span class="who-name">' + esc(who) + "</span></div>"
+            : '<div class="who"><span class="who-name">unclaimed</span></div>') +
+          (done ? '<span class="tag done">Done</span>' : "") +
+        "</div></div>";
+    });
+    if (isToday && !nowLineDrawn && slot.key === nowHour) {
+      html += '<div class="nowline"><span class="lbl">' + esc(clockTime(now)) +
+        '</span><span class="ln"></span></div>';
+      nowLineDrawn = true;
+    }
+    html += "</div></div>";
+  });
+  wrap.innerHTML = html;
+}
+
+function defaultUpNext(dayTasks) {
+  var now = Date.now();
+  var open = dayTasks.filter(function (t) { return !t.done; });
+  var upcoming = open.filter(function (t) { return new Date(t.due_at).getTime() >= now; });
+  if (upcoming.length) return upcoming[0];
+  if (open.length) return open[0];
+  return dayTasks[0] || null;
+}
+
+function paintRail() {
+  var dayTasks = tasksOn(selectedDate);
+  var current = null;
+  if (selectedId) {
+    current = datedTasks.filter(function (t) { return String(t.id) === String(selectedId); })[0] || null;
+  }
+  if (!current) current = defaultUpNext(dayTasks);
+
+  var joinBtn = document.getElementById("unJoin");
+  var fileBtn = document.getElementById("unFile");
+  var minsEl = document.getElementById("unMins");
+  var lblEl = document.getElementById("unMinLbl");
+  var whenEl = document.getElementById("unWhen");
+  var clientEl = document.getElementById("unClient");
+  var metaEl = document.getElementById("unMeta");
+  var bodyEl = document.getElementById("unBody");
+
+  if (!current) {
+    if (minsEl) minsEl.textContent = "—";
+    if (lblEl) lblEl.textContent = "no call linked";
+    if (whenEl) whenEl.textContent = "";
+    if (clientEl) clientEl.textContent = "Nothing up next";
+    if (metaEl) metaEl.textContent = "Dated work from the task queue paints here when one is due.";
+    if (bodyEl) bodyEl.textContent = "No briefing on file.";
+    if (fileBtn) {
+      fileBtn.disabled = true;
+      delete fileBtn.dataset.clientId;
+      fileBtn.title = "No client linked";
+    }
+    if (joinBtn) {
+      joinBtn.disabled = true;
+      delete joinBtn.dataset.joinUrl;
+      joinBtn.title = "No call link on this appointment";
+    }
+  } else {
+    selectedId = current.id;
+    var nd = new Date(current.due_at);
+    var mins = Math.round((nd.getTime() - Date.now()) / 60000);
+    if (minsEl) minsEl.textContent = String(Math.abs(mins));
+    if (lblEl) lblEl.textContent = mins >= 0 ? "minutes out" : "minutes overdue";
+    if (whenEl) whenEl.textContent = clockTime(nd);
+    if (clientEl) clientEl.textContent = displayName(current);
+    if (metaEl) {
+      metaEl.textContent = (current.assignee_name ? current.assignee_name + " · " : "") +
+        briefingText(current);
+    }
+    if (bodyEl) bodyEl.textContent = briefingText(current);
+    if (fileBtn) {
+      if (current.client_id) {
+        fileBtn.disabled = false;
+        fileBtn.dataset.clientId = current.client_id;
+        fileBtn.removeAttribute("title");
       } else {
-        // Group into the hour blocks the layout expects.
-        var byHour = [];
-        today.forEach(function (t) {
-          var d = new Date(t.due_at);
-          var key = hourLabel(d);
-          var slot = byHour.filter(function (s) { return s.key === key; })[0];
-          if (!slot) { slot = { key: key, items: [] }; byHour.push(slot); }
-          slot.items.push({ t: t, d: d });
-        });
-
-        byHour.forEach(function (slot) {
-          html += '<div class="hour"><div class="hour-label">' + esc(slot.key) + "</div>" +
-                  '<div class="hour-body">';
-          slot.items.forEach(function (it) {
-            /* Deliberately NOT tagging overdue rows `.past`. That class is the
-               screen's collapsed presentation for an appointment that already
-               happened — it shrinks the row and sets `.evt-meta{display:none}`,
-               which hid the task title. Everything here is an OPEN task
-               (done:false), so one whose due time has passed needs more
-               attention than the rest, not a greyed-out row with no title. */
-            var who = it.t.assignee_name || "";
-            html += '<div class="evt">' +
-              '<div class="evt-time">' + esc(clockTime(it.d)) + "</div>" +
-              '<div class="evt-main">' +
-                '<div class="evt-client">' + esc(it.t.client_name || "(no client)") + "</div>" +
-                '<div class="evt-meta">' + esc(it.t.title) +
-                  (it.t.assignee_role
-                    ? ' <span class="rail-tag">' + esc(String(it.t.assignee_role).toUpperCase()) + "</span>"
-                    : "") +
-                "</div>" +
-                (it.t.body ? '<div class="evt-outcome">' + esc(it.t.body) + "</div>" : "") +
-              "</div>" +
-              '<div class="evt-right">' +
-                (who
-                  ? '<div class="who"><span class="av human">' + esc(initials(who)) +
-                    '</span><span class="who-name">' + esc(who) + "</span></div>"
-                  : '<div class="who"><span class="who-name">unclaimed</span></div>') +
-              "</div>" +
-            "</div>";
-          });
-          html += "</div></div>";
-        });
+        fileBtn.disabled = true;
+        delete fileBtn.dataset.clientId;
+        fileBtn.title = "No client linked to this task";
       }
-      wrap.innerHTML = html;
-
-      // Paint Up Next from the soonest open dated task. Join Call stays
-      // disabled until a meeting URL exists on the task (none today). His file
-      // opens the client control panel when client_id is present.
-      var next = today[0] || rows[0] || null;
-      var joinBtn = document.getElementById("unJoin");
-      var fileBtn = document.getElementById("unFile");
-      if (next) {
-        var nd = new Date(next.due_at);
-        var mins = Math.round((nd.getTime() - Date.now()) / 60000);
-        var minsEl = document.getElementById("unMins");
-        var lblEl = document.getElementById("unMinLbl");
-        if (minsEl) minsEl.textContent = String(Math.abs(mins));
-        if (lblEl) lblEl.textContent = mins >= 0 ? "minutes out" : "minutes overdue";
-        var whenEl = document.getElementById("unWhen");
-        if (whenEl) whenEl.textContent = clockTime(nd);
-        var clientEl = document.getElementById("unClient");
-        if (clientEl) clientEl.textContent = next.client_name || "(no client)";
-        var metaEl = document.getElementById("unMeta");
-        if (metaEl) {
-          metaEl.textContent = (next.assignee_name ? next.assignee_name + " · " : "") +
-            (next.title || "open task");
-        }
-        var bodyEl = document.getElementById("unBody");
-        if (bodyEl) bodyEl.textContent = next.body || "No briefing text on this task.";
-        if (fileBtn) {
-          if (next.client_id) {
-            fileBtn.disabled = false;
-            fileBtn.dataset.clientId = next.client_id;
-            fileBtn.removeAttribute("title");
-          } else {
-            fileBtn.disabled = true;
-            delete fileBtn.dataset.clientId;
-            fileBtn.title = "No client linked to this task";
-          }
-        }
-        if (joinBtn) {
-          var joinUrl = next.meeting_url || next.join_url || null;
-          if (joinUrl) {
-            joinBtn.disabled = false;
-            joinBtn.dataset.joinUrl = joinUrl;
-            joinBtn.removeAttribute("title");
-          } else {
-            joinBtn.disabled = true;
-            delete joinBtn.dataset.joinUrl;
-            joinBtn.title = "No call link on this appointment";
-          }
-        }
-        // Later items in the Then list.
-        var then = document.getElementById("thenList");
-        if (then) {
-          var rest = rows.filter(function (t) { return t !== next; }).slice(0, 6);
-          if (!rest.length) {
-            then.innerHTML = '<div class="then-row"><div class="then-name" style="color:var(--ink2)">Nothing else dated after Up Next.</div></div>';
-          } else {
-            then.innerHTML = rest.map(function (t) {
-              var d = new Date(t.due_at);
-              return '<div class="then-row">' +
-                '<div class="then-time">' + esc(clockTime(d)) + "</div>" +
-                '<div class="then-name">' + esc(t.client_name || t.title || "Task") +
-                '<div class="then-sub">' + esc(t.assignee_name || t.title || "") + "</div></div></div>";
-            }).join("");
-          }
-        }
+    }
+    if (joinBtn) {
+      var url = meetingUrl(current);
+      if (url) {
+        joinBtn.disabled = false;
+        joinBtn.dataset.joinUrl = url;
+        joinBtn.removeAttribute("title");
+      } else {
+        joinBtn.disabled = true;
+        delete joinBtn.dataset.joinUrl;
+        joinBtn.title = "No call link on this appointment";
       }
+    }
+  }
 
-      /* Name EVERY part that is still sample. */
-      return "live schedule · " + today.length + " today" +
-             (later ? " · " + later + " dated later" : "") +
-             " · coverage from open shifts";
-    });
-
-  // Coverage roster — staff currently clocked in.
-  (function loadCoverage() {
-    var cov = document.getElementById("covList");
-    if (!cov || typeof FHData === "undefined") return;
-    var t = "";
-    try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
-    fetch("/api/shifts?roster=1", {
-      headers: t ? { accept: "application/json", authorization: "Bearer " + t }
-                 : { accept: "application/json" }
-    }).then(function (r) { return r.json(); }).then(function (body) {
-      var rows = (body && body.roster) || [];
-      if (!rows.length) {
-        cov.innerHTML = '<div class="cov-row"><span class="cov-name" style="color:var(--ink2)">Nobody clocked in right now.</span></div>';
-        return;
-      }
-      cov.innerHTML = rows.map(function (p) {
-        var name = p.name || p.email || "Staff";
-        var role = p.role ? String(p.role).replace(/_/g, " ") : "";
-        var started = p.started_at ? new Date(p.started_at) : null;
-        var since = started ? started.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-        return '<div class="cov-row"><span class="cov-name">' + esc(name) +
-          '</span><span class="cov-role">' + esc(role) +
-          (since ? ' · since ' + esc(since) : '') + '</span></div>';
+  var then = document.getElementById("thenList");
+  if (then) {
+    var rest = datedTasks.filter(function (t) {
+      return t.id && (!current || String(t.id) !== String(current.id));
+    }).sort(function (a, b) {
+      return new Date(a.due_at) - new Date(b.due_at);
+    }).slice(0, 8);
+    if (!rest.length) {
+      then.innerHTML = '<div class="then-row"><div class="then-name" style="color:var(--ink2)">Nothing else dated after Up Next.</div></div>';
+    } else {
+      then.innerHTML = rest.map(function (t) {
+        var due = new Date(t.due_at);
+        return '<div class="then-row" data-task-id="' + esc(t.id) + '" role="button" tabindex="0">' +
+          '<div class="then-time">' + esc(clockTime(due)) + "</div>" +
+          '<div class="then-name">' + esc(displayName(t)) +
+          '<div class="then-sub">' + esc(briefingText(t)) + "</div></div></div>";
       }).join("");
-    }).catch(function () {
-      cov.innerHTML = '<div class="cov-row"><span class="cov-name" style="color:var(--ink2)">Coverage unavailable — clock in on Staff &amp; Teams.</span></div>';
-    });
-  })();
+    }
+  }
+}
 
-  var joinBtn0 = document.getElementById("unJoin");
-  var fileBtn0 = document.getElementById("unFile");
-  if (joinBtn0) {
-    joinBtn0.addEventListener("click", function () {
-      var url = joinBtn0.dataset.joinUrl;
-      if (!url) {
-        alert("No call link on this appointment yet.");
-        return;
-      }
-      window.open(url, "_blank", "noopener");
-    });
+function paintFooter() {
+  var foot = document.getElementById("footView");
+  if (!foot) return;
+  if (view === "week") {
+    foot.textContent = "week of " + weekRangeLabel(sundayOf(selectedDate)).toLowerCase();
+    return;
   }
-  if (fileBtn0) {
-    fileBtn0.addEventListener("click", function () {
-      var cid = fileBtn0.dataset.clientId;
-      if (!cid) {
-        alert("No client file is linked to this appointment.");
-        return;
-      }
-      location.href = "client-control-panel.html?id=" + encodeURIComponent(cid);
-    });
+  var when = dateLabelText(selectedDate).toLowerCase();
+  if (!loaded) { foot.textContent = when; return; }
+  var items = tasksOn(selectedDate);
+  var left = items.filter(function (t) { return !t.done; }).length;
+  foot.textContent = when + " · " + items.length + " booked · " + left + " left";
+}
+
+function paintAll() {
+  paintDateLabel();
+  paintStats();
+  paintWeekStrip();
+  paintDay();
+  paintRail();
+  paintFooter();
+}
+
+[].slice.call(document.querySelectorAll("#seg span")).forEach(function (x) {
+  x.addEventListener("click", function () { setView(x.getAttribute("data-v")); });
+});
+
+var strip = document.querySelector(".weekstrip");
+function pickDay(el) {
+  if (!el || !el.dataset.ymd) return;
+  selectedDate = parseYmd(el.dataset.ymd);
+  selectedId = null;
+  setView("day");
+  paintAll();
+}
+if (strip) {
+  strip.addEventListener("click", function (e) { pickDay(e.target.closest(".ws-day")); });
+  strip.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    pickDay(e.target.closest(".ws-day"));
+  });
+}
+
+var navs = [].slice.call(document.querySelectorAll(".navbtn"));
+function step(dir) {
+  var x = new Date(selectedDate.getTime());
+  x.setDate(x.getDate() + (view === "week" ? dir * 7 : dir));
+  selectedDate = startOfDay(x);
+  selectedId = null;
+  paintAll();
+}
+if (navs[0]) navs[0].addEventListener("click", function () { step(-1); });
+if (navs[1]) navs[1].addEventListener("click", function () { step(1); });
+var todayBtn = document.querySelector(".today-btn");
+if (todayBtn) {
+  todayBtn.addEventListener("click", function () {
+    selectedDate = startOfDay(new Date());
+    selectedId = null;
+    paintAll();
+  });
+}
+
+var thenList = document.getElementById("thenList");
+if (thenList) {
+  thenList.addEventListener("click", function (e) {
+    var row = e.target.closest(".then-row");
+    if (!row || !row.dataset.taskId) return;
+    selectedId = row.dataset.taskId;
+    var t = datedTasks.filter(function (x) { return String(x.id) === String(selectedId); })[0];
+    if (t && t.due_at) selectedDate = startOfDay(new Date(t.due_at));
+    paintAll();
+  });
+}
+
+var dz = document.getElementById("demozone"), dTog = document.getElementById("demoToggle"),
+    dBody = document.getElementById("demoBody");
+if (dTog && dBody && dz) {
+  dTog.addEventListener("click", function () {
+    var open = dBody.hidden;
+    dBody.hidden = !open;
+    dz.classList.toggle("open", open);
+    dTog.setAttribute("aria-expanded", String(open));
+  });
+}
+
+tickClock();
+setInterval(tickClock, 1000);
+paintAll();
+
+function loadDatedTasks() {
+  if (typeof FHData === "undefined" || !FHData.taskQueue) {
+    return Promise.resolve({ ok: false, source: "offline", error: "data layer missing" });
   }
+  return Promise.all([
+    FHData.taskQueue({ done: false, limit: 200 }),
+    FHData.taskQueue({ done: true, limit: 200 })
+  ]).then(function (parts) {
+    var open = parts[0], closed = parts[1];
+    if ((!open || !open.ok) && (!closed || !closed.ok)) return open || closed;
+    var seen = Object.create(null);
+    var tasks = [];
+    function take(res) {
+      if (!res || !res.ok || !res.data) return;
+      (res.data.tasks || []).forEach(function (t) {
+        if (!t || !t.due_at) return;
+        var key = t.id || (String(t.due_at) + ":" + String(t.title || ""));
+        if (seen[key]) return;
+        seen[key] = true;
+        tasks.push(t);
+      });
+    }
+    take(open);
+    take(closed);
+    return { ok: true, source: "api", data: { tasks: tasks }, error: null };
+  });
+}
+
+if (typeof FHData !== "undefined" && FHData.wire) {
+  FHData.wire(loadDatedTasks(), "scheduled work", function (data) {
+    datedTasks = (data.tasks || []).filter(function (t) { return t && t.due_at; });
+    datedTasks.sort(function (a, b) { return new Date(a.due_at) - new Date(b.due_at); });
+    loaded = true;
+    selectedId = null;
+    paintAll();
+    var todayN = tasksOn(startOfDay(new Date())).length;
+    var later = datedTasks.length - todayN;
+    return "live schedule · " + todayN + " today" +
+      (later > 0 ? " · " + later + " dated later" : "");
+  });
+}
+
+(function loadCoverage() {
+  var cov = document.getElementById("covList");
+  if (!cov) return;
+  var t = "";
+  try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
+  fetch("/api/shifts?roster=1", {
+    headers: t ? { accept: "application/json", authorization: "Bearer " + t }
+               : { accept: "application/json" }
+  }).then(function (r) { return r.json(); }).then(function (body) {
+    var rows = (body && body.roster) || [];
+    if (!rows.length) {
+      cov.innerHTML = '<div class="cov-row"><span class="cov-name" style="color:var(--ink2)">Nobody clocked in right now.</span></div>';
+      return;
+    }
+    cov.innerHTML = rows.map(function (p) {
+      var name = p.name || p.email || "Staff";
+      var role = p.role ? String(p.role).replace(/_/g, " ") : "";
+      var started = p.started_at ? new Date(p.started_at) : null;
+      var since = started ? started.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+      return '<div class="cov-row"><span class="cov-name">' + esc(name) +
+        '</span><span class="cov-role">' + esc(role) +
+        (since ? " · since " + esc(since) : "") + "</span></div>";
+    }).join("");
+  }).catch(function () {
+    cov.innerHTML = '<div class="cov-row"><span class="cov-name" style="color:var(--ink2)">Coverage unavailable — clock in on Staff &amp; Teams.</span></div>';
+  });
+})();
+
+var joinBtn0 = document.getElementById("unJoin");
+var fileBtn0 = document.getElementById("unFile");
+if (joinBtn0) {
+  joinBtn0.addEventListener("click", function () {
+    var url = joinBtn0.dataset.joinUrl;
+    if (!url) return;
+    window.open(url, "_blank", "noopener");
+  });
+}
+if (fileBtn0) {
+  fileBtn0.addEventListener("click", function () {
+    var cid = fileBtn0.dataset.clientId;
+    if (!cid) return;
+    location.href = "client-control-panel.html?client_id=" + encodeURIComponent(cid);
+  });
+}
 })();
 </script>
 </body>

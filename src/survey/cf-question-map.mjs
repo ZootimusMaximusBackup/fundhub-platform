@@ -208,3 +208,29 @@ export function answersByPayloadKey(answersById = {}) {
   }
   return out;
 }
+
+const CURRENT_SCORE = CF_SURVEY_QUESTIONS.find((q) => q.id === "current_score");
+const FICO_BANDS = new Set(CURRENT_SCORE?.options || []);
+
+function looksLikeFicoBand(s) {
+  return FICO_BANDS.has(s) || /^\d{3}-\d{3}$/.test(s) || /^\d{3}\+$/.test(s) || /^not sure$/i.test(s);
+}
+
+function isCfOptionId(v) {
+  if (typeof v === "number") return v >= 10000;
+  return typeof v === "string" && /^\d{5,}$/.test(v.trim());
+}
+
+/* The words they picked on the survey. Never a ClickFunnels option id. */
+export function surveyFicoBand(cf = {}) {
+  const label = cf && cf.cf_svy_self_reported_fico_label;
+  if (label != null && String(label).trim()) {
+    const s = String(label).trim();
+    if (looksLikeFicoBand(s)) return s;
+  }
+  const raw = cf && cf.cf_svy_self_reported_fico;
+  if (raw == null || raw === "") return null;
+  if (isCfOptionId(raw)) return null;
+  const s = String(raw).trim();
+  return looksLikeFicoBand(s) ? s : null;
+}

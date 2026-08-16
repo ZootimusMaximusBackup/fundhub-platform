@@ -34,6 +34,7 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+  included_files = ["assets/ebooks/fundhub-ebook-placeholder.pdf"]
   # letter-generator.js require()s this at load time. esbuild leaves it
   # external, which 502s the whole /api/* function (login included).
   external_node_modules = ["@pdf-lib/fontkit"]
@@ -100,6 +101,11 @@
 # declares `config.path = "/api/*"`; this rewrite is the belt to that braces, so
 # /api/* still routes if the v2 path config is not honoured. The function
 # tolerates either URL shape — see the prefix stripping in its handler.
+[[redirects]]
+  from = "/lender-climate"
+  to = "/climate/"
+  status = 301
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"

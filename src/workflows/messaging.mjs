@@ -192,5 +192,13 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
     });
   }
 
-  return { sent: true };
+  let messageId = ins?.rows?.[0]?.id || null;
+  if (!messageId && providerRef) {
+    const existing = await db.query(
+      `SELECT id FROM messages WHERE org_id = $1 AND provider_ref = $2 LIMIT 1`,
+      [orgId, providerRef]
+    );
+    messageId = existing.rows[0]?.id || null;
+  }
+  return { sent: true, messageId };
 }
