@@ -7,6 +7,7 @@
 |-------|------|--------|
 | 1 Accounts + ship | Report wording, commit/merge, one Netlify deploy, seed/unsuspend, login probes | **done** |
 | 2 Honest UI | Scrub fake names on calendar, template-editor, hiring | **done** |
+| 2b Honest UI leftovers | closer-dashboard / my-numbers / client-portal / documents / products-commissions / galaxy leftovers | **done** — `cursor/honest-ui-leftovers-3e3a` |
 | 3 Template seed | Missing EMAIL/SMS keys; leave `compliance_passed` false | **done** (2 missing keys only) |
 | 4 Re-audit | Browser-click sidebar after #2 deploys (not Playwright) | **partial** — core screens clicked; full 40 still Agent 4 |
 
@@ -99,3 +100,31 @@ Agent 4 can start the full sidebar re-audit — this ship is live.
 | Template seed | **done** | Inserted only missing `EMAIL-S05A-NOSHOW-RECOVERY` + `SMS-S05A-NOSHOW-RECOVERY`. `compliance_passed=false`. Did **not** overwrite 16 already-approved rows. |
 | Dana Reyes on Campaigns | **done in repo** | Sample action log now says Staff. Needs this deploy to be live. |
 | Extra live clicks | **done** | closer-dashboard, closer-call, my-numbers, sales-floor, messaging, campaigns, staff-teams, automations |
+
+---
+
+## Agent 2b log (Honest UI leftovers)
+
+| Step | Status | Notes |
+|------|--------|-------|
+| Claim | **done** | Branch `cursor/honest-ui-leftovers-3e3a` |
+| closer-dashboard | **done** | Empty/fail banners no longer say “sample markup”; Deal Math stays dashes; `not sourced yet` banner |
+| my-numbers | **done** | Removed invented “$500 per deposit” formula; commission note points at ledger |
+| client-portal | **done** | Removed sample-history timeline/payments/docs and $46,500 furniture; honest empty activity |
+| documents | **done** | Empty table says “No documents on file yet” |
+| products-commissions | **done** | PRODUCTS/RULES start empty; local-only rate/product edit honesty note |
+| galaxy / partner-galaxy | **done** | Cleared STANDING sample pairs; partner flares no longer hardcode jordan/marcus/nina |
+| Tests | **done** | `crm-html` + closer-dashboard-view + closer-ui-honest: **67/67** pass; lint clean |
+
+### Change manifest (2b)
+
+- `public/app/closer-dashboard.html`, `src/http/closer-dashboard-view.mjs` (+ test)
+- `public/app/my-numbers.html`
+- `public/app/client-portal.html`
+- `public/app/documents.html`
+- `public/app/products-commissions.html`
+- `public/app/galaxy.html`, `public/app/partner-galaxy.html`
+- `src/http/crm-html.test.mjs`
+- `docs/workflows/screen-audit-2026-08-16.md`
+
+**Not flipped:** `INNGEST_EVENT_KEY`, `outbound_enabled`, `compliance_passed`.

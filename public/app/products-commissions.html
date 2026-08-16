@@ -274,12 +274,16 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
           <div id="ruleList"></div>
           <div style="padding:13px 16px;border-top:1px solid var(--line);background:var(--soft)">
             <div class="eyebrow" style="margin-bottom:7px">PC-03 <span class="sep">/</span> WHY RATES ARE NEVER OVERWRITTEN</div>
-            <div class="note" style="max-width:80ch">
+            <div class="note" style="max-width:80ch;margin-bottom:10px">
               A commission rate is a dated fact, not a setting. Changing one <strong>closes the current version</strong>
               — its effective-to date is stamped the day before the new rate starts — and <strong>opens a new version</strong>.
               Nothing is destroyed. A payout that already accrued keeps pointing at the version that was open the day it
               was earned, so re-running last quarter's ledger produces last quarter's numbers. Every ledger row below
               names the exact rule version it was computed from.
+            </div>
+            <div class="note" id="rulesLocalNote" style="max-width:80ch;color:var(--warn, #B45309)">
+              Rate and product edits on this screen stay in this browser only — they are not saved to the server yet.
+              The payout ledger below is live from /api/read/commissions.
             </div>
           </div>
         </div>
@@ -382,37 +386,12 @@ function dayBefore(iso){
   return d.toISOString().slice(0,10);
 }
 
-/* ══ PRODUCTS ════════════════════════════════════════════════════════════ */
-var PRODUCTS=[
-  {id:'P-01',name:'Business Financial Assessment',cat:'Diagnostic',price:32,variable:false,min:32,max:32,rails:[]},
-  {id:'P-02',name:'Consulting Services Deposit',cat:'Funding',price:3000,variable:false,min:3000,max:3000,rails:[]},
-  {id:'P-03',name:'Consulting Services Package (DIY)',cat:'Repair',price:1000,variable:true,min:750,max:1500,rails:[]},
-  {id:'P-04',name:'Credit Optimization Bundle',cat:'Repair',price:2000,variable:true,min:1500,max:2500,rails:[]},
-  {id:'P-05',name:'Inquiry Removal',cat:'Inquiry Removal',price:95,variable:true,min:75,max:150,rails:[]}
-];
+/* ══ PRODUCTS — start empty; /api/read/products fills when live ══════════ */
+var PRODUCTS=[];
 
-/* ══ COMMISSION RULES — every rate change appends a version ══════════════ */
-var RULES=[
-  {id:'CR-01',name:'Closer — deposit commission',side:'Front-end',scope:'Product · Consulting Services Deposit',who:'Role · Closer',kind:'percent',
-   versions:[
-     {v:1,rate:8,from:'2025-01-01',to:'2026-02-28',by:'Chris Stanbridge',why:'Original rate at launch'},
-     {v:2,rate:10,from:'2026-03-01',to:null,by:'Chris Stanbridge',why:'Raised to hold closers after Q1 attrition'}
-   ]},
-  {id:'CR-02',name:'Closer — success fee share',side:'Back-end',scope:'Event · 10% success fee collected',who:'Role · Closer',kind:'percent',
-   versions:[{v:1,rate:5,from:'2025-01-01',to:null,by:'Chris Stanbridge',why:'Original rate at launch'}]},
-  {id:'CR-03',name:'Sales manager override',side:'Front-end',scope:'All products',who:'Role · Sales Manager',kind:'percent',
-   versions:[
-     {v:1,rate:2,from:'2025-09-18',to:'2026-06-30',by:'Chris Stanbridge',why:'Original override on promotion'},
-     {v:2,rate:2.5,from:'2026-07-01',to:null,by:'Chris Stanbridge',why:'Added Alt-Fin rail to her scope'}
-   ]},
-  {id:'CR-04',name:'Inquiry removal — per unit',side:'Front-end',scope:'Product · Inquiry Removal',who:'Role · Inquiry Remover',kind:'per-unit',
-   versions:[{v:1,rate:25,from:'2025-08-05',to:null,by:'Chris Stanbridge',why:'Set when Alvin was hired'}]},
-  {id:'CR-05',name:'Affiliate referral',side:'Front-end',scope:'First paid product on a referred client',who:'Role · Affiliate',kind:'percent',
-   versions:[{v:1,rate:12,from:'2026-01-15',to:null,by:'Chris Stanbridge',why:'Standard partner rate'}]},
-  {id:'CR-06',name:'Funding advisor — stack tiers',side:'Back-end',scope:'Rail · Funding: Card Stacking',who:'Role · Funding Advisor',kind:'tiered',
-   tiers:[{lo:0,hi:50000,rate:3},{lo:50000,hi:150000,rate:4},{lo:150000,hi:null,rate:5}],
-   versions:[{v:1,rate:null,from:'2025-03-24',to:null,by:'Chris Stanbridge',why:'Tier table set when Marcus joined'}]}
-];
+/* ══ COMMISSION RULES — no live rules read on this screen yet.
+   Rate edits below stay in this browser only and are not saved. ═══════════ */
+var RULES=[];
 function activeV(r){return r.versions.filter(function(v){return v.to===null})[0]||r.versions[r.versions.length-1]}
 
 /* ══ WHO A RULE AFFECTS ═══════════════════════════════════════════════════
@@ -455,7 +434,7 @@ function renderProducts(){
       '<td class="money" style="color:'+(p.variable?'inherit':'var(--gray2)')+'">'+money(p.min)+'</td>'+
       '<td class="money" style="color:'+(p.variable?'inherit':'var(--gray2)')+'">'+money(p.max)+'</td>'+
       '<td style="font-size:11px;color:var(--gray)">'+(p.rails&&p.rails.length?esc(p.rails.join(' · ')):'<span title="No rails source">—</span>')+'</td></tr>';
-  }).join('');
+  }).join('')||'<tr><td colspan="7" class="empty">No products on file yet.</td></tr>';
   document.querySelectorAll('#prodBody tr[data-p]').forEach(function(tr){
     tr.addEventListener('click',function(){openProduct(tr.dataset.p)});
   });
@@ -524,7 +503,7 @@ function renderRules(){
             '<button class="btn sm mono" data-cancel="'+r.id+'">Cancel</button></div>'+
         '</div>'+
       '</div></div>';
-  }).join('')||'<div class="empty">No rules in that scope.</div>';
+  }).join('')||'<div class="empty">No commission rules loaded on this screen yet. The ledger tab still shows live payouts.</div>';
 
   document.querySelectorAll('.rule-hd').forEach(function(h){
     h.addEventListener('click',function(){h.parentElement.classList.toggle('open')});
@@ -739,7 +718,13 @@ renderProducts(); renderRules(); renderLedger(); renderStats();
 
   FHData.wire(FHData.read("products", { limit: 200 }), "product ladder", function (data) {
     var rows = data.items || [];
-    if (!rows.length) return null;
+    if (!rows.length) {
+      if (typeof PRODUCTS !== "undefined") {
+        PRODUCTS.length = 0;
+        if (typeof renderProducts === "function") try { renderProducts(); } catch (e) {}
+      }
+      return "no products on file yet · rate edits stay in this browser only";
+    }
     set("kProd", rows.length);
     set("kRules", rows.reduce(function (a, p) { return a + (p.active_rules || 0); }, 0));
 
@@ -773,7 +758,7 @@ renderProducts(); renderRules(); renderLedger(); renderStats();
     Array.prototype.push.apply(PRODUCTS, mapped);
     try { renderProducts(); } catch (e) { return null; }
 
-    return "live product ladder · " + rows.length + " products · rails have no source";
+    return "live product ladder · " + rows.length + " products · rails have no source · rate edits stay in this browser only";
   });
 
   function ledgerFromApi(r) {
