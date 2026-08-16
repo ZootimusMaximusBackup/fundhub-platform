@@ -163,11 +163,12 @@ test("classify: rows present means live", () => {
   assert.equal(d.tone, "real");
 });
 
-test("classify: a client with no tradelines is empty, and empty keeps the sample markup", () => {
+test("classify: a client with no tradelines is empty, and empty keeps dashes", () => {
   const d = classify(okRead(apiResponse([], { requestedAmount: 35000 })), { clientId: CID });
   assert.equal(d.mode, "empty");
   assert.equal(d.tone, "sample");
-  assert.match(d.text, /sample markup/);
+  assert.match(d.text, /funding numbers stay dashes/);
+  assert.ok(!/sample markup/.test(d.text));
 });
 
 test("classify: tradelines that exist but cannot be drawn against are empty, with the reason", () => {
@@ -177,6 +178,7 @@ test("classify: tradelines that exist but cannot be drawn against are empty, wit
   const d = classify(okRead(apiResponse(rows, { requestedAmount: 5000 })), { clientId: CID });
   assert.equal(d.mode, "empty");
   assert.match(d.text, /none of them drawable/);
+  assert.match(d.text, /funding numbers stay dashes/);
 });
 
 /* ── buildView: the numbers ───────────────────────────────────────────────── */

@@ -87,13 +87,13 @@ export function pctText(v, dp) {
 
    Returns { mode, tone, text }:
      mode "live"   paint from the API
-     mode "empty"  read succeeded, nothing to paint — sample markup stays
-     mode "sample" read failed — sample markup stays
+     mode "empty"  read succeeded, nothing to paint — keep dashes, do not invent
+     mode "sample" read failed — keep dashes, do not invent
    ─────────────────────────────────────────────────────────────────────────── */
 export function classify(res, opts) {
   var o = opts || {};
   var clientId = o.clientId;
-  var S = "sample calculators — ";
+  var S = "deal calculators — ";
 
   if (!clientId) {
     return { mode: "sample", tone: "sample",
@@ -138,20 +138,20 @@ export function classify(res, opts) {
   var rows = Array.isArray(body.data) ? body.data : [];
   if (!rows.length) {
     return { mode: "empty", tone: "sample",
-      text: "no tradelines on file for this client — every number on this screen is sample markup" };
+      text: "no tradelines on file for this client — funding numbers stay dashes" };
   }
 
   /* Rows exist but none of them can be drawn against: closed lines and
      installment loans are excluded by src/tradelines/index.mjs, and a line with
      no credit limit is dropped by calcFunding. A waterfall with no cards in it
-     is not a screen — keep the sample markup and say exactly why. */
+     is not a screen — keep dashes and say exactly why. */
   var funding = body.funding || {};
   var alloc = funding.allocation || null;
   var drawable = alloc && Array.isArray(alloc.draws) ? alloc.draws.length : null;
   if (drawable === 0) {
     return { mode: "empty", tone: "sample",
       text: rows.length + " tradeline(s) on file for this client, none of them drawable " +
-            "(installment, closed, or no credit limit recorded) — showing sample markup" };
+            "(installment, closed, or no credit limit recorded) — funding numbers stay dashes" };
   }
 
   return { mode: "live", tone: "real", text: null };
@@ -288,11 +288,11 @@ export function buildView(payload) {
 }
 
 /* NOT_SOURCED — everything on this screen that GET /api/read/tradelines cannot
-   answer. Named here, and shown in the banner, because a sample number sitting
+   answer. Named here, and shown in the banner, because an invented number sitting
    next to live ones is indistinguishable from a real one. Same treatment as the
    "Worked" stat on inquiry-remover. */
 export const NOT_SOURCED =
-  "still sample: today's pipeline, the shift stats, the Deal Math panel " +
+  "not sourced yet: today's pipeline, the shift stats, the Deal Math panel " +
   "(net cash, monthly obligation, negative-amortization cliff) and the per-card minimums";
 
 /** bannerText — what the green banner says when real rows are on screen. */

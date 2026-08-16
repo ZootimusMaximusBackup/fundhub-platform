@@ -20,10 +20,13 @@
     <div class="code" id="code">Referral</div>
     <h1>Continue to apply</h1>
     <p id="lead">This link belongs to an affiliate. We will send you to the Fundhub apply form with their code attached.</p>
-    <a class="btn" id="go" href="https://apply.fundhub.ai/">Go to apply</a>
+    <a class="btn" id="go" href="https://apply.fundhub.ai/apply">Go to apply</a>
   </div>
   <script>
     (function () {
+      // Canonical FundHub apply path. Bare apply.fundhub.ai/ 302s to the wrong
+      // ClickFunnels workspace theme (myclickfunnels.com); /apply is the live funnel.
+      var APPLY = "https://apply.fundhub.ai/apply";
       var params = new URLSearchParams(location.search);
       var ref = String(params.get("ref") || params.get("a1") || "").trim();
       if (ref) {
@@ -33,7 +36,7 @@
         document.getElementById("code").textContent = "No code on this link";
         document.getElementById("lead").textContent = "Open the apply form to continue.";
       }
-      var dest = "https://apply.fundhub.ai/";
+      var dest = APPLY;
       if (ref) dest += "?a1=" + encodeURIComponent(ref) + "&ref=" + encodeURIComponent(ref);
       document.getElementById("go").href = dest;
       if (ref) location.replace(dest);

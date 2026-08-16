@@ -7,8 +7,10 @@
 |-------|------|--------|
 | 1 Accounts + ship | Report wording, commit/merge, one Netlify deploy, seed/unsuspend, login probes | **done** |
 | 2 Honest UI | Scrub fake names on calendar, template-editor, hiring | **done** |
+| 2b Honest UI leftovers | closer-dashboard / my-numbers / client-portal / documents / products-commissions / galaxy leftovers | **done** — `cursor/honest-ui-leftovers-3e3a` |
 | 3 Template seed | Missing EMAIL/SMS keys; leave `compliance_passed` false | **done** (2 missing keys only) |
 | 4 Re-audit | Browser-click sidebar after #2 deploys (not Playwright) | **done** — live HTML scrub confirmed; 11/11 logins; Playwright 26/26 / 31/31 = 100; 39 screens clicked |
+| Affiliate `/start?ref=` | Land refs on correct FundHub `/apply` funnel, not wrong CF theme | **done** — `cursor/affiliate-start-ref-fix-c9e2` |
 
 **Do not flip:** `INNGEST_EVENT_KEY`, `outbound_enabled`, `compliance_passed`. Do not rotate keys.
 
@@ -139,3 +141,52 @@ Agent 4 can start the full sidebar re-audit — this ship is live.
 | All other 37 | GREEN | No furniture people names in visible UI after open + clicks |
 
 **Single next action for Chris:** One owner manual pass on live `https://fundhub.ai` as `chris@` (agent gate is 100/100).
+
+## Agent 2b log (Honest UI leftovers)
+
+| Step | Status | Notes |
+|------|--------|-------|
+| Claim | **done** | Branch `cursor/honest-ui-leftovers-3e3a` |
+| closer-dashboard | **done** | Empty/fail banners no longer say “sample markup”; Deal Math stays dashes; `not sourced yet` banner |
+| my-numbers | **done** | Removed invented “$500 per deposit” formula; commission note points at ledger |
+| client-portal | **done** | Removed sample-history timeline/payments/docs and $46,500 furniture; honest empty activity |
+| documents | **done** | Empty table says “No documents on file yet” |
+| products-commissions | **done** | PRODUCTS/RULES start empty; local-only rate/product edit honesty note |
+| galaxy / partner-galaxy | **done** | Cleared STANDING sample pairs; partner flares no longer hardcode jordan/marcus/nina |
+| Tests | **done** | `crm-html` + closer-dashboard-view + closer-ui-honest: **67/67** pass; lint clean |
+
+### Change manifest (2b)
+
+- `public/app/closer-dashboard.html`, `src/http/closer-dashboard-view.mjs` (+ test)
+- `public/app/my-numbers.html`
+- `public/app/client-portal.html`
+- `public/app/documents.html`
+- `public/app/products-commissions.html`
+- `public/app/galaxy.html`, `public/app/partner-galaxy.html`
+- `src/http/crm-html.test.mjs`
+- `docs/workflows/screen-audit-2026-08-16.md`
+
+**Not flipped:** `INNGEST_EVENT_KEY`, `outbound_enabled`, `compliance_passed`.
+
+## Affiliate `/start?ref=` fix (2026-08-16)
+
+| Step | Status | Notes |
+|------|--------|-------|
+| Claim | **done** | Branch `cursor/affiliate-start-ref-fix-c9e2` |
+| Root cause | **done** | `public/start.html` sent refs to `https://apply.fundhub.ai/` which **302s** to `chrisstanbridgestea3f77f.myclickfunnels.com` (wrong CF theme). Canonical funnel is `/apply`. |
+| Fix | **done** | Redirect + button now target `https://apply.fundhub.ai/apply?a1=&ref=` |
+| Test | **done** | `src/http/start-html.test.mjs` — 1/1 pass |
+| Journey | **n/a** | No API route change; `-intended.md` untouched; `-actual.md` not regenerated |
+| INNGEST / outbound | **not touched** | |
+
+### Change manifest
+
+| File | Change |
+|------|--------|
+| `public/start.html` | Dest = `apply.fundhub.ai/apply` (+ `a1`/`ref`); no longer bare `/` |
+| `src/http/start-html.test.mjs` | New static HTML guard for destination |
+| `docs/workflows/11am-company-ready-2026-08-16.md` | This log |
+
+**Verify (after deploy):** open `https://fundhub.ai/start?ref=TESTCODE` — should land on `https://apply.fundhub.ai/apply?a1=TESTCODE&ref=TESTCODE` (FundHub apply survey), not myclickfunnels.com.
+
+**Left for later (out of this unit):** `api/public/partner-apply.mjs` still builds partner CTA hrefs as `APPLY_ORIGIN/?a1=` (same wrong root). Affiliate screen referral builder already points at `/start?ref=`.

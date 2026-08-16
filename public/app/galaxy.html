@@ -370,12 +370,9 @@
    Rails run behind everything; clients travel them as pulses.
    Money lands as a flare that flies into the number it moved.
 
-   NO BACKEND. Every node below (NODES), its state, its stats and every
-   handoff/flare event is scripted from data in this file — there is no
-   api/company-activity/* or equivalent endpoint, and none should be invented
-   for this pass (see the notice under the topbar). A real version needs a
-   presence/status feed, a handoff-events stream and a money-movement feed;
-   none of the three exist. Read-only either way: nothing here writes.
+   Live feed: boot fetches /api/read/company-activity and fills NODES when
+   real (or Demo Mode) presence exists. No hardcoded worker rows. Without a
+   session the notice asks for sign-in. Read-only: nothing here writes.
    ============================================================ */
 
 var TAU = Math.PI*2;
@@ -439,8 +436,8 @@ var LIVE_FEED = false;
 /* handoff routes that actually happen at Fundhub */
 var ROUTES = [];
 
-/* threads that just sit there — two workers on the same file */
-var STANDING = [['marcus','dc'],['alvin','irai'],['josh','cf'],['a1','a3'],['recon','fixer'],['sarah','jordan']];
+/* threads that just sit there — filled only when live nodes share a file */
+var STANDING = [];
 
 /* ---------- the seven rails ---------- */
 var RAILS = [
