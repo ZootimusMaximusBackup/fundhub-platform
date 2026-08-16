@@ -95,6 +95,7 @@ function makeNode(tag) {
 function mountInVm(opts, { token = "real-token", fetchImpl } = {}) {
   const byId = new Map();
   const fetches = [];
+  const timers = [];
   const register = (id, el) => { byId.set(id, el); };
   const body = makeNode("body");
   body._register = register;
@@ -118,6 +119,10 @@ function mountInVm(opts, { token = "real-token", fetchImpl } = {}) {
       getItem(k) { return k === "fh_token" ? token : ""; }
     },
     location: { href: "https://fundhub.ai/app/client-portal.html" },
+    setTimeout(fn, ms) {
+      timers.push({ fn, ms: Number(ms) || 0 });
+      return timers.length;
+    },
     fetch: (url, init) => {
       fetches.push({ url, init });
       if (fetchImpl) return fetchImpl(url, init);
@@ -134,6 +139,11 @@ function mountInVm(opts, { token = "real-token", fetchImpl } = {}) {
     sandbox,
     byId,
     fetches,
+    timers,
+    flushTimers() {
+      const queued = timers.splice(0, timers.length);
+      for (const t of queued) t.fn();
+    },
     panel: byId.get("fh-chat-panel"),
     bodyEl: byId.get("fh-chat-body"),
     send() {
@@ -173,8 +183,14 @@ describe("pre-call chat widget", () => {
     assert.match(SHELL_SRC, /autoOpenPrecall:\s*isPortal && !hadCall/);
   });
 
-  test("auto-opens with the pre-call greeting when they have not had a call", () => {
-    const ui = mountInVm({ portal: true, hadCall: false, autoOpenPrecall: true });
+  test("stays closed on first paint, then pops open after login", () => {
+    const ui = mountInVm({
+      portal: true, hadCall: false, autoOpenPrecall: true, popAfterMs: 1400
+    });
+    assert.equal(ui.panel.classList.contains("open"), false, "not already open on login");
+    assert.equal(ui.timers.length, 1);
+    assert.equal(ui.timers[0].ms, 1400);
+    ui.flushTimers();
     assert.equal(ui.panel.classList.contains("open"), true);
     const texts = ui.bodyEl.children.map((c) => c.innerHTML).join(" ");
     assert.equal(texts.includes(GREETING), true);
@@ -184,13 +200,16 @@ describe("pre-call chat widget", () => {
   test("does not auto-open after they have been on a call", () => {
     const ui = mountInVm({ portal: true, hadCall: true, autoOpenPrecall: false });
     assert.equal(ui.panel.classList.contains("open"), false);
+    assert.equal(ui.timers.length, 0);
     const texts = ui.bodyEl.children.map((c) => c.innerHTML).join(" ");
     assert.equal(texts.includes(GREETING), false);
     assert.match(texts, /Message your Fundhub team/);
   });
 
-  test("unknown hadCall on a portal mount still auto-opens locally", () => {
+  test("unknown hadCall on a portal mount still pops open after a beat", () => {
     const ui = mountInVm({ portal: true, demo: true });
+    assert.equal(ui.panel.classList.contains("open"), false);
+    ui.flushTimers();
     assert.equal(ui.panel.classList.contains("open"), true);
     const texts = ui.bodyEl.children.map((c) => c.innerHTML).join(" ");
     assert.equal(texts.includes(GREETING), true);

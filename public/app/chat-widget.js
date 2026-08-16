@@ -326,10 +326,20 @@
     paintFoot();
     paintBodyWelcome();
 
+    /* Stay closed on first paint. After login settles, pop open so it feels
+       like an alert — not already open when they land. */
     if (autoOpenPrecall) {
-      panel.classList.add("open");
-      var precallInput = document.getElementById("fh-chat-input");
-      if (precallInput) precallInput.focus();
+      var popMs = Number(opts.popAfterMs);
+      if (!Number.isFinite(popMs) || popMs < 0) popMs = 1400;
+      setTimeout(function () {
+        if (panel.classList.contains("open")) return;
+        panel.classList.add("open");
+        paintModes();
+        paintFoot();
+        if (!document.getElementById("fh-chat-body").children.length) paintBodyWelcome();
+        var precallInput = document.getElementById("fh-chat-input");
+        if (precallInput) precallInput.focus();
+      }, popMs);
     }
   }
 

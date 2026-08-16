@@ -28,7 +28,7 @@ const OWNER_SESSION = {
   }
 };
 
-async function openPortal(page, session, entitlements) {
+async function openPortal(page, session, entitlements, { settleMs = 600 } = {}) {
   await page.addInitScript((s) => {
     localStorage.setItem("fh_token", "e2e-token");
     localStorage.setItem("fh_role", (s.staff && s.staff.role) || "owner");
@@ -48,7 +48,7 @@ async function openPortal(page, session, entitlements) {
 
   await page.goto(`/app/client-portal.html?id=${CLIENT_ID}`);
   await page.waitForLoadState("domcontentloaded");
-  await page.waitForTimeout(600);
+  if (settleMs > 0) await page.waitForTimeout(settleMs);
 }
 
 test.describe("client portal go-live UX", () => {
@@ -141,7 +141,10 @@ test.describe("client portal go-live UX", () => {
       ...CLIENT_SESSION,
       had_call: false,
       staff: { ...CLIENT_SESSION.staff, had_call: false }
-    }, []);
+    }, [], { settleMs: 0 });
+    // Widget mounts closed, then pops ~1.4s after login. Unit test covers the
+    // closed-first beat; here we prove the live greeting lands after that.
+    await expect(page.locator("#fh-chat-fab")).toBeVisible({ timeout: 8000 });
     await expect(page.locator("#fh-chat-panel")).toHaveClass(/open/, { timeout: 8000 });
     await expect(page.locator("#fh-chat-body")).toContainText(/before we talk/i);
   });
