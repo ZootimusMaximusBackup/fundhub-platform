@@ -97,7 +97,7 @@ Agent 4 can start the full sidebar re-audit — this ship is live.
 |------|--------|-------|
 | 2h leftover loop | **fired 5:35 AM PT** | One-shot done. Furniture still gone in repo + live. Agent 4 full 40-screen still partial. |
 | Template seed | **done** | Inserted only missing `EMAIL-S05A-NOSHOW-RECOVERY` + `SMS-S05A-NOSHOW-RECOVERY`. `compliance_passed=false`. Did **not** overwrite 16 already-approved rows. |
-| Dana Reyes on Campaigns | **done in repo** | Sample action log now says Staff. Needs this deploy to be live. |
+| Dana Reyes on Campaigns | **done + live** | Sample action log says Staff. Agent 4 curl confirmed on https://fundhub.ai/app/campaign-manager.html |
 | Extra live clicks | **done** | closer-dashboard, closer-call, my-numbers, sales-floor, messaging, campaigns, staff-teams, automations |
 
 ---
