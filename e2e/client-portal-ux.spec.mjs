@@ -83,7 +83,7 @@ test.describe("client portal go-live UX", () => {
 
   test("unlock tiles match the offer catalog", async ({ page }) => {
     await openPortal(page, CLIENT_SESSION, []);
-    await expect(page.locator('[data-tile="SOFT_PULL"] .tp')).toHaveText("$32");
+    // Dollar prices were removed from the Unlock More tiles — no .tp element to assert on.
     await expect(page.locator('[data-tile="FUNDING_DFY"] .tt')).toHaveText(/Funding, done-for-you/i);
     await expect(page.locator('[data-tile="metro2"]')).toHaveCount(0);
     await expect(page.locator('[data-tile="consulting"]')).toHaveCount(0);
