@@ -331,7 +331,7 @@ function render(){
       '<td><span class="badge '+dl[0]+'">'+dl[1]+'</span></td>'+
       '<td><span class="badge '+s[0]+'">'+s[1]+'</span></td>'+
       '<td>'+(isP?'<span class="age '+ageCls(d.age)+'">'+d.age+'d</span>':'<span class="age" style="color:var(--gray2)">—</span>')+'</td></tr>';
-  }).join('')||'<tr><td colspan="7" class="empty">Nothing matches that filter.</td></tr>';
+  }).join('')||'<tr><td colspan="7" class="empty">'+(DOCS.length?'Nothing matches that filter.':'No documents on file yet.')+'</td></tr>';
 
   document.querySelectorAll('#tbl th[data-s]').forEach(function(th){
     var arrow=sortKey===th.dataset.s?(sortDir===1?' ↑':' ↓'):'';
@@ -348,6 +348,9 @@ function renderStats(){
   if(pend.length){
     document.getElementById('kOld').textContent=pend[0].age+'d';
     document.getElementById('kOldWho').textContent=pend[0].doc+' · '+pend[0].client;
+  } else {
+    document.getElementById('kOld').textContent='—';
+    document.getElementById('kOldWho').textContent=DOCS.length?'Nothing pending':'No documents on file yet';
   }
   var stale=DOCS.filter(function(d){return pending(d)&&d.age>=14}).length;
   document.getElementById('staleTxt').textContent=stale+' past 14 days';

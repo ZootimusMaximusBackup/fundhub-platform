@@ -30,10 +30,14 @@ test("client-portal.html ships no sample people and no fake upload or video", ()
   const html = fs.readFileSync(path.join(APP, "client-portal.html"), "utf8");
   assert.ok(!/Derek Owusu/.test(html), "must not ship Derek Owusu");
   assert.ok(!/Marcus Webb/.test(html), "must not ship Marcus Webb");
+  assert.ok(!/\$46,500/.test(html), "must not ship sample funding dollars");
+  assert.ok(!/sample-history/.test(html), "must not keep sample-history furniture");
+  assert.ok(!/Jul 24, 2026 · PDF/.test(html), "must not ship sample document dates");
   assert.ok(!/setInterval/.test(html), "must not fake progress with setInterval");
   assert.ok(!/var DUR = 252/.test(html), "must not fake a 4:12 welcome video");
   assert.ok(!/markSentUi\(\s*\)/.test(html), "must not mark files sent with no upload");
   assert.ok(html.includes("Open this from a client file"), "empty state must tell them to open from a client file");
+  assert.ok(html.includes("No activity recorded on this file yet"));
   assert.ok(html.includes("Welcome video is not available"));
   assert.ok(html.includes("Uploads are off"));
   assert.ok(html.includes("FHData.client("), "must read GET /api/dashboard/client");
@@ -107,7 +111,9 @@ test("my-numbers.html does not ship sample people or fake cash", () => {
   const html = fs.readFileSync(path.join(APP, "my-numbers.html"), "utf8");
   assert.ok(!/Marcus Webb|Elena Voss|Devon Marsh|Bianca Souza/.test(html));
   assert.ok(!/\$34,000/.test(html));
+  assert.ok(!/\$500 per deposit/.test(html), "must not invent a commission formula");
   assert.ok(html.includes('id="staffChip"'));
+  assert.ok(html.includes("Commission plan comes from the ledger"));
 });
 
 test("closer-dashboard.html is not Jordan/Priya furniture", () => {
@@ -115,7 +121,9 @@ test("closer-dashboard.html is not Jordan/Priya furniture", () => {
   assert.ok(!/Jordan Blake/.test(html));
   assert.ok(!/Priya Nair/.test(html));
   assert.ok(!/>Sun Jul 26/.test(html));
+  assert.ok(!/showing sample markup/.test(html));
   assert.ok(html.includes("Open from a client"));
+  assert.ok(html.includes("funding numbers stay dashes") || html.includes("not sourced yet"));
   assert.ok(/timeZone:\s*["']America\/New_York["']/.test(html));
 });
 
@@ -130,6 +138,7 @@ test("ops, affiliate, and partner galaxy do not ship sample people as live", () 
   assert.ok(aff.includes("No referrals on file"));
   const gal = fs.readFileSync(path.join(APP, "partner-galaxy.html"), "utf8");
   assert.ok(!/Derek Owusu|Priya Nair/.test(gal));
+  assert.ok(!/ND\.jordan|ND\.marcus|ND\.nina/.test(gal), "money flares must not hardcode sample node ids");
   assert.ok(/var CLIENTS = \[\]/.test(gal));
   assert.ok(/var NODES = \[\]/.test(gal));
   assert.ok(gal.includes("No partners on file"));
@@ -138,15 +147,26 @@ test("ops, affiliate, and partner galaxy do not ship sample people as live", () 
   assert.ok(ae.includes("Pick a person"));
   assert.ok(ae.includes("FHData.staff"), "agent-editor must load live staff");
   const pc = fs.readFileSync(path.join(APP, "products-commissions.html"), "utf8");
-  assert.ok(!/Jordan Blake|Marcus Webb/.test(pc));
+  assert.ok(!/Jordan Blake|Marcus Webb|Alvin/.test(pc));
+  assert.ok(/var PRODUCTS\s*=\s*\[\s*\]/.test(pc), "products must start empty");
+  assert.ok(/var RULES\s*=\s*\[\s*\]/.test(pc), "rules must start empty");
   assert.ok(pc.includes("var LEDGER=[]"));
   assert.ok(pc.includes("no commission rows yet"));
+  assert.ok(pc.includes("stay in this browser only"));
 });
 
 test("documents.html does not seed sample people before the live read", () => {
   const html = fs.readFileSync(path.join(APP, "documents.html"), "utf8");
   assert.ok(!/Priya Nair|Ray Pulaski/.test(html));
   assert.ok(/var DOCS=\[\]/.test(html));
+  assert.ok(html.includes("No documents on file yet"));
+});
+
+test("galaxy.html does not seed sample standing workers", () => {
+  const html = fs.readFileSync(path.join(APP, "galaxy.html"), "utf8");
+  assert.ok(/var STANDING = \[\]/.test(html));
+  assert.ok(!/\['marcus','dc'\]/.test(html));
+  assert.ok(!/Jordan Blake|Marcus Webb|Nina Torres/.test(html));
 });
 
 test("client-control-panel right column is paper, not a black gutter", () => {
@@ -198,4 +218,20 @@ test("calendar, template-editor, and hiring do not ship furniture names", () => 
 test("campaign-manager.html does not ship Dana Reyes furniture", () => {
   const html = fs.readFileSync(path.join(APP, "campaign-manager.html"), "utf8");
   assert.ok(!/Dana Reyes/.test(html), "campaign-manager still has Dana Reyes");
+});
+
+test("honest-ui leftovers screens stay empty without inventing dollars", () => {
+  const FURNITURE = /Jordan Blake|Marcus Webb|Nina Torres|Carlos Bettencourt|Meredith Yao|Dana Reyes/;
+  for (const file of [
+    "closer-dashboard.html",
+    "my-numbers.html",
+    "client-portal.html",
+    "documents.html",
+    "products-commissions.html",
+    "galaxy.html",
+    "partner-galaxy.html",
+  ]) {
+    const html = fs.readFileSync(path.join(APP, file), "utf8");
+    assert.ok(!FURNITURE.test(html), file + " still has furniture names");
+  }
 });

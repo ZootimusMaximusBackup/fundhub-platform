@@ -24,18 +24,18 @@
 | Screen | BETA | Status | What's missing |
 |--------|------|--------|----------------|
 | pipeline | no | real | Side effects need Inngest |
-| closer-dashboard | no | partial | Needs `?client_id=`; deal math dash |
+| closer-dashboard | no | partial | Needs `?client_id=`. Deal math stays dashes (no deal-math endpoint). Honest empty — no sample markup. |
 | closer-call | no | partial | Join off until meeting URL |
-| my-numbers | no | partial | Empty until activity |
+| my-numbers | no | partial | Honest empty until closer activity; no invented commission formula |
 | sales-floor | no | partial | sales@ now logs in; empty until activity |
 | calendar | no | partial | No-show/show rate dash. Furniture names scrubbed 2026-08-16. |
 | present | no | partial | SMS queued; TU off |
 | soft-pull-approve | no | partial | Public page |
 | client-control-panel | no | real | Oxylabs/GHL gaps |
 | messaging | no | partial | Outbound providers |
-| documents | no | partial | Empty without client |
+| documents | no | partial | Honest empty when library is empty — no sample rows |
 | contracts | no | partial | Send on call cockpit |
-| client-portal | no | partial | Needs `?client_id=` |
+| client-portal | no | partial | Needs `?client_id=`. Sample timeline/dollars scrubbed; activity stays empty until live rows |
 | consent-capture | no | partial | No nav link |
 | payment-success | no | partial | Commas unverified |
 | lenders | no | partial | Empty until import |
@@ -44,12 +44,12 @@
 | subscriptions | yes | partial | Billing gaps |
 | index | no | real | Login |
 | command-center | yes | partial | Ad metrics |
-| galaxy | yes | partial | Nav map |
+| galaxy | yes | partial | Live activity feed; no hardcoded standing workers |
 | ops-admin | yes | partial | Comp dashes |
-| partner-galaxy | no | partial | Partner only |
+| partner-galaxy | no | partial | Partner only; money flares use live nodes only |
 | automations | no | partial | Screen says engine on (42/51 fired). Owner gate still: do not flip INNGEST. |
 | staff-teams | no | partial | Overnight roles seeded; roster is live |
-| products-commissions | no | partial | Commission writes local |
+| products-commissions | no | partial | Products + ledger live; rate edits stay in-browser only (honest note on screen) |
 | template-editor | no | partial | Drafts blocked. Preview uses Preview Name, not Marcus Webb. |
 | journeys | yes | partial | Mock tracking |
 | agent-editor | yes | partial | Owner agent decisions |

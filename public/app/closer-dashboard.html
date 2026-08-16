@@ -670,7 +670,7 @@ window.FHCloserView = (function () {
   function classify(res, opts) {
     var o = opts || {};
     var clientId = o.clientId;
-    var S = "sample calculators — ";
+    var S = "deal calculators — ";
 
     if (!clientId) {
       return { mode: "sample", tone: "sample",
@@ -715,7 +715,7 @@ window.FHCloserView = (function () {
     var rows = Array.isArray(body.data) ? body.data : [];
     if (!rows.length) {
       return { mode: "empty", tone: "sample",
-        text: "no tradelines on file for this client — every number on this screen is sample markup" };
+        text: "no tradelines on file for this client — funding numbers stay dashes" };
     }
 
     var funding = body.funding || {};
@@ -724,7 +724,7 @@ window.FHCloserView = (function () {
     if (drawable === 0) {
       return { mode: "empty", tone: "sample",
         text: rows.length + " tradeline(s) on file for this client, none of them drawable " +
-              "(installment, closed, or no credit limit recorded) — showing sample markup" };
+              "(installment, closed, or no credit limit recorded) — funding numbers stay dashes" };
     }
 
     return { mode: "live", tone: "real", text: null };
@@ -846,7 +846,7 @@ window.FHCloserView = (function () {
      the banner, because a sample number beside live ones is indistinguishable
      from a real one. Same treatment as "Worked" on inquiry-remover. */
   var NOT_SOURCED =
-    "still sample: today's pipeline, the shift stats, the Deal Math panel " +
+    "not sourced yet: today's pipeline, the shift stats, the Deal Math panel " +
     "(net cash, monthly obligation, negative-amortization cliff) and the per-card minimums";
 
   function bannerText(view) {
@@ -1205,7 +1205,7 @@ window.FHCloserView = (function () {
       if (mine !== seq) return;
       busy(false);
       failed({ source: "render", error: (e && e.message) || "read failed" },
-        { tone: "error", text: "sample calculators — the tradeline read threw (" +
+        { tone: "error", text: "deal calculators — the tradeline read threw (" +
           ((e && e.message) || "unknown") + ")" });
     });
   }
