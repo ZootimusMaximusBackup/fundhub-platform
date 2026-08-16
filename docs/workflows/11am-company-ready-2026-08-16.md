@@ -6,7 +6,7 @@
 | Agent | Owns | Status |
 |-------|------|--------|
 | 1 Accounts + ship | Report wording, commit/merge, one Netlify deploy, seed/unsuspend, login probes | **done** |
-| 2 Honest UI | Scrub fake names on calendar, template-editor, hiring | claimed |
+| 2 Honest UI | Scrub fake names on calendar, template-editor, hiring | **done** |
 | 3 Template seed | Missing EMAIL/SMS keys; leave `compliance_passed` false | pending |
 | 4 Re-audit | Browser-click sidebar after #2 deploys (not Playwright) | pending |
 
@@ -62,8 +62,21 @@ Password: same as E2E (`STAFF_E2E_PASSWORD`). Probes spaced ~2.5s to avoid 429.
 | Scrub `template-editor.html` | **done** | Preview sample is "Preview Name" / preview@example.com, not Marcus Webb |
 | Scrub `hiring.html` | **done** | Demo referral source no longer names Jordan Blake |
 | `crm-html` tests | **done** | 17/17 pass, including new furniture-name test |
-| Merge + deploy | pending | Tab 1 already deployed `6a818f81b24a4a4391828c79` without this scrub — need a second prod deploy after merge |
-| Browser-click 5 pages | pending | calendar, template-editor, hiring, pipeline, client-control-panel |
+| Merge to `main` | **done** | `c5c7dfd` |
+| Prod deploy | **done** | Deploy id `6a8190b6c66dcdd3da0d932c` — live HTML confirmed scrubbed |
+| Browser-click 5 pages | **done** | Signed in as `chris@`. No Jordan Blake / Marcus Webb / Carlos Bettencourt / Meredith Yao / Nina Torres on any of the five |
+
+### Live click results (`https://fundhub.ai`, after deploy `6a8190b6c66dcdd3da0d932c`)
+
+| Page | What I did | What I saw |
+|------|------------|------------|
+| Calendar | Opened, expanded Demonstration states, clicked a real booking | Demo copy says “Two bookings sit in the same 4:30 slot.” Real names on the board (Sarah Blankstein etc.). No furniture names. |
+| Message Copy | Opened EMAIL-S02 draft, then `payment_link_notice` | Preview: “Hi Preview, here is your payment link…” — not Marcus Webb. 200 pieces of copy. |
+| Hiring | Dismissed banner, clicked Applied | 3 live open applications. No Jordan Blake. No Priya sample row. |
+| Pipeline | Typed “Chris” in search | R-01 Sales 16 cards. “Select a card.” No furniture names. |
+| Client Control Panel | Opened with no `?id=`, expanded Credit & Hold | “Open with ?id=<client id>”. Dashes. No fake person. |
+
+Agent 4 can start the full sidebar re-audit — this ship is live.
 
 ### For Chris when you wake
 
@@ -73,7 +86,6 @@ Password: same as E2E (`STAFF_E2E_PASSWORD`). Probes spaced ~2.5s to avoid 429.
 
 ### Left for other agents / out of scope
 
-- Furniture names still on `calendar.html`, `template-editor.html`, `hiring.html` (Agent 2)
 - Template seed (Agent 3)
 - Browser re-audit after UI ship (Agent 4)
 - Inngest / outbound / compliance flips — owner only
