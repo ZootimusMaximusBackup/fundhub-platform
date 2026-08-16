@@ -76,7 +76,12 @@ const CREDS = {
   MAILGUN_SEND_API_KEY: "key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   MAILGUN_SEND_DOMAIN: "mg.example.com",
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>",
-  GHL_RELAY_API_KEY: "ghl-token"
+  GHL_RELAY_API_KEY: "ghl-token",
+  // Twilio is the live SMS path (GHL stubbed off, owner 2026-08-14). Fence
+  // tests that prove SMS bookkeeping need a transmitting provider.
+  TWILIO_SEND_ACCOUNT_SID: "ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  TWILIO_SEND_AUTH_TOKEN: "twilio-auth-token-value",
+  TWILIO_SEND_FROM: "+15550001111"
 };
 
 const withFence = (value) =>
@@ -128,13 +133,20 @@ describe("MESSAGING_DRY_RUN: nothing reaches the sender", () => {
   });
 
   test("the SMS path is fenced too, not just email", async () => {
+    // GHL relay is stubbed (TRANSMITS=false) — the dry-run fence only gates
+    // transmitting providers. Prove SMS bookkeeping via Twilio, the live path.
     const f = spy();
-    const db = fakeDb();
+    const db = fakeDb({
+      routing: {
+        email: { provider: "mailgun", enabled: true },
+        sms: { provider: "twilio", enabled: true }
+      }
+    });
     const res = await dispatchOne(db, claimed({ channel: "sms" }), {
       fetchImpl: f, env: withFence("1"), now: MIDDAY
     });
 
-    assert.strictEqual(f.calls.length, 0, "AN SMS WAS TRANSMITTED THROUGH THE GHL RELAY");
+    assert.strictEqual(f.calls.length, 0, "AN SMS WAS TRANSMITTED THROUGH TWILIO");
     assert.strictEqual(res.outcome, OUTCOME.DRY_RUN);
   });
 

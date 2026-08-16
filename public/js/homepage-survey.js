@@ -8,7 +8,7 @@
   var STEPS = [
     {
       id: "funding_target_amount",
-      title: "How much are you looking for?",
+      title: "Set Your Target Amount",
       type: "single",
       options: [
         "Less than $50k",
@@ -48,7 +48,7 @@
     },
     {
       id: "current_score",
-      title: "Roughly where is your credit?",
+      title: "Your Current Score",
       type: "single",
       options: ["500-579", "580-649", "650-699", "700-749", "750+", "Not sure"],
     },

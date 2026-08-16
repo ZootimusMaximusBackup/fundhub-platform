@@ -217,13 +217,15 @@ describe("routing", () => {
     assert.ok(f.calls[0].url.includes("mailgun.net"), f.calls[0].url);
   });
 
-  test("sms routes to the GHL relay, addressed by contact id", async () => {
+  test("sms routed to the GHL stub is rejected — never hits the network", async () => {
+    // Owner 2026-08-14: GHL account canceled. ghl_relay stays registered so
+    // historical routing rows do not crash, but TRANSMITS=false and send()
+    // permanently rejects. Live SMS is Twilio; this test pins the stub.
     const f = spy();
     const db = fakeDb();
     const res = await dispatchOne(db, claimed({ channel: "sms" }), { fetchImpl: f, env: ENV, now: MIDDAY });
-    assert.strictEqual(res.outcome, OUTCOME.SENT);
-    assert.ok(f.calls[0].url.includes("leadconnectorhq.com"), f.calls[0].url);
-    assert.strictEqual(JSON.parse(f.calls[0].init.body).contactId, "ghlContact123");
+    assert.strictEqual(res.outcome, OUTCOME.REJECTED);
+    assert.strictEqual(f.calls.length, 0, "GHL stub must not call the network");
   });
 
   // No route is a HOLD. The alternative — picking a provider — would send a
