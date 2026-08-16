@@ -1,11 +1,14 @@
 // POST /api/closer-deck — live actions from the presenter cockpit.
 //
+//   { action: "send_soft_pull", client_id }
+//   { action: "send_ebook", client_id, amount_cents, description? }
 //   { action: "send_pay_link", client_id, offer_key }
 //   { action: "generate_letters", client_id, offer_key, edu?, force_repair?, tier? }
 //   { action: "log_disposition", client_id, offer_key, route?, temperature?, beliefs_count?, cost_of_inaction? }
 //
-// COMPLIANCE REVIEW REQUIRED — payment rails, fee timing, dispute letter send.
-// Letters NEVER fire on the qualified funding offer.
+// COMPLIANCE REVIEW REQUIRED — payment rails, fee timing, consent, credit pull,
+// dispute letter send. Soft pull amount is fixed ($32). Letters NEVER fire on
+// the qualified funding offer.
 
 import { db } from "../src/db.mjs";
 import { requireAuth as defaultRequireAuth } from "../src/http/middleware/requireAuth.mjs";
@@ -14,6 +17,8 @@ import { dbDown } from "../src/http/db-down.mjs";
 import {
   CloserDeckError,
   sendDeckPayLink,
+  sendDeckSoftPull,
+  sendDeckEbook,
   generateDeckLetters,
   logDeckDisposition
 } from "../src/sales/closer-deck.mjs";
@@ -60,6 +65,29 @@ export default async function handler(req, res, deps = {}) {
       return res.status(404).json({ ok: false, error: "client_not_found" });
     }
 
+    if (body.action === "send_soft_pull") {
+      const result = await sendDeckSoftPull(database, {
+        orgId,
+        clientId,
+        staffId: staff.id,
+        checkoutBaseUrl: process.env.COMMAS_CHECKOUT_BASE_URL,
+        env: process.env
+      });
+      return res.status(200).json({ ok: true, action: "send_soft_pull", ...result });
+    }
+
+    if (body.action === "send_ebook") {
+      const result = await sendDeckEbook(database, {
+        orgId,
+        clientId,
+        staffId: staff.id,
+        amountCents: body.amount_cents,
+        description: body.description || null,
+        checkoutBaseUrl: process.env.COMMAS_CHECKOUT_BASE_URL
+      });
+      return res.status(200).json({ ok: true, action: "send_ebook", ...result });
+    }
+
     if (body.action === "send_pay_link") {
       const result = await sendDeckPayLink(database, {
         orgId,
@@ -99,23 +127,23 @@ export default async function handler(req, res, deps = {}) {
       return res.status(result.created ? 201 : 200).json({
         ok: true,
         action: "log_disposition",
-        created: result.created
+        ...result
       });
     }
 
-    return res.status(400).json({ ok: false, error: "invalid_action" });
-  } catch (e) {
-    if (e instanceof CloserDeckError) {
-      return res.status(e.status).json({
+    return res.status(400).json({
+      ok: false,
+      error: "unknown_action",
+      message: "action must be send_soft_pull, send_ebook, send_pay_link, generate_letters, or log_disposition"
+    });
+  } catch (err) {
+    if (err instanceof CloserDeckError) {
+      return res.status(err.status || 400).json({
         ok: false,
-        error: e.code,
-        message: e.message
+        error: err.code || "bad_request",
+        message: err.message
       });
     }
-    if (e instanceof TypeError || e instanceof RangeError) {
-      return res.status(400).json({ ok: false, error: String(e.message).slice(0, 200) });
-    }
-    if (dbDown(res, e)) return;
-    throw e;
+    return dbDown(res, err);
   }
 }

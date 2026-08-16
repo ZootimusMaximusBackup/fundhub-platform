@@ -107,6 +107,25 @@ function badRequest(message) {
   return Object.assign(new Error(message), { code: "BAD_REQUEST" });
 }
 
+/** Attachments are asset keys from src/messaging/assets.mjs — never raw bytes. */
+function normalizeAttachments(list) {
+  if (list == null) return null;
+  if (!Array.isArray(list)) {
+    throw badRequest("attachments must be an array of { asset }");
+  }
+  if (list.length === 0) return null;
+  return list.map((item) => {
+    const asset = item && (item.asset || item.key);
+    if (!asset || typeof asset !== "string") {
+      throw badRequest("each attachment needs an asset key");
+    }
+    return {
+      asset: String(asset),
+      filename: item.filename ? String(item.filename) : undefined
+    };
+  });
+}
+
 /* resolveTarget — what conversation is this reply on, and who is it to.
 
    TWO WAYS IN, AND THE ORG CHECK IS ON BOTH.
@@ -206,7 +225,8 @@ async function addressFor(db, clientId, channel) {
 export async function composeAndSend(db, input = {}, options = {}) {
   const {
     orgId, staffId, conversationId = null, clientId = null, channel = null,
-    body, subject = null, shiftId = null, idempotencyKey = null
+    body, subject = null, shiftId = null, idempotencyKey = null,
+    attachments = null
   } = input;
 
   if (!orgId) throw badRequest("orgId is required");
@@ -227,6 +247,8 @@ export async function composeAndSend(db, input = {}, options = {}) {
     ? subject.trim()
     : null;
 
+  const att = normalizeAttachments(attachments);
+
   const providerRef = idempotencyKey ? `staff:${idempotencyKey}` : null;
   const toAddress = await addressFor(db, target.clientId, target.channel);
 
@@ -240,13 +262,13 @@ export async function composeAndSend(db, input = {}, options = {}) {
     `INSERT INTO messages (
        org_id, client_id, conversation_id, direction, channel, rendered_body,
        provider_ref, status, compliance_check_passed, to_address, subject,
-       sender_staff_id, sender_kind
+       sender_staff_id, sender_kind, attachments
      )
-     VALUES ($1,$2,$3,'outbound',$4,$5,$6,'queued',false,$7,$8,$9,'staff')
+     VALUES ($1,$2,$3,'outbound',$4,$5,$6,'queued',false,$7,$8,$9,'staff',$10)
      ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING
      RETURNING id, created_at`,
     [orgId, target.clientId, target.conversationId, target.channel, text,
-     providerRef, toAddress, subjectLine, staffId]
+     providerRef, toAddress, subjectLine, staffId, att]
   );
 
   /* A deduped send is not a failure and not a second message. The caller sent

@@ -37,3 +37,11 @@ test("closer call cockpit has a Present control that deep-links the contact", ()
   assert.ok(closerHtml.includes("Present"));
   assert.ok(closerJs.includes("present.html?contact="));
 });
+
+test("present cockpit can send soft pull and variable-price e-book", () => {
+  assert.ok(presentJs.includes("send_soft_pull"));
+  assert.ok(presentJs.includes("send_ebook"));
+  assert.ok(presentJs.includes("Send soft pull"));
+  assert.ok(presentJs.includes("ebookDollars"));
+  assert.ok(presentJs.includes("amount_cents"));
+});

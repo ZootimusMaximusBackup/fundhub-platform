@@ -4,6 +4,7 @@ One line per journey change, newest at top. This is the human-readable record �
 including when a change made a journey worse.
 
 2026-08-15 | client | Portal pre-call polish: hero welcome, Facebook wins group, offers from catalog, empty states before call/credit pull, chat auto-opens with pre-call questions. COMPLIANCE REVIEW REQUIRED — offers, credit-pull empty states, chat collecting client data | Portal access is granted before the call | (this commit)
+2026-08-15 | role-closer (+ all actuals regen) | Present soft-pull send + client soft-pull-approve (signed URL) + closer-set e-book email with placeholder PDF attachment. COMPLIANCE REVIEW REQUIRED — fee timing, consent, credit pull, payment rails | On-call soft pull from Present; refuse → e-book downsell | (this commit)
 2026-08-14 | role-closer, role-owner, role-sales-manager | Regenerated actuals — `GET /api/read/closer-deck` and `POST /api/closer-deck` (closer desk). Present button on the call cockpit opens the 24-screen closer deck with live contact data. COMPLIANCE REVIEW REQUIRED — dispute letters, fee timing, payment rails | Plug closer deck into CRM | (this commit)
 2026-08-14 | all eight | Regenerated actuals — `POST /api/repair/send` (STAFF) human PostGrid mail for repair DIY/DFY | Bureau letter mail W2 — shared send helper; COMPLIANCE REVIEW REQUIRED | (uncommitted)
 2026-08-10 | all eight | Regenerated actuals after Metro 2 / DFY repair events and `repair/exceptions` route landed | Credit-repair spine commit a50ed59 left journeys/diagrams stale; CI suite failed | (this commit)

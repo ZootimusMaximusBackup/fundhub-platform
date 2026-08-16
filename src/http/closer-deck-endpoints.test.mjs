@@ -136,6 +136,25 @@ describe("POST /api/closer-deck", () => {
     assert.equal(res.body.error, "commas_not_configured");
   });
 
+  test("soft pull without Commas config is 503", async () => {
+    const res = await post({
+      action: "send_soft_pull",
+      client_id: CID
+    });
+    assert.equal(res.statusCode, 503);
+    assert.equal(res.body.error, "commas_not_configured");
+  });
+
+  test("ebook without amount is 400", async () => {
+    process.env.COMMAS_CHECKOUT_BASE_URL = "https://pay.example/checkout";
+    const res = await post({
+      action: "send_ebook",
+      client_id: CID
+    });
+    assert.equal(res.statusCode, 400);
+    assert.equal(res.body.error, "bad_ebook_amount");
+  });
+
   test("a setter cannot fire cockpit actions", async () => {
     const res = await post({
       action: "log_disposition",

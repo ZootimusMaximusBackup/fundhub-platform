@@ -13,7 +13,9 @@
 //                    the real domain is verified (SPF/DKIM).
 //   RESEND_BASE_URL  optional; defaults to https://api.resend.com
 
+import { readFile } from "node:fs/promises";
 import { postJson, classify, success, failure, rejection, redact } from "./http.mjs";
+import { resolveMessageAsset } from "../assets.mjs";
 
 /** Must equal the `provider` value in message_channel_routing. */
 export const PROVIDER = "resend";
@@ -28,6 +30,34 @@ export const ENABLED = true;
 export const TRANSMITS = true;
 
 const DEFAULT_BASE_URL = "https://api.resend.com";
+
+/** Load named assets onto the Resend attachments array. Unknown keys reject. */
+async function loadAttachments(list) {
+  if (list == null) return { files: [], error: null };
+  if (!Array.isArray(list)) return { files: [], error: "attachments must be an array" };
+  const files = [];
+  for (const item of list) {
+    const key = item && (item.asset || item.key);
+    const asset = resolveMessageAsset(key);
+    if (!asset) {
+      return { files: [], error: `unknown attachment asset: ${String(key || "")}` };
+    }
+    try {
+      const bytes = await readFile(asset.absPath);
+      files.push({
+        filename: (item && item.filename) || asset.filename,
+        content: bytes.toString("base64"),
+        content_type: asset.contentType
+      });
+    } catch (err) {
+      return {
+        files: [],
+        error: `could not read attachment ${asset.filename}: ${String(err && err.message || err)}`
+      };
+    }
+  }
+  return { files, error: null };
+}
 
 /** Rough plain-text fallback when the template body is HTML (multipart text part). */
 function htmlToText(html) {
@@ -98,6 +128,10 @@ async function attempt(message, { fetchImpl, timeoutMs, signal, env = process.en
   if (message.providerRef) {
     payload.headers = { "X-Fundhub-Ref": String(message.providerRef) };
   }
+
+  const attached = await loadAttachments(message.attachments);
+  if (attached.error) return rejection(attached.error);
+  if (attached.files.length) payload.attachments = attached.files;
 
   const res = await postJson(`${cfg.baseUrl}/emails`, {
     headers: {

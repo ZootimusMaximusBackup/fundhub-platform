@@ -20,7 +20,7 @@ flowchart TD
     CAN --> A_contracts[contracts — 1 route]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_public[public — 2 routes]
-    CAN --> A_top_level[Everything else — 3 routes]
+    CAN --> A_top_level[Everything else — 4 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 129 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
@@ -47,7 +47,7 @@ flowchart TD
 
 ## What they can reach
 
-**14 of 143 routes.**
+**15 of 144 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -64,16 +64,17 @@ flowchart TD
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
 | `/api/public/partner-page` | GET | anyone |
 | `/api/public/survey-submit` | POST | anyone |
+| `/api/soft-pull-approve` | GET, POST | anyone |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
 ### Worth knowing
 
-- **10 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/contracts/sign`, `/api/health`, `/api/public/partner-page`, `/api/public/survey-submit`. These are the sign-in routes and the health check.
+- **11 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/contracts/sign`, `/api/health`, `/api/public/partner-page`, `/api/public/survey-submit`, `/api/soft-pull-approve`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**129 of 143 routes.**
+**129 of 144 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

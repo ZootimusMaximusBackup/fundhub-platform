@@ -93,7 +93,7 @@
     idx: 0, tier: null, edu: false, forceRepair: false, rung: 0, temp: 0,
     checks: {}, costNum: "", obj: null, showRef: false, toast: "", clientOnly: false,
     survey: {}, engine: { available: false, reason: "engine data unavailable", fico: {}, reasons: [] },
-    offers: [], loaded: false, error: null
+    offers: [], softPull: null, ebookDollars: "", loaded: false, error: null
   };
 
   function esc(s) {
@@ -458,6 +458,24 @@
         html += '</div><div style="margin-top:7px"><span class="mono">Their monthly cost of inaction</span><input id="fh-cost" value="' + esc(state.costNum) + '" placeholder="$ per month, in their words" style="margin-top:4px;width:100%;background:transparent;border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:11px;padding:7px 9px;outline:none"></div></div>';
       }
 
+      if (ph === "03 Soft pull" || code() === "S-05") {
+        var sp = state.softPull || {};
+        html += '<div><span class="mono">Live soft pull</span>';
+        html += '<div style="margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--gray);line-height:1.55">';
+        html += "<div>consent: " + (sp.consent_valid ? "on file" : "waiting") + "</div>";
+        html += "<div>paid $32: " + (sp.diagnostic_paid ? "yes" : (sp.diagnostic_link_status || "not yet")) + "</div>";
+        html += "<div>pull: " + esc(sp.pull_status || "not started") + "</div>";
+        html += '</div><div style="margin-top:7px;display:flex;flex-direction:column;gap:5px">';
+        html += ckBtn("Send soft pull ($32 + approval form)", "softpull", true);
+        html += '</div><div style="font-size:10px;color:var(--gray2);margin-top:5px">Fixed $32. Emails pay link + approval form. Stay on the Meet.</div></div>';
+
+        html += '<div><span class="mono">No-pay downsell — e-book</span>';
+        html += '<div style="margin-top:6px;display:flex;gap:6px;align-items:center">';
+        html += '<input id="fh-ebook" value="' + esc(state.ebookDollars) + '" placeholder="$ amount" style="flex:1;background:transparent;border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:11px;padding:7px 9px;outline:none">';
+        html += ckBtn("Send e-book email", "ebook", false);
+        html += '</div><div style="font-size:10px;color:var(--gray2);margin-top:5px">You set the price. Empty PDF attached until the real file is ready.</div></div>';
+      }
+
       if (code() === "S-07") {
         html += '<div><span class="mono">Route the call</span><div style="font-size:10.5px;color:var(--gray2);margin:4px 0 6px">Engine returned ' + esc(d.label || "unavailable") + ". Education is client-driven — route it only if that's their ask.</div><div style=\"display:flex;flex-direction:column;gap:5px\">";
         [["FULL_FUNDING", "FULL FUNDING"], ["FUNDING_PLUS_REPAIR", "FUNDING PLUS REPAIR"], ["REPAIR_ONLY", "REPAIR ONLY"]].forEach(function (pair) {
@@ -569,6 +587,11 @@
       cost.addEventListener("input", function (e) { state.costNum = e.target.value; });
       cost.addEventListener("keydown", function (e) { e.stopPropagation(); });
     }
+    var ebook = document.getElementById("fh-ebook");
+    if (ebook) {
+      ebook.addEventListener("input", function (e) { state.ebookDollars = e.target.value; });
+      ebook.addEventListener("keydown", function (e) { e.stopPropagation(); });
+    }
   }
 
   function go(n) {
@@ -592,9 +615,9 @@
     state.tier = k; state.rung = 0; state.edu = false; state.forceRepair = false; render();
   }
 
-  async function fire(action) {
+  async function fire(action, extra) {
     if (!window.FHData || !contactId) { toast("No contact on this deck."); return; }
-    var body = {
+    var body = Object.assign({
       action: action,
       client_id: contactId,
       offer_key: action === "generate_letters" && state.edu ? "UWIQ_DELIVERABLES" : selectedOfferKey(),
@@ -605,13 +628,15 @@
       temperature: state.temp,
       beliefs_count: Object.keys(state.checks).filter(function (k) { return state.checks[k]; }).length,
       cost_of_inaction: state.costNum || null
-    };
+    }, extra || {});
     var r = await window.FHData.write("/api/closer-deck", body);
     if (!r.ok) {
       toast((r.error && (r.error.message || r.error)) || "Could not complete that action");
       return;
     }
-    if (action === "send_pay_link") toast("Agreement and pay link sent.");
+    if (action === "send_soft_pull") toast("Soft pull emailed — pay link + approval form.");
+    else if (action === "send_ebook") toast("E-book email sent with PDF attached.");
+    else if (action === "send_pay_link") toast("Agreement and pay link sent.");
     else if (action === "generate_letters") toast(state.edu ? "Deliverables sent to client." : "Letters generating. Client emailed.");
     else toast("Disposition written to contact record.");
   }
@@ -646,6 +671,13 @@
     if (a === "obj-back") { state.obj = null; render(); return; }
     if (a.indexOf("obj:") === 0) { state.obj = Number(a.slice(4)); render(); return; }
     if (a.indexOf("obj-jump:") === 0) { jumpTo(a.slice(9)); return; }
+    if (a === "softpull") { fire("send_soft_pull"); return; }
+    if (a === "ebook") {
+      var dollars = state.ebookDollars || (document.getElementById("fh-ebook") && document.getElementById("fh-ebook").value) || "";
+      var cents = Math.round(parseFloat(String(dollars).replace(/[^0-9.]/g, "")) * 100);
+      if (!Number.isFinite(cents) || cents < 100) { toast("Enter an e-book price first."); return; }
+      fire("send_ebook", { amount_cents: cents }); return;
+    }
     if (a === "pay") { fire("send_pay_link"); return; }
     if (a === "letters") { fire("generate_letters"); return; }
     if (a === "disp") { fire("log_disposition"); return; }
@@ -685,6 +717,7 @@
     state.survey = d.survey || {};
     state.engine = d.engine || { available: false, reason: "engine data unavailable", fico: {}, reasons: [] };
     state.offers = d.offers || [];
+    state.softPull = d.soft_pull || null;
     state.tier = (state.engine && state.engine.tier) || null;
     state.loaded = true;
     render();

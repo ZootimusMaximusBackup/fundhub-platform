@@ -146,6 +146,7 @@ import financeAlerts from "../../api/finance/alerts.mjs";
 import financeModel from "../../api/finance/model.mjs";
 import bankingAccounts from "../../api/banking/accounts.mjs";
 import consentCapture from "../../api/consent/capture.mjs";
+import softPullApprove from "../../api/soft-pull-approve.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
 import documentsUpload from "../../api/documents-upload.mjs";
@@ -602,6 +603,10 @@ export const ROUTES = {
   // is the same narrow set as finance/soft-pull and is spelled out in
   // api/consent/capture.mjs. Nothing behind it transmits.
   "consent/capture": consentCapture,
+
+  // Client-facing soft-pull approval (signed link from Present). No session —
+  // the URL is the credential. COMPLIANCE REVIEW REQUIRED — consent + identity.
+  "soft-pull-approve": softPullApprove,
 
   // Payment links. ROLE_SETS.FINANCE, same gate as finance/subscriptions and
   // finance/cards — a payment link is a live request for a client's money,

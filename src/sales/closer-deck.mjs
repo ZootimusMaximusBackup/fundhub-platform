@@ -11,6 +11,10 @@ import { addTags } from "../workflows/tags.mjs";
 import { EMAIL_TEMPLATE_KEY } from "../workflows/ds-02-diy-letters.mjs";
 import { buildLetterPackForClient } from "../underwrite/letter-pack.mjs";
 import { logCallOutcome } from "./call-outcomes.mjs";
+import { signSoftPullApproveUrl } from "../consent/approve-token.mjs";
+import { consentStatus } from "../consent/index.mjs";
+import { composeAndSend } from "../messaging/compose.mjs";
+import { secretFromEnv } from "../documents/signed-url.mjs";
 
 export class CloserDeckError extends Error {
   constructor(message, { status = 400, code = "bad_request" } = {}) {
@@ -211,6 +215,8 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
     if (prequal != null && engine.available) engine.total = prequal;
   }
 
+  const softPull = await softPullStatus(db, { orgId, clientId });
+
   return {
     client_id: client.id,
     survey: {
@@ -225,7 +231,224 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
       motivation: cf(client, "cf_svy_money_change_now")
     },
     engine,
+    soft_pull: softPull,
     offers: offersForClient()
+  };
+}
+
+async function softPullStatus(db, { orgId, clientId }) {
+  const consent = await consentStatus(db, {
+    orgId, clientId, kind: "soft_pull_consent"
+  });
+  const paid = await db.query(
+    `SELECT id, amount_cents, status, paid_at, created_at
+       FROM payment_links
+      WHERE org_id = $1 AND client_id = $2 AND purpose = 'diagnostic'
+      ORDER BY created_at DESC LIMIT 1`,
+    [orgId, clientId]
+  );
+  const req = await db.query(
+    `SELECT id, status, created_at, resolved_at
+       FROM soft_pull_requests
+      WHERE org_id = $1 AND client_id = $2
+      ORDER BY created_at DESC LIMIT 1`,
+    [orgId, clientId]
+  );
+  const link = paid.rows[0] || null;
+  const pull = req.rows[0] || null;
+  return {
+    consent_valid: !!consent.valid,
+    consent_reason: consent.reason || null,
+    diagnostic_paid: !!(link && (link.status === "paid" || link.paid_at)),
+    diagnostic_link_status: link ? link.status : null,
+    pull_status: pull ? pull.status : null,
+    pull_id: pull ? pull.id : null
+  };
+}
+
+function publicBaseUrl(env = process.env) {
+  if (env.PUBLIC_BASE_URL) return String(env.PUBLIC_BASE_URL).replace(/\/$/, "");
+  if (env.URL) return String(env.URL).replace(/\/$/, "");
+  return "https://fundhub.ai";
+}
+
+/**
+ * sendDeckSoftPull — $32 fixed diagnostic pay link + soft-pull approval form.
+ * Soft-pull price is never closer-editable (owner law).
+ */
+export async function sendDeckSoftPull(db, {
+  orgId, clientId, staffId, checkoutBaseUrl, env = process.env
+}) {
+  const offer = getOffer("SOFT_PULL");
+  if (!offer) {
+    throw new CloserDeckError("Soft-pull offer missing from catalog.", { status: 500, code: "offer_missing" });
+  }
+  if (!checkoutBaseUrl) {
+    throw new CloserDeckError(
+      "COMMAS_CHECKOUT_BASE_URL is not set — no checkout link can be built",
+      { status: 503, code: "commas_not_configured" }
+    );
+  }
+
+  let signingSecret;
+  try {
+    signingSecret = secretFromEnv(env);
+  } catch {
+    throw new CloserDeckError(
+      "DOCUMENT_URL_SECRET is not set — cannot sign the soft-pull approval link",
+      { status: 503, code: "signing_secret_missing" }
+    );
+  }
+
+  const link = await createPaymentLink(db, {
+    orgId,
+    clientId,
+    purpose: "diagnostic",
+    description: offer.name,
+    amountCents: offer.priceCents,
+    createdByStaffId: staffId,
+    checkoutBaseUrl
+  });
+
+  const approve = signSoftPullApproveUrl({
+    orgId,
+    clientId,
+    secret: signingSecret,
+    baseUrl: publicBaseUrl(env)
+  });
+
+  const first = await db.query(
+    `SELECT first_name, email FROM clients WHERE id = $1 AND org_id = $2`,
+    [clientId, orgId]
+  );
+  const firstName = first.rows[0]?.first_name || "there";
+  const amount = formatCents(offer.priceCents) || "$32";
+
+  const emailBody =
+    `Hi ${firstName},\n\n` +
+    `On our call — next step is your ${amount} soft-pull assessment.\n\n` +
+    `1) Pay here (fixed ${amount}):\n${link.checkout_url}\n\n` +
+    `2) Approve the soft pull and enter your details:\n${approve.url}\n\n` +
+    `Both take about a minute. Stay on the Meet with your advisor.\n\n` +
+    `— Fundhub`;
+
+  const composed = await composeAndSend(db, {
+    orgId,
+    staffId,
+    clientId,
+    channel: "email",
+    subject: `Your ${amount} soft-pull assessment`,
+    body: emailBody,
+    idempotencyKey: `soft-pull-send:${link.id}`
+  });
+
+  const smsBody =
+    `Hi ${firstName}, your Fundhub soft-pull: pay ${amount} ${link.checkout_url} ` +
+    `then approve ${approve.url}`;
+  let sms = null;
+  try {
+    sms = await composeAndSend(db, {
+      orgId,
+      staffId,
+      clientId,
+      channel: "sms",
+      body: smsBody,
+      idempotencyKey: `soft-pull-sms:${link.id}`
+    });
+  } catch {
+    sms = { outcome: null, detail: "sms_failed" };
+  }
+
+  const sent = (await markSent(db, { id: link.id, orgId })) || link;
+  await mergeCustomFields(db, clientId, {
+    closer_deck_soft_pull_sent_at: new Date().toISOString(),
+    closer_deck_soft_pull_link_id: link.id
+  });
+
+  return {
+    link: {
+      ...sent,
+      amount_display: formatCents(Number(sent.amount_cents)),
+      offer_key: "SOFT_PULL"
+    },
+    approve_url: approve.url,
+    approve_expires_at: approve.expiresAtIso,
+    email: composed,
+    sms
+  };
+}
+
+/** E-book downsell — closer sets the price. Empty PDF placeholder until Chris swaps it. */
+export async function sendDeckEbook(db, {
+  orgId, clientId, staffId, amountCents, checkoutBaseUrl, description = null
+}) {
+  const cents = Number(amountCents);
+  if (!Number.isInteger(cents) || cents < 100 || cents > 50000000) {
+    throw new CloserDeckError(
+      "E-book price must be a whole-cent amount between $1 and $500,000.",
+      { status: 400, code: "bad_ebook_amount" }
+    );
+  }
+  if (!checkoutBaseUrl) {
+    throw new CloserDeckError(
+      "COMMAS_CHECKOUT_BASE_URL is not set — no checkout link can be built",
+      { status: 503, code: "commas_not_configured" }
+    );
+  }
+
+  const label = String(description || "Fundhub e-book").trim().slice(0, 120) || "Fundhub e-book";
+  const link = await createPaymentLink(db, {
+    orgId,
+    clientId,
+    purpose: "custom",
+    description: label,
+    amountCents: cents,
+    createdByStaffId: staffId,
+    checkoutBaseUrl
+  });
+
+  const first = await db.query(
+    `SELECT first_name FROM clients WHERE id = $1 AND org_id = $2`,
+    [clientId, orgId]
+  );
+  const firstName = first.rows[0]?.first_name || "there";
+  const amount = formatCents(cents);
+
+  const emailBody =
+    `Hi ${firstName},\n\n` +
+    `Here's the e-book we talked about on the call.\n\n` +
+    `If it works for you, you can pay ${amount} here:\n${link.checkout_url}\n\n` +
+    `The PDF is attached (placeholder until the final file is ready).\n\n` +
+    `No pressure — stay on the Meet with your advisor if you have questions.\n\n` +
+    `— Fundhub`;
+
+  const composed = await composeAndSend(db, {
+    orgId,
+    staffId,
+    clientId,
+    channel: "email",
+    subject: `${label} — ${amount}`,
+    body: emailBody,
+    idempotencyKey: `ebook-send:${link.id}`,
+    attachments: [{ asset: "ebook-placeholder", filename: "fundhub-ebook.pdf" }]
+  });
+
+  const sent = (await markSent(db, { id: link.id, orgId })) || link;
+  await mergeCustomFields(db, clientId, {
+    closer_deck_ebook_sent_at: new Date().toISOString(),
+    closer_deck_ebook_link_id: link.id,
+    closer_deck_ebook_amount_cents: cents
+  });
+
+  return {
+    link: {
+      ...sent,
+      amount_display: formatCents(Number(sent.amount_cents)),
+      offer_key: null,
+      description: label
+    },
+    email: composed,
+    attachment: "ebook-placeholder"
   };
 }
 

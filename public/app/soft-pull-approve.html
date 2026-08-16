@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fundhub · Soft-pull approval</title>
+<link rel="stylesheet" href="fundhub-brand.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--paper);color:var(--ink);font-family:var(--sans)}
+.wrap{max-width:560px;margin:0 auto;padding:28px 18px 64px}
+.mono{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray2)}
+h1{font-size:24px;font-weight:800;letter-spacing:-.03em;margin:10px 0 8px;line-height:1.15}
+.lede{font-size:13.5px;color:var(--gray);line-height:1.5;margin:0 0 18px}
+.card{border:1px solid var(--line);border-radius:12px;background:var(--soft);padding:16px;margin-bottom:14px}
+.card h2{font-size:13px;font-weight:700;margin:0 0 8px}
+.disc{font-size:12.5px;line-height:1.55;color:var(--ink);white-space:pre-wrap}
+label{display:block;font-size:11.5px;font-weight:600;margin:12px 0 5px}
+input{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;background:var(--paper);font:inherit}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{margin-top:16px;width:100%;padding:12px 14px;border:0;border-radius:10px;background:var(--ink);color:var(--paper);font:700 13px var(--sans);cursor:pointer}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.err{border:1px solid #c45;background:#fff5f4;color:#6E2A22;padding:10px 12px;border-radius:8px;font-size:12.5px;margin-bottom:12px}
+.ok{border:1px solid #2C5138;background:rgba(168,216,176,.26);color:#2C5138;padding:14px;border-radius:10px}
+.fine{font-size:10.5px;color:var(--gray2);margin-top:12px;line-height:1.45}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="mono">Fundhub · soft pull</div>
+  <p class="lede">Loading…</p>
+</div>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var token = { org: q.get("org"), client: q.get("client"), exp: q.get("exp"), sig: q.get("sig") };
+  var root = document.getElementById("app");
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function apiUrl() {
+    return "/api/soft-pull-approve?org=" + encodeURIComponent(token.org || "") +
+      "&client=" + encodeURIComponent(token.client || "") +
+      "&exp=" + encodeURIComponent(token.exp || "") +
+      "&sig=" + encodeURIComponent(token.sig || "");
+  }
+
+  function showErr(msg) {
+    root.innerHTML =
+      '<div class="mono">Fundhub · soft pull</div>' +
+      '<h1>Link problem</h1>' +
+      '<div class="err">' + esc(msg) + "</div>" +
+      '<p class="lede">Stay on the call and ask your advisor to send a fresh link.</p>';
+  }
+
+  function renderForm(data) {
+    var name = data.contact && data.contact.first_name ? data.contact.first_name : "there";
+    var already = data.consent && data.consent.valid;
+    root.innerHTML =
+      '<div class="mono">Fundhub · soft pull</div>' +
+      "<h1>Approve your soft-pull assessment</h1>" +
+      '<p class="lede">Hi ' + esc(name) + ". Fill this out while you stay on the Google Meet. " +
+      "It is a soft inquiry — it does not hurt your score.</p>" +
+      (already ? '<div class="ok">Consent is already on file. You can update your details below if needed, or just pay the $32 assessment.</div><br>' : "") +
+      '<div class="card"><h2>' + esc((data.disclosure && data.disclosure.version) || "Authorization") + "</h2>" +
+      '<div class="disc">' + esc((data.disclosure && data.disclosure.text) || "") + "</div></div>" +
+      '<form id="f">' +
+      '<label for="granted_name">Full legal name</label>' +
+      '<input id="granted_name" name="granted_name" autocomplete="name" required>' +
+      '<label for="ssn">Social Security number</label>' +
+      '<input id="ssn" name="ssn" inputmode="numeric" autocomplete="off" required placeholder="123-45-6789">' +
+      '<label for="dob">Date of birth</label>' +
+      '<input id="dob" name="dob" type="date" required>' +
+      '<label for="address_line1">Street address</label>' +
+      '<input id="address_line1" name="address_line1" autocomplete="street-address" required>' +
+      '<div class="row2"><div><label for="city">City</label><input id="city" name="city" required></div>' +
+      '<div><label for="state">State</label><input id="state" name="state" maxlength="2" required placeholder="AZ"></div></div>' +
+      '<label for="postal_code">ZIP</label>' +
+      '<input id="postal_code" name="postal_code" inputmode="numeric" required>' +
+      '<button class="btn" type="submit" id="go">I agree — submit soft-pull approval</button>' +
+      '<p class="fine">Your advisor cannot see this Social Security number on their screen. ' +
+      "After you submit, pay the $32 assessment from the link in your email (if you have not already).</p>" +
+      '<div id="msg"></div></form>';
+
+    document.getElementById("f").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var btn = document.getElementById("go");
+      var msg = document.getElementById("msg");
+      btn.disabled = true;
+      msg.innerHTML = "";
+      var body = {
+        org: token.org,
+        client: token.client,
+        exp: token.exp,
+        sig: token.sig,
+        granted_name: document.getElementById("granted_name").value,
+        ssn: document.getElementById("ssn").value,
+        dob: document.getElementById("dob").value,
+        address_line1: document.getElementById("address_line1").value,
+        city: document.getElementById("city").value,
+        state: document.getElementById("state").value,
+        postal_code: document.getElementById("postal_code").value
+      };
+      fetch("/api/soft-pull-approve", {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify(body)
+      }).then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
+        .then(function (r) {
+          if (!r.body || !r.body.ok) {
+            btn.disabled = false;
+            msg.innerHTML = '<div class="err">' + esc((r.body && (r.body.message || r.body.error)) || "Could not save") + "</div>";
+            return;
+          }
+          root.innerHTML =
+            '<div class="mono">Fundhub · soft pull</div>' +
+            "<h1>You're approved</h1>" +
+            '<div class="ok">' + esc(r.body.next || "Consent saved.") + "</div>" +
+            '<p class="lede" style="margin-top:14px">Stay on the Meet. Your advisor will continue once payment clears.</p>';
+        })
+        .catch(function () {
+          btn.disabled = false;
+          msg.innerHTML = '<div class="err">Network error — try again.</div>';
+        });
+    });
+  }
+
+  if (!token.org || !token.client || !token.exp || !token.sig) {
+    showErr("This page needs a full link from your advisor.");
+    return;
+  }
+
+  fetch(apiUrl(), { headers: { accept: "application/json" } })
+    .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
+    .then(function (r) {
+      if (!r.body || !r.body.ok) {
+        showErr((r.body && (r.body.message || r.body.error)) || "Could not open this link.");
+        return;
+      }
+      renderForm(r.body);
+    })
+    .catch(function () { showErr("Could not reach the server."); });
+})();
+</script>
+</body>
+</html>
