@@ -1,0 +1,120 @@
+{
+  "at": "2026-08-16T16:51:27.168207Z",
+  "base": "https://fundhub.ai",
+  "agent": "agent-4-reaudit",
+  "spacing_ms": 2500,
+  "passed": 11,
+  "total": 11,
+  "logins": [
+    {
+      "email": "chris@fundhub.ai",
+      "http": 200,
+      "ok": true,
+      "principal": "staff",
+      "staffRole": "owner",
+      "accountKind": null,
+      "error": null,
+      "role": "chris"
+    },
+    {
+      "email": "owner@fundhub.ai",
+      "http": 200,
+      "ok": true,
+      "principal": "staff",
+      "staffRole": "owner",
+      "accountKind": null,
+      "error": null,
+      "role": "owner"
+    },
+    {
+      "email": "admin@fundhub.ai",
+      "http": 200,
+      "ok": true,
+      "principal": "staff",
+      "staffRole": "admin",
+      "accountKind": null,
+      "error": null,
+      "role": "admin"
+    },
+    {
+      "email": "sales@fundhub.ai",
+      "http": 200,
+      "ok": true,
+      "principal": "staff",
+      "staffRole": "sales_manager",
+      "accountKind": null,
+      "error": null,
+      "role": "sales"
+    },
+    {
+      "email": "closer@fundhub.ai",
+      "http": 200,
+      "ok": true,
+      "principal": "staff",
+      "staffRole": "closer",
+      "accountKind": null,
+      "error": null,
+      "role": "closer"
+    },
+    {
+      "email": "advisor@fundhub.ai",
+      "http": 200,
+      "ok": true,
+      "principal": "staff",
+      "staffRole": "funding_advisor",
+      "accountKind": null,
+      "error": null,
+      "role": "advisor"
+    },
+    {
+      "email": "inquiry@fundhub.ai",
+      "http": 200,
+      "ok": true,
+      "principal": "staff",
+      "staffRole": "inquiry_specialist",
+      "accountKind": null,
+      "error": null,
+      "role": "inquiry"
+    },
+    {
+      "email": "setter@fundhub.ai",
+      "http": 200,
+      "ok": true,
+      "principal": "staff",
+      "staffRole": "setter",
+      "accountKind": null,
+      "error": null,
+      "role": "setter"
+    },
+    {
+      "email": "affiliate@fundhub.ai",
+      "http": 200,
+      "ok": true,
+      "principal": "affiliate",
+      "staffRole": null,
+      "accountKind": "affiliate",
+      "error": null,
+      "role": "affiliate"
+    },
+    {
+      "email": "partner@fundhub.ai",
+      "http": 200,
+      "ok": true,
+      "principal": "partner",
+      "staffRole": null,
+      "accountKind": "partner",
+      "error": null,
+      "role": "partner"
+    },
+    {
+      "email": "client@fundhub.ai",
+      "http": 200,
+      "ok": true,
+      "principal": "client",
+      "staffRole": null,
+      "accountKind": "client",
+      "error": null,
+      "role": "client"
+    }
+  ]
+}

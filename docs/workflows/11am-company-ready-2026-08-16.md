@@ -8,7 +8,7 @@
 | 1 Accounts + ship | Report wording, commit/merge, one Netlify deploy, seed/unsuspend, login probes | **done** |
 | 2 Honest UI | Scrub fake names on calendar, template-editor, hiring | **done** |
 | 3 Template seed | Missing EMAIL/SMS keys; leave `compliance_passed` false | **done** (2 missing keys only) |
-| 4 Re-audit | Browser-click sidebar after #2 deploys (not Playwright) | **partial** — core screens clicked; full 40 still Agent 4 |
+| 4 Re-audit | Browser-click sidebar after #2 deploys (not Playwright) | **done** — live HTML scrub confirmed; 11/11 logins; Playwright 26/26 / 31/31 = 100; 39 screens clicked |
 
 **Do not flip:** `INNGEST_EVENT_KEY`, `outbound_enabled`, `compliance_passed`. Do not rotate keys.
 
@@ -99,3 +99,43 @@ Agent 4 can start the full sidebar re-audit — this ship is live.
 | Template seed | **done** | Inserted only missing `EMAIL-S05A-NOSHOW-RECOVERY` + `SMS-S05A-NOSHOW-RECOVERY`. `compliance_passed=false`. Did **not** overwrite 16 already-approved rows. |
 | Dana Reyes on Campaigns | **done in repo** | Sample action log now says Staff. Needs this deploy to be live. |
 | Extra live clicks | **done** | closer-dashboard, closer-call, my-numbers, sales-floor, messaging, campaigns, staff-teams, automations |
+
+---
+
+## Agent 4 log (re-audit + Playwright regression)
+
+| Step | Status | Notes |
+|------|--------|-------|
+| Live HTML scrub check | **done** | `/app/calendar`, `template-editor`, `hiring`, `campaign-manager` — no Jordan Blake / Marcus Webb / Carlos Bettencourt / Meredith Yao / Dana Reyes / Nina Torres. Campaign sample action log uses **Staff**. |
+| Role login probe (11) | **done** | **11/11 OK** — evidence `e2e-verify-run4-evidence/role-login-probe-agent4-reaudit.json` (~2.5s spacing) |
+| `npm run test:e2e:live` | **done** | **26/26 pass · 31/31 required = 100** — evidence `e2e-verify-run4-evidence/live-playwright-100/score-agent4-reaudit.json` + `agent4-reaudit-run.txt` |
+| Sidebar browser-click | **done** | Logged in as `chris@`. Opened all 39 app screens (not Playwright suite). 38 GREEN + `sample-data` YELLOW (intentional demo). Evidence `e2e-verify-run4-evidence/sidebar-click-agent4-reaudit.json`. Screenshots under `/opt/cursor/artifacts/screenshots/agent4-sidebar/`. |
+| Board status | **done** | Company walk readiness: **GREEN** (logins + scrub + Playwright 100 + screens clicked). Gaps remain BETA/off switches — not 11 AM blockers. |
+
+**Not flipped:** `INNGEST_EVENT_KEY`, `outbound_enabled`, `compliance_passed`. No key rotation.
+
+### Login matrix (Agent 4 re-probe, live)
+
+| Role | Email | Result |
+|------|-------|--------|
+| chris | `chris@fundhub.ai` | OK — staff/owner |
+| owner | `owner@fundhub.ai` | OK — staff/owner |
+| admin | `admin@fundhub.ai` | OK — staff/admin |
+| sales | `sales@fundhub.ai` | OK — staff/sales_manager |
+| closer | `closer@fundhub.ai` | OK — staff/closer |
+| advisor | `advisor@fundhub.ai` | OK — staff/funding_advisor |
+| inquiry | `inquiry@fundhub.ai` | OK — staff/inquiry_specialist |
+| setter | `setter@fundhub.ai` | OK — staff/setter |
+| affiliate | `affiliate@fundhub.ai` | OK — affiliate |
+| partner | `partner@fundhub.ai` | OK — partner |
+| client | `client@fundhub.ai` | OK — client |
+
+### Fake names / dollars flagged on click pass
+
+| Screen | Flag | Notes |
+|--------|------|-------|
+| sample-data | YELLOW | Intentional Demo Mode — not a production walk screen |
+| journeys | note | Mock tracking still has sample fill (`Chase Ink` / `$18,000`) in page JS — not a scrubbed person name; already known partial |
+| All other 37 | GREEN | No furniture people names in visible UI after open + clicks |
+
+**Single next action for Chris:** One owner manual pass on live `https://fundhub.ai` as `chris@` (agent gate is 100/100).
