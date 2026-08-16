@@ -28,6 +28,7 @@ import { on } from "../events/registry.mjs";
 import { resolveClient } from "./client-lifecycle.mjs";
 import { recordOptOut, recordOptIn } from "../lib/opt-out.mjs";
 import { createTask } from "../lib/create-task.mjs";
+import { isInterviewBooking } from "../insights/meet.mjs";
 import { addTags } from "../workflows/tags.mjs";
 import { mergeCustomFields } from "../workflows/custom-fields.mjs";
 import { advanceCardToStage } from "../workflows/cards.mjs";
@@ -214,6 +215,8 @@ export async function onBookingCreated(event, db) {
   const clientId = await resolveClient(db, event);
   if (!clientId) return;
   const p = event.payload || {};
+  // Ending interviews are not sales calls. customer-insights stamps that Meet.
+  if (isInterviewBooking(p)) return { skipped: "interview" };
   const uid = p.bookingUid || null;
   const dup = await db.query(
     `SELECT 1 FROM tasks WHERE client_id=$1 AND source_workflow='calcom' AND body=$2 LIMIT 1`,

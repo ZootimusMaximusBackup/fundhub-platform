@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { chunkText } from "./chunk.mjs";
 import { embedTexts, toVectorLiteral } from "./embed.mjs";
 import { classifyAndApply } from "./review.mjs";
+import { attachDriveRecording } from "../sales/recordings.mjs";
 
 function sha256(text) {
   return crypto.createHash("sha256").update(String(text || ""), "utf8").digest("hex");
@@ -54,6 +55,12 @@ export async function upsertExtractedFile(db, {
     });
     const classification = await maybeClassify(db, {
       orgId, fileId, extracted, env, fetchImpl, classify, classifyFn
+    });
+    await attachDriveRecording(db, {
+      orgId,
+      clientId: extracted.clientId || null,
+      fileName: extracted.name,
+      url: extracted.webViewLink || null
     });
     return { ok: true, fileId, chunkCount: 0, skipped: false, reason: "needs_transcription", classification };
   }

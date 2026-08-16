@@ -5,7 +5,7 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 
 import { driveConfigFromEnv } from "./config.mjs";
 import { buildServiceAccountJwt, fetchAccessToken } from "./auth.mjs";
-import { classifyMime } from "./mime.mjs";
+import { classifyMime, needsMediaDownload } from "./mime.mjs";
 import { sniffClientId } from "./client-id.mjs";
 import { unzipEntries, extractDocxText, extractOfficeText } from "./office.mjs";
 import { extractPdfText } from "./pdf-text.mjs";
@@ -144,6 +144,8 @@ test("classifyMime covers google, pdf, office, image skip, av", () => {
   assert.equal(classifyMime("image/png").action, "skip");
   assert.equal(classifyMime("audio/mpeg").kind, "av");
   assert.equal(classifyMime("application/vnd.openxmlformats-officedocument.wordprocessingml.document").kind, "office");
+  assert.equal(needsMediaDownload(classifyMime("application/pdf")), true);
+  assert.equal(needsMediaDownload(classifyMime("video/mp4")), false);
 });
 
 test("sniffClientId finds uuid in name or parent", () => {
@@ -210,6 +212,16 @@ test("extractFromDriveFile flags av for transcription + client sniff", async () 
   assert.equal(result.needsTranscription, true);
   assert.equal(result.clientId, id);
   assert.equal(result.byteLength, 7);
+});
+
+test("extractFromDriveFile flags av without downloading bytes", async () => {
+  const result = await extractFromDriveFile(
+    { id: "a2", name: "Meet - Jane Doe.mp4", mimeType: "video/mp4" }
+  );
+  assert.equal(result.ok, true);
+  assert.equal(result.needsTranscription, true);
+  assert.equal(result.unattached, true);
+  assert.equal(result.byteLength, null);
 });
 
 // ── drive client + walk ────────────────────────────────────────────────────

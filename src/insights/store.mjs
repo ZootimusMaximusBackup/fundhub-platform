@@ -83,7 +83,7 @@ export function parseInsightInput(input = {}) {
     stage,
     channel,
     answers: parseAnswers(input.answers),
-    notes: cleanStr(input.notes, NOTES_MAX),
+    notes: cleanStr(input.notes || input.transcript, NOTES_MAX),
     meetingUrl: cleanStr(input.meeting_url || input.meetingUrl, URL_MAX),
     recordingUrl: cleanStr(input.recording_url || input.recordingUrl, URL_MAX),
     occurredAt

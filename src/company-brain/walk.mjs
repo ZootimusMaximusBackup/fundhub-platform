@@ -4,7 +4,7 @@
 
 import { driveConfigFromEnv } from "./config.mjs";
 import { createDriveClient } from "./drive-client.mjs";
-import { classifyMime, GOOGLE_FOLDER } from "./mime.mjs";
+import { classifyMime, GOOGLE_FOLDER, needsMediaDownload } from "./mime.mjs";
 import { extractFromDriveFile } from "./extract.mjs";
 
 /**
@@ -64,7 +64,7 @@ export async function walkDriveAndExtract({
 
     const extracted = await extractFromDriveFile(meta, {
       parentNames,
-      download: classified.action === "download"
+      download: needsMediaDownload(classified)
         ? () => client.downloadMedia(meta.id)
         : undefined,
       exportTo: classified.action === "export"

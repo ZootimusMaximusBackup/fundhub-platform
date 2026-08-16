@@ -36,10 +36,16 @@ export function classifyMime(mimeType) {
   if (mime === "application/pdf") return { kind: "pdf", action: "download" };
   if (OFFICE.has(mime)) return { kind: "office", action: "download" };
   if (mime.startsWith(AUDIO_PREFIX) || mime.startsWith(VIDEO_PREFIX)) {
-    return { kind: "av", action: "download" }; // Whisper later; step 1 proves download
+    // Whisper later. Index metadata only — do not download Meet recordings.
+    return { kind: "av", action: "download" };
   }
   if (mime.startsWith("text/") || mime === "application/json") {
     return { kind: "text", action: "download" };
   }
   return { kind: "other", action: "skip" };
+}
+
+/** Pull bytes for text-ish files. Skip A/V — Meet recordings stay in Drive. */
+export function needsMediaDownload(classified) {
+  return classified?.action === "download" && classified.kind !== "av";
 }

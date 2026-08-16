@@ -3,6 +3,8 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-15 | all eight | One finance route added — `GET,POST /api/company-brain/sync` (owner, admin, sales_manager). Sales floor shows today's Meet recordings from Drive. COMPLIANCE REVIEW REQUIRED — call recordings | Drive connector existed; keys were never set; SM needed a quick list | (this commit)
+
 2026-08-15 | all eight | Two staff routes added — `POST /api/customer-insights`, `GET /api/read/customer-insights`. Three collections: start (existing apply survey), mid check-in 7 days after pay (phone/AI, not Meet), ending Google Meet interview after funded. COMPLIANCE REVIEW REQUIRED — answers may later feed ads/VSL | Beta customer insight store + auto tasks | (this commit)
 
 2026-08-15 | client | BS-01 SMS pre-call companion: three texts on booking (booked → +24h → 2h before call), no video links, stops if call held. Email drip unchanged. COMPLIANCE REVIEW REQUIRED — outbound SMS | Owner: SMS back-end selling off GHL | (this commit)

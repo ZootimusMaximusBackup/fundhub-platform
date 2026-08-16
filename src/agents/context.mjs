@@ -26,6 +26,8 @@ const SURVEY_KEYS = [
  *     survey: { [key]: value },
  *     client: { id, first_name, last_name, email, phone, funded, funded_amount, tags, flags },
  *     snapshot: { pipeline_stage, funding_round, fico, prequal_amount, agent_context_field, outcome_tier },
+ *     insights: [{ stage, channel, answers, notes, recording_url, meeting_url, occurred_at }],
+ *     recent_calls: [{ outcome, notes, recording_url, logged_at }],
  *     as_prompt_block: string   // ready to inject under the system prompt
  *   }
  */
@@ -35,7 +37,7 @@ export async function fetchContext(db, {
   if (!orgId) throw new Error("fetchContext: orgId is required");
   if (!clientId) throw new Error("fetchContext: clientId is required");
 
-  const [clientRes, convoRes, messagesRes, stageRes, roundRes, cfRes] = await Promise.all([
+  const [clientRes, convoRes, messagesRes, stageRes, roundRes, cfRes, insightRes, callRes] = await Promise.all([
     db.query(
       `SELECT id, first_name, last_name, email, phone, funded, funded_amount,
               tags, outcome_tier, dnd_sms, dnd_email, dnd_voice
@@ -107,6 +109,22 @@ export async function fetchContext(db, {
               cf_funding_scope, employee_next_action, analyzer_path_raw
          FROM client_custom_fields
         WHERE client_id = $1 AND org_id = $2`,
+      [clientId, orgId]
+    ),
+    db.query(
+      `SELECT stage, channel, answers, notes, recording_url, meeting_url, occurred_at
+         FROM customer_insights
+        WHERE client_id = $1 AND org_id = $2
+        ORDER BY occurred_at DESC
+        LIMIT 6`,
+      [clientId, orgId]
+    ),
+    db.query(
+      `SELECT outcome, notes, recording_url, logged_at
+         FROM call_outcomes
+        WHERE client_id = $1 AND org_id = $2
+        ORDER BY logged_at DESC
+        LIMIT 3`,
       [clientId, orgId]
     )
   ]);
@@ -199,6 +217,22 @@ export async function fetchContext(db, {
     snapshot
   };
 
+  context.insights = (insightRes.rows || []).map((row) => ({
+    stage: row.stage || null,
+    channel: row.channel || null,
+    answers: row.answers && typeof row.answers === "object" ? row.answers : {},
+    notes: row.notes || null,
+    recording_url: row.recording_url || null,
+    meeting_url: row.meeting_url || null,
+    occurred_at: row.occurred_at || null
+  }));
+  context.recent_calls = (callRes.rows || []).map((row) => ({
+    outcome: row.outcome || null,
+    notes: row.notes || null,
+    recording_url: row.recording_url || null,
+    logged_at: row.logged_at || null
+  }));
+
   context.as_prompt_block = formatPromptBlock(context);
   return context;
 }
@@ -253,6 +287,28 @@ export function formatPromptBlock(ctx) {
           ? `AGENT(${m.sender_agent_code || "?"})`
           : (m.sender_kind || "OUTBOUND").toUpperCase());
       lines.push(`  [${who}] ${(m.body || "").slice(0, 500)}`);
+    }
+  }
+  if (ctx.insights?.length) {
+    lines.push("Customer interviews / check-ins:");
+    for (const i of ctx.insights) {
+      const when = i.occurred_at ? ` ${i.occurred_at}` : "";
+      lines.push(`  - ${i.stage || "insight"} ${i.channel || ""}${when}`.trim());
+      if (i.notes) lines.push(`    notes: ${String(i.notes).slice(0, 400)}`);
+      const answers = i.answers && typeof i.answers === "object" ? i.answers : {};
+      for (const [k, v] of Object.entries(answers).slice(0, 12)) {
+        if (v == null || v === "") continue;
+        lines.push(`    ${k}: ${String(v).slice(0, 200)}`);
+      }
+      if (i.recording_url) lines.push(`    recording: ${i.recording_url}`);
+    }
+  }
+  if (ctx.recent_calls?.length) {
+    lines.push("Recent sales calls:");
+    for (const call of ctx.recent_calls) {
+      const rec = call.recording_url ? ` recording: ${call.recording_url}` : "";
+      lines.push(`  - ${call.outcome || "logged"} ${call.logged_at || ""}${rec}`.trim());
+      if (call.notes) lines.push(`    notes: ${String(call.notes).slice(0, 400)}`);
     }
   }
   return lines.join("\n");

@@ -42,6 +42,12 @@ const emptyFloor = {
   beliefs: { beliefs: [], sources: [], period: {}, prior: {} },
   compliance: { available: false, reason: "Call recording and transcription do not exist yet", items: [] },
   cold_deals: [],
+  recordings: {
+    drive_ready: false,
+    missing: ["GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON"],
+    items: [],
+    reason: "Google Drive is not connected yet. Recordings stay in Meet Recordings until Drive is turned on."
+  },
   discipline: {
     unlogged_calls: 0, shifts_started_late: null,
     shifts_detail: { reason: "Needs scheduled shift times" },
@@ -112,11 +118,13 @@ test("sales-floor loads for sales_manager and shell bounces a closer home", asyn
   await openScreen(page, "/app/sales-floor.html", SALES_MANAGER, salesHandlers());
   await expect(page.locator("body")).toBeVisible();
   await expect(page.locator(".hero").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Today's recordings" })).toBeVisible();
+  await expect(page.locator("text=Google Drive is not connected yet")).toBeVisible();
 
   // Closers are not on the sales-floor allow list — shell.js replaces them
   // to their home before the page (or its API 403 banner) can paint.
   const errors = await openScreen(page, "/app/sales-floor.html", CLOSER, salesHandlers({ floorStatus: 403 }));
-  await expect(page).toHaveURL(/closer-dashboard\.html/);
+  await expect(page).toHaveURL(/dashboard\.html/);
   expect(errors).toEqual([]);
 });
 

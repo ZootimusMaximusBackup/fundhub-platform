@@ -81,6 +81,7 @@ import readFinanceAsk from "../../api/read/finance-ask.mjs";
 import readCompanyBrain from "../../api/read/company-brain.mjs";
 import readCompanyBrainAffiliate from "../../api/read/company-brain-affiliate.mjs";
 import companyBrainReviews from "../../api/company-brain/reviews.mjs";
+import companyBrainSync from "../../api/company-brain/sync.mjs";
 import readWorkflows from "../../api/read/workflows.mjs";
 import readTransactions from "../../api/read/transactions.mjs";
 import readCloserCall from "../../api/read/closer-call.mjs";
@@ -375,6 +376,7 @@ export const ROUTES = {
 
   // Owner-only classification review queue (H-3).
   "company-brain/reviews": companyBrainReviews,
+  "company-brain/sync": companyBrainSync,
 
   // read/workflows introspects the live src/workflows/index.mjs `functions`
   // array — the actual Inngest registry — rather than a hand-authored list, so

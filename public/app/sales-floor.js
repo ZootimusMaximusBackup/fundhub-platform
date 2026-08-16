@@ -21,6 +21,19 @@
     return h ? (h + "h " + m + "m") : (m + "m");
   }
 
+  function safeDriveUrl(u) {
+    if (!u) return "";
+    try {
+      var x = new URL(u);
+      if (x.protocol !== "https:") return "";
+      var host = String(x.hostname || "").toLowerCase();
+      if (host === "drive.google.com" || host === "docs.google.com") return x.href;
+      return "";
+    } catch (e) {
+      return "";
+    }
+  }
+
   var state = { data: null };
 
   function paint(d) {
@@ -149,13 +162,47 @@
         "<b>Flag a belief × source pattern to marketing.</b> Stores a row only — nothing is sent externally.</div>" +
         '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">' +
         '<button type="button" id="fh-flag-mkt" style="font-family:var(--sans);font-size:12.5px;padding:7px 13px;border:1px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:7px;cursor:pointer">Flag to marketing</button>' +
-        '<button type="button" disabled title="Recordings do not exist yet" style="font-family:var(--sans);font-size:12.5px;padding:7px 13px;border:1px solid var(--line);background:var(--paper);border-radius:7px;opacity:.5">Pull call recordings</button>' +
+        '<button type="button" id="fh-recordings-jump" style="font-family:var(--sans);font-size:12.5px;padding:7px 13px;border:1px solid var(--line);background:var(--paper);border-radius:7px;cursor:pointer">Today\'s recordings</button>' +
         "</div>");
       var btn = $("#fh-flag-mkt");
       if (btn) btn.addEventListener("click", flagMarketing);
+      var jump = $("#fh-recordings-jump");
+      if (jump) jump.addEventListener("click", function () {
+        var el = document.getElementById("fh-recordings");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     }
 
-    // Compliance honest empty
+    // Today's recordings (Google Drive / Meet Record)
+    document.querySelectorAll(".panel h3").forEach(function (h) {
+      if (!/Today'?s recordings/i.test(h.textContent || "")) return;
+      var panel = h.parentElement;
+      var rec = d.recordings || {};
+      var items = rec.items || [];
+      var rows = items.map(function (it) {
+        var when = it.when ? new Date(it.when) : null;
+        var whenLabel = when && !isNaN(when.getTime())
+          ? (it.is_today ? "Today · " : "") + when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+          : (it.is_today ? "Today" : "This week");
+        var who = it.client_name || (it.attached ? "Client" : "Not matched yet");
+        var href = safeDriveUrl(it.url);
+        var open = href
+          ? '<a href="' + href + '" target="_blank" rel="noopener">Open in Drive</a>'
+          : "<em>No link</em>";
+        return '<div class="row"><span class="l"><b>' + (it.name || "Recording") +
+          "</b><em>" + who + " · " + whenLabel + "</em></span><span class=\"r\">" + open + "</span></div>";
+      }).join("");
+      var note = items.length
+        ? ""
+        : '<p class="note">' + (rec.reason || "No Meet recordings in the last 7 days.") + "</p>";
+      var refreshLabel = rec.drive_ready ? "Refresh from Drive" : "Drive not connected";
+      panel.innerHTML = "<h3>Today's recordings</h3>" + (rows || "") + note +
+        '<div style="margin-top:12px"><button type="button" id="fh-drive-refresh" ' +
+        'style="font-family:var(--sans);font-size:12.5px;padding:7px 13px;border:1px solid var(--line);background:var(--paper);border-radius:7px;cursor:pointer">' +
+        refreshLabel + "</button></div>";
+      var refresh = panel.querySelector("#fh-drive-refresh");
+      if (refresh) refresh.addEventListener("click", refreshDrive);
+    });
     document.querySelectorAll(".panel h3").forEach(function (h) {
       if (!/Compliance/i.test(h.textContent || "")) return;
       var panel = h.parentElement;
@@ -227,6 +274,22 @@
       return;
     }
     alert("Stored for marketing routing. Nothing was sent externally.");
+  }
+
+  async function refreshDrive() {
+    var btn = $("#fh-drive-refresh");
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Checking Drive…";
+    }
+    if (!window.FHData) return;
+    var r = await window.FHData.write("/api/company-brain/sync", {});
+    if (!r.ok) {
+      alert((r.error && (r.error.message || r.error)) || "Could not refresh Drive");
+    } else if (r.data && r.data.reason === "not_configured") {
+      alert("Google Drive is not connected yet. Recordings stay in Meet Recordings until Drive is turned on.");
+    }
+    await boot();
   }
 
   async function boot() {

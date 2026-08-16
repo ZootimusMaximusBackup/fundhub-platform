@@ -20,7 +20,7 @@ flowchart TD
     CAN --> A_banking[banking — 3 routes]
     CAN --> A_campaigns[Campaigns — 8 routes]
     CAN --> A_chat[chat — 3 routes]
-    CAN --> A_company_brain[company-brain — 1 route]
+    CAN --> A_company_brain[company-brain — 2 routes]
     CAN --> A_consent[consent — 1 route]
     CAN --> A_contracts[contracts — 1 route]
     CAN --> A_creative[Creative Factory — 7 routes]
@@ -47,7 +47,7 @@ flowchart TD
 
 ## What they can reach
 
-**144 of 146 routes.**
+**145 of 147 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -78,6 +78,7 @@ flowchart TD
 | `/api/chat/peers` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/closer-deck` | POST | closer, sales_manager, owner, admin |
 | `/api/company-brain/reviews` | GET, POST | owner |
+| `/api/company-brain/sync` | GET, POST | owner, admin, sales_manager |
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/contracts` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/contracts/sign` | GET, POST | anyone |
@@ -204,7 +205,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**2 of 146 routes.**
+**2 of 147 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

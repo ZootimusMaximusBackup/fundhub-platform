@@ -1,6 +1,6 @@
 # Customer insight surveys — shared board
 
-Status: C + A done (beta). Pending: D context fetcher, E call recording, F auto-book Meet, G deploy.  
+Status: C + A done (beta). D context fetcher done. E Drive recordings + sales-floor list done. Pending: F auto-book Meet, G deploy.  
 Model: Grok 4.6 high (owner-set)
 
 ## Three collections (owner-set 2026-08-15)
@@ -25,10 +25,10 @@ Google Meet is only on the **sales call** (existing closer desk) and the **endin
 | C — Store + funded task | this session | done | Table + save/read API + auto task on `round.funded`. |
 | A — Mid check-in | this session | done | Task due in 7 days on `deposit.paid` / `sale.closed`. Phone/AI, not Meet. |
 | B — Meet / questions | this session | done | Folded into C. Questions in `src/insights/questions.mjs`. |
-| D — Context fetcher | unclaimed | pending | Feed saved answers into `src/agents/context.mjs`. |
-| E — Call recording | unclaimed | pending | Save recording link on the insight row. Slot `recording_url` already exists. |
+| D — Context fetcher | this session | done | Interview answers + call recordings go into `src/agents/context.mjs` prompt block. |
+| E — Call recording | this session | done | Drive index + sales-floor "Today's recordings". Meet Record → Drive link. Keys never set. |
 | F — Auto-book Meet | unclaimed | pending | Book Google Meet for the sales call and the ending interview only. |
-| G — Deploy | unclaimed | pending | Ship the beta (store + mid task + ending Meet task). |
+| G — Deploy | unclaimed | pending | Ship the beta (store + mid task + ending Meet task + recordings list). |
 
 ## Frozen response shape (C)
 
@@ -86,3 +86,29 @@ Answers may later be used in ads, VSL, and landing pages. This batch only **stor
 - Due in 7 days
 - Body says phone/AI, not Google Meet
 - Save as `stage=mid`, `channel=call`
+
+### D — Context fetcher (done)
+
+**Files**
+- `src/agents/context.mjs` + `src/agents/context.test.mjs`
+
+**Behavior**
+- Last 6 interview rows and last 3 sales-call rows go into the prompt block the AI already reads.
+
+### E — Drive recordings + sales floor (done)
+
+**Files**
+- `src/sales/recordings.mjs` + tests
+- `src/sales/metrics.mjs` — `recordings` on sales-floor payload
+- `api/company-brain/sync.mjs` — GET/POST, sales manager / owner / admin
+- `netlify/functions/api.mjs` — `company-brain/sync`
+- `public/app/sales-floor.html` + `sales-floor.js`
+- `src/company-brain/walk.mjs` + `sync.mjs` — do not download video/audio during index
+- `src/company-brain/store.mjs` — stamp Drive link onto the latest call / interview
+- `src/insights/meet.mjs` — Meet Record + Drive, not Meetily
+- `.env.example` — `GOOGLE_DRIVE_*` names only
+
+**Behavior**
+- Click Record in Google Meet. File stays in Drive. Fundhub stores the link.
+- Sales floor shows last 7 days with an Open in Drive link.
+- Drive keys were never set. Dashboard says so until they are.

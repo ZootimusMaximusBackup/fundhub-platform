@@ -5,6 +5,7 @@
 import { BELIEFS, BELIEF_LABELS } from "./beliefs.mjs";
 import { countUnlogged, listUnloggedCalls } from "./call-outcomes.mjs";
 import { orgDemoModeEnabled, demoClause } from "../demo/exclude-demo.mjs";
+import { listRecentRecordings } from "./recordings.mjs";
 
 function monthWindow(now = new Date()) {
   const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -363,11 +364,11 @@ export async function beliefAnalytics(db, { orgId, start, end } = {}) {
 /**
  * Manager floor view.
  */
-export async function salesFloor(db, { orgId, now = new Date() } = {}) {
+export async function salesFloor(db, { orgId, now = new Date(), env = process.env } = {}) {
   if (!orgId) throw new TypeError("salesFloor: orgId required");
   const window = monthWindow(now);
 
-  const [cash, funnel, d2f, closers, beliefs, unlogged, cold, shiftsLate] = await Promise.all([
+  const [cash, funnel, d2f, closers, beliefs, unlogged, cold, shiftsLate, recordings] = await Promise.all([
     db.query(
       `SELECT COALESCE(SUM(cash_collected_cents), 0)::bigint AS cents
          FROM call_outcomes
@@ -380,7 +381,8 @@ export async function salesFloor(db, { orgId, now = new Date() } = {}) {
     beliefAnalytics(db, { orgId, ...window }),
     countUnlogged(db, { orgId }),
     coldDeals(db, { orgId }),
-    lateShifts(db, { orgId, now })
+    lateShifts(db, { orgId, now }),
+    listRecentRecordings(db, { orgId, now, env })
   ]);
 
   const cashCents = Number(cash.rows[0]?.cents || 0);
@@ -411,9 +413,13 @@ export async function salesFloor(db, { orgId, now = new Date() } = {}) {
     funnel,
     closers,
     beliefs,
+    recordings,
     compliance: {
       available: false,
-      reason: "Call recording and transcription do not exist yet — compliance flags cannot be counted. Table call_compliance_flags is ready.",
+      reason: recordings.items.length
+        ? "Recordings are in Google Drive. Phrase flags still need transcription — table call_compliance_flags is ready."
+        : (recordings.reason
+          || "No Meet recordings yet. Click Record in Google Meet; the file lands in Drive."),
       items: []
     },
     cold_deals: cold,

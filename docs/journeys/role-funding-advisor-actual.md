@@ -33,11 +33,11 @@ flowchart TD
     CAN --> A_social[social — 3 routes]
     CAN --> A_top_level[Everything else — 22 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 42 routes]
+    WHO -->|Yes| CANT[Blocked — 43 routes]
     CANT --> B_auth[Signing in and out — 1 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_chat[chat — 1 blocked]
-    CANT --> B_company_brain[company-brain — 1 blocked]
+    CANT --> B_company_brain[company-brain — 2 blocked]
     CANT --> B_demo[demo — 2 blocked]
     CANT --> B_finance[Finance — 5 blocked]
     CANT --> B_hiring[Hiring — 6 blocked]
@@ -51,7 +51,7 @@ flowchart TD
 
 ## What they can reach
 
-**104 of 146 routes.**
+**104 of 147 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -168,7 +168,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**42 of 146 routes.**
+**43 of 147 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -178,6 +178,7 @@ flowchart TD
 | `/api/chat/portal-message` | POST | client |
 | `/api/closer-deck` | POST | closer, sales_manager, owner, admin |
 | `/api/company-brain/reviews` | GET, POST | owner |
+| `/api/company-brain/sync` | GET, POST | owner, admin, sales_manager |
 | `/api/demo/mode` | DELETE, GET, POST | owner, admin |
 | `/api/demo/simulate` | DELETE, POST | owner, admin |
 | `/api/finance/bank-accounts` | GET, POST | owner, admin, sales_manager |

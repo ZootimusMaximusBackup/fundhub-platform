@@ -50,7 +50,9 @@ export function normalizeCalcomEvent(body) {
     email: String(first.email || "").trim().toLowerCase(),
     name: String(first.name || "").trim(),
     meetingUrl: pickMeetingUrl(p),
-    rescheduleUid: p.rescheduleUid || p.rescheduledBy || null
+    rescheduleUid: p.rescheduleUid || p.rescheduledBy || null,
+    eventTypeSlug: String(p.eventType?.slug || p.eventTypeSlug || "").trim() || null,
+    eventTypeTitle: String(p.eventType?.title || p.eventType?.name || p.eventTypeTitle || "").trim() || null
   };
 }
 
@@ -110,6 +112,8 @@ export async function handleCalcomWebhook({ db, rawBody, signatureHeader, secret
       name: evt.name,
       meetingUrl: evt.meetingUrl,
       rescheduleUid: evt.rescheduleUid,
+      eventTypeSlug: evt.eventTypeSlug,
+      eventTypeTitle: evt.eventTypeTitle,
       source: "calcom"
     };
     const idKey = evt.bookingUid ? `calcom:${evt.bookingUid}:${c.name}` : undefined;
