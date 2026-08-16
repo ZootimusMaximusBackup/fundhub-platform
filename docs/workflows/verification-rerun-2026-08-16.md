@@ -101,7 +101,7 @@ Password: same as E2E (from `.env`, not printed).
 
 | Endpoint | Status | Notes |
 |----------|--------|-------|
-| `/api/read/messages?limit=3` | **400** | `invalid_parameter` — query shape wrong or handler stricter than probe |
+| `/api/read/messages?limit=3` | **400 expected** | Probe shape was wrong. Handler requires `conversation_id` (uuid). Fixed in `scripts/tmp-full-live-verify.mjs` — resolve thread then `?conversation_id=…&limit=3`. |
 | `/api/dashboard/client?id=9af65808…` | 200 | Prove client "Chris" |
 | `/api/read/tradelines?client_id=9af65808…` | 200 | 45 tradelines |
 | `/api/read/search?q=prove` | 200 | |
@@ -202,7 +202,7 @@ Use this list for time estimates. Counts are discrete work items.
 2. Seed `client@fundhub.ai` on prod (or document magic-link-only path)
 3. Unsuspend closer / advisor / inquiry / setter (or re-invite)
 4. Scrub 3 HTML pages: calendar, template-editor, hiring
-5. Fix or document `/api/read/messages` probe (400 invalid_parameter)
+5. ~~Fix or document `/api/read/messages` probe (400 invalid_parameter)~~ **done** — probe fixed; handler correct
 6. Commit + push gauntlet fixes; one Netlify deploy; optional Playwright regression (26 specs — **not** the 40-screen audit; that was agent browser clicks)
 
 ### P1 — Money & mail truth (~8 items)
