@@ -54,9 +54,16 @@
       .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
   }
 
+  var PRECALL_GREETING =
+    "Your call is coming up. Any questions you want us to know before we talk? Type them here and your advisor will see them.";
+
   function mount(opts) {
     opts = opts || {};
     var isPortal = !!opts.portal;
+    var isDemo = !!opts.demo;
+    var hadCall = opts.hadCall === true;
+    var autoOpenPrecall = opts.autoOpenPrecall === true ||
+      (isPortal && opts.autoOpenPrecall !== false && !hadCall);
     var style = document.createElement("style");
     style.id = "fh-chat-style";
     style.textContent = STYLE;
@@ -132,7 +139,9 @@
       } else if (state.mode === "knowledge") {
         addMsg("Ask about company SOPs, scripts, and Drive knowledge. Same rules as Company Brain.");
       } else if (isPortal) {
-        addMsg("Message your Fundhub team. Replies show in their inbox.");
+        addMsg(hadCall
+          ? "Message your Fundhub team. Replies show in their inbox."
+          : PRECALL_GREETING);
       } else {
         addMsg("Staff↔staff is blue and skips quiet-hours rules. Staff↔client uses the real outbound path and compliance gate.");
       }
@@ -238,6 +247,10 @@
       }
 
       if (isPortal) {
+        if (isDemo) {
+          addMsg("Sent to your team.", "them");
+          return;
+        }
         api("/api/chat/portal-message", {
           method: "POST",
           body: JSON.stringify({ body: q, channel: "sms" })
@@ -312,6 +325,12 @@
     paintModes();
     paintFoot();
     paintBodyWelcome();
+
+    if (autoOpenPrecall) {
+      panel.classList.add("open");
+      var precallInput = document.getElementById("fh-chat-input");
+      if (precallInput) precallInput.focus();
+    }
   }
 
   window.FHChat = { mount: mount };

@@ -36,6 +36,7 @@
 import { db } from "../../src/db.mjs";
 import { attachStaff, bearerToken } from "../../src/http/middleware/requireAuth.mjs";
 import { verifyAccountSession } from "../../src/auth/account-session.mjs";
+import { clientHadCall } from "../../src/auth/client-had-call.mjs";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -68,23 +69,35 @@ export default async function handler(req, res) {
   if (!account) return res.status(401).json({ ok: false, error: "unauthorized" });
 
   const p = account.principal;
-  return res.status(200).json({
+  const projected = {
+    id: p.accountId,
+    org_id: p.orgId,
+    role: p.kind,
+    email: p.email,
+    name: p.name,
+    status: "active",          // verifyAccountSession only returns active accounts
+    principal_kind: p.kind,    // unambiguous, for anything that should not read `role`
+    client_id: p.clientId,
+    affiliate_id: p.affiliateId,
+    partner_id: p.partnerId    // partner-surface screens; CRM uses org-brand
+  };
+
+  const payload = {
     ok: true,
     principal: p.kind,
-    // The projection. `role` carries the principal kind because that is the key
-    // shell.js ROLE_TABS is written against; `id` is the ACCOUNT id, never a
-    // staff id, and there is no staff row behind it.
-    staff: {
-      id: p.accountId,
-      org_id: p.orgId,
-      role: p.kind,
-      email: p.email,
-      name: p.name,
-      status: "active",          // verifyAccountSession only returns active accounts
-      principal_kind: p.kind,    // unambiguous, for anything that should not read `role`
-      client_id: p.clientId,
-      affiliate_id: p.affiliateId,
-      partner_id: p.partnerId    // partner-surface screens; CRM uses org-brand
-    }
-  });
+    staff: projected
+  };
+
+  // Client principals only. The portal chat widget auto-opens before the sales
+  // call; had_call tells it to stop after a closer has logged one. Not a new
+  // route — same GET /api/auth/session payload.
+  if (p.kind === "client") {
+    const call = await clientHadCall(db, { orgId: p.orgId, clientId: p.clientId });
+    payload.had_call = call.had_call;
+    payload.had_call_at = call.had_call_at;
+    projected.had_call = call.had_call;
+    projected.had_call_at = call.had_call_at;
+  }
+
+  return res.status(200).json(payload);
 }

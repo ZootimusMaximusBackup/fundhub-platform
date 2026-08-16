@@ -56,6 +56,14 @@ header.topbar{background:var(--ink);color:var(--dark-text);display:flex;align-it
 body:not(.portal-staff) .statesw{display:none}
 /* Funding sample blocks — hidden when this client has no funding-snapshot. */
 body.no-funding .funding-only{display:none !important}
+/* Pre-call placeholders — shown until funding-snapshot (or staff In progress). */
+.precall-only{display:none !important}
+body.no-funding .precall-only{display:block !important}
+body.no-docs .action-card{display:none !important}
+.own-empty{display:none}
+body.no-own .own-real{display:none}
+body.no-own .own-empty{display:block}
+body.no-funding .sample-history{display:none !important}
 
 main{flex:1;overflow-y:auto;background:var(--paper);padding:26px 0 44px;display:flex;justify-content:center}
 main::-webkit-scrollbar{width:9px}
@@ -71,27 +79,36 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .sec-hd .card-title{margin-bottom:0}
 .sec-note{font-size:11.5px;color:var(--text-faint);margin-left:auto}
 
-/* ── 1 · welcome video (compact) ─────────────────────────────────────────────
-   Was a full-bleed 16:9 player owning the top third of the page. The video is
-   not the client's question, so it keeps every control and loses the real
-   estate: thumbnail left, title and scrub right, one card tall. */
-.video-card{padding:14px 15px;display:flex;gap:15px;align-items:center;flex-wrap:wrap}
-.player{position:relative;flex:0 0 172px;width:172px;aspect-ratio:16/9;border-radius:9px;background:linear-gradient(135deg,#0A0A0A,#1C1C20);display:flex;align-items:center;justify-content:center;overflow:hidden}
+/* ── 1 · welcome video (hero) ──────────────────────────────────────────────
+   Full-width welcome to the portal. Always shown — access is granted before
+   the call, so this cannot hide behind funding-snapshot. */
+.video-card{padding:0;overflow:hidden;display:flex;flex-direction:column}
+.player{position:relative;width:100%;aspect-ratio:16/9;max-height:min(420px,52vw);border-radius:0;background:linear-gradient(135deg,#0A0A0A,#1C1C20);display:flex;align-items:center;justify-content:center;overflow:hidden}
 .player .ghost{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.player .ghost .logo{width:72%;aspect-ratio:2698/543;filter:invert(1);opacity:.08}
-.playbtn{position:relative;width:40px;height:40px;border-radius:50%;border:0;background:rgba(252,252,252,.94);color:var(--ink);font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;padding-left:3px;transition:transform .14s,background .14s}
+.player .ghost .logo{width:42%;max-width:280px;aspect-ratio:2698/543;filter:invert(1);opacity:.12}
+.playbtn{position:relative;width:64px;height:64px;border-radius:50%;border:0;background:rgba(252,252,252,.94);color:var(--ink);font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;padding-left:4px;transition:transform .14s,background .14s}
 .playbtn:hover{transform:scale(1.06);background:#fff}
-.playbtn.playing{padding-left:0;font-size:11px}
-.player.playing .ghost .logo{opacity:.13}
-/* scrub row lives beside the thumbnail now, not on top of it */
-.vrow{display:flex;align-items:center;gap:10px;margin-top:9px}
+.playbtn.playing{padding-left:0;font-size:16px}
+.player.playing .ghost .logo{opacity:.18}
+.vrow{display:flex;align-items:center;gap:10px;margin-top:10px}
 .vtrack{flex:1;height:3px;border-radius:2px;background:var(--line);overflow:hidden;cursor:pointer}
 .vtrack i{display:block;height:100%;width:0;background:var(--spectrum);border-radius:2px}
 .vtime{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);letter-spacing:.06em;flex:0 0 auto}
-.video-meta{flex:1;min-width:230px}
-.video-title{font-size:14px;font-weight:800;letter-spacing:-.01em;margin-bottom:3px}
-.video-copy{font-size:12.5px;color:var(--text-dim);line-height:1.45}
+.video-meta{padding:18px 22px 16px}
+.video-title{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.video-copy{font-size:13.5px;color:var(--text-dim);line-height:1.45;max-width:62ch}
 .tier-tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:3px 9px;border-radius:5px;background:var(--purple-bg);border:1px solid var(--purple-line);color:var(--purple);white-space:nowrap}
+
+/* Facebook wins — always on the portal, including before the call. */
+.fb-wins{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit;padding:14px 18px}
+.fb-wins:hover{border-color:var(--ink)}
+.fb-mark{width:36px;height:36px;border-radius:10px;background:#1877F2;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;flex:0 0 36px}
+.fb-t{font-size:14px;font-weight:800;letter-spacing:-.01em}
+.fb-d{font-size:12.5px;color:var(--text-dim);line-height:1.4}
+.fb-go{margin-left:auto;font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--ink);text-decoration:underline;text-underline-offset:2px}
+@media(max-width:640px){
+  .fb-go{display:none}
+}
 
 /* ── 2 · progress ───────────────────────────────────────────────────────── */
 .stepper{display:flex;align-items:flex-start}
@@ -298,12 +315,13 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
   .promo-side{flex:1 1 100%}
   .statesw .lb{display:none}
   .step .lbl{font-size:9px}
-  .player{flex:1 1 100%;width:100%}
+  .player{max-height:min(280px,56vw)}
+  .video-title{font-size:17px}
 }
 </style>
 <script src="shell.js"></script>
 </head>
-<body>
+<body class="no-funding no-docs no-own">
 <div class="shell">
 
   <header class="topbar">
@@ -314,7 +332,8 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
     <div class="spacer"></div>
     <div class="statesw" role="group" aria-label="Wireframe state">
       <span class="lb">State</span>
-      <button id="st-progress" class="on" type="button">In progress</button>
+      <button id="st-precall" class="on" type="button">Before call</button>
+      <button id="st-progress" type="button">In progress</button>
       <button id="st-funded" type="button">Just funded</button>
     </div>
     <div class="who-pill">
@@ -327,10 +346,21 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
     <div class="page">
 
       <div class="welcome" id="greeting">Welcome back, Derek</div>
+      <div class="welcome-sub precall-only" id="greeting-sub-pre">Welcome to your Fundhub portal. Your call is next.</div>
       <div class="welcome-sub funding-only" id="greeting-sub">Here's where things stand on your funding.</div>
 
-      <!-- ══ 1 · WELCOME VIDEO (compact) ═════════════════════════════════ -->
-      <section class="card video-card funding-only" aria-labelledby="video-title">
+      <!-- ══ 0 · FACEBOOK WINS ════════════════════════════════════════════ -->
+      <a class="card fb-wins" id="fb-wins" href="https://www.facebook.com/groups/1713376659872201" target="_blank" rel="noopener noreferrer">
+        <div class="fb-mark" aria-hidden="true">f</div>
+        <div>
+          <div class="fb-t">Join the Fundhub wins group</div>
+          <div class="fb-d">This is where we post wins. Come say hi before your call.</div>
+        </div>
+        <span class="fb-go">Join on Facebook</span>
+      </a>
+
+      <!-- ══ 1 · WELCOME VIDEO (hero) ════════════════════════════════════ -->
+      <section class="card video-card" aria-labelledby="video-title">
         <div class="player" id="player">
           <div class="ghost"><div class="logo" role="presentation"></div></div>
           <button class="playbtn" id="playbtn" type="button" aria-label="Play welcome video">▶</button>
@@ -338,16 +368,34 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
         <div class="video-meta">
           <div class="sec-hd" style="margin-bottom:7px">
             <div class="eyebrow">CP-01 <span class="sep">/</span> START HERE</div>
-            <span class="tier-tag" id="tier-tag">Card Stacking DFY</span>
+            <span class="tier-tag" id="tier-tag">Fundhub portal</span>
           </div>
-          <div class="video-title" id="video-title">Welcome to Card Stacking DFY — what happens next</div>
-          <div class="video-copy">Four minutes with Marcus on how your rounds are built, what we need from
-            you, and when the money actually lands.</div>
+          <div class="video-title" id="video-title">Welcome to the Fundhub portal</div>
+          <div class="video-copy">A short hello: what this page is, what happens on your call, and how to
+            use this portal so you are not guessing.</div>
           <div class="vrow">
             <span class="vtime" id="vnow">0:00</span>
             <div class="vtrack" id="vtrack"><i id="vfill"></i></div>
             <span class="vtime">4:12</span>
           </div>
+        </div>
+      </section>
+
+      <!-- ══ 2a · BEFORE THE CALL — honest empty status ══════════════════ -->
+      <section class="card prog-card precall-only" aria-labelledby="sb-pre-main">
+        <div class="status-line">
+          <div class="sb-eyebrow">Before your call</div>
+          <div class="sb-main" id="sb-pre-main">Your file is open. Watch the welcome, join the wins group, and bring questions. Funding steps show up after we talk.</div>
+        </div>
+        <div class="stepper" id="stepper-pre">
+          <div class="step current"><span class="line"></span><div class="dot">●</div><div class="lbl">Booked</div></div>
+          <div class="step future"><span class="line"></span><div class="dot">2</div><div class="lbl">Diagnostic Paid</div></div>
+          <div class="step future"><span class="line"></span><div class="dot">3</div><div class="lbl">Docs Received</div></div>
+          <div class="step future"><span class="line"></span><div class="dot">4</div><div class="lbl">Round Started</div></div>
+          <div class="step future"><span class="line"></span><div class="dot">5</div><div class="lbl">Round Submitted</div></div>
+          <div class="step future"><span class="line"></span><div class="dot">6</div><div class="lbl">Round Approved</div></div>
+          <div class="step future"><span class="line"></span><div class="dot">7</div><div class="lbl">Round Funded</div></div>
+          <div class="step future"><span class="line"></span><div class="dot">8</div><div class="lbl">File Finalized</div></div>
         </div>
       </section>
 
@@ -375,16 +423,15 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
         <div class="promo-bd">
           <div class="promo-main">
             <div class="eyebrow">CP-00 <span class="sep">/</span> RECOMMENDED NEXT</div>
-            <div class="pt" id="promo-title">Credit Optimization Roadmap</div>
-            <div class="pd">Your round funded at $46,500. The single biggest lever on your next
-              round is your score between now and then — this is the month-by-month plan to move it,
-              built off the report we already ran for you.</div>
-            <div class="pwhy"><span class="pulse"></span> Unlocked for you because your round just funded</div>
+            <div class="pt" id="promo-title">Credit repair, done-for-you</div>
+            <div class="pd">Your round funded. If you want repair work before the next round, talk to your
+              advisor — the price is set on the call.</div>
+            <div class="pwhy"><span class="pulse"></span> Next step after funding — not included yet</div>
           </div>
           <div class="promo-side">
-            <div class="promo-price">$2,000<span class="pu">one time</span></div>
-            <button class="btn-book" type="button" data-book="Credit Optimization Roadmap">Book a call about this</button>
-            <button class="btn-unlock" type="button" data-unlock="roadmap">Unlock now</button>
+            <div class="promo-price">$1,000<span class="pu">list · set on the call</span></div>
+            <button class="btn-book" type="button" data-book="Credit repair, done-for-you">Book a call about this</button>
+            <button class="btn-unlock" type="button" data-unlock="REPAIR_DFY">Unlock now</button>
           </div>
         </div>
       </section>
@@ -412,62 +459,103 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           <div class="card-title" id="own-t">What You Own</div>
           <span class="sec-note">Yours to keep — always here, always downloadable</span>
         </div>
-        <div class="own">
-          <div><div class="on-t">Funding Snapshot</div><div class="on-d">Updated Jul 24, 2026 · PDF · 1.4 MB</div></div>
-          <div class="own-actions"><button class="dl-btn" type="button">Download ↓</button></div>
+        <div id="own-list">
+          <div class="own own-real">
+            <div><div class="on-t">Funding Snapshot</div><div class="on-d">Updated Jul 24, 2026 · PDF · 1.4 MB</div></div>
+            <div class="own-actions"><button class="dl-btn" type="button">Download ↓</button></div>
+          </div>
+          <div class="own own-real">
+            <div><div class="on-t">Bank and Lender Match List</div><div class="on-d">Updated Jul 18, 2026 · PDF · 820 KB</div></div>
+            <div class="own-actions"><button class="dl-btn" type="button">Download ↓</button></div>
+          </div>
+          <div class="own own-real">
+            <div><div class="on-t">Credit Analysis Report</div><div class="on-d">Updated Jul 22, 2026 · PDF · 2.1 MB</div></div>
+            <div class="own-actions"><button class="dl-btn" type="button">Download ↓</button></div>
+          </div>
         </div>
-        <div class="own">
-          <div><div class="on-t">Bank and Lender Match List</div><div class="on-d">Updated Jul 18, 2026 · PDF · 820 KB</div></div>
-          <div class="own-actions"><button class="dl-btn" type="button">Download ↓</button></div>
+        <div class="own-empty" id="own-empty">
+          <div class="own">
+            <div>
+              <div class="on-t">Nothing to download yet</div>
+              <div class="on-d">Your reports land here after your call and credit pull. Nothing is missing — we have not run those yet.</div>
+            </div>
+          </div>
         </div>
-        <div class="own">
-          <div><div class="on-t">Credit Analysis Report</div><div class="on-d">Updated Jul 22, 2026 · PDF · 2.1 MB</div></div>
-          <div class="own-actions"><button class="dl-btn" type="button">Download ↓</button></div>
-        </div>
-        <div class="own-foot"><span class="pulse"></span> Part of your Card Stacking DFY package. Nothing here expires.</div>
+        <div class="own-foot own-real"><span class="pulse"></span> Files from your package. Nothing here expires.</div>
+        <div class="own-foot own-empty"><span class="pulse"></span> After your call, this list fills in on its own.</div>
       </section>
 
       <!-- ══ 5 · UNLOCK MORE ═════════════════════════════════════════════ -->
       <section class="card" aria-labelledby="unlock-t">
         <div class="sec-hd">
           <div class="card-title" id="unlock-t">Unlock More</div>
-          <span class="sec-note">Not included in your current package</span>
+          <span class="sec-note">List prices — final amount is set on your call, except the $32 soft pull</span>
         </div>
         <div class="tiles" id="tiles">
 
-          <article class="tile locked" data-tile="metro2">
+          <article class="tile locked" data-tile="SOFT_PULL">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
-            <div class="tt">Metro 2 Dispute Letter Pack — Rounds 2 &amp; 3</div>
-            <div class="td">Two more rounds of dispute letters, drafted and mailed for you, aimed at
-              what's still holding your score down.</div>
-            <div class="tp">$450</div>
+            <div class="tt">UnderwriteIQ soft-pull assessment</div>
+            <div class="td">A soft inquiry so we can see your file. Price is fixed.</div>
+            <div class="tp">$32</div>
             <div class="tacts">
-              <button class="btn-unlock" type="button" data-unlock="metro2">Unlock</button>
-              <button class="btn-advise" type="button" data-book="Metro 2 Dispute Letter Pack — Rounds 2 &amp; 3">Talk to an advisor</button>
+              <button class="btn-unlock" type="button" data-unlock="SOFT_PULL">Unlock</button>
+              <button class="btn-advise" type="button" data-book="UnderwriteIQ soft-pull assessment">Talk to an advisor</button>
             </div>
           </article>
 
-          <article class="tile locked" data-tile="roadmap">
+          <article class="tile locked" data-tile="FUNDING_DFY">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
-            <div class="tt">Credit Optimization Roadmap</div>
-            <div class="td">A month-by-month plan to lift your score before your next funding round,
-              built off your Credit Analysis Report.</div>
-            <div class="tp">$2,000</div>
+            <div class="tt">Funding, done-for-you</div>
+            <div class="td">We run the funding round with you. Plus 10% of what funds, due when money lands.</div>
+            <div class="tp">$3,000</div>
             <div class="tacts">
-              <button class="btn-unlock" type="button" data-unlock="roadmap">Unlock</button>
-              <button class="btn-advise" type="button" data-book="Credit Optimization Roadmap">Talk to an advisor</button>
+              <button class="btn-unlock" type="button" data-unlock="FUNDING_DFY">Unlock</button>
+              <button class="btn-advise" type="button" data-book="Funding, done-for-you">Talk to an advisor</button>
             </div>
           </article>
 
-          <article class="tile locked" data-tile="consulting">
+          <article class="tile locked" data-tile="REPAIR_DFY">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
-            <div class="tt">Consulting Services Package</div>
-            <div class="td">Work one-to-one with a strategist to plan and run your next round yourself,
-              start to finish.</div>
+            <div class="tt">Credit repair, done-for-you</div>
+            <div class="td">Repair work run for you. Price is set on the call.</div>
             <div class="tp">$1,000</div>
             <div class="tacts">
-              <button class="btn-unlock" type="button" data-unlock="consulting">Unlock</button>
-              <button class="btn-advise" type="button" data-book="Consulting Services Package">Talk to an advisor</button>
+              <button class="btn-unlock" type="button" data-unlock="REPAIR_DFY">Unlock</button>
+              <button class="btn-advise" type="button" data-book="Credit repair, done-for-you">Talk to an advisor</button>
+            </div>
+          </article>
+
+          <article class="tile locked" data-tile="REPAIR_TRIAL">
+            <div class="lockrow"><span class="lk">🔒</span> Locked</div>
+            <div class="tt">Repair test run (first round, done for you)</div>
+            <div class="td">One round to start. Price is set on the call.</div>
+            <div class="tp">$200</div>
+            <div class="tacts">
+              <button class="btn-unlock" type="button" data-unlock="REPAIR_TRIAL">Unlock</button>
+              <button class="btn-advise" type="button" data-book="Repair test run (first round, done for you)">Talk to an advisor</button>
+            </div>
+          </article>
+
+          <article class="tile locked" data-tile="UWIQ_DELIVERABLES">
+            <div class="lockrow"><span class="lk">🔒</span> Locked</div>
+            <div class="tt">UnderwriteIQ Deliverables Package</div>
+            <div class="td">Report, letter pack, roadmap, funding snapshot, lender list, and the mini course.</div>
+            <div class="tp">$1,000+</div>
+            <div class="tacts">
+              <button class="btn-unlock" type="button" data-unlock="UWIQ_DELIVERABLES">Unlock</button>
+              <button class="btn-advise" type="button" data-book="UnderwriteIQ Deliverables Package">Talk to an advisor</button>
+            </div>
+          </article>
+
+          <article class="tile locked" data-tile="FUNDING_MASTERY">
+            <div class="lockrow"><span class="lk">🔒</span> Locked</div>
+            <div class="tt">Funding Mastery course (A to Z)</div>
+            <div class="td">The course. Price is set on the call.</div>
+            <div class="tp">$5,000</div>
+            <div class="tacts">
+              <button class="btn-unlock" type="button" data-unlock="FUNDING_MASTERY">Unlock</button>
+              <button class="btn-advise" type="button" data-book="Funding Mastery course (A to Z)">Talk to an advisor</button>
             </div>
           </article>
 
@@ -493,59 +581,69 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           </div>
 
           <div class="tabpane on" id="tp-pay" role="tabpanel" data-pane="pay">
-            <div class="pay-row">
+            <div class="pay-row sample-history">
               <div><div class="pn">Credit diagnostic</div><div class="pd">Jul 10, 2026</div></div>
               <div class="pv">$32<span class="paid-pill">Paid</span></div>
             </div>
-            <div class="pay-row">
+            <div class="pay-row sample-history">
               <div><div class="pn">Deposit</div><div class="pd">Jul 15, 2026</div></div>
               <div class="pv">$3,000<span class="paid-pill">Paid</span></div>
             </div>
-            <div class="pay-row" id="fee-row">
+            <div class="pay-row sample-history" id="fee-row">
               <div><div class="pn">Success Fee</div><div class="pd" id="fee-note">10% of what funds — due when the money lands</div></div>
               <div class="pv" id="fee-val">about $4,650</div>
+            </div>
+            <div class="pay-row precall-only">
+              <div><div class="pn">No payments yet</div><div class="pd">They show here after you pay</div></div>
+              <div class="pv">—</div>
             </div>
           </div>
 
           <div class="tabpane" id="tp-docs" role="tabpanel" data-pane="docs">
-            <div class="doc-row">
+            <div class="doc-row sample-history">
               <div><div class="dr-n">Funding Snapshot</div><div class="dr-m">Jul 24, 2026 · PDF · 1.4 MB</div></div>
               <span class="dr-s have">On file</span>
             </div>
-            <div class="doc-row">
+            <div class="doc-row sample-history">
               <div><div class="dr-n">Credit Analysis Report</div><div class="dr-m">Jul 22, 2026 · PDF · 2.1 MB</div></div>
               <span class="dr-s have">On file</span>
             </div>
-            <div class="doc-row">
+            <div class="doc-row sample-history">
               <div><div class="dr-n">Bank and Lender Match List</div><div class="dr-m">Jul 18, 2026 · PDF · 820 KB</div></div>
               <span class="dr-s have">On file</span>
             </div>
-            <div class="doc-row">
+            <div class="doc-row sample-history">
               <div><div class="dr-n">Photo ID</div><div class="dr-m">Received Jul 22, 2026</div></div>
               <span class="dr-s have">On file</span>
             </div>
-            <div class="doc-row">
+            <div class="doc-row sample-history">
               <div><div class="dr-n">Bank statements (last 2 months)</div><div class="dr-m">Asked Jul 24, 2026</div></div>
               <span class="dr-s want">Still needed</span>
             </div>
-            <div class="doc-row">
+            <div class="doc-row sample-history">
               <div><div class="dr-n">Voided check</div><div class="dr-m">Asked Jul 24, 2026</div></div>
               <span class="dr-s want">Still needed</span>
+            </div>
+            <div class="doc-row precall-only">
+              <div><div class="dr-n">No files yet</div><div class="dr-m">They show here after your call</div></div>
+              <span class="dr-s">Waiting</span>
             </div>
           </div>
 
           <div class="tabpane" id="tp-act" role="tabpanel" data-pane="act">
             <div class="timeline-item funded-only" hidden><span class="td">Jul 27</span><span>Your round funded — $46,500 sent to your account</span></div>
-            <div class="timeline-item"><span class="td">Jul 24</span><span>Your round was approved for $46,500</span></div>
-            <div class="timeline-item"><span class="td">Jul 22</span><span>We got your documents and started reviewing them</span></div>
-            <div class="timeline-item"><span class="td">Jul 18</span><span>We sent your application to 3 lenders</span></div>
-            <div class="timeline-item"><span class="td">Jul 15</span><span>Deposit received — thank you!</span></div>
-            <div class="timeline-item"><span class="td">Jul 10</span><span>We finished your credit diagnostic</span></div>
+            <div class="timeline-item sample-history"><span class="td">Jul 24</span><span>Your round was approved for $46,500</span></div>
+            <div class="timeline-item sample-history"><span class="td">Jul 22</span><span>We got your documents and started reviewing them</span></div>
+            <div class="timeline-item sample-history"><span class="td">Jul 18</span><span>We sent your application to 3 lenders</span></div>
+            <div class="timeline-item sample-history"><span class="td">Jul 15</span><span>Deposit received — thank you!</span></div>
+            <div class="timeline-item sample-history"><span class="td">Jul 10</span><span>We finished your credit diagnostic</span></div>
+            <div class="timeline-item precall-only"><span class="td">Today</span><span>Portal opened — your call is next</span></div>
           </div>
 
           <div class="tabpane" id="tp-msg" role="tabpanel" data-pane="msg">
-            <div class="timeline-item"><span class="td">2:32 PM</span><span>Reminder: your call with Marcus Webb is at 3:02 PM today</span></div>
-            <div class="timeline-item"><span class="td">Jul 24</span><span>We still need your bank statements and a voided check</span></div>
+            <div class="timeline-item"><span class="td">Today</span><span>Use chat if you have questions before your call</span></div>
+            <div class="timeline-item sample-history"><span class="td">2:32 PM</span><span>Reminder: your call with Marcus Webb is at 3:02 PM today</span></div>
+            <div class="timeline-item sample-history"><span class="td">Jul 24</span><span>We still need your bank statements and a voided check</span></div>
             <div class="msgs-note">Nothing here needs a reply right now.</div>
           </div>
         </div>
@@ -649,27 +747,39 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
    walkable.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── product copy, single source for the tiles and the unlock modal ─────── */
+/* ── product copy, single source for the tiles and the unlock modal.
+   Names and list prices match src/config/offers.mjs. Soft pull is fixed.
+   Every other price is closer-set on the call. ─────── */
 var PRODUCTS = {
-  metro2:{
-    name:'Metro 2 Dispute Letter Pack — Rounds 2 & 3',
-    price:'$450',
-    desc:'Two more rounds of Metro 2 compliant dispute letters, drafted against your '+
-         'Credit Analysis Report and mailed for you. Most people see the effect of a '+
-         'round land 30 to 45 days after it goes out.'
+  SOFT_PULL:{
+    name:'UnderwriteIQ soft-pull assessment',
+    price:'$32',
+    desc:'A soft inquiry so we can see your file. This price is fixed.'
   },
-  roadmap:{
-    name:'Credit Optimization Roadmap',
-    price:'$2,000',
-    desc:'A month-by-month plan to lift your score before your next funding round — '+
-         'which accounts to move, in what order, and what to leave alone. Built off '+
-         'the Credit Analysis Report you already own.'
+  FUNDING_DFY:{
+    name:'Funding, done-for-you',
+    price:'$3,000',
+    desc:'We run the funding round with you. List price $3,000, plus 10% of what funds, due when the money lands. Final amount is set on your call.'
   },
-  consulting:{
-    name:'Consulting Services Package',
+  REPAIR_DFY:{
+    name:'Credit repair, done-for-you',
     price:'$1,000',
-    desc:'Work one-to-one with a strategist to plan and run your next round yourself. '+
-         'Includes the lender list, the sequencing and a working session to set it up.'
+    desc:'Repair work run for you. List price $1,000. Final amount is set on your call.'
+  },
+  REPAIR_TRIAL:{
+    name:'Repair test run (first round, done for you)',
+    price:'$200',
+    desc:'One round to start. List price $200. Final amount is set on your call.'
+  },
+  UWIQ_DELIVERABLES:{
+    name:'UnderwriteIQ Deliverables Package',
+    price:'$1,000+',
+    desc:'Credit Analysis Report, dispute letter pack, Credit Optimization Roadmap, Funding Snapshot, Bank and Lender Match List, and the How To Use This mini course. Price is set on your call.'
+  },
+  FUNDING_MASTERY:{
+    name:'Funding Mastery course (A to Z)',
+    price:'$5,000',
+    desc:'The course, start to finish. List price $5,000. Final amount is set on your call.'
   }
 };
 
@@ -1087,14 +1197,14 @@ var PRODUCTS = {
   });
 })();
 
-/* ── the two page states ────────────────────────────────────────────────────
-   IN PROGRESS : round approved, nothing promoted, three locked tiles.
-   JUST FUNDED : the money landed, so one tile is promoted above the fold with
-                 a booking link and pulled out of the grid below — the offer is
-                 in one place, not two.
+/* ── the three page states ──────────────────────────────────────────────────
+   BEFORE CALL : portal is open, no funding claims, no dummy files.
+   IN PROGRESS : round approved sample, nothing promoted, catalog tiles locked.
+   JUST FUNDED : the money landed, repair DFY promoted above the fold.
    ─────────────────────────────────────────────────────────────────────────── */
 (function(){
-  var bProg = document.getElementById('st-progress'),
+  var bPre  = document.getElementById('st-precall'),
+      bProg = document.getElementById('st-progress'),
       bFund = document.getElementById('st-funded'),
       promo = document.getElementById('promo'),
       stepper = document.getElementById('stepper');
@@ -1116,45 +1226,62 @@ var PRODUCTS = {
     }
   };
 
-  function setState(funded){
+  function setEmptyFlags(precall){
+    document.body.classList.toggle('no-funding', precall);
+    document.body.classList.toggle('no-docs', precall);
+    document.body.classList.toggle('no-own', precall);
+  }
+
+  function setState(mode){
+    var funded = mode === 'funded';
+    var precall = mode === 'precall';
     var c = funded ? COPY.funded : COPY.progress;
 
-    bProg.classList.toggle('on', !funded);
+    if (bPre) bPre.classList.toggle('on', precall);
+    bProg.classList.toggle('on', mode === 'progress');
     bFund.classList.toggle('on', funded);
 
-    document.getElementById('greeting-sub').textContent = c.sub;
-    document.getElementById('sb-eyebrow').textContent = c.eyebrow;
-    document.getElementById('sb-main').innerHTML = c.main;
-    document.getElementById('fee-note').textContent = c.feeNote;
-    document.getElementById('fee-val').textContent = c.feeVal;
+    setEmptyFlags(precall);
 
-    /* stepper: funded pushes the marker two stops along */
-    var s = {
-      approved: stepper.querySelector('[data-step="approved"]'),
-      funded:   stepper.querySelector('[data-step="funded"]'),
-      final:    stepper.querySelector('[data-step="final"]')
-    };
-    if(funded){
-      s.approved.className = 'step done'; s.approved.querySelector('.dot').textContent = '✓';
-      s.funded.className   = 'step done'; s.funded.querySelector('.dot').textContent   = '✓';
-      s.final.className    = 'step current'; s.final.querySelector('.dot').textContent = '●';
-    } else {
-      s.approved.className = 'step current'; s.approved.querySelector('.dot').textContent = '●';
-      s.funded.className   = 'step future';  s.funded.querySelector('.dot').textContent   = '6';
-      s.final.className    = 'step future';  s.final.querySelector('.dot').textContent    = '7';
+    var sub = document.getElementById('greeting-sub');
+    if (sub && !precall) sub.textContent = c.sub;
+    if (!precall) {
+      document.getElementById('sb-eyebrow').textContent = c.eyebrow;
+      document.getElementById('sb-main').innerHTML = c.main;
+      var feeNote = document.getElementById('fee-note');
+      var feeVal = document.getElementById('fee-val');
+      if (feeNote) feeNote.textContent = c.feeNote;
+      if (feeVal) feeVal.textContent = c.feeVal;
     }
 
-    /* promoted offer above the fold, and out of the grid so it reads once */
+    if (!precall && stepper) {
+      var s = {
+        approved: stepper.querySelector('[data-step="approved"]'),
+        funded:   stepper.querySelector('[data-step="funded"]'),
+        final:    stepper.querySelector('[data-step="final"]')
+      };
+      if(funded){
+        s.approved.className = 'step done'; s.approved.querySelector('.dot').textContent = '✓';
+        s.funded.className   = 'step done'; s.funded.querySelector('.dot').textContent   = '✓';
+        s.final.className    = 'step current'; s.final.querySelector('.dot').textContent = '●';
+      } else {
+        s.approved.className = 'step current'; s.approved.querySelector('.dot').textContent = '●';
+        s.funded.className   = 'step future';  s.funded.querySelector('.dot').textContent   = '6';
+        s.final.className    = 'step future';  s.final.querySelector('.dot').textContent    = '7';
+      }
+    }
+
     promo.classList.toggle('on', funded);
-    var roadmapTile = document.querySelector('.tile[data-tile="roadmap"]');
-    if(roadmapTile) roadmapTile.classList.toggle('hidden', funded);
+    var repairTile = document.querySelector('.tile[data-tile="REPAIR_DFY"]');
+    if(repairTile) repairTile.classList.toggle('hidden', funded);
 
     document.querySelectorAll('.funded-only').forEach(function(el){ el.hidden = !funded; });
   }
 
-  bProg.addEventListener('click', function(){ setState(false); });
-  bFund.addEventListener('click', function(){ setState(true); });
-  setState(false);
+  if (bPre) bPre.addEventListener('click', function(){ setState('precall'); });
+  bProg.addEventListener('click', function(){ setState('progress'); });
+  bFund.addEventListener('click', function(){ setState('funded'); });
+  setState('precall');
 })();
 </script>
 <script src="data.js"></script>
@@ -1167,17 +1294,28 @@ var PRODUCTS = {
    Requires a CLIENT principal session (Unit 12) to resolve a client id; a staff
    member opening this screen without ?id= sees the sample markup, correctly.
 
-   Funding sample blocks (approval amount, Card Stacking DFY video, progress
-   stepper) are suppressed when the client has no funding-snapshot entitlement.
-   That is a hide-only rule — not a letter journey. */
+   Funding sample blocks (approval amount, progress stepper) are suppressed
+   when the client has no funding-snapshot entitlement. The welcome video and
+   Facebook wins group stay visible — portal access is granted before the call.
+   What You Own paints from real deliverable entitlements, or a placeholder. */
 (function () {
   "use strict";
-  // Screen tile keys → entitlement codes from 032's catalog.
+  // Screen tile keys (src/config/offers.mjs) → entitlement catalog codes (032).
   var MAP = {
-    metro2:     "metro2-letter-pack",
-    roadmap:    "credit-optimization-roadmap",
-    consulting: "funding-snapshot"
+    SOFT_PULL:         "credit-analysis-report",
+    FUNDING_DFY:       "funding-snapshot",
+    REPAIR_DFY:        "metro2-letter-pack",
+    REPAIR_TRIAL:      "metro2-letter-pack",
+    UWIQ_DELIVERABLES: "credit-optimization-roadmap",
+    FUNDING_MASTERY:   null
   };
+  var OWN_CODES = [
+    { code: "credit-analysis-report", name: "Credit Analysis Report" },
+    { code: "credit-optimization-roadmap", name: "Credit Optimization Roadmap" },
+    { code: "funding-snapshot", name: "Funding Snapshot" },
+    { code: "bank-lender-match-list", name: "Bank and Lender Match List" },
+    { code: "metro2-letter-pack", name: "Metro 2 Dispute Letter Pack" }
+  ];
   var FUNDING_CODE = "funding-snapshot";
   var STAFF_ROLES = {
     owner: 1, admin: 1, sales_manager: 1, closer: 1,
@@ -1196,6 +1334,29 @@ var PRODUCTS = {
 
   function setFundingVisible(hasFunding) {
     document.body.classList.toggle("no-funding", !hasFunding);
+  }
+
+  function setOwnVisible(hasOwn) {
+    document.body.classList.toggle("no-own", !hasOwn);
+  }
+
+  function paintOwn(active) {
+    var list = document.getElementById("own-list");
+    if (!list) return;
+    var rows = [];
+    for (var i = 0; i < OWN_CODES.length; i++) {
+      if (active[OWN_CODES[i].code]) rows.push(OWN_CODES[i]);
+    }
+    if (!rows.length) {
+      setOwnVisible(false);
+      return;
+    }
+    setOwnVisible(true);
+    list.innerHTML = rows.map(function (r) {
+      return '<div class="own own-real"><div><div class="on-t">' + r.name +
+        '</div><div class="on-d">On your account · PDF</div></div>' +
+        '<div class="own-actions"><button class="dl-btn" type="button">Download ↓</button></div></div>';
+    }).join("");
   }
 
   function paintTile(tile, included) {
@@ -1234,14 +1395,18 @@ var PRODUCTS = {
   } catch (e) {}
 
   if (!clientId) {
-    // Sample / designer walkthrough — keep funding markup; staff toggle only.
-    setFundingVisible(true);
+    // Sample / designer walkthrough — default is BEFORE CALL (no fake $ / PDFs).
+    setFundingVisible(false);
+    document.body.classList.add("no-docs");
+    setOwnVisible(false);
     FHData.banner("sample", "sample portal — sign in as a client, or open with ?id=<client id>");
     return;
   }
 
   // Real client file: hide funding claims until entitlements confirm funding-snapshot.
   setFundingVisible(false);
+  document.body.classList.add("no-docs");
+  setOwnVisible(false);
 
   FHData.wire(FHData.entitlements({ client_id: clientId, limit: 200 }),
     "entitlements", function (data) {
@@ -1250,12 +1415,25 @@ var PRODUCTS = {
       rows.forEach(function (e) { if (e.active) active[e.entitlement_code] = e; });
 
       setFundingVisible(!!active[FUNDING_CODE]);
+      document.body.classList.add("no-docs");
+      paintOwn(active);
+      if (active[FUNDING_CODE]) {
+        var sbLive = document.getElementById("sb-main");
+        if (sbLive) {
+          sbLive.textContent = "Your funding file is open. We will update this as your round moves.";
+        }
+      }
 
       var unlocked = 0, locked = 0;
       var tiles = document.querySelectorAll("[data-tile]");
       for (var i = 0; i < tiles.length; i++) {
-        var code = MAP[tiles[i].getAttribute("data-tile")];
-        if (!code) continue;
+        var key = tiles[i].getAttribute("data-tile");
+        var code = MAP[key];
+        if (!code) {
+          paintTile(tiles[i], false);
+          locked++;
+          continue;
+        }
         if (active[code]) {
           paintTile(tiles[i], true);
           unlocked++;
@@ -1263,6 +1441,10 @@ var PRODUCTS = {
           paintTile(tiles[i], false);
           locked++;
         }
+      }
+      if (active["metro2-letter-pack"]) {
+        var trial = document.querySelector('[data-tile="REPAIR_TRIAL"]');
+        if (trial) trial.classList.add("hidden");
       }
       if (!unlocked && !locked) return null;
       return "live entitlements · " + unlocked + " unlocked · " + locked + " locked";

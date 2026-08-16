@@ -1505,7 +1505,13 @@
     var isPortal = role === "client" || PAGE === "client-portal.html";
     function go() {
       if (window.FHChat && typeof window.FHChat.mount === "function") {
-        window.FHChat.mount({ portal: isPortal, demo: !!demo });
+        var hadCall = !!(staff && staff.had_call);
+        window.FHChat.mount({
+          portal: isPortal,
+          demo: !!demo,
+          hadCall: hadCall,
+          autoOpenPrecall: isPortal && !hadCall
+        });
       }
     }
     if (window.FHChat) { go(); return; }
