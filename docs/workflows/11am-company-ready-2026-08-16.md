@@ -10,6 +10,7 @@
 | 2b Honest UI leftovers | closer-dashboard / my-numbers / client-portal / documents / products-commissions / galaxy leftovers | **done** — `cursor/honest-ui-leftovers-3e3a` |
 | 3 Template seed | Missing EMAIL/SMS keys; leave `compliance_passed` false | **done** (2 missing keys only) |
 | 4 Re-audit | Browser-click sidebar after #2 deploys (not Playwright) | **partial** — core screens clicked; full 40 still Agent 4 |
+| Affiliate `/start?ref=` | Land refs on correct FundHub `/apply` funnel, not wrong CF theme | **done** — `cursor/affiliate-start-ref-fix-c9e2` |
 
 **Do not flip:** `INNGEST_EVENT_KEY`, `outbound_enabled`, `compliance_passed`. Do not rotate keys.
 
@@ -128,3 +129,27 @@ Agent 4 can start the full sidebar re-audit — this ship is live.
 - `docs/workflows/screen-audit-2026-08-16.md`
 
 **Not flipped:** `INNGEST_EVENT_KEY`, `outbound_enabled`, `compliance_passed`.
+
+## Affiliate `/start?ref=` fix (2026-08-16)
+
+| Step | Status | Notes |
+|------|--------|-------|
+| Claim | **done** | Branch `cursor/affiliate-start-ref-fix-c9e2` |
+| Root cause | **done** | `public/start.html` sent refs to `https://apply.fundhub.ai/` which **302s** to `chrisstanbridgestea3f77f.myclickfunnels.com` (wrong CF theme). Canonical funnel is `/apply`. |
+| Fix | **done** | Redirect + button now target `https://apply.fundhub.ai/apply?a1=&ref=` |
+| Test | **done** | `src/http/start-html.test.mjs` — 1/1 pass |
+| Journey | **n/a** | No API route change; `-intended.md` untouched; `-actual.md` not regenerated |
+| INNGEST / outbound | **not touched** | |
+
+### Change manifest
+
+| File | Change |
+|------|--------|
+| `public/start.html` | Dest = `apply.fundhub.ai/apply` (+ `a1`/`ref`); no longer bare `/` |
+| `src/http/start-html.test.mjs` | New static HTML guard for destination |
+| `docs/workflows/11am-company-ready-2026-08-16.md` | This log |
+
+**Verify (after deploy):** open `https://fundhub.ai/start?ref=TESTCODE` — should land on `https://apply.fundhub.ai/apply?a1=TESTCODE&ref=TESTCODE` (FundHub apply survey), not myclickfunnels.com.
+
+**Left for later (out of this unit):** `api/public/partner-apply.mjs` still builds partner CTA hrefs as `APPLY_ORIGIN/?a1=` (same wrong root). Affiliate screen referral builder already points at `/start?ref=`.
+
