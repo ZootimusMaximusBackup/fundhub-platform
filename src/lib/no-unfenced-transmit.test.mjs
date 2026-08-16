@@ -107,7 +107,23 @@ const ALLOWED_RAW_FETCH = {
   "src/adplatforms/tiktok.mjs":
     "UNFENCED SPEND: TikTok ads, via the shared client above.",
   "src/creative/providers/_http.mjs":
-    "UNFENCED SPEND: paid creative-generation providers."
+    "UNFENCED SPEND: paid creative-generation providers.",
+
+  /* ── CLAUDE.md §12 named exceptions — letter delivery / CRS letter POST ───
+     These default fetchImpl to globalThis.fetch and hand it to letter-delivery
+     helpers. Owner-documented exceptions, not new holes. Do not cite them to
+     justify a fourth raw-fetch call site. */
+  "src/workflows/c-06-crs-results-router.mjs":
+    "CLAUDE.md §12 exception: POST to letter-delivery URL for funding letter pack. " +
+    "fetchImpl is injectable; default is globalThis.fetch for test seams.",
+  "src/workflows/ds-02-diy-letters.mjs":
+    "CLAUDE.md §12 exception: POST to the same letter-delivery URL for DIY letters. " +
+    "fetchImpl is injectable; default is globalThis.fetch for test seams.",
+
+  /* ── Market / macro data. No client contact, no vendor client record ─────── */
+  "src/climate/connectors.mjs":
+    "Reads FRED/BLS/Census/NOAA/geocode public series for the climate engine. " +
+    "No client data leaves; no client or vendor record is written."
 };
 
 /* Modules permitted to declare fence: INTERNAL. Pinned to an exact set, so a

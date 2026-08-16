@@ -122,10 +122,10 @@ flowchart LR
 | event | group | bus handlers | Inngest functions |
 |---|---|---|---|
 | `entry.captured` | journey spine | `onEntryCaptured` | 4 |
-| `survey.submitted` | journey spine | `onSurveySubmitted` | 1 |
-| `diagnostic.paid` | journey spine | `onDiagnosticPaid`, `onDiagnosticPaidMoney` | 2 |
+| `survey.submitted` | journey spine | `onSurveySubmitted` | 2 |
+| `diagnostic.paid` | journey spine | `onDiagnosticPaid`, `onDiagnosticPaidSoftPull`, `onDiagnosticPaidMoney` | 2 |
 | `analysis.completed` | journey spine | `onAnalysisCompleted` | 8 |
-| `booking.created` | journey spine | `onBookingCreated` | 6 |
+| `booking.created` | journey spine | `onBookingCreated`, `onInterviewBooked` | 7 |
 | `booking.rescheduled` | journey spine | `onBookingRescheduled` | 0 |
 | `booking.cancelled` | journey spine | `onBookingCancelled` | 0 |
 | `booking.noshow` | journey spine | `onBookingNoshow` | 1 |

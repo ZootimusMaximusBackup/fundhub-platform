@@ -3,7 +3,7 @@
 # Agent trigger map
 
 Which canonical event wakes which automation. "Agent" here means a registered Inngest function —
-the 49 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
+the 51 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
 (The AG-xx prompt-driven agents in `wireframes/agent-editor.html` are a UI mock with no code behind
 them yet, and are deliberately not drawn here.)
 
@@ -27,6 +27,7 @@ flowchart LR
   e_booking_created --> w_dpc_05_no_progress_escalation["dpc-05-no-progress-escalation"]
   e_booking_created --> w_n_03_hot_nurture["n-03-hot-nurture"]
   e_booking_created --> w_s_04_call_booked["s-04-call-booked"]
+  e_booking_created --> w_s_04b_booking_reminders["s-04b-booking-reminders"]
   e_booking_noshow(["booking.noshow"])
   e_booking_noshow --> w_s_05a_no_show_recovery["s-05a-no-show-recovery"]
   e_call_completed(["call.completed"])
@@ -79,6 +80,7 @@ flowchart LR
   e_round_submitted --> w_f_03_round_submitted["f-03-round-submitted"]
   e_survey_submitted(["survey.submitted"])
   e_survey_submitted --> w_n_02_warm_nurture["n-02-warm-nurture"]
+  e_survey_submitted --> w_s_nobook_chase["s-nobook-chase"]
 ```
 
 ## Fan-out per event
@@ -86,7 +88,7 @@ flowchart LR
 | event | functions | triggered |
 |---|---|---|
 | `analysis.completed` | 8 | `af-02-referral-ownership-capture`, `c-02-inquiry-created`, `c-06-crs-results-router`, `dpc-01-analyzer-lock`, `u-02-analyzer-complete-delivery`, `u-03-crs-snapshot-sync`, `u-04-promote-crs-primary`, `u-05-data-health-monitor` |
-| `booking.created` | 6 | `ai-set-04-3way-handoff`, `bs-01-precall-launcher`, `dpc-02-call-outcome-enforcement`, `dpc-05-no-progress-escalation`, `n-03-hot-nurture`, `s-04-call-booked` |
+| `booking.created` | 7 | `ai-set-04-3way-handoff`, `bs-01-precall-launcher`, `dpc-02-call-outcome-enforcement`, `dpc-05-no-progress-escalation`, `n-03-hot-nurture`, `s-04-call-booked`, `s-04b-booking-reminders` |
 | `booking.noshow` | 1 | `s-05a-no-show-recovery` |
 | `call.completed` | 4 | `ai-set-03-no-answer-cadence`, `ds-01-repair-referral`, `n-03-hot-nurture`, `s-08-post-call-funding-declined` |
 | `deposit.paid` | 2 | `c-02b-inquiry-removal-requested`, `s-06-post-call-funding-purchased` |
@@ -101,7 +103,7 @@ flowchart LR
 | `round.funded` | 5 | `f-07-funding-locked`, `f-08-post-funding-monitoring`, `n-04-post-funding-nurture`, `n-06-renewal-second-wave`, `sys-01-ltv-calculator` |
 | `round.started` | 7 | `bc-01-customer-responsiveness`, `bc-02-customer-friction`, `c-05-pre-funding-review`, `f-01-funding-intake`, `f-02-portal-id-missing`, `f-10-client-funding-inbox-provisioner`, `round-started-client-notify` |
 | `round.submitted` | 1 | `f-03-round-submitted` |
-| `survey.submitted` | 1 | `n-02-warm-nurture` |
+| `survey.submitted` | 2 | `n-02-warm-nurture`, `s-nobook-chase` |
 
 ## Canonical events that trigger nothing
 

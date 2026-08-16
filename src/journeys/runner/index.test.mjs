@@ -82,18 +82,18 @@ test("the six seeded journeys walk to nine paths", () => {
 
 // ── the registry ──────────────────────────────────────────────────────────
 
-/* 50 SINCE s-05a-no-show-recovery.mjs JOINED THE REGISTRY (2026-08-04).
-   contract-chaser is a CRON with no event trigger, so no journey will ever
-   reach it and it will always sit in neverFired — which is the correct
-   outcome, not a coverage hole. The counts here are pinned so that
-   registering a workflow stays a visible decision; see the note in
-   src/workflows/index.test.mjs. */
-test("ACCEPTANCE: the registry accounts for all 50 registered workflows", async () => {
+/* 51 SINCE message-dispatch-sweeper.mjs JOINED THE REGISTRY.
+   contract-chaser and message-dispatch-sweeper are CRONs with no event
+   trigger, so no journey will ever reach them and they will always sit in
+   neverFired — which is the correct outcome, not a coverage hole. The counts
+   here are pinned so that registering a workflow stays a visible decision;
+   see the note in src/workflows/index.test.mjs. */
+test("ACCEPTANCE: the registry accounts for all 51 registered workflows", async () => {
   const reg = await loadRegistry();
-  assert.equal(reg.registered, 50, "src/workflows/index.mjs registers 50 functions");
+  assert.equal(reg.registered, 51, "src/workflows/index.mjs registers 51 functions");
   assert.equal(
     reg.workflows.length + reg.unrunnable.length,
-    50,
+    51,
     "every registered workflow is either runnable or explicitly listed as unrunnable"
   );
   assert.deepEqual(reg.unrunnable, [], "no registered workflow should be unreachable by the runner");
@@ -101,11 +101,14 @@ test("ACCEPTANCE: the registry accounts for all 50 registered workflows", async 
 
 test("every workflow is either fired or named in neverFired — none silently missing", async () => {
   const reg = await loadRegistry();
-  const pretendFired = ["n-06-renewal-second-wave", "s-02-incomplete-survey-nudge"];
+  /* n-06 is event-triggered but no seeded journey walks it yet — pretend it
+     fired so the accounting still covers every registered id. s-02 was removed
+     from the registry; do not re-list a ghost id here. */
+  const pretendFired = ["n-06-renewal-second-wave"];
   const never = neverFired(reg, pretendFired);
-  assert.equal(never.length + pretendFired.length, 50);
+  assert.equal(never.length + pretendFired.length, 51);
   const all = new Set([...never.map((w) => w.id), ...pretendFired]);
-  assert.equal(all.size, 50);
+  assert.equal(all.size, 51);
   for (const fn of functions) assert.ok(all.has(fn.id()), `${fn.id()} is unaccounted for`);
 });
 
@@ -195,11 +198,11 @@ test("the coverage report names every unreached workflow explicitly", async () =
   const db = fakeDb();
   const report = await run(db, { journeys: SEED_JOURNEYS, orgId: "org-1", runId: "t3", env: {} });
   const c = report.workflowCoverage;
-  assert.equal(c.registered, 50);
+  assert.equal(c.registered, 51);
   assert.equal(
     c.fired.length + c.neverFired.length,
-    50,
-    "fired + neverFired must account for all 50 — a workflow missing from both is a silent coverage hole"
+    51,
+    "fired + neverFired must account for all 51 — a workflow missing from both is a silent coverage hole"
   );
 });
 

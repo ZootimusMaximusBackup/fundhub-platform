@@ -171,14 +171,13 @@ const FIXTURE_MAXED = {
    A client where a score is the ONLY thing anybody entered. Utilization,
    inquiries, negatives and late payments are all null, and there are no lines.
 
-   The engine collapses each of those nulls to zero, and zero negatives is one of
-   the three conditions for `fundable`. So this client — about whom almost nothing
-   is known — comes out FUNDABLE and is told "You're approved".
+   Product rule (vendored measuredCount): unknown counts stay null — never 0.
+   `fundable` requires `neg === 0` (strict). So this client — about whom almost
+   nothing is known — is NOT fundable. That is the pin: unknown must not read
+   as a clean file.
 
-   That is not a bug being asserted as correct. It is the engine's real behaviour,
-   pinned so it cannot change without notice, and it is precisely why
-   ./adapter.mjs records every unentered field and ./report.mjs marks any sentence
-   resting on one. The last assertion in this block is the one that matters. */
+   ./adapter.mjs still records every unentered field and ./report.mjs marks any
+   sentence resting on one. The LLC "not fundable / repair" line is what ships. */
 const FIXTURE_EMPTY_BUT_SCORED = {
   experian: {
     score: 700,
@@ -222,28 +221,26 @@ describe("pinned fixtures — known input, known sentences", () => {
     ]);
   });
 
-  test("FIXTURE 2: a score and nothing else reads as APPROVED — pinned deliberately", () => {
+  test("FIXTURE 2: a score and nothing else is NOT fundable — unknown stays null", () => {
     const uw = computeUnderwrite(FIXTURE_EMPTY_BUT_SCORED, null);
 
-    // Every one of these zeros is an UNKNOWN the engine collapsed.
-    assert.equal(uw.metrics.negative_accounts, 0, "null negatives became 0");
-    assert.equal(uw.metrics.late_payment_events, 0, "null late payments became 0");
-    assert.equal(uw.metrics.inquiries.total, 0, "null inquiries became 0");
-    assert.equal(uw.metrics.utilization_pct, null, "utilization is the one null that survives");
+    // Product rule: counts that gate fundable stay null when unknown.
+    assert.equal(uw.metrics.negative_accounts, null, "null negatives stay null — never 0");
+    assert.equal(uw.metrics.late_payment_events, null, "null late payments stay null");
+    assert.equal(uw.metrics.inquiries.total, null, "null inquiries stay null in total");
+    assert.equal(uw.metrics.utilization_pct, null, "utilization null survives");
 
-    assert.equal(uw.fundable, true,
-      "THIS IS THE FINDING: a client with only a score is 'fundable', because unknown negatives " +
-      "collapsed to zero and zero negatives is a condition for fundable");
+    assert.equal(uw.fundable, false,
+      "THIS IS THE PIN: a client with only a score is not fundable, because unknown " +
+      "negatives stay null and fundable requires neg === 0");
 
     assert.deepEqual(buildSuggestions(uw), [
       "Add a strong primary revolving account (not AU) with a $5,000+ limit to anchor your profile before stacking.",
       "Your file is thin. Add at least one primary credit card and one small installment loan to establish depth.",
-      "You’re approved, but you don’t have an LLC. Forming one now lets you unlock business funding immediately."
+      "You don’t have an LLC yet. Form an LLC now so it can season while your credit is being repaired."
     ]);
 
-    // ── and this is the containment ──
-    // Given the adapter's record of what was never entered, the "approved"
-    // sentence must be marked as resting on missing data, with the fields named.
+    // ── containment still applies to the LLC / thin-file sentences ──
     const missing = {
       experian: [
         { field: "negatives", source: "clients.custom_fields.crs_negative_items_count", reason: "not entered" },
@@ -254,11 +251,11 @@ describe("pinned fixtures — known input, known sentences", () => {
     };
     const annotated = annotateSuggestions(buildSuggestions(uw), uw, missing);
 
-    const approved = annotated.find((a) => a.id === "llc_absent_fundable");
-    assert.ok(approved, "the approval sentence must be recognised and labelled");
-    assert.equal(approved.restsOnMissingData, true,
-      "the 'you're approved' line must never be presented as a measured result when the data behind it is absent");
-    assert.deepEqual(approved.missingFields.map((f) => f.field), ["hasLLC"]);
+    const notFundable = annotated.find((a) => a.id === "llc_absent_not_fundable");
+    assert.ok(notFundable, "the not-fundable LLC sentence must be recognised and labelled");
+    assert.equal(notFundable.restsOnMissingData, true,
+      "the LLC line must never be presented as a measured result when hasLLC is absent");
+    assert.deepEqual(notFundable.missingFields.map((f) => f.field), ["hasLLC"]);
 
     const thinFile = annotated.find((a) => a.id === "file_thin_empty");
     assert.equal(thinFile.restsOnMissingData, true);
