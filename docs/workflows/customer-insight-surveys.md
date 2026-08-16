@@ -1,6 +1,6 @@
 # Customer insight surveys — shared board
 
-Status: C + A done (beta). D (context fetcher) still pending.  
+Status: C + A done (beta). Pending: D context fetcher, E call recording, F auto-book Meet, G deploy.  
 Model: Grok 4.6 high (owner-set)
 
 ## Three collections (owner-set 2026-08-15)
@@ -25,7 +25,10 @@ Google Meet is only on the **sales call** (existing closer desk) and the **endin
 | C — Store + funded task | this session | done | Table + save/read API + auto task on `round.funded`. |
 | A — Mid check-in | this session | done | Task due in 7 days on `deposit.paid` / `sale.closed`. Phone/AI, not Meet. |
 | B — Meet / questions | this session | done | Folded into C. Questions in `src/insights/questions.mjs`. |
-| D — Context fetcher | unclaimed | pending | Read stored rows into `src/agents/context.mjs`. |
+| D — Context fetcher | unclaimed | pending | Feed saved answers into `src/agents/context.mjs`. |
+| E — Call recording | unclaimed | pending | Save recording link on the insight row. Slot `recording_url` already exists. |
+| F — Auto-book Meet | unclaimed | pending | Book Google Meet for the sales call and the ending interview only. |
+| G — Deploy | unclaimed | pending | Ship the beta (store + mid task + ending Meet task). |
 
 ## Frozen response shape (C)
 
