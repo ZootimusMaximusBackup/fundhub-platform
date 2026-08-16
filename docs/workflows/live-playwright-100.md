@@ -1,6 +1,6 @@
 # Live Playwright 100 — shared board
 
-**Status:** **100/100 PASS** (2026-08-12)
+**Status:** **100/100 PASS** (2026-08-15)
 **Canonical:** `https://fundhub.ai` · funnel `https://apply.fundhub.ai`
 **Gate law:** No manual review from Chris until AI-run Playwright scores **100/100** against live; then exactly one manual pass.
 **Command:** `npm run test:e2e:live`
@@ -25,7 +25,7 @@
 
 `score = (passed_required / required) * 100`
 
-**Final:** **100/100** (19/19) — evidence `docs/workflows/e2e-verify-run4-evidence/live-playwright-100/`
+**Final:** **100/100** (19/19) — evidence `docs/workflows/e2e-verify-run4-evidence/live-playwright-100/` (re-verified 2026-08-15 after credit restore)
 
 ## Required live test ids
 
@@ -69,6 +69,8 @@ All non-`live-*` specs under `e2e/` use `e2e/harness.mjs` + static server (`npm 
 | 3 | 17/19 | `/api/read/search` 503 `c.business_name` | fix `api/read/search.mjs` + deploy |
 | 4–5 | 18/19 | Meta+k / force click flaky | evaluate open overlay; skip flaky re-goto |
 | 6 | **19/19 = 100** | — | — |
+| 7 | 5/19 | Netlify `usage_exceeded` | wait for credits |
+| 8 | **19/19 = 100** | — | credits restored; health + login green |
 
 ## Product fix shipped
 
