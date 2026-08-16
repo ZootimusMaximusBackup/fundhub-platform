@@ -9,6 +9,7 @@
 | 2 Honest UI | Scrub fake names on calendar, template-editor, hiring | **done** |
 | 3 Template seed | Missing EMAIL/SMS keys; leave `compliance_passed` false | **done** (2 missing keys only) |
 | 4 Re-audit | Browser-click sidebar after #2 deploys (not Playwright) | **partial** — core screens clicked; full 40 still Agent 4 |
+| Affiliate `/start?ref=` | Land refs on correct FundHub `/apply` funnel, not wrong CF theme | **claimed** — `cursor/affiliate-start-ref-fix-c9e2` |
 
 **Do not flip:** `INNGEST_EVENT_KEY`, `outbound_enabled`, `compliance_passed`. Do not rotate keys.
 
