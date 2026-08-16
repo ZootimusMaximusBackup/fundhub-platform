@@ -7,8 +7,8 @@
 |-------|------|--------|
 | 1 Accounts + ship | Report wording, commit/merge, one Netlify deploy, seed/unsuspend, login probes | **done** |
 | 2 Honest UI | Scrub fake names on calendar, template-editor, hiring | **done** |
-| 3 Template seed | Missing EMAIL/SMS keys; leave `compliance_passed` false | pending |
-| 4 Re-audit | Browser-click sidebar after #2 deploys (not Playwright) | pending |
+| 3 Template seed | Missing EMAIL/SMS keys; leave `compliance_passed` false | **done** (2 missing keys only) |
+| 4 Re-audit | Browser-click sidebar after #2 deploys (not Playwright) | **partial** — core screens clicked; full 40 still Agent 4 |
 
 **Do not flip:** `INNGEST_EVENT_KEY`, `outbound_enabled`, `compliance_passed`. Do not rotate keys.
 
@@ -86,6 +86,16 @@ Agent 4 can start the full sidebar re-audit — this ship is live.
 
 ### Left for other agents / out of scope
 
-- Template seed (Agent 3)
-- Browser re-audit after UI ship (Agent 4)
+- Agent 4 can finish remaining BETA sidebar screens (this chat clicked core + campaigns/staff/automations)
 - Inngest / outbound / compliance flips — owner only
+- P1 money/mail (Twilio A2P, Commas, GHL contacts, Resend DNS) — needs live provider setup
+- P2 unit hygiene (diagrams, workflow count 51, outbound-fetch fence) — not 11 AM blockers
+
+### Agent 2 follow-up (same night)
+
+| Step | Status | Notes |
+|------|--------|-------|
+| 2h leftover loop | **armed** | PID 75645 — first tick ~5:35 AM PT. Keep Cursor open. |
+| Template seed | **done** | Inserted only missing `EMAIL-S05A-NOSHOW-RECOVERY` + `SMS-S05A-NOSHOW-RECOVERY`. `compliance_passed=false`. Did **not** overwrite 16 already-approved rows. |
+| Dana Reyes on Campaigns | **done in repo** | Sample action log now says Staff. Needs this deploy to be live. |
+| Extra live clicks | **done** | closer-dashboard, closer-call, my-numbers, sales-floor, messaging, campaigns, staff-teams, automations |

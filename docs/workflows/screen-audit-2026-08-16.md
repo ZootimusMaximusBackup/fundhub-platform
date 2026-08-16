@@ -14,8 +14,8 @@
 |------|--------|
 | Chris owner | Works |
 | affiliate / partner | Works |
-| sales@ / client@ | Fail — not seeded |
-| closer / advisor / inquiry | Fail — suspended |
+| sales@ / client@ | Works — seeded overnight 2026-08-16 |
+| closer / advisor / inquiry / setter | Works — unsuspended overnight 2026-08-16 |
 
 ---
 
@@ -27,8 +27,8 @@
 | closer-dashboard | no | partial | Needs `?client_id=`; deal math dash |
 | closer-call | no | partial | Join off until meeting URL |
 | my-numbers | no | partial | Empty until activity |
-| sales-floor | no | partial | sales@ not seeded |
-| calendar | no | partial | No-show/show rate dash |
+| sales-floor | no | partial | sales@ now logs in; empty until activity |
+| calendar | no | partial | No-show/show rate dash. Furniture names scrubbed 2026-08-16. |
 | present | no | partial | SMS queued; TU off |
 | soft-pull-approve | no | partial | Public page |
 | client-control-panel | no | real | Oxylabs/GHL gaps |
@@ -47,18 +47,18 @@
 | galaxy | yes | partial | Nav map |
 | ops-admin | yes | partial | Comp dashes |
 | partner-galaxy | no | partial | Partner only |
-| automations | no | off | **INNGEST off** |
-| staff-teams | no | partial | Chris only real staff |
+| automations | no | partial | Screen says engine on (42/51 fired). Owner gate still: do not flip INNGEST. |
+| staff-teams | no | partial | Overnight roles seeded; roster is live |
 | products-commissions | no | partial | Commission writes local |
-| template-editor | no | partial | Drafts blocked |
+| template-editor | no | partial | Drafts blocked. Preview uses Preview Name, not Marcus Webb. |
 | journeys | yes | partial | Mock tracking |
 | agent-editor | yes | partial | Owner agent decisions |
 | company-brain | yes | off | OpenAI + Drive |
-| campaign-manager | yes | off | Meta token |
+| campaign-manager | yes | off | Meta token. Dana Reyes scrubbed from sample action log 2026-08-16. |
 | social-studio | yes | off | Meta + LinkedIn |
 | creative-factory | yes | off | Creative keys |
 | content-admin | yes | partial | Video stub |
-| hiring | yes | partial | Demo rows |
+| hiring | yes | partial | Live applications (3 open). Jordan Blake scrubbed. |
 | brand-studio | yes | partial | DNS for custom domain |
 | affiliate | yes | partial | No funnel builder |
 | sample-data | yes | fake | Demo only |

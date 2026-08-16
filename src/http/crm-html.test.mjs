@@ -194,3 +194,8 @@ test("calendar, template-editor, and hiring do not ship furniture names", () => 
     assert.ok(!FURNITURE.test(html), file + " still has furniture names");
   }
 });
+
+test("campaign-manager.html does not ship Dana Reyes furniture", () => {
+  const html = fs.readFileSync(path.join(APP, "campaign-manager.html"), "utf8");
+  assert.ok(!/Dana Reyes/.test(html), "campaign-manager still has Dana Reyes");
+});
