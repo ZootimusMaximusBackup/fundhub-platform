@@ -91,6 +91,8 @@ import readSalesFloor from "../../api/read/sales-floor.mjs";
 import readCompanyActivity from "../../api/read/company-activity.mjs";
 import readCallOutcomes from "../../api/read/call-outcomes.mjs";
 import callOutcomesWrite from "../../api/call-outcomes.mjs";
+import readCustomerInsights from "../../api/read/customer-insights.mjs";
+import customerInsightsWrite from "../../api/customer-insights.mjs";
 import marketingFlagsWrite from "../../api/marketing-flags.mjs";
 import bankingSyncAccounts from "../../api/banking/sync-accounts.mjs";
 import inquiries from "../../api/inquiries.mjs";
@@ -399,6 +401,8 @@ export const ROUTES = {
   "read/company-activity": readCompanyActivity,
   "read/call-outcomes": readCallOutcomes,
   "call-outcomes": callOutcomesWrite,
+  "read/customer-insights": readCustomerInsights,
+  "customer-insights": customerInsightsWrite,
   "marketing-flags": marketingFlagsWrite,
 
   // banking/sync-accounts is the FIRST WRITER `bank_accounts` has ever had —

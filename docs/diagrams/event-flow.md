@@ -121,7 +121,7 @@ flowchart LR
 
 | event | group | bus handlers | Inngest functions |
 |---|---|---|---|
-| `entry.captured` | journey spine | `onEntryCaptured` | 5 |
+| `entry.captured` | journey spine | `onEntryCaptured` | 4 |
 | `survey.submitted` | journey spine | `onSurveySubmitted` | 1 |
 | `diagnostic.paid` | journey spine | `onDiagnosticPaid`, `onDiagnosticPaidMoney` | 2 |
 | `analysis.completed` | journey spine | `onAnalysisCompleted` | 8 |
@@ -131,12 +131,12 @@ flowchart LR
 | `booking.noshow` | journey spine | `onBookingNoshow` | 1 |
 | `call.completed` | journey spine | `onCallCompleted` | 4 |
 | `decision.rendered` | journey spine | `onDecisionRendered` | 0 |
-| `deposit.paid` | journey spine | `onDepositPaid`, `onDepositPaidGate`, `onDepositPaidMoney` | 2 |
-| `sale.closed` | journey spine | `onSaleClosed`, `onSaleClosedMoney` | 0 |
+| `deposit.paid` | journey spine | `onDepositPaid`, `onPaidMidCheckin`, `onDepositPaidGate`, `onDepositPaidMoney` | 2 |
+| `sale.closed` | journey spine | `onSaleClosed`, `onPaidMidCheckin`, `onSaleClosedMoney` | 0 |
 | `round.started` | journey spine | `onRoundStartedMoney` | 7 |
 | `round.submitted` | journey spine | — | 1 |
 | `round.approved` | journey spine | — | 3 |
-| `round.funded` | journey spine | `onRoundFundedMoney` | 5 |
+| `round.funded` | journey spine | `onRoundFundedInsights`, `onRoundFundedMoney` | 5 |
 | `round.closeout` | journey spine | `onRoundCloseoutGate` | 0 |
 | `file.finalized` | journey spine | — | 0 |
 | `payment.received` | side events | `onPaymentReceived`, `onPaymentReceivedMoney`, `onPaymentReceivedForLink` | 1 |

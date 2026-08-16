@@ -3,9 +3,9 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
-2026-08-15 | client | BS-01 SMS pre-call companion: three texts on booking (booked → +24h → 2h before call), no video links, stops if call held. Email drip unchanged. COMPLIANCE REVIEW REQUIRED — outbound SMS | Owner: SMS back-end selling off GHL | (this commit)
+2026-08-15 | all eight | Two staff routes added — `POST /api/customer-insights`, `GET /api/read/customer-insights`. Three collections: start (existing apply survey), mid check-in 7 days after pay (phone/AI, not Meet), ending Google Meet interview after funded. COMPLIANCE REVIEW REQUIRED — answers may later feed ads/VSL | Beta customer insight store + auto tasks | (this commit)
 
-2026-08-15 | all eight | Two staff routes added — `POST /api/customer-insights`, `GET /api/read/customer-insights`. On `round.funded`, a funding-advisor task is created for the post-funding Google Meet interview. COMPLIANCE REVIEW REQUIRED — answers may later feed ads/VSL | Beta customer insight store + auto task | (this commit)
+2026-08-15 | client | BS-01 SMS pre-call companion: three texts on booking (booked → +24h → 2h before call), no video links, stops if call held. Email drip unchanged. COMPLIANCE REVIEW REQUIRED — outbound SMS | Owner: SMS back-end selling off GHL | (this commit)
 
 2026-08-15 | client | Portal pre-call polish: hero welcome, Facebook wins group, offers from catalog, empty states before call/credit pull, chat auto-opens with pre-call questions. COMPLIANCE REVIEW REQUIRED — offers, credit-pull empty states, chat collecting client data | Portal access is granted before the call | (this commit)
 2026-08-15 | role-closer (+ all actuals regen) | Present soft-pull send + client soft-pull-approve (signed URL) + closer-set e-book email with placeholder PDF attachment. COMPLIANCE REVIEW REQUIRED — fee timing, consent, credit pull, payment rails | On-call soft pull from Present; refuse → e-book downsell | (this commit)

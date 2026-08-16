@@ -7,6 +7,7 @@ import { register as registerLifecycle } from "./handlers/client-lifecycle.mjs";
 import { register as registerComms } from "./handlers/comms.mjs";
 import { register as registerPaymentLinks } from "./handlers/payment-links.mjs";
 import { register as registerMoneyChain } from "./handlers/money-chain.mjs";
+import { register as registerCustomerInsights } from "./handlers/customer-insights.mjs";
 import { register as registerInquiryGate } from "./handlers/inquiry-gate.mjs";
 import { register as registerInquiryDocs } from "./handlers/inquiry-docs.mjs";
 import { register as registerCommasDisputes } from "./handlers/commas-disputes.mjs";
@@ -19,6 +20,7 @@ export function registerAll() {
   registerComms();
   registerPaymentLinks();
   registerMoneyChain();
+  registerCustomerInsights();
   registerInquiryGate();
   registerInquiryDocs();
   /* Chargebacks and refunds → tasks. Registered after the money chain so a

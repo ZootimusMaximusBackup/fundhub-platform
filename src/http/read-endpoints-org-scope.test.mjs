@@ -102,6 +102,9 @@ const NO_ORG_COLUMN = new Map([
      src/galaxy/company-activity.mjs binds org_id = $1 on every query and throws
      without an org. Verified by reading that module, not assumed from the name. */
   ["company-activity.mjs", "scoped in src/galaxy/company-activity.mjs companyActivity(), which binds org_id = $1 and throws without an org"],
+  /* Customer insight interviews — handler writes no SQL. listInsights() in
+     src/insights/store.mjs binds org_id = $1 and throws without an org. */
+  ["customer-insights.mjs", "scoped in src/insights/store.mjs listInsights(), which binds org_id = $1 and throws without an org"],
 ]);
 
 /* An allow-listed endpoint must still prove it hands the SESSION's org to
