@@ -28,3 +28,4 @@ Required ids live on `docs/workflows/live-playwright-100.md`. Report the score a
 - Credentials from gitignored `.env` / env only — never ask Chris to paste passwords.
 - No key-rotation nags (see `secrets-env-law.mdc`).
 - Commit evidence/docs when the score moves; do not ask Chris to “check the site” until 100/100.
+- A 100 score is still a script. After it, walk the same path in a browser like a person (see `test-means-human-click.mdc`).
