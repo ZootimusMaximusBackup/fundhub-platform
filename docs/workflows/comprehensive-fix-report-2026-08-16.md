@@ -14,10 +14,10 @@
 | Item | Status | What it means |
 |------|--------|---------------|
 | Local `main` vs `origin/main` | **MERGED & PUSHED** (`4e09dbc`) | **146 files** CRM stack is on GitHub `main` — staff invite/suspend, honest UI, CRS, contracts send, climate map, journeys, prove scripts |
-| Netlify deploy | **WAITING** | Company human test starts after deploy finishes — watch Netlify for `main` build |
+| Netlify deploy | **LIVE** (`06d96b8` / deploy `6a818f81…`) | Overnight ship on https://fundhub.ai |
 | Unit tests at commit | **11 failures** (5,384+ pass) | Pre-existing: diagram docs stale, workflow count 50 vs 51, 2 sidebar sync pages, messaging tests — not all introduced by merge |
-| Live Playwright (deployed site) | **26/26 pass, 31/31 required = 100** (re-run **twice** 2026-08-16) | Still 100 after merge |
-| Full company human test | **BLOCKED** | 6 role logins fail; 3 pages still have fake names — see [`verification-rerun-2026-08-16.md`](./verification-rerun-2026-08-16.md) |
+| Live Playwright (deployed site) | **26/26 pass, 31/31 required = 100** (re-run **twice** 2026-08-16) | Still 100 after merge — script gate only, not the 40-screen audit |
+| Full company human test | **UNBLOCKED for logins** | All 11 role logins OK after seed — see [`11am-company-ready-2026-08-16.md`](./11am-company-ready-2026-08-16.md) |
 | Double-verify report | **DONE** | All automated checks re-run; evidence in `e2e-verify-run4-evidence/` |
 
 **Commits now on origin/main:**
@@ -49,25 +49,25 @@
 
 ## 2. Who can log in on LIVE today
 
-Probed against https://fundhub.ai (same password as E2E):
+Probed against https://fundhub.ai (same password as E2E). **Re-probed after overnight seed — 11/11 OK** ([board](./11am-company-ready-2026-08-16.md)):
 
 | Role | Email | Live result |
 |------|-------|-------------|
 | Owner | `chris@fundhub.ai` | **Works** |
 | Owner test | `owner@fundhub.ai` | Works (test account; hidden from roster) |
 | Admin test | `admin@fundhub.ai` | Works (test; hidden) |
-| Sales manager | `sales@fundhub.ai` | **FAIL — invalid_credentials** (not seeded on prod) |
-| Closer | `closer@fundhub.ai` | **FAIL — account_suspended** |
-| Funding advisor | `advisor@fundhub.ai` | **FAIL — account_suspended** |
-| Inquiry specialist | `inquiry@fundhub.ai` | **FAIL — account_suspended** |
-| Setter | `setter@fundhub.ai` | Not re-probed this session — likely suspended |
-| Affiliate | `affiliate@fundhub.ai` | **Works** — Playwright `aff:own_login` green; burst API probes may hit **429** |
-| White-label partner | `partner@fundhub.ai` | **Works** — Playwright `wl:partner_login` green; burst API probes may hit **429** |
-| Client portal | `client@fundhub.ai` | **FAIL — invalid_credentials** (not seeded on prod) |
+| Sales manager | `sales@fundhub.ai` | **Works** (seeded overnight) |
+| Closer | `closer@fundhub.ai` | **Works** (unsuspended overnight) |
+| Funding advisor | `advisor@fundhub.ai` | **Works** (unsuspended overnight) |
+| Inquiry specialist | `inquiry@fundhub.ai` | **Works** (unsuspended overnight) |
+| Setter | `setter@fundhub.ai` | **Works** (unsuspended overnight) |
+| Affiliate | `affiliate@fundhub.ai` | **Works** — space probes to avoid 429 |
+| White-label partner | `partner@fundhub.ai` | **Works** — space probes to avoid 429 |
+| Client portal | `client@fundhub.ai` | **Works** (seeded overnight) |
 
 **Only real staff person (owner-set):** Chris Stanbridge. Alvin/Jordan/Nina/Marcus/etc. are furniture — hidden, not deleted.
 
-**Company test blocked for roles:** sales manager, closer, advisor, inquiry, client — until seed/unsuspend or invite.
+**Company test login gate:** open. Remaining blockers: 3 furniture pages (calendar / template-editor / hiring) + Chris one owner pass.
 
 ---
 
