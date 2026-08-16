@@ -152,6 +152,7 @@ async function main() {
   await db.query(`DELETE FROM sale_attributions WHERE sale_id = $1`, [saleId]);
   await db.query(`DELETE FROM sales WHERE id = $1`, [saleId]);
   await db.query(`DELETE FROM cards WHERE client_id = $1`, [clientId]);
+  await db.query(`DELETE FROM tasks WHERE client_id = $1`, [clientId]);
   await db.query(`DELETE FROM events WHERE client_id = $1`, [clientId]);
   await db.query(`DELETE FROM clients WHERE id = $1`, [clientId]);
   await db.query(`DELETE FROM staff WHERE id = $1`, [advisorId]);

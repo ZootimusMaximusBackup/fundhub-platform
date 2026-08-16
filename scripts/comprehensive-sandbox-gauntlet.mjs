@@ -155,13 +155,16 @@ try {
     const staff = (await db.query(`SELECT id FROM staff WHERE org_id = $1 AND role = 'owner' LIMIT 1`, [orgId])).rows[0];
     const ir = await createCase(db, {
       orgId,
-      clientId: clientRow.id,
-      bureau: "EX",
-      createdByStaffId: staff?.id || null,
-      notes: `gauntlet ${MARK}`
+      row: {
+        client_id: clientRow.id,
+        case_status: "Queued",
+        selected_bureaus_raw: "EX",
+        remover_notes: `gauntlet ${MARK}`,
+        requested_by: staff?.id || null
+      }
     });
     pass("inquiry_case", ir.id);
-    report.phases.inquiry_removal = { id: ir.id, status: ir.status };
+    report.phases.inquiry_removal = { id: ir.id, status: ir.case_status };
   } catch (e) {
     fail("inquiry_case", String(e.message || e));
   }
@@ -184,7 +187,7 @@ try {
       const app = (
         await db.query(
           `INSERT INTO applications (org_id, funding_round_id, client_id, bank, status, approved_amount)
-           VALUES ($1, $2, $3, 'Chase', 'approved', 45000)
+           VALUES ($1, $2, $3, 'Chase', 'Approved', 45000)
            RETURNING id`,
           [orgId, round.id, clientRow.id]
         )
@@ -209,20 +212,26 @@ try {
   }
 
   try {
-    const tmpl = (await db.query(`SELECT id FROM contract_templates WHERE org_id = $1 LIMIT 1`, [orgId])).rows[0];
-    if (tmpl) {
+    const staff = (await db.query(`SELECT id FROM staff WHERE org_id = $1 AND role = 'owner' LIMIT 1`, [orgId])).rows[0];
+    const tmpl = (
+      await db.query(
+        `SELECT id, template_key, kind FROM contract_templates WHERE org_id = $1 LIMIT 1`,
+        [orgId]
+      )
+    ).rows[0];
+    if (tmpl && staff?.id) {
       const c = (
         await db.query(
-          `INSERT INTO contracts (org_id, client_id, template_id, status, title)
-           VALUES ($1, $2, $3, 'draft', 'Gauntlet Test')
+          `INSERT INTO contracts (org_id, client_id, template_id, template_key, kind, status, title, created_by)
+           VALUES ($1, $2, $3, $4, $5, 'draft', 'Gauntlet Test', $6)
            RETURNING id, status`,
-          [orgId, clientRow.id, tmpl.id]
+          [orgId, clientRow.id, tmpl.id, tmpl.template_key, tmpl.kind, staff.id]
         )
       ).rows[0];
       pass("contract_draft", c.id);
       report.phases.contract = c;
     } else {
-      fail("contract_draft", "no template");
+      fail("contract_draft", tmpl ? "no owner staff for created_by" : "no template");
     }
   } catch (e) {
     fail("contract_draft", String(e.message || e));
