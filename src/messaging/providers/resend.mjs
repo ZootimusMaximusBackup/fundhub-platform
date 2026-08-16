@@ -31,12 +31,27 @@ export const TRANSMITS = true;
 
 const DEFAULT_BASE_URL = "https://api.resend.com";
 
-/** Load named assets onto the Resend attachments array. Unknown keys reject. */
+function asBase64(content, encoding) {
+  if (Buffer.isBuffer(content)) return content.toString("base64");
+  const raw = String(content ?? "");
+  if (encoding === "utf8") return Buffer.from(raw, "utf8").toString("base64");
+  return raw.replace(/\s+/g, "");
+}
+
+/** Named assets, or inline { filename, content } bytes for generated files. */
 async function loadAttachments(list) {
   if (list == null) return { files: [], error: null };
   if (!Array.isArray(list)) return { files: [], error: "attachments must be an array" };
   const files = [];
   for (const item of list) {
+    if (item && item.content != null && item.filename) {
+      files.push({
+        filename: String(item.filename),
+        content: asBase64(item.content, item.encoding),
+        content_type: item.contentType || item.content_type || "application/pdf"
+      });
+      continue;
+    }
     const key = item && (item.asset || item.key);
     const asset = resolveMessageAsset(key);
     if (!asset) {

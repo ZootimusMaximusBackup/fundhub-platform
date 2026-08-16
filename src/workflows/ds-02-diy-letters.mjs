@@ -52,13 +52,11 @@ async function createInvoiceTaskOnce(db, { orgId, clientId, eventId }) {
 async function deliverLettersInRepo(db, {
   clientId, orgId, identity, violationsByBureau
 } = {}) {
-  const vmap = violationsByBureau || {};
-  const hasViolations = Object.values(vmap).some((a) => Array.isArray(a) && a.length > 0);
-  if (hasViolations) {
-    return deliverDiyPackageInRepo(db, {
-      clientId, orgId, identity, violationsByBureau: vmap, seed: `${orgId}:${clientId}`
-    });
-  }
+  const enginePack = await deliverDiyPackageInRepo(db, {
+    clientId, orgId, identity, violationsByBureau, seed: `${orgId}:${clientId}`
+  });
+  if (enginePack.delivered) return enginePack;
+  if (enginePack.reason && enginePack.reason !== "no_violations") return enginePack;
   const pack = await buildLetterPackForClient(db, { clientId, pack: "repair" });
   const files = pack.files || [];
   if (!files.length) {

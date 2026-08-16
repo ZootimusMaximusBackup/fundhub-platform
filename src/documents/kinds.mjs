@@ -9,7 +9,7 @@
 // assertKnownSubtype(). Registering an unlisted subtype is allowed on purpose.
 
 export const KINDS = Object.freeze({
-  AUTHORIZATION: "authorization",         // soft-pull consent
+  AUTHORIZATION: "authorization",         // soft-pull consent, dispute-letter authorization
   CONTRACT: "contract",                   // funding agreement, repair engagement, partner license
   INVOICE_DOCUMENT: "invoice_document",   // the rendered artifact for an invoices row
   DELIVERABLE: "deliverable",             // the five UnderwriteIQ deliverables
@@ -21,7 +21,8 @@ export const ALL_KINDS = Object.freeze(Object.values(KINDS));
 // Conventional subtypes per kind. Confirmed with Chris 2026-07-28.
 export const SUBTYPES = Object.freeze({
   authorization: Object.freeze([
-    "soft_pull_consent"           // the C-00 consent gate — a real record, not a custom field
+    "soft_pull_consent",          // the C-00 consent gate — a real record, not a custom field
+    "dispute_authorization"       // onboarding sign-off to PREPARE letters/complaints; not a mail/file gate
   ]),
   contract: Object.freeze([
     "funding_agreement",
@@ -43,7 +44,10 @@ export const SUBTYPES = Object.freeze({
     "bank_lender_match_list",       // Bank and Lender Match List
     // Between-rounds / funding mail stack (discriminator = EX|EQ|TU)
     "funding_inquiry_removal",
-    "funding_personal_info"
+    "funding_personal_info",
+    "cfpb_complaint",
+    "state_ag_complaint",
+    "furnisher_validation"
   ]),
   // what a client hands us through the upload endpoint (docs/UPLOADS-SPEC.md).
   // One document PER FILE — never one-per-client — so uploads.mjs always
@@ -64,6 +68,7 @@ export const SUBTYPES = Object.freeze({
 // own title; this is the fallback so a document is never registered untitled.
 export const SUBTYPE_TITLES = Object.freeze({
   soft_pull_consent: "Soft Pull Authorization",
+  dispute_authorization: "Dispute Letter Authorization",
   funding_agreement: "Funding Agreement",
   repair_engagement_letter: "Repair Engagement Letter",
   partner_license: "Partner License",
@@ -77,6 +82,9 @@ export const SUBTYPE_TITLES = Object.freeze({
   bank_lender_match_list: "Bank and Lender Match List",
   funding_inquiry_removal: "Funding Inquiry Removal Letter",
   funding_personal_info: "Funding Personal Info Letter",
+  cfpb_complaint: "CFPB Complaint",
+  state_ag_complaint: "State Attorney General Complaint",
+  furnisher_validation: "Furnisher Debt Validation Letter",
   id_document: "ID Document",
   ssn_card: "SSN Card",
   proof_of_address: "Proof of Address",

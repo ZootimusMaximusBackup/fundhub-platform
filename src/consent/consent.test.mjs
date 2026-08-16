@@ -38,8 +38,11 @@ import {
   disclosureFor,
   versionsFor,
   CURRENT_SOFT_PULL_VERSION,
-  SOFT_PULL_DISCLOSURES
+  SOFT_PULL_DISCLOSURES,
+  CURRENT_DISPUTE_AUTH_VERSION,
+  DISPUTE_AUTH_DISCLOSURES
 } from "./disclosures.mjs";
+import { assertKnownSubtype, KINDS } from "../documents/kinds.mjs";
 
 /* fakeDb — records every query and answers from a scripted queue. Same shape as
    the one in src/finance/soft-pulls.test.mjs, deliberately: the two modules are
@@ -101,6 +104,7 @@ describe("the gate has no failure mode that produces true", () => {
     ["no kind", { orgId: ORG, clientId: CLIENT }],
     ["an unknown kind", { ...subject, kind: "vibes" }],
     ["a kind that is nearly right", { ...subject, kind: "soft_pull_consents" }],
+    ["a near-miss of dispute_authorization", { ...subject, kind: "dispute_authorizations" }],
     ["a null kind", { ...subject, kind: null }],
     ["a numeric kind", { ...subject, kind: 1 }]
   ];
@@ -459,10 +463,8 @@ describe("normalizers", () => {
 // ── the disclosure is server-owned ─────────────────────────────────────────
 
 describe("the words come from the server", () => {
-  test("the kind vocabulary matches what 099 and kinds.mjs already name", () => {
-    // soft_pull_consent existed in src/documents/kinds.mjs and was referenced by
-    // nothing. This module is what references it — no new kind was invented.
-    assert.deepEqual([...CONSENT_KINDS], ["soft_pull_consent"]);
+  test("the kind vocabulary matches what 099/167 and kinds.mjs name", () => {
+    assert.deepEqual([...CONSENT_KINDS], ["soft_pull_consent", "dispute_authorization"]);
   });
 
   test("a known version returns its exact stored text", () => {
@@ -505,6 +507,78 @@ describe("the words come from the server", () => {
     ]) {
       assert.ok(!text.includes(claim),
         `the consent wording contains an outcome claim: "${claim}"`);
+    }
+  });
+});
+
+describe("dispute_authorization consent kind", () => {
+  test("disclosureFor returns dispute-auth-v1", () => {
+    const d = disclosureFor("dispute_authorization");
+    assert.equal(d.version, CURRENT_DISPUTE_AUTH_VERSION);
+    assert.equal(d.title, "Dispute letter authorization");
+    assert.equal(d.text, DISPUTE_AUTH_DISCLOSURES[CURRENT_DISPUTE_AUTH_VERSION].text);
+  });
+
+  test("disclosureFor unknown kind fails closed", () => {
+    assert.equal(disclosureFor("vibes"), null);
+    assert.equal(disclosureFor("dispute_authorizations"), null);
+    assert.equal(disclosureFor("dispute_authorization", "dispute-auth-v99"), null);
+  });
+
+  test("soft-pull-v1 text is untouched", () => {
+    assert.equal(
+      disclosureFor("soft_pull_consent", CURRENT_SOFT_PULL_VERSION).text,
+      SOFT_PULL_DISCLOSURES[CURRENT_SOFT_PULL_VERSION].text
+    );
+  });
+
+  test("assertKnownSubtype accepts dispute_authorization", () => {
+    assert.equal(
+      assertKnownSubtype(KINDS.AUTHORIZATION, "dispute_authorization"),
+      "dispute_authorization"
+    );
+  });
+
+  test("captureConsent with this kind works in a unit fake", async () => {
+    const db = fakeDb([{ rows: [rowFor({
+      kind: "dispute_authorization",
+      consent_version: CURRENT_DISPUTE_AUTH_VERSION,
+      capture_method: "signature"
+    })] }]);
+    const c = await captureConsent(db, {
+      orgId: ORG, clientId: CLIENT, kind: "dispute_authorization",
+      consentText: DISPUTE_AUTH_DISCLOSURES[CURRENT_DISPUTE_AUTH_VERSION].text,
+      consentVersion: CURRENT_DISPUTE_AUTH_VERSION,
+      grantedBy: { kind: "client", id: ACCOUNT },
+      captureMethod: "signature", grantedName: "Dana Client"
+    });
+    assert.equal(db.calls[0].params[2], "dispute_authorization");
+    assert.equal(c.kind, "dispute_authorization");
+    assert.equal(c.capture_method, "signature");
+  });
+
+  test("the wording makes no claim about credit outcomes", () => {
+    const text = DISPUTE_AUTH_DISCLOSURES[CURRENT_DISPUTE_AUTH_VERSION].text.toLowerCase();
+    for (const claim of [
+      "improve", "increase your score", "raise your score", "boost",
+      "guarantee", "guaranteed", "approved", "approval", "qualify you",
+      "we will get you", "funding is", "will be deleted", "will remove"
+    ]) {
+      assert.ok(!text.includes(claim),
+        `the dispute-auth wording contains an outcome claim: "${claim}"`);
+    }
+    assert.match(text, /prepare credit dispute letters and complaint drafts/);
+    assert.match(text, /not mailed or filed/);
+    assert.match(text, /sign cfpb and state ag complaints myself/);
+    assert.match(text, /withdraw/);
+    assert.match(text, /does not undo letters already prepared/);
+    assert.match(text, /no promise about deletions, scores, funding, or legal outcomes/);
+  });
+
+  test("the dispute-auth disclosure map is frozen", () => {
+    assert.ok(Object.isFrozen(DISPUTE_AUTH_DISCLOSURES));
+    for (const v of versionsFor("dispute_authorization")) {
+      assert.ok(Object.isFrozen(DISPUTE_AUTH_DISCLOSURES[v]), `${v} is not frozen`);
     }
   });
 });

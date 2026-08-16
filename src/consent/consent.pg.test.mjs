@@ -42,7 +42,12 @@ import {
   ConsentError
 } from "./index.mjs";
 import { requestSoftPull, SoftPullError } from "../finance/soft-pulls.mjs";
-import { SOFT_PULL_DISCLOSURES, CURRENT_SOFT_PULL_VERSION } from "./disclosures.mjs";
+import {
+  SOFT_PULL_DISCLOSURES,
+  CURRENT_SOFT_PULL_VERSION,
+  DISPUTE_AUTH_DISCLOSURES,
+  CURRENT_DISPUTE_AUTH_VERSION
+} from "./disclosures.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 
@@ -505,6 +510,53 @@ describe("consent gate", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
       });
       await assert.rejects(ask, (e) => e.code === "consent_required");
       assert.deepEqual(await ledger(), []);
+    });
+  });
+
+  describe("dispute_authorization kind", () => {
+    const DISPUTE_TEXT = DISPUTE_AUTH_DISCLOSURES[CURRENT_DISPUTE_AUTH_VERSION].text;
+
+    test("captureConsent writes a live dispute_authorization row", async () => {
+      await wipe();
+      const c = await captureConsent(db, {
+        orgId: org, clientId: client, kind: "dispute_authorization",
+        consentText: DISPUTE_TEXT,
+        consentVersion: CURRENT_DISPUTE_AUTH_VERSION,
+        grantedBy: { kind: "client", id: accountId },
+        captureMethod: "signature", grantedName: "Consent Pgtest Client"
+      });
+      assert.equal(c.kind, "dispute_authorization");
+      assert.equal(c.consent_version, CURRENT_DISPUTE_AUTH_VERSION);
+      assert.equal(await hasValidConsent(db, {
+        orgId: org, clientId: client, kind: "dispute_authorization" }), true);
+      assert.equal(await hasValidConsent(db, {
+        orgId: org, clientId: client, kind: "soft_pull_consent" }), false,
+        "dispute authorization opened the soft-pull gate");
+    });
+
+    test("the kind check permits dispute_authorization and refuses an invented kind", async () => {
+      await wipe();
+      await db.query(
+        `INSERT INTO client_consents
+           (org_id, client_id, kind, consent_text, granted_by_kind,
+            granted_by_account_id, capture_method, granted_name)
+         VALUES ($1,$2,'dispute_authorization',$3,'client',$4,'signature','Consent Pgtest Client')`,
+        [org, client, DISPUTE_TEXT, accountId]
+      );
+      await assert.rejects(
+        () => db.query(
+          `INSERT INTO client_consents
+             (org_id, client_id, kind, consent_text, granted_by_kind,
+              granted_by_account_id, capture_method, granted_name)
+           VALUES ($1,$2,'vibes',$3,'client',$4,'signature','Consent Pgtest Client')`,
+          [org, client, DISPUTE_TEXT, accountId]
+        ),
+        (e) => {
+          assert.match(e.message, /client_consents_kind_check/,
+            `refused for the wrong reason: ${e.message}`);
+          return true;
+        }
+      );
     });
   });
 });

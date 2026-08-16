@@ -222,10 +222,10 @@ function ownsClient(principal, clientId) {
   return !!principal.clientId && String(principal.clientId) === String(clientId).trim();
 }
 
-/* normalizeKind — the requested kind, or null. Defaults to soft_pull_consent,
-   which is the only kind 099 permits today; an unrecognised one is refused
-   rather than coerced to the default, so a typo does not silently record a
-   consent of the wrong type. */
+/* normalizeKind — the requested kind, or null. Defaults to soft_pull_consent.
+   An unrecognised one is refused rather than coerced to the default, so a typo
+   does not silently record a consent of the wrong type. Permitted kinds live
+   in CONSENT_KINDS (099 + 167). */
 function normalizeKind(raw) {
   if (raw === undefined || raw === null || raw === "") return DEFAULT_KIND;
   const k = String(raw).trim();

@@ -9,11 +9,16 @@ const MAX_STRIKES = 2;
 export function proseForVariance(letterText) {
   return String(letterText || "")
     .replace(/CITATIONS:[\s\S]*?(?=\nCLOSING:|\nSincerely|\nRespectfully|$)/i, " ")
+    .replace(/Violation M2-\d{3}[\s\S]*?(?=\n\nViolation M2-|\n\nCITATIONS:|\n\nCLOSING:|$)/gi, " ")
     .replace(/Item \d+ \(M2-\d{3}\)[\s\S]*?(?=\n\nItem \d+|\n\nTone:|\n\nHooks:|\n\nRequested|\n\nCITATIONS:|\n\nCLOSING:|$)/gi, " ")
+    .replace(/^Metro 2 field:.*$/gim, " ")
+    .replace(/^Severity:.*$/gim, " ")
     .replace(/\bM2-\d{3}\b/g, " ")
     .replace(/15 U\.S\.C\.[^\n.]*/g, " ")
     .replace(/§\s*1681[^\n.]*/g, " ")
-    .replace(/Field \d+:[\s\S]*?(?=\n|$)/g, " ");
+    .replace(/Field \d+:[\s\S]*?(?=\n|$)/g, " ")
+    .replace(/Signature: _+/g, " ")
+    .replace(/^Date: _+$/gim, " ");
 }
 
 /** Normalize for fingerprinting: lowercase, collapse whitespace, strip punctuation noise. */

@@ -3,6 +3,12 @@
 import { generateLetter, buildLetterText, ROUND } from "../letters/generate.mjs";
 import { assertBatchVariance } from "../letters/variance.mjs";
 import { renderLetterPdf } from "../letters/render.mjs";
+import { splitViolations } from "../letters/catalog.mjs";
+import { buildCfpbComplaint, buildStateAgComplaint, renderComplaintPdf } from "../letters/complaints.mjs";
+import {
+  buildFurnisherValidationLetter,
+  renderFurnisherValidationPdf
+} from "../letters/furnisher-validation.mjs";
 import { assertReadyToSend } from "../../repair/safety.mjs";
 
 function coverSheet({ round, bureau, items, waitDays = 30 }) {
@@ -37,7 +43,61 @@ function decisionTree() {
     "All items deleted → stop. Do not send Round 2 or 3. Celebrate and re-check your scores.",
     "Some deleted / some verified → send Round 2 only for the verified items (cross out the rest).",
     "All verified → send Round 2 MOV demand.",
-    "No response after 30 days + mail time → Round 2 with late-response argument; keep your certified-mail receipt."
+    "No response after 30 days + mail time → Round 2 with late-response argument; keep your certified-mail receipt.",
+    "Round 3 still on the report → file the CFPB complaint, then the state AG complaint. Sign the declaration on each. Do not file them with Round 1."
+  ].join("\n");
+}
+
+function streetKey(value) {
+  return String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function dropCurrentStreet(items, identity) {
+  const current = streetKey(identity?.addressLine1);
+  if (!current) return items;
+  return items.filter((v) => {
+    const label = streetKey(v.subject || v.observed?.address || "");
+    return !label || !label.startsWith(current);
+  });
+}
+
+function accountsFromPack(violationsByBureau) {
+  const accounts = [];
+  for (const [bureau, list] of Object.entries(violationsByBureau || {})) {
+    for (const v of list || []) {
+      if (!v?.ruleId) continue;
+      accounts.push({
+        creditor: v.creditor || v.subject || "Creditor",
+        accountType: bureau,
+        amount: v.amount ?? null,
+        originalCreditor: v.originalCreditor || null,
+        fieldViolations: [{ ruleId: v.ruleId, field: v.field, reason: v.reason }]
+      });
+    }
+  }
+  return accounts;
+}
+
+function blankTimeline() {
+  return [
+    { round: "R1", summary: "Initial Metro 2 dispute via certified mail." },
+    { round: "R2", summary: "Method of verification / FCRA escalation." },
+    { round: "R3", summary: "Final bureau notice." }
+  ];
+}
+
+function complaintCover() {
+  return [
+    "SEND THESE COMPLAINTS ONLY IF:",
+    "Round 3 is done and the disputed items are still on the report.",
+    "",
+    "DO NOT FILE WITH ROUND 1.",
+    "",
+    "BEFORE FILING:",
+    "1. Write today's date",
+    "2. Sign the perjury declaration by hand — onboarding consent is not this signature",
+    "3. Attach Round 1–3 letters and certified-mail receipts",
+    "4. File CFPB first or file CFPB and the state AG at the same time"
   ].join("\n");
 }
 
@@ -50,10 +110,17 @@ export async function buildDiyPackage({
   identity,
   seed,
   priorByBureau = {},
-  furnishers = []
+  furnishers = [],
+  hasAuthorization = false,
+  datedComplaints = false
 }) {
+  if (datedComplaints && !hasAuthorization) {
+    return { ok: false, reason: "dispute_authorization_required", stalled: true };
+  }
+
   const letters = [];
   const documents = [];
+  const extras = [];
 
   documents.push({ path: "01-START-HERE-instructions.pdf.txt", text: instructionsDoc() });
   documents.push({ path: "02-decision-tree.pdf.txt", text: decisionTree() });
@@ -61,58 +128,69 @@ export async function buildDiyPackage({
   for (const [bureau, violations] of Object.entries(violationsByBureau)) {
     if (!violations?.length) continue; // never generate for a bureau with zero findings
 
-    const metro = violations.filter((v) => !["M2-031", "M2-032", "M2-033", "M2-034", "M2-035", "M2-036", "M2-037", "M2-038"].includes(v.ruleId));
-    const personal = violations.filter((v) => ["M2-031", "M2-032", "M2-033", "M2-034", "M2-035", "M2-036", "M2-037", "M2-038"].includes(v.ruleId));
+    const split = splitViolations(violations);
+    const metro = split.tradeline;
+    const personal = dropCurrentStreet(split.personal, identity);
+    const inquiry = split.inquiry;
 
-    for (const [round, set, folder] of [
-      [ROUND.R1, metro, "03-round-1"],
-      [ROUND.R1, personal, "03-round-1"]
+    for (const [kind, set] of [
+      ["metro2", metro],
+      ["personal-info", personal],
+      ["inquiry", inquiry]
     ]) {
       if (!set.length) continue;
-      const kind = set === personal ? "personal-info-inquiries" : "metro2";
+      const folder = "03-round-1";
       const gen = await generateLetter({
         violations: set,
         identity,
         bureau,
-        round,
+        round: ROUND.R1,
         seed: `${seed}:${bureau}:${kind}:R1`,
         priorLetters: [],
         undated: false
       });
       if (!gen.ok) return { ok: false, reason: gen.reason, stalled: true };
-      letters.push({ ...gen, bureau, round, folder, filename: `${folder}/${bureau.toLowerCase()}-${kind}.pdf` });
-    }
-
-    // Conditional R2 / R3
-    for (const round of [ROUND.R2, ROUND.R3]) {
-      const set = metro.length ? metro : violations;
-      const folder = round === ROUND.R2 ? "04-round-2-CONDITIONAL" : "05-round-3-CONDITIONAL";
-      const cover = coverSheet({
-        round,
-        bureau,
-        items: set.map((v) => ({ creditor: v.subject || v.creditor, account_last4: v.account_last4 })),
-        waitDays: round === ROUND.R2 ? 30 : 15
-      });
-      documents.push({ path: `${folder}/COVER-${bureau}.txt`, text: cover });
-      const gen = await generateLetter({
-        violations: set,
-        identity,
-        bureau,
-        round,
-        seed: `${seed}:${bureau}:${round}:v2`,
-        attemptOffset: round === ROUND.R2 ? 1 : 2,
-        priorLetters: [],
-        undated: true
-      });
-      if (!gen.ok) return { ok: false, reason: gen.reason, stalled: true };
       letters.push({
         ...gen,
         bureau,
-        round,
+        round: ROUND.R1,
         folder,
-        filename: `${folder}/${bureau.toLowerCase()}-${round.toLowerCase()}.pdf`,
-        conditional: true
+        filename: `${folder}/${bureau.toLowerCase()}-${kind}.pdf`,
+        skipVariance: kind !== "metro2"
       });
+    }
+
+    // Conditional R2 / R3 — tradeline Metro 2 only. Not a final notice on Round 1.
+    if (metro.length) {
+      for (const round of [ROUND.R2, ROUND.R3]) {
+        const folder = round === ROUND.R2 ? "04-round-2-CONDITIONAL" : "05-round-3-CONDITIONAL";
+        const cover = coverSheet({
+          round,
+          bureau,
+          items: metro.map((v) => ({ creditor: v.subject || v.creditor, account_last4: v.account_last4 })),
+          waitDays: round === ROUND.R2 ? 30 : 15
+        });
+        documents.push({ path: `${folder}/COVER-${bureau}.txt`, text: cover });
+        const gen = await generateLetter({
+          violations: metro,
+          identity,
+          bureau,
+          round,
+          seed: `${seed}:${bureau}:${round}:v2`,
+          attemptOffset: round === ROUND.R2 ? 1 : 2,
+          priorLetters: [],
+          undated: true
+        });
+        if (!gen.ok) return { ok: false, reason: gen.reason, stalled: true };
+        letters.push({
+          ...gen,
+          bureau,
+          round,
+          folder,
+          filename: `${folder}/${bureau.toLowerCase()}-${round.toLowerCase()}.pdf`,
+          conditional: true
+        });
+      }
     }
   }
 
@@ -135,18 +213,52 @@ export async function buildDiyPackage({
     if (!gen.ok) return { ok: false, reason: gen.reason, stalled: true };
     letters.push({
       ...gen,
-      filename: `03-round-1/furnisher-${(f.name || "creditor").toLowerCase().replace(/\s+/g, "-")}.pdf`
+      filename: `03-round-1/furnisher-${slugName(f.name)}.pdf`
     });
   }
 
-  // Intra-batch + prior window. On failure, regenerate the later letter with a bumped seed (2 strikes).
+  for (const f of furnishers) {
+    if (!f?.name && !f?.addressLines?.length) continue;
+    const built = buildFurnisherValidationLetter({
+      identity,
+      furnisher: { name: f.name, addressLines: f.addressLines },
+      account: {
+        creditor: f.name,
+        last4: f.account_last4 || f.last4,
+        originalCreditor: f.originalCreditor,
+        accountType: f.accountType
+      }
+    });
+    const pdf = await renderFurnisherValidationPdf({
+      identity,
+      furnisher: { name: f.name, addressLines: f.addressLines },
+      account: {
+        creditor: f.name,
+        last4: f.account_last4 || f.last4,
+        originalCreditor: f.originalCreditor,
+        accountType: f.accountType
+      }
+    });
+    extras.push({
+      path: `03-round-1/furnisher-validation-${slugName(f.name)}.pdf`,
+      text: built.text,
+      pdf: Buffer.from(pdf)
+    });
+  }
+
+  // Intra-batch + prior window. Personal-info and inquiry letters skip this
+  // check — they share a header with the Metro 2 letter on purpose.
+  const varianceTargets = letters
+    .map((l, index) => ({ l, index }))
+    .filter(({ l }) => !l.skipVariance);
   let batch = assertBatchVariance(
-    letters.map((l) => ({ text: l.text, bureau: l.bureau })),
+    varianceTargets.map(({ l }) => ({ text: l.text, bureau: l.bureau })),
     0.45,
     priorByBureau
   );
   for (let strike = 0; !batch.ok && strike < 2; strike++) {
-    const idx = batch.b;
+    const tracked = varianceTargets[batch.b];
+    const idx = tracked?.index;
     const L = letters[idx];
     if (!L) break;
     const regen = await generateLetter({
@@ -160,9 +272,19 @@ export async function buildDiyPackage({
       undated: L.conditional === true
     });
     if (!regen.ok) return { ok: false, reason: regen.reason, stalled: true };
-    letters[idx] = { ...L, ...regen, filename: L.filename, conditional: L.conditional, folder: L.folder };
+    letters[idx] = {
+      ...L,
+      ...regen,
+      filename: L.filename,
+      conditional: L.conditional,
+      folder: L.folder,
+      skipVariance: L.skipVariance
+    };
+    const again = letters
+      .map((l, index) => ({ l, index }))
+      .filter(({ l }) => !l.skipVariance);
     batch = assertBatchVariance(
-      letters.map((l) => ({ text: l.text, bureau: l.bureau })),
+      again.map(({ l }) => ({ text: l.text, bureau: l.bureau })),
       0.45,
       priorByBureau
     );
@@ -190,17 +312,69 @@ export async function buildDiyPackage({
     });
   }
 
+  for (const extra of extras) {
+    files.push(extra);
+  }
+
+  const complaintFiles = await maybeComplaintFiles({
+    identity,
+    violationsByBureau,
+    datedComplaints
+  });
+  if (!complaintFiles.ok) return complaintFiles;
+  files.push(...complaintFiles.files);
+
   files.push({ path: "08-round-tracker.pdf.txt", text: roundTrackerTemplate() });
 
   return {
     ok: true,
     files,
-    letterCount: letters.length,
+    letterCount: letters.length + extras.length + complaintFiles.files.filter((f) => f.pdf).length,
     events: {
       ready: "diy.package.ready",
       delivered: "diy.package.delivered"
     }
   };
+}
+
+function slugName(name) {
+  return String(name || "creditor")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "creditor";
+}
+
+async function maybeComplaintFiles({
+  identity,
+  violationsByBureau,
+  datedComplaints
+}) {
+  const accounts = accountsFromPack(violationsByBureau);
+  if (!accounts.length) return { ok: true, files: [] };
+
+  const undated = !datedComplaints;
+  const timeline = blankTimeline();
+  const files = [
+    { path: "06-complaints-CONDITIONAL/COVER.txt", text: complaintCover() }
+  ];
+
+  const cfpbText = buildCfpbComplaint({ identity, accounts, timeline, undated });
+  const agText = buildStateAgComplaint({ identity, accounts, timeline, undated });
+  const [cfpbPdf, agPdf] = await Promise.all([
+    renderComplaintPdf(cfpbText, identity),
+    renderComplaintPdf(agText, identity)
+  ]);
+  files.push({
+    path: "06-complaints-CONDITIONAL/cfpb-complaint.pdf",
+    text: cfpbText,
+    pdf: Buffer.from(cfpbPdf)
+  });
+  files.push({
+    path: "06-complaints-CONDITIONAL/state-ag-complaint.pdf",
+    text: agText,
+    pdf: Buffer.from(agPdf)
+  });
+  return { ok: true, files };
 }
 
 function violationsForLetter(letter, byBureau) {
@@ -218,6 +392,7 @@ function instructionsDoc() {
     "Do not use a PO box return address. Use the home address on your ID.",
     "Sign by hand, in ink.",
     "Wait the full 30 days plus mail time before Round 2.",
+    "Do not file the CFPB or state AG complaints until Round 3 failed. Sign the declaration on those pages — the onboarding box is not that signature.",
     "Metro 2 disputes correct inaccurate reporting. Accurate derogatories may be corrected rather than deleted."
   ].join("\n");
 }
@@ -228,7 +403,9 @@ function roundTrackerTemplate() {
     "Round | Bureau | Date mailed | Certified receipt # | Response date | Outcome",
     "R1 |  |  |  |  |",
     "R2 |  |  |  |  |",
-    "R3 |  |  |  |  |"
+    "R3 |  |  |  |  |",
+    "CFPB |  |  |  |  |",
+    "State AG |  |  |  |  |"
   ].join("\n");
 }
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fundhub — Soft Pull Consent</title>
+<title>Fundhub — Consent</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -131,6 +131,16 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
 .cc-empty{ font:400 12.5px/1.5 'Inter',system-ui,sans-serif; color:var(--text-dim); }
 .cc-note{ margin-top:18px; font:400 12px/1.6 'Inter',system-ui,sans-serif; color:var(--text-dim); max-width:70ch; }
 .cc-note code{ font:500 11px/1 'JetBrains Mono',ui-monospace,monospace; }
+
+/* Sign pad. Shown only when capture_method is signature. The drawing is a
+   client-side gate (must put ink in the box). The POST still sends name +
+   method; this screen does not invent an upload. */
+#ccSignPad{
+  display:block; width:100%; height:160px; touch-action:none; cursor:crosshair;
+  border:1px dashed var(--gray2); border-radius:6px; background:#fff;
+}
+.cc-sign-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:8px; }
+
 @media (max-width:560px){ .cc-methods{ flex-direction:column; } }
 </style>
 <script src="shell.js"></script>
@@ -204,7 +214,7 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
 
   <div class="main">
     <div class="topbar">
-      <span class="crumb">Compliance</span><h1>Soft Pull Consent</h1>
+      <span class="crumb">Compliance</span><h1 id="ccPageTitle">Consent</h1>
       <div class="spacer"></div>
     </div>
 
@@ -215,11 +225,10 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
         <a class="cc-back" id="ccBack" href="client-control-panel.html">← Back to Client Control Panel</a>
 
         <div class="cc-head">
-          <h1 class="cc-title">Soft Pull Consent</h1>
+          <h1 class="cc-title" id="ccTitle">Consent</h1>
           <span class="cc-version" id="ccVersion">—</span>
         </div>
-        <p class="cc-sub">
-          A soft credit pull cannot be requested for a client until they have agreed to it here.
+        <p class="cc-sub" id="ccSub">
           Recording consent does not pull anybody's credit and does not send anything.
         </p>
 
@@ -252,7 +261,7 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
               </button>
               <button type="button" class="cc-method" data-method="signature">
                 <span class="m-name">They signed</span>
-                <span class="m-why">On screen or on paper. Attach the signed document if you have one.</span>
+                <span class="m-why">Draw in the box below. A typed name alone is not a signature.</span>
               </button>
             </div>
           </div>
@@ -260,6 +269,15 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
           <div class="cc-field" id="ccNameField">
             <label for="ccName">Name they typed or signed <span class="sub">— required for typed and signed</span></label>
             <input class="cc-input" id="ccName" type="text" autocomplete="off" placeholder="Their full name, exactly as they gave it">
+          </div>
+
+          <div class="cc-field" id="ccSignField" hidden>
+            <label for="ccSignPad">Draw your signature</label>
+            <canvas id="ccSignPad" data-testid="ccSignPad" width="640" height="160" aria-label="Signature pad"></canvas>
+            <div class="cc-sign-row">
+              <button class="btn ghost" id="ccSignClear" data-testid="ccSignClear" type="button">Clear</button>
+              <span class="cc-empty">Draw your signature. An empty box does not count.</span>
+            </div>
           </div>
 
           <div class="cc-field">
@@ -284,6 +302,7 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
 
         <p class="cc-note">
           Open this screen with a client in the address bar — <code>consent-capture.html?client_id=&lt;id&gt;</code>.
+          To authorize dispute letters, add <code>&amp;kind=dispute_authorization</code>.
         </p>
       </div>
     </div>
@@ -334,21 +353,47 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
 
   var $ = function (id) { return document.getElementById(id); };
 
+  var ALLOWED_KINDS = { soft_pull_consent: 1, dispute_authorization: 1 };
   var clientId = param("client_id");
-  var kind = "soft_pull_consent";
-  var method = "typed";
+  var rawKind = param("kind");
+  var kind = (rawKind && ALLOWED_KINDS[rawKind]) ? rawKind : "soft_pull_consent";
+  var isDispute = kind === "dispute_authorization";
+  var method = isDispute ? "signature" : "typed";
   var disclosureVersion = null;
   var busy = false;
+  var padState = { sized: false, ink: false, drawing: false, last: null, dist: 0 };
 
   /* THE WAY OUT, carrying the client through. Set before anything can fail, so
-     a broken read still leaves a working link off this page. */
+     a broken read still leaves a working link off this page. Dispute-letter
+     authorization lives on the client portal; other consents go back to CCP. */
   var back = $("ccBack");
-  back.setAttribute(
-    "href",
-    clientId
-      ? "client-control-panel.html?client_id=" + encodeURIComponent(clientId)
-      : "client-control-panel.html"
-  );
+  if (isDispute) {
+    back.textContent = "← Back to Client Portal";
+    back.setAttribute(
+      "href",
+      clientId
+        ? "client-portal.html?id=" + encodeURIComponent(clientId)
+        : "client-portal.html"
+    );
+  } else {
+    back.setAttribute(
+      "href",
+      clientId
+        ? "client-control-panel.html?client_id=" + encodeURIComponent(clientId)
+        : "client-control-panel.html"
+    );
+  }
+
+  function applyKindCopy() {
+    var title = isDispute ? "Authorize dispute letters" : "Soft Pull Consent";
+    document.title = "Fundhub — " + title;
+    $("ccPageTitle").textContent = title;
+    $("ccTitle").textContent = title;
+    $("ccSub").textContent = isDispute
+      ? "This lets Fundhub prepare dispute letters for you. It is not a credit pull. Recording this does not mail anything and does not check your credit."
+      : "A soft credit pull cannot be requested for a client until they have agreed to it here. Recording consent does not pull anybody's credit and does not send anything.";
+  }
+  applyKindCopy();
 
   function setStatus(tone, lede, detail) {
     var el = $("ccStatus");
@@ -402,7 +447,21 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
     return "Something went wrong (status " + res.status + ").";
   }
 
-  var REASON_TEXT = {
+  var REASON_TEXT = isDispute ? {
+    valid: ["is-valid", "Authorization is on file",
+      "You already signed. We can prepare dispute letters. This is not a credit pull."],
+    none_on_file: ["is-blocked", "No signature on file",
+      "Sign below so we can prepare dispute letters. This is not a credit pull."],
+    revoked: ["is-blocked", "Authorization was withdrawn",
+      "This permission was taken back. A new signature is needed before we prepare letters."],
+    expired: ["is-blocked", "Authorization has expired",
+      "The permission on file has run out. Sign again below."],
+    not_yet_effective: ["is-unknown", "Authorization has not started yet",
+      "The permission on file starts at a later date."],
+    no_org_scope: ["is-unknown", "Cannot check",
+      "Your session has no organisation attached, so consent cannot be checked. Sign out and back in."],
+    bad_input: ["is-unknown", "Cannot check", "This page was opened without a valid client."]
+  } : {
     valid: ["is-valid", "Consent is on file", "A soft pull may be requested for this client."],
     none_on_file: ["is-blocked", "No consent on file",
       "A soft pull cannot be requested until this client agrees. Record it below."],
@@ -480,6 +539,128 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
     });
   }
 
+  function padCtx() {
+    return $("ccSignPad").getContext("2d");
+  }
+
+  function padPos(e) {
+    var canvas = $("ccSignPad");
+    var r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  function fillPadPaper() {
+    var canvas = $("ccSignPad");
+    var ctx = padCtx();
+    var w = canvas.clientWidth || 640;
+    var h = canvas.clientHeight || 160;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "#1a1a1a";
+    ctx.lineWidth = 2.25;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  }
+
+  function ensurePadSized() {
+    var canvas = $("ccSignPad");
+    if (!canvas || padState.sized) return;
+    var cssW = Math.max(canvas.clientWidth, 280);
+    var cssH = 160;
+    var ratio = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(cssW * ratio);
+    canvas.height = Math.floor(cssH * ratio);
+    canvas.style.width = cssW + "px";
+    canvas.style.height = cssH + "px";
+    var ctx = padCtx();
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    fillPadPaper();
+    padState.sized = true;
+  }
+
+  function clearPad() {
+    if (!$("ccSignPad")) return;
+    padState.ink = false;
+    padState.drawing = false;
+    padState.last = null;
+    padState.dist = 0;
+    if (!padState.sized) ensurePadSized();
+    else fillPadPaper();
+  }
+
+  function canvasHasInk() {
+    var canvas = $("ccSignPad");
+    if (!canvas || !padState.sized) return false;
+    var ctx = padCtx();
+    var img;
+    try { img = ctx.getImageData(0, 0, canvas.width, canvas.height); }
+    catch (e) { return padState.ink && padState.dist > 12; }
+    var d = img.data;
+    var dark = 0;
+    for (var i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 30) continue;
+      if (d[i] < 240 || d[i + 1] < 240 || d[i + 2] < 240) {
+        dark++;
+        if (dark > 8) return true;
+      }
+    }
+    return false;
+  }
+
+  function bindPad() {
+    var canvas = $("ccSignPad");
+    if (!canvas) return;
+    canvas.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+      ensurePadSized();
+      canvas.setPointerCapture(e.pointerId);
+      padState.drawing = true;
+      padState.last = padPos(e);
+    });
+    canvas.addEventListener("pointermove", function (e) {
+      if (!padState.drawing || !padState.last) return;
+      e.preventDefault();
+      var p = padPos(e);
+      var ctx = padCtx();
+      ctx.beginPath();
+      ctx.moveTo(padState.last.x, padState.last.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      var dx = p.x - padState.last.x;
+      var dy = p.y - padState.last.y;
+      padState.dist += Math.sqrt(dx * dx + dy * dy);
+      if (padState.dist > 12) padState.ink = true;
+      padState.last = p;
+    });
+    function stopDraw(e) {
+      padState.drawing = false;
+      padState.last = null;
+      try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+    }
+    canvas.addEventListener("pointerup", stopDraw);
+    canvas.addEventListener("pointercancel", stopDraw);
+    $("ccSignClear").addEventListener("click", function () { clearPad(); });
+  }
+
+  function syncMethodUi() {
+    $("ccNameField").style.display = method === "checkbox" ? "none" : "";
+    var field = $("ccSignField");
+    if (method === "signature") {
+      field.hidden = false;
+      ensurePadSized();
+    } else {
+      field.hidden = true;
+    }
+    Array.prototype.forEach.call(document.querySelectorAll(".cc-method"), function (o) {
+      o.classList.toggle("on", o.getAttribute("data-method") === method);
+    });
+  }
+
   function load() {
     if (!clientId) {
       setStatus("is-unknown", "No client selected",
@@ -519,6 +700,10 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
       say("err", "Type the name exactly as the client gave it. This is required when they type or sign.");
       return;
     }
+    if (method === "signature" && !canvasHasInk()) {
+      say("err", "Draw your signature in the box. An empty box does not count.");
+      return;
+    }
     busy = true;
     $("ccSubmit").disabled = true;
 
@@ -540,9 +725,12 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
         say("err", problem(res));
         return;
       }
-      say("ok", "Consent recorded. A soft pull may now be requested for this client.");
+      say("ok", isDispute
+        ? "Signature recorded. We can prepare dispute letters. This is not a credit pull."
+        : "Consent recorded. A soft pull may now be requested for this client.");
       $("ccName").value = "";
       $("ccExpires").value = "";
+      clearPad();
       load();
     });
   }
@@ -566,24 +754,25 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
         say("err", problem(res));
         return;
       }
-      say("ok", "Consent withdrawn. Soft pulls for this client are blocked from now on.");
+      say("ok", isDispute
+        ? "Authorization withdrawn. We will not prepare new dispute letters from this permission."
+        : "Consent withdrawn. Soft pulls for this client are blocked from now on.");
       load();
     });
   }
 
   /* Method picker. The name field is only required for two of the three, and
-     the label says so rather than the form failing after the fact. */
+     the label says so rather than the form failing after the fact. Signature
+     also requires ink in the pad — a typed name alone is not a signature. */
   Array.prototype.forEach.call(document.querySelectorAll(".cc-method"), function (b) {
     b.addEventListener("click", function () {
-      Array.prototype.forEach.call(document.querySelectorAll(".cc-method"), function (o) {
-        o.classList.remove("on");
-      });
-      b.classList.add("on");
       method = b.getAttribute("data-method");
-      $("ccNameField").style.display = method === "checkbox" ? "none" : "";
+      syncMethodUi();
     });
   });
 
+  bindPad();
+  syncMethodUi();
   $("ccSubmit").addEventListener("click", submit);
 
   load();

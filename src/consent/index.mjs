@@ -57,14 +57,13 @@ export class ConsentError extends Error {
   }
 }
 
-/** The kinds a consent row may carry. Mirrors the CHECK in 099, which in turn
- *  mirrors the `authorization` subtypes in src/documents/kinds.mjs.
+/** The kinds a consent row may carry. Mirrors the CHECK on client_consents.kind
+ *  (099, extended by 167) and the `authorization` subtypes in
+ *  src/documents/kinds.mjs.
  *
- *  'soft_pull_consent' ALREADY EXISTED in that taxonomy and was referenced by
- *  nothing. This module is what references it. A new kind here needs a
- *  migration, because the database constrains this column — see 099's header
- *  for why that set is closed rather than free text. */
-export const CONSENT_KINDS = Object.freeze(["soft_pull_consent"]);
+ *  A new kind here needs a migration, because the database constrains this
+ *  column — see 099's header for why that set is closed rather than free text. */
+export const CONSENT_KINDS = Object.freeze(["soft_pull_consent", "dispute_authorization"]);
 
 /** How a consent was captured. Closed set of three, CHECKed in 099. */
 export const CAPTURE_METHODS = Object.freeze(["typed", "checkbox", "signature"]);

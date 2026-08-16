@@ -67,12 +67,41 @@ export const SOFT_PULL_DISCLOSURES = Object.freeze({
 /** The version new captures default to when the caller names none. */
 export const CURRENT_SOFT_PULL_VERSION = "soft-pull-v1";
 
-/** Which disclosure applies to which consent kind. One kind today; the map
- *  exists so a second kind cannot quietly reuse the first one's words. */
+/* Every version ever shown for dispute-letter authorization. Add to this map;
+   never edit an entry. Owner-set 2026-08-15 (W2a). No credit-outcome promises. */
+export const DISPUTE_AUTH_DISCLOSURES = Object.freeze({
+  "dispute-auth-v1": Object.freeze({
+    version: "dispute-auth-v1",
+    title: "Dispute letter authorization",
+    text: [
+      "I authorize Fundhub to prepare credit dispute letters and complaint drafts from my credit file for my review.",
+      "",
+      "Letters and complaints are not mailed or filed until I send or file them, or until staff I authorize send or file them.",
+      "",
+      "I must sign CFPB and state AG complaints myself before filing.",
+      "",
+      "I may withdraw this authorization at any time.",
+      "",
+      "Withdrawing this authorization does not undo letters already prepared.",
+      "",
+      "This authorization makes no promise about deletions, scores, funding, or legal outcomes."
+    ].join("\n")
+  })
+});
+
+/** The version new dispute-authorization captures default to. */
+export const CURRENT_DISPUTE_AUTH_VERSION = "dispute-auth-v1";
+
+/** Which disclosure applies to which consent kind. The map exists so a second
+ *  kind cannot quietly reuse the first one's words. */
 const BY_KIND = Object.freeze({
   soft_pull_consent: Object.freeze({
     versions: SOFT_PULL_DISCLOSURES,
     current: CURRENT_SOFT_PULL_VERSION
+  }),
+  dispute_authorization: Object.freeze({
+    versions: DISPUTE_AUTH_DISCLOSURES,
+    current: CURRENT_DISPUTE_AUTH_VERSION
   })
 });
 

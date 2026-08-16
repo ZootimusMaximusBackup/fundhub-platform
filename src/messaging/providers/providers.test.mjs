@@ -398,6 +398,23 @@ describe("resend provider", () => {
     });
     assert.ok(!String(res.error || "").includes(RS_ENV.RESEND_API_KEY), `key leaked: ${res.error}`);
   });
+
+  test("inline generated PDFs attach without a named asset key", async () => {
+    const f = fakeFetch({ status: 200, body: { id: "re_att_1" } });
+    const res = await resend.send({
+      ...emailMsg,
+      attachments: [{
+        filename: "experian-dispute.pdf",
+        content: Buffer.from("%PDF-1.4 test").toString("base64"),
+        contentType: "application/pdf"
+      }]
+    }, { fetchImpl: f, env: RS_ENV });
+    assert.strictEqual(res.status, "sent");
+    const sent = JSON.parse(f.calls[0].init.body);
+    assert.strictEqual(sent.attachments[0].filename, "experian-dispute.pdf");
+    assert.strictEqual(sent.attachments[0].content_type, "application/pdf");
+    assert.ok(sent.attachments[0].content);
+  });
 });
 
 // ---------------------------------------------------------------------------

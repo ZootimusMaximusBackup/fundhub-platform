@@ -174,6 +174,31 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 /* the 'we asked 2 days ago' nudge is stale once the docs are in — retire it
    rather than rewrite it */
 .action-card.done .action-sub{display:none}
+
+/* Onboarding sign box — client authorizes Fundhub to prepare dispute letters.
+   Not a credit pull. Hidden after a live consent is on file. */
+.sign-auth-card{border:1px solid var(--ink)}
+.sign-auth-card.is-signed{border-color:var(--green-line);background:var(--green-bg)}
+.sign-auth-lede{font-size:13.5px;color:var(--text-dim);line-height:1.5;margin-bottom:12px;max-width:62ch}
+.sign-auth-words{white-space:pre-wrap;font-size:13px;line-height:1.65;color:var(--text);
+  background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:14px;
+  max-height:200px;overflow-y:auto;margin-bottom:14px}
+#cpSignPad{display:block;width:100%;height:160px;touch-action:none;cursor:crosshair;
+  border:1px dashed var(--gray2);border-radius:6px;background:#fff}
+.sign-auth-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;margin-bottom:12px}
+.sign-auth-hint{font-size:12px;color:var(--text-dim)}
+.sign-auth-field{margin-bottom:12px}
+.sign-auth-field label{display:block;font-weight:600;font-size:12px;margin-bottom:5px}
+.sign-auth-input{width:100%;border:1px solid var(--line);border-radius:6px;padding:9px 11px;font:inherit;background:#fff}
+.sign-auth-input:focus{outline:2px solid var(--info);outline-offset:-1px}
+.sign-auth-msg{margin-top:10px;font-weight:600;font-size:12px;border-radius:6px;padding:10px 12px;display:none}
+.sign-auth-msg.show{display:block}
+.sign-auth-msg.ok{color:var(--green);background:var(--green-bg)}
+.sign-auth-msg.err{color:var(--red);background:var(--red-bg)}
+#cpSignSubmit{width:100%;max-width:440px}
+.sign-auth-link{display:inline-block;margin-top:12px;font-size:12.5px;font-weight:700;color:var(--blue);
+  text-decoration:underline;text-underline-offset:2px}
+.sign-auth-card.is-signed .sign-auth-form{display:none}
 .doc-need.covered{border-color:var(--green-line)}
 .doc-need.covered .dn-age{color:var(--green)}
 
@@ -379,6 +404,33 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             <span class="vtime">4:12</span>
           </div>
         </div>
+      </section>
+
+      <!-- ══ SIGN TO AUTHORIZE DISPUTE LETTERS — onboarding ════════════ -->
+      <section class="card sign-auth-card" id="dispute-auth-card" aria-labelledby="dispute-auth-title">
+        <div class="card-title" id="dispute-auth-title">Sign to authorize dispute letters</div>
+        <p class="sign-auth-lede">
+          This lets Fundhub prepare dispute letters for you. It is not a credit pull.
+          Draw your signature, type your legal name, then press the button.
+        </p>
+        <div class="sign-auth-words" id="cpDisclosure">The legal wording loads from the server. It is not stored in this page.</div>
+        <div class="sign-auth-form" id="cpSignForm">
+          <div class="sign-auth-field">
+            <label for="cpSignName">Your legal name</label>
+            <input class="sign-auth-input" id="cpSignName" type="text" autocomplete="name" placeholder="Type your full legal name">
+          </div>
+          <div class="sign-auth-field">
+            <label for="cpSignPad">Draw your signature</label>
+            <canvas id="cpSignPad" width="640" height="160" aria-label="Signature pad"></canvas>
+            <div class="sign-auth-row">
+              <button class="contact-btn" id="cpSignClear" type="button">Clear</button>
+              <span class="sign-auth-hint">Draw your signature. An empty box does not count.</span>
+            </div>
+          </div>
+          <button class="btn-book" id="cpSignSubmit" type="button">I sign to authorize Fundhub to prepare my dispute letters</button>
+        </div>
+        <div class="sign-auth-msg" id="cpSignMsg"></div>
+        <a class="sign-auth-link" id="cpSignFullLink" href="consent-capture.html?kind=dispute_authorization">Open the full consent page</a>
       </section>
 
       <!-- ══ 2a · BEFORE THE CALL — honest empty status ══════════════════ -->
@@ -1449,6 +1501,249 @@ var PRODUCTS = {
       if (!unlocked && !locked) return null;
       return "live entitlements · " + unlocked + " unlocked · " + locked + " locked";
     });
+})();
+</script>
+<script>
+/* Dispute-letter authorization. Same capture as consent-capture.html with
+   kind=dispute_authorization and capture_method signature. The legal paragraph
+   is not in this file — GET /api/consent/capture returns it. The drawing is a
+   client-side gate; POST sends name + method, not a new upload. */
+(function () {
+  "use strict";
+  var KIND = "dispute_authorization";
+  var card = document.getElementById("dispute-auth-card");
+  var canvas = document.getElementById("cpSignPad");
+  if (!card || !canvas) return;
+
+  var padState = { sized: false, ink: false, drawing: false, last: null, dist: 0 };
+  var disclosureVersion = null;
+  var busy = false;
+
+  function $(id) { return document.getElementById(id); }
+
+  function resolveClientId() {
+    var id = null;
+    try { id = new URLSearchParams(location.search).get("id"); } catch (e) {}
+    try {
+      var acct = JSON.parse(localStorage.getItem("fh_account") || "null");
+      if (!id && acct && acct.clientId) id = acct.clientId;
+    } catch (e) {}
+    return id;
+  }
+
+  var clientId = resolveClientId();
+  var full = $("cpSignFullLink");
+  if (full) {
+    full.setAttribute(
+      "href",
+      clientId
+        ? "consent-capture.html?client_id=" + encodeURIComponent(clientId) +
+          "&kind=" + encodeURIComponent(KIND)
+        : "consent-capture.html?kind=" + encodeURIComponent(KIND)
+    );
+  }
+
+  function say(kindOfMsg, text) {
+    var el = $("cpSignMsg");
+    el.className = "sign-auth-msg show " + kindOfMsg;
+    el.textContent = text;
+  }
+
+  function api(path, options) {
+    var init = options || {};
+    init.headers = init.headers || {};
+    init.headers["accept"] = "application/json";
+    if (init.body !== undefined) {
+      init.headers["content-type"] = "application/json";
+      init.body = JSON.stringify(init.body);
+    }
+    init.credentials = "same-origin";
+    return fetch(path, init).then(
+      function (r) {
+        return r.json().then(
+          function (b) { return { status: r.status, body: b }; },
+          function () { return { status: r.status, body: null }; }
+        );
+      },
+      function (e) { return { status: 0, body: null, transport: (e && e.message) || "network error" }; }
+    );
+  }
+
+  function padPos(e) {
+    var r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  function padCtx() { return canvas.getContext("2d"); }
+
+  function fillPadPaper() {
+    var ctx = padCtx();
+    var w = canvas.clientWidth || 640;
+    var h = canvas.clientHeight || 160;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "#1a1a1a";
+    ctx.lineWidth = 2.25;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  }
+
+  function ensurePadSized() {
+    if (padState.sized) return;
+    var cssW = Math.max(canvas.clientWidth, 280);
+    var cssH = 160;
+    var ratio = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(cssW * ratio);
+    canvas.height = Math.floor(cssH * ratio);
+    canvas.style.width = cssW + "px";
+    canvas.style.height = cssH + "px";
+    var ctx = padCtx();
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    fillPadPaper();
+    padState.sized = true;
+  }
+
+  function clearPad() {
+    padState.ink = false;
+    padState.drawing = false;
+    padState.last = null;
+    padState.dist = 0;
+    if (!padState.sized) ensurePadSized();
+    else fillPadPaper();
+  }
+
+  function canvasHasInk() {
+    if (!padState.sized) return false;
+    var ctx = padCtx();
+    var img;
+    try { img = ctx.getImageData(0, 0, canvas.width, canvas.height); }
+    catch (e) { return padState.ink && padState.dist > 12; }
+    var d = img.data;
+    var dark = 0;
+    for (var i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 30) continue;
+      if (d[i] < 240 || d[i + 1] < 240 || d[i + 2] < 240) {
+        dark++;
+        if (dark > 8) return true;
+      }
+    }
+    return false;
+  }
+
+  function markSigned() {
+    card.classList.add("is-signed");
+    $("dispute-auth-title").textContent = "You already signed";
+    say("ok", "You already signed. We can prepare dispute letters. This is not a credit pull.");
+  }
+
+  function load() {
+    if (!clientId) {
+      $("cpDisclosure").textContent =
+        "Sign in as a client, or open this page with ?id=<client id>, to load the legal wording and record a signature.";
+      ensurePadSized();
+      return;
+    }
+    api("/api/consent/capture?client_id=" + encodeURIComponent(clientId) +
+        "&kind=" + encodeURIComponent(KIND)).then(function (res) {
+      if (res.status !== 200 || !res.body || !res.body.ok) {
+        $("cpDisclosure").textContent =
+          "The legal wording is not on this page. It will show here once the server has it. You can still draw your signature.";
+        ensurePadSized();
+        return;
+      }
+      var d = res.body.disclosure;
+      if (d && d.text) {
+        disclosureVersion = d.version;
+        $("cpDisclosure").textContent = d.text;
+      } else {
+        $("cpDisclosure").textContent = "The consent wording is unavailable — do not record a consent.";
+      }
+      if (res.body.status && res.body.status.valid) markSigned();
+      else ensurePadSized();
+    });
+  }
+
+  function submit() {
+    if (busy) return;
+    if (!clientId) {
+      say("err", "Sign in as a client, or open this page with your client id, to record a signature.");
+      return;
+    }
+    var name = $("cpSignName").value.trim();
+    if (!name) {
+      say("err", "Type your legal name. This is required when you sign.");
+      return;
+    }
+    if (!canvasHasInk()) {
+      say("err", "Draw your signature in the box. An empty box does not count.");
+      return;
+    }
+    busy = true;
+    $("cpSignSubmit").disabled = true;
+    var body = {
+      client_id: clientId,
+      kind: KIND,
+      action: "grant",
+      capture_method: "signature",
+      granted_name: name,
+      consent_version: disclosureVersion
+    };
+    api("/api/consent/capture", { method: "POST", body: body }).then(function (res) {
+      busy = false;
+      $("cpSignSubmit").disabled = false;
+      if (res.status !== 200 || !res.body || !res.body.ok) {
+        var msg = (res.body && (res.body.message || res.body.error)) ||
+          (res.status === 401 ? "You are signed out. Sign in and try again." :
+           res.status === 0 ? "Could not reach the server. Try again." :
+           "That signature could not be recorded. Try again.");
+        say("err", String(msg));
+        return;
+      }
+      $("cpSignName").value = "";
+      clearPad();
+      markSigned();
+      say("ok", "Signature recorded. We can prepare dispute letters. This is not a credit pull.");
+    });
+  }
+
+  canvas.addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+    ensurePadSized();
+    canvas.setPointerCapture(e.pointerId);
+    padState.drawing = true;
+    padState.last = padPos(e);
+  });
+  canvas.addEventListener("pointermove", function (e) {
+    if (!padState.drawing || !padState.last) return;
+    e.preventDefault();
+    var p = padPos(e);
+    var ctx = padCtx();
+    ctx.beginPath();
+    ctx.moveTo(padState.last.x, padState.last.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    var dx = p.x - padState.last.x;
+    var dy = p.y - padState.last.y;
+    padState.dist += Math.sqrt(dx * dx + dy * dy);
+    if (padState.dist > 12) padState.ink = true;
+    padState.last = p;
+  });
+  function stopDraw(e) {
+    padState.drawing = false;
+    padState.last = null;
+    try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+  }
+  canvas.addEventListener("pointerup", stopDraw);
+  canvas.addEventListener("pointercancel", stopDraw);
+  $("cpSignClear").addEventListener("click", function () { clearPad(); });
+  $("cpSignSubmit").addEventListener("click", submit);
+
+  load();
 })();
 </script>
 </body>

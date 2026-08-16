@@ -6,6 +6,7 @@ import { citationsFor, metro2RefFor } from "../rules/citations.mjs";
 import { openingFor, closingFor, roundInstructions, rotateViolations, ROUND } from "./prompts.mjs";
 import { resolvedCitationBlock } from "./citations-assert.mjs";
 import { generateWithVarianceGate, structuralFingerprint } from "./variance.mjs";
+import { handwrittenSignOff } from "./sign-block.mjs";
 
 function bureauName(code) {
   return ({ EX: "Experian", EQ: "Equifax", TU: "TransUnion" })[String(code || "").toUpperCase()] || String(code || "Credit Bureau");
@@ -18,30 +19,81 @@ function hashSeed(str) {
   return Math.abs(h);
 }
 
-function formatViolationParagraph(v, index) {
-  if (!v?.ruleId) return null;
-  const cites = v.citations || citationsFor(v.ruleId);
-  const statuteBits = Array.isArray(cites)
-    ? cites
-    : [...(cites.statutes || []), ...(cites.cases || cites.caseLaw || [])];
+const RULE_PLAIN_NAMES = Object.freeze({
+  "M2-005": "Stale Date of Account Information",
+  "M2-007": "Obsolete item",
+  "M2-011": "Status-balance contradiction",
+  "M2-031": "Stale former address",
+  "M2-036": "Duplicate same-day inquiry"
+});
+
+const SEVERITY_LABEL = Object.freeze({
+  deletion: "Deletion-tier",
+  strong: "Strong",
+  moderate: "Moderate",
+  supporting: "Supporting"
+});
+
+function lastFourSsn(identity) {
+  if (!identity || identity.ssn == null || identity.ssn === "") return null;
+  const digits = String(identity.ssn).replace(/\D/g, "");
+  if (digits.length < 4) return null;
+  return digits.slice(-4);
+}
+
+function plainName(v) {
+  if (RULE_PLAIN_NAMES[v.ruleId]) return RULE_PLAIN_NAMES[v.ruleId];
   const metro = v.metro2Ref || metro2RefFor(v.ruleId);
-  const field = v.field != null ? `Field ${v.field}` : "the reported fields";
+  if (metro) return String(metro).trim();
+  const reason = String(v.reason || "").trim();
+  if (reason) return reason.split(/[.;]/)[0].trim().slice(0, 80);
+  return v.ruleId;
+}
+
+function fieldLine(v) {
+  const metro = v.metro2Ref || metro2RefFor(v.ruleId);
+  if (metro) return `Metro 2 field: ${metro}`;
+  if (v.field != null && String(v.field).trim() !== "") {
+    const f = String(v.field).trim();
+    return `Metro 2 field: ${/^field\b/i.test(f) ? f : `Field ${f}`}`;
+  }
+  return "Metro 2 field: not specified by the engine";
+}
+
+function capItemStatutes(v) {
+  const cites = v.citations || citationsFor(v.ruleId) || [];
+  const bits = Array.isArray(cites)
+    ? [...cites]
+    : [...(cites.statutes || []), ...(cites.cases || cites.caseLaw || [])];
+  const isCase = (s) => /\bv\.\s/i.test(String(s));
+  const statutes = bits.filter((s) => !isCase(s)).map((s) => String(s));
+  const cases = bits.filter(isCase).map((s) => String(s));
+  const out = statutes.slice(0, 3);
+  if (out.length < 2 && cases[0]) out.push(cases[0]);
+  return out.slice(0, 3);
+}
+
+function formatViolationParagraph(v) {
+  if (!v?.ruleId) return null;
   const observed = v.observed == null ? "not populated as required" : JSON.stringify(v.observed);
   const expected = v.expected == null ? "compliant Metro 2 reporting" : JSON.stringify(v.expected);
+  const statutes = capItemStatutes(v);
+  const sev = SEVERITY_LABEL[v.severity] || "Supporting";
   return [
-    `Item ${index + 1} (${v.ruleId}).`,
+    `Violation ${v.ruleId} — ${plainName(v)}`,
+    fieldLine(v),
+    `Severity: ${sev}`,
     v.reason || "Reporting defect identified by deterministic Metro 2 check.",
-    `${field}: observed ${observed}; expected ${expected}.`,
-    metro ? `Metro 2 reference: ${metro}.` : null,
-    statuteBits.length ? `Legal basis: ${statuteBits.join("; ")}.` : null
-  ].filter(Boolean).join(" ");
+    `Observed: ${observed}. Expected: ${expected}.`,
+    statutes.length ? `Legal basis: ${statutes.join("; ").replace(/\.$/, "")}.` : null
+  ].filter(Boolean).join("\n");
 }
 
 /**
  * Build letter plain text.
  * @param {{
  *   violations: object[],
- *   identity: { fullName, addressLine1, addressLine2?, city, state, zip, accountLast4? },
+ *   identity: { fullName, addressLine1, addressLine2?, city, state, zip, ssn?, accountLast4? },
  *   bureau: 'EX'|'EQ'|'TU',
  *   round?: string,
  *   seed?: string|number,
@@ -60,10 +112,9 @@ export function buildLetterText(opts = {}) {
   const instr = roundInstructions(round);
   const seed = hashSeed(opts.seed ?? `${identity.fullName || ""}:${bureau}:${round}`);
   const ordered = rotateViolations(violations, seed + (opts.attempt || 0) * 7);
-  // Vary structure: attempt 0 body-first, attempt 1 lead-then-items, attempt 2 items then statutes emphasis
   const attempt = Number(opts.attempt) || 0;
-  const open = openingFor(seed + attempt);
-  const close = closingFor(seed + attempt + 3);
+  const open = openingFor(seed + attempt, round);
+  const close = closingFor(seed + attempt + 3, round);
   const dateLine = opts.undated ? "[DATE — write today's date when you mail this]" : (opts.date || "");
   const name = identity.fullName || "[Consumer Name]";
   const addr = [
@@ -71,45 +122,53 @@ export function buildLetterText(opts = {}) {
     identity.addressLine2,
     [identity.city, identity.state, identity.zip].filter(Boolean).join(", ")
   ].filter(Boolean);
+  const ssn4 = lastFourSsn(identity);
 
-  const paragraphs = ordered.map((v, i) => formatViolationParagraph(v, i)).filter(Boolean);
+  const paragraphs = ordered.map((v) => formatViolationParagraph(v)).filter(Boolean);
   const citationBlock = resolvedCitationBlock(ordered);
+  const ruleIdList = ordered.map((v) => v.ruleId).join(", ");
+  const reSubject = instr.round === ROUND.FURNISHER
+    ? "Furnisher Metro 2 dispute"
+    : `Round ${instr.roundLabel || String(instr.round).replace(/^R/, "")} Metro 2 dispute`;
 
-  const header = [
+  const headerLines = [
     dateLine,
     "",
     name,
-    ...addr,
-    "",
-    bureauName(bureau),
-    "",
-    `Re: Dispute of inaccurate credit reporting — Round ${instr.round}`
-  ].filter((l, i, a) => !(l === "" && a[i - 1] === "")).join("\n");
+    ...addr
+  ];
+  if (ssn4) headerLines.push(`Last four of SSN: ${ssn4}`);
+  headerLines.push("", bureauName(bureau), "", `Re: ${reSubject} — ${ruleIdList}`);
+  const header = headerLines.filter((l, i, a) => !(l === "" && a[i - 1] === "")).join("\n");
 
   let body;
   if (attempt % 3 === 1) {
-    body = [open, "", instr.lead, "", ...paragraphs.flatMap((p) => [p, ""])].join("\n");
+    body = [open, "", instr.lead, "", instr.demand, "", ...paragraphs.flatMap((p) => [p, ""]), instr.ask].join("\n");
   } else if (attempt % 3 === 2) {
     body = [
       instr.lead,
       "",
-      `Hooks for this round: ${instr.hooks.join(", ")}.`,
+      instr.demand,
       "",
       open,
       "",
-      "Requested actions: delete or correct each item below after a reasonable investigation.",
+      instr.ask,
       "",
-      ...paragraphs.flatMap((p) => [p, ""])
+      ...paragraphs.flatMap((p) => [p, ""]),
+      "",
+      instr.next
     ].join("\n");
   } else {
     body = [
       open,
       "",
-      `Tone: ${instr.tone}.`,
+      instr.demand,
       "",
       ...paragraphs.flatMap((p) => [p, ""]),
       "",
-      instr.lead
+      instr.lead,
+      "",
+      instr.next
     ].join("\n");
   }
 
@@ -124,8 +183,7 @@ export function buildLetterText(opts = {}) {
     "CLOSING:",
     close,
     "",
-    "Sincerely,",
-    name
+    handwrittenSignOff(name)
   ].join("\n");
 }
 

@@ -134,4 +134,98 @@ describe("generate", () => {
     assert.ok(bytes.byteLength > 500);
     assert.equal(String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]), "%PDF");
   });
+
+  it("labels each item with Violation, field, and severity", () => {
+    const text = buildLetterText({ violations: sampleViolations, identity, bureau: "EX", seed: "jane-ex-r1" });
+    assert.match(text, /Violation M2-007 — Obsolete item/);
+    assert.match(text, /Violation M2-011 — Status-balance contradiction/);
+    assert.match(text, /Metro 2 field: Field 25/);
+    assert.match(text, /Severity: Deletion-tier/);
+    assert.match(text, /Severity: Strong/);
+    assert.match(text, /Signature:/);
+    assert.equal(/fundhub/i.test(text), false);
+    assert.match(text, /Re: Round 1 Metro 2 dispute — /);
+    assert.match(text, /M2-007/);
+    assert.match(text, /M2-011/);
+  });
+
+  it("prints last four of SSN only when identity has ssn", () => {
+    const withSsn = buildLetterText({
+      violations: sampleViolations,
+      identity: { ...identity, ssn: "123-45-6789" },
+      bureau: "EQ",
+      seed: "ssn-eq"
+    });
+    assert.match(withSsn, /Last four of SSN: 6789/);
+    assert.doesNotMatch(withSsn, /123-45-6789/);
+    assert.doesNotMatch(withSsn, /123456789/);
+    const without = buildLetterText({
+      violations: sampleViolations,
+      identity,
+      bureau: "EQ",
+      seed: "ssn-eq"
+    });
+    assert.doesNotMatch(without, /SSN/);
+  });
+
+  it("escalates copy by round without making R1 a final notice", () => {
+    const r1 = buildLetterText({
+      violations: sampleViolations,
+      identity,
+      bureau: "TU",
+      round: "R1",
+      seed: "round-tu"
+    });
+    const r2 = buildLetterText({
+      violations: sampleViolations,
+      identity,
+      bureau: "TU",
+      round: "R2",
+      seed: "round-tu"
+    });
+    const r3 = buildLetterText({
+      violations: sampleViolations,
+      identity,
+      bureau: "TU",
+      round: "R3",
+      seed: "round-tu"
+    });
+    const r1Body = r1.split("CITATIONS:")[0];
+    assert.match(r1Body, /30 days/);
+    assert.match(r1Body, /method of verification/i);
+    assert.match(r1Body, /not a final notice/i);
+    assert.doesNotMatch(r1Body, /this is a final notice/i);
+    assert.doesNotMatch(r1Body, /willful noncompliance/i);
+    assert.doesNotMatch(r1Body, /1681n/);
+    assert.match(r2, /611\(a\)\(7\)/);
+    assert.match(r2, /611\(a\)\(6\)\(B\)\(iii\)/);
+    assert.match(r2, /furnisher/i);
+    assert.match(r3, /611\(a\)\(5\)\(A\)/);
+    assert.match(r3, /15 days/);
+    assert.match(r3, /1681n/);
+    assert.match(r3, /not a lawsuit/i);
+    assert.match(r3, /Re: Round 3 Metro 2 dispute/);
+    assert.equal(/Tone:/i.test(r1 + r2 + r3), false);
+    assert.equal(/Hooks for this round/i.test(r1 + r2 + r3), false);
+  });
+
+  it("uses metro2Ref as the name when the rule is not in the short list", () => {
+    const text = buildLetterText({
+      violations: [{
+        ruleId: "M2-018",
+        severity: "moderate",
+        field: "23",
+        observed: null,
+        expected: "populated",
+        reason: "Original charge-off amount is blank",
+        citations: ["15 U.S.C. § 1681e(b)"],
+        metro2Ref: "Field 23 — Original Charge-off Amount"
+      }],
+      identity,
+      bureau: "EX",
+      seed: "fallback-name"
+    });
+    assert.match(text, /Violation M2-018 — Field 23 — Original Charge-off Amount/);
+    assert.match(text, /Severity: Moderate/);
+  });
 });
