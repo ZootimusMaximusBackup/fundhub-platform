@@ -27,6 +27,8 @@
 
 **Final:** **100/100** (19/19) — evidence `docs/workflows/e2e-verify-run4-evidence/live-playwright-100/` (re-verified 2026-08-15 after credit restore)
 
+**2026-08-16 affiliate + white-label:** required is now **31** (old 19 + 5 affiliate + 7 white-label). Live run **31/31 = 100**. Full command **26/26**.
+
 ## Required live test ids
 
 | id | Covered by |
@@ -48,6 +50,18 @@
 | `screen:thank-you` no booking | live-run4-pass |
 | `funnel:fixed-grid` | live-run4-pass `/watch` |
 | `api:health` pending0 | live-run4-pass |
+| `aff:website_entry` | live-affiliate-onboard homepage → /affiliates/ |
+| `aff:apply_form` | live-affiliate-onboard fake e2e+aff apply |
+| `aff:own_login` | live-affiliate-onboard seeded affiliate login |
+| `aff:dashboard` | live-affiliate-onboard referral link + funnel card |
+| `aff:session_affiliate` | live-affiliate-onboard session names affiliate |
+| `wl:website_entry` | live-white-label-onboard homepage → /affiliates/ |
+| `wl:white_label_apply` | live-white-label-onboard fake e2e+wl apply |
+| `wl:partner_login` | live-white-label-onboard partner sign-in |
+| `wl:partner_galaxy` | live-white-label-onboard Your Galaxy |
+| `wl:own_url` | live-white-label-onboard /sites/ path in studio |
+| `wl:funnel_studio` | live-white-label-onboard Brand Studio |
+| `wl:public_partner_page` | live-white-label-onboard unpublished is not live |
 
 ## Harness-only inventory (excluded from live score)
 
@@ -71,6 +85,8 @@ All non-`live-*` specs under `e2e/` use `e2e/harness.mjs` + static server (`npm 
 | 6 | **19/19 = 100** | — | — |
 | 7 | 5/19 | Netlify `usage_exceeded` | wait for credits |
 | 8 | **19/19 = 100** | — | credits restored; health + login green |
+| 9 | **24/24 = 100** | — | 2026-08-16 Workflow 2 added 5 affiliate ids; full `test:e2e:live` 26/26 |
+| 10 | **31/31 = 100** | — | 2026-08-16 partner sites + Brand Studio writes; added 7 white-label ids after green |
 
 ## Product fix shipped
 
@@ -84,3 +100,8 @@ All non-`live-*` specs under `e2e/` use `e2e/harness.mjs` + static server (`npm 
 - `api/read/search.mjs`
 - `docs/workflows/live-playwright-100.md` + evidence
 - `CLAUDE.md` env law; `.gitignore` conflict cleanup; E2E/W4 docs
+
+### 2026-08-16 Workflow 2 (append)
+
+- `e2e/live-affiliate-onboard.spec.mjs`
+- five required ids: `aff:website_entry`, `aff:apply_form`, `aff:own_login`, `aff:dashboard`, `aff:session_affiliate`

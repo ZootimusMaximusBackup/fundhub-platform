@@ -52,7 +52,7 @@
 // after.
 
 import { db } from "../src/db.mjs";
-import { requireAuth } from "../src/http/middleware/requireAuth.mjs";
+import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
 import { redact, isUuid, requireRole, CLIENT_DATA_ERRORS } from "../src/http/read-api.mjs";
 import { safeError } from "../src/http/health.mjs";
 
@@ -158,20 +158,26 @@ function validate(body) {
    behaved exactly this way since it was written, and public/app/shell.js:439
    already gives up when staff.partner_id is absent. When Unit 12 lands partner
    sessions, this function starts admitting them with no edit. */
-function canAccessBrand(staff, partnerId) {
+function canAccessBrand(principal, partnerId) {
+  if (principal && principal.kind === "partner") {
+    return Boolean(principal.partnerId && principal.partnerId === partnerId);
+  }
+  const staff = principal && (principal.staff || principal);
   const role = String(staff && staff.role || "").trim().toLowerCase();
   if (role === "owner" || role === "admin") return true;
-  if (role === "partner" && staff.partner_id && staff.partner_id === partnerId) return true;
   return false;
 }
 
 export default async function handler(req, res) {
-  const staff = await requireAuth(req, res, { db });
-  if (!staff) return;
+  const principal = await requirePrincipal(req, res, ["staff", "partner"], { db });
+  if (!principal) return;
 
-  // THE SECOND CALL. This is the one that gates, and it covers BOTH methods —
-  // the read included, which is what was missing.
-  if (!requireRole(res, staff, PARTNER_BRAND_ROLES)) return;
+  // Staff still need owner/admin. A partner principal is admitted by kind and
+  // then pinned to their own partner_id in canAccessBrand.
+  if (principal.kind === "staff") {
+    const staff = principal.staff || { role: principal.role };
+    if (!requireRole(res, staff, PARTNER_BRAND_ROLES)) return;
+  }
 
   if (req.method === "GET") {
     const partnerId = (req.query || {}).partner_id;
@@ -186,7 +192,7 @@ export default async function handler(req, res) {
        tell the branches apart. It sits BEFORE the query, so a refused caller
        never touches the row and cannot time the difference between a partner id
        that exists and one that does not. */
-    if (!canAccessBrand(staff, partnerId)) {
+    if (!canAccessBrand(principal, partnerId)) {
       return res.status(403).json({ ok: false, error: "forbidden",
         message: "only the owning partner or an admin may read this brand" });
     }
@@ -208,7 +214,7 @@ export default async function handler(req, res) {
     const partnerId = body.partner_id;
     if (!partnerId) return res.status(400).json({ ok: false, error: "partner_id_required" });
     if (!isUuid(partnerId)) return res.status(400).json({ ok: false, error: "invalid_partner_id" });
-    if (!canAccessBrand(staff, partnerId)) {
+    if (!canAccessBrand(principal, partnerId)) {
       return res.status(403).json({ ok: false, error: "forbidden",
         message: "only the owning partner or an admin may edit this brand" });
     }

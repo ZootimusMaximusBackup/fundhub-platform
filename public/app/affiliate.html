@@ -186,8 +186,8 @@ table.grid tbody tr:hover{background:var(--soft)}
     <div class="topbar">
       <span class="crumb">My Work</span><h1>Affiliate</h1>
       <div class="spacer"></div>
-      <span class="chip wip"><span class="cd"></span>License unsigned</span>
-      <span class="chip on"><span class="cd"></span>Dana Kowalczyk</span>
+      <span class="chip wip" id="affLicenseChip" style="display:none"><span class="cd"></span>License unsigned</span>
+      <span class="chip on" id="affWhoChip" style="display:none"><span class="cd"></span><span id="affWho"></span></span>
     </div>
 
     <div class="content">
@@ -226,25 +226,24 @@ table.grid tbody tr:hover{background:var(--soft)}
         <div class="lb">
           <div class="eyebrow">AF-01 <span class="sep">/</span> YOUR REFERRAL LINK</div>
           <div class="linkrow">
-            <input id="reflink" readonly value="https://fundhub.ai/start?ref=DKOWAL-000123">
+            <input id="reflink" readonly value="">
             <button class="btn mono" id="copyLink">Copy link</button>
             <button class="btn mono" id="copyCode">Copy code</button>
           </div>
           <div style="display:flex;gap:26px;margin-top:15px;flex-wrap:wrap">
-            <div><div class="eyebrow" style="color:#71717A">AF-01 <span class="sep">/</span> CODE</div><div class="mono" style="font-size:15px;font-weight:600;margin-top:6px">DKOWAL-000123</div></div>
-            <div><div class="eyebrow" style="color:#71717A">AF-01 <span class="sep">/</span> CLICKS 30D</div><div class="mono" style="font-size:15px;font-weight:600;margin-top:6px">342</div></div>
+            <div><div class="eyebrow" style="color:#71717A">AF-01 <span class="sep">/</span> CODE</div><div class="mono" id="affCode" style="font-size:15px;font-weight:600;margin-top:6px">No code yet</div></div>
+            <div><div class="eyebrow" style="color:#71717A">AF-01 <span class="sep">/</span> CLICKS 30D</div><div class="mono" id="affClicks" style="font-size:15px;font-weight:600;margin-top:6px">—</div></div>
             <div><div class="eyebrow" style="color:#71717A">AF-01 <span class="sep">/</span> RATE</div><div class="mono" style="font-size:15px;font-weight:600;margin-top:6px">Per agreement</div></div>
             <div><div class="eyebrow" style="color:#71717A">AF-01 <span class="sep">/</span> COOKIE</div><div class="mono" style="font-size:15px;font-weight:600;margin-top:6px">60d</div></div>
           </div>
         </div>
       </div>
 
-      <div class="banner" id="licenseBanner">
+      <div class="banner" id="licenseBanner" style="display:none">
         <span class="bi">▲</span>
         <div style="flex:1;min-width:200px">
           <div class="bt">Payouts are held — your partner license is not signed</div>
-          <div class="bd">Sent 13 days ago and opened, not signed. <span class="money">$367.68</span> is accrued and will
-            release on the next Friday run once the license is on file. Nothing expires; the balance keeps accruing.</div>
+          <div class="bd" id="licenseBannerBody">Accrued payouts stay on file until the license is signed.</div>
         </div>
         <button class="btn sm mono dark" id="signBtn">Sign license</button>
       </div>
@@ -313,7 +312,7 @@ table.grid tbody tr:hover{background:var(--soft)}
               <dt>Qualifying products</dt><dd>Business Financial Assessment ($32) · Consulting Services Deposit ($3,000) · Consulting Services Package (~$1,000 DIY) · Credit Optimization Bundle ($2,000) · Inquiry Removal. The 10% success fee is not a qualifying product.</dd>
               <dt>Payout schedule</dt><dd>Fridays, ACH, on balances above $50. Below that the balance rolls to the next run.</dd>
               <dt>Clawback</dt><dd>A refund inside 30 days reverses the commission on the next run. After 30 days it stands.</dd>
-              <dt>Partner license</dt><dd><span class="badge b-warn">Awaiting signature · 13 days</span> — payouts accrue but do not release until it is signed.</dd>
+              <dt>Partner license</dt><dd>Payouts accrue but do not release until the license is signed.</dd>
               <dt>What you can see</dt><dd>Business name, referral date, status, and your own commission. Client contact details, credit data and outcome tiers are outside the Affiliate role.</dd>
             </dl>
           </div>
@@ -345,22 +344,7 @@ document.querySelectorAll('.tab').forEach(function(t){
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
 function money(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
 
-var LEADS=[
-  {d:'2026-07-18',biz:'Nguyen Family Dental PC',   st:'Assessment paid',prod:'Business Financial Assessment',basis:32,   pay:'Accrued'},
-  {d:'2026-07-11',biz:'Halverson Roofing LLC',     st:'Deposit paid',   prod:'Consulting Services Deposit',   basis:3000, pay:'Accrued'},
-  {d:'2026-07-12',biz:'Ortega Mobile Detailing',   st:'Assessment paid',prod:'Business Financial Assessment', basis:32,   pay:'Accrued'},
-  {d:'2026-07-02',biz:'Brightwater Pools Inc',     st:'Funded',         prod:'Consulting Services Deposit',   basis:3000, pay:'Paid'},
-  {d:'2026-06-24',biz:'Kestrel Freight Co',        st:'Deposit paid',   prod:'Consulting Services Deposit',   basis:3000, pay:'Paid'},
-  {d:'2026-06-19',biz:'Lomax Dental Studio',       st:'Assessment paid',prod:'Credit Optimization Bundle',    basis:2000, pay:'Paid'},
-  {d:'2026-06-11',biz:'Sandoval Landscaping',      st:'Lost',           prod:null,                            basis:0,    pay:'—'},
-  {d:'2026-06-04',biz:'Iverson Electric LLC',      st:'Assessment paid',prod:'Consulting Services Package',   basis:1000, pay:'Paid'},
-  {d:'2026-05-28',biz:'Petrosyan Auto Group',      st:'Funded',         prod:'Consulting Services Deposit',   basis:3000, pay:'Paid'},
-  {d:'2026-05-21',biz:'Chandler Bookkeeping',      st:'Signed up',      prod:null,                            basis:0,    pay:'—'},
-  {d:'2026-05-14',biz:'Redmond Fitness Studio',    st:'Assessment paid',prod:'Consulting Services Package',   basis:1000, pay:'Paid'},
-  {d:'2026-05-07',biz:'Grantham Interiors',        st:'Lost',           prod:null,                            basis:0,    pay:'—'},
-  {d:'2026-04-30',biz:'Vasquez Tile & Stone',      st:'Signed up',      prod:null,                            basis:0,    pay:'—'},
-  {d:'2026-04-22',biz:'Northgate Veterinary',      st:'Clicked',        prod:null,                            basis:0,    pay:'—'}
-];
+var LEADS=[];
 var ST_CLS={'Clicked':'b-gray','Signed up':'b-info','Assessment paid':'b-butter','Deposit paid':'b-warn','Funded':'b-ok','Lost':'b-alert'};
 var PAY_CLS={'Accrued':'b-warn','Paid':'b-ok','—':'b-gray'};
 var RATE=0.12;
@@ -368,14 +352,7 @@ function commission(l){return l.basis*RATE}
 
 /* Every run reconciles to the lead rows above: your agreement rate on each qualifying basis,
    grouped by the fortnight the payment landed in. */
-var PAYOUTS=[
-  {d:'2026-07-31',per:'2026-07-11 → 2026-07-31',n:3,m:'ACH ·••4471',amt:367.68,st:'Held'},
-  {d:'2026-07-10',per:'2026-06-27 → 2026-07-10',n:1,m:'ACH ·••4471',amt:360.00,st:'Paid'},
-  {d:'2026-06-26',per:'2026-06-13 → 2026-06-26',n:2,m:'ACH ·••4471',amt:600.00,st:'Paid'},
-  {d:'2026-06-12',per:'2026-05-30 → 2026-06-12',n:1,m:'ACH ·••4471',amt:120.00,st:'Paid'},
-  {d:'2026-05-29',per:'2026-05-16 → 2026-05-29',n:1,m:'ACH ·••4471',amt:360.00,st:'Paid'},
-  {d:'2026-05-15',per:'2026-05-02 → 2026-05-15',n:1,m:'ACH ·••4471',amt:120.00,st:'Paid'}
-];
+var PAYOUTS=[];
 var PST_CLS={Paid:'b-ok',Held:'b-alert',Scheduled:'b-info'};
 
 function renderLeads(){
@@ -394,7 +371,7 @@ function renderLeads(){
       '<td class="money">'+(l.basis?money(l.basis):'—')+'</td>'+
       '<td class="money" style="text-align:right">'+(c?money(c):'—')+'</td>'+
       '<td><span class="badge '+PAY_CLS[l.pay]+'">'+l.pay+'</span></td></tr>';
-  }).join('')||'<tr><td colspan="7" class="empty">No referrals match that filter.</td></tr>';
+  }).join('')||'<tr><td colspan="7" class="empty">'+(LEADS.length?'No referrals match that filter.':'No referrals on file.')+'</td></tr>';
   document.getElementById('leadTotal').textContent=money(list.reduce(function(a,l){return a+commission(l)},0));
 }
 
@@ -407,12 +384,12 @@ function renderPayouts(){
       '<td class="money" style="text-align:right">'+money(p.amt)+'</td>'+
       '<td><span class="badge '+PST_CLS[p.st]+'">'+p.st+'</span>'+
       (p.st==='Held'?' <span style="font-size:11px;color:var(--gray)">license unsigned</span>':'')+'</td></tr>';
-  }).join('');
+  }).join('')||'<tr><td colspan="6" class="empty">No payouts on file.</td></tr>';
 }
 
 function renderFunnel(){
   var steps=[
-    {l:'Clicked',      n:342},
+    {l:'Clicked',      n:0},
     {l:'Signed up',    n:LEADS.length},
     {l:'Assessment paid',n:LEADS.filter(function(l){return ['Assessment paid','Deposit paid','Funded'].indexOf(l.st)>=0}).length},
     {l:'Deposit paid', n:LEADS.filter(function(l){return ['Deposit paid','Funded'].indexOf(l.st)>=0}).length},
@@ -431,7 +408,7 @@ function renderStats(){
   var conv=LEADS.filter(function(l){return l.basis>0}).length;
   document.getElementById('kRef').textContent=LEADS.length;
   document.getElementById('kConv').textContent=conv;
-  document.getElementById('kConvRate').textContent=Math.round(conv/LEADS.length*100)+'% of referrals paid';
+  document.getElementById('kConvRate').textContent=LEADS.length?Math.round(conv/LEADS.length*100)+'% of referrals paid':'—';
   document.getElementById('kOwed').textContent=money(LEADS.filter(function(l){return l.pay==='Accrued'}).reduce(function(a,l){return a+commission(l)},0));
   document.getElementById('kPaid').textContent=money(PAYOUTS.filter(function(p){return p.st==='Paid'}).reduce(function(a,p){return a+p.amt},0));
 }
@@ -443,9 +420,13 @@ function copy(txt,btn,label){
        try{document.execCommand('copy')}catch(e){} document.body.removeChild(ta);done();}
 }
 document.getElementById('copyLink').addEventListener('click',function(){copy(document.getElementById('reflink').value,this,'Copy link')});
-document.getElementById('copyCode').addEventListener('click',function(){copy('DKOWAL-000123',this,'Copy code')});
+document.getElementById('copyCode').addEventListener('click',function(){
+  var code=(document.getElementById('affCode').textContent||'').trim();
+  if(!code||code==='No code yet') return;
+  copy(code,this,'Copy code');
+});
 document.getElementById('signBtn').addEventListener('click',function(){
-  if(!confirm('Open the partner license for signature?\n\nOnce signed, the $367.68 accrued balance releases on the next Friday run.')) return;
+  if(!confirm('Open the partner license for signature?\n\nAccrued payouts release on the next Friday run once it is signed.')) return;
   var held=PAYOUTS.filter(function(p){return p.st==='Held'})[0];
   if(held) held.st='Scheduled';
   document.getElementById('licenseBanner').style.display='none';
@@ -477,19 +458,66 @@ renderLeads(); renderPayouts(); renderFunnel(); renderStats();
       { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  FHData.wire(FHData.affiliates({ limit: 200 }), "affiliate figures", function (data) {
-    var rows = data.items || [];
-    if (!rows.length) return null;
-    var owed = rows.reduce(function (a, r) { return a + Number(r.balance_due || 0); }, 0);
-    var converted = rows.filter(function (r) { return Number(r.balance_due || 0) > 0; }).length;
-    var tier2 = rows.filter(function (r) { return r.tier_level === "tier2"; }).length;
+  function applyCode(code) {
+    var c = String(code || "").trim();
+    var el = document.getElementById("affCode");
+    var link = document.getElementById("reflink");
+    if (!c) {
+      if (el) el.textContent = "No code yet";
+      if (link) link.value = "";
+      return;
+    }
+    if (el) el.textContent = c;
+    if (link) link.value = "https://fundhub.ai/start?ref=" + c;
+  }
 
+  var meId = null;
+  var lastRows = [];
+  function paintMine() {
+    var mine = meId
+      ? lastRows.filter(function (r) { return String(r.id) === String(meId); })[0]
+      : null;
+    applyCode(mine && mine.tracking_id);
+    return mine;
+  }
+  var t;
+  try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+  fetch("/api/auth/session", { headers: t ? { authorization: "Bearer " + t } : {} })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (!(d && d.ok && d.staff)) return;
+      meId = d.staff.affiliate_id || null;
+      var name = String(d.staff.name || "").trim();
+      var who = document.getElementById("affWho");
+      var chip = document.getElementById("affWhoChip");
+      if (name && who && chip) {
+        who.textContent = name;
+        chip.style.display = "";
+      }
+      paintMine();
+    })
+    .catch(function () {});
+
+  FHData.wire(FHData.affiliates({ limit: 200 }), "affiliate figures", function (data) {
+    lastRows = data.items || [];
+    var mine = paintMine();
+
+    if (mine && mine.license_signed === false) {
+      var banner = document.getElementById("licenseBanner");
+      var chip = document.getElementById("affLicenseChip");
+      if (banner) banner.style.display = "";
+      if (chip) chip.style.display = "";
+    }
+
+    if (!lastRows.length) return "no affiliate rows · No code yet";
+    if (!mine) return "affiliate roster loaded · no code for this session";
+
+    var owed = Number(mine.balance_due || 0);
     set("kOwed", usd(owed));
-    set("kConv", converted);
-    set("kConvRate", tier2 + " at tier 2");
     // kPaid has no source: settled totals live in affiliate_payouts, which has
-    // no read endpoint yet. Left as-is rather than guessed.
-    return "live affiliate balances · " + rows.length + " affiliates · " + usd(owed) + " accrued";
+    // no read endpoint yet. Left as a dash rather than guessed.
+    return "live affiliate code · " + (mine.tracking_id || "No code yet") +
+           " · " + usd(owed) + " accrued";
   });
 })();
 </script>

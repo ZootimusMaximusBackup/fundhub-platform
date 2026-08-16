@@ -52,7 +52,17 @@ const asStaff = (role, orgId) => async () => ({
 async function drive(handler, { role, orgId = CALLER_ORG, query = {} } = {}) {
   const r = res();
   const fake = recorder();
-  await handler({ method: "GET", query, headers: {} }, r, { db: fake, requireAuth: asStaff(role, orgId) });
+  const staff = await asStaff(role, orgId)();
+  await handler({ method: "GET", query, headers: {} }, r, {
+    db: fake,
+    requireAuth: async () => staff,
+    requirePrincipal: async () => ({
+      kind: "staff",
+      staff,
+      role: staff.role,
+      orgId: staff.org_id
+    })
+  });
   return { r, calls: fake.calls };
 }
 

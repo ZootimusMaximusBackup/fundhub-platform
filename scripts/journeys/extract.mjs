@@ -290,18 +290,9 @@ export function gateFor(file, { sets, wrappers }) {
     };
   }
 
-  // requireRole(res, staff, X) — the SECOND call, after requireAuth.
-  const rr = /requireRole\(\s*res\s*,\s*staff\s*,\s*([\w.]+)\s*\)/.exec(src);
-  if (rr) {
-    const resolved = resolveSet(rr[1]);
-    if (!resolved) {
-      return { kind: "unverified", roles: null, principals: null, note: `requireRole with an unresolvable set: ${rr[1]}` };
-    }
-    return { kind: "role-set", roles: resolved.roles, principals: null, note: `requireAuth + requireRole, ${resolved.label}` };
-  }
-
-  // requirePrincipal(req, res, [kinds]) — gated by kind, sometimes plus a local
-  // role set applied only to the staff kind.
+  // requirePrincipal is the entry gate when both it and requireRole are present.
+  // requireRole then only limits the staff kind. Reading requireRole first would
+  // hide partner/affiliate access on Brand Studio and partner pages.
   const kinds = principalsFromRequirePrincipal(src);
   if (kinds) {
     const localSet = /const\s+(\w*ROLES)\s*=\s*new Set\(\[([^\]]*)\]\)/.exec(src);
@@ -314,6 +305,16 @@ export function gateFor(file, { sets, wrappers }) {
       };
     }
     return { kind: "principal", roles: null, principals: kinds, note: `requirePrincipal(${kinds.join(", ")})` };
+  }
+
+  // requireRole(res, staff, X) — the SECOND call, after requireAuth.
+  const rr = /requireRole\(\s*res\s*,\s*staff\s*,\s*([\w.]+)\s*\)/.exec(src);
+  if (rr) {
+    const resolved = resolveSet(rr[1]);
+    if (!resolved) {
+      return { kind: "unverified", roles: null, principals: null, note: `requireRole with an unresolvable set: ${rr[1]}` };
+    }
+    return { kind: "role-set", roles: resolved.roles, principals: null, note: `requireAuth + requireRole, ${resolved.label}` };
   }
 
   // requireAuth with no role gate: any signed-in employee, any role.

@@ -186,6 +186,11 @@
   .success h3{font-size:19px;font-weight:600}
   .success p{margin-top:10px;color:var(--gray);font-size:15px}
   .success .chk{font-family:var(--mono);color:var(--ink);font-size:12px;letter-spacing:.14em}
+  .success .cred{margin-top:18px;text-align:left;background:var(--soft);border-radius:10px;padding:16px 18px}
+  .success .cred dt{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin-top:10px}
+  .success .cred dt:first-child{margin-top:0}
+  .success .cred dd{font-size:15px;color:var(--ink);word-break:break-all}
+  .err{color:#9B1C1C;margin-top:12px;display:none;font-size:14px}
 
   /* boot veil */
   .boot{position:fixed;inset:0;background:var(--ink);z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .22s ease,visibility .22s ease}
@@ -513,10 +518,17 @@
           <p class="disclaim">By submitting, you confirm the information provided is accurate. Partner approval is at Fundhub's discretion, and no commission or revenue share is earned until a partner agreement is signed.</p>
         </form>
         <div class="success" id="success">
-          <div class="chk">✓ RECEIVED</div>
-          <h3 style="margin-top:12px">Application received</h3>
-          <p>Thank you. We review every partner application by hand and will follow up with next steps for your track.</p>
+          <div class="chk" id="success-chk">✓ YOU'RE IN</div>
+          <h3 style="margin-top:12px" id="success-title">Your login is ready</h3>
+          <p id="success-lead">Save these. We cannot email them yet. This is the only time the first password is shown.</p>
+          <dl class="cred" id="success-cred">
+            <dt>Login</dt><dd id="success-email"></dd>
+            <dt>First password</dt><dd id="success-pass"></dd>
+            <dt id="success-link-label">Your link</dt><dd><a id="success-link" href="#"></a></dd>
+          </dl>
+          <p><a class="btn" id="success-login" href="/login.html" style="display:inline-block;margin-top:16px">Log in now</a></p>
         </div>
+        <p class="err" id="apply-err"></p>
       </div>
     </div>
   </div>
@@ -646,16 +658,62 @@
     if(digits.length!==10){alert('We need 10 digits, including area code.');return;}
     if(!sms){alert('Check the box so we can text you application updates.');return;}
     var b=this.querySelector('button[type=submit]');
-    b.disabled=true;b.textContent='Sending…';
-    // PASTE YOUR GHL INBOUND WEBHOOK URL BELOW
-    var GHL_WEBHOOK='PASTE_WEBHOOK_URL_HERE';
-    var payload={full_name:name,email:email,phone:phone,company:document.getElementById('p-co').value.trim(),track:track,audience:document.getElementById('p-aud').value.trim(),sms_consent:sms,page_url:location.href,submitted_at:new Date().toISOString()};
-    if(GHL_WEBHOOK.indexOf('http')===0){fetch(GHL_WEBHOOK,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(function(){});}
-    setTimeout(function(){
+    var err=document.getElementById('apply-err');
+    if(err){err.style.display='none';err.textContent='';}
+    b.disabled=true;b.textContent='Creating your login…';
+    var payload={
+      name:name,
+      email:email,
+      phone:phone,
+      company:document.getElementById('p-co').value.trim(),
+      track:track,
+      audience:document.getElementById('p-aud').value.trim(),
+      sms_consent:sms
+    };
+    fetch('/api/public/partner-apply',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',accept:'application/json'},
+      body:JSON.stringify(payload)
+    }).then(function(r){return r.json().then(function(d){return {ok:r.ok,status:r.status,body:d};});})
+    .then(function(res){
+      var d=res.body||{};
+      if(d.error==='already_registered'){
+        document.getElementById('pform').style.display='none';
+        document.getElementById('success-chk').textContent="✓ ALREADY IN";
+        document.getElementById('success-title').textContent='You already have a login';
+        document.getElementById('success-lead').textContent='Use Log in with the email you just typed. We will not make a second account.';
+        document.getElementById('success-email').textContent=email;
+        document.getElementById('success-pass').textContent='(the password you already set)';
+        var a0=document.getElementById('success-link');
+        a0.href=d.login_url||'/login.html';
+        a0.textContent='Log in';
+        document.getElementById('success-link-label').textContent='Next';
+        document.getElementById('success').style.display='block';
+        document.getElementById('success').scrollIntoView({behavior:'smooth',block:'center'});
+        return;
+      }
+      if(!res.ok||!d.ok){
+        b.disabled=false;b.textContent='Submit partner application';
+        var msg='Could not create the login. Try again.';
+        if(d.error==='sms_consent_required') msg='Check the box so we can text you application updates.';
+        else if(d.error==='name_email_phone_required') msg='We need this one to continue.';
+        if(err){err.textContent=msg;err.style.display='block';}
+        return;
+      }
       document.getElementById('pform').style.display='none';
+      document.getElementById('success-email').textContent=d.email||email;
+      document.getElementById('success-pass').textContent=d.password||'';
+      var link=d.referral_url||d.site_url||'';
+      var a=document.getElementById('success-link');
+      a.href=link||'/login.html';
+      a.textContent=link||'Log in';
+      document.getElementById('success-link-label').textContent=d.kind==='partner'?'Your site':'Your referral link';
       document.getElementById('success').style.display='block';
       document.getElementById('success').scrollIntoView({behavior:'smooth',block:'center'});
-    },reduce?0:700);
+    }).catch(function(){
+      b.disabled=false;b.textContent='Submit partner application';
+      if(err){err.textContent='Could not reach Fundhub. Try again.';err.style.display='block';}
+    });
   });
 </script>
 </body>

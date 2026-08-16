@@ -67,6 +67,171 @@
   },
   "suites": [
     {
+      "title": "live-affiliate-onboard.spec.mjs",
+      "file": "live-affiliate-onboard.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "live affiliate onboard",
+          "file": "live-affiliate-onboard.spec.mjs",
+          "line": 46,
+          "column": 6,
+          "specs": [
+            {
+              "title": "aff:website_entry homepage to affiliates",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "req",
+                      "description": "aff:website_entry"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-live",
+                  "projectName": "chromium-live",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1755,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-16T09:47:31.525Z",
+                      "annotations": [
+                        {
+                          "type": "req",
+                          "description": "aff:website_entry"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f9f4be4f0a8b77370ec2-bc2b7e1b6ae7e925ca41",
+              "file": "live-affiliate-onboard.spec.mjs",
+              "line": 47,
+              "column": 3
+            },
+            {
+              "title": "aff:apply_form fake identity shows received",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "req",
+                      "description": "aff:apply_form"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-live",
+                  "projectName": "chromium-live",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4706,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-16T09:47:33.626Z",
+                      "annotations": [
+                        {
+                          "type": "req",
+                          "description": "aff:apply_form"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f9f4be4f0a8b77370ec2-7ba2c0d5ae9e1bf86b7c",
+              "file": "live-affiliate-onboard.spec.mjs",
+              "line": 60,
+              "column": 3
+            },
+            {
+              "title": "aff:own_login dashboard and session",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 1080000,
+                  "annotations": [
+                    {
+                      "type": "req",
+                      "description": "aff:own_login"
+                    },
+                    {
+                      "type": "req",
+                      "description": "aff:dashboard"
+                    },
+                    {
+                      "type": "req",
+                      "description": "aff:session_affiliate"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-live",
+                  "projectName": "chromium-live",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2935,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-16T09:47:38.337Z",
+                      "annotations": [
+                        {
+                          "type": "req",
+                          "description": "aff:own_login"
+                        },
+                        {
+                          "type": "req",
+                          "description": "aff:dashboard"
+                        },
+                        {
+                          "type": "req",
+                          "description": "aff:session_affiliate"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f9f4be4f0a8b77370ec2-1a892913d47587ab7448",
+              "file": "live-affiliate-onboard.spec.mjs",
+              "line": 78,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
       "title": "live-run4-pass.spec.mjs",
       "file": "live-run4-pass.spec.mjs",
       "column": 0,
@@ -100,12 +265,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6813,
+                      "duration": 2371,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:23:46.393Z",
+                      "startTime": "2026-08-16T09:47:41.284Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -144,12 +309,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6692,
+                      "duration": 1836,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:23:53.469Z",
+                      "startTime": "2026-08-16T09:47:43.667Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -188,12 +353,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1898,
+                      "duration": 1868,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:00.168Z",
+                      "startTime": "2026-08-16T09:47:45.508Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -232,12 +397,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 935,
+                      "duration": 811,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:02.071Z",
+                      "startTime": "2026-08-16T09:47:47.381Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -276,12 +441,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 171,
+                      "duration": 140,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:03.012Z",
+                      "startTime": "2026-08-16T09:47:48.195Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -320,12 +485,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 180,
+                      "duration": 147,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:03.188Z",
+                      "startTime": "2026-08-16T09:47:48.340Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -372,12 +537,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 433,
+                      "duration": 409,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:03.374Z",
+                      "startTime": "2026-08-16T09:47:48.492Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -416,12 +581,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6813,
+                      "duration": 5228,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:03.812Z",
+                      "startTime": "2026-08-16T09:47:48.909Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -460,12 +625,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1032,
+                      "duration": 976,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:10.633Z",
+                      "startTime": "2026-08-16T09:47:54.143Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -512,12 +677,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 153,
+                      "duration": 133,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:11.670Z",
+                      "startTime": "2026-08-16T09:47:55.124Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -556,12 +721,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 146,
+                      "duration": 132,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:11.827Z",
+                      "startTime": "2026-08-16T09:47:55.261Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -608,12 +773,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 171,
+                      "duration": 137,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:11.977Z",
+                      "startTime": "2026-08-16T09:47:55.396Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -660,12 +825,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1158,
+                      "duration": 981,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:12.151Z",
+                      "startTime": "2026-08-16T09:47:55.537Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -704,12 +869,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 974,
+                      "duration": 891,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:13.315Z",
+                      "startTime": "2026-08-16T09:47:56.522Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -748,12 +913,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1039,
+                      "duration": 1034,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:14.296Z",
+                      "startTime": "2026-08-16T09:47:57.418Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -800,12 +965,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3352,
+                      "duration": 2831,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:15.341Z",
+                      "startTime": "2026-08-16T09:47:58.459Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -844,12 +1009,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2262,
+                      "duration": 2304,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:18.696Z",
+                      "startTime": "2026-08-16T09:48:01.296Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -888,12 +1053,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1054,
+                      "duration": 1048,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:20.961Z",
+                      "startTime": "2026-08-16T09:48:03.604Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -940,12 +1105,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 221,
+                      "duration": 215,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-16T04:24:22.019Z",
+                      "startTime": "2026-08-16T09:48:04.656Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -966,13 +1131,246 @@
           ]
         }
       ]
+    },
+    {
+      "title": "live-white-label-onboard.spec.mjs",
+      "file": "live-white-label-onboard.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "live white-label website entry",
+          "file": "live-white-label-onboard.spec.mjs",
+          "line": 39,
+          "column": 6,
+          "specs": [
+            {
+              "title": "wl:website_entry affiliates door has white-label",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "req",
+                      "description": "wl:website_entry"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-live",
+                  "projectName": "chromium-live",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1407,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-16T09:48:04.879Z",
+                      "annotations": [
+                        {
+                          "type": "req",
+                          "description": "wl:website_entry"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dc7909f35bbdef0c6e77-5ddbcb88e542bae25a8f",
+              "file": "live-white-label-onboard.spec.mjs",
+              "line": 40,
+              "column": 3
+            },
+            {
+              "title": "wl:white_label_apply creates a login or says already in",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "req",
+                      "description": "wl:white_label_apply"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-live",
+                  "projectName": "chromium-live",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3447,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-16T09:48:06.292Z",
+                      "annotations": [
+                        {
+                          "type": "req",
+                          "description": "wl:white_label_apply"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dc7909f35bbdef0c6e77-25641dbc67d3d3d4b22b",
+              "file": "live-white-label-onboard.spec.mjs",
+              "line": 56,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "live white-label own access and studio",
+          "file": "live-white-label-onboard.spec.mjs",
+          "line": 75,
+          "column": 6,
+          "specs": [
+            {
+              "title": "wl:partner login, galaxy, own URL, funnel studio",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 90000,
+                  "annotations": [
+                    {
+                      "type": "req",
+                      "description": "wl:partner_login"
+                    },
+                    {
+                      "type": "req",
+                      "description": "wl:partner_galaxy"
+                    },
+                    {
+                      "type": "req",
+                      "description": "wl:own_url"
+                    },
+                    {
+                      "type": "req",
+                      "description": "wl:funnel_studio"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-live",
+                  "projectName": "chromium-live",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2197,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-16T09:48:09.746Z",
+                      "annotations": [
+                        {
+                          "type": "req",
+                          "description": "wl:partner_login"
+                        },
+                        {
+                          "type": "req",
+                          "description": "wl:partner_galaxy"
+                        },
+                        {
+                          "type": "req",
+                          "description": "wl:own_url"
+                        },
+                        {
+                          "type": "req",
+                          "description": "wl:funnel_studio"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dc7909f35bbdef0c6e77-d54b7f2aae5e6f7bb4e6",
+              "file": "live-white-label-onboard.spec.mjs",
+              "line": 78,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "live white-label public page",
+          "file": "live-white-label-onboard.spec.mjs",
+          "line": 104,
+          "column": 6,
+          "specs": [
+            {
+              "title": "wl:public_partner_page unpublished is not live",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "req",
+                      "description": "wl:public_partner_page"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-live",
+                  "projectName": "chromium-live",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 370,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-16T09:48:11.949Z",
+                      "annotations": [
+                        {
+                          "type": "req",
+                          "description": "wl:public_partner_page"
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dc7909f35bbdef0c6e77-fe1c1e016fe70cb6f661",
+              "file": "live-white-label-onboard.spec.mjs",
+              "line": 105,
+              "column": 3
+            }
+          ]
+        }
+      ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-16T04:23:46.142Z",
-    "duration": 36137.192,
-    "expected": 19,
+    "startTime": "2026-08-16T09:47:31.222Z",
+    "duration": 41157.227,
+    "expected": 26,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

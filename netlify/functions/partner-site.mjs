@@ -16,7 +16,7 @@ const MAIN_HOSTS = new Set([
   "transcendent-wisp-888771.netlify.app"
 ]);
 
-function parsePath(rawPath) {
+export function parsePath(rawPath) {
   const path = String(rawPath || "/").split("?")[0];
   const sites = path.match(
     /(?:^\/sites\/|^\/\.netlify\/functions\/partner-site\/)([0-9a-f-]{36})\/([a-z0-9][a-z0-9-]{0,62})\/?$/i
@@ -28,23 +28,45 @@ function parsePath(rawPath) {
   return { mode: "unknown" };
 }
 
-function hostOf(event) {
-  const h = (event.headers && (event.headers.host || event.headers.Host)) || "";
+function hostOf(request) {
+  if (request?.headers?.get) {
+    return String(request.headers.get("host") || "").toLowerCase().split(":")[0];
+  }
+  const h = (request?.headers && (request.headers.host || request.headers.Host)) || "";
   return String(h).toLowerCase().split(":")[0];
 }
 
-export async function handler(event) {
-  const host = hostOf(event);
-  let rawPath = event.path || "/";
+function pathOf(request) {
   try {
-    if (event.rawUrl) rawPath = new URL(event.rawUrl).pathname;
-  } catch { /* keep event.path */ }
-  // Netlify 200-rewrite to the function name alone leaves the browser path in
-  // x-forwarded-url / referer less reliably than rawUrl — also try query.
-  const q = event.queryStringParameters || {};
-  const parsed = (q.partner_id && q.slug)
-    ? { mode: "sites", partnerId: q.partner_id, slug: String(q.slug).toLowerCase() }
-    : parsePath(rawPath);
+    if (request?.url) return new URL(request.url).pathname || "/";
+  } catch { /* fall through */ }
+  if (request?.rawUrl) {
+    try { return new URL(request.rawUrl).pathname || "/"; } catch { /* fall through */ }
+  }
+  return request?.path || "/";
+}
+
+function html(status, body, extra = {}) {
+  return new Response(body, {
+    status,
+    headers: { "content-type": "text/html; charset=utf-8", ...extra }
+  });
+}
+
+export async function handler(request) {
+  const host = hostOf(request);
+  const rawPath = pathOf(request);
+  let parsed;
+  try {
+    const url = request?.url ? new URL(request.url) : null;
+    const partnerId = url?.searchParams.get("partner_id");
+    const slug = url?.searchParams.get("slug");
+    parsed = (partnerId && slug)
+      ? { mode: "sites", partnerId, slug: String(slug).toLowerCase() }
+      : parsePath(rawPath);
+  } catch {
+    parsed = parsePath(rawPath);
+  }
 
   let loaded = null;
   try {
@@ -58,29 +80,21 @@ export async function handler(event) {
     }
   } catch (err) {
     console.error("[partner-site]", err?.message || err);
-    return {
-      statusCode: 500,
-      headers: { "content-type": "text/plain; charset=utf-8" },
-      body: "page unavailable"
-    };
+    return html(500, "<!doctype html><title>Unavailable</title><p>page unavailable</p>");
   }
 
   if (!loaded) {
-    return {
-      statusCode: 404,
-      headers: { "content-type": "text/html; charset=utf-8" },
-      body: "<!doctype html><title>Not found</title><p>This page is not published.</p>"
-    };
+    return html(404, "<!doctype html><title>Not found</title><p>This page is not published.</p>");
   }
 
-  return {
-    statusCode: 200,
-    headers: {
-      "content-type": "text/html; charset=utf-8",
+  try {
+    return html(200, renderPartnerPageHtml(loaded), {
       "cache-control": "public, max-age=60"
-    },
-    body: renderPartnerPageHtml(loaded)
-  };
+    });
+  } catch (err) {
+    console.error("[partner-site] render", err?.message || err);
+    return html(500, "<!doctype html><title>Unavailable</title><p>page unavailable</p>");
+  }
 }
 
 export const config = {

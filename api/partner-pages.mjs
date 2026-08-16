@@ -5,7 +5,7 @@
 //   PATCH { id, title?, slug?, status?, body_json? }
 
 import { db } from "../src/db.mjs";
-import { requireAuth } from "../src/http/middleware/requireAuth.mjs";
+import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
 import { requireRole, isUuid } from "../src/http/read-api.mjs";
 import { safeError } from "../src/http/health.mjs";
 
@@ -29,11 +29,25 @@ function defaultBody(funnelKey) {
   };
 }
 
+function orgIdOf(principal) {
+  if (principal.kind === "staff") return principal.staff?.org_id || principal.orgId || null;
+  return principal.orgId || null;
+}
+
+function canTouchPartner(principal, partnerId) {
+  if (principal.kind === "partner") return principal.partnerId === partnerId;
+  return true;
+}
+
 export default async function handler(req, res) {
-  const staff = await requireAuth(req, res, { db });
-  if (!staff) return;
-  if (!requireRole(res, staff, ROLES)) return;
-  if (!staff.org_id) return res.status(403).json({ ok: false, error: "no_org_scope" });
+  const principal = await requirePrincipal(req, res, ["staff", "partner"], { db });
+  if (!principal) return;
+  if (principal.kind === "staff") {
+    const staff = principal.staff || { role: principal.role, org_id: principal.orgId };
+    if (!requireRole(res, staff, ROLES)) return;
+  }
+  const orgId = orgIdOf(principal);
+  if (!orgId) return res.status(403).json({ ok: false, error: "no_org_scope" });
 
   try {
     if (req.method === "GET") {
@@ -41,13 +55,16 @@ export default async function handler(req, res) {
       if (!isUuid(partnerId)) {
         return res.status(400).json({ ok: false, error: "partner_id_required" });
       }
+      if (!canTouchPartner(principal, partnerId)) {
+        return res.status(403).json({ ok: false, error: "forbidden" });
+      }
       const r = await db.query(
         `SELECT id, partner_id, funnel_key, title, slug, status, body_json,
                 created_at, updated_at
            FROM partner_pages
           WHERE org_id = $1 AND partner_id = $2
           ORDER BY updated_at DESC`,
-        [staff.org_id, partnerId]
+        [orgId, partnerId]
       );
       const brand = (await db.query(
         `SELECT domain, domain_verified FROM partner_brand WHERE partner_id = $1`,
@@ -74,6 +91,9 @@ export default async function handler(req, res) {
       const partnerId = body.partner_id;
       const funnelKey = String(body.funnel_key || "").toLowerCase();
       if (!isUuid(partnerId)) return res.status(400).json({ ok: false, error: "partner_id_required" });
+      if (!canTouchPartner(principal, partnerId)) {
+        return res.status(403).json({ ok: false, error: "forbidden" });
+      }
       if (!FUNNELS[funnelKey]) {
         return res.status(400).json({
           ok: false, error: "unknown_funnel_key", allowed: Object.keys(FUNNELS)
@@ -81,7 +101,7 @@ export default async function handler(req, res) {
       }
       const partner = await db.query(
         `SELECT id FROM partners WHERE id = $1 AND org_id = $2`,
-        [partnerId, staff.org_id]
+        [partnerId, orgId]
       );
       if (!partner.rows[0]) return res.status(404).json({ ok: false, error: "partner_not_found" });
 
@@ -95,7 +115,7 @@ export default async function handler(req, res) {
            title = EXCLUDED.title,
            updated_at = now()
          RETURNING *`,
-        [staff.org_id, partnerId, funnelKey, title, slug, JSON.stringify(body.body_json || defaultBody(funnelKey))]
+        [orgId, partnerId, funnelKey, title, slug, JSON.stringify(body.body_json || defaultBody(funnelKey))]
       );
       // Also ensure selected_funnels includes this key on partner_brand.
       await db.query(
@@ -118,7 +138,7 @@ export default async function handler(req, res) {
       const body = req.body || {};
       if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "id_required" });
       const sets = [];
-      const params = [body.id, staff.org_id];
+      const params = [body.id, orgId];
       if (body.title != null) {
         params.push(String(body.title).trim());
         sets.push(`title = $${params.length}`);
@@ -138,9 +158,14 @@ export default async function handler(req, res) {
       }
       if (!sets.length) return res.status(400).json({ ok: false, error: "nothing_to_update" });
       sets.push("updated_at = now()");
+      let ownerSql = "";
+      if (principal.kind === "partner") {
+        params.push(principal.partnerId);
+        ownerSql = ` AND partner_id = $${params.length}`;
+      }
       const r = await db.query(
         `UPDATE partner_pages SET ${sets.join(", ")}
-          WHERE id = $1 AND org_id = $2
+          WHERE id = $1 AND org_id = $2${ownerSql}
           RETURNING *`,
         params
       );
@@ -150,12 +175,12 @@ export default async function handler(req, res) {
         await db.query(
           `UPDATE partner_pages SET published_at = COALESCE(published_at, now())
             WHERE id = $1 AND org_id = $2`,
-          [body.id, staff.org_id]
+          [body.id, orgId]
         ).catch(() => null);
       } else if (body.status != null) {
         await db.query(
           `UPDATE partner_pages SET published_at = NULL WHERE id = $1 AND org_id = $2`,
-          [body.id, staff.org_id]
+          [body.id, orgId]
         ).catch(() => null);
       }
       return res.status(200).json({ ok: true, page: r.rows[0] });

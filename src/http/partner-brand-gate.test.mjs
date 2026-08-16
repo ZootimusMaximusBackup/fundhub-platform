@@ -28,6 +28,7 @@ const ORG = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const STAFF = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 
 const SESSION_SQL = /FROM live JOIN staff/i;
+const ACCOUNT_SQL = /account_sessions|FROM accounts/i;
 
 const sessionRow = (role) => ({
   rows: [{
@@ -67,7 +68,10 @@ function stub(role, rows = []) {
   });
 }
 
-const dataCalls = (q) => q.mock.calls.filter((c) => !SESSION_SQL.test(c.arguments[0])).length;
+const dataCalls = (q) => q.mock.calls.filter((c) => {
+  const sql = c.arguments[0];
+  return !SESSION_SQL.test(sql) && !ACCOUNT_SQL.test(sql);
+}).length;
 
 /* Every staff role that is NOT owner or admin. These are the ones that could
    read a partner's identity before this gate existed. */
@@ -147,6 +151,7 @@ describe("/api/partner-brand — the read is gated too", () => {
   test("no session is a 401, and the brand is never queried", async () => {
     const q = mock.method(dbModule.db, "query", async (sql) => {
       if (SESSION_SQL.test(sql)) return { rows: [] };
+      if (/account_sessions|FROM accounts/i.test(sql)) return { rows: [] };
       throw new Error("must not be reached: " + sql);
     });
     try {
@@ -182,12 +187,9 @@ describe("/api/partner-brand — the gate is a real second call", () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const src = fs.readFileSync(path.join(here, "../../api/partner-brand.mjs"), "utf8");
 
-    const call = /requireAuth\s*\(([^;]*?)\)\s*;/s.exec(src);
-    assert.ok(call, "requireAuth call not found");
-    assert.ok(!/\broles\b/.test(call[1]),
-      "requireAuth forwards opts to authenticate(), which reads only { db, env } — " +
-      "a roles key there is silently dropped and the endpoint has NO gate");
+    assert.match(src, /requirePrincipal\(\s*req\s*,\s*res\s*,\s*\["staff",\s*"partner"\]/,
+      "the entry gate must name staff and partner kinds");
     assert.match(src, /requireRole\(\s*res\s*,\s*staff\s*,\s*PARTNER_BRAND_ROLES\s*\)/,
-      "the gate must be a separate requireRole call that actually runs");
+      "staff still need a separate requireRole call; a roles key on auth is dropped");
   });
 });

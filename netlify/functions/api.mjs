@@ -125,6 +125,7 @@ import partnerPages from "../../api/partner-pages.mjs";
 import partnerBrandVerifyDomain from "../../api/partner-brand/verify-domain.mjs";
 import publicPartnerPage from "../../api/public/partner-page.mjs";
 import publicSurveySubmit from "../../api/public/survey-submit.mjs";
+import publicPartnerApply from "../../api/public/partner-apply.mjs";
 import creativeGenerate from "../../api/creative/generate.mjs";
 import creativeLibrary from "../../api/creative/library.mjs";
 import creativeBrandKits from "../../api/creative/brand-kits.mjs";
@@ -468,6 +469,7 @@ export const ROUTES = {
   "partner-brand/verify-domain": partnerBrandVerifyDomain,
   "public/partner-page": publicPartnerPage,
   "public/survey-submit": publicSurveySubmit,
+  "public/partner-apply": publicPartnerApply,
   "creative/generate": creativeGenerate,
   "creative/library": creativeLibrary,
   "creative/brand-kits": creativeBrandKits,
