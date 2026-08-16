@@ -6,7 +6,7 @@
 | Agent | Owns | Status |
 |-------|------|--------|
 | 1 Accounts + ship | Report wording, commit/merge, one Netlify deploy, seed/unsuspend, login probes | **done** |
-| 2 Honest UI | Scrub fake names on core screens | pending |
+| 2 Honest UI | Scrub fake names on calendar, template-editor, hiring | claimed |
 | 3 Template seed | Missing EMAIL/SMS keys; leave `compliance_passed` false | pending |
 | 4 Re-audit | Browser-click sidebar after #2 deploys (not Playwright) | pending |
 
@@ -50,6 +50,20 @@ Password: same as E2E (`STAFF_E2E_PASSWORD`). Probes spaced ~2.5s to avoid 429.
 | Client portal | `client@fundhub.ai` | 200 | **OK** — client (was missing; now seeded) |
 
 **Summary: 11/11 pass. Company role-login gate is unblocked.**
+
+---
+
+## Agent 2 log (Honest UI)
+
+| Step | Status | Notes |
+|------|--------|-------|
+| Claim | **done** | Branch `cursor/honest-ui-furniture-2026-08-16` |
+| Scrub `calendar.html` | **done** | Double-book demo copy no longer names Jordan Blake / Carlos Bettencourt / Meredith Yao |
+| Scrub `template-editor.html` | **done** | Preview sample is "Preview Name" / preview@example.com, not Marcus Webb |
+| Scrub `hiring.html` | **done** | Demo referral source no longer names Jordan Blake |
+| `crm-html` tests | **done** | 17/17 pass, including new furniture-name test |
+| Merge + deploy | pending | Tab 1 already deployed `6a818f81b24a4a4391828c79` without this scrub — need a second prod deploy after merge |
+| Browser-click 5 pages | pending | calendar, template-editor, hiring, pipeline, client-control-panel |
 
 ### For Chris when you wake
 

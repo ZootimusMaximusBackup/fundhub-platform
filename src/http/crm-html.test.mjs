@@ -186,3 +186,11 @@ test("closer-call.js does not paint builder notes", () => {
   assert.ok(!/numbered field on this payload/.test(js));
   assert.ok(!/Use \/api\/read/.test(js));
 });
+
+test("calendar, template-editor, and hiring do not ship furniture names", () => {
+  const FURNITURE = /Jordan Blake|Marcus Webb|Nina Torres|Carlos Bettencourt|Meredith Yao/;
+  for (const file of ["calendar.html", "template-editor.html", "hiring.html"]) {
+    const html = fs.readFileSync(path.join(APP, file), "utf8");
+    assert.ok(!FURNITURE.test(html), file + " still has furniture names");
+  }
+});

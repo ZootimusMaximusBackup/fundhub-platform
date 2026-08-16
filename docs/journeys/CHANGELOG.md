@@ -3,6 +3,8 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-16 | role-owner (actuals regen no-op) | Calendar, hiring, and template-editor no longer ship Jordan Blake / Marcus Webb / Carlos Bettencourt / Meredith Yao in the HTML. Route tables did not change. | Overnight P0 — live scan found 3 furniture pages | (this commit)
+
 2026-08-16 | affiliate + white-label (+ all actuals regen) | Website apply is a real public door (`POST /api/public/partner-apply`). Affiliates can read their own roster row. Partners can save brand and publish funnel pages. Intended files still do not mention website apply or a personal URL. | Owner: fake affiliate and white-label come in through the site, get a login, get a URL, make a funnel | (this commit)
 
 2026-08-16 | role-owner (+ all actuals regen) | Two auth routes added — `POST /api/auth/invite`, `POST /api/auth/suspend`. Owner makes a company login and can revoke it. Intended still says 7 sign-in routes; actual is 9. | Only Chris is staff; he creates and revokes logins | (this commit)
