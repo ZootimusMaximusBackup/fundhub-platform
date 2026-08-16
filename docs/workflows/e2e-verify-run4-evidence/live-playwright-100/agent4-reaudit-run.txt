@@ -1,0 +1,39 @@
+
+> fundhub-platform@0.0.1 test:e2e:live
+> playwright test -c playwright.live.config.mjs
+
+
+Running 26 tests using 1 worker
+
+(node:3791) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3791) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium-live] › e2e/live-affiliate-onboard.spec.mjs:47:3 › live affiliate onboard › aff:website_entry homepage to affiliates (1.5s)
+  ✓   2 [chromium-live] › e2e/live-affiliate-onboard.spec.mjs:60:3 › live affiliate onboard › aff:apply_form fake identity shows received (1.6s)
+  ✓   3 [chromium-live] › e2e/live-affiliate-onboard.spec.mjs:78:3 › live affiliate onboard › aff:own_login dashboard and session (2.2s)
+  ✓   4 [chromium-live] › e2e/live-run4-pass.spec.mjs:8:3 › live auth › auth:staff_session chris (1.5s)
+  ✓   5 [chromium-live] › e2e/live-run4-pass.spec.mjs:14:3 › live auth › auth:staff_session owner (1.2s)
+  ✓   6 [chromium-live] › e2e/live-run4-pass.spec.mjs:19:3 › live auth › auth:staff_session admin (1.1s)
+  ✓   7 [chromium-live] › e2e/live-run4-pass.spec.mjs:24:3 › live auth › api:auth/login bad password (3.8s)
+  ✓   8 [chromium-live] › e2e/live-run4-pass.spec.mjs:32:3 › live auth › api:auth/session anon (59ms)
+  ✓   9 [chromium-live] › e2e/live-run4-pass.spec.mjs:38:3 › live auth › api:auth/login demo off (63ms)
+  ✓  10 [chromium-live] › e2e/live-run4-pass.spec.mjs:48:3 › live CRM › CRM shells static 200 (210ms)
+  ✓  11 [chromium-live] › e2e/live-run4-pass.spec.mjs:56:3 › live CRM › CRM rows+filters / demo banner (5.4s)
+  ✓  12 [chromium-live] › e2e/live-run4-pass.spec.mjs:93:3 › live CRM › route:dirty_letter_artifact repair client visible (804ms)
+  ✓  13 [chromium-live] › e2e/live-run4-pass.spec.mjs:108:3 › live webhooks fail-closed › wh:clickfunnels fail-closed (61ms)
+  ✓  14 [chromium-live] › e2e/live-run4-pass.spec.mjs:116:3 › live webhooks fail-closed › wh:commas signature (61ms)
+  ✓  15 [chromium-live] › e2e/live-run4-pass.spec.mjs:126:3 › live dashboard authz › api:dashboard/* anonymous refuse (58ms)
+  ✓  16 [chromium-live] › e2e/live-run4-pass.spec.mjs:134:3 › live money read (staff) › api:read/products (823ms)
+  ✓  17 [chromium-live] › e2e/live-run4-pass.spec.mjs:148:3 › live money read (staff) › api:payment-links list (744ms)
+  ✓  18 [chromium-live] › e2e/live-run4-pass.spec.mjs:158:3 › live money read (staff) › api:read/commissions (824ms)
+  ✓  19 [chromium-live] › e2e/live-run4-pass.spec.mjs:180:3 › live funnel thank-you + grid › screen:thank-you calendar (2.4s)
+  ✓  20 [chromium-live] › e2e/live-run4-pass.spec.mjs:198:3 › live funnel thank-you + grid › screen:thank-you no booking (1.9s)
+  ✓  21 [chromium-live] › e2e/live-run4-pass.spec.mjs:212:3 › live funnel thank-you + grid › funnel:fixed-grid bg (458ms)
+  ✓  22 [chromium-live] › e2e/live-run4-pass.spec.mjs:232:3 › live health › api:health up pending0 (126ms)
+  ✓  23 [chromium-live] › e2e/live-white-label-onboard.spec.mjs:40:3 › live white-label website entry › wl:website_entry affiliates door has white-label (1.4s)
+  ✓  24 [chromium-live] › e2e/live-white-label-onboard.spec.mjs:56:3 › live white-label website entry › wl:white_label_apply creates a login or says already in (2.2s)
+  ✓  25 [chromium-live] › e2e/live-white-label-onboard.spec.mjs:78:3 › live white-label own access and studio › wl:partner login, galaxy, own URL, funnel studio (2.0s)
+  ✓  26 [chromium-live] › e2e/live-white-label-onboard.spec.mjs:105:3 › live white-label public page › wl:public_partner_page unpublished is not live (192ms)
+
+  26 passed (33.5s)
