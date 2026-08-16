@@ -99,3 +99,47 @@ Agent 4 can start the full sidebar re-audit — this ship is live.
 | Template seed | **done** | Inserted only missing `EMAIL-S05A-NOSHOW-RECOVERY` + `SMS-S05A-NOSHOW-RECOVERY`. `compliance_passed=false`. Did **not** overwrite 16 already-approved rows. |
 | Dana Reyes on Campaigns | **done in repo** | Sample action log now says Staff. Needs this deploy to be live. |
 | Extra live clicks | **done** | closer-dashboard, closer-call, my-numbers, sales-floor, messaging, campaigns, staff-teams, automations |
+
+---
+
+## P2 unit hygiene (Workflow retry — rate-limit relaunch)
+
+| Agent | Owns | Status |
+|-------|------|--------|
+| P2 unit hygiene | Fix 11 known `npm test` failures; no weaken/delete; no flip of Inngest/outbound/compliance; no key rotation | **done** |
+
+**Branch:** `cursor/p2-unit-hygiene-7635`
+
+### Scoreboard (11/11)
+
+| # | Item | Result | Fix |
+|---|------|--------|-----|
+| 1 | `docs/diagrams` sync | **pass** | `npm run diagrams` — regenerated README, agent-triggers, event-flow |
+| 2 | homepage-survey titles | **pass** | Titles → CF ground truth: "Set Your Target Amount", "Your Current Score" |
+| 3–4 | Sidebar sync | **pass** | Excluded `payment-success.html` + `soft-pull-approve.html` (public, no CRM shell) |
+| 5–7 | Journey runner 50→51 | **pass** | Counts → 51; dropped ghost `s-02-incomplete-survey-nudge` from pretendFired |
+| 8 | Outbound-fetch fence | **pass** | Allow-list: c-06, ds-02 (CLAUDE.md §12), climate/connectors (macro data, no client) |
+| 9 | SMS dry-run fence | **pass** | Fence test routes SMS via Twilio (transmitting); GHL stub skips fence by design |
+| 10 | GHL SMS routing | **pass** | Expect `REJECTED` + zero network (GHL stubbed off, owner 2026-08-14) |
+| 11 | Underwrite FIXTURE 2 | **pass** | Pin: unknown stays null → not fundable (`neg === 0` required) |
+
+**Verify:** touched test files 147/147 pass (+ adjacent underwrite/messaging/workflows 102/102).
+
+**Not flipped:** `INNGEST_EVENT_KEY`, `outbound_enabled`, `compliance_passed`. No key rotation.
+
+### Change manifest
+
+| Path | Change |
+|------|--------|
+| `docs/diagrams/{README,agent-triggers,event-flow}.md` | Regenerated |
+| `public/js/homepage-survey.js` | CF ground-truth titles |
+| `src/http/app-nav-matches-shell.test.mjs` | NO_SIDEBAR exclusions + comments |
+| `src/journeys/runner/index.test.mjs` | 51 workflows; pretendFired cleanup |
+| `src/lib/no-unfenced-transmit.test.mjs` | ALLOWED_RAW_FETCH entries |
+| `src/messaging/dispatch-fence.test.mjs` | SMS fence via Twilio |
+| `src/messaging/dispatch.test.mjs` | GHL stub rejection pin |
+| `src/underwrite/fixtures.test.mjs` | FIXTURE 2 product-rule pin |
+
+### Blocked
+
+None.
