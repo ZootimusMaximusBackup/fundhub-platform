@@ -103,6 +103,21 @@ export const KNOWN_TEMPLATES = [
     body: "Hey {{contact.first_name}}, it's Josh from FundHub. Your Strategy Session is starting in 15 minutes! I've briefed your Senior Advisor, {{user.name}}, on your UnderwriteIQ results and they're ready to review your {{contact.analyzer_prequal_amount}} pre-approval. Here's the Zoom link: {{appointment.meeting_location}}. {{user.name}} will take it from here! Reply STOP to opt out."
   },
   {
+    template_key: "SMS-BS01-01-BOOKED",
+    channel: "sms",
+    body: "Hey {{contact.first_name}}, it's Fundhub. You're booked — we'll text you again before the call. Need to move it? Just reply here. Reply STOP to opt out."
+  },
+  {
+    template_key: "SMS-BS01-02-PRECALL",
+    channel: "sms",
+    body: "Hey {{contact.first_name}}, Fundhub here. Quick check-in before your call — reply if you have questions or need to reschedule. Looking forward to it. Reply STOP to opt out."
+  },
+  {
+    template_key: "SMS-BS01-03-DAYOF",
+    channel: "sms",
+    body: "Hey {{contact.first_name}}, Fundhub — your call is coming up soon. Reply if you need anything before we start. Reply STOP to opt out."
+  },
+  {
     template_key: "SMS-DPC04-RESCHEDULE-REBOOKING",
     channel: "sms",
     body: "Hey {{contact.first_name}}, no worries about the reschedule! Here's the link to grab a new time that works better for you: {{calendar.booking_link}}. Looking forward to it! — Josh. Reply STOP to opt out."

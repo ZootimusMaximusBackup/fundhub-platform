@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert";
 import {
   handle, gridCells, resolveCellKey,
-  FUNDING_PREFIX, REPAIR_PREFIX, DAYS, SLOTS, DAILY_SLOTS, KICKOFF_SLOT, KICKOFF_WAIT
+  FUNDING_PREFIX, REPAIR_PREFIX, DAYS, SLOTS, DAILY_SLOTS, KICKOFF_SLOT, KICKOFF_WAIT,
+  SMS_BS01_BOOKED, SMS_BS01_PRECALL, SMS_BS01_DAYOF
 } from "./bs-01-precall-launcher.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
@@ -228,4 +229,79 @@ test("idempotency key is per grid cell, so two cells in one run never collide", 
   await handle({ event: ev("booking.created", {}, { id: "evt-1", clientId: "cl-1" }), db, step: fakeStep() });
   const refs = db.messages.map((m) => m.provider_ref);
   assert.equal(new Set(refs).size, refs.length, "every cell has a distinct provider_ref");
+});
+
+// --- SMS companion (owner 2026-08-15) ---------------------------------------
+
+const smsTemplates = () => [
+  { org_id: "org-1", template_key: SMS_BS01_BOOKED, channel: "sms", body: "booked", compliance_passed: true },
+  { org_id: "org-1", template_key: SMS_BS01_PRECALL, channel: "sms", body: "precall", compliance_passed: true },
+  { org_id: "org-1", template_key: SMS_BS01_DAYOF, channel: "sms", body: "dayof", compliance_passed: true }
+];
+
+test("sms: every booking gets three SMS when templates exist, even with no email path", async () => {
+  const start = "2026-08-20T18:00:00Z";
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: null, custom_fields: {} }],
+    templates: smsTemplates()
+  });
+  const res = await handle({
+    event: ev("booking.created", { startTime: start }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+
+  assert.equal(res.drip, "none");
+  assert.equal(db.messages.length, 3);
+  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_BS01_BOOKED, SMS_BS01_PRECALL, SMS_BS01_DAYOF]);
+  assert.equal(res.sms.stoppedBecause, null);
+  assert.ok(db.clients[0].custom_fields.bs_sms_last_sent_ts);
+});
+
+test("sms: skips day-of when booking has no startTime", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: null, custom_fields: {} }],
+    templates: smsTemplates()
+  });
+  const res = await handle({
+    event: ev("booking.created", {}, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+
+  assert.equal(db.messages.length, 2);
+  assert.equal(res.sms.skippedDayOf, "no_start_time");
+  assert.ok(!db.messages.some((m) => m.template_key === SMS_BS01_DAYOF));
+});
+
+test("sms: stops after booked when call already held before precall wake", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: null, custom_fields: {} }],
+    templates: smsTemplates(),
+    events: [{ client_id: "cl-1", name: "call.completed" }]
+  });
+  const res = await handle({
+    event: ev("booking.created", { startTime: "2026-08-20T18:00:00Z" }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+
+  assert.equal(res.sms.stoppedBecause, "call_held");
+  assert.equal(res.sms.stoppedAt, "sms-precall");
+  assert.equal(db.messages.length, 1);
+  assert.equal(db.messages[0].template_key, SMS_BS01_BOOKED);
+});
+
+test("sms + email: funding path queues email grid and three SMS together", async () => {
+  const cells = allCells(FUNDING_PREFIX);
+  const db = pgFake({
+    clients: [fundingClient()],
+    templates: [...templatesFor(FUNDING_PREFIX, cells), ...smsTemplates()]
+  });
+  const res = await handle({
+    event: ev("booking.created", { startTime: "2026-08-20T18:00:00Z" }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+
+  assert.equal(res.drip, "funding");
+  assert.equal(db.messages.length, 21);
+  assert.equal(db.messages.filter((m) => m.channel === "sms").length, 3);
+  assert.equal(db.messages.filter((m) => m.channel === "email").length, 18);
 });

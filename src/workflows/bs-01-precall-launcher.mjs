@@ -48,8 +48,10 @@
 // the kickoff, because the sequence spans ~71 hours and the call normally lands
 // inside it; a gate that fired once at t=+12h would still send 14 stale touches.
 //
-// Trigger: booking.created. Gate: product path decides which drip runs (Funding vs
-// Repair variant) — Rule 4-compliant (categorical path, not a dollar amount).
+// Trigger: booking.created. Gate: product path decides which EMAIL drip runs
+// (Funding vs Repair) — Rule 4-compliant (categorical path, not a dollar amount).
+// SMS companion (owner 2026-08-15): three texts for every booking, no video links,
+// parallel with the email drip, same call-held exit.
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
@@ -62,6 +64,14 @@ import { addTags } from "./tags.mjs";
 
 export const FUNDING_PREFIX = "BS-FUND";
 export const REPAIR_PREFIX = "BS-REPAIR";
+
+// Thin SMS companion (owner 2026-08-15): three texts, no video links, not the
+// email 18-cell grid. One set for every booked contact — path split is email-only.
+export const SMS_BS01_BOOKED = "SMS-BS01-01-BOOKED";
+export const SMS_BS01_PRECALL = "SMS-BS01-02-PRECALL";
+export const SMS_BS01_DAYOF = "SMS-BS01-03-DAYOF";
+export const SMS_PRECALL_WAIT = "24h";
+export const SMS_DAYOF_OFFSET_MS = 2 * 60 * 60 * 1000;
 
 export const DAYS = ["D1", "D2", "D3"];
 
@@ -163,6 +173,67 @@ async function runDrip({ db, step, orgId, clientId, eventId, prefix }) {
   return { sent, gaps, stoppedAt: null, stoppedBecause: null };
 }
 
+/**
+ * Three SMS touches for every booked contact. Independent of funding/repair
+ * email path. Stops when the call is held (same gate as the email drip).
+ */
+async function runSmsDrip({ db, step, orgId, clientId, eventId, startTime }) {
+  const sent = [];
+
+  const booked = await step.run("send-sms-booked", () =>
+    sendTemplated(db, {
+      orgId, clientId, channel: "sms", templateKey: SMS_BS01_BOOKED,
+      eventId: `${eventId}:sms:booked`
+    }));
+  sent.push({ templateKey: SMS_BS01_BOOKED, ...booked });
+  if (booked.sent) {
+    await step.run("stamp-sms-booked", () =>
+      mergeCustomFields(db, clientId, { bs_sms_last_sent_ts: new Date().toISOString() }));
+  }
+
+  await step.sleep("wait-sms-precall", SMS_PRECALL_WAIT);
+  const heldPrecall = await step.run("recheck-sms-precall", () => callHappened(db, clientId));
+  if (heldPrecall) {
+    return { sent, stoppedAt: "sms-precall", stoppedBecause: "call_held", skippedDayOf: null };
+  }
+
+  const precall = await step.run("send-sms-precall", () =>
+    sendTemplated(db, {
+      orgId, clientId, channel: "sms", templateKey: SMS_BS01_PRECALL,
+      eventId: `${eventId}:sms:precall`
+    }));
+  sent.push({ templateKey: SMS_BS01_PRECALL, ...precall });
+  if (precall.sent) {
+    await step.run("stamp-sms-precall", () =>
+      mergeCustomFields(db, clientId, { bs_sms_last_sent_ts: new Date().toISOString() }));
+  }
+
+  if (!startTime) {
+    return { sent, stoppedAt: null, stoppedBecause: null, skippedDayOf: "no_start_time" };
+  }
+
+  const target = new Date(new Date(startTime).getTime() - SMS_DAYOF_OFFSET_MS);
+  await step.sleepUntil("wait-sms-dayof", target);
+
+  const heldDayof = await step.run("recheck-sms-dayof", () => callHappened(db, clientId));
+  if (heldDayof) {
+    return { sent, stoppedAt: "sms-dayof", stoppedBecause: "call_held", skippedDayOf: null };
+  }
+
+  const dayof = await step.run("send-sms-dayof", () =>
+    sendTemplated(db, {
+      orgId, clientId, channel: "sms", templateKey: SMS_BS01_DAYOF,
+      eventId: `${eventId}:sms:dayof`
+    }));
+  sent.push({ templateKey: SMS_BS01_DAYOF, ...dayof });
+  if (dayof.sent) {
+    await step.run("stamp-sms-dayof", () =>
+      mergeCustomFields(db, clientId, { bs_sms_last_sent_ts: new Date().toISOString() }));
+  }
+
+  return { sent, stoppedAt: null, stoppedBecause: null, skippedDayOf: null };
+}
+
 export async function handle({ event, db, step }) {
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
@@ -173,19 +244,33 @@ export async function handle({ event, db, step }) {
   await step.run("set-precall-start", () => mergeCustomFields(db, clientId, { bs_precall_start_ts: new Date().toISOString() }));
 
   const outcomeTier = await step.run("check-product-path", () => clientOutcomeTier(db, clientId));
+
+  // SMS for every booking. Start before (or beside) the email drip so the
+  // email kickoff is not delayed by SMS sleeps.
+  const smsPromise = runSmsDrip({
+    db, step, orgId, clientId, eventId,
+    startTime: event.payload?.startTime || null
+  });
+
   let prefix;
   let drip;
   if (isFundingPath(outcomeTier)) { prefix = FUNDING_PREFIX; drip = "funding"; }
   else if (isRepairOnlyPath(outcomeTier)) { prefix = REPAIR_PREFIX; drip = "repair"; }
-  else return { done: true, drip: "none", reason: `no_matching_path:${outcomeTier}` };
+  else {
+    const sms = await smsPromise;
+    return { done: true, drip: "none", reason: `no_matching_path:${outcomeTier}`, sms };
+  }
 
-  const { sent, gaps, stoppedAt, stoppedBecause } = await runDrip({ db, step, orgId, clientId, eventId, prefix });
+  const [sms, { sent, gaps, stoppedAt, stoppedBecause }] = await Promise.all([
+    smsPromise,
+    runDrip({ db, step, orgId, clientId, eventId, prefix })
+  ]);
 
   // Only tag the full run — a drip cut short by the call already happening did not
   // complete the pre-call sequence, and DPC-02 owns the held/no-show outcome.
   if (!stoppedAt) await step.run("tag-call-booked", () => addTags(db, clientId, ["call:booked"]));
 
-  return { done: true, drip, sent, gaps, stoppedAt, stoppedBecause };
+  return { done: true, drip, sent, gaps, stoppedAt, stoppedBecause, sms };
 }
 
 export const bs01PrecallLauncher = inngest.createFunction(
