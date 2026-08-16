@@ -305,3 +305,22 @@ test.describe("before/after + grid A/B artifacts", () => {
     });
   });
 });
+
+test.describe("watch favicon", () => {
+  test("overrides tab icon with fundhub mark", async ({ page }) => {
+    await page.goto("/watch.html", { waitUntil: "domcontentloaded" });
+    const icons = await page.evaluate(() =>
+      [...document.querySelectorAll('link[rel*="icon"],link[rel="apple-touch-icon"]')].map((l) => ({
+        rel: l.rel,
+        hrefHead: l.href.slice(0, 22),
+        sizes: l.getAttribute("sizes"),
+      })),
+    );
+    expect(
+      icons.some((i) => i.hrefHead === "data:image/png;base64," && i.rel.includes("icon")),
+    ).toBe(true);
+    expect(icons.some((i) => i.rel === "apple-touch-icon" && i.sizes === "180x180")).toBe(
+      true,
+    );
+  });
+});
