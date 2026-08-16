@@ -554,26 +554,25 @@ function evMove(){
   bumpKPI('move', 1, false);
 }
 
-/* -- money lands: the loudest thing on this screen -- */
+/* -- money lands: only against live nodes; amounts are decorative flares,
+      not ledger facts — the banner owns real partner dollars. -- */
 function evMoney(){
   if(!NODES.length) return;
   if(flares.length>=2) return;
+  var actives = NODES.filter(function(n){ return n.state==='active'; });
+  var n = pick(actives.length ? actives : NODES);
+  if(!n) return;
   var roll = Math.random();
-  var n, amt, kid, kind, color;
-  if(roll < 0.42){
-    n = pick([ND.jordan, ND.nina]); amt = 3000 + (Math.random()<0.5?300:0);
+  var amt, kid, kind, color;
+  if(roll < 0.55){
+    amt = 3000 + (Math.random()<0.5?300:0);
     kid='cash'; kind='Deposit paid'; color=C.green;
-  } else if(roll < 0.72){
-    n = ND.marcus; amt = 8500 + Math.round(Math.random()*7)*2500;
-    kid='fund'; kind='Round funded'; color=C.gold;
-  } else if(roll < 0.90){
-    n = ND.a2; amt = 600 + Math.round(Math.random()*12)*100;
-    kid='cash'; kind='Payment received'; color=C.green;
   } else {
-    n = ND.marcus; amt = 18500 + Math.round(Math.random()*10)*1500;
+    amt = 8500 + Math.round(Math.random()*7)*2500;
     kid='fund'; kind='Round funded'; color=C.gold;
   }
   var k = KPI[kid];
+  if(!k) return;
   flares.push({n:n, k:k, amt:amt, kind:kind, color:color, t:0, dur:2.9, delivered:false, big: amt>=12000});
   blooms.push({x:n.x, y:n.y, t:0, dur:1.5, color:color, big: amt>=12000});
   n.flash = 1; n.out += (kid==='fund'?3:1); sizeNode(n);

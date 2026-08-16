@@ -8,14 +8,27 @@
 
 ---
 
+## Agent 4 re-audit (2026-08-16 afternoon)
+
+| Check | Result | Evidence |
+|-------|--------|----------|
+| Live furniture scrub | Calendar / Message Copy / Hiring / Campaigns — scrubbed people **gone**; Campaigns sample log says **Staff** (not Dana Reyes) | curl `/app/*.html` |
+| Role logins | **11/11 OK** | `e2e-verify-run4-evidence/role-login-probe-agent4-reaudit.json` |
+| Live Playwright | **26/26 · 31/31 required = 100** | `e2e-verify-run4-evidence/live-playwright-100/score-agent4-reaudit.json` |
+| Sidebar click pass as `chris@` | **39 screens** — 38 GREEN, `sample-data` YELLOW (demo only). No scrubbed furniture names in visible UI. | `e2e-verify-run4-evidence/sidebar-click-agent4-reaudit.json` |
+
+**Company walk readiness: GREEN** (roles log in; core UI does not lie about scrubbed people; Playwright gate 100).
+
+---
+
 ## Who can log in on live
 
 | Role | Result |
 |------|--------|
-| Chris owner | Works |
-| affiliate / partner | Works |
-| sales@ / client@ | Works — seeded overnight 2026-08-16 |
-| closer / advisor / inquiry / setter | Works — unsuspended overnight 2026-08-16 |
+| Chris owner | Works — re-probed Agent 4 |
+| affiliate / partner | Works — re-probed Agent 4 |
+| sales@ / client@ | Works — seeded overnight 2026-08-16; re-probed OK |
+| closer / advisor / inquiry / setter | Works — unsuspended overnight 2026-08-16; re-probed OK |
 
 ---
 
@@ -24,18 +37,18 @@
 | Screen | BETA | Status | What's missing |
 |--------|------|--------|----------------|
 | pipeline | no | real | Side effects need Inngest |
-| closer-dashboard | no | partial | Needs `?client_id=`; deal math dash |
+| closer-dashboard | no | partial | Needs `?client_id=`. Deal math stays dashes (no deal-math endpoint). Honest empty — no sample markup. |
 | closer-call | no | partial | Join off until meeting URL |
-| my-numbers | no | partial | Empty until activity |
+| my-numbers | no | partial | Honest empty until closer activity; no invented commission formula |
 | sales-floor | no | partial | sales@ now logs in; empty until activity |
 | calendar | no | partial | No-show/show rate dash. Furniture names scrubbed 2026-08-16. |
 | present | no | partial | SMS queued; TU off |
 | soft-pull-approve | no | partial | Public page |
 | client-control-panel | no | real | Oxylabs/GHL gaps |
 | messaging | no | partial | Outbound providers |
-| documents | no | partial | Empty without client |
+| documents | no | partial | Honest empty when library is empty — no sample rows |
 | contracts | no | partial | Send on call cockpit |
-| client-portal | no | partial | Needs `?client_id=` |
+| client-portal | no | partial | Needs `?client_id=`. Sample timeline/dollars scrubbed; activity stays empty until live rows |
 | consent-capture | no | partial | No nav link |
 | payment-success | no | partial | Commas unverified |
 | lenders | no | partial | Empty until import |
@@ -44,24 +57,24 @@
 | subscriptions | yes | partial | Billing gaps |
 | index | no | real | Login |
 | command-center | yes | partial | Ad metrics |
-| galaxy | yes | partial | Nav map |
+| galaxy | yes | partial | Live activity feed; no hardcoded standing workers |
 | ops-admin | yes | partial | Comp dashes |
-| partner-galaxy | no | partial | Partner only |
+| partner-galaxy | no | partial | Partner only; money flares use live nodes only |
 | automations | no | partial | Screen says engine on (42/51 fired). Owner gate still: do not flip INNGEST. |
 | staff-teams | no | partial | Overnight roles seeded; roster is live |
-| products-commissions | no | partial | Commission writes local |
+| products-commissions | no | partial | Products + ledger live; rate edits stay in-browser only (honest note on screen) |
 | template-editor | no | partial | Drafts blocked. Preview uses Preview Name, not Marcus Webb. |
-| journeys | yes | partial | Mock tracking |
-| agent-editor | yes | partial | Owner agent decisions |
-| company-brain | yes | off | OpenAI + Drive |
-| campaign-manager | yes | off | Meta token. Dana Reyes scrubbed from sample action log 2026-08-16. |
-| social-studio | yes | off | Meta + LinkedIn |
-| creative-factory | yes | off | Creative keys |
-| content-admin | yes | partial | Video stub |
-| hiring | yes | partial | Live applications (3 open). Jordan Blake scrubbed. |
-| brand-studio | yes | partial | DNS for custom domain |
-| affiliate | yes | partial | No funnel builder |
-| sample-data | yes | fake | Demo only |
+| journeys | yes | partial | Mock tracking. Sample fill still has Chase Ink / $18,000 in page JS (not a scrubbed person). Agent 4 clicked: GREEN for furniture names. |
+| agent-editor | yes | partial | Owner agent decisions. Agent 4 clicked OK. |
+| company-brain | yes | off | OpenAI + Drive. Agent 4 clicked OK (empty/off). |
+| campaign-manager | yes | off | Meta token. Dana Reyes scrubbed; live sample action log uses Staff. Agent 4 confirmed live. |
+| social-studio | yes | off | Meta + LinkedIn. Agent 4 clicked OK. |
+| creative-factory | yes | off | Creative keys. Agent 4 clicked OK. |
+| content-admin | yes | partial | Video stub. Agent 4 clicked OK. |
+| hiring | yes | partial | Live applications (3 open). Jordan Blake scrubbed. Agent 4 re-confirmed. |
+| brand-studio | yes | partial | DNS for custom domain. Agent 4 clicked OK. |
+| affiliate | yes | partial | No funnel builder. Product price copy is real catalog, not furniture people. |
+| sample-data | yes | fake | Demo only — Agent 4 YELLOW (intentional). |
 | sidebar.fragment | — | N/A | Not a screen |
 
 **16 BETA pages:** finance-os, subscriptions, company-brain, command-center, galaxy, ops-admin, agent-editor, journeys, campaign-manager, social-studio, creative-factory, content-admin, hiring, sample-data, brand-studio, affiliate

@@ -54,7 +54,7 @@ header.topbar{background:var(--ink);color:var(--dark-text);display:flex;align-it
 .statesw button.on{background:var(--paper);color:var(--ink);font-weight:700}
 /* Designer STATE toggle — staff only. Clients must never see it. */
 body:not(.portal-staff) .statesw{display:none}
-/* Funding sample blocks — hidden when this client has no funding-snapshot. */
+/* Funding blocks — hidden when this client has no funding-snapshot. */
 body.no-funding .funding-only{display:none !important}
 /* Pre-call placeholders — shown until funding-snapshot (or staff In progress). */
 .precall-only{display:none !important}
@@ -63,7 +63,6 @@ body.no-docs .action-card{display:none !important}
 .own-empty{display:none}
 body.no-own .own-real{display:none}
 body.no-own .own-empty{display:block}
-body.no-funding .sample-history{display:none !important}
 
 main{flex:1;overflow-y:auto;background:var(--paper);padding:26px 0 44px;display:flex;justify-content:center}
 main::-webkit-scrollbar{width:9px}
@@ -454,7 +453,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <section class="card prog-card funding-only" aria-labelledby="sb-main">
         <div class="status-line">
           <div class="sb-eyebrow" id="sb-eyebrow">Current Status</div>
-          <div class="sb-main" id="sb-main">You're approved for <b>$46,500</b>. Getting that money to you is the next step.</div>
+          <div class="sb-main" id="sb-main">Your funding file is open. Amounts show here when a round is approved on your file.</div>
         </div>
         <div class="stepper" id="stepper">
           <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Booked</div></div>
@@ -510,18 +509,6 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           <span class="sec-note">Yours to keep — always here, always downloadable</span>
         </div>
         <div id="own-list">
-          <div class="own own-real">
-            <div><div class="on-t">Funding Snapshot</div><div class="on-d">Updated Jul 24, 2026 · PDF · 1.4 MB</div></div>
-            <div class="own-actions"><button class="dl-btn" type="button">Download ↓</button></div>
-          </div>
-          <div class="own own-real">
-            <div><div class="on-t">Bank and Lender Match List</div><div class="on-d">Updated Jul 18, 2026 · PDF · 820 KB</div></div>
-            <div class="own-actions"><button class="dl-btn" type="button">Download ↓</button></div>
-          </div>
-          <div class="own own-real">
-            <div><div class="on-t">Credit Analysis Report</div><div class="on-d">Updated Jul 22, 2026 · PDF · 2.1 MB</div></div>
-            <div class="own-actions"><button class="dl-btn" type="button">Download ↓</button></div>
-          </div>
         </div>
         <div class="own-empty" id="own-empty">
           <div class="own">
@@ -631,63 +618,25 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           </div>
 
           <div class="tabpane on" id="tp-pay" role="tabpanel" data-pane="pay">
-            <div class="pay-row sample-history">
-              <div><div class="pn">Credit diagnostic</div><div class="pd">Jul 10, 2026</div></div>
-              <div class="pv">$32<span class="paid-pill">Paid</span></div>
-            </div>
-            <div class="pay-row sample-history">
-              <div><div class="pn">Deposit</div><div class="pd">Jul 15, 2026</div></div>
-              <div class="pv">$3,000<span class="paid-pill">Paid</span></div>
-            </div>
-            <div class="pay-row sample-history" id="fee-row">
+            <div class="pay-row" id="fee-row" hidden>
               <div><div class="pn">Success Fee</div><div class="pd" id="fee-note">10% of what funds — due when the money lands</div></div>
-              <div class="pv" id="fee-val">about $4,650</div>
+              <div class="pv" id="fee-val">—</div>
             </div>
-            <div class="pay-row precall-only">
+            <div class="pay-row">
               <div><div class="pn">No payments yet</div><div class="pd">They show here after you pay</div></div>
               <div class="pv">—</div>
             </div>
           </div>
 
           <div class="tabpane" id="tp-docs" role="tabpanel" data-pane="docs">
-            <div class="doc-row sample-history">
-              <div><div class="dr-n">Funding Snapshot</div><div class="dr-m">Jul 24, 2026 · PDF · 1.4 MB</div></div>
-              <span class="dr-s have">On file</span>
-            </div>
-            <div class="doc-row sample-history">
-              <div><div class="dr-n">Credit Analysis Report</div><div class="dr-m">Jul 22, 2026 · PDF · 2.1 MB</div></div>
-              <span class="dr-s have">On file</span>
-            </div>
-            <div class="doc-row sample-history">
-              <div><div class="dr-n">Bank and Lender Match List</div><div class="dr-m">Jul 18, 2026 · PDF · 820 KB</div></div>
-              <span class="dr-s have">On file</span>
-            </div>
-            <div class="doc-row sample-history">
-              <div><div class="dr-n">Photo ID</div><div class="dr-m">Received Jul 22, 2026</div></div>
-              <span class="dr-s have">On file</span>
-            </div>
-            <div class="doc-row sample-history">
-              <div><div class="dr-n">Bank statements (last 2 months)</div><div class="dr-m">Asked Jul 24, 2026</div></div>
-              <span class="dr-s want">Still needed</span>
-            </div>
-            <div class="doc-row sample-history">
-              <div><div class="dr-n">Voided check</div><div class="dr-m">Asked Jul 24, 2026</div></div>
-              <span class="dr-s want">Still needed</span>
-            </div>
-            <div class="doc-row precall-only">
-              <div><div class="dr-n">No files yet</div><div class="dr-m">They show here after your call</div></div>
-              <span class="dr-s">Waiting</span>
+            <div class="doc-row">
+              <div><div class="dr-n">No files yet</div><div class="dr-m">They show here when they are on file</div></div>
+              <span class="dr-s">—</span>
             </div>
           </div>
 
           <div class="tabpane" id="tp-act" role="tabpanel" data-pane="act">
-            <div class="timeline-item funded-only" hidden><span class="td">Jul 27</span><span>Your round funded — $46,500 sent to your account</span></div>
-            <div class="timeline-item sample-history"><span class="td">Jul 24</span><span>Your round was approved for $46,500</span></div>
-            <div class="timeline-item sample-history"><span class="td">Jul 22</span><span>We got your documents and started reviewing them</span></div>
-            <div class="timeline-item sample-history"><span class="td">Jul 18</span><span>We sent your application to 3 lenders</span></div>
-            <div class="timeline-item sample-history"><span class="td">Jul 15</span><span>Deposit received — thank you!</span></div>
-            <div class="timeline-item sample-history"><span class="td">Jul 10</span><span>We finished your credit diagnostic</span></div>
-            <div class="timeline-item precall-only"><span class="td">Today</span><span>Portal opened — your call is next</span></div>
+            <div class="timeline-item" id="act-empty"><span class="td">—</span><span>No activity recorded on this file yet.</span></div>
           </div>
 
           <div class="tabpane" id="tp-msg" role="tabpanel" data-pane="msg">
@@ -1204,16 +1153,16 @@ var PRODUCTS = {
     progress:{
       sub:"Here's where things stand on your funding.",
       eyebrow:'Current Status',
-      main:'You\'re approved for <b>$46,500</b>. Getting that money to you is the next step.',
+      main:'Your funding file is open. Amounts show here when a round is approved on your file.',
       feeNote:'10% of what funds — due when the money lands',
-      feeVal:'about $4,650'
+      feeVal:'—'
     },
     funded:{
       sub:'Your funding landed. Here\'s what\'s next.',
       eyebrow:'Funded',
-      main:'<b>$46,500</b> was sent to your account on Jul 27. Your file stays open while it settles.',
-      feeNote:'10% of $46,500 — due now that the money landed',
-      feeVal:'$4,650'
+      main:'Your round funded. Exact amounts come from your file — this preview does not invent a dollar amount.',
+      feeNote:'10% of what funded — due now that the money landed',
+      feeVal:'—'
     }
   };
 
@@ -1238,11 +1187,17 @@ var PRODUCTS = {
     if (sub && !precall) sub.textContent = c.sub;
     if (!precall) {
       document.getElementById('sb-eyebrow').textContent = c.eyebrow;
-      document.getElementById('sb-main').innerHTML = c.main;
+      var sbMain = document.getElementById('sb-main');
+      if (sbMain) sbMain.textContent = c.main;
+      var feeRow = document.getElementById('fee-row');
+      if (feeRow) feeRow.hidden = false;
       var feeNote = document.getElementById('fee-note');
       var feeVal = document.getElementById('fee-val');
       if (feeNote) feeNote.textContent = c.feeNote;
       if (feeVal) feeVal.textContent = c.feeVal;
+    } else {
+      var feeRowOff = document.getElementById('fee-row');
+      if (feeRowOff) feeRowOff.hidden = true;
     }
 
     if (!precall && stepper) {
