@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isInterviewBooking, meetBookingUrl } from "./meet.mjs";
+import { isInterviewBooking, meetBookingUrl, salesMeetBookingUrl } from "./meet.mjs";
 
 test("isInterviewBooking: matches interview event types only", () => {
   assert.equal(isInterviewBooking({ eventTypeSlug: "post-funding-interview" }), true);
@@ -14,4 +14,12 @@ test("meetBookingUrl: only a real http(s) link", () => {
     "https://cal.com/fundhub/interview");
   assert.equal(meetBookingUrl({ INSIGHT_MEET_BOOKING_URL: "" }), null);
   assert.equal(meetBookingUrl({ INSIGHT_MEET_BOOKING_URL: "not-a-url" }), null);
+});
+
+test("salesMeetBookingUrl: env override or apply funnel default", () => {
+  assert.equal(
+    salesMeetBookingUrl({ SALES_MEET_BOOKING_URL: "https://cal.com/fundhub/strategy" }),
+    "https://cal.com/fundhub/strategy"
+  );
+  assert.equal(salesMeetBookingUrl({}), "https://apply.fundhub.ai/funding-book-call");
 });

@@ -825,12 +825,12 @@ Did **not** run an authenticated live step: would risk Inngest-side effects with
 
 ## W4b — Staff session re-probe (2026-08-12, after STAFF_INITIAL_PASSWORD deploy)
 
-**Finding:** Setting `STAFF_INITIAL_PASSWORD` on Netlify does **not** change existing `staff.password_hash`. `Staff2026!` → **401** for all tested emails. Existing role-test password still works for `chris@` / `owner@` / `admin@` (documented example in `scripts/seed-role-accounts.mjs`). Closers/advisors (`jordan@`, `nina@`, `marcus@`, `alvin@`, `sarah@`) still **401** on that password.
+**Finding:** Setting `STAFF_INITIAL_PASSWORD` on Netlify does **not** change existing `staff.password_hash`. The probe password tried in W4b → **401** for all tested emails. Existing role-test password still works for `chris@` / `owner@` / `admin@` (documented example in `scripts/seed-role-accounts.mjs`). Closers/advisors (`jordan@`, `nina@`, `marcus@`, `alvin@`, `sarah@`) still **401** on that password.
 
 | id | verdict | evidence |
 |----|---------|----------|
 | `auth:staff_session` chris/owner/admin | **PASS** | live login 200 + session 200 |
-| `auth:staff_session` Staff2026! | **FAIL** | env set+deployed; hashes not reset |
+| `auth:staff_session` probe password | **FAIL** | env set+deployed; hashes not reset |
 | `auth:founding closers/advisors` | **FAIL**/401 | need `--reset-passwords` seed against prod DB |
 | `api:dashboard/clients` authed | **PASS** | 18 clients |
 | `api:read/staff` | **PASS** | 20 staff |
@@ -842,7 +842,7 @@ Did **not** run an authenticated live step: would risk Inngest-side effects with
 | `screen:demo mode banner` | **FAIL** (posture) | Staff & Teams shows **DEMO MODE ON — sample data is displayed** while owner session; demo logins API still off |
 
 **Owner next (pick one password story):**
-1. Unmask/`netlify env:get` **DATABASE_URL** (or paste) → run `STAFF_INITIAL_PASSWORD='…' node scripts/seed-staff.mjs` with `--reset` / role-accounts `--reset-passwords` so `Staff2026!` (or chosen) actually works for all founding roles.
+1. Unmask/`netlify env:get` **DATABASE_URL** (or paste) → run `STAFF_INITIAL_PASSWORD='…' node scripts/seed-staff.mjs` with `--reset` / role-accounts `--reset-passwords` so the chosen password actually works for all founding roles.
 2. Or keep role-test password and paste it for closer/advisor accounts after reset.
 
 **Still blocked for ad launch (unchanged):** CF secret accept, `COMMAS_CHECKOUT_BASE_URL`, `commas_inbox` RLS, migrations 160/161, transmit dry-run.

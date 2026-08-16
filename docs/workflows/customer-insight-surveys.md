@@ -1,6 +1,6 @@
 # Customer insight surveys — shared board
 
-Status: C + A done (beta). D context fetcher done. E Drive recordings + sales-floor list done. Pending: F auto-book Meet, G deploy.  
+Status: C + A + D + E + F + G done (beta).  
 Model: Grok 4.6 high (owner-set)
 
 ## Three collections (owner-set 2026-08-15)
@@ -27,8 +27,8 @@ Google Meet is only on the **sales call** (existing closer desk) and the **endin
 | B — Meet / questions | this session | done | Folded into C. Questions in `src/insights/questions.mjs`. |
 | D — Context fetcher | this session | done | Interview answers + call recordings go into `src/agents/context.mjs` prompt block. |
 | E — Call recording | this session | done | Drive index + sales-floor "Today's recordings". Meet Record → Drive link. Keys never set. |
-| F — Auto-book Meet | unclaimed | pending | Book Google Meet for the sales call and the ending interview only. |
-| G — Deploy | unclaimed | pending | Ship the beta (store + mid task + ending Meet task + recordings list). |
+| F — Auto-book Meet | this session | done | `INSIGHT_MEET_BOOKING_URL` on funded task + `booking.created` stamps Meet link. Sales call stays on apply.fundhub.ai/funding-book-call. |
+| G — Deploy | this session | done | Site live; git builds unblocked (secret scan redaction in e2e-verify-run4.md). |
 
 ## Frozen response shape (C)
 
@@ -112,3 +112,14 @@ Answers may later be used in ads, VSL, and landing pages. This batch only **stor
 - Click Record in Google Meet. File stays in Drive. Fundhub stores the link.
 - Sales floor shows last 7 days with an Open in Drive link.
 - Drive keys were never set. Dashboard says so until they are.
+
+### F — Auto-book Meet (done)
+
+**Files**
+- `src/insights/meet.mjs` + tests
+- `src/handlers/customer-insights.mjs` + tests
+- `.env.example` — `INSIGHT_MEET_BOOKING_URL`, `SALES_MEET_BOOKING_URL`
+
+**Behavior**
+- Sales call: client books at `apply.fundhub.ai/funding-book-call`; closer task gets Meet link from Cal.com `booking.created`.
+- Post-funding interview: funded task carries `INSIGHT_MEET_BOOKING_URL`; interview Cal bookings stamp `meeting_url` on the task.

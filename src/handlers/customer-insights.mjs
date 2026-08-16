@@ -17,16 +17,21 @@ export const TASK_TITLE = "Post-funding Google Meet interview";
 export const MID_SOURCE_WORKFLOW = "customer-insights-mid";
 export const MID_TASK_TITLE = "Mid-journey check-in";
 
-export function interviewTaskBody(eventId) {
+export function interviewTaskBody(eventId, env = process.env) {
   const questions = formatQuestionList("post");
-  return [
-    "Book a Google Meet. Click Record in Google Meet. Ask these questions. Save answers with POST /api/customer-insights (stage=post, channel=google_meet).",
+  const bookUrl = meetBookingUrl(env);
+  const lines = [
+    bookUrl
+      ? `Send the client this booking link (Google Meet is created when they book): ${bookUrl}`
+      : "Book a Google Meet (set INSIGHT_MEET_BOOKING_URL on Netlify for a Cal.com link).",
+    "Click Record in Google Meet. Ask these questions. Save answers with POST /api/customer-insights (stage=post, channel=google_meet).",
     RECORDING_NOTE,
     "",
     questions,
     "",
     `[event:${eventId}]`
-  ].join("\n");
+  ];
+  return lines.join("\n");
 }
 
 export function checkinTaskBody(eventId) {
@@ -50,6 +55,7 @@ export async function onRoundFundedInsights(event, db, env = process.env) {
   if (!clientId) return { created: false, reason: "no_client" };
 
   const eventId = event.id || null;
+  const bookUrl = meetBookingUrl(env);
   return createTask(db, {
     orgId: event.orgId,
     clientId,
@@ -57,8 +63,8 @@ export async function onRoundFundedInsights(event, db, env = process.env) {
     sourceWorkflow: SOURCE_WORKFLOW,
     assigneeRole: ASSIGNEE_ROLE,
     eventId,
-    body: interviewTaskBody(eventId),
-    meetingUrl: meetBookingUrl(env)
+    body: interviewTaskBody(eventId, env),
+    meetingUrl: bookUrl
   });
 }
 
