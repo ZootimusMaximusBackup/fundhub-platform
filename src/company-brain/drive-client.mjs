@@ -16,8 +16,8 @@ export function createDriveClient({
   fetchImpl = globalThis.fetch,
   apiBase = DRIVE_API_BASE
 } = {}) {
-  if (!serviceAccount?.clientEmail || !serviceAccount?.privateKey || !delegateEmail) {
-    throw new Error("createDriveClient requires serviceAccount and delegateEmail");
+  if (!serviceAccount?.clientEmail || !serviceAccount?.privateKey) {
+    throw new Error("createDriveClient requires serviceAccount");
   }
 
   let cached = null; // { accessToken, expiresAtMs }

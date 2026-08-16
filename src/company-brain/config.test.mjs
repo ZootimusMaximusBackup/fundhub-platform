@@ -82,8 +82,20 @@ test("driveConfigFromEnv reports missing keys", () => {
   const c = driveConfigFromEnv({});
   assert.equal(c.ready, false);
   assert.ok(c.missing.includes("GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON"));
-  assert.ok(c.missing.includes("GOOGLE_DRIVE_DELEGATE_EMAIL"));
+  assert.equal(c.delegateEmail, null);
   assert.deepEqual(c.excludedFolderIds, []);
+});
+
+test("driveConfigFromEnv is ready with JSON only (no Workspace impersonation)", () => {
+  const c = driveConfigFromEnv({
+    GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON: JSON.stringify({
+      client_email: SA.clientEmail,
+      private_key: SA.privateKey,
+      project_id: "p"
+    })
+  });
+  assert.equal(c.ready, true);
+  assert.equal(c.delegateEmail, null);
 });
 
 test("driveConfigFromEnv parses service account JSON", () => {
@@ -118,6 +130,17 @@ test("buildServiceAccountJwt is verifiable RS256", () => {
   const pad = "=".repeat((4 - (padded.length % 4)) % 4);
   const sig = Buffer.from(padded + pad, "base64");
   assert.equal(verifier.verify(crypto.createPublicKey(SA.privateKey), sig), true);
+});
+
+test("buildServiceAccountJwt omits sub when there is no Workspace delegate", () => {
+  const jwt = buildServiceAccountJwt({
+    clientEmail: SA.clientEmail,
+    privateKey: SA.privateKey,
+    nowSec: 1_700_000_000
+  });
+  const payload = JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString("utf8"));
+  assert.equal(payload.iss, SA.clientEmail);
+  assert.equal(payload.sub, undefined);
 });
 
 test("fetchAccessToken posts JWT grant", async () => {

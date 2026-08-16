@@ -21,18 +21,21 @@ export function buildServiceAccountJwt({
   nowSec = Math.floor(Date.now() / 1000),
   lifetimeSec = 3600
 } = {}) {
-  if (!clientEmail || !privateKey || !delegateEmail) {
-    throw new Error("buildServiceAccountJwt requires clientEmail, privateKey, delegateEmail");
+  if (!clientEmail || !privateKey) {
+    throw new Error("buildServiceAccountJwt requires clientEmail and privateKey");
   }
   const header = b64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const claim = b64url(JSON.stringify({
+  const claimBody = {
     iss: clientEmail,
-    sub: delegateEmail,
     scope,
     aud: GOOGLE_TOKEN_URL,
     iat: nowSec,
     exp: nowSec + lifetimeSec
-  }));
+  };
+  // `sub` is domain-wide delegation. Omit it and the robot acts as itself
+  // (files must be shared with the service-account email).
+  if (delegateEmail) claimBody.sub = delegateEmail;
+  const claim = b64url(JSON.stringify(claimBody));
   const unsigned = `${header}.${claim}`;
   const signer = crypto.createSign("RSA-SHA256");
   signer.update(unsigned);

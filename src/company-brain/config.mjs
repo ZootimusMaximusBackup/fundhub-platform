@@ -15,7 +15,8 @@ export const DRIVE_API_BASE = "https://www.googleapis.com/drive/v3";
  *
  * Env:
  *   GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON — full service-account JSON string
- *   GOOGLE_DRIVE_DELEGATE_EMAIL — Workspace user to impersonate (domain-wide delegation)
+ *   GOOGLE_DRIVE_DELEGATE_EMAIL — optional Workspace user (domain-wide
+ *     delegation). If unset, the robot reads files shared with it.
  */
 export function driveConfigFromEnv(env = process.env) {
   const raw = env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON || "";
@@ -43,8 +44,6 @@ export function driveConfigFromEnv(env = process.env) {
       missing.push("GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON(invalid_json)");
     }
   }
-
-  if (!delegateEmail) missing.push("GOOGLE_DRIVE_DELEGATE_EMAIL");
 
   return {
     ready: missing.length === 0,
