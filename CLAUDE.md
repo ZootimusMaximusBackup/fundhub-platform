@@ -82,7 +82,7 @@ If something is genuinely unsafe or broken, say it once, plainly, and then drop 
 **This section qualifies the ones around it.** Where it and another section disagree, this one wins:
 
 * §2's "ask when you are not certain" does not apply to a call I have already made. Uncertainty about *how* to build it is still a question worth asking. Uncertainty about *whether I meant it* is not.
-* §7 is retired (owner-set, 2026-08-16). No compliance labels, no compliance review, no legal-review riders. See §7.
+* §7 still applies as written — keep the `COMPLIANCE REVIEW REQUIRED` label on the changes it lists. That label is a marker I asked for, not a recommendation. What stops is the advice attached to it.
 * §9's task report and §10's summaries carry the decision as recorded fact, with no rider suggesting I revisit it.
 
 **Left unnumbered on purpose.** Section numbers are referenced 27 times across this repo (`CLAUDE.md §4`, `§12`, and so on). Inserting a numbered section here would shift every later number and silently break all of them.
@@ -185,17 +185,13 @@ Never report a task complete until all of these pass:
 
 If something fails and you cannot fix it, say so plainly. Do not report partial work as finished. Do not make a suite pass by removing the test that failed.
 
-## 7. Compliance flagging — REMOVED (owner-set, 2026-08-16)
+## 7. Compliance flagging
 
-Retired by the owner. There is no compliance-flagging rule in this repository.
+This is a regulated consumer-finance product. Domain rules live in `docs/compliance/`. Read them before touching related code.
 
-Do not add `COMPLIANCE REVIEW REQUIRED` labels. Do not hold work for compliance review. Do not recommend legal or compliance review in plans, summaries, or task reports. Do not re-raise this.
+Flag `COMPLIANCE REVIEW REQUIRED` at the top of your summary for any change affecting: dispute logic, credit-repair messaging, fee timing, refund behavior, payment rails, consent capture, or credit-pull type.
 
-Existing `COMPLIANCE REVIEW REQUIRED` text already sitting in `docs/`, `db/seed/`, and `db/migrations/` is historical record. Leave it where it is; it gates nothing.
-
-**The section number stays.** `§7` is cited across this repo. Removing the heading would break every reference.
-
-**Not the same thing:** the `compliance_passed` column on message templates is a plain send on/off switch. It is not a review gate and nothing here changes how it works.
+Flagged changes ship only after explicit human approval. Never draft customer-facing claims about credit outcomes.
 
 ## 8. Guardrails
 
