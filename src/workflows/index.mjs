@@ -40,7 +40,9 @@ import { n06RenewalSecondWave } from './n-06-renewal-second-wave.mjs';
 import { roundStartedClientNotify } from './round-started-client-notify.mjs';
 import { s01NewLeadIntake } from './s-01-new-lead-intake.mjs';
 import { s04CallBooked } from './s-04-call-booked.mjs';
+import { s04bBookingReminders } from './s-04b-booking-reminders.mjs';
 import { s05aNoShowRecovery } from './s-05a-no-show-recovery.mjs';
+import { sNobookChase } from './s-nobook-chase.mjs';
 import { s06PostCallFundingPurchased } from './s-06-post-call-funding-purchased.mjs';
 import { s08PostCallFundingDeclined } from './s-08-post-call-funding-declined.mjs';
 import { sys01ClientValueCalculator } from './sys-01-client-value-calculator.mjs';
@@ -119,6 +121,8 @@ export const functions = [
   roundStartedClientNotify,
   s01NewLeadIntake,
   s04CallBooked,
+  s04bBookingReminders,
+  sNobookChase,
   s05aNoShowRecovery,
   s06PostCallFundingPurchased,
   s08PostCallFundingDeclined,

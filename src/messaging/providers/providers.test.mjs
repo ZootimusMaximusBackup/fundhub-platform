@@ -459,6 +459,23 @@ describe("twilio provider", () => {
     assert.strictEqual(sent.get("To"), "+15551234567");
   });
 
+  test("appends https MediaUrl values for MMS", async () => {
+    const bad = await twilio.send({
+      ...twMsg,
+      mediaUrls: ["http://insecure.example/x.png"]
+    }, { fetchImpl: fakeFetch({}), env: TW_ENV });
+    assert.strictEqual(bad.status, "rejected");
+
+    const f2 = fakeFetch({ status: 201, body: { sid: "SM2" } });
+    const ok = await twilio.send({
+      ...twMsg,
+      mediaUrls: ["https://fundhub.ai/assets/sms/result.png"]
+    }, { fetchImpl: f2, env: TW_ENV });
+    assert.strictEqual(ok.status, "sent");
+    const sent = new URLSearchParams(f2.calls[0].init.body);
+    assert.strictEqual(sent.getAll("MediaUrl")[0], "https://fundhub.ai/assets/sms/result.png");
+  });
+
   test("a plain number goes in From", async () => {
     const f = fakeFetch({ status: 201, body: { sid: "SM1" } });
     await twilio.send(twMsg, { fetchImpl: f, env: TW_ENV });

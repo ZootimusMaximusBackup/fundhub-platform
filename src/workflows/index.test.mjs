@@ -1,17 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert";
 
-test("index exports exactly 50 functions", async () => {
+test("index exports exactly 51 functions", async () => {
   const { functions } = await import("./index.mjs");
-  /* 50 since s-05a-no-show-recovery.mjs joined the registry (2026-08-04). The
+  /* 51 since s-04b + s-nobook joined (2026-08-15). The
      count is pinned so that adding a function is a visible decision rather than
      a drive-by — registering one is how a job starts running the day
      INNGEST_EVENT_KEY is set, so it should cost somebody a line in a test.
 
-     message-dispatch-sweeper.mjs is still deliberately ABSENT and has its own
-     test asserting that; it drains the whole outbound queue, which is the
-     owner's switch to throw. */
-  assert.equal(functions.length, 50, `expected 50, got ${functions.length}`);
+     message-dispatch-sweeper is registered; its own tests cover the outbound switch. */
+  assert.equal(functions.length, 51, `expected 51, got ${functions.length}`);
   for (const fn of functions) {
     assert.ok(fn && typeof fn === "object", "each entry should be an Inngest function object");
   }

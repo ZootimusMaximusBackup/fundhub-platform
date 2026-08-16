@@ -55,16 +55,26 @@ async function clientContext(db, clientId) {
   const fullName = [c.first_name, c.last_name].filter(Boolean).join(" ") || null;
   const base = String(process.env.APP_BASE_URL || process.env.URL || "https://fundhub.ai").replace(/\/+$/, "");
   const portalLoginUrl = `${base}/portal-login.html?email=${encodeURIComponent(c.email || "")}`;
+  const cf = c.custom_fields || {};
+  const bookingLink =
+    cf.calendar_booking_link ||
+    cf.booking_link ||
+    process.env.SALES_MEET_BOOKING_URL ||
+    "https://apply.fundhub.ai/funding-book-call";
   return {
     contact: {
-      ...(c.custom_fields || {}),
+      ...cf,
       first_name: c.first_name ?? null,
       last_name: c.last_name ?? null,
       name: fullName,
       full_name: fullName,
       email: c.email ?? null,
-      phone: c.phone ?? null
+      phone: c.phone ?? null,
+      calendar_booking_link: bookingLink,
+      booking_link: bookingLink
     },
+    custom_values: { booking_link: bookingLink },
+    calendar: { booking_link: bookingLink },
     // Used by U-02 funding delivery CTA (and any later portal buttons).
     portal_login_url: portalLoginUrl
   };

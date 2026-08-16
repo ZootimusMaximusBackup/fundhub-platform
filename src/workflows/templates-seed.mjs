@@ -100,7 +100,7 @@ export const KNOWN_TEMPLATES = [
   {
     template_key: "SMS-AISET04-HANDOFF",
     channel: "sms",
-    body: "Hey {{contact.first_name}}, it's Josh from FundHub. Your Strategy Session is starting in 15 minutes! I've briefed your Senior Advisor, {{user.name}}, on your UnderwriteIQ results and they're ready to review your {{contact.analyzer_prequal_amount}} pre-approval. Here's the Zoom link: {{appointment.meeting_location}}. {{user.name}} will take it from here! Reply STOP to opt out."
+    body: "Hey {{contact.first_name}}, it's Josh from Fundhub. Your call starts in 15 minutes. I've intro'd your advisor so you're not walking in cold — link: {{appointment.meeting_location}}. See you soon. Reply STOP to opt out."
   },
   {
     template_key: "SMS-BS01-01-BOOKED",
@@ -116,6 +116,36 @@ export const KNOWN_TEMPLATES = [
     template_key: "SMS-BS01-03-DAYOF",
     channel: "sms",
     body: "Hey {{contact.first_name}}, Fundhub — your call is coming up soon. Reply if you need anything before we start. Reply STOP to opt out."
+  },
+  {
+    template_key: "SMS-S04-01-CONFIRM",
+    channel: "sms",
+    body: "Hey {{contact.first_name}}, it's Fundhub. You're booked for {{appointment.start_time}}. Reply CONFIRM so we know you're set. Reschedule: {{custom_values.booking_link}} Reply STOP to opt out."
+  },
+  {
+    template_key: "SMS-S04-02-REMIND-24H",
+    channel: "sms",
+    body: "Fundhub reminder, {{contact.first_name}}: your call is tomorrow at {{appointment.start_time}}. Reply CONFIRM if you're still good. Reschedule: {{custom_values.booking_link}} Reply STOP to opt out."
+  },
+  {
+    template_key: "SMS-S04-03-REMIND-2H",
+    channel: "sms",
+    body: "Fundhub reminder, {{contact.first_name}}: your call starts at {{appointment.start_time}}. Reply CONFIRM if you're good to go. Reschedule: {{custom_values.booking_link}} Reply STOP to opt out."
+  },
+  {
+    template_key: "SMS-NOBOOK-01",
+    channel: "sms",
+    body: "Hey {{contact.first_name}}, it's Fundhub. Your file is ready — grab a time so we can walk you through what it supports: {{custom_values.booking_link}} Reply STOP to opt out."
+  },
+  {
+    template_key: "SMS-NOBOOK-02",
+    channel: "sms",
+    body: "Hey {{contact.first_name}}, Fundhub here. Still worth a look — same file, wrong order of apps is usually the ceiling. Book here: {{custom_values.booking_link}} Reply STOP to opt out."
+  },
+  {
+    template_key: "SMS-NOBOOK-03",
+    channel: "sms",
+    body: "Last nudge from Fundhub, {{contact.first_name}}. Want help mapping your cleanest path? {{custom_values.booking_link}} Reply STOP to opt out."
   },
   {
     template_key: "SMS-DPC04-RESCHEDULE-REBOOKING",

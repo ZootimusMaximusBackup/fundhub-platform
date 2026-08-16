@@ -135,6 +135,20 @@ async function attempt(message, { fetchImpl, timeoutMs, signal, env = process.en
   }
   form.set("Body", body);
 
+  // Optional MMS: public HTTPS MediaUrl values only (Twilio fetches them).
+  // Local file paths are refused — host under public/ and pass absolute https URLs.
+  const media = message.mediaUrls || message.media_urls || null;
+  if (Array.isArray(media)) {
+    for (const raw of media) {
+      const u = String(raw || "").trim();
+      if (!u) continue;
+      if (!/^https:\/\//i.test(u)) {
+        return rejection(`twilio MediaUrl must be https — got ${u.slice(0, 48)}`);
+      }
+      form.append("MediaUrl", u);
+    }
+  }
+
   // Twilio's Messages endpoint has no idempotency key. The duplicate-send guard
   // is the (org_id, provider_ref) unique index on messages from migration 004,
   // enforced long before this code runs. providerRef is deliberately NOT sent as

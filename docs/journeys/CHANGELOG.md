@@ -7,6 +7,8 @@ including when a change made a journey worse.
 
 2026-08-15 | all eight | Two staff routes added — `POST /api/customer-insights`, `GET /api/read/customer-insights`. Three collections: start (existing apply survey), mid check-in 7 days after pay (phone/AI, not Meet), ending Google Meet interview after funded. COMPLIANCE REVIEW REQUIRED — answers may later feed ads/VSL | Beta customer insight store + auto tasks | (this commit)
 
+2026-08-15 | client | Follow-up pack: S-04B booking confirm/24h/2h SMS, no-book chase after survey, fixed 3-way handoff copy, GHL agents retired, Twilio MMS MediaUrl support. COMPLIANCE REVIEW REQUIRED — outbound SMS | Owner: fix leftover fall-off / agents gaps | (this commit)
+
 2026-08-15 | client | BS-01 SMS pre-call companion: three texts on booking (booked → +24h → 2h before call), no video links, stops if call held. Email drip unchanged. COMPLIANCE REVIEW REQUIRED — outbound SMS | Owner: SMS back-end selling off GHL | (this commit)
 
 2026-08-15 | client | Portal pre-call polish: hero welcome, Facebook wins group, offers from catalog, empty states before call/credit pull, chat auto-opens with pre-call questions. COMPLIANCE REVIEW REQUIRED — offers, credit-pull empty states, chat collecting client data | Portal access is granted before the call | (this commit)

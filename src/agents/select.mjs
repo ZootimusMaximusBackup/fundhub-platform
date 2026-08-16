@@ -13,7 +13,7 @@
 //
 // Eligible = status in (live, shadow), channel covers the inbound channel,
 // agent_class = client_facing, channel is messaging (sms|email|sms_email),
-// runtime !== 'bland' (Bland stays on the external path until cutover).
+// runtime !== 'bland' | 'ghl' (Bland = voice vendor; GHL is out — owner 2026-08-15).
 
 const MESSAGING_CHANNELS = new Set(["sms", "email", "sms_email"]);
 const RUNNING = new Set(["live", "shadow"]);
@@ -32,7 +32,7 @@ export function isEligibleAgent(agent, inboundChannel) {
   if (!RUNNING.has(agent.status)) return false;
   if (agent.agent_class && agent.agent_class !== "client_facing") return false;
   if (!MESSAGING_CHANNELS.has(agent.channel)) return false;
-  if (agent.runtime === "bland") return false;
+  if (agent.runtime === "bland" || agent.runtime === "ghl") return false;
   if (!channelCompatible(agent.channel, inboundChannel)) return false;
   // Draft prompts empty → cannot usefully reply.
   if (!agent.prompt || !String(agent.prompt).trim()) return false;
@@ -125,6 +125,7 @@ export async function selectAgent(db, {
         AND agent_class = 'client_facing'
         AND channel IN ('sms', 'email', 'sms_email')
         AND COALESCE(runtime, '') <> 'bland'
+        AND COALESCE(runtime, '') <> 'ghl'
         AND prompt IS NOT NULL AND btrim(prompt) <> ''`,
     [orgId]
   );
