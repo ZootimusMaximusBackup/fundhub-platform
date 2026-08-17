@@ -250,6 +250,10 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
   <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
   <nav class="side-scroll" id="fh-side-nav">
 
+<div class="navgroup" data-fh-section="home"><button class="navhead" type="button">Home<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="partner-galaxy.html"><span class="ico">⌂</span><span class="lbl">Home</span></a>
+</div></div>
+
 <div class="navgroup" data-fh-section="sales"><button class="navhead" type="button">Sales<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
         <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
@@ -291,7 +295,6 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
         <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
         <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
         <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
-        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
 </div></div>
 
 <div class="navgroup" data-fh-section="admin"><button class="navhead" type="button">Admin<span class="chev">▾</span></button><div class="navlist">
@@ -299,7 +302,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
         <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
         <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
         <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Demo Mode</span></a>
-        <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
+        <a class="navitem on" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
 </div></div>
 
 <div class="navgroup" data-fh-section="portals"><button class="navhead" type="button">Portals<span class="chev">▾</span></button><div class="navlist">
@@ -444,14 +447,30 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
           </div>
 
           <!-- GENERATION -->
-          <div class="card" style="margin-top:14px">
-            <div class="card-hd"><div class="eyebrow">BS-06 <span class="sep">/</span> GENERATION</div><div class="spacer"></div><span class="tag-soon">Coming soon</span></div>
+          <div class="card" id="bsGenCard">
+            <div class="card-hd"><div class="eyebrow">BS-06 <span class="sep">/</span> GENERATION</div><div class="spacer"></div><span class="chip" id="suiteChip"><span class="cd"></span><span id="suiteTxt">Off</span></span></div>
             <div style="padding:12px 14px 14px">
-              <div class="fun soon">
-                <div class="funnel"><b>Generate VSL script</b><span>Built from your offer and the proven control, inside the compliance boundary.</span></div>
-                <div class="funnel"><b>Generate ad scripts</b><span>Hooks, angles, and creative variants from the winning swipe library.</span></div>
-                <div class="funnel"><b>Generate wordmark</b><span>Typographic lockups rendered in your display face.</span></div>
+              <div class="stats" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
+                <div class="stat"><div class="eyebrow">Writing left</div><div class="sv" id="kTokens">—</div><div class="sd">this month, of the cap</div></div>
+                <div class="stat"><div class="eyebrow">Pages live</div><div class="sv" id="kLive">0</div><div class="sd">published on our site</div></div>
               </div>
+              <div id="suiteOwnerRow" style="display:none;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+                <button class="btn dark mono" type="button" id="suiteOnBtn">Turn on for this partner</button>
+                <button class="btn mono" type="button" id="suiteOffBtn">Turn off</button>
+              </div>
+              <p class="hint" id="suiteOffMsg">The owner has not turned this on yet. You can still save your colors and name.</p>
+              <div id="suiteOnTools" style="display:none">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+                  <button class="btn dark" type="button" id="genCopyBtn">Write page copy</button>
+                  <button class="btn" type="button" id="genLogoBtn">Make a wordmark from the name</button>
+                </div>
+                <div class="fieldrow"><label for="histPage">Copy history</label><div>
+                  <select class="inp" id="histPage"></select>
+                  <select class="inp" id="histSection" style="margin-top:8px"></select>
+                  <div id="histList" style="margin-top:8px"></div>
+                </div></div>
+              </div>
+              <div class="hint" id="genMsg" style="margin-top:10px"></div>
             </div>
           </div>
 
@@ -532,11 +551,10 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
   KEY = MODE === "partner" ? "fh_partner_brand" : "fh_org_brand";
 
   var FUNNELS = [
-    {id:"apply",   n:"Application funnel",   d:"Hero, process, engine, options, guarantees, apply form. The fundhub.ai control."},
+    {id:"apply",   n:"Application funnel",   d:"Hero, process, engine, options, apply form. The fundhub.ai control."},
     {id:"diag",    n:"Diagnostic funnel",    d:"Straight to the assessment offer. Lowest friction entry."},
     {id:"edu",     n:"Education funnel",     d:"Two-program structure with curriculum and enrollment."},
     {id:"aff",     n:"Affiliate recruit",    d:"Two-track partner page. Recruits under your brand."},
-    {id:"mail",    n:"Direct-mail landing",  d:"PURL/QR destination matched to the mail piece."},
     {id:"book",    n:"Booking funnel",       d:"Straight to calendar. For warm and referral traffic."}
   ];
 
@@ -808,6 +826,122 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     return h;
   }
 
+  var LIVE_PAGES = [];
+  var SUITE = { enabled: false, remaining: null, cap: null, used: null };
+
+  function suiteMsg(t) {
+    var el = $("genMsg");
+    if (el) el.textContent = t || "";
+  }
+
+  function paintSuite() {
+    var chip = $("suiteChip");
+    var txt = $("suiteTxt");
+    if (txt) txt.textContent = SUITE.enabled ? "On" : "Off";
+    if (chip) chip.className = "chip " + (SUITE.enabled ? "on" : "");
+    var tok = $("kTokens");
+    if (tok) {
+      tok.textContent = SUITE.remaining == null ? "—" : String(SUITE.remaining);
+    }
+    var off = $("suiteOffMsg");
+    var tools = $("suiteOnTools");
+    if (off) off.style.display = SUITE.enabled ? "none" : "block";
+    if (tools) tools.style.display = SUITE.enabled ? "block" : "none";
+    var ownerRow = $("suiteOwnerRow");
+    if (ownerRow) ownerRow.style.display = viewerRole === "owner" && MODE === "partner" ? "flex" : "none";
+  }
+
+  function refreshSuite() {
+    if (MODE !== "partner" || !partnerId) {
+      SUITE = { enabled: false, remaining: null, cap: null, used: null };
+      paintSuite();
+      return;
+    }
+    fetch("/api/partner-marketing/usage?partner_id=" + encodeURIComponent(partnerId), { headers: authHeaders() })
+      .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .then(function (res) {
+        if (!res.ok) {
+          suiteMsg(res.message || res.error || "Could not load writing budget.");
+          return;
+        }
+        SUITE = {
+          enabled: !!res.enabled,
+          remaining: res.remaining,
+          cap: res.cap,
+          used: res.used
+        };
+        paintSuite();
+      });
+  }
+
+  function fillHistorySelects() {
+    var pageSel = $("histPage");
+    var secSel = $("histSection");
+    if (!pageSel) return;
+    pageSel.innerHTML = LIVE_PAGES.length
+      ? LIVE_PAGES.map(function (p) {
+          return '<option value="' + p.id + '">' + (p.title || p.funnel_key) + "</option>";
+        }).join("")
+      : '<option value="">No pages yet</option>';
+    fillHistorySections();
+  }
+
+  function fillHistorySections() {
+    var pageSel = $("histPage");
+    var secSel = $("histSection");
+    if (!secSel) return;
+    var page = LIVE_PAGES.filter(function (p) { return p.id === (pageSel && pageSel.value); })[0];
+    var sections = page && page.body_json && page.body_json.sections ? page.body_json.sections : [];
+    var unlocked = sections.filter(function (s) { return !s.locked; });
+    secSel.innerHTML = '<option value="">All unlocked blocks</option>' +
+      unlocked.map(function (s) {
+        return '<option value="' + (s.id || "") + '">' + (s.headline || s.type || s.id) + "</option>";
+      }).join("");
+    loadHistory();
+  }
+
+  function loadHistory() {
+    var list = $("histList");
+    var pageSel = $("histPage");
+    var secSel = $("histSection");
+    if (!list || !pageSel || !pageSel.value) {
+      if (list) list.innerHTML = "";
+      return;
+    }
+    var url = "/api/partner-marketing/copy-history?page_id=" + encodeURIComponent(pageSel.value);
+    if (secSel && secSel.value) url += "&section_id=" + encodeURIComponent(secSel.value);
+    fetch(url, { headers: authHeaders() })
+      .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .then(function (res) {
+        var items = (res && res.items) || [];
+        if (!items.length) {
+          list.innerHTML = '<div class="hint">No earlier versions yet. Write copy to start a history.</div>';
+          return;
+        }
+        list.innerHTML = items.map(function (v) {
+          var when = v.created_at ? String(v.created_at).slice(0, 16).replace("T", " ") : "";
+          return '<div class="funnel on" style="cursor:default;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;align-items:center">' +
+            "<div><b>" + (v.section_id || "") + "</b><span>" + when + "</span></div>" +
+            '<button type="button" class="btn mono" data-restore="' + v.id + '">Use this version</button></div>';
+        }).join("");
+        list.querySelectorAll("[data-restore]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            suiteMsg("Restoring…");
+            fetch("/api/partner-marketing/copy-history", {
+              method: "POST",
+              headers: authHeaders(),
+              body: JSON.stringify({ page_id: pageSel.value, version_id: btn.getAttribute("data-restore") })
+            }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+              .then(function (res) {
+                suiteMsg(res.ok ? "Restored that version." : (res.message || res.error || "Restore failed"));
+                refreshPages();
+                refreshSuite();
+              });
+          });
+        });
+      });
+  }
+
   function refreshPages() {
     var list = $("pagesList");
     var msg = $("pagesMsg");
@@ -824,6 +958,11 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
           return;
         }
         var items = res.items || [];
+        LIVE_PAGES = items;
+        var liveN = items.filter(function (p) { return p.status === "published"; }).length;
+        var kLive = $("kLive");
+        if (kLive) kLive.textContent = String(liveN);
+        fillHistorySelects();
         if (!items.length) {
           list.innerHTML = '<div class="hint">No page drafts yet. Select funnels above, then Create pages.</div>';
           return;
@@ -903,6 +1042,57 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     });
   }
   refreshPages();
+  refreshSuite();
+  var histPage = $("histPage");
+  var histSection = $("histSection");
+  if (histPage) histPage.addEventListener("change", fillHistorySections);
+  if (histSection) histSection.addEventListener("change", loadHistory);
+  function setSuite(on) {
+    suiteMsg(on ? "Turning on…" : "Turning off…");
+    fetch("/api/partner-marketing/enable", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ partner_id: partnerId, enabled: on })
+    }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .then(function (res) {
+        suiteMsg(res.ok ? (on ? "On for this partner." : "Off for this partner.") : (res.message || res.error || "Could not change"));
+        refreshSuite();
+      });
+  }
+  if ($("suiteOnBtn")) $("suiteOnBtn").addEventListener("click", function () { setSuite(true); });
+  if ($("suiteOffBtn")) $("suiteOffBtn").addEventListener("click", function () { setSuite(false); });
+  if ($("genCopyBtn")) $("genCopyBtn").addEventListener("click", function () {
+    var pageSel = $("histPage");
+    if (!pageSel || !pageSel.value) { suiteMsg("Create a page first."); return; }
+    suiteMsg("Writing copy…");
+    fetch("/api/partner-marketing/generate-copy", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ page_id: pageSel.value, section_id: ($("histSection") && $("histSection").value) || null })
+    }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .then(function (res) {
+        suiteMsg(res.ok ? "Copy written. Locked legal blocks were left alone." : (res.message || res.error || "Write failed"));
+        refreshPages();
+        refreshSuite();
+      });
+  });
+  if ($("genLogoBtn")) $("genLogoBtn").addEventListener("click", function () {
+    suiteMsg("Making wordmark…");
+    fetch("/api/partner-marketing/generate-logo", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ partner_id: partnerId, name: D.entity || D.name })
+    }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .then(function (res) {
+        if (!res.ok) { suiteMsg(res.message || res.error || "Wordmark failed"); return; }
+        if (res.brand && res.brand.wordmark_url) {
+          D.logo = res.brand.wordmark_url;
+          paint();
+        }
+        suiteMsg("Wordmark saved from the brand name.");
+        refreshSuite();
+      });
+  });
   $("submitBtn").addEventListener("click", function(){
     /* COMPLIANCE REVIEW REQUIRED — approval flow.
        This used to set D.status="submitted", write it to localStorage, flip the

@@ -337,9 +337,9 @@ describe("the client signing page — uploaded documents", () => {
     assert.match(CLIENT, /function waiting/);
   });
 
-  test("a signer can decline, with a reason", () => {
-    assert.match(CLIENT, /action: "decline"/);
-    assert.match(CLIENT, /id="declineBtn"/);
+  test("there is no decline button — they sign, or they don't", () => {
+    assert.equal(/id="declineBtn"/.test(CLIENT), false);
+    assert.equal(/I do not want to sign this/.test(CLIENT), false);
   });
 
   test("it shows the other signers' progress but never their contact details", () => {

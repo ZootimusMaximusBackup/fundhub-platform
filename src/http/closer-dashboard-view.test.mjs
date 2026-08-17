@@ -406,7 +406,7 @@ test("the page's copy and the module build the same view model from the same res
 /* ── the screen itself ────────────────────────────────────────────────────── */
 
 test("closer-dashboard.html loads data.js, without which every reader is undefined", () => {
-  assert.match(HTML, /<script src="data\.js"><\/script>/);
+  assert.match(HTML, /<script[^>]*src="data\.js"/);
 });
 
 test("closer-dashboard.html default markup is honest empty, not sample people", () => {
@@ -457,7 +457,8 @@ test("every DOM hook the wiring writes into is still in the markup", () => {
   assert.match(HTML, /class="res-note"/);
   assert.match(HTML, /class="bd-sub"[^>]*>D-04 /);
   assert.match(HTML, /class="bd-sub"[^>]*>D-03b /);
-  assert.match(HTML, /CD-02 \/ Deal Calculators/);
+  assert.match(HTML, /id="calcTitle"/);
+  assert.match(HTML, /Deal Calculators/);
 });
 
 test("the loading state is scoped to an attribute the wiring sets and clears", () => {

@@ -90,6 +90,7 @@ async function runScreen({ search = `?client_id=${CID}`, respond } = {}) {
       getElementById: (id) => (els[id] || (els[id] = makeEl(id))),
       createElement: () => makeEl(""),
       querySelectorAll: () => [],
+      documentElement: { style: { setProperty() {} } },
       body: { appendChild: (el) => { els[el.id] = el; } }
     },
     localStorage: {
@@ -142,8 +143,11 @@ const CARD = (over = {}) => ({
    Payment links defaults to an empty list: the panel is a later addition
    (src/payment-links/index.mjs) and most of the tests below are about the
    plan/cards panel above it, not this one. */
-function respondWith({ sub = {}, cards = {}, links = {}, subStatus = 200, cardStatus = 200, linksStatus = 200 } = {}) {
+function respondWith({ sub = {}, cards = {}, links = {}, clients = {}, subStatus = 200, cardStatus = 200, linksStatus = 200 } = {}) {
   return (p) => {
+    if (p.indexOf("/api/dashboard/clients") === 0) {
+      return { status: 200, body: { ok: true, clients: [], ...clients } };
+    }
     if (p.indexOf("/api/finance/subscriptions") === 0) {
       return { status: subStatus, body: subStatus === 200
         ? { ok: true, client_id: CID, current: null, history: [], ...sub }
@@ -181,9 +185,18 @@ const MONEY_SHAPED = /\b\d[\d,]*\.\d{2}\b/;
 
 describe("subscriptions.html — the reads it issues", () => {
 
-  test("with no client in the URL it asks for nothing and invents nothing", async () => {
-    const s = await runScreen({ search: "", respond: () => { throw new Error("no read expected"); } });
-    assert.deepEqual(s.calls, [], "the screen read the API without a client to read about");
+  test("with no client in the URL it asks for nothing about a plan and invents nothing", async () => {
+    const s = await runScreen({
+      search: "",
+      respond: (p) => {
+        if (p.indexOf("/api/dashboard/clients") === 0) {
+          return { status: 200, body: { ok: true, clients: [] } };
+        }
+        throw new Error("no read expected: " + p);
+      }
+    });
+    assert.ok(s.calls.every((c) => c.indexOf("/api/dashboard/clients") === 0),
+      "the screen read something besides the client picker with no client open:\n" + s.calls.join("\n"));
     assert.ok(/client_id/.test(s.html()), "the page does not say what is missing");
     assert.ok(!MONEY_SHAPED.test(s.html()),
       "money is on screen with no client named:\n" + s.html());
@@ -192,7 +205,8 @@ describe("subscriptions.html — the reads it issues", () => {
 
   test("with a client it reads the plan, the cards and the payment links, removed cards included", async () => {
     const s = await runScreen({ respond: respondWith({}) });
-    assert.equal(s.calls.length, 3);
+    assert.ok(s.calls.some((c) => c.indexOf("/api/dashboard/clients") === 0),
+      "the client picker did not load");
     assert.ok(s.calls.some((c) => c.indexOf("/api/finance/subscriptions?client_id=" + CID) === 0));
     const cardCall = s.calls.find((c) => c.indexOf("/api/finance/cards") === 0);
     assert.match(cardCall, /include_removed=1/,

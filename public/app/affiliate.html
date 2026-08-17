@@ -108,8 +108,11 @@ table.grid tbody tr:hover{background:var(--soft)}
 .terms dd{font-size:var(--fs-body);margin-top:4px;line-height:1.6}
 .foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
 .empty{padding:26px 16px;text-align:center;color:var(--gray2);font-size:var(--fs-body)}
-.scopebar{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:14px}
-.scopebar .st{font-size:var(--fs-body);color:var(--gray)}
+.scopebar{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:14px}
+.scopebar summary{cursor:pointer;font-size:var(--fs-body);color:var(--gray);list-style:none}
+.scopebar summary::-webkit-details-marker{display:none}
+.scopebar[open] summary{margin-bottom:8px}
+.scopebar .st{font-size:var(--fs-body);color:var(--gray);display:block}
 @media(max-width:1000px){.stats{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.funnel{flex-wrap:wrap}.fstep{flex:1 1 30%}}
 </style>
@@ -120,6 +123,10 @@ table.grid tbody tr:hover{background:var(--soft)}
   <aside class="side" id="side">
   <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
   <nav class="side-scroll" id="fh-side-nav">
+
+<div class="navgroup" data-fh-section="home"><button class="navhead" type="button">Home<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="partner-galaxy.html"><span class="ico">⌂</span><span class="lbl">Home</span></a>
+</div></div>
 
 <div class="navgroup" data-fh-section="sales"><button class="navhead" type="button">Sales<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
@@ -162,7 +169,6 @@ table.grid tbody tr:hover{background:var(--soft)}
         <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
         <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
         <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
-        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
 </div></div>
 
 <div class="navgroup" data-fh-section="admin"><button class="navhead" type="button">Admin<span class="chev">▾</span></button><div class="navlist">
@@ -175,7 +181,7 @@ table.grid tbody tr:hover{background:var(--soft)}
 
 <div class="navgroup" data-fh-section="portals"><button class="navhead" type="button">Portals<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
-        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+        <a class="navitem on" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
 </div></div>
 
   </nav>
@@ -194,17 +200,17 @@ table.grid tbody tr:hover{background:var(--soft)}
       <div class="linkbox">
         <div class="lt"></div>
         <div class="lb">
-          <div class="eyebrow">AF-01 <span class="sep">/</span> YOUR REFERRAL LINK</div>
+          <div class="eyebrow">YOUR REFERRAL LINK</div>
           <div class="linkrow">
             <input id="reflink" readonly value="">
             <button class="btn mono" id="copyLink">Copy link</button>
             <button class="btn mono" id="copyCode">Copy code</button>
           </div>
           <div style="display:flex;gap:26px;margin-top:15px;flex-wrap:wrap">
-            <div><div class="eyebrow" style="color:#71717A">AF-01 <span class="sep">/</span> CODE</div><div class="mono" id="affCode" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">No code yet</div></div>
-            <div><div class="eyebrow" style="color:#71717A">AF-01 <span class="sep">/</span> CLICKS 30D</div><div class="mono" id="affClicks" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">—</div></div>
-            <div><div class="eyebrow" style="color:#71717A">AF-01 <span class="sep">/</span> RATE</div><div class="mono" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">Per agreement</div></div>
-            <div><div class="eyebrow" style="color:#71717A">AF-01 <span class="sep">/</span> COOKIE</div><div class="mono" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">60d</div></div>
+            <div><div class="eyebrow" style="color:#71717A">CODE</div><div class="mono" id="affCode" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">No code yet</div></div>
+            <div><div class="eyebrow" style="color:#71717A">CLICKS 30D</div><div class="mono" id="affClicks" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">—</div></div>
+            <div><div class="eyebrow" style="color:#71717A">RATE</div><div class="mono" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">Per agreement</div></div>
+            <div><div class="eyebrow" style="color:#71717A">COOKIE</div><div class="mono" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">60d</div></div>
           </div>
         </div>
       </div>
@@ -218,15 +224,16 @@ table.grid tbody tr:hover{background:var(--soft)}
       </div>
 
       <div class="stats" style="margin-top:14px">
-        <div class="stat"><div class="eyebrow">AF-02 <span class="sep">/</span> REFERRED</div><div class="sv" id="kRef">—</div><div class="sd">lifetime leads · comes from your referral tracking, not connected to this page yet</div></div>
-        <div class="stat"><div class="eyebrow">AF-02 <span class="sep">/</span> CONVERTED</div><div class="sv" id="kConv">—</div><div class="sd" id="kConvRate">comes from your referral tracking, not connected to this page yet</div></div>
-        <div class="stat"><div class="eyebrow">AF-02 <span class="sep">/</span> OWED</div><div class="sv" id="kOwed">$0</div><div class="sd">accrued, not yet paid</div></div>
-        <div class="stat"><div class="eyebrow">AF-02 <span class="sep">/</span> PAID</div><div class="sv" id="kPaid">—</div><div class="sd">lifetime · comes from past payout runs, not connected to this page yet</div></div>
+        <div class="stat"><div class="eyebrow">REFERRED</div><div class="sv" id="kRef">—</div><div class="sd">lifetime leads · comes from your referral tracking, not connected to this page yet</div></div>
+        <div class="stat"><div class="eyebrow">CONVERTED</div><div class="sv" id="kConv">—</div><div class="sd" id="kConvRate">comes from your referral tracking, not connected to this page yet</div></div>
+        <div class="stat"><div class="eyebrow">OWED</div><div class="sv" id="kOwed">$0</div><div class="sd">accrued, not yet paid</div></div>
+        <div class="stat"><div class="eyebrow">PAID</div><div class="sv" id="kPaid">—</div><div class="sd">lifetime · comes from past payout runs, not connected to this page yet</div></div>
       </div>
 
-      <div class="scopebar" style="margin-top:14px">
+      <details class="scopebar" style="margin-top:14px">
+        <summary class="st">What you can see</summary>
         <span class="st">You only see people who used your link, and only your own payouts. You do not see their contact details or credit file.</span>
-      </div>
+      </details>
 
       <div class="card" id="brainCard" style="margin:14px 0">
         <div class="hair"></div>
@@ -251,8 +258,31 @@ table.grid tbody tr:hover{background:var(--soft)}
         </div>
       </div>
 
+      <div class="card" id="blasterCard" style="margin-top:14px">
+        <div class="hair"></div>
+        <div class="card-hd">
+          <div>
+            <div class="eyebrow">Partner gift</div>
+            <div style="font-weight:600;margin-top:2px">Message Blaster for Mac</div>
+          </div>
+        </div>
+        <div class="card-bd">
+          <p style="color:var(--gray);font-size:var(--fs-body);margin-bottom:10px;line-height:1.55">
+            Text a personalized iMessage to everyone in one Contacts group on your Mac. Type
+            <span class="mono">{name}</span> in your message and it becomes each person's first name.
+            You see the full list before anything sends.
+          </p>
+          <ol style="color:var(--gray);font-size:var(--fs-body);margin:0 0 12px 18px;line-height:1.55">
+            <li>In Contacts, make a group with only the people who should get the message.</li>
+            <li>Download and open Message Blaster. First time only: right-click → Open if Mac blocks it.</li>
+            <li>Allow Contacts and Messages when Mac asks.</li>
+          </ol>
+          <button class="btn dark" type="button" id="blasterBtn">Download Message Blaster</button>
+          <p id="blasterStatus" class="mono" style="margin-top:10px;font-size:var(--fs-caption);color:var(--gray)"></p>
+        </div>
+      </div>
+
       <div class="card" style="margin-top:14px">
-        <div class="card-hd"><div class="eyebrow">AF-03 <span class="sep">/</span> FUNNEL</div>
           <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">LIFETIME · CLICK TO FUNDED</span></div>
         <div class="card-bd"><div class="empty" id="funnel">Nothing to show yet. Clicks, sign-ups and funded deals are not connected to this page, so it cannot count them.</div></div>
       </div>
@@ -273,7 +303,7 @@ table.grid tbody tr:hover{background:var(--soft)}
             </select>
             <input id="q" placeholder="Filter business…" style="border:1px solid var(--line);border-radius:7px;padding:6px 10px;font-size:var(--fs-body);width:180px">
             <div class="spacer"></div>
-            <div class="eyebrow">AF-04 <span class="sep">/</span> REFERRED LEADS</div>
+            <div class="eyebrow">REFERRED LEADS</div>
           </div>
           <div style="overflow-x:auto"><table class="grid">
             <thead><tr><th>Referred</th><th>Business</th><th>Status</th><th>First paid product</th><th>Basis</th><th style="text-align:right">Commission</th><th>Payout</th></tr></thead>
@@ -284,14 +314,14 @@ table.grid tbody tr:hover{background:var(--soft)}
               <td style="border-top:2px solid var(--line)"></td></tr></tfoot>
           </table></div>
           <div style="padding:12px 16px;border-top:1px solid var(--line);background:var(--soft);font-size:var(--fs-body);color:var(--gray);line-height:1.55">
-            Commission accrues — at the rate in your partner agreement — on the <strong>first</strong> paid product on a referred client — rule
-            <span class="mono">CR-05 v1</span>. Later purchases by the same client do not pay again. A lead that
+            Commission accrues — at the rate in your partner agreement — on the <strong>first</strong> paid product on a referred client.
+            Later purchases by the same client do not pay again. A lead that
             never pays never accrues, which is why "Clicked" and "Signed up" rows show no commission.
           </div>
         </div>
 
         <div class="tabpane" id="tab-payouts">
-          <div class="card-hd"><div class="eyebrow">AF-05 <span class="sep">/</span> PAYOUT HISTORY</div>
+          <div class="card-hd"><div class="eyebrow">PAYOUT HISTORY</div>
             <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">FRIDAYS · ACH</span></div>
           <div style="overflow-x:auto"><table class="grid">
             <thead><tr><th>Run date</th><th>Period covered</th><th>Clients</th><th>Method</th><th style="text-align:right">Amount</th><th>Status</th></tr></thead>
@@ -301,9 +331,9 @@ table.grid tbody tr:hover{background:var(--soft)}
 
         <div class="tabpane" id="tab-terms">
           <div class="card-bd">
-            <div class="eyebrow" style="margin-bottom:12px">AF-06 <span class="sep">/</span> PARTNER TERMS</div>
+            <div class="eyebrow" style="margin-bottom:12px">PARTNER TERMS</div>
             <dl class="terms" style="max-width:74ch">
-              <dt>Rate</dt><dd>first qualified paid outcome on any client attributed to your code — rule <span class="mono">CR-05 v1</span>, effective 2026-01-15. If the rate ever changes, the version open on the day a client paid is the one that governs that payout.</dd>
+              <dt>Rate</dt><dd>first qualified paid outcome on any client attributed to your code, effective 2026-01-15. If the rate ever changes, the version open on the day a client paid is the one that governs that payout.</dd>
               <dt>Attribution window</dt><dd>60 days from first click. Last-touch: if another affiliate's link is clicked after yours inside the window, the later click takes the commission.</dd>
               <dt>Qualifying products</dt><dd>Business Financial Assessment ($32) · Consulting Services Deposit ($3,000) · Consulting Services Package (~$1,000 DIY) · Credit Optimization Bundle ($2,000) · Inquiry Removal. The 10% success fee is not a qualifying product.</dd>
               <dt>Payout schedule</dt><dd>Fridays, ACH, on balances above $50. Below that the balance rolls to the next run.</dd>
@@ -558,6 +588,44 @@ renderLeads(); renderPayouts();
       btn.disabled = false;
       status.textContent = "Offline — " + ((e && e.message) || "error");
     });
+  });
+})();
+</script>
+
+<script>
+(function () {
+  "use strict";
+  var btn = document.getElementById("blasterBtn");
+  if (!btn) return;
+  var status = document.getElementById("blasterStatus");
+  function token() { try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; } }
+  function isDemo() { try { return localStorage.getItem("fh_demo") === "1"; } catch (e) { return false; } }
+  btn.addEventListener("click", function () {
+    if (isDemo()) { if (status) status.textContent = "Demo session — download not available."; return; }
+    var t = token();
+    if (!t) { if (status) status.textContent = "Sign in to download."; return; }
+    btn.disabled = true;
+    if (status) status.textContent = "Preparing download…";
+    fetch("/api/gifts/message-blaster", {
+      headers: { authorization: "Bearer " + t, accept: "application/x-apple-diskimage" }
+    }).then(function (res) {
+      if (!res.ok) {
+        return res.json().catch(function () { return {}; }).then(function (j) {
+          throw new Error(j.error || ("HTTP " + res.status));
+        });
+      }
+      return res.blob();
+    }).then(function (blob) {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "MessageBlaster.dmg";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      if (status) status.textContent = "Download started — open the file on your Mac.";
+    }).catch(function (e) {
+      if (status) status.textContent = "Could not download — " + ((e && e.message) || "error");
+    }).finally(function () { btn.disabled = false; });
   });
 })();
 </script>

@@ -285,6 +285,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
   <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
   <nav class="side-scroll" id="fh-side-nav">
 
+<div class="navgroup" data-fh-section="home"><button class="navhead" type="button">Home<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="partner-galaxy.html"><span class="ico">⌂</span><span class="lbl">Home</span></a>
+</div></div>
+
 <div class="navgroup" data-fh-section="sales"><button class="navhead" type="button">Sales<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
         <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
@@ -326,12 +330,11 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
         <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
         <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
-        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
 </div></div>
 
 <div class="navgroup" data-fh-section="admin"><button class="navhead" type="button">Admin<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
-        <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
+        <a class="navitem on" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
         <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
         <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Demo Mode</span></a>
         <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
@@ -358,11 +361,11 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 
       <!-- ══ HR-00 · SUMMARY ═════════════════════════════════════════════ -->
       <div class="stats" id="statRow">
-        <div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> BENCH</div><div class="sv">—</div><div class="sd">loading…</div></div>
-        <div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> OPEN APPLICATIONS</div><div class="sv">—</div><div class="sd">loading…</div></div>
-        <div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> NEEDS A HUMAN</div><div class="sv">—</div><div class="sd">loading…</div></div>
-        <div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> POSTINGS POSTED</div><div class="sv">—</div><div class="sd">loading…</div></div>
-        <div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> HUMAN OVERRIDE RATE</div><div class="sv">—</div><div class="sd">loading…</div></div>
+        <div class="stat"><div class="eyebrow">BENCH</div><div class="sv">—</div><div class="sd">loading…</div></div>
+        <div class="stat"><div class="eyebrow">OPEN APPLICATIONS</div><div class="sv">—</div><div class="sd">loading…</div></div>
+        <div class="stat"><div class="eyebrow">NEEDS A HUMAN</div><div class="sv">—</div><div class="sd">loading…</div></div>
+        <div class="stat"><div class="eyebrow">POSTINGS POSTED</div><div class="sv">—</div><div class="sd">loading…</div></div>
+        <div class="stat"><div class="eyebrow">HUMAN OVERRIDE RATE</div><div class="sv">—</div><div class="sd">loading…</div></div>
       </div>
       <div class="deriv" id="deriv"></div>
 
@@ -370,7 +373,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <div class="card gate">
         <div class="gbar"></div>
         <div class="card-hd">
-          <div class="eyebrow">HR-01 <span class="sep">/</span> THE HUMAN GATE</div>
+          <div class="eyebrow">THE HUMAN GATE</div>
           <div class="spacer"></div>
           <span class="badge b-accent">advisory only</span>
         </div>
@@ -401,7 +404,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <!-- ══ HR-02 · THE BENCH ═══════════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">HR-02 <span class="sep">/</span> THE BENCH</div>
+          <div class="eyebrow">THE BENCH</div>
           <div class="spacer"></div>
           <span class="badge b-gray">always-on recruiting</span>
           <span class="badge b-gray mono">worst shortfall first</span>
@@ -431,7 +434,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <!-- ══ HR-03 · PIPELINE BOARD ══════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">HR-03 <span class="sep">/</span> PIPELINE BOARD</div>
+          <div class="eyebrow">PIPELINE BOARD</div>
           <div class="spacer"></div>
           <div class="selwrap"><label for="fRole">role</label><select id="fRole"></select></div>
           <div class="selwrap"><label for="fSource">source</label><select id="fSource"></select></div>
@@ -469,7 +472,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <!-- ══ HR-04 · NEEDS A HUMAN ═══════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">HR-04 <span class="sep">/</span> NEEDS A HUMAN</div>
+          <div class="eyebrow">NEEDS A HUMAN</div>
           <div class="spacer"></div>
           <span class="badge b-warn" id="rqCount">—</span>
           <span class="badge b-gray mono">flagged or not scored</span>
@@ -500,7 +503,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <!-- ══ HR-05 · JOB POSTINGS ════════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">HR-05 <span class="sep">/</span> JOB POSTINGS &amp; SYNDICATION</div>
+          <div class="eyebrow">JOB POSTINGS &amp; SYNDICATION</div>
           <div class="spacer"></div>
           <div class="rail" id="postStateRail"></div>
           <div class="rail" id="postChannelRail"></div>
@@ -540,7 +543,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <!-- ══ HR-06 · FUNNEL BY SOURCE ════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">HR-06 <span class="sep">/</span> FUNNEL BY SOURCE</div>
+          <div class="eyebrow">FUNNEL BY SOURCE</div>
           <div class="spacer"></div>
           <div class="selwrap"><label for="fnRole">role</label><select id="fnRole"></select></div>
           <div class="selwrap"><label for="fnDays">days</label><select id="fnDays">
@@ -579,7 +582,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <!-- ══ HR-07 · DECISION LOG ════════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">HR-07 <span class="sep">/</span> DECISION LOG · AEDT AUDIT TRAIL</div>
+          <div class="eyebrow">DECISION LOG · AEDT AUDIT TRAIL</div>
           <div class="spacer"></div>
           <div class="selwrap"><label for="dcRole">role</label><select id="dcRole"></select></div>
           <div class="selwrap"><label for="dcDays">days</label><select id="dcDays">
@@ -637,7 +640,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dwTitle" aria-hidden="true" inert>
   <div class="dw-hd">
     <div style="min-width:0">
-      <div class="eyebrow">HR-08 <span class="sep">/</span> APPLICATION REVIEW</div>
+      <div class="eyebrow">APPLICATION REVIEW</div>
       <h2 id="dwTitle">—</h2>
       <div id="dwSub" class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.07em;margin-top:5px"></div>
     </div>
@@ -1674,19 +1677,19 @@ function renderStats(){
   var orate = judged.length ? (100*overrides.length/judged.length) : null;
 
   document.getElementById('statRow').innerHTML =
-    '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> BENCH</div>'+
+    '<div class="stat"><div class="eyebrow">BENCH</div>'+
       '<div class="sv">'+benchCount+' <span class="nul" style="font-size:var(--fs-title)">/ '+benchTarget+'</span></div>'+
       '<div class="sd">shortfall '+shortfall+' across '+bench.length+' active roles'+demoNote(demoOpen)+'</div></div>'+
-    '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> OPEN APPLICATIONS</div>'+
+    '<div class="stat"><div class="eyebrow">OPEN APPLICATIONS</div>'+
       '<div class="sv">'+openApps+'</div>'+
       '<div class="sd">still open, across all roles'+demoNote(demoOpen)+'</div></div>'+
-    '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> NEEDS A HUMAN</div>'+
+    '<div class="stat"><div class="eyebrow">NEEDS A HUMAN</div>'+
       '<div class="sv">'+queue.length+'</div>'+
       '<div class="sd">flagged or not scored · '+queueOpen+' still open'+demoNote(demoQueue)+'</div></div>'+
-    '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> POSTINGS POSTED</div>'+
+    '<div class="stat"><div class="eyebrow">POSTINGS POSTED</div>'+
       '<div class="sv">'+posted+' <span class="nul" style="font-size:var(--fs-title)">/ '+POSTINGS.length+'</span></div>'+
       '<div class="sd">'+failed+' failed · LinkedIn posting unconfirmed</div></div>'+
-    '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> HUMAN OVERRIDE RATE</div>'+
+    '<div class="stat"><div class="eyebrow">HUMAN OVERRIDE RATE</div>'+
       '<div class="sv small">'+(orate===null?'—':orate.toFixed(1)+'%')+'</div>'+
       '<div class="sd">'+overrides.length+' of '+judged.length+' decisions differed</div></div>';
 
@@ -1720,8 +1723,11 @@ function renderStats(){
 /* ══ HR-03 · PIPELINE BOARD ══════════════════════════════════════════════ */
 var boardState = {stage:'all', role:'', source:'', flagged:false};
 
+var SHOW_DEMO_ROWS = false;
+
 function boardFiltered(ignoreStage){
   return APPS.filter(function(a){
+    if(!SHOW_DEMO_ROWS && a.is_demo_row) return false;
     if(!ignoreStage && boardState.stage!=='all' && a.stage_key!==boardState.stage) return false;
     if(boardState.role && a.role_key!==boardState.role) return false;
     if(boardState.source && a.source!==boardState.source) return false;
@@ -1820,7 +1826,7 @@ function renderBoard(){
 
 /* ══ HR-04 · NEEDS A HUMAN ═══════════════════════════════════════════════ */
 function renderReviewQueue(){
-  var rows = APPS.filter(function(a){ return a.needs_human; });
+  var rows = APPS.filter(function(a){ return a.needs_human && (SHOW_DEMO_ROWS || !a.is_demo_row); });
   rows.sort(function(x,y){
     if(x.sort_order!==y.sort_order) return x.sort_order-y.sort_order;
     return pd(y.entered_stage_at)-pd(x.entered_stage_at);
@@ -2327,7 +2333,7 @@ function renderDrawerBody(a){
       'and a written reason; the database enforces this.</b><br>'+
       'Nothing in this panel can be changed — it only shows what was recorded.</div></div>'+
 
-    '<div class="dw-sec"><div class="eyebrow">HR-08.1 <span class="sep">/</span> CANDIDATE</div>'+
+    '<div class="dw-sec"><div class="eyebrow">CANDIDATE</div>'+
       '<div class="kv">'+
         '<div><div class="k2">email</div><div class="v">'+esc(a.email)+'</div></div>'+
         '<div><div class="k2">phone</div><div class="v">'+esc(a.phone||'—')+'</div></div>'+
@@ -2357,7 +2363,7 @@ function renderDrawerBody(a){
       (a.notes?'<div class="note" style="margin-top:9px"><b>notes:</b> '+esc(a.notes)+'</div>':'')+
     '</div>'+
 
-    '<div class="dw-sec"><div class="eyebrow">HR-08.2 <span class="sep">/</span> ANSWERS AS SUBMITTED</div>'+
+    '<div class="dw-sec"><div class="eyebrow">ANSWERS AS SUBMITTED</div>'+
       '<div class="panel"><div class="panel-hd"><span>'+answerKeys.length+' field'+(answerKeys.length===1?'':'s')+'</span>'+
         badge('b-gray','exactly as submitted')+'</div><div class="panel-bd">'+
         (answerKeys.length?'<div class="catgrid" style="grid-template-columns:180px minmax(0,1fr)">'+
@@ -2371,20 +2377,20 @@ function renderDrawerBody(a){
         'so a fairness check can re-run the score on exactly what the grader saw.</div>'+
       '</div></div></div>'+
 
-    '<div class="dw-sec"><div class="eyebrow">HR-08.3 <span class="sep">/</span> SCORE HISTORY — '+a.scores.length+' ENTR'+(a.scores.length===1?'Y':'IES')+'</div>'+
+    '<div class="dw-sec"><div class="eyebrow">SCORE HISTORY — '+a.scores.length+' ENTR'+(a.scores.length===1?'Y':'IES')+'</div>'+
       scorePanel(a)+
       '<div class="note" style="margin-top:9px">This is the <b>full</b> history, oldest first. Scoring somebody again adds '+
       'a new entry, it never replaces the old one, and a score cannot be deleted — an override that hid the original '+
       'would defeat the whole point of keeping the record. The board shows only the latest entry.</div>'+
     '</div>'+
 
-    '<div class="dw-sec"><div class="eyebrow">HR-08.4 <span class="sep">/</span> ROLE SCORECARD &amp; COMP</div>'+
+    '<div class="dw-sec"><div class="eyebrow">ROLE SCORECARD &amp; COMP</div>'+
       scorecardPanel(role)+'</div>'+
 
-    '<div class="dw-sec"><div class="eyebrow">HR-08.5 <span class="sep">/</span> INTERVIEWS</div>'+
+    '<div class="dw-sec"><div class="eyebrow">INTERVIEWS</div>'+
       interviewPanel(a)+'</div>'+
 
-    '<div class="dw-sec"><div class="eyebrow">HR-08.6 <span class="sep">/</span> DECISIONS</div>'+
+    '<div class="dw-sec"><div class="eyebrow">DECISIONS</div>'+
       decisionPanel(a.decisions)+'</div>';
 }
 
@@ -2557,6 +2563,7 @@ var HIRING_SRC = {};
 function wireHiring(){
   var demo=false; try{ demo = localStorage.getItem('fh_demo')==='1'; }catch(e){}
   if(demo){
+    SHOW_DEMO_ROWS = true;
     APPS = SAMPLE_APPS.slice();
     POSTINGS = SAMPLE_POSTINGS.slice();
     DECISIONS = SAMPLE_DECISIONS.slice();
@@ -2569,6 +2576,10 @@ function wireHiring(){
   }
   FHData.banner('sample','loading hiring…','hiring');
   Promise.all([
+    apiGet('/api/demo/mode').then(function(res){
+      var d = res && (res.data || res);
+      if (res && res.ok && d && d.demo_mode_enabled) SHOW_DEMO_ROWS = true;
+    }).catch(function(){}),
     apiGet('/api/hiring/candidates?state=all&limit=200').then(function(res){
       HIRING_SRC.candidates=res;
       if(res.ok){

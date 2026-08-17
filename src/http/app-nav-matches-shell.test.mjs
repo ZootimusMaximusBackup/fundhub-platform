@@ -44,7 +44,7 @@ const NO_SIDEBAR = new Set([
 ]);
 
 function navHrefs(html) {
-  return [...html.matchAll(/class="navitem"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+  return [...html.matchAll(/class="navitem[^"]*"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
 }
 
 function canonicalSidebar() {

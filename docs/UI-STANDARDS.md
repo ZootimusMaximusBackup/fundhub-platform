@@ -77,6 +77,16 @@ Every dashboard is built for its role's first question of the day:
 - **Client:** "Where is my money/file?" — status of their thing, next step, one contact action.
 If a screen serves the wrong question first, it fails this doc regardless of how clean it looks.
 
+## 11. PHONE (390px)
+
+The CRM must work on a phone. Design and test at **390px** wide.
+
+- **One column.** KPI rows, two-pane screens, Present, and card grids stack vertically. Never two columns squeezed to one letter per line.
+- **No sideways page scroll.** A table that must stay a table may scroll inside its own box. Everything else stacks.
+- **Hit targets stay 40px+.** Text stays at least 11px.
+- **The name chip lives in the header**, not over the page.
+- **The menu opens the rail.** The rail does not sit on the page as a strip of icons.
+
 ---
 
 *Slop signatures (instant fail): uneven card rows · five borders where spacing would do · buttons that 403 · sample data as real · full-page spinner · centered paragraphs · "Submit" · six font sizes · metrics with no comparison · nav items a role can't use.*

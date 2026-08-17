@@ -178,7 +178,6 @@ test.describe("hiring / creative / social / campaign", () => {
     "/app/creative-factory.html",
     "/app/social-studio.html",
     "/app/campaign-manager.html",
-    "/app/content-admin.html",
     "/app/galaxy.html",
     "/app/affiliate.html",
     "/app/sample-data.html",

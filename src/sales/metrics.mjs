@@ -5,7 +5,7 @@
 import { BELIEFS, BELIEF_LABELS } from "./beliefs.mjs";
 import { countUnlogged, listUnloggedCalls } from "./call-outcomes.mjs";
 import { isDemoEmail } from "../auth/demo-logins.mjs";
-import { demoClause } from "../demo/exclude-demo.mjs";
+import { demoClause, orgDemoModeEnabled } from "../demo/exclude-demo.mjs";
 import { listRecentRecordings } from "./recordings.mjs";
 
 function monthWindow(now = new Date()) {
@@ -514,12 +514,13 @@ async function floorFunnel(db, { orgId, start, end }) {
   ]);
   const bookedN = Number(booked.rows[0]?.n || 0);
   const held = Number(outcomes.rows[0]?.held || 0);
+  const bookedOut = Math.max(bookedN, held);
   const deposits = Number(outcomes.rows[0]?.deposits || 0);
   const d2f = await depositToFunded(db, { orgId, start, end });
   return {
-    booked: bookedN,
+    booked: bookedOut,
     held,
-    show_rate: rate(held, bookedN),
+    show_rate: rate(held, bookedOut),
     deposits,
     close_rate: rate(deposits, held),
     funded: d2f.funded,
@@ -552,9 +553,11 @@ async function floorFunnelDay(db, { orgId, day }) {
       [orgId, day]
     )
   ]);
+  const bookedN = Number(booked.rows[0]?.n || 0);
+  const held = Number(outcomes.rows[0]?.held || 0);
   return {
-    booked: Number(booked.rows[0]?.n || 0),
-    held: Number(outcomes.rows[0]?.held || 0),
+    booked: Math.max(bookedN, held),
+    held,
     deposits: Number(outcomes.rows[0]?.deposits || 0)
   };
 }
@@ -581,29 +584,31 @@ export function isOwnerSetCloser({ name, email } = {}) {
     || e === OWNER_SET_CLOSER.email;
 }
 
-export function isBlockedCloserIdentity({ name, email, is_demo } = {}) {
-  if (isOwnerSetCloser({ name, email })) return false;
-  if (is_demo === true || is_demo === "true" || is_demo === "t") return true;
+export function isBlockedCloserIdentity({ name, email, is_demo } = {}, { demoMode = false } = {}) {
   const n = String(name || "").trim();
   const e = String(email || "").trim().toLowerCase();
-  if (isDemoEmail(e)) return true;
   if (BLOCKED_CLOSER_NAMES.has(n.toLowerCase())) return true;
-  if (/\bdemo\b/i.test(n) || /sandbox/i.test(n) || /sandbox/i.test(e)) return true;
+  if (/sandbox/i.test(n) || /sandbox/i.test(e)) return true;
   if (/^test\b/i.test(n)) return true;
+  if (demoMode) return false;
+  if (is_demo === true || is_demo === "true" || is_demo === "t") return true;
+  if (isDemoEmail(e)) return true;
+  if (/\bdemo\b/i.test(n)) return true;
   return false;
 }
 
-export function belongsOnCloserBoard(staff = {}) {
-  if (isBlockedCloserIdentity(staff)) return false;
-  if (isOwnerSetCloser(staff)) return true;
+export function belongsOnCloserBoard(staff = {}, opts = {}) {
+  if (String(staff.role || "").trim().toLowerCase() === "owner") return false;
+  if (isBlockedCloserIdentity(staff, opts)) return false;
   return String(staff.role || "").trim().toLowerCase() === "closer";
 }
 
-export function filterCloserRoster(rows) {
-  return (rows || []).filter(belongsOnCloserBoard);
+export function filterCloserRoster(rows, opts) {
+  return (rows || []).filter((row) => belongsOnCloserBoard(row, opts));
 }
 
 async function closerRoster(db, { orgId, start, end, now }) {
+  const demoMode = await orgDemoModeEnabled(db, orgId);
   const r = await db.query(
     `SELECT s.id AS staff_id, s.name, s.email, s.role, s.is_demo,
             sh.started_at AS shift_started,
@@ -627,17 +632,13 @@ async function closerRoster(db, { orgId, start, end, now }) {
        ) agg ON true
       WHERE s.org_id = $1
         AND s.status = 'active'
-        AND (
-          lower(btrim(s.role)) = 'closer'
-          OR lower(btrim(s.email)) = '${OWNER_SET_CLOSER.email}'
-          OR lower(btrim(s.name)) = '${OWNER_SET_CLOSER.name.toLowerCase()}'
-        )
+        AND lower(btrim(s.role)) = 'closer'
       ORDER BY cash_cents DESC, s.name`,
     [orgId, start.toISOString(), end.toISOString()]
   );
 
   const out = [];
-  for (const row of filterCloserRoster(r.rows)) {
+  for (const row of filterCloserRoster(r.rows, { demoMode })) {
     const d2f = await depositToFunded(db, {
       orgId, staffId: row.staff_id, start, end
     });

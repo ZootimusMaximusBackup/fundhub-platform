@@ -322,6 +322,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
   <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
   <nav class="side-scroll" id="fh-side-nav">
 
+<div class="navgroup" data-fh-section="home"><button class="navhead" type="button">Home<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="partner-galaxy.html"><span class="ico">⌂</span><span class="lbl">Home</span></a>
+</div></div>
+
 <div class="navgroup" data-fh-section="sales"><button class="navhead" type="button">Sales<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
         <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
@@ -361,9 +365,8 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
 
 <div class="navgroup" data-fh-section="marketing"><button class="navhead" type="button">Marketing<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
-        <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
+        <a class="navitem on" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
         <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
-        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
 </div></div>
 
 <div class="navgroup" data-fh-section="admin"><button class="navhead" type="button">Admin<span class="chev">▾</span></button><div class="navlist">
@@ -387,7 +390,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
     <div class="topbar">
       <span class="crumb">Marketing</span><h1>Social Studio</h1>
       <div class="spacer"></div>
-      <span class="selwrap"><label for="partnerSel">partner_id</label>
+      <span class="selwrap"><label for="partnerSel">Partner</label>
         <select id="partnerSel"></select></span>
       <span class="chip" id="nowChip"><span class="cd" style="background:var(--info)"></span><span id="nowTxt">now</span></span>
       <button class="btn mono" id="composeTop">+ Compose</button>
@@ -398,39 +401,47 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
       <!-- ══ SS-00 · SUMMARY ══════════════════════════════════════════════ -->
       <div class="stats" id="stats">
         <button type="button" class="stat" data-k="channels" aria-pressed="true">
-          <span class="eyebrow">SS-00 <span class="sep">/</span> CHANNELS</span>
+          <span class="eyebrow">CHANNELS</span>
           <div class="sv" id="kChannels">—</div><div class="sd" id="kChannelsD">—</div></button>
         <button type="button" class="stat" data-k="queued" aria-pressed="false">
-          <span class="eyebrow">SS-00 <span class="sep">/</span> QUEUED</span>
+          <span class="eyebrow">QUEUED</span>
           <div class="sv" id="kQueued">—</div><div class="sd" id="kQueuedD">—</div></button>
         <button type="button" class="stat" data-k="blocked" aria-pressed="false">
-          <span class="eyebrow">SS-00 <span class="sep">/</span> BLOCKED</span>
+          <span class="eyebrow">BLOCKED</span>
           <div class="sv" id="kBlocked">—</div><div class="sd" id="kBlockedD">—</div></button>
         <button type="button" class="stat" data-k="failed" aria-pressed="false">
-          <span class="eyebrow">SS-00 <span class="sep">/</span> FAILED</span>
+          <span class="eyebrow">FAILED</span>
           <div class="sv" id="kFailed">—</div><div class="sd" id="kFailedD">—</div></button>
         <button type="button" class="stat" data-k="posted" aria-pressed="false">
-          <span class="eyebrow">SS-00 <span class="sep">/</span> POSTED</span>
+          <span class="eyebrow">POSTED</span>
           <div class="sv" id="kPosted">—</div><div class="sd" id="kPostedD">—</div></button>
       </div>
       <div class="deriv"><div class="dk">Derivation</div><div class="dv" id="derivBody">—</div></div>
 
       <div class="notice" id="sampleNotice">
         <span class="ni">◉</span>
-        <span>
-          <b>No partner is selected, so nothing on this page is loaded.</b>
-          The partner picker in the header has no list to read. It used to offer three partners that were
-          made up, and every read and write on this screen was sent with one of their ids — against a
-          partner that does not exist. Those are gone, and nothing is sent until a real partner can be picked.
-          Connecting a channel, queueing a post and publishing all work once a partner can be picked. The
-          channel and post lists below stay empty until the read that fills them is built.
-        </span>
+        <span id="ssNoticeTxt">Loading partners…</span>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="card-hd">
+          <div class="eyebrow">Generate posts</div>
+          <div class="spacer"></div>
+          <span class="chip" id="ssSuiteChip"><span class="cd"></span><span id="ssSuiteTxt">—</span></span>
+        </div>
+        <div class="card-bd">
+          <p class="hint" id="ssSuiteMsg">Posts are written from this partner's brand. Meta and Google stay unconnected until those keys land. You can still generate and queue here.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
+            <button class="btn dark" type="button" id="ssGenBtn">Write 3 posts</button>
+            <span class="hint mono" id="ssGenMsg"></span>
+          </div>
+        </div>
       </div>
 
       <!-- ══ SS-01 · CONNECTED CHANNELS ═══════════════════════════════════ -->
       <div class="card" style="margin-top:14px">
         <div class="card-hd">
-          <div class="eyebrow">SS-01 <span class="sep">/</span> CONNECTED CHANNELS</div>
+          <div class="eyebrow">CONNECTED CHANNELS</div>
           <div class="spacer"></div>
           <span class="badge b-gray mono" id="chCount">—</span>
           <span class="badge b-gray mono">social_channels</span>
@@ -441,7 +452,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
       <!-- ══ SS-02 · NOT CONNECTED ════════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">SS-02 <span class="sep">/</span> NOT CONNECTED</div>
+          <div class="eyebrow">NOT CONNECTED</div>
           <div class="spacer"></div>
           <span class="badge b-gray mono" id="ghCount">—</span>
         </div>
@@ -471,7 +482,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
           <!-- ══ SS-03 · COMPOSE ════════════════════════════════════════ -->
           <div class="card" id="composer">
             <div class="card-hd">
-              <div class="eyebrow">SS-03 <span class="sep">/</span> COMPOSE A POST</div>
+              <div class="eyebrow">COMPOSE A POST</div>
               <div class="spacer"></div>
               <span class="badge b-gray mono">5 fields · schedule()</span>
             </div>
@@ -536,7 +547,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
         <!-- ══ SS-04 · GUARDRAIL VERDICT ═══════════════════════════════ -->
         <div class="card vpane">
           <div class="card-hd">
-            <div class="eyebrow">SS-04 <span class="sep">/</span> GUARDRAIL VERDICT</div>
+            <div class="eyebrow">GUARDRAIL VERDICT</div>
           </div>
           <div class="verdict">
             <span class="badge b-gray mono" id="vState">—</span>
@@ -567,7 +578,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
       <!-- ══ SS-05..SS-09 · POST WORKBENCH ══════════════════════════════ -->
       <div class="card" id="workbench" style="margin-top:14px">
         <div class="card-hd">
-          <div class="eyebrow" id="wbEyebrow">SS-05 <span class="sep">/</span> SCHEDULED QUEUE</div>
+          <div class="eyebrow" id="wbEyebrow">SCHEDULED QUEUE</div>
           <div class="spacer"></div>
           <span class="badge b-gray mono">social_posts</span>
         </div>
@@ -649,7 +660,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
         <!-- ══ SS-10 · POSTING WINDOW ═══════════════════════════════════ -->
         <div class="card" style="margin-top:0">
           <div class="card-hd">
-            <div class="eyebrow">SS-10 <span class="sep">/</span> POSTING WINDOW</div>
+            <div class="eyebrow">POSTING WINDOW</div>
             <div class="spacer"></div>
             <span class="selwrap"><label for="btChannel">channel</label>
               <select id="btChannel"></select></span>
@@ -670,7 +681,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
         <!-- ══ SS-11 · APPROVAL SETTING ═════════════════════════════════ -->
         <div class="card" style="margin-top:0">
           <div class="card-hd">
-            <div class="eyebrow">SS-11 <span class="sep">/</span> APPROVAL SETTING</div>
+            <div class="eyebrow">APPROVAL SETTING</div>
             <div class="spacer"></div>
             <span class="badge b-gray mono">partner_module_settings</span>
           </div>
@@ -695,7 +706,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" aria-hidden="true" aria-label="Post detail">
   <div class="drawer-hd">
-    <div class="eyebrow">SS-13 <span class="sep">/</span> POST RECORD</div>
+    <div class="eyebrow">POST RECORD</div>
     <button class="dx" id="drawerClose" aria-label="Close">✕</button>
   </div>
   <div class="drawer-bd" id="drawerBody"></div>
@@ -964,7 +975,7 @@ function noPartner(what){
 function channels(){ return SOCIAL_CHANNELS.filter(function(c){ return c.partner === P; }); }
 function chById(id){ return SOCIAL_CHANNELS.filter(function(c){ return c.id === id; })[0] || null; }
 function assets(){ return ASSETS.filter(function(a){ return a.partner === P; }); }
-function posts(){ return POSTS.filter(function(p){ return p.partner === P; }); }
+function posts(){ return POSTS; }
 function byStatus(s){ return posts().filter(function(p){ return p.status === s; }); }
 function postById(id){ return POSTS.filter(function(p){ return p.id === id; })[0] || null; }
 function approveBeforeLaunch(){
@@ -1233,11 +1244,11 @@ function reasonHtml(r){
 
 /* ══ SS-05..SS-09 · WORKBENCH ════════════════════════════════════════════ */
 var EYEBROWS = {
-  queued:'SS-05 <span class="sep">/</span> SCHEDULED QUEUE',
-  blocked:'SS-06 <span class="sep">/</span> REVIEW QUEUE — BLOCKED',
-  failed:'SS-07 <span class="sep">/</span> FAILED POSTS &amp; TASKS',
-  posted:'SS-08 <span class="sep">/</span> PUBLISHED',
-  audit:'SS-09 <span class="sep">/</span> PUBLISH AUDIT TRAIL'
+  queued:'SCHEDULED QUEUE',
+  blocked:'REVIEW QUEUE — BLOCKED',
+  failed:'FAILED POSTS &amp; TASKS',
+  posted:'PUBLISHED',
+  audit:'PUBLISH AUDIT TRAIL'
 };
 function applyFilters(list){
   return list.filter(function(p){
@@ -1686,9 +1697,18 @@ function syncWriteControls(){
     if(on){ if(el._title0) el.setAttribute('title', el._title0); else el.removeAttribute('title'); }
     else el.setAttribute('title', why);
   });
+  var gen = document.getElementById('ssGenBtn');
+  if (gen) {
+    var suiteOn = window.__ssSuiteEnabled === true;
+    gen.disabled = !on || !suiteOn;
+    gen.setAttribute('title', !on
+      ? why
+      : (suiteOn ? '' : 'The owner has not turned this on for this partner.'));
+  }
   if(!on){
     document.getElementById('queueMsg').textContent = why;
-    document.getElementById('oauthMsg').textContent = 'Connecting a channel needs a partner. No partner is selected.';
+    var om = document.getElementById('oauthMsg');
+    if (om) om.textContent = 'Connecting a channel needs a partner. No partner is selected.';
   }
 }
 
@@ -1786,26 +1806,51 @@ document.getElementById('fOffer').addEventListener('change', function(){
 /* partner scope */
 (function(){
   var sel = document.getElementById('partnerSel');
-  if(!PARTNERS.length){
-    /* No partner list to offer. The picker says so and stays empty rather than
-       naming a partner that does not exist. */
-    sel.innerHTML = '<option value="">— no partner list —</option>';
-    sel.disabled = true;
-    return;
-  }
-  sel.innerHTML = PARTNERS.map(function(p,i){
-    return '<option value="'+i+'">'+esc(p.name)+' · '+esc(p.status)+'</option>'; }).join('') +
-    '<option value="-1" disabled>— all partners: 400 partner_id_required —</option>';
-  sel.addEventListener('change', function(){
-    var v = parseInt(sel.value,10);
-    if(v < 0){ sel.value = String(P); return; }
-    P = v; fltChannel = ''; fltOffer = '';
-    document.getElementById('btChannel').innerHTML = '';
-    closeDrawer();
-    LIVE_ACTIONS = null; ACTIONS_ERR = null;
+  function applyPartners(list){
+    PARTNERS = list || [];
+    if(!PARTNERS.length){
+      sel.innerHTML = '<option value="">No partners on file</option>';
+      sel.disabled = true;
+      var n = document.getElementById('ssNoticeTxt');
+      if (n) n.textContent = 'No partner is selected, so nothing on this page is loaded.';
+      renderAll();
+      return;
+    }
+    sel.disabled = false;
+    var qid = null;
+    try { qid = new URL(location.href).searchParams.get('partner_id'); } catch(e){}
+    var idx = 0;
+    if (qid) {
+      for (var i = 0; i < PARTNERS.length; i++) if (PARTNERS[i].id === qid) idx = i;
+    }
+    P = idx;
+    sel.innerHTML = PARTNERS.map(function(p,i){
+      return '<option value="'+i+'">'+(p.name || p.slug || p.id)+'</option>';
+    }).join('');
+    sel.value = String(P);
+    var n = document.getElementById('ssNoticeTxt');
+    if (n) n.textContent = 'Showing ' + (PARTNERS[P].name || PARTNERS[P].id) + '.';
     renderAll();
     wireActionLog();
+    loadQueue();
+  }
+  sel.addEventListener('change', function(){
+    P = parseInt(sel.value,10) || 0;
+    var p = PARTNERS[P];
+    var url = new URL(location.href);
+    if (p && p.id) url.searchParams.set('partner_id', p.id);
+    else url.searchParams.delete('partner_id');
+    location.assign(url.pathname + url.search + url.hash);
   });
+  if(!window.FHData || typeof FHData.partners !== 'function'){
+    apiGet('/api/read/partners?limit=200').then(function(res){
+      applyPartners(res.ok ? (res.data.items || res.data.rows || []) : []);
+    });
+  } else {
+    FHData.partners({ limit: 200 }).then(function(res){
+      applyPartners(res.ok ? ((res.data && (res.data.items || res.data.rows)) || []) : []);
+    });
+  }
 })();
 
 /* composer */
@@ -1998,7 +2043,93 @@ document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDr
       start(el.getAttribute('data-oauth'));
     });
   });
+
+  var role = '';
+  try { role = String(localStorage.getItem('fh_role') || '').trim().toLowerCase(); } catch (e) { role = ''; }
+  var box = document.getElementById('oauthConnectBox');
+  if (box && role === 'partner') {
+    box.innerHTML = 'Connecting Facebook, Instagram, or LinkedIn is for the owner once those apps are set up. You can still write and queue posts here.';
+  } else if (box) {
+    function markMissing(channel, code) {
+      var id = channel === 'facebook' ? 'oauthFb' : (channel === 'instagram' ? 'oauthIg' : 'oauthLi');
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (code === 'not_configured') {
+        el.disabled = true;
+        el.setAttribute('title', (LABEL[channel] || channel) + ' is not set up yet. Nothing was sent.');
+      }
+    }
+    function probe(channel) {
+      var pid = partnerId();
+      if (!pid) return;
+      var url = '/api/social/oauth?action=start&channel=' + encodeURIComponent(channel) +
+        '&partner_id=' + encodeURIComponent(pid);
+      if (channel === 'linkedin') url += '&external_account_id=probe';
+      fetch(url, {
+        headers: Object.assign({ accept: 'application/json' },
+          (token() && token() !== 'demo') ? { authorization: 'Bearer ' + token() } : {})
+      }).then(function (r) { return r.json().catch(function () { return {}; }); })
+        .then(function (res) {
+          if (res && res.error === 'not_configured') markMissing(channel, 'not_configured');
+        });
+    }
+    ['facebook', 'instagram', 'linkedin'].forEach(probe);
+  }
 })();
+
+function loadQueue(){
+  var p = partner();
+  POSTS = [];
+  if(!p){ renderAll(); return; }
+  apiGet('/api/social/posts?partner_id='+encodeURIComponent(p.id)).then(function(res){
+    POSTS = res.ok ? ((res.data.items)||[]).map(function(row){
+      return Object.assign({}, row, { partner: P, blocked_reasons: row.blocked_reasons || [] });
+    }) : [];
+    renderAll();
+  });
+  apiGet('/api/partner-marketing/usage?partner_id='+encodeURIComponent(p.id)).then(function(res){
+    var txt = document.getElementById('ssSuiteTxt');
+    var chip = document.getElementById('ssSuiteChip');
+    if (!res.ok) {
+      if (txt) txt.textContent = '—';
+      window.__ssSuiteEnabled = false;
+      syncWriteControls();
+      return;
+    }
+    if (txt) txt.textContent = (res.data.enabled ? 'On · ' : 'Off · ') + (res.data.remaining != null ? res.data.remaining + ' left' : '');
+    if (chip) chip.className = 'chip ' + (res.data.enabled ? 'on' : '');
+    window.__ssSuiteEnabled = !!res.data.enabled;
+    syncWriteControls();
+  });
+}
+
+document.getElementById('ssGenBtn').addEventListener('click', function(){
+  var msg = document.getElementById('ssGenMsg');
+  var p = partner();
+  if (!p) { msg.textContent = 'Pick a partner first.'; return; }
+  if (window.__ssSuiteEnabled !== true) {
+    msg.textContent = 'The owner has not turned this on for this partner.';
+    return;
+  }
+  msg.textContent = 'Writing…';
+  var t = '';
+  try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
+  fetch('/api/social/generate', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+      ...(t && t !== 'demo' ? { authorization: 'Bearer ' + t } : {})
+    },
+    body: JSON.stringify({ partner_id: p.id, count: 3, offer_type: 'funding' })
+  }).then(function(r){ return r.json().catch(function(){ return { ok:false }; }); })
+    .then(function(res){
+      msg.textContent = res.ok
+        ? 'Wrote ' + ((res.items && res.items.length) || 0) + ' posts.'
+        : (res.message || res.error || 'Write failed');
+      loadQueue();
+    });
+});
 
 /* ══ BOOT ════════════════════════════════════════════════════════════════ */
 document.getElementById('nowTxt').textContent = 'now = ' + fmt(NOW_ISO);

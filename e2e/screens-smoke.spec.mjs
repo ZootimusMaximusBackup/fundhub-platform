@@ -32,7 +32,6 @@ const SCREENS = [
   "/app/campaign-manager.html",
   "/app/creative-factory.html",
   "/app/social-studio.html",
-  "/app/content-admin.html",
   "/app/hiring.html",
   "/app/brand-studio.html",
   "/app/galaxy.html",

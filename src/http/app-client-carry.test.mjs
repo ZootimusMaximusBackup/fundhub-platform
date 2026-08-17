@@ -361,7 +361,7 @@ describe("shell.js — a query string does not open a hole in the gate", () => {
   });
 
   test("a click on an allowed screen with a query string still goes through", async () => {
-    const a = anchor("finance-os.html?client_id=" + CID);
+    const a = anchor("client-control-panel.html?client_id=" + CID);
     const r = await runShell({ role: "closer", page: "closer-dashboard.html", links: [a] });
     assert.equal(r.click(a).defaultPrevented, false);
   });
@@ -379,10 +379,10 @@ describe("shell.js — a query string does not open a hole in the gate", () => {
   });
 
   test("an allowed row keeps its client and stays visible", async () => {
-    const a = anchor("finance-os.html");
+    const a = anchor("closer-call.html");
     await runShell({ role: "closer", page: "closer-dashboard.html",
                      search: "?client_id=" + CID, links: [a] });
-    assert.equal(a.href, "finance-os.html?client_id=" + CID);
+    assert.equal(a.href, "closer-call.html?client_id=" + CID);
     assert.notEqual(a.li.style.display, "none");
   });
 });

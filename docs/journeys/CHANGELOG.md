@@ -3,6 +3,10 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-17 | role-owner + role-closer + affiliate + white-label | Owner answers from the 2026-08-17 UI audit: beta screens stay on the owner rail; partner Home is partner-galaxy; Content mock is off the rail; owners are off the staff roster; booked never undercounts held; contract sign has no decline button; Present fills the client's first name. | Owner answers on ui-audit-2026-08-17 | (pending commit)
+
+2026-08-17 | affiliate + white-label | Affiliates and white-label partners may download Darwin's Message Blaster for Mac (`GET /api/gifts/message-blaster`). Gift cards on affiliate.html and partner-galaxy.html. Not staff, not clients, not the DIY brokerage. | Owner: gift the Mac blaster to affiliates and WL partners | (pending commit)
+
 2026-08-17 | role-owner | Owner/admin can read and save Content (`/api/content/tiles`, `/api/content/upload`). Closers and advisors cannot. | Named fix: Content had no save path | (pending commit)
 
 2026-08-17 | gate-relay | If the watcher stops or the Mac slept, Telegram says the messenger went down (or that it is back). Silence is no longer the same as "nothing needs you." | Owner: add to job 1 | (pending commit)

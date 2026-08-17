@@ -180,6 +180,10 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
   <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
   <nav class="side-scroll" id="fh-side-nav">
 
+<div class="navgroup" data-fh-section="home"><button class="navhead" type="button">Home<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="partner-galaxy.html"><span class="ico">⌂</span><span class="lbl">Home</span></a>
+</div></div>
+
 <div class="navgroup" data-fh-section="sales"><button class="navhead" type="button">Sales<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
         <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
@@ -211,7 +215,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 </div></div>
 
 <div class="navgroup" data-fh-section="automation"><button class="navhead" type="button">Automation<span class="chev">▾</span></button><div class="navlist">
-        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem on" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
         <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
         <a class="navitem" href="journeys.html"><span class="ico">⇝</span><span class="lbl">Journeys</span></a>
         <a class="navitem" href="template-editor.html"><span class="ico">✎</span><span class="lbl">Message Copy</span></a>
@@ -221,7 +225,6 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
         <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
         <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
         <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
-        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
 </div></div>
 
 <div class="navgroup" data-fh-section="admin"><button class="navhead" type="button">Admin<span class="chev">▾</span></button><div class="navlist">
@@ -250,10 +253,10 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 
     <div class="content fh-maxw">
       <div class="stats">
-        <div class="stat"><div class="eyebrow">AE-00 <span class="sep">/</span> AGENTS</div><div class="sv" id="kAll">—</div><div class="sd" id="kAllSub">loading…</div></div>
-        <div class="stat"><div class="eyebrow">AE-00 <span class="sep">/</span> LIVE</div><div class="sv" id="kLive">0</div><div class="sd">acting on real clients</div></div>
-        <div class="stat"><div class="eyebrow">AE-00 <span class="sep">/</span> SHADOW</div><div class="sv" id="kShadow">0</div><div class="sd">logging, not sending</div></div>
-        <div class="stat"><div class="eyebrow">AE-00 <span class="sep">/</span> BREACHES 7D</div><div class="sv" id="kBreach">0</div><div class="sd">guardrail blocks</div></div>
+        <div class="stat"><div class="eyebrow">AGENTS</div><div class="sv" id="kAll">—</div><div class="sd" id="kAllSub">loading…</div></div>
+        <div class="stat"><div class="eyebrow">LIVE</div><div class="sv" id="kLive">0</div><div class="sd">acting on real clients</div></div>
+        <div class="stat"><div class="eyebrow">SHADOW</div><div class="sv" id="kShadow">0</div><div class="sd">logging, not sending</div></div>
+        <div class="stat"><div class="eyebrow">BREACHES 7D</div><div class="sv" id="kBreach">0</div><div class="sd">guardrail blocks</div></div>
       </div>
 
       <div class="card" id="emptyState" style="display:none;margin-top:14px">
@@ -268,7 +271,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
             <div class="mtop"></div>
             <div class="mbd">
               <div style="flex:1;min-width:180px">
-                <div class="eyebrow">AE-07 <span class="sep">/</span> MODE</div>
+                <div class="eyebrow">MODE</div>
                 <div class="mt" id="modeTitle">—</div>
                 <div style="font-size:var(--fs-caption);color:var(--gray)" id="modeSub">—</div>
               </div>
@@ -280,7 +283,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 
             <!-- What it may do, and what stops it: these two stay open. -->
           <div class="card keycard">
-            <div class="card-hd"><div class="eyebrow">AE-04 <span class="sep">/</span> GUARDRAIL BLOCK</div>
+            <div class="card-hd"><div class="eyebrow">GUARDRAIL BLOCK</div>
               <div class="spacer"></div><span class="badge b-alert" id="guardState">REQUIRED</span></div>
             <div class="card-bd">
               <div class="guard"><div class="gh">Hard constraints · evaluated before every send</div>
@@ -295,7 +298,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
           </div>
 
           <div class="card keycard">
-            <div class="card-hd"><div class="eyebrow">AE-06 <span class="sep">/</span> AUTHORITY LIMITS</div>
+            <div class="card-hd"><div class="eyebrow">AUTHORITY LIMITS</div>
               <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">WHAT IT MAY DO UNSUPERVISED</span></div>
             <div class="card-bd">
               <div class="grid2" style="margin-bottom:6px">
@@ -311,7 +314,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 
             <!-- Everything else about the agent is one click away. -->
           <details class="card" style="margin-top:14px">
-            <summary class="card-hd"><div class="eyebrow">AE-01 <span class="sep">/</span> IDENTITY</div></summary>
+            <summary class="card-hd"><div class="eyebrow">IDENTITY</div></summary>
             <div class="card-bd">
               <div class="grid2">
                 <div class="field" style="grid-column:1/-1"><label>Agent name</label><input id="a_name"></div>
@@ -325,7 +328,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
           </details>
 
           <details class="card">
-            <summary class="card-hd"><div class="eyebrow">AE-02 <span class="sep">/</span> TRIGGER EVENTS</div>
+            <summary class="card-hd"><div class="eyebrow">TRIGGER EVENTS</div>
               <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em" id="trigCount">0 SELECTED</span></summary>
             <div class="card-bd"><div class="evgrid" id="evGrid"></div>
               <div style="font-size:var(--fs-caption);color:var(--gray);margin-top:11px;line-height:1.55">
@@ -335,14 +338,14 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
           </details>
 
           <details class="card">
-            <summary class="card-hd"><div class="eyebrow">AE-03 <span class="sep">/</span> PROMPT</div>
+            <summary class="card-hd"><div class="eyebrow">PROMPT</div>
               <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em" id="promptLen">0 CHARS</span></summary>
             <div class="card-bd"><div class="field"><textarea id="a_prompt" rows="9"></textarea>
               <span class="hint">CONTEXT FETCHER INJECTS CLIENT STATE BEFORE THIS RUNS</span></div></div>
           </details>
 
           <details class="card">
-            <summary class="card-hd"><div class="eyebrow">AE-05 <span class="sep">/</span> ESCALATION PATH</div></summary>
+            <summary class="card-hd"><div class="eyebrow">ESCALATION PATH</div></summary>
             <div class="card-bd"><div class="grid2">
               <div class="field"><label>Escalate to</label><select id="a_esc">
                 <option value="">Pick a person</option></select></div>
@@ -353,7 +356,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
           </details>
 
           <details class="card">
-            <summary class="card-hd"><div class="eyebrow">AE-08 <span class="sep">/</span> SHADOW LOG</div>
+            <summary class="card-hd"><div class="eyebrow">SHADOW LOG</div>
               <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">WHAT IT WOULD HAVE SENT</span></summary>
             <div id="shadowLog"></div>
           </details>
@@ -589,7 +592,7 @@ function renderGate(){
     : 'Runs on every trigger and logs what it would send. Nothing leaves the building.';
   var checks=gateChecks(), allOk=checks.every(function(c){return c.ok});
   document.getElementById('gateBox').innerHTML=
-    '<div class="eyebrow" style="margin-bottom:8px">AE-09 <span class="sep">/</span> PROMOTION GATE</div>'+
+    '<div class="eyebrow" style="margin-bottom:8px">PROMOTION GATE</div>'+
     checks.map(function(c){
       return '<div class="gaterow '+(c.ok?'pass':'fail')+'"><span class="gi">'+(c.ok?'●':'○')+'</span>'+
         '<span class="gt">'+esc(c.t)+'</span><span class="gv">'+esc(c.v)+'</span></div>';
@@ -788,9 +791,11 @@ document.getElementById('saveBtn').addEventListener('click',function(){
 });
 document.getElementById('revertBtn').addEventListener('click',function(){select(cur.id)});
 document.getElementById('newBtn').addEventListener('click',function(){
+  var name = window.prompt('Name this agent');
+  if (!name || !String(name).trim()) return;
   saveNote('CREATING…');
   FHData.write('/api/agents', {
-    action:'create', name:'New agent', channel:'internal', agent_class:'client_facing'
+    action:'create', name:String(name).trim(), channel:'internal', agent_class:'client_facing'
   }).then(function(res){
     if(!res || !res.ok){ writeFail(res, 'Could not create agent'); return; }
     var agent = res.data && res.data.agent;

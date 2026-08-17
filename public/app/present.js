@@ -504,7 +504,10 @@
         if (l.indexOf("REPAIR:") === 0) return !funding && !state.edu;
         return true;
       }).forEach(function (l) {
-        html += '<div class="say">' + esc(l.replace(/^FUND: |^REPAIR: |^EDU: /, "")) + "</div>";
+        var first = String((state.survey && state.survey.name) || "").trim().split(/\s+/)[0] || "";
+        var said = l.replace(/^FUND: |^REPAIR: |^EDU: /, "");
+        if (first) said = said.replace(/\[First Name\]/g, first);
+        html += '<div class="say">' + esc(said) + "</div>";
       });
       html += '</div></div><div class="watch"><span class="mono">Watch for</span><div style="font-size:11px;color:var(--gray);margin-top:4px">' + esc(t.watch) + "</div></div>";
 

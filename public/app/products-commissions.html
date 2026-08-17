@@ -172,6 +172,10 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
   <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
   <nav class="side-scroll" id="fh-side-nav">
 
+<div class="navgroup" data-fh-section="home"><button class="navhead" type="button">Home<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="partner-galaxy.html"><span class="ico">⌂</span><span class="lbl">Home</span></a>
+</div></div>
+
 <div class="navgroup" data-fh-section="sales"><button class="navhead" type="button">Sales<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
         <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
@@ -213,13 +217,12 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
         <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
         <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
         <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
-        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
 </div></div>
 
 <div class="navgroup" data-fh-section="admin"><button class="navhead" type="button">Admin<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
         <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
-        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem on" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
         <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Demo Mode</span></a>
         <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
 </div></div>
@@ -248,10 +251,10 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
 
     <div class="content fh-maxw">
       <div class="stats">
-        <div class="stat"><div class="eyebrow">PC-00 <span class="sep">/</span> PRODUCTS</div><div class="sv" id="kProd">5</div><div class="sd">3 with variable pricing</div></div>
-        <div class="stat"><div class="eyebrow">PC-00 <span class="sep">/</span> ACTIVE RULES</div><div class="sv" id="kRules">6</div><div class="sd">front-end and back-end</div></div>
-        <div class="stat"><div class="eyebrow">PC-00 <span class="sep">/</span> ACCRUED</div><div class="sv" id="kAccrued">$0</div><div class="sd">owed, not yet paid</div></div>
-        <div class="stat"><div class="eyebrow">PC-00 <span class="sep">/</span> PAID MTD</div><div class="sv" id="kPaid">$0</div><div class="sd" id="kPaidMonth">—</div></div>
+        <div class="stat"><div class="eyebrow">PRODUCTS</div><div class="sv" id="kProd">5</div><div class="sd">3 with variable pricing</div></div>
+        <div class="stat"><div class="eyebrow">ACTIVE RULES</div><div class="sv" id="kRules">6</div><div class="sd">front-end and back-end</div></div>
+        <div class="stat"><div class="eyebrow">ACCRUED</div><div class="sv" id="kAccrued">$0</div><div class="sd">owed, not yet paid</div></div>
+        <div class="stat"><div class="eyebrow">PAID MTD</div><div class="sv" id="kPaid">$0</div><div class="sd" id="kPaidMonth">—</div></div>
       </div>
 
       <div class="card" style="margin-top:14px">
@@ -262,7 +265,7 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
 
         <!-- PRODUCTS -->
         <div class="tabpane on" id="tab-products">
-          <div class="card-hd"><div class="eyebrow">PC-01 <span class="sep">/</span> PRODUCTS</div>
+          <div class="card-hd"><div class="eyebrow">PRODUCTS</div>
             <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">CLICK A ROW TO EDIT</span></div>
           <div style="overflow-x:auto"><table class="grid">
             <thead><tr><th>Product</th><th>Category</th><th>Default price</th><th>Variable</th><th>Min</th><th>Max</th><th>Rails</th></tr></thead>
@@ -275,11 +278,11 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
           <!-- §5: the scope filter and the "CLICK TO EXPAND" hint are gone. There is
                no rule source on this screen, so both sat over a permanently empty
                list — a control that can never do anything does not render. -->
-          <div class="card-hd"><div class="eyebrow">PC-02 <span class="sep">/</span> COMMISSION RULES</div>
+          <div class="card-hd"><div class="eyebrow">COMMISSION RULES</div>
             <div class="spacer"></div></div>
           <div id="ruleList"></div>
           <div style="padding:13px 16px;border-top:1px solid var(--line);background:var(--soft)">
-            <div class="eyebrow" style="margin-bottom:7px">PC-03 <span class="sep">/</span> WHY RATES ARE NEVER OVERWRITTEN</div>
+            <div class="eyebrow" style="margin-bottom:7px">WHY RATES ARE NEVER OVERWRITTEN</div>
             <div class="note" style="max-width:80ch;margin-bottom:10px">
               A commission rate is a dated fact, not a setting. Changing one <strong>closes the current version</strong>
               — its effective-to date is stamped the day before the new rate starts — and <strong>opens a new version</strong>.
@@ -298,7 +301,7 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
         <!-- LEDGER -->
         <div class="tabpane" id="tab-ledger">
           <div class="card-hd"><button class="btn sm mono" id="ledgerBack">← Back to rules</button>
-            <div class="eyebrow">PC-04 <span class="sep">/</span> PAYOUT LEDGER</div>
+            <div class="eyebrow">PAYOUT LEDGER</div>
             <div class="spacer"></div>
             <select id="perFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:var(--fs-body);background:#fff"><option value="">Everyone</option></select>
             <select id="statFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:var(--fs-body);background:#fff">
@@ -322,7 +325,7 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
 
 <div class="scrim" id="scrim"></div>
 <aside class="editor" id="editor">
-  <div class="editor-hd"><div><div class="eyebrow">PC-05 <span class="sep">/</span> <span id="edMode">EDIT PRODUCT</span></div><div id="edTitle" style="font-size:var(--fs-title);font-weight:600;margin-top:5px">—</div></div><button class="xbtn" id="edClose">✕</button></div>
+  <div class="editor-hd"><div><div class="eyebrow"><span id="edMode">EDIT PRODUCT</span></div><div id="edTitle" style="font-size:var(--fs-title);font-weight:600;margin-top:5px">—</div></div><button class="xbtn" id="edClose">✕</button></div>
   <div class="editor-bd">
     <div class="grid2">
       <div class="field" style="grid-column:1/-1"><label>Product name</label><input id="p_name"></div>
@@ -339,7 +342,7 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
       <div class="field"><label>Maximum</label><input id="p_max" class="num" type="number" min="0"><span class="hint">CEILING</span></div>
     </div>
     <div style="margin-top:16px">
-      <div class="eyebrow" style="margin-bottom:7px">PC-06 <span class="sep">/</span> RULES THAT REFERENCE THIS</div>
+      <div class="eyebrow" style="margin-bottom:7px">RULES THAT REFERENCE THIS</div>
       <div id="p_rules" class="note"></div>
     </div>
   </div>
@@ -469,7 +472,7 @@ function renderRules(){
 
     var tiers='';
     if(r.kind==='tiered'){
-      tiers='<div class="tierbox"><div class="eyebrow" style="margin-bottom:6px">PC-07 <span class="sep">/</span> TIERS</div>'+
+      tiers='<div class="tierbox"><div class="eyebrow" style="margin-bottom:6px">TIERS</div>'+
         r.tiers.map(function(t,i){
           return '<div class="tierrow"><span class="badge b-accent">T'+(i+1)+'</span>'+
             '<span class="tb">'+money(t.lo)+' → '+(t.hi==null?'no ceiling':money(t.hi))+'</span>'+

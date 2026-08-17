@@ -246,6 +246,10 @@ table.grid td.srccell .sub{white-space:normal}
   <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
   <nav class="side-scroll" id="fh-side-nav">
 
+<div class="navgroup" data-fh-section="home"><button class="navhead" type="button">Home<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="partner-galaxy.html"><span class="ico">⌂</span><span class="lbl">Home</span></a>
+</div></div>
+
 <div class="navgroup" data-fh-section="sales"><button class="navhead" type="button">Sales<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
         <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
@@ -284,10 +288,9 @@ table.grid td.srccell .sub{white-space:normal}
 </div></div>
 
 <div class="navgroup" data-fh-section="marketing"><button class="navhead" type="button">Marketing<span class="chev">▾</span></button><div class="navlist">
-        <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
+        <a class="navitem on" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
         <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
         <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
-        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
 </div></div>
 
 <div class="navgroup" data-fh-section="admin"><button class="navhead" type="button">Admin<span class="chev">▾</span></button><div class="navlist">
@@ -332,7 +335,7 @@ table.grid td.srccell .sub{white-space:normal}
       <!-- ══ CM-01 · SCOPE + DATA SOURCES ═════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">CM-01 <span class="sep">/</span> SCOPE &amp; SOURCES</div>
+          <div class="eyebrow">SCOPE &amp; SOURCES</div>
           <div class="spacer"></div>
           <span class="badge b-gray mono" id="scopeBadge">one partner</span>
         </div>
@@ -367,7 +370,7 @@ table.grid td.srccell .sub{white-space:normal}
       <!-- ══ CM-02 · NEEDS ATTENTION ══════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">CM-02 <span class="sep">/</span> NEEDS ATTENTION</div>
+          <div class="eyebrow">NEEDS ATTENTION</div>
           <div class="spacer"></div>
           <span class="badge b-gray mono">each tile is a real filter</span>
         </div>
@@ -383,7 +386,7 @@ table.grid td.srccell .sub{white-space:normal}
       <!-- ══ CM-03 · SPEND vs CEILINGS ════════════════════════════════════ -->
       <div class="card" id="secSpend">
         <div class="card-hd">
-          <div class="eyebrow">CM-03 <span class="sep">/</span> TODAY'S SPEND VS CEILINGS</div>
+          <div class="eyebrow">TODAY'S SPEND VS CEILINGS</div>
           <div class="spacer"></div>
           <div class="rail" id="spendRail"></div>
         </div>
@@ -415,7 +418,7 @@ table.grid td.srccell .sub{white-space:normal}
       <!-- ══ CM-04 · CAMPAIGN LIST ════════════════════════════════════════ -->
       <div class="card" id="secCampaigns">
         <div class="card-hd">
-          <div class="eyebrow">CM-04 <span class="sep">/</span> CAMPAIGNS</div>
+          <div class="eyebrow">CAMPAIGNS</div>
           <div class="spacer"></div>
           <div class="selwrap"><label for="fPlatform">Platform</label>
             <select id="fPlatform"><option value="all">all</option><option value="meta">meta</option><option value="tiktok">tiktok</option><option value="google">google</option></select>
@@ -458,7 +461,7 @@ table.grid td.srccell .sub{white-space:normal}
       <!-- ══ CM-06 · CREATIVE FATIGUE ═════════════════════════════════════ -->
       <div class="card" id="secFatigue">
         <div class="card-hd">
-          <div class="eyebrow">CM-06 <span class="sep">/</span> CREATIVE FATIGUE BY AD</div>
+          <div class="eyebrow">CREATIVE FATIGUE BY AD</div>
           <div class="spacer"></div>
           <div class="selwrap"><label for="fDays">Window</label>
             <select id="fDays"><option value="7" selected>7 days</option><option value="14">14 days</option><option value="30">30 days</option></select>
@@ -494,7 +497,7 @@ table.grid td.srccell .sub{white-space:normal}
       <!-- ══ CM-07 · CONNECTIONS ══════════════════════════════════════════ -->
       <div class="card" id="secConn">
         <div class="card-hd">
-          <div class="eyebrow">CM-07 <span class="sep">/</span> PLATFORM CONNECTIONS &amp; LAUNCH BLOCKERS</div>
+          <div class="eyebrow">PLATFORM CONNECTIONS &amp; LAUNCH BLOCKERS</div>
           <div class="spacer"></div>
           <div class="rail" id="connRail"></div>
         </div>
@@ -529,7 +532,7 @@ table.grid td.srccell .sub{white-space:normal}
       <!-- ══ CM-08 · ACTION LOG ═══════════════════════════════════════════ -->
       <div class="card" id="secLog">
         <div class="card-hd">
-          <div class="eyebrow">CM-08 <span class="sep">/</span> ACTION LOG</div>
+          <div class="eyebrow">ACTION LOG</div>
           <div class="spacer"></div>
           <div class="selwrap"><label for="fTarget">Target</label>
             <select id="fTarget">
@@ -602,7 +605,7 @@ table.grid td.srccell .sub{white-space:normal}
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dwTitle" aria-hidden="true">
   <div class="dw-hd">
     <div style="min-width:0">
-      <div class="eyebrow">CM-05 <span class="sep">/</span> CAMPAIGN DETAIL</div>
+      <div class="eyebrow">CAMPAIGN DETAIL</div>
       <h2 id="dwTitle">—</h2>
       <div id="dwSub" class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.07em;margin-top:5px"></div>
     </div>
@@ -925,7 +928,7 @@ function tiles(){
 function renderTiles(){
   document.getElementById('statRow').innerHTML = tiles().map(function(t){
     return '<div class="stat">'+
-      '<span class="eyebrow">CM-00 <span class="sep">/</span> '+esc(t.eyebrow)+'</span>'+
+      '<span class="eyebrow">'+esc(t.eyebrow)+'</span>'+
       '<div class="sv'+(t.value.length>9?' small':'')+'">'+t.value+'</div>'+
       '<div class="sd">'+esc(t.sd)+'</div></div>';
   }).join('');
@@ -1443,7 +1446,7 @@ function renderDrawerBody(){
   var tail = series.slice(-14).reverse();
 
   host.innerHTML =
-    '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">CM-05.1 <span class="sep">/</span> HEADER</div>' +
+    '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">HEADER</div>' +
       '<div class="kv">' + kv.map(function(p){ return '<div><div class="k">'+esc(p[0])+'</div><div class="v">'+p[1]+'</div></div>'; }).join('') + '</div>' +
       '<div style="margin-top:14px;padding:12px;border:1px solid var(--line);background:var(--wash,#fafafa)">' +
         '<div class="eyebrow" style="margin-bottom:8px">CHANGE THIS CAMPAIGN ON META</div>' +
@@ -1466,13 +1469,13 @@ function renderDrawerBody(){
         '<div class="jsonbox">'+esc(JSON.stringify(c.targeting || {}, null, 1))+'</div></div>' +
     '</div>' +
 
-    '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">CM-05.2 <span class="sep">/</span> AD SETS</div>' +
+    '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">AD SETS</div>' +
       '<div class="dw-tbl"><div class="tblscroll"><table class="grid"><thead><tr><th>Ad set</th><th>Approval</th><th>Status</th><th>Budget / day</th><th>Ads</th><th>Learning until</th><th>In learning</th></tr></thead>' +
       '<tbody>'+setRows+'</tbody></table></div></div>' +
       '<p class="note" style="margin-top:7px">While an ad set is still learning, the optimiser leaves it alone. Those skips are never written into the action log, so an ad set can be untouched for days with nothing to show for it here.</p>' +
     '</div>' +
 
-    '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">CM-05.3 <span class="sep">/</span> DAILY SERIES</div>' +
+    '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">DAILY SERIES</div>' +
       '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px">' +
         '<div class="selwrap"><label for="dwDays">Days</label><select id="dwDays">' +
           [7,14,30,90,180].map(function(d){ return '<option value="'+d+'"'+(DW.days===d?' selected':'')+'>'+d+'</option>'; }).join('') +
@@ -1510,7 +1513,7 @@ function renderDrawerBody(){
         : '') +
     '</div>' +
 
-    '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">CM-05.4 <span class="sep">/</span> RECENT ACTIONS</div>' +
+    '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">RECENT ACTIONS</div>' +
       '<div class="dw-tbl"><div class="tblscroll"><table class="grid"><thead><tr><th>When</th><th>Actor</th><th>Rule</th><th>Reason</th><th>Change</th><th>Outcome</th><th>Revert</th></tr></thead>' +
       '<tbody>'+actRows+'</tbody></table></div></div>' +
       '<p class="note" style="margin-top:7px">This is <b>not</b> everything that happened. It covers this campaign and its ad sets only — anything done to a single ad, to a creative or to the connection is in the Action log panel on the main screen. Newest 50 only, and no names here.</p>' +
@@ -1700,12 +1703,12 @@ document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDr
 
 /* ══ CM-01 · SCOPE + PER-PANEL STATUS ════════════════════════════════════ */
 var PANELS = [
-  { key:'spend',    label:'CM-03 spend vs limits'  },
-  { key:'list',     label:'CM-04 campaigns'        },
-  { key:'detail',   label:'CM-05 campaign detail'  },
-  { key:'fatigue',  label:'CM-06 creative fatigue' },
-  { key:'conn',     label:'CM-07 connections'      },
-  { key:'log',      label:'CM-08 action log'       }
+  { key:'spend',    label:'spend vs limits'  },
+  { key:'list',     label:'campaigns'        },
+  { key:'detail',   label:'campaign detail'  },
+  { key:'fatigue',  label:'creative fatigue' },
+  { key:'conn',     label:'connections'      },
+  { key:'log',      label:'action log'       }
 ];
 var SRC = {};
 PANELS.forEach(function(p){ SRC[p.key] = { source:'…', note:'not loaded yet', rows:null }; });

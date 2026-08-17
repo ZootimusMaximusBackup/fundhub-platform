@@ -127,7 +127,6 @@ button.ghost{background:transparent;color:var(--ink);border-color:var(--line);fo
       <input id="name" type="text" autocomplete="name" placeholder="Your full name">
       <label class="agree"><input id="agree" type="checkbox"><span id="statement"></span></label>
       <button id="go" disabled>Sign</button>
-      <button class="ghost" id="declineBtn" type="button">I do not want to sign this</button>
       <div class="msg" id="msg"></div>
       <div class="note">
         When you press Sign we save the exact document above, your name, and the
@@ -598,7 +597,6 @@ window.dispatchEvent(new Event("pdfjs-ready"));
   $("agree").addEventListener("change", check);
   $("go").addEventListener("click", sign);
   $("barGo").addEventListener("click", sign);
-  $("declineBtn").addEventListener("click", decline);
   $("dlBtn").addEventListener("click", download);
   load();
 })();

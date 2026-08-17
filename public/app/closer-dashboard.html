@@ -202,9 +202,13 @@
   <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
   <nav class="side-scroll" id="fh-side-nav">
 
+<div class="navgroup" data-fh-section="home"><button class="navhead" type="button">Home<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="partner-galaxy.html"><span class="ico">⌂</span><span class="lbl">Home</span></a>
+</div></div>
+
 <div class="navgroup" data-fh-section="sales"><button class="navhead" type="button">Sales<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
-        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem on" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
         <a class="navitem" href="closer-call.html"><span class="ico">☎</span><span class="lbl">Call cockpit</span></a>
         <a class="navitem" href="my-numbers.html"><span class="ico">＃</span><span class="lbl">My numbers</span></a>
         <a class="navitem" href="sales-floor.html"><span class="ico">▣</span><span class="lbl">Sales floor</span></a>
@@ -243,7 +247,6 @@
         <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
         <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
         <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
-        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
 </div></div>
 
 <div class="navgroup" data-fh-section="admin"><button class="navhead" type="button">Admin<span class="chev">▾</span></button><div class="navlist">
@@ -295,7 +298,7 @@
   <main>
 
     <div class="section">
-      <div class="section-title eyebrow">CD-01 / Today's Pipeline</div>
+      <div class="section-title eyebrow">Today's Pipeline</div>
       <table class="pipe" id="todayPipe">
         <tr><th>Client</th><th>Stage</th><th>Next</th><th>When</th></tr>
         <tr><td colspan="4"><span class="empty-slot">No booked calls for you right now.</span></td></tr>
@@ -303,7 +306,7 @@
     </div>
 
     <div class="section">
-      <div class="section-title eyebrow" id="calcTitle">CD-02 / Deal Calculators</div>
+      <div class="section-title eyebrow" id="calcTitle">Deal Calculators</div>
       <div class="calc-client" id="calcClientName" hidden></div>
       <p id="calcGate" class="empty-slot" hidden>Open from a client.</p>
       <div class="calc-grid" id="calcGrid">
@@ -389,7 +392,7 @@
         </summary>
         <div class="bd-body">
 
-          <div class="bd-sub">CD-02a / Where the draw comes from — lowest APR first</div>
+          <div class="bd-sub">Where the draw comes from — lowest APR first</div>
           <table class="deal">
             <tr><th>Lender</th><th>Limit</th><th>Balance</th><th>Headroom</th><th>Draw</th></tr>
             <tr><td colspan="5"><span class="empty-slot">Opens with a client id — waterfall comes from live tradelines.</span></td></tr>
@@ -398,7 +401,7 @@
 
           <div class="bd-cols">
             <div>
-              <div class="bd-sub">CD-03 / What each way of paying it back costs her</div>
+              <div class="bd-sub">What each way of paying it back costs her</div>
               <table class="pm">
                 <tr><th>Method</th><th>12mo</th><th>24mo</th><th>36mo</th></tr>
                 <tr><td>Lump Sum</td><td>—</td><td>—</td><td>—</td></tr>
@@ -1077,8 +1080,8 @@ window.FHCloserView = (function () {
     // Tradelines are not a client record. Do not invent a name for this file.
     var titles = [].slice.call(document.querySelectorAll(".section-title"));
     for (var i = 0; i < titles.length; i++) {
-      if (titles[i].textContent.indexOf("CD-02") === 0) {
-        titles[i].textContent = "CD-02 / Deal Calculators";
+      if (titles[i].textContent.indexOf("Deal Calculators") >= 0) {
+        titles[i].textContent = "Deal Calculators";
       }
     }
 
@@ -1312,6 +1315,8 @@ window.FHCloserView = (function () {
     if (!el || !name) return;
     el.textContent = name;
     el.hidden = false;
+    var sub = document.querySelector(".topbar .sub");
+    if (sub) sub.textContent = "Closer Dashboard · " + name;
   });
 
   load(false);

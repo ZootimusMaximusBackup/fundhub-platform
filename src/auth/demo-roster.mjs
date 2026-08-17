@@ -77,7 +77,7 @@ export const DEMO_PASSWORD = "demo-portal-2026";
 export const DEMO_STAFF = Object.freeze([
   { email: `owner@${DEMO_EMAIL_DOMAIN}`,   role: "owner",              name: "DEMO Owner",              lands: "command-center.html",   label: "Owner",             portal: "Command Center" },
   { email: `admin@${DEMO_EMAIL_DOMAIN}`,   role: "admin",              name: "DEMO Admin",              lands: "command-center.html",   label: "Admin",             portal: "Command Center" },
-  { email: `advisor@${DEMO_EMAIL_DOMAIN}`, role: "funding_advisor",    name: "DEMO Funding Advisor",    lands: "command-center.html",   label: "Funding advisor",   portal: "Command Center" },
+  { email: `advisor@${DEMO_EMAIL_DOMAIN}`, role: "funding_advisor",    name: "DEMO Funding Advisor",    lands: "client-control-panel.html", label: "Funding advisor",   portal: "Client Control Panel" },
   { email: `closer@${DEMO_EMAIL_DOMAIN}`,  role: "closer",             name: "DEMO Closer",             lands: "closer-dashboard.html", label: "Closer",            portal: "Closer Dashboard" },
   { email: `inquiry@${DEMO_EMAIL_DOMAIN}`, role: "inquiry_specialist", name: "DEMO Inquiry Specialist", lands: "inquiry-remover.html",  label: "Inquiry specialist", portal: "Inquiry Remover" },
   { email: `setter@${DEMO_EMAIL_DOMAIN}`,  role: "setter",             name: "DEMO Setter",             lands: "pipeline.html",         label: "Setter",            portal: "Pipeline" },

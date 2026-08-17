@@ -42,36 +42,43 @@ test("blocked closer identities: seed, demo, sandbox, test — never Chris", () 
   );
 });
 
-test("closer board includes Chris even when role is owner; keeps a real closer", () => {
+test("closer board excludes owners; keeps a real closer", () => {
   const chris = { name: "Chris Stanbridge", email: "chris@fundhub.ai", role: "owner", is_demo: false };
   const real = { name: "Riley Chen", email: "riley@fundhub.ai", role: "closer", is_demo: false };
   const ownerOnly = { name: "TEST — Owner Role", email: "owner@fundhub.ai", role: "owner", is_demo: false };
-  assert.equal(belongsOnCloserBoard(chris), true);
+  assert.equal(belongsOnCloserBoard(chris), false);
   assert.equal(belongsOnCloserBoard(real), true);
   assert.equal(belongsOnCloserBoard(ownerOnly), false);
 });
 
-test("filterCloserRoster drops demo names and keeps Chris; does not mutate the source list", () => {
+test("filterCloserRoster drops demo names and owners; does not mutate the source list", () => {
   const rows = [
     { name: "Jordan Blake", email: "jordan@fundhub.ai", role: "closer", is_demo: false },
     { name: "Nina Castellano", email: "nina@fundhub.ai", role: "closer", is_demo: false },
     { name: "CRS Sandbox Smoke", email: "crs_sandbox@example.com", role: "closer", is_demo: false },
     { name: "TEST — Closer Role", email: "closer@fundhub.ai", role: "closer", is_demo: false },
-    { name: "Chris Stanbridge", email: "chris@fundhub.ai", role: "owner", is_demo: false }
+    { name: "Chris Stanbridge", email: "chris@fundhub.ai", role: "owner", is_demo: false },
+    { name: "Riley Chen", email: "riley@fundhub.ai", role: "closer", is_demo: false }
   ];
   const frozen = rows.slice();
   const out = filterCloserRoster(rows);
-  assert.deepEqual(out.map((r) => r.name), ["Chris Stanbridge"]);
+  assert.deepEqual(out.map((r) => r.name), ["Riley Chen"]);
   assert.equal(rows.length, frozen.length, "filter must not delete staff rows");
   assert.equal(rows[0].name, "Jordan Blake");
 });
 
-test("closerRoster SQL includes owner Chris, never DELETEs, and returns live rates or null", async () => {
+test("DEMO closers show only when Demo Mode is on", () => {
+  const demo = { name: "DEMO Closer", email: "closer@demo.fundhub.local", role: "closer", is_demo: true };
+  assert.equal(belongsOnCloserBoard(demo), false);
+  assert.equal(belongsOnCloserBoard(demo, { demoMode: true }), true);
+});
+
+test("closerRoster SQL is closers only, never DELETEs, and returns live rates or null", async () => {
   const db = {
     async query(sql) {
       if (/FROM staff s/.test(sql)) {
-        assert.match(sql, /chris@fundhub\.ai/);
-        assert.match(sql, /chris stanbridge/);
+        assert.doesNotMatch(sql, /chris@fundhub\.ai/);
+        assert.doesNotMatch(sql, /chris stanbridge/);
         assert.match(sql, /lower\(btrim\(s\.role\)\) = 'closer'/);
         assert.doesNotMatch(sql, /\bDELETE\b/i);
         return {
@@ -84,6 +91,11 @@ test("closerRoster SQL includes owner Chris, never DELETEs, and returns live rat
             {
               staff_id: "c", name: "Chris Stanbridge", email: "chris@fundhub.ai",
               role: "owner", is_demo: false, shift_started: null,
+              cash_cents: 200, held: 2, deposits: 0
+            },
+            {
+              staff_id: "r", name: "Riley Chen", email: "riley@fundhub.ai",
+              role: "closer", is_demo: false, shift_started: null,
               cash_cents: 200, held: 2, deposits: 0
             },
             {
@@ -110,7 +122,7 @@ test("closerRoster SQL includes owner Chris, never DELETEs, and returns live rat
     now: new Date("2026-08-16T12:00:00Z")
   });
   assert.equal(rows.length, 1);
-  assert.equal(rows[0].name, "Chris Stanbridge");
+  assert.equal(rows[0].name, "Riley Chen");
   assert.equal(rows[0].calls, 2);
   assert.equal(rows[0].close_rate, 0);
   assert.equal(rows[0].funded_rate, null);

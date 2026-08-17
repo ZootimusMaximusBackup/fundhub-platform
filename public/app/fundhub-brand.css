@@ -168,3 +168,21 @@ td.money, th.money, td .age, th[data-s="age"]{
 
 /* data.js status strip is fixed; pad the page so it cannot cover controls */
 body{padding-bottom:var(--fh-statusbar)}
+
+/* Phone law (UI-STANDARDS §11) — 390px. Present, KPI rows, and two-pane
+   screens stack. Tables keep their own scroll box via .fh-scroll-x. */
+@media (max-width: 390px) {
+  html, body { max-width: 100%; }
+  .kpi-grid, .stats, .stat-tiles, .stat-head, .row-bottom, .grid2, .layout,
+  .record-fields, .holds-panel, .stage {
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+  }
+  .stage { display: flex !important; }
+  .cockpit, .client {
+    flex: 1 1 auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}

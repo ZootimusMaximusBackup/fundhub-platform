@@ -25,6 +25,10 @@ input::placeholder{color:var(--gray2)}
 .mono{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray2)}
 .btn-ghost{font-family:var(--mono);font-size:9.5px;padding:5px 9px;background:transparent;color:var(--gray);border:1px solid var(--line);cursor:pointer}
 .stage{display:flex;flex:1;min-height:0;overflow:hidden}
+@media (max-width:390px){
+  .stage{flex-direction:column}
+  .client,.cockpit{flex:1 1 auto;max-width:100%;width:100%;min-height:40vh}
+}
 .client{flex:1 1 auto;min-width:0;position:relative;background:var(--paper);border-right:1px solid var(--line);overflow:hidden}
 .client.solo{border-right:none}
 .cockpit{flex:0 0 340px;position:relative;overflow:hidden;background:var(--soft);border-left:1px solid var(--line)}

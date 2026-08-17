@@ -304,6 +304,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
   <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
   <nav class="side-scroll" id="fh-side-nav">
 
+<div class="navgroup" data-fh-section="home"><button class="navhead" type="button">Home<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="partner-galaxy.html"><span class="ico">⌂</span><span class="lbl">Home</span></a>
+</div></div>
+
 <div class="navgroup" data-fh-section="sales"><button class="navhead" type="button">Sales<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
         <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
@@ -344,8 +348,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 <div class="navgroup" data-fh-section="marketing"><button class="navhead" type="button">Marketing<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
         <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
-        <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
-        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
+        <a class="navitem on" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
 </div></div>
 
 <div class="navgroup" data-fh-section="admin"><button class="navhead" type="button">Admin<span class="chev">▾</span></button><div class="navlist">
@@ -567,37 +570,15 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         <div class="card-hd">
           <div class="eyebrow">Usage</div>
           <div class="spacer"></div>
-          <span class="badge b-warn mono">schema only</span>
-          <span class="badge b-alert mono">rates unsigned</span>
+          <span class="badge b-gray mono" id="cfUseBadge">meter only</span>
         </div>
-        <div class="card-bd">
+        <div class="card-bd" id="cfUseBody">
           <div class="unwired">
-            <div class="uh"><span>⚠</span><span>empty on purpose — nothing is metered yet</span></div>
-            <div class="ub">
-              Nothing in the live system records creative usage today, so there is nothing to show.
-              Any number here would be made up.
-            </div>
-          </div>
-          <div class="tblscroll" style="margin-top:13px">
-            <table class="grid">
-              <thead><tr><th>Event</th><th>Period</th><th>Events</th><th>Quantity</th><th>Billable</th><th>Voided</th></tr></thead>
-              <tbody>
-                <tr><td colspan="6"><div class="empty">
-                  No rows. Nothing records creative usage yet.
-                </div></td></tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="tblscroll" style="margin-top:13px">
-            <table class="grid">
-              <thead><tr><th>Rate</th><th>Amount</th><th>Signed off</th><th>Status</th></tr></thead>
-              <tbody id="ratesBody"></tbody>
-            </table>
+            <div class="uh"><span>◉</span><span>Loading writing budget…</span></div>
           </div>
         </div>
         <div class="cap">
-          <b>Both rates are placeholders nobody has signed off.</b> They are internal figures and
-          must not be shown to a partner or put on an invoice until someone approves them.
+          This counts writing-robot tokens for this partner this month. It does not charge money.
         </div>
       </div>
 
@@ -703,14 +684,7 @@ var PROVIDER_KEYS   = ['static','ugc-video','product-video','copy','resize'];
    and write against a partner that does not exist (UI-STANDARDS §6).
    ════════════════════════════════════════════════════════════════════════ */
 var PARTNERS = [];
-(function seedPartnerFromUrl(){
-  var pid = null;
-  try { pid = new URL(location.href).searchParams.get('partner_id'); } catch(e){}
-  if(!pid && window.FHData && FHData.param){ try { pid = FHData.param('partner_id'); } catch(e){} }
-  /* name is the id itself: no endpoint here returns a partner's name, and
-     printing one we do not have would be invented. */
-  if(pid) PARTNERS = [{id:pid, name:pid, offers:[]}];
-})();
+var CF_SUITE = { enabled: false, remaining: null, cap: null, used: null, loaded: false, error: null };
 
 /* Rows for CF-00/02/04/06/08 come from the four api/creative/* GETs and nowhere
    else. They start empty and stay empty when a read fails or no partner is named;
@@ -992,29 +966,139 @@ var S = {
 function renderScope(){
   var sel = document.getElementById('partnerSel');
   var p = currentPartner();
-  if(!sel.options.length){
-    sel.innerHTML = p
-      ? '<option value="0">'+esc(p.name)+'</option>'
-      : '<option value="">No partner selected</option>';
-    sel.disabled = true;   /* one partner per address, and no list to choose from */
-  }
-  if(p) sel.value = '0';
+  if (p) sel.value = String(S.partner);
   document.getElementById('scopePid').textContent = p ? p.id : 'No partner selected';
-  document.getElementById('scopeChipTxt').textContent = p ? p.name : 'no partner selected';
+  document.getElementById('scopeChipTxt').textContent = p ? (p.name || p.slug || p.id) : 'no partner selected';
   document.getElementById('scopeOffers').innerHTML = '';
   document.getElementById('scopeHow').innerHTML = p
-    ? 'Showing <b>' + esc(p.name) + '</b> only.'
-    : 'Nothing is loaded. This screen needs one partner before it can show jobs, creatives, or brand kits.';
-  setWriteControls(!!p);
+    ? 'Showing <b>' + esc(p.name || p.slug || p.id) + '</b> only.'
+    : 'Nothing is loaded. Pick a partner to show jobs, creatives, or brand kits.';
+  setWriteControls(canWriteCreative());
 }
 
-/* §5/§6 — a write control never fires against a partner that was not named. */
+function canWriteCreative(){
+  return Boolean(currentPartner() && CF_SUITE.loaded && CF_SUITE.enabled);
+}
+
+function loadPartnerPicker(){
+  var sel = document.getElementById('partnerSel');
+  if(!sel) return;
+  if(!window.FHData || typeof FHData.partners !== 'function'){
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', loadPartnerPicker, { once: true });
+      return;
+    }
+    sel.innerHTML = '<option value="">Could not load partners</option>';
+    sel.disabled = true;
+    renderAll();
+    loadCfUsage();
+    return;
+  }
+  FHData.partners({ limit: 200 }).then(function(res){
+    if(!res.ok){
+      PARTNERS = [];
+      sel.innerHTML = '<option value="">Could not load partners</option>';
+      sel.disabled = true;
+      renderAll();
+      loadCfUsage();
+      return;
+    }
+    var items = (res.data && res.data.items) || [];
+    PARTNERS = items;
+    if(!items.length){
+      sel.innerHTML = '<option value="">No partners on file</option>';
+      sel.disabled = true;
+      renderAll();
+      loadCfUsage();
+      return;
+    }
+    var cur = '';
+    try { cur = new URL(location.href).searchParams.get('partner_id') || ''; } catch(e){}
+    var idx = 0;
+    if (cur) {
+      for (var i = 0; i < items.length; i++) if (items[i].id === cur) idx = i;
+    }
+    S.partner = idx;
+    sel.disabled = false;
+    sel.innerHTML = items.map(function(p, i){
+      return '<option value="'+i+'">'+esc(p.name || p.slug || '')+'</option>';
+    }).join('');
+    sel.value = String(idx);
+    renderAll();
+    wireCreative();
+    loadCfUsage();
+  });
+}
+
+function loadCfUsage(){
+  var body = document.getElementById('cfUseBody');
+  var badge = document.getElementById('cfUseBadge');
+  var pid = currentPartnerId();
+  CF_SUITE = { enabled: false, remaining: null, cap: null, used: null, loaded: false, error: null };
+  if (!body) return;
+  if (!pid) {
+    body.innerHTML = '<div class="unwired"><div class="uh"><span>◉</span><span>Pick a partner to see the writing budget.</span></div></div>';
+    if (badge) badge.textContent = 'no partner';
+    setWriteControls(false);
+    return;
+  }
+  body.innerHTML = '<div class="unwired"><div class="uh"><span>◉</span><span>Loading writing budget…</span></div></div>';
+  var tok = '';
+  try { tok = localStorage.getItem('fh_token') || ''; } catch (e) { tok = ''; }
+  fetch('/api/partner-marketing/usage?partner_id=' + encodeURIComponent(pid), {
+    headers: tok ? { accept: 'application/json', authorization: 'Bearer ' + tok } : { accept: 'application/json' }
+  }).then(function (r) {
+    return r.json().then(function (d) { return { status: r.status, d: d }; })
+      .catch(function () { return { status: r.status, d: {} }; });
+  }).then(function (pack) {
+    var d = pack.d || {};
+    if (pack.status === 403) {
+      CF_SUITE.error = 'Only the owner or this partner can see the writing budget.';
+      body.innerHTML = '<div class="unwired"><div class="uh"><span>◉</span><span>' + CF_SUITE.error + '</span></div></div>';
+      if (badge) badge.textContent = 'owner / partner';
+      setWriteControls(false);
+      return;
+    }
+    if (!d.ok) {
+      CF_SUITE.error = d.message || 'Could not load the writing budget.';
+      body.innerHTML = '<div class="unwired"><div class="uh"><span>⚠</span><span>' + esc(CF_SUITE.error) + '</span></div></div>';
+      if (badge) badge.textContent = 'error';
+      setWriteControls(false);
+      return;
+    }
+    CF_SUITE = { enabled: !!d.enabled, remaining: d.remaining, cap: d.cap, used: d.used, loaded: true, error: null };
+    if (badge) badge.textContent = d.enabled ? 'on' : 'off';
+    body.innerHTML =
+      '<div class="stats">' +
+        '<div class="stat"><div class="eyebrow">On?</div><div class="sv">' + (d.enabled ? 'Yes' : 'No') + '</div></div>' +
+        '<div class="stat"><div class="eyebrow">Used this month</div><div class="sv">' + (d.used == null ? '—' : d.used) + '</div></div>' +
+        '<div class="stat"><div class="eyebrow">Left</div><div class="sv">' + (d.remaining == null ? '—' : d.remaining) + '</div></div>' +
+        '<div class="stat"><div class="eyebrow">Cap</div><div class="sv">' + (d.cap == null ? '—' : d.cap) + '</div></div>' +
+      '</div>' +
+      (d.enabled ? '' : '<p class="note">The owner has not turned this on for this partner. Generate stays off so you do not hit a wall.</p>');
+    setWriteControls(canWriteCreative());
+  }).catch(function () {
+    CF_SUITE.error = 'Could not reach the writing budget.';
+    body.innerHTML = '<div class="unwired"><div class="uh"><span>⚠</span><span>' + CF_SUITE.error + '</span></div></div>';
+    if (badge) badge.textContent = 'error';
+    setWriteControls(false);
+  });
+}
+
+/* §5/§6 — a write control never fires against a partner that was not named,
+   and never sits live when the owner has not turned this partner on. */
 function setWriteControls(enabled){
   var ids = ['genBtn','runJobsBtn'];
   document.querySelectorAll('[data-cact]').forEach(function(b){ b.disabled = !enabled; });
   ids.forEach(function(id){ var b = document.getElementById(id); if(b) b.disabled = !enabled; });
-  if(enabled) return;   /* leave any live status message alone */
-  var reason = 'No partner selected.';
+  if(enabled) return;
+  var reason = !currentPartner()
+    ? 'No partner selected.'
+    : (CF_SUITE.error
+      ? CF_SUITE.error
+      : (CF_SUITE.loaded && !CF_SUITE.enabled
+        ? 'The owner has not turned this on for this partner.'
+        : 'Writing tools stay off until the budget loads.'));
   ['genMsg','actMsg'].forEach(function(id){ var m = document.getElementById(id); if(m) m.textContent = reason; });
 }
 
@@ -1741,12 +1825,15 @@ function renderStaticTables(){
       '<td class="note">' + esc(g.consequence) + '</td></tr>';
   }).join('');
 
-  document.getElementById('ratesBody').innerHTML = RATES.map(function(r){
-    return '<tr class="stripe-warn"><td class="mono">' + esc(r.rate_key) + '</td>' +
-      '<td class="mnum">' + esc(r.rate) + '</td>' +
-      '<td class="mono">' + nul('null') + '</td>' +
-      '<td><span class="badge b-warn" style="white-space:normal">' + esc(r.status) + '</span></td></tr>';
-  }).join('');
+  var ratesBody = document.getElementById('ratesBody');
+  if (ratesBody) {
+    ratesBody.innerHTML = RATES.map(function(r){
+      return '<tr class="stripe-warn"><td class="mono">' + esc(r.rate_key) + '</td>' +
+        '<td class="mnum">' + esc(r.rate) + '</td>' +
+        '<td class="mono">' + nul('null') + '</td>' +
+        '<td><span class="badge b-warn" style="white-space:normal">' + esc(r.status) + '</span></td></tr>';
+    }).join('');
+  }
 }
 
 /* ══ DETAIL DRAWER ═══════════════════════════════════════════════════════ */
@@ -1875,7 +1962,7 @@ function openKit(k){
     'The name is unique per partner (<code>brand_kits_partner_name_uniq</code>) and there is no global or ' +
     'fundhub-owned kit.</p></div>';
 
-  DW.open('CF-08 <span class="sep">/</span> BRAND KIT', k.name, html);
+  DW.open('BRAND KIT', k.name, html);
 }
 
 /* ══ WIRING ══════════════════════════════════════════════════════════════ */
@@ -2041,11 +2128,29 @@ function wireCreative(){
 /* ══ BOOT ════════════════════════════════════════════════════════════════ */
 renderStaticTables();
 renderRules();
-renderAll();
-wireCreative();
+loadPartnerPicker();
+document.getElementById('partnerSel').addEventListener('change', function(){
+  S.partner = parseInt(this.value, 10) || 0;
+  var p = PARTNERS[S.partner];
+  try {
+    var url = new URL(location.href);
+    if (p && p.id) url.searchParams.set('partner_id', p.id);
+    else url.searchParams.delete('partner_id');
+    history.replaceState({}, '', url.pathname + url.search + url.hash);
+  } catch (e) {}
+  wireCreative();
+  loadCfUsage();
+});
 
 document.getElementById('genBtn').addEventListener('click', function () {
   var msg = document.getElementById('genMsg');
+  if (!canWriteCreative()) {
+    msg.textContent = CF_SUITE.error
+      || (CF_SUITE.loaded && !CF_SUITE.enabled
+        ? 'The owner has not turned this on for this partner.'
+        : 'Need a partner first.');
+    return;
+  }
   var partnerId = null;
   try {
     if (typeof PARTNERS !== 'undefined' && typeof S !== 'undefined' && PARTNERS[S.partner]) {
