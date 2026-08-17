@@ -1870,7 +1870,7 @@ function apiGet(path){
 }
 
 function scoped(path){
-  var qp = (window.FHData && FHData.param) ? FHData.param('partner_id') : null;
+  var qp = partnerParam();
   return qp ? path + (path.indexOf('?') === -1 ? '?' : '&') + 'partner_id=' + encodeURIComponent(qp) : path;
 }
 

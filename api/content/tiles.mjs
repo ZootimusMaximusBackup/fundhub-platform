@@ -42,37 +42,60 @@ function publicVideo(row) {
 }
 
 async function loadBundle(orgId) {
-  const [tiles, videos, map, products] = await Promise.all([
-    db.query(
-      `SELECT code, name, description, display_price_cents, active, sort_order
+  /* Price and the video tables land in 171_content.sql. Until that file
+     is applied, read what already exists and leave price/videos empty.
+     Do not invent a price. */
+  const tiles = await db.query(
+    `SELECT code, name, description, active, sort_order
+       FROM entitlement_catalog
+      WHERE org_id = $1::uuid
+      ORDER BY sort_order, code`,
+    [orgId]
+  );
+  let priceByCode = {};
+  try {
+    const prices = await db.query(
+      `SELECT code, display_price_cents
          FROM entitlement_catalog
-        WHERE org_id = $1::uuid
-        ORDER BY sort_order, code`,
+        WHERE org_id = $1::uuid AND display_price_cents IS NOT NULL`,
       [orgId]
-    ),
-    db.query(
+    );
+    for (const row of prices.rows) priceByCode[row.code] = row.display_price_cents;
+  } catch {
+    priceByCode = {};
+  }
+  let videos = { rows: [] };
+  let map = { rows: [] };
+  try {
+    videos = await db.query(
       `SELECT id, title, duration_label, mime_type, byte_size, uploaded_by, created_at
          FROM content_videos
         WHERE org_id = $1::uuid
         ORDER BY created_at DESC`,
       [orgId]
-    ),
-    db.query(
+    );
+    map = await db.query(
       `SELECT tier_code, video_id FROM content_tier_map WHERE org_id = $1::uuid`,
       [orgId]
-    ),
-    db.query(
-      `SELECT code, name, description
-         FROM products
-        WHERE org_id = $1::uuid AND active = true
-        ORDER BY sort_order, code`,
-      [orgId]
-    )
-  ]);
+    );
+  } catch {
+    videos = { rows: [] };
+    map = { rows: [] };
+  }
+  const products = await db.query(
+    `SELECT code, name, description
+       FROM products
+      WHERE org_id = $1::uuid AND active = true
+      ORDER BY sort_order, code`,
+    [orgId]
+  );
   const mapping = {};
   for (const row of map.rows) mapping[row.tier_code] = row.video_id;
   return {
-    tiles: tiles.rows.map(publicTile),
+    tiles: tiles.rows.map((row) => publicTile({
+      ...row,
+      display_price_cents: priceByCode[row.code] != null ? priceByCode[row.code] : null
+    })),
     videos: videos.rows.map(publicVideo),
     map: mapping,
     products: products.rows.map((p) => ({
@@ -159,23 +182,42 @@ export default async function handler(req, res) {
           }
           priceCents = n;
         }
-        const updated = await db.query(
-          `UPDATE entitlement_catalog
-              SET name = $3,
-                  description = $4,
-                  active = $5,
-                  display_price_cents = $6
-            WHERE org_id = $1::uuid AND code = $2
-            RETURNING code`,
-          [
-            orgId,
-            code,
-            name,
-            String(t.copy || "").trim() || null,
-            t.on !== false,
-            priceCents
-          ]
-        );
+        let updated;
+        try {
+          updated = await db.query(
+            `UPDATE entitlement_catalog
+                SET name = $3,
+                    description = $4,
+                    active = $5,
+                    display_price_cents = $6
+              WHERE org_id = $1::uuid AND code = $2
+              RETURNING code`,
+            [
+              orgId,
+              code,
+              name,
+              String(t.copy || "").trim() || null,
+              t.on !== false,
+              priceCents
+            ]
+          );
+        } catch {
+          updated = await db.query(
+            `UPDATE entitlement_catalog
+                SET name = $3,
+                    description = $4,
+                    active = $5
+              WHERE org_id = $1::uuid AND code = $2
+              RETURNING code`,
+            [
+              orgId,
+              code,
+              name,
+              String(t.copy || "").trim() || null,
+              t.on !== false
+            ]
+          );
+        }
         if (!updated.rows[0]) {
           return res.status(400).json({
             ok: false, error: "unknown_tile",
@@ -186,34 +228,44 @@ export default async function handler(req, res) {
     }
 
     if (mapping) {
-      for (const tierCode of Object.keys(mapping)) {
-        const code = String(tierCode || "").trim();
-        if (!code) continue;
-        const videoId = mapping[tierCode];
-        if (videoId == null || videoId === "") {
-          await db.query(
-            `DELETE FROM content_tier_map WHERE org_id = $1::uuid AND tier_code = $2`,
-            [orgId, code]
+      try {
+        for (const tierCode of Object.keys(mapping)) {
+          const code = String(tierCode || "").trim();
+          if (!code) continue;
+          const videoId = mapping[tierCode];
+          if (videoId == null || videoId === "") {
+            await db.query(
+              `DELETE FROM content_tier_map WHERE org_id = $1::uuid AND tier_code = $2`,
+              [orgId, code]
+            );
+            continue;
+          }
+          const found = await db.query(
+            `SELECT id FROM content_videos WHERE org_id = $1::uuid AND id = $2::uuid`,
+            [orgId, videoId]
           );
-          continue;
+          if (!found.rows[0]) {
+            return res.status(400).json({
+              ok: false, error: "unknown_video",
+              message: "That video is not in this company's library."
+            });
+          }
+          await db.query(
+            `INSERT INTO content_tier_map (org_id, tier_code, video_id, updated_at)
+             VALUES ($1::uuid, $2, $3::uuid, now())
+             ON CONFLICT (org_id, tier_code)
+             DO UPDATE SET video_id = EXCLUDED.video_id, updated_at = now()`,
+            [orgId, code, videoId]
+          );
         }
-        const found = await db.query(
-          `SELECT id FROM content_videos WHERE org_id = $1::uuid AND id = $2::uuid`,
-          [orgId, videoId]
-        );
-        if (!found.rows[0]) {
+      } catch {
+        const wantsVideo = Object.values(mapping).some((v) => v != null && v !== "");
+        if (wantsVideo) {
           return res.status(400).json({
-            ok: false, error: "unknown_video",
-            message: "That video is not in this company's library."
+            ok: false, error: "videos_not_stored_yet",
+            message: "Tile words were saved. Welcome videos are not stored in the database yet."
           });
         }
-        await db.query(
-          `INSERT INTO content_tier_map (org_id, tier_code, video_id, updated_at)
-           VALUES ($1::uuid, $2, $3::uuid, now())
-           ON CONFLICT (org_id, tier_code)
-           DO UPDATE SET video_id = EXCLUDED.video_id, updated_at = now()`,
-          [orgId, code, videoId]
-        );
       }
     }
 
