@@ -370,7 +370,7 @@
               <div class="val" id="oMonthly">—</div>
             </div>
           </div>
-          <div class="res-note">No deal-math endpoint — net cash and monthly stay dashes until one exists.</div>
+          <div class="res-note">Net cash uses the numbers you type and the draw on this file.</div>
 
           <div class="alert-box" id="cliffBox">
             <div class="a-title" id="cliffTitle">—</div>
@@ -1234,6 +1234,10 @@ window.FHCloserView = (function () {
       if ($("oFunded")) $("oFunded").textContent = moneyDeal(d.drawn);
       if ($("oFees")) $("oFees").textContent = "−" + moneyDeal(d.fees).replace(/^−/, "");
       if ($("oDebts")) $("oDebts").textContent = "−" + moneyDeal(d.debts).replace(/^−/, "");
+      var note = document.querySelector(".res-note");
+      if (note) {
+        note.textContent = "Net cash and monthly use the deposit, fee, debts, and minimum you type, plus the drawn amount from this file.";
+      }
     });
   }
 
@@ -1300,6 +1304,7 @@ window.FHCloserView = (function () {
     var el = $(id);
     if (el) el.addEventListener("input", askDealMath);
   });
+  askDealMath();
 
   FHData.read("closer-call", { client_id: clientId }).then(function (res) {
     var name = res && res.ok && res.data && res.data.client && res.data.client.name;
