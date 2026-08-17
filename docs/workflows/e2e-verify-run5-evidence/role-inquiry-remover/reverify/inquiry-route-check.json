@@ -1,0 +1,70 @@
+{
+  "ranAt": "2026-08-17T05:53:50.101Z",
+  "base": "https://fundhub.ai",
+  "email": "inquiry@fundhub.ai",
+  "loginStatus": 200,
+  "role": "inquiry_specialist",
+  "checks": [
+    {
+      "route": "/api/inquiry?action=cases",
+      "status": 503,
+      "shape": {
+        "ok": false,
+        "error": "not_configured",
+        "keys": [
+          "ok",
+          "error",
+          "message"
+        ],
+        "arrayLens": {}
+      }
+    },
+    {
+      "route": "/api/read/inquiry-cases",
+      "status": 200,
+      "shape": {
+        "ok": true,
+        "error": null,
+        "keys": [
+          "ok",
+          "cases"
+        ],
+        "arrayLens": {
+          "cases": 0
+        }
+      }
+    },
+    {
+      "route": "/api/read/inquiries",
+      "status": 200,
+      "shape": {
+        "ok": true,
+        "error": null,
+        "keys": [
+          "ok",
+          "count",
+          "limit",
+          "offset",
+          "hasMore",
+          "items"
+        ],
+        "arrayLens": {
+          "items": 0
+        }
+      }
+    },
+    {
+      "route": "/api/pii",
+      "status": 400,
+      "shape": {
+        "ok": false,
+        "error": "client_id must be a uuid",
+        "keys": [
+          "ok",
+          "error"
+        ],
+        "arrayLens": {}
+      }
+    }
+  ]
+}

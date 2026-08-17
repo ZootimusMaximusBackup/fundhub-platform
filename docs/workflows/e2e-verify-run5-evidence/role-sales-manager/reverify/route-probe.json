@@ -1,0 +1,1716 @@
+{
+  "journey": "role-sales-manager",
+  "email": "sales@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T05:48:39.817Z",
+  "login": {
+    "status": 200,
+    "ok": true,
+    "error": "",
+    "tokenPresent": true,
+    "staff": {
+      "role": "sales_manager",
+      "email": "sales@fundhub.ai",
+      "id": "581af335-6e8a-485f-b450-799d683c80eb"
+    },
+    "setCookie": true
+  },
+  "session": {
+    "status": 200,
+    "role": "sales_manager",
+    "ok": true
+  },
+  "unauth": [
+    {
+      "route": "/api/applications",
+      "expected": 401,
+      "status": 401,
+      "ms": 144,
+      "error": "unauthorized",
+      "bytes": 35
+    },
+    {
+      "route": "/api/banking/accounts",
+      "expected": 401,
+      "status": 401,
+      "ms": 237,
+      "error": "unauthorized",
+      "bytes": 35
+    },
+    {
+      "route": "/api/campaigns/action-log",
+      "expected": 401,
+      "status": 401,
+      "ms": 154,
+      "error": "unauthorized",
+      "bytes": 35
+    },
+    {
+      "route": "/api/campaigns/connections",
+      "expected": 401,
+      "status": 401,
+      "ms": 153,
+      "error": "unauthorized",
+      "bytes": 35
+    },
+    {
+      "route": "/api/campaigns/detail",
+      "expected": 401,
+      "status": 401,
+      "ms": 146,
+      "error": "unauthorized",
+      "bytes": 35
+    },
+    {
+      "route": "/api/campaigns/fatigue",
+      "expected": 401,
+      "status": 401,
+      "ms": 141,
+      "error": "unauthorized",
+      "bytes": 35
+    }
+  ],
+  "reach": [
+    {
+      "route": "/api/agents",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/applications",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 200,
+      "error": "application_id required",
+      "bytes": 46
+    },
+    {
+      "route": "/api/auth/login",
+      "method": "GET",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 167,
+      "error": "",
+      "bytes": 67
+    },
+    {
+      "route": "/api/auth/logout",
+      "method": "—",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/auth/magic-link",
+      "method": "—",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/auth/magic-link-verify",
+      "method": "—",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/auth/reset",
+      "method": "POST",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/auth/session",
+      "method": "—",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/banking/accounts",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 207,
+      "error": "client_id is required and must be a uuid",
+      "bytes": 63
+    },
+    {
+      "route": "/api/banking/sync-accounts",
+      "method": "POST",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/call-outcomes",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/campaigns/action-log",
+      "method": "GET",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 207,
+      "error": "partner_id_required",
+      "bytes": 134
+    },
+    {
+      "route": "/api/campaigns/connections",
+      "method": "GET",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 212,
+      "error": "partner_id_required",
+      "bytes": 134
+    },
+    {
+      "route": "/api/campaigns/detail",
+      "method": "GET",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 220,
+      "error": "partner_id_required",
+      "bytes": 134
+    },
+    {
+      "route": "/api/campaigns/fatigue",
+      "method": "GET",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 196,
+      "error": "partner_id_required",
+      "bytes": 134
+    },
+    {
+      "route": "/api/campaigns/list",
+      "method": "GET",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 201,
+      "error": "partner_id_required",
+      "bytes": 134
+    },
+    {
+      "route": "/api/campaigns/spend",
+      "method": "GET",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 208,
+      "error": "partner_id_required",
+      "bytes": 134
+    },
+    {
+      "route": "/api/campaigns/sync",
+      "method": "POST",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/campaigns/write",
+      "method": "POST",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/chat/ask",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/chat/messages",
+      "method": "GET",
+      "gate": "staff",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 271,
+      "error": "",
+      "bytes": 42
+    },
+    {
+      "route": "/api/chat/peers",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 257,
+      "error": "",
+      "bytes": 1149
+    },
+    {
+      "route": "/api/climate",
+      "method": "OPTIONS",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/climate/config",
+      "method": "—",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/climate/geocode",
+      "method": "OPTIONS",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/closer-deck",
+      "method": "POST",
+      "gate": "closer, sales_manager, owner, admin",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/company-brain/sync",
+      "method": "GET",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 269,
+      "error": "",
+      "bytes": 81
+    },
+    {
+      "route": "/api/contracts",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/contracts/sign",
+      "method": "GET",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": 404,
+      "ms": 157,
+      "error": "not_found",
+      "bytes": 32
+    },
+    {
+      "route": "/api/creative/actions",
+      "method": "POST",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/creative/approvals",
+      "method": "GET",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 223,
+      "error": "partner_id_required",
+      "bytes": 134
+    },
+    {
+      "route": "/api/creative/brand-kits",
+      "method": "GET",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 210,
+      "error": "partner_id_required",
+      "bytes": 134
+    },
+    {
+      "route": "/api/creative/generate",
+      "method": "POST",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/creative/jobs",
+      "method": "GET",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 205,
+      "error": "partner_id_required",
+      "bytes": 134
+    },
+    {
+      "route": "/api/creative/library",
+      "method": "GET",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 207,
+      "error": "partner_id_required",
+      "bytes": 134
+    },
+    {
+      "route": "/api/creative/run",
+      "method": "POST",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/customer-insights",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/dashboard/client",
+      "method": "—",
+      "gate": "staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/dashboard/client-archive",
+      "method": "POST",
+      "gate": "staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/dashboard/clients",
+      "method": "—",
+      "gate": "staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/dashboard/kpis",
+      "method": "—",
+      "gate": "staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/dashboard/pipeline",
+      "method": "—",
+      "gate": "staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/dashboard/seed",
+      "method": "—",
+      "gate": "staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/documents-upload",
+      "method": "POST",
+      "gate": "staff, client",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/documents/:id",
+      "method": "HEAD",
+      "gate": "**not a sign-in** — signed link",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/finance/alerts",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 271,
+      "error": "",
+      "bytes": 64
+    },
+    {
+      "route": "/api/finance/bank-accounts",
+      "method": "GET",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 250,
+      "error": "client_id must be a uuid",
+      "bytes": 47
+    },
+    {
+      "route": "/api/finance/bills",
+      "method": "GET",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 201,
+      "error": "client_id or bill_id must be a uuid",
+      "bytes": 58
+    },
+    {
+      "route": "/api/finance/cards",
+      "method": "GET",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 215,
+      "error": "client_id must be a uuid",
+      "bytes": 47
+    },
+    {
+      "route": "/api/finance/cashflow",
+      "method": "GET",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 210,
+      "error": "client_id must be a uuid",
+      "bytes": 47
+    },
+    {
+      "route": "/api/finance/entities",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 215,
+      "error": "client_id must be a uuid",
+      "bytes": 47
+    },
+    {
+      "route": "/api/finance/liabilities",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 220,
+      "error": "client_id or tradeline_id must be a uuid",
+      "bytes": 63
+    },
+    {
+      "route": "/api/finance/model",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/finance/subscriptions",
+      "method": "GET",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 204,
+      "error": "client_id must be a uuid",
+      "bytes": 47
+    },
+    {
+      "route": "/api/health",
+      "method": "—",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/inngest",
+      "method": "—",
+      "gate": "**not a sign-in** — Inngest request signing",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/inquiries",
+      "method": "GET",
+      "gate": "staff",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 212,
+      "error": "inquiry_id must be a uuid",
+      "bytes": 48
+    },
+    {
+      "route": "/api/inquiry-cases",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/journeys/run",
+      "method": "POST",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/lender-observations",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/lenders",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/marketing-flags",
+      "method": "POST",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/message-templates",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/messages",
+      "method": "POST",
+      "gate": "staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/messages-outbound",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/org-brand",
+      "method": "GET",
+      "gate": "staff, partner, affiliate, client",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 295,
+      "error": "",
+      "bytes": 285
+    },
+    {
+      "route": "/api/payment-links",
+      "method": "GET",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 221,
+      "error": "client_id must be a uuid",
+      "bytes": 47
+    },
+    {
+      "route": "/api/pipeline-cards",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/products",
+      "method": "POST",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/public/partner-apply",
+      "method": "POST",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/public/partner-page",
+      "method": "GET",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 143,
+      "error": "partner_id_and_slug_or_domain_required",
+      "bytes": 61
+    },
+    {
+      "route": "/api/public/survey-submit",
+      "method": "POST",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/read/affiliates",
+      "method": "GET",
+      "gate": "employees: owner, admin, sales_manager plus: affiliate",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 268,
+      "error": "",
+      "bytes": 2011
+    },
+    {
+      "route": "/api/read/agent-context",
+      "method": "—",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/read/agent-shadow-log",
+      "method": "—",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/read/agents",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 327,
+      "error": "",
+      "bytes": 27457
+    },
+    {
+      "route": "/api/read/ai-bureau-config",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 269,
+      "error": "",
+      "bytes": 2410
+    },
+    {
+      "route": "/api/read/banking-surface",
+      "method": "GET",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 403,
+      "ms": 208,
+      "error": "banking surface requires plaid configuration",
+      "bytes": 67
+    },
+    {
+      "route": "/api/read/call-outcomes",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 282,
+      "error": "",
+      "bytes": 3119
+    },
+    {
+      "route": "/api/read/closer-call",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 209,
+      "error": "client_id is required and must be a uuid",
+      "bytes": 63
+    },
+    {
+      "route": "/api/read/closer-deck",
+      "method": "GET",
+      "gate": "closer, sales_manager, owner, admin",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 202,
+      "error": "client_id is required and must be a uuid",
+      "bytes": 63
+    },
+    {
+      "route": "/api/read/commissions",
+      "method": "GET",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 267,
+      "error": "",
+      "bytes": 70
+    },
+    {
+      "route": "/api/read/company-activity",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 625,
+      "error": "",
+      "bytes": 6599
+    },
+    {
+      "route": "/api/read/company-brain",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/read/contracts",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 263,
+      "error": "",
+      "bytes": 5863
+    },
+    {
+      "route": "/api/read/conversations",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 206,
+      "error": "invalid_parameter",
+      "bytes": 40
+    },
+    {
+      "route": "/api/read/customer-insights",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 273,
+      "error": "",
+      "bytes": 1051
+    },
+    {
+      "route": "/api/read/documents",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 259,
+      "error": "",
+      "bytes": 2849
+    },
+    {
+      "route": "/api/read/entitlements",
+      "method": "GET",
+      "gate": "employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager plus: client",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 274,
+      "error": "",
+      "bytes": 70
+    },
+    {
+      "route": "/api/read/finance-ask",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/read/finance-command",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 544,
+      "error": "",
+      "bytes": 8473
+    },
+    {
+      "route": "/api/read/finance-os",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 205,
+      "error": "client_id is required and must be a uuid",
+      "bytes": 63
+    },
+    {
+      "route": "/api/read/funding-rounds",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 286,
+      "error": "",
+      "bytes": 70
+    },
+    {
+      "route": "/api/read/inbox",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 366,
+      "error": "",
+      "bytes": 7440
+    },
+    {
+      "route": "/api/read/inquiries",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 278,
+      "error": "",
+      "bytes": 70
+    },
+    {
+      "route": "/api/read/inquiry-cases",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 272,
+      "error": "",
+      "bytes": 22
+    },
+    {
+      "route": "/api/read/invoices",
+      "method": "GET",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 281,
+      "error": "",
+      "bytes": 1023
+    },
+    {
+      "route": "/api/read/lender-matches",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 213,
+      "error": "client_id is required and must be a uuid",
+      "bytes": 63
+    },
+    {
+      "route": "/api/read/lender-observations",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 271,
+      "error": "",
+      "bytes": 48
+    },
+    {
+      "route": "/api/read/lenders",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 389,
+      "error": "",
+      "bytes": 183
+    },
+    {
+      "route": "/api/read/message-templates",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 390,
+      "error": "",
+      "bytes": 96665
+    },
+    {
+      "route": "/api/read/messages",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 206,
+      "error": "invalid_parameter",
+      "bytes": 40
+    },
+    {
+      "route": "/api/read/money-map",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 199,
+      "error": "client_id is required and must be a uuid",
+      "bytes": 63
+    },
+    {
+      "route": "/api/read/my-numbers",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 614,
+      "error": "",
+      "bytes": 4180
+    },
+    {
+      "route": "/api/read/partners",
+      "method": "GET",
+      "gate": "employees: owner, admin, sales_manager plus: partner",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 301,
+      "error": "",
+      "bytes": 1506
+    },
+    {
+      "route": "/api/read/portal-contracts",
+      "method": "GET",
+      "gate": "staff, client",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 220,
+      "error": "client_id_required",
+      "bytes": 87
+    },
+    {
+      "route": "/api/read/portal-summary",
+      "method": "GET",
+      "gate": "staff, client",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 213,
+      "error": "client_id_required",
+      "bytes": 91
+    },
+    {
+      "route": "/api/read/products",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 297,
+      "error": "",
+      "bytes": 2088
+    },
+    {
+      "route": "/api/read/sales-floor",
+      "method": "GET",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 542,
+      "error": "",
+      "bytes": 2455
+    },
+    {
+      "route": "/api/read/search",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 212,
+      "error": "",
+      "bytes": 102
+    },
+    {
+      "route": "/api/read/staff",
+      "method": "GET",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 292,
+      "error": "",
+      "bytes": 397
+    },
+    {
+      "route": "/api/read/tradelines",
+      "method": "—",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/read/transactions",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 193,
+      "error": "client_id is required and must be a uuid",
+      "bytes": 63
+    },
+    {
+      "route": "/api/read/underwrite",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 236,
+      "error": "client_id is required and must be a uuid",
+      "bytes": 63
+    },
+    {
+      "route": "/api/read/workflows",
+      "method": "GET",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 267,
+      "error": "",
+      "bytes": 10692
+    },
+    {
+      "route": "/api/repair/exceptions",
+      "method": "GET",
+      "gate": "staff",
+      "expected": "not 401/403/404",
+      "status": 403,
+      "ms": 208,
+      "error": "role_forbidden",
+      "bytes": 37
+    },
+    {
+      "route": "/api/repair/send",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/shifts",
+      "method": "GET",
+      "gate": "staff",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 292,
+      "error": "",
+      "bytes": 24
+    },
+    {
+      "route": "/api/social/oauth",
+      "method": "—",
+      "gate": "staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/social/publish",
+      "method": "POST",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/social/schedule",
+      "method": "POST",
+      "gate": "partner, staff",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    },
+    {
+      "route": "/api/soft-pull-approve",
+      "method": "GET",
+      "gate": "anyone",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 254,
+      "error": "bad_token",
+      "bytes": 82
+    },
+    {
+      "route": "/api/staff/telemetry",
+      "method": "GET",
+      "gate": "owner, admin, sales_manager",
+      "expected": "not 401/403/404",
+      "status": 400,
+      "ms": 222,
+      "error": "staff_id must be a uuid",
+      "bytes": 46
+    },
+    {
+      "route": "/api/tasks",
+      "method": "GET",
+      "gate": "staff",
+      "expected": "not 401/403/404",
+      "status": 200,
+      "ms": 400,
+      "error": "",
+      "bytes": 29069
+    },
+    {
+      "route": "/api/webhooks/:provider",
+      "method": "—",
+      "gate": "**not a sign-in** — provider signature",
+      "expected": "not 401/403/404",
+      "status": null,
+      "note": "UNVERIFIED — write-only route, not probed"
+    }
+  ],
+  "blocked": [
+    {
+      "route": "/api/ai-bureau-config",
+      "method": "POST",
+      "gate": "owner, admin, funding_advisor",
+      "expected": 403,
+      "status": 403,
+      "ms": 198,
+      "error": "forbidden",
+      "bytes": 102
+    },
+    {
+      "route": "/api/auth/admin-reset",
+      "method": "POST",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 195,
+      "error": "forbidden",
+      "bytes": 61
+    },
+    {
+      "route": "/api/auth/invite",
+      "method": "POST",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 271,
+      "error": "forbidden",
+      "bytes": 61
+    },
+    {
+      "route": "/api/auth/suspend",
+      "method": "POST",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 209,
+      "error": "forbidden",
+      "bytes": 61
+    },
+    {
+      "route": "/api/banking/revoke",
+      "method": "GET",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 222,
+      "error": "forbidden",
+      "bytes": 85
+    },
+    {
+      "route": "/api/chat/portal-message",
+      "method": "POST",
+      "gate": "client",
+      "expected": 403,
+      "status": 403,
+      "ms": 200,
+      "error": "forbidden",
+      "bytes": 72
+    },
+    {
+      "route": "/api/company-brain/reviews",
+      "method": "GET",
+      "gate": "owner",
+      "expected": 403,
+      "status": 403,
+      "ms": 203,
+      "error": "forbidden",
+      "bytes": 78
+    },
+    {
+      "route": "/api/consent/capture",
+      "method": "GET",
+      "gate": "employees: owner, admin, closer, funding_advisor plus: client",
+      "expected": 403,
+      "status": 403,
+      "ms": 208,
+      "error": "forbidden",
+      "bytes": 110
+    },
+    {
+      "route": "/api/demo/mode",
+      "method": "GET",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 201,
+      "error": "forbidden",
+      "bytes": 85
+    },
+    {
+      "route": "/api/demo/simulate",
+      "method": "POST",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 203,
+      "error": "forbidden",
+      "bytes": 85
+    },
+    {
+      "route": "/api/finance/soft-pull",
+      "method": "GET",
+      "gate": "employees: owner, admin, closer, funding_advisor plus: client",
+      "expected": 403,
+      "status": 403,
+      "ms": 199,
+      "error": "forbidden",
+      "bytes": 32
+    },
+    {
+      "route": "/api/hiring/application",
+      "method": "GET",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 204,
+      "error": "forbidden",
+      "bytes": 85
+    },
+    {
+      "route": "/api/hiring/bench",
+      "method": "GET",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 210,
+      "error": "forbidden",
+      "bytes": 85
+    },
+    {
+      "route": "/api/hiring/candidates",
+      "method": "GET",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 211,
+      "error": "forbidden",
+      "bytes": 85
+    },
+    {
+      "route": "/api/hiring/decisions",
+      "method": "GET",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 216,
+      "error": "forbidden",
+      "bytes": 85
+    },
+    {
+      "route": "/api/hiring/funnel",
+      "method": "GET",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 202,
+      "error": "forbidden",
+      "bytes": 85
+    },
+    {
+      "route": "/api/hiring/postings",
+      "method": "GET",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 196,
+      "error": "forbidden",
+      "bytes": 85
+    },
+    {
+      "route": "/api/inquiry",
+      "method": "—",
+      "gate": "inquiry_specialist, admin, owner",
+      "expected": 403,
+      "status": null,
+      "note": "UNVERIFIED — no GET/POST method to probe safely"
+    },
+    {
+      "route": "/api/journeys",
+      "method": "GET",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 256,
+      "error": "forbidden",
+      "bytes": 61
+    },
+    {
+      "route": "/api/journeys/ask",
+      "method": "POST",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 201,
+      "error": "forbidden",
+      "bytes": 61
+    },
+    {
+      "route": "/api/partner-brand",
+      "method": "GET",
+      "gate": "employees: owner, admin plus: partner",
+      "expected": 403,
+      "status": 403,
+      "ms": 309,
+      "error": "forbidden",
+      "bytes": 85
+    },
+    {
+      "route": "/api/partner-brand/verify-domain",
+      "method": "POST",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 203,
+      "error": "forbidden",
+      "bytes": 85
+    },
+    {
+      "route": "/api/partner-pages",
+      "method": "GET",
+      "gate": "employees: owner, admin plus: partner",
+      "expected": 403,
+      "status": 403,
+      "ms": 208,
+      "error": "forbidden",
+      "bytes": 85
+    },
+    {
+      "route": "/api/pii",
+      "method": "GET",
+      "gate": "owner, admin, inquiry_specialist, funding_advisor",
+      "expected": 403,
+      "status": 403,
+      "ms": 208,
+      "error": "forbidden",
+      "bytes": 32
+    },
+    {
+      "route": "/api/privacy/erasure",
+      "method": "GET",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 208,
+      "error": "forbidden",
+      "bytes": 85
+    },
+    {
+      "route": "/api/proxy/end",
+      "method": "POST",
+      "gate": "owner, funding_advisor",
+      "expected": 403,
+      "status": 403,
+      "ms": 261,
+      "error": "forbidden",
+      "bytes": 95
+    },
+    {
+      "route": "/api/proxy/launch",
+      "method": "POST",
+      "gate": "owner, funding_advisor",
+      "expected": 403,
+      "status": 403,
+      "ms": 202,
+      "error": "forbidden",
+      "bytes": 95
+    },
+    {
+      "route": "/api/read/company-brain-affiliate",
+      "method": "POST",
+      "gate": "affiliate, partner",
+      "expected": 403,
+      "status": 403,
+      "ms": 193,
+      "error": "forbidden",
+      "bytes": 84
+    },
+    {
+      "route": "/api/read/failed-events",
+      "method": "GET",
+      "gate": "owner, admin",
+      "expected": 403,
+      "status": 403,
+      "ms": 262,
+      "error": "forbidden",
+      "bytes": 85
+    },
+    {
+      "route": "/api/read/proxy-sessions",
+      "method": "GET",
+      "gate": "owner, funding_advisor",
+      "expected": 403,
+      "status": 403,
+      "ms": 208,
+      "error": "forbidden",
+      "bytes": 95
+    },
+    {
+      "route": "/api/staff/monitoring-consent",
+      "method": "POST",
+      "gate": "owner",
+      "expected": 403,
+      "status": 403,
+      "ms": 198,
+      "error": "forbidden",
+      "bytes": 78
+    }
+  ],
+  "groups": {
+    "reach": [
+      {
+        "group": "Signing in and out",
+        "intended": 6,
+        "actual": 6
+      },
+      {
+        "group": "banking",
+        "intended": 2,
+        "actual": 2
+      },
+      {
+        "group": "Campaigns",
+        "intended": 6,
+        "actual": 8
+      },
+      {
+        "group": "contracts",
+        "intended": 1,
+        "actual": 1
+      },
+      {
+        "group": "Creative Factory",
+        "intended": 4,
+        "actual": 7
+      },
+      {
+        "group": "The dashboard",
+        "intended": 4,
+        "actual": 6
+      },
+      {
+        "group": "Documents",
+        "intended": 1,
+        "actual": 1
+      },
+      {
+        "group": "Finance",
+        "intended": 9,
+        "actual": 9
+      },
+      {
+        "group": "journeys",
+        "intended": 1,
+        "actual": 1
+      },
+      {
+        "group": "Reading data",
+        "intended": 25,
+        "actual": 43
+      },
+      {
+        "group": "Everything else",
+        "intended": 11,
+        "actual": 25
+      },
+      {
+        "group": "Incoming webhooks",
+        "intended": 1,
+        "actual": 1
+      },
+      {
+        "group": "chat",
+        "intended": 0,
+        "actual": 3
+      },
+      {
+        "group": "climate",
+        "intended": 0,
+        "actual": 2
+      },
+      {
+        "group": "company-brain",
+        "intended": 0,
+        "actual": 1
+      },
+      {
+        "group": "public",
+        "intended": 0,
+        "actual": 3
+      },
+      {
+        "group": "repair",
+        "intended": 0,
+        "actual": 2
+      },
+      {
+        "group": "social",
+        "intended": 0,
+        "actual": 3
+      },
+      {
+        "group": "staff",
+        "intended": 0,
+        "actual": 1
+      }
+    ],
+    "blocked": [
+      {
+        "group": "Signing in and out",
+        "intended": 1,
+        "actual": 3
+      },
+      {
+        "group": "banking",
+        "intended": 1,
+        "actual": 1
+      },
+      {
+        "group": "consent",
+        "intended": 1,
+        "actual": 1
+      },
+      {
+        "group": "Finance",
+        "intended": 1,
+        "actual": 1
+      },
+      {
+        "group": "Hiring",
+        "intended": 6,
+        "actual": 6
+      },
+      {
+        "group": "journeys",
+        "intended": 1,
+        "actual": 1
+      },
+      {
+        "group": "privacy",
+        "intended": 1,
+        "actual": 1
+      },
+      {
+        "group": "Reading data",
+        "intended": 1,
+        "actual": 3
+      },
+      {
+        "group": "Everything else",
+        "intended": 4,
+        "actual": 6
+      },
+      {
+        "group": "chat",
+        "intended": 0,
+        "actual": 1
+      },
+      {
+        "group": "company-brain",
+        "intended": 0,
+        "actual": 1
+      },
+      {
+        "group": "demo",
+        "intended": 0,
+        "actual": 2
+      },
+      {
+        "group": "partner-brand",
+        "intended": 0,
+        "actual": 1
+      },
+      {
+        "group": "proxy",
+        "intended": 0,
+        "actual": 2
+      },
+      {
+        "group": "staff",
+        "intended": 0,
+        "actual": 1
+      }
+    ]
+  },
+  "summary": {
+    "reachTotal": 125,
+    "reachProbed": 72,
+    "reachUnverified": 53,
+    "reachBad": 3,
+    "blockedTotal": 31,
+    "blockedProbed": 30,
+    "blockedUnverified": 1,
+    "blockedBad": 0,
+    "unauthBad": 0
+  }
+}

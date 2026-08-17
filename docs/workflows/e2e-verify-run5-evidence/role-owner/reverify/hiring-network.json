@@ -1,0 +1,63 @@
+{
+  "ranAt": "2026-08-17T05:44:57.129Z",
+  "base": "https://fundhub.ai",
+  "email": "owner@fundhub.ai",
+  "screen": "/app/hiring.html",
+  "apiCalls": [
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/hiring/postings?limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/hiring/bench?limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/hiring/candidates?state=all&limit=200",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "itemCount": 3,
+        "flagsNullCount": 3,
+        "error": ""
+      }
+    },
+    {
+      "method": "GET",
+      "url": "/api/hiring/decisions?state=all&days=730&limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/org-brand",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/demo/mode",
+      "status": 200
+    }
+  ],
+  "counts": {
+    "total": 8,
+    "c4xx": 0,
+    "c5xx": 0
+  },
+  "pageErrors": [
+    "Cannot read properties of undefined (reading 'label')"
+  ],
+  "consoleErrors": []
+}

@@ -1,0 +1,254 @@
+{
+  "ranAt": "2026-08-17T05:51:44.687Z",
+  "base": "https://fundhub.ai",
+  "email": "partner@fundhub.ai",
+  "login": {
+    "ok": true,
+    "landedAt": "/app/partner-galaxy.html",
+    "calls": [
+      {
+        "method": "GET",
+        "url": "/api/auth/login",
+        "status": 200
+      },
+      {
+        "method": "POST",
+        "url": "/api/auth/login",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/read/partners?limit=200",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/health",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/org-brand",
+        "status": 200
+      }
+    ],
+    "consoleErrors": [],
+    "demoModeCalled": false
+  },
+  "storage": {
+    "fh_role": "partner",
+    "fh_token_present": true,
+    "fh_account": {
+      "keys": [
+        "accountId",
+        "affiliateId",
+        "clientId",
+        "email",
+        "kind",
+        "name",
+        "orgId",
+        "partnerId"
+      ],
+      "kind": "partner",
+      "partnerId_present": true,
+      "clientId_present": false,
+      "affiliateId_present": false,
+      "accountId_present": true,
+      "orgId_present": true
+    },
+    "allKeys": [
+      "fh_account",
+      "fh_role",
+      "fh_token"
+    ]
+  },
+  "screens": [
+    {
+      "label": "partner-galaxy",
+      "target": "/app/partner-galaxy.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/partner-galaxy.html",
+      "title": "Your Galaxy — Partner View",
+      "footer": "‹‹ ADMIN ▾ ◆ Brand Studio BETA fundhub Fundhub / Galaxy Your page · https://fundhub.ai/sites/9defaf28-47c5-43a0-8f5e-f41ef90f360a/apply 1 partner on file Mon, Aug 17, 1:51:54 AM EDT LIVE GX-01 / READI",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/white-label/reverify/shots/sc-partner-galaxy.png",
+      "calls": [
+        {
+          "method": "GET",
+          "url": "/api/auth/session",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/read/partners?limit=200",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/org-brand",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/auth/session",
+          "status": 200
+        }
+      ],
+      "apiFails": [],
+      "consoleErrors": [],
+      "demoModeCalled": false
+    },
+    {
+      "label": "brand-studio",
+      "target": "/app/brand-studio.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/brand-studio.html",
+      "title": "Fundhub — Brand Studio",
+      "footerBar": "Beta — under development. Data may be incomplete or inaccurate. Do not use for client decisions. Dismiss ‹‹ ADMIN ▾ ◆ Brand Studio BETA fundhub SETUP Brand Studio DRAFT RESET BS-00 / BRAND Text mark w",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/white-label/reverify/shots/sc-brand-studio.png",
+      "calls": [
+        {
+          "method": "GET",
+          "url": "/api/auth/session",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/partner-brand?partner_id=<uuid>",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/partner-pages?partner_id=<uuid>",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/org-brand",
+          "status": 200
+        }
+      ],
+      "apiFails": [],
+      "consoleErrors": [],
+      "demoModeCalled": false,
+      "partnerModeMarker": true,
+      "brandNameField": ""
+    },
+    {
+      "label": "ops-admin-direct",
+      "target": "/app/ops-admin.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/partner-galaxy.html",
+      "title": "Your Galaxy — Partner View",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/white-label/reverify/shots/sc-ops-admin-direct.png",
+      "calls": [
+        {
+          "method": "GET",
+          "url": "/api/auth/session",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/read/partners?limit=200",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/auth/session",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/org-brand",
+          "status": 200
+        }
+      ],
+      "apiFails": [],
+      "consoleErrors": [],
+      "demoModeCalled": false
+    }
+  ],
+  "api": [
+    {
+      "method": "GET",
+      "route": "/api/read/messages?status=blocked&limit=30",
+      "status": 401,
+      "error": "unauthorized",
+      "keys": [
+        "ok",
+        "error"
+      ],
+      "bytes": 35
+    },
+    {
+      "method": "GET",
+      "route": "/api/read/messages",
+      "status": 401,
+      "error": "unauthorized",
+      "keys": [
+        "ok",
+        "error"
+      ],
+      "bytes": 35
+    },
+    {
+      "method": "GET",
+      "route": "/api/demo/mode",
+      "status": 401,
+      "error": "unauthorized",
+      "keys": [
+        "ok",
+        "error"
+      ],
+      "bytes": 35
+    },
+    {
+      "method": "POST",
+      "route": "/api/read/company-brain-affiliate",
+      "status": 400,
+      "error": "question_required",
+      "keys": [
+        "ok",
+        "error"
+      ],
+      "bytes": 40
+    },
+    {
+      "method": "GET",
+      "route": "/api/auth/session",
+      "status": 200,
+      "error": "",
+      "keys": [
+        "ok",
+        "principal",
+        "staff"
+      ],
+      "bytes": 356
+    }
+  ],
+  "tokenPresent": true
+}

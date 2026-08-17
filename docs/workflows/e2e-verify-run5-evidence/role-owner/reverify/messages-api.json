@@ -1,0 +1,28 @@
+{
+  "agent": "role-owner-B (claude-fable-5 reverify)",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T05:39:00.909Z",
+  "login": {
+    "status": 200,
+    "ok": true,
+    "tokenPresent": true,
+    "role": "owner"
+  },
+  "messagesBlocked": {
+    "url": "/api/read/messages?status=blocked&limit=30",
+    "status": 200,
+    "ok": true,
+    "topLevelKeys": [
+      "ok",
+      "count",
+      "limit",
+      "offset",
+      "hasMore",
+      "items"
+    ],
+    "itemsLength": 0,
+    "count": 0,
+    "error": null
+  },
+  "verdict": "CONFIRMED-FIXED"
+}

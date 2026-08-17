@@ -1,0 +1,98 @@
+{
+  "agent": "role-owner-B (claude-fable-5 reverify)",
+  "email": "owner@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T05:38:39.624Z",
+  "loginLeftLoginPage": true,
+  "loginApi": [
+    {
+      "method": "GET",
+      "url": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200
+    }
+  ],
+  "finalUrl": "/app/staff-teams.html",
+  "staffGetStatus": 200,
+  "apiCalls": [
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/org-brand",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/demo/mode",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/read/staff?limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/shifts",
+      "status": 200
+    }
+  ],
+  "consoleErrors": [],
+  "footer": {
+    "present": true,
+    "text": "live roster · 1 staff · signed-in user not on roster · consent 0/1",
+    "visible": true
+  },
+  "isObjectPromise": false,
+  "startsWithLiveRoster": true,
+  "roster": {
+    "tables": [
+      {
+        "id": "rosterTbl",
+        "rows": 1
+      },
+      {
+        "id": "permTbl",
+        "rows": 18
+      },
+      {
+        "id": null,
+        "rows": 1
+      },
+      {
+        "id": null,
+        "rows": 0
+      },
+      {
+        "id": null,
+        "rows": 0
+      }
+    ],
+    "totalRows": 20
+  },
+  "shot": "docs/workflows/e2e-verify-run5-evidence/role-owner/reverify/staff-teams-shot.png",
+  "verdict": "CONFIRMED-FIXED"
+}

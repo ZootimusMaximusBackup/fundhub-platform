@@ -1,0 +1,222 @@
+{
+  "journey": "affiliate/reverify",
+  "email": "affiliate@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T05:39:40.846Z",
+  "login": {
+    "pageShot": "docs/workflows/e2e-verify-run5-evidence/affiliate/reverify/shots/00-login-page.png",
+    "ok": true,
+    "apiFails": [],
+    "consoleErrors": [],
+    "roleStored": "affiliate"
+  },
+  "landing": {
+    "url": "/app/affiliate.html",
+    "title": "Fundhub — Affiliate",
+    "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/reverify/shots/01-landing.png",
+    "apiFails": [],
+    "consoleErrors": [],
+    "appShellUrl": "/app/affiliate.html",
+    "appShellShot": "docs/workflows/e2e-verify-run5-evidence/affiliate/reverify/shots/02-app-shell.png"
+  },
+  "sidebar": [
+    {
+      "href": "/app/affiliate.html",
+      "label": "",
+      "visible": true
+    },
+    {
+      "href": "pipeline.html",
+      "label": "▤Pipeline",
+      "visible": false
+    },
+    {
+      "href": "closer-dashboard.html",
+      "label": "★Closer Dashboard",
+      "visible": false
+    },
+    {
+      "href": "closer-call.html",
+      "label": "☎Call cockpit",
+      "visible": false
+    },
+    {
+      "href": "my-numbers.html",
+      "label": "＃My numbers",
+      "visible": false
+    },
+    {
+      "href": "sales-floor.html",
+      "label": "▣Sales floor",
+      "visible": false
+    },
+    {
+      "href": "calendar.html",
+      "label": "▦Calendar",
+      "visible": false
+    },
+    {
+      "href": "lenders.html",
+      "label": "⬡Lenders",
+      "visible": false
+    },
+    {
+      "href": "finance-os.html",
+      "label": "▩Finance OSBETA",
+      "visible": false
+    },
+    {
+      "href": "contracts.html",
+      "label": "✒Contracts",
+      "visible": false
+    },
+    {
+      "href": "subscriptions.html",
+      "label": "◍SubscriptionsBETA",
+      "visible": false
+    },
+    {
+      "href": "client-control-panel.html",
+      "label": "◎Client Control Panel",
+      "visible": false
+    },
+    {
+      "href": "messaging.html",
+      "label": "✉Messaging",
+      "visible": false
+    },
+    {
+      "href": "documents.html",
+      "label": "▧Documents",
+      "visible": false
+    },
+    {
+      "href": "inquiry-remover.html",
+      "label": "⊘Inquiry Remover",
+      "visible": false
+    },
+    {
+      "href": "company-brain.html",
+      "label": "◎Company BrainBETA",
+      "visible": false
+    },
+    {
+      "href": "command-center.html",
+      "label": "⌘Command CenterBETA",
+      "visible": false
+    },
+    {
+      "href": "galaxy.html",
+      "label": "✷GalaxyBETA",
+      "visible": false
+    },
+    {
+      "href": "ops-admin.html",
+      "label": "⚙Ops & AdminBETA",
+      "visible": false
+    },
+    {
+      "href": "agent-editor.html",
+      "label": "◈Agent EditorBETA",
+      "visible": false
+    },
+    {
+      "href": "automations.html",
+      "label": "⇄Workflows",
+      "visible": false
+    },
+    {
+      "href": "journeys.html",
+      "label": "⇝JourneysBETA",
+      "visible": false
+    },
+    {
+      "href": "template-editor.html",
+      "label": "✎Message Copy",
+      "visible": false
+    },
+    {
+      "href": "campaign-manager.html",
+      "label": "◇CampaignsBETA",
+      "visible": false
+    },
+    {
+      "href": "social-studio.html",
+      "label": "◉Social StudioBETA",
+      "visible": false
+    },
+    {
+      "href": "creative-factory.html",
+      "label": "✳Creative FactoryBETA",
+      "visible": false
+    },
+    {
+      "href": "content-admin.html",
+      "label": "▶ContentBETA",
+      "visible": false
+    },
+    {
+      "href": "staff-teams.html",
+      "label": "⚇Staff & Teams",
+      "visible": false
+    },
+    {
+      "href": "hiring.html",
+      "label": "⊕HiringBETA",
+      "visible": false
+    },
+    {
+      "href": "products-commissions.html",
+      "label": "⛁Products & Commissions",
+      "visible": false
+    },
+    {
+      "href": "sample-data.html",
+      "label": "⌗Demo ModeBETA",
+      "visible": false
+    },
+    {
+      "href": "brand-studio.html",
+      "label": "◆Brand StudioBETA",
+      "visible": false
+    },
+    {
+      "href": "client-portal.html",
+      "label": "◐Client Portal",
+      "visible": false
+    },
+    {
+      "href": "affiliate.html",
+      "label": "⇗AffiliateBETA",
+      "visible": true
+    }
+  ],
+  "screens": [
+    {
+      "label": "",
+      "href": "/app/affiliate.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/affiliate.html",
+      "bounced": false,
+      "title": "Fundhub — Affiliate",
+      "h1": "Affiliate",
+      "bodyText": "Beta — under development. Data may be incomplete or inaccurate. Do not use for client decisions. Dismiss ‹‹ PORTALS ▾ ⇗ Affiliate BETA fundhub MY WORK Affiliate TEST — AFFILIATE ROLE AF-00 / SCOPED VIEW You are seeing only clients that came through your link, and only your own payouts — permissions ",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/reverify/shots/03-_app_affiliate.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "⇗AffiliateBETA",
+      "href": "affiliate.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/affiliate.html",
+      "bounced": false,
+      "title": "Fundhub — Affiliate",
+      "h1": "Affiliate",
+      "bodyText": "Beta — under development. Data may be incomplete or inaccurate. Do not use for client decisions. Dismiss ‹‹ PORTALS ▾ ⇗ Affiliate BETA fundhub MY WORK Affiliate TEST — AFFILIATE ROLE AF-00 / SCOPED VIEW You are seeing only clients that came through your link, and only your own payouts — permissions ",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/reverify/shots/04-affiliate.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    }
+  ]
+}

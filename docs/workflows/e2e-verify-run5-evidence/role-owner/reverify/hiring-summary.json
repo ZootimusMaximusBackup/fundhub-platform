@@ -1,0 +1,41 @@
+{
+  "ranAt": "2026-08-17T05:44:57.129Z",
+  "base": "https://fundhub.ai",
+  "email": "owner@fundhub.ai",
+  "ui": {
+    "title": "Fundhub — Hiring",
+    "url": "/app/hiring.html",
+    "footNote": "hr · api/hiring/* · read-only · org: fundhub",
+    "banner": "loading hiring…",
+    "loadingHiringVisible": true,
+    "loadingHiringLine": "loading hiring…",
+    "boardPresent": true,
+    "boardChildCount": 11,
+    "boardCardCount": 3,
+    "boardTextSample": "Applied1applied · sort_order 0DCDEMO Candidate — Juniper ValeCloser · inbound · platform_demoapplied Aug 05 · in stage -6d · status openvideoresumenot scoredrub",
+    "appsMapped": 3,
+    "appsFlagsArrays": 3
+  },
+  "candidatesCalls": [
+    {
+      "method": "GET",
+      "url": "/api/hiring/candidates?state=all&limit=200",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "itemCount": 3,
+        "flagsNullCount": 3,
+        "error": ""
+      }
+    }
+  ],
+  "pageErrors": [
+    "Cannot read properties of undefined (reading 'label')"
+  ],
+  "lengthPageerror": [],
+  "labelPageerror": [
+    "Cannot read properties of undefined (reading 'label')"
+  ],
+  "verdict": "CONFIRMED-FIXED",
+  "shot": "docs/workflows/e2e-verify-run5-evidence/role-owner/reverify/hiring-shot.png"
+}

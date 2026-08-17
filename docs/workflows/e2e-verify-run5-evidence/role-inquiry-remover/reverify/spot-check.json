@@ -1,0 +1,161 @@
+{
+  "email": "inquiry@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T05:51:58.489Z",
+  "login": {
+    "ok": true,
+    "landedAt": "/app/inquiry-remover.html"
+  },
+  "localStorage": {
+    "fh_account_present": false,
+    "fh_account_shape": null,
+    "fh_role": "inquiry_specialist",
+    "fh_token_present": true,
+    "keys": [
+      "fh_role",
+      "fh_token"
+    ]
+  },
+  "demoMode": {
+    "screensStillCalling": [
+      "ops-admin.html: 403",
+      "closer-dashboard.html: 403",
+      "finance-os.html: 403",
+      "client-control-panel.html: 403",
+      "documents.html: 403",
+      "sample-data.html: 403"
+    ],
+    "screensClean": [
+      "inquiry-remover.html",
+      "command-center.html",
+      "pipeline.html",
+      "staff-teams.html",
+      "messaging.html"
+    ]
+  },
+  "opsAdminMessages": {
+    "requests": [
+      {
+        "page": "/app/ops-admin.html",
+        "method": "GET",
+        "url": "/api/read/messages?status=blocked&limit=30",
+        "status": 200,
+        "shape": {
+          "ok": true,
+          "error": null,
+          "itemsLen": 0,
+          "keys": [
+            "ok",
+            "count",
+            "limit",
+            "offset",
+            "hasMore",
+            "items"
+          ]
+        }
+      }
+    ],
+    "panelText": "CLIENT CHANNEL REASON WHEN No messages stopped by the compliance gate",
+    "shot": "docs/workflows/e2e-verify-run5-evidence/role-inquiry-remover/reverify/shots/spot-ops-admin.png"
+  },
+  "screens": {
+    "inquiry-remover.html": {
+      "finalUrl": "/app/inquiry-remover.html",
+      "apiCalls": 7,
+      "demoModeCalls": [],
+      "fails": [],
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-inquiry-remover/reverify/shots/spot-inquiry-remover-landing.png",
+      "systemAlertVisible": true,
+      "demoBannerPresent": false
+    },
+    "command-center.html": {
+      "finalUrl": "/app/command-center.html",
+      "apiCalls": 11,
+      "demoModeCalls": [],
+      "fails": []
+    },
+    "pipeline.html": {
+      "finalUrl": "/app/pipeline.html",
+      "apiCalls": 11,
+      "demoModeCalls": [],
+      "fails": []
+    },
+    "ops-admin.html": {
+      "finalUrl": "/app/ops-admin.html",
+      "apiCalls": 9,
+      "demoModeCalls": [
+        403
+      ],
+      "fails": [
+        "GET /api/read/invoices -> 403",
+        "GET /api/read/failed-events -> 403",
+        "GET /api/demo/mode -> 403",
+        "GET /api/read/staff -> 403"
+      ]
+    },
+    "closer-dashboard.html": {
+      "finalUrl": "/app/closer-dashboard.html",
+      "apiCalls": 5,
+      "demoModeCalls": [
+        403
+      ],
+      "fails": [
+        "GET /api/demo/mode -> 403"
+      ]
+    },
+    "finance-os.html": {
+      "finalUrl": "/app/finance-os.html",
+      "apiCalls": 6,
+      "demoModeCalls": [
+        403
+      ],
+      "fails": [
+        "GET /api/demo/mode -> 403"
+      ]
+    },
+    "client-control-panel.html": {
+      "finalUrl": "/app/client-control-panel.html",
+      "apiCalls": 4,
+      "demoModeCalls": [
+        403
+      ],
+      "fails": [
+        "GET /api/demo/mode -> 403"
+      ]
+    },
+    "documents.html": {
+      "finalUrl": "/app/documents.html",
+      "apiCalls": 5,
+      "demoModeCalls": [
+        403
+      ],
+      "fails": [
+        "GET /api/demo/mode -> 403"
+      ]
+    },
+    "sample-data.html": {
+      "finalUrl": "/app/sample-data.html",
+      "apiCalls": 4,
+      "demoModeCalls": [
+        403
+      ],
+      "fails": [
+        "GET /api/demo/mode -> 403"
+      ]
+    },
+    "staff-teams.html": {
+      "finalUrl": "/app/staff-teams.html",
+      "apiCalls": 5,
+      "demoModeCalls": [],
+      "fails": [
+        "GET /api/read/staff -> 403"
+      ]
+    },
+    "messaging.html": {
+      "finalUrl": "/app/messaging.html",
+      "apiCalls": 4,
+      "demoModeCalls": [],
+      "fails": []
+    }
+  }
+}

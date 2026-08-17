@@ -1,0 +1,40 @@
+{
+  "ranAt": "2026-08-17T05:41:43.767Z",
+  "base": "https://fundhub.ai",
+  "email": "client@fundhub.ai",
+  "detail": {
+    "url": "/app/client-portal.html",
+    "greeting": "Welcome back, TEST",
+    "whoName": "TEST — Client Role",
+    "banner": "sample documents — not signed in for real data · live pre-qual · none yet · live entitlements · 0 unlocked · 6 locked · live agreements · none yet",
+    "disclosure": "The legal wording is not on this page. It will show here once the server has it. You can still draw your signature.",
+    "disclosureVisible": false,
+    "chatWidgetText": "#fh-chat-fab{position:fixed;right:18px;bottom:18px;z-index:2147482800;width:52px;height:52px;border-radius:16px;border:1px solid #E4E4E7;background:#0A0A0A;color:#fff;font:600 13px/1 Inter,system-ui,sans-serif;cursor:pointer;box-shadow:0 12px 32px rgba(0,0,0,.22)}#fh-chat-panel{position:fixed;right:",
+    "hasOpenFromClientFile": false,
+    "hasWelcomeBack": true,
+    "hasSampleDocuments": true,
+    "signOutVisible": true
+  },
+  "apiTotal": 12,
+  "apiFails": [
+    {
+      "method": "GET",
+      "url": "/api/consent/capture?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521&kind=dispute_authorization",
+      "status": 401,
+      "hasAuthHeader": false
+    },
+    {
+      "method": "GET",
+      "url": "/api/dashboard/client?id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "status": 401,
+      "hasAuthHeader": true
+    },
+    {
+      "method": "GET",
+      "url": "/api/read/documents?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521&limit=200",
+      "status": 401,
+      "hasAuthHeader": true
+    }
+  ],
+  "shot": "docs/workflows/e2e-verify-run5-evidence/client/reverify/02-landing-full.png"
+}
