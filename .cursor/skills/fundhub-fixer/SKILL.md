@@ -31,6 +31,8 @@ do not invent one — ask one question or send him to Auditor first.
 
 ## Prove path (required before "done")
 
+**Prove** = reproduce the board finding's exact check and write evidence (screenshot + response) to the evidence folder; update the board row. Chat claims of success count for nothing.
+
 Order matters. Do not skip.
 
 1. `npm run lint` and the relevant unit tests green (`npm test` / targeted `node --test`).
