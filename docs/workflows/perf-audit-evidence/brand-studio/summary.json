@@ -1,0 +1,220 @@
+{
+  "url": "https://fundhub.ai/app/brand-studio.html",
+  "slug": "brand-studio",
+  "role": "partner@fundhub.ai",
+  "ranAt": "2026-08-17T08:53:51.093Z",
+  "runs": [
+    {
+      "run": 1,
+      "performanceScore": 95,
+      "lcpMs": 1565.363,
+      "lcpElement": null,
+      "tbtMs": 16.07900000000018,
+      "clsScore": 0.1251666172985782,
+      "ttfbMs": 166,
+      "speedIndexMs": 1643,
+      "totalBytes": 141045,
+      "byType": {
+        "total": {
+          "requestCount": 14,
+          "transferSize": 141045
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79833
+        },
+        "script": {
+          "requestCount": 2,
+          "transferSize": 35007
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 13697
+        },
+        "stylesheet": {
+          "requestCount": 4,
+          "transferSize": 11234
+        },
+        "other": {
+          "requestCount": 5,
+          "transferSize": 1274
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 4,
+          "transferSize": 82134
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    },
+    {
+      "run": 2,
+      "performanceScore": 94,
+      "lcpMs": 1565.47,
+      "lcpElement": null,
+      "tbtMs": 18.873999999999796,
+      "clsScore": 0.1354509025046305,
+      "ttfbMs": 42,
+      "speedIndexMs": 1645,
+      "totalBytes": 140944,
+      "byType": {
+        "total": {
+          "requestCount": 14,
+          "transferSize": 140944
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79833
+        },
+        "script": {
+          "requestCount": 2,
+          "transferSize": 34867
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 13743
+        },
+        "stylesheet": {
+          "requestCount": 4,
+          "transferSize": 11122
+        },
+        "other": {
+          "requestCount": 5,
+          "transferSize": 1379
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 4,
+          "transferSize": 82134
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    },
+    {
+      "run": 3,
+      "performanceScore": 95,
+      "lcpMs": 1579.172,
+      "lcpElement": null,
+      "tbtMs": 17.33100000000013,
+      "clsScore": 0.1251666172985782,
+      "ttfbMs": 39,
+      "speedIndexMs": 1643,
+      "totalBytes": 141007,
+      "byType": {
+        "total": {
+          "requestCount": 14,
+          "transferSize": 141007
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79833
+        },
+        "script": {
+          "requestCount": 2,
+          "transferSize": 34955
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 13697
+        },
+        "stylesheet": {
+          "requestCount": 4,
+          "transferSize": 11255
+        },
+        "other": {
+          "requestCount": 5,
+          "transferSize": 1267
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 4,
+          "transferSize": 82134
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    }
+  ],
+  "median": {
+    "performanceScore": 95,
+    "lcpMs": 1565.47,
+    "tbtMs": 17.33100000000013,
+    "clsScore": 0.1251666172985782,
+    "ttfbMs": 42,
+    "speedIndexMs": 1643,
+    "totalBytes": 141007
+  },
+  "lcpElement": null,
+  "byTypeMedianRun": {
+    "total": {
+      "requestCount": 14,
+      "transferSize": 140944
+    },
+    "font": {
+      "requestCount": 2,
+      "transferSize": 79833
+    },
+    "script": {
+      "requestCount": 2,
+      "transferSize": 34867
+    },
+    "document": {
+      "requestCount": 1,
+      "transferSize": 13743
+    },
+    "stylesheet": {
+      "requestCount": 4,
+      "transferSize": 11122
+    },
+    "other": {
+      "requestCount": 5,
+      "transferSize": 1379
+    },
+    "image": {
+      "requestCount": 0,
+      "transferSize": 0
+    },
+    "media": {
+      "requestCount": 0,
+      "transferSize": 0
+    },
+    "third-party": {
+      "requestCount": 4,
+      "transferSize": 82134
+    }
+  },
+  "renderBlockingItems": [],
+  "thirdParty": [],
+  "extra": {
+    "role": "partner",
+    "inlineStyleCount": 74,
+    "headBlockingScripts": 1,
+    "finalUrl": "https://fundhub.ai/app/brand-studio.html"
+  }
+}

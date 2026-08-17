@@ -1,0 +1,343 @@
+{
+  "screen": "/app/sample-data.html",
+  "slug": "sample-data",
+  "email": "owner@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T18:09:43.303Z",
+  "login": {
+    "ok": true,
+    "cached": true,
+    "landedAt": "/app/command-center.html"
+  },
+  "load": {
+    "httpStatus": 200,
+    "finalUrl": "/app/sample-data.html",
+    "bounced": false,
+    "title": "FundHub — Demo Mode",
+    "apiFails": [],
+    "consoleErrors": [],
+    "fold": "docs/workflows/ui-audit-evidence/sample-data/restamp/1440-fold.png",
+    "mobileFold": "docs/workflows/ui-audit-evidence/sample-data/restamp/390-fold.png"
+  },
+  "probe": {
+    "h1": [
+      "Demo Mode"
+    ],
+    "navVisibleCount": 5,
+    "navItems": [
+      "⚇Staff & Teams",
+      "⊕HiringBETA",
+      "⛁Products & Commissions",
+      "⌗Demo ModeBETA",
+      "◆Brand StudioBETA"
+    ],
+    "navGroups": [
+      "Sales▾",
+      "Funding▾",
+      "Client ops▾",
+      "Watch▾",
+      "Automation▾",
+      "Marketing▾",
+      "Admin▾",
+      "Portals▾"
+    ],
+    "filledButtons": [
+      "⌗Demo ModeBETA",
+      "Turn Demo Mode ON",
+      "Wipe demo data…",
+      "Search⌘K",
+      "Chat"
+    ],
+    "buttons": [
+      {
+        "tag": "a",
+        "id": "",
+        "text": "",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 118,
+        "h": 24,
+        "x": 16,
+        "y": 10
+      },
+      {
+        "tag": "button",
+        "id": "burger",
+        "text": "‹‹",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 26,
+        "h": 26,
+        "x": 186,
+        "y": 9
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "Sales▾",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 228,
+        "h": 28,
+        "x": 0,
+        "y": 56
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "Funding▾",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 228,
+        "h": 28,
+        "x": 0,
+        "y": 87
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "Client ops▾",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 228,
+        "h": 28,
+        "x": 0,
+        "y": 118
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "Watch▾",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 228,
+        "h": 28,
+        "x": 0,
+        "y": 150
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "Automation▾",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 228,
+        "h": 28,
+        "x": 0,
+        "y": 181
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "Marketing▾",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 228,
+        "h": 28,
+        "x": 0,
+        "y": 212
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "Admin▾",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 228,
+        "h": 28,
+        "x": 0,
+        "y": 243
+      },
+      {
+        "tag": "a",
+        "id": "",
+        "text": "⚇Staff & Teams",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 228,
+        "h": 27,
+        "x": 0,
+        "y": 271
+      },
+      {
+        "tag": "a",
+        "id": "",
+        "text": "⊕HiringBETA",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 228,
+        "h": 29,
+        "x": 0,
+        "y": 299
+      },
+      {
+        "tag": "a",
+        "id": "",
+        "text": "⛁Products & Commissions",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 228,
+        "h": 27,
+        "x": 0,
+        "y": 328
+      },
+      {
+        "tag": "a",
+        "id": "",
+        "text": "⌗Demo ModeBETA",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": true,
+        "bg": "rgb(22, 22, 25)",
+        "w": 228,
+        "h": 29,
+        "x": 0,
+        "y": 355
+      },
+      {
+        "tag": "a",
+        "id": "",
+        "text": "◆Brand StudioBETA",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 228,
+        "h": 29,
+        "x": 0,
+        "y": 384
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "Portals▾",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 228,
+        "h": 28,
+        "x": 0,
+        "y": 416
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "Dismiss",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 64,
+        "h": 19,
+        "x": 1238,
+        "y": 10
+      },
+      {
+        "tag": "button",
+        "id": "btnOn",
+        "text": "Turn Demo Mode ON",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": true,
+        "bg": "rgb(10, 10, 10)",
+        "w": 169,
+        "h": 41,
+        "x": 401,
+        "y": 244
+      },
+      {
+        "tag": "button",
+        "id": "btnWipe",
+        "text": "Wipe demo data…",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": true,
+        "bg": "rgb(255, 255, 255)",
+        "w": 153,
+        "h": 43,
+        "x": 401,
+        "y": 631
+      },
+      {
+        "tag": "button",
+        "id": "fh-shell-out",
+        "text": "Sign out",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 73,
+        "h": 21,
+        "x": 1340,
+        "y": 21
+      },
+      {
+        "tag": "button",
+        "id": "fh-shell-search-btn",
+        "text": "Search⌘K",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": true,
+        "bg": "rgb(255, 255, 255)",
+        "w": 99,
+        "h": 36,
+        "x": 908,
+        "y": 12
+      },
+      {
+        "tag": "button",
+        "id": "fh-chat-fab",
+        "text": "Chat",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": true,
+        "bg": "rgb(10, 10, 10)",
+        "w": 52,
+        "h": 52,
+        "x": 1370,
+        "y": 830
+      }
+    ],
+    "chipText": null,
+    "chipCoversSearch": false,
+    "chipCoversDismiss": false,
+    "bodySample": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ ⚇ Staff & Teams ⊕ Hiring BETA ⛁ Products & Commissions ⌗ Demo Mode BETA ◆ Brand Studio BETA PORTALS ▾ fundhub Beta — under development. Data may be incomplete or inaccurate. Do not use for client decisions. Dismiss SETUP Demo Mode DEMO MODE OFF DEMO / PLATFORM TOGGLE Owner-only. Turning Demo Mode on seeds fictional clients, lenders, calls, funding, and money rows — all flagged is_demo. Turning it off hides those rows. Real money totals never include them. Wipe removes the rows. Turn Demo Mode ON Demo Mode is OFF — demo rows are hidden. DEMO / COUNTS clients: 7 lenders: 0 call_outcomes: 0 sales: 0 tasks: 0 documents: 0 bank_accounts: 0 subscriptions: 0 DEMO / DELETE THE ROWS Deletes the demo rows counted above and the demo records linked to them, and turns Demo Mode off. This cannot be undone. Wipe demo data… TEST — Owner Role · owner · 34 tabs LIVE Sign out Search ⌘K Chat"
+  },
+  "click": {
+    "label": "Wipe",
+    "result": "DIALOG",
+    "dialogs": [
+      {
+        "type": "confirm",
+        "message": "Delete 7 demo rows for this org?\n\n7 clients. The demo records linked to them go too, and Demo Mode turns off.\n\nThis cannot be undone."
+      }
+    ],
+    "intercepted": [],
+    "shot": "docs/workflows/ui-audit-evidence/sample-data/restamp/1440-after-click.png"
+  }
+}

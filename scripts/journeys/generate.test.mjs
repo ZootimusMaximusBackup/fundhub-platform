@@ -60,13 +60,16 @@ describe("the journeys are not stale", () => {
     // the prior version of this test and docs/journeys/README.md's history). On
     // 2026-08-02 the owner directed a one-time, explicit exception: each one was
     // generated from the same extracted data as its -actual.md, because no
-    // independent spec existed to draw intent from otherwise. This test does not
-    // require they exist — a human replacing one with real, independently
-    // authored intent is the intended end state — but any that DO exist must
-    // carry the disclaimer, so nobody mistakes a stopgap for a settled spec.
+    // independent spec existed to draw intent from otherwise.
+    //
+    // That disclaimer is for the eight tracked role journeys only. A Builder
+    // intended (gate-relay-intended.md and later) is independently authored
+    // before the code — putting the stopgap banner on it would be a lie.
     if (!fs.existsSync(OUT_DIR)) return;
+    const tracked = new Set(JOURNEYS.map((j) => `${j.name}-intended.md`));
     const intendedFiles = fs.readdirSync(OUT_DIR).filter((f) => /-intended\.md$/.test(f));
     for (const name of intendedFiles) {
+      if (!tracked.has(name)) continue;
       const body = fs.readFileSync(path.join(OUT_DIR, name), "utf8");
       assert.match(body, /WRITTEN AFTER THE FACT, NOT BEFORE IT/,
         `${name} exists but does not carry the after-the-fact disclaimer`);

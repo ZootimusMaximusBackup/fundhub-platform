@@ -168,6 +168,20 @@ describe("principal reads", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =
     assert.ok([401, 403].includes(r.status), `commissions admitted a client: ${r.status}`);
   });
 
+  test("a signed-in client is refused by staff-only file routes", async () => {
+    for (const path of [
+      "/api/read/documents",
+      `/api/dashboard/client?id=${clientA}`
+    ]) {
+      const r = await call(path, tokClientA);
+      assert.equal(r.status, 403, `${path} admitted a client: ${r.status}`);
+      const body = await json(r);
+      assert.equal(body && body.ok, false);
+      assert.ok(!body || !("items" in body) && !("client" in body),
+        `${path} leaked rows in the refusal`);
+    }
+  });
+
   test("a revoked session stops working immediately", async () => {
     const { revokeAccountSession } = await import("../auth/account-session.mjs");
     const before = await call("/api/read/entitlements", tokClientA);

@@ -1,0 +1,30 @@
+{
+  "found": {
+    "static.mjs": false,
+    "asset_id": false,
+    "uuid from library": false,
+    "uuid": false,
+    "CF-09": false,
+    "CF-10": true,
+    "CF-11": true,
+    "CF-12": true,
+    "coming soon": false,
+    "Enqueue generation": true
+  },
+  "cfs": [
+    "CF-01",
+    "CF-02",
+    "CF-03",
+    "CF-04",
+    "CF-05",
+    "CF-06",
+    "CF-07",
+    "CF-08",
+    "CF-10",
+    "CF-11",
+    "CF-12"
+  ],
+  "uuidInput": null,
+  "bodyLen": 11936,
+  "tail": "rived default rather than an observed one optimization_rules.spend_tier_refresh Creative refresh cadence by daily spend tier. Set in 052 — derived from the spec's 72h/frequency-3 anchors, scaled by how fast spend accumulates frequency. 0 DEFAULTED IN 052 — DERIVED, TUNABLE active on a derived default rather than an observed one optimization_rules.roas_primary While ROAS is at or above target, CPM/CTR rules may queue creative but must not pause or cut budget. Target set to break-even (1.0) in 052 — raise it to your actual target. 0 DEFAULTED IN 052 — DERIVED, TUNABLE active on a derived default rather than an observed one Nothing can be generated until a vendor is switched on. Until then a job fails straight away, and trying again will not help. Vendor names and keys are never shown here. CF-11 / USAGE & METERING SCHEMA ONLY RATES UNSIGNED ⚠ EMPTY ON PURPOSE — NOTHING IS METERED YET Nothing in the live system records creative usage today, so there is nothing to show. Any number here would be made up. EVENT_TYPE PERIOD EVENTS QUANTITY BILLABLE_CENTS VOIDED_CENTS No rows. Nothing records creative usage yet. RATE_KEY RATE SIGNED_OFF_AT STATUS generation_markup_pct 100 null PLACEHOLDER SET IN 052 — AWAITING SIGN-OFF managed_spend_pct 10 null PLACEHOLDER SET IN 052 — AWAITING SIGN-OFF Both rates are placeholders nobody has signed off. They are internal figures and must not be shown to a partner or put on an invoice until someone approves them. CF-12 / GENERATE & DECIDE Ask for new creative. Queued work is picked up automatically every couple of minutes; \"Run queued jobs now\" starts it straight away. ASSET_KIND static copy video resize PROMPT IDEMPOTENCY_KEY ENQUEUE GENERATION RUN QUEUED JOBS NOW No partner selected — open this screen with ?partner_id= set. Decide on one creative. Pick it from the library above, then approve, reject or archive it. Each of the three asks you to confirm first. CREATIVE No creatives loaded for this partner APPROVE REJECT ARCHIVE No partner selected — open this screen with ?partner_id= set. No names and no performance figures on a creative. This screen is never told who asked for or approved a creative, and it is never told how an advert performed. Spend and fatigue live on Campaigns. systems nominal · fundhub.ai creative factory · no partner selected · no partner selected — nothing requested CF-— / DETAIL — ✕ creative factory · no partner selected — no request was sent TEST — Owner Role · owner · 34 tabs LIVE Sign out Search ⌘K Chat"
+}

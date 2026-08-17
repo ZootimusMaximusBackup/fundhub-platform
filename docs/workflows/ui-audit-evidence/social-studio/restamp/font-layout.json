@@ -1,0 +1,82 @@
+{
+  "screen": "/app/social-studio.html",
+  "slug": "social-studio",
+  "email": "owner@fundhub.ai",
+  "ranAt": "2026-08-17T18:01:00.309Z",
+  "httpStatus": 200,
+  "finalUrl": "/app/social-studio.html",
+  "bounced": false,
+  "probe": {
+    "viewport": {
+      "w": 1440,
+      "h": 900
+    },
+    "sidebarWidth": 0,
+    "appWidth": 1440,
+    "mainWidth": 1212,
+    "mainMaxWidth": "1280px",
+    "appMaxWidth": "none",
+    "hasFhMaxw": true,
+    "maxwEls": [
+      {
+        "tag": "div",
+        "className": "content fh-maxw",
+        "maxWidth": "1280px",
+        "width": 1212
+      }
+    ],
+    "distinctFontSizes": 7,
+    "sizeCounts": [
+      {
+        "px": 28,
+        "nodes": 5
+      },
+      {
+        "px": 18,
+        "nodes": 2
+      },
+      {
+        "px": 14,
+        "nodes": 22
+      },
+      {
+        "px": 13,
+        "nodes": 1
+      },
+      {
+        "px": 12,
+        "nodes": 1
+      },
+      {
+        "px": 11,
+        "nodes": 186
+      },
+      {
+        "px": 10,
+        "nodes": 1
+      }
+    ],
+    "cardPaddingsPx": {
+      "14": 10,
+      "16": 10
+    },
+    "tileRows": [
+      {
+        "className": "stats",
+        "childCount": 5,
+        "childWidths": [
+          223,
+          223,
+          223,
+          223,
+          223
+        ]
+      }
+    ],
+    "comparisonHits": [],
+    "h1": [
+      "Social Studio"
+    ],
+    "controlCount": 37
+  }
+}

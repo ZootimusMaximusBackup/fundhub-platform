@@ -1,0 +1,8 @@
+{
+  "screen": "inquiry-remover",
+  "ranAt": "2026-08-17T18:05:31Z",
+  "rows": [
+    { "line": 356, "sev": "MEDIUM", "verdict": "CONFIRMED-FIXED", "evidence": "docs/workflows/ui-audit-evidence/inquiry-remover/restamp/1440-fold.png", "note": "No empty coral alert strip under the header." },
+    { "line": 357, "sev": "MEDIUM", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/inquiry-remover/restamp/1440-fold.png", "note": "Four tiles still bare 0 with no comparison; 7 font sizes." }
+  ]
+}

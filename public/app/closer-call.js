@@ -41,14 +41,34 @@
     return h ? (h + "h " + m + "m") : (m + "m");
   }
 
-  function setEmpty(reason) {
-    var main = $(".stage main") || $(".stage");
-    if (!main) return;
-    var note = document.createElement("p");
-    note.className = "note";
-    note.style.cssText = "padding:16px 22px;color:#52525B";
-    note.textContent = reason;
-    main.prepend(note);
+  function hideLiveControls() {
+    var logbar = document.querySelector(".logbar");
+    if (logbar) logbar.hidden = true;
+    var present = document.getElementById("fh-present");
+    if (present) present.hidden = true;
+    var sendBtn = document.getElementById("fh-send-contract");
+    if (sendBtn) sendBtn.hidden = true;
+  }
+
+  function showLiveControls() {
+    var logbar = document.querySelector(".logbar");
+    if (logbar) logbar.hidden = false;
+    var present = document.getElementById("fh-present");
+    if (present) present.hidden = false;
+    var sendBtn = document.getElementById("fh-send-contract");
+    if (sendBtn) sendBtn.hidden = false;
+  }
+
+  function setEmpty(reason, kind) {
+    hideLiveControls();
+    var h1 = document.getElementById("ccp-who-name");
+    var meta = document.getElementById("ccp-who-meta");
+    if (h1) h1.textContent = kind === "error" ? "Could not load" : "No call right now";
+    if (meta) meta.textContent = reason || "No booked call right now.";
+    var sendBtn = document.getElementById("fh-send-contract");
+    var sendPanel = document.getElementById("fh-contract-panel");
+    if (sendBtn) sendBtn.remove();
+    if (sendPanel) sendPanel.remove();
   }
 
   function paint(data) {
@@ -433,26 +453,41 @@
     setBand(2, opt, "After optimization");
   }
 
-  async function boot() {
-    if (!window.FHData) { setEmpty("data.js failed to load"); return; }
-    if (!clientId) {
-      setEmpty("Pick a client from the pipeline to open the call cockpit.");
-      var sendBtn = document.getElementById("fh-send-contract");
-      var sendPanel = document.getElementById("fh-contract-panel");
-      if (sendBtn) sendBtn.remove();
-      if (sendPanel) sendPanel.remove();
-      return;
+  async function resolveClient() {
+    if (clientId) return clientId;
+    var nowR = await window.FHData.read("closer-now");
+    if (!nowR.ok) {
+      setEmpty((nowR.error && (nowR.error.message || nowR.error)) ||
+        ("Could not load current call (" + nowR.source + ")"), "error");
+      return null;
     }
-    try { sessionStorage.setItem("fh_pending_disposition", clientId); } catch (e) {}
+    var cur = nowR.data && nowR.data.current;
+    if (!cur || !cur.client_id) {
+      setEmpty("No booked call right now.");
+      return null;
+    }
+    clientId = cur.client_id;
+    window.__FH_CLIENT_ID = clientId;
+    if (cur.task_id && !state.taskId) state.taskId = cur.task_id;
+    return clientId;
+  }
+
+  async function boot() {
+    if (!window.FHData) { setEmpty("data.js failed to load", "error"); return; }
+    hideLiveControls();
     var q = new URLSearchParams(location.search);
     state.taskId = q.get("task_id") || null;
+    var who = await resolveClient();
+    if (!who) return;
+    try { sessionStorage.setItem("fh_pending_disposition", clientId); } catch (e) {}
 
     var r = await window.FHData.read("closer-call", { client_id: clientId });
     if (!r.ok) {
-      setEmpty((r.error && (r.error.message || r.error)) || ("Could not load cockpit (" + r.source + ")"));
+      setEmpty((r.error && (r.error.message || r.error)) || ("Could not load cockpit (" + r.source + ")"), "error");
       return;
     }
     paint(r.data);
+    showLiveControls();
     loadUnderwrite();
 
     var join = document.getElementById("fh-join");

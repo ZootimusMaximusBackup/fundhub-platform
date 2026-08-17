@@ -1,0 +1,11 @@
+{
+  "screen": "command-center",
+  "ranAt": "2026-08-17T18:08:44Z",
+  "rows": [
+    { "line": 376, "sev": "CRITICAL", "verdict": "CONFIRMED-FIXED", "evidence": "docs/workflows/ui-audit-evidence/command-center/restamp/1440-fold.png", "note": "No Equifax timeout, Kayla Whitmore, 2:47 PM, or fake call counts; CC-04 live registry 22 agents; CC-10 honest empty." },
+    { "line": 380, "sev": "MEDIUM", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/command-center/restamp/1440-fold.png", "note": "KPI tiles still bare $0/0 with no comparison; 2:47 PM timestamp is gone (live 2:08 PM)." },
+    { "line": 381, "sev": "MEDIUM", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/command-center/restamp/layout.json", "note": "8 font sizes (10-28px)." },
+    { "line": 382, "sev": "MEDIUM", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/command-center/restamp/probe.json", "note": "Open board 88x18, Dismiss 64x19, rail chevron 7x14 — 15 named small targets." },
+    { "line": 383, "sev": "MEDIUM", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/command-center/restamp/layout.json", "note": "Off-scale spacing remains (10/9/7/6px)." }
+  ]
+}

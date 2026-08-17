@@ -5,6 +5,7 @@
 // for why the role default is deny and what redact() strips.
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
+import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
 import { readHandler, ROLE_SETS } from "../../src/http/read-api.mjs";
 
 /* THE ORG COMES FROM THE SESSION AND IS REQUIRED (audit C1).
@@ -43,4 +44,11 @@ const run = readHandler({
     ]).then((r) => r.rows)
 });
 
-export default (req, res) => run(req, res, { db, requireAuth });
+export default async (req, res) => {
+  // A signed-in client (or any non-staff principal) must be refused as
+  // forbidden, not treated as "no session". requireAuth only sees staff
+  // tokens, so an account token used to look unsigned-in (401).
+  const principal = await requirePrincipal(req, res, ["staff"], { db });
+  if (!principal) return;
+  return run(req, res, { db, requireAuth });
+};

@@ -1,0 +1,11 @@
+{
+  "built": "2026-08-17",
+  "job": "GET /api/read/closer-now — current and next call for the signed-in closer, no client_id",
+  "unitTests": "4/4 closer-now.test.mjs pass",
+  "e2e": "10/10 closer cases in e2e/sales-dashboards.spec.mjs pass",
+  "lint": "pass",
+  "journeys": "regenerated — closer-now on role-closer-actual.md",
+  "live": "UNVERIFIED — not deployed to fundhub.ai yet",
+  "lighthouse": "UNVERIFIED — needs deploy",
+  "humanClick": "UNVERIFIED — needs deploy"
+}

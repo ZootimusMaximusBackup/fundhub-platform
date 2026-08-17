@@ -1,0 +1,220 @@
+{
+  "url": "https://fundhub.ai/app/calendar.html",
+  "slug": "calendar",
+  "role": "sales@fundhub.ai",
+  "ranAt": "2026-08-17T08:43:36.206Z",
+  "runs": [
+    {
+      "run": 1,
+      "performanceScore": 99,
+      "lcpMs": 1548.338,
+      "lcpElement": null,
+      "tbtMs": 2.3519999999998618,
+      "clsScore": 0.037073647253183316,
+      "ttfbMs": 101,
+      "speedIndexMs": 1921,
+      "totalBytes": 147848,
+      "byType": {
+        "total": {
+          "requestCount": 15,
+          "transferSize": 147848
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79933
+        },
+        "script": {
+          "requestCount": 3,
+          "transferSize": 39071
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 11984
+        },
+        "stylesheet": {
+          "requestCount": 3,
+          "transferSize": 10020
+        },
+        "other": {
+          "requestCount": 6,
+          "transferSize": 6840
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 3,
+          "transferSize": 81115
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    },
+    {
+      "run": 2,
+      "performanceScore": 100,
+      "lcpMs": 1542.149,
+      "lcpElement": null,
+      "tbtMs": 0,
+      "clsScore": 0.037073647253183316,
+      "ttfbMs": 201,
+      "speedIndexMs": 1930,
+      "totalBytes": 147824,
+      "byType": {
+        "total": {
+          "requestCount": 15,
+          "transferSize": 147824
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79933
+        },
+        "script": {
+          "requestCount": 3,
+          "transferSize": 39193
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 11929
+        },
+        "stylesheet": {
+          "requestCount": 3,
+          "transferSize": 10012
+        },
+        "other": {
+          "requestCount": 6,
+          "transferSize": 6757
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 3,
+          "transferSize": 81115
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    },
+    {
+      "run": 3,
+      "performanceScore": 99,
+      "lcpMs": 1552.757,
+      "lcpElement": null,
+      "tbtMs": 2.1000000000001364,
+      "clsScore": 0.037073647253183316,
+      "ttfbMs": 43,
+      "speedIndexMs": 1917,
+      "totalBytes": 147698,
+      "byType": {
+        "total": {
+          "requestCount": 15,
+          "transferSize": 147698
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79933
+        },
+        "script": {
+          "requestCount": 3,
+          "transferSize": 39036
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 11921
+        },
+        "stylesheet": {
+          "requestCount": 3,
+          "transferSize": 10044
+        },
+        "other": {
+          "requestCount": 6,
+          "transferSize": 6764
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 3,
+          "transferSize": 81115
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    }
+  ],
+  "median": {
+    "performanceScore": 99,
+    "lcpMs": 1548.338,
+    "tbtMs": 2.1000000000001364,
+    "clsScore": 0.037073647253183316,
+    "ttfbMs": 101,
+    "speedIndexMs": 1921,
+    "totalBytes": 147824
+  },
+  "lcpElement": null,
+  "byTypeMedianRun": {
+    "total": {
+      "requestCount": 15,
+      "transferSize": 147824
+    },
+    "font": {
+      "requestCount": 2,
+      "transferSize": 79933
+    },
+    "script": {
+      "requestCount": 3,
+      "transferSize": 39193
+    },
+    "document": {
+      "requestCount": 1,
+      "transferSize": 11929
+    },
+    "stylesheet": {
+      "requestCount": 3,
+      "transferSize": 10012
+    },
+    "other": {
+      "requestCount": 6,
+      "transferSize": 6757
+    },
+    "image": {
+      "requestCount": 0,
+      "transferSize": 0
+    },
+    "media": {
+      "requestCount": 0,
+      "transferSize": 0
+    },
+    "third-party": {
+      "requestCount": 3,
+      "transferSize": 81115
+    }
+  },
+  "renderBlockingItems": [],
+  "thirdParty": [],
+  "extra": {
+    "role": "sales_manager",
+    "inlineStyleCount": 22,
+    "headBlockingScripts": 1,
+    "finalUrl": "https://fundhub.ai/app/calendar.html"
+  }
+}

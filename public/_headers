@@ -58,3 +58,8 @@
 # fresh too.
 /contract.html
   Cache-Control: public, max-age=0, must-revalidate
+
+# VSL on apply.fundhub.ai/vsl. Must be video/mp4 with no attachment header
+# so Chrome will autoplay it muted on mobile.
+/funnel/vsl.mp4
+  Content-Type: video/mp4

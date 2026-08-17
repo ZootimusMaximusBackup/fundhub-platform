@@ -1,0 +1,220 @@
+{
+  "url": "https://fundhub.ai/app/company-brain.html",
+  "slug": "company-brain",
+  "role": "advisor@fundhub.ai",
+  "ranAt": "2026-08-17T08:41:09.285Z",
+  "runs": [
+    {
+      "run": 1,
+      "performanceScore": 98,
+      "lcpMs": 1551.367,
+      "lcpElement": null,
+      "tbtMs": 3.758000000000038,
+      "clsScore": 0.07993460512314414,
+      "ttfbMs": 84,
+      "speedIndexMs": 1839,
+      "totalBytes": 135321,
+      "byType": {
+        "total": {
+          "requestCount": 12,
+          "transferSize": 135321
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79933
+        },
+        "script": {
+          "requestCount": 3,
+          "transferSize": 39100
+        },
+        "stylesheet": {
+          "requestCount": 3,
+          "transferSize": 10023
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 5537
+        },
+        "other": {
+          "requestCount": 3,
+          "transferSize": 728
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 3,
+          "transferSize": 81115
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    },
+    {
+      "run": 2,
+      "performanceScore": 98,
+      "lcpMs": 1560.157,
+      "lcpElement": null,
+      "tbtMs": 5.502999999999929,
+      "clsScore": 0.07993460512314414,
+      "ttfbMs": 47,
+      "speedIndexMs": 1841,
+      "totalBytes": 135388,
+      "byType": {
+        "total": {
+          "requestCount": 12,
+          "transferSize": 135388
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79933
+        },
+        "script": {
+          "requestCount": 3,
+          "transferSize": 39073
+        },
+        "stylesheet": {
+          "requestCount": 3,
+          "transferSize": 10031
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 5515
+        },
+        "other": {
+          "requestCount": 3,
+          "transferSize": 836
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 3,
+          "transferSize": 81115
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    },
+    {
+      "run": 3,
+      "performanceScore": 98,
+      "lcpMs": 1553.909,
+      "lcpElement": null,
+      "tbtMs": 3.765999999999849,
+      "clsScore": 0.07993460512314414,
+      "ttfbMs": 69,
+      "speedIndexMs": 1839,
+      "totalBytes": 135201,
+      "byType": {
+        "total": {
+          "requestCount": 12,
+          "transferSize": 135201
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79932
+        },
+        "script": {
+          "requestCount": 3,
+          "transferSize": 39012
+        },
+        "stylesheet": {
+          "requestCount": 3,
+          "transferSize": 10026
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 5512
+        },
+        "other": {
+          "requestCount": 3,
+          "transferSize": 719
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 3,
+          "transferSize": 81114
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    }
+  ],
+  "median": {
+    "performanceScore": 98,
+    "lcpMs": 1553.909,
+    "tbtMs": 3.765999999999849,
+    "clsScore": 0.07993460512314414,
+    "ttfbMs": 69,
+    "speedIndexMs": 1839,
+    "totalBytes": 135321
+  },
+  "lcpElement": null,
+  "byTypeMedianRun": {
+    "total": {
+      "requestCount": 12,
+      "transferSize": 135388
+    },
+    "font": {
+      "requestCount": 2,
+      "transferSize": 79933
+    },
+    "script": {
+      "requestCount": 3,
+      "transferSize": 39073
+    },
+    "stylesheet": {
+      "requestCount": 3,
+      "transferSize": 10031
+    },
+    "document": {
+      "requestCount": 1,
+      "transferSize": 5515
+    },
+    "other": {
+      "requestCount": 3,
+      "transferSize": 836
+    },
+    "image": {
+      "requestCount": 0,
+      "transferSize": 0
+    },
+    "media": {
+      "requestCount": 0,
+      "transferSize": 0
+    },
+    "third-party": {
+      "requestCount": 3,
+      "transferSize": 81115
+    }
+  },
+  "renderBlockingItems": [],
+  "thirdParty": [],
+  "extra": {
+    "role": "funding_advisor",
+    "inlineStyleCount": 32,
+    "headBlockingScripts": 1,
+    "finalUrl": "https://fundhub.ai/app/company-brain.html"
+  }
+}

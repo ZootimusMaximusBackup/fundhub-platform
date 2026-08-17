@@ -81,6 +81,7 @@ const NO_ORG_COLUMN = new Map([
      query and refuse a missing org at the handler (403). Verified by reading
      those modules, not assumed from the filename. */
   ["closer-call.mjs", "scoped in src/sales/cockpit.mjs buildCockpit() — every query binds org_id from the session"],
+  ["closer-now.mjs", "scoped in src/sales/closer-now.mjs closerNow() — every query binds org_id from the session"],
   ["my-numbers.mjs", "scoped in src/sales/metrics.mjs closerMyNumbers() — every query binds org_id from the session"],
   ["sales-floor.mjs", "scoped in src/sales/metrics.mjs salesFloor() — every query binds org_id from the session"],
   ["closer-deck.mjs", "scoped in src/sales/closer-deck.mjs buildCloserDeck() — every query binds org_id from the session"],

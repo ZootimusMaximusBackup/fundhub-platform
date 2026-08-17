@@ -1,0 +1,9 @@
+{
+  "screen": "client-control-panel",
+  "ranAt": "2026-08-17T18:00:11Z",
+  "rows": [
+    { "line": 332, "sev": "MEDIUM", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/client-control-panel/restamp/1440-client-fold.png", "note": "Disabled Open Bank Inbox / GHL Contact / Raw Report still render (272x35, disabled=true)." },
+    { "line": 333, "sev": "MEDIUM", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/client-control-panel/restamp/layout.json", "note": "Section toggles still 849x14; 7 font sizes; 9px labels gone." },
+    { "line": 335, "sev": "LOW", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/client-control-panel/restamp/1440-client-fold.png", "note": "NEXT ACTION still coral-bordered with — and Credit EX — · EQ — · TU — on loaded TEST client." }
+  ]
+}

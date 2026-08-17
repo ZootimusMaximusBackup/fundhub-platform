@@ -35,7 +35,7 @@ flowchart TD
     CAN --> A_privacy[privacy — 1 route]
     CAN --> A_proxy[proxy — 2 routes]
     CAN --> A_public[public — 3 routes]
-    CAN --> A_read[Reading data — 45 routes]
+    CAN --> A_read[Reading data — 46 routes]
     CAN --> A_repair[repair — 2 routes]
     CAN --> A_social[social — 3 routes]
     CAN --> A_staff[staff — 2 routes]
@@ -48,7 +48,7 @@ flowchart TD
 
 ## What they can reach
 
-**154 of 156 routes.**
+**155 of 157 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -159,6 +159,7 @@ flowchart TD
 | `/api/read/call-outcomes` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/closer-call` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/closer-deck` | GET | closer, sales_manager, owner, admin |
+| `/api/read/closer-now` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/commissions` | GET | owner, admin, sales_manager |
 | `/api/read/company-activity` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/company-brain` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -215,12 +216,12 @@ flowchart TD
 
 ## What they are blocked from
 
-**2 of 156 routes.**
+**2 of 157 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/chat/portal-message` | POST | client |
-| `/api/read/company-brain-affiliate` | POST | affiliate, partner |
+| `/api/read/company-brain-affiliate` | POST | employees: affiliate, partner<br>plus: affiliate, partner |
 
 ## UNVERIFIED
 

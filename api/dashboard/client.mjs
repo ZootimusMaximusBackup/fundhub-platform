@@ -6,12 +6,30 @@ import { db } from "../../src/db.mjs";
 import { clientDetailExtras } from "../../src/http/client-detail.mjs";
 import { redact, isUuid, requireRole, ROLE_SETS, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
+import { resolvePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
+import { AUTH_UNAVAILABLE } from "../../src/http/middleware/requireAuth.mjs";
 import { requireClientInOrg } from "../../src/http/client-scope.mjs";
 import { requireSessionOrg } from "../../src/http/session-org.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import { getActiveCaseForClient } from "../../src/inquiry-ops/cases.mjs";
 
 export default async function handler(req, res) {
+  // A signed-in client (or any non-staff principal) is refused here. Do this
+  // before requireDashboardAccess: that gate only sees staff tokens, so an
+  // account token used to look unsigned-in (401). No-token callers still fall
+  // through so the DASHBOARD_SECRET header fallback keeps working.
+  const principal = await resolvePrincipal(req, { db });
+  if (principal === AUTH_UNAVAILABLE) {
+    return res.status(503).json({ ok: false, error: "auth_unavailable", db: "down" });
+  }
+  if (principal && principal.kind !== "staff") {
+    return res.status(403).json({
+      ok: false,
+      error: "forbidden",
+      message: "this endpoint serves staff"
+    });
+  }
+
   // Staff session first; the DASHBOARD_SECRET gate stays as the fallback until
   // cutover, so existing links keep working while staff accounts roll out.
   const staff = await requireDashboardAccess(req, res, { db });

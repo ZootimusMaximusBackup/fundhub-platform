@@ -1,0 +1,116 @@
+{
+  "sizeCount": 6,
+  "sizes": {
+    "10": 1,
+    "11": 68,
+    "12": 1,
+    "13": 1,
+    "14": 44,
+    "18": 1
+  },
+  "smallCount": 46,
+  "small": [
+    {
+      "text": "",
+      "w": 118,
+      "h": 24
+    },
+    {
+      "text": "‹‹",
+      "w": 26,
+      "h": 26
+    },
+    {
+      "text": "Sales▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "Funding▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "Client ops▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "Watch▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "Automation▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "◈Agent EditorBETA",
+      "w": 228,
+      "h": 29
+    },
+    {
+      "text": "⇄Workflows",
+      "w": 228,
+      "h": 27
+    },
+    {
+      "text": "⇝JourneysBETA",
+      "w": 228,
+      "h": 29
+    },
+    {
+      "text": "✎Message Copy",
+      "w": 228,
+      "h": 27
+    },
+    {
+      "text": "Marketing▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "Admin▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "Portals▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "Dismiss",
+      "w": 64,
+      "h": 19
+    },
+    {
+      "text": "Undo",
+      "w": 62,
+      "h": 33
+    },
+    {
+      "text": "Client13",
+      "w": 189,
+      "h": 39
+    },
+    {
+      "text": "Setter6",
+      "w": 189,
+      "h": 39
+    },
+    {
+      "text": "Closer9",
+      "w": 189,
+      "h": 39
+    },
+    {
+      "text": "Funding Advisor5",
+      "w": 189,
+      "h": 39
+    }
+  ],
+  "title": "Fundhub — Journeys",
+  "navActive": null
+}

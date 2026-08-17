@@ -1,0 +1,82 @@
+{
+  "screen": "/app/campaign-manager.html",
+  "slug": "campaign-manager",
+  "email": "owner@fundhub.ai",
+  "ranAt": "2026-08-17T18:00:56.661Z",
+  "httpStatus": 200,
+  "finalUrl": "/app/campaign-manager.html",
+  "bounced": false,
+  "probe": {
+    "viewport": {
+      "w": 1440,
+      "h": 900
+    },
+    "sidebarWidth": 0,
+    "appWidth": 1440,
+    "mainWidth": 1280,
+    "mainMaxWidth": "1280px",
+    "appMaxWidth": "none",
+    "hasFhMaxw": true,
+    "maxwEls": [
+      {
+        "tag": "div",
+        "className": "content fh-maxw",
+        "maxWidth": "1280px",
+        "width": 1280
+      }
+    ],
+    "distinctFontSizes": 7,
+    "sizeCounts": [
+      {
+        "px": 28,
+        "nodes": 4
+      },
+      {
+        "px": 18,
+        "nodes": 8
+      },
+      {
+        "px": 14,
+        "nodes": 76
+      },
+      {
+        "px": 13,
+        "nodes": 1
+      },
+      {
+        "px": 12,
+        "nodes": 1
+      },
+      {
+        "px": 11,
+        "nodes": 172
+      },
+      {
+        "px": 10,
+        "nodes": 1
+      }
+    ],
+    "cardPaddingsPx": {
+      "14": 10,
+      "16": 10
+    },
+    "tileRows": [
+      {
+        "className": "stats",
+        "childCount": 5,
+        "childWidths": [
+          237,
+          237,
+          237,
+          237,
+          237
+        ]
+      }
+    ],
+    "comparisonHits": [],
+    "h1": [
+      "Campaigns"
+    ],
+    "controlCount": 53
+  }
+}

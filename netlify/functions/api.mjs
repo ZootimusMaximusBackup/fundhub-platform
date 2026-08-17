@@ -91,6 +91,7 @@ import companyBrainSync from "../../api/company-brain/sync.mjs";
 import readWorkflows from "../../api/read/workflows.mjs";
 import readTransactions from "../../api/read/transactions.mjs";
 import readCloserCall from "../../api/read/closer-call.mjs";
+import readCloserNow from "../../api/read/closer-now.mjs";
 import readCloserDeck from "../../api/read/closer-deck.mjs";
 import closerDeckWrite from "../../api/closer-deck.mjs";
 import readMyNumbers from "../../api/read/my-numbers.mjs";
@@ -411,6 +412,7 @@ export const ROUTES = {
   "read/transactions": readTransactions,
   /* Sales dashboards — call cockpit, closer my-numbers, manager floor. */
   "read/closer-call": readCloserCall,
+  "read/closer-now": readCloserNow,
   "read/closer-deck": readCloserDeck,
   "closer-deck": closerDeckWrite,
   "read/my-numbers": readMyNumbers,

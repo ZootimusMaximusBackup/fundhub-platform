@@ -21,7 +21,7 @@ flowchart TD
     CAN --> A_contracts[contracts — 1 route]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_public[public — 3 routes]
-    CAN --> A_read[Reading data — 1 route]
+    CAN --> A_read[Reading data — 2 routes]
     CAN --> A_top_level[Everything else — 5 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 136 routes]
@@ -49,7 +49,7 @@ flowchart TD
 
 ## What they can reach
 
-**20 of 156 routes.**
+**21 of 157 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -71,6 +71,7 @@ flowchart TD
 | `/api/public/partner-page` | GET | anyone |
 | `/api/public/survey-submit` | POST | anyone |
 | `/api/read/affiliates` | GET | employees: owner, admin, sales_manager<br>plus: affiliate |
+| `/api/read/company-brain-affiliate` | POST | employees: affiliate, partner<br>plus: affiliate, partner |
 | `/api/soft-pull-approve` | GET, POST | anyone |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
@@ -81,7 +82,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**136 of 156 routes.**
+**136 of 157 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -175,10 +176,10 @@ flowchart TD
 | `/api/read/call-outcomes` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/closer-call` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/closer-deck` | GET | closer, sales_manager, owner, admin |
+| `/api/read/closer-now` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/commissions` | GET | owner, admin, sales_manager |
 | `/api/read/company-activity` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/company-brain` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
-| `/api/read/company-brain-affiliate` | POST | affiliate, partner |
 | `/api/read/contracts` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/customer-insights` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |

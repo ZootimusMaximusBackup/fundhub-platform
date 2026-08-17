@@ -1,0 +1,8 @@
+{
+  "screen": "ops-admin",
+  "ranAt": "2026-08-17T18:09:45Z",
+  "rows": [
+    { "line": 389, "sev": "MEDIUM", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/ops-admin/restamp/1440-fold.png", "note": "Multiple filled controls remain (period pill, Turn ON, Money tab, Chat); 7 font sizes." },
+    { "line": 390, "sev": "LOW", "verdict": "CONFIRMED-FIXED", "evidence": "docs/workflows/ui-audit-evidence/ops-admin/restamp/header-wrap.json", "note": "Title and clock each one client rect; clock is a single line, no AM/EDT wrap." }
+  ]
+}

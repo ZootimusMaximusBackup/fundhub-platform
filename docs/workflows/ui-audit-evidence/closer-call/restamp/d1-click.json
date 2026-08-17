@@ -1,0 +1,51 @@
+{
+  "ranAt": "2026-08-17T17:26:03.468Z",
+  "before": {
+    "h1": "TEST Client Role",
+    "boxes": [
+      {
+        "id": "d1",
+        "present": true,
+        "checked": false,
+        "w": 13,
+        "h": 13,
+        "visible": true
+      },
+      {
+        "id": "d2",
+        "present": true,
+        "checked": false,
+        "w": 13,
+        "h": 13,
+        "visible": true
+      },
+      {
+        "id": "d3",
+        "present": true,
+        "checked": false,
+        "w": 13,
+        "h": 13,
+        "visible": true
+      },
+      {
+        "id": "d4",
+        "present": true,
+        "checked": false,
+        "w": 13,
+        "h": 13,
+        "visible": true
+      }
+    ],
+    "url": "https://fundhub.ai/app/closer-call.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521"
+  },
+  "click": {
+    "visible": true,
+    "after": {
+      "checked": true,
+      "localStorageKeys": []
+    }
+  },
+  "intercepted": [],
+  "dialogs": [],
+  "shot": "docs/workflows/ui-audit-evidence/closer-call/restamp/1440-after-d1.png"
+}

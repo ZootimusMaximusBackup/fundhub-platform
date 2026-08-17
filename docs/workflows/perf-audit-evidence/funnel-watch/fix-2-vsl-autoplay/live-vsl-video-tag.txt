@@ -1,0 +1,1 @@
+<video id="fh-vsl" autoplay="true" muted="true" playsinline="true" preload="auto" src="https://chrisstanbridgestea3f77f.myclickfunnels.com/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBM040TWc9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--cea3ead91c68ec7b17178d2734989d22fff8abaa/VSL.mov" class="id-6Z-EMgqDQ-701">

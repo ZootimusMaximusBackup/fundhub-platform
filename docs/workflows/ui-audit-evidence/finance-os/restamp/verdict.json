@@ -1,0 +1,8 @@
+{
+  "screen": "finance-os",
+  "ranAt": "2026-08-17T18:03:30Z",
+  "rows": [
+    { "line": 348, "sev": "CRITICAL", "verdict": "CONFIRMED-FIXED", "evidence": "docs/workflows/ui-audit-evidence/finance-os/restamp/1440-client-fold.png", "note": "Bare and client: banner is a thin top bar; Dismiss 64x19 at x1238 y10; mainW 1212; docH 3259; layout paints without Dismiss." },
+    { "line": 351, "sev": "MEDIUM", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/finance-os/restamp/layout.json", "note": "Text-me-when body still wraps in ~65px column; 7 sizes; bureau labels now 11px not 8px." }
+  ]
+}

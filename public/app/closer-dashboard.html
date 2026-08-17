@@ -284,11 +284,9 @@
       <div class="who-role" id="whoRole">—</div>
     </div>
     <div class="stat-tiles">
-      <div class="stat-tile"><div class="stat-label">Calls Today</div><div class="stat-value">—</div>
-        <div class="stat-sub">no closer shift endpoint</div></div>
+      <div class="stat-tile"><div class="stat-label">Calls Today</div><div class="stat-value">—</div></div>
       <div class="stat-tile"><div class="stat-label">Kept</div><div class="stat-value">—</div></div>
-      <div class="stat-tile"><div class="stat-label">Collected</div><div class="stat-value">—</div>
-        <div class="stat-sub">no deposit rollup for this seat</div></div>
+      <div class="stat-tile"><div class="stat-label">Collected</div><div class="stat-value">—</div></div>
       <div class="stat-tile"><div class="stat-label">Pace</div><div class="stat-value pace-neutral">—</div></div>
     </div>
   </div>
@@ -297,9 +295,9 @@
 
     <div class="section">
       <div class="section-title eyebrow">CD-01 / Today's Pipeline</div>
-      <table class="pipe">
+      <table class="pipe" id="todayPipe">
         <tr><th>Client</th><th>Stage</th><th>Next</th><th>When</th></tr>
-        <tr><td colspan="4"><span class="empty-slot">No closer-day pipeline endpoint yet — open Pipeline for the live board. Deal calculators below load when you open this screen with ?client_id=.</span></td></tr>
+        <tr><td colspan="4"><span class="empty-slot">No booked calls for you right now.</span></td></tr>
       </table>
     </div>
 
@@ -1209,6 +1207,44 @@ window.FHCloserView = (function () {
           ((e && e.message) || "unknown") + ")" });
     });
   }
+
+  function whenText(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+
+  function paintToday(data) {
+    var table = document.getElementById("todayPipe");
+    if (!table) return;
+    while (table.rows.length > 1) table.deleteRow(1);
+    var calls = [];
+    if (data && data.current) calls.push(data.current);
+    if (data && data.next) calls.push(data.next);
+    if (!calls.length) {
+      var empty = table.insertRow();
+      var td = empty.insertCell();
+      td.colSpan = 4;
+      var span = document.createElement("span");
+      span.className = "empty-slot";
+      span.textContent = "No booked calls for you right now.";
+      td.appendChild(span);
+      return;
+    }
+    for (var i = 0; i < calls.length; i++) {
+      var c = calls[i];
+      var tr = table.insertRow();
+      tr.appendChild(cell(c.name || "Client"));
+      tr.appendChild(cell("—"));
+      tr.appendChild(cell(c.title || "Call"));
+      tr.appendChild(cell(whenText(c.due_at)));
+    }
+  }
+
+  FHData.read("closer-now").then(function (res) {
+    paintToday(res.ok ? res.data : null);
+  });
 
   if (!clientId) {
     var gate = document.getElementById("calcGate");

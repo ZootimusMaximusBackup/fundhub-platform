@@ -1,0 +1,45 @@
+{
+  "sizes": [
+    10,
+    11,
+    12,
+    12.5,
+    13,
+    14,
+    18,
+    28
+  ],
+  "sizeCount": 8,
+  "sections": {
+    "HR-04": {
+      "found": true,
+      "snippet": null,
+      "tableRows": []
+    },
+    "HR-05": {
+      "found": true,
+      "snippet": null,
+      "tableRows": []
+    },
+    "HR-06": {
+      "found": true,
+      "snippet": null,
+      "tableRows": []
+    },
+    "HR-07": {
+      "found": true,
+      "snippet": null,
+      "tableRows": []
+    }
+  },
+  "hasNothingHere": true,
+  "hr04": true,
+  "hr06": true,
+  "hr07": true,
+  "snippets": {
+    "hr04": " / NEEDS A HUMAN\n0 WAITING · 0 OPEN · 3 DEMO NOT COUNTED\nFLAGGED OR NOT SCORED\nCANDIDATE\tROLE\tSTAGE\tSTATUS\tAVERAGE\tRECOMMENDATION\tRUBRIC\tWHY IT IS HERE\tIN STAGE\nDEMO Candidate — Juniper Vale DEMO ROW\n291d880e-eb62-47ef-b1c5-8b6c85d0fc84 · inbound\n\tCloser\tApplied\tOPEN\tnot scored\tno score\nadvisory — a human decides\n\tno rubric\t\nNot scored\nNo reason fo",
+    "hr05": " / JOB POSTINGS & SYNDICATION\nALL STATES1\nDRAFT0\nPOSTED1\nPAUSED0\nCLOSED0\nFAILED0\nALL CHANNELS1\nLINKEDIN0\nFACEBOOK0\nJOB_BOARD0\nINTERNAL1\nPOSTING\tROLE\tCHANNEL\tLOCATION\tSTATUS\tPUBLISHED\tPOSTED\tAPPLICATIONS\tLAST 7D\tLAST SYNCED\n▸DEMO Closer — Cobalt Harbor Desk\n2a1ede40-2f71-43a1-924e-b69a8b3d304b\n\tCloser\tINTERNAL\tRemote\tPOSTED\tPUBLISHED\tAug 05\t3\nlifeti",
+    "hr06": " / FUNNEL BY SOURCE\nROLE\nall roles\nCloser\nSetter\nSales Coordinator\nDAYS\n30\n90\n180\n365\n730\n—\nSOURCE\tROLE\tAPPLICATIONS\tCURRENTLY AT OR PAST GROUP INTERVIEW\tCURRENTLY AT OR PAST 1:1\tCURRENTLY AT OR PAST OFFER\tHIRED\tREJECTED\tHIRE RATE %\nThese count where people are standing right now, not how far they got. Someone who was turned down is still counted i",
+    "hr07": " / DECISION LOG · AEDT AUDIT TRAIL\nROLE\nall roles\nCloser\nSetter\nSales Coordinator\nDAYS\n30\n90\n180\n365\n730\nALL0\nADVANCE0\nREJECT0\nOFFER0\nOFFER_ACCEPTED ∅0\nOFFER_DECLINED ∅0\nWITHDRAW ∅0\nHOLD ∅0\nOVERRIDE RATE\ndecisions that went against the advice ÷ decisions that had advice\n0 ÷ 0 = — · 0 rows left out, because there was no advice at the time\nA PERSON N"
+  }
+}

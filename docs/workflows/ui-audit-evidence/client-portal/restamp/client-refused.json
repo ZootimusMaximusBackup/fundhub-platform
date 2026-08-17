@@ -1,0 +1,29 @@
+{
+  "ranAt": "2026-08-17T18:58:40.410Z",
+  "base": "https://fundhub.ai",
+  "email": "client@fundhub.ai",
+  "login": {
+    "status": 200,
+    "principal": "client",
+    "landedAt": "/app/client-portal.html"
+  },
+  "routes": [
+    {
+      "url": "/api/read/documents?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521&limit=200",
+      "status": 401,
+      "ok": false,
+      "error": "unauthorized",
+      "leakedKeys": []
+    },
+    {
+      "url": "/api/dashboard/client?id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "status": 401,
+      "ok": false,
+      "error": "unauthorized",
+      "leakedKeys": []
+    }
+  ],
+  "refused": true,
+  "bannerHasNotSignedIn": false,
+  "shot": "docs/workflows/ui-audit-evidence/client-portal/restamp/client-refused.png"
+}

@@ -1,0 +1,72 @@
+{
+  "screen": "/app/command-center.html",
+  "slug": "command-center",
+  "email": "owner@fundhub.ai",
+  "ranAt": "2026-08-17T17:59:44.980Z",
+  "httpStatus": 200,
+  "finalUrl": "/app/command-center.html",
+  "bounced": false,
+  "probe": {
+    "viewport": {
+      "w": 1440,
+      "h": 900
+    },
+    "sidebarWidth": 0,
+    "appWidth": 1440,
+    "mainWidth": 1212,
+    "mainMaxWidth": "1280px",
+    "appMaxWidth": "none",
+    "hasFhMaxw": true,
+    "maxwEls": [
+      {
+        "tag": "main",
+        "className": "fh-maxw",
+        "maxWidth": "1280px",
+        "width": 1212
+      }
+    ],
+    "distinctFontSizes": 8,
+    "sizeCounts": [
+      {
+        "px": 28,
+        "nodes": 59
+      },
+      {
+        "px": 18,
+        "nodes": 7
+      },
+      {
+        "px": 16,
+        "nodes": 1
+      },
+      {
+        "px": 14,
+        "nodes": 29
+      },
+      {
+        "px": 13,
+        "nodes": 1
+      },
+      {
+        "px": 12,
+        "nodes": 1
+      },
+      {
+        "px": 11,
+        "nodes": 212
+      },
+      {
+        "px": 10,
+        "nodes": 1
+      }
+    ],
+    "cardPaddingsPx": {
+      "2": 40,
+      "6": 40
+    },
+    "tileRows": [],
+    "comparisonHits": [],
+    "h1": [],
+    "controlCount": 32
+  }
+}

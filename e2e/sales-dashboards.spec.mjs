@@ -101,6 +101,7 @@ function salesHandlers({ floorStatus = 200 } = {}) {
       });
     },
     "/api/read/closer-call": emptyCockpit,
+    "/api/read/closer-now": { ok: true, current: null, next: null },
     "/api/read/underwrite": { ok: true, suggestions: [] },
     "/api/call-outcomes": { ok: true, created: true, outcome: { outcome: "deposit" } },
     "/api/marketing-flags": { ok: true, flag: { id: "flag-1" } }
@@ -175,9 +176,32 @@ test("closer-call requires client_id and shows disposition hotkeys", async ({ pa
   await expect(page.locator("#fh-present")).toBeVisible();
 });
 
-test("closer-call without client_id shows the honest gate", async ({ page }) => {
+test("closer-call without client_id shows empty when no current call", async ({ page }) => {
   await openScreen(page, "/app/closer-call.html", CLOSER, salesHandlers());
-  await expect(page.locator("body")).toContainText(/client_id|pipeline|cockpit/i);
+  await expect(page.locator("#ccp-who-name")).toHaveText("No call right now");
+  await expect(page.locator("body")).toContainText("No booked call right now");
+  await expect(page.locator(".logbar")).toBeHidden();
+  await expect(page.locator("#fh-present")).toBeHidden();
+});
+
+test("closer-call without client_id loads the current call from closer-now", async ({ page }) => {
+  await openScreen(page, "/app/closer-call.html", CLOSER, {
+    ...salesHandlers(),
+    "/api/read/closer-now": {
+      ok: true,
+      current: {
+        task_id: "t-now",
+        client_id: CLIENT_ID,
+        name: "Dana Whitfield",
+        due_at: "2026-08-17T18:00:00.000Z",
+        title: "Close"
+      },
+      next: null
+    }
+  });
+  await expect(page.locator("h1").first()).toBeVisible();
+  await expect(page.locator("#fh-present")).toBeVisible();
+  await expect(page.locator('[data-belief="desire"]').first()).toBeVisible();
 });
 
 test("my-numbers header is the session closer, not Marcus or Elena", async ({ page }) => {
@@ -195,7 +219,37 @@ test("closer-dashboard without a client is honest empty", async ({ page }) => {
   await expect(page.locator("#calcGate")).toBeVisible();
   await expect(page.locator("#calcGate")).toHaveText("Open from a client.");
   await expect(page.locator("#whoName")).toHaveText("Casey Reed");
+  await expect(page.locator("#todayPipe")).toContainText("No booked calls for you right now");
+  await expect(page.locator("body")).not.toContainText("no closer shift endpoint");
+  await expect(page.locator("body")).not.toContainText("No closer-day pipeline endpoint");
   await expect(page.locator("body")).not.toContainText("Jordan Blake");
   await expect(page.locator("body")).not.toContainText("Priya Nair");
   await expect(page.locator(".clock")).not.toContainText("Jul 26");
+});
+
+test("closer-dashboard lists current and next from closer-now", async ({ page }) => {
+  await freezeClock(page, "2026-08-17T18:00:00Z");
+  await openScreen(page, "/app/closer-dashboard.html", CLOSER, {
+    ...salesHandlers(),
+    "/api/read/closer-now": {
+      ok: true,
+      current: {
+        task_id: "t-now",
+        client_id: CLIENT_ID,
+        name: "Dana Whitfield",
+        due_at: "2026-08-17T17:00:00.000Z",
+        title: "Close"
+      },
+      next: {
+        task_id: "t-next",
+        client_id: "bbbbbbbb-2222-4222-8222-222222222222",
+        name: "Riley Chen",
+        due_at: "2026-08-17T20:00:00.000Z",
+        title: "Close"
+      }
+    }
+  });
+  await expect(page.locator("#todayPipe")).toContainText("Dana Whitfield");
+  await expect(page.locator("#todayPipe")).toContainText("Riley Chen");
+  await expect(page.locator("#todayPipe")).not.toContainText("No booked calls");
 });

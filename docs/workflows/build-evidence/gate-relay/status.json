@@ -1,0 +1,14 @@
+{
+  "built": "2026-08-17",
+  "unitTests": "21/21 pass — see unit-tests.txt",
+  "failurePaths": {
+    "unknownSenderIgnored": "PASS",
+    "malformedGateDoesNotCrash": "PASS",
+    "transcribeFailureSpeaks": "PASS — sends \"Couldn't hear that. Reply in text?\""
+  },
+  "liveTelegramRoundTrip": "PASS — gate live-prove-1 sent at 11:01, voice reply transcribed to Go, decision GO written 11:02",
+  "liveWhisper": "PASS — voice note became raw \"Go\"",
+  "smsAdapter": "STUB — send/onReply throw not wired",
+  "gitignore": ".fundhub-relay/ is ignored so voice transcripts stay off git",
+  "suiteNote": "Disclaimer test updated so Builder-authored intended.md is not forced to claim it was written after the fact. Two red tests remain from before this work: stale role-actual.md files, and company-brain-affiliate org scope."
+}

@@ -1,0 +1,220 @@
+{
+  "url": "https://fundhub.ai/app/campaign-manager.html",
+  "slug": "campaign-manager",
+  "role": "owner@fundhub.ai",
+  "ranAt": "2026-08-17T08:38:55.855Z",
+  "runs": [
+    {
+      "run": 1,
+      "performanceScore": 95,
+      "lcpMs": 1622.819,
+      "lcpElement": null,
+      "tbtMs": 54.27299999999968,
+      "clsScore": 0.12520174459229555,
+      "ttfbMs": 46,
+      "speedIndexMs": 1763,
+      "totalBytes": 171262,
+      "byType": {
+        "total": {
+          "requestCount": 18,
+          "transferSize": 171262
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79933
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 40218
+        },
+        "script": {
+          "requestCount": 3,
+          "transferSize": 39061
+        },
+        "stylesheet": {
+          "requestCount": 3,
+          "transferSize": 10022
+        },
+        "other": {
+          "requestCount": 9,
+          "transferSize": 2028
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 3,
+          "transferSize": 81115
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    },
+    {
+      "run": 2,
+      "performanceScore": 95,
+      "lcpMs": 1619.918,
+      "lcpElement": null,
+      "tbtMs": 79.02499999999986,
+      "clsScore": 0.12520174459229555,
+      "ttfbMs": 45,
+      "speedIndexMs": 1761,
+      "totalBytes": 171420,
+      "byType": {
+        "total": {
+          "requestCount": 18,
+          "transferSize": 171420
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79933
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 40165
+        },
+        "script": {
+          "requestCount": 3,
+          "transferSize": 39232
+        },
+        "stylesheet": {
+          "requestCount": 3,
+          "transferSize": 10011
+        },
+        "other": {
+          "requestCount": 9,
+          "transferSize": 2079
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 3,
+          "transferSize": 81115
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    },
+    {
+      "run": 3,
+      "performanceScore": 95,
+      "lcpMs": 1621.508,
+      "lcpElement": null,
+      "tbtMs": 44.39100000000076,
+      "clsScore": 0.12520174459229555,
+      "ttfbMs": 50,
+      "speedIndexMs": 1763,
+      "totalBytes": 171054,
+      "byType": {
+        "total": {
+          "requestCount": 18,
+          "transferSize": 171054
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79933
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 40157
+        },
+        "script": {
+          "requestCount": 3,
+          "transferSize": 38967
+        },
+        "stylesheet": {
+          "requestCount": 3,
+          "transferSize": 10108
+        },
+        "other": {
+          "requestCount": 9,
+          "transferSize": 1889
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 3,
+          "transferSize": 81115
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    }
+  ],
+  "median": {
+    "performanceScore": 95,
+    "lcpMs": 1621.508,
+    "tbtMs": 54.27299999999968,
+    "clsScore": 0.12520174459229555,
+    "ttfbMs": 46,
+    "speedIndexMs": 1763,
+    "totalBytes": 171262
+  },
+  "lcpElement": null,
+  "byTypeMedianRun": {
+    "total": {
+      "requestCount": 18,
+      "transferSize": 171420
+    },
+    "font": {
+      "requestCount": 2,
+      "transferSize": 79933
+    },
+    "document": {
+      "requestCount": 1,
+      "transferSize": 40165
+    },
+    "script": {
+      "requestCount": 3,
+      "transferSize": 39232
+    },
+    "stylesheet": {
+      "requestCount": 3,
+      "transferSize": 10011
+    },
+    "other": {
+      "requestCount": 9,
+      "transferSize": 2079
+    },
+    "image": {
+      "requestCount": 0,
+      "transferSize": 0
+    },
+    "media": {
+      "requestCount": 0,
+      "transferSize": 0
+    },
+    "third-party": {
+      "requestCount": 3,
+      "transferSize": 81115
+    }
+  },
+  "renderBlockingItems": [],
+  "thirdParty": [],
+  "extra": {
+    "role": "owner",
+    "inlineStyleCount": 195,
+    "headBlockingScripts": 1,
+    "finalUrl": "https://fundhub.ai/app/campaign-manager.html"
+  }
+}

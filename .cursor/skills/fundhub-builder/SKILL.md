@@ -17,6 +17,8 @@ Binding law: `docs/UI-STANDARDS.md`, `docs/PERF-STANDARDS.md`, `fundhub-brand.cs
 
 Answer all seven in one block, then STOP and wait for "go." One word from Chris proceeds; anything else revises. Never skip the gate, never guess an answer.
 
+When the gate-relay process is running on this Mac, do not only wait in the IDE. Write `.fundhub-relay/gates/<id>.json` with `{ question, options, context, session }` — `question` must be a one-word decision, never status — then `node scripts/gate-relay/index.mjs wait <id>`. Read the decision file and proceed. The relay never edits app code.
+
 1. **Role** — who is this for? One role. Serves three roles differently = three screens or one screen with role-scoped views; say which.
 2. **One job** — one sentence. Two sentences = two screens.
 3. **First question** — what does that role ask when they open it? (UI-STANDARDS §10.) The answer goes top-left, largest. "Company metrics" for anyone but the owner = stop and ask.

@@ -1,0 +1,158 @@
+{
+  "screen": "/app/present.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "slug": "present-client",
+  "email": "closer@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T18:00:08.668Z",
+  "login": {
+    "ok": true,
+    "cached": true,
+    "landedAt": "/dashboard.html"
+  },
+  "load": {
+    "httpStatus": 200,
+    "finalUrl": "/app/present.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+    "bounced": false,
+    "title": "Closer · Present",
+    "apiFails": [],
+    "consoleErrors": [],
+    "fold": "docs/workflows/ui-audit-evidence/present-client/restamp/1440-fold.png",
+    "mobileFold": "docs/workflows/ui-audit-evidence/present-client/restamp/390-fold.png"
+  },
+  "probe": {
+    "h1": [
+      "TEST Client Role"
+    ],
+    "navVisibleCount": 0,
+    "navItems": [],
+    "navGroups": [],
+    "filledButtons": [
+      "01",
+      "Next screen"
+    ],
+    "buttons": [
+      {
+        "tag": "button",
+        "id": "",
+        "text": "Client screen only",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 123,
+        "h": 25,
+        "x": 1303,
+        "y": 6
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "01",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": true,
+        "bg": "rgb(10, 10, 10)",
+        "w": 50,
+        "h": 24,
+        "x": 1111,
+        "y": 823
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "02",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 50,
+        "h": 24,
+        "x": 1165,
+        "y": 823
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "03",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 50,
+        "h": 24,
+        "x": 1219,
+        "y": 823
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "04",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 50,
+        "h": 24,
+        "x": 1273,
+        "y": 823
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "05",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 50,
+        "h": 24,
+        "x": 1326,
+        "y": 823
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "07",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 50,
+        "h": 24,
+        "x": 1380,
+        "y": 823
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "Back",
+        "disabled": true,
+        "hiddenAttr": false,
+        "filled": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "w": 51,
+        "h": 32,
+        "x": 1111,
+        "y": 858
+      },
+      {
+        "tag": "button",
+        "id": "",
+        "text": "Next screen",
+        "disabled": false,
+        "hiddenAttr": false,
+        "filled": true,
+        "bg": "rgb(10, 10, 10)",
+        "w": 261,
+        "h": 32,
+        "x": 1169,
+        "y": 858
+      }
+    ],
+    "chipText": null,
+    "chipCoversSearch": false,
+    "chipCoversDismiss": false,
+    "bodySample": "TEST CLIENT ROLE ENGINE DATA UNAVAILABLE Client screen only S-01 / SESSION fundhub. FUNDING STRATEGY SESSION TEST Client Role — CUSTOMER-INITIATED · SOFT INQUIRY · NO OBLIGATION 01 INTRO 1 / 24 Rapport SAY THIS Hey [First Name]! It's [Your Name] over at Fundhub. How's your week been so far? Mirror their energy. Let them answer. Do not rush. I know we've got a limited amount of time, so are you ready to jump in? Are you in front of a computer with a card handy for the soft-pull assessment? WATCH FOR The first 60 seconds decide whether they trust you or have their guard up. 01 02 03 04 05 07 Back Next screen"
+  },
+  "click": null
+}

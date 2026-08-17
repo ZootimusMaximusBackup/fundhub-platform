@@ -122,10 +122,6 @@ button.k .hk{color:var(--gray2)}
 (function(){
   var q = new URLSearchParams(location.search);
   var cid = q.get('client_id') || q.get('id');
-  if (!cid) {
-    document.body.insertAdjacentHTML('afterbegin',
-      '<div style="padding:14px 22px;background:#F5CE8F22;border-bottom:1px solid #E4E4E7;font-size:13px">Open this cockpit from the pipeline with a client selected — <code>?client_id=</code> is required.</div>');
-  }
   window.__FH_CLIENT_ID = cid || null;
 })();
 </script>
@@ -253,8 +249,8 @@ button.k .hk{color:var(--gray2)}
     <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
       <span class="chip wip" id="fh-temp-chip" hidden><span class="cd"></span>—</span>
       <button type="button" class="k" id="fh-join" disabled title="No call link on this appointment">Join call</button>
-      <button type="button" class="k" id="fh-present">Present</button>
-      <button type="button" class="k" id="fh-send-contract">Send contract</button>
+      <button type="button" class="k" id="fh-present" hidden>Present</button>
+      <button type="button" class="k" id="fh-send-contract" hidden>Send contract</button>
     </div>
   </div>
 
@@ -363,7 +359,7 @@ button.k .hk{color:var(--gray2)}
 </aside>
 </div>
 
-<div class="logbar">
+<div class="logbar" hidden>
   <div class="logrow">
     <span class="lbl">Outcome</span>
     <button><span class="hk">1</span>Deposit</button>

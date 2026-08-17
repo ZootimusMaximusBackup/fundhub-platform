@@ -9,7 +9,7 @@ Wires the four protocols into one autonomous chain. Chris speaks exactly twice: 
 
 ## The chain
 
-1. **PLAN** — load fundhub-builder, run its Step 1 plan gate (all seven questions). STOP. Wait for "go." This stop is never skipped, never inferred, never satisfied by anything except Chris saying go in this session.
+1. **PLAN** — load fundhub-builder, run its Step 1 plan gate (all seven questions). STOP. Wait for "go." This stop is never skipped, never inferred, never satisfied by anything except Chris saying go in this session. If `scripts/gate-relay` is running, write that stop to `.fundhub-relay/gates/<id>.json` (decision-shaped question, options `GO` / `QUESTIONS`) and `node scripts/gate-relay/index.mjs wait <id>` so Chris can answer from his phone. Same for later OPEN-QUESTION / BLOCKED stops. The relay writes the decision file; it never edits app code.
 2. **BUILD** — Builder executes under its own rules. Produces the screen, the `-intended.md`, four-state screenshots, control-click evidence, Lighthouse run.
 3. **AUDIT** — dispatch a fresh subagent as fundhub-ui-auditor (and fundhub-perf-auditor if a page was created) against the LIVE deployed result. The build agent never audits its own work — different agent, fresh context, reads only the `-intended.md` and the standards.
 4. **FIX** — findings from step 3 become tickets. Dispatch fundhub-fixer subagents, one ticket each, smallest diff, evidence per fix. OPEN-QUESTION and role-lens (§10) rows are NOT tickets — they queue for Chris.

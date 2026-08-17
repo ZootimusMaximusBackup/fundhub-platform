@@ -1,0 +1,72 @@
+{
+  "url": "https://apply.fundhub.ai/book",
+  "slug": "funnel-book",
+  "role": null,
+  "ranAt": "2026-08-17T08:39:21.988Z",
+  "runs": [
+    {
+      "run": 1,
+      "performanceScore": null,
+      "lcpMs": null,
+      "lcpElement": null,
+      "tbtMs": null,
+      "clsScore": null,
+      "ttfbMs": null,
+      "speedIndexMs": null,
+      "totalBytes": null,
+      "byType": {},
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    },
+    {
+      "run": 2,
+      "performanceScore": null,
+      "lcpMs": null,
+      "lcpElement": null,
+      "tbtMs": null,
+      "clsScore": null,
+      "ttfbMs": null,
+      "speedIndexMs": null,
+      "totalBytes": null,
+      "byType": {},
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    },
+    {
+      "run": 3,
+      "performanceScore": null,
+      "lcpMs": null,
+      "lcpElement": null,
+      "tbtMs": null,
+      "clsScore": null,
+      "ttfbMs": null,
+      "speedIndexMs": null,
+      "totalBytes": null,
+      "byType": {},
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    }
+  ],
+  "median": {
+    "performanceScore": null,
+    "lcpMs": null,
+    "tbtMs": null,
+    "clsScore": null,
+    "ttfbMs": null,
+    "speedIndexMs": null,
+    "totalBytes": null
+  },
+  "lcpElement": null,
+  "byTypeMedianRun": {},
+  "renderBlockingItems": [],
+  "thirdParty": [],
+  "extra": {
+    "inlineStyleCount": 10,
+    "headBlockingScripts": 3,
+    "video": null,
+    "finalUrl": "https://apply.fundhub.ai/book"
+  }
+}

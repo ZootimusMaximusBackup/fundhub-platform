@@ -1,0 +1,220 @@
+{
+  "url": "https://fundhub.ai/app/journeys.html",
+  "slug": "journeys",
+  "role": "owner@fundhub.ai",
+  "ranAt": "2026-08-17T08:36:45.412Z",
+  "runs": [
+    {
+      "run": 1,
+      "performanceScore": 95,
+      "lcpMs": 1497.98,
+      "lcpElement": null,
+      "tbtMs": 6.579000000000178,
+      "clsScore": 0.12522664236093714,
+      "ttfbMs": 34,
+      "speedIndexMs": 1701,
+      "totalBytes": 146348,
+      "byType": {
+        "total": {
+          "requestCount": 14,
+          "transferSize": 146348
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79933
+        },
+        "script": {
+          "requestCount": 2,
+          "transferSize": 29846
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 24475
+        },
+        "stylesheet": {
+          "requestCount": 4,
+          "transferSize": 10971
+        },
+        "other": {
+          "requestCount": 5,
+          "transferSize": 1123
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 4,
+          "transferSize": 82045
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    },
+    {
+      "run": 2,
+      "performanceScore": 95,
+      "lcpMs": 1496.71,
+      "lcpElement": null,
+      "tbtMs": 4.935000000000173,
+      "clsScore": 0.12522664236093714,
+      "ttfbMs": 43,
+      "speedIndexMs": 1700,
+      "totalBytes": 146287,
+      "byType": {
+        "total": {
+          "requestCount": 14,
+          "transferSize": 146287
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79933
+        },
+        "script": {
+          "requestCount": 2,
+          "transferSize": 29833
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 24452
+        },
+        "stylesheet": {
+          "requestCount": 4,
+          "transferSize": 10996
+        },
+        "other": {
+          "requestCount": 5,
+          "transferSize": 1073
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 4,
+          "transferSize": 82045
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    },
+    {
+      "run": 3,
+      "performanceScore": 95,
+      "lcpMs": 1495.301,
+      "lcpElement": null,
+      "tbtMs": 10.151000000000295,
+      "clsScore": 0.12522664236093714,
+      "ttfbMs": 149,
+      "speedIndexMs": 1700,
+      "totalBytes": 146311,
+      "byType": {
+        "total": {
+          "requestCount": 14,
+          "transferSize": 146311
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79933
+        },
+        "script": {
+          "requestCount": 2,
+          "transferSize": 29819
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 24457
+        },
+        "stylesheet": {
+          "requestCount": 4,
+          "transferSize": 11003
+        },
+        "other": {
+          "requestCount": 5,
+          "transferSize": 1099
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 4,
+          "transferSize": 82045
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    }
+  ],
+  "median": {
+    "performanceScore": 95,
+    "lcpMs": 1496.71,
+    "tbtMs": 6.579000000000178,
+    "clsScore": 0.12522664236093714,
+    "ttfbMs": 43,
+    "speedIndexMs": 1700,
+    "totalBytes": 146311
+  },
+  "lcpElement": null,
+  "byTypeMedianRun": {
+    "total": {
+      "requestCount": 14,
+      "transferSize": 146287
+    },
+    "font": {
+      "requestCount": 2,
+      "transferSize": 79933
+    },
+    "script": {
+      "requestCount": 2,
+      "transferSize": 29833
+    },
+    "document": {
+      "requestCount": 1,
+      "transferSize": 24452
+    },
+    "stylesheet": {
+      "requestCount": 4,
+      "transferSize": 10996
+    },
+    "other": {
+      "requestCount": 5,
+      "transferSize": 1073
+    },
+    "image": {
+      "requestCount": 0,
+      "transferSize": 0
+    },
+    "media": {
+      "requestCount": 0,
+      "transferSize": 0
+    },
+    "third-party": {
+      "requestCount": 4,
+      "transferSize": 82045
+    }
+  },
+  "renderBlockingItems": [],
+  "thirdParty": [],
+  "extra": {
+    "role": "owner",
+    "inlineStyleCount": 10,
+    "headBlockingScripts": 1,
+    "finalUrl": "https://fundhub.ai/app/journeys.html"
+  }
+}

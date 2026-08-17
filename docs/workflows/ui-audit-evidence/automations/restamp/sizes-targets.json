@@ -1,0 +1,98 @@
+{
+  "sizeCount": 8,
+  "sizes": {
+    "10": 1,
+    "11": 264,
+    "12": 1,
+    "13": 1,
+    "14": 156,
+    "16": 1,
+    "18": 14,
+    "28": 3
+  },
+  "smallCount": 16,
+  "small": [
+    {
+      "text": "",
+      "w": 118,
+      "h": 24
+    },
+    {
+      "text": "‹‹",
+      "w": 26,
+      "h": 26
+    },
+    {
+      "text": "Sales▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "Funding▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "Client ops▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "Watch▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "Automation▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "◈Agent EditorBETA",
+      "w": 228,
+      "h": 29
+    },
+    {
+      "text": "⇄Workflows",
+      "w": 228,
+      "h": 27
+    },
+    {
+      "text": "⇝JourneysBETA",
+      "w": 228,
+      "h": 29
+    },
+    {
+      "text": "✎Message Copy",
+      "w": 228,
+      "h": 27
+    },
+    {
+      "text": "Marketing▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "Admin▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "Portals▾",
+      "w": 228,
+      "h": 28
+    },
+    {
+      "text": "Sign out",
+      "w": 73,
+      "h": 21
+    },
+    {
+      "text": "Search⌘K",
+      "w": 99,
+      "h": 36
+    }
+  ],
+  "title": "Fundhub — Automations",
+  "navActive": null
+}

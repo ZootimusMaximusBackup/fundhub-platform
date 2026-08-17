@@ -3,6 +3,10 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-17 | role-closer | Closers can read `GET /api/read/closer-now` — which call they are on right now and which is next, with no client in the URL. Dashboard and call cockpit use it. | Owner: one read, not thirteen features | (pending commit)
+
+2026-08-17 | gate-relay | New local messenger: skills write a gate file, Telegram asks Chris a one-word decision, his text or voice comes back as a decision file. SMS/Twilio adapter is a stub. Live Telegram unverified — bot token not in env yet. | Owner: run the build machine from the phone | (pending commit)
+
 2026-08-16 | client | Portal shows the pre-qualified amount after the soft pull (`GET /api/read/portal-summary`), and portal chat now answers with Claude instead of only filing the message for staff. Staff Ask tab answered by Claude, grounded on the platform-help corpus. GAP: `client-intended.md` does not describe an AI reply in the portal — owner directed it on 2026-08-16, recorded here rather than silently reconciled. Company Brain Knowledge mode still cannot answer: zero documents are synced and retrieval needs OpenAI embeddings, which are not configured. | Owner: "the portal doesn't say how much you're pre-qualified for" and "the chat bots aren't plugged in — use one API" | (pending commit)
 
 2026-08-16 | client | Clients can read their agreements on the portal (`GET /api/read/portal-contracts`) with sign links for pending contracts. Five placeholder contract templates seeded (repair trial, repair, funding, combo, soft pull). Present deck auto-picks template from offer. | Owner: multiple deal types need matching agreements visible to clients | (pending commit)

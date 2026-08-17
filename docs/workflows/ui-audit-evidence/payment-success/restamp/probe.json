@@ -1,0 +1,37 @@
+{
+  "screen": "/app/payment-success.html",
+  "slug": "payment-success",
+  "email": "client@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T17:56:20.862Z",
+  "login": {
+    "ok": true,
+    "cached": true,
+    "landedAt": "/app/client-portal.html"
+  },
+  "load": {
+    "httpStatus": 200,
+    "finalUrl": "/app/payment-success.html",
+    "bounced": false,
+    "title": "Fundhub · Payment received",
+    "apiFails": [],
+    "consoleErrors": [],
+    "fold": "docs/workflows/ui-audit-evidence/payment-success/restamp/1440-fold.png",
+    "mobileFold": "docs/workflows/ui-audit-evidence/payment-success/restamp/390-fold.png"
+  },
+  "probe": {
+    "h1": [
+      "Payment received"
+    ],
+    "navVisibleCount": 0,
+    "navItems": [],
+    "navGroups": [],
+    "filledButtons": [],
+    "buttons": [],
+    "chipText": null,
+    "chipCoversSearch": false,
+    "chipCoversDismiss": false,
+    "bodySample": "FUNDHUB · PAYMENT Payment received Thanks — your payment cleared. Stay on the call with your advisor. If this was your soft-pull assessment, we start the credit pull next. You do not need to do anything else on this page. You can close this tab and return to your Meet."
+  },
+  "click": null
+}

@@ -1,0 +1,220 @@
+{
+  "url": "https://fundhub.ai/app/affiliate.html",
+  "slug": "affiliate",
+  "role": "affiliate@fundhub.ai",
+  "ranAt": "2026-08-17T08:56:20.808Z",
+  "runs": [
+    {
+      "run": 1,
+      "performanceScore": 95,
+      "lcpMs": 1528.406,
+      "lcpElement": null,
+      "tbtMs": 9.958999999999833,
+      "clsScore": 0.1251666172985782,
+      "ttfbMs": 43,
+      "speedIndexMs": 1643,
+      "totalBytes": 135686,
+      "byType": {
+        "total": {
+          "requestCount": 13,
+          "transferSize": 135686
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79833
+        },
+        "script": {
+          "requestCount": 2,
+          "transferSize": 34928
+        },
+        "stylesheet": {
+          "requestCount": 3,
+          "transferSize": 10117
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 9453
+        },
+        "other": {
+          "requestCount": 5,
+          "transferSize": 1355
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 3,
+          "transferSize": 81015
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    },
+    {
+      "run": 2,
+      "performanceScore": 95,
+      "lcpMs": 1534.535,
+      "lcpElement": null,
+      "tbtMs": 7.325000000000273,
+      "clsScore": 0.1251666172985782,
+      "ttfbMs": 37,
+      "speedIndexMs": 1650,
+      "totalBytes": 135735,
+      "byType": {
+        "total": {
+          "requestCount": 13,
+          "transferSize": 135735
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79833
+        },
+        "script": {
+          "requestCount": 2,
+          "transferSize": 34891
+        },
+        "stylesheet": {
+          "requestCount": 3,
+          "transferSize": 10027
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 9472
+        },
+        "other": {
+          "requestCount": 5,
+          "transferSize": 1512
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 3,
+          "transferSize": 81015
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    },
+    {
+      "run": 3,
+      "performanceScore": 95,
+      "lcpMs": 1533.905,
+      "lcpElement": null,
+      "tbtMs": 7.393000000000029,
+      "clsScore": 0.1251666172985782,
+      "ttfbMs": 74,
+      "speedIndexMs": 1648,
+      "totalBytes": 135750,
+      "byType": {
+        "total": {
+          "requestCount": 13,
+          "transferSize": 135750
+        },
+        "font": {
+          "requestCount": 2,
+          "transferSize": 79833
+        },
+        "script": {
+          "requestCount": 2,
+          "transferSize": 34921
+        },
+        "stylesheet": {
+          "requestCount": 3,
+          "transferSize": 10117
+        },
+        "document": {
+          "requestCount": 1,
+          "transferSize": 9455
+        },
+        "other": {
+          "requestCount": 5,
+          "transferSize": 1424
+        },
+        "image": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "media": {
+          "requestCount": 0,
+          "transferSize": 0
+        },
+        "third-party": {
+          "requestCount": 3,
+          "transferSize": 81015
+        }
+      },
+      "renderBlockingMs": null,
+      "renderBlockingItems": [],
+      "thirdParty": []
+    }
+  ],
+  "median": {
+    "performanceScore": 95,
+    "lcpMs": 1533.905,
+    "tbtMs": 7.393000000000029,
+    "clsScore": 0.1251666172985782,
+    "ttfbMs": 43,
+    "speedIndexMs": 1648,
+    "totalBytes": 135735
+  },
+  "lcpElement": null,
+  "byTypeMedianRun": {
+    "total": {
+      "requestCount": 13,
+      "transferSize": 135735
+    },
+    "font": {
+      "requestCount": 2,
+      "transferSize": 79833
+    },
+    "script": {
+      "requestCount": 2,
+      "transferSize": 34891
+    },
+    "stylesheet": {
+      "requestCount": 3,
+      "transferSize": 10027
+    },
+    "document": {
+      "requestCount": 1,
+      "transferSize": 9472
+    },
+    "other": {
+      "requestCount": 5,
+      "transferSize": 1512
+    },
+    "image": {
+      "requestCount": 0,
+      "transferSize": 0
+    },
+    "media": {
+      "requestCount": 0,
+      "transferSize": 0
+    },
+    "third-party": {
+      "requestCount": 3,
+      "transferSize": 81015
+    }
+  },
+  "renderBlockingItems": [],
+  "thirdParty": [],
+  "extra": {
+    "role": "affiliate",
+    "inlineStyleCount": 89,
+    "headBlockingScripts": 1,
+    "finalUrl": "https://fundhub.ai/app/affiliate.html"
+  }
+}

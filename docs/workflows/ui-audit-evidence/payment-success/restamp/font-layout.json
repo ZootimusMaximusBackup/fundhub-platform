@@ -1,0 +1,52 @@
+{
+  "screen": "/app/payment-success.html",
+  "slug": "payment-success",
+  "email": "client@fundhub.ai",
+  "ranAt": "2026-08-17T18:00:53.366Z",
+  "httpStatus": 200,
+  "finalUrl": "/app/payment-success.html",
+  "bounced": false,
+  "probe": {
+    "viewport": {
+      "w": 1440,
+      "h": 900
+    },
+    "sidebarWidth": 0,
+    "appWidth": null,
+    "mainWidth": null,
+    "mainMaxWidth": null,
+    "appMaxWidth": null,
+    "hasFhMaxw": false,
+    "maxwEls": [],
+    "distinctFontSizes": 5,
+    "sizeCounts": [
+      {
+        "px": 26,
+        "nodes": 1
+      },
+      {
+        "px": 14,
+        "nodes": 1
+      },
+      {
+        "px": 13,
+        "nodes": 1
+      },
+      {
+        "px": 11,
+        "nodes": 1
+      },
+      {
+        "px": 10,
+        "nodes": 1
+      }
+    ],
+    "cardPaddingsPx": {},
+    "tileRows": [],
+    "comparisonHits": [],
+    "h1": [
+      "Payment received"
+    ],
+    "controlCount": 0
+  }
+}

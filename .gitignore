@@ -20,3 +20,6 @@ playwright-report/
 
 # Local Netlify folder
 .netlify
+
+# Gate relay runtime (gate files, decisions, poll offset). May hold voice transcripts.
+.fundhub-relay/
