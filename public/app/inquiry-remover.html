@@ -6,7 +6,7 @@
 <title>Fundhub — Inquiry Remover</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="stylesheet" href="crm-sidebar.css">
 <style>
@@ -92,7 +92,7 @@
   .section-title{font-size:var(--fs-caption);font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
 
   .bureau-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
-  .bureau-chip{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 14px;min-width:150px;}
+  .bureau-chip{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 14px;min-width:150px;min-height:72px;}
   .bureau-chip.blocked{border-color:var(--red-line);background:rgba(242,166,155,.09);}
   .bureau-chip .bn{font-size:var(--fs-caption);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;}
   .bureau-chip .bc{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:var(--fs-metric);font-variant-numeric:tabular-nums;margin-top:2px;}
@@ -241,7 +241,7 @@
   
   
 </style>
-<script src="shell.js"></script>
+<script defer src="shell.js"></script>
 </head>
 <body>
 <div class="app">
@@ -990,7 +990,7 @@ return VIEW;
 })();
 </script>
 
-<script src="data.js"></script>
+<script defer src="data.js"></script>
 <script>
 /* ───────────────────────────────────────────────────────────────────────────
    WIRING — replaces the sample queue with inquiry_log, then hands the rebuilt

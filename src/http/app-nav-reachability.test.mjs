@@ -76,7 +76,7 @@ const FILES = fs.readdirSync(APP).filter((f) => f.endsWith(".html")).sort();
 const HTML = new Map(FILES.map((f) => [f, fs.readFileSync(path.join(APP, f), "utf8")]));
 
 /** gated — the pages that load the shell, so the shell decides who sees them. */
-const GATED = FILES.filter((f) => /<script src="shell\.js">/.test(HTML.get(f)));
+const GATED = FILES.filter((f) => /<script(?:\s+defer)?\s+src="shell\.js">/.test(HTML.get(f)));
 
 /** navHrefs — the sidebar rows in one file, in document order. */
 function navHrefs(text) {

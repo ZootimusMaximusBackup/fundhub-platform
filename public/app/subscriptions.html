@@ -6,7 +6,7 @@
 <title>Fundhub — Subscriptions</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="stylesheet" href="crm-sidebar.css">
 <!-- The shared Finance OS frame. It carries .is-unknown and .is-partial, which
@@ -15,7 +15,7 @@
      "+" because it is a floor rather than a figure. Written once there rather
      than an eighth time here. -->
 <link rel="stylesheet" href="finance-os.css">
-<script src="shell.js"></script>
+<script defer src="shell.js"></script>
 <style>
 /* ══ SHARED CHROME — identical across every screen that carries the sidebar ══
    Subscriptions used to be one of the six Finance OS write screens, reached
@@ -60,6 +60,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
 .content{padding:22px 24px 40px;flex:1}
+#subsMount,#linksMount{min-height:320px}
 .foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
 </style>
 <style>
@@ -290,7 +291,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 <script data-chrome>
 
 </script>
-<script src="data.js"></script>
+<script defer src="data.js"></script>
 <script>
 (function () {
   "use strict";

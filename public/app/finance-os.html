@@ -6,7 +6,7 @@
 <title>Fundhub — Finance OS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="stylesheet" href="crm-sidebar.css">
 <!-- finance-os.css is the shared frame the OTHER Finance write screens use
@@ -16,7 +16,7 @@
      number" vs "this number is a floor". This screen reuses it for the same
      reason those did: writing that rule an eighth time is how it drifts. -->
 <link rel="stylesheet" href="finance-os.css">
-<script src="shell.js"></script>
+<script defer src="shell.js"></script>
 <script src="demo-client-bootstrap.js"></script>
 <style>
 /* ══ SHARED CHROME — identical across every screen that carries the sidebar ══
@@ -79,7 +79,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 @keyframes pulse{to{transform:scale(1.9);opacity:0}}
 
 /* ══ FINANCE OS — content area only, everything below scoped to #fosWrap ═══ */
-#fosWrap{max-width:var(--fh-maxw);margin:0 auto}
+#fosWrap{max-width:var(--fh-maxw);margin:0 auto;min-height:480px}
 #fosWrap .grid2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:start}
 #fosWrap .col{display:flex;flex-direction:column;gap:14px;min-width:0}
 @media (max-width:1180px){#fosWrap .grid2{grid-template-columns:1fr}}
@@ -292,7 +292,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 <script data-chrome>
 
 </script>
-<script src="data.js"></script>
+<script defer src="data.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════════════════
    Finance OS — one client's whole money picture, wired to real endpoints.

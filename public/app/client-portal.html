@@ -6,7 +6,7 @@
 <title>Fundhub — Client Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <style>
 /* ══ CLIENT PORTAL ═══════════════════════════════════════════════════════
@@ -341,7 +341,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
   .video-title{font-size:var(--fs-title)}
 }
 </style>
-<script src="shell.js"></script>
+<script defer src="shell.js"></script>
 </head>
 <body class="no-funding no-docs no-own">
 <div class="shell">
@@ -1296,7 +1296,7 @@ var PRODUCTS = {
   setState('precall');
 })();
 </script>
-<script src="data.js"></script>
+<script defer src="data.js"></script>
 <script>
 
 /* Client Portal — the tiles lock and unlock from real entitlements (032).

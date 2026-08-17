@@ -6,7 +6,7 @@
 <title>Fundhub — Campaigns</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="stylesheet" href="crm-sidebar.css">
 <style>
@@ -210,7 +210,7 @@ table.grid td.srccell .sub{white-space:normal}
 @media(max-width:1280px){.stats{grid-template-columns:repeat(3,1fr)}.attn{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
-<script src="shell.js"></script>
+<script defer src="shell.js"></script>
 </head>
 <body>
 <!-- Campaigns (CM) — paid acquisition across Meta and TikTok, for ONE partner's book.
@@ -611,7 +611,7 @@ table.grid td.srccell .sub{white-space:normal}
   <div class="dw-bd" id="dwBody"></div>
 </aside>
 
-<script src="data.js"></script>
+<script defer src="data.js"></script>
 <script>
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}

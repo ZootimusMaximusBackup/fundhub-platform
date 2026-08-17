@@ -6,7 +6,7 @@
 <title>Fundhub — Staff &amp; Teams</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="stylesheet" href="crm-sidebar.css">
 <style>
@@ -153,7 +153,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
 .empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:var(--fs-body)}
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
 </style>
-<script src="shell.js"></script>
+<script defer src="shell.js"></script>
 </head>
 <body>
 <div class="app">
@@ -679,7 +679,7 @@ document.getElementById('toAdvanced').addEventListener('click',function(){
 
 renderAll();
 </script>
-<script src="data.js"></script>
+<script defer src="data.js"></script>
 <script>
 
 /* Staff & Teams — the real roster from /api/read/staff. Replaces the roster

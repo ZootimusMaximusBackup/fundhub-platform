@@ -45,8 +45,8 @@ function apiPaths(src) {
 
 describe("the Contracts screen (public/app/contracts.html)", () => {
   test("is a CRM screen: it loads the shell and the shared data layer", () => {
-    assert.match(CRM, /<script src="shell\.js"><\/script>/);
-    assert.match(CRM, /<script src="data\.js"><\/script>/);
+    assert.match(CRM, /<script(?:\s+defer)?\s+src="shell\.js"><\/script>/);
+    assert.match(CRM, /<script(?:\s+defer)?\s+src="data\.js"><\/script>/);
   });
 
   test("the shell knows about it, so it is not a page only a typed URL can reach", () => {

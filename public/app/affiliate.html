@@ -6,7 +6,7 @@
 <title>Fundhub — Affiliate</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="stylesheet" href="crm-sidebar.css">
 <style>
@@ -113,7 +113,7 @@ table.grid tbody tr:hover{background:var(--soft)}
 @media(max-width:1000px){.stats{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.funnel{flex-wrap:wrap}.fstep{flex:1 1 30%}}
 </style>
-<script src="shell.js"></script>
+<script defer src="shell.js"></script>
 </head>
 <body>
 <div class="app">
@@ -416,7 +416,7 @@ document.getElementById('q').addEventListener('input',renderLeads);
 
 renderLeads(); renderPayouts();
 </script>
-<script src="data.js"></script>
+<script defer src="data.js"></script>
 <script>
 
 /* Affiliate — real balances from /api/read/affiliates.

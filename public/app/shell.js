@@ -1516,8 +1516,8 @@
     var m = FACE.test(String(mono || "")) ? mono : null;
     if (!d && !m) return;
     var fams = [];
-    if (d) fams.push(d.replace(/ /g, "+") + ":wght@400;500;600;700;800");
-    if (m) fams.push(m.replace(/ /g, "+") + ":wght@400;500;600;700");
+    if (d) fams.push(d.replace(/ /g, "+") + ":wght@400;600");
+    if (m) fams.push(m.replace(/ /g, "+") + ":wght@400;500");
     var link = document.getElementById("fh-brand-fonts");
     if (!link) {
       link = document.createElement("link");

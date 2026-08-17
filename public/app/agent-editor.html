@@ -6,7 +6,7 @@
 <title>Fundhub — Agent Editor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="stylesheet" href="crm-sidebar.css">
 <style>
@@ -102,7 +102,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .unset.show{display:inline}
 
 .layout{display:grid;grid-template-columns:296px minmax(0,1fr);gap:14px;align-items:start}
-.alist{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;position:sticky;top:71px}
+.alist{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;position:sticky;top:71px;min-height:420px}
 .agrp{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:var(--gray);padding:11px 14px 7px;background:var(--soft);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
 .agrp::before{content:"";width:16px;height:2px;background:var(--spectrum);border-radius:1px}
 .aitem{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .1s}
@@ -172,7 +172,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 .foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
 @media(max-width:1080px){.layout{grid-template-columns:1fr}.alist{position:static}.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
 </style>
-<script src="shell.js"></script>
+<script defer src="shell.js"></script>
 </head>
 <body>
 <div class="app">
@@ -814,7 +814,7 @@ function hideEmpty(){
   document.getElementById('emptyState').style.display='none';
 }
 </script>
-<script src="data.js"></script>
+<script defer src="data.js"></script>
 <script>
 
 /* Agent Editor's list is the registry, full stop — no sample agents padded

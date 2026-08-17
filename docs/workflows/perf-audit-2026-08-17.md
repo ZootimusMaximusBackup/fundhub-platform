@@ -86,3 +86,36 @@ Rows 1–2 aren't "seconds saved" — they're total loss of the traffic that hit
 ## Total footprint of the two pattern fixes
 
 Rows 4 + 5 together mean **35 of 39 CRM/portal screens** (all but command-center's sibling set... — precisely: the 27 in row 4, plus A's 8) carry the same root defect: `shell.js` (and on some screens `data.js`) blocking `<head>` with no `async`/`defer`. One shared file, one line-level fix, benefits nearly the entire staff-facing app on every load, every day. This is the highest-leverage fix in the audit regardless of the "rank by seconds, not ease" rule — the seconds saved are real and they multiply by every screen and every login.
+
+---
+
+## Fixer stamps — 2026-08-17
+
+Code is in this repo. Live speed numbers land after deploy. Funnel rows live in ClickFunnels — this repo cannot paste into that editor.
+
+| # | Stamp | What happened |
+|---|---|---|
+| 1 | **WONTFIX** | Left alone. Owner already closed it. Booking URL stays `apply.fundhub.ai/funding-book-call`. |
+| 2 | **SHIPPED-FILE / CF-SRC-OPEN** | `https://fundhub.ai/funnel/vsl.mp4` is live and served as `video/mp4`. The watch page in ClickFunnels still plays the old `.mov` from ClickFunnels storage. Change the video `src` in the ClickFunnels watch fragment to `https://fundhub.ai/funnel/vsl.mp4`. Do not touch the booking slug. The mp4 on disk is 22MB — bigger than the 1.5MB page budget, so row 6 stays open even after the src swap unless a smaller mobile file is made. |
+| 3 | **INVALID** | Left alone. Real people see the survey. Speed tests get sent to the book-call page. |
+| 4 | **FIXED** | Every CRM `shell.js` / `data.js` tag is now `defer`. One pattern, 35 screens. Lint clean. Screen tests 175/175. Live check after deploy: page source must show `defer` on `shell.js`. |
+| 5 | **RECHECK-AFTER-DEPLOY** | Pipeline was 2.54s (just over). Same font + script chain as rows 4 and 22. Recheck live LCP after those land. |
+| 6 | **CF / ASSET** | Same as row 2. The live watch page still pulls the `.mov`. The mp4 we host is `video/mp4` but 22MB. Needs a smaller mobile mp4 in ClickFunnels, not a code change here. |
+| 7 | **OPEN** | Client portal chat still waits 1.4s on purpose before it pops. Not part of the three named patterns. Left alone. |
+| 8 | **CF** | Watch / apply / thank-you still load jQuery, jQuery-Cookie, and lazysizes in the ClickFunnels header with no `defer`. This repo does not own that header. In ClickFunnels: page settings → header scripts → add `defer` (or drop the ones the page does not use). |
+| 9 | **FIXED** | Agent Editor, Hiring, Subscriptions, Command Center, Ops Admin: cards now hold their height before the numbers arrive. Hiring also paints the five summary cards on first draw instead of an empty row. |
+| 10 | **FIXED** | My numbers: big number and team panels keep their height before the API fills them. |
+| 11 | **FIXED** | Finance OS: the client file area is held at 480px so the page does not jump when the file lands. |
+| 12 | **FIXED** | Messaging: the thread column is held at 60% of the screen height. |
+| 13 | **FIXED** | Sample data content area held at 640px. Galaxy left as-is (the leftover 0.122 is the same small shared shift as row 14). |
+| 14 | **OPEN** | Journeys / Campaigns / Social / Creative / Content all shift by the same 0.1252. That is the yellow beta bar inserting after first paint. Not the empty-card pattern. Left for a later pass. |
+| 15 | **OPEN** | Brand Studio and Affiliate — same 0.1252 beta-bar shift as row 14. |
+| 16 | **OPEN** | Client portal "Before your call" card starts hidden, then appears. Different from the empty-card pattern. Left alone. |
+| 17 | **FIXED** | Inquiry Remover bureau chips now keep a 72px height so the counts do not shove the page. |
+| 18 | **OPEN** | Closer Dashboard shift is the deal calculator turning on, not an empty card. Left alone. |
+| 19 | **CF** | Thank-you LCP 2.29s. Same three ClickFunnels header scripts as row 8. Fix there. |
+| 20 | **RECHECK-AFTER-DEPLOY** | Galaxy main-thread work. Recheck after the font + script cut. Not a separate rewrite this pass. |
+| 21 | **OPEN** | Inline `style=` on 30 pages. That is a rewrite, not a one-line pattern. Left alone. |
+| 22 | **FIXED** | CRM Google Fonts cut to four weights: Inter 400/600 and JetBrains Mono 400/500. Brand paint in `shell.js` uses the same four. |
+| 23 | **CF** | FontAwesome 5.15 still loads from `use.fontawesome.com` on watch / apply / thank-you with no preconnect. ClickFunnels header. Add a preconnect there, or drop the library — the tap-for-sound icon is already an inline picture. |
+| 24 | **UNMEASURED** | Book-call page still needs its own headed speed run. Headless hits get stamped as bots and skipped. Not run this pass. |

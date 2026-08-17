@@ -6,7 +6,7 @@
 <title>Fundhub — Hiring</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="stylesheet" href="crm-sidebar.css">
 <style>
@@ -74,7 +74,7 @@ table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:va
 table.grid tr:last-child td{border-bottom:0}
 
 .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;min-height:96px}
 .stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
 .stat .sv{font-family:var(--mono);font-size:var(--fs-metric);font-variant-numeric:tabular-nums;font-weight:600;margin-top:8px;letter-spacing:-.02em}
 .stat .sv.small{font-size:var(--fs-metric)}
@@ -86,7 +86,7 @@ table.grid tr:last-child td{border-bottom:0}
 /* ══ HIRING — page specific ══════════════════════════════════════════════ */
 
 /* derivation strip — every derived number on this screen shows its working */
-.deriv{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:13px 15px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 22px}
+.deriv{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:13px 15px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 22px;min-height:88px}
 .deriv .dcell{min-width:0}
 .deriv .dk{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:var(--gray);margin-bottom:4px}
 .deriv .formula{font-family:var(--mono);font-size:var(--fs-body);color:var(--ink);line-height:1.6;word-break:break-word}
@@ -237,8 +237,8 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 @media(max-width:1320px){.stats{grid-template-columns:repeat(3,1fr)}.deriv{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.deriv{grid-template-columns:1fr}.gate .gbd{grid-template-columns:1fr}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
-<script src="shell.js"></script>
-<script src="data.js"></script>
+<script defer src="shell.js"></script>
+<script defer src="data.js"></script>
 </head>
 <body>
 <!-- Hiring (HR) — the always-on recruiting funnel: postings, candidates, graded
@@ -357,7 +357,13 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
     <div class="content fh-maxw">
 
       <!-- ══ HR-00 · SUMMARY ═════════════════════════════════════════════ -->
-      <div class="stats" id="statRow"></div>
+      <div class="stats" id="statRow">
+        <div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> BENCH</div><div class="sv">—</div><div class="sd">loading…</div></div>
+        <div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> OPEN APPLICATIONS</div><div class="sv">—</div><div class="sd">loading…</div></div>
+        <div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> NEEDS A HUMAN</div><div class="sv">—</div><div class="sd">loading…</div></div>
+        <div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> POSTINGS POSTED</div><div class="sv">—</div><div class="sd">loading…</div></div>
+        <div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> HUMAN OVERRIDE RATE</div><div class="sv">—</div><div class="sd">loading…</div></div>
+      </div>
       <div class="deriv" id="deriv"></div>
 
       <!-- ══ HR-01 · THE HUMAN GATE ══════════════════════════════════════ -->

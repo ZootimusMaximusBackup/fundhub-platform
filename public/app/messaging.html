@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="stylesheet" href="crm-sidebar.css">
 <style>
@@ -152,7 +152,7 @@
   .live-tag .d{width:5px;height:5px;border-radius:50%;background:var(--ok);animation:livepulse 1.8s infinite;}
 
   /* ---------- CENTER: thread ---------- */
-  .thread-col{background:var(--paper);display:flex;flex-direction:column;min-height:0;}
+  .thread-col{background:var(--paper);display:flex;flex-direction:column;min-height:60vh;}
   .thread-head{background:var(--surface);border-bottom:1px solid var(--line);padding:8px 16px;flex-shrink:0;
     display:flex;align-items:center;justify-content:space-between;gap:12px;}
   .th-left{display:flex;align-items:center;gap:10px;}
@@ -339,7 +339,7 @@
   .thread-note{margin-top:14px;padding-top:10px;border-top:1px dashed var(--line);
     font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.06em;color:var(--text-faint);line-height:1.6;}
 </style>
-<script src="shell.js"></script>
+<script defer src="shell.js"></script>
 </head>
 <body>
 <div class="app">
@@ -577,7 +577,7 @@
 })();
 
 </script>
-<script src="data.js"></script>
+<script defer src="data.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════════════════
    THE STAFF REPLY INBOX

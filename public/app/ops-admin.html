@@ -6,7 +6,7 @@
 <title>Fundhub — Ops &amp; Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="stylesheet" href="crm-sidebar.css">
 <style>
@@ -82,7 +82,7 @@
   /* five tiles, not six — show rate rides under close rate as context rather
      than standing beside it as a rival percentage */
   .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
-  .kpi-tile{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:9px 11px;}
+  .kpi-tile{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:9px 11px;min-height:72px;}
   .kpi-label{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:4px;}
   /* UI-STANDARDS §7 — tabular numerals so a row of KPI values lines up digit for digit. */
   .kpi-value{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:var(--fs-metric);font-variant-numeric:tabular-nums;}
@@ -224,7 +224,7 @@
   
   
 </style>
-<script src="shell.js"></script>
+<script defer src="shell.js"></script>
 </head>
 <body>
 <div class="app">
@@ -491,7 +491,7 @@
      It used to sit after the DATE RANGE block below, so loadKpis() hit its
      `typeof FHData === 'undefined'` guard on every call and the five Company
      KPIs stayed '—' forever. -->
-<script src="data.js"></script>
+<script defer src="data.js"></script>
 
 <script>
 /* ───────────────────────────────────────────────────────────────────────────

@@ -8,8 +8,8 @@
 <link rel="stylesheet" href="crm-sidebar.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="shell.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script defer src="shell.js"></script>
 <style>
 
 :root{
@@ -47,7 +47,7 @@ header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-
 .pace::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:56px 56px}
 .pacetop{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;position:relative}
 .pacetop .lb{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
-.pacetop .big{font-size:44px;font-weight:500;letter-spacing:-.035em;line-height:1;margin-top:7px;font-variant-numeric:tabular-nums}
+.pacetop .big{font-size:44px;font-weight:500;letter-spacing:-.035em;line-height:1;margin-top:7px;font-variant-numeric:tabular-nums;min-height:44px}
 .pacetop .sub{font-size:12.5px;color:var(--gray2);margin-top:6px}
 .bar{height:7px;border-radius:4px;background:rgba(255,255,255,.09);margin-top:18px;position:relative;overflow:hidden}
 .bar i{display:block;height:100%;border-radius:4px;background:var(--spectrum)}
@@ -57,7 +57,7 @@ header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .m{background:var(--paper);padding:15px 17px}
 .m .lb{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
-.m .vl{font-size:25px;font-weight:500;letter-spacing:-.025em;margin-top:5px;font-variant-numeric:tabular-nums}
+.m .vl{font-size:25px;font-weight:500;letter-spacing:-.025em;margin-top:5px;font-variant-numeric:tabular-nums;min-height:25px}
 .m .cmp{font-size:11.5px;margin-top:3px;color:var(--gray)}
 .up{color:#4F8A5B} .dn{color:#C25B4E}
 
@@ -78,7 +78,7 @@ header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-
 .d.today{border-color:var(--ink);border-width:2px}
 
 .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.panel{border:1px solid var(--line);border-radius:10px;padding:17px 18px;background:var(--paper)}
+.panel{border:1px solid var(--line);border-radius:10px;padding:17px 18px;background:var(--paper);min-height:160px}
 .panel h3{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:13px}
 
 .qual{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
@@ -271,7 +271,7 @@ a.todo{text-decoration:none;color:inherit;cursor:pointer}
 
 </div>
 </div>
-<script src="data.js"></script>
+<script defer src="data.js"></script>
 <script src="my-numbers.js"></script>
 </body>
 </html>

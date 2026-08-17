@@ -6,7 +6,7 @@
 <title>Fundhub — Command Center</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="stylesheet" href="crm-sidebar.css">
 <style>
@@ -595,6 +595,7 @@
     font-size:var(--fs-metric);
     font-variant-numeric:tabular-nums;
     color:var(--text);
+    min-height:var(--fs-metric);
   }
   .kpi-sub{
     font-family:'JetBrains Mono',monospace;
@@ -670,7 +671,7 @@
   }
   .nominal{display:flex;align-items:center;gap:7px;margin-left:auto;}
 </style>
-<script src="shell.js"></script>
+<script defer src="shell.js"></script>
 </head>
 <body>
 <div class="app">
@@ -1036,7 +1037,7 @@ document.querySelectorAll('.rail-toggle').forEach(function(t){
   t.addEventListener('click',function(){t.closest('.rail').classList.toggle('closed')});
 });
 </script>
-<script src="data.js"></script>
+<script defer src="data.js"></script>
 <script>
 
 /* Command Center — the agent cards carry real registry status from 037.

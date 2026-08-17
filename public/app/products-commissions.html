@@ -6,7 +6,7 @@
 <title>Fundhub — Products &amp; Commissions</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="stylesheet" href="crm-sidebar.css">
 <style>
@@ -164,7 +164,7 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
 .empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:var(--fs-body)}
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
 </style>
-<script src="shell.js"></script>
+<script defer src="shell.js"></script>
 </head>
 <body>
 <div class="app">
@@ -702,7 +702,7 @@ fillPersonFilter();
 (function(){var pm=document.getElementById('kPaidMonth'); if(pm) pm.textContent=MONTH_LABEL;})();
 renderProducts(); renderRules(); renderLedger(); renderStats();
 </script>
-<script src="data.js"></script>
+<script defer src="data.js"></script>
 <script>
 
 /* Products & Commissions — the product ladder from /api/read/products and the

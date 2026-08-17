@@ -119,8 +119,8 @@ function bodyOf(file) {
   const src = stripFonts(read(file));
   const out = src
     .replace('<link rel="stylesheet" href="fundhub-brand.css">', "{{CSS}}")
-    .replace('<script src="shell.js"><\/script>', prelude(file) + "{{SHELL}}")
-    .replace('<script src="data.js"><\/script>', "{{DATA}}");
+    .replace(/<script(?:\s+defer)?\s+src="shell\.js"><\/script>/, prelude(file) + "{{SHELL}}")
+    .replace(/<script(?:\s+defer)?\s+src="data\.js"><\/script>/, "{{DATA}}");
   // A screen whose asset tags do not match is a screen that would load blank.
   if (!out.includes("{{CSS}}") || !out.includes("{{SHELL}}")) {
     throw new Error(file + ": brand stylesheet or shell script tag not found");

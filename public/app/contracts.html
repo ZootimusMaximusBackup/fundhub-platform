@@ -6,7 +6,7 @@
 <title>Fundhub — Contracts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="stylesheet" href="crm-sidebar.css">
 <style>
@@ -127,7 +127,7 @@ tr.sel td{background:rgba(169,198,232,.13)}
 .foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em}
 @media(max-width:1180px){.layout{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
 </style>
-<script src="shell.js"></script>
+<script defer src="shell.js"></script>
 </head>
 <body>
 <div class="app">
@@ -332,7 +332,7 @@ tr.sel td{background:rgba(169,198,232,.13)}
   </div>
 </div>
 
-<script src="data.js"></script>
+<script defer src="data.js"></script>
 <script type="module">
 /* pdf.js, vendored (public/vendor/pdfjs) — no build step in this repo, and the
    field editor must not depend on a third-party host. Legacy 4.x build: pdf.js 6

@@ -6,7 +6,7 @@
 <title>FundHub — Demo Mode</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="stylesheet" href="crm-sidebar.css">
 <style>
@@ -70,7 +70,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 }
 .pill .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:0 0 6px}
 
-.content{padding:22px 24px 40px;flex:1}
+.content{padding:22px 24px 40px;flex:1;min-height:640px}
 
 /* ── CARDS ───────────────────────────────────────────────────────────────── */
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -238,7 +238,7 @@ pre.json .b{color:#C4B3E5}
 @media(max-width:1180px){.split{grid-template-columns:1fr}.split > .sticky{position:static}.presets{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){.grid2,.grid3{grid-template-columns:1fr}.presets{grid-template-columns:1fr}}
 </style>
-<script src="shell.js"></script>
+<script defer src="shell.js"></script>
 </head>
 <body>
 <div class="app">
