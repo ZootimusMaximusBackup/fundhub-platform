@@ -241,7 +241,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
       <div class="card" style="margin-top:14px">
         <div class="tabs">
           <button class="tab on" data-tab="roster">Roster</button>
-          <button class="tab" data-tab="perms">Permissions reference</button>
+          <button class="tab" data-tab="perms">Permissions</button>
           <button class="tab" data-tab="clock">Clock &amp; consent</button>
           <button class="tab" data-tab="telemetry">Telemetry</button>
         </div>
@@ -250,7 +250,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
           <div class="card-hd" style="border-bottom:1px solid var(--line)">
             <div class="eyebrow">ST-01 <span class="sep">/</span> ROSTER</div>
             <div class="spacer"></div>
-            <button class="btn sm mono" id="toAdvanced">Permissions reference →</button>
+            <button class="btn sm mono" id="toAdvanced">Permissions →</button>
             <select id="roleFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:var(--fs-body);background:#fff">
               <option value="">All roles</option>
               <option>Owner</option><option>Sales Manager</option><option>Closer</option>
@@ -260,7 +260,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
           </div>
           <div style="overflow-x:auto">
             <table class="grid" id="rosterTbl">
-              <thead><tr><th>Person</th><th>Access — role preset</th><th>Consent</th><th>Clock</th><th>Status</th></tr></thead>
+              <thead><tr><th>Person</th><th>Role</th><th>Consent</th><th>Clock</th><th>Status</th></tr></thead>
               <tbody id="rosterBody"></tbody>
             </table>
           </div>
@@ -268,14 +268,14 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
 
         <div class="tabpane" id="tab-perms">
           <div class="card-hd" style="border-bottom:1px solid var(--line)">
-            <div class="eyebrow">ST-02 <span class="sep">/</span> PERMISSIONS BY ROLE · REFERENCE CHART</div>
+            <div class="eyebrow">ST-02 <span class="sep">/</span> PERMISSIONS BY ROLE</div>
             <div class="spacer"></div>
-            <span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">READ ONLY · NOT THE LIVE SETTINGS</span>
+            <span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">NOT AVAILABLE HERE</span>
           </div>
-          <div class="mwrap"><table class="perm" id="permTbl"></table></div>
+          <div style="padding:28px 16px;font-size:var(--fs-body);color:var(--gray)">There is no permission list to show you here.<br><br>What each role is allowed to do is decided in the system's code, and the server checks it on every single action. That code does not hand the list to this screen, so this screen has no way to read it.<br><br>This tab used to show a chart of eighteen permissions across six roles. That chart was typed in by hand. It was never checked against the real rules, so it could have been wrong in either direction — and it looked exactly like an answer. It has been removed rather than left up as a guess.</div>
           <div style="padding:12px 16px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <span class="badge b-gray" id="permCount">—</span>
-            <span style="font-size:var(--fs-body);color:var(--gray)">This chart is a hand-written guide, not the live settings. It is not read from the system and nothing on this screen can change what a role may do. The real rules live in the system's code and the server checks them on every action. It has never been checked against that code, so read it as a guide, not as proof. Owner always keeps every permission.</span>
+            <span class="badge b-gray" id="permCount">No permission list available</span>
+            <span style="font-size:var(--fs-body);color:var(--gray)">Nothing on this screen has ever been able to change what a role may do, and nothing here does now.</span>
           </div>
         </div>
 
@@ -361,8 +361,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
     </div>
     <div style="margin-top:18px">
       <div class="eyebrow" style="margin-bottom:6px">ST-07 <span class="sep">/</span> EFFECTIVE PERMISSIONS</div>
-      <div style="font-size:var(--fs-body);color:var(--gray);margin-bottom:9px">Copied from the ST-02 reference chart, not from the server. This screen cannot change what a role may do — that is set in the system's code.</div>
-      <div id="ed_perms" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      <div style="font-size:var(--fs-body);color:var(--gray);margin-bottom:9px">Not available on this screen. What this person's role may do is set in the system's code and checked by the server on every action. This screen cannot read that list and cannot change it.</div>
     </div>
   </div>
   <div class="editor-ft">
@@ -391,7 +390,6 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 var PEOPLE=[];
 var nextId=8;
 
-var ROLES=['Owner','Sales Manager','Closer','Funding Advisor','Inquiry Specialist','Affiliate'];
 var ROLE_KEY={
   Owner:null,
   Admin:'admin',
@@ -402,59 +400,25 @@ var ROLE_KEY={
   'Sales Manager':'sales_manager',
   Affiliate:null
 };
-var PERMS=[
-  {code:'PM-01',g:'Clients',n:'View pipeline',            d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Specialist':1,Affiliate:0}},
-  {code:'PM-02',g:'Clients',n:'Edit client records',      d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Specialist':0,Affiliate:0}},
-  {code:'PM-03',g:'Clients',n:'View PII (SSN, DOB)',      d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':1,'Inquiry Specialist':0,Affiliate:0}},
-  {code:'PM-04',g:'Clients',n:'Run soft pull',            d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Specialist':0,Affiliate:0}},
-  {code:'PM-05',g:'Money',n:'Override outcome tier',    d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Specialist':0,Affiliate:0}},
-  {code:'PM-06',g:'Messaging',n:'Send SMS / email',         d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Specialist':1,Affiliate:0}},
-  {code:'PM-07',g:'Money',n:'Take payments',            d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Specialist':0,Affiliate:0}},
-  {code:'PM-08',g:'Money',n:'Issue refunds',            d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Specialist':0,Affiliate:0}},
-  {code:'PM-09',g:'Setup',n:'Edit products & pricing',  d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Specialist':0,Affiliate:0}},
-  {code:'PM-10',g:'Setup',n:'Edit commission rules',    d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Specialist':0,Affiliate:0}},
-  {code:'PM-11',g:'Money',n:'View all payouts',         d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Specialist':0,Affiliate:0}},
-  {code:'PM-12',g:'Money',n:'View own payouts',         d:{Owner:1,'Sales Manager':1,Closer:1,'Funding Advisor':1,'Inquiry Specialist':1,Affiliate:1}},
-  {code:'PM-13',g:'Admin',n:'Manage staff',             d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Specialist':0,Affiliate:0}},
-  {code:'PM-14',g:'Setup',n:'Configure agents',         d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Specialist':0,Affiliate:0}},
-  {code:'PM-15',g:'Setup',n:'Promote agent to live',    d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Specialist':0,Affiliate:0}},
-  {code:'PM-16',g:'Admin',n:'Replay events',            d:{Owner:1,'Sales Manager':0,Closer:0,'Funding Advisor':0,'Inquiry Specialist':0,Affiliate:0}},
-  {code:'PM-17',g:'Admin',n:'Export data',              d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Specialist':0,Affiliate:0}},
-  {code:'PM-18',g:'Clients',n:'View referred leads only', d:{Owner:1,'Sales Manager':1,Closer:0,'Funding Advisor':0,'Inquiry Specialist':0,Affiliate:1}}
-];
+/* There is deliberately no permission matrix in this file.
+
+   An 18×6 chart used to live here, typed in by hand. Nothing read it from the
+   server, because nothing serves it: role rules are enforced per endpoint in
+   the server's own code and are never published to the browser. An owner
+   looking at that chart was reading a guess about who can issue refunds or see
+   a Social Security number in a regulated product. Removed until a real source
+   exists — see the ST-02 tab, which now says so on screen. */
 
 var ROLE_CLS={Owner:'b-accent','Sales Manager':'b-info',Closer:'b-ok','Funding Advisor':'b-warn','Inquiry Specialist':'b-gray',Affiliate:'b-gray'};
 function initials(p){return (p.first[0]+p.last[0]).toUpperCase()}
 
-/* ══ ROLE PRESETS ═════════════════════════════════════════════════════════
-   Six people do not need an 18×6 grid to answer "who has access to what".
-   The roster answers it with the role's preset — which areas it reaches and
-   how many of the 18 permissions it holds — read off the PERMS reference
-   chart above. Neither the chart nor this column is read from the server, and
-   neither can be edited here; ST-02 says so on screen.                      */
-var PGROUPS=['Clients','Money','Messaging','Setup','Admin'];
-function preset(role){
-  var held=PERMS.filter(function(pm){return pm.d[role]===1});
-  return {
-    n:held.length, total:PERMS.length,
-    groups:PGROUPS.filter(function(g){
-      return held.some(function(pm){return pm.g===g});
-    }),
-    names:held.map(function(pm){return pm.n})
-  };
-}
+/* ══ ROLE CELL ════════════════════════════════════════════════════════════
+   The person's real role, and nothing more. This column used to add "which
+   areas they reach" and "14 of 18 permissions", both counted off the
+   hand-written chart that used to sit above. Those numbers described the
+   chart, not the system, so they are gone.                                 */
 function presetCell(role){
-  var pr=preset(role), all=pr.n===pr.total;
-  /* A role the sample permission matrix has no column for (admin, setter) is
-     not a role with zero permissions. Saying "0 of 21" about a real admin
-     would assert something false, so say the matrix does not cover them. */
-  var known=ROLES.indexOf(role)>=0;
-  return '<div class="acc"><span class="badge '+(ROLE_CLS[role]||'b-gray')+'">'+esc(role)+'</span>'+
-    (known
-      ? '<span class="acc-g">'+(pr.groups.length?esc(pr.groups.join(' · ')):'no areas')+'</span>'+
-        '<span class="acc-n'+(all?' full':'')+'">'+pr.n+' of '+pr.total+'</span>'
-      : '<span class="acc-g" title="This role has no row in the ST-02 permission matrix">not in the matrix</span>')+
-    '</div>';
+  return '<div class="acc"><span class="badge '+(ROLE_CLS[role]||'b-gray')+'">'+esc(role)+'</span></div>';
 }
 
 /* ══ RENDER ══════════════════════════════════════════════════════════════ */
@@ -474,7 +438,7 @@ function renderRoster(){
   var rows=visible().map(function(p){
     /* employee code and start date ride in the row's hover title and stay
        editable in the person editor — they don't earn a column here */
-    var t=p.code+' · started '+p.start+' · '+preset(p.role).names.join(', ');
+    var t=p.code+' · started '+p.start;
     return '<tr data-id="'+esc(String(p.id))+'" class="'+(String(p.id)===String(selId)?'sel':'')+'" title="'+esc(t)+'">'+
       '<td><div class="who-cell"><span class="av">'+initials(p)+'</span><div><div class="nm">'+esc(p.first+' '+p.last)+'</div><div class="em">'+esc(p.email)+'</div></div></div></td>'+
       '<td>'+presetCell(p.role)+'</td>'+
@@ -547,24 +511,8 @@ function renderClock(){
   });
 }
 
-function renderPerm(){
-  var head='<thead><tr><th class="pl">Permission</th>'+ROLES.map(function(r){return '<th>'+esc(r)+'</th>'}).join('')+'</tr></thead>';
-  /* Read-only on purpose. The cells used to be buttons that flipped this
-     in-page array: nothing was sent anywhere, nothing survived a reload, and an
-     owner clicking through them believed they were changing who can do what in
-     a regulated product. There is no permissions endpoint and no permissions
-     table to write to, so per UI-STANDARDS §5 the control does not render. */
-  var body='<tbody>'+PERMS.map(function(pm){
-    return '<tr><td class="pl"><div>'+esc(pm.n)+'</div><div class="pd">'+pm.code+'</div></td>'+
-      ROLES.map(function(r){
-        var on=pm.d[r]===1;
-        return '<td><span class="pcell '+(on?'yes':'')+'" title="'+esc(r)+' — '+(on?'allowed':'not allowed')+' in this chart">'+(on?'●':'○')+'</span></td>';
-      }).join('')+'</tr>';
-  }).join('')+'</tbody>';
-  document.getElementById('permTbl').innerHTML=head+body;
-  var granted=0; PERMS.forEach(function(pm){ROLES.forEach(function(r){if(pm.d[r]===1)granted++})});
-  document.getElementById('permCount').textContent=granted+' of '+(PERMS.length*ROLES.length)+' marked allowed';
-}
+/* ST-02 has no render function on purpose: there is no permission data to
+   render. Its tab is static copy explaining why. */
 
 function renderStats(){
   var hasClock=PEOPLE.some(function(p){return p.clock!==null});
@@ -579,23 +527,12 @@ function renderStats(){
   var chip=document.getElementById('onShiftChip');
   chip.className='chip '+(shift===null?'wip':(shift>0?'on':'wip'));
 }
-function renderAll(){renderRoster();renderClock();renderPerm();renderStats();}
+function renderAll(){renderRoster();renderClock();renderStats();}
 
 /* ══ EDITOR ══════════════════════════════════════════════════════════════ */
-function fillPerms(p){
-  var box=document.getElementById('ed_perms');
-  if(!p){box.innerHTML='';return}
-  var list=PERMS.filter(function(pm){return pm.d[p.role]===1});
-  if(!list.length){box.innerHTML='<span class="badge b-gray">No permissions on this role</span>';return}
-  /* grouped by area and named, not eighteen bare codes */
-  box.innerHTML=PGROUPS.filter(function(g){
-    return list.some(function(pm){return pm.g===g});
-  }).map(function(g){
-    var inG=list.filter(function(pm){return pm.g===g});
-    return '<div class="ed-pg"><div class="ed-pgh">'+g+' <span>'+inG.length+'</span></div>'+
-      inG.map(function(pm){return '<span class="badge b-info" title="'+pm.code+'">'+esc(pm.n)+'</span>'}).join('')+'</div>';
-  }).join('');
-}
+/* ST-07 used to list this person's permissions as badges, filtered out of the
+   same hand-written chart. It is static copy now — there is nothing real to
+   fill it with. */
 function setSw(id,on){document.getElementById(id).classList.toggle('on',!!on)}
 function getSw(id){return document.getElementById(id).classList.contains('on')}
 
@@ -613,7 +550,6 @@ function openEditor(id){
   document.getElementById('ed_role').value=p.role;
   document.getElementById('ed_start').value=p.start;
   setSw('ed_active',p.active); setSw('ed_consent',p.consent); setSw('ed_clock',p.clock);
-  fillPerms(p);
   document.getElementById('edReset').style.display = p.email ? '' : 'none';
   document.getElementById('edDeact').style.display = '';
   document.getElementById('editor').classList.add('open');
@@ -632,7 +568,6 @@ function openNew(){
   document.getElementById('ed_start').value='';
   document.getElementById('ed_email').placeholder='made for you as name@fundhub.ai';
   setSw('ed_active',false); setSw('ed_consent',false); setSw('ed_clock',false);
-  fillPerms({role:'Closer'});
   document.getElementById('edReset').style.display='none';   // no account exists yet
   document.getElementById('edDeact').style.display='none';   // nothing to revoke yet
   document.getElementById('editor').classList.add('open');
@@ -644,7 +579,6 @@ function closeEditor(){
   selId=null; renderRoster();
 }
 document.querySelectorAll('.sw').forEach(function(s){s.addEventListener('click',function(){s.classList.toggle('on')})});
-document.getElementById('ed_role').addEventListener('change',function(){fillPerms({role:this.value})});
 document.getElementById('addBtn').addEventListener('click',openNew);
 document.getElementById('edClose').addEventListener('click',closeEditor);
 document.getElementById('edCancel').addEventListener('click',closeEditor);
@@ -749,8 +683,9 @@ renderAll();
 <script>
 
 /* Staff & Teams — the real roster from /api/read/staff. Replaces the roster
-   table body only; the clock table and permissions grid have no endpoint and
-   keep their sample markup (reported in the unit notes). */
+   table body only; the clock table has no endpoint and keeps its sample markup
+   (reported in the unit notes). The permissions tab has no endpoint either and
+   now renders nothing rather than a hand-written stand-in. */
 (function () {
   "use strict";
   var esc = function (v) {

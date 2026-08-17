@@ -223,7 +223,8 @@ tr.sel td{background:rgba(169,198,232,.13)}
       <div>
           <div class="card">
             <div class="card-hd"><h2>Contracts</h2><div class="spacer"></div>
-              <button class="btn sm" id="btnRemind" title="Email everyone who has not signed yet, and put it on the follow-up list">Send reminders</button>
+              <!-- owner/admin only: run_reminders is in OWNER_ADMIN_ACTIONS (api/contracts.mjs) -->
+              <button class="btn sm" id="btnRemind" style="display:none" title="Email everyone who has not signed yet, and put it on the follow-up list">Send reminders</button>
               <select id="selStatus" style="border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:12px">
                 <option value="">All</option><option value="draft">Draft</option>
                 <option value="sent">Sent</option><option value="viewed">Opened</option>
@@ -414,6 +415,7 @@ window.dispatchEvent(new Event("pdfjs-ready"));
       .then(function (r) {
         isAdmin = norm(r) === "owner" || norm(r) === "admin";
         $("tplCard").style.display = isAdmin ? "" : "none";
+        $("btnRemind").style.display = isAdmin ? "" : "none";
         renderDetail();
       });
   }
