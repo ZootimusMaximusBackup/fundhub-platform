@@ -14,7 +14,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--butter:#F2E39B}           /* spectrum stop @40% — the 6th status color */
 html,body{height:100%}
-body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:1.5;-webkit-font-smoothing:antialiased}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 a{color:inherit;text-decoration:none}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -40,29 +40,29 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
-.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
-.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
 .content{padding:22px 24px 40px;flex:1}
 
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .card+.card{margin-top:14px}
 .card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.card-hd .t{font-size:13.5px;font-weight:600;letter-spacing:-.01em}
+.card-hd .t{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .card-bd{padding:16px}
 .hair{height:2px;background:var(--spectrum);border-radius:1px}
 
-.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:var(--fs-body);font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
 .btn:hover{background:var(--soft);border-color:var(--gray2)}
 .btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .btn.dark:hover{background:var(--ink2)}
-.btn.sm{padding:5px 10px;font-size:11.5px}
-.btn.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.btn.sm{padding:5px 10px;font-size:var(--fs-caption)}
+.btn.mono{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.08em;text-transform:uppercase}
 .btn.danger{color:#6E2A22;border-color:var(--alert)}
 .btn.danger:hover{background:rgba(242,166,155,.16)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 
-.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:var(--fs-caption);font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
 .b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
 .b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
 .b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
@@ -71,24 +71,24 @@ button,input,select,textarea{font:inherit;color:inherit}
 .b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
 
 table.grid{width:100%;border-collapse:collapse}
-table.grid th{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft)}
-table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+table.grid th{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft)}
+table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:var(--fs-body);vertical-align:middle}
 table.grid tr:last-child td{border-bottom:0}
 
 .field{display:flex;flex-direction:column;gap:5px}
-.field label{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
-.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:13px;width:100%;font-family:inherit}
+.field label{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
+.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:var(--fs-body);width:100%;font-family:inherit}
 .field select:focus,.field input:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
-.field .hint{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em}
+.field .hint{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em}
 
 .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
 .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
 .stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
-.stat .sv{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
-.stat .sd{font-size:11px;color:var(--gray);margin-top:2px}
+.stat .sv{font-family:var(--mono);font-size:var(--fs-metric);font-variant-numeric:tabular-nums;font-weight:600;margin-top:8px;letter-spacing:-.02em}
+.stat .sd{font-size:var(--fs-caption);color:var(--gray);margin-top:2px}
 
-.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
-.empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:12px}
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+.empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:var(--fs-body)}
 
 /* ══ CREATIVE FACTORY — page specific ════════════════════════════════════ */
 .stat.pick{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
@@ -99,33 +99,33 @@ table.grid tr:last-child td{border-bottom:0}
 
 /* derivation strip — every number on this screen can show its working */
 .deriv{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:12px 15px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:8px 22px}
-.deriv .dk{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);margin-bottom:3px}
-.deriv .formula{font-family:var(--mono);font-size:11.5px;color:var(--ink);line-height:1.6;word-break:break-word}
-.deriv .inputs{font-family:var(--mono);font-size:11px;color:var(--gray);line-height:1.7}
+.deriv .dk{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:var(--gray);margin-bottom:3px}
+.deriv .formula{font-family:var(--mono);font-size:var(--fs-caption);color:var(--ink);line-height:1.6;word-break:break-word}
+.deriv .inputs{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray);line-height:1.7}
 .deriv .inputs b{color:var(--ink);font-weight:600}
-.deriv .src{grid-column:1/-1;font-family:var(--mono);font-size:10px;color:var(--gray2);letter-spacing:.05em;border-top:1px dashed var(--line);padding-top:8px;line-height:1.6}
+.deriv .src{grid-column:1/-1;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.05em;border-top:1px dashed var(--line);padding-top:8px;line-height:1.6}
 
-.note{font-size:11.5px;color:var(--gray);line-height:1.55}
-.note code,.mono.k,code{font-family:var(--mono);font-size:11px;background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
-.cap{padding:10px 16px;border-top:1px solid var(--line);background:var(--soft);font-size:11.5px;color:var(--gray);line-height:1.5}
+.note{font-size:var(--fs-body);color:var(--gray);line-height:1.55}
+.note code,.mono.k,code{font-family:var(--mono);font-size:var(--fs-caption);background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.cap{padding:10px 16px;border-top:1px solid var(--line);background:var(--soft);font-size:var(--fs-body);color:var(--gray);line-height:1.5}
 .cap b{color:var(--ink);font-weight:600}
 .cap+.cap{border-top:1px dashed var(--line)}
 .cap.q{background:#fff}
 
 /* filter rails */
 .rail{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
-.rail button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .12s,border-color .12s;color:var(--gray)}
+.rail button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .12s,border-color .12s;color:var(--gray)}
 .rail button:hover{background:var(--soft);color:var(--ink)}
 .rail button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .rail button .n{font-weight:700;margin-left:5px;opacity:.75}
-.rail .rl{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-right:2px}
+.rail .rl{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-right:2px}
 .selwrap{display:inline-flex;align-items:center;gap:6px}
-.selwrap label{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
-.selwrap select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 7px;font-size:11.5px;font-family:var(--mono);max-width:220px}
+.selwrap label{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
+.selwrap select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 7px;font-size:var(--fs-body);font-family:var(--mono);max-width:220px}
 .selwrap select:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
 
 /* the request line each surface would issue */
-.req{font-family:var(--mono);font-size:10px;color:var(--gray2);letter-spacing:.04em;padding:8px 16px;border-top:1px dashed var(--line);background:var(--soft);word-break:break-all;display:none}
+.req{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.04em;padding:8px 16px;border-top:1px dashed var(--line);background:var(--soft);word-break:break-all;display:none}
 .req.on{display:block}
 .req b{color:var(--ink);font-weight:600}
 
@@ -133,9 +133,9 @@ table.grid tr:last-child td{border-bottom:0}
 .attn{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .attn button{text-align:left;border:1px solid var(--line);border-left-width:3px;border-radius:9px;background:#fff;padding:12px 14px;cursor:pointer;font:inherit;color:inherit;transition:background .12s}
 .attn button:hover{background:var(--soft)}
-.attn button .an{font-family:var(--mono);font-size:24px;font-weight:600;letter-spacing:-.02em;line-height:1.1}
-.attn button .at{font-size:12px;font-weight:600;margin-top:4px}
-.attn button .ad{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em;margin-top:4px;line-height:1.5}
+.attn button .an{font-family:var(--mono);font-size:var(--fs-metric);font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:-.02em;line-height:1.1}
+.attn button .at{font-size:var(--fs-body);font-weight:600;margin-top:4px}
+.attn button .ad{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em;margin-top:4px;line-height:1.5}
 .attn button.sev-bad{border-left-color:var(--alert)}
 .attn button.sev-warn{border-left-color:var(--warn)}
 .attn button.sev-ok{border-left-color:var(--ok)}
@@ -149,7 +149,7 @@ tr.stripe-warn td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
 tr.stripe-ok td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
 tr.stripe-info td:first-child{box-shadow:inset 3px 0 0 var(--info)}
 tr.dim td{opacity:.62}
-.sub{display:block;font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em;margin-top:3px;font-weight:400}
+.sub{display:block;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em;margin-top:3px;font-weight:400}
 .nul{color:var(--gray2)}
 .mnum{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
 
@@ -157,19 +157,19 @@ tr.dim td{opacity:.62}
 tr.rowbtn{cursor:pointer}
 tr.rowbtn:hover td{background:var(--soft)}
 tr.rowbtn[aria-expanded="true"] td{background:var(--soft)}
-td .chev{display:inline-block;width:10px;color:var(--gray2);font-size:9px;transition:transform .16s;margin-right:6px}
+td .chev{display:inline-block;width:10px;color:var(--gray2);font-size:var(--fs-caption);transition:transform .16s;margin-right:6px}
 tr.rowbtn[aria-expanded="true"] .chev{transform:rotate(90deg)}
 tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 .detwrap{border-top:1px dashed var(--line);padding-top:11px;display:flex;gap:26px;flex-wrap:wrap}
 .detcol{min-width:140px}
-.detcol .dk{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:3px}
-.detcol .dv{font-size:12px;font-weight:600;word-break:break-word}
-.detcol .dv.mono{font-family:var(--mono);font-size:11px;font-weight:500}
+.detcol .dk{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:3px}
+.detcol .dv{font-size:var(--fs-body);font-weight:600;word-break:break-word}
+.detcol .dv.mono{font-family:var(--mono);font-size:var(--fs-caption);font-weight:500}
 .detfull{flex:1 1 100%;min-width:0}
 
-.errbox{font-family:var(--mono);font-size:11px;line-height:1.6;color:#6E2A22;background:rgba(242,166,155,.16);border:1px solid var(--alert);border-radius:7px;padding:8px 10px;word-break:break-word}
-.jsonbox{font-family:var(--mono);font-size:10.5px;line-height:1.6;color:var(--gray);background:var(--soft);border:1px solid var(--line);border-radius:7px;padding:8px 10px;white-space:pre-wrap;word-break:break-word;max-height:210px;overflow:auto}
-.pager{display:flex;align-items:center;gap:10px;padding:11px 16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.06em;flex-wrap:wrap}
+.errbox{font-family:var(--mono);font-size:var(--fs-body);line-height:1.6;color:#6E2A22;background:rgba(242,166,155,.16);border:1px solid var(--alert);border-radius:7px;padding:8px 10px;word-break:break-word}
+.jsonbox{font-family:var(--mono);font-size:var(--fs-caption);line-height:1.6;color:var(--gray);background:var(--soft);border:1px solid var(--line);border-radius:7px;padding:8px 10px;white-space:pre-wrap;word-break:break-word;max-height:210px;overflow:auto}
+.pager{display:flex;align-items:center;gap:10px;padding:11px 16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em;flex-wrap:wrap}
 
 /* reason cards — a blocked_reasons element */
 .reasons{display:flex;flex-direction:column;gap:8px}
@@ -177,10 +177,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 .rz.set-approval{border-color:var(--info);background:rgba(169,198,232,.12)}
 .rz.set-engine{border-color:var(--warn);background:rgba(245,206,143,.14)}
 .rz .rzh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.rz .rzc{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink)}
-.rz .rzm{font-size:12px;color:var(--ink);margin-top:5px;line-height:1.5}
-.rz .rzq{font-family:var(--mono);font-size:10px;color:var(--gray);letter-spacing:.05em;margin-top:5px}
-.rz .rzd{font-family:var(--mono);font-size:10px;color:var(--gray2);margin-top:5px;word-break:break-word}
+.rz .rzc{font-family:var(--mono);font-size:var(--fs-caption);font-weight:600;color:var(--ink)}
+.rz .rzm{font-size:var(--fs-body);color:var(--ink);margin-top:5px;line-height:1.5}
+.rz .rzq{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray);letter-spacing:.05em;margin-top:5px}
+.rz .rzd{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);margin-top:5px;word-break:break-word}
 
 /* library grid */
 .lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:12px;padding:16px}
@@ -195,15 +195,15 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 /* One tile treatment only. There is no "has an object" variant, because the
    endpoint cannot tell the screen which rows have one — see CF-04. */
 .tile{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.tile .fmt{position:absolute;left:5px;top:5px;font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;border-radius:3px;padding:1px 5px}
-.tile .dur{position:absolute;right:5px;bottom:5px;font-family:var(--mono);font-size:8.5px;border-radius:3px;padding:1px 5px}
+.tile .fmt{position:absolute;left:5px;top:5px;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.1em;border-radius:3px;padding:1px 5px}
+.tile .dur{position:absolute;right:5px;bottom:5px;font-family:var(--mono);font-size:var(--fs-caption);border-radius:3px;padding:1px 5px}
 .tile.none{background:repeating-linear-gradient(135deg,var(--soft),var(--soft) 7px,var(--line) 7px,var(--line) 14px);border-bottom:1px solid var(--line)}
-.tile.none .np{font-family:var(--mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--gray2);text-align:center;padding:0 8px;line-height:1.5}
+.tile.none .np{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.09em;text-transform:uppercase;color:var(--gray2);text-align:center;padding:0 8px;line-height:1.5}
 .ameta{padding:9px 10px 10px}
-.ameta .an{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
-.ameta .ak{font-size:11px;color:var(--gray);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ameta .an{font-family:var(--mono);font-size:var(--fs-caption);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.ameta .ak{font-size:var(--fs-caption);color:var(--gray);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ameta .aflags{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
-.flag{font-family:var(--mono);font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;border-radius:4px;padding:2px 5px;border:1px solid var(--line);background:var(--soft);color:var(--gray)}
+.flag{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.09em;text-transform:uppercase;border-radius:4px;padding:2px 5px;border:1px solid var(--line);background:var(--soft);color:var(--gray)}
 .flag.ai{background:rgba(196,179,229,.26);border-color:var(--accent);color:#3F2F63}
 .flag.synth{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
 .flag.derived{background:rgba(169,198,232,.26);border-color:var(--info);color:#22415F}
@@ -213,16 +213,16 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 .kit{border:1px solid var(--line);border-radius:9px;background:#fff;padding:13px 14px;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:border-color .12s}
 .kit:hover{border-color:var(--gray2)}
 .kit .kh{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-.kit .kn{font-size:13px;font-weight:600;letter-spacing:-.01em}
+.kit .kn{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .sw{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap}
 .sw i{width:22px;height:22px;border-radius:5px;border:1px solid var(--line);display:block}
-.kit .kk{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.07em;margin-top:9px;line-height:1.6}
+.kit .kk{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.07em;margin-top:9px;line-height:1.6}
 .kit .kk b{color:var(--gray);font-weight:600}
 
 /* not-wired panels */
 .unwired{border:1px dashed var(--line);border-radius:9px;background:var(--soft);padding:14px 15px}
-.unwired .uh{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#6B4A12;display:flex;align-items:center;gap:8px}
-.unwired .ub{font-size:11.5px;color:var(--gray);line-height:1.55;margin-top:7px}
+.unwired .uh{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:#6B4A12;display:flex;align-items:center;gap:8px}
+.unwired .ub{font-size:var(--fs-body);color:var(--gray);line-height:1.55;margin-top:7px}
 
 /* drawer */
 .scrim{position:fixed;inset:0;background:rgba(10,10,10,.42);opacity:0;pointer-events:none;transition:opacity .18s;z-index:60}
@@ -230,19 +230,19 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 .drawer{position:fixed;top:0;right:0;bottom:0;width:min(720px,94vw);background:var(--paper);border-left:1px solid var(--line);z-index:61;transform:translateX(102%);transition:transform .2s ease;display:flex;flex-direction:column;box-shadow:-14px 0 34px rgba(10,10,10,.10)}
 .drawer.on{transform:none}
 .dw-hd{padding:14px 18px 12px;border-bottom:1px solid var(--line);background:#fff;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
-.dw-hd h2{font-size:15px;font-weight:600;letter-spacing:-.01em;line-height:1.3}
-.dw-x{margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:7px;width:28px;height:28px;flex:0 0 28px;cursor:pointer;font-family:var(--mono);font-size:13px;line-height:1;color:var(--gray)}
+.dw-hd h2{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em;line-height:1.3}
+.dw-x{margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:7px;width:28px;height:28px;flex:0 0 28px;cursor:pointer;font-family:var(--mono);font-size:var(--fs-body);line-height:1;color:var(--gray)}
 .dw-x:hover{background:var(--soft);color:var(--ink)}
 .dw-bd{flex:1;overflow-y:auto;padding:16px 18px 30px}
 .dw-bd::-webkit-scrollbar{width:7px}
 .dw-bd::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px}
 .dw-sec{margin-top:16px}
 .dw-sec:first-child{margin-top:0}
-.dw-sec>h3{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);margin-bottom:8px}
+.dw-sec>h3{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:var(--gray);margin-bottom:8px}
 .kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px 16px;border:1px solid var(--line);border-radius:9px;background:#fff;padding:13px 15px}
-.kv .k{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
-.kv .v{font-size:12.5px;font-weight:600;margin-top:2px;word-break:break-word}
-.kv .v.mono{font-family:var(--mono);font-size:11px;font-weight:500}
+.kv .k{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
+.kv .v{font-size:var(--fs-body);font-weight:600;margin-top:2px;word-break:break-word}
+.kv .v.mono{font-family:var(--mono);font-size:var(--fs-caption);font-weight:500}
 
 .tblscroll{overflow-x:auto}
 .tblscroll::-webkit-scrollbar{height:7px}
@@ -295,12 +295,12 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
      placeholder, because the screen has nothing to tell one from another.
 
      WIRED to all four api/creative/* endpoints (wireCreative(), near the bottom of
-     the page script), each read scoped to CF-01's selected partner_id. KITS / JOBS /
-     ASSETS below (renamed SAMPLE_KITS / SAMPLE_JOBS / SAMPLE_ASSETS internally) are
-     the fallback this screen renders immediately and falls back to on a demo
-     session or a failed read, exactly like every other wired screen in
-     public/app/ — CF-12's ledger reports which of the four actually answered on
-     the last check, rather than asserting it. -->
+     the page script), each read scoped to the one partner_id named in this page's
+     address. THERE IS NO SAMPLE FALLBACK. No partner roster, no sample jobs, assets,
+     kits or campaigns live in this file: when a read fails, when the session is a
+     demo one, or when no partner is named, each panel shows its empty or error state
+     and nothing is requested — UI-STANDARDS §6. CF-12's ledger reports which of the
+     four actually answered on the last check, rather than asserting it. -->
 <div class="app">
   <aside class="side" id="side">
   <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
@@ -376,7 +376,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <button class="btn mono" id="reqToggle" aria-pressed="false">Show request URLs</button>
     </div>
 
-    <div class="content">
+    <div class="content fh-maxw">
 
       <!-- ══ CF-00 · SUMMARY ═══════════════════════════════════════════════ -->
       <div class="stats" id="stats"></div>
@@ -396,7 +396,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
               <select id="partnerSel"></select>
               <span class="hint">sets <code>?partner_id=</code> on all four reads</span>
             </div>
-            <div class="mono" style="font-size:10.5px;color:var(--gray2);letter-spacing:.05em;margin-top:10px" id="scopePid">—</div>
+            <div class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.05em;margin-top:10px" id="scopePid">—</div>
             <div style="margin-top:9px" id="scopeOffers"></div>
           </div>
           <div>
@@ -937,7 +937,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
             </div>
             <button class="btn dark mono" type="button" id="genBtn">Enqueue generation</button>
             <button class="btn mono" type="button" id="runJobsBtn">Run queued jobs now</button>
-            <span class="hint mono" id="genMsg" style="font-size:10.5px;color:var(--gray2)"></span>
+            <span class="hint mono" id="genMsg" style="font-size:var(--fs-caption);color:var(--gray2)"></span>
           </div>
         </div>
         <div class="cap">
@@ -952,7 +952,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
             <button class="btn mono" type="button" data-cact="approve">Approve</button>
             <button class="btn mono" type="button" data-cact="reject">Reject</button>
             <button class="btn mono" type="button" data-cact="archive">Archive</button>
-            <span class="hint mono" id="actMsg" style="font-size:10.5px;color:var(--gray2)"></span>
+            <span class="hint mono" id="actMsg" style="font-size:var(--fs-caption);color:var(--gray2)"></span>
           </div>
         </div>
         <div class="cap">
@@ -1022,436 +1022,30 @@ var KIT_STATES  = ['draft','active','archived'];
 var JOB_ASSET_KINDS = ['static','video','copy','resize'];
 var PROVIDER_KEYS   = ['static','ugc-video','product-video','copy','resize'];
 
-/* ══ PARTNERS ════════════════════════════════════════════════════════════
-   Every read resolves to exactly one partner. The three below are the same book
-   Social Studio selects over and the one Campaigns is scoped to — same ids, same
-   names, one roster.
-
-   `offers` IS DERIVED, NOT DECLARED. There is no offer column on partners
-   (042:30-64) and no CHECK or trigger anywhere that binds a partner to a set of
-   offer types. offer_type is an attribute of the WORK: campaigns.offer_type
-   (046:166, CHECK 046:181-182) and social_posts.offer_type (049:66, CHECK
-   049:87-88), each `IN ('funding','credit_cards','credit_repair')`. Even
-   compliance scopes by offer, not by partner — compliance_rules.offer_types
-   (047:51). creative_assets and brand_kits carry no offer_type at all.
-
-   So this array is a SUMMARY of the offer types each partner is actually shown
-   running on the other two screens, rendered as chips next to the picker. It is
-   not a constraint, and nothing may treat it as one: a partner running all three
-   offers is ordinary, not an error. The two offer-linked rules that DO exist are
-   both per-campaign, never per-partner — credit_repair may not run on TikTok
-   (046:219-221) and a credit_repair campaign cannot go approved/live without a
-   named approver (046:204-206).
+/* ══ PARTNER SCOPE ══════════════════════════════════════════════════════
+   There is no partner roster in this file and no endpoint that lists partners.
+   This screen reads and writes for exactly ONE partner, named in the address as
+   ?partner_id=<uuid>; that value is what every request below sends. With no
+   partner named, PARTNERS stays empty, no request is issued, every panel shows
+   its empty state and the write controls are disabled — a stand-in id would read
+   and write against a partner that does not exist (UI-STANDARDS §6).
    ════════════════════════════════════════════════════════════════════════ */
-var PARTNERS = [
-  /* funding + credit_cards from the campaigns below; credit_repair because the
-     same partner_id carries credit_repair posts in Social Studio and a
-     credit_repair book in Campaigns. That credit_repair work is meta-only — never
-     TikTok, which CHECK campaigns_tiktok_credit_repair_ck forbids outright. The
-     funding book is not: campaign 2f80d651 below runs funding on TikTok, which is
-     permitted, and Campaigns shows the same partner doing it. */
-  {id:'8f3c2a91-4d17-4b0e-9c62-1a7e5d3b8042', name:'Ironwood Capital Group',   offers:['funding','credit_cards','credit_repair']},
-  /* credit_repair because Social Studio has a blocked credit_repair post on this
-     partner's LinkedIn channel. Blocked by the CROA rules is still a row. */
-  {id:'b47d5e60-90aa-4f31-8e55-6c204f9a1bd3', name:'Larkspur Card Collective', offers:['credit_cards','credit_repair']},
-  {id:'c9a10f34-2be7-4a88-b0d9-7f61e2c4a915', name:'Halcyon Credit Works',     offers:['credit_repair']}
-];
+var PARTNERS = [];
+(function seedPartnerFromUrl(){
+  var pid = null;
+  try { pid = new URL(location.href).searchParams.get('partner_id'); } catch(e){}
+  if(!pid && window.FHData && FHData.param){ try { pid = FHData.param('partner_id'); } catch(e){} }
+  /* name is the id itself: no endpoint here returns a partner's name, and
+     printing one we do not have would be invented. */
+  if(pid) PARTNERS = [{id:pid, name:pid, offers:[]}];
+})();
 
-/* ══ BRAND KITS — GET /api/creative/brand-kits ════════════════════════════
-   Exactly the columns brand-kits.mjs selects, plus asset_count (non-archived).
-   palette / fonts / voice_profile / products are FREE-SHAPE jsonb: the rows below
-   deliberately use different inner keys from each other, because nothing in the
-   schema or the code defines any. voice_profile.tone is the one key any code reads.
-   source_url and scraped_at are NULL because nothing outside tests writes them.
-   ════════════════════════════════════════════════════════════════════════ */
-var KITS = [
-  {id:'0b6f21d4-5c83-4f70-9e11-3a72c05be418', partner:0, name:'Ironwood Capital — Core',
-   status:'active', asset_count:23, source_url:null, scraped_at:null,
-   logo_asset_id:'3f9c14b7-6a02-4d55-8e31-b7205cc41d09',
-   palette:{ink:'#12211C', moss:'#4F6F52', bone:'#F3EFE7'},
-   fonts:{display:'Söhne', body:'Inter'},
-   voice_profile:{tone:'plain, unhurried, no hype', reading_level:'grade 8'},
-   products:['Working capital line','Equipment financing','Revenue-based advance'],
-   created_at:'2026-05-14T15:20:11Z', updated_at:'2026-07-28T11:04:52Z'},
-
-  {id:'7d40a9c2-11ef-4b36-a5c8-90e6f2417b3d', partner:0, name:'Ironwood — Q3 Funding Push',
-   status:'draft', asset_count:0, source_url:null, scraped_at:null, logo_asset_id:null,
-   palette:{}, fonts:{}, voice_profile:{}, products:[],
-   created_at:'2026-07-27T09:02:40Z', updated_at:'2026-07-27T09:02:40Z'},
-
-  {id:'c1e58b06-3d97-4a12-88f4-2b60d5793ea1', partner:0, name:'Ironwood Legacy 2025',
-   status:'archived', asset_count:3, source_url:null, scraped_at:null, logo_asset_id:null,
-   palette:{swatches:['#12211C','#8FA98F','#D9D2C5']},
-   fonts:{stack:'Inter, system-ui'},
-   voice_profile:{tone:'formal'},
-   products:[{name:'SBA bridge', offer_type:'funding'}],
-   created_at:'2025-11-03T18:41:07Z', updated_at:'2026-02-09T13:15:00Z'},
-
-  {id:'a2704f19-8c6b-4e0d-b933-51ca7e260f84', partner:1, name:'Larkspur Cards — House',
-   status:'active', asset_count:9, source_url:null, scraped_at:null,
-   logo_asset_id:'d5b3907a-42c1-4f68-9a07-6e2148cb35f2',
-   palette:{primary:'#1F3A5F', accent:'#C9A227', surface:'#FBFAF7'},
-   fonts:{heading:'GT America', body:'Inter'},
-   voice_profile:{tone:'confident, benefit-first', banned_words:['guaranteed','instant']},
-   products:['0% intro APR card stack','Business card stacking'],
-   created_at:'2026-06-02T10:11:33Z', updated_at:'2026-07-29T16:48:20Z'},
-
-  {id:'e938c520-7a4d-4c91-82be-04f7361ad9b6', partner:2, name:'Halcyon Credit Works',
-   status:'active', asset_count:6, source_url:null, scraped_at:null, logo_asset_id:null,
-   palette:{base:'#2B2440'}, fonts:{},
-   voice_profile:{tone:'careful, statutory — never promissory'},
-   products:['Credit analysis report','Dispute rounds'],
-   created_at:'2026-06-19T08:55:02Z', updated_at:'2026-07-30T07:12:44Z'}
-];
-/* wireCreative() below replaces KITS/JOBS/ASSETS/APPROVALS_LIVE with live rows
-   per the currently-selected partner; these SAMPLE_* copies are the fallback
-   this screen renders immediately and falls back to on any read failure. */
-var SAMPLE_KITS = KITS;
-
-/* ══ GENERATION JOBS — GET /api/creative/jobs ═════════════════════════════
-   Exactly the columns jobs.mjs selects. cost_cents, spec (whole), requested_by,
-   org_id, partner_id and updated_at are NOT here because the endpoint does not
-   return them. asset_kind / formats / variants come out of the spec jsonb, and
-   formats or variants may legitimately be null when the caller did not pass them.
-   ════════════════════════════════════════════════════════════════════════ */
-var JOBS = [
-  /* running: claimed, provider call in flight. asset_count 0 until the run commits. */
-  {id:'5c1a90e7-3f42-4b8d-9c06-71e2a4d5f830', partner:0, brand_kit_id:KITS[0].id,
-   provider:'ugc-video', status:'running', attempt:1, error:null,
-   idempotency_key:'ironwood-funding-w31-ugc-a', asset_kind:'video', formats:['9x16'], variants:3,
-   asset_count:0, created_at:'2026-07-30T09:02:18Z', started_at:'2026-07-30T09:04:11Z', finished_at:null},
-
-  /* queued WITH attempt 2, started_at and an error: a retry, not a run in flight. */
-  {id:'b70f4d51-2a86-4e39-90c7-15b3e8a04f26', partner:0, brand_kit_id:KITS[0].id,
-   provider:'copy', status:'queued', attempt:2,
-   error:'provider returned 429: {"error":"rate_limited","retry_after_s":30}',
-   idempotency_key:'ironwood-cc-w31-copy-a', asset_kind:'copy', formats:null, variants:4,
-   asset_count:0, created_at:'2026-07-30T08:38:55Z', started_at:'2026-07-30T08:41:02Z', finished_at:null},
-
-  /* succeeded: 3 formats x 2 variants = 6 provider calls = 6 assets. error cleared. */
-  {id:'1e29c3a8-64b0-4d17-a5f2-0937bd6e21c4', partner:0, brand_kit_id:KITS[0].id,
-   provider:'static', status:'succeeded', attempt:1, error:null,
-   idempotency_key:'ironwood-funding-w31-static-a', asset_kind:'static',
-   formats:['1x1','4x5','9x16'], variants:2, asset_count:6,
-   created_at:'2026-07-30T08:12:03Z', started_at:'2026-07-30T08:12:04Z', finished_at:'2026-07-30T08:13:51Z'},
-
-  /* queued with attempt 0 and no provider: never claimed. provider stays NULL until
-     run() resolves one. */
-  {id:'9a3d7f60-8e15-4c22-b04a-6d18e5920fb3', partner:0, brand_kit_id:KITS[0].id,
-   provider:null, status:'queued', attempt:0, error:null,
-   idempotency_key:'ironwood-cc-w31-static-b', asset_kind:'static', formats:['1x1'], variants:3,
-   asset_count:0, created_at:'2026-07-30T07:59:41Z', started_at:null, finished_at:null},
-
-  /* failed, permanent: no active creative_providers row for this asset kind.
-     provider is NULL because resolve() threw before the UPDATE that sets it. */
-  {id:'42b8e015-9d63-4a77-8f10-c3e26074ba59', partner:0, brand_kit_id:KITS[0].id,
-   provider:null, status:'failed', attempt:1,
-   error:'no active provider configured for asset kind "resize" — insert a creative_providers row rather than hardcoding one',
-   idempotency_key:'ironwood-resize-hook7', asset_kind:'resize', formats:['4x5','9x16'], variants:null,
-   asset_count:0, created_at:'2026-07-30T06:57:12Z', started_at:'2026-07-30T06:58:00Z', finished_at:'2026-07-30T06:58:00Z'},
-
-  /* failed at the 3-claim ceiling, after a retryable 5xx each time. */
-  {id:'d6027e94-1b58-4f03-9276-8a4c1de5307f', partner:0, brand_kit_id:KITS[0].id,
-   provider:'product-video', status:'failed', attempt:3,
-   error:'provider returned 503: upstream render queue unavailable',
-   idempotency_key:'ironwood-funding-w30-prod-b', asset_kind:'video', formats:['16x9','1x1'], variants:1,
-   asset_count:0, created_at:'2026-07-29T19:14:30Z', started_at:'2026-07-29T19:20:09Z', finished_at:'2026-07-29T19:26:44Z'},
-
-  /* succeeded resize: 3 target formats, one derived asset each. variants not passed. */
-  {id:'8f51b2c7-70a9-4d64-b1e8-25360af7912d', partner:0, brand_kit_id:KITS[0].id,
-   provider:'resize', status:'succeeded', attempt:1, error:null,
-   idempotency_key:'ironwood-resize-hook3', asset_kind:'resize', formats:['1x1','4x5','16x9'], variants:null,
-   asset_count:3, created_at:'2026-07-29T15:06:22Z', started_at:'2026-07-29T15:06:23Z', finished_at:'2026-07-29T15:07:40Z'},
-
-  /* failed on a 200 with an empty asset list — a failure whatever the provider says. */
-  {id:'3b94a608-52df-4e11-87c3-9016d4e7215a', partner:0, brand_kit_id:KITS[0].id,
-   provider:'copy', status:'failed', attempt:3, error:'provider returned zero assets',
-   idempotency_key:'ironwood-funding-w30-copy-c', asset_kind:'copy', formats:null, variants:2,
-   asset_count:0, created_at:'2026-07-29T11:42:08Z', started_at:'2026-07-29T12:01:19Z', finished_at:'2026-07-29T12:03:02Z'},
-
-  {id:'c0e7461b-9a23-4f85-b672-d1408e35927c', partner:0, brand_kit_id:KITS[0].id,
-   provider:'ugc-video', status:'succeeded', attempt:1, error:null,
-   idempotency_key:'ironwood-funding-w30-ugc-a', asset_kind:'video', formats:['9x16'], variants:2,
-   asset_count:2, created_at:'2026-07-28T14:31:55Z', started_at:'2026-07-28T14:32:01Z', finished_at:'2026-07-28T14:38:12Z'},
-
-  {id:'f14d8036-6b70-4c29-95ae-2703b8e5164d', partner:0, brand_kit_id:KITS[0].id,
-   provider:'static', status:'succeeded', attempt:2, error:null,
-   idempotency_key:'ironwood-cc-w30-static-a', asset_kind:'static', formats:['1x1','4x5'], variants:2,
-   asset_count:4, created_at:'2026-07-28T09:18:44Z', started_at:'2026-07-28T09:26:10Z', finished_at:'2026-07-28T09:27:33Z'},
-
-  {id:'6a2c5931-4e80-4b17-a3d6-58f019cb7420', partner:0, brand_kit_id:KITS[2].id,
-   provider:'static', status:'succeeded', attempt:1, error:null,
-   idempotency_key:'ironwood-legacy-refresh-1', asset_kind:'static', formats:['16x9'], variants:3,
-   asset_count:3, created_at:'2026-07-27T16:02:09Z', started_at:'2026-07-27T16:02:11Z', finished_at:'2026-07-27T16:03:20Z'},
-
-  /* Larkspur */
-  {id:'e5390a71-8c46-4d02-bf19-7a2650e4318b', partner:1, brand_kit_id:KITS[3].id,
-   provider:'static', status:'succeeded', attempt:1, error:null,
-   idempotency_key:'larkspur-cc-w31-static-a', asset_kind:'static', formats:['1x1','4x5'], variants:2,
-   asset_count:4, created_at:'2026-07-29T13:44:51Z', started_at:'2026-07-29T13:44:53Z', finished_at:'2026-07-29T13:46:02Z'},
-  {id:'27b6f4e0-1d59-4a83-9c07-3e15820ad6f9', partner:1, brand_kit_id:KITS[3].id,
-   provider:null, status:'queued', attempt:0, error:null,
-   idempotency_key:'larkspur-cc-w31-copy-a', asset_kind:'copy', formats:null, variants:5,
-   asset_count:0, created_at:'2026-07-30T08:05:16Z', started_at:null, finished_at:null},
-
-  /* Halcyon — credit_repair */
-  {id:'b8d1067f-3a92-4e56-81c4-70f26e9d5138', partner:2, brand_kit_id:KITS[4].id,
-   provider:'copy', status:'succeeded', attempt:1, error:null,
-   idempotency_key:'halcyon-cr-w31-copy-a', asset_kind:'copy', formats:null, variants:3,
-   asset_count:3, created_at:'2026-07-30T07:10:02Z', started_at:'2026-07-30T07:10:04Z', finished_at:'2026-07-30T07:11:19Z'},
-  {id:'0d47a52e-6f81-4b30-a97c-4b2e6018df53', partner:2, brand_kit_id:KITS[4].id,
-   provider:'copy', status:'failed', attempt:3, error:'provider unreachable: fetch failed',
-   idempotency_key:'halcyon-cr-w30-copy-b', asset_kind:'copy', formats:null, variants:2,
-   asset_count:0, created_at:'2026-07-28T20:15:37Z', started_at:'2026-07-28T20:44:02Z', finished_at:'2026-07-28T20:44:05Z'}
-];
-var SAMPLE_JOBS = JOBS;
-
-/* ══ BLOCKED REASON OBJECTS ══════════════════════════════════════════════
-   The exact shape src/compliance/screen.mjs builds and generate.mjs writes into
-   creative_assets.blocked_reasons: { code, rule_set, message, citation?, severity?,
-   detail? }. Messages and citations for rule-derived reasons are verbatim from
-   db/migrations/047_compliance_rules.sql:205-300. No timestamp, no reviewer, no id,
-   no resolved flag — because the column has none.
-   ════════════════════════════════════════════════════════════════════════ */
-var RZ = {
-  guaranteedApproval: {code:'guaranteed-approval', rule_set:'claims', severity:'block',
-    message:'Guaranteed approval cannot be advertised. Approval depends on underwriting.',
-    citation:'FTC Act 15 U.S.C. 45'},
-  incomeCue: {code:'income-wealth-targeting-cue', rule_set:'claims', severity:'block',
-    message:"Copy that targets or implies the viewer's income or financial distress is prohibited in this vertical.",
-    citation:'Meta special ad category / ECOA'},
-  guaranteedFunding: {code:'guaranteed-funding-amount', rule_set:'claims', severity:'block',
-    message:'Guaranteeing a specific funding amount is prohibited. Use "up to" with qualifying conditions stated.',
-    citation:'FTC Act 15 U.S.C. 45'},
-  scoreIncrease: {code:'guaranteed-score-increase', rule_set:'croa', severity:'block',
-    message:'Promising a specific or guaranteed credit-score increase is prohibited. State what the service does, not what the score will do.',
-    citation:'CROA 15 U.S.C. 1679b(a)(3)'},
-  disclosure: {code:'croa-consumer-rights', rule_set:'disclosure', severity:'block',
-    message:'Credit-repair funnels must carry the "Consumer Credit File Rights Under State and Federal Law" disclosure, linked to the campaign before launch.',
-    citation:'CROA 15 U.S.C. 1679c(a)'},
-  categoryUnset: {code:'special_ad_category_unset', rule_set:'platform',
-    message:'No special_ad_category is configured for meta/credit_cards. Populate ad_platform_category_map before any Meta launch.'},
-  screenError: {code:'screen_error', rule_set:'engine',
-    message:'Compliance screening could not complete, so this is blocked. Try again; if it persists this is a platform fault, not your copy.',
-    detail:'connection terminated unexpectedly'},
-  approvalSetting: {code:'human_approval_required_setting', rule_set:'approval',
-    message:'This partner has approve_before_launch enabled, so a human must approve before launch.'},
-  approvalCreditRepair: {code:'human_approval_required_credit_repair', rule_set:'approval',
-    message:'Credit-repair creative always requires human approval before launch. This gate cannot be turned off.'}
-};
-
-/* ══ CREATIVE LIBRARY — GET /api/creative/library ═════════════════════════
-   The columns library.mjs selects and that SURVIVE THE RESPONSE, plus updated_at.
-
-   NO has_storage_key. library.mjs:40 does select (storage_key IS NOT NULL) AS
-   has_storage_key, but the row never reaches a client with it: partnerReadHandler
-   returns page(), page() runs redact() over items, and redact()'s FORBIDDEN_KEY
-   (read-api.mjs:18) carries a bare, unanchored `storage_key` alternative that
-   matches the substring inside has_storage_key. ALLOWED_EXACT (:22) whitelists
-   only ssn_present and has_ssn. So the boolean is stripped with the column it
-   describes, and CF-04 below cannot know whether an object exists for a row.
-   (creative-endpoints.pg.test.mjs:107-118 asserts the boolean is present, but it
-   calls fetchRows directly and never goes through redact — which is why CI is
-   green on a field no screen can receive.)
-
-   NO brand_kit_name either, though library.mjs:41 does return it — the rows below
-   omit it and kitName() reconstructs the label from KITS, since these rows are the
-   sample stand-in for four separate reads.
-
-   updated_at is HERE and created_at is here, because these rows feed two endpoints
-   with different projections: library.mjs returns created_at and not updated_at,
-   approvals.mjs returns updated_at and not created_at. CF-04 reads created_at,
-   CF-06 reads updated_at, and neither renders a column its own endpoint omits.
-   updated_at is one second after created_at on every row because storeAsset()
-   INSERTs and then immediately UPDATEs compliance_state (generate.mjs:237-240)
-   under the set_updated_at trigger (045:367-383) — it is never equal to created_at
-   and never earlier.
-
-   duration_sec is numeric(10,3), which node-pg hands back as a STRING, so it is a
-   string here too, and it is null on every non-video row (CHECK 045:210).
-   archived_at is null on every row because no code path in the repo ever sets it.
-   ════════════════════════════════════════════════════════════════════════ */
-var ASSETS = [
-  /* the six from job 1e29c3a8 — 3 formats x 2 variants */
-  {id:'3f9c14b7-6a02-4d55-8e31-b7205cc41d09', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'1x1',
-   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T08:12:31Z', updated_at:'2026-07-30T08:12:32Z'},
-  {id:'a71e6d29-4b53-4c08-9f27-0e6318da54b1', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'1x1',
-   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'blocked', blocked_reasons:[RZ.guaranteedFunding], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T08:12:47Z', updated_at:'2026-07-30T08:12:48Z'},
-  {id:'5d80b3f6-27c1-4e94-8a05-6b1349fe207c', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'4x5',
-   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T08:13:02Z', updated_at:'2026-07-30T08:13:03Z'},
-  {id:'e2461c95-0a78-4d3b-b6f1-8c5027ae9b34', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'4x5',
-   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T08:13:18Z', updated_at:'2026-07-30T08:13:19Z'},
-  {id:'c85302ad-7f16-4b60-91e4-2a70d6c8153f', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'9x16',
-   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'blocked', blocked_reasons:[RZ.incomeCue], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T08:13:35Z', updated_at:'2026-07-30T08:13:36Z'},
-  {id:'70b9e438-5c02-4a17-8d63-91f47025ce6a', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'9x16',
-   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T08:13:50Z', updated_at:'2026-07-30T08:13:51Z'},
-
-  /* ugc-video: synthetic_performer is hardcoded true by the provider, so ai_generated
-     must be true as well — the CHECK forbids the other combination. */
-  {id:'19c7d580-6e34-4f21-a08b-53627fd914e0', partner:0, brand_kit_id:KITS[0].id, kind:'video', format:'9x16',
-   provider:'ugc-video', duration_sec:'18.400', ai_generated:true, synthetic_performer:true,
-   compliance_state:'pending', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-28T14:35:12Z', updated_at:'2026-07-28T14:35:13Z'},
-  {id:'86f403b1-2d59-4c76-b3e0-1a7852069df4', partner:0, brand_kit_id:KITS[0].id, kind:'video', format:'9x16',
-   provider:'ugc-video', duration_sec:'21.750', ai_generated:true, synthetic_performer:true,
-   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-28T14:38:04Z', updated_at:'2026-07-28T14:38:05Z'},
-
-  /* resize children: kind and both disclosure flags INHERITED from the parent, plus
-     parent_asset_id. A resize is not a kind — the parent was static, so these are static. */
-  {id:'2ba85e07-9314-4d6f-80c9-64e13a7f5b28', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'4x5',
-   provider:'resize', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'passed', blocked_reasons:[], parent_asset_id:'3f9c14b7-6a02-4d55-8e31-b7205cc41d09',
-   archived_at:null, created_at:'2026-07-29T15:06:51Z', updated_at:'2026-07-29T15:06:52Z'},
-  {id:'d3719fc4-8065-4b2a-97e1-05c2f4b8360d', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'9x16',
-   provider:'resize', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'passed', blocked_reasons:[], parent_asset_id:'3f9c14b7-6a02-4d55-8e31-b7205cc41d09',
-   archived_at:null, created_at:'2026-07-29T15:07:14Z', updated_at:'2026-07-29T15:07:15Z'},
-  {id:'4e0d68a3-51b7-492c-8f06-732be1d05947', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'16x9',
-   provider:'resize', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'passed', blocked_reasons:[], parent_asset_id:'3f9c14b7-6a02-4d55-8e31-b7205cc41d09',
-   archived_at:null, created_at:'2026-07-29T15:07:39Z', updated_at:'2026-07-29T15:07:40Z'},
-
-  /* copy: format 1x1 is copy.mjs's DEFAULT (`spec.format || '1x1'`), not a fixed value —
-     format is NOT NULL and the library filters on it, so the provider supplies a neutral
-     one when the caller names none. storageKeyFor() returns NULL for kind='copy', but the
-     screen learns that from `kind`, not from the row: see the header above. */
-  {id:'ba5c2716-4038-4e1d-95a7-6c0f8324ed19', partner:0, brand_kit_id:KITS[0].id, kind:'copy', format:'1x1',
-   provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-28T09:27:05Z', updated_at:'2026-07-28T09:27:06Z'},
-  {id:'f608b1d5-72a9-4c34-8016-9e5b4023af7c', partner:0, brand_kit_id:KITS[0].id, kind:'copy', format:'1x1',
-   provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'blocked', blocked_reasons:[RZ.guaranteedApproval], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-28T09:27:21Z', updated_at:'2026-07-28T09:27:22Z'},
-  {id:'8c1740e6-b529-4a0f-93d8-2607f1b54e83', partner:0, brand_kit_id:KITS[0].id, kind:'copy', format:'1x1',
-   provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'pending', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-28T09:27:38Z', updated_at:'2026-07-28T09:27:39Z'},
-
-  /* the fail-closed case: screening itself fell over, so the asset is blocked with an
-     engine reason rather than a copy reason. */
-  {id:'71ea3958-0c47-4b62-a8d1-53f9207e6cb4', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'16x9',
-   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'blocked', blocked_reasons:[RZ.screenError], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-27T16:03:11Z', updated_at:'2026-07-27T16:03:12Z'},
-  {id:'0f2c86b4-9d13-4507-be9a-4182c0e73da5', partner:0, brand_kit_id:KITS[2].id, kind:'static', format:'16x9',
-   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-27T16:02:58Z', updated_at:'2026-07-27T16:02:59Z'},
-
-  /* ai_generated is TRUE here, as it is on every row: static.mjs:58 hardcodes it, and
-     storeAsset() stores `a.ai_generated !== false`. No provider in this module emits a
-     false flag, and generate.mjs is the only writer of creative_assets in the repo — so
-     there is no ai_generated = false asset to show. */
-  {id:'56d90b28-3f74-4e15-8c02-b937a154e60f', partner:0, brand_kit_id:KITS[0].id, kind:'static', format:'1x1',
-   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-26T12:40:03Z', updated_at:'2026-07-26T12:40:04Z'},
-
-  /* Larkspur */
-  {id:'d5b3907a-42c1-4f68-9a07-6e2148cb35f2', partner:1, brand_kit_id:KITS[3].id, kind:'static', format:'1x1',
-   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-29T13:45:10Z', updated_at:'2026-07-29T13:45:11Z'},
-  {id:'93a6f102-8b47-4d59-a0e3-7c1258f4b60d', partner:1, brand_kit_id:KITS[3].id, kind:'static', format:'4x5',
-   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'blocked', blocked_reasons:[RZ.categoryUnset], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-29T13:45:44Z', updated_at:'2026-07-29T13:45:45Z'},
-  {id:'417ce805-6a92-4b31-97f0-2d5b8340e169', partner:1, brand_kit_id:KITS[3].id, kind:'video', format:'16x9',
-   provider:'product-video', duration_sec:'12.000', ai_generated:true, synthetic_performer:false,
-   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-26T10:22:37Z', updated_at:'2026-07-26T10:22:38Z'},
-  {id:'a0b74c31-5e28-4f96-83d1-609ecb2f4571', partner:1, brand_kit_id:KITS[3].id, kind:'copy', format:'1x1',
-   provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'pending', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-25T17:03:12Z', updated_at:'2026-07-25T17:03:13Z'},
-
-  /* Halcyon — credit_repair, so the CROA rule set applies */
-  {id:'6b28f503-c941-4a70-85de-1f0327b46c82', partner:2, brand_kit_id:KITS[4].id, kind:'copy', format:'1x1',
-   provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'blocked', blocked_reasons:[RZ.scoreIncrease], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T07:10:41Z', updated_at:'2026-07-30T07:10:42Z'},
-  {id:'ce4082b7-1f36-4d95-a07c-583b2916e0d4', partner:2, brand_kit_id:KITS[4].id, kind:'copy', format:'1x1',
-   provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'blocked', blocked_reasons:[RZ.disclosure], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T07:10:58Z', updated_at:'2026-07-30T07:10:59Z'},
-  {id:'32f5a70c-8d61-4b28-9e04-71c3068ad5f9', partner:2, brand_kit_id:KITS[4].id, kind:'copy', format:'1x1',
-   provider:'copy', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'pending', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-30T07:11:15Z', updated_at:'2026-07-30T07:11:16Z'},
-  {id:'7de1b640-4a95-4c03-b28f-16057e3924ac', partner:2, brand_kit_id:KITS[4].id, kind:'static', format:'4x5',
-   provider:'static', duration_sec:null, ai_generated:true, synthetic_performer:false,
-   compliance_state:'passed', blocked_reasons:[], parent_asset_id:null, archived_at:null,
-   created_at:'2026-07-24T11:38:20Z', updated_at:'2026-07-24T11:38:21Z'}
-];
-var SAMPLE_ASSETS = ASSETS;
-/* Live lists start empty — SAMPLE_* restored only on demo. */
+/* Rows for CF-00/02/04/06/08 come from the four api/creative/* GETs and nowhere
+   else. They start empty and stay empty when a read fails or no partner is named;
+   there is no sample fallback to fall back to. */
 var KITS = [];
 var JOBS = [];
 var ASSETS = [];
-
-/* ══ CAMPAIGNS AWAITING APPROVAL — the second branch of the UNION ALL ═════
-   `reasons` here is NOT a reason list. approvals.mjs synthesises it with
-   jsonb_agg(jsonb_build_object('code', s.state, 'message', s.reasons)) over
-   compliance_screenings — so `code` is a SCREENING STATE (passed | blocked |
-   needs_approval) and `message` is the whole reasons ARRAY, nested. Rendered
-   naively it prints [object Object]; the renderer below unwraps it.
-   ════════════════════════════════════════════════════════════════════════ */
-var CAMPAIGNS = [
-  {id:'c47b0295-8e13-4a6f-90d2-56138ba7e04c', partner:0, name:'Funding — Forester evergreen',
-   strategy_key:'forester', offer_type:'funding', platform:'meta', budget_cents:450000,
-   updated_at:'2026-07-30T08:55:02Z',
-   screenings:[{code:'needs_approval', message:[RZ.approvalSetting]}]},
-
-  {id:'9e5107ba-4d68-4c02-8f31-b7205ac96e1d', partner:0, name:'Card stacking — Venus Fly Trap 1',
-   strategy_key:'venus_fly_trap_1', offer_type:'credit_cards', platform:'meta', budget_cents:280000,
-   updated_at:'2026-07-30T07:41:19Z',
-   screenings:[{code:'blocked', message:[RZ.categoryUnset]},
-               {code:'needs_approval', message:[RZ.approvalSetting]}]},
-
-  /* tiktok + funding, so neither structural block applies and the tiktok rule row is
-     scoped to credit_repair — the copy rules leave this clean. It still cannot come
-     back 'passed': Ironwood has approve_before_launch ON (the two rows above prove it,
-     and Social Studio shows the same setting for the same partner_id), and
-     screen.mjs:215-221 returns needs_approval for EVERY non-credit_repair subject while
-     that boolean is true. One partner, one boolean, one verdict. */
-  {id:'2f80d651-3b97-4e14-a5c0-916428de70b3', partner:0, name:'Tornado — 72h funding push',
-   strategy_key:'tornado', offer_type:'funding', platform:'tiktok', budget_cents:120000,
-   updated_at:'2026-07-29T18:22:47Z',
-   screenings:[{code:'needs_approval', message:[RZ.approvalSetting]}]},
-
-  /* The one clean 'passed' on this screen, and it has to be this partner: Larkspur is
-     the partner whose approve_before_launch is OFF (social-studio.html:862-865), so a
-     credit_cards subject with clean copy falls through to `return {state:'passed'}`.
-     A passed screening carries reasons: [] — the renderer says so rather than hiding
-     the row. approval_state is still awaiting_approval, because that is a workflow
-     value on campaigns, not a compliance verdict. */
-  {id:'8a61e304-7f52-4b9d-86c1-40b7f2596ea8', partner:1, name:'Larkspur — Harvester retarget',
-   strategy_key:'harvester', offer_type:'credit_cards', platform:'meta', budget_cents:65000,
-   updated_at:'2026-07-29T12:09:33Z',
-   screenings:[{code:'passed', message:[]}]},
-
-  /* strategy_key is NULLABLE on this row shape — a campaign that has not been given one
-     still appears in the queue, and the cell is rendered blank, not "—unknown—". */
-  {id:'b3d925fc-0a48-4671-92e7-5c8016b3a4d0', partner:2, name:'Halcyon — CROA-safe intro',
-   strategy_key:null, offer_type:'credit_repair', platform:'meta', budget_cents:90000,
-   updated_at:'2026-07-30T07:33:58Z',
-   screenings:[{code:'blocked', message:[RZ.disclosure]},
-               {code:'needs_approval', message:[RZ.approvalCreditRepair]}]}
-];
 
 /* ══ COMPLIANCE RULE CATALOGUE ═══════════════════════════════════════════
    Three sources, and the difference between them is the point of the table:
@@ -1728,6 +1322,21 @@ function page(rows, limit, offset){
   return {items:items, count:items.length, limit:limit, offset:offset, hasMore:hasMore};
 }
 function byPartner(rows){ return rows.filter(function(r){ return r.partner === S.partner; }); }
+/* The one partner this screen is scoped to, or null when none was named. */
+function currentPartner(){ return PARTNERS[S.partner] || null; }
+function currentPartnerId(){ var p = currentPartner(); return p ? p.id : null; }
+/* §6 — what a panel is allowed to paint right now. Returns null when the panel's
+   endpoint answered, otherwise the sentence to show instead of rows. Never a
+   count, never a zero: a failed read and an empty partner are not "none". */
+function panelState(key){
+  if(!currentPartner())
+    return 'No partner selected. Open this screen with <span class="mono">?partner_id=</span> set to one partner ' +
+           'and this fills with that partner’s rows.';
+  var res = CF_ENDPOINT_RES[key];
+  if(!res) return 'Loading…';
+  if(!res.ok) return 'This could not be read just now — ' + esc(res.error || res.source) + '. Nothing is shown rather than a stale or made-up figure.';
+  return null;
+}
 function kitName(id){
   for(var i=0;i<KITS.length;i++){ if(KITS[i].id===id) return KITS[i].name; }
   return null;
@@ -1760,34 +1369,38 @@ var S = {
 /* ══ CF-01 · PARTNER SCOPE ═══════════════════════════════════════════════ */
 function renderScope(){
   var sel = document.getElementById('partnerSel');
+  var p = currentPartner();
   if(!sel.options.length){
-    sel.innerHTML = PARTNERS.map(function(p,i){
-      return '<option value="'+i+'">'+esc(p.name)+'</option>';
-    }).join('');
-    sel.addEventListener('change', function(){
-      S.partner = parseInt(sel.value,10)||0;
-      S.jobOffset = 0; S.libOffset = 0; S.apprOffset = 0; S.kitOffset = 0;
-      S.libKit = '';
-      // Switching partners is switching ?partner_id= — re-fetch, don't re-filter
-      // cached rows from the partner we just left.
-      JOBS=[]; ASSETS=[]; KITS=[]; APPROVALS_LIVE=null;
-      renderAll();
-      wireCreative();
-    });
+    sel.innerHTML = p
+      ? '<option value="0">'+esc(p.name)+'</option>'
+      : '<option value="">No partner selected</option>';
+    sel.disabled = true;   /* one partner per address, and no list to choose from */
   }
-  sel.value = String(S.partner);
-  var p = PARTNERS[S.partner];
-  document.getElementById('scopePid').textContent = 'partner_id = ' + p.id;
-  document.getElementById('scopeChipTxt').textContent = p.name;
-  document.getElementById('scopeOffers').innerHTML = p.offers.map(function(o){
-    return '<span class="badge b-gray mono" style="margin-right:4px">'+esc(o)+'</span>';
-  }).join('');
-  document.getElementById('scopeHow').innerHTML =
-    'Reading as <b>staff</b>, so every request carries <code>?partner_id=' + esc(p.id) + '</code>. ' +
-    'This picker is the whole of the cross-partner capability on this screen: it changes <i>which one</i> ' +
-    'partner is on screen, never how many. A partner principal reading the same four endpoints sees this ' +
-    'as a static label instead, because <code>resolvePartnerId</code> pins them to their own id and ' +
-    'discards the query string.';
+  if(p) sel.value = '0';
+  document.getElementById('scopePid').textContent = p ? 'partner_id = ' + p.id : 'partner_id = not set';
+  document.getElementById('scopeChipTxt').textContent = p ? p.name : 'no partner selected';
+  document.getElementById('scopeOffers').innerHTML = '';
+  document.getElementById('scopeHow').innerHTML = p
+    ? 'Reading as <b>staff</b>, so every request carries <code>?partner_id=' + esc(p.id) + '</code>, taken from ' +
+      'this page’s own address. One partner per address: there is no roster here and no endpoint that lists ' +
+      'partners, so this screen never shows more than the one it was opened for. A partner principal reading ' +
+      'the same four endpoints is pinned to its own id by <code>resolvePartnerId</code>, which discards the ' +
+      'query string.'
+    : '<b>Nothing is loaded yet.</b> Generation jobs, the creative library, the review queue and brand kits ' +
+      'appear here once this screen is opened for one partner — add <code>?partner_id=&lt;id&gt;</code> to this ' +
+      'page’s address and reload. Until then no request is sent and the buttons below are switched off, because ' +
+      'a stand-in id would read and write against a partner that does not exist.';
+  setWriteControls(!!p);
+}
+
+/* §5/§6 — a write control never fires against a partner that was not named. */
+function setWriteControls(enabled){
+  var ids = ['genBtn','runJobsBtn'];
+  document.querySelectorAll('[data-cact]').forEach(function(b){ b.disabled = !enabled; });
+  ids.forEach(function(id){ var b = document.getElementById(id); if(b) b.disabled = !enabled; });
+  if(enabled) return;   /* leave any live status message alone */
+  var reason = 'No partner selected — open this screen with ?partner_id= set.';
+  ['genMsg','actMsg'].forEach(function(id){ var m = document.getElementById(id); if(m) m.textContent = reason; });
 }
 
 /* ══ CF-00 · STAT TILES + DERIVATION ═════════════════════════════════════
@@ -1802,7 +1415,9 @@ function renderScope(){
    ════════════════════════════════════════════════════════════════════════ */
 function statModel(){
   var jobs = byPartner(JOBS), assets = byPartner(ASSETS), kits = byPartner(KITS);
-  var camps = CAMPAIGNS.filter(function(c){ return c.partner === S.partner; });
+  /* campaign rows come from the approvals read's own campaign branch — there is no
+     campaign list in this file to count instead. */
+  var camps = (APPROVALS_LIVE || []).filter(function(r){ return r.item_type === 'campaign'; });
   var queued = jobs.filter(function(j){ return j.status==='queued'; });
   var running = jobs.filter(function(j){ return j.status==='running'; });
   var failed = jobs.filter(function(j){ return j.status==='failed'; });
@@ -1883,7 +1498,29 @@ var DERIVS = {
         'rather than a page count — unlike every other number on this strip. The two are allowed to disagree.'};}
 };
 
+/* One message per distinct reason, so "no partner" does not print four times. */
+function blockersFor(keys){
+  var out = [];
+  keys.forEach(function(k){
+    var s = panelState(k);
+    if(s && out.indexOf(s) < 0) out.push(s);
+  });
+  return out;
+}
+
 function renderStats(){
+  var deriv = document.getElementById('deriv');
+  /* §6 — the strip is fed by all four reads. If any of them did not answer, the
+     totals would be wrong, so the strip says so instead of printing numbers. */
+  var blockers = blockersFor(['jobs','assets','approvals','kits']);
+  if(blockers.length){
+    document.getElementById('stats').innerHTML =
+      '<div class="empty" style="grid-column:1/-1">' + blockers.join('<br>') + '</div>';
+    deriv.innerHTML = '';
+    deriv.style.display = 'none';
+    return;
+  }
+  deriv.style.display = '';
   var m = statModel();
   var tiles = [
     {k:'flight',  label:'JOBS IN FLIGHT', v:(m.queued.length + m.running.length),
@@ -1940,12 +1577,15 @@ function jobStateParam(){ return S.jobStates.length ? S.jobStates.join(',') : 'a
 function renderJobRail(){
   var jobs = byPartner(JOBS);
   var host = document.getElementById('jobRail');
+  /* a chip count is a claim about the response — none is shown until there is one */
+  var blocked = panelState('jobs');
+  var cnt = function(n){ return blocked ? '' : '<span class="n">' + n + '</span>'; };
   var html = '<span class="rl">?state=</span>' +
-    '<button data-js="" class="' + (S.jobStates.length?'':'on') + '">all<span class="n">' + jobs.length + '</span></button>';
+    '<button data-js="" class="' + (S.jobStates.length?'':'on') + '">all' + cnt(jobs.length) + '</button>';
   html += JOB_STATES.map(function(st){
     var n = jobs.filter(function(j){ return j.status===st; }).length;
     return '<button data-js="' + st + '" class="' + (S.jobStates.indexOf(st)>=0?'on':'') + '">' +
-      st + '<span class="n">' + n + '</span></button>';
+      st + cnt(n) + '</button>';
   }).join('');
   host.innerHTML = html;
   host.querySelectorAll('[data-js]').forEach(function(b){
@@ -1969,7 +1609,10 @@ function renderJobs(){
   var pg = page(rows, S.jobLimit, S.jobOffset);
   var body = document.getElementById('jobBody');
 
-  if(!pg.items.length){
+  var blocked = panelState('jobs');
+  if(blocked){
+    body.innerHTML = '<tr><td colspan="10"><div class="empty">' + blocked + '</div></td></tr>';
+  } else if(!pg.items.length){
     body.innerHTML = '<tr><td colspan="10"><div class="empty">No jobs match <span class="mono">?state=' +
       esc(jobStateParam()) + '</span> for this partner.</div></td></tr>';
   } else {
@@ -1999,7 +1642,7 @@ function renderJobs(){
     S.jobOffset = Math.max(0, S.jobOffset + d * S.jobLimit); renderJobs();
   });
   setReq('jobReq', '/api/creative/jobs', {
-    partner_id: PARTNERS[S.partner].id, state: jobStateParam(),
+    partner_id: currentPartnerId(), state: jobStateParam(),
     limit: S.jobLimit, offset: S.jobOffset
   });
 }
@@ -2017,7 +1660,7 @@ function jobDetail(j){
   }).join('');
 
   if(j.error){
-    out += '<div class="detfull" style="margin-top:4px"><div class="dk" style="font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:5px">error</div>' +
+    out += '<div class="detfull" style="margin-top:4px"><div class="dk" style="font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:5px">error</div>' +
       '<div class="errbox">' + esc(j.error) + '</div></div>';
   }
   out += '<div class="detfull"><p class="note" style="margin-top:6px">' + jobExplain(j) + '</p></div>';
@@ -2090,6 +1733,14 @@ function wireExpand(body, sel, detailFn, lookup){
 
 /* ══ CF-03 · JOB STATE LEGEND ════════════════════════════════════════════ */
 function renderLegend(){
+  var blocked = panelState('jobs');
+  if(blocked){
+    /* §6 — five zeros would read as "no jobs in any state", which is a different
+       claim from "the jobs list was not read". */
+    document.getElementById('stateLegend').innerHTML =
+      '<div class="empty" style="grid-column:1/-1">' + blocked + '</div>';
+    return;
+  }
   var jobs = byPartner(JOBS);
   var n = function(f){ return jobs.filter(f).length; };
   var cards = [
@@ -2135,21 +1786,23 @@ function railHtml(label, param, values, current, counts){
 
 function renderLibFilters(){
   var all = byPartner(ASSETS).filter(function(a){ return S.libArchived==='1' || !a.archived_at; });
+  /* counts are omitted, not zeroed, while the library read has not answered */
+  var off = !!panelState('assets');
 
   document.getElementById('libStateRail').innerHTML = railHtml('?state=', 'ls',
     [{k:'all',t:'all'}].concat(LIB_STATES.map(function(s){ return {k:s,t:s}; })),
     S.libState,
-    function(k){ return k==='all' ? all.length : all.filter(function(a){ return a.compliance_state===k; }).length; });
+    off ? null : function(k){ return k==='all' ? all.length : all.filter(function(a){ return a.compliance_state===k; }).length; });
 
   document.getElementById('libKindRail').innerHTML = railHtml('?kind=', 'lk',
     [{k:'',t:'any'}].concat(ASSET_KINDS.map(function(s){ return {k:s,t:s}; })),
     S.libKind,
-    function(k){ return k==='' ? all.length : all.filter(function(a){ return a.kind===k; }).length; });
+    off ? null : function(k){ return k==='' ? all.length : all.filter(function(a){ return a.kind===k; }).length; });
 
   document.getElementById('libFormatRail').innerHTML = railHtml('?format=', 'lf',
     [{k:'',t:'any'}].concat(FORMATS.map(function(s){ return {k:s,t:s}; })),
     S.libFormat,
-    function(k){ return k==='' ? all.length : all.filter(function(a){ return a.format===k; }).length; });
+    off ? null : function(k){ return k==='' ? all.length : all.filter(function(a){ return a.format===k; }).length; });
 
   document.getElementById('libStateRail').querySelectorAll('[data-ls]').forEach(function(b){
     b.addEventListener('click', function(){ S.libState = b.dataset.ls; S.libOffset=0; renderLibrary(); });
@@ -2191,10 +1844,10 @@ function assetCard(a){
       '<div class="an">' + esc(a.kind) + ' · ' + esc(a.provider) + '</div>' +
       '<div class="ak">' + esc(kitName(a.brand_kit_id) || 'no brand kit') + '</div>' +
       '<div class="aflags">' +
-        '<span class="badge ' + LIB_BADGE[a.compliance_state] + '" style="font-size:8.5px;padding:2px 5px">' + esc(a.compliance_state) + '</span>' +
+        '<span class="badge ' + LIB_BADGE[a.compliance_state] + '" style="font-size:var(--fs-caption);padding:2px 5px">' + esc(a.compliance_state) + '</span>' +
         flags +
       '</div>' +
-      '<div class="ak mono" style="font-size:9.5px;color:var(--gray2);margin-top:6px">' + esc(fmt(a.created_at)) + ' · ' + esc(shortId(a.id)) + '</div>' +
+      '<div class="ak mono" style="font-size:var(--fs-caption);color:var(--gray2);margin-top:6px">' + esc(fmt(a.created_at)) + ' · ' + esc(shortId(a.id)) + '</div>' +
     '</div>' +
   '</button>';
 }
@@ -2205,7 +1858,10 @@ function renderLibrary(){
   var pg = page(rows, S.libLimit, S.libOffset);
   var grid = document.getElementById('libGrid');
 
-  if(!pg.items.length){
+  var blocked = panelState('assets');
+  if(blocked){
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">' + blocked + '</div>';
+  } else if(!pg.items.length){
     grid.innerHTML = '<div class="empty" style="grid-column:1/-1">' + libEmptyMsg() + '</div>';
   } else {
     grid.innerHTML = pg.items.map(assetCard).join('');
@@ -2213,12 +1869,12 @@ function renderLibrary(){
       b.addEventListener('click', function(){ openAsset(assetById(b.dataset.asset)); });
     });
   }
-  document.getElementById('libCount').textContent = pg.count + ' on this page';
+  document.getElementById('libCount').textContent = blocked ? 'not read' : pg.count + ' on this page';
   renderPager('libPager', pg, function(d){
     S.libOffset = Math.max(0, S.libOffset + d * S.libLimit); renderLibrary();
   });
   setReq('libReq', '/api/creative/library', {
-    partner_id: PARTNERS[S.partner].id, state: S.libState,
+    partner_id: currentPartnerId(), state: S.libState,
     kind: S.libKind, format: S.libFormat, brand_kit_id: S.libKit,
     include_archived: S.libArchived, limit: S.libLimit, offset: S.libOffset
   });
@@ -2233,7 +1889,7 @@ function libEmptyMsg(){
     return 'Same rows as before. <span class="mono">archived_at</span> exists and the library hides those rows by ' +
       'default, but <b>no code path ever sets it</b> — and hard delete is impossible ' +
       '(<span class="mono">trg_creative_assets_no_delete</span>). So this filter changes nothing on a real database.';
-  return 'No assets match this filter for ' + esc(PARTNERS[S.partner].name) + '.';
+  return 'No assets match this filter for this partner.';
 }
 
 /* ══ CF-06 · REVIEW &amp; APPROVAL QUEUE ══════════════════════════════════ */
@@ -2264,14 +1920,8 @@ function apprRows(){
         updated_at:a.updated_at, _asset:a});
     });
   }
-  if(want==='all' || want==='awaiting_approval'){
-    CAMPAIGNS.filter(function(c){ return c.partner===S.partner; }).forEach(function(c){
-      out.push({item_type:'campaign', id:c.id, state:'awaiting_approval',
-        subtype:c.strategy_key, detail:c.name, reasons:c.screenings,
-        budget_cents:c.budget_cents, offer_type:c.offer_type, platform:c.platform,
-        ai_generated:null, synthetic_performer:null, updated_at:c.updated_at, _camp:c});
-    });
-  }
+  /* The campaign branch of this queue exists only in the approvals response. With
+     that read unavailable there are no campaign rows to show — and none to invent. */
   out.sort(function(a,b){ return a.updated_at < b.updated_at ? 1 : a.updated_at > b.updated_at ? -1 : 0; });
   return out;
 }
@@ -2279,10 +1929,12 @@ function apprRows(){
 function renderApprRail(){
   var host = document.getElementById('apprRail');
   var opts = [{k:'all',t:'all'},{k:'blocked',t:'blocked'},{k:'pending',t:'pending'},{k:'awaiting_approval',t:'awaiting_approval'}];
+  var off = !!panelState('approvals');
   host.innerHTML = '<span class="rl">?state=</span>' + opts.map(function(o){
     var saved = S.apprState; S.apprState = o.k;
     var n = apprRows().length; S.apprState = saved;
-    return '<button data-as="' + o.k + '" class="' + (S.apprState===o.k?'on':'') + '">' + o.t + '<span class="n">' + n + '</span></button>';
+    return '<button data-as="' + o.k + '" class="' + (S.apprState===o.k?'on':'') + '">' + o.t +
+      (off ? '' : '<span class="n">' + n + '</span>') + '</button>';
   }).join('');
   host.querySelectorAll('[data-as]').forEach(function(b){
     b.addEventListener('click', function(){ S.apprState = b.dataset.as; S.apprOffset=0; renderApprovals(); });
@@ -2295,7 +1947,10 @@ function renderApprovals(){
   var pg = page(rows, S.apprLimit, S.apprOffset);
   var body = document.getElementById('apprBody');
 
-  if(!pg.items.length){
+  var blocked = panelState('approvals');
+  if(blocked){
+    body.innerHTML = '<tr><td colspan="10"><div class="empty">' + blocked + '</div></td></tr>';
+  } else if(!pg.items.length){
     body.innerHTML = '<tr><td colspan="10"><div class="empty">Nothing in the queue for this filter.</div></td></tr>';
   } else {
     body.innerHTML = pg.items.map(function(r){
@@ -2332,7 +1987,7 @@ function renderApprovals(){
     S.apprOffset = Math.max(0, S.apprOffset + d * S.apprLimit); renderApprovals();
   });
   setReq('apprReq', '/api/creative/approvals', {
-    partner_id: PARTNERS[S.partner].id, state: S.apprState,
+    partner_id: currentPartnerId(), state: S.apprState,
     limit: S.apprLimit, offset: S.apprOffset
   });
 }
@@ -2358,10 +2013,10 @@ function apprDetail(r){
   out += '<div class="detcol"><div class="dk">id</div><div class="dv mono">' + esc(r.id) + '</div></div>';
   out += '<div class="detcol"><div class="dk">subtype</div><div class="dv mono">' +
     (r.subtype ? esc(r.subtype) : '<span class="nul">null</span>') +
-    '</div><div class="ad" style="font-family:var(--mono);font-size:9px;color:var(--gray2);margin-top:3px">' +
+    '</div><div class="ad" style="font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);margin-top:3px">' +
     (r.item_type==='campaign' ? 'strategy_key (nullable)' : 'creative_assets.kind') + '</div></div>';
   out += '<div class="detcol"><div class="dk">detail</div><div class="dv">' + esc(r.detail) +
-    '</div><div class="ad" style="font-family:var(--mono);font-size:9px;color:var(--gray2);margin-top:3px">' +
+    '</div><div class="ad" style="font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);margin-top:3px">' +
     (r.item_type==='campaign' ? 'campaigns.name' : 'creative_assets.format') + '</div></div>';
 
   if(r.item_type==='campaign'){
@@ -2442,7 +2097,7 @@ function renderRules(){
       '<td>' + sevCell + '</td>' +
       '<td class="mono">' + esc((r.offers.length ? r.offers.join(' ') : 'all offers') +
         (r.platforms.length ? ' · ' + r.platforms.join(' ') : '')) + '</td>' +
-      '<td class="mono" style="font-size:10.5px">' + (r.citation ? esc(r.citation) : nul('—')) + '</td>' +
+      '<td class="mono" style="font-size:var(--fs-caption)">' + (r.citation ? esc(r.citation) : nul('—')) + '</td>' +
     '</tr>';
   }).join('');
   wireExpand(document.getElementById('ruleBody'), '[data-rule]', function(r){
@@ -2491,9 +2146,11 @@ function swatches(palette){
 function renderKits(){
   var host = document.getElementById('kitRail');
   var mine = byPartner(KITS);
+  var off = !!panelState('kits');
   host.innerHTML = '<span class="rl">?state=</span>' + ['all'].concat(KIT_STATES).map(function(s){
     var n = s==='all' ? mine.length : mine.filter(function(k){ return k.status===s; }).length;
-    return '<button data-ks="' + s + '" class="' + (S.kitState===s?'on':'') + '">' + s + '<span class="n">' + n + '</span></button>';
+    return '<button data-ks="' + s + '" class="' + (S.kitState===s?'on':'') + '">' + s +
+      (off ? '' : '<span class="n">' + n + '</span>') + '</button>';
   }).join('');
   host.querySelectorAll('[data-ks]').forEach(function(b){
     b.addEventListener('click', function(){ S.kitState = b.dataset.ks; S.kitOffset=0; renderKits(); });
@@ -2503,7 +2160,10 @@ function renderKits(){
   var pg = page(rows, S.kitLimit, S.kitOffset);
   var grid = document.getElementById('kitGrid');
 
-  if(!pg.items.length){
+  var blocked = panelState('kits');
+  if(blocked){
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">' + blocked + '</div>';
+  } else if(!pg.items.length){
     grid.innerHTML = '<div class="empty" style="grid-column:1/-1">No brand kits with status ' +
       '<span class="mono">' + esc(S.kitState) + '</span> for this partner. There is no fundhub-owned or ' +
       'global kit — <span class="mono">brand_kits.partner_id</span> is NOT NULL.</div>';
@@ -2540,7 +2200,7 @@ function renderKits(){
     S.kitOffset = Math.max(0, S.kitOffset + d * S.kitLimit); renderKits();
   });
   setReq('kitReq', '/api/creative/brand-kits', {
-    partner_id: PARTNERS[S.partner].id, state: S.kitState, limit: S.kitLimit, offset: S.kitOffset
+    partner_id: currentPartnerId(), state: S.kitState, limit: S.kitLimit, offset: S.kitOffset
   });
 }
 
@@ -2556,14 +2216,14 @@ function renderStaticTables(){
   }).join('');
 
   document.getElementById('contractBody').innerHTML = CONTRACT.map(function(c){
-    return '<tr><td class="mono">' + esc(c.ep) + '</td><td class="mono" style="font-size:10.5px">' + esc(c.state) + '</td>' +
-      '<td class="mono" style="font-size:10.5px">' + esc(c.other) + '</td><td class="note">' + esc(c.bad) + '</td></tr>';
+    return '<tr><td class="mono">' + esc(c.ep) + '</td><td class="mono" style="font-size:var(--fs-caption)">' + esc(c.state) + '</td>' +
+      '<td class="mono" style="font-size:var(--fs-caption)">' + esc(c.other) + '</td><td class="note">' + esc(c.bad) + '</td></tr>';
   }).join('');
 
   document.getElementById('gapsBody').innerHTML = GAPS.map(function(g){
     var badge = g.tone==='bad' ? 'b-alert' : (g.tone==='warn' ? 'b-warn' : 'b-ok');
     return '<tr class="stripe-' + g.tone + '"><td class="mono">' + esc(g.config) + '</td>' +
-      '<td class="mono" style="font-size:11px">' + esc(g.detail) + '</td>' +
+      '<td class="mono" style="font-size:var(--fs-caption)">' + esc(g.detail) + '</td>' +
       '<td class="mnum">' + g.rows_set + '</td>' +
       '<td><span class="badge ' + badge + '" style="white-space:normal">' + esc(g.status) + '</span></td>' +
       '<td class="note">' + esc(g.consequence) + '</td></tr>';
@@ -2579,7 +2239,7 @@ function renderStaticTables(){
   document.getElementById('ledgerBody').innerHTML = LEDGER.map(function(l){
     var badge = l.tone==='ok' ? 'b-ok' : (l.tone==='warn' ? 'b-warn' : 'b-alert');
     return '<tr class="stripe-' + l.tone + '"><td><b>' + esc(l.s) + '</b></td>' +
-      '<td class="mono" style="font-size:11px">' + esc(l.src) + '</td>' +
+      '<td class="mono" style="font-size:var(--fs-caption)">' + esc(l.src) + '</td>' +
       '<td><span class="badge ' + badge + '">' + esc(l.st) + '</span></td>' +
       '<td class="note">' + esc(l.note) + '</td></tr>';
   }).join('');
@@ -2795,8 +2455,9 @@ function renderAll(){
   renderLibrary();
   renderApprovals();
   renderKits();
+  var p = currentPartner();
   document.getElementById('footNote').textContent =
-    'cf · api/creative/* · read-only · ' + PARTNERS[S.partner].name.toLowerCase() +
+    'cf · api/creative/* · read-only · ' + (p ? String(p.name).toLowerCase() : 'no partner selected') +
     (CF_SRC.length ? ' · ' + CF_SRC.join(' · ') : '');
 }
 
@@ -2809,10 +2470,8 @@ function renderAll(){
 
    Every one of these four endpoints requires ?partner_id= for a staff caller
    (src/http/partner-read-api.mjs resolvePartnerId — a staff session with none
-   gets a 400, never "everything"), so every read below is scoped to whichever
-   partner CF-01's picker currently has selected. Switching partners re-fetches
-   all four rather than re-filtering cached rows, because the picker is really
-   choosing which tenant's data the server is allowed to hand back. */
+   gets a 400, never "everything"), so every read below is scoped to the one
+   partner named in this page's address. With none named, nothing is requested. */
 function apiGet(path){
   var demo = false, tok = '';
   try { demo = localStorage.getItem('fh_demo') === '1'; tok = localStorage.getItem('fh_token') || ''; } catch(e){}
@@ -2847,29 +2506,46 @@ function apiGet(path){
   });
 }
 
-/* Every field on a live row already matches what this screen renders — each of
-   the four sample arrays was built column-for-column from its endpoint's SQL
-   (see the comments above KITS/JOBS/ASSETS). The one thing no endpoint returns
-   is which partner index the row belongs to, because the server only ever
-   answers for the one partner_id in the request — so that is stamped on here. */
+/* The one thing no endpoint returns is which partner index the row belongs to,
+   because the server only ever answers for the one partner_id in the request —
+   so that is stamped on here. */
 function tagPartner(items){ return (items||[]).map(function(r){ r.partner = S.partner; return r; }); }
 
 var LIVE_CF = {kits:false, jobs:false, assets:false, approvals:false};
-var APPROVALS_LIVE = null; // null = derive client-side from ASSETS + CAMPAIGNS, as apprRows() always did
+var APPROVALS_LIVE = null; // null = the approvals read has not answered; derive the asset rows from ASSETS
 var CF_SRC = [];
 var CF_ENDPOINT_RES = {};
 
 function wireCreative(){
   var demo=false; try{ demo = localStorage.getItem('fh_demo')==='1'; }catch(e){}
   if(demo){
-    KITS=SAMPLE_KITS; JOBS=SAMPLE_JOBS; ASSETS=SAMPLE_ASSETS; APPROVALS_LIVE=null;
-    CF_SRC = ['demo session — sample markup'];
-    if(window.FHData) FHData.banner('sample','sample creative factory — demo session, the backend was not queried','creative');
+    /* A demo session queries nothing. There is no sample book to stand in for a
+       real one, so the panels show their empty state and say why (§6). */
+    KITS=[]; JOBS=[]; ASSETS=[]; APPROVALS_LIVE=null;
+    CF_ENDPOINT_RES = {
+      jobs:{ok:false, source:'demo', data:null, error:'demo session — the creative endpoints were not queried'},
+      assets:{ok:false, source:'demo', data:null, error:'demo session — the creative endpoints were not queried'},
+      kits:{ok:false, source:'demo', data:null, error:'demo session — the creative endpoints were not queried'},
+      approvals:{ok:false, source:'demo', data:null, error:'demo session — the creative endpoints were not queried'}
+    };
+    CF_SRC = ['demo session — nothing read'];
+    if(window.FHData) FHData.banner('sample','creative factory — demo session, the backend was not queried and nothing is shown','creative');
     updateLedgerLive();
     renderAll();
     return;
   }
-  var pid = PARTNERS[S.partner].id;
+  var pid = currentPartnerId();
+  if(!pid){
+    /* No partner named — issuing these reads with a stand-in id is what this
+       screen used to do. Now it asks for nothing and says so. */
+    KITS=[]; JOBS=[]; ASSETS=[]; APPROVALS_LIVE=null;
+    CF_ENDPOINT_RES = {};
+    CF_SRC = ['no partner selected — nothing requested'];
+    updateLedgerLive();
+    renderAll();
+    if(window.FHData) FHData.banner('sample','creative factory · no partner selected — no request was sent','creative');
+    return;
+  }
   Promise.all([
     apiGet('/api/creative/jobs?partner_id='+encodeURIComponent(pid)+'&state=all&limit=200').then(function(res){
       CF_ENDPOINT_RES.jobs=res;

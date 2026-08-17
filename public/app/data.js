@@ -30,9 +30,11 @@
  *   ok:false source:"demo"         — demo session, no read attempted
  *   ok:true  source:"api"          — real rows
  *
- * "notfound"/"badrequest" are NOT outages. A screen must report them as sample
- * data with a reason, never as "backend unavailable" — see the reference
- * wiring in client-control-panel.html.
+ * "notfound"/"badrequest" are NOT outages. A screen must report them as a read
+ * that did not come back, with a reason, never as "backend unavailable" — see
+ * the reference wiring in client-control-panel.html. No failure message calls
+ * what is left on screen "sample": this layer does not know what the screen is
+ * still showing, and UI-STANDARDS §6 forbids sample data dressed as real.
  *
  * "nodb" vs "server" is the same class of distinction and it was got wrong for
  * the same reason (audit m17). Every non-ok body used to be classified "nodb",
@@ -502,7 +504,16 @@ window.FHData = (function () {
       if (res && res.source === "demo") {
         this.banner("sample", "sample " + what + " — demo session, the backend was not queried", what);
       } else if (res && res.source === "unauthorized") {
-        this.banner("error", "sample " + what + " — not signed in for real data", what);
+        /* 401 and 403 arrive here as the SAME source (see get(): both map to
+           "unauthorized"), so this file cannot tell "signed out" from "signed
+           in but not allowed". The old wording picked one and told a client who
+           WAS signed in that they were not — a lie on screen, and the reason
+           they stopped trusting the page. It also called what was left on the
+           screen "sample", which is not this layer's to promise. Say the two
+           possibilities, assert neither, and give a next step. */
+        this.banner("error", "We could not load " + what + ". This account may not be " +
+          "allowed to see it, or may need to be signed in again. If signing in again does " +
+          "not help, ask your advisor.", what);
       } else if (res && res.source === "unbuilt") {
         // 501 from a route that is registered but whose handler is not finished.
         // "Sample" tone, not "error": nothing is broken and nothing is down —
@@ -512,14 +523,15 @@ window.FHData = (function () {
       } else if (res && (res.source === "notfound" || res.source === "badrequest")) {
         // The backend answered. Nothing is broken except what was asked for, so
         // this is a "sample" tone with a reason, not an outage.
-        this.banner("sample", "sample " + what + " — " +
+        this.banner("sample", "We could not load " + what + " — " +
           (res.source === "notfound" ? "no matching record" : "the request was rejected") +
-          " (" + detail + ")", what);
+          " (" + detail + "). Check the link you followed, or ask your advisor.", what);
       } else if (res && res.source === "nodb") {
         // The database itself said so — a 503 from the connection guard, or
         // db:"down" from /api/health. This is the one case where naming the
         // database is a fact and not a guess.
-        this.banner("error", "sample " + what + " — the database is not answering (" + detail + ")", what);
+        this.banner("error", "We could not load " + what + " — the database is not answering (" +
+          detail + "). Try again in a few minutes.", what);
       } else if (res && res.source === "server") {
         /* AUDIT m17. The old wording here was "backend unavailable", and every
            500 out of a crashed handler arrived carrying source "nodb", so the
@@ -531,16 +543,19 @@ window.FHData = (function () {
            true: our side broke while answering, and the database did not report
            a problem of its own. An honest vague message sends the reader to the
            right place; a confident wrong one sends them to Postgres for an hour. */
-        this.banner("error", "sample " + what + " — something went wrong on our side while " +
-          "answering. The database did not report a problem. (" + detail + ")", what);
+        this.banner("error", "We could not load " + what + " — something went wrong on our side " +
+          "while answering. The database did not report a problem. (" + detail + ") " +
+          "Try again in a few minutes.", what);
       } else if (res && res.source === "offline") {
         // No reply came back at all — no status, no body. Distinct from the two
         // above, which both mean somebody answered and the answer was bad.
-        this.banner("error", "sample " + what + " — we could not reach the server (" + detail + ")", what);
+        this.banner("error", "We could not load " + what + " — we could not reach the server (" +
+          detail + "). Check your connection and try again.", what);
       } else {
         // Genuinely unclassified. Say that, rather than picking a system to blame.
-        this.banner("error", "sample " + what + " — the read failed and we cannot tell why (" +
-          ((res && res.source) || "unknown") + ": " + detail + ")", what);
+        this.banner("error", "We could not load " + what + " — the read failed and we cannot " +
+          "tell why (" + ((res && res.source) || "unknown") + ": " + detail + "). " +
+          "Try again, and tell your advisor if it keeps failing.", what);
       }
     },
 
@@ -562,7 +577,8 @@ window.FHData = (function () {
         if (res && res.ok) {
           var note = null;
           try { note = paint(res.data); }
-          catch (e) { self.banner("error", "sample " + what + " — render failed: " + e.message, what); return; }
+          catch (e) { self.banner("error", "We could not show " + what + " — the page failed to " +
+            "draw it (" + e.message + "). Reload the page.", what); return; }
           if (note) { self.banner("real", note, what); return; }
           // Connected, queried, nothing there. Do not keep sample people.
           self.banner("sample", "no " + what + " in the database yet", what);
@@ -570,7 +586,8 @@ window.FHData = (function () {
         }
         self.explain(res, what);
       }).catch(function (e) {
-        self.banner("error", "sample " + what + " — " + (e && e.message ? e.message : "read failed"), what);
+        self.banner("error", "We could not load " + what + " — " +
+          (e && e.message ? e.message : "the read failed") + ". Try again in a few minutes.", what);
       });
     }
   };

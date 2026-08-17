@@ -14,7 +14,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--butter:#F2E39B}           /* spectrum stop @40% — the 6th status color */
 html,body{height:100%}
-body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:1.5;-webkit-font-smoothing:antialiased}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 a{color:inherit;text-decoration:none}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -40,29 +40,29 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
-.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
-.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
 .content{padding:22px 24px 40px;flex:1}
 
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .card+.card{margin-top:14px}
 .card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.card-hd .t{font-size:13.5px;font-weight:600;letter-spacing:-.01em}
+.card-hd .t{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .card-bd{padding:16px}
 .hair{height:2px;background:var(--spectrum);border-radius:1px}
 
-.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:var(--fs-body);font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
 .btn:hover{background:var(--soft);border-color:var(--gray2)}
 .btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .btn.dark:hover{background:var(--ink2)}
-.btn.sm{padding:5px 10px;font-size:11.5px}
-.btn.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.btn.sm{padding:5px 10px;font-size:var(--fs-caption)}
+.btn.mono{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.08em;text-transform:uppercase}
 .btn.danger{color:#6E2A22;border-color:var(--alert)}
 .btn.danger:hover{background:rgba(242,166,155,.16)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 
-.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:var(--fs-caption);font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
 .b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
 .b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
 .b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
@@ -74,17 +74,17 @@ button,input,select,textarea{font:inherit;color:inherit}
 .b-butter{background:rgba(242,227,155,.40);border-color:var(--butter);color:#6B4A12}
 
 table.grid{width:100%;border-collapse:collapse}
-table.grid th{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft)}
-table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+table.grid th{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft)}
+table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:var(--fs-body);vertical-align:middle}
 table.grid tr:last-child td{border-bottom:0}
 
 .field{display:flex;flex-direction:column;gap:5px}
-.field label{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
-.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:13px;width:100%;font-family:inherit}
+.field label{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
+.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:var(--fs-body);width:100%;font-family:inherit}
 .field textarea{resize:vertical;min-height:52px;line-height:1.45}
 .field input.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
-.field .hint{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em}
+.field .hint{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
 .sw{position:relative;width:38px;height:21px;flex:0 0 38px;border-radius:11px;background:var(--line);border:1px solid var(--line);cursor:pointer;transition:background .15s}
@@ -95,11 +95,11 @@ table.grid tr:last-child td{border-bottom:0}
 .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
 .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
 .stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
-.stat .sv{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
-.stat .sd{font-size:11px;color:var(--gray);margin-top:2px}
+.stat .sv{font-family:var(--mono);font-size:var(--fs-metric);font-variant-numeric:tabular-nums;font-weight:600;margin-top:8px;letter-spacing:-.02em}
+.stat .sd{font-size:var(--fs-caption);color:var(--gray);margin-top:2px}
 
-.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
-.empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:12px}
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+.empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:var(--fs-body)}
 
 /* ══ SOCIAL STUDIO — page specific ═══════════════════════════════════════ */
 
@@ -111,27 +111,27 @@ button.stat[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 3px rg
 button.stat:focus-visible{outline:2px solid var(--info);outline-offset:2px}
 .deriv{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--soft);
   padding:12px 15px;display:flex;gap:12px;align-items:flex-start}
-.deriv .dk{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+.deriv .dk{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;
   color:var(--gray);flex:0 0 96px;padding-top:2px}
-.deriv .dv{flex:1;min-width:0;font-family:var(--mono);font-size:11px;line-height:1.65;color:var(--ink);
+.deriv .dv{flex:1;min-width:0;font-family:var(--mono);font-size:var(--fs-caption);line-height:1.65;color:var(--ink);
   word-break:break-word}
 .deriv .dv b{font-weight:600}
 .deriv .dv .src{color:var(--gray2)}
 
 .notice{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--info);
-  background:rgba(169,198,232,.13);border-radius:9px;padding:11px 14px;margin-top:14px;font-size:12px;color:#22415F}
-.notice .ni{flex:0 0 auto;font-size:13px;line-height:1.3}
+  background:rgba(169,198,232,.13);border-radius:9px;padding:11px 14px;margin-top:14px;font-size:var(--fs-body);color:#22415F}
+.notice .ni{flex:0 0 auto;font-size:var(--fs-body);line-height:1.3}
 .notice.warn{border-color:var(--warn);background:rgba(245,206,143,.20);color:#6B4A12}
 .notice.bad{border-color:var(--alert);background:rgba(242,166,155,.18);color:#6E2A22}
 /* inline schema tokens read as chips, exactly as on Campaigns / Creative
    Factory / Hiring — same family, size, fill and border. */
-.notice code,code{font-family:var(--mono);font-size:11px;background:var(--soft);
+.notice code,code{font-family:var(--mono);font-size:var(--fs-caption);background:var(--soft);
   border:1px solid var(--line);border-radius:4px;padding:1px 5px}
 
 /* the caption strip under a card — the shared footnote treatment across the
    four Marketing + Setup surfaces. */
 .cap{padding:10px 16px;border-top:1px solid var(--line);background:var(--soft);
-  font-size:11.5px;color:var(--gray);line-height:1.55}
+  font-size:var(--fs-caption);color:var(--gray);line-height:1.55}
 .cap b{color:var(--ink);font-weight:600}
 .cap+.cap{border-top:1px dashed var(--line)}
 
@@ -144,34 +144,34 @@ button.stat:focus-visible{outline:2px solid var(--info);outline-offset:2px}
 .chcard.s-expired::before{background:var(--warn)}
 .chcard.s-revoked::before{background:var(--alert)}
 .chcard-hd{display:flex;align-items:center;gap:9px;padding:11px 13px 10px 15px;border-bottom:1px solid var(--line)}
-.chcard-hd .cn{font-size:12.5px;font-weight:600;letter-spacing:-.01em}
-.chcard-hd .ch{font-family:var(--mono);font-size:10px;color:var(--gray2);letter-spacing:.05em;display:block;margin-top:2px;font-weight:400}
+.chcard-hd .cn{font-size:var(--fs-body);font-weight:600;letter-spacing:-.01em}
+.chcard-hd .ch{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.05em;display:block;margin-top:2px;font-weight:400}
 .chcard-bd{padding:10px 13px 12px 15px;display:flex;flex-direction:column;gap:6px}
-.kv{display:flex;gap:10px;font-size:11.5px;align-items:baseline}
-.kv .k{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);flex:0 0 96px}
+.kv{display:flex;gap:10px;font-size:var(--fs-caption);align-items:baseline}
+.kv .k{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);flex:0 0 96px}
 .kv .v{flex:1;min-width:0;word-break:break-word}
-.kv .v.mono{font-family:var(--mono);font-size:11px}
-.tick{font-family:var(--mono);font-size:11px}
+.kv .v.mono{font-family:var(--mono);font-size:var(--fs-caption)}
+.tick{font-family:var(--mono);font-size:var(--fs-caption)}
 .tick.y{color:#2C5138}
 .tick.n{color:var(--gray2)}
 .scopes{display:flex;flex-wrap:wrap;gap:4px}
-.scope{font-family:var(--mono);font-size:9px;letter-spacing:.05em;background:var(--soft);
+.scope{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.05em;background:var(--soft);
   border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--gray)}
-.consq{margin-top:4px;border-top:1px dashed var(--line);padding-top:8px;font-size:11px;color:var(--gray);line-height:1.5}
+.consq{margin-top:4px;border-top:1px dashed var(--line);padding-top:8px;font-size:var(--fs-caption);color:var(--gray);line-height:1.5}
 .consq b{color:var(--ink);font-weight:600}
 
 .ghost{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px;padding:16px}
 .ghosttile{border:1.5px dashed var(--line);border-radius:9px;padding:11px 13px;background:var(--soft)}
-.ghosttile .gn{font-size:12.5px;font-weight:600;color:var(--gray)}
-.ghosttile .gs{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray2);margin-top:5px}
+.ghosttile .gn{font-size:var(--fs-body);font-weight:600;color:var(--gray)}
+.ghosttile .gs{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.1em;text-transform:uppercase;color:var(--gray2);margin-top:5px}
 
 /* ── composer / verdict ──────────────────────────────────────────────────── */
 .cols{display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:14px;align-items:start;margin-top:14px}
 .vpane{position:sticky;top:71px}
 .capwrap{position:relative}
-.capwrap textarea{min-height:104px;font-size:12.5px}
+.capwrap textarea{min-height:104px;font-size:var(--fs-body)}
 .capmeta{display:flex;gap:10px;align-items:baseline;margin-top:5px}
-.capmeta .cc{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em;margin-left:auto}
+.capmeta .cc{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em;margin-left:auto}
 
 .rsn{border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:9px 11px;background:#fff}
 .rsn+.rsn{margin-top:8px}
@@ -180,13 +180,13 @@ button.stat:focus-visible{outline:2px solid var(--info);outline-offset:2px}
 .rsn.sev-none{border-left-color:var(--alert);border-left-style:dashed}
 .rsn.sev-approval{border-left-color:var(--accent)}
 .rsn .rh{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.rsn .rc{font-family:var(--mono);font-size:11px;font-weight:600}
-.rsn .rm{font-size:11.5px;color:var(--gray);line-height:1.5;margin-top:5px}
-.rsn .rcite{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--gray2);margin-top:5px}
-.rsn .rsevnote{font-family:var(--mono);font-size:9.5px;color:#6E2A22;margin-top:5px;letter-spacing:.04em}
+.rsn .rc{font-family:var(--mono);font-size:var(--fs-caption);font-weight:600}
+.rsn .rm{font-size:var(--fs-caption);color:var(--gray);line-height:1.5;margin-top:5px}
+.rsn .rcite{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.06em;color:var(--gray2);margin-top:5px}
+.rsn .rsevnote{font-family:var(--mono);font-size:var(--fs-caption);color:#6E2A22;margin-top:5px;letter-spacing:.04em}
 
 .verdict{padding:13px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.verdict .vwhat{font-size:11.5px;color:var(--gray);width:100%;line-height:1.5}
+.verdict .vwhat{font-size:var(--fs-caption);color:var(--gray);width:100%;line-height:1.5}
 .verdict .vwhat b{color:var(--ink);font-weight:600}
 
 /* ── workbench: tab rail over the four post states + the audit trail ─────── */
@@ -194,40 +194,40 @@ button.stat:focus-visible{outline:2px solid var(--info);outline-offset:2px}
    Factory and Hiring .rail is the flush filter-chip row, and one name must
    not mean two components across the set. */
 .tabrail{display:flex;gap:6px;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--soft);flex-wrap:wrap}
-.rtab{font:inherit;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:var(--gray);
+.rtab{font:inherit;font-size:var(--fs-body);font-weight:600;cursor:pointer;background:#fff;color:var(--gray);
   border:1px solid var(--line);border-radius:7px;padding:6px 12px;display:inline-flex;align-items:center;gap:8px;
   transition:background .12s,color .12s,border-color .12s}
 .rtab:hover{border-color:var(--gray2);color:var(--ink)}
 .rtab.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 .rtab:focus-visible{outline:2px solid var(--info);outline-offset:2px}
-.rtab .rn{font-family:var(--mono);font-size:10.5px;font-weight:600;border-radius:9px;padding:0 6px;
+.rtab .rn{font-family:var(--mono);font-size:var(--fs-caption);font-weight:600;border-radius:9px;padding:0 6px;
   background:var(--soft);color:var(--gray)}
 .rtab.on .rn{background:#26262B;color:var(--paper)}
 .filters{display:flex;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap}
 /* the shared label+select pair, byte-identical to Campaigns / Creative Factory
    / Hiring so the same control does not change shape between screens. */
 .selwrap{display:inline-flex;align-items:center;gap:6px}
-.selwrap label{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
-.selwrap select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 7px;font-size:11.5px;font-family:var(--mono);max-width:230px}
+.selwrap label{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
+.selwrap select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 7px;font-size:var(--fs-caption);font-family:var(--mono);max-width:230px}
 .selwrap select:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
 
 /* label + select, to the same metrics as .selwrap on the other three screens */
-.filters select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 7px;font-size:11.5px;font-family:var(--mono)}
+.filters select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 7px;font-size:var(--fs-caption);font-family:var(--mono)}
 .filters select:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
-.filters .fl{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
+.filters .fl{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
 .pane{display:none}
 .pane.on{display:block}
 /* the full status CHECK set — including the two that never appear in a list,
    because leaving them out would imply social_posts has four states. */
 .legend{display:flex;gap:14px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:#fff}
-.lgi{display:flex;gap:7px;align-items:baseline;font-size:10.5px;color:var(--gray);max-width:250px}
+.lgi{display:flex;gap:7px;align-items:baseline;font-size:var(--fs-caption);color:var(--gray);max-width:250px}
 .lgi .lgt{line-height:1.45}
 .lgi.transient{opacity:.72}
 
 table.grid tr[data-row]{cursor:pointer}
 table.grid tr[data-row]:hover td{background:var(--soft)}
 table.grid tr[data-row][aria-expanded="true"] td{background:var(--soft)}
-.rchev{display:inline-block;width:10px;color:var(--gray2);font-size:9px;transition:transform .16s ease;margin-right:6px}
+.rchev{display:inline-block;width:10px;color:var(--gray2);font-size:var(--fs-caption);transition:transform .16s ease;margin-right:6px}
 /* caret + channel name are one unit. At 1180 the first column is narrow enough
    that they would otherwise break across two lines. */
 table.grid tr[data-row]>td:first-child{white-space:nowrap}
@@ -235,39 +235,39 @@ tr[data-row][aria-expanded="true"] .rchev{transform:rotate(90deg)}
 tr.det>td{background:var(--soft);padding:0 14px 13px !important}
 .detbox{border-top:1px dashed var(--line);padding-top:11px;display:flex;gap:20px;flex-wrap:wrap}
 .detcol{min-width:190px;flex:1}
-.detcol .dt{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:6px}
+.detcol .dt{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:6px}
 /* post caption text — a different thing from .cap, which is the card footnote */
-.pcap{font-size:12px;line-height:1.5;max-width:52ch}
+.pcap{font-size:var(--fs-body);line-height:1.5;max-width:52ch}
 .pcap.trunc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.substate{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--gray);display:block;margin-top:4px}
-.err{font-family:var(--mono);font-size:10.5px;color:#6E2A22;word-break:break-word}
+.substate{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.06em;color:var(--gray);display:block;margin-top:4px}
+.err{font-family:var(--mono);font-size:var(--fs-caption);color:#6E2A22;word-break:break-word}
 .attn{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;
-  border-radius:5px;font-family:var(--mono);font-size:10.5px;font-weight:600;background:var(--soft);
+  border-radius:5px;font-family:var(--mono);font-size:var(--fs-caption);font-weight:600;background:var(--soft);
   border:1px solid var(--line);color:var(--gray)}
 .attn.hot{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
 
 /* ── task strip ──────────────────────────────────────────────────────────── */
 .task{border:1px solid var(--warn);background:rgba(245,206,143,.16);border-radius:9px;padding:12px 14px;margin:14px}
-.task .tt{font-size:12.5px;font-weight:600;color:#6B4A12}
-.task .tk{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#6B4A12;opacity:.8}
-.task .td{font-family:var(--mono);font-size:11px;color:#6B4A12;margin-top:7px;word-break:break-word}
+.task .tt{font-size:var(--fs-body);font-weight:600;color:#6B4A12}
+.task .tk{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.1em;text-transform:uppercase;color:#6B4A12;opacity:.8}
+.task .td{font-family:var(--mono);font-size:var(--fs-caption);color:#6B4A12;margin-top:7px;word-break:break-word}
 
 /* ── best times ──────────────────────────────────────────────────────────── */
 .btgrid{display:flex;flex-direction:column;gap:6px}
 .btrow{display:flex;align-items:center;gap:9px}
-.btrow .bd{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);flex:0 0 34px}
+.btrow .bd{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);flex:0 0 34px}
 .btrow .bs{display:flex;gap:5px;flex-wrap:wrap;flex:1}
-.slot{font-family:var(--mono);font-size:10.5px;background:rgba(169,198,232,.22);border:1px solid var(--info);
+.slot{font-family:var(--mono);font-size:var(--fs-caption);background:rgba(169,198,232,.22);border:1px solid var(--info);
   color:#22415F;border-radius:5px;padding:1px 6px}
 .slot.next{background:rgba(168,216,176,.30);border-color:var(--ok);color:#2C5138;font-weight:600}
-.btrow .none{font-family:var(--mono);font-size:10px;color:var(--gray2)}
+.btrow .none{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2)}
 
 /* ── the "cannot do yet" panel — structural, not decorative ─────────────── */
 .gapgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:12px;padding:16px}
 .gap{border:1px solid var(--line);border-radius:9px;padding:12px 14px;background:var(--soft)}
-.gap .gt{font-size:12.5px;font-weight:600;display:flex;gap:8px;align-items:center}
-.gap .gb{font-size:11.5px;color:var(--gray);line-height:1.55;margin-top:6px}
-.gap .gs{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.04em;margin-top:7px;word-break:break-word}
+.gap .gt{font-size:var(--fs-body);font-weight:600;display:flex;gap:8px;align-items:center}
+.gap .gb{font-size:var(--fs-caption);color:var(--gray);line-height:1.55;margin-top:6px}
+.gap .gs{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.04em;margin-top:7px;word-break:break-word}
 
 /* ── drawer ──────────────────────────────────────────────────────────────── */
 .scrim{position:fixed;inset:0;background:rgba(10,10,10,.34);z-index:40;opacity:0;pointer-events:none;transition:opacity .16s}
@@ -280,14 +280,14 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
 .drawer-bd{flex:1;overflow-y:auto;padding:16px}
 .drawer-bd::-webkit-scrollbar{width:6px}
 .drawer-bd::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:3px}
-.drawer-ft{border-top:1px solid var(--line);padding:11px 16px;font-family:var(--mono);font-size:9.5px;
+.drawer-ft{border-top:1px solid var(--line);padding:11px 16px;font-family:var(--mono);font-size:var(--fs-caption);
   color:var(--gray2);letter-spacing:.06em}
-.dsec{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);
+.dsec{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:var(--gray);
   margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
 .dsec:first-child{margin-top:0;padding-top:0;border-top:0}
-.dx{background:none;border:0;color:var(--gray2);font-size:15px;line-height:1;cursor:pointer;margin-left:auto}
+.dx{background:none;border:0;color:var(--gray2);font-size:var(--fs-title);line-height:1;cursor:pointer;margin-left:auto}
 .dx:hover{color:var(--ink)}
-.jsonline{font-family:var(--mono);font-size:10.5px;background:var(--soft);border:1px solid var(--line);
+.jsonline{font-family:var(--mono);font-size:var(--fs-caption);background:var(--soft);border:1px solid var(--line);
   border-radius:6px;padding:7px 9px;word-break:break-word;line-height:1.55}
 .jsonline+.jsonline{margin-top:6px}
 
@@ -398,7 +398,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
       <button class="btn dark mono" id="composeTop">+ Compose</button>
     </div>
 
-    <div class="content">
+    <div class="content fh-maxw">
 
       <!-- ══ SS-00 · SUMMARY ══════════════════════════════════════════════ -->
       <div class="stats" id="stats">
@@ -423,10 +423,13 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
       <div class="notice" id="sampleNotice">
         <span class="ni">◉</span>
         <span>
-          <b>Connect is live; the post queue has no list API yet.</b>
-          <code>/api/social/oauth</code>, <code>schedule</code>, and <code>publish</code> are routed.
-          There is still no list endpoint for <code>social_posts</code> / <code>social_channels</code>,
-          so queue panes stay empty rather than inventing rows. Section <b>SS-12</b> lists what is left.
+          <b>No partner is selected, so nothing on this page is loaded.</b>
+          The partner picker in the header has no list to read. It used to offer three partners that were
+          made up, and every read and write on this screen was sent with one of their ids — against a
+          partner that does not exist. Those are gone, and nothing is sent until a real partner can be picked.
+          <code>/api/social/oauth</code>, <code>schedule</code> and <code>publish</code> are routed; there is
+          still no list endpoint for <code>social_posts</code> / <code>social_channels</code>. Section
+          <b>SS-12</b> lists what is left to build.
         </span>
       </div>
 
@@ -458,7 +461,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
             <button type="button" class="btn" data-oauth="instagram" id="oauthIg">Connect Instagram</button>
             <button type="button" class="btn" data-oauth="linkedin" id="oauthLi">Connect LinkedIn</button>
           </div>
-          <div id="oauthMsg" style="margin-top:8px;font-size:12px;color:var(--ink2)">Needs META_APP_ID / LINKEDIN_CLIENT_ID when unset — the API names the missing env var.</div>
+          <div id="oauthMsg" style="margin-top:8px;font-size:var(--fs-caption);color:var(--ink2)">Needs META_APP_ID / LINKEDIN_CLIENT_ID when unset — the API names the missing env var.</div>
         </div>
       </div>
 
@@ -521,7 +524,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
                 <button class="btn dark mono" id="publishDueBtn" type="button"
                   title="POST /api/social/publish → publishDue">Publish due now</button>
                 <button class="btn mono" id="clearComposer">Clear</button>
-                <span class="hint mono" id="queueMsg" style="font-size:10.5px;color:var(--gray2)">Queues into social_posts. Cron social-publish-sweeper runs publishDue every 5 minutes.</span>
+                <span class="hint mono" id="queueMsg" style="font-size:var(--fs-caption);color:var(--gray2)">Queues into social_posts. Cron social-publish-sweeper runs publishDue every 5 minutes.</span>
               </div>
             </div>
           </div>
@@ -754,13 +757,14 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
 
 /* ════════════════════════════════════════════════════════════════════════
-   FIXED CLOCK. Every "due / not due" call on this screen is made against this
-   instant, so the sample data reads the same way every time it is opened. The
-   scheduler's own predicate is `scheduled_for <= COALESCE($now, now())`, and it
-   accepts an explicit now for exactly this reason.
+   THE CLOCK. Real wall-clock time, read when the page loads. It used to be a
+   frozen constant (Jul 30 2026 14:20Z) shown in the topbar as "now" — a stated
+   time that was not the time. Every "due / not due" call on this screen is made
+   against this instant; the scheduler's own predicate is
+   `scheduled_for <= COALESCE($now, now())`.
    ════════════════════════════════════════════════════════════════════════ */
-var NOW_ISO = '2026-07-30T14:20:00.000Z';
-var NOW = new Date(NOW_ISO);
+var NOW = new Date();
+var NOW_ISO = NOW.toISOString();
 
 /* The 8 permitted channels — social_channels_channel_ck (049:43-44), identical to
    the frozen CHANNELS export at scheduler.mjs:193-195. */
@@ -847,26 +851,14 @@ var RULES = [
    through the partner read APIs must name a partner or gets 400 partner_id_required
    — so this screen is scoped to one partner at a time and there is no merged feed.
 
-   THE ROSTER IS SHARED. These three ids and names are the same book Creative
-   Factory selects over and the one Campaigns is scoped to. Nothing here pins a
-   partner to an offer type, because nothing in the schema does either: partners
-   (042:30-64) has no offer column and no CHECK or trigger on one. offer_type is
-   per POST (049:66, CHECK 049:87-88), so the same partner may legitimately carry
-   funding, credit_cards and credit_repair rows — and below, Ironwood does.
+   THERE IS NO ROSTER. This list used to hold three invented partners with
+   invented uuids (the same book Creative Factory and Campaigns used), and every
+   read and write on this screen was sent with one of those ids — against a
+   partner that does not exist. They are gone. Nothing may be hardcoded back
+   here: the picker needs a real partner list, and until it has one this screen
+   shows its empty state and sends nothing.
    ════════════════════════════════════════════════════════════════════════ */
-var PARTNERS = [
-  {id:'8f3c2a91-4d17-4b0e-9c62-1a7e5d3b8042', name:'Ironwood Capital Group', brand_name:'Ironwood Capital',
-   slug:'ironwood-capital', status:'active',
-   settings:{approve_before_launch:true, autopilot_enabled:false, launch_enabled:true,
-             weekly_asset_target:18, max_concurrent_jobs:3}},
-  {id:'b47d5e60-90aa-4f31-8e55-6c204f9a1bd3', name:'Larkspur Card Collective', brand_name:'Larkspur Cards',
-   slug:'larkspur-cards', status:'active',
-   settings:{approve_before_launch:false, autopilot_enabled:true, launch_enabled:true,
-             weekly_asset_target:15, max_concurrent_jobs:5}},
-  {id:'c9a10f34-2be7-4a88-b0d9-7f61e2c4a915', name:'Halcyon Credit Works', brand_name:'Halcyon',
-   slug:'halcyon-credit', status:'invited',
-   settings:null}   /* no partner_module_settings row — scheduler falls back to true */
-];
+var PARTNERS = [];
 
 /* ══ SOCIAL CHANNELS ═════════════════════════════════════════════════════ */
 var SOCIAL_CHANNELS = []; /* live list API not built — empty on purpose */
@@ -886,31 +878,13 @@ var POSTS = []; /* live list API not built — empty on purpose */
 /* ══ ACTION LOG — target_type = 'social_post' ════════════════════════════
    Written BEFORE the platform call, every time. actor is always 'agent';
    agent_id is null because publishDue's agentId parameter defaults to null and
-   nothing in the repo passes one. */
-var ACTION_LOG = [
-  {id:'5104ab2f', partner:0, post_id:'71fc0e48', channel:'linkedin', created_at:'2026-07-29T09:12:00.000Z',
-   executed_at:'2026-07-29T09:12:00.000Z', execute_error:'no adapter registered for channel linkedin', undone_at:null},
-  {id:'93cd7e60', partner:0, post_id:'71fc0e48', channel:'linkedin', created_at:'2026-07-29T09:07:00.000Z',
-   executed_at:'2026-07-29T09:07:00.000Z', execute_error:'no adapter registered for channel linkedin', undone_at:null},
-  {id:'0a2f83b1', partner:0, post_id:'71fc0e48', channel:'linkedin', created_at:'2026-07-29T09:02:00.000Z',
-   executed_at:'2026-07-29T09:02:00.000Z', execute_error:'no adapter registered for channel linkedin', undone_at:null},
-  {id:'6b48c105', partner:0, post_id:'0b5ae913', channel:'linkedin', created_at:'2026-07-29T08:30:11.000Z',
-   executed_at:'2026-07-29T08:30:12.000Z', execute_error:null, undone_at:null},
-  {id:'ff307d92', partner:0, post_id:'e97240ba', channel:'instagram', created_at:'2026-07-28T18:41:00.000Z',
-   executed_at:'2026-07-28T18:41:00.000Z', execute_error:'channel rate limited', undone_at:null},
-  {id:'21e6b0c4', partner:0, post_id:'e97240ba', channel:'instagram', created_at:'2026-07-28T18:36:00.000Z',
-   executed_at:'2026-07-28T18:36:00.000Z', execute_error:'channel rate limited', undone_at:null},
-  {id:'8c50f7de', partner:0, post_id:'e97240ba', channel:'instagram', created_at:'2026-07-28T18:31:00.000Z',
-   executed_at:'2026-07-28T18:31:00.000Z', execute_error:'channel rate limited', undone_at:null},
-  {id:'74a1de38', partner:0, post_id:'a3d8241f', channel:'instagram', created_at:'2026-07-28T18:30:06.000Z',
-   executed_at:'2026-07-28T18:30:07.000Z', execute_error:null, undone_at:null},
-  {id:'b0937fc5', partner:0, post_id:'3c7de095', channel:'instagram', created_at:'2026-07-30T11:00:03.000Z',
-   executed_at:'2026-07-30T11:00:03.000Z', execute_error:'channel rate limited', undone_at:null},
-  {id:'e2841ba9', partner:0, post_id:'6ec91b07', channel:'linkedin', created_at:'2026-07-27T08:30:08.000Z',
-   executed_at:'2026-07-27T08:30:09.000Z', execute_error:null, undone_at:null},
-  {id:'3d70c418', partner:0, post_id:'f4207ac6', channel:'facebook', created_at:'2026-07-25T16:00:03.000Z',
-   executed_at:'2026-07-25T16:00:04.000Z', execute_error:null, undone_at:null}
-];
+   nothing in the repo passes one.
+
+   Empty on purpose. This used to hold eleven invented publish attempts that the
+   audit table painted whenever the live read failed, so a failed read looked
+   like history. The only real source is /api/campaigns/action-log — see
+   wireActionLog(); when that read fails the table now says so. */
+var ACTION_LOG = [];
 
 /* ══ PARTNER ONBOARDING TASKS ════════════════════════════════════════════
    The unique index is (partner_id, task_key, connection_id, campaign_id) NULLS NOT
@@ -1029,7 +1003,15 @@ var pane = 'queued';
 var fltChannel = '', fltOffer = '';
 var derivKey = 'channels';
 
-function partner(){ return PARTNERS[P]; }
+function partner(){ return PARTNERS[P] || null; }
+function hasPartner(){ return !!partner(); }
+/* §6 empty state. Names what would be here and why nothing is, instead of
+   painting a tile, a row or a count for a partner nobody has chosen. */
+function noPartner(what){
+  return '<div class="empty">'+what+' appears here once a partner is selected.<br>'+
+    'No partner can be selected yet: this screen has no partner list to read, so nothing is loaded and nothing is sent. '+
+    'SS-12 at the bottom of the page lists what is still missing.</div>';
+}
 function channels(){ return SOCIAL_CHANNELS.filter(function(c){ return c.partner === P; }); }
 function chById(id){ return SOCIAL_CHANNELS.filter(function(c){ return c.id === id; })[0] || null; }
 function assets(){ return ASSETS.filter(function(a){ return a.partner === P; }); }
@@ -1037,7 +1019,7 @@ function posts(){ return POSTS.filter(function(p){ return p.partner === P; }); }
 function byStatus(s){ return posts().filter(function(p){ return p.status === s; }); }
 function postById(id){ return POSTS.filter(function(p){ return p.id === id; })[0] || null; }
 function approveBeforeLaunch(){
-  var s = partner().settings;
+  var p = partner(), s = p && p.settings;
   return s ? s.approve_before_launch : true;   /* scheduler.mjs:61 — ?? true */
 }
 function logs(){ return ACTION_LOG.filter(function(l){ return l.partner === P; }); }
@@ -1056,6 +1038,16 @@ function queueState(p){
 /* ══ SS-00 · STATS + DERIVATION ══════════════════════════════════════════ */
 var DERIV = {};
 function renderStats(){
+  if(!hasPartner()){
+    ['Channels','Queued','Blocked','Failed','Posted'].forEach(function(k){
+      document.getElementById('k'+k).textContent = '—';
+      document.getElementById('k'+k+'D').textContent = 'no partner selected';
+    });
+    DERIV = {};
+    document.getElementById('derivBody').textContent =
+      'Nothing to derive. Each tile counts one partner\'s social_channels or social_posts rows, and no partner is selected.';
+    return;
+  }
   var chs = channels(), act = chs.filter(function(c){ return c.connection_state === 'active'; });
   var q = byStatus('queued'), b = byStatus('blocked'), f = byStatus('failed'), po = byStatus('posted');
   var due = q.filter(function(p){ return queueState(p).k === 'due'; });
@@ -1121,11 +1113,17 @@ function renderStats(){
 /* ══ SS-01 · CONNECTED CHANNELS ══════════════════════════════════════════ */
 function renderChannels(){
   var chs = channels(), host = document.getElementById('chGrid');
+  if(!hasPartner()){
+    document.getElementById('chCount').textContent = '—';
+    host.className='';
+    host.innerHTML = noPartner('Each connected social account');
+    return;
+  }
   document.getElementById('chCount').textContent = chs.length + ' connected';
   if(!chs.length){
     host.className='';
     host.innerHTML = '<div class="empty">No <span class="mono">social_channels</span> rows for this partner. '+
-      'Nothing can be composed or queued until one exists — and there is no connect flow to create one.</div>';
+      'Nothing can be composed or queued until one exists. Connect one in SS-02 below.</div>';
     return;
   }
   host.className='chgrid';
@@ -1173,10 +1171,16 @@ function renderChannels(){
 
 /* ══ SS-02 · NOT CONNECTED ═══════════════════════════════════════════════ */
 function renderGhosts(){
+  var host = document.getElementById('ghGrid');
+  if(!hasPartner()){
+    document.getElementById('ghCount').textContent = '—';
+    host.className='';
+    host.innerHTML = noPartner('The permitted channels a partner has not connected');
+    return;
+  }
   var have = channels().map(function(c){ return c.channel; });
   var missing = CHANNELS.filter(function(c){ return have.indexOf(c) === -1; });
   document.getElementById('ghCount').textContent = missing.length + ' of 8 unused';
-  var host = document.getElementById('ghGrid');
   if(!missing.length){ host.className=''; host.innerHTML='<div class="empty">All eight permitted channels have a row.</div>'; return; }
   host.className='ghost';
   host.innerHTML = missing.map(function(c){
@@ -1299,6 +1303,7 @@ function renderQueue(){
     return new Date(a.scheduled_for) - new Date(b.scheduled_for);
   });
   var host = document.getElementById('tblQueued');
+  if(!hasPartner()){ host.innerHTML = noPartner('Posts waiting to publish'); return; }
   if(!rows.length){ host.innerHTML = '<div class="empty">Nothing queued for this partner and filter.</div>'; return; }
   host.innerHTML = '<table class="grid"><thead><tr>'+
     '<th>Channel</th><th>Caption</th><th>Offer type</th><th>scheduled_for</th>'+
@@ -1321,6 +1326,7 @@ function renderQueue(){
 function renderBlocked(){
   var rows = applyFilters(byStatus('blocked')).sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
   var host = document.getElementById('tblBlocked');
+  if(!hasPartner()){ host.innerHTML = noPartner('Posts the guardrail refused'); return; }
   if(!rows.length){ host.innerHTML = '<div class="empty">Nothing blocked for this partner and filter.</div>'; return; }
   host.innerHTML = '<table class="grid"><thead><tr>'+
     '<th>Channel</th><th>Caption</th><th>Offer type</th><th>Rule sets</th><th>Reasons</th><th>Created</th>'+
@@ -1344,6 +1350,11 @@ function renderBlocked(){
 function renderFailed(){
   var rows = applyFilters(byStatus('failed')).sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
   var host = document.getElementById('tblFailed');
+  if(!hasPartner()){
+    host.innerHTML = noPartner('Posts that gave up after ' + MAX_ATTEMPTS + ' attempts');
+    document.getElementById('taskStrip').innerHTML = '';
+    return;
+  }
   if(!rows.length){
     host.innerHTML = '<div class="empty">Nothing failed for this partner and filter.</div>';
   } else {
@@ -1398,6 +1409,7 @@ function renderFailed(){
 function renderPosted(){
   var rows = applyFilters(byStatus('posted')).sort(function(a,b){ return new Date(b.posted_at)-new Date(a.posted_at); });
   var host = document.getElementById('tblPosted');
+  if(!hasPartner()){ host.innerHTML = noPartner('Posts that published'); return; }
   if(!rows.length){ host.innerHTML = '<div class="empty">Nothing published for this partner and filter.</div>'; return; }
   host.innerHTML = '<table class="grid"><thead><tr>'+
     '<th>Channel</th><th>Caption</th><th>Offer type</th><th>posted_at</th><th>external_post_id</th>'+
@@ -1408,26 +1420,17 @@ function renderPosted(){
         '<td>'+capCell(p)+'</td>'+
         '<td class="mono">'+esc(p.offer_type)+'</td>'+
         '<td class="mono">'+esc(fmt(p.posted_at))+'<span class="substate">'+esc(rel(p.posted_at))+'</span></td>'+
-        '<td class="mono" style="word-break:break-all;font-size:11px">'+esc(p.external_post_id)+'</td>'+
+        '<td class="mono" style="word-break:break-all;font-size:var(--fs-caption)">'+esc(p.external_post_id)+'</td>'+
       '</tr>' + detailRow(p, 5);
     }).join('') + '</tbody></table>';
   wireRows(host);
 }
 
-/* The same filter the audit table uses, so the tab badge cannot disagree with the
-   rows underneath it. */
-function auditRows(){
-  return logs().filter(function(l){
-    if(fltChannel){ var c = chById(fltChannel); if(!c || c.channel !== l.channel) return false; }
-    if(fltOffer){ var p = postById(l.post_id); if(!p || p.offer_type !== fltOffer) return false; }
-    return true;
-  });
-}
-/* renderAudit — live api/campaigns/action-log rows when wireActionLog() below
-   landed any, otherwise the sample-derived auditRows(). The two are NOT the
-   same shape: a real row has no channel/offer_type (those live on
-   social_posts, which has no endpoint at all — see SS-12), so the channel/
-   offer filters above the table only apply in sample fallback. */
+/* renderAudit — api/campaigns/action-log rows, and nothing else. There used to
+   be a second renderer here that drew invented rows whenever the live read
+   failed; a failed read now says it failed. The channel/offer filters above the
+   table do not apply to these rows: a real action_log row carries no channel or
+   offer_type (those live on social_posts, which has no endpoint — see SS-12). */
 function renderAudit(){
   var host = document.getElementById('tblAudit');
   if(LIVE_ACTIONS){
@@ -1442,8 +1445,8 @@ function renderAudit(){
           '<td><span class="badge '+(l.actor==='agent'?'b-accent':'b-gray')+'">'+esc(l.actor)+'</span>'+
             '<span class="substate">'+(l.agent_name?esc(l.agent_name):(l.user_name?esc(l.user_name):'—'))+'</span></td>'+
           '<td>'+esc(l.reason||'—')+'</td>'+
-          '<td class="mono" style="font-size:11px">'+esc(String(l.target_id||'—'))+'</td>'+
-          '<td class="mono" style="font-size:11px">'+esc(JSON.stringify(l.before))+'<br>→ '+esc(JSON.stringify(l.after))+'</td>'+
+          '<td class="mono" style="font-size:var(--fs-caption)">'+esc(String(l.target_id||'—'))+'</td>'+
+          '<td class="mono" style="font-size:var(--fs-caption)">'+esc(JSON.stringify(l.before))+'<br>→ '+esc(JSON.stringify(l.after))+'</td>'+
           '<td class="mono">'+(l.executed_at?esc(fmt(l.executed_at)):'<span style="color:#6E2A22">null</span>')+'</td>'+
           '<td>'+(l.execute_error?'<span class="err">'+esc(l.execute_error)+'</span>':'<span style="color:var(--gray2)">—</span>')+'</td>'+
           '<td><span class="badge '+(l.revertible?'b-info':'b-gray')+'">'+(l.revertible?'true':'false')+'</span></td>'+
@@ -1451,25 +1454,11 @@ function renderAudit(){
       }).join('') + '</tbody></table>';
     return;
   }
-  var rows = auditRows().sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
-  if(!rows.length){ host.innerHTML = '<div class="empty">No action_log rows with target_type = \'social_post\' for this filter.</div>'; return; }
-  host.innerHTML = '<table class="grid"><thead><tr>'+
-    '<th>created_at</th><th>rule_key</th><th>actor</th><th>reason</th><th>before → after</th>'+
-    '<th>executed_at</th><th>execute_error</th><th>revertible</th></tr></thead><tbody>'+
-    rows.map(function(l){
-      var revertible = !l.undone_at;   /* undo_payload is always written for social_publish */
-      return '<tr>'+
-        '<td class="mono">'+esc(fmt(l.created_at))+'</td>'+
-        '<td class="mono">social_publish</td>'+
-        '<td><span class="badge b-accent">agent</span><span class="substate">agent_id null</span></td>'+
-        '<td>scheduled post to <span class="mono">'+esc(l.channel)+'</span>'+
-          '<span class="substate">target_id '+esc(l.post_id)+'</span></td>'+
-        '<td class="mono" style="font-size:11px">{status:queued}<br>→ {status:posted}</td>'+
-        '<td class="mono">'+(l.executed_at?esc(fmt(l.executed_at)):'<span style="color:#6E2A22">null</span>')+'</td>'+
-        '<td>'+(l.execute_error?'<span class="err">'+esc(l.execute_error)+'</span>':'<span style="color:var(--gray2)">—</span>')+'</td>'+
-        '<td><span class="badge '+(revertible?'b-info':'b-gray')+'">'+(revertible?'true':'false')+'</span></td>'+
-      '</tr>';
-    }).join('') + '</tbody></table>';
+  if(!hasPartner()){ host.innerHTML = noPartner('Every publish attempt, newest first'); return; }
+  host.innerHTML = ACTIONS_ERR
+    ? '<div class="empty">The publish audit trail could not be read: ' + esc(ACTIONS_ERR) +
+      '<br>Nothing is shown in its place. Reload the page to try again.</div>'
+    : '<div class="empty">Reading the publish audit trail…</div>';
 }
 
 /* expanding row bodies ---------------------------------------------------- */
@@ -1495,7 +1484,7 @@ function detailRow(p, span){
 }
 function reasonDetailRow(p, span){
   return '<tr class="det" hidden data-det="'+esc(p.id)+'"><td colspan="'+span+'"><div class="detbox" style="flex-direction:column">'+
-    '<div style="width:100%"><div class="dt" style="font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:8px">blocked_reasons — stored on the row</div>'+
+    '<div style="width:100%"><div class="dt" style="font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:8px">blocked_reasons — stored on the row</div>'+
     p.blocked_reasons.map(reasonHtml).join('')+
     '<div style="margin-top:10px"><button class="btn sm mono" data-open="'+esc(p.id)+'">Open full record</button></div></div>'+
   '</div></td></tr>';
@@ -1546,7 +1535,7 @@ function openDrawer(id){
 
     '<div class="dsec">caption</div>'+
     '<div class="pcap">'+esc(p.caption)+'</div>'+
-    '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:9.5px;color:var(--gray2)">'+
+    '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2)">'+
       p.caption.length.toLocaleString('en-US')+' chars · compliance_screenings.screened_text keeps the first 8,000</div>'+
 
     '<div class="dsec">compliance_screenings</div>'+
@@ -1559,7 +1548,7 @@ function openDrawer(id){
     (p.screening.codes.length
       ? '<div class="jsonline"><b>reasons[].code:</b> '+esc(p.screening.codes.join(', '))+'</div>'
       : '<div class="jsonline"><b>reasons:</b> [] — state is \'passed\', which is the only state allowed an empty array</div>')+
-    '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:9.5px;color:var(--gray2)">append-only · trg_compliance_screenings_no_delete</div>'+
+    '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2)">append-only · trg_compliance_screenings_no_delete</div>'+
 
     (p.status === 'blocked'
       ? '<div class="dsec">blocked_reasons</div>' + p.blocked_reasons.map(reasonHtml).join('')
@@ -1575,7 +1564,7 @@ function openDrawer(id){
            '(scheduler.mjs:40-46) and never reads creative_assets; no CHECK or trigger in 049 looks at the asset '+
            'beyond partner_id, which trg_social_post_same_partner checks. A '+esc(a.compliance_state)+' asset is '+
            'published exactly like an approved one.</div>'+
-         '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:9.5px;color:var(--gray2)">storage_key is redacted out of every API response</div>'
+         '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2)">storage_key is redacted out of every API response</div>'
        : '')+
 
     '<div class="dsec">action_log — target_type social_post</div>'+
@@ -1623,6 +1612,7 @@ function renderBestTimes(){
   }
   var c = chById(sel.value) || chs[0];
   var host = document.getElementById('btBody');
+  if(!hasPartner()){ host.innerHTML = noPartner('The posting slots a channel will use'); return; }
   if(!c){ host.innerHTML = '<div class="empty">No channels for this partner.</div>'; return; }
   var next = nextBestTime(c);
   var nextSlot = next ? pad(new Date(next).getUTCHours())+':'+pad(new Date(next).getUTCMinutes()) : null;
@@ -1656,13 +1646,14 @@ function renderBestTimes(){
 
 /* ══ SS-11 · APPROVAL SETTING ════════════════════════════════════════════ */
 function renderApproval(){
+  var host = document.getElementById('approvalBody');
+  if(!hasPartner()){ host.innerHTML = noPartner('The approve_before_launch setting'); return; }
   var s = partner().settings, on = approveBeforeLaunch();
   var crRows = posts().filter(function(p){ return p.offer_type === 'credit_repair'; });
-  var host = document.getElementById('approvalBody');
   host.innerHTML =
     '<div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:12px">'+
       '<span class="sw'+(on?' on':'')+'" role="img" aria-label="approve_before_launch is '+(on?'on':'off')+'"></span>'+
-      '<span style="font-size:12.5px;font-weight:600">approve_before_launch = <span class="mono">'+(on?'true':'false')+'</span></span>'+
+      '<span style="font-size:var(--fs-body);font-weight:600">approve_before_launch = <span class="mono">'+(on?'true':'false')+'</span></span>'+
       '<span class="badge '+(s?'b-gray':'b-warn')+'">'+(s?'stored row':'no row — falls back to true')+'</span>'+
     '</div>'+
     (s ? '<div class="kv"><span class="k">weekly target</span><span class="v mono">'+s.weekly_asset_target+' assets (CHECK &gt;= 15)</span></div>'+
@@ -1694,11 +1685,17 @@ function renderApproval(){
 
 /* ══ RENDER + WIRE ═══════════════════════════════════════════════════════ */
 function renderCounts(){
+  if(!hasPartner()){
+    ['nQueued','nBlocked','nFailed','nPosted','nAudit'].forEach(function(id){
+      document.getElementById(id).textContent = '—'; });
+    document.getElementById('fCount').textContent = 'no partner selected';
+    return;
+  }
   document.getElementById('nQueued').textContent  = applyFilters(byStatus('queued')).length;
   document.getElementById('nBlocked').textContent = applyFilters(byStatus('blocked')).length;
   document.getElementById('nFailed').textContent  = applyFilters(byStatus('failed')).length;
   document.getElementById('nPosted').textContent  = applyFilters(byStatus('posted')).length;
-  document.getElementById('nAudit').textContent   = LIVE_ACTIONS ? LIVE_ACTIONS.length : auditRows().length;
+  document.getElementById('nAudit').textContent   = LIVE_ACTIONS ? LIVE_ACTIONS.length : '—';
   var all = applyFilters(posts()).length;
   document.getElementById('fCount').textContent = all + ' of ' + posts().length + ' posts match';
 }
@@ -1711,6 +1708,28 @@ function renderAll(){
   renderComposerOptions(); renderVerdict();
   renderFilterOptions(); renderPanes();
   renderBestTimes(); renderApproval();
+  syncWriteControls();
+}
+
+/* §5/§6 — a send button that cannot act does not sit there looking live. With no
+   partner selected there is nothing to write to, so every control that would
+   send is disabled and says why, instead of posting to an id that does not
+   exist. */
+function syncWriteControls(){
+  var on = hasPartner();
+  var why = 'No partner selected — nothing can be queued, published or connected from this screen yet.';
+  ['queueBtn','publishDueBtn','oauthFb','oauthIg','oauthLi'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    if(el._title0 === undefined) el._title0 = el.getAttribute('title') || '';
+    el.disabled = !on;
+    if(on){ if(el._title0) el.setAttribute('title', el._title0); else el.removeAttribute('title'); }
+    else el.setAttribute('title', why);
+  });
+  if(!on){
+    document.getElementById('queueMsg').textContent = why;
+    document.getElementById('oauthMsg').textContent = 'Connecting a channel needs a partner. No partner is selected.';
+  }
 }
 
 /* ══ API WIRING — SS-?? AUDIT TRAIL ═══════════════════════════════════════
@@ -1756,12 +1775,15 @@ function apiGet(path){
   });
 }
 
-var LIVE_ACTIONS = null; // null = fall back to the sample-derived auditRows()
+var LIVE_ACTIONS = null; // null = not read; the table then says why, and shows no rows
+var ACTIONS_ERR = null;  // the reason the read failed, shown to the user verbatim
 function wireActionLog(){
-  var pid = PARTNERS[P].id;
-  apiGet('/api/campaigns/action-log?partner_id='+encodeURIComponent(pid)+'&target_type=social_post&state=all&limit=200')
+  var p = partner();
+  if(!p){ LIVE_ACTIONS = null; ACTIONS_ERR = null; renderAudit(); renderCounts(); return; }
+  apiGet('/api/campaigns/action-log?partner_id='+encodeURIComponent(p.id)+'&target_type=social_post&state=all&limit=200')
     .then(function(res){
       LIVE_ACTIONS = res.ok ? (res.data.items||[]) : null;
+      ACTIONS_ERR = res.ok ? null : (res.error || null);
       renderAudit(); renderCounts();
       if(window.FHData){
         if(res.ok) FHData.banner('real', 'social_post action log · api', 'social-audit');
@@ -1804,6 +1826,13 @@ document.getElementById('fOffer').addEventListener('change', function(){
 /* partner scope */
 (function(){
   var sel = document.getElementById('partnerSel');
+  if(!PARTNERS.length){
+    /* No partner list to offer. The picker says so and stays empty rather than
+       naming a partner that does not exist. */
+    sel.innerHTML = '<option value="">— no partner list —</option>';
+    sel.disabled = true;
+    return;
+  }
   sel.innerHTML = PARTNERS.map(function(p,i){
     return '<option value="'+i+'">'+esc(p.name)+' · '+esc(p.status)+'</option>'; }).join('') +
     '<option value="-1" disabled>— all partners: 400 partner_id_required —</option>';
@@ -1813,7 +1842,7 @@ document.getElementById('fOffer').addEventListener('change', function(){
     P = v; fltChannel = ''; fltOffer = '';
     document.getElementById('btChannel').innerHTML = '';
     closeDrawer();
-    LIVE_ACTIONS = null;
+    LIVE_ACTIONS = null; ACTIONS_ERR = null;
     renderAll();
     wireActionLog();
   });
@@ -1844,10 +1873,11 @@ document.getElementById('queueBtn').addEventListener('click', function(){
   var offer = document.getElementById('cOffer').value || 'funding';
   var when = document.getElementById('cWhen').value;
   var asset = document.getElementById('cAsset').value || null;
-  var partnerSel = document.getElementById('partnerSel');
-  var partnerId = partnerSel ? partnerSel.value : '';
-  if (!partnerId || partnerId === '-1') {
-    msg.textContent = 'Pick a real partner_id first.';
+  /* The partner this screen is scoped to, or nothing. Never the picker's index,
+     and never a hardcoded id. */
+  var p = partner();
+  if (!p) {
+    msg.textContent = 'No partner selected — nothing was sent.';
     return;
   }
   if (!channelId) { msg.textContent = 'Pick a channel.'; return; }
@@ -1856,7 +1886,7 @@ document.getElementById('queueBtn').addEventListener('click', function(){
   var t = '';
   try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
   var body = {
-    partner_id: partnerId,
+    partner_id: p.id,
     channel_id: channelId,
     caption: caption,
     offer_type: offer,
@@ -1884,10 +1914,9 @@ document.getElementById('queueBtn').addEventListener('click', function(){
 });
 document.getElementById('publishDueBtn').addEventListener('click', function () {
   var msg = document.getElementById('queueMsg');
-  var partnerSel = document.getElementById('partnerSel');
-  var partnerId = partnerSel ? partnerSel.value : '';
-  if (!partnerId || partnerId === '-1') {
-    msg.textContent = 'Pick a real partner_id first.';
+  var p = partner();
+  if (!p) {
+    msg.textContent = 'No partner selected — nothing was sent.';
     return;
   }
   msg.textContent = 'Publishing due posts…';
@@ -1900,7 +1929,7 @@ document.getElementById('publishDueBtn').addEventListener('click', function () {
       'content-type': 'application/json',
       ...(t && t !== 'demo' ? { authorization: 'Bearer ' + t } : {})
     },
-    body: JSON.stringify({ partner_id: partnerId })
+    body: JSON.stringify({ partner_id: p.id })
   }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
     .then(function (res) {
       if (!res.ok) {
@@ -1926,10 +1955,10 @@ document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDr
 /* ══ OAUTH CONNECT ═══════════════════════════════════════════════════════ */
 (function () {
   var msg = document.getElementById('oauthMsg');
-  // Same partner the rest of this screen is scoped to (the topbar partnerSel),
-  // not an invented session lookup — PARTNERS[P].id is the real uuid that
-  // wireActionLog() already sends on the one other live call this page makes.
-  function partnerId() { return PARTNERS[P] ? PARTNERS[P].id : ''; }
+  // Same partner the rest of this screen is scoped to (the topbar partnerSel).
+  // There is no partner list yet, so this returns '' and the connect buttons are
+  // disabled — nothing is sent for a partner that does not exist.
+  function partnerId() { var p = partner(); return p ? p.id : ''; }
   function token() {
     try { return localStorage.getItem('fh_token') || ''; } catch (e) { return ''; }
   }
@@ -1972,9 +2001,8 @@ document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDr
 
 /* ══ BOOT ════════════════════════════════════════════════════════════════ */
 document.getElementById('nowTxt').textContent = 'now = ' + fmt(NOW_ISO);
-document.getElementById('cCaption').value =
-  'Working capital for owners who need materials before the draw clears. Every application is underwritten individually.';
-document.getElementById('cOffer').value = 'funding';
+/* The composer opens empty. It used to open with a caption and an offer type
+   already filled in, which read as copy somebody had written. */
 renderAll();
 wireActionLog();
 </script>

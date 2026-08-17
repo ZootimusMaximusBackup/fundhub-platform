@@ -44,12 +44,12 @@
   }
   /* ---------- worker avatars: filled = a person, purple outline = an agent ---------- */
   .av{width:17px;height:17px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;
-    justify-content:center;font-size:7.5px;font-weight:800;letter-spacing:-.2px;vertical-align:middle;}
+    justify-content:center;font-size:var(--fs-caption);font-weight:800;letter-spacing:-.2px;vertical-align:middle;}
   .av.human{background:var(--ink);color:#fff;}
   .av.agent{background:#fff;color:var(--purple);border:1.5px solid var(--purple);}
-  .av.lg{width:20px;height:20px;font-size:8px;}
-  .av.xl{width:26px;height:26px;font-size:9.5px;}
-  .agent-tag{font-size:8.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+  .av.lg{width:20px;height:20px;font-size:var(--fs-caption);}
+  .av.xl{width:26px;height:26px;font-size:var(--fs-caption);}
+  .agent-tag{font-size:var(--fs-caption);font-weight:800;letter-spacing:.4px;text-transform:uppercase;
     background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-line);
     border-radius:4px;padding:0 4px;}
   *{box-sizing:border-box;}
@@ -62,27 +62,27 @@
   /* the real fundhub wordmark, from fundhub-brand.css (--logo).
      .inv flips it for the dark topbar. */
   .brand .logo{height:15px;aspect-ratio:2698/543;flex-shrink:0;}
-  .brand .sep{color:var(--dark-text-dim);font-weight:400;}
-  .brand .sub{font-weight:600;font-size:12.5px;color:var(--dark-text-dim);}
-  .topbar-right{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--dark-text-dim);}
-  .live-pill{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dark-text);background:#151517;border:1px solid var(--dark-line);padding:4px 9px 4px 7px;border-radius:20px;}
+  .brand .sep{color:var(--dark-text-dim);font-weight:400;font-size:var(--fs-body);}
+  .brand .sub{font-weight:600;font-size:var(--fs-body);color:var(--dark-text-dim);}
+  .topbar-right{display:flex;align-items:center;gap:16px;font-size:var(--fs-caption);color:var(--dark-text-dim);}
+  .live-pill{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--dark-text);background:#151517;border:1px solid var(--dark-line);padding:4px 9px 4px 7px;border-radius:20px;}
   .live-dot{width:6px;height:6px;border-radius:50%;background:#A8D8B0;box-shadow:0 0 0 0 rgba(168,216,176,.6);animation:pulse 1.8s infinite;}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(168,216,176,.55);}70%{box-shadow:0 0 0 6px rgba(168,216,176,0);}100%{box-shadow:0 0 0 0 rgba(168,216,176,0);}}
-  .clock{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dark-text);}
-  .org-pill{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;}
+  .clock{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--dark-text);}
+  .org-pill{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;}
 
   .stat-head{background:var(--surface);border-bottom:1px solid var(--line);padding:9px 18px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px;}
   .who{display:flex;align-items:baseline;gap:9px;}
-  .who-name{font-size:16px;font-weight:800;}
-  .who-role{font-size:11.5px;color:var(--text-dim);}
+  .who-name{font-size:var(--fs-title);font-weight:800;}
+  .who-role{font-size:var(--fs-caption);color:var(--text-dim);}
   .stat-tiles{display:flex;gap:10px;}
   /* Tiles are min-width:88px in a non-wrapping flex row, so four of them
      plus gaps run past a 390px phone and drag the page sideways. Wrap
      instead of stacking — they stay scannable two-up. Mobile only. */
   @media (max-width:640px){ .stat-tiles{flex-wrap:wrap;} }
   .stat-tile{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:5px 12px;text-align:center;min-width:88px;}
-  .stat-label{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:2px;}
-  .stat-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;}
+  .stat-label{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:2px;}
+  .stat-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:var(--fs-metric);font-variant-numeric:tabular-nums;}
 
   main{flex:1;overflow-y:auto;padding:22px 24px 20px;background:var(--paper);}
   main::-webkit-scrollbar{width:8px;}
@@ -92,50 +92,50 @@
     display:flex;gap:10px;align-items:flex-start;background:var(--red-bg);border:1px solid var(--red-line);
     border-radius:8px;padding:10px 14px;margin-bottom:12px;
   }
-  .system-alert .a-icon{font-size:16px;color:var(--red);}
-  .system-alert .a-title{font-weight:800;font-size:13px;color:var(--red);margin-bottom:2px;}
-  .system-alert .a-body{font-size:12px;color:var(--text);}
+  .system-alert .a-icon{font-size:var(--fs-title);color:var(--red);}
+  .system-alert .a-title{font-weight:800;font-size:var(--fs-body);color:var(--red);margin-bottom:2px;}
+  .system-alert .a-body{font-size:var(--fs-body);color:var(--text);}
 
   .section{margin-bottom:14px;}
-  .section-title{font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
+  .section-title{font-size:var(--fs-caption);font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
 
   .bureau-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
   .bureau-chip{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 14px;min-width:150px;}
   .bureau-chip.blocked{border-color:var(--red-line);background:rgba(242,166,155,.09);}
-  .bureau-chip .bn{font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;}
-  .bureau-chip .bc{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:20px;margin-top:2px;}
+  .bureau-chip .bn{font-size:var(--fs-caption);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;}
+  .bureau-chip .bc{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:var(--fs-metric);font-variant-numeric:tabular-nums;margin-top:2px;}
   .bureau-chip .bc.zero{color:var(--text-faint);}
   .bureau-chip .bc.blocked{color:var(--red);}
-  .bureau-chip .bs{font-size:10.5px;color:var(--text-faint);margin-top:2px;}
+  .bureau-chip .bs{font-size:var(--fs-caption);color:var(--text-faint);margin-top:2px;}
 
   table.queue{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
-  table.queue th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);padding:8px 12px;border-bottom:1px solid var(--line);background:var(--paper);}
-  table.queue td{padding:8px 12px;font-size:12.5px;border-bottom:1px solid var(--paper-dim);vertical-align:middle;}
+  table.queue th{text-align:left;font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);padding:8px 12px;border-bottom:1px solid var(--line);background:var(--paper);}
+  table.queue td{padding:8px 12px;font-size:var(--fs-body);border-bottom:1px solid var(--paper-dim);vertical-align:middle;}
   table.queue tr:last-child td{border-bottom:none;}
   table.queue tr.stuck td{background:rgba(242,166,155,.09);}
-  .status-pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;}
+  .status-pill{display:inline-block;font-size:var(--fs-caption);font-weight:700;padding:2px 8px;border-radius:10px;}
   .status-pill.confirmed{background:var(--green-bg);color:var(--green);}
   .status-pill.progress{background:var(--blue-bg);color:var(--blue);}
   .status-pill.new{background:var(--paper-dim);color:var(--text-dim);}
   .status-pill.noanswer{background:var(--amber-bg);color:var(--amber);}
-  .stuck-age{font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--amber);font-size:12.5px;}
+  .stuck-age{font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--amber);font-size:var(--fs-body);}
 
   .letters-list{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
-  .letter-row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid var(--paper-dim);font-size:12.5px;}
+  .letter-row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid var(--paper-dim);font-size:var(--fs-body);}
   .letter-row:last-child{border-bottom:none;}
   .letter-row .lt-name{font-weight:700;}
-  .letter-row .lt-detail{color:var(--text-dim);font-size:11.5px;}
-  .letter-row .lt-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);}
+  .letter-row .lt-detail{color:var(--text-dim);font-size:var(--fs-caption);}
+  .letter-row .lt-time{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--text-faint);}
   .letter-row.blocked{background:rgba(242,166,155,.09);}
   .letter-row.blocked .lt-detail{color:var(--red);font-weight:600;}
   .letter-more{display:flex;align-items:center;justify-content:center;gap:6px;
     padding:7px 14px;border-top:1px solid var(--line);background:var(--paper);
-    font-size:11.5px;font-weight:600;color:var(--text-dim);text-decoration:none;}
+    font-size:var(--fs-body);font-weight:600;color:var(--text-dim);text-decoration:none;}
   .letter-more:hover{color:var(--text);background:var(--paper-dim);}
-  .letter-more .lm-ar{font-size:10px;color:var(--text-faint);}
+  .letter-more .lm-ar{font-size:var(--fs-caption);color:var(--text-faint);}
   .who-role .pace{font-weight:700;color:var(--text);}
 
-  footer.statusbar{flex-shrink:0;height:22px;background:var(--ink);display:flex;align-items:center;padding:0 14px;gap:16px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dark-text-dim);}
+  footer.statusbar{flex-shrink:0;height:22px;background:var(--ink);display:flex;align-items:center;padding:0 14px;gap:16px;font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--dark-text-dim);}
 
   /* ---------- bureau chips double as the queue filter ---------- */
   button.bureau-chip{
@@ -151,7 +151,7 @@
     outline:2px solid var(--blue-line);outline-offset:2px;
   }
   .filter-note{
-    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;
+    font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);letter-spacing:.08em;
     text-transform:uppercase;color:var(--text-faint);margin:-4px 0 10px;min-height:12px;
   }
 
@@ -161,34 +161,34 @@
   table.queue tr[data-row].stuck:hover td{background:rgba(242,166,155,.14);}
   table.queue tr[data-row][aria-expanded="true"] td{background:var(--paper-dim);}
   table.queue tr[data-row].locked{cursor:not-allowed;}
-  .call-state{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;}
+  .call-state{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);font-weight:700;}
   .call-state.holding{color:var(--amber);}
   .call-state.live,.call-state.transferred{color:var(--green,#2f7d4a);}
-  .hold-time{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800;color:var(--amber);}
+  .hold-time{font-family:'JetBrains Mono',monospace;font-size:var(--fs-body);font-weight:800;color:var(--amber);}
   .case-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
-  .case-actions button{font:700 11px/1 'Inter',sans-serif;letter-spacing:.04em;text-transform:uppercase;
+  .case-actions button{font:700 var(--fs-caption)/1 'Inter',sans-serif;letter-spacing:.04em;text-transform:uppercase;
     border:1px solid var(--line);background:var(--surface);padding:8px 12px;border-radius:6px;cursor:pointer;}
   .case-actions button.primary{background:var(--text);color:var(--surface);}
   .case-detail{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:12px;background:var(--surface);}
-  .case-detail .cd-title{font-weight:800;font-size:14px;margin-bottom:4px;}
-  .case-detail .cd-meta{font-size:12px;color:var(--text-dim);margin-bottom:8px;}
+  .case-detail .cd-title{font-weight:800;font-size:var(--fs-title);margin-bottom:4px;}
+  .case-detail .cd-meta{font-size:var(--fs-caption);color:var(--text-dim);margin-bottom:8px;}
   #cases-panel{margin-bottom:18px;}
   tr.case-main{cursor:pointer;}
   tr.case-main:hover td{background:rgba(169,198,232,.08);}
   tr.case-detail-row > td{background:var(--paper-dim);padding:0 !important;border-bottom:1px solid var(--line);}
   .case-expand{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:14px;padding:14px 12px 16px;}
   @media (max-width:1100px){.case-expand{grid-template-columns:1fr;}}
-  .case-col h4{margin:0 0 8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);}
-  .case-letter{max-height:280px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px;font-size:12px;}
+  .case-col h4{margin:0 0 8px;font-size:var(--fs-caption);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);}
+  .case-letter{max-height:280px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px;font-size:var(--fs-body);}
   .case-letter textarea{width:100%;min-height:220px;border:0;resize:vertical;font:inherit;background:transparent;}
-  .chip{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid var(--line);margin-right:4px;}
+  .chip{display:inline-block;font-size:var(--fs-caption);font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid var(--line);margin-right:4px;}
   .chip.on{background:var(--blue-bg);border-color:var(--blue-line);color:var(--blue);}
   .chip.done{background:var(--green-bg);border-color:var(--green-line);color:var(--green);}
   .fraud-slot{margin-top:10px;padding:10px;border:1px dashed var(--line);border-radius:6px;background:var(--surface);}
-  .fraud-slot label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;}
-  .fraud-slot .hint{font-size:11px;color:var(--text-dim);margin:0 0 8px;}
+  .fraud-slot label{display:block;font-size:var(--fs-body);font-weight:700;margin-bottom:6px;}
+  .fraud-slot .hint{font-size:var(--fs-caption);color:var(--text-dim);margin:0 0 8px;}
 
-  .rowchev{display:inline-block;width:9px;color:var(--text-faint);font-size:9px;
+  .rowchev{display:inline-block;width:9px;color:var(--text-faint);font-size:var(--fs-caption);
     transition:transform .16s ease;margin-right:5px;}
   tr[data-row][aria-expanded="true"] .rowchev{transform:rotate(90deg);}
 
@@ -196,7 +196,7 @@
   .workstrip{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
     border-top:1px dashed var(--line);padding-top:10px;}
   .qbtn{
-    font:inherit;font-size:11.5px;font-weight:600;cursor:pointer;
+    font:inherit;font-size:var(--fs-body);font-weight:600;cursor:pointer;
     background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 11px;
     transition:background .12s,border-color .12s;
   }
@@ -205,12 +205,12 @@
   .qbtn.primary:hover:not(:disabled){background:#1C1C20;}
   .qbtn:disabled{opacity:.45;cursor:not-allowed;}
   .worklog{
-    font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-dim);
+    font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--text-dim);
     margin-left:auto;text-align:right;line-height:1.5;
   }
   .worklog .wl-lock{color:var(--red);}
   .queue-empty td{
-    text-align:center;color:var(--text-faint);font-size:12px;padding:18px 12px !important;
+    text-align:center;color:var(--text-faint);font-size:var(--fs-body);padding:18px 12px !important;
   }
   .stat-value{transition:color .2s;}
   .stat-value.bumped{color:var(--green);}
@@ -224,11 +224,11 @@
      using the tokens already declared at the top of this file. */
   .qbtn.qinput{font-weight:400;min-width:148px;}
   select.qbtn{padding:5px 8px;}
-  .pii-ssn{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;letter-spacing:.02em;}
-  .pii-note{font-size:11px;color:var(--text-faint);}
+  .pii-ssn{font-family:'JetBrains Mono',monospace;font-size:var(--fs-body);font-weight:700;letter-spacing:.02em;}
+  .pii-note{font-size:var(--fs-caption);color:var(--text-faint);}
   .worklog .wl-fail{color:var(--red);}
   .worklog .wl-pend{color:var(--text-faint);}
-  .status-pending{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-faint);}
+  .status-pending{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--text-faint);}
   /* ---------- shared chrome: the 23-item sidebar, identical on every internal surface ---------- */
   .app{display:flex;min-height:100vh}
   
@@ -349,9 +349,9 @@
 
   <main>
 
-    <div class="system-alert" id="systemAlert" hidden></div>
+    <div class="system-alert fh-maxw" id="systemAlert" hidden></div>
 
-    <div class="section">
+    <div class="section fh-maxw">
       <div class="section-title">Queue by Bureau</div>
       <div class="bureau-row">
         <button type="button" class="bureau-chip" data-bureau="Equifax" aria-pressed="false">
@@ -373,12 +373,12 @@
       <div class="filter-note" id="filter-note" role="status" aria-live="polite"></div>
     </div>
 
-    <div class="section" id="cases-panel" hidden>
+    <div class="section fh-maxw" id="cases-panel" hidden>
       <div class="section-title">Active Cases</div>
       <div id="cases-list"></div>
     </div>
 
-    <div class="section">
+    <div class="section fh-maxw">
       <div class="section-title">Work Queue</div>
       <table class="queue">
         <tr><th>Client</th><th>Bureau</th><th>Inquiry</th><th>Call State</th><th>Hold</th><th>Attempts</th><th>Status</th></tr>
@@ -386,7 +386,7 @@
       </table>
     </div>
 
-    <div class="section">
+    <div class="section fh-maxw">
       <div class="section-title">Recent Letters Issued</div>
       <div class="letters-list">
         <div class="letter-row">
@@ -396,9 +396,9 @@
       </div>
     </div>
 
-    <div class="section" id="caseQueueSection">
+    <div class="section fh-maxw" id="caseQueueSection">
       <div class="section-title">Inquiry removal cases</div>
-      <p style="font-size:12.5px;color:var(--text-dim);margin:0 0 10px">
+      <p style="font-size:var(--fs-body);color:var(--text-dim);margin:0 0 10px">
         One row per client per bureau. Click a row to review the letter, identity packet, and send.
         Nothing mails until you press send.
       </p>
@@ -1079,7 +1079,7 @@ window.__fhQueueReady = (function () {
       box.dataset.caseId = c.id || '';
       var hold = c.hold_duration_display || (c.master_call_state === 'holding' ? '…' : '—');
       var inqs = (c.inquiries || []).map(function (i) {
-        return '<div style="font-size:12px;margin:3px 0;">' +
+        return '<div style="font-size:var(--fs-body);margin:3px 0;">' +
           esc(i.bureau || '—') + ' · ' + esc(i.inquiry_name || i.inquiry || '—') +
           ' · <span class="call-state ' + callStateClass(i.call_state) + '">' +
           esc(callStateLabel(i.call_state)) + '</span>' +
@@ -1762,12 +1762,12 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
     var blocked = C.case_status === "Blocked";
     var letter = C.letter_draft_html || "<p><em>No draft letter yet.</em></p>";
     var portalBlock = bureau === "EX"
-      ? '<label style="display:block;font-size:12px;margin:8px 0 4px">Experian portal reference (required if uploading)</label>' +
+      ? '<label style="display:block;font-size:var(--fs-body);margin:8px 0 4px">Experian portal reference (required if uploading)</label>' +
         '<input type="text" class="portal-ref" placeholder="Reference from Experian confirmation" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px">' +
-        '<label style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:12px">' +
+        '<label style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:var(--fs-body)">' +
         '<input type="checkbox" class="want-portal"> Upload to Experian portal</label>' +
         '<a class="qbtn" style="display:inline-block;margin-top:6px;text-decoration:none" target="_blank" rel="noopener" href="https://www.experian.com/consumer/upload/">Open Experian upload ↗</a>'
-      : '<p style="font-size:12px;color:var(--text-dim)">Portal upload is Experian-only. Mail only for this bureau.</p>';
+      : '<p style="font-size:var(--fs-body);color:var(--text-dim)">Portal upload is Experian-only. Mail only for this bureau.</p>';
     return (
       '<div class="case-expand" data-case-id="' + esc(C.id) + '">' +
         '<div class="case-col">' +
@@ -1775,7 +1775,7 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
           '<div class="cd-meta">Open count: ' + esc(C.open_inquiry_count || 0) +
             (C.funding_round_id ? ' · Round <span class="mono">' + esc(String(C.funding_round_id).slice(0, 8)) + '</span>' : '') +
           '</div>' +
-          '<p style="font-size:12px;color:var(--text-dim)">Inquiries and personal-info mismatches staged for this bureau. Inclusion checkboxes land with the letter editor in a follow-up polish.</p>' +
+          '<p style="font-size:var(--fs-body);color:var(--text-dim)">Inquiries and personal-info mismatches staged for this bureau. Inclusion checkboxes land with the letter editor in a follow-up polish.</p>' +
           '<div class="fraud-slot">' +
             '<label>Additional documentation — fraud / identity theft cases</label>' +
             '<p class="hint">Upload an FTC or police report you obtained. The system never generates or files one.</p>' +
@@ -1786,19 +1786,19 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
         '<div class="case-col">' +
           '<h4>Generated letter (draft)</h4>' +
           '<div class="case-letter"><textarea class="letter-edit">' + esc(letter.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 8000)) + '</textarea></div>' +
-          '<p style="font-size:11px;color:var(--text-dim);margin:6px 0 0">Draft only — nothing sends until you press send below.</p>' +
+          '<p style="font-size:var(--fs-caption);color:var(--text-dim);margin:6px 0 0">Draft only — nothing sends until you press send below.</p>' +
         '</div>' +
         '<div class="case-col">' +
           '<h4>Identity packet</h4>' +
-          '<p style="font-size:12px;color:var(--text-dim)">Docs: ' + esc(docsLabel(C)) + '. SSN stays masked; reveal uses /api/pii with an audit reason.</p>' +
+          '<p style="font-size:var(--fs-body);color:var(--text-dim)">Docs: ' + esc(docsLabel(C)) + '. SSN stays masked; reveal uses /api/pii with an audit reason.</p>' +
           '<button type="button" class="qbtn" data-act="packet">Download packet</button>' +
           '<h4 style="margin-top:14px">Send</h4>' +
           (blocked
-            ? '<p style="font-size:12px;color:var(--red)">Send disabled — identity packet incomplete. Collection is chasing uploads.</p>'
+            ? '<p style="font-size:var(--fs-body);color:var(--red)">Send disabled — identity packet incomplete. Collection is chasing uploads.</p>'
             : '') +
-          '<label style="display:flex;gap:6px;align-items:center;font-size:12px;margin:6px 0">' +
+          '<label style="display:flex;gap:6px;align-items:center;font-size:var(--fs-body);margin:6px 0">' +
             '<input type="checkbox" class="want-mail" ' + (blocked ? "disabled" : "checked") + '> Mail letter (PostGrid)</label>' +
-          '<label style="display:flex;gap:6px;align-items:center;font-size:12px;margin:6px 0">' +
+          '<label style="display:flex;gap:6px;align-items:center;font-size:var(--fs-body);margin:6px 0">' +
             'Mail service <select class="mail-service" ' + (blocked ? "disabled" : "") + '>' +
               '<option value="">Bureau default (first class)</option>' +
               '<option value="first_class">First class</option>' +

@@ -13,7 +13,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--butter:#F2E39B}
 html,body{height:100%}
-body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:1.5;-webkit-font-smoothing:antialiased}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 a{color:inherit;text-decoration:none}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -46,8 +46,8 @@ button,input,select,textarea{font:inherit;color:inherit}
    padding, "+ New agent" sits under Search and a click opens search instead.
    --fh-shell-top-clearance is set by shell.js layoutShellChrome(). */
 @media (min-width:1201px){ .topbar{padding-right:var(--fh-shell-top-clearance, 520px)} }
-.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
-.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
 @media (max-width:480px){
   /* The title, live chip and "+ New agent" button don't fit in one 57px row
@@ -63,16 +63,16 @@ button,input,select,textarea{font:inherit;color:inherit}
 .card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .card-bd{padding:16px}
 .hair{height:2px;background:var(--spectrum);border-radius:1px}
-.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:var(--fs-body);font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
 .btn:hover{background:var(--soft);border-color:var(--gray2)}
 .btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .btn.dark:hover{background:var(--ink2)}
-.btn.sm{padding:5px 10px;font-size:11.5px}
-.btn.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.btn.sm{padding:5px 10px;font-size:var(--fs-caption)}
+.btn.mono{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.08em;text-transform:uppercase}
 .btn:disabled{opacity:.42;cursor:not-allowed}
 .btn:disabled:hover{background:#fff;border-color:var(--line)}
 .btn.dark:disabled:hover{background:var(--ink)}
-.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:var(--fs-caption);font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
 .b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
 .b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
 .b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
@@ -80,12 +80,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 .b-accent{background:rgba(196,179,229,.26);border-color:var(--accent);color:#3F2F63}
 .b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
 .field{display:flex;flex-direction:column;gap:5px}
-.field label{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
-.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:13px;width:100%}
-.field textarea{resize:vertical;line-height:1.6;font-size:12.5px}
+.field label{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
+.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:var(--fs-body);width:100%}
+.field textarea{resize:vertical;line-height:1.6;font-size:var(--fs-body)}
 .field input.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
-.field .hint{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em}
+.field .hint{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .sw{position:relative;width:38px;height:21px;flex:0 0 38px;border-radius:11px;background:var(--line);border:1px solid var(--line);cursor:pointer;transition:background .15s}
 .sw::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.18)}
@@ -93,32 +93,32 @@ button,input,select,textarea{font:inherit;color:inherit}
 .swrow{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)}
 .swrow:last-child{border-bottom:0}
 .swrow .swl{flex:1;min-width:0}
-.swrow .swl .n{font-size:12.5px;font-weight:500}
-.swrow .swl .d{font-size:11px;color:var(--gray);line-height:1.4}
+.swrow .swl .n{font-size:var(--fs-body);font-weight:500}
+.swrow .swl .d{font-size:var(--fs-caption);color:var(--gray);line-height:1.4}
 
 .layout{display:grid;grid-template-columns:296px minmax(0,1fr);gap:14px;align-items:start}
 .alist{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;position:sticky;top:71px}
-.agrp{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);padding:11px 14px 7px;background:var(--soft);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.agrp{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:var(--gray);padding:11px 14px 7px;background:var(--soft);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
 .agrp::before{content:"";width:16px;height:2px;background:var(--spectrum);border-radius:1px}
 .aitem{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .1s}
 .aitem:hover{background:var(--soft)}
 .aitem.on{background:rgba(169,198,232,.14)}
 .aitem.on .an{font-weight:600}
 .aitem .dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
-.aitem .an{flex:1;min-width:0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.aitem .ac{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.08em}
-.aitem .ast{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;
+.aitem .an{flex:1;min-width:0;font-size:var(--fs-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aitem .ac{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.08em}
+.aitem .ast{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;
   border:1px solid var(--line);border-radius:5px;padding:1px 5px;white-space:nowrap}
 .aitem .ast.live{border-color:var(--ok);background:rgba(168,216,176,.22);color:#2C5138}
 .aitem .ast.shadow{border-color:var(--accent);background:rgba(196,179,229,.20);color:#3F2F63}
-.aitem .atr{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em;
+.aitem .atr{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em;
   white-space:nowrap;min-width:48px;text-align:right}
 .aitem .atr.none{color:#6E2A22}
 
 /* ---- config sections: what it may do stays open, the rest folds away ---- */
 details.card>summary{list-style:none;cursor:pointer}
 details.card>summary::-webkit-details-marker{display:none}
-details.card>summary.card-hd::after{content:"▾";margin-left:auto;font-size:10px;color:var(--gray2);
+details.card>summary.card-hd::after{content:"▾";margin-left:auto;font-size:var(--fs-caption);color:var(--gray2);
   transition:transform .16s}
 details.card[open]>summary.card-hd::after{transform:rotate(180deg)}
 details.card>summary.card-hd:hover{background:var(--soft)}
@@ -130,14 +130,14 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 .ev{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:7px;padding:7px 9px;cursor:pointer;background:#fff;transition:border-color .12s,background .12s;text-align:left}
 .ev:hover{border-color:var(--gray2)}
 .ev.on{border-color:var(--ink);background:var(--soft)}
-.ev .box{width:14px;height:14px;flex:0 0 14px;border:1px solid var(--gray2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;color:transparent}
+.ev .box{width:14px;height:14px;flex:0 0 14px;border:1px solid var(--gray2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-caption);line-height:1;color:transparent}
 .ev.on .box{background:var(--ink);border-color:var(--ink);color:#fff}
-.ev .en{font-family:var(--mono);font-size:11px;letter-spacing:.02em}
+.ev .en{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.02em}
 
 .guard{background:var(--card);border:1px solid var(--cardline);border-radius:8px;padding:13px 14px;color:var(--cardtext)}
-.guard textarea{width:100%;background:transparent;border:0;color:var(--cardtext);font-family:var(--mono);font-size:11.5px;line-height:1.75;resize:vertical;min-height:118px}
+.guard textarea{width:100%;background:transparent;border:0;color:var(--cardtext);font-family:var(--mono);font-size:var(--fs-body);line-height:1.75;resize:vertical;min-height:118px}
 .guard textarea:focus{outline:none}
-.guard .gh{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#71717A;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.guard .gh{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:#71717A;margin-bottom:8px;display:flex;align-items:center;gap:8px}
 .guard .gh::before{content:"";width:16px;height:2px;background:var(--spectrum);border-radius:1px}
 
 .mode{border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -145,26 +145,26 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 .mode .mbd{padding:15px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .mode.shadow{background:rgba(196,179,229,.10)}
 .mode.live{background:rgba(168,216,176,.12)}
-.mode .mt{font-family:var(--mono);font-size:17px;font-weight:600;letter-spacing:-.01em}
+.mode .mt{font-family:var(--mono);font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .gate{border-top:1px solid var(--line);padding:13px 16px;background:#fff}
-.gaterow{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12px}
-.gaterow .gi{font-family:var(--mono);font-size:12px;width:15px;flex:0 0 15px;text-align:center}
+.gaterow{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:var(--fs-body)}
+.gaterow .gi{font-family:var(--mono);font-size:var(--fs-body);width:15px;flex:0 0 15px;text-align:center}
 .gaterow.pass .gi{color:#2C5138}
 .gaterow.fail .gi{color:#6E2A22}
 .gaterow .gt{flex:1;min-width:0}
-.gaterow .gv{font-family:var(--mono);font-size:11px;color:var(--gray)}
+.gaterow .gv{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray)}
 
-.srun{display:flex;gap:11px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:12px;align-items:flex-start}
+.srun{display:flex;gap:11px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:var(--fs-body);align-items:flex-start}
 .srun:last-child{border-bottom:0}
-.srun .st{font-family:var(--mono);font-size:10.5px;color:var(--gray2);flex:0 0 74px;letter-spacing:.04em}
+.srun .st{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);flex:0 0 74px;letter-spacing:.04em}
 .srun .sb{flex:1;min-width:0}
-.srun .so{color:var(--gray);font-size:11.5px;line-height:1.5;margin-top:3px}
+.srun .so{color:var(--gray);font-size:var(--fs-caption);line-height:1.5;margin-top:3px}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
 .stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
-.stat .sv{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
-.stat .sd{font-size:11px;color:var(--gray);margin-top:2px}
-.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+.stat .sv{font-family:var(--mono);font-size:var(--fs-metric);font-variant-numeric:tabular-nums;font-weight:600;margin-top:8px;letter-spacing:-.02em}
+.stat .sd{font-size:var(--fs-caption);color:var(--gray);margin-top:2px}
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
 @media(max-width:1080px){.layout{grid-template-columns:1fr}.alist{position:static}.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
 </style>
 <script src="shell.js"></script>
@@ -243,7 +243,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
       <button class="btn dark mono" id="newBtn">+ New agent</button>
     </div>
 
-    <div class="content">
+    <div class="content fh-maxw">
       <div class="stats">
         <div class="stat"><div class="eyebrow">AE-00 <span class="sep">/</span> AGENTS</div><div class="sv" id="kAll">—</div><div class="sd" id="kAllSub">loading…</div></div>
         <div class="stat"><div class="eyebrow">AE-00 <span class="sep">/</span> LIVE</div><div class="sv" id="kLive">0</div><div class="sd">acting on real clients</div></div>
@@ -265,7 +265,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
               <div style="flex:1;min-width:180px">
                 <div class="eyebrow">AE-07 <span class="sep">/</span> MODE</div>
                 <div class="mt" id="modeTitle">—</div>
-                <div style="font-size:11.5px;color:var(--gray)" id="modeSub">—</div>
+                <div style="font-size:var(--fs-caption);color:var(--gray)" id="modeSub">—</div>
               </div>
               <button class="btn dark mono" id="promoteBtn">Promote to live</button>
               <button class="btn mono" id="demoteBtn">Return to shadow</button>
@@ -291,7 +291,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 
           <div class="card keycard">
             <div class="card-hd"><div class="eyebrow">AE-06 <span class="sep">/</span> AUTHORITY LIMITS</div>
-              <div class="spacer"></div><span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em">WHAT IT MAY DO UNSUPERVISED</span></div>
+              <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">WHAT IT MAY DO UNSUPERVISED</span></div>
             <div class="card-bd">
               <div class="grid2" style="margin-bottom:6px">
                 <div class="field"><label>Max discount</label><input id="a_disc" class="num" type="number" min="0" max="100" value="0"><span class="hint">PERCENT OFF LIST — 0 MEANS NONE</span></div>
@@ -321,9 +321,9 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 
           <details class="card">
             <summary class="card-hd"><div class="eyebrow">AE-02 <span class="sep">/</span> TRIGGER EVENTS</div>
-              <div class="spacer"></div><span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em" id="trigCount">0 SELECTED</span></summary>
+              <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em" id="trigCount">0 SELECTED</span></summary>
             <div class="card-bd"><div class="evgrid" id="evGrid"></div>
-              <div style="font-size:11.5px;color:var(--gray);margin-top:11px;line-height:1.55">
+              <div style="font-size:var(--fs-caption);color:var(--gray);margin-top:11px;line-height:1.55">
                 Canonical bus events. An agent with no trigger never fires — it can be saved, but it stays inert.
               </div>
             </div>
@@ -331,7 +331,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 
           <details class="card">
             <summary class="card-hd"><div class="eyebrow">AE-03 <span class="sep">/</span> PROMPT</div>
-              <div class="spacer"></div><span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em" id="promptLen">0 CHARS</span></summary>
+              <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em" id="promptLen">0 CHARS</span></summary>
             <div class="card-bd"><div class="field"><textarea id="a_prompt" rows="9"></textarea>
               <span class="hint">CONTEXT FETCHER INJECTS CLIENT STATE BEFORE THIS RUNS</span></div></div>
           </details>
@@ -349,13 +349,13 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 
           <details class="card">
             <summary class="card-hd"><div class="eyebrow">AE-08 <span class="sep">/</span> SHADOW LOG</div>
-              <div class="spacer"></div><span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em">WHAT IT WOULD HAVE SENT</span></summary>
+              <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">WHAT IT WOULD HAVE SENT</span></summary>
             <div id="shadowLog"></div>
           </details>
           <div style="display:flex;gap:9px;margin-top:14px;flex-wrap:wrap">
             <button class="btn dark mono" id="saveBtn">Save agent</button>
             <button class="btn mono" id="revertBtn">Revert</button>
-            <span id="saveNote" class="mono" style="align-self:center;font-size:11px;color:var(--gray2);letter-spacing:.08em"></span>
+            <span id="saveNote" class="mono" style="align-self:center;font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.08em"></span>
           </div>
         </div>
       </div>
@@ -523,10 +523,10 @@ function renderLog(){
   document.getElementById('shadowLog').innerHTML=l.length?l.map(function(r){
     var blocked=/^BLOCKED|^HELD/.test(r.o);
     return '<div class="srun"><span class="st">'+r.t+'</span><div class="sb">'+
-      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><strong style="font-size:12px">'+esc(r.c)+'</strong>'+
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><strong style="font-size:var(--fs-body)">'+esc(r.c)+'</strong>'+
       (blocked?'<span class="badge b-alert">Guardrail</span>':(cur.mode==='live'?'<span class="badge b-ok">Sent</span>':'<span class="badge b-accent">Shadow</span>'))+'</div>'+
       '<div class="so">'+esc(r.o)+'</div></div></div>';
-  }).join(''):'<div style="padding:22px 16px;text-align:center;color:var(--gray2);font-size:12px">No runs recorded yet.</div>';
+  }).join(''):'<div style="padding:22px 16px;text-align:center;color:var(--gray2);font-size:var(--fs-body)">No runs recorded yet.</div>';
 }
 
 /* promotion gate — a real checklist that blocks */
@@ -568,7 +568,7 @@ function renderGate(){
       return '<div class="gaterow '+(c.ok?'pass':'fail')+'"><span class="gi">'+(c.ok?'●':'○')+'</span>'+
         '<span class="gt">'+esc(c.t)+'</span><span class="gv">'+esc(c.v)+'</span></div>';
     }).join('')+
-    (allOk?'':'<div style="margin-top:9px;font-size:11.5px;color:#6E2A22">Promotion is blocked until every check passes.</div>');
+    (allOk?'':'<div style="margin-top:9px;font-size:var(--fs-caption);color:#6E2A22">Promotion is blocked until every check passes.</div>');
   var pb=document.getElementById('promoteBtn'), db=document.getElementById('demoteBtn');
   pb.style.display=live?'none':''; db.style.display=live?'':'none';
   pb.disabled=!allOk;

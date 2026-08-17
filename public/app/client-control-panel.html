@@ -44,12 +44,12 @@
   }
   /* ---------- worker avatars: filled = a person, purple outline = an agent ---------- */
   .av{width:17px;height:17px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;
-    justify-content:center;font-size:7.5px;font-weight:800;letter-spacing:-.2px;vertical-align:middle;}
+    justify-content:center;font-size:var(--fs-caption);font-weight:800;letter-spacing:-.2px;vertical-align:middle;}
   .av.human{background:var(--ink);color:#fff;}
   .av.agent{background:#fff;color:var(--purple);border:1.5px solid var(--purple);}
-  .av.lg{width:20px;height:20px;font-size:8px;}
-  .av.xl{width:26px;height:26px;font-size:9.5px;}
-  .agent-tag{font-size:8.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+  .av.lg{width:20px;height:20px;font-size:var(--fs-caption);}
+  .av.xl{width:26px;height:26px;font-size:var(--fs-caption);}
+  .agent-tag{font-size:var(--fs-caption);font-weight:800;letter-spacing:.4px;text-transform:uppercase;
     background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-line);
     border-radius:4px;padding:0 4px;}
   *{box-sizing:border-box;}
@@ -67,13 +67,13 @@
      .inv flips it for the dark topbar. */
   .brand .logo{height:15px;aspect-ratio:2698/543;flex-shrink:0;}
   .brand .sep{color:var(--dark-text-dim);font-weight:400;}
-  .brand .sub{font-weight:600;font-size:12.5px;color:var(--dark-text-dim);}
-  .topbar-right{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--dark-text-dim);}
-  .live-pill{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dark-text);background:#151517;border:1px solid var(--dark-line);padding:4px 9px 4px 7px;border-radius:20px;}
+  .brand .sub{font-weight:600;font-size:var(--fs-body);color:var(--dark-text-dim);}
+  .topbar-right{display:flex;align-items:center;gap:16px;font-size:var(--fs-caption);color:var(--dark-text-dim);}
+  .live-pill{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--dark-text);background:#151517;border:1px solid var(--dark-line);padding:4px 9px 4px 7px;border-radius:20px;}
   .live-dot{width:6px;height:6px;border-radius:50%;background:#A8D8B0;box-shadow:0 0 0 0 rgba(168,216,176,.6);animation:pulse 1.8s infinite;}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(168,216,176,.55);}70%{box-shadow:0 0 0 6px rgba(168,216,176,0);}100%{box-shadow:0 0 0 0 rgba(168,216,176,0);}}
-  .clock{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dark-text);}
-  .org-pill{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;}
+  .clock{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--dark-text);}
+  .org-pill{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;}
 
   /* ---------- record header ---------- */
   .record-head{
@@ -82,13 +82,13 @@
     display:flex;align-items:center;justify-content:space-between;gap:16px;
   }
   .record-id{display:flex;align-items:baseline;gap:10px;}
-  .record-name{font-size:17px;font-weight:800;color:var(--text);}
-  .record-key{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);}
+  .record-name{font-size:var(--fs-title);font-weight:800;color:var(--text);}
+  .record-key{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--text-faint);}
   .record-fields{display:flex;gap:10px;flex-wrap:wrap;}
   .rf-tile{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:5px 11px;text-align:center;min-width:92px;}
-  .rf-label{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:2px;}
-  .rf-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13.5px;color:var(--text);}
-  .status-badge-lg{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;background:var(--blue-bg);color:var(--blue);}
+  .rf-label{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:2px;}
+  .rf-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-variant-numeric:tabular-nums;font-size:var(--fs-body);color:var(--text);}
+  .status-badge-lg{display:inline-block;font-size:var(--fs-caption);font-weight:700;padding:3px 10px;border-radius:12px;background:var(--blue-bg);color:var(--blue);}
 
   /* ---------- layout ---------- */
   main{flex:1;display:grid;grid-template-columns:1fr 300px;gap:1px;background:var(--ink);overflow:hidden;}
@@ -100,13 +100,13 @@
   .side-col::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px;}
 
   .group{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px 14px;margin-bottom:12px;}
-  .group-title{font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
-  .group-title .chev{font-size:11px;color:var(--text-faint);font-weight:400;text-transform:none;letter-spacing:0;cursor:default;}
+  .group-title{font-size:var(--fs-caption);font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+  .group-title .chev{font-size:var(--fs-caption);color:var(--text-faint);font-weight:400;text-transform:none;letter-spacing:0;cursor:default;}
 
   .kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;}
   .kv{display:flex;flex-direction:column;gap:2px;}
-  .kv-label{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);}
-  .kv-value{font-size:13px;font-weight:600;color:var(--text);}
+  .kv-label{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);}
+  .kv-value{font-size:var(--fs-body);font-weight:600;color:var(--text);}
   .kv-value.mono{font-family:'JetBrains Mono',monospace;}
 
   /* ---------- Next action + blockers — the loudest thing on the page --------
@@ -115,25 +115,25 @@
      It leads now; the blocker sits under it as the reason. */
   .blockers-panel{background:rgba(242,166,155,.09);border:1px solid var(--red-line);border-radius:8px;padding:13px 14px 13px;}
   .na-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:12px;}
-  .na-eyebrow{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.16em;
+  .na-eyebrow{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);letter-spacing:.16em;
     text-transform:uppercase;color:var(--red);margin-bottom:5px;}
-  .na-main{font-size:17px;font-weight:800;line-height:1.3;color:var(--text);letter-spacing:-.01em;}
-  .na-why{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  .na-main{font-size:var(--fs-title);font-weight:800;line-height:1.3;color:var(--text);letter-spacing:-.01em;}
+  .na-why{font-size:var(--fs-caption);font-weight:700;letter-spacing:1px;text-transform:uppercase;
     color:var(--text-dim);margin-bottom:6px;}
   .blockers-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
-  .blockers-title{font-size:13px;font-weight:800;color:var(--red);}
+  .blockers-title{font-size:var(--fs-body);font-weight:800;color:var(--red);}
   .blocker-card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--amber-line);border-radius:6px;padding:9px 12px;margin-bottom:8px;}
   .blocker-top{display:flex;justify-content:space-between;align-items:flex-start;}
-  .blocker-reason{font-weight:700;font-size:13px;color:var(--text);}
+  .blocker-reason{font-weight:700;font-size:var(--fs-body);color:var(--text);}
   .blocker-age-wrap{text-align:right;}
-  .blocker-age{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:17px;color:var(--amber);}
-  .blocker-age-label{font-size:8.5px;text-transform:uppercase;color:var(--text-faint);letter-spacing:.4px;display:block;}
-  .blocker-detail{font-size:12px;color:var(--text-dim);margin-top:4px;}
-  .blocker-action{font-size:11.5px;color:var(--text);margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);}
+  .blocker-age{font-family:'JetBrains Mono',monospace;font-weight:800;font-variant-numeric:tabular-nums;font-size:var(--fs-title);color:var(--amber);}
+  .blocker-age-label{font-size:var(--fs-caption);text-transform:uppercase;color:var(--text-faint);letter-spacing:.4px;display:block;}
+  .blocker-detail{font-size:var(--fs-caption);color:var(--text-dim);margin-top:4px;}
+  .blocker-action{font-size:var(--fs-caption);color:var(--text);margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);}
   .blocker-action b{color:var(--blue);}
 
   .status-chip-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;}
-  .status-chip{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--text-dim);}
+  .status-chip{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:var(--fs-caption);color:var(--text-dim);}
   .status-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--green-line);}
   .status-chip.neutral .dot{background:var(--text-faint);}
 
@@ -141,32 +141,32 @@
   .details-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-bottom:10px;}
   .notes-box{
     border:1px dashed var(--line);border-radius:6px;padding:14px;text-align:center;
-    color:var(--text-faint);font-size:12.5px;background:var(--paper);
+    color:var(--text-faint);font-size:var(--fs-body);background:var(--paper);
   }
 
   /* ---------- sidebar: actions ---------- */
-  .side-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text);margin:0 0 8px 0;}
+  .side-title{font-size:var(--fs-caption);font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text);margin:0 0 8px 0;}
   .action-btn{
     display:flex;align-items:center;justify-content:space-between;width:100%;
     background:var(--surface);color:var(--text);border:1px solid var(--ink);border-radius:6px;
-    padding:10px 12px;margin-bottom:7px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;
+    padding:10px 12px;margin-bottom:7px;font-family:'Inter',sans-serif;font-size:var(--fs-body);font-weight:600;
     cursor:default;text-decoration:none;
   }
   .action-btn .arrow{color:var(--text);}
   .action-btn.confirm-required{background:#1C1C20;}
-  .action-btn.confirm-required .arrow{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:#F5CE8F;}
+  .action-btn.confirm-required .arrow{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:#F5CE8F;}
   .action-error{
     display:flex;gap:8px;background:var(--red-bg);border:1px solid var(--red-line);border-radius:6px;
-    padding:8px 10px;margin-bottom:10px;font-size:11.5px;color:var(--red);
+    padding:8px 10px;margin-bottom:10px;font-size:var(--fs-caption);color:var(--red);
   }
-  .action-error b{display:block;color:var(--text);font-size:12px;margin-bottom:1px;}
+  .action-error b{display:block;color:var(--text);font-size:var(--fs-caption);margin-bottom:1px;}
 
   .link-btn{
     display:flex;align-items:center;justify-content:space-between;width:100%;
     background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:6px;
-    padding:8px 11px;margin-bottom:6px;font-size:12px;font-weight:600;
+    padding:8px 11px;margin-bottom:6px;font-size:var(--fs-caption);font-weight:600;
   }
-  .link-btn .arrow{color:var(--text-faint);font-size:12px;}
+  .link-btn .arrow{color:var(--text-faint);font-size:var(--fs-caption);}
 
   /* ---------- "More" — the old Quick Launch stack -------------------------
      Two competing button stacks in one column meant neither read as primary.
@@ -175,23 +175,23 @@
   .more{margin-top:2px;}
   .more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;
     background:var(--surface);border:1px dashed var(--line);border-radius:6px;padding:8px 11px;
-    font-size:12px;font-weight:600;color:var(--text-dim);}
+    font-size:var(--fs-caption);font-weight:600;color:var(--text-dim);}
   .more>summary::-webkit-details-marker{display:none;}
   .more>summary:hover{color:var(--text);border-color:var(--text-faint);}
   .more>summary:focus-visible{outline:2px solid var(--blue-line);outline-offset:2px;}
-  .more>summary .arrow{color:var(--text-faint);font-size:11px;transition:transform .16s;}
+  .more>summary .arrow{color:var(--text-faint);font-size:var(--fs-caption);transition:transform .16s;}
   .more[open]>summary .arrow{transform:rotate(180deg);}
   .more-body{padding-top:7px;}
 
   .facts-list{display:flex;flex-direction:column;}
-  .fact-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--paper-dim);font-size:11.5px;}
+  .fact-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--paper-dim);font-size:var(--fs-caption);}
   .fact-row:last-child{border-bottom:none;}
   .fact-row .k{color:var(--text-dim);}
   .fact-row .v{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--text);}
 
   footer.statusbar{
     flex-shrink:0;height:22px;background:var(--ink);display:flex;align-items:center;
-    padding:0 14px;gap:16px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dark-text-dim);
+    padding:0 14px;gap:16px;font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--dark-text-dim);
   }
 
   /* ---------- interaction states ---------- */
@@ -202,15 +202,15 @@
   }
   /* armed — waiting for a second click to commit */
   .action-btn.armed{background:#2A2118;box-shadow:inset 0 0 0 1px var(--amber-line);}
-  .action-btn.armed .arrow{color:var(--amber-line);font-size:9px;text-transform:uppercase;letter-spacing:.4px;}
+  .action-btn.armed .arrow{color:var(--amber-line);font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;}
   .action-btn .cancel{
-    background:none;border:0;color:var(--dark-text-dim);font-size:12px;line-height:1;
+    background:none;border:0;color:var(--dark-text-dim);font-size:var(--fs-caption);line-height:1;
     padding:0 0 0 8px;cursor:pointer;
   }
   .action-btn .cancel:hover{color:var(--dark-text);}
   /* running */
   .action-btn.loading{opacity:.75;cursor:progress;}
-  .action-btn.loading .arrow{display:inline-flex;align-items:center;gap:6px;font-size:10px;
+  .action-btn.loading .arrow{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-caption);
     text-transform:uppercase;letter-spacing:.4px;color:var(--dark-text-dim);}
   .spin{
     width:11px;height:11px;border-radius:50%;display:inline-block;
@@ -219,14 +219,14 @@
   @keyframes spin{to{transform:rotate(360deg);}}
   /* settled */
   .action-btn.done{background:#16241A;box-shadow:inset 0 0 0 1px var(--green-line);}
-  .action-btn.done .arrow{color:var(--green-line);font-family:'JetBrains Mono',monospace;font-size:10px;}
+  .action-btn.done .arrow{color:var(--green-line);font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);}
   .action-btn.failed{background:#2A1714;box-shadow:inset 0 0 0 1px var(--red-line);}
-  .action-btn.failed .arrow{color:var(--red-line);font-size:9px;text-transform:uppercase;letter-spacing:.4px;}
+  .action-btn.failed .arrow{color:var(--red-line);font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;}
   .action-error.clearing{opacity:0;transform:translateY(-4px);transition:opacity .3s,transform .3s;}
 
   /* ---------- collapsible group ---------- */
   .group-title.tog{cursor:pointer;user-select:none;width:100%;background:none;border:0;
-    font:inherit;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+    font:inherit;font-size:var(--fs-caption);font-weight:700;letter-spacing:1px;text-transform:uppercase;
     color:var(--text-dim);padding:0;text-align:left;}
   .group-title.tog .chev{cursor:pointer;}
   .group-title .cg{display:inline-block;transition:transform .18s ease;}
@@ -236,7 +236,7 @@
   /* ---------- notes ---------- */
   textarea.notes-box{
     display:block;width:100%;min-height:64px;resize:vertical;text-align:left;
-    font-family:'Inter',-apple-system,sans-serif;font-size:12.5px;line-height:1.5;color:var(--text);
+    font-family:'Inter',-apple-system,sans-serif;font-size:var(--fs-body);line-height:1.5;color:var(--text);
     transition:border-color .12s,box-shadow .12s;
   }
   textarea.notes-box::placeholder{color:var(--text-faint);}
@@ -246,7 +246,7 @@
   }
   .notes-status{
     display:flex;align-items:center;gap:6px;margin-top:6px;min-height:14px;
-    font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.08em;
+    font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);letter-spacing:.08em;
     text-transform:uppercase;color:var(--text-faint);
   }
   .notes-status .sd{width:6px;height:6px;border-radius:50%;background:var(--amber-line);flex:0 0 6px;}
@@ -258,18 +258,18 @@
   }
   .dropzone:hover,.dropzone:focus-visible{border-color:var(--blue-line);background:var(--paper-dim);outline:none;}
   .dropzone.drag{border-color:var(--blue-line);border-style:solid;background:var(--blue-bg);}
-  .dz-label{font-size:12.5px;font-weight:600;color:var(--text);}
-  .dz-hint{font-size:11px;color:var(--text-faint);margin-top:3px;}
+  .dz-label{font-size:var(--fs-body);font-weight:600;color:var(--text);}
+  .dz-hint{font-size:var(--fs-caption);color:var(--text-faint);margin-top:3px;}
   .dz-filelist{display:flex;flex-direction:column;gap:4px;margin-top:8px;}
   .dz-file{
-    display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text);
+    display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--text);
     padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);
   }
   .dz-file.sent{border-color:var(--green-line);}
   .dz-file .fn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .dz-file .fs{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-faint);}
+  .dz-file .fs{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--text-faint);}
   .dz-status{
-    margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.05em;
+    margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);letter-spacing:.05em;
     color:var(--text-faint);min-height:13px;
   }
   .dz-status.err{color:var(--red-line);}
@@ -377,7 +377,7 @@
   </nav>
   <div class="side-foot"><span class="pulse"></span><span class="who">fundhub</span></div>
 </aside>
-<div class="shell">
+<div class="shell fh-maxw">
 
   <header class="topbar">
     <div class="brand">
@@ -405,7 +405,7 @@
       <div class="rf-tile"><div class="rf-label">Open Inquiries</div><div class="rf-value" id="ccp-inquiries">—</div></div>
       <div class="rf-tile"><div class="rf-label">Inquiry Removal</div><div class="rf-value" data-ir-case id="ccp-ir">—</div></div>
       <div class="rf-tile"><div class="rf-label">Scores</div>
-        <div class="rf-value" id="ccp-scores" style="font-family:'JetBrains Mono',monospace;font-size:12px;">—</div></div>
+        <div class="rf-value" id="ccp-scores" style="font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);">—</div></div>
       <div class="rf-tile"><div class="rf-label">Funding Round</div><div class="rf-value" id="ccp-round">—</div></div>
     </div>
   </div>
@@ -441,10 +441,10 @@
           <span class="chev">collapsed by default <span class="cg">⌄</span></span>
         </button>
         <div class="group-body" id="agent-context-body" hidden>
-          <p style="font-size:12px;color:var(--muted,#666);margin:0 0 10px;">
+          <p style="font-size:var(--fs-caption);color:var(--muted,#666);margin:0 0 10px;">
             Read-only. Same facts the agent runtime injects into every reply prompt.
           </p>
-          <pre id="agent-context-pre" class="mono" style="white-space:pre-wrap;font-size:11px;line-height:1.45;background:var(--surface,#fff);border:1px solid var(--line,#ddd);border-radius:6px;padding:12px;margin:0;max-height:320px;overflow:auto;">Open with ?id=&lt;client id&gt; to load.</pre>
+          <pre id="agent-context-pre" class="mono" style="white-space:pre-wrap;font-size:var(--fs-caption);line-height:1.45;background:var(--surface,#fff);border:1px solid var(--line,#ddd);border-radius:6px;padding:12px;margin:0;max-height:320px;overflow:auto;">Open with ?id=&lt;client id&gt; to load.</pre>
         </div>
       </div>
 
@@ -514,14 +514,14 @@
 
       <div class="side-title">Funding · Apply</div>
       <div id="fh-funding-apply" style="margin-bottom:14px;padding:10px 12px;border:1px solid var(--line,#E4E4E7);border-radius:10px;background:#fff">
-        <div style="font:700 10px/1 var(--mono,ui-monospace);letter-spacing:.1em;text-transform:uppercase;color:var(--gray,#71717A)">Apply door</div>
-        <div id="fh-funding-apply-status" style="margin-top:6px;font-size:12.5px;color:var(--gray,#71717A)">Open with ?id=&lt;client&gt; to load matching lenders.</div>
+        <div style="font:700 var(--fs-caption)/1 var(--mono,ui-monospace);letter-spacing:.1em;text-transform:uppercase;color:var(--gray,#71717A)">Apply door</div>
+        <div id="fh-funding-apply-status" style="margin-top:6px;font-size:var(--fs-body);color:var(--gray,#71717A)">Open with ?id=&lt;client&gt; to load matching lenders.</div>
         <div id="fh-funding-apply-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
-        <p style="margin:8px 0 0;font-size:11px;color:var(--gray,#71717A)">Shows lenders that fit this file. Apply opens the bank page when a URL is on file.</p>
+        <p style="margin:8px 0 0;font-size:var(--fs-caption);color:var(--gray,#71717A)">Shows lenders that fit this file. Apply opens the bank page when a URL is on file.</p>
       </div>
 
       <div class="side-title">Actions</div>
-      <p id="ccp-actions-note" style="font-size:13px;line-height:1.45;color:var(--text);margin:0 0 10px;">Bureau pulls run from the closer deck. These buttons open the live file — they do not fake a pull.</p>
+      <p id="ccp-actions-note" style="font-size:var(--fs-body);line-height:1.45;color:var(--text);margin:0 0 10px;">Bureau pulls run from the closer deck. These buttons open the live file — they do not fake a pull.</p>
       <a class="action-btn" id="ccp-link-pipeline" href="pipeline.html">Open Pipeline <span class="arrow">↗</span></a>
       <a class="action-btn" id="ccp-link-present" href="present.html">Open Closer Deck <span class="arrow">↗</span></a>
       <a class="action-btn" id="ccp-link-messaging" href="messaging.html">Open Messaging <span class="arrow">↗</span></a>
@@ -657,7 +657,7 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     box.style.cssText =
       "position:fixed;left:0;right:0;bottom:0;z-index:2147482000;padding:7px 14px;" +
       "background:" + (TONE[tone] || TONE.error) + ";color:#0A0A0A;" +
-      "font:600 11px/1.4 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.05em;text-align:center";
+      "font:600 var(--fs-caption)/1.4 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.05em;text-align:center";
     box.textContent = text;
     document.body.appendChild(box);
   }
@@ -935,14 +935,14 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
         var row = document.createElement("div");
         row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px";
         var label = document.createElement("span");
-        label.style.cssText = "font-size:12.5px;min-width:0";
+        label.style.cssText = "font-size:var(--fs-body);min-width:0";
         label.textContent = (m.name || "?") + (m.bureaus_pulled ? (" · " + m.bureaus_pulled) : "");
         row.appendChild(label);
         if (m.id && m.application_url && window.FHProxyApply) {
           var btn = document.createElement("button");
           btn.type = "button";
           btn.className = "action-btn";
-          btn.style.cssText = "margin:0;padding:6px 10px;font-size:11px";
+          btn.style.cssText = "margin:0;padding:6px 10px;font-size:var(--fs-caption)";
           btn.textContent = "Apply";
           btn.setAttribute("data-fh-apply", "1");
           btn.addEventListener("click", function () {
@@ -955,7 +955,7 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
           row.appendChild(btn);
         } else {
           var miss = document.createElement("span");
-          miss.style.cssText = "font-size:11px;color:var(--gray2,#A1A1AA)";
+          miss.style.cssText = "font-size:var(--fs-caption);color:var(--gray2,#A1A1AA)";
           miss.textContent = "No URL";
           row.appendChild(miss);
         }

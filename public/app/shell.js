@@ -131,7 +131,14 @@
     "subscriptions.html",
     /* journeys.html — api/journeys/ask.mjs and api/journeys/store.mjs both
        gate on requireRole("owner", "admin"); the nav row matches. */
-    "journeys.html"
+    "journeys.html",
+    /* sample-data.html — the Demo Mode row. Its only endpoint, api/demo/mode.mjs,
+       gates on requireRole(owner, admin) for GET, POST and DELETE alike, so
+       every staff role that could see the row got a 403 the moment the screen
+       loaded. UI-STANDARDS §4: a role does not render an item it cannot use.
+       Nav row moved to match the gate that was already there — the gate itself
+       is unchanged. (UI audit 2026-08-17, pattern row C.) */
+    "sample-data.html"
   ];
 
   /* Closer desk — call cockpit + personal numbers. In every sidebar so the
@@ -153,6 +160,28 @@
      added for those roles — "*" already covers owner/admin). */
   var HIRING_ONLY = ["hiring.html"];
 
+  /* OFFERED_TO_NOBODY — in ALL and in the sidebar markup, offered to no role.
+     Not a permission decision: the screen behind the row does not work when it
+     is opened from the rail, for anybody, owner included.
+
+       campaign-manager.html — every read answers 400 because the screen has no
+         partner picker and sends no partner id; the tiles, the 11 campaigns and
+         the red "1 CEILING BREACHED" pill on top of them are a sample book.
+       content-admin.html — no backend exists for it, by the screen's own text.
+
+     UI-STANDARDS §4: an item that opens a screen the role cannot use does not
+     render. The files, the routes and the API gates are untouched — only the
+     rail stops offering them, so typing the path bounces you home like any
+     other screen your role does not have.
+
+     THEY STAY IN ALL ON PURPOSE. src/http/app-nav-reachability.test.mjs fails
+     if a sidebar row points at a screen ALL has never heard of, and the 30-odd
+     screens each carry their own inline copy of this sidebar
+     (src/http/app-nav-matches-shell.test.mjs), so the ROW cannot be deleted
+     from here alone. Give either screen a working read and delete its entry
+     below — that is the whole change needed to put it back. */
+  var OFFERED_TO_NOBODY = ["campaign-manager.html", "content-admin.html"];
+
   /* staffTabs — every screen a signed-in employee may open, which is every row
      the shared sidebar leaves them looking at — except the role-narrow
      screens above, which closer / sales_manager pick up in allowedFor().
@@ -170,7 +199,8 @@
         && CLOSER_DESK_ONLY.indexOf(s) === -1
         && SALES_FLOOR_ONLY.indexOf(s) === -1
         && PORTAL_ONLY.indexOf(s) === -1
-        && HIRING_ONLY.indexOf(s) === -1;
+        && HIRING_ONLY.indexOf(s) === -1
+        && OFFERED_TO_NOBODY.indexOf(s) === -1;
     });
   }
 
@@ -260,7 +290,12 @@
   function allowedFor(role) {
     if (!role) return [];
     var m = ROLE_TABS[role];
-    if (m === "*") return ALL.slice();
+    /* "*" is every screen EXCEPT the ones no role is offered — see
+       OFFERED_TO_NOBODY. Owner and admin are not an exception to that list:
+       the two screens on it are broken for them too. */
+    if (m === "*") {
+      return ALL.filter(function (s) { return OFFERED_TO_NOBODY.indexOf(s) === -1; });
+    }
     if (m === "closer") return staffTabs().concat(CLOSER_DESK_ONLY);
     if (m === "sales_manager") return staffTabs().concat(SALES_FLOOR_ONLY);
     if (m === "staff" || !m) return staffTabs();
@@ -678,7 +713,37 @@
         a.appendChild(badge);
       }
     }
+    setGroupDefault(fresh);
     wireSidebarChrome(fresh);
+  }
+
+  /* UI-STANDARDS §4 — max 7 top-level nav items, two levels deep.
+     The rail is already two levels: the group headers are the first, their rows
+     the second. But every group shipped open, so what a role actually faced was
+     one flat list — 21 rows for a staff role, 31 for the owner, all at once.
+     Start with only the group you are standing in open. The headers still
+     toggle (wireSidebarChrome), so every other group is one click away (§9),
+     and the group you are in stays open so "where am I" is still answered on
+     sight (§4). Deliberately not remembered between pages: a stored open set
+     would drift back to "everything open" one click at a time. */
+  function setGroupDefault(side) {
+    var groups = side.querySelectorAll(".navgroup");
+    /* Three pages carry the rail without being a row on it — consent-capture
+       and partner-galaxy, plus anything opened from outside /app/. Closing
+       every group there would leave a rail of headings and nothing else, and
+       for a partner the single row they may open (Brand Studio) would be the
+       thing hidden. No active row means no group to keep open, so open them
+       all: this default narrows a long rail, it never empties one. */
+    if (!side.querySelector("a.navitem.on")) return openAllGroups(side);
+    for (var i = 0; i < groups.length; i++) {
+      if (groups[i].querySelector("a.navitem.on")) groups[i].classList.remove("closed");
+      else groups[i].classList.add("closed");
+    }
+  }
+
+  function openAllGroups(side) {
+    var groups = side.querySelectorAll(".navgroup");
+    for (var i = 0; i < groups.length; i++) groups[i].classList.remove("closed");
   }
 
   function wireSidebarChrome(side) {
@@ -750,6 +815,12 @@
     function syncMini() {
       var mini = side.classList.contains("mini");
       document.documentElement.classList.toggle("fh-side-mini", mini && !isMobile());
+      /* The 60px icon rail hides every label, group headers included, so a
+         closed group there is a row with nothing left to open it. Open them all
+         while the rail is mini; put the one-group-open default back when it is
+         not. */
+      if (mini && !isMobile()) openAllGroups(side);
+      else setGroupDefault(side);
       if (burger) burger.textContent = isMobile() ? "✕" : (mini ? "››" : "‹‹");
       getMenuBtn();
       if (!isMobile()) closeMobile();

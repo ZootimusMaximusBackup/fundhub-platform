@@ -14,7 +14,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--butter:#F2E39B}           /* spectrum stop @40% — the 6th status color */
 html,body{height:100%}
-body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:1.5;-webkit-font-smoothing:antialiased}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 a{color:inherit;text-decoration:none}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -40,35 +40,35 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
-.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
-.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
-.content{padding:22px 24px 40px;flex:1}
+.content{padding:22px 24px 40px;flex:1;width:100%}
 
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .card+.card{margin-top:14px}
 .card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.card-hd .t{font-size:13.5px;font-weight:600;letter-spacing:-.01em}
+.card-hd .t{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .card-bd{padding:16px}
 .hair{height:2px;background:var(--spectrum);border-radius:1px}
 
-.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:var(--fs-body);font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
 .btn:hover{background:var(--soft);border-color:var(--gray2)}
 .btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .btn.dark:hover{background:var(--ink2)}
-.btn.sm{padding:5px 10px;font-size:11.5px}
-.btn.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.btn.sm{padding:5px 10px;font-size:var(--fs-caption)}
+.btn.mono{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.08em;text-transform:uppercase}
 .btn.danger{color:#6E2A22;border-color:var(--alert)}
 .btn.danger:hover{background:rgba(242,166,155,.16)}
 
 .tabs{display:flex;border-bottom:1px solid var(--line);padding:0 16px;background:#fff}
-.tab{background:transparent;border:0;border-bottom:2px solid transparent;cursor:pointer;padding:11px 13px;font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:-1px}
+.tab{background:transparent;border:0;border-bottom:2px solid transparent;cursor:pointer;padding:11px 13px;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:-1px}
 .tab:hover{color:var(--ink)}
 .tab.on{color:var(--ink);border-bottom-color:var(--ink)}
 .tabpane{display:none}
 .tabpane.on{display:block}
 
-.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:var(--fs-caption);font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
 .b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
 .b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
 .b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
@@ -77,24 +77,24 @@ button,input,select,textarea{font:inherit;color:inherit}
 .b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
 
 table.grid{width:100%;border-collapse:collapse}
-table.grid th{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft)}
-table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+table.grid th{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft)}
+table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:var(--fs-body);vertical-align:middle}
 table.grid tr:last-child td{border-bottom:0}
 table.grid tbody tr{cursor:pointer;transition:background .1s}
 table.grid tbody tr:hover{background:var(--soft)}
 table.grid tbody tr.sel{background:rgba(169,198,232,.14)}
 
-.av{width:26px;height:26px;border-radius:50%;flex:0 0 26px;display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;letter-spacing:-.02em;background:var(--ink);color:#fff}
+.av{width:26px;height:26px;border-radius:50%;flex:0 0 26px;display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-caption);font-weight:700;letter-spacing:-.02em;background:var(--ink);color:#fff}
 .who-cell{display:flex;align-items:center;gap:10px}
 .who-cell .nm{font-weight:600}
-.who-cell .em{font-family:var(--mono);font-size:10px;color:var(--gray2);letter-spacing:.08em}
+.who-cell .em{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.08em}
 
 .field{display:flex;flex-direction:column;gap:5px}
-.field label{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
-.field input,.field select{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:13px;width:100%}
+.field label{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
+.field input,.field select{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:var(--fs-body);width:100%}
 .field input.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .field input:focus,.field select:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
-.field .hint{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em}
+.field .hint{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
 .sw{position:relative;width:38px;height:21px;flex:0 0 38px;border-radius:11px;background:var(--line);border:1px solid var(--line);cursor:pointer;transition:background .15s}
@@ -104,32 +104,32 @@ table.grid tbody tr.sel{background:rgba(169,198,232,.14)}
 .swrow{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)}
 .swrow:last-child{border-bottom:0}
 .swrow .swl{flex:1;min-width:0}
-.swrow .swl .n{font-size:12.5px;font-weight:500}
-.swrow .swl .d{font-size:11px;color:var(--gray);line-height:1.4}
+.swrow .swl .n{font-size:var(--fs-body);font-weight:500}
+.swrow .swl .d{font-size:var(--fs-caption);color:var(--gray);line-height:1.4}
 
 /* role preset — the one-line answer to "what can this person reach?" */
 .acc{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-.acc .acc-g{font-size:11.5px;color:var(--gray)}
-.acc .acc-n{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--gray2);
+.acc .acc-g{font-size:var(--fs-caption);color:var(--gray)}
+.acc .acc-n{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.08em;color:var(--gray2);
   border:1px solid var(--line);border-radius:5px;padding:2px 6px;white-space:nowrap}
 .acc .acc-n.full{border-color:var(--accent);color:#3F2F63}
 
 /* effective permissions in the person editor, grouped and named */
 .ed-pg{width:100%;margin-bottom:9px;display:flex;flex-wrap:wrap;gap:5px}
-.ed-pgh{width:100%;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+.ed-pgh{width:100%;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;
   color:var(--gray2);margin-bottom:2px}
 .ed-pgh span{color:var(--gray)}
 
 /* permissions matrix */
 .mwrap{overflow-x:auto}
 table.perm{width:100%;border-collapse:collapse;min-width:820px}
-table.perm th{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray);padding:11px 10px;border-bottom:1px solid var(--line);font-weight:500;text-align:center;background:var(--soft);white-space:nowrap}
+table.perm th{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.1em;text-transform:uppercase;color:var(--gray);padding:11px 10px;border-bottom:1px solid var(--line);font-weight:500;text-align:center;background:var(--soft);white-space:nowrap}
 table.perm th.pl{text-align:left;width:38%;min-width:250px;position:sticky;left:0;z-index:2}
 table.perm td{padding:0;border-bottom:1px solid var(--line);text-align:center}
-table.perm td.pl{text-align:left;padding:9px 12px;font-size:12.5px;background:#fff;position:sticky;left:0;z-index:1;border-right:1px solid var(--line)}
-table.perm td.pl .pd{font-size:10.5px;color:var(--gray2);font-family:var(--mono);letter-spacing:.08em}
+table.perm td.pl{text-align:left;padding:9px 12px;font-size:var(--fs-body);background:#fff;position:sticky;left:0;z-index:1;border-right:1px solid var(--line)}
+table.perm td.pl .pd{font-size:var(--fs-caption);color:var(--gray2);font-family:var(--mono);letter-spacing:.08em}
 table.perm tr:last-child td{border-bottom:0}
-.pcell{width:100%;height:38px;border:0;background:transparent;cursor:pointer;font-family:var(--mono);font-size:13px;color:var(--gray2);transition:background .1s}
+.pcell{width:100%;height:38px;border:0;background:transparent;cursor:pointer;font-family:var(--mono);font-size:var(--fs-body);color:var(--gray2);transition:background .1s}
 .pcell:hover{background:var(--soft)}
 .pcell.yes{color:#2C5138}
 .pcell.locked{cursor:not-allowed;color:var(--gray2);opacity:.5}
@@ -140,7 +140,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
 .editor-hd{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
 .editor-bd{padding:18px;overflow-y:auto;flex:1}
 .editor-ft{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:9px}
-.xbtn{margin-left:auto;border:1px solid var(--line);background:#fff;width:28px;height:28px;border-radius:6px;cursor:pointer;font-family:var(--mono);font-size:13px;line-height:1}
+.xbtn{margin-left:auto;border:1px solid var(--line);background:#fff;width:28px;height:28px;border-radius:6px;cursor:pointer;font-family:var(--mono);font-size:var(--fs-body);line-height:1}
 .xbtn:hover{background:var(--soft)}
 .scrim{position:fixed;inset:0;background:rgba(10,10,10,.28);opacity:0;pointer-events:none;transition:opacity .2s;z-index:50}
 .scrim.on{opacity:1;pointer-events:auto}
@@ -148,11 +148,11 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
 .stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
-.stat .sv{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
-.stat .sd{font-size:11px;color:var(--gray);margin-top:2px}
+.stat .sv{font-family:var(--mono);font-size:var(--fs-metric);font-variant-numeric:tabular-nums;font-weight:600;margin-top:8px;letter-spacing:-.02em}
+.stat .sd{font-size:var(--fs-caption);color:var(--gray);margin-top:2px}
 
-.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
-.empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:12px}
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+.empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:var(--fs-body)}
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
 </style>
 <script src="shell.js"></script>
@@ -232,7 +232,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
       <button class="btn dark mono" id="addBtn">+ Add person</button>
     </div>
 
-    <div class="content">
+    <div class="content fh-maxw">
       <div class="stats">
         <div class="stat"><div class="eyebrow">ST-00 <span class="sep">/</span> HEADCOUNT</div><div class="sv" id="kHead">7</div><div class="sd">across 6 roles</div></div>
         <div class="stat"><div class="eyebrow">ST-00 <span class="sep">/</span> ON SHIFT</div><div class="sv" id="kShift">—</div><div class="sd">clocked in right now</div></div>
@@ -253,12 +253,12 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
             <div class="eyebrow">ST-01 <span class="sep">/</span> ROSTER</div>
             <div class="spacer"></div>
             <button class="btn sm mono" id="toAdvanced">Advanced permissions →</button>
-            <select id="roleFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:12px;background:#fff">
+            <select id="roleFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:var(--fs-body);background:#fff">
               <option value="">All roles</option>
               <option>Owner</option><option>Sales Manager</option><option>Closer</option>
               <option>Funding Advisor</option><option>Inquiry Specialist</option><option>Affiliate</option>
             </select>
-            <input id="qFilter" placeholder="Filter name or code…" style="border:1px solid var(--line);border-radius:7px;padding:6px 10px;font-size:12px;width:190px">
+            <input id="qFilter" placeholder="Filter name or code…" style="border:1px solid var(--line);border-radius:7px;padding:6px 10px;font-size:var(--fs-body);width:190px">
           </div>
           <div style="overflow-x:auto">
             <table class="grid" id="rosterTbl">
@@ -272,12 +272,12 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
           <div class="card-hd" style="border-bottom:1px solid var(--line)">
             <div class="eyebrow">ST-02 <span class="sep">/</span> ADVANCED PERMISSIONS · FULL MATRIX</div>
             <div class="spacer"></div>
-            <span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em">CLICK A CELL TO TOGGLE · OWNER IS LOCKED</span>
+            <span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">CLICK A CELL TO TOGGLE · OWNER IS LOCKED</span>
           </div>
           <div class="mwrap"><table class="perm" id="permTbl"></table></div>
           <div style="padding:12px 16px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <span class="badge b-gray" id="permCount">—</span>
-            <span style="font-size:11.5px;color:var(--gray)">Owner keeps every permission and cannot be reduced — there has to be one account that can restore the others.</span>
+            <span style="font-size:var(--fs-body);color:var(--gray)">Owner keeps every permission and cannot be reduced — there has to be one account that can restore the others.</span>
           </div>
         </div>
 
@@ -285,7 +285,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
           <div class="card-hd" style="border-bottom:1px solid var(--line)">
             <div class="eyebrow">ST-03 <span class="sep">/</span> CLOCK STATE &amp; MONITORING CONSENT</div>
             <div class="spacer"></div>
-            <span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em">CONSENT · docs/MONITORING-CONSENT-FORM.md</span>
+            <span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">CONSENT · docs/MONITORING-CONSENT-FORM.md</span>
           </div>
           <div style="overflow-x:auto">
             <table class="grid">
@@ -295,7 +295,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
           </div>
           <div style="padding:13px 16px;border-top:1px solid var(--line)">
             <div class="eyebrow" style="margin-bottom:7px">ST-04 <span class="sep">/</span> WHAT CONSENT COVERS</div>
-            <div style="font-size:11.5px;color:var(--gray);line-height:1.6;max-width:76ch">
+            <div style="font-size:var(--fs-body);color:var(--gray);line-height:1.6;max-width:76ch">
               Deep monitoring (activity level, apps and sites used, and screenshots when Hubstaff has them on)
               during clocked-in shifts only. Off by default. Owner records a signed written notice to turn it on,
               and clears that record to revoke. See docs/MONITORING-CONSENT-FORM.md. Get legal review before use.
@@ -307,12 +307,12 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
           <div class="card-hd" style="border-bottom:1px solid var(--line)">
             <div class="eyebrow">ST-08 <span class="sep">/</span> SHIFT &amp; ACTIVITY TELEMETRY</div>
             <div class="spacer"></div>
-            <select id="teleStaff" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:12px;background:#fff;min-width:200px">
+            <select id="teleStaff" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:var(--fs-body);background:#fff;min-width:200px">
               <option value="">Select a person…</option>
             </select>
             <button class="btn sm mono" id="teleRefresh">Refresh</button>
           </div>
-          <div id="teleEmpty" style="padding:28px 16px;font-size:12.5px;color:var(--gray)">Pick someone to see shifts, hours, and Hubstaff activity.</div>
+          <div id="teleEmpty" style="padding:28px 16px;font-size:var(--fs-body);color:var(--gray)">Pick someone to see shifts, hours, and Hubstaff activity.</div>
           <div id="teleBody" style="display:none">
             <div class="stats" style="margin:0;border-bottom:1px solid var(--line);border-radius:0">
               <div class="stat"><div class="eyebrow">CONSENT</div><div class="sv" id="teleConsent">—</div><div class="sd" id="teleConsentSd">monitoring consent</div></div>
@@ -341,7 +341,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
 
 <div class="scrim" id="scrim"></div>
 <aside class="editor" id="editor">
-  <div class="editor-hd"><div><div class="eyebrow">ST-05 <span class="sep">/</span> <span id="edMode">EDIT PERSON</span></div><div class="t" id="edTitle" style="font-size:14px;font-weight:600;margin-top:5px">—</div></div><button class="xbtn" id="edClose">✕</button></div>
+  <div class="editor-hd"><div><div class="eyebrow">ST-05 <span class="sep">/</span> <span id="edMode">EDIT PERSON</span></div><div class="t" id="edTitle" style="font-size:var(--fs-title);font-weight:600;margin-top:5px">—</div></div><button class="xbtn" id="edClose">✕</button></div>
   <div class="editor-bd">
     <div class="grid2">
       <div class="field"><label>First name</label><input id="ed_first"></div>
@@ -363,7 +363,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
     </div>
     <div style="margin-top:18px">
       <div class="eyebrow" style="margin-bottom:6px">ST-07 <span class="sep">/</span> EFFECTIVE PERMISSIONS</div>
-      <div style="font-size:11.5px;color:var(--gray);margin-bottom:9px">Inherited from the role. Change them in the permissions matrix — they are not editable per person.</div>
+      <div style="font-size:var(--fs-body);color:var(--gray);margin-bottom:9px">Inherited from the role. Change them in the permissions matrix — they are not editable per person.</div>
       <div id="ed_perms" style="display:flex;flex-wrap:wrap;gap:6px"></div>
     </div>
   </div>
@@ -518,10 +518,10 @@ function renderClock(){
       '<td>'+(clockKnown
              ?(p.clock?'<span class="badge b-ok">Clocked in</span>':'<span class="badge b-gray">Clocked out</span>')
              :'<span class="badge b-gray" title="Open shift unknown for this row">—</span>')+'</td>'+
-      '<td class="mono" style="font-size:11.5px">'+(clockKnown&&p.clock?p.since:'—')+'</td>'+
-      '<td class="mono" style="font-size:11.5px">'+(p.today||'—')+'</td>'+
+      '<td class="mono" style="font-size:var(--fs-body)">'+(clockKnown&&p.clock?p.since:'—')+'</td>'+
+      '<td class="mono" style="font-size:var(--fs-body)">'+(p.today||'—')+'</td>'+
       '<td>'+consentCell+'</td>'+
-      '<td class="mono" style="font-size:11.5px;color:var(--gray)">'+(p.consentAt||'—')+'</td>'+
+      '<td class="mono" style="font-size:var(--fs-body);color:var(--gray)">'+(p.consentAt||'—')+'</td>'+
       '<td style="text-align:right;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">'+consentBtn+clockCell+'</td></tr>';
   }).join('');
   document.querySelectorAll('[data-clock]').forEach(function(b){
@@ -861,8 +861,8 @@ renderAll();
     document.getElementById("teleAvgSd").textContent = (data.activity && data.activity.activity_samples || 0) + " activity blocks";
     document.getElementById("teleSamples").textContent = String((data.activity && (data.activity.activity_samples + data.activity.screenshot_samples)) || 0);
     document.getElementById("teleShifts").innerHTML = (data.shifts || []).map(function (s) {
-      return "<tr><td class=\"mono\" style=\"font-size:11px\">" + esc(fmtWhen(s.started_at)) +
-        "</td><td class=\"mono\" style=\"font-size:11px\">" + esc(s.open ? "open" : fmtWhen(s.ended_at)) +
+      return "<tr><td class=\"mono\" style=\"font-size:var(--fs-body)\">" + esc(fmtWhen(s.started_at)) +
+        "</td><td class=\"mono\" style=\"font-size:var(--fs-body)\">" + esc(s.open ? "open" : fmtWhen(s.ended_at)) +
         "</td><td>" + (s.open ? '<span class="badge b-ok">Open</span>' : '<span class="badge b-gray">Closed</span>') + "</td></tr>";
     }).join("") || '<tr><td colspan="3" class="empty">No shifts on file.</td></tr>';
     document.getElementById("teleEvents").innerHTML = ((data.activity && data.activity.recent) || []).map(function (e) {
@@ -870,8 +870,8 @@ renderAll();
       var summary = e.kind === "monitor_activity"
         ? ("overall " + (d.overall == null ? "—" : d.overall + "%"))
         : "screenshot";
-      return "<tr><td class=\"mono\" style=\"font-size:11px\">" + esc(fmtWhen(e.created_at)) +
-        "</td><td><span class=\"badge b-info\">" + esc(e.kind) + "</span></td><td style=\"font-size:11.5px\">" + esc(summary) + "</td></tr>";
+      return "<tr><td class=\"mono\" style=\"font-size:var(--fs-body)\">" + esc(fmtWhen(e.created_at)) +
+        "</td><td><span class=\"badge b-info\">" + esc(e.kind) + "</span></td><td style=\"font-size:var(--fs-body)\">" + esc(summary) + "</td></tr>";
     }).join("") || '<tr><td colspan="3" class="empty">No monitor events yet.</td></tr>';
   }
   window.FHLoadTelemetry = function (staffId) {

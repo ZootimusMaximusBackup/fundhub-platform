@@ -19,37 +19,37 @@
 .pulse{width:7px;height:7px;border-radius:50%;background:var(--ok,#A8D8B0)}
 .shell{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{height:57px;display:flex;align-items:center;gap:12px;padding:0 22px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:5}
-.brand{display:flex;align-items:center;gap:8px}.brand .name{font-weight:700}.brand .sep{color:var(--gray2)}.brand .sub{color:var(--gray);font-size:13px}
-.topbar-right{margin-left:auto;display:flex;gap:10px;align-items:center;font-size:12px;color:var(--gray)}
+.brand{display:flex;align-items:center;gap:8px;font-size:var(--fs-body)}.brand .name{font-weight:700}.brand .sep{color:var(--gray2)}.brand .sub{color:var(--gray);font-size:var(--fs-body)}
+.topbar-right{margin-left:auto;display:flex;gap:10px;align-items:center;font-size:var(--fs-caption);color:var(--gray)}
 main{padding:22px 24px 40px}
 .tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:14px}
-.tab{border:0;background:transparent;padding:10px 14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab{border:0;background:transparent;padding:10px 14px;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;color:var(--gray);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
 .tab.on{color:var(--ink);border-bottom-color:var(--ink)}
 .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:end}
-.filters label{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray)}
+.filters label{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.1em;text-transform:uppercase;color:var(--gray)}
 .filters select,.filters input,textarea{font:inherit}
-.filters select,.filters input{border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:13px;min-width:120px;background:#fff}
-.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer}
+.filters select,.filters input{border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:var(--fs-body);min-width:120px;background:#fff}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-family:inherit;font-size:var(--fs-body);font-weight:500;cursor:pointer}
 .btn:hover{background:var(--soft)}.btn.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
-.btn.sm{padding:5px 9px;font-size:11.5px}
+.btn.sm{padding:5px 9px;font-size:var(--fs-caption)}
 .panel{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.panel-hd{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.panel-hd .meta{color:var(--gray);font-size:12px;margin-left:auto}
+.panel-hd{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:var(--fs-title)}
+.panel-hd .meta{color:var(--gray);font-size:var(--fs-caption);margin-left:auto}
 table.grid{width:100%;border-collapse:collapse}
-table.grid th{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);background:var(--soft);font-weight:500;white-space:nowrap}
-table.grid td{padding:6px 8px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+table.grid th{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;color:var(--gray);text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);background:var(--soft);font-weight:500;white-space:nowrap}
+table.grid td{padding:6px 8px;border-bottom:1px solid var(--line);font-size:var(--fs-body);vertical-align:middle}
 table.grid tr:hover td{background:var(--soft)}
-table.grid input,table.grid select{width:100%;border:1px solid transparent;background:transparent;border-radius:5px;padding:5px 6px;font-size:12.5px}
+table.grid input,table.grid select{width:100%;border:1px solid transparent;background:transparent;border-radius:5px;padding:5px 6px;font-size:var(--fs-body)}
 table.grid input:focus,table.grid select:focus{border-color:var(--ink);background:#fff;outline:0}
 table.grid .dirty{background:rgba(245,206,143,.25)}
-.empty{padding:28px 16px;color:var(--gray);font-size:13px;text-align:center}
-.banner{padding:10px 12px;border-radius:8px;background:rgba(169,198,232,.2);border:1px solid var(--info,#A9C6E8);font-size:12.5px;margin-bottom:12px}
+.empty{padding:28px 16px;color:var(--gray);font-size:var(--fs-body);text-align:center}
+.banner{padding:10px 12px;border-radius:8px;background:rgba(169,198,232,.2);border:1px solid var(--info,#A9C6E8);font-size:var(--fs-body);margin-bottom:12px}
 .banner.warn{background:rgba(245,206,143,.25);border-color:var(--warn,#F5CE8F)}
-.toast{position:fixed;bottom:18px;right:18px;background:var(--ink);color:#fff;padding:10px 14px;border-radius:8px;font-size:12.5px;z-index:50;display:none}
+.toast{position:fixed;bottom:18px;right:18px;background:var(--ink);color:#fff;padding:10px 14px;border-radius:8px;font-size:var(--fs-body);z-index:50;display:none}
 .toast.show{display:block}
 .import-box{display:none;padding:14px;border-top:1px solid var(--line)}
 .import-box.on{display:block}
-.import-box textarea{width:100%;min-height:140px;border:1px solid var(--line);border-radius:8px;padding:10px;font-family:var(--mono);font-size:11.5px}
+.import-box textarea{width:100%;min-height:140px;border:1px solid var(--line);border-radius:8px;padding:10px;font-family:var(--mono);font-size:var(--fs-caption)}
 .mismatch{color:#6E2A22;font-weight:600}
 .hide{display:none!important}
 @media(max-width:860px){.side{position:fixed;z-index:30;height:100%;transform:translateX(0)}}
@@ -128,7 +128,7 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
       <div class="brand"><div class="name">Fundhub</div><div class="sep">/</div><div class="sub">Lenders</div></div>
       <div class="topbar-right"><span id="clock"></span></div>
     </header>
-    <main>
+    <main class="fh-maxw">
       <div class="banner" id="emptyBanner">
         The lender list starts empty on purpose. Export the seven Airtable product tables, then Import CSV here.
         Do not invent lender names or bureau pulls.
@@ -173,13 +173,13 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
             <span class="meta" id="listMeta">Loading…</span>
           </div>
           <div class="import-box" id="importBox">
-            <p style="margin:0 0 8px;font-size:12.5px;color:var(--gray)">Paste CSV with <code>lender_table</code> and <code>name</code>. Known columns only — extras are ignored.</p>
+            <p style="margin:0 0 8px;font-size:var(--fs-body);color:var(--gray)">Paste CSV with <code>lender_table</code> and <code>name</code>. Known columns only — extras are ignored.</p>
             <textarea id="importCsv" placeholder="lender_table,name,bureaus_pulled,priority_tier,..."></textarea>
             <div style="margin-top:8px;display:flex;gap:8px">
               <button class="btn dark" type="button" id="btnImportRun">Import now</button>
               <button class="btn" type="button" id="btnImportCancel">Cancel</button>
             </div>
-            <div id="importResult" style="margin-top:8px;font-size:12.5px;color:var(--gray)"></div>
+            <div id="importResult" style="margin-top:8px;font-size:var(--fs-body);color:var(--gray)"></div>
           </div>
           <div style="overflow:auto">
             <table class="grid" id="lenderTable">
@@ -352,7 +352,7 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
           '<option value="false"' + (L.active === false ? " selected" : "") + ">Inactive</option>" +
         "</select></td>" +
         '<td><input data-f="eligible_states" value="' + esc(L.eligible_states) + '"/></td>' +
-        '<td style="white-space:nowrap;font-family:var(--mono);font-size:11px;color:var(--gray)">' +
+        '<td style="white-space:nowrap;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray)">' +
           esc(L.last_updated_by || "—") + "<br/>" + esc(L.last_updated_date || "") + "</td>" +
         '<td class="apply-cell"></td>' +
         '<td><button class="btn sm save-btn" type="button">Save</button></td>';
@@ -450,7 +450,7 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
             "<td>" + esc(O.expected_bureaus_raw) + "</td>" +
             '<td class="mismatch">' + esc(O.observed_bureau) + "</td>" +
             "<td>" + esc(O.observation_source) + "</td>" +
-            "<td style=\"font-family:var(--mono);font-size:11px\">" + esc(O.client_id) + "</td>" +
+            "<td style=\"font-family:var(--mono);font-size:var(--fs-caption)\">" + esc(O.client_id) + "</td>" +
             "<td>" + esc(O.notes) + "</td>" +
             '<td style="white-space:nowrap">' +
               '<button class="btn sm" data-act="confirmed" type="button">Confirm</button> ' +

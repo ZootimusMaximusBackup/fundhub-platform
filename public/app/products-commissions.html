@@ -14,7 +14,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--butter:#F2E39B}
 html,body{height:100%}
-body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:1.5;-webkit-font-smoothing:antialiased}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 a{color:inherit;text-decoration:none}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -45,26 +45,29 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* Clear Search + Sign-out chip so "+ Add product" is actually clickable.
    --fh-shell-top-clearance is set by shell.js layoutShellChrome(). */
 @media (min-width:1201px){ .topbar{padding-right:var(--fh-shell-top-clearance, 520px)} }
-.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
-.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
-.content{padding:22px 24px 40px;flex:1}
+/* UI-STANDARDS §1: cap the content column at --fh-maxw (.fh-maxw on the div).
+   width:100% keeps it filling the column below 1280px — a flex item with auto
+   inline margins is not stretched, so without this it would shrink to fit. */
+.content{padding:22px 24px 40px;flex:1;width:100%}
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .card+.card{margin-top:14px}
 .card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .card-bd{padding:16px}
 .hair{height:2px;background:var(--spectrum);border-radius:1px}
-.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:var(--fs-body);font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
 .btn:hover{background:var(--soft);border-color:var(--gray2)}
 .btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .btn.dark:hover{background:var(--ink2)}
-.btn.sm{padding:5px 10px;font-size:11.5px}
-.btn.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.btn.sm{padding:5px 10px;font-size:var(--fs-caption)}
+.btn.mono{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.08em;text-transform:uppercase}
 .tabs{display:flex;border-bottom:1px solid var(--line);padding:0 16px;background:#fff}
-.tab{background:transparent;border:0;border-bottom:2px solid transparent;cursor:pointer;padding:11px 13px;font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:-1px}
+.tab{background:transparent;border:0;border-bottom:2px solid transparent;cursor:pointer;padding:11px 13px;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:-1px}
 .tab:hover{color:var(--ink)}.tab.on{color:var(--ink);border-bottom-color:var(--ink)}
 .tabpane{display:none}.tabpane.on{display:block}
-.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:var(--fs-caption);font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
 .b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
 .b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
 .b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
@@ -73,18 +76,18 @@ button,input,select,textarea{font:inherit;color:inherit}
 .b-butter{background:rgba(242,227,155,.32);border-color:var(--butter);color:#5E5310}
 .b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
 table.grid{width:100%;border-collapse:collapse}
-table.grid th{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft)}
-table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle}
+table.grid th{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft)}
+table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:var(--fs-body);vertical-align:middle}
 table.grid tr:last-child td{border-bottom:0}
 table.grid tbody tr.clik{cursor:pointer}
 table.grid tbody tr.clik:hover{background:var(--soft)}
 .money{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:500}
 .field{display:flex;flex-direction:column;gap:5px}
-.field label{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
-.field input,.field select{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:13px;width:100%}
+.field label{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
+.field input,.field select{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:var(--fs-body);width:100%}
 .field input.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .field input:focus,.field select:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
-.field .hint{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em}
+.field .hint{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em}
 .field input:disabled{background:var(--soft);color:var(--gray2)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .sw{position:relative;width:38px;height:21px;flex:0 0 38px;border-radius:11px;background:var(--line);border:1px solid var(--line);cursor:pointer;transition:background .15s}
@@ -93,23 +96,23 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
 .swrow{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)}
 .swrow:last-child{border-bottom:0}
 .swrow .swl{flex:1;min-width:0}
-.swrow .swl .n{font-size:12.5px;font-weight:500}
-.swrow .swl .d{font-size:11px;color:var(--gray);line-height:1.4}
+.swrow .swl .n{font-size:var(--fs-body);font-weight:500}
+.swrow .swl .d{font-size:var(--fs-caption);color:var(--gray);line-height:1.4}
 
 /* rules */
 .rule{border-bottom:1px solid var(--line)}
 .rule:last-child{border-bottom:0}
 .rule-hd{padding:13px 16px;display:flex;align-items:center;gap:11px;cursor:pointer;flex-wrap:wrap}
 .rule-hd:hover{background:var(--soft)}
-.rule-hd .rc{font-family:var(--mono);font-size:10px;color:var(--gray2);letter-spacing:.11em}
-.rule-hd .rn{font-size:13px;font-weight:600;letter-spacing:-.01em}
-.rule-hd .rs{font-size:11.5px;color:var(--gray)}
-.rule-hd .rate{font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:-.01em}
+.rule-hd .rc{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.11em}
+.rule-hd .rn{font-size:var(--fs-body);font-weight:600;letter-spacing:-.01em}
+.rule-hd .rs{font-size:var(--fs-caption);color:var(--gray)}
+.rule-hd .rate{font-family:var(--mono);font-size:var(--fs-body);font-weight:600;letter-spacing:-.01em}
 .rule-bd{display:none;padding:0 16px 16px;background:var(--soft)}
 .rule.open .rule-bd{display:block}
 .rule.open .rule-hd{background:var(--soft)}
 /* who a rate change lands on, stated on the closed rule header */
-.rule-hd .rimpact{font-size:11.5px;color:var(--gray);margin-top:3px}
+.rule-hd .rimpact{font-size:var(--fs-caption);color:var(--gray);margin-top:3px}
 .rule-hd .rimpact b{color:var(--ink);font-weight:600}
 .rule-hd .rimpact b.ri-open{color:#6B4A12}
 .rule-hd .rimpact .ri-none{color:var(--gray2)}
@@ -117,10 +120,10 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
 /* rate history: a record, collapsed until asked for */
 .vhist{margin-top:10px}
 .vhist>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
-  font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--gray2);
+  font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.11em;text-transform:uppercase;color:var(--gray2);
   padding:7px 0}
 .vhist>summary::-webkit-details-marker{display:none}
-.vhist>summary::before{content:"▸";font-size:9px;transition:transform .15s}
+.vhist>summary::before{content:"▸";font-size:var(--fs-caption);transition:transform .15s}
 .vhist[open]>summary::before{transform:rotate(90deg)}
 .vhist>summary:hover{color:var(--ink)}
 
@@ -128,35 +131,35 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
 .card.on-ledger .tabs{display:none}
 
 .vtable{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:0}
-.vtable th{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);font-weight:500}
-.vtable td{padding:9px 11px;border-bottom:1px solid var(--line);font-size:12px}
+.vtable th{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;color:var(--gray);text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);font-weight:500}
+.vtable td{padding:9px 11px;border-bottom:1px solid var(--line);font-size:var(--fs-body)}
 .vtable tr:last-child td{border-bottom:0}
 .vtable tr.closed td{color:var(--gray2)}
 .vtable tr.closed td .money{text-decoration:line-through}
 .vrail{width:3px;border-radius:2px;height:16px;display:inline-block;vertical-align:middle}
 .tierbox{background:#fff;border:1px solid var(--line);border-radius:8px;padding:11px 13px;margin-top:10px}
-.tierrow{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px}
+.tierrow{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:var(--fs-body)}
 .tierrow:last-child{border-bottom:0}
-.tierrow .tb{font-family:var(--mono);font-size:11.5px;color:var(--gray);flex:1}
+.tierrow .tb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray);flex:1}
 .editline{background:#fff;border:1px solid var(--ink);border-radius:8px;padding:13px;margin-top:10px;display:none}
 .editline.on{display:block}
-.note{font-size:11.5px;color:var(--gray);line-height:1.55}
+.note{font-size:var(--fs-body);color:var(--gray);line-height:1.55}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
 .stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
-.stat .sv{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
-.stat .sd{font-size:11px;color:var(--gray);margin-top:2px}
+.stat .sv{font-family:var(--mono);font-size:var(--fs-metric);font-variant-numeric:tabular-nums;font-weight:600;margin-top:8px;letter-spacing:-.02em}
+.stat .sd{font-size:var(--fs-caption);color:var(--gray);margin-top:2px}
 .editor{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:92vw;background:#fff;border-left:1px solid var(--line);box-shadow:-14px 0 40px rgba(0,0,0,.10);transform:translateX(102%);transition:transform .2s ease;z-index:60;display:flex;flex-direction:column}
 .editor.open{transform:none}
 .editor-hd{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
 .editor-bd{padding:18px;overflow-y:auto;flex:1}
 .editor-ft{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:9px}
-.xbtn{margin-left:auto;border:1px solid var(--line);background:#fff;width:28px;height:28px;border-radius:6px;cursor:pointer;font-family:var(--mono);font-size:13px;line-height:1}
+.xbtn{margin-left:auto;border:1px solid var(--line);background:#fff;width:28px;height:28px;border-radius:6px;cursor:pointer;font-family:var(--mono);font-size:var(--fs-body);line-height:1}
 .xbtn:hover{background:var(--soft)}
 .scrim{position:fixed;inset:0;background:rgba(10,10,10,.28);opacity:0;pointer-events:none;transition:opacity .2s;z-index:50}
 .scrim.on{opacity:1;pointer-events:auto}
-.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
-.empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:12px}
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+.empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:var(--fs-body)}
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
 </style>
 <script src="shell.js"></script>
@@ -239,7 +242,7 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
       <button class="btn dark mono" id="addProdBtn">+ Add product</button>
     </div>
 
-    <div class="content">
+    <div class="content fh-maxw">
       <div class="stats">
         <div class="stat"><div class="eyebrow">PC-00 <span class="sep">/</span> PRODUCTS</div><div class="sv" id="kProd">5</div><div class="sd">3 with variable pricing</div></div>
         <div class="stat"><div class="eyebrow">PC-00 <span class="sep">/</span> ACTIVE RULES</div><div class="sv" id="kRules">6</div><div class="sd">front-end and back-end</div></div>
@@ -256,7 +259,7 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
         <!-- PRODUCTS -->
         <div class="tabpane on" id="tab-products">
           <div class="card-hd"><div class="eyebrow">PC-01 <span class="sep">/</span> PRODUCTS</div>
-            <div class="spacer"></div><span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em">CLICK A ROW TO EDIT</span></div>
+            <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">CLICK A ROW TO EDIT</span></div>
           <div style="overflow-x:auto"><table class="grid">
             <thead><tr><th>Product</th><th>Category</th><th>Default price</th><th>Variable</th><th>Min</th><th>Max</th><th>Rails</th></tr></thead>
             <tbody id="prodBody"></tbody>
@@ -267,10 +270,10 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
         <div class="tabpane" id="tab-rules">
           <div class="card-hd"><div class="eyebrow">PC-02 <span class="sep">/</span> COMMISSION RULES</div>
             <div class="spacer"></div>
-            <select id="scopeFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:12px;background:#fff">
+            <select id="scopeFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:var(--fs-body);background:#fff">
               <option value="">All scopes</option><option>Front-end</option><option>Back-end</option>
             </select>
-            <span class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em">CLICK TO EXPAND</span></div>
+            <span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">CLICK TO EXPAND</span></div>
           <div id="ruleList"></div>
           <div style="padding:13px 16px;border-top:1px solid var(--line);background:var(--soft)">
             <div class="eyebrow" style="margin-bottom:7px">PC-03 <span class="sep">/</span> WHY RATES ARE NEVER OVERWRITTEN</div>
@@ -293,8 +296,8 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
           <div class="card-hd"><button class="btn sm mono" id="ledgerBack">← Back to rules</button>
             <div class="eyebrow">PC-04 <span class="sep">/</span> PAYOUT LEDGER</div>
             <div class="spacer"></div>
-            <select id="perFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:12px;background:#fff"><option value="">Everyone</option></select>
-            <select id="statFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:12px;background:#fff">
+            <select id="perFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:var(--fs-body);background:#fff"><option value="">Everyone</option></select>
+            <select id="statFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:var(--fs-body);background:#fff">
               <option value="">All statuses</option><option>Accrued</option><option>Approved</option><option>Paid</option>
             </select>
           </div>
@@ -315,7 +318,7 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
 
 <div class="scrim" id="scrim"></div>
 <aside class="editor" id="editor">
-  <div class="editor-hd"><div><div class="eyebrow">PC-05 <span class="sep">/</span> <span id="edMode">EDIT PRODUCT</span></div><div id="edTitle" style="font-size:14px;font-weight:600;margin-top:5px">—</div></div><button class="xbtn" id="edClose">✕</button></div>
+  <div class="editor-hd"><div><div class="eyebrow">PC-05 <span class="sep">/</span> <span id="edMode">EDIT PRODUCT</span></div><div id="edTitle" style="font-size:var(--fs-title);font-weight:600;margin-top:5px">—</div></div><button class="xbtn" id="edClose">✕</button></div>
   <div class="editor-bd">
     <div class="grid2">
       <div class="field" style="grid-column:1/-1"><label>Product name</label><input id="p_name"></div>
@@ -427,13 +430,13 @@ var ST_CLS={Paid:'b-ok',Approved:'b-info',Accrued:'b-warn'};
 function renderProducts(){
   document.getElementById('prodBody').innerHTML=PRODUCTS.map(function(p){
     return '<tr class="clik" data-p="'+p.id+'">'+
-      '<td><div style="font-weight:600">'+esc(p.name)+'</div><div class="mono" style="font-size:10px;color:var(--gray2);letter-spacing:.1em">'+p.id+'</div></td>'+
+      '<td><div style="font-weight:600">'+esc(p.name)+'</div><div class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">'+p.id+'</div></td>'+
       '<td><span class="badge b-gray">'+esc(p.cat)+'</span></td>'+
       '<td class="money">'+money(p.price)+'</td>'+
       '<td>'+(p.variable?'<span class="badge b-info">Variable</span>':'<span class="badge b-gray">Fixed</span>')+'</td>'+
       '<td class="money" style="color:'+(p.variable?'inherit':'var(--gray2)')+'">'+money(p.min)+'</td>'+
       '<td class="money" style="color:'+(p.variable?'inherit':'var(--gray2)')+'">'+money(p.max)+'</td>'+
-      '<td style="font-size:11px;color:var(--gray)">'+(p.rails&&p.rails.length?esc(p.rails.join(' · ')):'<span title="No rails source">—</span>')+'</td></tr>';
+      '<td style="font-size:var(--fs-caption);color:var(--gray)">'+(p.rails&&p.rails.length?esc(p.rails.join(' · ')):'<span title="No rails source">—</span>')+'</td></tr>';
   }).join('')||'<tr><td colspan="7" class="empty">No products on file yet.</td></tr>';
   document.querySelectorAll('#prodBody tr[data-p]').forEach(function(tr){
     tr.addEventListener('click',function(){openProduct(tr.dataset.p)});
@@ -451,10 +454,10 @@ function renderRules(){
       return '<tr class="'+(open?'':'closed')+'">'+
         '<td><span class="vrail" style="background:'+(open?'var(--ok)':'var(--line)')+'"></span> <span class="mono">v'+v.v+'</span></td>'+
         '<td class="money">'+(r.kind==='tiered'?'tier table':(r.kind==='per-unit'?'$'+v.rate+'/unit':v.rate+'%'))+'</td>'+
-        '<td class="mono" style="font-size:11px">'+v.from+'</td>'+
-        '<td class="mono" style="font-size:11px">'+(v.to||'—')+'</td>'+
+        '<td class="mono" style="font-size:var(--fs-body)">'+v.from+'</td>'+
+        '<td class="mono" style="font-size:var(--fs-body)">'+(v.to||'—')+'</td>'+
         '<td>'+(open?'<span class="badge b-ok">Open</span>':'<span class="badge b-gray">Closed</span>')+'</td>'+
-        '<td style="font-size:11px;color:var(--gray)">'+esc(v.why)+'<div class="mono" style="font-size:10px;color:var(--gray2)">'+esc(v.by)+'</div></td></tr>';
+        '<td style="font-size:var(--fs-body);color:var(--gray)">'+esc(v.why)+'<div class="mono" style="font-size:var(--fs-caption);color:var(--gray2)">'+esc(v.by)+'</div></td></tr>';
     }).join('');
 
     var tiers='';
@@ -555,13 +558,13 @@ function renderLedger(){
   var rows=LEDGER.filter(function(l){return (!pf||l.who===pf)&&(!sf||l.st===sf)});
   document.getElementById('ledgerBody').innerHTML=rows.map(function(l){
     var ruleCell=(l.rule&&l.rule!=='—')?'<span class="badge b-gray">'+esc(l.rule)+(l.ver?(' v'+l.ver):'')+'</span>':'—';
-    return '<tr><td class="mono" style="font-size:11.5px">'+l.d+'</td>'+
+    return '<tr><td class="mono" style="font-size:var(--fs-body)">'+l.d+'</td>'+
       '<td style="font-weight:500">'+esc(l.who)+'</td>'+
       '<td>'+esc(l.client)+'</td>'+
-      '<td style="font-size:12px">'+esc(l.prod)+'</td>'+
+      '<td style="font-size:var(--fs-body)">'+esc(l.prod)+'</td>'+
       '<td>'+ruleCell+'</td>'+
       '<td class="money">'+money(l.basis)+'</td>'+
-      '<td class="mono" style="font-size:11.5px">'+esc(l.rate)+'</td>'+
+      '<td class="mono" style="font-size:var(--fs-body)">'+esc(l.rate)+'</td>'+
       '<td class="money" style="text-align:right">'+money(l.amt)+'</td>'+
       '<td><span class="badge '+(ST_CLS[l.st]||'b-gray')+'">'+esc(l.st)+'</span></td></tr>';
   }).join('')||'<tr><td colspan="9" class="empty">'+(LEDGER.length?'Nothing matches that filter.':'No payouts on file.')+'</td></tr>';

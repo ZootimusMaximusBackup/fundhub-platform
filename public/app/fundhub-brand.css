@@ -57,3 +57,16 @@
   background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
     linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
   background-size:56px 56px}
+
+/* UI-STANDARDS.md §3 TYPE SCALE — the only four text sizes a screen may use. */
+:root{
+  --fs-metric:28px;   /* big number - the one thing the role came for */
+  --fs-title:18px;    /* section title */
+  --fs-body:14px;     /* body text - never smaller */
+  --fs-caption:11px;  /* caption / label / eyebrow - the floor, never smaller */
+}
+
+/* UI-STANDARDS.md §1 MAX CONTENT WIDTH — 1280px, centered. */
+:root{ --fh-maxw:1280px; }
+/* Put .fh-maxw on the content column only, never on a table or its scroll wrapper — tables stay wider inside their own overflow-x container (§1). */
+.fh-maxw{max-width:var(--fh-maxw);margin-inline:auto}

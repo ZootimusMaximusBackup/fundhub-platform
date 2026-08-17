@@ -13,12 +13,12 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--butter:#F2E39B}
 html,body{height:100%}
-body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:1.5;-webkit-font-smoothing:antialiased}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 a{color:inherit;text-decoration:none}
 button,input,select,textarea{font:inherit;color:inherit}
 .logo{width:118px;height:24px;flex:0 0 118px}
-.eyebrow{display:block}
+.eyebrow{display:block;font-size:var(--fs-caption)}
 .eyebrow .sep{color:var(--line);margin:0 6px}
 .app{display:flex;min-height:100vh}
 
@@ -42,8 +42,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 
   .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
-.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
-.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
 .content{padding:22px 24px 40px;flex:1}
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -51,16 +51,16 @@ button,input,select,textarea{font:inherit;color:inherit}
 .card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .card-bd{padding:16px}
 .hair{height:2px;background:var(--spectrum);border-radius:1px}
-.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:var(--fs-body);font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
 .btn:hover{background:var(--soft);border-color:var(--gray2)}
 .btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .btn.dark:hover{background:var(--ink2)}
-.btn.sm{padding:5px 10px;font-size:11.5px}
-.btn.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.btn.sm{padding:5px 10px;font-size:var(--fs-caption)}
+.btn.mono{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.08em;text-transform:uppercase}
 .btn:disabled{opacity:.42;cursor:not-allowed}
 .btn:disabled:hover{background:#fff;border-color:var(--line)}
 .btn.dark:disabled:hover{background:var(--ink)}
-.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:var(--fs-caption);font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
 .b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
 .b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
 .b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
@@ -68,12 +68,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 .b-accent{background:rgba(196,179,229,.26);border-color:var(--accent);color:#3F2F63}
 .b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
 .field{display:flex;flex-direction:column;gap:5px}
-.field label{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
-.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:13px;width:100%}
-.field textarea{resize:vertical;line-height:1.6;font-size:12.5px}
+.field label{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
+.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:var(--fs-body);width:100%}
+.field textarea{resize:vertical;line-height:1.6;font-size:var(--fs-body)}
 .field input.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
-.field .hint{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em}
+.field .hint{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .sw{position:relative;width:38px;height:21px;flex:0 0 38px;border-radius:11px;background:var(--line);border:1px solid var(--line);cursor:pointer;transition:background .15s}
 .sw::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.18)}
@@ -81,32 +81,32 @@ button,input,select,textarea{font:inherit;color:inherit}
 .swrow{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)}
 .swrow:last-child{border-bottom:0}
 .swrow .swl{flex:1;min-width:0}
-.swrow .swl .n{font-size:12.5px;font-weight:500}
-.swrow .swl .d{font-size:11px;color:var(--gray);line-height:1.4}
+.swrow .swl .n{font-size:var(--fs-body);font-weight:500}
+.swrow .swl .d{font-size:var(--fs-caption);color:var(--gray);line-height:1.4}
 
 .layout{display:grid;grid-template-columns:296px minmax(0,1fr);gap:14px;align-items:start}
 .alist{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;position:sticky;top:71px}
-.agrp{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);padding:11px 14px 7px;background:var(--soft);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.agrp{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:var(--gray);padding:11px 14px 7px;background:var(--soft);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
 .agrp::before{content:"";width:16px;height:2px;background:var(--spectrum);border-radius:1px}
 .aitem{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .1s}
 .aitem:hover{background:var(--soft)}
 .aitem.on{background:rgba(169,198,232,.14)}
 .aitem.on .an{font-weight:600}
 .aitem .dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
-.aitem .an{flex:1;min-width:0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.aitem .ac{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.08em}
-.aitem .ast{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;
+.aitem .an{flex:1;min-width:0;font-size:var(--fs-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aitem .ac{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.08em}
+.aitem .ast{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;
   border:1px solid var(--line);border-radius:5px;padding:1px 5px;white-space:nowrap}
 .aitem .ast.live{border-color:var(--ok);background:rgba(168,216,176,.22);color:#2C5138}
 .aitem .ast.shadow{border-color:var(--accent);background:rgba(196,179,229,.20);color:#3F2F63}
-.aitem .atr{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em;
+.aitem .atr{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em;
   white-space:nowrap;min-width:48px;text-align:right}
 .aitem .atr.none{color:#6E2A22}
 
 /* ---- config sections: what it may do stays open, the rest folds away ---- */
 details.card>summary{list-style:none;cursor:pointer}
 details.card>summary::-webkit-details-marker{display:none}
-details.card>summary.card-hd::after{content:"▾";margin-left:auto;font-size:10px;color:var(--gray2);
+details.card>summary.card-hd::after{content:"▾";margin-left:auto;font-size:var(--fs-caption);color:var(--gray2);
   transition:transform .16s}
 details.card[open]>summary.card-hd::after{transform:rotate(180deg)}
 details.card>summary.card-hd:hover{background:var(--soft)}
@@ -118,14 +118,14 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 .ev{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:7px;padding:7px 9px;cursor:pointer;background:#fff;transition:border-color .12s,background .12s;text-align:left}
 .ev:hover{border-color:var(--gray2)}
 .ev.on{border-color:var(--ink);background:var(--soft)}
-.ev .box{width:14px;height:14px;flex:0 0 14px;border:1px solid var(--gray2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;color:transparent}
+.ev .box{width:14px;height:14px;flex:0 0 14px;border:1px solid var(--gray2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-caption);line-height:1;color:transparent}
 .ev.on .box{background:var(--ink);border-color:var(--ink);color:#fff}
-.ev .en{font-family:var(--mono);font-size:11px;letter-spacing:.02em}
+.ev .en{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.02em}
 
 .guard{background:var(--card);border:1px solid var(--cardline);border-radius:8px;padding:13px 14px;color:var(--cardtext)}
-.guard textarea{width:100%;background:transparent;border:0;color:var(--cardtext);font-family:var(--mono);font-size:11.5px;line-height:1.75;resize:vertical;min-height:118px}
+.guard textarea{width:100%;background:transparent;border:0;color:var(--cardtext);font-family:var(--mono);font-size:var(--fs-body);line-height:1.75;resize:vertical;min-height:118px}
 .guard textarea:focus{outline:none}
-.guard .gh{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#71717A;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.guard .gh{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:#71717A;margin-bottom:8px;display:flex;align-items:center;gap:8px}
 .guard .gh::before{content:"";width:16px;height:2px;background:var(--spectrum);border-radius:1px}
 
 .mode{border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -133,26 +133,26 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 .mode .mbd{padding:15px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .mode.shadow{background:rgba(196,179,229,.10)}
 .mode.live{background:rgba(168,216,176,.12)}
-.mode .mt{font-family:var(--mono);font-size:17px;font-weight:600;letter-spacing:-.01em}
+.mode .mt{font-family:var(--mono);font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .gate{border-top:1px solid var(--line);padding:13px 16px;background:#fff}
-.gaterow{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12px}
-.gaterow .gi{font-family:var(--mono);font-size:12px;width:15px;flex:0 0 15px;text-align:center}
+.gaterow{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:var(--fs-body)}
+.gaterow .gi{font-family:var(--mono);font-size:var(--fs-body);width:15px;flex:0 0 15px;text-align:center}
 .gaterow.pass .gi{color:#2C5138}
 .gaterow.fail .gi{color:#6E2A22}
 .gaterow .gt{flex:1;min-width:0}
-.gaterow .gv{font-family:var(--mono);font-size:11px;color:var(--gray)}
+.gaterow .gv{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray)}
 
-.srun{display:flex;gap:11px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:12px;align-items:flex-start}
+.srun{display:flex;gap:11px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:var(--fs-body);align-items:flex-start}
 .srun:last-child{border-bottom:0}
-.srun .st{font-family:var(--mono);font-size:10.5px;color:var(--gray2);flex:0 0 74px;letter-spacing:.04em}
+.srun .st{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);flex:0 0 74px;letter-spacing:.04em}
 .srun .sb{flex:1;min-width:0}
-.srun .so{color:var(--gray);font-size:11.5px;line-height:1.5;margin-top:3px}
+.srun .so{color:var(--gray);font-size:var(--fs-caption);line-height:1.5;margin-top:3px}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
 .stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
-.stat .sv{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
-.stat .sd{font-size:11px;color:var(--gray);margin-top:2px}
-.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+.stat .sv{font-family:var(--mono);font-size:var(--fs-metric);font-variant-numeric:tabular-nums;font-weight:600;margin-top:8px;letter-spacing:-.02em}
+.stat .sd{font-size:var(--fs-caption);color:var(--gray);margin-top:2px}
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
 @media(max-width:1080px){.layout{grid-template-columns:1fr}.alist{position:static}.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
 </style>
 <script src="shell.js"></script>
@@ -230,7 +230,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
       <span class="chip on" id="liveChip"><span class="cd"></span><span id="liveTxt">— loading</span></span>
     </div>
 
-    <div class="content">
+    <div class="content fh-maxw">
       <div class="stats">
         <div class="stat"><div class="eyebrow">TE-00 <span class="sep">/</span> MESSAGES</div><div class="sv" id="kAll">—</div><div class="sd">pieces of copy you can edit</div></div>
         <div class="stat"><div class="eyebrow">TE-00 <span class="sep">/</span> TEXTS</div><div class="sv" id="kSms">—</div><div class="sd">sent as SMS</div></div>
@@ -241,19 +241,19 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 
       <div class="card" id="draftBanner" style="display:none;margin-bottom:14px;border-color:var(--alert)">
         <div class="card-hd"><span class="badge b-alert">DRAFT templates — will not send</span></div>
-        <div class="card-bd" style="font-size:12.5px;line-height:1.6;color:var(--gray)">
+        <div class="card-bd" style="font-size:var(--fs-body);line-height:1.6;color:var(--gray)">
           <p>These keys still have <span class="mono">[DRAFT]</span> placeholder bodies. The dispatcher refuses them even if someone marks them approved. Replace the copy before a live send can reach a client.</p>
-          <ul id="draftList" class="mono" style="margin-top:8px;font-size:11px;padding-left:18px"></ul>
+          <ul id="draftList" class="mono" style="margin-top:8px;font-size:var(--fs-caption);padding-left:18px"></ul>
         </div>
       </div>
 
       <div class="card" id="explainCard">
         <div class="card-hd"><span class="badge b-info">How this works</span></div>
-        <div class="card-bd" style="font-size:12.5px;line-height:1.7;color:var(--gray)">
+        <div class="card-bd" style="font-size:var(--fs-body);line-height:1.7;color:var(--gray)">
           <p><strong>Editing the words switches the message off.</strong> The system will not send a message whose wording has not been approved. So when you change the copy here and save it, that message stops going out straight away.</p>
           <p style="margin-top:8px"><strong>An owner or admin turns it back on.</strong> They have to read the new wording on this screen first — there is no way to approve from the list without opening it. Who approved it and when is recorded on the message.</p>
           <p style="margin-top:8px"><strong>The short name cannot be changed, and nothing can be deleted here.</strong> Automations and journeys find a message by its short name. Change it and the message quietly stops going out with nothing reporting a problem. Each message shows what is using it.</p>
-          <p class="mono" style="margin-top:8px;font-size:11px">Nothing on this screen sends anything. There is no test-send button because nothing transmits yet.</p>
+          <p class="mono" style="margin-top:8px;font-size:var(--fs-caption)">Nothing on this screen sends anything. There is no test-send button because nothing transmits yet.</p>
         </div>
       </div>
 
@@ -264,22 +264,22 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 
         <div>
           <div class="card" id="edEmpty">
-            <div class="card-bd" style="color:var(--gray);font-size:12.5px">Pick a message on the left to read or edit it.</div>
+            <div class="card-bd" style="color:var(--gray);font-size:var(--fs-body)">Pick a message on the left to read or edit it.</div>
           </div>
 
           <div id="edPane" style="display:none">
             <div class="card keycard">
               <div class="card-hd">
                 <span class="badge b-gray mono" id="edChan">—</span>
-                <strong class="mono" id="edKey" style="font-size:12.5px;letter-spacing:.04em">—</strong>
+                <strong class="mono" id="edKey" style="font-size:var(--fs-body);letter-spacing:.04em">—</strong>
                 <span class="badge" id="edState">—</span>
                 <div class="spacer"></div>
-                <span class="mono" style="font-size:10px;color:var(--gray2)" id="edApproved"></span>
+                <span class="mono" style="font-size:var(--fs-caption);color:var(--gray2)" id="edApproved"></span>
               </div>
               <div class="card-bd">
                 <div class="eyebrow" style="margin-bottom:7px">WHAT USES THIS</div>
-                <div id="edUsed" style="font-size:12.5px;line-height:1.7">—</div>
-                <p class="mono" style="font-size:9.5px;color:var(--gray2);margin-top:9px;letter-spacing:.06em">The short name above is fixed. It is how automations and journeys find this message.</p>
+                <div id="edUsed" style="font-size:var(--fs-body);line-height:1.7">—</div>
+                <p class="mono" style="font-size:var(--fs-caption);color:var(--gray2);margin-top:9px;letter-spacing:.06em">The short name above is fixed. It is how automations and journeys find this message.</p>
               </div>
             </div>
 
@@ -307,7 +307,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
                   <button class="btn dark mono" id="saveBtn">Save wording</button>
                   <button class="btn mono sm" id="revertBtn">Undo my changes</button>
                   <div class="spacer"></div>
-                  <span id="saveMsg" style="font-size:12px"></span>
+                  <span id="saveMsg" style="font-size:var(--fs-body)"></span>
                 </div>
               </div>
             </div>
@@ -315,23 +315,23 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
             <div class="card">
               <div class="card-hd"><span class="eyebrow">PREVIEW — WITH MADE-UP DETAILS</span></div>
               <div class="card-bd">
-                <div id="preview" style="background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:13px;font-size:13px;line-height:1.65;white-space:pre-wrap"></div>
-                <p class="mono" style="font-size:9.5px;color:var(--gray2);margin-top:8px;letter-spacing:.06em">Sample details only. Blank spots are placeholders nothing fills in.</p>
+                <div id="preview" style="background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:13px;font-size:var(--fs-body);line-height:1.65;white-space:pre-wrap"></div>
+                <p class="mono" style="font-size:var(--fs-caption);color:var(--gray2);margin-top:8px;letter-spacing:.06em">Sample details only. Blank spots are placeholders nothing fills in.</p>
               </div>
             </div>
 
             <div class="card" id="apprCard" style="display:none">
               <div class="card-hd"><span class="badge b-warn">Approval</span><span class="eyebrow">OWNER AND ADMIN ONLY</span></div>
               <div class="card-bd">
-                <div id="apprState" style="font-size:12.5px;line-height:1.7;margin-bottom:11px"></div>
-                <label style="display:flex;gap:9px;align-items:flex-start;font-size:12.5px;cursor:pointer">
+                <div id="apprState" style="font-size:var(--fs-body);line-height:1.7;margin-bottom:11px"></div>
+                <label style="display:flex;gap:9px;align-items:flex-start;font-size:var(--fs-body);cursor:pointer">
                   <input type="checkbox" id="apprRead" style="margin-top:3px">
                   <span>I have read the wording above, exactly as it is written now, and I approve it going out to clients.</span>
                 </label>
                 <div style="display:flex;align-items:center;gap:10px;margin-top:13px">
                   <button class="btn dark mono" id="apprBtn" disabled>Approve this wording</button>
                   <div class="spacer"></div>
-                  <span id="apprMsg" style="font-size:12px"></span>
+                  <span id="apprMsg" style="font-size:var(--fs-body)"></span>
                 </div>
               </div>
             </div>
@@ -538,12 +538,12 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
     var parts = [];
     (used.journeys || []).forEach(function (j) {
       parts.push('<div><span class="badge b-accent">journey</span> ' + esc(j.journeyName) +
-                 ' <span class="mono" style="font-size:10.5px;color:var(--gray2)">— step “' + esc(j.step) + '”, listed as ' + esc(j.label) + "</span></div>");
+                 ' <span class="mono" style="font-size:var(--fs-caption);color:var(--gray2)">— step “' + esc(j.step) + '”, listed as ' + esc(j.label) + "</span></div>");
     });
     var files = {};
     (used.workflows || []).forEach(function (w) { files[w.file] = 1; });
     Object.keys(files).sort().forEach(function (f) {
-      parts.push('<div><span class="badge b-info">automation</span> <span class="mono" style="font-size:11px">' + esc(f) + "</span></div>");
+      parts.push('<div><span class="badge b-info">automation</span> <span class="mono" style="font-size:var(--fs-caption)">' + esc(f) + "</span></div>");
     });
     $("edUsed").innerHTML = parts.length
       ? parts.join("")
@@ -610,7 +610,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 
     var html = "";
     if (blocking.length) {
-      html += '<div class="badge b-alert">will not save</div> <span style="font-size:12.5px">' +
+      html += '<div class="badge b-alert">will not save</div> <span style="font-size:var(--fs-body)">' +
         blocking.map(function (t) { return "<code>{{" + esc(t) + "}}</code>"; }).join(", ") +
         " — nothing fills " + (blocking.length > 1 ? "these" : "this") + " in. Remove or correct " +
         (blocking.length > 1 ? "them" : "it") + " to save.</span>";
@@ -618,7 +618,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
     if (warn.length) {
       html += (html ? '<div style="height:7px"></div>' : "") +
         warn.map(function (w) {
-          return '<div style="font-size:12px;color:var(--gray)"><span class="badge b-warn">heads up</span> <code>{{' +
+          return '<div style="font-size:var(--fs-body);color:var(--gray)"><span class="badge b-warn">heads up</span> <code>{{' +
             esc(w.t) + "}}</code> — " + esc(w.why) + "</div>";
         }).join("");
     }
