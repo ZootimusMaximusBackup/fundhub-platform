@@ -64,8 +64,13 @@
       if (vl) vl.textContent = val;
       if (c) c.innerHTML = cmp || "";
     }
-    mset(0, "Deposits closed", String(month.deposits_closed != null ? month.deposits_closed : "—"), "");
-    mset(1, "Close rate", pct(month.close_rate), "");
+    var prior = month.prior || {};
+    var depCmp = prior.deposits != null && Number.isFinite(Number(prior.deposits))
+      ? ("was " + prior.deposits) : "";
+    var closeCmp = prior.close_rate != null && Number.isFinite(Number(prior.close_rate))
+      ? ("was " + pct(prior.close_rate)) : "";
+    mset(0, "Deposits closed", String(month.deposits_closed != null ? month.deposits_closed : "—"), depCmp);
+    mset(1, "Close rate", pct(month.close_rate), closeCmp);
     mset(2, "Show rate", pct(month.show_rate), "");
     mset(3, "Downsells", String(month.downsells != null ? month.downsells : "—"), "");
     mset(4, "Deposit → funded", pct(month.deposit_to_funded), "First-class metric");
@@ -135,11 +140,23 @@
     });
     if (owedHost) {
       var html = owed.map(function (o) {
-        return '<div class="todo"><span class="t">' + (o.urgency || "Now") + "</span><div><b>" +
-          (o.title || "") + "</b><em>" + (o.detail || "") + "</em></div></div>";
+        var body = '<span class="t">' + (o.urgency || "—") + "</span><div><b>" +
+          (o.title || "") + "</b><em>" + (o.detail || "") + "</em></div>";
+        if (o.client_id) {
+          var href = "closer-call.html?client_id=" + encodeURIComponent(o.client_id);
+          if (o.task_id) href += "&task_id=" + encodeURIComponent(o.task_id);
+          return '<a class="todo" href="' + href + '">' + body + "</a>";
+        }
+        return '<div class="todo">' + body + "</div>";
       }).join("") || '<div class="todo"><span class="t">—</span><div><b>Nothing owed</b><em>Unlogged calls and quiet deposits will land here</em></div></div>';
       var p = owedHost.querySelector(".panel");
       if (p) p.innerHTML = html;
+      var owedNote = owedHost.querySelector(".sech .note");
+      if (owedNote) {
+        owedNote.textContent = (month.unlogged > owed.length)
+          ? ("Showing " + owed.length + " of " + month.unlogged)
+          : "clears automatically when done";
+      }
     }
   }
 

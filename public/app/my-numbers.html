@@ -86,8 +86,9 @@ header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-
 .qual .r{display:flex;align-items:center;gap:9px;font-variant-numeric:tabular-nums}
 
 .todo{display:flex;gap:11px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);font-size:13px}
+a.todo{text-decoration:none;color:inherit;cursor:pointer}
 .todo:first-of-type{border-top:none}
-.todo .t{font-family:var(--mono);font-size:10.5px;color:var(--gray2);flex:0 0 40px;padding-top:1px}
+.todo .t{font-family:var(--mono);font-size:10.5px;color:var(--gray2);flex:0 0 78px;padding-top:1px}
 .todo b{font-weight:500;display:block} .todo em{font-style:normal;color:var(--gray);font-size:11.5px}
 
 .money{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
@@ -206,7 +207,7 @@ header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-
   </div>
 
   <div class="sec">
-    <div class="sech"><span class="eyebrow">This month</span><span class="note">vs your 90-day average</span></div>
+    <div class="sech"><span class="eyebrow">This month</span><span class="note">vs last month</span></div>
     <div class="grid">
       <div class="m"><div class="lb">Deposits closed</div><div class="vl">—</div><div class="cmp"></div></div>
       <div class="m"><div class="lb">Close rate</div><div class="vl">—</div><div class="cmp"></div></div>
@@ -246,7 +247,6 @@ header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-
     <div class="days">
       <div class="d" style="flex:2;justify-content:flex-start;padding:0 10px">Daily close streak is not stored yet.</div>
     </div>
-    <p class="note" style="margin-top:9px">Daily close streak is not stored yet.</p>
   </div>
 
   <div class="sec two">

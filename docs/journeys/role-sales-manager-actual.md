@@ -29,7 +29,7 @@ flowchart TD
     CAN --> A_finance[Finance — 9 routes]
     CAN --> A_journeys[journeys — 1 route]
     CAN --> A_public[public — 3 routes]
-    CAN --> A_read[Reading data — 44 routes]
+    CAN --> A_read[Reading data — 45 routes]
     CAN --> A_repair[repair — 2 routes]
     CAN --> A_social[social — 3 routes]
     CAN --> A_staff[staff — 1 route]
@@ -55,7 +55,7 @@ flowchart TD
 
 ## What they can reach
 
-**126 of 157 routes.**
+**127 of 158 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -147,6 +147,7 @@ flowchart TD
 | `/api/read/contracts` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/conversations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/customer-insights` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/deal-math` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/documents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager<br>plus: client |
 | `/api/read/finance-ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -194,7 +195,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**31 of 157 routes.**
+**31 of 158 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

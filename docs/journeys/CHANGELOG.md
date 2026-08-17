@@ -3,6 +3,10 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-17 | gate-relay | Telegram now sends the real ask (`context`) when the question is a stub like "Build?". | Owner: phone must say what he is deciding | (pending commit)
+
+2026-08-17 | role-closer | Closers can read `GET /api/read/deal-math` — net cash and monthly from the numbers they type plus the drawn amount on the file. | Owner: close the deal-math HIGH; do not invent a draw | (pending commit)
+
 2026-08-17 | role-closer | Closers can read `GET /api/read/closer-now` — which call they are on right now and which is next, with no client in the URL. Dashboard and call cockpit use it. | Owner: one read, not thirteen features | (pending commit)
 
 2026-08-17 | gate-relay | New local messenger: skills write a gate file, Telegram asks Chris a one-word decision, his text or voice comes back as a decision file. SMS/Twilio adapter is a stub. Live Telegram unverified — bot token not in env yet. | Owner: run the build machine from the phone | (pending commit)

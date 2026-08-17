@@ -14,6 +14,16 @@ function monthWindow(now = new Date()) {
   return { start, end };
 }
 
+/** Civil date in America/New_York as YYYY-MM-DD. */
+export function nyDateString(now = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(now);
+}
+
 function priorWindow({ start, end }) {
   const ms = end.getTime() - start.getTime();
   return {
@@ -134,6 +144,44 @@ async function openShift(db, { orgId, staffId }) {
   return r.rows[0] || null;
 }
 
+function parseDueAt(dueAt) {
+  if (dueAt == null || dueAt === "") return null;
+  const d = dueAt instanceof Date ? dueAt : new Date(dueAt);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function owedUrgency(dueAt, now) {
+  const d = parseDueAt(dueAt);
+  if (!d) return "—";
+  const ms = d.getTime() - now.getTime();
+  const abs = Math.abs(ms);
+  const overdue = ms < 0;
+  if (overdue) {
+    if (abs < 60 * 60 * 1000) return Math.max(1, Math.floor(abs / 60000)) + "m overdue";
+    if (abs < 24 * 60 * 60 * 1000) return Math.max(1, Math.floor(abs / 3600000)) + "h overdue";
+    return Math.max(1, Math.floor(abs / 86400000)) + "d overdue";
+  }
+  if (abs < 60 * 60 * 1000) return "in " + Math.max(1, Math.floor(abs / 60000)) + "m";
+  if (abs < 24 * 60 * 60 * 1000) return "in " + Math.max(1, Math.floor(abs / 3600000)) + "h";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+}
+
+function owedHeldDetail(dueAt) {
+  const d = parseDueAt(dueAt);
+  if (!d) return "No outcome recorded";
+  const age = Date.now() - d.getTime();
+  const when = (age >= 0 && age < 86400000)
+    ? (age < 3600000 ? "just now" : Math.floor(age / 3600000) + "h ago")
+    : d.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: "UTC"
+    });
+  return `Held window ended ${when}; no outcome recorded`;
+}
+
 /**
  * Closer personal metrics for my-numbers.html.
  * Always scoped to staffId — never org-wide for a closer session.
@@ -219,11 +267,9 @@ export async function closerMyNumbers(db, { orgId, staffId, now = new Date() } =
     },
     team,
     owed: unloggedList.map((u) => ({
-      urgency: "Now",
+      urgency: owedUrgency(u.due_at, now),
       title: `Log the call with ${u.client_name}`,
-      detail: u.due_at
-        ? `Held window ended ${u.due_at}; no outcome recorded`
-        : "No outcome recorded",
+      detail: owedHeldDetail(u.due_at),
       task_id: u.task_id,
       client_id: u.client_id
     })),
@@ -369,7 +415,8 @@ export async function salesFloor(db, { orgId, now = new Date(), env = process.en
   if (!orgId) throw new TypeError("salesFloor: orgId required");
   const window = monthWindow(now);
 
-  const [cash, funnel, d2f, closers, beliefs, unlogged, cold, shiftsLate, recordings] = await Promise.all([
+  const todayYmd = nyDateString(now);
+  const [cash, funnel, todayFunnel, d2f, closers, beliefs, unlogged, cold, shiftsLate, recordings] = await Promise.all([
     db.query(
       `SELECT COALESCE(SUM(cash_collected_cents), 0)::bigint AS cents
          FROM call_outcomes
@@ -377,6 +424,7 @@ export async function salesFloor(db, { orgId, now = new Date(), env = process.en
       [orgId, window.start.toISOString(), window.end.toISOString()]
     ),
     floorFunnel(db, { orgId, ...window }),
+    floorFunnelDay(db, { orgId, day: todayYmd }),
     depositToFunded(db, { orgId, ...window }),
     closerRoster(db, { orgId, ...window, now }),
     beliefAnalytics(db, { orgId, ...window }),
@@ -412,6 +460,14 @@ export async function salesFloor(db, { orgId, now = new Date(), env = process.en
       deposit_to_funded_n: d2f
     },
     funnel,
+    today: {
+      date: todayYmd,
+      booked: todayFunnel.booked,
+      held: todayFunnel.held,
+      deposits: todayFunnel.deposits,
+      target_cents: null,
+      target_reason: "No daily sales_manager target in staff_targets"
+    },
     closers,
     beliefs,
     recordings,
@@ -471,6 +527,35 @@ async function floorFunnel(db, { orgId, start, end }) {
     downsells: Number(outcomes.rows[0]?.downsells || 0),
     downsell_cash_cents: Number(outcomes.rows[0]?.downsell_cents || 0),
     downsell_cash_display: formatUsdFromCents(outcomes.rows[0]?.downsell_cents)
+  };
+}
+
+/** Same funnel counts, one America/New_York civil day. */
+async function floorFunnelDay(db, { orgId, day }) {
+  const [booked, outcomes] = await Promise.all([
+    db.query(
+      `SELECT count(DISTINCT client_id)::int AS n
+         FROM events
+        WHERE org_id = $1 AND name = 'booking.created'
+          AND created_at >= ($2::date AT TIME ZONE 'America/New_York')
+          AND created_at < (($2::date + 1) AT TIME ZONE 'America/New_York')
+          AND client_id IS NOT NULL`,
+      [orgId, day]
+    ),
+    db.query(
+      `SELECT count(*) FILTER (WHERE outcome <> 'no_show')::int AS held,
+              count(*) FILTER (WHERE outcome = 'deposit')::int AS deposits
+         FROM call_outcomes
+        WHERE org_id = $1
+          AND logged_at >= ($2::date AT TIME ZONE 'America/New_York')
+          AND logged_at < (($2::date + 1) AT TIME ZONE 'America/New_York')`,
+      [orgId, day]
+    )
+  ]);
+  return {
+    booked: Number(booked.rows[0]?.n || 0),
+    held: Number(outcomes.rows[0]?.held || 0),
+    deposits: Number(outcomes.rows[0]?.deposits || 0)
   };
 }
 

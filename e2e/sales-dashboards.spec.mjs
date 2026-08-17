@@ -38,6 +38,7 @@ const emptyFloor = {
     deposit_to_funded: null, deposit_to_funded_n: { deposits: 0, funded: 0, rate: null }
   },
   funnel: { booked: 0, held: 0, deposits: 0, funded: 0, downsells: 0, downsell_cash_cents: 0 },
+  today: { date: "2026-08-17", booked: 0, held: 0, deposits: 0, target_cents: null, target_reason: "No daily sales_manager target in staff_targets" },
   closers: [],
   beliefs: { beliefs: [], sources: [], period: {}, prior: {} },
   compliance: { available: false, reason: "Call recording and transcription do not exist yet", items: [] },

@@ -106,6 +106,7 @@
   #calcGate{padding:16px 0 4px;font-size:14px;}
 
   .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
+  .calc-grid[hidden],#breakdown[hidden],.stat-tiles[hidden]{display:none;}
   .calc-panel{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:13px 15px 15px;}
   /* LOADING STATE — set only while a /api/read/tradelines request is in flight,
      removed the moment it resolves either way. Nothing else in the design keys
@@ -283,7 +284,7 @@
       <div class="who-name"><span class="av human" id="whoAv">—</span> <span id="whoName">—</span></div>
       <div class="who-role" id="whoRole">—</div>
     </div>
-    <div class="stat-tiles">
+    <div class="stat-tiles" hidden>
       <div class="stat-tile"><div class="stat-label">Calls Today</div><div class="stat-value">—</div></div>
       <div class="stat-tile"><div class="stat-label">Kept</div><div class="stat-value">—</div></div>
       <div class="stat-tile"><div class="stat-label">Collected</div><div class="stat-value">—</div></div>
@@ -303,6 +304,7 @@
 
     <div class="section">
       <div class="section-title eyebrow" id="calcTitle">CD-02 / Deal Calculators</div>
+      <div class="calc-client" id="calcClientName" hidden></div>
       <p id="calcGate" class="empty-slot" hidden>Open from a client.</p>
       <div class="calc-grid" id="calcGrid">
 
@@ -941,7 +943,7 @@ window.FHCloserView = (function () {
 
   var panels = [].slice.call(document.querySelectorAll(".calc-panel"));
   var dealTable = document.querySelector("table.deal");
-  var seq = 0, timer = null, live = false, marked = false;
+  var seq = 0, timer = null, live = false, marked = false, lastDrawn = 0;
 
   function busy(on) {
     panels.forEach(function (p) {
@@ -1082,17 +1084,12 @@ window.FHCloserView = (function () {
 
     var note = document.querySelector(".res-note");
     if (note) {
-      note.textContent = "No deal-math endpoint — net cash, monthly obligation, and the cliff stay dashes.";
+      note.textContent = "Net cash and monthly use the deposit, fee, debts, and minimum you type, plus the drawn amount from this file.";
     }
     var d03 = subHeading("D-03b");
-    if (d03) d03.textContent = "D-03b / How the net cash is arrived at — no deal-math endpoint";
+    if (d03) d03.textContent = "D-03b / How the net cash is arrived at";
     var d04 = subHeading("D-04");
     if (d04) d04.textContent = "D-04 / Minimum payment, card by card — the minimum has no API source";
-
-    ["oNet", "oMonthly", "oFunded", "oFees", "oDebts"].forEach(function (id) {
-      var el = $(id);
-      if (el) el.textContent = "—";
-    });
 
     var cliffBox = $("cliffBox");
     if (cliffBox) cliffBox.className = "alert-box warn";
@@ -1157,7 +1154,10 @@ window.FHCloserView = (function () {
     renderMinTable(view);
     var range = $("iDrawRange");
     if (range && view.drawMax != null) range.max = Math.round(view.drawMax);
+    var drawnN = Number(String(view.totalDrawnText || "").replace(/,/g, ""));
+    lastDrawn = Number.isFinite(drawnN) ? drawnN : 0;
     markUnsourced();
+    askDealMath();
   }
 
   function requestParams() {
@@ -1205,6 +1205,35 @@ window.FHCloserView = (function () {
       failed({ source: "render", error: (e && e.message) || "read failed" },
         { tone: "error", text: "deal calculators — the tradeline read threw (" +
           ((e && e.message) || "unknown") + ")" });
+    });
+  }
+
+  function moneyDeal(n) {
+    if (n == null || !Number.isFinite(Number(n))) return "—";
+    var sign = n < 0 ? "−" : "";
+    return sign + "$" + Math.abs(Math.round(n)).toLocaleString("en-US");
+  }
+
+  function askDealMath() {
+    if (!window.FHData || !clientId) return;
+    var deposit = Number($("iDeposit") && $("iDeposit").value);
+    var fee = Number($("iFee") && $("iFee").value);
+    var debts = Number($("iDebts") && $("iDebts").value);
+    var min = Number($("iMin") && $("iMin").value);
+    FHData.read("deal-math", {
+      deposit: isFinite(deposit) ? deposit : 0,
+      fee: isFinite(fee) ? fee : 0,
+      debts: isFinite(debts) ? debts : 0,
+      min: isFinite(min) && min > 0 ? min : 3,
+      drawn: lastDrawn
+    }).then(function (res) {
+      if (!res || !res.ok || !res.data) return;
+      var d = res.data;
+      if ($("oNet")) $("oNet").textContent = moneyDeal(d.net);
+      if ($("oMonthly")) $("oMonthly").textContent = moneyDeal(d.monthly) + " / mo";
+      if ($("oFunded")) $("oFunded").textContent = moneyDeal(d.drawn);
+      if ($("oFees")) $("oFees").textContent = "−" + moneyDeal(d.fees).replace(/^−/, "");
+      if ($("oDebts")) $("oDebts").textContent = "−" + moneyDeal(d.debts).replace(/^−/, "");
     });
   }
 
@@ -1266,6 +1295,18 @@ window.FHCloserView = (function () {
   ["iDraw", "iDrawRange", "iGuard"].forEach(function (id) {
     var el = $(id);
     if (el) el.addEventListener("input", schedule);
+  });
+  ["iDeposit", "iFee", "iDebts", "iMin"].forEach(function (id) {
+    var el = $(id);
+    if (el) el.addEventListener("input", askDealMath);
+  });
+
+  FHData.read("closer-call", { client_id: clientId }).then(function (res) {
+    var name = res && res.ok && res.data && res.data.client && res.data.client.name;
+    var el = document.getElementById("calcClientName");
+    if (!el || !name) return;
+    el.textContent = name;
+    el.hidden = false;
   });
 
   load(false);

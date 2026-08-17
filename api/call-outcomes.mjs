@@ -63,7 +63,8 @@ export default async function handler(req, res, deps = {}) {
       transactionId: isUuid(body.transaction_id) ? body.transaction_id : null,
       recordingUrl: body.recording_url || null,
       durationSeconds: body.duration_seconds ?? null,
-      notes: body.notes || null
+      notes: body.notes || null,
+      checklist: body.checklist || null
     });
     return res.status(result.created ? 201 : 200).json({
       ok: true,

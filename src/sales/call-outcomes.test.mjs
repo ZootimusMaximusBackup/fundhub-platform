@@ -96,6 +96,37 @@ test("logCallOutcome: refuses typed cash by never reading amount from input", as
   assert.match(presented.belief_label, /Desire/);
 });
 
+test("logCallOutcome: checklist is stored and returned, unchecked boxes are false not missing", async () => {
+  const org = "11111111-1111-4111-8111-111111111111";
+  const client = "22222222-2222-4222-8222-222222222222";
+  const staff = "33333333-3333-4333-8333-333333333333";
+  let notes;
+  const db = stubDb([
+    [/FROM clients/, () => ({ rows: [{ id: client }] })],
+    [/INSERT INTO call_outcomes/, (params) => {
+      notes = params[11];
+      return {
+        rows: [{
+          id: "out1", org_id: org, client_id: client, staff_id: staff,
+          outcome: "callback", belief_failed: null,
+          cash_collected_cents: 0, notes
+        }]
+      };
+    }]
+  ]);
+  const { row } = await logCallOutcome(db, {
+    orgId: org, clientId: client, staffId: staff,
+    outcome: "callback",
+    checklist: { call_recorded: true, personal_guarantee: false }
+  });
+  assert.match(String(notes), /checklist:/);
+  const presented = presentOutcome(row);
+  assert.equal(presented.checklist.call_recorded, true);
+  assert.equal(presented.checklist.personal_guarantee, false);
+  assert.equal(presented.checklist.month_14_cliff, false);
+  assert.equal(presented.checklist.bank_decides, false);
+});
+
 test("logCallOutcome: bad outcome throws CallOutcomeError", async () => {
   await assert.rejects(
     () => logCallOutcome(stubDb(), {

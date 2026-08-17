@@ -269,7 +269,7 @@
   .then-row:last-child{border-bottom:none;}
   .then-row[data-task-id]{cursor:pointer;}
   .then-row[data-task-id]:hover{background:var(--paper);}
-  .then-time{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--text-dim);width:52px;flex-shrink:0;}
+  .then-time{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--text-dim);min-width:52px;width:auto;flex-shrink:0;}
   .then-name{font-size:12px;font-weight:700;flex:1;min-width:0;}
   .then-sub{font-size:10px;color:var(--text-faint);margin-top:1px;font-weight:400;}
   .then-row.conflict{background:color-mix(in srgb,var(--alert) 8%,#fff);}
@@ -551,15 +551,24 @@ function parseYmd(s) {
   return startOfDay(new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])));
 }
 function hourLabel(d) {
-  var h = d.getHours();
-  var ampm = h < 12 ? "AM" : "PM";
-  var h12 = h % 12 === 0 ? 12 : h % 12;
-  return h12 + ":00 " + ampm;
+  return d.toLocaleTimeString("en-US", {
+    hour: "numeric", minute: "2-digit",
+    timeZone: "America/New_York"
+  }).replace(/:\d{2}/, ":00");
 }
 function clockTime(d) {
-  var h = d.getHours(), m = d.getMinutes();
-  var h12 = h % 12 === 0 ? 12 : h % 12;
-  return h12 + ":" + (m < 10 ? "0" + m : m);
+  return d.toLocaleTimeString("en-US", {
+    hour: "numeric", minute: "2-digit",
+    timeZone: "America/New_York"
+  }).replace(/\s*[AP]M$/i, "");
+}
+function thenTimeLabel(due) {
+  var clock = clockTime(due);
+  if (Math.abs(due.getTime() - Date.now()) <= 24 * 60 * 60 * 1000) return clock;
+  return due.toLocaleDateString("en-US", {
+    month: "short", day: "numeric",
+    timeZone: "America/New_York"
+  }) + " " + clock;
 }
 function initials(name) {
   var parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -594,7 +603,8 @@ function tickClock() {
   if (!el) return;
   el.textContent = new Date().toLocaleString("en-US", {
     weekday: "short", month: "short", day: "numeric",
-    hour: "numeric", minute: "2-digit", second: "2-digit"
+    hour: "numeric", minute: "2-digit", second: "2-digit",
+    timeZone: "America/New_York", timeZoneName: "short"
   });
 }
 function dateLabelText(d) {
@@ -838,8 +848,10 @@ function paintRail() {
 
   var then = document.getElementById("thenList");
   if (then) {
+    var nowMs = Date.now();
     var rest = datedTasks.filter(function (t) {
-      return t.id && (!current || String(t.id) !== String(current.id));
+      return t.id && (!current || String(t.id) !== String(current.id))
+        && new Date(t.due_at).getTime() > nowMs;
     }).sort(function (a, b) {
       return new Date(a.due_at) - new Date(b.due_at);
     }).slice(0, 8);
@@ -849,7 +861,7 @@ function paintRail() {
       then.innerHTML = rest.map(function (t) {
         var due = new Date(t.due_at);
         return '<div class="then-row" data-task-id="' + esc(t.id) + '" role="button" tabindex="0">' +
-          '<div class="then-time">' + esc(clockTime(due)) + "</div>" +
+          '<div class="then-time">' + esc(thenTimeLabel(due)) + "</div>" +
           '<div class="then-name">' + esc(displayName(t)) +
           '<div class="then-sub">' + esc(briefingText(t)) + "</div></div></div>";
       }).join("");
@@ -982,8 +994,12 @@ if (typeof FHData !== "undefined" && FHData.wire) {
     loaded = true;
     selectedId = null;
     paintAll();
-    var todayN = tasksOn(startOfDay(new Date())).length;
-    var later = datedTasks.length - todayN;
+    var todayStart = startOfDay(new Date());
+    var todayN = tasksOn(todayStart).length;
+    var nowMs = Date.now();
+    var later = datedTasks.filter(function (t) {
+      return new Date(t.due_at).getTime() > nowMs && !sameDay(new Date(t.due_at), todayStart);
+    }).length;
     return "live schedule · " + todayN + " today" +
       (later > 0 ? " · " + later + " dated later" : "");
   });
@@ -1007,7 +1023,10 @@ if (typeof FHData !== "undefined" && FHData.wire) {
       var name = p.name || p.email || "Staff";
       var role = p.role ? String(p.role).replace(/_/g, " ") : "";
       var started = p.started_at ? new Date(p.started_at) : null;
-      var since = started ? started.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+      var since = started ? started.toLocaleTimeString("en-US", {
+        hour: "numeric", minute: "2-digit",
+        timeZone: "America/New_York"
+      }) : "";
       return '<div class="cov-row"><span class="cov-name">' + esc(name) +
         '</span><span class="cov-role">' + esc(role) +
         (since ? " · since " + esc(since) : "") + "</span></div>";

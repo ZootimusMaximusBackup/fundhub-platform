@@ -46,23 +46,28 @@
     }
 
     var hero = d.hero || {};
+    var today = d.today || {};
+    var hl2s = document.querySelectorAll(".hero .hl2");
+    if (hl2s[0]) hl2s[0].textContent = "Today";
     var bigs = document.querySelectorAll(".hero .big");
-    if (bigs[0]) bigs[0].textContent = hero.cash_display || money(hero.cash_cents);
+    if (bigs[0]) {
+      bigs[0].textContent = today.deposits != null ? String(today.deposits) : "—";
+    }
     if (bigs[1]) bigs[1].textContent = pct(hero.deposit_to_funded);
     var subs = document.querySelectorAll(".hero .sub");
     if (subs[0]) {
-      subs[0].textContent = hero.target_display
-        ? ("Target " + hero.target_display)
-        : (hero.target_reason || "No team target set");
+      subs[0].textContent = "Booked " + (today.booked != null ? today.booked : "—") +
+        " · Held " + (today.held != null ? today.held : "—") +
+        " · " + (today.target_reason || "No daily target");
     }
     if (subs[1]) {
       var n = hero.deposit_to_funded_n || {};
       subs[1].textContent = (n.funded != null ? n.funded + " of " + n.deposits + " deposits funded" : "Of deposits taken this period");
     }
     var bar = $(".hero .bar i");
-    if (bar && hero.target_cents) {
-      bar.style.width = Math.min(100, Math.round((hero.cash_cents || 0) / hero.target_cents * 100)) + "%";
-    } else if (bar) bar.style.width = "0%";
+    if (bar) bar.style.width = "0%";
+    var marks = document.querySelectorAll(".hero .marks span");
+    if (marks[1]) marks[1].textContent = today.target_reason || "No daily target";
 
     var funnel = d.funnel || {};
     var fs = document.querySelectorAll(".funnel .f");
@@ -86,10 +91,14 @@
     var say = document.querySelector(".sec .say");
     if (say && funnel.deposits != null && funnel.funded != null) {
       var gap = funnel.deposits - funnel.funded;
-      say.innerHTML = gap > 0
-        ? ("<b>The leak is after the sale, not before it.</b> " + gap +
-          " deposits haven't funded. Deposit-to-funded is the failure mode this screen exists to catch.")
-        : "<b>Deposits are funding.</b> Keep pressure on show rate and belief spikes below.";
+      if (funnel.deposits === 0) {
+        say.innerHTML = "<b>No deposits this month.</b> The funnel above is the month so far.";
+      } else if (gap > 0) {
+        say.innerHTML = "<b>The leak is after the sale, not before it.</b> " + gap +
+          " deposits haven't funded. Deposit-to-funded is the failure mode this screen exists to catch.";
+      } else {
+        say.innerHTML = "<b>Deposits are funding.</b> Keep pressure on show rate and belief spikes below.";
+      }
     }
 
     // Roster
@@ -157,15 +166,24 @@
       // Remove everything after h3
       while (sourcePanel.children.length > 1) sourcePanel.removeChild(sourcePanel.lastChild);
       sourcePanel.insertAdjacentHTML("beforeend", headHtml + rowsHtml);
+      var beliefs = (d.beliefs && d.beliefs.beliefs) || [];
+      var top = beliefs[0];
+      var canFlag = top && top.belief && ((top.this_count || 0) > 0 || (top.last_count || 0) > 0);
+      var flagLabel = canFlag ? ("Flag " + String(top.label || top.belief)) : "";
       sourcePanel.insertAdjacentHTML("beforeend",
         '<div class="flagbox" style="background:rgba(245,206,143,.14);border-left-color:var(--warn)">' +
         "<b>Flag a belief × source pattern to marketing.</b> Stores a row only — nothing is sent externally.</div>" +
         '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">' +
-        '<button type="button" id="fh-flag-mkt" style="font-family:var(--sans);font-size:12.5px;padding:7px 13px;border:1px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:7px;cursor:pointer">Flag to marketing</button>' +
-        '<button type="button" id="fh-recordings-jump" style="font-family:var(--sans);font-size:12.5px;padding:7px 13px;border:1px solid var(--line);background:var(--paper);border-radius:7px;cursor:pointer">Today\'s recordings</button>' +
+        (canFlag
+          ? '<button type="button" id="fh-flag-mkt" style="font-family:var(--sans);font-size:var(--fs-body);padding:7px 13px;border:1px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:7px;cursor:pointer"></button>'
+          : "") +
+        '<button type="button" id="fh-recordings-jump" style="font-family:var(--sans);font-size:var(--fs-body);padding:7px 13px;border:1px solid var(--line);background:var(--paper);border-radius:7px;cursor:pointer">Today\'s recordings</button>' +
         "</div>");
       var btn = $("#fh-flag-mkt");
-      if (btn) btn.addEventListener("click", flagMarketing);
+      if (btn) {
+        btn.textContent = flagLabel;
+        btn.addEventListener("click", flagMarketing);
+      }
       var jump = $("#fh-recordings-jump");
       if (jump) jump.addEventListener("click", function () {
         var el = document.getElementById("fh-recordings");

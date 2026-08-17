@@ -16,6 +16,7 @@ import {
   clockIn,
   clockOut,
   currentShift,
+  listOpenRoster,
   autoCloseStale,
   ShiftError,
   STALE_SHIFT_HOURS,
@@ -157,6 +158,18 @@ test("currentShift considers only open shifts and returns a deterministic one", 
 
 test("currentShift: a missing staff id is refused", async () => {
   await assert.rejects(() => currentShift(stubDb(), {}), ShiftError);
+});
+
+test("listOpenRoster excludes demo staff the same way sales-floor does", async () => {
+  const db = stubDb({ rows: [] });
+  await listOpenRoster(db, { orgId: ORG });
+  assert.match(db.calls[0].sql, /COALESCE\(s\.is_demo,\s*false\)\s*=\s*false/);
+  assert.match(db.calls[0].sql, /ended_at IS NULL/);
+  assert.deepEqual(db.calls[0].params, [ORG]);
+});
+
+test("listOpenRoster: a missing org id is refused", async () => {
+  await assert.rejects(() => listOpenRoster(stubDb(), {}), ShiftError);
 });
 
 // --- autoCloseStale ----------------------------------------------------------

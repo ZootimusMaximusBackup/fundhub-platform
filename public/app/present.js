@@ -283,7 +283,7 @@
     }).join("");
   }
   function unavail() {
-    return '<div class="unavail"><span class="mono">Engine data unavailable</span><p class="sub" style="margin-top:6px">No UnderwriteIQ payload is on this contact yet. Nothing here is guessed.</p></div>';
+    return '<div class="unavail"><span class="mono">Your numbers are not on this file yet</span><p class="sub" style="margin-top:6px">Nothing here is guessed.</p></div>';
   }
   function reasonsList(d, withPlan) {
     return (d.reasons || []).map(function (pair, i) {
@@ -307,7 +307,7 @@
     var needsEngine = c !== "S-01" && c !== "S-02" && c !== "S-03" && c !== "S-04" && c !== "S-05" && c !== "S-06";
 
     if (c === "S-07" && !d.available) {
-      return slide("S-07", "Your results", kicker("Assessment") + h1("Engine data unavailable") + sub("The UnderwriteIQ payload is not on this contact yet. No amounts or scores are shown."));
+      return slide("S-07", "Your results", kicker("Assessment") + h1("Your numbers are not on this file yet.") + sub("Nothing here is guessed. No amounts or scores are shown."));
     }
 
     if (c === "S-01") {
@@ -634,7 +634,7 @@
       if (showEngine) {
         var beliefs = Object.keys(state.checks).filter(function (k) { return state.checks[k]; }).length;
         html += '<div style="border-top:1px solid var(--line);padding-top:9px"><span class="mono">Engine data</span><div style="margin-top:5px;font-family:var(--mono);font-size:10px;color:var(--gray);line-height:1.6">';
-        if (!d.available) html += "<div>engine data unavailable</div>";
+        if (!d.available) html += "<div>Your numbers are not on this file yet</div>";
         else {
           html += "<div>" + esc(state.tier || "—") + (state.edu ? " · route EDU" : state.forceRepair ? " · DESCENT" : "") + " · " + money(d.total) + " · " + dash(d.fico.ex) + "/" + dash(d.fico.tu) + "/" + dash(d.fico.eq) + "</div>";
           html += "<div>afterFix " + money(d.afterFix) + " · beliefs " + beliefs + "/7" + (state.temp > 0 ? " · temp " + state.temp + "/10" : "") + "</div>";
@@ -668,7 +668,7 @@
     var dots = DECK.map(function (s, i) { return '<i class="' + (i <= state.idx ? "on" : "") + '"></i>'; }).join("");
     root.innerHTML =
       '<div class="topbar"><span class="mono">' + esc((state.survey && state.survey.name) || "Present") + "</span>" +
-      (state.engine && !state.engine.available ? '<span class="mono" style="color:var(--gray)">engine data unavailable</span>' : "") +
+      (state.engine && !state.engine.available ? '<span class="mono" style="color:var(--gray)">Your numbers are not on this file yet</span>' : "") +
       '<div class="sp"></div><button type="button" class="btn-ghost" data-act="client-only">' +
       (state.clientOnly ? "Show cockpit" : "Client screen only") + "</button></div>" +
       '<div class="stage"><div class="client' + (state.clientOnly ? " solo" : "") + '">' + clientSlide() +

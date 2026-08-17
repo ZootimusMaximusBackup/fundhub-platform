@@ -6,8 +6,14 @@ import {
   filterCloserRoster,
   isBlockedCloserIdentity,
   isOwnerSetCloser,
+  nyDateString,
   OWNER_SET_CLOSER
 } from "./metrics.mjs";
+
+test("nyDateString is YYYY-MM-DD in America/New_York", () => {
+  assert.match(nyDateString(new Date("2026-08-17T16:00:00.000Z")), /^\d{4}-\d{2}-\d{2}$/);
+  assert.equal(nyDateString(new Date("2026-08-17T16:00:00.000Z")), "2026-08-17");
+});
 
 test("owner-set closer is Chris Stanbridge", () => {
   assert.equal(OWNER_SET_CLOSER.name, "Chris Stanbridge");

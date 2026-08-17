@@ -207,6 +207,13 @@ test("closer-call.js does not paint builder notes", () => {
   assert.ok(!/Use \/api\/read/.test(js));
 });
 
+test("calendar.html clock and Then rail use America/New_York and skip past due_at", () => {
+  const html = fs.readFileSync(path.join(APP, "calendar.html"), "utf8");
+  assert.ok(/timeZone:\s*["']America\/New_York["']/.test(html), "calendar clock must pin America/New_York");
+  assert.ok(/timeZoneName:\s*["']short["']/.test(html), "calendar clock must label EDT/EST");
+  assert.ok(/getTime\(\)\s*>\s*nowMs/.test(html), "Then rail and dated-later must filter after now");
+});
+
 test("calendar, template-editor, and hiring do not ship furniture names", () => {
   const FURNITURE = /Jordan Blake|Marcus Webb|Nina Torres|Carlos Bettencourt|Meredith Yao/;
   for (const file of ["calendar.html", "template-editor.html", "hiring.html"]) {

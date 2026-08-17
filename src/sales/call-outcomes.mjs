@@ -23,6 +23,22 @@ export class CallOutcomeError extends Error {
 
 const PAID = `status IN ('paid','succeeded','complete','completed')`;
 
+const CHECKLIST_KEYS = [
+  "call_recorded",
+  "personal_guarantee",
+  "month_14_cliff",
+  "bank_decides"
+];
+
+function normalizeChecklist(raw) {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const out = {};
+  for (const k of CHECKLIST_KEYS) {
+    out[k] = raw[k] === true;
+  }
+  return out;
+}
+
 /**
  * Resolve cash for a deposit/downsell from the transaction record.
  * Prefer an explicit transactionId; else the latest paid tx for the client
@@ -84,7 +100,8 @@ export async function logCallOutcome(db, input) {
     transactionId = null,
     recordingUrl = null,
     durationSeconds = null,
-    notes = null
+    notes = null,
+    checklist = null
   } = input || {};
 
   if (!orgId) throw new CallOutcomeError("orgId is required", { status: 403, code: "forbidden" });
@@ -143,6 +160,13 @@ export async function logCallOutcome(db, input) {
     orgId, clientId, transactionId, outcome
   });
 
+  const checks = normalizeChecklist(checklist);
+  let noteText = notes == null ? "" : String(notes);
+  if (checks) {
+    noteText = (noteText ? noteText + "\n" : "") + "checklist:" + JSON.stringify(checks);
+  }
+  noteText = noteText ? noteText.slice(0, 4000) : null;
+
   const res = await db.query(
     `INSERT INTO call_outcomes (
         org_id, client_id, staff_id, task_id, booking_ref,
@@ -159,7 +183,7 @@ export async function logCallOutcome(db, input) {
       outcome, beliefFailed, cash.cashCollectedCents, cash.transactionId,
       recordingUrl || null,
       durationSeconds == null ? null : Number(durationSeconds),
-      notes == null ? null : String(notes).slice(0, 4000)
+      noteText
     ]
   );
 
@@ -239,8 +263,20 @@ export function presentOutcome(row) {
     recording_url: row.recording_url,
     duration_seconds: row.duration_seconds,
     notes: row.notes,
+    checklist: row.checklist || checklistFromNotes(row.notes),
     logged_at: row.logged_at
   };
+}
+
+function checklistFromNotes(notes) {
+  if (!notes || typeof notes !== "string") return null;
+  const i = notes.lastIndexOf("checklist:");
+  if (i < 0) return null;
+  try {
+    return normalizeChecklist(JSON.parse(notes.slice(i + 10)));
+  } catch (e) {
+    return null;
+  }
 }
 
 export async function createMarketingFlag(db, {

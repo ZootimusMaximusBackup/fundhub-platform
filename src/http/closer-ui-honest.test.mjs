@@ -22,6 +22,11 @@ test("closer-dashboard.html default markup has no sample people", () => {
   assert.match(html, /Open from a client\./);
   assert.match(html, /id="whoName"/);
   assert.match(html, /\/api\/auth\/session/);
+  assert.match(html, /\.calc-grid\[hidden\]/);
+  assert.match(html, /class="stat-tiles" hidden/);
+  assert.match(html, /id="calcClientName"/);
+  assert.match(html, /FHData\.read\("closer-call"/);
+  assert.match(html, /FHData\.read\("deal-math"/);
 });
 
 test("closer-dashboard.html binds live clock and session, not a sample who", () => {

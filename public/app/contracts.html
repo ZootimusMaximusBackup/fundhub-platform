@@ -205,8 +205,8 @@ tr.sel td{background:rgba(169,198,232,.13)}
 
     <div class="content">
       <div class="stats">
-        <div class="stat"><div class="eyebrow">CT-00 <span class="sep">/</span> WORDINGS</div><div class="sv" id="kTpl">—</div><div class="sd">wordings in use</div></div>
         <div class="stat"><div class="eyebrow">CT-00 <span class="sep">/</span> WAITING</div><div class="sv" id="kOut">—</div><div class="sd">sent, not signed yet</div></div>
+        <div class="stat"><div class="eyebrow">CT-00 <span class="sep">/</span> WORDINGS</div><div class="sv" id="kTpl">—</div><div class="sd">wordings in use</div></div>
         <div class="stat"><div class="eyebrow">CT-00 <span class="sep">/</span> SIGNED</div><div class="sv" id="kSigned">—</div><div class="sd">signed and on file</div></div>
         <div class="stat"><div class="eyebrow">CT-00 <span class="sep">/</span> DRAFTS</div><div class="sv" id="kDraft">—</div><div class="sd">started, not sent</div></div>
       </div>
@@ -214,8 +214,7 @@ tr.sel td{background:rgba(169,198,232,.13)}
       <div class="card" id="explainCard">
         <div class="card-hd"><span class="badge b-info">How this works</span></div>
         <div class="card-bd note">
-          <p><strong>This page is for writing the words.</strong> Make a wording, upload a PDF, or take one out of use. That is company work, not a send to a client.</p>
-          <p style="margin-top:8px"><strong>Send from the call.</strong> Open Present or the call cockpit for that person. Pick a wording, press Send, then copy the sign link. An email also goes if mail is on.</p>
+          <p><strong>Send from the call.</strong> Open Present or the call cockpit for that person. Pick a wording, press Send, then copy the sign link. An email also goes if mail is on.</p>
           <p style="margin-top:8px"><strong>The words lock when they go out.</strong> After that nobody can change them. If the stored copy is altered, the client's page refuses to accept a signature and says so.</p>
         </div>
       </div>
@@ -1034,6 +1033,8 @@ window.dispatchEvent(new Event("pdfjs-ready"));
      Inngest is not switched on, so this button is how it happens today. Same
      function either way. */
   $("btnRemind").onclick = function () {
+    var n = $("kOut").textContent;
+    if (!confirm("Email everyone who has not signed yet (" + n + " people) and put them on the follow-up list?")) return;
     $("btnRemind").disabled = true;
     $("btnRemind").textContent = "sending…";
     FHData.write("/api/contracts", { action: "run_reminders" }).then(function (res) {

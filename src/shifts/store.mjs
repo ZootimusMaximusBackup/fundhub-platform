@@ -230,6 +230,7 @@ export async function listOpenRoster(db, { orgId } = {}) {
        JOIN staff s ON s.id = sh.staff_id
       WHERE sh.org_id = $1
         AND sh.ended_at IS NULL
+        AND COALESCE(s.is_demo, false) = false
       ORDER BY s.name ASC`,
     [orgId]
   );

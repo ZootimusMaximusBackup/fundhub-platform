@@ -99,13 +99,15 @@ td:last-child{text-align:right;font-variant-numeric:tabular-nums}
 .disc input{margin-top:2px;accent-color:#0A0A0A}
 .never{margin-top:9px;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--alert);line-height:1.7}
 
-.logbar{border-top:1px solid var(--line);background:var(--paper);padding:15px 22px;position:sticky;bottom:0;z-index:20}
+.logbar{border-top:1px solid var(--line);background:var(--paper);padding:15px 72px 15px 22px;position:sticky;bottom:0;z-index:20}
 .logrow{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px}
 .logrow .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);flex:0 0 auto;margin-right:4px}
 button{font-family:var(--sans);font-size:12.5px;padding:7px 13px;border:1px solid var(--line);background:var(--paper);border-radius:7px;cursor:pointer;color:var(--ink);transition:border-color .12s,background .12s}
 button:hover{border-color:var(--gray2);background:var(--soft)}
 button.k{border-color:var(--ink);background:var(--ink);color:var(--paper)}
 button.k:hover{background:var(--ink2)}
+button.k:disabled{border-color:var(--line);background:var(--paper);color:var(--gray);cursor:not-allowed}
+button.k:disabled:hover{background:var(--paper);border-color:var(--line)}
 button .hk{font-family:var(--mono);font-size:9.5px;color:var(--gray2);margin-right:6px}
 button.k .hk{color:var(--gray2)}
 .foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--gray2)}
@@ -249,8 +251,8 @@ button.k .hk{color:var(--gray2)}
     <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
       <span class="chip wip" id="fh-temp-chip" hidden><span class="cd"></span>—</span>
       <button type="button" class="k" id="fh-join" disabled title="No call link on this appointment">Join call</button>
-      <button type="button" class="k" id="fh-present" hidden>Present</button>
-      <button type="button" class="k" id="fh-send-contract" hidden>Send contract</button>
+      <button type="button" id="fh-present" hidden>Present</button>
+      <button type="button" id="fh-send-contract" hidden>Send contract</button>
     </div>
   </div>
 
@@ -260,7 +262,7 @@ button.k .hk{color:var(--gray2)}
     <select id="fh-contract-tpl" style="width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:13px"></select>
     <div id="fh-contract-blanks"></div>
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-      <button type="button" class="k" id="fh-contract-go">Send</button>
+      <button type="button" id="fh-contract-go">Send</button>
       <button type="button" id="fh-contract-copy" disabled>Copy link</button>
     </div>
     <input id="fh-contract-link" readonly style="display:none;margin-top:10px;width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-family:var(--mono);font-size:11px;background:var(--soft)">

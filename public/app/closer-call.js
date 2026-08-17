@@ -390,7 +390,13 @@
         outcome: state.outcome,
         belief_failed: state.belief === "none" ? null : state.belief,
         task_id: state.taskId,
-        transaction_id: state.transactionId
+        transaction_id: state.transactionId,
+        checklist: {
+          call_recorded: !!(document.getElementById("d1") && document.getElementById("d1").checked),
+          personal_guarantee: !!(document.getElementById("d2") && document.getElementById("d2").checked),
+          month_14_cliff: !!(document.getElementById("d3") && document.getElementById("d3").checked),
+          bank_decides: !!(document.getElementById("d4") && document.getElementById("d4").checked)
+        }
       };
       var r = await window.FHData.write("/api/call-outcomes", body);
       if (!r.ok) {
