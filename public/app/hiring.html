@@ -2572,6 +2572,7 @@ function apiGet(path){
 function mapCandidateRow(r){
   var c = Object.assign({}, r);
   c.id = r.application_id;
+  c.flags = r.flags || [];
   c.needs_human = (r.flags && r.flags.length > 0) || r.average === null || r.average === undefined;
   return c;
 }

@@ -748,7 +748,7 @@
     </div>
     <div class="topbar-right">
       <div class="org-pill">Org: Fundhub</div>
-      <div class="clock" id="clock">—</div>
+      <div class="clock" id="clock"></div>
       <div class="live-pill"><span class="live-dot"></span>LIVE</div>
     </div>
   </header>
@@ -760,7 +760,7 @@
       <div class="pane-head">
         <div class="pane-title eyebrow">CC-01 / Pipeline Summary</div>
         <div class="pane-head-right">
-          <div class="pane-meta">— active clients · — moved forward today · counts only</div>
+          <div class="pane-meta" id="cc-pipeline-meta">counts only</div>
           <a class="pane-open" href="pipeline.html">Open the board ↗</a>
         </div>
       </div>
@@ -768,127 +768,84 @@
 
         <div class="holds-panel">
           <div class="eyebrow" style="margin-bottom:8px">CC-02 / Holds</div>
-          <div class="holds-panel-head">
-            <div class="holds-panel-title">Holds — no holds feed yet</div>
-            <div class="holds-panel-oldest">Oldest: <b>—</b></div>
-          </div>
-          <div class="holds-summary-row">
-            <div class="hold-chip crit off"><span class="dot"></span>Fraud Alert <span class="count">0</span></div>
-            <div class="hold-chip warn off"><span class="dot"></span>Missing Documents <span class="count">0</span></div>
-            <div class="hold-chip warn off"><span class="dot"></span>Awaiting CRS <span class="count">0</span></div>
-            <div class="hold-chip crit off"><span class="dot"></span>Internal Review <span class="count">0</span></div>
-            <div class="hold-chip neutral off"><span class="dot"></span>New Inquiries <span class="count">0</span></div>
-          </div>
-          <div class="holds-list"></div>
-          <div class="holds-empty on" id="holdsEmpty">No holds feed yet</div>
+          <div class="holds-empty on" id="holdsEmpty">No holds. A hold will show here when a file is waiting.</div>
         </div>
 
         <div class="rail">
           <div class="rail-head">
             <div class="rail-name"><button class="rail-toggle" title="Collapse rail">▾</button><span class="rail-code">R-01</span>Sales</div>
             <div class="rail-head-right">
-              <div class="rail-total">—</div>
+              <div class="rail-total"></div>
               <a class="rail-open" href="pipeline.html">Open board ↗</a>
             </div>
           </div>
-          <div class="stage-row">
-            <div class="stage-chip live"><div class="stage-label">New Lead</div><div class="stage-count">—</div></div>
-            <div class="stage-chip"><div class="stage-label">Survey Completed</div><div class="stage-count">—</div></div>
-            <div class="stage-chip"><div class="stage-label">Booked</div><div class="stage-count">—</div></div>
-            <div class="stage-chip live"><div class="stage-label">Diagnostic Paid</div><div class="stage-count">—</div><div class="stage-dollar">—</div></div>
-            <div class="stage-chip"><div class="stage-label">Decision Rendered</div><div class="stage-count">—</div></div>
-          </div>
+          <div class="stage-row"></div>
         </div>
 
         <div class="rail">
           <div class="rail-head">
             <div class="rail-name"><button class="rail-toggle" title="Collapse rail">▾</button><span class="rail-code">R-02</span>Funding: Card Stacking</div>
             <div class="rail-head-right">
-              <div class="rail-total">—</div>
+              <div class="rail-total"></div>
               <a class="rail-open" href="pipeline.html">Open board ↗</a>
             </div>
           </div>
-          <div class="stage-row">
-            <div class="stage-chip"><div class="stage-label">Docs Received</div><div class="stage-count">—</div></div>
-            <div class="stage-chip"><div class="stage-label">Round Started</div><div class="stage-count">—</div></div>
-            <div class="stage-chip"><div class="stage-label">Round Submitted</div><div class="stage-count">—</div></div>
-            <div class="stage-chip live"><div class="stage-label">Round Approved</div><div class="stage-count">—</div><div class="stage-dollar">—</div></div>
-            <div class="stage-chip live"><div class="stage-label">Round Funded</div><div class="stage-count">—</div><div class="stage-dollar">—</div></div>
-            <div class="stage-chip"><div class="stage-label">File Finalized</div><div class="stage-count">—</div></div>
-          </div>
+          <div class="stage-row"></div>
         </div>
 
         <div class="rail">
           <div class="rail-head">
             <div class="rail-name"><button class="rail-toggle" title="Collapse rail">▾</button><span class="rail-code">R-03</span>Funding: Alt-Fin (Lendflow)</div>
             <div class="rail-head-right">
-              <div class="rail-total">—</div>
+              <div class="rail-total"></div>
               <a class="rail-open" href="pipeline.html">Open board ↗</a>
             </div>
           </div>
-          <div class="stage-row">
-            <div class="stage-chip"><div class="stage-label">Docs Received</div><div class="stage-count">—</div></div>
-            <div class="stage-chip"><div class="stage-label">Round Started</div><div class="stage-count">—</div></div>
-            <div class="stage-chip"><div class="stage-label">Round Submitted</div><div class="stage-count">—</div></div>
-            <div class="stage-chip"><div class="stage-label">Round Approved</div><div class="stage-count">—</div></div>
-            <div class="stage-chip live"><div class="stage-label">Round Funded</div><div class="stage-count">—</div><div class="stage-dollar">—</div></div>
-          </div>
+          <div class="stage-row"></div>
         </div>
 
         <div class="rail">
           <div class="rail-head">
             <div class="rail-name"><button class="rail-toggle" title="Collapse rail">▾</button><span class="rail-code">R-04</span>Optimization (Repair) Rounds</div>
             <div class="rail-head-right">
-              <div class="rail-total">—</div>
+              <div class="rail-total"></div>
               <a class="rail-open" href="pipeline.html">Open board ↗</a>
             </div>
           </div>
-          <div class="stage-row">
-            <div class="stage-chip"><div class="stage-label">Docs Received</div><div class="stage-count">—</div></div>
-            <div class="stage-chip"><div class="stage-label">Round Started</div><div class="stage-count">—</div></div>
-            <div class="stage-chip"><div class="stage-label">Round Submitted</div><div class="stage-count">—</div></div>
-            <div class="stage-chip"><div class="stage-label">Round Approved</div><div class="stage-count">—</div></div>
-            <div class="stage-chip"><div class="stage-label">File Finalized</div><div class="stage-count">—</div></div>
-          </div>
+          <div class="stage-row"></div>
         </div>
 
         <div class="rail">
           <div class="rail-head">
             <div class="rail-name"><button class="rail-toggle" title="Collapse rail">▾</button><span class="rail-code">R-05</span>Inquiry Removal</div>
             <div class="rail-head-right">
-              <div class="rail-total">—</div>
+              <div class="rail-total"></div>
               <a class="rail-open" href="pipeline.html">Open board ↗</a>
             </div>
           </div>
-          <div class="stage-row">
-            <div class="stage-chip"><div class="stage-label">New Lead</div><div class="stage-count">—</div></div>
-            <div class="stage-chip live"><div class="stage-label">Bureau Processing</div><div class="stage-count">—</div></div>
-          </div>
+          <div class="stage-row"></div>
         </div>
 
         <div class="rail">
           <div class="rail-head">
             <div class="rail-name"><button class="rail-toggle" title="Collapse rail">▾</button><span class="rail-code">R-06</span>AR + Collections</div>
             <div class="rail-head-right">
-              <div class="rail-total">—</div>
+              <div class="rail-total"></div>
               <a class="rail-open" href="pipeline.html">Open board ↗</a>
             </div>
           </div>
-          <div class="stage-row">
-            <div class="stage-chip"><div class="stage-label">Invoice Sent</div><div class="stage-count">—</div></div>
-            <div class="stage-chip live"><div class="stage-label">Paid</div><div class="stage-count">—</div><div class="stage-dollar">—</div></div>
-          </div>
+          <div class="stage-row"></div>
         </div>
 
         <div class="rail">
           <div class="rail-head">
             <div class="rail-name"><button class="rail-toggle" title="Collapse rail">▾</button><span class="rail-code">R-07</span>Affiliates + Hiring</div>
             <div class="rail-head-right">
-              <div class="rail-total">—</div>
+              <div class="rail-total"></div>
               <a class="rail-open" href="pipeline.html">Open board ↗</a>
             </div>
           </div>
-          <div class="empty-rail">No affiliate referrals or applicant activity yet today — first ones typically land after 10am.</div>
+          <div class="empty-rail">No affiliate referrals or applicants in this summary yet.</div>
         </div>
 
         <div class="feed-title eyebrow">CC-03 / Live Feed<span class="feed-filters"><button class="ffilter on" data-f="all">All</button><button class="ffilter" data-f="money">Money</button><button class="ffilter" data-f="move">Moves</button><button class="ffilter" data-f="agent">Agents</button><button class="ffilter" data-f="hold">Holds</button></span></div>
@@ -1115,32 +1072,32 @@
           <div class="kpi-grid">
             <div class="kpi-tile">
               <div class="kpi-label">Cash Collected Today</div>
-              <div class="kpi-value">—</div>
+              <div class="kpi-value"></div>
               <div class="kpi-sub">no live source yet</div>
             </div>
             <div class="kpi-tile">
               <div class="kpi-label">Pipeline Movement</div>
-              <div class="kpi-value">—</div>
+              <div class="kpi-value"></div>
               <div class="kpi-sub">stage changes today</div>
             </div>
             <div class="kpi-tile">
               <div class="kpi-label">Close Rate (30d)</div>
-              <div class="kpi-value">—</div>
+              <div class="kpi-value"></div>
               <div class="kpi-sub">booked → decision rendered</div>
             </div>
             <div class="kpi-tile">
               <div class="kpi-label">Show Rate</div>
-              <div class="kpi-value">—</div>
+              <div class="kpi-value"></div>
               <div class="kpi-sub">booked calls kept, 7d avg</div>
             </div>
             <div class="kpi-tile">
               <div class="kpi-label">Cost / Funded Client</div>
-              <div class="kpi-value">—</div>
+              <div class="kpi-value"></div>
               <div class="kpi-sub">needs ad spend (migration 038)</div>
             </div>
             <div class="kpi-tile">
               <div class="kpi-label">Funded Today</div>
-              <div class="kpi-value">—</div>
+              <div class="kpi-value"></div>
               <div class="kpi-sub">Card Stacking + Alt-Fin combined</div>
             </div>
           </div>
@@ -1193,7 +1150,7 @@
     <span class="ghost"></span>
     <span>fundhub-cc · v1</span>
     <span>org: fundhub</span>
-    <span>— active clients</span>
+    <span id="cc-active-clients">active clients</span>
     <span>a read-only summary — go to the board to change anything</span>
     <span class="nominal"><span class="pulse"></span>systems nominal · fundhub.ai</span>
   </footer>
@@ -1334,7 +1291,9 @@ document.querySelectorAll('.rail-toggle').forEach(function(t){
     for (var i = 0; i < tiles.length && i < map.length; i++) {
       var val = tiles[i].querySelector(".kpi-value");
       var sub = tiles[i].querySelector(".kpi-sub");
-      if (val) val.textContent = map[i].value || "—";
+      var v = map[i].value;
+      if (v == null || v === "" || v === "—") v = "0";
+      if (val) val.textContent = String(v);
       if (sub && map[i].sub) sub.textContent = map[i].sub;
     }
   }
@@ -1343,9 +1302,95 @@ document.querySelectorAll('.rail-toggle').forEach(function(t){
     FHData.wire(FHData.kpis("today"), "command center KPIs", function (data) {
       if (!data || !data.display) return null;
       paintKpis(data.display, data.kpis);
+      if (data.display.pipeline_movement != null && data.display.pipeline_movement !== "") {
+        movedToday = data.display.pipeline_movement;
+        paintPipelineMeta();
+      }
       return "live KPIs · cash " + data.display.cash +
              " · funded " + data.display.funded;
     });
+  }
+
+  var RAIL_KEYS = {
+    "R-01": "sales",
+    "R-02": "funding_card_stacking",
+    "R-03": "funding_altfin",
+    "R-04": "optimization",
+    "R-05": "inquiry_removal",
+    "R-06": "ar_collections"
+  };
+
+  function usd(n) {
+    return "$" + Math.round(n || 0).toLocaleString("en-US");
+  }
+
+  var activeSum = 0;
+  var movedToday = null;
+
+  function paintPipelineMeta() {
+    var meta = document.getElementById("cc-pipeline-meta");
+    var foot = document.getElementById("cc-active-clients");
+    var parts = [activeSum + " active clients"];
+    if (movedToday != null) parts.push(movedToday + " moved forward today");
+    parts.push("counts only");
+    if (meta) meta.textContent = parts.join(" · ");
+    if (foot) foot.textContent = activeSum + " active clients";
+  }
+
+  function paintRail(railEl, stages, ok) {
+    var row = railEl.querySelector(".stage-row");
+    var totalEl = railEl.querySelector(".rail-total");
+    var list = stages || [];
+    var i, s, html, railCount;
+    if (!ok) {
+      if (row) row.innerHTML = '<div class="empty-rail">Could not load this board.</div>';
+      if (totalEl) totalEl.textContent = "0";
+      return 0;
+    }
+    if (!list.length) {
+      if (row) row.innerHTML = '<div class="empty-rail">No stages on this board yet.</div>';
+      if (totalEl) totalEl.textContent = "0";
+      return 0;
+    }
+    html = "";
+    railCount = 0;
+    for (i = 0; i < list.length; i++) {
+      s = list[i];
+      railCount += s.count || 0;
+      html += '<div class="stage-chip' + ((s.count || 0) > 0 ? " live" : "") + '">' +
+        '<div class="stage-label">' + esc(s.name || s.key) + '</div>' +
+        '<div class="stage-count">' + String(s.count || 0) + '</div>' +
+        (s.amount ? '<div class="stage-dollar">' + usd(s.amount) + '</div>' : '') +
+        '</div>';
+    }
+    if (row) row.innerHTML = html;
+    if (totalEl) totalEl.textContent = String(railCount);
+    return railCount;
+  }
+
+  if (typeof FHData !== "undefined" && FHData.pipeline) {
+    var queue = [];
+    var rails = document.querySelectorAll(".rail");
+    var r, codeEl, code, key;
+    for (r = 0; r < rails.length; r++) {
+      codeEl = rails[r].querySelector(".rail-code");
+      code = codeEl ? codeEl.textContent.trim() : "";
+      key = RAIL_KEYS[code];
+      if (key) queue.push({ el: rails[r], key: key });
+    }
+    function nextRail() {
+      if (!queue.length) { paintPipelineMeta(); return; }
+      var item = queue.shift();
+      FHData.pipeline(item.key).then(function (res) {
+        if (res && res.ok && res.data && res.data.stages) {
+          activeSum += paintRail(item.el, res.data.stages, true);
+        } else {
+          paintRail(item.el, [], false);
+        }
+        nextRail();
+      });
+    }
+    nextRail();
   }
 
   var STATE = {

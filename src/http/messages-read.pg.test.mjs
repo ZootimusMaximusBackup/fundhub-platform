@@ -62,6 +62,26 @@ test("messages: a missing conversation_id is 400, never every message in the com
   assert.equal(calls.length, 0, "a request with no conversation_id reached the database");
 });
 
+test("messages: status=blocked without conversation_id is an org-scoped blocked list", async () => {
+  const { r, calls } = await drive({ status: "blocked", limit: "30" });
+  assert.equal(r.code, 200);
+  assert.equal(r.body.ok, true);
+  assert.ok(Array.isArray(r.body.items), "blocked list must return items, even if empty");
+  assert.equal(calls.length, 1);
+  assert.ok(calls[0].params.includes(ORG), "the session's org was not bound");
+  assert.ok(calls[0].params.includes("blocked"), "status was not passed as a bind parameter");
+  assert.match(calls[0].sql, /m\.org_id\s*=\s*\$\d+/, "the query has no org filter");
+  assert.match(calls[0].sql, /m\.status\s*=\s*\$\d+/, "the query has no status bind");
+  assert.ok(!calls[0].sql.includes("'blocked'"), "status was interpolated into the SQL text");
+});
+
+test("messages: a status other than blocked still requires conversation_id", async () => {
+  const { r, calls } = await drive({ status: "queued" });
+  assert.equal(r.code, 400);
+  assert.equal(r.body.error, "invalid_parameter");
+  assert.equal(calls.length, 0, "a non-blocked status without conversation_id reached the database");
+});
+
 test("messages: a malformed conversation_id is 400 rather than a 500 out of Postgres", async () => {
   for (const bad of ["zzz", "123", "not-a-uuid", "", "   ", "00000000-0000-4000-8000-00000000000"]) {
     const { r, calls } = await drive({ conversation_id: bad });

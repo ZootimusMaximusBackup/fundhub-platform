@@ -121,7 +121,7 @@ test("affiliate endpoint refuses staff roles", async () => {
   await affiliateHandler(
     { method: "POST", body: { question: "kit" } },
     res,
-    { requireAuth: async () => ({ id: "s1", org_id: "org-1", role: "closer" }) }
+    { requirePrincipal: async () => ({ kind: "staff", orgId: "org-1", role: "closer" }) }
   );
   assert.equal(res.statusCode, 403);
 });
@@ -132,7 +132,7 @@ test("affiliate endpoint uses allowlist retrieve and rejects non-affiliate chunk
     { method: "POST", body: { question: "partner kit" } },
     res,
     {
-      requireAuth: async () => ({ id: "a1", org_id: "org-1", role: "affiliate" }),
+      requirePrincipal: async () => ({ kind: "affiliate", orgId: "org-1", role: "affiliate" }),
       retrieveAffiliateChunks: async (_db, args) => {
         assert.equal(args.role, "affiliate");
         return {
@@ -161,7 +161,7 @@ test("affiliate endpoint fails closed if a non-affiliate chunk is returned", asy
     { method: "POST", body: { question: "secret" } },
     res,
     {
-      requireAuth: async () => ({ id: "a1", org_id: "org-1", role: "partner" }),
+      requirePrincipal: async () => ({ kind: "partner", orgId: "org-1", role: "partner" }),
       retrieveAffiliateChunks: async () => ({
         ok: true,
         chunks: [{ fileName: "cap-table.pdf", content: "secret", accessTier: "owner" }]

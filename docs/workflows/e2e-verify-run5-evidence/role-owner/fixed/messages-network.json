@@ -1,0 +1,16 @@
+{
+  "ticket": 4,
+  "email": "owner@fundhub.ai",
+  "base": "http://localhost:8888",
+  "ranAt": "2026-08-17T05:06:57.604Z",
+  "fetchGet": null,
+  "networkHits": [],
+  "panel": {
+    "tableText": "CLIENT▲ CHANNEL▲ REASON▲ WHEN▲ No messages stopped by the compliance gate",
+    "hasLoading": false,
+    "hasEmpty": true,
+    "hasError": false
+  },
+  "proved": true,
+  "shot": "docs/workflows/e2e-verify-run5-evidence/role-owner/fixed/ops-admin-shot.png"
+}

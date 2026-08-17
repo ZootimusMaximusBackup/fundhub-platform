@@ -1,0 +1,120 @@
+{
+  "email": "owner@fundhub.ai",
+  "base": "http://localhost:8888",
+  "ranAt": "2026-08-17T04:55:46.750Z",
+  "loginOk": true,
+  "loginPosts": [
+    {
+      "status": 200,
+      "url": "/api/auth/login"
+    }
+  ],
+  "session": {
+    "hasToken": true,
+    "role": "owner"
+  },
+  "sawCandidatesRequest": true,
+  "candidates": {
+    "url": "/api/hiring/candidates?state=all&limit=200",
+    "status": 200,
+    "method": "GET",
+    "ok": true,
+    "itemCount": 0,
+    "flagsNullCount": 0
+  },
+  "candidatesHits": [
+    {
+      "url": "/api/hiring/candidates?state=all&limit=200",
+      "status": 503,
+      "method": "GET",
+      "ok": false,
+      "itemCount": 0,
+      "flagsNullCount": 0
+    },
+    {
+      "url": "/api/hiring/candidates?state=all&limit=200",
+      "status": 503,
+      "method": "GET",
+      "ok": false,
+      "itemCount": 0,
+      "flagsNullCount": 0
+    },
+    {
+      "url": "/api/hiring/candidates?state=all&limit=200",
+      "status": 503,
+      "method": "GET",
+      "ok": false,
+      "itemCount": 0,
+      "flagsNullCount": 0
+    },
+    {
+      "url": "/api/hiring/candidates?state=all&limit=200",
+      "status": 503,
+      "method": "GET",
+      "ok": false,
+      "itemCount": 0,
+      "flagsNullCount": 0
+    },
+    {
+      "url": "/api/hiring/candidates?state=all&limit=200",
+      "status": 200,
+      "method": "GET",
+      "ok": true,
+      "itemCount": 0,
+      "flagsNullCount": 0
+    },
+    {
+      "url": "/api/hiring/candidates?state=all&limit=200",
+      "status": 200,
+      "method": "GET",
+      "ok": true,
+      "itemCount": 0,
+      "flagsNullCount": 0
+    }
+  ],
+  "candidatesHitCount": 6,
+  "pageErrors": [
+    "Cannot read properties of undefined (reading 'label')"
+  ],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+  ],
+  "flagsLengthPageerror": false,
+  "ui": {
+    "url": "/app/hiring.html",
+    "title": "Fundhub — Hiring",
+    "footNote": "hr · api/hiring/* · read-only · org: fundhub",
+    "banner": "loading hiring…",
+    "loadingOnScreen": true,
+    "boardChildCount": 11,
+    "boardCardCount": 3,
+    "boardTextSample": "Applied1applied · sort_order 0DCDEMO Candidate — Juniper ValeCloser · inbound · platform_demoapplied Aug 05 · in stage -6d · status openvideoresumenot scoredrubric vno scoreadvisory — a human decides · scored by a personScreening1screening ",
+    "mappedFlags": [
+      {
+        "name": "DEMO Candidate — Juniper Vale",
+        "flagsIsArray": true,
+        "flagsLength": 0
+      },
+      {
+        "name": "DEMO Candidate — Cedar Holt",
+        "flagsIsArray": true,
+        "flagsLength": 0
+      },
+      {
+        "name": "DEMO Candidate — Maple Crest",
+        "flagsIsArray": true,
+        "flagsLength": 0
+      }
+    ]
+  },
+  "crashed": false,
+  "proved": true,
+  "shot": "docs/workflows/e2e-verify-run5-evidence/role-owner/fixed/hiring-shot.png"
+}

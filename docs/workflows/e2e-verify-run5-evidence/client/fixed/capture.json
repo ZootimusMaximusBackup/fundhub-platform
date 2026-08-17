@@ -1,0 +1,29 @@
+{
+  "email": "client@fundhub.ai",
+  "html": "local public/ (patched storeSession) ; API proxied to https://fundhub.ai",
+  "base": "http://127.0.0.1:64521",
+  "ranAt": "2026-08-17T04:41:54.476Z",
+  "loginOk": true,
+  "leftLoginUrl": "/app/client-portal.html",
+  "storage": {
+    "role": "client",
+    "hasToken": true,
+    "account": {
+      "kind": "client",
+      "clientId": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "name": "TEST — Client Role"
+    }
+  },
+  "landing": {
+    "greeting": "Welcome back, TEST",
+    "greetingSub": "Welcome to your Fundhub portal. Your call is next.",
+    "whoName": "TEST — Client Role",
+    "prequal": "—",
+    "banner": "live agreements · none yet · sample documents — not signed in for real data · live entitlements · 0 unlocked · 6 locked · live pre-qual · none yet",
+    "title": "Fundhub — Client Portal"
+  },
+  "sawPortalSummaryRequest": false,
+  "portalSummaryHitCount": 1,
+  "shot": "docs/workflows/e2e-verify-run5-evidence/client/fixed/01-landing.png",
+  "portalSummaryFile": "docs/workflows/e2e-verify-run5-evidence/client/fixed/portal-summary.json"
+}

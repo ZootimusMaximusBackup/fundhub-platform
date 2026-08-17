@@ -237,6 +237,10 @@ function storeSession(data, demoRole) {
   // paints, instead of drawing and then bouncing while the session resolves.
   if (role) localStorage.setItem("fh_role", String(role).trim().toLowerCase());
   else localStorage.removeItem("fh_role");
+  // The client portal reads fh_account.clientId. Login already returns that
+  // id on data.account; without writing it here the portal paints empty.
+  if (data.account) localStorage.setItem("fh_account", JSON.stringify(data.account));
+  else localStorage.removeItem("fh_account");
   try {
     if (demoRole) localStorage.setItem(DEMO_ROLE_KEY, demoRole);
     else localStorage.removeItem(DEMO_ROLE_KEY);

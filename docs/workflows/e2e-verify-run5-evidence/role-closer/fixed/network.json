@@ -1,0 +1,16 @@
+{
+  "email": "closer@fundhub.ai",
+  "base": "http://localhost:8888",
+  "ranAt": "2026-08-17T04:45:01.469Z",
+  "loginOk": true,
+  "landingUrl": "/dashboard.html",
+  "landingTitle": "FundHub — Closer Dashboard",
+  "shellUrl": "/app/pipeline.html",
+  "shellTitle": "Fundhub — Pipeline",
+  "storage": {
+    "role": "closer",
+    "hasToken": true
+  },
+  "demoModeRequests": [],
+  "note": "none — closer session never requested /api/demo/mode"
+}

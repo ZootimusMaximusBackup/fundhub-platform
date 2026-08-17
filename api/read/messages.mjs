@@ -1,13 +1,17 @@
 // GET /api/read/messages?conversation_id=<uuid> — one thread, both directions.
+// GET /api/read/messages?status=blocked — org-scoped blocked messages (no conversation_id).
 //
 // The other half of the staff reply inbox: api/read/inbox.mjs lists the threads,
 // this reads inside one. Every row `messages` holds for that conversation —
 // what the client sent us and what we sent them, in one list, because a thread
 // that shows only one side is not a conversation.
 //
-// conversation_id IS REQUIRED, for the same reason client_id is required on
-// api/read/conversations.mjs: "forgot the parameter" must never degrade into
-// "return every message in the company". The guard throws SQLSTATE 22P02 so
+// conversation_id IS REQUIRED unless status=blocked. "forgot the parameter"
+// must never degrade into "return every message in the company". The one extra
+// shape is status=blocked: an org-scoped list of messages the dispatcher already
+// marked blocked (ops-admin compliance gate). Any other status, or no status,
+// still requires conversation_id. status is bound as a parameter, never
+// interpolated. The guard throws SQLSTATE 22P02 so
 // readHandler's CLIENT_DATA_ERRORS branch turns it into a 400 — the same 400
 // Postgres itself would raise for a non-uuid against a uuid column, a
 // round-trip early. It runs inside fetch(), which is AFTER auth and the role
@@ -51,12 +55,40 @@ import { readHandler, ROLE_SETS, isUuid } from "../../src/http/read-api.mjs";
 export const run = readHandler({
   roles: ROLE_SETS.STAFF,
   fetch: (db, { limit, offset, query, staff }) => {
+    const blockedOnly = query.status === "blocked";
     const raw = query.conversation_id;
-    if (!isUuid(raw)) {
+    if (!blockedOnly && !isUuid(raw)) {
       throw Object.assign(
         new Error("conversation_id is required and must be a uuid"),
         { code: "22P02" }
       );
+    }
+
+    if (blockedOnly) {
+      return db.query(
+        `SELECT m.id,
+                m.conversation_id,
+                m.client_id,
+                m.direction,
+                m.channel,
+                m.rendered_body,
+                m.subject,
+                m.status,
+                m.provider,
+                m.blocked_reason,
+                m.last_error,
+                m.scheduled_at,
+                m.sender_staff_id,
+                s.name AS sender_name,
+                m.created_at
+           FROM messages m
+           LEFT JOIN staff s ON s.id = m.sender_staff_id
+          WHERE m.org_id = $3::uuid
+            AND m.status = $4
+          ORDER BY m.created_at DESC, m.id DESC
+          LIMIT $1 OFFSET $2`,
+        [limit + 1, offset, (staff && staff.org_id) || null, query.status]
+      ).then((r) => r.rows);
     }
 
     return db.query(

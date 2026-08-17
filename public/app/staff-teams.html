@@ -997,17 +997,17 @@ renderAll();
       };
     });
 
-    return applyMyShift(mapped).then(function () {
+    applyMyShift(mapped).then(function () {
       PEOPLE.length = 0;
       Array.prototype.push.apply(PEOPLE, mapped);
-      try { renderAll(); fillTeleSelect(); } catch (e) { return null; }
-      var selfRow = mapped.filter(function (p) { return p.self; })[0];
-      var consented = mapped.filter(function (p) { return p.consent === true; }).length;
-      return "live roster · " + rows.length + " staff" +
-             (selfRow ? (selfRow.clock ? " · you are clocked in" : " · you are clocked out") : " · signed-in user not on roster") +
-             " · consent " + consented + "/" + rows.length +
-             (unmapped.length ? " · " + unmapped.length + " role(s) outside the permission matrix" : "");
+      try { renderAll(); fillTeleSelect(); } catch (e) {}
     });
+    var selfRow = mapped.filter(function (p) { return p.self; })[0];
+    var consented = mapped.filter(function (p) { return p.consent === true; }).length;
+    return "live roster · " + rows.length + " staff" +
+           (selfRow ? (selfRow.clock ? " · you are clocked in" : " · you are clocked out") : " · signed-in user not on roster") +
+           " · consent " + consented + "/" + rows.length +
+           (unmapped.length ? " · " + unmapped.length + " role(s) outside the permission matrix" : "");
   });
   });
 })();

@@ -373,7 +373,7 @@
           <div class="section-title"><span><span class="av agent">CG</span> Compliance Gate — Messages It Stopped</span></div>
           <table class="admin" id="compliance-blocked-table">
             <tr><th>Client</th><th>Channel</th><th>Reason</th><th>When</th></tr>
-            <tr><td colspan="4" class="empty-note" style="border-bottom:none">Loading blocked messages…</td></tr>
+            <tr><td colspan="4" class="empty-note" style="border-bottom:none">No messages stopped by the compliance gate</td></tr>
           </table>
         </div>
 
@@ -857,25 +857,36 @@
     });
   }
 
-  // Compliance gate — messages with status blocked.
-  if (FHData.read) {
-    FHData.wire(FHData.read("messages", { status: "blocked", limit: 30 }), "compliance blocks", function (data) {
-      var table = document.getElementById("compliance-blocked-table");
-      if (!table) return null;
-      var rows = data.items || data.messages || [];
-      var html = "<tr><th>Client</th><th>Channel</th><th>Reason</th><th>When</th></tr>";
-      if (!rows.length) {
-        html += '<tr><td colspan="4" class="empty-note" style="border-bottom:none">No messages stopped by the compliance gate</td></tr>';
-      } else {
-        rows.slice(0, 15).forEach(function (r) {
-          html += "<tr><td>" + esc(r.client_name || r.client_id || "—") +
-            "</td><td>" + esc(r.channel || "—") +
-            "</td><td>" + esc(r.blocked_reason || r.status || "blocked") +
-            "</td><td class=\"mono\">" + esc(relTime(r.created_at)) + "</td></tr>";
-        });
-      }
+  // Compliance gate — always paint empty, rows, or error. Never leave Loading.
+  function paintCompliance(res) {
+    var table = document.getElementById("compliance-blocked-table");
+    if (!table) return;
+    var html = "<tr><th>Client</th><th>Channel</th><th>Reason</th><th>When</th></tr>";
+    if (!res || !res.ok) {
+      html += '<tr><td colspan="4" class="empty-note" style="border-bottom:none">Could not load stopped messages. Refresh this page.</td></tr>';
       table.innerHTML = html;
-      return "live compliance gate · " + rows.length + " blocked";
+      return;
+    }
+    var data = res.data || {};
+    var rows = data.items || data.messages || [];
+    if (!rows.length) {
+      html += '<tr><td colspan="4" class="empty-note" style="border-bottom:none">No messages stopped by the compliance gate</td></tr>';
+    } else {
+      rows.slice(0, 15).forEach(function (r) {
+        html += "<tr><td>" + esc(r.client_name || r.client_id || "—") +
+          "</td><td>" + esc(r.channel || "—") +
+          "</td><td>" + esc(r.blocked_reason || r.status || "blocked") +
+          "</td><td class=\"mono\">" + esc(relTime(r.created_at)) + "</td></tr>";
+      });
+    }
+    table.innerHTML = html;
+    if (FHData.banner) {
+      FHData.banner("real", "live compliance gate · " + rows.length + " blocked", "compliance blocks");
+    }
+  }
+  if (FHData.read) {
+    FHData.read("messages", { status: "blocked", limit: 30 }).then(paintCompliance).catch(function () {
+      paintCompliance(null);
     });
   }
 

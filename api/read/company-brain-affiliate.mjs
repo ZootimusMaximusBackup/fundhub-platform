@@ -7,7 +7,7 @@
 // Staff must use /api/read/company-brain — this endpoint refuses them.
 
 import { db } from "../../src/db.mjs";
-import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
+import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
 import { requireRole } from "../../src/http/read-api.mjs";
 import { retrieveAffiliateChunks } from "../../src/company-brain/retrieve.mjs";
 import { synthesizeAnswer } from "../../src/company-brain/answer.mjs";
@@ -24,15 +24,17 @@ export default async function handler(req, res, deps = {}) {
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
   }
 
-  const staff = deps.requireAuth
-    ? await deps.requireAuth(req, res, { db: database })
-    : await requireAuth(req, res, { db: database });
-  if (!staff) return;
+  const principal = deps.requirePrincipal
+    ? await deps.requirePrincipal(req, res, ["affiliate", "partner"], { db: database })
+    : await requirePrincipal(req, res, ["affiliate", "partner"], { db: database });
+  if (!principal) return;
 
   // Do NOT use ROLE_SETS.STAFF — affiliates are outside it.
-  if (!requireRole(res, staff, AFFILIATE_BRAIN_ROLES)) return;
+  const role = String(principal.role || principal.kind || "").trim().toLowerCase();
+  if (!requireRole(res, { role }, AFFILIATE_BRAIN_ROLES)) return;
 
-  if (!staff.org_id) return res.status(403).json({ ok: false, error: "no_org_scope" });
+  const orgId = principal.orgId || principal.org_id;
+  if (!orgId) return res.status(403).json({ ok: false, error: "no_org_scope" });
 
   const question = String((req.body && req.body.question) || "").trim();
   if (!question) return res.status(400).json({ ok: false, error: "question_required" });
@@ -41,8 +43,8 @@ export default async function handler(req, res, deps = {}) {
   }
 
   const found = await retrieve(database, {
-    orgId: staff.org_id,
-    role: staff.role,
+    orgId,
+    role,
     query: question,
     limit: Number((req.body && req.body.limit) || 8),
     env: deps.env || process.env,
@@ -76,7 +78,7 @@ export default async function handler(req, res, deps = {}) {
       source: synthesized.source
     },
     sources: synthesized.citations || [],
-    role: staff.role,
+    role,
     scope: "affiliate_allowlist"
   });
 }

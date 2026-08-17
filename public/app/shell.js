@@ -1574,7 +1574,7 @@
   function mountDemoBanner(staff) {
     if (!staff || !staff.org_id) return;
     var role = normRole(staff.role);
-    if (role === "client" || role === "affiliate" || role === "partner") return;
+    if (role !== "owner" && role !== "admin") return;
     var tok = "";
     try { tok = localStorage.getItem("fh_token") || ""; } catch (e) { tok = ""; }
     var demoHeaders = { Accept: "application/json" };
