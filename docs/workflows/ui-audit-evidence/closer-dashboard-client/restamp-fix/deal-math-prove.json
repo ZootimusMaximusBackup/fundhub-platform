@@ -1,0 +1,33 @@
+{
+  "tiles": {
+    "present": true,
+    "hidden": true,
+    "display": "grid",
+    "w": 451.625,
+    "h": 46
+  },
+  "dealMath": {
+    "before": {
+      "net": "$0",
+      "monthly": "$0 / mo",
+      "note": "Net cash and monthly use the deposit, fee, debts, and minimum you type, plus the drawn amount from this file.",
+      "name": "TEST Client Role"
+    },
+    "after": {
+      "net": "−$500",
+      "monthly": "$0 / mo",
+      "note": "Net cash and monthly use the deposit, fee, debts, and minimum you type, plus the drawn amount from this file."
+    },
+    "changed": true
+  },
+  "joinSave": {
+    "joinDisabled": true,
+    "joinFilled": false,
+    "joinBg": "rgb(252, 252, 252)",
+    "saveRight": 1368,
+    "chatLeft": 1370,
+    "overlap": false,
+    "saveText": "Save · next call"
+  },
+  "checklistBody": null
+}

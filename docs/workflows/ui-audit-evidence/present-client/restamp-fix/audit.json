@@ -1,0 +1,386 @@
+{
+  "screen": "/app/present.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "slug": "present-client-livefix",
+  "email": "closer@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T19:33:47.915Z",
+  "login": {
+    "ok": true,
+    "cached": true,
+    "landedAt": "/app/closer-dashboard.html",
+    "role": "closer"
+  },
+  "load": {
+    "httpStatus": 200,
+    "retriesFor503OrBounce": 0,
+    "finalUrl": "/app/present.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+    "bounced": false,
+    "title": "Closer · Present",
+    "apiCalls": [
+      {
+        "method": "GET",
+        "url": "/api/read/closer-deck?contact=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+        "status": 200
+      }
+    ],
+    "apiFails": [],
+    "consoleErrors": [],
+    "dialogs": [],
+    "shots": {
+      "fold": "docs/workflows/ui-audit-evidence/present-client-livefix/1440-fold.png",
+      "full": "docs/workflows/ui-audit-evidence/present-client-livefix/1440-full.png"
+    }
+  },
+  "dom": {
+    "vw": 1440,
+    "vh": 900,
+    "docH": 900,
+    "sizes": {
+      "9.5px": {
+        "count": 10,
+        "examples": [
+          "TEST Client Role",
+          "Your numbers are not on this file yet",
+          "Client screen only"
+        ]
+      },
+      "12px": {
+        "count": 2,
+        "examples": [
+          "fundhub",
+          "."
+        ]
+      },
+      "52px": {
+        "count": 1,
+        "examples": [
+          "TEST Client Role"
+        ]
+      },
+      "13px": {
+        "count": 1,
+        "examples": [
+          "—"
+        ]
+      },
+      "13.5px": {
+        "count": 1,
+        "examples": [
+          "Rapport"
+        ]
+      },
+      "11.5px": {
+        "count": 5,
+        "examples": [
+          "Hey [First Name]! It's [Your Name] over ",
+          "Mirror their energy. Let them answer. Do",
+          "I know we've got a limited amount of tim"
+        ]
+      },
+      "11px": {
+        "count": 1,
+        "examples": [
+          "The first 60 seconds decide whether they"
+        ]
+      },
+      "9px": {
+        "count": 6,
+        "examples": [
+          "01",
+          "02",
+          "03"
+        ]
+      }
+    },
+    "navVisibleCount": 0,
+    "navActive": [],
+    "navGroups": [],
+    "h1": [
+      "TEST Client Role"
+    ],
+    "h2": [],
+    "contentWidth": 1440,
+    "contentSel": "div#app",
+    "sideW": 0,
+    "controlsCount": 9,
+    "controls": [
+      {
+        "idx": 0,
+        "key": "button|Client screen only||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Client screen only",
+        "id": null,
+        "cls": "btn-ghost",
+        "href": null,
+        "disabled": false,
+        "w": 123,
+        "h": 40,
+        "top": 6,
+        "left": 1303,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(82, 82, 91)",
+        "filled": false
+      },
+      {
+        "idx": 1,
+        "key": "button|01||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "01",
+        "id": null,
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 50,
+        "h": 40,
+        "top": 799,
+        "left": 1111,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(10, 10, 10)",
+        "color": "rgb(252, 252, 252)",
+        "filled": true
+      },
+      {
+        "idx": 2,
+        "key": "button|02||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "02",
+        "id": null,
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 50,
+        "h": 40,
+        "top": 799,
+        "left": 1165,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 3,
+        "key": "button|03||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "03",
+        "id": null,
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 50,
+        "h": 40,
+        "top": 799,
+        "left": 1219,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 4,
+        "key": "button|04||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "04",
+        "id": null,
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 50,
+        "h": 40,
+        "top": 799,
+        "left": 1273,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 5,
+        "key": "button|05||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "05",
+        "id": null,
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 50,
+        "h": 40,
+        "top": 799,
+        "left": 1326,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 6,
+        "key": "button|07||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "07",
+        "id": null,
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 50,
+        "h": 40,
+        "top": 799,
+        "left": 1380,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 7,
+        "key": "button|Back||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Back",
+        "id": null,
+        "cls": "ck-btn",
+        "href": null,
+        "disabled": true,
+        "w": 51,
+        "h": 40,
+        "top": 850,
+        "left": 1111,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 8,
+        "key": "button|Next screen||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Next screen",
+        "id": null,
+        "cls": "ck-btn k",
+        "href": null,
+        "disabled": false,
+        "w": 261,
+        "h": 40,
+        "top": 850,
+        "left": 1169,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(10, 10, 10)",
+        "color": "rgb(252, 252, 252)",
+        "filled": true
+      }
+    ],
+    "genericLabels": [],
+    "smallTargets": [],
+    "primaryLooking": [
+      {
+        "text": "01",
+        "bg": "rgb(10, 10, 10)",
+        "w": 50,
+        "h": 40,
+        "aboveFold": true
+      },
+      {
+        "text": "Next screen",
+        "bg": "rgb(10, 10, 10)",
+        "w": 261,
+        "h": 40,
+        "aboveFold": true
+      }
+    ],
+    "capsRuns": [],
+    "sampleWording": [],
+    "loadingWording": [],
+    "errorWording": [],
+    "emptyWording": [],
+    "centeredParas": [],
+    "offScale": {},
+    "unevenRows": [],
+    "tables": [],
+    "metrics": [
+      {
+        "text": "01 Intro1 / 24RapportSay thisHey [First Name]! It's [Your Name] over at Fundhub.",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "cockpit"
+      }
+    ],
+    "topLeft": {
+      "tag": "div",
+      "text": "TEST Client RoleYour numbers are not on this file yetClient screen only"
+    },
+    "bodyText": "TEST CLIENT ROLE YOUR NUMBERS ARE NOT ON THIS FILE YET Client screen only S-01 / SESSION fundhub. FUNDING STRATEGY SESSION TEST Client Role — CUSTOMER-INITIATED · SOFT INQUIRY · NO OBLIGATION 01 INTRO 1 / 24 Rapport SAY THIS Hey [First Name]! It's [Your Name] over at Fundhub. How's your week been so far? Mirror their energy. Let them answer. Do not rush. I know we've got a limited amount of time, so are you ready to jump in? Are you in front of a computer with a card handy for the soft-pull assessment? WATCH FOR The first 60 seconds decide whether they trust you or have their guard up. 01 02 0"
+  },
+  "mobile": {
+    "scrollWidth": 390,
+    "horizontalOverflow": false,
+    "sideVisible": false,
+    "sideW": 0,
+    "burger": false,
+    "overflowers": [],
+    "textUnder11px": 16,
+    "docH": 844,
+    "shots": {
+      "full": "docs/workflows/ui-audit-evidence/present-client-livefix/390-full.png",
+      "fold": "docs/workflows/ui-audit-evidence/present-client-livefix/390-fold.png"
+    },
+    "finalUrl": "/app/present.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+    "apiFails": []
+  },
+  "clicks": [],
+  "clickSummary": {
+    "skipped": true,
+    "reason": "--no-clicks"
+  }
+}
