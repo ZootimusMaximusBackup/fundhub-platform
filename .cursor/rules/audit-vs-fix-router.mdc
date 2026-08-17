@@ -15,6 +15,7 @@ alwaysApply: true
 | ui audit, design audit, "check the dashboard", screen review, slop check | `fundhub-ui-auditor` | Score screens against `docs/UI-STANDARDS.md`. **Read-only.** |
 | perf audit, speed audit, load time, lighthouse, page speed, core web vitals | `fundhub-perf-auditor` | Score pages against `docs/PERF-STANDARDS.md`. **Read-only.** |
 | fix, ship, repair, wire, "make X work", unblock | `fundhub-fixer` | Change **only** what he named. Then prove. |
+| build, create, add a screen, new dashboard, new feature, scaffold, make me a | `fundhub-builder` | Not for fixing (`fundhub-fixer`) or auditing (`fundhub-auditor`). No trigger matched → normal dev under existing rules. |
 
 Skill paths:
 
