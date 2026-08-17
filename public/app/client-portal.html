@@ -1588,7 +1588,12 @@ var PRODUCTS = {
 
   markStaffChrome();
 
-  var clientId = FHData.param("id") || FHData.param("client_id");
+  var clientId = null;
+  try {
+    if (window.FHData && typeof FHData.param === "function") {
+      clientId = FHData.param("id") || FHData.param("client_id");
+    }
+  } catch (e) {}
   try {
     var acct = JSON.parse(localStorage.getItem("fh_account") || "null");
     if (!clientId && acct && (acct.clientId || acct.client_id)) {
