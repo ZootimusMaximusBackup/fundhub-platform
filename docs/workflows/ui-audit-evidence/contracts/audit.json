@@ -1,9 +1,9 @@
 {
-  "screen": "/app/pipeline.html",
-  "slug": "pipeline",
+  "screen": "/app/contracts.html",
+  "slug": "contracts",
   "email": "closer@fundhub.ai",
   "base": "https://fundhub.ai",
-  "ranAt": "2026-08-17T16:23:00.330Z",
+  "ranAt": "2026-08-17T15:50:51.089Z",
   "login": {
     "ok": true,
     "cached": true,
@@ -13,9 +13,9 @@
   "load": {
     "httpStatus": 200,
     "retriesFor503OrBounce": 0,
-    "finalUrl": "/app/pipeline.html",
+    "finalUrl": "/app/contracts.html",
     "bounced": false,
-    "title": "Fundhub — Pipeline",
+    "title": "Fundhub — Contracts",
     "apiCalls": [
       {
         "method": "GET",
@@ -24,7 +24,12 @@
       },
       {
         "method": "GET",
-        "url": "/api/dashboard/pipeline?key=funding_card_stacking",
+        "url": "/api/auth/session",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/read/contracts?view=templates",
         "status": 200
       },
       {
@@ -39,37 +44,7 @@
       },
       {
         "method": "GET",
-        "url": "/api/dashboard/pipeline?key=funding_altfin",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=inquiry_removal",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=sales",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=optimization",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=affiliates_white_label",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=hiring",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=ar_collections",
+        "url": "/api/read/contracts?view=contracts&limit=200",
         "status": 200
       }
     ],
@@ -77,8 +52,8 @@
     "consoleErrors": [],
     "dialogs": [],
     "shots": {
-      "fold": "docs/workflows/ui-audit-evidence/pipeline/1440-fold.png",
-      "full": "docs/workflows/ui-audit-evidence/pipeline/1440-full.png"
+      "fold": "docs/workflows/ui-audit-evidence/contracts/1440-fold.png",
+      "full": "docs/workflows/ui-audit-evidence/contracts/1440-full.png"
     }
   },
   "dom": {
@@ -86,32 +61,78 @@
     "vh": 900,
     "docH": 900,
     "sizes": {
-      "14px": {
-        "count": 36,
-        "examples": [
-          "Fundhub",
-          "/",
-          "Pipeline"
-        ]
-      },
       "11px": {
-        "count": 61,
+        "count": 24,
         "examples": [
-          "Org: Fundhub",
-          "Mon, Aug 17, 12:23:14 PM EDT",
-          "LIVE"
+          "Work",
+          "— live",
+          "CT-00"
         ]
       },
-      "12px": {
+      "14.5px": {
         "count": 1,
         "examples": [
-          "Search"
+          "Contracts"
+        ]
+      },
+      "22px": {
+        "count": 4,
+        "examples": [
+          "5",
+          "4",
+          "0"
         ]
       },
       "10px": {
+        "count": 8,
+        "examples": [
+          "How this works",
+          "opened",
+          "sent"
+        ]
+      },
+      "12px": {
+        "count": 7,
+        "examples": [
+          "This page is for writing the words.",
+          "Make a wording, upload a PDF, or take on",
+          "Send from the call."
+        ]
+      },
+      "13.5px": {
         "count": 1,
         "examples": [
-          "⌘K"
+          "Contracts"
+        ]
+      },
+      "11.5px": {
+        "count": 1,
+        "examples": [
+          "Send reminders"
+        ]
+      },
+      "9.5px": {
+        "count": 4,
+        "examples": [
+          "Client",
+          "Contract",
+          "State"
+        ]
+      },
+      "12.5px": {
+        "count": 12,
+        "examples": [
+          "Chris ProveFunding",
+          "Funding Agreement — prove send 2026-08-1",
+          "Chris ProveFunding"
+        ]
+      },
+      "10.5px": {
+        "count": 3,
+        "examples": [
+          "fundhub",
+          "·",
+          "contracts"
         ]
       },
       "13px": {
@@ -121,24 +142,22 @@
         ]
       }
     },
-    "navVisibleCount": 5,
+    "navVisibleCount": 3,
     "navActive": [
-      "▤Pipeline"
+      "✒Contracts"
     ],
     "navGroups": [
       {
         "head": "Sales▾",
-        "items": [
-          "▤Pipeline",
-          "★Closer Dashboard",
-          "☎Call cockpit",
-          "＃My numbers",
-          "▦Calendar"
-        ]
+        "items": []
       },
       {
         "head": "Funding▾",
-        "items": []
+        "items": [
+          "⬡Lenders",
+          "▩Finance OSBETA",
+          "✒Contracts"
+        ]
       },
       {
         "head": "Client ops▾",
@@ -161,12 +180,16 @@
         "items": []
       }
     ],
-    "h1": [],
-    "h2": [],
+    "h1": [
+      "Contracts"
+    ],
+    "h2": [
+      "Contracts"
+    ],
     "contentWidth": 1440,
     "contentSel": "div.app",
     "sideW": 228,
-    "controlsCount": 24,
+    "controlsCount": 23,
     "controls": [
       {
         "idx": 0,
@@ -189,7 +212,7 @@
         "beta": false,
         "inputLike": false,
         "bg": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 238)",
+        "color": "rgb(252, 252, 252)",
         "filled": false
       },
       {
@@ -242,126 +265,6 @@
       },
       {
         "idx": 3,
-        "key": "a|▤Pipeline||pipeline.html",
-        "ord": 0,
-        "viaCursor": false,
-        "tag": "a",
-        "type": null,
-        "text": "▤Pipeline",
-        "id": null,
-        "cls": "navitem on",
-        "href": "pipeline.html",
-        "disabled": false,
-        "w": 228,
-        "h": 27,
-        "top": 84,
-        "left": 0,
-        "aboveFold": true,
-        "sidebar": true,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(22, 22, 25)",
-        "color": "rgb(252, 252, 252)",
-        "filled": true
-      },
-      {
-        "idx": 4,
-        "key": "a|★Closer Dashboard||closer-dashboard.html",
-        "ord": 0,
-        "viaCursor": false,
-        "tag": "a",
-        "type": null,
-        "text": "★Closer Dashboard",
-        "id": null,
-        "cls": "navitem",
-        "href": "closer-dashboard.html",
-        "disabled": false,
-        "w": 228,
-        "h": 27,
-        "top": 111,
-        "left": 0,
-        "aboveFold": true,
-        "sidebar": true,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgba(0, 0, 0, 0)",
-        "color": "rgb(161, 161, 170)",
-        "filled": false
-      },
-      {
-        "idx": 5,
-        "key": "a|☎Call cockpit||closer-call.html",
-        "ord": 0,
-        "viaCursor": false,
-        "tag": "a",
-        "type": null,
-        "text": "☎Call cockpit",
-        "id": null,
-        "cls": "navitem",
-        "href": "closer-call.html",
-        "disabled": false,
-        "w": 228,
-        "h": 27,
-        "top": 139,
-        "left": 0,
-        "aboveFold": true,
-        "sidebar": true,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgba(0, 0, 0, 0)",
-        "color": "rgb(161, 161, 170)",
-        "filled": false
-      },
-      {
-        "idx": 6,
-        "key": "a|＃My numbers||my-numbers.html",
-        "ord": 0,
-        "viaCursor": false,
-        "tag": "a",
-        "type": null,
-        "text": "＃My numbers",
-        "id": null,
-        "cls": "navitem",
-        "href": "my-numbers.html",
-        "disabled": false,
-        "w": 228,
-        "h": 27,
-        "top": 166,
-        "left": 0,
-        "aboveFold": true,
-        "sidebar": true,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgba(0, 0, 0, 0)",
-        "color": "rgb(161, 161, 170)",
-        "filled": false
-      },
-      {
-        "idx": 7,
-        "key": "a|▦Calendar||calendar.html",
-        "ord": 0,
-        "viaCursor": false,
-        "tag": "a",
-        "type": null,
-        "text": "▦Calendar",
-        "id": null,
-        "cls": "navitem",
-        "href": "calendar.html",
-        "disabled": false,
-        "w": 228,
-        "h": 27,
-        "top": 193,
-        "left": 0,
-        "aboveFold": true,
-        "sidebar": true,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgba(0, 0, 0, 0)",
-        "color": "rgb(161, 161, 170)",
-        "filled": false
-      },
-      {
-        "idx": 8,
         "key": "button|Funding▾||",
         "ord": 0,
         "viaCursor": false,
@@ -374,7 +277,7 @@
         "disabled": false,
         "w": 228,
         "h": 28,
-        "top": 223,
+        "top": 87,
         "left": 0,
         "aboveFold": true,
         "sidebar": true,
@@ -385,7 +288,79 @@
         "filled": false
       },
       {
-        "idx": 9,
+        "idx": 4,
+        "key": "a|⬡Lenders||lenders.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "⬡Lenders",
+        "id": null,
+        "cls": "navitem",
+        "href": "lenders.html",
+        "disabled": false,
+        "w": 228,
+        "h": 27,
+        "top": 115,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 5,
+        "key": "a|▩Finance OSBETA||finance-os.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "▩Finance OSBETA",
+        "id": null,
+        "cls": "navitem",
+        "href": "finance-os.html",
+        "disabled": false,
+        "w": 228,
+        "h": 29,
+        "top": 143,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 6,
+        "key": "a|✒Contracts||contracts.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "✒Contracts",
+        "id": null,
+        "cls": "navitem on",
+        "href": "contracts.html",
+        "disabled": false,
+        "w": 228,
+        "h": 27,
+        "top": 172,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(22, 22, 25)",
+        "color": "rgb(252, 252, 252)",
+        "filled": true
+      },
+      {
+        "idx": 7,
         "key": "button|Client ops▾||",
         "ord": 0,
         "viaCursor": false,
@@ -398,7 +373,7 @@
         "disabled": false,
         "w": 228,
         "h": 28,
-        "top": 254,
+        "top": 202,
         "left": 0,
         "aboveFold": true,
         "sidebar": true,
@@ -409,7 +384,7 @@
         "filled": false
       },
       {
-        "idx": 10,
+        "idx": 8,
         "key": "button|Watch▾||",
         "ord": 0,
         "viaCursor": false,
@@ -422,7 +397,7 @@
         "disabled": false,
         "w": 228,
         "h": 28,
-        "top": 286,
+        "top": 233,
         "left": 0,
         "aboveFold": true,
         "sidebar": true,
@@ -433,7 +408,7 @@
         "filled": false
       },
       {
-        "idx": 11,
+        "idx": 9,
         "key": "button|Automation▾||",
         "ord": 0,
         "viaCursor": false,
@@ -446,7 +421,7 @@
         "disabled": false,
         "w": 228,
         "h": 28,
-        "top": 317,
+        "top": 264,
         "left": 0,
         "aboveFold": true,
         "sidebar": true,
@@ -457,7 +432,7 @@
         "filled": false
       },
       {
-        "idx": 12,
+        "idx": 10,
         "key": "button|Marketing▾||",
         "ord": 0,
         "viaCursor": false,
@@ -470,7 +445,7 @@
         "disabled": false,
         "w": 228,
         "h": 28,
-        "top": 348,
+        "top": 296,
         "left": 0,
         "aboveFold": true,
         "sidebar": true,
@@ -481,7 +456,7 @@
         "filled": false
       },
       {
-        "idx": 13,
+        "idx": 11,
         "key": "button|Admin▾||",
         "ord": 0,
         "viaCursor": false,
@@ -494,7 +469,7 @@
         "disabled": false,
         "w": 228,
         "h": 28,
-        "top": 379,
+        "top": 327,
         "left": 0,
         "aboveFold": true,
         "sidebar": true,
@@ -505,55 +480,199 @@
         "filled": false
       },
       {
-        "idx": 14,
-        "key": "input|Search name, phone, or email|q|",
+        "idx": 12,
+        "key": "button|Send reminders|btnRemind|",
         "ord": 0,
         "viaCursor": false,
-        "tag": "input",
+        "tag": "button",
         "type": null,
-        "text": "Search name, phone, or email",
-        "id": "q",
+        "text": "Send reminders",
+        "id": "btnRemind",
+        "cls": "btn sm",
+        "href": null,
+        "disabled": false,
+        "w": 109,
+        "h": 29,
+        "top": 370,
+        "left": 1195,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 13,
+        "key": "select|AllDraft SentOpened SignedVoid|selStatus|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "select",
+        "type": null,
+        "text": "AllDraft SentOpened SignedVoid",
+        "id": "selStatus",
         "cls": null,
         "href": null,
         "disabled": false,
-        "w": 193,
-        "h": 19,
-        "top": 95,
-        "left": 268,
+        "w": 83,
+        "h": 29,
+        "top": 370,
+        "left": 1316,
         "aboveFold": true,
         "sidebar": false,
         "beta": false,
         "inputLike": true,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 14,
+        "key": "tr|Chris ProveFundingFunding Agreement — prove send 2026-08-16o||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "tr",
+        "type": null,
+        "text": "Chris ProveFundingFunding Agreement — prove send 2026-08-16o",
+        "id": null,
+        "cls": "rowlink",
+        "href": null,
+        "disabled": false,
+        "w": 1162,
+        "h": 44,
+        "top": 445,
+        "left": 253,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
         "bg": "rgba(0, 0, 0, 0)",
         "color": "rgb(10, 10, 10)",
         "filled": false
       },
       {
         "idx": 15,
-        "key": "button|⚟ Filter0|filterBtn|",
+        "key": "tr|Chris ProveFundingSoft Pull Authorization — prove send 2026-||",
         "ord": 0,
         "viaCursor": false,
-        "tag": "button",
+        "tag": "tr",
         "type": null,
-        "text": "⚟ Filter0",
-        "id": "filterBtn",
-        "cls": "filter-btn",
+        "text": "Chris ProveFundingSoft Pull Authorization — prove send 2026-",
+        "id": null,
+        "cls": "rowlink",
         "href": null,
         "disabled": false,
-        "w": 68,
-        "h": 31,
-        "top": 89,
-        "left": 480,
+        "w": 1162,
+        "h": 44,
+        "top": 489,
+        "left": 253,
         "aboveFold": true,
         "sidebar": false,
         "beta": false,
         "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(82, 82, 91)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(10, 10, 10)",
         "filled": false
       },
       {
         "idx": 16,
+        "key": "tr|Chris ProveFundingFunding Agreement — prove send 2026-08-16s||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "tr",
+        "type": null,
+        "text": "Chris ProveFundingFunding Agreement — prove send 2026-08-16s",
+        "id": null,
+        "cls": "rowlink",
+        "href": null,
+        "disabled": false,
+        "w": 1162,
+        "h": 44,
+        "top": 533,
+        "left": 253,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 17,
+        "key": "tr|Chris ProveFundingSoft Pull Authorization — prove send 2026-||",
+        "ord": 1,
+        "viaCursor": false,
+        "tag": "tr",
+        "type": null,
+        "text": "Chris ProveFundingSoft Pull Authorization — prove send 2026-",
+        "id": null,
+        "cls": "rowlink",
+        "href": null,
+        "disabled": false,
+        "w": 1162,
+        "h": 44,
+        "top": 577,
+        "left": 253,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 18,
+        "key": "tr|Chris ProveFundingFunding Agreement — prove send 2026-08-16d||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "tr",
+        "type": null,
+        "text": "Chris ProveFundingFunding Agreement — prove send 2026-08-16d",
+        "id": null,
+        "cls": "rowlink",
+        "href": null,
+        "disabled": false,
+        "w": 1162,
+        "h": 44,
+        "top": 621,
+        "left": 253,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 19,
+        "key": "tr|Chris ProveFundingSoft Pull Authorization — prove send 2026-||",
+        "ord": 2,
+        "viaCursor": false,
+        "tag": "tr",
+        "type": null,
+        "text": "Chris ProveFundingSoft Pull Authorization — prove send 2026-",
+        "id": null,
+        "cls": "rowlink",
+        "href": null,
+        "disabled": false,
+        "w": 1162,
+        "h": 44,
+        "top": 665,
+        "left": 253,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 20,
         "key": "button|Sign out|fh-shell-out|",
         "ord": 0,
         "viaCursor": false,
@@ -577,7 +696,7 @@
         "filled": false
       },
       {
-        "idx": 17,
+        "idx": 21,
         "key": "button|Search⌘K|fh-shell-search-btn|",
         "ord": 0,
         "viaCursor": false,
@@ -601,7 +720,7 @@
         "filled": false
       },
       {
-        "idx": 18,
+        "idx": 22,
         "key": "button|Chat|fh-chat-fab|",
         "ord": 0,
         "viaCursor": false,
@@ -623,134 +742,14 @@
         "bg": "rgb(10, 10, 10)",
         "color": "rgb(255, 255, 255)",
         "filled": true
-      },
-      {
-        "idx": 19,
-        "key": "div|FRFrancis RawlinsMOVEDEL⠿——5d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "FRFrancis RawlinsMOVEDEL⠿——5d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 197,
-        "left": 250,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
-      },
-      {
-        "idx": 20,
-        "key": "div|MSMarisol scharonMOVEDEL⠿750+—3d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "MSMarisol scharonMOVEDEL⠿750+—3d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 197,
-        "left": 498,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
-      },
-      {
-        "idx": 21,
-        "key": "div|KSKalaya SirimitrMOVEDEL⠿580-649—2d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "KSKalaya SirimitrMOVEDEL⠿580-649—2d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 197,
-        "left": 746,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
-      },
-      {
-        "idx": 22,
-        "key": "div|SMSelwyn McintoshMOVEDEL⠿700-749—2d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "SMSelwyn McintoshMOVEDEL⠿700-749—2d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 313,
-        "left": 746,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
-      },
-      {
-        "idx": 23,
-        "key": "div|RRRick RockwellMOVEDEL⠿580-649—3d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "RRRick RockwellMOVEDEL⠿580-649—3d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 429,
-        "left": 746,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
       }
     ],
     "genericLabels": [],
     "smallTargets": [
       {
-        "text": "⚟ Filter0",
-        "w": 68,
-        "h": 31
+        "text": "Send reminders",
+        "w": 109,
+        "h": 29
       },
       {
         "text": "Sign out",
@@ -779,25 +778,99 @@
     "emptyWording": [],
     "centeredParas": [],
     "offScale": {
-      "7px": 5,
-      "9px": 5,
-      "14px": 1
+      "14px": 5,
+      "13px": 2
     },
-    "unevenRows": [],
-    "tables": [],
+    "unevenRows": [
+      {
+        "top": 80,
+        "widths": [
+          1164,
+          282,
+          282,
+          282,
+          282
+        ]
+      }
+    ],
+    "tables": [
+      {
+        "headers": [
+          "Client",
+          "Contract",
+          "State",
+          "When"
+        ],
+        "rowCount": 6,
+        "cols": [
+          {
+            "header": "Client",
+            "sample": "Chris ProveFunding",
+            "numeric": false,
+            "align": "start",
+            "tabular": false
+          },
+          {
+            "header": "Contract",
+            "sample": "Funding Agreement — prov",
+            "numeric": false,
+            "align": "start",
+            "tabular": false
+          },
+          {
+            "header": "State",
+            "sample": "opened",
+            "numeric": false,
+            "align": "start",
+            "tabular": false
+          },
+          {
+            "header": "When",
+            "sample": "opened 2026-08-16",
+            "numeric": false,
+            "align": "start",
+            "tabular": true
+          }
+        ]
+      }
+    ],
     "metrics": [
       {
-        "text": "fundhub-pipeline · v1 org: fundhub rail: Sales drag a card to change stage · mov",
-        "fontSize": "11px",
+        "text": "CT-00 / WORDINGS5wordings in use CT-00 / WAITING4sent, not signed yet CT-00 / SI",
+        "fontSize": "13px",
         "tabular": false,
-        "cls": "statusbar"
+        "cls": "stats"
+      },
+      {
+        "text": "CT-00 / WORDINGS5wordings in use",
+        "fontSize": "13px",
+        "tabular": false,
+        "cls": "stat"
+      },
+      {
+        "text": "CT-00 / WAITING4sent, not signed yet",
+        "fontSize": "13px",
+        "tabular": false,
+        "cls": "stat"
+      },
+      {
+        "text": "CT-00 / SIGNED0signed and on file",
+        "fontSize": "13px",
+        "tabular": false,
+        "cls": "stat"
+      },
+      {
+        "text": "CT-00 / DRAFTS2started, not sent",
+        "fontSize": "13px",
+        "tabular": false,
+        "cls": "stat"
       }
     ],
     "topLeft": {
-      "tag": "header",
-      "text": "Fundhub / Pipeline Org: Fundhub Mon, Aug 17, 12:23:14 PM EDT LIVE"
+      "tag": "div",
+      "text": "WorkContracts — live"
     },
-    "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Mon, Aug 17, 12:23:14 PM EDT LIVE R-01 Sales 16 R-02 Funding: Card Stacking 0 R-03 Funding: Alt-Fin (Lendflow) 0 R-04 Optimization (Repair) Rounds 0 R-05 Inquiry Removal 0 R-06 AR / Collections 0 R-08 Affiliates + White Label 0 R-09 Hiring 0 ⌕ ⚟ Filter 16 cards $50,000 est. — held Archive New Lead 1 $0 est. FR Francis Rawlins MOVE DEL ⠿ — — 5d in stage Survey Complete 1 $0 est. MS Marisol scharon MOVE DEL ⠿ 750+ "
+    "bodyText": "‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ▩ Finance OS BETA ✒ Contracts CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ fundhub WORK Contracts — LIVE CT-00 / WORDINGS 5 wordings in use CT-00 / WAITING 4 sent, not signed yet CT-00 / SIGNED 0 signed and on file CT-00 / DRAFTS 2 started, not sent HOW THIS WORKS This page is for writing the words. Make a wording, upload a PDF, or take one out of use. That is company work, not a send to a client. Send from the call. Open Present or the call cockpit for that person. Pick a wording, press Send, then copy the sign link. An email also goes if mail is on. Th"
   },
   "mobile": {
     "scrollWidth": 390,
@@ -805,36 +878,70 @@
     "sideVisible": true,
     "sideW": 228,
     "burger": true,
-    "overflowers": [
-      "div.rail-tab",
-      "div.rail-tab",
-      "div.rail-tab",
-      "div.rail-tab",
-      "div.rail-tab",
-      "div.rail-tab"
-    ],
-    "textUnder11px": 4,
-    "docH": 844,
+    "overflowers": [],
+    "textUnder11px": 18,
+    "docH": 1323,
     "shots": {
-      "full": "docs/workflows/ui-audit-evidence/pipeline/390-full.png",
-      "fold": "docs/workflows/ui-audit-evidence/pipeline/390-fold.png"
+      "full": "docs/workflows/ui-audit-evidence/contracts/390-full.png",
+      "fold": "docs/workflows/ui-audit-evidence/contracts/390-fold.png"
     },
-    "finalUrl": "/app/pipeline.html",
+    "finalUrl": "/app/contracts.html",
     "apiFails": []
   },
   "clicks": [
     {
       "n": 1,
       "tag": "button",
-      "text": "⚟ Filter0",
-      "id": "filterBtn",
-      "cls": "filter-btn",
+      "text": "Send reminders",
+      "id": "btnRemind",
+      "cls": "btn sm",
       "href": null,
-      "w": 68,
-      "h": 31,
+      "w": 109,
+      "h": 29,
       "aboveFold": true,
       "urlChanged": null,
-      "api": [],
+      "api": [
+        {
+          "method": "POST",
+          "url": "/api/contracts",
+          "status": 599
+        }
+      ],
+      "intercepted": [
+        {
+          "method": "POST",
+          "url": "/api/contracts",
+          "bodyKeys": [
+            "action"
+          ]
+        }
+      ],
+      "dialogs": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 599 (Unknown)"
+      ],
+      "domChanged": true,
+      "result": "WRITE-INTERCEPTED",
+      "shot": "docs/workflows/ui-audit-evidence/contracts/clicks/01-WRITE-INTERCEPTED-Send_reminders.png"
+    },
+    {
+      "n": 2,
+      "tag": "tr",
+      "text": "Chris ProveFundingFunding Agreement — prove send 2026-08-16o",
+      "id": null,
+      "cls": "rowlink",
+      "href": null,
+      "w": 1162,
+      "h": 44,
+      "aboveFold": true,
+      "urlChanged": null,
+      "api": [
+        {
+          "method": "GET",
+          "url": "/api/read/contracts?id=e2bd8fba-836d-4a29-a80f-6fb9a5eb97b2",
+          "status": 200
+        }
+      ],
       "intercepted": [],
       "dialogs": [],
       "consoleErrors": [],
@@ -842,7 +949,127 @@
       "result": "OK"
     },
     {
-      "n": 2,
+      "n": 3,
+      "tag": "tr",
+      "text": "Chris ProveFundingSoft Pull Authorization — prove send 2026-",
+      "id": null,
+      "cls": "rowlink",
+      "href": null,
+      "w": 1162,
+      "h": 44,
+      "aboveFold": true,
+      "urlChanged": null,
+      "api": [
+        {
+          "method": "GET",
+          "url": "/api/read/contracts?id=f59d6197-9ff0-4910-b882-6af021cdb57e",
+          "status": 200
+        }
+      ],
+      "intercepted": [],
+      "dialogs": [],
+      "consoleErrors": [],
+      "domChanged": true,
+      "result": "OK"
+    },
+    {
+      "n": 4,
+      "tag": "tr",
+      "text": "Chris ProveFundingFunding Agreement — prove send 2026-08-16s",
+      "id": null,
+      "cls": "rowlink",
+      "href": null,
+      "w": 1162,
+      "h": 44,
+      "aboveFold": true,
+      "urlChanged": null,
+      "api": [
+        {
+          "method": "GET",
+          "url": "/api/read/contracts?id=b1503fd1-296a-4153-93ec-bd181096f66d",
+          "status": 200
+        }
+      ],
+      "intercepted": [],
+      "dialogs": [],
+      "consoleErrors": [],
+      "domChanged": true,
+      "result": "OK"
+    },
+    {
+      "n": 5,
+      "tag": "tr",
+      "text": "Chris ProveFundingSoft Pull Authorization — prove send 2026-",
+      "id": null,
+      "cls": "rowlink",
+      "href": null,
+      "w": 1162,
+      "h": 44,
+      "aboveFold": true,
+      "urlChanged": null,
+      "api": [
+        {
+          "method": "GET",
+          "url": "/api/read/contracts?id=0a3b154e-8bde-4d42-ba31-7bbbcf44e889",
+          "status": 200
+        }
+      ],
+      "intercepted": [],
+      "dialogs": [],
+      "consoleErrors": [],
+      "domChanged": true,
+      "result": "OK"
+    },
+    {
+      "n": 6,
+      "tag": "tr",
+      "text": "Chris ProveFundingFunding Agreement — prove send 2026-08-16d",
+      "id": null,
+      "cls": "rowlink",
+      "href": null,
+      "w": 1162,
+      "h": 44,
+      "aboveFold": true,
+      "urlChanged": null,
+      "api": [
+        {
+          "method": "GET",
+          "url": "/api/read/contracts?id=010343de-0b29-4867-ae4c-312370be782c",
+          "status": 200
+        }
+      ],
+      "intercepted": [],
+      "dialogs": [],
+      "consoleErrors": [],
+      "domChanged": true,
+      "result": "OK"
+    },
+    {
+      "n": 7,
+      "tag": "tr",
+      "text": "Chris ProveFundingSoft Pull Authorization — prove send 2026-",
+      "id": null,
+      "cls": "rowlink",
+      "href": null,
+      "w": 1162,
+      "h": 44,
+      "aboveFold": true,
+      "urlChanged": null,
+      "api": [
+        {
+          "method": "GET",
+          "url": "/api/read/contracts?id=c55658b1-ebb4-4381-aa4d-198e8d59be60",
+          "status": 200
+        }
+      ],
+      "intercepted": [],
+      "dialogs": [],
+      "consoleErrors": [],
+      "domChanged": true,
+      "result": "OK"
+    },
+    {
+      "n": 8,
       "tag": "button",
       "text": "Search⌘K",
       "id": "fh-shell-search-btn",
@@ -860,7 +1087,7 @@
       "result": "OK"
     },
     {
-      "n": 3,
+      "n": 9,
       "tag": "button",
       "text": "Chat",
       "id": "fh-chat-fab",
@@ -876,133 +1103,14 @@
       "consoleErrors": [],
       "domChanged": true,
       "result": "OK"
-    },
-    {
-      "n": 4,
-      "tag": "div",
-      "text": "FRFrancis RawlinsMOVEDEL⠿——5d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=eaf80303-0aaa-48d6-8b99-7bd059bd85fc",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
-    },
-    {
-      "n": 5,
-      "tag": "div",
-      "text": "MSMarisol scharonMOVEDEL⠿750+—3d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=b20f9331-2862-48d9-97a9-d316475336bb",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
-    },
-    {
-      "n": 6,
-      "tag": "div",
-      "text": "KSKalaya SirimitrMOVEDEL⠿580-649—2d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=ec5f4923-7b2e-4ddf-a947-5637b2239499",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
-    },
-    {
-      "n": 7,
-      "tag": "div",
-      "text": "SMSelwyn McintoshMOVEDEL⠿700-749—2d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=89f234f6-cf92-4a82-883c-0f0f2b9ca093",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
-    },
-    {
-      "n": 8,
-      "tag": "div",
-      "text": "RRRick RockwellMOVEDEL⠿580-649—3d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=ca2bc6c4-5e5e-4a5a-832a-8129b73195f3",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
     }
   ],
   "clickSummary": {
-    "candidates": 8,
-    "attempted": 8,
+    "candidates": 9,
+    "attempted": 9,
     "skippedForCap": 0,
     "tally": {
+      "WRITE-INTERCEPTED": 1,
       "OK": 8
     },
     "loadRetriesTotal": 0

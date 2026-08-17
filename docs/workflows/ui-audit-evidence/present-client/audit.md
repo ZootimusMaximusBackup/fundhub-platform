@@ -1,0 +1,45 @@
+# UI audit evidence — present-client as closer@fundhub.ai
+
+Ran 2026-08-17T15:56:05.133Z against https://fundhub.ai. Login ok (role closer). Screen /app/present.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521 → HTTP 200, final /app/present.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521, title "Closer · Present".
+
+Shots: docs/workflows/ui-audit-evidence/present-client/1440-fold.png · docs/workflows/ui-audit-evidence/present-client/1440-full.png · docs/workflows/ui-audit-evidence/present-client/390-full.png
+
+## Load
+- API calls: 1; failing: none
+- Load retries because of 503/bounce (dev-server flakiness, not a screen finding): 0 at first open · 0 across the whole run
+- Console errors: none
+
+## DOM read (1440×900)
+- Page height 900px (fold 900) · content width 1440px (div#app) · sidebar 0px
+- Top-left element: div "S-01 / Sessionfundhub.Funding strategy sessionTEST Client Role—Customer-initiate"
+- H1: TEST Client Role · H2s: —
+- Nav: 0 visible items · active: none marked · groups: 
+- Font sizes in use (8): 52px×1, 13.5px×1, 13px×1, 12px×2, 11.5px×5, 11px×1, 9.5px×10, 9px×6
+- Primary-looking (filled) buttons: 2 — "01", "Next screen"
+- Generic labels: none · targets under 40px: 9
+- Off-8px-scale spacing values: none
+- Uneven card rows: none detected
+- ALL-CAPS runs: 0 · centered paragraphs: 0
+- Sample/demo/beta wording: none
+- Loading wording after settle: none
+- Error wording: none
+- Empty-state wording: none
+- Tables: none
+- Metric-ish elements: "01 Intro1 / 24RapportSay thisH"@16px
+
+## Mobile (390×844)
+- Horizontal overflow: no · sidebar visible false (0px) · burger false · elements past right edge: none · text under 11px: 16 · api fails: 0
+
+## Click sweep
+- 8 clicked of 8 candidates (cap 80) · tally: OK=1, GONE=7
+
+| # | Control | Size | Result | What happened | Shot |
+|---|---|---|---|---|---|
+| 1 | button "Client screen only" | 123×25 | OK |  |  |
+| 2 | button "01" | 50×24 | GONE | control not visible on re-locate (DOM changed after an earlier click) |  |
+| 3 | button "02" | 50×24 | GONE | control not visible on re-locate (DOM changed after an earlier click) |  |
+| 4 | button "03" | 50×24 | GONE | control not visible on re-locate (DOM changed after an earlier click) |  |
+| 5 | button "04" | 50×24 | GONE | control not visible on re-locate (DOM changed after an earlier click) |  |
+| 6 | button "05" | 50×24 | GONE | control not visible on re-locate (DOM changed after an earlier click) |  |
+| 7 | button "07" | 50×24 | GONE | control not visible on re-locate (DOM changed after an earlier click) |  |
+| 8 | button "Next screen" | 261×32 | GONE | control not visible on re-locate (DOM changed after an earlier click) |  |

@@ -1,21 +1,21 @@
 {
-  "screen": "/app/pipeline.html",
-  "slug": "pipeline",
+  "screen": "/app/closer-dashboard.html",
+  "slug": "closer-dashboard",
   "email": "closer@fundhub.ai",
   "base": "https://fundhub.ai",
-  "ranAt": "2026-08-17T16:23:00.330Z",
+  "ranAt": "2026-08-17T15:44:37.946Z",
   "login": {
     "ok": true,
-    "cached": true,
     "landedAt": "/dashboard.html",
-    "role": "closer"
+    "role": "closer",
+    "loginApiStatus": 200
   },
   "load": {
     "httpStatus": 200,
     "retriesFor503OrBounce": 0,
-    "finalUrl": "/app/pipeline.html",
+    "finalUrl": "/app/closer-dashboard.html",
     "bounced": false,
-    "title": "Fundhub — Pipeline",
+    "title": "Fundhub — Closer Dashboard",
     "apiCalls": [
       {
         "method": "GET",
@@ -24,7 +24,7 @@
       },
       {
         "method": "GET",
-        "url": "/api/dashboard/pipeline?key=funding_card_stacking",
+        "url": "/api/auth/session",
         "status": 200
       },
       {
@@ -36,49 +36,14 @@
         "method": "GET",
         "url": "/api/org-brand",
         "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=funding_altfin",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=inquiry_removal",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=sales",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=optimization",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=affiliates_white_label",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=hiring",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=ar_collections",
-        "status": 200
       }
     ],
     "apiFails": [],
     "consoleErrors": [],
     "dialogs": [],
     "shots": {
-      "fold": "docs/workflows/ui-audit-evidence/pipeline/1440-fold.png",
-      "full": "docs/workflows/ui-audit-evidence/pipeline/1440-full.png"
+      "fold": "docs/workflows/ui-audit-evidence/closer-dashboard/1440-fold.png",
+      "full": "docs/workflows/ui-audit-evidence/closer-dashboard/1440-full.png"
     }
   },
   "dom": {
@@ -87,31 +52,92 @@
     "docH": 900,
     "sizes": {
       "14px": {
-        "count": 36,
+        "count": 6,
         "examples": [
           "Fundhub",
-          "/",
-          "Pipeline"
+          "—",
+          "—"
         ]
       },
-      "11px": {
-        "count": 61,
+      "16px": {
+        "count": 2,
+        "examples": [
+          "/",
+          "TEST — Closer Role"
+        ]
+      },
+      "12.5px": {
+        "count": 2,
+        "examples": [
+          "Closer Dashboard",
+          "No closer-day pipeline endpoint yet — op"
+        ]
+      },
+      "10.5px": {
+        "count": 4,
         "examples": [
           "Org: Fundhub",
-          "Mon, Aug 17, 12:23:14 PM EDT",
-          "LIVE"
+          "LIVE",
+          "CD-01 / Today's Pipeline"
         ]
       },
       "12px": {
-        "count": 1,
+        "count": 2,
         "examples": [
+          "Mon, Aug 17, 11:45:16 AM EDT",
           "Search"
         ]
       },
-      "10px": {
+      "7.5px": {
+        "count": 2,
+        "examples": [
+          "T—",
+          "T—"
+        ]
+      },
+      "11.5px": {
         "count": 1,
         "examples": [
-          "⌘K"
+          "closer"
+        ]
+      },
+      "9px": {
+        "count": 4,
+        "examples": [
+          "Calls Today",
+          "Kept",
+          "Collected"
+        ]
+      },
+      "8.5px": {
+        "count": 2,
+        "examples": [
+          "no closer shift endpoint",
+          "no deposit rollup for this seat"
+        ]
+      },
+      "9.5px": {
+        "count": 4,
+        "examples": [
+          "Client",
+          "Stage",
+          "Next"
+        ]
+      },
+      "10px": {
+        "count": 6,
+        "examples": [
+          "fundhub-closer · v1",
+          "org: fundhub",
+          "TEST — Closer Role"
+        ]
+      },
+      "11px": {
+        "count": 4,
+        "examples": [
+          "Open from a client.",
+          "TEST — Closer Role · closer · 23 tabs",
+          "LIVE"
         ]
       },
       "13px": {
@@ -123,7 +149,7 @@
     },
     "navVisibleCount": 5,
     "navActive": [
-      "▤Pipeline"
+      "★Closer Dashboard"
     ],
     "navGroups": [
       {
@@ -166,7 +192,7 @@
     "contentWidth": 1440,
     "contentSel": "div.app",
     "sideW": 228,
-    "controlsCount": 24,
+    "controlsCount": 17,
     "controls": [
       {
         "idx": 0,
@@ -249,7 +275,7 @@
         "type": null,
         "text": "▤Pipeline",
         "id": null,
-        "cls": "navitem on",
+        "cls": "navitem",
         "href": "pipeline.html",
         "disabled": false,
         "w": 228,
@@ -260,9 +286,9 @@
         "sidebar": true,
         "beta": false,
         "inputLike": false,
-        "bg": "rgb(22, 22, 25)",
-        "color": "rgb(252, 252, 252)",
-        "filled": true
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
       },
       {
         "idx": 4,
@@ -273,7 +299,7 @@
         "type": null,
         "text": "★Closer Dashboard",
         "id": null,
-        "cls": "navitem",
+        "cls": "navitem on",
         "href": "closer-dashboard.html",
         "disabled": false,
         "w": 228,
@@ -284,9 +310,9 @@
         "sidebar": true,
         "beta": false,
         "inputLike": false,
-        "bg": "rgba(0, 0, 0, 0)",
-        "color": "rgb(161, 161, 170)",
-        "filled": false
+        "bg": "rgb(22, 22, 25)",
+        "color": "rgb(252, 252, 252)",
+        "filled": true
       },
       {
         "idx": 5,
@@ -506,54 +532,6 @@
       },
       {
         "idx": 14,
-        "key": "input|Search name, phone, or email|q|",
-        "ord": 0,
-        "viaCursor": false,
-        "tag": "input",
-        "type": null,
-        "text": "Search name, phone, or email",
-        "id": "q",
-        "cls": null,
-        "href": null,
-        "disabled": false,
-        "w": 193,
-        "h": 19,
-        "top": 95,
-        "left": 268,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": true,
-        "bg": "rgba(0, 0, 0, 0)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
-      },
-      {
-        "idx": 15,
-        "key": "button|⚟ Filter0|filterBtn|",
-        "ord": 0,
-        "viaCursor": false,
-        "tag": "button",
-        "type": null,
-        "text": "⚟ Filter0",
-        "id": "filterBtn",
-        "cls": "filter-btn",
-        "href": null,
-        "disabled": false,
-        "w": 68,
-        "h": 31,
-        "top": 89,
-        "left": 480,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(82, 82, 91)",
-        "filled": false
-      },
-      {
-        "idx": 16,
         "key": "button|Sign out|fh-shell-out|",
         "ord": 0,
         "viaCursor": false,
@@ -577,7 +555,7 @@
         "filled": false
       },
       {
-        "idx": 17,
+        "idx": 15,
         "key": "button|Search⌘K|fh-shell-search-btn|",
         "ord": 0,
         "viaCursor": false,
@@ -601,7 +579,7 @@
         "filled": false
       },
       {
-        "idx": 18,
+        "idx": 16,
         "key": "button|Chat|fh-chat-fab|",
         "ord": 0,
         "viaCursor": false,
@@ -623,135 +601,10 @@
         "bg": "rgb(10, 10, 10)",
         "color": "rgb(255, 255, 255)",
         "filled": true
-      },
-      {
-        "idx": 19,
-        "key": "div|FRFrancis RawlinsMOVEDEL⠿——5d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "FRFrancis RawlinsMOVEDEL⠿——5d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 197,
-        "left": 250,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
-      },
-      {
-        "idx": 20,
-        "key": "div|MSMarisol scharonMOVEDEL⠿750+—3d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "MSMarisol scharonMOVEDEL⠿750+—3d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 197,
-        "left": 498,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
-      },
-      {
-        "idx": 21,
-        "key": "div|KSKalaya SirimitrMOVEDEL⠿580-649—2d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "KSKalaya SirimitrMOVEDEL⠿580-649—2d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 197,
-        "left": 746,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
-      },
-      {
-        "idx": 22,
-        "key": "div|SMSelwyn McintoshMOVEDEL⠿700-749—2d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "SMSelwyn McintoshMOVEDEL⠿700-749—2d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 313,
-        "left": 746,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
-      },
-      {
-        "idx": 23,
-        "key": "div|RRRick RockwellMOVEDEL⠿580-649—3d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "RRRick RockwellMOVEDEL⠿580-649—3d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 429,
-        "left": 746,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
       }
     ],
     "genericLabels": [],
     "smallTargets": [
-      {
-        "text": "⚟ Filter0",
-        "w": 68,
-        "h": 31
-      },
       {
         "text": "Sign out",
         "w": 73,
@@ -779,25 +632,100 @@
     "emptyWording": [],
     "centeredParas": [],
     "offScale": {
-      "7px": 5,
-      "9px": 5,
+      "9px": 1,
+      "18px": 1,
+      "10px": 3,
+      "5px": 4,
+      "2px": 4,
+      "1px": 2,
       "14px": 1
     },
     "unevenRows": [],
-    "tables": [],
+    "tables": [
+      {
+        "headers": [
+          "Client",
+          "Stage",
+          "Next",
+          "When"
+        ],
+        "rowCount": 2,
+        "cols": []
+      }
+    ],
     "metrics": [
       {
-        "text": "fundhub-pipeline · v1 org: fundhub rail: Sales drag a card to change stage · mov",
-        "fontSize": "11px",
+        "text": "T— TEST — Closer Role closer Calls Today— no closer shift endpoint Kept— Collect",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "stat-head"
+      },
+      {
+        "text": "Calls Today— no closer shift endpoint Kept— Collected— no deposit rollup for thi",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "stat-tiles"
+      },
+      {
+        "text": "Calls Today— no closer shift endpoint",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "stat-tile"
+      },
+      {
+        "text": "—",
+        "fontSize": "14px",
+        "tabular": false,
+        "cls": "stat-value"
+      },
+      {
+        "text": "Kept—",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "stat-tile"
+      },
+      {
+        "text": "—",
+        "fontSize": "14px",
+        "tabular": false,
+        "cls": "stat-value"
+      },
+      {
+        "text": "Collected— no deposit rollup for this seat",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "stat-tile"
+      },
+      {
+        "text": "—",
+        "fontSize": "14px",
+        "tabular": false,
+        "cls": "stat-value"
+      },
+      {
+        "text": "Pace—",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "stat-tile"
+      },
+      {
+        "text": "—",
+        "fontSize": "14px",
+        "tabular": false,
+        "cls": "stat-value pace-neutral"
+      },
+      {
+        "text": "fundhub-closer · v1 org: fundhub T— TEST — Closer Role these numbers are estimat",
+        "fontSize": "10px",
         "tabular": false,
         "cls": "statusbar"
       }
     ],
     "topLeft": {
       "tag": "header",
-      "text": "Fundhub / Pipeline Org: Fundhub Mon, Aug 17, 12:23:14 PM EDT LIVE"
+      "text": "Fundhub / Closer Dashboard Org: Fundhub Mon, Aug 17, 11:45:16 AM EDT LIVE"
     },
-    "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Mon, Aug 17, 12:23:14 PM EDT LIVE R-01 Sales 16 R-02 Funding: Card Stacking 0 R-03 Funding: Alt-Fin (Lendflow) 0 R-04 Optimization (Repair) Rounds 0 R-05 Inquiry Removal 0 R-06 AR / Collections 0 R-08 Affiliates + White Label 0 R-09 Hiring 0 ⌕ ⚟ Filter 16 cards $50,000 est. — held Archive New Lead 1 $0 est. FR Francis Rawlins MOVE DEL ⠿ — — 5d in stage Survey Complete 1 $0 est. MS Marisol scharon MOVE DEL ⠿ 750+ "
+    "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ fundhub Fundhub / Closer Dashboard ORG: FUNDHUB Mon, Aug 17, 11:45:16 AM EDT LIVE T— TEST — Closer Role closer CALLS TODAY — no closer shift endpoint KEPT — COLLECTED — no deposit rollup for this seat PACE — CD-01 / TODAY'S PIPELINE CLIENT STAGE NEXT WHEN No closer-day pipeline endpoint yet — open Pipeline for the live board. Deal calculators below load when you open this screen with ?client_id=. CD-02 / DEAL CALCULATORS Open from a client. Deal Fundin"
   },
   "mobile": {
     "scrollWidth": 390,
@@ -806,43 +734,25 @@
     "sideW": 228,
     "burger": true,
     "overflowers": [
-      "div.rail-tab",
-      "div.rail-tab",
-      "div.rail-tab",
-      "div.rail-tab",
-      "div.rail-tab",
-      "div.rail-tab"
+      "div.stat-tiles",
+      "div.stat-tile",
+      "div.stat-label",
+      "div.stat-value",
+      "div.stat-sub",
+      "div.stat-tile"
     ],
-    "textUnder11px": 4,
+    "textUnder11px": 35,
     "docH": 844,
     "shots": {
-      "full": "docs/workflows/ui-audit-evidence/pipeline/390-full.png",
-      "fold": "docs/workflows/ui-audit-evidence/pipeline/390-fold.png"
+      "full": "docs/workflows/ui-audit-evidence/closer-dashboard/390-full.png",
+      "fold": "docs/workflows/ui-audit-evidence/closer-dashboard/390-fold.png"
     },
-    "finalUrl": "/app/pipeline.html",
+    "finalUrl": "/app/closer-dashboard.html",
     "apiFails": []
   },
   "clicks": [
     {
       "n": 1,
-      "tag": "button",
-      "text": "⚟ Filter0",
-      "id": "filterBtn",
-      "cls": "filter-btn",
-      "href": null,
-      "w": 68,
-      "h": 31,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
-    },
-    {
-      "n": 2,
       "tag": "button",
       "text": "Search⌘K",
       "id": "fh-shell-search-btn",
@@ -860,7 +770,7 @@
       "result": "OK"
     },
     {
-      "n": 3,
+      "n": 2,
       "tag": "button",
       "text": "Chat",
       "id": "fh-chat-fab",
@@ -876,134 +786,14 @@
       "consoleErrors": [],
       "domChanged": true,
       "result": "OK"
-    },
-    {
-      "n": 4,
-      "tag": "div",
-      "text": "FRFrancis RawlinsMOVEDEL⠿——5d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=eaf80303-0aaa-48d6-8b99-7bd059bd85fc",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
-    },
-    {
-      "n": 5,
-      "tag": "div",
-      "text": "MSMarisol scharonMOVEDEL⠿750+—3d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=b20f9331-2862-48d9-97a9-d316475336bb",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
-    },
-    {
-      "n": 6,
-      "tag": "div",
-      "text": "KSKalaya SirimitrMOVEDEL⠿580-649—2d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=ec5f4923-7b2e-4ddf-a947-5637b2239499",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
-    },
-    {
-      "n": 7,
-      "tag": "div",
-      "text": "SMSelwyn McintoshMOVEDEL⠿700-749—2d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=89f234f6-cf92-4a82-883c-0f0f2b9ca093",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
-    },
-    {
-      "n": 8,
-      "tag": "div",
-      "text": "RRRick RockwellMOVEDEL⠿580-649—3d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=ca2bc6c4-5e5e-4a5a-832a-8129b73195f3",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
     }
   ],
   "clickSummary": {
-    "candidates": 8,
-    "attempted": 8,
+    "candidates": 2,
+    "attempted": 2,
     "skippedForCap": 0,
     "tally": {
-      "OK": 8
+      "OK": 2
     },
     "loadRetriesTotal": 0
   }

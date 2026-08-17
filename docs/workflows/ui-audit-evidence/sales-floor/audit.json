@@ -1,30 +1,25 @@
 {
-  "screen": "/app/pipeline.html",
-  "slug": "pipeline",
-  "email": "closer@fundhub.ai",
+  "screen": "/app/sales-floor.html",
+  "slug": "sales-floor",
+  "email": "sales@fundhub.ai",
   "base": "https://fundhub.ai",
-  "ranAt": "2026-08-17T16:23:00.330Z",
+  "ranAt": "2026-08-17T15:51:51.111Z",
   "login": {
     "ok": true,
-    "cached": true,
-    "landedAt": "/dashboard.html",
-    "role": "closer"
+    "landedAt": "/app/sales-floor.html",
+    "role": "sales_manager",
+    "loginApiStatus": 200
   },
   "load": {
     "httpStatus": 200,
     "retriesFor503OrBounce": 0,
-    "finalUrl": "/app/pipeline.html",
+    "finalUrl": "/app/sales-floor.html",
     "bounced": false,
-    "title": "Fundhub — Pipeline",
+    "title": "Sales floor · Fundhub",
     "apiCalls": [
       {
         "method": "GET",
         "url": "/api/auth/session",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=funding_card_stacking",
         "status": 200
       },
       {
@@ -39,37 +34,12 @@
       },
       {
         "method": "GET",
-        "url": "/api/dashboard/pipeline?key=funding_altfin",
+        "url": "/api/read/sales-floor",
         "status": 200
       },
       {
         "method": "GET",
-        "url": "/api/dashboard/pipeline?key=inquiry_removal",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=sales",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=optimization",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=affiliates_white_label",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=hiring",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/dashboard/pipeline?key=ar_collections",
+        "url": "/api/auth/session",
         "status": 200
       }
     ],
@@ -77,34 +47,82 @@
     "consoleErrors": [],
     "dialogs": [],
     "shots": {
-      "fold": "docs/workflows/ui-audit-evidence/pipeline/1440-fold.png",
-      "full": "docs/workflows/ui-audit-evidence/pipeline/1440-full.png"
+      "fold": "docs/workflows/ui-audit-evidence/sales-floor/1440-fold.png",
+      "full": "docs/workflows/ui-audit-evidence/sales-floor/1440-full.png"
     }
   },
   "dom": {
     "vw": 1440,
     "vh": 900,
-    "docH": 900,
+    "docH": 1639,
     "sizes": {
-      "14px": {
-        "count": 36,
+      "11.5px": {
+        "count": 24,
         "examples": [
-          "Fundhub",
-          "/",
-          "Pipeline"
+          "M-01 / Sales floor",
+          "Where the funnel leaks",
+          "This month"
+        ]
+      },
+      "9px": {
+        "count": 3,
+        "examples": [
+          "0 closers on shift",
+          "TEST — Sales Manager Role",
+          "12"
+        ]
+      },
+      "9.5px": {
+        "count": 25,
+        "examples": [
+          "Cash collected · August",
+          "Funded, not just sold",
+          "0"
+        ]
+      },
+      "44px": {
+        "count": 2,
+        "examples": [
+          "$5",
+          "—"
+        ]
+      },
+      "12.5px": {
+        "count": 11,
+        "examples": [
+          "No monthly sales_manager deposits target",
+          "0 of 0 deposits funded",
+          "Deposits are funding."
+        ]
+      },
+      "25px": {
+        "count": 5,
+        "examples": [
+          "0",
+          "5",
+          "0"
+        ]
+      },
+      "13px": {
+        "count": 24,
+        "examples": [
+          "Chris Stanbridge",
+          "5",
+          "0%"
         ]
       },
       "11px": {
-        "count": 61,
+        "count": 5,
         "examples": [
-          "Org: Fundhub",
-          "Mon, Aug 17, 12:23:14 PM EDT",
-          "LIVE"
+          "Off shift",
+          "setter unknown",
+          "TEST — Sales Manager Role · sales_manage"
         ]
       },
       "12px": {
-        "count": 1,
+        "count": 2,
         "examples": [
+          "—",
           "Search"
         ]
       },
@@ -113,17 +131,11 @@
         "examples": [
           "⌘K"
         ]
-      },
-      "13px": {
-        "count": 1,
-        "examples": [
-          "Chat"
-        ]
       }
     },
-    "navVisibleCount": 5,
+    "navVisibleCount": 4,
     "navActive": [
-      "▤Pipeline"
+      "▣Sales floor"
     ],
     "navGroups": [
       {
@@ -131,8 +143,7 @@
         "items": [
           "▤Pipeline",
           "★Closer Dashboard",
-          "☎Call cockpit",
-          "＃My numbers",
+          "▣Sales floor",
           "▦Calendar"
         ]
       },
@@ -164,9 +175,9 @@
     "h1": [],
     "h2": [],
     "contentWidth": 1440,
-    "contentSel": "div.app",
+    "contentSel": "div.app-shell",
     "sideW": 228,
-    "controlsCount": 24,
+    "controlsCount": 19,
     "controls": [
       {
         "idx": 0,
@@ -249,7 +260,7 @@
         "type": null,
         "text": "▤Pipeline",
         "id": null,
-        "cls": "navitem on",
+        "cls": "navitem",
         "href": "pipeline.html",
         "disabled": false,
         "w": 228,
@@ -260,9 +271,9 @@
         "sidebar": true,
         "beta": false,
         "inputLike": false,
-        "bg": "rgb(22, 22, 25)",
-        "color": "rgb(252, 252, 252)",
-        "filled": true
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
       },
       {
         "idx": 4,
@@ -290,15 +301,15 @@
       },
       {
         "idx": 5,
-        "key": "a|☎Call cockpit||closer-call.html",
+        "key": "a|▣Sales floor||sales-floor.html",
         "ord": 0,
         "viaCursor": false,
         "tag": "a",
         "type": null,
-        "text": "☎Call cockpit",
+        "text": "▣Sales floor",
         "id": null,
-        "cls": "navitem",
-        "href": "closer-call.html",
+        "cls": "navitem on",
+        "href": "sales-floor.html",
         "disabled": false,
         "w": 228,
         "h": 27,
@@ -308,21 +319,21 @@
         "sidebar": true,
         "beta": false,
         "inputLike": false,
-        "bg": "rgba(0, 0, 0, 0)",
-        "color": "rgb(161, 161, 170)",
-        "filled": false
+        "bg": "rgb(22, 22, 25)",
+        "color": "rgb(252, 252, 252)",
+        "filled": true
       },
       {
         "idx": 6,
-        "key": "a|＃My numbers||my-numbers.html",
+        "key": "a|▦Calendar||calendar.html",
         "ord": 0,
         "viaCursor": false,
         "tag": "a",
         "type": null,
-        "text": "＃My numbers",
+        "text": "▦Calendar",
         "id": null,
         "cls": "navitem",
-        "href": "my-numbers.html",
+        "href": "calendar.html",
         "disabled": false,
         "w": 228,
         "h": 27,
@@ -338,30 +349,6 @@
       },
       {
         "idx": 7,
-        "key": "a|▦Calendar||calendar.html",
-        "ord": 0,
-        "viaCursor": false,
-        "tag": "a",
-        "type": null,
-        "text": "▦Calendar",
-        "id": null,
-        "cls": "navitem",
-        "href": "calendar.html",
-        "disabled": false,
-        "w": 228,
-        "h": 27,
-        "top": 193,
-        "left": 0,
-        "aboveFold": true,
-        "sidebar": true,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgba(0, 0, 0, 0)",
-        "color": "rgb(161, 161, 170)",
-        "filled": false
-      },
-      {
-        "idx": 8,
         "key": "button|Funding▾||",
         "ord": 0,
         "viaCursor": false,
@@ -374,7 +361,7 @@
         "disabled": false,
         "w": 228,
         "h": 28,
-        "top": 223,
+        "top": 196,
         "left": 0,
         "aboveFold": true,
         "sidebar": true,
@@ -385,7 +372,7 @@
         "filled": false
       },
       {
-        "idx": 9,
+        "idx": 8,
         "key": "button|Client ops▾||",
         "ord": 0,
         "viaCursor": false,
@@ -398,7 +385,7 @@
         "disabled": false,
         "w": 228,
         "h": 28,
-        "top": 254,
+        "top": 227,
         "left": 0,
         "aboveFold": true,
         "sidebar": true,
@@ -409,7 +396,7 @@
         "filled": false
       },
       {
-        "idx": 10,
+        "idx": 9,
         "key": "button|Watch▾||",
         "ord": 0,
         "viaCursor": false,
@@ -422,7 +409,7 @@
         "disabled": false,
         "w": 228,
         "h": 28,
-        "top": 286,
+        "top": 258,
         "left": 0,
         "aboveFold": true,
         "sidebar": true,
@@ -433,7 +420,7 @@
         "filled": false
       },
       {
-        "idx": 11,
+        "idx": 10,
         "key": "button|Automation▾||",
         "ord": 0,
         "viaCursor": false,
@@ -446,7 +433,7 @@
         "disabled": false,
         "w": 228,
         "h": 28,
-        "top": 317,
+        "top": 290,
         "left": 0,
         "aboveFold": true,
         "sidebar": true,
@@ -457,7 +444,7 @@
         "filled": false
       },
       {
-        "idx": 12,
+        "idx": 11,
         "key": "button|Marketing▾||",
         "ord": 0,
         "viaCursor": false,
@@ -470,7 +457,7 @@
         "disabled": false,
         "w": 228,
         "h": 28,
-        "top": 348,
+        "top": 321,
         "left": 0,
         "aboveFold": true,
         "sidebar": true,
@@ -481,7 +468,7 @@
         "filled": false
       },
       {
-        "idx": 13,
+        "idx": 12,
         "key": "button|Admin▾||",
         "ord": 0,
         "viaCursor": false,
@@ -494,7 +481,7 @@
         "disabled": false,
         "w": 228,
         "h": 28,
-        "top": 379,
+        "top": 352,
         "left": 0,
         "aboveFold": true,
         "sidebar": true,
@@ -505,51 +492,75 @@
         "filled": false
       },
       {
-        "idx": 14,
-        "key": "input|Search name, phone, or email|q|",
-        "ord": 0,
-        "viaCursor": false,
-        "tag": "input",
-        "type": null,
-        "text": "Search name, phone, or email",
-        "id": "q",
-        "cls": null,
-        "href": null,
-        "disabled": false,
-        "w": 193,
-        "h": 19,
-        "top": 95,
-        "left": 268,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": true,
-        "bg": "rgba(0, 0, 0, 0)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
-      },
-      {
-        "idx": 15,
-        "key": "button|⚟ Filter0|filterBtn|",
+        "idx": 13,
+        "key": "button|Flag to marketing|fh-flag-mkt|",
         "ord": 0,
         "viaCursor": false,
         "tag": "button",
-        "type": null,
-        "text": "⚟ Filter0",
-        "id": "filterBtn",
-        "cls": "filter-btn",
+        "type": "button",
+        "text": "Flag to marketing",
+        "id": "fh-flag-mkt",
+        "cls": null,
         "href": null,
         "disabled": false,
-        "w": 68,
+        "w": 131,
         "h": 31,
-        "top": 89,
-        "left": 480,
+        "top": 867,
+        "left": 861,
         "aboveFold": true,
         "sidebar": false,
         "beta": false,
         "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(82, 82, 91)",
+        "bg": "rgb(10, 10, 10)",
+        "color": "rgb(252, 252, 252)",
+        "filled": true
+      },
+      {
+        "idx": 14,
+        "key": "button|Today's recordings|fh-recordings-jump|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Today's recordings",
+        "id": "fh-recordings-jump",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 141,
+        "h": 31,
+        "top": 867,
+        "left": 1000,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(252, 252, 252)",
+        "color": "rgb(0, 0, 0)",
+        "filled": false
+      },
+      {
+        "idx": 15,
+        "key": "button|Refresh from Drive|fh-drive-refresh|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Refresh from Drive",
+        "id": "fh-drive-refresh",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 139,
+        "h": 31,
+        "top": 1192,
+        "left": 269,
+        "aboveFold": false,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(252, 252, 252)",
+        "color": "rgb(0, 0, 0)",
         "filled": false
       },
       {
@@ -591,7 +602,7 @@
         "w": 99,
         "h": 36,
         "top": 12,
-        "left": 894,
+        "left": 785,
         "aboveFold": true,
         "sidebar": false,
         "beta": false,
@@ -623,133 +634,23 @@
         "bg": "rgb(10, 10, 10)",
         "color": "rgb(255, 255, 255)",
         "filled": true
-      },
-      {
-        "idx": 19,
-        "key": "div|FRFrancis RawlinsMOVEDEL⠿——5d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "FRFrancis RawlinsMOVEDEL⠿——5d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 197,
-        "left": 250,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
-      },
-      {
-        "idx": 20,
-        "key": "div|MSMarisol scharonMOVEDEL⠿750+—3d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "MSMarisol scharonMOVEDEL⠿750+—3d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 197,
-        "left": 498,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
-      },
-      {
-        "idx": 21,
-        "key": "div|KSKalaya SirimitrMOVEDEL⠿580-649—2d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "KSKalaya SirimitrMOVEDEL⠿580-649—2d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 197,
-        "left": 746,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
-      },
-      {
-        "idx": 22,
-        "key": "div|SMSelwyn McintoshMOVEDEL⠿700-749—2d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "SMSelwyn McintoshMOVEDEL⠿700-749—2d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 313,
-        "left": 746,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
-      },
-      {
-        "idx": 23,
-        "key": "div|RRRick RockwellMOVEDEL⠿580-649—3d in stageunassigned||",
-        "ord": 0,
-        "viaCursor": true,
-        "tag": "div",
-        "type": null,
-        "text": "RRRick RockwellMOVEDEL⠿580-649—3d in stageunassigned",
-        "id": null,
-        "cls": "card",
-        "href": null,
-        "disabled": false,
-        "w": 222,
-        "h": 110,
-        "top": 429,
-        "left": 746,
-        "aboveFold": true,
-        "sidebar": false,
-        "beta": false,
-        "inputLike": false,
-        "bg": "rgb(255, 255, 255)",
-        "color": "rgb(10, 10, 10)",
-        "filled": false
       }
     ],
     "genericLabels": [],
     "smallTargets": [
       {
-        "text": "⚟ Filter0",
-        "w": 68,
+        "text": "Flag to marketing",
+        "w": 131,
+        "h": 31
+      },
+      {
+        "text": "Today's recordings",
+        "w": 141,
+        "h": 31
+      },
+      {
+        "text": "Refresh from Drive",
+        "w": 139,
         "h": 31
       },
       {
@@ -765,6 +666,13 @@
     ],
     "primaryLooking": [
       {
+        "text": "Flag to marketing",
+        "bg": "rgb(10, 10, 10)",
+        "w": 131,
+        "h": 31,
+        "aboveFold": true
+      },
+      {
         "text": "Chat",
         "bg": "rgb(10, 10, 10)",
         "w": 52,
@@ -775,29 +683,81 @@
     "capsRuns": [],
     "sampleWording": [],
     "loadingWording": [],
-    "errorWording": [],
-    "emptyWording": [],
+    "errorWording": [
+      "Which belief failed"
+    ],
+    "emptyWording": [
+      "0 of 0 deposits funded",
+      "Live objection counts load here. Empty means none logged this month."
+    ],
     "centeredParas": [],
     "offScale": {
-      "7px": 5,
-      "9px": 5,
-      "14px": 1
+      "17px": 6,
+      "18px": 6
     },
     "unevenRows": [],
     "tables": [],
     "metrics": [
       {
-        "text": "fundhub-pipeline · v1 org: fundhub rail: Sales drag a card to change stage · mov",
-        "fontSize": "11px",
-        "tabular": false,
-        "cls": "statusbar"
+        "text": "$5",
+        "fontSize": "44px",
+        "tabular": true,
+        "cls": "big"
+      },
+      {
+        "text": "—",
+        "fontSize": "44px",
+        "tabular": true,
+        "cls": "big"
+      },
+      {
+        "text": "5",
+        "fontSize": "13px",
+        "tabular": true,
+        "cls": "num c2"
+      },
+      {
+        "text": "0%",
+        "fontSize": "13px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "—",
+        "fontSize": "13px",
+        "tabular": true,
+        "cls": "num c4"
+      },
+      {
+        "text": "$5",
+        "fontSize": "13px",
+        "tabular": true,
+        "cls": "num c5"
+      },
+      {
+        "text": "5",
+        "fontSize": "13px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "0%",
+        "fontSize": "13px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "0",
+        "fontSize": "13px",
+        "tabular": true,
+        "cls": "num"
       }
     ],
     "topLeft": {
       "tag": "header",
-      "text": "Fundhub / Pipeline Org: Fundhub Mon, Aug 17, 12:23:14 PM EDT LIVE"
+      "text": "M-01 / Sales floor 0 closers on shift TEST — Sales Manager Role"
     },
-    "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Mon, Aug 17, 12:23:14 PM EDT LIVE R-01 Sales 16 R-02 Funding: Card Stacking 0 R-03 Funding: Alt-Fin (Lendflow) 0 R-04 Optimization (Repair) Rounds 0 R-05 Inquiry Removal 0 R-06 AR / Collections 0 R-08 Affiliates + White Label 0 R-09 Hiring 0 ⌕ ⚟ Filter 16 cards $50,000 est. — held Archive New Lead 1 $0 est. FR Francis Rawlins MOVE DEL ⠿ — — 5d in stage Survey Complete 1 $0 est. MS Marisol scharon MOVE DEL ⠿ 750+ "
+    "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ fundhub M-01 / SALES FLOOR 0 CLOSERS ON SHIFT TEST — SALES MANAGER ROLE CASH COLLECTED · AUGUST $5 No monthly sales_manager deposits target in staff_targets FUNDED, NOT JUST SOLD — 0 of 0 deposits funded 0 Target — WHERE THE FUNNEL LEAKS This month BOOKED 0 HELD 5 DEPOSITS 0 0% of held FUNDED 0 DOWNSELLS 5 $5 Deposits are funding. Keep pressure on show rate and belief spikes below. YOUR CLOSERS Cash · close rate · funded rate · what to do CLOSER CALLS CLOSE FUNDED C"
   },
   "mobile": {
     "scrollWidth": 390,
@@ -805,32 +765,71 @@
     "sideVisible": true,
     "sideW": 228,
     "burger": true,
-    "overflowers": [
-      "div.rail-tab",
-      "div.rail-tab",
-      "div.rail-tab",
-      "div.rail-tab",
-      "div.rail-tab",
-      "div.rail-tab"
-    ],
-    "textUnder11px": 4,
-    "docH": 844,
+    "overflowers": [],
+    "textUnder11px": 26,
+    "docH": 2918,
     "shots": {
-      "full": "docs/workflows/ui-audit-evidence/pipeline/390-full.png",
-      "fold": "docs/workflows/ui-audit-evidence/pipeline/390-fold.png"
+      "full": "docs/workflows/ui-audit-evidence/sales-floor/390-full.png",
+      "fold": "docs/workflows/ui-audit-evidence/sales-floor/390-fold.png"
     },
-    "finalUrl": "/app/pipeline.html",
+    "finalUrl": "/app/sales-floor.html",
     "apiFails": []
   },
   "clicks": [
     {
       "n": 1,
       "tag": "button",
-      "text": "⚟ Filter0",
-      "id": "filterBtn",
-      "cls": "filter-btn",
+      "text": "Flag to marketing",
+      "id": "fh-flag-mkt",
+      "cls": null,
       "href": null,
-      "w": 68,
+      "w": 131,
+      "h": 31,
+      "aboveFold": true,
+      "urlChanged": null,
+      "api": [
+        {
+          "method": "POST",
+          "url": "/api/marketing-flags",
+          "status": 599
+        }
+      ],
+      "intercepted": [
+        {
+          "method": "POST",
+          "url": "/api/marketing-flags",
+          "bodyKeys": [
+            "belief",
+            "lead_source",
+            "setter_label",
+            "outcome_count",
+            "period_start",
+            "period_end",
+            "note"
+          ]
+        }
+      ],
+      "dialogs": [
+        {
+          "type": "alert",
+          "message": "UI audit harness refused to send this write"
+        }
+      ],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 599 (Unknown)"
+      ],
+      "domChanged": false,
+      "result": "WRITE-INTERCEPTED",
+      "shot": "docs/workflows/ui-audit-evidence/sales-floor/clicks/01-WRITE-INTERCEPTED-Flag_to_marketing.png"
+    },
+    {
+      "n": 2,
+      "tag": "button",
+      "text": "Today's recordings",
+      "id": "fh-recordings-jump",
+      "cls": null,
+      "href": null,
+      "w": 141,
       "h": 31,
       "aboveFold": true,
       "urlChanged": null,
@@ -838,11 +837,60 @@
       "intercepted": [],
       "dialogs": [],
       "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
+      "domChanged": false,
+      "result": "NOOP",
+      "shot": "docs/workflows/ui-audit-evidence/sales-floor/clicks/02-NOOP-Today_s_recordings.png"
     },
     {
-      "n": 2,
+      "n": 3,
+      "tag": "button",
+      "text": "Refresh from Drive",
+      "id": "fh-drive-refresh",
+      "cls": null,
+      "href": null,
+      "w": 139,
+      "h": 31,
+      "aboveFold": false,
+      "urlChanged": null,
+      "api": [
+        {
+          "method": "POST",
+          "url": "/api/company-brain/sync",
+          "status": 599
+        },
+        {
+          "method": "GET",
+          "url": "/api/read/sales-floor",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/auth/session",
+          "status": 200
+        }
+      ],
+      "intercepted": [
+        {
+          "method": "POST",
+          "url": "/api/company-brain/sync",
+          "bodyKeys": []
+        }
+      ],
+      "dialogs": [
+        {
+          "type": "alert",
+          "message": "UI audit harness refused to send this write"
+        }
+      ],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 599 (Unknown)"
+      ],
+      "domChanged": false,
+      "result": "WRITE-INTERCEPTED",
+      "shot": "docs/workflows/ui-audit-evidence/sales-floor/clicks/03-WRITE-INTERCEPTED-Refresh_from_Drive.png"
+    },
+    {
+      "n": 4,
       "tag": "button",
       "text": "Search⌘K",
       "id": "fh-shell-search-btn",
@@ -860,7 +908,7 @@
       "result": "OK"
     },
     {
-      "n": 3,
+      "n": 5,
       "tag": "button",
       "text": "Chat",
       "id": "fh-chat-fab",
@@ -876,134 +924,16 @@
       "consoleErrors": [],
       "domChanged": true,
       "result": "OK"
-    },
-    {
-      "n": 4,
-      "tag": "div",
-      "text": "FRFrancis RawlinsMOVEDEL⠿——5d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=eaf80303-0aaa-48d6-8b99-7bd059bd85fc",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
-    },
-    {
-      "n": 5,
-      "tag": "div",
-      "text": "MSMarisol scharonMOVEDEL⠿750+—3d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=b20f9331-2862-48d9-97a9-d316475336bb",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
-    },
-    {
-      "n": 6,
-      "tag": "div",
-      "text": "KSKalaya SirimitrMOVEDEL⠿580-649—2d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=ec5f4923-7b2e-4ddf-a947-5637b2239499",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
-    },
-    {
-      "n": 7,
-      "tag": "div",
-      "text": "SMSelwyn McintoshMOVEDEL⠿700-749—2d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=89f234f6-cf92-4a82-883c-0f0f2b9ca093",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
-    },
-    {
-      "n": 8,
-      "tag": "div",
-      "text": "RRRick RockwellMOVEDEL⠿580-649—3d in stageunassigned",
-      "id": null,
-      "cls": "card",
-      "href": null,
-      "w": 222,
-      "h": 110,
-      "aboveFold": true,
-      "urlChanged": null,
-      "api": [
-        {
-          "method": "GET",
-          "url": "/api/dashboard/client?id=ca2bc6c4-5e5e-4a5a-832a-8129b73195f3",
-          "status": 200
-        }
-      ],
-      "intercepted": [],
-      "dialogs": [],
-      "consoleErrors": [],
-      "domChanged": true,
-      "result": "OK"
     }
   ],
   "clickSummary": {
-    "candidates": 8,
-    "attempted": 8,
+    "candidates": 5,
+    "attempted": 5,
     "skippedForCap": 0,
     "tally": {
-      "OK": 8
+      "WRITE-INTERCEPTED": 2,
+      "NOOP": 1,
+      "OK": 2
     },
     "loadRetriesTotal": 0
   }

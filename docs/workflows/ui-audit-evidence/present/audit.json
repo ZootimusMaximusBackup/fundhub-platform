@@ -1,0 +1,159 @@
+{
+  "screen": "/app/present.html",
+  "slug": "present",
+  "email": "closer@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T15:50:12.267Z",
+  "login": {
+    "ok": true,
+    "cached": true,
+    "landedAt": "/dashboard.html",
+    "role": "closer"
+  },
+  "load": {
+    "httpStatus": 200,
+    "retriesFor503OrBounce": 0,
+    "finalUrl": "/app/present.html",
+    "bounced": false,
+    "title": "Closer · Present",
+    "apiCalls": [],
+    "apiFails": [],
+    "consoleErrors": [],
+    "dialogs": [],
+    "shots": {
+      "fold": "docs/workflows/ui-audit-evidence/present/1440-fold.png",
+      "full": "docs/workflows/ui-audit-evidence/present/1440-full.png"
+    }
+  },
+  "dom": {
+    "vw": 1440,
+    "vh": 900,
+    "docH": 900,
+    "sizes": {
+      "9.5px": {
+        "count": 1,
+        "examples": [
+          "Present"
+        ]
+      },
+      "30px": {
+        "count": 1,
+        "examples": [
+          "Open Present from a contact. This page n"
+        ]
+      },
+      "13px": {
+        "count": 1,
+        "examples": [
+          "Back to the call cockpit"
+        ]
+      }
+    },
+    "navVisibleCount": 0,
+    "navActive": [],
+    "navGroups": [],
+    "h1": [
+      "Open Present from a contact. This page needs ?contact= on the URL."
+    ],
+    "h2": [],
+    "contentWidth": 1440,
+    "contentSel": "div#app",
+    "sideW": 0,
+    "controlsCount": 1,
+    "controls": [
+      {
+        "idx": 0,
+        "key": "a|Back to the call cockpit||closer-call.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "Back to the call cockpit",
+        "id": null,
+        "cls": null,
+        "href": "closer-call.html",
+        "disabled": false,
+        "w": 143,
+        "h": 16,
+        "top": 131,
+        "left": 22,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 238)",
+        "filled": false
+      }
+    ],
+    "genericLabels": [],
+    "smallTargets": [
+      {
+        "text": "Back to the call cockpit",
+        "w": 143,
+        "h": 16
+      }
+    ],
+    "primaryLooking": [],
+    "capsRuns": [],
+    "sampleWording": [],
+    "loadingWording": [],
+    "errorWording": [],
+    "emptyWording": [],
+    "centeredParas": [],
+    "offScale": {},
+    "unevenRows": [],
+    "tables": [],
+    "metrics": [],
+    "topLeft": {
+      "tag": "span",
+      "text": "Present"
+    },
+    "bodyText": "PRESENT Open Present from a contact. This page needs ?contact= on the URL. Back to the call cockpit"
+  },
+  "mobile": {
+    "scrollWidth": 390,
+    "horizontalOverflow": false,
+    "sideVisible": false,
+    "sideW": 0,
+    "burger": false,
+    "overflowers": [],
+    "textUnder11px": 1,
+    "docH": 844,
+    "shots": {
+      "full": "docs/workflows/ui-audit-evidence/present/390-full.png",
+      "fold": "docs/workflows/ui-audit-evidence/present/390-fold.png"
+    },
+    "finalUrl": "/app/present.html",
+    "apiFails": []
+  },
+  "clicks": [
+    {
+      "n": 1,
+      "tag": "a",
+      "text": "Back to the call cockpit",
+      "id": null,
+      "cls": null,
+      "href": "closer-call.html",
+      "w": 143,
+      "h": 16,
+      "aboveFold": true,
+      "urlChanged": "/app/closer-call.html",
+      "api": [],
+      "intercepted": [],
+      "dialogs": [],
+      "consoleErrors": [],
+      "domChanged": true,
+      "result": "NAV"
+    }
+  ],
+  "clickSummary": {
+    "candidates": 1,
+    "attempted": 1,
+    "skippedForCap": 0,
+    "tally": {
+      "NAV": 1
+    },
+    "loadRetriesTotal": 0
+  }
+}
