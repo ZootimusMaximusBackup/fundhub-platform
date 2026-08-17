@@ -138,7 +138,29 @@
        loaded. UI-STANDARDS §4: a role does not render an item it cannot use.
        Nav row moved to match the gate that was already there — the gate itself
        is unchanged. (UI audit 2026-08-17, pattern row C.) */
-    "sample-data.html"
+    "sample-data.html",
+    /* campaign-manager.html and content-admin.html — parked here by owner
+       decision on 2026-08-17, NOT because the gates say owner/admin.
+
+       Neither screen works when opened from the rail: campaign-manager answers
+       400 on every read because it has no partner picker and sends no partner
+       id, and content-admin has no backend at all by its own on-screen text.
+       The 2026-08-17 fix run first removed both rows from every rail on that
+       basis (§4: a role does not render an item it cannot use). The owner asked
+       for them back on his own nav so he can reach them to review — board
+       OPEN-QUESTIONS #13 (how staff scope the partner screens) and #14 (whether
+       content-admin ships at all) are still OPEN and neither is answered here.
+
+       Owner-and-admin rather than owner-alone: ROLE_TABS maps both to "*", so
+       this list is the narrowest existing shelf that keeps the two rows off
+       every staff rail. Splitting owner from admin would need a new mechanism
+       nobody has asked for. Staff roles still do not see either row — that part
+       of the §4 fix stands.
+
+       When #13/#14 are answered: give the screen a working read and move the
+       entry back onto the staff surface, or delete the row for good. */
+    "campaign-manager.html",
+    "content-admin.html"
   ];
 
   /* Closer desk — call cockpit + personal numbers. In every sidebar so the
@@ -160,28 +182,6 @@
      added for those roles — "*" already covers owner/admin). */
   var HIRING_ONLY = ["hiring.html"];
 
-  /* OFFERED_TO_NOBODY — in ALL and in the sidebar markup, offered to no role.
-     Not a permission decision: the screen behind the row does not work when it
-     is opened from the rail, for anybody, owner included.
-
-       campaign-manager.html — every read answers 400 because the screen has no
-         partner picker and sends no partner id; the tiles, the 11 campaigns and
-         the red "1 CEILING BREACHED" pill on top of them are a sample book.
-       content-admin.html — no backend exists for it, by the screen's own text.
-
-     UI-STANDARDS §4: an item that opens a screen the role cannot use does not
-     render. The files, the routes and the API gates are untouched — only the
-     rail stops offering them, so typing the path bounces you home like any
-     other screen your role does not have.
-
-     THEY STAY IN ALL ON PURPOSE. src/http/app-nav-reachability.test.mjs fails
-     if a sidebar row points at a screen ALL has never heard of, and the 30-odd
-     screens each carry their own inline copy of this sidebar
-     (src/http/app-nav-matches-shell.test.mjs), so the ROW cannot be deleted
-     from here alone. Give either screen a working read and delete its entry
-     below — that is the whole change needed to put it back. */
-  var OFFERED_TO_NOBODY = ["campaign-manager.html", "content-admin.html"];
-
   /* staffTabs — every screen a signed-in employee may open, which is every row
      the shared sidebar leaves them looking at — except the role-narrow
      screens above, which closer / sales_manager pick up in allowedFor().
@@ -199,8 +199,7 @@
         && CLOSER_DESK_ONLY.indexOf(s) === -1
         && SALES_FLOOR_ONLY.indexOf(s) === -1
         && PORTAL_ONLY.indexOf(s) === -1
-        && HIRING_ONLY.indexOf(s) === -1
-        && OFFERED_TO_NOBODY.indexOf(s) === -1;
+        && HIRING_ONLY.indexOf(s) === -1;
     });
   }
 
@@ -290,12 +289,7 @@
   function allowedFor(role) {
     if (!role) return [];
     var m = ROLE_TABS[role];
-    /* "*" is every screen EXCEPT the ones no role is offered — see
-       OFFERED_TO_NOBODY. Owner and admin are not an exception to that list:
-       the two screens on it are broken for them too. */
-    if (m === "*") {
-      return ALL.filter(function (s) { return OFFERED_TO_NOBODY.indexOf(s) === -1; });
-    }
+    if (m === "*") return ALL.slice();
     if (m === "closer") return staffTabs().concat(CLOSER_DESK_ONLY);
     if (m === "sales_manager") return staffTabs().concat(SALES_FLOOR_ONLY);
     if (m === "staff" || !m) return staffTabs();
