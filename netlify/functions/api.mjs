@@ -138,6 +138,8 @@ import creativeJobs from "../../api/creative/jobs.mjs";
 import creativeApprovals from "../../api/creative/approvals.mjs";
 import creativeActions from "../../api/creative/actions.mjs";
 import creativeRun from "../../api/creative/run.mjs";
+import contentTiles from "../../api/content/tiles.mjs";
+import contentUpload from "../../api/content/upload.mjs";
 import hiringCandidates from "../../api/hiring/candidates.mjs";
 import hiringApplication from "../../api/hiring/application.mjs";
 import hiringPostings from "../../api/hiring/postings.mjs";
@@ -496,6 +498,10 @@ export const ROUTES = {
   "creative/approvals": creativeApprovals,
   "creative/actions": creativeActions,
   "creative/run": creativeRun,
+  /* Content — welcome video upload + locked-tile save. ROLE_SETS.OPS
+     (owner, admin). Same people the Content nav item is shown to. */
+  "content/tiles": contentTiles,
+  "content/upload": contentUpload,
 
   // Hiring. ROLE_SETS.HIRING is {owner, admin} — NOT the STAFF set, because
   // these carry applicant PII and the scoring trail of an automated employment

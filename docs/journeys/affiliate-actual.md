@@ -24,13 +24,14 @@ flowchart TD
     CAN --> A_read[Reading data — 2 routes]
     CAN --> A_top_level[Everything else — 5 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 137 routes]
+    WHO -->|Yes| CANT[Blocked — 139 routes]
     CANT --> B_auth[Signing in and out — 3 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_campaigns[Campaigns — 8 blocked]
     CANT --> B_chat[chat — 4 blocked]
     CANT --> B_company_brain[company-brain — 2 blocked]
     CANT --> B_consent[consent — 1 blocked]
+    CANT --> B_content[content — 2 blocked]
     CANT --> B_creative[Creative Factory — 7 blocked]
     CANT --> B_dashboard[The dashboard — 6 blocked]
     CANT --> B_demo[demo — 2 blocked]
@@ -49,7 +50,7 @@ flowchart TD
 
 ## What they can reach
 
-**21 of 158 routes.**
+**21 of 160 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -82,7 +83,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**137 of 158 routes.**
+**139 of 160 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -112,6 +113,8 @@ flowchart TD
 | `/api/company-brain/reviews` | GET, POST | owner |
 | `/api/company-brain/sync` | GET, POST | owner, admin, sales_manager |
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
+| `/api/content/tiles` | GET, POST | owner, admin |
+| `/api/content/upload` | POST | owner, admin |
 | `/api/contracts` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/creative/actions` | POST | partner, staff |
 | `/api/creative/approvals` | GET | partner, staff |

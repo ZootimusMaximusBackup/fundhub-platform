@@ -3,6 +3,12 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-17 | role-owner | Owner/admin can read and save Content (`/api/content/tiles`, `/api/content/upload`). Closers and advisors cannot. | Named fix: Content had no save path | (pending commit)
+
+2026-08-17 | gate-relay | If the watcher stops or the Mac slept, Telegram says the messenger went down (or that it is back). Silence is no longer the same as "nothing needs you." | Owner: add to job 1 | (pending commit)
+
+2026-08-17 | gate-relay | A reply closes the question it was sent for (button or reply-to), not the oldest open one. The text names the thread. An unanswered question is sent again after 15 minutes. Wait with no question file fails out loud. | Owner: GO on job 1 plus wrong-thread yes is worse than a missed ask | (pending commit)
+
 2026-08-17 | gate-relay | Telegram now sends the real ask (`context`) when the question is a stub like "Build?". | Owner: phone must say what he is deciding | (pending commit)
 
 2026-08-17 | role-closer | Closers can read `GET /api/read/deal-math` — net cash and monthly from the numbers they type plus the drawn amount on the file. | Owner: close the deal-math HIGH; do not invent a draw | (pending commit)

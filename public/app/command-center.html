@@ -1078,7 +1078,15 @@ document.querySelectorAll('.rail-toggle').forEach(function(t){
     }
   }
 
-  if (typeof FHData !== "undefined" && FHData.kpis) {
+  function bootKpis() {
+    /* data.js is deferred. This used to check FHData during parse, miss it,
+       and never write the tiles — they painted empty and stayed empty. */
+    if (typeof FHData === "undefined" || !FHData.kpis) {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", bootKpis, { once: true });
+      }
+      return;
+    }
     FHData.wire(FHData.kpis("today"), "command center KPIs", function (data) {
       if (!data || !data.display) return null;
       paintKpis(data.display, data.kpis);
@@ -1099,6 +1107,7 @@ document.querySelectorAll('.rail-toggle').forEach(function(t){
              " · funded " + data.display.funded;
     });
   }
+  bootKpis();
 
   var RAIL_KEYS = {
     "R-01": "sales",

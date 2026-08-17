@@ -266,16 +266,15 @@ table.grid tr:last-child td{border-bottom:0}
     <div class="topbar">
       <span class="crumb">Setup</span><h1>Content</h1>
       <div class="spacer"></div>
-      <span class="chip on" id="liveChip"><span class="cd"></span><span id="liveTxt">local draft · not saved</span></span>
+      <span class="chip on" id="liveChip"><span class="cd"></span><span id="liveTxt">loading…</span></span>
+      <button class="btn dark mono" id="saveBtn" type="button" hidden>Save changes</button>
     </div>
 
     <div class="content fh-maxw">
 
-      <div class="notice" id="noBackendNotice" style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:8px;background:rgba(169,198,232,.16);border:1px solid var(--info);color:#22415F;font-size:var(--fs-body);margin-bottom:14px">
+      <div class="notice" id="noBackendNotice" style="display:none;align-items:center;gap:9px;padding:9px 13px;border-radius:8px;background:rgba(169,198,232,.16);border:1px solid var(--info);color:#22415F;font-size:var(--fs-body);margin-bottom:14px">
         <span>◉</span>
-        <span><b>Nothing on this screen is saved.</b> It is a preview of what a client sees in their portal — the
-          welcome video and the “Unlock More” tiles. Anything you change here stays in this browser tab and is gone
-          when you reload it.</span>
+        <span id="noticeTxt"></span>
       </div>
 
       <div class="stats">
@@ -294,6 +293,30 @@ table.grid tr:last-child td{border-bottom:0}
               <div class="eyebrow">CN-01 <span class="sep">/</span> VIDEO LIBRARY</div>
               <div class="spacer"></div>
               <span class="badge b-gray mono" id="libCount">0 videos</span>
+            </div>
+            <div class="card-bd" id="uploadBox" hidden>
+              <div class="drop" id="drop">
+                <div class="di">▶</div>
+                <div class="dt">
+                  <div class="n">Upload a welcome video</div>
+                  <div class="d">MP4, MOV, or WebM. The file is stored, then listed below.</div>
+                </div>
+                <button class="btn mono" id="chooseBtn" type="button">Choose file</button>
+                <input type="file" id="vfile" hidden accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm">
+              </div>
+              <div class="picked" id="picked"></div>
+              <div class="upmeta" id="upmeta">
+                <div class="field"><label>Title</label><input id="upTitle" placeholder="Welcome video title"></div>
+                <div class="field"><label>Duration</label><input id="upDur" class="num" placeholder="0:00"></div>
+                <div class="field"><label>Assign to tier</label>
+                  <select id="upTier"></select>
+                </div>
+              </div>
+              <div style="display:flex;gap:9px;margin-top:12px;align-items:center">
+                <button class="btn dark mono" id="doUpload" type="button" disabled>Upload</button>
+                <button class="btn mono" id="clearUpload" type="button" hidden>Clear</button>
+                <span class="hint mono" id="upHint"></span>
+              </div>
             </div>
             <div id="vlist"></div>
           </div>
@@ -320,6 +343,7 @@ table.grid tr:last-child td{border-bottom:0}
               <div class="eyebrow">CN-03 <span class="sep">/</span> LOCKED TILE EDITOR</div>
               <div class="spacer"></div>
               <span class="badge b-gray mono">drives “Unlock More”</span>
+              <button class="btn dark mono sm" id="saveTilesBtn" type="button" hidden>Save tiles</button>
             </div>
             <div class="card-bd">
               <div id="tileEditors"></div>
@@ -365,54 +389,26 @@ table.grid tr:last-child td{border-bottom:0}
   </div>
 </div>
 
+<script defer src="data.js"></script>
 <script>
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
 
-/* ══ DATA ════════════════════════════════════════════════════════════════
-   Entitlement tiers a client can hold. DEFAULT is the fall-through for anyone
-   whose tier has no video mapped.
-   ════════════════════════════════════════════════════════════════════════ */
-var TIERS = [
-  {id:'card-stacking', name:'Card Stacking DFY',          note:'done-for-you funding rounds'},
-  {id:'consulting',    name:'Consulting Services Package', note:'strategist-led, client runs it'},
-  {id:'repair',        name:'Credit Repair Bundle',        note:'optimization rounds'},
-  {id:'inquiry',       name:'Inquiry Removal',             note:'per-unit removals'},
-  {id:'default',       name:'Default',                     note:'no tier mapped', isDefault:true}
-];
-
-/* No api/content/* endpoint exists (see the notice at the top of the page), so
-   this starts empty rather than with invented video rows — there is nothing
-   real to show, and pretending otherwise is exactly what CN-00's stats used to
-   do. Uploading through CN-01 below only pushes into this in-memory array; it
-   is gone on reload. */
+/* Tiers come from products. Default is the fall-through when a product has
+   no video mapped. Tiles come from entitlement_catalog. Nothing here is
+   a built-in roster. */
+var TIERS = [{id:'default', name:'Default', note:'no tier mapped', isDefault:true}];
 var VIDEOS = [];
-
-/* tier id -> video id. Empty for the same reason — nothing is mapped until a
-   real video exists to map. */
 var MAP = {};
-
-/* the locked tiles the portal renders under “Unlock More”. Price is what the
-   client is shown; the catalogue in Products & Commissions stays the source of
-   truth for what is actually charged. */
-var TILES = [
-  {id:'metro2', code:'T-01', name:'Metro 2 Dispute Letter Pack — Rounds 2 & 3',
-   copy:'Two more rounds of dispute letters, drafted and mailed for you, aimed at what\'s still holding your score down.',
-   price:450, on:false},
-  {id:'roadmap', code:'T-02', name:'Credit Optimization Roadmap',
-   copy:'A month-by-month plan to lift your score before your next funding round, built off your Credit Analysis Report.',
-   price:2000, on:false},
-  {id:'consulting', code:'T-03', name:'Consulting Services Package',
-   copy:'Work one-to-one with a strategist to plan and run your next round yourself, start to finish.',
-   price:1000, on:false},
-  {id:'inquiry', code:'T-04', name:'Inquiry Removal',
-   copy:'We challenge hard inquiries that are dragging your score down, priced per removal.',
-   price:95, on:false}
-];
+var TILES = [];
+var DIRTY = false;
 
 var previewTier = 'card-stacking';
 
-function money(n){ return '$' + Number(n).toLocaleString('en-US'); }
+function money(n){
+  if(n === '' || n == null || !Number.isFinite(Number(n))) return '—';
+  return '$' + Number(n).toLocaleString('en-US');
+}
 function videoById(id){ for(var i=0;i<VIDEOS.length;i++){ if(VIDEOS[i].id===id) return VIDEOS[i]; } return null; }
 function tierById(id){ for(var i=0;i<TIERS.length;i++){ if(TIERS[i].id===id) return TIERS[i]; } return null; }
 
@@ -420,8 +416,7 @@ function tierById(id){ for(var i=0;i<TIERS.length;i++){ if(TIERS[i].id===id) ret
 function renderVideos(){
   var host = document.getElementById('vlist');
   if(!VIDEOS.length){
-    host.innerHTML = '<div class="empty">No videos yet. There is no way to add one from this screen — ' +
-      'the video library has not been built. When it is, your videos will be listed here.</div>';
+    host.innerHTML = '<div class="empty">No videos yet. Upload one above and it will stay after you reload.</div>';
   } else {
     host.innerHTML = VIDEOS.map(function(v){
       /* which tiers point at this video */
@@ -434,7 +429,7 @@ function renderVideos(){
         '<div class="thumb"><span class="logo" role="presentation"></span><span class="dur">' + esc(v.dur) + '</span></div>' +
         '<div class="vmeta">' +
           '<div class="vt">' + esc(v.title) + '</div>' +
-          '<div class="vd">' + esc(v.id) + ' · uploaded ' + esc(v.up) + ' · ' + esc(v.by) + '</div>' +
+          '<div class="vd">' + esc(v.id) + (v.up ? ' · uploaded ' + esc(v.up) : '') + (v.by ? ' · ' + esc(v.by) : '') + '</div>' +
         '</div>' +
         '<div class="vacts">' + badge + '</div>' +
       '</div>';
@@ -466,6 +461,7 @@ function renderTiers(){
   host.querySelectorAll('select').forEach(function(sel){
     sel.addEventListener('change', function(){
       MAP[sel.dataset.tier] = sel.value;
+      markDirty();
       renderVideos(); renderPreview(); renderStats();
     });
   });
@@ -474,6 +470,10 @@ function renderTiers(){
 /* ══ LOCKED TILE EDITOR ══════════════════════════════════════════════════ */
 function renderEditors(){
   var host = document.getElementById('tileEditors');
+  if(!TILES.length){
+    host.innerHTML = '<div class="empty">No locked tiles on file for this company yet.</div>';
+    return;
+  }
   host.innerHTML = TILES.map(function(t){
     return '<div class="ted' + (t.on ? '' : ' off') + '" data-ed="' + esc(t.id) + '">' +
       '<div class="ted-hd">' +
@@ -491,7 +491,7 @@ function renderEditors(){
           '<span class="hint">shown under the name, in client language</span></div>' +
         '<div class="field"><label>Price shown</label>' +
           '<div class="pricewrap"><span class="cur">$</span>' +
-          '<input data-f="price" class="num" type="number" min="0" step="1" value="' + t.price + '"></div></div>' +
+            '<input data-f="price" class="num" type="number" min="0" step="1" value="' + (t.price === '' || t.price == null ? '' : t.price) + '"></div></div>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -504,8 +504,9 @@ function renderEditors(){
     ed.querySelectorAll('[data-f]').forEach(function(inp){
       inp.addEventListener('input', function(){
         var f = inp.dataset.f;
-        rec[f] = (f === 'price') ? (parseInt(inp.value, 10) || 0) : inp.value;
+        rec[f] = (f === 'price') ? inp.value : inp.value;
         if(f === 'name') ed.querySelector('.nm').textContent = rec.name;
+        markDirty();
         renderPreview();
       });
     });
@@ -520,6 +521,7 @@ function renderEditors(){
       var st = ed.querySelector('[data-state]');
       st.textContent = rec.on ? 'Showing' : 'Hidden';
       st.className = 'badge ' + (rec.on ? 'b-ok' : 'b-gray') + ' mono';
+      markDirty();
       renderPreview(); renderStats();
     }
     sw.addEventListener('click', flip);
@@ -577,8 +579,8 @@ function renderStats(){
   var live = TILES.filter(function(t){ return t.on; }).length;
   document.getElementById('kTiles').textContent = live;
   document.getElementById('liveTxt').textContent = live
-    ? (live + ' tile' + (live===1?'':'s') + ' on · local draft, not saved')
-    : 'local draft · not saved';
+    ? (live + ' tile' + (live===1?'':'s') + ' on' + (DIRTY ? ' · unsaved' : ''))
+    : (DIRTY ? 'unsaved changes' : 'saved');
 
   var mapped = TIERS.filter(function(t){ return !t.isDefault && MAP[t.id]; }).length,
       total  = TIERS.filter(function(t){ return !t.isDefault; }).length;
@@ -599,20 +601,214 @@ function renderStats(){
   }
 }
 
-/* ══ UPLOAD — removed, not hidden ══════════════════════════════════════════
-   There is no api/content/* route and no storage signed-URL path for videos,
-   so the upload controls do not render at all (UI-STANDARDS §5). An earlier
-   version faked a progress bar and pushed into VIDEOS[]; the version after
-   that left the same buttons on screen, disabled, labelled "not available
-   yet". Both are out. Do not invent an endpoint here. */
+/* ══ SAVE / UPLOAD ═══════════════════════════════════════════════════════ */
+function canWrite(){
+  return window.FHData && typeof FHData.write === 'function' && typeof FHData.uploadFiles === 'function';
+}
+function showNotice(text){
+  var box = document.getElementById('noBackendNotice');
+  var txt = document.getElementById('noticeTxt');
+  if(!text){ box.style.display = 'none'; return; }
+  txt.textContent = text;
+  box.style.display = 'flex';
+}
+function markDirty(){
+  DIRTY = true;
+  renderStats();
+}
+function applyBundle(data){
+  VIDEOS = (data.videos || []).map(function(v){
+    var when = v.uploaded_at ? new Date(v.uploaded_at) : null;
+    return {
+      id: v.id,
+      title: v.title,
+      dur: v.duration_label || '',
+      up: when ? when.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '',
+      by: ''
+    };
+  });
+  MAP = {};
+  var rawMap = data.map || {};
+  Object.keys(rawMap).forEach(function(k){ MAP[k] = rawMap[k]; });
+  var products = data.products || [];
+  TIERS = products.map(function(p){
+    return { id: p.id, name: p.name, note: p.note || '' };
+  }).concat([{ id:'default', name:'Default', note:'no tier mapped', isDefault:true }]);
+  TILES = (data.tiles || []).map(function(t){
+    return {
+      id: t.code,
+      code: t.code,
+      name: t.name,
+      copy: t.copy || '',
+      price: t.price_cents == null ? '' : (Number(t.price_cents) / 100),
+      on: !!t.on
+    };
+  });
+  if(!tierById(previewTier) && TIERS.length) previewTier = TIERS[0].id;
+  DIRTY = false;
+}
 
-/* ══ BOOT ════════════════════════════════════════════════════════════════ */
-renderVideos();
-renderTiers();
-renderEditors();
-renderSwitch();
-renderPreview();
-renderStats();
+function tilePayload(){
+  return TILES.map(function(t){
+    var dollars = t.price === '' || t.price == null ? null : Number(t.price);
+    return {
+      code: t.code || t.id,
+      name: t.name,
+      copy: t.copy || '',
+      price_cents: dollars == null || !Number.isFinite(dollars) ? null : Math.round(dollars * 100),
+      on: !!t.on
+    };
+  });
+}
+
+function saveAll(){
+  if(!canWrite()) return;
+  var btn = document.getElementById('saveBtn');
+  var btn2 = document.getElementById('saveTilesBtn');
+  btn.disabled = true; btn2.disabled = true;
+  btn.textContent = 'Saving…';
+  FHData.write('/api/content/tiles', { action:'save', tiles: tilePayload(), map: MAP }).then(function(res){
+    btn.disabled = false; btn2.disabled = false;
+    btn.textContent = 'Save changes';
+    if(!res.ok){
+      showNotice(res.error || 'The save did not go through. Try again.');
+      return;
+    }
+    applyBundle(res.data);
+    paintAll();
+    showNotice('');
+  });
+}
+
+var pickedFile = null;
+function fillUpTier(){
+  var sel = document.getElementById('upTier');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— none yet —</option>' +
+    TIERS.map(function(t){ return '<option value="'+esc(t.id)+'">'+esc(t.name)+'</option>'; }).join('');
+}
+function setPicked(file){
+  pickedFile = file || null;
+  var picked = document.getElementById('picked');
+  var meta = document.getElementById('upmeta');
+  var go = document.getElementById('doUpload');
+  var clr = document.getElementById('clearUpload');
+  if(!pickedFile){
+    picked.className = 'picked';
+    picked.innerHTML = '';
+    meta.classList.remove('on');
+    go.disabled = true;
+    clr.hidden = true;
+    document.getElementById('upHint').textContent = '';
+    return;
+  }
+  picked.className = 'picked on';
+  picked.innerHTML = '<div class="pfile"><span class="pi">▶</span><span class="pn">'+esc(pickedFile.name)+
+    '</span><span class="ps">'+Math.max(1, Math.round(pickedFile.size/1024))+' KB</span></div>';
+  meta.classList.add('on');
+  go.disabled = false;
+  clr.hidden = false;
+  if(!document.getElementById('upTitle').value) document.getElementById('upTitle').value = pickedFile.name.replace(/\.[^.]+$/, '');
+  fillUpTier();
+}
+function wireUpload(){
+  var box = document.getElementById('uploadBox');
+  if(!canWrite()){ box.hidden = true; return; }
+  box.hidden = false;
+  var input = document.getElementById('vfile');
+  document.getElementById('chooseBtn').addEventListener('click', function(){ input.click(); });
+  input.addEventListener('change', function(){ setPicked(input.files && input.files[0]); });
+  var drop = document.getElementById('drop');
+  drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.classList.add('hot'); });
+  drop.addEventListener('dragleave', function(){ drop.classList.remove('hot'); });
+  drop.addEventListener('drop', function(e){
+    e.preventDefault(); drop.classList.remove('hot');
+    setPicked(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]);
+  });
+  document.getElementById('clearUpload').addEventListener('click', function(){
+    input.value = '';
+    setPicked(null);
+  });
+  document.getElementById('doUpload').addEventListener('click', function(){
+    if(!pickedFile || !canWrite()) return;
+    var go = this;
+    go.disabled = true;
+    document.getElementById('upHint').textContent = 'Uploading…';
+    FHData.uploadFiles('/api/content/upload', [pickedFile], {
+      title: document.getElementById('upTitle').value,
+      duration: document.getElementById('upDur').value
+    }).then(function(res){
+      if(!res.ok){
+        go.disabled = false;
+        document.getElementById('upHint').textContent = res.error || 'The upload did not go through.';
+        return;
+      }
+      var video = res.data && res.data.video;
+      var tier = document.getElementById('upTier').value;
+      if(video && tier) MAP[tier] = video.id;
+      document.getElementById('upHint').textContent = 'Uploaded.';
+      input.value = '';
+      setPicked(null);
+      if(video && tier){
+        return FHData.write('/api/content/tiles', { action:'save', map: MAP }).then(function(saveRes){
+          if(saveRes.ok) applyBundle(saveRes.data);
+          else showNotice(saveRes.error || 'The video landed, but the tier map did not save.');
+          paintAll();
+        });
+      }
+      return FHData.write('/api/content/tiles', { action:'save', tiles: tilePayload(), map: MAP }).then(function(saveRes){
+        if(saveRes.ok) applyBundle(saveRes.data);
+        paintAll();
+      });
+    });
+  });
+}
+
+function paintAll(){
+  renderVideos();
+  renderTiers();
+  renderEditors();
+  renderSwitch();
+  renderPreview();
+  renderStats();
+  fillUpTier();
+}
+
+function boot(){
+  if(!window.FHData || typeof FHData.write !== 'function'){
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', boot, { once: true });
+      return;
+    }
+    showNotice('The save path did not load, so nothing on this screen can be stored. Reload the page.');
+    paintAll();
+    return;
+  }
+  var t = '';
+  try { t = localStorage.getItem('fh_token') || ''; } catch(e){}
+  fetch('/api/content/tiles', {
+    headers: t ? { accept:'application/json', authorization:'Bearer '+t } : { accept:'application/json' }
+  }).then(function(r){ return r.json().catch(function(){ return { ok:false }; }); })
+    .then(function(d){
+      if(!d || d.ok !== true){
+        showNotice((d && d.message) || 'Content could not be read. Sign in as an owner or admin and reload.');
+        paintAll();
+        return;
+      }
+      applyBundle(d);
+      document.getElementById('saveBtn').hidden = false;
+      document.getElementById('saveTilesBtn').hidden = false;
+      document.getElementById('saveBtn').addEventListener('click', saveAll);
+      document.getElementById('saveTilesBtn').addEventListener('click', saveAll);
+      wireUpload();
+      paintAll();
+      showNotice('');
+    }).catch(function(){
+      showNotice('Content could not be read right now. Reload the page.');
+      paintAll();
+    });
+}
+boot();
 </script>
 </body>
 </html>

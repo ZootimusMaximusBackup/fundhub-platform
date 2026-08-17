@@ -1765,7 +1765,15 @@ function renderScope(){
 function loadPartnerPicker(){
   var sel = document.getElementById('partnerSel');
   if(!sel) return;
+  /* data.js is deferred. This block used to run during parse, before
+     FHData existed, and lock the list on "Could not load partners"
+     even when the partner read itself was fine. Wait until the data
+     script is ready, then ask. */
   if(!window.FHData || typeof FHData.partners !== 'function'){
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', loadPartnerPicker, { once: true });
+      return;
+    }
     sel.innerHTML = '<option value="">Could not load partners</option>';
     sel.disabled = true;
     return;
