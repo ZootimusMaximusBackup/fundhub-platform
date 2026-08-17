@@ -24,7 +24,7 @@ flowchart TD
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 1 route]
     CAN --> A_public[public — 3 routes]
-    CAN --> A_read[Reading data — 1 route]
+    CAN --> A_read[Reading data — 3 routes]
     CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 130 routes]
@@ -51,7 +51,7 @@ flowchart TD
 
 ## What they can reach
 
-**24 of 154 routes.**
+**26 of 156 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -77,6 +77,8 @@ flowchart TD
 | `/api/public/partner-page` | GET | anyone |
 | `/api/public/survey-submit` | POST | anyone |
 | `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager<br>plus: client |
+| `/api/read/portal-contracts` | GET | staff, client |
+| `/api/read/portal-summary` | GET | staff, client |
 | `/api/soft-pull-approve` | GET, POST | anyone |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
@@ -87,7 +89,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**130 of 154 routes.**
+**130 of 156 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

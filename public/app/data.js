@@ -236,6 +236,8 @@ window.FHData = (function () {
     messageTemplates:function (p) { return this.read("message-templates", p); },
     staff:           function (p) { return this.read("staff", p); },
     entitlements:    function (p) { return this.read("entitlements", p); },
+    portalContracts: function (p) { return this.read("portal-contracts", p); },
+    portalSummary:   function (p) { return this.read("portal-summary", p); },
     failedEvents:    function (p) { return this.read("failed-events", p); },
     /* The staff reply inbox — public/app/messaging.html.
 

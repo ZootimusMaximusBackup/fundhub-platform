@@ -3,6 +3,10 @@
 One line per journey change, newest at top. This is the human-readable record —
 including when a change made a journey worse.
 
+2026-08-16 | client | Portal shows the pre-qualified amount after the soft pull (`GET /api/read/portal-summary`), and portal chat now answers with Claude instead of only filing the message for staff. Staff Ask tab answered by Claude, grounded on the platform-help corpus. GAP: `client-intended.md` does not describe an AI reply in the portal — owner directed it on 2026-08-16, recorded here rather than silently reconciled. Company Brain Knowledge mode still cannot answer: zero documents are synced and retrieval needs OpenAI embeddings, which are not configured. | Owner: "the portal doesn't say how much you're pre-qualified for" and "the chat bots aren't plugged in — use one API" | (pending commit)
+
+2026-08-16 | client | Clients can read their agreements on the portal (`GET /api/read/portal-contracts`) with sign links for pending contracts. Five placeholder contract templates seeded (repair trial, repair, funding, combo, soft pull). Present deck auto-picks template from offer. | Owner: multiple deal types need matching agreements visible to clients | (pending commit)
+
 2026-08-16 | role-owner (actuals regen no-op) | Campaigns sample action log no longer ships Dana Reyes. | Overnight leftover furniture after live HTML scan | (this commit)
 
 2026-08-16 | role-owner (actuals regen no-op) | Calendar, hiring, and template-editor no longer ship Jordan Blake / Marcus Webb / Carlos Bettencourt / Meredith Yao in the HTML. Route tables did not change. | Overnight P0 — live scan found 3 furniture pages | (this commit)

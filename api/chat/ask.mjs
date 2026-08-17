@@ -14,7 +14,7 @@ import { ROLE_SETS, requireRole } from "../../src/http/read-api.mjs";
 import { canQueryBrain } from "../../src/company-brain/access.mjs";
 import { retrieveChunks } from "../../src/company-brain/retrieve.mjs";
 import { synthesizeAnswer } from "../../src/company-brain/answer.mjs";
-import { askPlatformHelp } from "../../src/chat/platform-help.mjs";
+import { answerStaffQuestion } from "../../src/chat/staff-assistant.mjs";
 import { safeError } from "../../src/http/health.mjs";
 
 export default async function handler(req, res, deps = {}) {
@@ -39,12 +39,17 @@ export default async function handler(req, res, deps = {}) {
 
   try {
     if (mode === "system" || mode === "howto" || mode === "help") {
-      const result = askPlatformHelp(question);
+      const ask = deps.answerStaffQuestion || answerStaffQuestion;
+      const result = await ask({
+        question,
+        env: deps.env || process.env,
+        fetchImpl: deps.fetchImpl
+      });
       return res.status(200).json({
         ok: true,
         mode: "system",
         question,
-        answer: { text: result.answer, thin: result.thin, source: "platform_help" },
+        answer: { text: result.text, thin: result.thin, source: result.source },
         sources: result.sources
       });
     }

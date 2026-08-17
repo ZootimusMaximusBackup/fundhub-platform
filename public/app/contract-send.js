@@ -38,6 +38,22 @@
     });
   }
 
+  function pickTemplate(items, templateKey) {
+    if (!items || !items.length || !templateKey) return null;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].template_key === templateKey) return items[i];
+    }
+    return null;
+  }
+
+  function fillBlankInputs(values) {
+    values = values || {};
+    Array.prototype.forEach.call(document.querySelectorAll("[data-blank]"), function (el) {
+      var k = el.getAttribute("data-blank");
+      if (k && values[k] != null && values[k] !== "") el.value = values[k];
+    });
+  }
+
   function sendToClient(opts) {
     opts = opts || {};
     if (!root.FHData) {
@@ -82,6 +98,8 @@
 
   root.FHContractSend = {
     listWordings: listWordings,
+    pickTemplate: pickTemplate,
+    fillBlankInputs: fillBlankInputs,
     sendToClient: sendToClient,
     copyText: copyText,
     linkUrl: linkUrl

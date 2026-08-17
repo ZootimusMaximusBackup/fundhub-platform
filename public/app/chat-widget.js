@@ -260,7 +260,8 @@
             return;
           }
           state.conversationId = res.conversation_id;
-          addMsg("Sent to your team.", "them");
+          var reply = res.reply && res.reply.text;
+          addMsg(esc(reply || "Sent to your team."), "them");
         });
         return;
       }

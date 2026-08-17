@@ -136,6 +136,56 @@
     }
     return "FUNDING_DFY";
   }
+  function resolveContractTemplateKey() {
+    if (state.tier === "FUNDING_PLUS_REPAIR") return "REPAIR-AND-FUNDING-AGREEMENT";
+    var o = offer(selectedOfferKey());
+    return (o && o.contractTemplateKey) || null;
+  }
+  function defaultContractBlankValues() {
+    var key = resolveContractTemplateKey();
+    var o = offer(selectedOfferKey());
+    var price = o && o.priceDisplay;
+    var base = { company_name: "Fundhub", company_email: "support@fundhub.ai" };
+    if (key === "SOFT-PULL-CONSENT") return Object.assign({}, base, { consent_days: "90" });
+    if (key === "REPAIR-TRIAL-AGREEMENT") {
+      return Object.assign({}, base, {
+        trial_fee: price || "$200",
+        scope: "One done-for-you dispute round. You watch progress in your portal."
+      });
+    }
+    if (key === "CREDIT-REPAIR-AGREEMENT") {
+      return Object.assign({}, base, {
+        monthly_fee: price || "$1,000",
+        term_days: "180",
+        scope: "Done-for-you credit repair: disputes, escalations, and dashboard access."
+      });
+    }
+    if (key === "FUNDING-AGREEMENT") {
+      var pct = (offer("FUNDING_DFY") && offer("FUNDING_DFY").successFeePercent) || 10;
+      return Object.assign({}, base, {
+        deposit: price || "$3,000",
+        success_fee: pct + "% of funded amount",
+        fee_due: "within 7 days of funding",
+        term_days: "180",
+        scope: "Done-for-you funding: matching, rounds, and inquiry sweeps."
+      });
+    }
+    if (key === "REPAIR-AND-FUNDING-AGREEMENT") {
+      var fund = offer("FUNDING_DFY");
+      var repair = offer("REPAIR_DFY");
+      var feePct = (fund && fund.successFeePercent) || 10;
+      return Object.assign({}, base, {
+        deposit: (fund && fund.priceDisplay) || "$3,000",
+        repair_fee: (repair && repair.priceDisplay) || "$1,000",
+        success_fee: feePct + "% of funded amount",
+        fee_due: "within 7 days of funding",
+        term_days: "180",
+        repair_scope: "Credit repair in parallel while funding rounds run.",
+        funding_scope: "Full done-for-you funding program."
+      });
+    }
+    return base;
+  }
   function lettersOk() {
     var o = offer(selectedOfferKey());
     return !!(o && o.letters);
@@ -683,11 +733,16 @@
     window.FHContractSend.listWordings().then(function (r) {
       if (!r.ok) { state.contractMsg = r.error || "Could not load wordings."; render(); return; }
       state.contractWordings = r.items || [];
-      state.contractTplId = state.contractWordings[0] ? state.contractWordings[0].id : "";
+      var wantKey = resolveContractTemplateKey();
+      var picked = window.FHContractSend.pickTemplate(state.contractWordings, wantKey);
+      state.contractTplId = picked ? picked.id : (state.contractWordings[0] ? state.contractWordings[0].id : "");
       state.contractMsg = state.contractWordings.length
-        ? "Pick a wording, then send. Copy the sign link after."
+        ? (picked
+          ? "Matched " + (picked.name || picked.template_key) + " to this offer. Send when ready."
+          : "Pick a wording, then send. Copy the sign link after.")
         : "No wordings in use. Make one on the Contracts page.";
       render();
+      window.FHContractSend.fillBlankInputs(defaultContractBlankValues());
     });
   }
 
@@ -696,6 +751,7 @@
     var id = state.contractTplId || (state.contractWordings[0] && state.contractWordings[0].id);
     if (!id) { toast("Pick a wording first."); return; }
     var values = contractBlankValues();
+    if (!Object.keys(values).length) values = defaultContractBlankValues();
     state.contractBusy = true;
     state.contractMsg = "Sending…";
     render();

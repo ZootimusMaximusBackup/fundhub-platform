@@ -163,6 +163,8 @@ import documentsUpload from "../../api/documents-upload.mjs";
 import paymentLinks from "../../api/payment-links.mjs";
 import contracts from "../../api/contracts.mjs";
 import readContracts from "../../api/read/contracts.mjs";
+import readPortalContracts from "../../api/read/portal-contracts.mjs";
+import readPortalSummary from "../../api/read/portal-summary.mjs";
 import contractsSign from "../../api/contracts/sign.mjs";
 import messagesOutbound from "../../api/messages-outbound.mjs";
 import agentsWrite from "../../api/agents.mjs";
@@ -677,6 +679,8 @@ export const ROUTES = {
   // working around it.
   "contracts": contracts,
   "read/contracts": readContracts,
+  "read/portal-contracts": readPortalContracts,
+  "read/portal-summary": readPortalSummary,
   "contracts/sign": contractsSign,
 
   // ── The outbound queue ─────────────────────────────────────────────────────

@@ -144,4 +144,10 @@ export function listPlatformHelp() {
   return ENTRIES.map(({ id, title, href }) => ({ id, title, href }));
 }
 
+/* The whole corpus, answers included — what the Claude-backed assistant is
+   grounded on. Copies out so a caller cannot mutate the source of truth. */
+export function platformHelpCorpus() {
+  return ENTRIES.map((e) => ({ ...e, keywords: [...e.keywords] }));
+}
+
 export { ENTRIES as _ENTRIES_FOR_TESTS };

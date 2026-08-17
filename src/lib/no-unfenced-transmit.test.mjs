@@ -127,10 +127,12 @@ const ALLOWED_RAW_FETCH = {
 };
 
 /* Modules permitted to declare fence: INTERNAL. Pinned to an exact set, so a
-   new module cannot quietly label itself internal to skip the flags. */
+   new module cannot quietly label itself internal to skip the flags.
+
+   Shrank 2026-08-16: Company Brain completions (answer.mjs, classify.mjs) moved
+   to Claude via src/agents/model.mjs, so they no longer declare a fence.
+   embed.mjs stays — embeddings remain on OpenAI. */
 const INTERNAL_CALLERS = new Set([
-  "src/company-brain/answer.mjs",
-  "src/company-brain/classify.mjs",
   "src/company-brain/embed.mjs"
 ]);
 

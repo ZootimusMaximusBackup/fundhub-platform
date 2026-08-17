@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   classifyHeuristic,
+  classifyWithModel,
   canApproveClassification,
   AUTO_TIERS
 } from "./classify.mjs";
@@ -39,6 +40,118 @@ test("heuristic queues owner and affiliate — never auto", () => {
   const unk = classifyHeuristic({ name: "notes.txt", text: "misc thoughts" });
   assert.equal(unk.proposedTier, "owner");
   assert.equal(unk.autoAssignable, false);
+});
+
+// Fake Anthropic Messages API — no real network.
+function fakeAnthropic({ status = 200, text = "" } = {}) {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url, init, json: JSON.parse(init.body) });
+    return {
+      ok: status >= 200 && status < 300,
+      status,
+      json: async () => (status >= 200 && status < 300
+        ? { content: [{ type: "text", text }] }
+        : { error: "boom" })
+    };
+  };
+  return { calls, fetchImpl };
+}
+
+const UNCLASSIFIED = { name: "notes.txt", text: "misc thoughts" };
+
+test("classifyWithModel calls Claude and takes its tier", async () => {
+  const { calls, fetchImpl } = fakeAnthropic({
+    text: '{"tier":"staff","rationale":"internal runbook"}'
+  });
+  const out = await classifyWithModel(UNCLASSIFIED, {
+    env: { ANTHROPIC_API_KEY: "sk-ant-test" },
+    fetchImpl
+  });
+  assert.equal(out.proposedTier, "staff");
+  assert.equal(out.autoAssignable, true);
+  assert.equal(out.source, "model");
+  assert.equal(out.rationale, "internal runbook");
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "https://api.anthropic.com/v1/messages");
+  assert.equal(calls[0].init.headers["x-api-key"], "sk-ant-test");
+  assert.match(calls[0].json.model, /^claude-/);
+});
+
+test("classifyWithModel tolerates Claude wrapping JSON in a code fence", async () => {
+  const { fetchImpl } = fakeAnthropic({
+    text: 'Here you go:\n```json\n{"tier":"sales","rationale":"pitch deck"}\n```'
+  });
+  const out = await classifyWithModel(UNCLASSIFIED, {
+    env: { ANTHROPIC_API_KEY: "sk-ant-test" },
+    fetchImpl
+  });
+  assert.equal(out.proposedTier, "sales");
+  assert.equal(out.source, "model");
+});
+
+test("classifyWithModel keeps the heuristic when no ANTHROPIC_API_KEY", async () => {
+  const { calls, fetchImpl } = fakeAnthropic({ text: '{"tier":"public"}' });
+  const out = await classifyWithModel(UNCLASSIFIED, { env: {}, fetchImpl });
+  assert.equal(out.proposedTier, "owner");
+  assert.equal(out.autoAssignable, false);
+  assert.equal(out.source, "heuristic");
+  assert.equal(calls.length, 0);
+});
+
+test("classifyWithModel with only OPENAI_API_KEY stays on the heuristic", async () => {
+  const { calls, fetchImpl } = fakeAnthropic({ text: '{"tier":"public"}' });
+  const out = await classifyWithModel(UNCLASSIFIED, {
+    env: { OPENAI_API_KEY: "sk-openai" },
+    fetchImpl
+  });
+  assert.equal(out.source, "heuristic");
+  assert.equal(calls.length, 0);
+});
+
+test("classifyWithModel falls back to heuristic on model error or bad JSON", async () => {
+  const err = await classifyWithModel(UNCLASSIFIED, {
+    env: { ANTHROPIC_API_KEY: "sk-ant-test" },
+    fetchImpl: fakeAnthropic({ status: 500 }).fetchImpl
+  });
+  assert.equal(err.source, "heuristic");
+  assert.equal(err.proposedTier, "owner");
+
+  const junk = await classifyWithModel(UNCLASSIFIED, {
+    env: { ANTHROPIC_API_KEY: "sk-ant-test" },
+    fetchImpl: fakeAnthropic({ text: "not json at all" }).fetchImpl
+  });
+  assert.equal(junk.source, "heuristic");
+
+  const badTier = await classifyWithModel(UNCLASSIFIED, {
+    env: { ANTHROPIC_API_KEY: "sk-ant-test" },
+    fetchImpl: fakeAnthropic({ text: '{"tier":"wizard"}' }).fetchImpl
+  });
+  assert.equal(badTier.source, "heuristic");
+});
+
+test("classifyWithModel skips the model when the heuristic already auto-assigns", async () => {
+  const { calls, fetchImpl } = fakeAnthropic({ text: '{"tier":"owner"}' });
+  const out = await classifyWithModel(
+    { name: "SOP — onboarding.md", text: "standard operating process" },
+    { env: { ANTHROPIC_API_KEY: "sk-ant-test" }, fetchImpl }
+  );
+  assert.equal(out.proposedTier, "staff");
+  assert.equal(out.source, "heuristic");
+  assert.equal(calls.length, 0);
+});
+
+test("classifyWithModel never auto-assigns owner or affiliate from the model", async () => {
+  for (const tier of ["owner", "affiliate"]) {
+    const { fetchImpl } = fakeAnthropic({ text: `{"tier":"${tier}"}` });
+    const out = await classifyWithModel(UNCLASSIFIED, {
+      env: { ANTHROPIC_API_KEY: "sk-ant-test" },
+      fetchImpl
+    });
+    assert.equal(out.proposedTier, tier);
+    assert.equal(out.autoAssignable, false);
+  }
 });
 
 test("H-3: only owner role can approve", () => {

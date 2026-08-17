@@ -1,9 +1,11 @@
 // Synthesize a cited answer from retrieved chunks.
-// Outbound LLM calls go through messaging/providers/http.mjs.
+// The model call goes through src/agents/model.mjs (Claude / Anthropic Messages
+// API) — the one completion path in this repo. Embeddings stay on OpenAI
+// (see embed.mjs); Anthropic has no embeddings API.
 // If no API key (or the model fails), fall back to an extractive answer —
 // never invent a document that was not retrieved.
 
-import { postJsonTo, INTERNAL } from "../lib/outbound-fetch.mjs";
+import { callModel } from "../agents/model.mjs";
 
 function citationsFrom(chunks) {
   return (chunks || []).map((c, i) => ({
@@ -36,7 +38,7 @@ function extractiveAnswer(query, chunks) {
     ok: true,
     text:
       `Found ${cites.length} source(s) for “${String(query || "").trim()}”. ` +
-      `OpenAI is not configured, so this is the matching text rather than a written summary:\n\n` +
+      `The answer model is not configured, so this is the matching text rather than a written summary:\n\n` +
       lines.join("\n\n"),
     thin: true,
     source: "extractive",
@@ -56,48 +58,29 @@ export async function synthesizeAnswer({
   const cites = citationsFrom(chunks);
   if (!cites.length) return extractiveAnswer(query, chunks);
 
-  const apiKey = env.OPENAI_API_KEY || env.COMPANY_BRAIN_OPENAI_API_KEY;
-  if (!apiKey) return extractiveAnswer(query, chunks);
-
-  const model = env.COMPANY_BRAIN_ANSWER_MODEL || "gpt-4o-mini";
-  const baseUrl = String(env.OPENAI_API_BASE || "https://api.openai.com").replace(/\/+$/, "");
+  if (!env.ANTHROPIC_API_KEY) return extractiveAnswer(query, chunks);
 
   const context = cites.map((c) =>
     `[${c.n}] file="${c.fileName}" tier=${c.accessTier || "?"}\n${c.excerpt}`
   ).join("\n\n");
 
-  const res = await postJsonTo(`${baseUrl}/v1/chat/completions`, {
-    headers: { authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model,
-      temperature: 0.2,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You answer staff questions using ONLY the numbered sources provided. " +
-            "Cite sources as [1], [2], etc. If the sources do not contain the answer, say so. " +
-            "Do not invent files, policies, or numbers. Keep the answer under 200 words."
-        },
-        {
-          role: "user",
-          content: `Question: ${query}\n\nSources:\n${context}`
-        }
-      ]
-    }),
-    timeoutMs: 45_000,
-    fetchImpl,
-    fence: INTERNAL,
-    what: "staff answer"
+  const res = await callModel({
+    system:
+      "You answer staff questions using ONLY the numbered sources provided. " +
+      "Cite sources as [1], [2], etc. If the sources do not contain the answer, say so. " +
+      "Do not invent files, policies, or numbers. Keep the answer under 200 words.",
+    user: `Question: ${query}\n\nSources:\n${context}`,
+    env,
+    fetchImpl
   });
 
-  if (!res.ok || !res.body?.choices?.[0]?.message?.content) {
+  if (res.mode !== "live" || res.error || !res.text) {
     return extractiveAnswer(query, chunks);
   }
 
   return {
     ok: true,
-    text: String(res.body.choices[0].message.content).trim(),
+    text: String(res.text).trim(),
     thin: false,
     source: "model",
     citations: cites

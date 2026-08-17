@@ -1,0 +1,37 @@
+---
+description: Route audit vs fix — never mix them in one pass
+alwaysApply: true
+---
+
+# Audit vs Fix
+
+**Owner law (2026-08-16):** Auditing and fixing are two doors. An agent never walks through both in the same pass.
+
+## Router
+
+| Chris said something like… | Load this skill | Do |
+|---|---|---|
+| audit, verify, discover, "what's broken", journey ground truth | `fundhub-auditor` | Find and prove. **Read-only.** |
+| fix, ship, repair, wire, "make X work", unblock | `fundhub-fixer` | Change **only** what he named. Then prove. |
+
+Skill paths:
+
+- `.cursor/skills/fundhub-auditor/SKILL.md`
+- `.cursor/skills/fundhub-fixer/SKILL.md`
+
+Read the matching skill **before** any other work on that request.
+
+## Both in one message
+
+Run **Auditor** first. Stop with findings. Wait for Chris to name what to fix. Do not start Fixer in the same turn.
+
+## Ambiguous "test"
+
+- If a fix already landed this session → Fixer prove path (suite → live Playwright 100 → human click).
+- Otherwise → ask one question: "audit or fix?" Wait.
+
+## Never
+
+- Audit-and-fix in one pass
+- "While I was auditing I also fixed…"
+- Turning a red test green by editing the test, baseline, or hook during an audit

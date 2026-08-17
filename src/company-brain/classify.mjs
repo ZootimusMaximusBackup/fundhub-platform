@@ -7,7 +7,7 @@
 //   - fail closed: caller keeps live access_tier at owner until auto/approve
 
 import { ACCESS_TIERS } from "./access.mjs";
-import { postJsonTo, INTERNAL } from "../lib/outbound-fetch.mjs";
+import { callModel } from "../agents/model.mjs";
 
 export const AUTO_TIERS = new Set(["public", "sales", "staff"]);
 export const REVIEW_TIERS = new Set(["owner", "affiliate"]);
@@ -105,6 +105,16 @@ export function classifyHeuristic(input = {}) {
   };
 }
 
+// Claude has no JSON response mode, so it may wrap the object in prose or a
+// code fence. Take the first balanced-looking object and let JSON.parse judge.
+function extractJsonObject(text) {
+  const s = String(text || "");
+  const start = s.indexOf("{");
+  const end = s.lastIndexOf("}");
+  if (start === -1 || end <= start) return s;
+  return s.slice(start, end + 1);
+}
+
 /**
  * Optional LLM assist when heuristic is owner/unclassifiable and a key is set.
  * Still never auto-assigns owner/affiliate.
@@ -117,48 +127,27 @@ export async function classifyWithModel(input = {}, {
   // If heuristic already found an auto tier, keep it — no spend.
   if (heuristic.autoAssignable) return heuristic;
 
-  const apiKey = env.OPENAI_API_KEY || env.COMPANY_BRAIN_OPENAI_API_KEY;
-  if (!apiKey) return heuristic;
+  if (!env.ANTHROPIC_API_KEY) return heuristic;
 
-  const model = env.COMPANY_BRAIN_CLASSIFY_MODEL || "gpt-4o-mini";
-  const baseUrl = String(env.OPENAI_API_BASE || "https://api.openai.com").replace(/\/+$/, "");
-  const prompt = {
-    model,
-    temperature: 0,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
-          "Classify a company document into exactly one access tier: public, sales, staff, owner, affiliate. " +
-          "Fail closed: if unsure, choose owner. Reply JSON {\"tier\":\"...\",\"rationale\":\"...\"}."
-      },
-      {
-        role: "user",
-        content: JSON.stringify({
-          name: input.name || "",
-          path: input.path || "",
-          parentNames: input.parentNames || [],
-          textSample: String(input.text || "").slice(0, 3000)
-        })
-      }
-    ]
-  };
-
-  const res = await postJsonTo(`${baseUrl}/v1/chat/completions`, {
-    headers: { authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify(prompt),
-    timeoutMs: 30_000,
-    fetchImpl,
-    fence: INTERNAL,
-    what: "document classify"
+  const res = await callModel({
+    system:
+      "Classify a company document into exactly one access tier: public, sales, staff, owner, affiliate. " +
+      "Fail closed: if unsure, choose owner. " +
+      "Reply with JSON only, no prose: {\"tier\":\"...\",\"rationale\":\"...\"}.",
+    user: JSON.stringify({
+      name: input.name || "",
+      path: input.path || "",
+      parentNames: input.parentNames || [],
+      textSample: String(input.text || "").slice(0, 3000)
+    }),
+    env,
+    fetchImpl
   });
 
-  if (!res.ok || !res.body) return heuristic;
+  if (res.mode !== "live" || res.error || !res.text) return heuristic;
 
   try {
-    const content = res.body.choices?.[0]?.message?.content || "";
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(extractJsonObject(res.text));
     const tier = String(parsed.tier || "").toLowerCase();
     if (!ACCESS_TIERS.includes(tier)) return heuristic;
     return {

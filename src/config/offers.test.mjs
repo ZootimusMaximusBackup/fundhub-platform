@@ -5,7 +5,9 @@ import {
   getOffer,
   offerAllowsLetters,
   formatCents,
-  offersForClient
+  offersForClient,
+  resolveContractTemplateKey,
+  defaultContractValues
 } from "./offers.mjs";
 
 test("every offer has a name, integer cents, and financing/letters flags", () => {
@@ -61,4 +63,14 @@ test("UWIQ deliverables contents are the six named items", () => {
     "Bank & Lender Match List",
     "How To Use This mini course"
   ]);
+});
+
+test("repair and funding offers map to contract template keys", () => {
+  assert.equal(OFFERS.REPAIR_TRIAL.contractTemplateKey, "REPAIR-TRIAL-AGREEMENT");
+  assert.equal(OFFERS.REPAIR_DFY.contractTemplateKey, "CREDIT-REPAIR-AGREEMENT");
+  assert.equal(OFFERS.FUNDING_DFY.contractTemplateKey, "FUNDING-AGREEMENT");
+  assert.equal(OFFERS.SOFT_PULL.contractTemplateKey, "SOFT-PULL-CONSENT");
+  assert.equal(resolveContractTemplateKey({ tier: "FUNDING_PLUS_REPAIR" }), "REPAIR-AND-FUNDING-AGREEMENT");
+  assert.equal(resolveContractTemplateKey({ offerKey: "REPAIR_TRIAL" }), "REPAIR-TRIAL-AGREEMENT");
+  assert.ok(defaultContractValues({ offerKey: "REPAIR_TRIAL" }).trial_fee);
 });

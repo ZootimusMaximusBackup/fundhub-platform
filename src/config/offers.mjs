@@ -26,6 +26,7 @@ export const UWIQ_DELIVERABLES_CONTENTS = Object.freeze([
  * @property {boolean} financing  Commas financing offered
  * @property {boolean} letters  DS-02 / letter pack may fire for this offer
  * @property {"diagnostic"|"deposit"|"repair"|"custom"} paymentPurpose
+ * @property {string} [contractTemplateKey]  contract_templates.template_key to send on close
  * @property {string[]} [contents]
  */
 
@@ -37,7 +38,8 @@ export const OFFERS = Object.freeze({
     priceCents: 3200,
     financing: false,
     letters: false,
-    paymentPurpose: "diagnostic"
+    paymentPurpose: "diagnostic",
+    contractTemplateKey: "SOFT-PULL-CONSENT"
   }),
   FUNDING_DFY: Object.freeze({
     key: "FUNDING_DFY",
@@ -46,7 +48,8 @@ export const OFFERS = Object.freeze({
     successFeePercent: 10,
     financing: false,
     letters: false,
-    paymentPurpose: "deposit"
+    paymentPurpose: "deposit",
+    contractTemplateKey: "FUNDING-AGREEMENT"
   }),
   REPAIR_DFY: Object.freeze({
     key: "REPAIR_DFY",
@@ -54,7 +57,8 @@ export const OFFERS = Object.freeze({
     priceCents: 100000,
     financing: true,
     letters: true,
-    paymentPurpose: "repair"
+    paymentPurpose: "repair",
+    contractTemplateKey: "CREDIT-REPAIR-AGREEMENT"
   }),
   REPAIR_TRIAL: Object.freeze({
     key: "REPAIR_TRIAL",
@@ -62,7 +66,8 @@ export const OFFERS = Object.freeze({
     priceCents: 20000,
     financing: true,
     letters: true,
-    paymentPurpose: "repair"
+    paymentPurpose: "repair",
+    contractTemplateKey: "REPAIR-TRIAL-AGREEMENT"
   }),
   UWIQ_DELIVERABLES: Object.freeze({
     key: "UWIQ_DELIVERABLES",
@@ -106,6 +111,68 @@ export function formatCents(cents) {
   });
 }
 
+/** Which contract wording matches the deck path (offer + tier). */
+export function resolveContractTemplateKey({ offerKey = null, tier = null } = {}) {
+  if (tier === "FUNDING_PLUS_REPAIR") return "REPAIR-AND-FUNDING-AGREEMENT";
+  const o = getOffer(offerKey);
+  return (o && o.contractTemplateKey) || null;
+}
+
+/** Default blank-field values for a contract send from the present deck. */
+export function defaultContractValues({ offerKey = null, tier = null } = {}) {
+  const templateKey = resolveContractTemplateKey({ offerKey, tier });
+  const o = getOffer(offerKey);
+  const price = formatCents(o && o.priceCents);
+  const company = "Fundhub";
+  const base = { company_name: company, company_email: "support@fundhub.ai" };
+
+  if (templateKey === "SOFT-PULL-CONSENT") {
+    return { ...base, consent_days: "90" };
+  }
+  if (templateKey === "REPAIR-TRIAL-AGREEMENT") {
+    return {
+      ...base,
+      trial_fee: price || "$200",
+      scope: "One done-for-you dispute round (bureaus and creditors on your file). You watch progress in your portal."
+    };
+  }
+  if (templateKey === "CREDIT-REPAIR-AGREEMENT") {
+    return {
+      ...base,
+      monthly_fee: price || "$1,000",
+      term_days: "180",
+      scope: "Done-for-you credit repair: forensic review, dispute rounds, creditor escalations, and live dashboard access."
+    };
+  }
+  if (templateKey === "FUNDING-AGREEMENT") {
+    const pct = (o && o.successFeePercent) || 10;
+    return {
+      ...base,
+      deposit: price || "$3,000",
+      success_fee: `${pct}% of funded amount`,
+      fee_due: "within 7 days of funding",
+      term_days: "180",
+      scope: "Done-for-you funding: lender matching, strategic application rounds, and inquiry sweeps between rounds."
+    };
+  }
+  if (templateKey === "REPAIR-AND-FUNDING-AGREEMENT") {
+    const fund = getOffer("FUNDING_DFY");
+    const repair = getOffer("REPAIR_DFY");
+    const pct = (fund && fund.successFeePercent) || 10;
+    return {
+      ...base,
+      deposit: formatCents(fund && fund.priceCents) || "$3,000",
+      repair_fee: formatCents(repair && repair.priceCents) || "$1,000",
+      success_fee: `${pct}% of funded amount`,
+      fee_due: "within 7 days of funding",
+      term_days: "180",
+      repair_scope: "Parallel credit repair on limiting bureaus while funding rounds run.",
+      funding_scope: "Full done-for-you funding program: matching, rounds, and inquiry sweeps."
+    };
+  }
+  return base;
+}
+
 /** Public JSON for the present page — no internals. */
 export function offersForClient() {
   return OFFER_KEYS.map((k) => {
@@ -120,6 +187,7 @@ export function offersForClient() {
       successFeePercent: o.successFeePercent ?? null,
       financing: o.financing,
       letters: o.letters,
+      contractTemplateKey: o.contractTemplateKey ?? null,
       contents: o.contents ? [...o.contents] : null
     };
   });

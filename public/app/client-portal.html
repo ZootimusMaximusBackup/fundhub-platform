@@ -431,11 +431,22 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
         <a class="sign-auth-link" id="cpSignFullLink" href="consent-capture.html?kind=dispute_authorization">Open the full consent page</a>
       </section>
 
+      <!-- ══ AGREEMENTS — contracts sent for signature ═════════════════ -->
+      <section class="card" id="agreements-card" aria-labelledby="agreements-title" hidden>
+        <div class="card-title" id="agreements-title">Your agreements</div>
+        <p class="welcome-sub" style="margin-bottom:12px">Review and sign anything we sent you. Signed copies stay here.</p>
+        <div id="agreements-list"></div>
+      </section>
+
       <!-- ══ 2a · BEFORE THE CALL — honest empty status ══════════════════ -->
       <section class="card prog-card precall-only" aria-labelledby="sb-pre-main">
         <div class="status-line">
           <div class="sb-eyebrow">Before your call</div>
           <div class="sb-main" id="sb-pre-main">Your file is open. Watch the welcome, join the wins group, and bring questions. Funding steps show up after we talk.</div>
+        </div>
+        <div class="status-line" id="sb-prequal-row" hidden style="margin-top:14px">
+          <div class="sb-eyebrow">Pre-qualified for</div>
+          <div class="sb-main" id="sb-prequal-amt">—</div>
         </div>
         <div class="stepper" id="stepper-pre">
           <div class="step current"><span class="line"></span><div class="dot">●</div><div class="lbl">Booked</div></div>
@@ -607,11 +618,12 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
         <summary>
           <span class="ac-chev">›</span>
           <span class="ac-t">Account &amp; history</span>
-          <span class="ac-s">Payments · Documents · Activity · Messages</span>
+          <span class="ac-s">Payments · Agreements · Documents · Activity · Messages</span>
         </summary>
         <div class="acct-bd">
           <div class="tabs" id="acct-tabs" role="tablist" aria-label="Account and history">
             <button class="tab on" type="button" role="tab" aria-selected="true"  aria-controls="tp-pay"  data-tab="pay">Payments</button>
+            <button class="tab"    type="button" role="tab" aria-selected="false" aria-controls="tp-agree" data-tab="agree">Agreements</button>
             <button class="tab"    type="button" role="tab" aria-selected="false" aria-controls="tp-docs" data-tab="docs">Documents</button>
             <button class="tab"    type="button" role="tab" aria-selected="false" aria-controls="tp-act"  data-tab="act">Activity</button>
             <button class="tab"    type="button" role="tab" aria-selected="false" aria-controls="tp-msg"  data-tab="msg">Messages</button>
@@ -625,6 +637,13 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             <div class="pay-row">
               <div><div class="pn">No payments yet</div><div class="pd">They show here after you pay</div></div>
               <div class="pv">—</div>
+            </div>
+          </div>
+
+          <div class="tabpane" id="tp-agree" role="tabpanel" data-pane="agree">
+            <div class="doc-row">
+              <div><div class="dr-n">No agreements yet</div><div class="dr-m">When we send you something to sign, it shows here</div></div>
+              <span class="dr-s">—</span>
             </div>
           </div>
 
@@ -1401,6 +1420,35 @@ var PRODUCTS = {
       status: booking.status || ""
     };
   }
+  function paintAgreements(items) {
+    var card = document.getElementById("agreements-card");
+    var pane = document.getElementById("tp-agree");
+    var list = document.getElementById("agreements-list");
+    var rows = items || [];
+    var html = "";
+    if (!rows.length) {
+      html = '<div class="doc-row"><div><div class="dr-n">No agreements yet</div><div class="dr-m">When we send you something to sign, it shows here</div></div><span class="dr-s">—</span></div>';
+      if (card) card.hidden = true;
+    } else {
+      if (card) card.hidden = false;
+      html = rows.map(function (a) {
+        var title = esc(a.title || a.template_name || "Agreement");
+        var when = a.sent_at ? fmtWhen(a.sent_at) : "—";
+        var st = a.status === "signed" ? "Signed" : (a.needs_signature ? "Needs signature" : esc(a.status || "—"));
+        var btn = "";
+        if (a.needs_signature && a.sign_url) {
+          btn = ' <a class="btn-book" style="display:inline-block;margin-top:8px;padding:8px 14px;font-size:12px" href="' +
+            esc(a.sign_url) + '">Review &amp; sign</a>';
+        } else if (a.status === "signed") {
+          btn = ' <span class="dr-s have">Signed</span>';
+        }
+        return '<div class="doc-row"><div><div class="dr-n">' + title +
+          '</div><div class="dr-m">' + esc(when) + " · " + st + btn + "</div></div></div>";
+      }).join("");
+    }
+    if (list) list.innerHTML = html;
+    if (pane) pane.innerHTML = html;
+  }
   function paintDocs(items) {
     var pane = document.getElementById("tp-docs");
     if (!pane) return;
@@ -1482,6 +1530,7 @@ var PRODUCTS = {
     document.body.classList.add("no-docs");
     setOwnVisible(false);
     paintDocs([]);
+    paintAgreements([]);
     paintMessages([]);
     paintPays([]);
     FHData.banner("sample", "Open this from a client file");
@@ -1511,6 +1560,33 @@ var PRODUCTS = {
     }
     if (res.source === "nodata") paintEmptyIdentity();
   });
+
+  FHData.wire(FHData.portalContracts(clientId ? { client_id: clientId } : {}),
+    "agreements", function (data) {
+      var items = data.items || [];
+      paintAgreements(items);
+      if (!items.length) return "live agreements · none yet";
+      var pending = items.filter(function (a) { return a.needs_signature; }).length;
+      return "live agreements · " + items.length + " on file" + (pending ? " · " + pending + " to sign" : "");
+    });
+
+  FHData.wire(FHData.portalSummary(clientId ? { client_id: clientId } : {}),
+    "portal-summary", function (data) {
+      var amt = data.prequal_display;
+      var row = document.getElementById("sb-prequal-row");
+      var el = document.getElementById("sb-prequal-amt");
+      if (!amt) {
+        if (row) row.hidden = true;
+        return "live pre-qual · none yet";
+      }
+      if (row) row.hidden = false;
+      if (el) el.textContent = amt;
+      var preMain = document.getElementById("sb-pre-main");
+      if (preMain) {
+        preMain.textContent = "Your soft-pull assessment is in. You're pre-qualified for approximately " + amt + ".";
+      }
+      return "live pre-qual · " + amt;
+    });
 
   FHData.wire(FHData.documents({ client_id: clientId, limit: 200 }),
     "documents", function (data) {
