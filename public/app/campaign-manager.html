@@ -320,7 +320,9 @@ table.grid td.srccell .sub{white-space:normal}
     <div class="topbar">
       <span class="crumb">Marketing</span><h1>Campaigns</h1>
       <div class="spacer"></div>
-      <span class="chip" id="ceilChip"><span class="cd"></span><span id="ceilTxt">ceilings</span></span>
+      <!-- hidden until GET /api/campaigns/spend answers; renderSpend() is the only
+           thing that may show it, and only from rows the server sent -->
+      <span class="chip" id="ceilChip" style="display:none"><span class="cd"></span><span id="ceilTxt"></span></span>
       <span class="chip" title="Every api/campaigns/* route is partnerReadHandler — a non-GET is answered 405 method_not_allowed">read-only · GET</span>
       <span class="chip" title="ad_metrics_daily and spend_ceilings store integer cents. There is no currency column anywhere in the module, so no symbol is shown — amounts are in the ad account's own currency.">amounts · account ccy</span>
       <button class="btn mono" id="reloadBtn">Reload</button>
@@ -882,10 +884,14 @@ function spendFiltered(){
   });
 }
 function renderSpend(){
+  /* one sentence when this panel has no answer — a count printed beside a filter
+     is as much a claim as a count printed in a tile, so the filter chips carry no
+     numbers until the read has answered (UI-STANDARDS §6). */
+  var unread = panelUnread('spend');
   var counts = { all:CEILINGS.length,
     breached:CEILINGS.filter(function(c){return c.breached;}).length,
     ok:CEILINGS.filter(function(c){return !c.breached;}).length };
-  rail(document.getElementById('spendRail'), SPEND_STATES, UI.spendState, counts,
+  rail(document.getElementById('spendRail'), SPEND_STATES, UI.spendState, unread ? null : counts,
        function(v){ UI.spendState=v; renderSpend(); });
 
   var rows = spendFiltered();
@@ -917,7 +923,7 @@ function renderSpend(){
     '</tr>';
   }).join('') : panelRow(9, 'spend', 'No ACTIVE ceiling matches this filter. That is not "no limits" — a partner with no ceiling row at all is denied every budget write with code <span class="mono k">no_ceiling_configured</span>.');
 
-  document.getElementById('spendFoot').textContent =
+  document.getElementById('spendFoot').textContent = unread ? unread :
     rows.length + ' of ' + CEILINGS.length + ' active ceilings · ordered by scope, then % of ceiling desc, nulls last';
 
   /* which campaigns have no campaign-scope ceiling of their own */
@@ -937,20 +943,24 @@ function renderSpend(){
     '(<code>ceiling_breached</code>), and <code>max_daily_increase_pct</code> is capped at 30 by ' +
     '<code>spend_ceilings_increase_ck</code> — <code>capIncrease()</code> clamps to 30 whatever the config says.';
 
-  /* topbar chip — the screen's headline status. It may only make a claim about
-     ceilings when the ceiling read actually answered. When it did not, an
-     all-clear and an alarm are both inventions, so the chip says it does not
-     know. (It read "1 CEILING BREACHED" off sample rows while the read was
-     being rejected — UI-STANDARDS §6.) */
+  /* topbar chip — the screen's headline status, and the only thing on the page
+     that can raise an alarm on its own. It is a claim about ceilings, so it may
+     only EXIST when the ceiling read actually answered. Rejected, or still in
+     flight: the pill does not render at all, because an all-clear and an alarm
+     are both inventions then. (It read "1 CEILING BREACHED" off built-in rows
+     while the read was being rejected — UI-STANDARDS §6.) The panel below says
+     what failed and what to do next; the headline does not guess. */
   var chip = document.getElementById('ceilChip');
   var txt = document.getElementById('ceilTxt');
-  if(PANEL_MSG.spend){
-    chip.className = 'chip';
-    txt.textContent = 'ceilings not read';
+  if(unread){
+    chip.style.display = 'none';
+    txt.textContent = '';
   } else if(!CEILINGS.length){
+    chip.style.display = '';
     chip.className = 'chip';
-    txt.textContent = SRC.spend && SRC.spend.source === '…' ? 'checking ceilings' : 'no ceilings set';
+    txt.textContent = 'no ceilings set';
   } else {
+    chip.style.display = '';
     var breached = CEILINGS.filter(function(c){return c.breached;}).length;
     var near = CEILINGS.filter(function(c){return !c.breached && (c.approaching_ceiling || c.exhausted);}).length;
     chip.className = 'chip ' + (breached ? 'bad' : near ? 'wip' : 'on');
@@ -1093,10 +1103,11 @@ function campMatch(c){
 }
 function renderCampaigns(reset){
   if(reset) UI.campOffset = 0;
+  var unread = panelUnread('list');
   var counts = {}; CAMP_STATES.forEach(function(s){
     counts[s] = s==='all' ? CAMPAIGNS.length : CAMPAIGNS.filter(function(c){ return c.approval_state===s; }).length;
   });
-  rail(document.getElementById('campRail'), CAMP_STATES, UI.campState, counts,
+  rail(document.getElementById('campRail'), CAMP_STATES, UI.campState, unread ? null : counts,
        function(v){ UI.campState=v; renderCampaigns(true); });
 
   var all = CAMPAIGNS.filter(campMatch);   /* ORDER BY created_at DESC — the array is already in that order */
@@ -1144,11 +1155,14 @@ function renderCampaigns(reset){
   document.getElementById('campPager').innerHTML =
     /* NOT the endpoint's limit/offset/hasMore envelope — these are client-side
        slice bounds over the single ?limit=200 read wireAll makes. Named
-       differently so the row cannot be misread as API paging. */
-    '<span title="A client-side slice of one GET /api/campaigns/list?limit=200. The endpoint&#39;s own limit / offset / hasMore envelope is not what these numbers are.">' +
-    from + '–' + (UI.campOffset + page.length) + ' of ' + all.length +
-    ' · page size ' + UI.campLimit + ' · from row ' + UI.campOffset +
-    ' · more below ' + (hasMore ? 'yes' : 'no') + '</span>' +
+       differently so the row cannot be misread as API paging. A read that did
+       not answer has no slice to describe: "0–0 of 0" would read as an empty
+       book rather than an unread one. */
+    (unread ? '<span>' + esc(unread) + '</span>' :
+      '<span title="A client-side slice of one GET /api/campaigns/list?limit=200. The endpoint&#39;s own limit / offset / hasMore envelope is not what these numbers are.">' +
+      from + '–' + (UI.campOffset + page.length) + ' of ' + all.length +
+      ' · page size ' + UI.campLimit + ' · from row ' + UI.campOffset +
+      ' · more below ' + (hasMore ? 'yes' : 'no') + '</span>') +
     '<span class="spacer" style="flex:1"></span>' +
     '<button class="btn sm mono" id="cPrev"'+(UI.campOffset<=0?' disabled':'')+'>‹ prev</button>' +
     '<button class="btn sm mono" id="cNext"'+(hasMore?'':' disabled')+'>next ›</button>';
@@ -1159,10 +1173,11 @@ function renderCampaigns(reset){
 
 /* ══ CM-06 · CREATIVE FATIGUE ════════════════════════════════════════════ */
 function renderFatigue(){
+  var unread = panelUnread('fatigue');
   var counts = {}; FAT_STATES.forEach(function(s){
     counts[s] = s==='all' ? FATIGUE.length : FATIGUE.filter(function(f){ return f.recommendation===s; }).length;
   });
-  rail(document.getElementById('fatRail'), FAT_STATES, UI.fatState, counts,
+  rail(document.getElementById('fatRail'), FAT_STATES, UI.fatState, unread ? null : counts,
        function(v){ UI.fatState=v; renderFatigue(); });
 
   var rows = FATIGUE.filter(function(f){ return UI.fatState==='all' || f.recommendation===UI.fatState; });
@@ -1187,17 +1202,18 @@ function renderFatigue(){
         ? 'No row can be <span class="mono k">unconfigured</span> here. That value is produced only when <i>both</i> <span class="mono k">frequency_bands</span> and <span class="mono k">ctr_below_floor</span> are inactive for this partner’s org, so it is all-or-nothing across the whole table rather than a per-ad verdict.'
         : 'No ad matches this filter within the window.'));
 
-  document.getElementById('fatFoot').textContent =
+  document.getElementById('fatFoot').textContent = unread ? unread :
     rows.length + ' of ' + FATIGUE.length + ' ads with metrics in the last ' + UI.fatDays +
     ' days · ordered by frequency desc (nulls last), then ctr asc (nulls last)';
 }
 
 /* ══ CM-07 · CONNECTIONS ═════════════════════════════════════════════════ */
 function renderConn(){
+  var unread = panelUnread('conn');
   var counts = {}; CONN_STATES.forEach(function(s){
     counts[s] = s==='all' ? CONNECTIONS.length : CONNECTIONS.filter(function(c){ return c.connection_state===s; }).length;
   });
-  rail(document.getElementById('connRail'), CONN_STATES, UI.connState, counts,
+  rail(document.getElementById('connRail'), CONN_STATES, UI.connState, unread ? null : counts,
        function(v){ UI.connState=v; renderConn(); });
 
   var rows = CONNECTIONS.filter(function(c){ return UI.connState==='all' || c.connection_state===UI.connState; });
@@ -1236,7 +1252,7 @@ function renderConn(){
       ? 'No connection in this state.'
       : 'No ad platform is connected to this partner yet. Connecting one is done in the platform’s own Business Manager — nothing on this screen connects an account.');
 
-  document.getElementById('connFoot').textContent =
+  document.getElementById('connFoot').textContent = unread ? unread :
     rows.length + ' of ' + CONNECTIONS.length + ' connections · ordered by platform, then created_at';
 }
 
@@ -1285,6 +1301,7 @@ function logMatch(a){
   return true;
 }
 function renderLog(){
+  var unread = panelUnread('log');
   var counts = {
     all: ACTIONS.length,
     agent: ACTIONS.filter(function(a){return a.actor==='agent';}).length,
@@ -1292,7 +1309,7 @@ function renderLog(){
     revertible: ACTIONS.filter(function(a){return a.revertible;}).length,
     failed: ACTIONS.filter(function(a){return a.execute_error!==null || a.executed_at===null;}).length
   };
-  rail(document.getElementById('logRail'), LOG_STATES, UI.logState, counts,
+  rail(document.getElementById('logRail'), LOG_STATES, UI.logState, unread ? null : counts,
        function(v){ UI.logState=v; renderLog(); });
 
   var rows = ACTIONS.filter(logMatch);
@@ -1355,7 +1372,7 @@ function renderLog(){
     tr.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } });
   });
 
-  document.getElementById('logFoot').textContent =
+  document.getElementById('logFoot').textContent = unread ? unread :
     rows.length + ' of ' + ACTIONS.length + ' actions · newest first · append-only (DELETE raises; UPDATE may touch only executed_at, execute_error, undone_at, undone_by)';
 }
 /* ══ CM-05 · CAMPAIGN DETAIL DRAWER ══════════════════════════════════════
@@ -1629,8 +1646,9 @@ function renderDrawerBody(){
 
   var ds = document.getElementById('dwDays');
   /* days= is a SERVER parameter — the window is applied by the endpoint's
-     `m.date > CURRENT_DATE - $2 days`, so on live data it has to be re-read.
-     The sample series is generated client-side and does narrow in place. */
+     `m.date > CURRENT_DATE - $2 days`, so it has to be re-read. There is no
+     client-side series to narrow instead: until /detail answers there are no
+     days on this screen at all. */
   if(ds) ds.addEventListener('change', function(){
     DW.days = Number(ds.value);
     if(DW.detail) loadDetail(DW.id); else renderDrawerBody();
@@ -1792,12 +1810,29 @@ PANELS.forEach(function(p){ SRC[p.key] = { source:'…', note:'not read yet', ro
    painting it like a failure reports six errors while nothing has failed yet. */
 function tone(src){ return src==='api' ? 'real' : src==='…' ? 'reading'
   : (src==='demo'||src==='notfound'||src==='badrequest'||src==='nodata') ? 'sample' : 'error'; }
+/* The reader's own word for each outcome, in the owner's language. The code
+   itself (badrequest, nodb, …) is kept on the cell's tooltip for whoever is
+   debugging, but a raw code is not a status a person can act on — UI-STANDARDS
+   §6 wants what failed, said plainly. The vocabulary itself is still spelled out
+   in the caption under this table. */
+var SOURCE_WORD = {
+  'api':'read from the database',
+  '…':'reading…',
+  'demo':'demo session · nothing read',
+  'unauthorized':'not allowed to read this',
+  'badrequest':'the request was turned down',
+  'notfound':'no matching record',
+  'nodata':'nothing to read',
+  'nodb':'database not reachable',
+  'offline':'could not reach the server',
+  'error':'could not be shown'
+};
 function renderSources(){
   document.getElementById('srcRows').innerHTML = PANELS.map(function(p){
     var s = SRC[p.key];
     return '<tr><td>'+esc(p.label)+'</td>'+
       '<td class="mono" style="font-size:var(--fs-caption)">'+esc(p.ep)+'</td>'+
-      '<td class="srccell"><span class="dot '+tone(s.source)+'"></span><span class="mono" style="font-size:var(--fs-caption)">'+esc(s.source)+'</span>'+
+      '<td class="srccell" title="'+esc(s.source)+'"><span class="dot '+tone(s.source)+'"></span><span style="font-size:var(--fs-caption)">'+esc(SOURCE_WORD[s.source] || 'could not be read')+'</span>'+
         '<span class="sub">'+esc(s.note)+'</span></td>'+
       '<td class="mnum">'+(s.rows===null?nul():s.rows)+'</td></tr>';
   }).join('');
@@ -1976,18 +2011,28 @@ function wireAll(){
       ACTIONS = items; renderLog(); renderAttention();
     })
   ]).then(function(res){
-    var worst = 'real', parts = [];
+    /* The bottom banner is the last thing a person reads before they believe the
+       screen. It used to spell out reader codes — "spend:badrequest · list:
+       badrequest" — which says nothing to whoever is looking at it. It now counts
+       what answered and repeats the first plain reason, same words as the panel
+       (UI-STANDARDS §6). */
+    var worst = 'real', good = 0, bad = 0, first = '';
     PANELS.forEach(function(p){
       var s = SRC[p.key];
       if(s.source === '…') return;
       var t = tone(s.source);
       if(t === 'error') worst = 'error';
       else if(t === 'sample' && worst !== 'error') worst = 'sample';
-      parts.push(p.key + ':' + s.source);
+      if(s.source === 'api') good++;
+      else { bad++; if(!first) first = PANEL_MSG[p.key] || ''; }
     });
-    var msg = parts.length ? 'campaigns · ' + parts.join(' · ') : 'campaigns · nothing read';
+    var total = good + bad;
+    var msg = !total ? 'Campaigns — nothing has been read yet'
+      : bad ? 'Campaigns — ' + good + ' of ' + total + ' panels loaded. ' +
+              (first || 'The rest could not be read. Press Reload to try again.')
+      : 'Campaigns — every panel loaded from the database';
     document.getElementById('footNote').textContent =
-      'cm · api/campaigns/* · read-only · ' + (parts.length ? parts.join(' · ') : 'nothing read');
+      'cm · api/campaigns/* · read-only · ' + (total ? good + ' of ' + total + ' panels read' : 'nothing read');
     if(window.FHData && FHData.banner) FHData.banner(worst === 'real' ? 'real' : worst, msg, 'campaigns');
     /* one settle pass now every panel's outcome is known — the tiles, the
        attention row and the ceiling chip each read more than one panel */

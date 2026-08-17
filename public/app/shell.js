@@ -1599,6 +1599,38 @@
     (document.head || document.documentElement).appendChild(s);
   }
 
+  /* Where a full-width bar may be inserted so it renders as a BAR and not as a
+     COLUMN. The bar is width:100%;flex:0 0 auto, so it is only safe inside a
+     container that stacks its children vertically.
+
+     .app is a flex ROW on 30 of these screens (sidebar beside content column).
+     Dropping the bar in as its first child made it a third row-item: the bar
+     became a tall brown column and the real content was squeezed into a ~60px
+     strip, one word per line, until the user clicked Dismiss. That was the
+     Finance OS and Subscriptions collapse.
+
+     So: use the content column (.shell or .main — every screen has one of the
+     two, both are flex-column). If a screen has neither and its .app is a row,
+     sit ABOVE .app rather than inside it, which is correct for any future
+     screen too. Only fall back to inserting inside when .app is not a row. */
+  function isRowBox(el) {
+    if (!el || !window.getComputedStyle) return false;
+    var cs = window.getComputedStyle(el);
+    if (cs.display !== "flex" && cs.display !== "inline-flex") return false;
+    var dir = cs.flexDirection || "row";
+    return dir === "row" || dir === "row-reverse";
+  }
+
+  function mountFullWidthBar(bar) {
+    var col = document.querySelector(".app > .shell") || document.querySelector(".shell") ||
+      document.querySelector(".app > .main") || document.querySelector(".main");
+    if (col && !isRowBox(col)) { col.insertBefore(bar, col.firstChild); return; }
+    var app = document.querySelector(".app");
+    if (app && app.parentNode && isRowBox(app)) { app.parentNode.insertBefore(bar, app); return; }
+    var host = app || document.body;
+    host.insertBefore(bar, host.firstChild);
+  }
+
   /* Driven by BETA_PAGES above — nothing else decides this. No storage: the
      dismiss button just removes the element, so it is gone for the rest of
      this page view and back the moment the page reloads or is reopened. */
@@ -1624,12 +1656,7 @@
       "<button type=\"button\" data-fh-beta-dismiss=\"1\" aria-label=\"Dismiss\" style=\"" +
       "background:none;border:1px solid var(--warn,#F5CE8F);color:#FDE9C4;border-radius:3px;" +
       "font:700 11px/1 'JetBrains Mono',ui-monospace,monospace;padding:3px 8px;cursor:pointer\">Dismiss</button>";
-    /* Same host-resolution as the demo banner: prefer .shell so Galaxy (and
-       any flex-column .app) keeps the canvas. */
-    var shell = document.querySelector(".app > .shell") || document.querySelector(".shell");
-    var app = document.querySelector(".app");
-    var host = shell || app || document.body;
-    host.insertBefore(bar, host.firstChild);
+    mountFullWidthBar(bar);
     var dismiss = bar.querySelector("[data-fh-beta-dismiss]");
     if (dismiss) {
       dismiss.addEventListener("click", function () {

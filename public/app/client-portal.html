@@ -251,7 +251,6 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .advisor-name{font-weight:800;font-size:var(--fs-body)}
 .advisor-role{font-size:var(--fs-body);color:var(--text-dim)}
 .support-note{font-size:var(--fs-caption);color:var(--text-faint);margin-top:11px;padding-top:11px;border-top:1px solid var(--line)}
-.contact-btns{display:flex;gap:8px;margin-left:auto}
 .contact-btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;font-size:var(--fs-body);font-weight:700;transition:background .12s}
 .contact-btn:hover{background:var(--soft)}
 
@@ -677,13 +676,15 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
               <div class="advisor-name" id="adv-name">—</div>
               <div class="advisor-role">Looks after your file</div>
             </div>
-            <div class="contact-btns">
-              <button class="contact-btn" type="button">Text</button>
-              <button class="contact-btn" type="button">Call</button>
-            </div>
+            <!-- AUDIT 2026-08-17: the "Text" and "Call" buttons stood here with no
+                 click handler anywhere in this page — both did nothing. UI-STANDARDS
+                 §5: a control that does nothing does not render. The portal has no
+                 advisor phone number to dial and no route that returns one, so there
+                 was nothing honest to wire them to. Chat is the contact action that
+                 works, and the note below points at it. -->
           </div>
           <div class="support-note" id="adv-note">Your round, your documents, a payment — your advisor is who you want.
-            No charge, no pitch.</div>
+            Use the chat button in the corner and they will get it. No charge, no pitch.</div>
         </section>
 
         <section class="card book-card" aria-labelledby="book-t">
@@ -1381,14 +1382,25 @@ var PRODUCTS = {
     var subPre = document.getElementById("greeting-sub-pre");
     if (subPre) subPre.textContent = "Welcome to your Fundhub portal. Your call is next.";
     var adv = advisor && String(advisor).trim();
-    setText("adv-name", adv ? adv : "—");
+    setAdvisor(adv);
+  }
+  /* AUDIT 2026-08-17: the advisor name sat at a bare "—" whenever the name was
+     not known, which for a CLIENT account is always — the only read that
+     carries it (GET /api/dashboard/client) is staff-gated and 401s for them.
+     An em dash where a person's name goes reads as "still loading". Say plainly
+     that the name is not shown, and point at the one contact action that
+     actually works from this screen. Nothing here invents a name. */
+  function setAdvisor(adv) {
+    setText("adv-name", adv ? adv : "Name not shown here");
     var aav = document.getElementById("adv-av");
     if (aav) aav.textContent = adv ? initials(adv) : "—";
     var note = document.getElementById("adv-note");
     if (note) {
       note.textContent = adv
-        ? ("Your round, your documents, a payment — " + adv + " is who you want. No charge, no pitch.")
-        : "Your round, your documents, a payment — your advisor is who you want. No charge, no pitch.";
+        ? ("Your round, your documents, a payment — " + adv + " is who you want. " +
+           "Use the chat button in the corner and they will get it. No charge, no pitch.")
+        : ("Your round, your documents, a payment — your advisor is who you want. " +
+           "Use the chat button in the corner and they will get it. No charge, no pitch.");
     }
   }
   function paintEmptyIdentity() {
@@ -1397,13 +1409,7 @@ var PRODUCTS = {
     if (av) av.textContent = "—";
     setText("greeting", "Open this from a client file");
     setText("greeting-sub-pre", "Open this from a client file.");
-    setText("adv-name", "—");
-    var aav = document.getElementById("adv-av");
-    if (aav) aav.textContent = "—";
-    var note = document.getElementById("adv-note");
-    if (note) {
-      note.textContent = "Your round, your documents, a payment — your advisor is who you want. No charge, no pitch.";
-    }
+    setAdvisor("");
   }
   function advisorFromClient(c) {
     var cf = (c && c.custom_fields) || {};
@@ -1468,6 +1474,21 @@ var PRODUCTS = {
         '</div><div class="dr-m">' + meta + "</div></div>" +
         '<span class="dr-s have">On file</span></div>';
     }).join("");
+  }
+  /* AUDIT 2026-08-17: a client account cannot read this list at all — the route
+     behind it is open to staff sessions only. The old empty state, "No files
+     yet · They show here when they are on file", is a promise the portal can
+     never keep for them, and the failed read painted a red "could not load"
+     strip as if something were broken. Nothing is broken. Say what is true and
+     give the one thing the client can actually do. */
+  function paintDocsNotListed() {
+    var pane = document.getElementById("tp-docs");
+    if (!pane) return;
+    pane.innerHTML = '<div class="doc-row"><div>' +
+      '<div class="dr-n">Your files are not listed here</div>' +
+      '<div class="dr-m">Letters, reports and anything else on your file are sent to you ' +
+      'by your advisor. Ask in chat and they will send you a copy.</div></div>' +
+      '<span class="dr-s">—</span></div>';
   }
   function paintMessages(rows) {
     var pane = document.getElementById("tp-msg");
@@ -1588,13 +1609,34 @@ var PRODUCTS = {
       return "live pre-qual · " + amt;
     });
 
-  FHData.wire(FHData.documents({ client_id: clientId, limit: 200 }),
-    "documents", function (data) {
-      var items = data.items || [];
+  /* AUDIT 2026-08-17 (client, CRITICAL). GET /api/read/documents is gated to
+     staff sessions, so a client account gets 401 here every single time. That
+     is not a read that failed — it is a read that was never open to them.
+     FHData.wire()'s failure path can only reach explain(), which speaks in
+     "we could not load this" terms and reads as an outage. So this read is
+     driven by hand: staff opening the portal with ?id= keep the ordinary
+     explain() wording (for them a 401 really is a stale session), and a client
+     gets the honest state instead of a red strip. No gate widened, no route
+     added — whether a client should be able to read their own documents is the
+     owner's call and is on the board as an open question. */
+  FHData.documents({ client_id: clientId, limit: 200 }).then(function (res) {
+    if (res && res.ok && res.data) {
+      var items = res.data.items || [];
       paintDocs(items);
-      if (!items.length) return "live documents · none on file";
-      return "live documents · " + items.length + " on file";
-    });
+      FHData.banner("real", items.length
+        ? "live documents · " + items.length + " on file"
+        : "live documents · none on file", "documents");
+      return;
+    }
+    if (res && res.source === "unauthorized" && !STAFF_ROLES[roleHint()]) {
+      paintDocsNotListed();
+      FHData.banner("sample", "your files are not listed here — your advisor sends them", "documents");
+      return;
+    }
+    FHData.explain(res, "documents");
+  }, function (e) {
+    FHData.explain({ source: "offline", error: (e && e.message) || "read failed" }, "documents");
+  });
 
   FHData.wire(FHData.entitlements({ client_id: clientId, limit: 200 }),
     "entitlements", function (data) {

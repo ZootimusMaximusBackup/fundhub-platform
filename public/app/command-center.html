@@ -531,6 +531,7 @@
   .status-rail.idle{background:var(--gray2);}
   .status-rail.blocked{background:var(--alert);}
   .status-rail.done{background:var(--info);}
+  .status-rail.shadow{background:var(--info);}
 
   .agent-body{flex:1;min-width:0;}
   .agent-top{
@@ -554,6 +555,7 @@
   .status-badge.idle{color:var(--text-dim);background:var(--paper-dim);}
   .status-badge.blocked{color:var(--ink2);background:var(--alert-bg);}
   .status-badge.done{color:var(--ink2);background:var(--info-bg);}
+  .status-badge.shadow{color:var(--ink2);background:var(--info-bg);}
 
   .agent-task{
     font-size:var(--fs-body);
@@ -865,196 +867,31 @@
       <!-- AGENT PANE -->
       <section class="pane">
         <div class="pane-head">
-          <div class="pane-title eyebrow">CC-04 / Agents — Exceptions</div>
-          <div class="pane-meta">1 blocked · 13 nominal</div>
+          <div class="pane-title eyebrow">CC-04 / Agents</div>
+          <div class="pane-meta" id="cc-agents-meta"></div>
         </div>
         <div class="pane-body">
 
-          <!-- ══ EXCEPTIONS — the only agents that get a card ══════════════
-               Blocked, failed or degraded only. The healthy thirteen are one
-               line below; the full roster is one click inside it. -->
-          <div class="exc-panel">
-            <div class="eyebrow" style="margin-bottom:8px">CC-05 / Needs A Human</div>
-            <div class="exc-title">⚠ 1 agent blocked</div>
-            <div class="agent-card blocked">
-              <div class="status-rail blocked"></div>
-              <div class="agent-body">
-                <div class="agent-top">
-                  <div><span class="av agent">IR</span> <span class="agent-code">AG-09</span><span class="agent-name">Inquiry Removal AI</span></div>
-                  <div class="status-badge blocked">Blocked</div>
-                </div>
-                <div class="agent-task error-text">Equifax portal timeout — 3 retries failed</div>
-                <div class="agent-stats">Queue backed up: <b>11 waiting</b></div>
-              </div>
-            </div>
-          </div>
-
+          <!-- ══ ROSTER ════════════════════════════════════════════════════
+               Everything in this drawer is drawn from GET /api/read/agents at
+               the bottom of this file. The registry stores a code, a name, a
+               class (client-facing / ops), a channel and a status — so those
+               are the only things a card may say. It records nothing about
+               what an agent is doing right now, how many calls it made, or
+               whether it is stuck, so no card carries a task line, a counter,
+               or a "blocked" state. -->
           <details class="roster" id="roster">
             <summary>
               <span class="rs-chev">›</span>
               <span class="rs-dot"></span>
-              <span class="rs-main">13 agents nominal</span>
-              <span class="rs-sub">8 active · 3 idle · 2 done</span>
+              <span class="rs-main" id="cc-roster-main">Agent registry</span>
+              <span class="rs-sub" id="cc-roster-sub"></span>
             </summary>
             <div class="roster-body">
 
-          <div class="feed-title eyebrow" style="margin-bottom:9px">CC-06 / Roster<span class="feed-filters"><button class="ffilter on" data-a="all">All</button><button class="ffilter" data-a="active">Active</button><button class="ffilter" data-a="idle">Idle</button><button class="ffilter" data-a="done">Done</button></span></div>
-          <div class="agent-group-label eyebrow">CC-07 / Client-Facing</div>
-
-          <div class="agent-card">
-            <div class="status-rail active"></div>
-            <div class="agent-body">
-              <div class="agent-top">
-                <div><span class="av agent">SJ</span> <span class="agent-code">AG-04</span><span class="agent-name">Setter Josh</span> <span class="agent-role">· Voice</span></div>
-                <div class="status-badge active">Active</div>
-              </div>
-              <div class="agent-task">On a call with Kayla Whitmore</div>
-              <div class="agent-stats">Calls today: <b>34</b> · Bookings: <b>6</b> · Queue waiting: <b>9</b></div>
-            </div>
-          </div>
-
-          <div class="agent-card">
-            <div class="status-rail active"></div>
-            <div class="agent-body">
-              <div class="agent-top">
-                <div><span class="av agent">A1</span> <span class="agent-code">AG-01</span><span class="agent-name">Agent 1</span> <span class="agent-role">· Lead Follow-up &amp; Booking</span></div>
-                <div class="status-badge active">Active</div>
-              </div>
-              <div class="agent-task">Following up with Tomás Reyes by text</div>
-              <div class="agent-stats">112 done today · 3 working now · none failed</div>
-            </div>
-          </div>
-
-          <div class="agent-card">
-            <div class="status-rail idle"></div>
-            <div class="agent-body">
-              <div class="agent-top">
-                <div><span class="av agent">A2</span> <span class="agent-code">AG-02</span><span class="agent-name">Agent 2</span> <span class="agent-role">· Billing</span></div>
-                <div class="status-badge idle">Idle</div>
-              </div>
-              <div class="agent-task">Last sent something 8m ago</div>
-              <div class="agent-stats">Invoices sent today: <b>14</b> · Failed charges: <b>1</b></div>
-            </div>
-          </div>
-
-          <div class="agent-card">
-            <div class="status-rail active"></div>
-            <div class="agent-body">
-              <div class="agent-top">
-                <div><span class="av agent">A3</span> <span class="agent-code">AG-03</span><span class="agent-name">Agent 3</span> <span class="agent-role">· Nurture</span></div>
-                <div class="status-badge active">Active</div>
-              </div>
-              <div class="agent-task">Working through 212 quiet leads</div>
-              <div class="agent-stats">Messages sent today: <b>89</b></div>
-            </div>
-          </div>
-
-          <div class="agent-card">
-            <div class="status-rail active"></div>
-            <div class="agent-body">
-              <div class="agent-top">
-                <div><span class="av agent">A5</span> <span class="agent-code">AG-05</span><span class="agent-name">Agent 5</span> <span class="agent-role">· Onboarding</span></div>
-                <div class="status-badge active">Active</div>
-              </div>
-              <div class="agent-task">Onboarding Brianna Holt</div>
-              <div class="agent-stats">Docs requested: <b>3</b></div>
-            </div>
-          </div>
-
-          <div class="agent-card">
-            <div class="status-rail active"></div>
-            <div class="agent-body">
-              <div class="agent-top">
-                <div><span class="av agent">DC</span> <span class="agent-code">AG-06</span><span class="agent-name">Document Check</span></div>
-                <div class="status-badge active">Active</div>
-              </div>
-              <div class="agent-task">Reviewing documents for Samuel Okafor</div>
-              <div class="agent-stats">Checked today: <b>27</b> · Flagged: <b>4</b></div>
-            </div>
-          </div>
-
-          <div class="agent-card">
-            <div class="status-rail idle"></div>
-            <div class="agent-body">
-              <div class="agent-top">
-                <div><span class="av agent">RC</span> <span class="agent-code">AG-07</span><span class="agent-name">Recon</span></div>
-                <div class="status-badge idle">Idle</div>
-              </div>
-              <div class="agent-task">Last checked the books 22m ago</div>
-              <div class="agent-stats">Files reconciled today: <b>61</b></div>
-            </div>
-          </div>
-
-          <div class="agent-card">
-            <div class="status-rail active"></div>
-            <div class="agent-body">
-              <div class="agent-top">
-                <div><span class="av agent">CF</span> <span class="agent-code">AG-08</span><span class="agent-name">Context Fetcher</span></div>
-                <div class="status-badge active">Active</div>
-              </div>
-              <div class="agent-task">Assembling context ahead of Courtney Vance's call</div>
-              <div class="agent-stats">Pulls today: <b>48</b></div>
-            </div>
-          </div>
-
-          <!-- A-09 Inquiry Removal AI is blocked, so its card lives in the
-               exceptions panel above rather than being repeated here. -->
-
-          <div class="agent-group-label eyebrow">CC-08 / Ops</div>
-
-          <div class="agent-card">
-            <div class="status-rail active"></div>
-            <div class="agent-body">
-              <div class="agent-top">
-                <div><span class="av agent">HB</span> <span class="agent-code">AG-10</span><span class="agent-name">Heartbeat</span></div>
-                <div class="status-badge active">Active</div>
-              </div>
-              <div class="agent-task">Everything looks healthy — checking every minute</div>
-            </div>
-          </div>
-
-          <div class="agent-card">
-            <div class="status-rail idle"></div>
-            <div class="agent-body">
-              <div class="agent-top">
-                <div><span class="av agent">FX</span> <span class="agent-code">AG-11</span><span class="agent-name">Fixer</span></div>
-                <div class="status-badge idle">Idle</div>
-              </div>
-              <div class="agent-task">Nothing has needed fixing today</div>
-            </div>
-          </div>
-
-          <div class="agent-card">
-            <div class="status-rail done"></div>
-            <div class="agent-body">
-              <div class="agent-top">
-                <div><span class="av agent">DB</span> <span class="agent-code">AG-12</span><span class="agent-name">Daily Brief</span></div>
-                <div class="status-badge done">Done</div>
-              </div>
-              <div class="agent-task">Sent <span class="av human">CS</span> Chris Stanbridge his 7:00 AM brief</div>
-            </div>
-          </div>
-
-          <div class="agent-card">
-            <div class="status-rail active"></div>
-            <div class="agent-body">
-              <div class="agent-top">
-                <div><span class="av agent">CG</span> <span class="agent-code">AG-13</span><span class="agent-name">Compliance Gate</span></div>
-                <div class="status-badge active">Active</div>
-              </div>
-              <div class="agent-task">214 messages checked today · 2 blocked</div>
-            </div>
-          </div>
-
-          <div class="agent-card">
-            <div class="status-rail done"></div>
-            <div class="agent-body">
-              <div class="agent-top">
-                <div><span class="av agent">DM</span> <span class="agent-code">AG-14</span><span class="agent-name">Data + Models</span></div>
-                <div class="status-badge done">Done</div>
-              </div>
-              <div class="agent-task">Finished last night's scoring at 3:12 AM</div>
-            </div>
+          <div class="feed-title eyebrow" style="margin-bottom:9px">CC-06 / Roster</div>
+          <div id="cc-roster-list">
+            <div class="empty-rail">Loading the agent registry…</div>
           </div>
 
             </div>
@@ -1067,7 +904,10 @@
       <section class="pane">
         <div class="pane-head">
           <div class="pane-title eyebrow">CC-09 / System</div>
-          <div class="pane-meta">as of 2:47 PM</div>
+          <!-- Filled with the real clock time the KPI read came back, and left
+               blank until it does. Nothing here may claim a time it did not
+               observe. -->
+          <div class="pane-meta" id="cc-system-meta"></div>
         </div>
         <div class="pane-body">
 
@@ -1104,42 +944,13 @@
             </div>
           </div>
 
-          <!-- Top four only, anomaly first — the degraded line is the answer to
-               "what broke", so it leads instead of sitting fourth in a list of
-               six. The two that have been fine all day are behind All systems. -->
+          <!-- Nothing on this screen reads platform health. There is no status
+               feed for the bureau portals, the job queue, the payment provider
+               or the compliance checks, so this pane states that it has no
+               source rather than showing a number. Do not put a value back here
+               until something fetches one. -->
           <div class="feed-title eyebrow">CC-10 / Platform Health</div>
-          <div class="health-list">
-            <div class="health-row">
-              <div class="health-name">Bureau portal (Equifax)</div>
-              <div class="health-val"><span class="health-dot bad"></span>down since 1:30 PM</div>
-            </div>
-            <div class="health-row">
-              <div class="health-name">Live updates delay</div>
-              <div class="health-val"><span class="health-dot ok"></span>1.2s</div>
-            </div>
-            <div class="health-row">
-              <div class="health-name">Jobs waiting to run</div>
-              <div class="health-val"><span class="health-dot ok"></span>3</div>
-            </div>
-            <div class="health-row">
-              <div class="health-name">Error rate (24h)</div>
-              <div class="health-val"><span class="health-dot ok"></span>0.4%</div>
-            </div>
-          </div>
-
-          <details class="allsys" id="allsys">
-            <summary><span class="as-chev">›</span>All systems</summary>
-            <div class="health-list">
-              <div class="health-row">
-                <div class="health-name">Payment provider (Commas)</div>
-                <div class="health-val"><span class="health-dot ok"></span>all good</div>
-              </div>
-              <div class="health-row">
-                <div class="health-name">Message compliance checks</div>
-                <div class="health-val"><span class="health-dot ok"></span>214 / 216 passed</div>
-              </div>
-            </div>
-          </details>
+          <div class="empty-rail">Nothing to show yet. Bureau portals, job backlog, error rate and payment status will appear here once this screen reads them from a live source. It does not read one today, so treat no news as no information — not as all clear.</div>
 
         </div>
       </section>
@@ -1154,7 +965,9 @@
     <span>org: fundhub</span>
     <span id="cc-active-clients">active clients</span>
     <span>a read-only summary — go to the board to change anything</span>
-    <span class="nominal"><span class="pulse"></span>systems nominal · fundhub.ai</span>
+    <!-- "systems nominal" was a health claim with no source, the same lie CC-10
+         above just stopped telling. Nothing on this page checks system health. -->
+    <span class="nominal"><span class="pulse"></span>fundhub.ai</span>
   </footer>
 
   </div>
@@ -1228,35 +1041,9 @@ setInterval(tickClock, 1000);
   });
 })();
 
-/* ── agent roster: status filters ──────────────────────────────────────────
-   Scoped to the roster drawer — the promoted exception card above it is not
-   part of the filterable set and must never be filtered away. */
-(function(){
-  var btns=[].slice.call(document.querySelectorAll('.ffilter[data-a]'));
-  var cards=[].slice.call(document.querySelectorAll('.roster-body .agent-card'));
-  var labels=[].slice.call(document.querySelectorAll('.roster-body .agent-group-label'));
-  btns.forEach(function(b){
-    b.addEventListener('click',function(){
-      btns.forEach(function(x){x.classList.remove('on')});
-      b.classList.add('on');
-      var f=b.getAttribute('data-a');
-      cards.forEach(function(c){
-        var r=c.querySelector('.status-rail');
-        var st=r?r.className.replace('status-rail','').trim():'';
-        c.classList.toggle('hide', f!=='all'&&st!==f);
-      });
-      /* a group header with nothing under it is noise — drop it */
-      labels.forEach(function(lbl){
-        var any=false,n=lbl.nextElementSibling;
-        while(n&&n.classList.contains('agent-card')){
-          if(!n.classList.contains('hide')) any=true;
-          n=n.nextElementSibling;
-        }
-        lbl.style.display=any?'':'none';
-      });
-    });
-  });
-})();
+/* The roster status filter chips (All / Active / Idle / Done) went with the
+   hardcoded cards they filtered. "Done" was never a registry state, and the
+   drawer now draws whatever /api/read/agents returns. */
 
 /* ── rails collapse ──────────────────────────────────────────────────────── */
 document.querySelectorAll('.rail-toggle').forEach(function(t){
@@ -1304,6 +1091,15 @@ document.querySelectorAll('.rail-toggle').forEach(function(t){
     FHData.wire(FHData.kpis("today"), "command center KPIs", function (data) {
       if (!data || !data.display) return null;
       paintKpis(data.display, data.kpis);
+      // The only honest timestamp available: the clock at the moment this read
+      // came back. It is never written unless a read succeeded.
+      var sysMeta = document.getElementById("cc-system-meta");
+      if (sysMeta) {
+        sysMeta.textContent = "read at " + new Date().toLocaleString("en-US", {
+          hour: "numeric", minute: "2-digit", timeZone: "America/New_York",
+          timeZoneName: "short"
+        });
+      }
       if (data.display.pipeline_movement != null && data.display.pipeline_movement !== "") {
         movedToday = data.display.pipeline_movement;
         paintPipelineMeta();
@@ -1395,43 +1191,123 @@ document.querySelectorAll('.rail-toggle').forEach(function(t){
     nextRail();
   }
 
+  /* ── CC-04 / CC-06 agent roster ────────────────────────────────────────────
+     The cards are BUILT from /api/read/agents, not decorated on top of a
+     hand-written list. The old markup shipped fourteen invented agents with
+     invented tasks and counters ("On a call with Kayla Whitmore", "Calls today
+     34") and only repainted the badge from the registry — which is how a card
+     could say "blocked" while its badge said ACTIVE.
+
+     A card may only say what the registry stores: code, name, class, channel,
+     status. The registry has no live-work fields and no "blocked" state, so
+     there is no task line, no counter, and no exceptions panel. */
   var STATE = {
     live:    { label: "Active",  cls: "active"  },
     shadow:  { label: "Shadow",  cls: "shadow"  },
     draft:   { label: "Draft",   cls: "idle"    },
     retired: { label: "Retired", cls: "idle"    }
   };
+  var CLASS_LABEL = {
+    client_facing: "CC-07 / Client-Facing",
+    ops:           "CC-08 / Ops"
+  };
 
-  FHData.wire(FHData.read("agents", { limit: 200 }), "agent status", function (data) {
-    var rows = data.items || [];
-    if (!rows.length) return null;
-    var byCode = {};
-    rows.forEach(function (a) { byCode[a.code] = a; });
+  function initials(name) {
+    var parts = String(name || "").trim().split(/\s+/).slice(0, 2);
+    var out = "";
+    for (var i = 0; i < parts.length; i++) if (parts[i]) out += parts[i].charAt(0);
+    return out.toUpperCase() || "?";
+  }
 
-    var touched = 0;
-    var codes = document.querySelectorAll(".agent-code");
-    for (var i = 0; i < codes.length; i++) {
-      var code = codes[i].textContent.trim();
-      var a = byCode[code];
-      if (!a) continue;
-      var card = codes[i].closest(".agent-card");
-      if (!card) continue;
-      var st = STATE[a.status] || STATE.draft;
+  function agentCard(a) {
+    var st = STATE[a.status] || STATE.draft;
+    return '<div class="agent-card">' +
+      '<div class="status-rail ' + st.cls + '"></div>' +
+      '<div class="agent-body"><div class="agent-top"><div>' +
+      '<span class="av agent">' + esc(initials(a.name)) + '</span> ' +
+      '<span class="agent-code">' + esc(a.code) + '</span>' +
+      '<span class="agent-name">' + esc(a.name) + '</span>' +
+      (a.channel ? ' <span class="agent-role">· ' + esc(a.channel) + '</span>' : '') +
+      '</div><div class="status-badge ' + st.cls + '">' + esc(st.label) + '</div>' +
+      '</div></div></div>';
+  }
 
-      var badge = card.querySelector(".status-badge");
-      if (badge) {
-        badge.textContent = st.label;
-        badge.className = "status-badge " + st.cls;
-      }
-      var rail = card.querySelector(".status-rail");
-      if (rail) rail.className = "status-rail " + st.cls;
-      touched++;
+  function setRosterSummary(main, sub) {
+    var m = document.getElementById("cc-roster-main");
+    var s = document.getElementById("cc-roster-sub");
+    if (m) m.textContent = main;
+    if (s) s.textContent = sub || "";
+  }
+
+  function renderRoster(rows) {
+    var list = document.getElementById("cc-roster-list");
+    var meta = document.getElementById("cc-agents-meta");
+    if (!list) return 0;
+    if (!rows.length) {
+      list.innerHTML = '<div class="empty-rail">No agents in the registry yet. ' +
+        'Agents added in the Agent Editor will be listed here.</div>';
+      setRosterSummary("No agents in the registry", "");
+      if (meta) meta.textContent = "registry read · 0 agents";
+      return 0;
     }
-    if (!touched) return null;
+    var groups = { client_facing: [], ops: [] }, other = [];
+    rows.forEach(function (a) {
+      if (groups[a.agent_class]) groups[a.agent_class].push(a); else other.push(a);
+    });
+    var html = "", key;
+    for (key in groups) {
+      if (!Object.prototype.hasOwnProperty.call(groups, key) || !groups[key].length) continue;
+      html += '<div class="agent-group-label eyebrow">' + esc(CLASS_LABEL[key]) + '</div>';
+      groups[key].forEach(function (a) { html += agentCard(a); });
+    }
+    if (other.length) {
+      html += '<div class="agent-group-label eyebrow">Other</div>';
+      other.forEach(function (a) { html += agentCard(a); });
+    }
+    list.innerHTML = html;
+
+    var counts = {};
+    rows.forEach(function (a) {
+      var lbl = (STATE[a.status] || STATE.draft).label;
+      counts[lbl] = (counts[lbl] || 0) + 1;
+    });
+    var parts = [];
+    for (key in counts) {
+      if (Object.prototype.hasOwnProperty.call(counts, key)) {
+        parts.push(counts[key] + " " + key.toLowerCase());
+      }
+    }
+    setRosterSummary(rows.length + (rows.length === 1 ? " agent" : " agents"), parts.join(" · "));
+    if (meta) meta.textContent = "registry read · " + rows.length +
+      (rows.length === 1 ? " agent" : " agents");
+    return rows.length;
+  }
+
+  function rosterUnavailable() {
+    var list = document.getElementById("cc-roster-list");
+    var meta = document.getElementById("cc-agents-meta");
+    if (list) {
+      list.innerHTML = '<div class="empty-rail">We could not load the agent ' +
+        'registry. Reload the page; if it keeps failing, nothing here is known.</div>';
+    }
+    setRosterSummary("Agent registry unavailable", "");
+    if (meta) meta.textContent = "registry not read";
+  }
+
+  /* One request, two readers: wire() owns the banner wording, and the second
+     handler covers the failure case wire() deliberately does not paint. */
+  var agentsRead = FHData.read("agents", { limit: 200 });
+
+  FHData.wire(agentsRead, "agent status", function (data) {
+    var rows = data.items || [];
+    var shown = renderRoster(rows);
+    if (!shown) return null;
     var live = rows.filter(function (a) { return a.status === "live"; });
-    return "live agent registry · " + touched + " cards updated · " +
-           live.length + " agent(s) actually live";
+    return "live agent registry · " + shown + " agent(s) listed · " +
+           live.length + " actually live";
   });
+
+  agentsRead.then(function (res) { if (!res || !res.ok) rosterUnavailable(); });
 })();
 </script>
 </body>

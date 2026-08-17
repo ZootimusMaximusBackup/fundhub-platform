@@ -245,20 +245,19 @@ table.grid tbody tr:hover{background:var(--soft)}
           <div class="bt">Payouts are held — your partner license is not signed</div>
           <div class="bd" id="licenseBannerBody">Accrued payouts stay on file until the license is signed.</div>
         </div>
-        <button class="btn sm mono dark" id="signBtn">Sign license</button>
       </div>
 
       <div class="stats" style="margin-top:14px">
-        <div class="stat"><div class="eyebrow">AF-02 <span class="sep">/</span> REFERRED</div><div class="sv" id="kRef">0</div><div class="sd">lifetime leads</div></div>
-        <div class="stat"><div class="eyebrow">AF-02 <span class="sep">/</span> CONVERTED</div><div class="sv" id="kConv">0</div><div class="sd" id="kConvRate">—</div></div>
+        <div class="stat"><div class="eyebrow">AF-02 <span class="sep">/</span> REFERRED</div><div class="sv" id="kRef">—</div><div class="sd">lifetime leads · comes from your referral tracking, not connected to this page yet</div></div>
+        <div class="stat"><div class="eyebrow">AF-02 <span class="sep">/</span> CONVERTED</div><div class="sv" id="kConv">—</div><div class="sd" id="kConvRate">comes from your referral tracking, not connected to this page yet</div></div>
         <div class="stat"><div class="eyebrow">AF-02 <span class="sep">/</span> OWED</div><div class="sv" id="kOwed">$0</div><div class="sd">accrued, not yet paid</div></div>
-        <div class="stat"><div class="eyebrow">AF-02 <span class="sep">/</span> PAID</div><div class="sv" id="kPaid">$0</div><div class="sd">lifetime</div></div>
+        <div class="stat"><div class="eyebrow">AF-02 <span class="sep">/</span> PAID</div><div class="sv" id="kPaid">—</div><div class="sd">lifetime · comes from past payout runs, not connected to this page yet</div></div>
       </div>
 
       <div class="card" style="margin-top:14px">
         <div class="card-hd"><div class="eyebrow">AF-03 <span class="sep">/</span> FUNNEL</div>
           <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">LIFETIME · CLICK TO FUNDED</span></div>
-        <div class="card-bd"><div class="funnel" id="funnel"></div></div>
+        <div class="card-bd"><div class="empty" id="funnel">Nothing to show yet. Clicks, sign-ups and funded deals are not connected to this page, so it cannot count them.</div></div>
       </div>
 
       <div class="card">
@@ -371,8 +370,8 @@ function renderLeads(){
       '<td class="money">'+(l.basis?money(l.basis):'—')+'</td>'+
       '<td class="money" style="text-align:right">'+(c?money(c):'—')+'</td>'+
       '<td><span class="badge '+PAY_CLS[l.pay]+'">'+l.pay+'</span></td></tr>';
-  }).join('')||'<tr><td colspan="7" class="empty">'+(LEADS.length?'No referrals match that filter.':'No referrals on file.')+'</td></tr>';
-  document.getElementById('leadTotal').textContent=money(list.reduce(function(a,l){return a+commission(l)},0));
+  }).join('')||'<tr><td colspan="7" class="empty">'+(LEADS.length?'No referrals match that filter.':'No referrals on file here — this page is not connected to the referral list yet.')+'</td></tr>';
+  document.getElementById('leadTotal').textContent=list.length?money(list.reduce(function(a,l){return a+commission(l)},0)):'—';
 }
 
 function renderPayouts(){
@@ -384,34 +383,17 @@ function renderPayouts(){
       '<td class="money" style="text-align:right">'+money(p.amt)+'</td>'+
       '<td><span class="badge '+PST_CLS[p.st]+'">'+p.st+'</span>'+
       (p.st==='Held'?' <span style="font-size:var(--fs-caption);color:var(--gray)">license unsigned</span>':'')+'</td></tr>';
-  }).join('')||'<tr><td colspan="6" class="empty">No payouts on file.</td></tr>';
+  }).join('')||'<tr><td colspan="6" class="empty">No payout runs shown here — this page is not connected to your payout history yet.</td></tr>';
 }
 
-function renderFunnel(){
-  var steps=[
-    {l:'Clicked',      n:0},
-    {l:'Signed up',    n:LEADS.length},
-    {l:'Assessment paid',n:LEADS.filter(function(l){return ['Assessment paid','Deposit paid','Funded'].indexOf(l.st)>=0}).length},
-    {l:'Deposit paid', n:LEADS.filter(function(l){return ['Deposit paid','Funded'].indexOf(l.st)>=0}).length},
-    {l:'Funded',       n:LEADS.filter(function(l){return l.st==='Funded'}).length}
-  ];
-  var cols=['var(--info)','var(--accent)','var(--butter)','var(--warn)','var(--ok)'];
-  var top=steps[0].n;
-  document.getElementById('funnel').innerHTML=steps.map(function(s,i){
-    var pct=top?Math.round(s.n/top*100):0;
-    return '<div class="fstep"><div class="fb" style="background:'+cols[i]+';opacity:.9">'+s.n+'</div>'+
-      '<div class="fl">'+esc(s.l)+'</div><div class="fp">'+pct+'% of clicks</div></div>';
-  }).join('');
-}
-
-function renderStats(){
-  var conv=LEADS.filter(function(l){return l.basis>0}).length;
-  document.getElementById('kRef').textContent=LEADS.length;
-  document.getElementById('kConv').textContent=conv;
-  document.getElementById('kConvRate').textContent=LEADS.length?Math.round(conv/LEADS.length*100)+'% of referrals paid':'—';
-  document.getElementById('kOwed').textContent=money(LEADS.filter(function(l){return l.pay==='Accrued'}).reduce(function(a,l){return a+commission(l)},0));
-  document.getElementById('kPaid').textContent=money(PAYOUTS.filter(function(p){return p.st==='Paid'}).reduce(function(a,p){return a+p.amt},0));
-}
+/* REFERRED, CONVERTED, PAID and the AF-03 funnel used to be counted out of the
+   empty LEADS and PAYOUTS arrays above and printed as "0", "0%" and "$0.00".
+   Nothing fetches those arrays, so those were not measurements — and to an
+   affiliate "PAID $0.00 lifetime" reads as "we have paid you nothing", which
+   this page has no way to know. They now sit at the em dash the markup ships
+   with, captioned where the real number will come from. OWED stays live off
+   /api/read/affiliates in the block below. When a read endpoint for referred
+   leads and payout runs exists, paint these four from it — never from LEADS. */
 
 function copy(txt,btn,label){
   function done(){var o=btn.textContent;btn.textContent='Copied ✓';setTimeout(function(){btn.textContent=label},1400)}
@@ -425,20 +407,17 @@ document.getElementById('copyCode').addEventListener('click',function(){
   if(!code||code==='No code yet') return;
   copy(code,this,'Copy code');
 });
-document.getElementById('signBtn').addEventListener('click',function(){
-  if(!confirm('Open the partner license for signature?\n\nAccrued payouts release on the next Friday run once it is signed.')) return;
-  var held=PAYOUTS.filter(function(p){return p.st==='Held'})[0];
-  if(held) held.st='Scheduled';
-  document.getElementById('licenseBanner').style.display='none';
-  document.querySelector('.chip.wip').className='chip on';
-  document.querySelector('.chip.on .cd').nextSibling;
-  document.querySelectorAll('.chip')[0].innerHTML='<span class="cd"></span>License signed';
-  renderPayouts();
-});
+/* There is no "Sign license" button. There is no e-signature path for the
+   partner license on this screen, so the old button changed nothing but the
+   browser: it hid the hold banner, rewrote the topbar chip to "License signed"
+   and flipped a Held payout to Scheduled without a single request. Telling an
+   outside partner their license is signed when nothing was signed is the lie
+   this removes. The hold banner and the topbar chip now say only what
+   /api/read/affiliates reports. */
 document.getElementById('stFilter').addEventListener('change',renderLeads);
 document.getElementById('q').addEventListener('input',renderLeads);
 
-renderLeads(); renderPayouts(); renderFunnel(); renderStats();
+renderLeads(); renderPayouts();
 </script>
 <script src="data.js"></script>
 <script>

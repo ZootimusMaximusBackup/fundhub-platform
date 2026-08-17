@@ -1226,16 +1226,27 @@ function renderVerdict(){
   else if(next){ hint.textContent = 'nextBestTime → ' + fmt(next) + ' (UTC, from best_times)'; }
   else { hint.textContent = 'best_times is empty → scheduled_for would be NULL, and the post would never publish'; }
 
-  var v = previewScreen(s.caption, s.offerType, approveBeforeLaunch());
   var badge = document.getElementById('vState');
+  /* Nothing has been typed and no offer type picked, so nothing is screened. The
+     panel used to open showing a verdict and a reason count for a caption nobody
+     wrote — a judgement about text that does not exist. It now waits. */
+  if(!s.caption.trim() && !s.offerType){
+    badge.textContent = '—';
+    badge.className = 'badge b-gray mono';
+    document.getElementById('vCount').textContent = '0 reasons';
+    document.getElementById('vWhat').innerHTML =
+      'Type a caption and pick an offer type. Nothing is screened until both exist — an empty offer_type is itself a block.';
+    document.getElementById('vReasons').innerHTML = '';
+    return;
+  }
+
+  var v = previewScreen(s.caption, s.offerType, approveBeforeLaunch());
   badge.textContent = v.state;
   badge.className = 'badge ' + (SCREEN_BADGE[v.state] || 'b-gray');
   document.getElementById('vCount').textContent = v.reasons.length + ' reason' + (v.reasons.length===1?'':'s');
 
   var what;
-  if(!s.caption.trim() && !s.offerType){
-    what = 'Type a caption and pick an offer type. Nothing is screened until both exist — an empty offer_type is itself a block.';
-  } else if(v.state === 'blocked'){
+  if(v.state === 'blocked'){
     what = 'The row would be INSERTed and then set to <b>status = \'blocked\'</b> with these reasons stored on it. '+
            'It stays in the review queue permanently — there is no re-screen, no override, no edit-and-resubmit.';
   } else {

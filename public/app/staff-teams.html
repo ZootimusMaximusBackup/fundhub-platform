@@ -129,10 +129,8 @@ table.perm td{padding:0;border-bottom:1px solid var(--line);text-align:center}
 table.perm td.pl{text-align:left;padding:9px 12px;font-size:var(--fs-body);background:#fff;position:sticky;left:0;z-index:1;border-right:1px solid var(--line)}
 table.perm td.pl .pd{font-size:var(--fs-caption);color:var(--gray2);font-family:var(--mono);letter-spacing:.08em}
 table.perm tr:last-child td{border-bottom:0}
-.pcell{width:100%;height:38px;border:0;background:transparent;cursor:pointer;font-family:var(--mono);font-size:var(--fs-body);color:var(--gray2);transition:background .1s}
-.pcell:hover{background:var(--soft)}
+.pcell{display:block;width:100%;height:38px;line-height:38px;cursor:default;font-family:var(--mono);font-size:var(--fs-body);color:var(--gray2)}
 .pcell.yes{color:#2C5138}
-.pcell.locked{cursor:not-allowed;color:var(--gray2);opacity:.5}
 table.perm tbody tr:hover td.pl{background:var(--soft)}
 
 .editor{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:92vw;background:#fff;border-left:1px solid var(--line);box-shadow:-14px 0 40px rgba(0,0,0,.10);transform:translateX(102%);transition:transform .2s ease;z-index:60;display:flex;flex-direction:column}
@@ -243,7 +241,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
       <div class="card" style="margin-top:14px">
         <div class="tabs">
           <button class="tab on" data-tab="roster">Roster</button>
-          <button class="tab" data-tab="perms">Advanced permissions</button>
+          <button class="tab" data-tab="perms">Permissions reference</button>
           <button class="tab" data-tab="clock">Clock &amp; consent</button>
           <button class="tab" data-tab="telemetry">Telemetry</button>
         </div>
@@ -252,7 +250,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
           <div class="card-hd" style="border-bottom:1px solid var(--line)">
             <div class="eyebrow">ST-01 <span class="sep">/</span> ROSTER</div>
             <div class="spacer"></div>
-            <button class="btn sm mono" id="toAdvanced">Advanced permissions →</button>
+            <button class="btn sm mono" id="toAdvanced">Permissions reference →</button>
             <select id="roleFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:var(--fs-body);background:#fff">
               <option value="">All roles</option>
               <option>Owner</option><option>Sales Manager</option><option>Closer</option>
@@ -270,14 +268,14 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
 
         <div class="tabpane" id="tab-perms">
           <div class="card-hd" style="border-bottom:1px solid var(--line)">
-            <div class="eyebrow">ST-02 <span class="sep">/</span> ADVANCED PERMISSIONS · FULL MATRIX</div>
+            <div class="eyebrow">ST-02 <span class="sep">/</span> PERMISSIONS BY ROLE · REFERENCE CHART</div>
             <div class="spacer"></div>
-            <span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">CLICK A CELL TO TOGGLE · OWNER IS LOCKED</span>
+            <span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">READ ONLY · NOT THE LIVE SETTINGS</span>
           </div>
           <div class="mwrap"><table class="perm" id="permTbl"></table></div>
           <div style="padding:12px 16px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <span class="badge b-gray" id="permCount">—</span>
-            <span style="font-size:var(--fs-body);color:var(--gray)">Owner keeps every permission and cannot be reduced — there has to be one account that can restore the others.</span>
+            <span style="font-size:var(--fs-body);color:var(--gray)">This chart is a hand-written guide, not the live settings. It is not read from the system and nothing on this screen can change what a role may do. The real rules live in the system's code and the server checks them on every action. It has never been checked against that code, so read it as a guide, not as proof. Owner always keeps every permission.</span>
           </div>
         </div>
 
@@ -363,7 +361,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
     </div>
     <div style="margin-top:18px">
       <div class="eyebrow" style="margin-bottom:6px">ST-07 <span class="sep">/</span> EFFECTIVE PERMISSIONS</div>
-      <div style="font-size:var(--fs-body);color:var(--gray);margin-bottom:9px">Inherited from the role. Change them in the permissions matrix — they are not editable per person.</div>
+      <div style="font-size:var(--fs-body);color:var(--gray);margin-bottom:9px">Copied from the ST-02 reference chart, not from the server. This screen cannot change what a role may do — that is set in the system's code.</div>
       <div id="ed_perms" style="display:flex;flex-wrap:wrap;gap:6px"></div>
     </div>
   </div>
@@ -431,9 +429,9 @@ function initials(p){return (p.first[0]+p.last[0]).toUpperCase()}
 /* ══ ROLE PRESETS ═════════════════════════════════════════════════════════
    Six people do not need an 18×6 grid to answer "who has access to what".
    The roster answers it with the role's preset — which areas it reaches and
-   how many of the 18 permissions it holds — read live off PERMS, so toggling
-   a cell in Advanced permissions changes what the roster says. The full grid
-   is one click away and stays the place you edit.                           */
+   how many of the 18 permissions it holds — read off the PERMS reference
+   chart above. Neither the chart nor this column is read from the server, and
+   neither can be edited here; ST-02 says so on screen.                      */
 var PGROUPS=['Clients','Money','Messaging','Setup','Admin'];
 function preset(role){
   var held=PERMS.filter(function(pm){return pm.d[role]===1});
@@ -551,26 +549,21 @@ function renderClock(){
 
 function renderPerm(){
   var head='<thead><tr><th class="pl">Permission</th>'+ROLES.map(function(r){return '<th>'+esc(r)+'</th>'}).join('')+'</tr></thead>';
-  var body='<tbody>'+PERMS.map(function(pm,i){
+  /* Read-only on purpose. The cells used to be buttons that flipped this
+     in-page array: nothing was sent anywhere, nothing survived a reload, and an
+     owner clicking through them believed they were changing who can do what in
+     a regulated product. There is no permissions endpoint and no permissions
+     table to write to, so per UI-STANDARDS §5 the control does not render. */
+  var body='<tbody>'+PERMS.map(function(pm){
     return '<tr><td class="pl"><div>'+esc(pm.n)+'</div><div class="pd">'+pm.code+'</div></td>'+
       ROLES.map(function(r){
-        var on=pm.d[r]===1, locked=(r==='Owner');
-        return '<td><button class="pcell '+(on?'yes':'')+' '+(locked?'locked':'')+'" data-p="'+i+'" data-r="'+esc(r)+'">'+(on?'●':'○')+'</button></td>';
+        var on=pm.d[r]===1;
+        return '<td><span class="pcell '+(on?'yes':'')+'" title="'+esc(r)+' — '+(on?'allowed':'not allowed')+' in this chart">'+(on?'●':'○')+'</span></td>';
       }).join('')+'</tr>';
   }).join('')+'</tbody>';
   document.getElementById('permTbl').innerHTML=head+body;
-  document.querySelectorAll('.pcell').forEach(function(c){
-    c.addEventListener('click',function(){
-      if(c.classList.contains('locked'))return;
-      var pm=PERMS[parseInt(c.dataset.p,10)];
-      pm.d[c.dataset.r]=pm.d[c.dataset.r]===1?0:1;
-      /* the roster's preset line is derived from PERMS — refresh it too */
-      renderPerm(); renderRoster();
-      if(selId) fillPerms(PEOPLE.filter(function(x){return String(x.id)===String(selId)})[0]);
-    });
-  });
   var granted=0; PERMS.forEach(function(pm){ROLES.forEach(function(r){if(pm.d[r]===1)granted++})});
-  document.getElementById('permCount').textContent=granted+' of '+(PERMS.length*ROLES.length)+' granted';
+  document.getElementById('permCount').textContent=granted+' of '+(PERMS.length*ROLES.length)+' marked allowed';
 }
 
 function renderStats(){

@@ -558,6 +558,11 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
 
   function load(){
     try { var v = JSON.parse(localStorage.getItem(KEY)||"null"); if(v) Object.assign(D, v); } catch(e){}
+    /* Approval state belongs to the server alone (partner_brand.approval_status)
+       and is only ever set by __fhBrandHydrateFromServer. A locally stored
+       "submitted" used to survive reloads and keep the topbar chip reading
+       "In review" when nothing had ever been submitted. */
+    D.status = "draft";
   }
   function save(){ localStorage.setItem(KEY, JSON.stringify(D)); }
 
@@ -675,6 +680,21 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     });
   }
 
+  /* BS-03 "Verify" POSTs /api/partner-brand/verify-domain, which is requireAuth
+     (staff sessions) followed by requireRole owner/admin
+     (api/partner-brand/verify-domain.mjs:5-20). The partner role is excluded on
+     both arms, so for a partner the button can only ever refuse. Remove it for
+     every role that cannot use it rather than show a control that 401s — the
+     same idiom as the Demo Mode panel in ops-admin.html. Unknown role removes
+     it too: a control is shown only when the role is known to be admitted. */
+  var viewerRole = "";
+  try { viewerRole = String(localStorage.getItem("fh_role") || "").trim().toLowerCase(); } catch (e) { viewerRole = ""; }
+  var verifyBtn = $("verifyBtn");
+  if (verifyBtn && viewerRole !== "owner" && viewerRole !== "admin") {
+    verifyBtn.parentNode.removeChild(verifyBtn);
+    verifyBtn = null;
+  }
+
   load(); hydrate(); loadFonts(); applyTokens(); renderFunnels(); paint();
 
   ["bName","bEntity","bAddr","bEmail"].forEach(function(id){
@@ -712,7 +732,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     D.domain = $("bDomain").value.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"");
     D.verified = false; paint();
   });
-  $("verifyBtn").addEventListener("click", function(){
+  if (verifyBtn) verifyBtn.addEventListener("click", function(){
     if(!D.domain){ $("saveMsg").textContent="Enter a domain first."; return; }
     if (MODE !== "partner" || !partnerId) {
       $("saveMsg").textContent = "Open with ?partner_id= to verify a partner domain.";
@@ -860,9 +880,16 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
   }
   refreshPages();
   $("submitBtn").addEventListener("click", function(){
-    if(!D.name || !D.entity){ $("saveMsg").textContent="Brand name and legal entity are required before review."; return; }
-    D.status = "submitted"; save(); paint();
-    $("saveMsg").textContent = "Submitted. Brands go live after an internal compliance review.";
+    /* COMPLIANCE REVIEW REQUIRED — approval flow.
+       This used to set D.status="submitted", write it to localStorage, flip the
+       topbar chip to "In review" and print "Submitted. Brands go live after an
+       internal compliance review." No request was ever made. There is no route
+       that can move a brand into review: api/partner-brand.mjs lists
+       approval_status in FORBIDDEN (line 74-75) and nothing else in api/ writes
+       that column. The partner was told they were in review while nobody at
+       Fundhub had been told anything. Say what is actually true instead, and
+       leave D.status to the server. */
+    $("saveMsg").textContent = "Nothing was sent — brand review is not set up yet. Your brand stays a draft.";
   });
   $("resetBtn").addEventListener("click", function(){
     if(!confirm(MODE === "org" ? "Reset CRM brand to fundhub defaults?" : "Reset brand to fundhub defaults?")) return;
