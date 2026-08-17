@@ -1725,13 +1725,15 @@
         bar.innerHTML =
           "<span>DEMO MODE ON — sample data is displayed. Numbers on this screen may be fictional.</span>" +
           "<a href=\"sample-data.html\" style=\"color:#FFEDD5;text-decoration:underline;font-weight:700\">Manage demo data</a>";
-        /* Prefer .shell so Galaxy (and any flex-column .app) keeps the canvas.
-           Fall back to .app, then body. Never insert beside a row-flex sibling
-           in a way that steals the full width from the stage. */
-        var shell = document.querySelector(".app > .shell") || document.querySelector(".shell");
-        var app = document.querySelector(".app");
-        var host = shell || app || document.body;
-        host.insertBefore(bar, host.firstChild);
+        /* Same mount rule as the beta banner — see mountFullWidthBar. This used
+           to resolve its own host as .shell || .app || body, with no .main and
+           no row check, so on the twelve screens whose .app is a flex ROW and
+           which have no .shell (finance-os, subscriptions and the rest) this bar
+           landed as a third COLUMN and crushed the page into a ~60px strip. That
+           was the finance-os/subscriptions CRITICAL on the 2026-08-17 board,
+           fixed for the beta banner in a80b02e and left latent here because it
+           only fires with Demo Mode on. Both banners now share one rule. */
+        mountFullWidthBar(bar);
         try { window.dispatchEvent(new Event("resize")); } catch (e) { /* ignore */ }
       })
       .catch(function () { /* no banner if the endpoint is unreachable */ });
