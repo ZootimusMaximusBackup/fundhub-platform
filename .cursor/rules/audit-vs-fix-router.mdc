@@ -13,12 +13,14 @@ alwaysApply: true
 |---|---|---|
 | audit, verify, discover, "what's broken", journey ground truth | `fundhub-auditor` | Find and prove. **Read-only.** |
 | ui audit, design audit, "check the dashboard", screen review, slop check | `fundhub-ui-auditor` | Score screens against `docs/UI-STANDARDS.md`. **Read-only.** |
+| perf audit, speed audit, load time, lighthouse, page speed, core web vitals | `fundhub-perf-auditor` | Score pages against `docs/PERF-STANDARDS.md`. **Read-only.** |
 | fix, ship, repair, wire, "make X work", unblock | `fundhub-fixer` | Change **only** what he named. Then prove. |
 
 Skill paths:
 
 - `.cursor/skills/fundhub-auditor/SKILL.md`
 - `.cursor/skills/fundhub-ui-auditor/SKILL.md`
+- `.cursor/skills/fundhub-perf-auditor/SKILL.md`
 - `.cursor/skills/fundhub-fixer/SKILL.md`
 
 Read the matching skill **before** any other work on that request.
