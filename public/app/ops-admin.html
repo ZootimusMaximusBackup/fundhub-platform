@@ -991,6 +991,14 @@
       : "OFF — demo rows are hidden. Turn on to seed fictional clients for demos and training.";
   }
   function load() {
+    /* api/demo/mode.mjs is owner/admin only. Hide the panel up front for every
+       other role instead of asking and eating a 403 (Fable audit ticket 1). */
+    var role = "";
+    try { role = String(localStorage.getItem("fh_role") || "").trim().toLowerCase(); } catch (e) { role = ""; }
+    if (role !== "owner" && role !== "admin") {
+      panel.style.display = "none";
+      return Promise.resolve();
+    }
     return fetch("/api/demo/mode", { credentials: "same-origin", headers: headers() })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); })
       .then(function (x) {

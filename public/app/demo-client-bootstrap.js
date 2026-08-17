@@ -14,6 +14,13 @@
   var q = new URLSearchParams(location.search);
   if (q.get(PARAM) || q.get("id") || q.get("client_id")) return;
 
+  /* api/demo/mode.mjs is owner/admin only. Every other staff role got a 403 +
+     console error here on five screens (Fable audit ticket 1, 2026-08-17).
+     Same gate shell.js mountDemoBanner uses; fh_role is written by login.html. */
+  var role = "";
+  try { role = String(localStorage.getItem("fh_role") || "").trim().toLowerCase(); } catch (e) { role = ""; }
+  if (role !== "owner" && role !== "admin") return;
+
   var headers = { Accept: "application/json" };
   try {
     var t = localStorage.getItem("fh_token");

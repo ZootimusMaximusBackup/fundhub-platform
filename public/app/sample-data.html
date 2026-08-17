@@ -371,6 +371,14 @@ pre.json .b{color:#C4B3E5}
     ].join("\n");
   }
   function load() {
+    /* api/demo/mode.mjs is owner/admin only. Say so up front for every other
+       role instead of asking and eating a 403 (Fable audit ticket 1). */
+    var role = "";
+    try { role = String(localStorage.getItem("fh_role") || "").trim().toLowerCase(); } catch (e) { role = ""; }
+    if (role !== "owner" && role !== "admin") {
+      setMsg("Demo Mode is limited to owner and admin.", false);
+      return Promise.resolve();
+    }
     return fetch("/api/demo/mode", { credentials: "same-origin", headers: headers() })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (x) { if (!x.ok) { setMsg((x.j && (x.j.message||x.j.error)) || "Could not load (owner/admin only).", false); return; } paint(x.j); })
