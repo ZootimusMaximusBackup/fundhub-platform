@@ -1,0 +1,274 @@
+{
+  "journey": "role-closer",
+  "email": "closer@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T15:45:47.214Z",
+  "login": {
+    "pageShot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/shots/00-login-page.png",
+    "ok": true,
+    "apiFails": [],
+    "consoleErrors": [],
+    "roleStored": "closer"
+  },
+  "landing": {
+    "url": "/dashboard.html",
+    "title": "FundHub — Closer Dashboard",
+    "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/shots/01-landing.png",
+    "apiFails": [],
+    "consoleErrors": [],
+    "appShellUrl": "/app/pipeline.html",
+    "appShellShot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/shots/02-app-shell.png"
+  },
+  "sidebar": [
+    {
+      "href": "command-center.html",
+      "label": "",
+      "visible": true
+    },
+    {
+      "href": "pipeline.html",
+      "label": "▤Pipeline",
+      "visible": true
+    },
+    {
+      "href": "closer-dashboard.html",
+      "label": "★Closer Dashboard",
+      "visible": true
+    },
+    {
+      "href": "closer-call.html",
+      "label": "☎Call cockpit",
+      "visible": true
+    },
+    {
+      "href": "my-numbers.html",
+      "label": "＃My numbers",
+      "visible": true
+    },
+    {
+      "href": "sales-floor.html",
+      "label": "▣Sales floor",
+      "visible": false
+    },
+    {
+      "href": "calendar.html",
+      "label": "▦Calendar",
+      "visible": true
+    },
+    {
+      "href": "lenders.html",
+      "label": "⬡Lenders",
+      "visible": false
+    },
+    {
+      "href": "finance-os.html",
+      "label": "▩Finance OSBETA",
+      "visible": false
+    },
+    {
+      "href": "contracts.html",
+      "label": "✒Contracts",
+      "visible": false
+    },
+    {
+      "href": "subscriptions.html",
+      "label": "◍SubscriptionsBETA",
+      "visible": false
+    },
+    {
+      "href": "client-control-panel.html",
+      "label": "◎Client Control Panel",
+      "visible": false
+    },
+    {
+      "href": "messaging.html",
+      "label": "✉Messaging",
+      "visible": false
+    },
+    {
+      "href": "documents.html",
+      "label": "▧Documents",
+      "visible": false
+    },
+    {
+      "href": "inquiry-remover.html",
+      "label": "⊘Inquiry Remover",
+      "visible": false
+    },
+    {
+      "href": "company-brain.html",
+      "label": "◎Company BrainBETA",
+      "visible": false
+    },
+    {
+      "href": "command-center.html",
+      "label": "⌘Command CenterBETA",
+      "visible": false
+    },
+    {
+      "href": "galaxy.html",
+      "label": "✷GalaxyBETA",
+      "visible": false
+    },
+    {
+      "href": "ops-admin.html",
+      "label": "⚙Ops & AdminBETA",
+      "visible": false
+    },
+    {
+      "href": "agent-editor.html",
+      "label": "◈Agent EditorBETA",
+      "visible": false
+    },
+    {
+      "href": "automations.html",
+      "label": "⇄Workflows",
+      "visible": false
+    },
+    {
+      "href": "journeys.html",
+      "label": "⇝JourneysBETA",
+      "visible": false
+    },
+    {
+      "href": "template-editor.html",
+      "label": "✎Message Copy",
+      "visible": false
+    },
+    {
+      "href": "campaign-manager.html",
+      "label": "◇CampaignsBETA",
+      "visible": false
+    },
+    {
+      "href": "social-studio.html",
+      "label": "◉Social StudioBETA",
+      "visible": false
+    },
+    {
+      "href": "creative-factory.html",
+      "label": "✳Creative FactoryBETA",
+      "visible": false
+    },
+    {
+      "href": "content-admin.html",
+      "label": "▶ContentBETA",
+      "visible": false
+    },
+    {
+      "href": "staff-teams.html",
+      "label": "⚇Staff & Teams",
+      "visible": false
+    },
+    {
+      "href": "hiring.html",
+      "label": "⊕HiringBETA",
+      "visible": false
+    },
+    {
+      "href": "products-commissions.html",
+      "label": "⛁Products & Commissions",
+      "visible": false
+    },
+    {
+      "href": "sample-data.html",
+      "label": "⌗Demo ModeBETA",
+      "visible": false
+    },
+    {
+      "href": "brand-studio.html",
+      "label": "◆Brand StudioBETA",
+      "visible": false
+    },
+    {
+      "href": "client-portal.html",
+      "label": "◐Client Portal",
+      "visible": false
+    },
+    {
+      "href": "affiliate.html",
+      "label": "⇗AffiliateBETA",
+      "visible": false
+    }
+  ],
+  "screens": [
+    {
+      "label": "",
+      "href": "command-center.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/command-center.html",
+      "bounced": false,
+      "title": "Fundhub — Command Center",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ ⌘ Command Center BETA ✷ Galaxy BETA ⚙ Ops & Admin BETA AUTOMATION ▾ MARKETING ▾ ADMIN ▾ fundhub Beta — under development. Data may be incomplete or inaccurate. Do not use for client decisions. Dismiss Fundhub / Command Center ORG: FUNDHUB Mon, Aug 17, 11:46:",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/shots/03-command-center.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "▤Pipeline",
+      "href": "pipeline.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/pipeline.html",
+      "bounced": false,
+      "title": "Fundhub — Pipeline",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Mon, Aug 17, 11:46:08 AM EDT LIVE R-01 Sales 16 R-02 Funding: Card Stacking 0 R-03 Funding: Alt-Fin (Lendflow) 0 R-0",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/shots/04-pipeline.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "★Closer Dashboard",
+      "href": "closer-dashboard.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/closer-dashboard.html",
+      "bounced": false,
+      "title": "Fundhub — Closer Dashboard",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ fundhub Fundhub / Closer Dashboard ORG: FUNDHUB Mon, Aug 17, 11:46:12 AM EDT LIVE T— TEST — Closer Role closer CALLS TODAY — no closer shift endpoint KEPT —",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/shots/05-closer-dashboard.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "☎Call cockpit",
+      "href": "closer-call.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/closer-call.html",
+      "bounced": false,
+      "title": "Closer · Call cockpit",
+      "h1": "Loading…",
+      "bodyText": "Open this cockpit from the pipeline with a client selected — ?client_id= is required. ‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ fundhub C-01 / CLOSER ON SHIFT · 3H 12M CLOSER CASH TODAY — live when ",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/shots/06-closer-call.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "＃My numbers",
+      "href": "my-numbers.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/my-numbers.html",
+      "bounced": false,
+      "title": "My numbers · Fundhub",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ fundhub C-02 / MY NUMBERS OFF SHIFT TEST — CLOSER ROLE CASH COLLECTED · THIS MONTH $0 No monthly deposits target in staff_targets RANK —/— — 0 Target — Stre",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/shots/07-my-numbers.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "▦Calendar",
+      "href": "calendar.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/calendar.html",
+      "bounced": false,
+      "title": "Fundhub — Calendar",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ fundhub Fundhub / Calendar ORG: FUNDHUB Mon, Aug 17, 8:46:28 AM LIVE Day Week ‹ › Today Monday, August 17 BOOKED 2 DONE 0 NO-SHOW — SHOW RATE — LEFT TODAY 2",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/shots/08-calendar.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    }
+  ]
+}

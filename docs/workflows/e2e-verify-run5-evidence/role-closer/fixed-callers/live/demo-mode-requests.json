@@ -1,0 +1,170 @@
+{
+  "base": "https://fundhub.ai",
+  "email": "closer@fundhub.ai",
+  "ranAt": "2026-08-17T15:44:32.876Z",
+  "login": {
+    "ok": true,
+    "roleStored": "closer",
+    "landedAt": "/dashboard.html",
+    "demoModeRequestsDuringLogin": [],
+    "apiRequestsSeen": 4
+  },
+  "screens": [
+    {
+      "screen": "/dashboard.html",
+      "httpStatus": 200,
+      "finalUrl": "/dashboard.html",
+      "title": "FundHub — Closer Dashboard",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/demo-mode-_dashboard.html.png",
+      "apiRequestsSeen": 1,
+      "demoModeRequests": [],
+      "demoModeResponses": [],
+      "demoModeInitiators": [],
+      "consoleErrorsMentioningDemoOr403": [],
+      "consoleErrorsAll": []
+    },
+    {
+      "screen": "/app/pipeline.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/pipeline.html",
+      "title": "Fundhub — Pipeline",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/demo-mode-_app_pipeline.html.png",
+      "apiRequestsSeen": 11,
+      "demoModeRequests": [],
+      "demoModeResponses": [],
+      "demoModeInitiators": [],
+      "consoleErrorsMentioningDemoOr403": [],
+      "consoleErrorsAll": []
+    },
+    {
+      "screen": "/app/command-center.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/command-center.html",
+      "title": "Fundhub — Command Center",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/demo-mode-_app_command-center.html.png",
+      "apiRequestsSeen": 11,
+      "demoModeRequests": [],
+      "demoModeResponses": [],
+      "demoModeInitiators": [],
+      "consoleErrorsMentioningDemoOr403": [],
+      "consoleErrorsAll": []
+    },
+    {
+      "screen": "/app/ops-admin.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/ops-admin.html",
+      "title": "Fundhub — Ops & Admin",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/demo-mode-_app_ops-admin.html.png",
+      "apiRequestsSeen": 9,
+      "demoModeRequests": [],
+      "demoModeResponses": [],
+      "demoModeInitiators": [],
+      "consoleErrorsMentioningDemoOr403": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "consoleErrorsAll": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "screen": "/app/staff-teams.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/staff-teams.html",
+      "title": "Fundhub — Staff & Teams",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/demo-mode-_app_staff-teams.html.png",
+      "apiRequestsSeen": 5,
+      "demoModeRequests": [],
+      "demoModeResponses": [],
+      "demoModeInitiators": [],
+      "consoleErrorsMentioningDemoOr403": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "consoleErrorsAll": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "screen": "/app/closer-dashboard.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/closer-dashboard.html",
+      "title": "Fundhub — Closer Dashboard",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/demo-mode-_app_closer-dashboard.html.png",
+      "apiRequestsSeen": 4,
+      "demoModeRequests": [],
+      "demoModeResponses": [],
+      "demoModeInitiators": [],
+      "consoleErrorsMentioningDemoOr403": [],
+      "consoleErrorsAll": []
+    },
+    {
+      "screen": "/app/closer-call.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/closer-call.html",
+      "title": "Closer · Call cockpit",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/demo-mode-_app_closer-call.html.png",
+      "apiRequestsSeen": 3,
+      "demoModeRequests": [],
+      "demoModeResponses": [],
+      "demoModeInitiators": [],
+      "consoleErrorsMentioningDemoOr403": [],
+      "consoleErrorsAll": []
+    },
+    {
+      "screen": "/app/finance-os.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/finance-os.html",
+      "title": "Fundhub — Finance OS",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/demo-mode-_app_finance-os.html.png",
+      "apiRequestsSeen": 5,
+      "demoModeRequests": [],
+      "demoModeResponses": [],
+      "demoModeInitiators": [],
+      "consoleErrorsMentioningDemoOr403": [],
+      "consoleErrorsAll": []
+    },
+    {
+      "screen": "/app/client-control-panel.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/client-control-panel.html",
+      "title": "Fundhub — Client Control Panel",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/demo-mode-_app_client-control-panel.html.png",
+      "apiRequestsSeen": 3,
+      "demoModeRequests": [],
+      "demoModeResponses": [],
+      "demoModeInitiators": [],
+      "consoleErrorsMentioningDemoOr403": [],
+      "consoleErrorsAll": []
+    },
+    {
+      "screen": "/app/documents.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/documents.html",
+      "title": "Fundhub — Documents",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/demo-mode-_app_documents.html.png",
+      "apiRequestsSeen": 4,
+      "demoModeRequests": [],
+      "demoModeResponses": [],
+      "demoModeInitiators": [],
+      "consoleErrorsMentioningDemoOr403": [],
+      "consoleErrorsAll": []
+    },
+    {
+      "screen": "/app/sample-data.html",
+      "httpStatus": 200,
+      "finalUrl": "/dashboard.html",
+      "title": "FundHub — Closer Dashboard",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/fixed-callers/live/demo-mode-_app_sample-data.html.png",
+      "apiRequestsSeen": 2,
+      "demoModeRequests": [],
+      "demoModeResponses": [],
+      "demoModeInitiators": [],
+      "consoleErrorsMentioningDemoOr403": [],
+      "consoleErrorsAll": []
+    }
+  ],
+  "totalDemoModeRequests": 0
+}
