@@ -376,10 +376,6 @@
         setErr("We need 10 digits, including area code.");
         return;
       }
-      if (!sms) {
-        setErr("Check the box so we can text you application updates.");
-        return;
-      }
       btn.disabled = true;
       btn.textContent = "Sending…";
       setErr("");
