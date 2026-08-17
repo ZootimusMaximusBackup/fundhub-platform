@@ -1,0 +1,138 @@
+{
+  "screen": "/app/client-control-panel.html",
+  "slug": "client-control-panel/nonsales-verify",
+  "email": "advisor@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T19:43:53.281Z",
+  "login": {
+    "ok": true,
+    "cached": true,
+    "landedAt": "/app/command-center.html",
+    "role": "funding_advisor"
+  },
+  "load": {
+    "httpStatus": 503,
+    "retriesFor503OrBounce": 0,
+    "finalUrl": "/app/client-control-panel.html",
+    "bounced": false,
+    "title": "Site not available",
+    "apiCalls": [],
+    "apiFails": [],
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 503 ()"
+    ],
+    "dialogs": [],
+    "shots": {
+      "fold": "docs/workflows/ui-audit-evidence/client-control-panel/nonsales-verify/1440-fold.png",
+      "full": "docs/workflows/ui-audit-evidence/client-control-panel/nonsales-verify/1440-full.png"
+    }
+  },
+  "dom": {
+    "vw": 1440,
+    "vh": 900,
+    "docH": 900,
+    "sizes": {
+      "22px": {
+        "count": 1,
+        "examples": [
+          "Site not available"
+        ]
+      },
+      "16px": {
+        "count": 1,
+        "examples": [
+          "This site was paused as it reached its u"
+        ]
+      },
+      "14px": {
+        "count": 2,
+        "examples": [
+          "If this is your site, please visit Netli",
+          "Billing docs page"
+        ]
+      }
+    },
+    "navVisibleCount": 0,
+    "navActive": [],
+    "navGroups": [],
+    "h1": [
+      "Site not available"
+    ],
+    "h2": [],
+    "contentWidth": 1440,
+    "contentSel": "div.main",
+    "sideW": 0,
+    "controlsCount": 1,
+    "controls": [
+      {
+        "idx": 0,
+        "key": "a|Billing docs page||https://docs.netlify.com/manage/accounts-and-billing/billing/resume-paused-projects/",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "Billing docs page",
+        "id": null,
+        "cls": null,
+        "href": "https://docs.netlify.com/manage/accounts-and-billing/billing/resume-paused-projects/",
+        "disabled": false,
+        "w": 327,
+        "h": 38,
+        "top": 488,
+        "left": 538,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(2, 128, 125)",
+        "filled": false
+      }
+    ],
+    "genericLabels": [],
+    "smallTargets": [
+      {
+        "text": "Billing docs page",
+        "w": 327,
+        "h": 38
+      }
+    ],
+    "primaryLooking": [],
+    "capsRuns": [],
+    "sampleWording": [],
+    "loadingWording": [],
+    "errorWording": [],
+    "emptyWording": [],
+    "centeredParas": [],
+    "offScale": {},
+    "unevenRows": [],
+    "tables": [],
+    "metrics": [],
+    "topLeft": {
+      "tag": "div",
+      "text": "Site not available This site was paused as it reached its usage limits. Please c"
+    },
+    "bodyText": "Site not available This site was paused as it reached its usage limits. Please contact the site owner for more information. If this is your site, please visit Netlify’s Billing docs page or log into your Netlify account to upgrade your plan."
+  },
+  "mobile": {
+    "scrollWidth": 390,
+    "horizontalOverflow": false,
+    "sideVisible": false,
+    "sideW": 0,
+    "burger": false,
+    "overflowers": [],
+    "textUnder11px": 0,
+    "docH": 844,
+    "shots": {
+      "full": "docs/workflows/ui-audit-evidence/client-control-panel/nonsales-verify/390-full.png",
+      "fold": "docs/workflows/ui-audit-evidence/client-control-panel/nonsales-verify/390-fold.png"
+    },
+    "finalUrl": "/app/client-control-panel.html",
+    "apiFails": []
+  },
+  "clicks": [],
+  "clickSummary": {
+    "skipped": true,
+    "reason": "--no-clicks"
+  }
+}

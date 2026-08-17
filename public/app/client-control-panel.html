@@ -84,6 +84,9 @@
   .record-id{display:flex;align-items:baseline;gap:10px;}
   .record-name{font-size:var(--fs-title);font-weight:800;color:var(--text);}
   .record-key{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--text-faint);}
+  .record-pick{display:flex;align-items:center;gap:8px;margin-top:8px;}
+  .record-pick label{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);font-weight:700;}
+  .record-pick select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:8px 10px;font-size:var(--fs-body);min-width:220px;max-width:360px;}
   .record-fields{display:flex;gap:10px;flex-wrap:wrap;}
   .rf-tile{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:5px 11px;text-align:center;min-width:92px;}
   .rf-label{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:2px;}
@@ -396,7 +399,13 @@
   <div class="record-head">
     <div class="record-id">
       <div class="record-name" id="ccp-name">Loading…</div>
-      <div class="record-key" id="ccp-key">No client open — <a href="pipeline.html" style="color:var(--blue);font-weight:700;">pick a client on Pipeline</a> to load their file here.</div>
+      <div class="record-key" id="ccp-key">No client open — pick one below.</div>
+      <div class="record-pick">
+        <label for="ccp-pick">Client</label>
+        <select id="ccp-pick" aria-label="Pick a client">
+          <option value="">Choose a client</option>
+        </select>
+      </div>
     </div>
     <div class="record-fields">
       <div class="rf-tile"><div class="rf-label">Main Status</div><div><span class="status-badge-lg" id="ccp-status">—</span></div></div>
@@ -780,11 +789,43 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
   wireLinks(id);
   if (!id) setText("ccp-name", "");
 
+  (function mountClientPicker() {
+    var sel = $("ccp-pick");
+    if (!sel || !window.FHData || typeof FHData.clients !== "function") return;
+    sel.addEventListener("change", function () {
+      if (!sel.value) return;
+      location.href = "client-control-panel.html?id=" + encodeURIComponent(sel.value);
+    });
+    FHData.clients(200).then(function (res) {
+      if (!res || !res.ok || !res.data || !Array.isArray(res.data.clients)) {
+        sel.innerHTML = '<option value="">the client list could not be read</option>';
+        return;
+      }
+      var list = res.data.clients;
+      if (!list.length) {
+        sel.innerHTML = '<option value="">No clients on file</option>';
+        return;
+      }
+      var html = ['<option value="">Choose a client</option>'];
+      list.forEach(function (c) {
+        if (!c || !c.id) return;
+        var n = [c.first_name, c.last_name].filter(Boolean).join(" ").trim();
+        var label = n || c.email || c.id;
+        html.push('<option value="' + String(c.id).replace(/"/g, "") + '"' +
+          (c.id === id ? " selected" : "") + ">" +
+          String(label).replace(/[&<>]/g, function (ch) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch];
+          }) + "</option>");
+      });
+      sel.innerHTML = html.join("");
+    });
+  })();
+
   FHData.client(id).then(function (res) {
     if (res.ok) { render(res.data); return; }
     setText("ccp-name", "");
     if (res.source === "nodata") {
-      banner("empty", "no client open — pick a client on Pipeline to load their file here");
+      banner("empty", "no client open — pick a client from the list");
     } else if (res.source === "demo") {
       banner("empty", "demo mode — this screen did not query a live file");
     } else if (res.source === "notfound") {

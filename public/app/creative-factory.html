@@ -111,10 +111,10 @@ table.grid tr:last-child td{border-bottom:0}
 
 /* filter rails */
 .rail{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
-.rail button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .12s,border-color .12s;color:var(--gray)}
-.rail button:hover{background:var(--soft);color:var(--ink)}
-/* §1 — a selected filter is not a primary action, so it never renders filled. */
-.rail button.on{background:var(--soft);color:var(--ink);border-color:var(--ink);font-weight:700}
+.rail button{border:1px solid var(--line);background:transparent;border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .12s,border-color .12s;color:var(--gray)}
+.rail button:hover{background:transparent;color:var(--ink);border-color:var(--gray2)}
+/* §1 — a selected filter is outline, never a filled primary. */
+.rail button.on{background:transparent;color:var(--ink);border-color:var(--ink);font-weight:700}
 .rail button .n{font-weight:700;margin-left:5px;opacity:.75}
 .rail .rl{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-right:2px}
 .selwrap{display:inline-flex;align-items:center;gap:6px}
@@ -370,8 +370,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <span class="crumb">Marketing</span><h1>Creative Factory</h1>
       <div class="spacer"></div>
       <span class="chip" id="scopeChip"><span class="cd" style="background:var(--info)"></span><span id="scopeChipTxt">one partner</span></span>
-      <span class="chip"><span class="cd" style="background:var(--gray2)"></span>read-only · GET</span>
-      <button class="btn mono" id="reqToggle" aria-pressed="false">Show request URLs</button>
+      <span class="chip"><span class="cd" style="background:var(--gray2)"></span>Read only</span>
     </div>
 
     <div class="content fh-maxw">
@@ -382,9 +381,9 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <!-- ══ CF-01 · PARTNER SCOPE ═════════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">CF-01 <span class="sep">/</span> PARTNER SCOPE</div>
+          <div class="eyebrow">Partner scope</div>
           <div class="spacer"></div>
-          <span class="badge b-gray mono" id="scopeBadge">staff · named partner</span>
+          <span class="badge b-gray mono" id="scopeBadge">One partner</span>
         </div>
         <div class="card-bd" style="display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:20px;align-items:start">
           <div>
@@ -397,10 +396,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </div>
           <div>
             <p class="note" id="scopeHow"></p>
-            <p class="note" style="margin-top:9px">
-              This screen only ever shows one partner at a time. There is no roll-up, no
-              leaderboard and no partner-vs-partner view.
-            </p>
+            <p class="note" style="margin-top:9px">This screen shows one partner at a time.</p>
           </div>
         </div>
       </div>
@@ -408,7 +404,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <!-- ══ CF-02 · GENERATION JOBS ═══════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">CF-02 <span class="sep">/</span> GENERATION JOBS</div>
+          <div class="eyebrow">Generation jobs</div>
           <div class="spacer"></div>
           <div class="rail" id="jobRail"></div>
           <span class="selwrap"><label for="jobLimit">limit</label>
@@ -425,32 +421,26 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         </div>
         <div class="pager" id="jobPager"></div>
         <div class="req" id="jobReq"></div>
-        <div class="cap">
-          <b>Newest first, always.</b> These columns cannot be sorted or searched, and there is no
-          cost per job — that figure is not sent to this screen, so it is not shown.
-        </div>
+        <div class="cap">Newest first. Cost per job is not shown here.</div>
       </div>
 
       <!-- ══ CF-03 · JOB STATES & RETRY ════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">CF-03 <span class="sep">/</span> JOB STATES &amp; RETRY</div>
+          <div class="eyebrow">Job states</div>
           <div class="spacer"></div>
-          <span class="badge b-gray mono">four statuses, exhaustive</span>
+          <span class="badge b-gray mono">Four statuses</span>
         </div>
         <div class="card-bd">
           <div class="attn" id="stateLegend"></div>
         </div>
-        <div class="cap">
-          <b>A job is tried up to three times before it is marked failed.</b> "Attempt" counts those
-          tries, not tries left. There is no progress bar, no time estimate and no queue position.
-        </div>
+        <div class="cap">A job is tried up to three times. Attempt is how many tries so far.</div>
       </div>
 
       <!-- ══ CF-04 · CREATIVE LIBRARY ══════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">CF-04 <span class="sep">/</span> CREATIVE LIBRARY</div>
+          <div class="eyebrow">Creative library</div>
           <div class="spacer"></div>
           <span class="badge b-gray mono" id="libCount">—</span>
         </div>
@@ -459,9 +449,9 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           <div class="rail" id="libKindRail"></div>
           <div class="rail" id="libFormatRail"></div>
           <div class="rail" style="gap:14px">
-            <span class="selwrap"><label for="libKit">brand_kit_id</label><select id="libKit"></select></span>
-            <span class="selwrap"><label for="libArch">include_archived</label>
-              <select id="libArch"><option value="">omitted</option><option value="1">1</option></select></span>
+            <span class="selwrap"><label for="libKit">Brand kit</label><select id="libKit"></select></span>
+            <span class="selwrap"><label for="libArch">Include archived</label>
+              <select id="libArch"><option value="">No</option><option value="1">Yes</option></select></span>
             <span class="selwrap"><label for="libLimit">limit</label>
               <select id="libLimit"><option>6</option><option selected>12</option><option>50</option><option>200</option></select></span>
           </div>
@@ -469,38 +459,32 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         <div class="lib" id="libGrid"></div>
         <div class="pager" id="libPager"></div>
         <div class="req" id="libReq"></div>
-        <div class="cap">
-          <b>No previews here.</b> The picture or video file itself is never sent to this screen, and
-          the words in a copy asset are not sent either. Every tile shows a placeholder.
-        </div>
+        <div class="cap">No previews. The file is not sent to this screen.</div>
       </div>
 
       <!-- ══ CF-05 · AI DISCLOSURE FLAGS ═══════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">CF-05 <span class="sep">/</span> AI DISCLOSURE FLAGS</div>
+          <div class="eyebrow">AI disclosure flags</div>
           <div class="spacer"></div>
-          <span class="badge b-accent mono">ai_generated</span>
-          <span class="badge b-warn mono">synthetic_performer</span>
+          <span class="badge b-accent mono">AI-generated</span>
+          <span class="badge b-warn mono">Synthetic performer</span>
         </div>
         <div class="card-bd">
           <div class="tblscroll">
             <table class="grid">
-              <thead><tr><th>Provider key</th><th>ai_generated</th><th>synthetic_performer</th><th>How the flag is decided</th></tr></thead>
+              <thead><tr><th>Provider</th><th>AI-generated</th><th>Synthetic performer</th><th>How it is decided</th></tr></thead>
               <tbody id="flagBody"></tbody>
             </table>
           </div>
         </div>
-        <div class="cap">
-          <b>A synthetic performer always implies AI-generated.</b> An asset can never be labelled
-          "synthetic performer" without also being labelled AI-generated.
-        </div>
+        <div class="cap">A synthetic performer is always also marked AI-generated.</div>
       </div>
 
       <!-- ══ CF-06 · REVIEW &amp; APPROVAL QUEUE ═══════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">CF-06 <span class="sep">/</span> REVIEW &amp; APPROVAL QUEUE</div>
+          <div class="eyebrow">Review queue</div>
           <div class="spacer"></div>
           <div class="rail" id="apprRail"></div>
           <span class="selwrap"><label for="apprLimit">limit</label>
@@ -517,17 +501,13 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         </div>
         <div class="pager" id="apprPager"></div>
         <div class="req" id="apprReq"></div>
-        <div class="cap">
-          <b>Two kinds of row share this list</b> — single creatives and whole campaigns — so some
-          columns are blank on one kind and filled on the other. Blank means "does not apply", never
-          zero. "Awaiting approval" means nobody has decided yet; it is not a compliance verdict.
-        </div>
+        <div class="cap">Creatives and campaigns share this list. Blank means it does not apply.</div>
       </div>
 
       <!-- ══ CF-07 · BLOCK REASON CATALOGUE ════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">CF-07 <span class="sep">/</span> BLOCK REASON CATALOGUE</div>
+          <div class="eyebrow">Block reasons</div>
           <div class="spacer"></div>
           <div class="rail" id="ruleRail"></div>
         </div>
@@ -537,37 +517,28 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
             <tbody id="ruleBody"></tbody>
           </table>
         </div>
-        <div class="cap">
-          <b>Every reason a creative or campaign can be blocked for.</b> Nothing here is a warning —
-          each one stops the work. Two of them cannot be switched off: credit-repair creative always
-          needs a person to approve it, and credit-repair adverts can never run on TikTok. There is
-          no record of who reviewed what or when, so no review history can be shown.
-        </div>
+        <div class="cap">Each reason stops the work. Credit-repair creative always needs a person, and credit-repair ads cannot run on TikTok.</div>
       </div>
 
       <!-- ══ CF-08 · BRAND KITS ════════════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">CF-08 <span class="sep">/</span> BRAND KITS</div>
+          <div class="eyebrow">Brand kits</div>
           <div class="spacer"></div>
           <div class="rail" id="kitRail"></div>
         </div>
         <div class="kits" id="kitGrid"></div>
         <div class="pager" id="kitPager"></div>
         <div class="req" id="kitReq"></div>
-        <div class="cap">
-          <b>Brand kits are read-only here.</b> Nothing on this screen creates, edits or re-scrapes
-          one, so there is no version history and no restore. A kit's logo shows as a reference, not
-          as a picture.
-        </div>
+        <div class="cap">Brand kits are read-only here.</div>
       </div>
 
       <!-- ══ CF-10 · READINESS &amp; CONFIG GAPS ═══════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">CF-10 <span class="sep">/</span> READINESS &amp; CONFIG GAPS</div>
+          <div class="eyebrow">Readiness</div>
           <div class="spacer"></div>
-          <span class="badge b-gray mono">company-wide · not this partner</span>
+          <span class="badge b-gray mono">Company-wide</span>
         </div>
         <div class="card-bd">
           <div class="unwired" style="margin-bottom:16px">
@@ -580,7 +551,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </div>
           <div class="tblscroll">
             <table class="grid">
-              <thead><tr><th>config</th><th>detail</th><th>rows_set</th><th>status</th><th>consequence</th></tr></thead>
+              <thead><tr><th>Setting</th><th>Detail</th><th>Rows set</th><th>Status</th><th>What happens</th></tr></thead>
               <tbody id="gapsBody"></tbody>
             </table>
           </div>
@@ -594,7 +565,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <!-- ══ CF-11 · USAGE &amp; METERING ════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">CF-11 <span class="sep">/</span> USAGE &amp; METERING</div>
+          <div class="eyebrow">Usage</div>
           <div class="spacer"></div>
           <span class="badge b-warn mono">schema only</span>
           <span class="badge b-alert mono">rates unsigned</span>
@@ -609,7 +580,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </div>
           <div class="tblscroll" style="margin-top:13px">
             <table class="grid">
-              <thead><tr><th>event_type</th><th>period</th><th>events</th><th>quantity</th><th>billable_cents</th><th>voided_cents</th></tr></thead>
+              <thead><tr><th>Event</th><th>Period</th><th>Events</th><th>Quantity</th><th>Billable</th><th>Voided</th></tr></thead>
               <tbody>
                 <tr><td colspan="6"><div class="empty">
                   No rows. Nothing records creative usage yet.
@@ -619,7 +590,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </div>
           <div class="tblscroll" style="margin-top:13px">
             <table class="grid">
-              <thead><tr><th>rate_key</th><th>rate</th><th>signed_off_at</th><th>status</th></tr></thead>
+              <thead><tr><th>Rate</th><th>Amount</th><th>Signed off</th><th>Status</th></tr></thead>
               <tbody id="ratesBody"></tbody>
             </table>
           </div>
@@ -633,7 +604,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <!-- ══ CF-12 · GENERATE &amp; DECIDE ═══════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">CF-12 <span class="sep">/</span> GENERATE &amp; DECIDE</div>
+          <div class="eyebrow">Generate and decide</div>
         </div>
         <div class="cap">
           <b>Ask for new creative.</b> Queued work is picked up automatically every couple of
@@ -641,13 +612,13 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         </div>
         <div class="card-bd" style="padding:16px;border-top:1px solid var(--line)">
           <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:end">
-            <div class="selwrap"><label for="genKind">asset_kind</label>
+            <div class="selwrap"><label for="genKind">Kind</label>
               <select id="genKind"><option>static</option><option>copy</option><option>video</option><option>resize</option></select>
             </div>
-            <div class="selwrap" style="min-width:220px"><label for="genPrompt">prompt</label>
+            <div class="selwrap" style="min-width:220px"><label for="genPrompt">Prompt</label>
               <input id="genPrompt" placeholder="Working capital for owners…" style="width:220px">
             </div>
-            <div class="selwrap" style="min-width:180px"><label for="genIdem">idempotency_key</label>
+            <div class="selwrap" style="min-width:180px"><label for="genIdem">Unique key</label>
               <input id="genIdem" placeholder="unique-key-per-batch" style="width:180px">
             </div>
             <button class="btn dark mono" type="button" id="genBtn">Enqueue generation</button>
@@ -692,7 +663,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dwTitle" aria-hidden="true">
   <div class="dw-hd">
     <div style="min-width:0">
-      <div class="eyebrow" id="dwEyebrow">CF-— <span class="sep">/</span> DETAIL</div>
+      <div class="eyebrow" id="dwEyebrow">Detail</div>
       <h2 id="dwTitle" style="margin-top:6px">—</h2>
     </div>
     <button class="dw-x" id="dwClose" aria-label="Close detail">✕</button>
@@ -907,56 +878,51 @@ var RULES = [
 
 /* ══ PROVIDER DISCLOSURE BEHAVIOUR (CF-05) ═══════════════════════════════ */
 var PROVIDER_FLAGS = [
-  {key:'static', ai:'always true', synth:'from the spec',
-   how:'Everything this provider makes is machine-made, so it is always marked AI-generated. Whether it shows a synthetic person depends on what was asked for; it is never guessed.'},
-  {key:'ugc-video', ai:'always true', synth:'always true',
-   how:'Always marked as showing a synthetic person. There is no setting that makes this provider produce a video without one.'},
-  {key:'product-video', ai:'always true', synth:'defaults false',
-   how:'The footage is machine-made either way, so it is always marked AI-generated. It is treated as having no synthetic person unless the request says otherwise.'},
-  {key:'copy', ai:'always true', synth:'always false',
+  {key:'static', ai:'always', synth:'depends',
+   how:'Always marked AI-generated. A synthetic person is marked only when one was asked for.'},
+  {key:'ugc-video', ai:'always', synth:'always',
+   how:'Always marked as showing a synthetic person, and therefore also AI-generated.'},
+  {key:'product-video', ai:'always', synth:'usually not',
+   how:'Always marked AI-generated. Treated as having no synthetic person unless the request says otherwise.'},
+  {key:'copy', ai:'always', synth:'never',
    how:'Written copy is always machine-made and never has a performer.'},
-  {key:'resize', ai:'inherited', synth:'inherited',
-   how:'Both labels are carried over from the original: a crop of an AI image is still AI, and a crop of a synthetic presenter still shows one.'}
+  {key:'resize', ai:'same as original', synth:'same as original',
+   how:'Both labels are copied from the original creative.'}
 ];
 
 /* ══ v_creative_config_gaps — status strings verbatim (048 / 052) ═════════ */
 var GAPS = [
-  {config:'ad_platform_category_map', detail:'meta special ad category per offer type', rows_set:3,
-   status:'DEFAULTED in 052 to CREDIT — confirm against your Marketing API version', tone:'warn',
-   consequence:'Meta rejects the campaign at create time if the enum is wrong'},
-  {config:'creative_providers', detail:'which vendor serves each asset kind', rows_set:0,
-   status:'UNSET — generation cannot run', tone:'bad',
-   consequence:'generation cannot run until at least one provider is active'},
-  {config:'creative_billing_rates.generation_markup_pct', detail:'rate = 100', rows_set:0,
-   status:'PLACEHOLDER set in 052 — AWAITING SIGN-OFF', tone:'warn',
-   consequence:'this rate bills a partner; an unsigned placeholder must not reach an invoice'},
-  {config:'creative_billing_rates.managed_spend_pct', detail:'rate = 10', rows_set:0,
-   status:'PLACEHOLDER set in 052 — AWAITING SIGN-OFF', tone:'warn',
-   consequence:'this rate bills a partner; an unsigned placeholder must not reach an invoice'},
-  /* All three optimization_rules rows come back DEFAULTED, not UNSET: 052 sets
-     needs_config = false and fills params for kill_no_conversions (052:82) and
-     spend_tier_refresh (052:117), and roas_primary shipped with needs_config false in
-     048. `detail` is optimization_rules.description verbatim, and `rows_set` is a
-     literal 0 for every optimization_rules row in the view (052:317). */
-  {config:'optimization_rules.kill_no_conversions',
-   detail:'Pause and log when an ad reaches $500 spend with zero conversions. Set in 052 — derived, not sourced; tune against your actual CPA.',
-   rows_set:0, status:'DEFAULTED in 052 — derived, tunable', tone:'ok',
-   consequence:'active on a derived default rather than an observed one'},
-  {config:'optimization_rules.spend_tier_refresh',
-   detail:"Creative refresh cadence by daily spend tier. Set in 052 — derived from the spec's 72h/frequency-3 anchors, scaled by how fast spend accumulates frequency.",
-   rows_set:0, status:'DEFAULTED in 052 — derived, tunable', tone:'ok',
-   consequence:'active on a derived default rather than an observed one'},
-  {config:'optimization_rules.roas_primary',
-   detail:'While ROAS is at or above target, CPM/CTR rules may queue creative but must not pause or cut budget. Target set to break-even (1.0) in 052 — raise it to your actual target.',
-   rows_set:0, status:'DEFAULTED in 052 — derived, tunable', tone:'ok',
-   consequence:'active on a derived default rather than an observed one'}
+  {config:'Meta ad category', detail:'Special ad category per offer type', rows_set:3,
+   status:'Using a default of CREDIT — confirm it', tone:'warn',
+   consequence:'Meta rejects the campaign if this is wrong'},
+  {config:'Creative vendors', detail:'Which vendor makes each kind of creative', rows_set:0,
+   status:'Not set — generation cannot run', tone:'bad',
+   consequence:'Nothing can be generated until a vendor is switched on'},
+  {config:'Generation markup', detail:'rate = 100', rows_set:0,
+   status:'Placeholder — not signed off', tone:'warn',
+   consequence:'Do not put this on an invoice until someone approves it'},
+  {config:'Managed spend rate', detail:'rate = 10', rows_set:0,
+   status:'Placeholder — not signed off', tone:'warn',
+   consequence:'Do not put this on an invoice until someone approves it'},
+  {config:'Kill ads with no conversions',
+   detail:'Pause when an ad spends $500 with zero conversions.',
+   rows_set:0, status:'Using a built-in default', tone:'ok',
+   consequence:'Active on a default, not a measured figure'},
+  {config:'Refresh by spend tier',
+   detail:'How often new creative is asked for, by daily spend.',
+   rows_set:0, status:'Using a built-in default', tone:'ok',
+   consequence:'Active on a default, not a measured figure'},
+  {config:'Protect budget when return is on target',
+   detail:'When return is at or above target, spend rules may queue creative but must not cut budget.',
+   rows_set:0, status:'Using a built-in default', tone:'ok',
+   consequence:'Active on a default, not a measured figure'}
 ];
 
 var RATES = [
-  {rate_key:'generation_markup_pct', rate:'100', signed_off_at:null,
-   status:'PLACEHOLDER set in 052 — AWAITING SIGN-OFF'},
-  {rate_key:'managed_spend_pct', rate:'10', signed_off_at:null,
-   status:'PLACEHOLDER set in 052 — AWAITING SIGN-OFF'}
+  {rate_key:'Generation markup', rate:'100', signed_off_at:null,
+   status:'Placeholder — not signed off'},
+  {rate_key:'Managed spend', rate:'10', signed_off_at:null,
+   status:'Placeholder — not signed off'}
 ];
 
 /* ══ HELPERS ═════════════════════════════════════════════════════════════ */
@@ -988,8 +954,7 @@ function currentPartnerId(){ var p = currentPartner(); return p ? p.id : null; }
    count, never a zero: a failed read and an empty partner are not "none". */
 function panelState(key){
   if(!currentPartner())
-    return 'No partner selected. Open this screen with <span class="mono">?partner_id=</span> set to one partner ' +
-           'and this fills with that partner’s rows.';
+    return 'No partner selected. Nothing is loaded.';
   var res = CF_ENDPOINT_RES[key];
   if(!res) return 'Loading…';
   if(!res.ok) return 'This could not be read just now — ' + esc(res.error || res.source) + '. Nothing is shown rather than a stale or made-up figure.';
@@ -1034,16 +999,12 @@ function renderScope(){
     sel.disabled = true;   /* one partner per address, and no list to choose from */
   }
   if(p) sel.value = '0';
-  document.getElementById('scopePid').textContent = p ? 'partner_id = ' + p.id : 'partner_id = not set';
+  document.getElementById('scopePid').textContent = p ? p.id : 'No partner selected';
   document.getElementById('scopeChipTxt').textContent = p ? p.name : 'no partner selected';
   document.getElementById('scopeOffers').innerHTML = '';
   document.getElementById('scopeHow').innerHTML = p
-    ? 'Showing <b>' + esc(p.name) + '</b> only, taken from this page’s own address. There is no partner list ' +
-      'to pick from here, so this screen never shows more than the one partner it was opened for.'
-    : '<b>Nothing is loaded yet.</b> Generation jobs, the creative library, the review queue and brand kits ' +
-      'appear here once this screen is opened for one partner — add <code>?partner_id=&lt;id&gt;</code> to this ' +
-      'page’s address and reload. Until then no request is sent and the buttons below are switched off, because ' +
-      'a stand-in id would read and write against a partner that does not exist.';
+    ? 'Showing <b>' + esc(p.name) + '</b> only.'
+    : 'Nothing is loaded. This screen needs one partner before it can show jobs, creatives, or brand kits.';
   setWriteControls(!!p);
 }
 
@@ -1053,7 +1014,7 @@ function setWriteControls(enabled){
   document.querySelectorAll('[data-cact]').forEach(function(b){ b.disabled = !enabled; });
   ids.forEach(function(id){ var b = document.getElementById(id); if(b) b.disabled = !enabled; });
   if(enabled) return;   /* leave any live status message alone */
-  var reason = 'No partner selected — open this screen with ?partner_id= set.';
+  var reason = 'No partner selected.';
   ['genMsg','actMsg'].forEach(function(id){ var m = document.getElementById(id); if(m) m.textContent = reason; });
 }
 
@@ -1118,7 +1079,7 @@ function renderStats(){
      §5 does not allow a control that does nothing. */
   document.getElementById('stats').innerHTML = tiles.map(function(t){
     return '<div class="stat">' +
-      '<div class="eyebrow">CF-00 <span class="sep">/</span> ' + t.label + '</div>' +
+      '<div class="eyebrow">' + t.label + '</div>' +
       '<div class="sv ' + t.cls + '">' + t.v + '</div>' +
       '<div class="sd">' + esc(t.d) + '</div>' +
     '</div>';
@@ -1131,20 +1092,14 @@ function renderPager(el, pg, onMove){
   host.innerHTML =
     '<button class="btn sm mono" data-mv="-1"' + (pg.offset<=0?' disabled':'') + '>‹ prev</button>' +
     '<button class="btn sm mono" data-mv="1"' + (pg.hasMore?'':' disabled') + '>next ›</button>' +
-    '<span>count ' + pg.count + ' · limit ' + pg.limit + ' · offset ' + pg.offset +
-    ' · hasMore ' + (pg.hasMore?'true':'false') + '</span>' +
-    '<span class="spacer"></span>' +
-    '<span>no total — hasMore comes from selecting limit+1 rows</span>';
+    '<span>Showing ' + pg.count + '</span>';
   host.querySelectorAll('[data-mv]').forEach(function(b){
     b.addEventListener('click', function(){ onMove(parseInt(b.dataset.mv,10)); });
   });
 }
-function setReq(el, path, params){
-  var qs = Object.keys(params).filter(function(k){ return params[k] !== '' && params[k] != null; })
-    .map(function(k){ return k + '=' + params[k]; }).join('&');
+function setReq(el){
   var host = document.getElementById(el);
-  host.className = 'req' + (S.showReq ? ' on' : '');
-  host.innerHTML = '<b>GET</b> ' + esc(path) + (qs ? '?' + esc(qs) : '');
+  if(host){ host.className = 'req'; host.innerHTML = ''; }
 }
 
 /* ══ CF-02 · GENERATION JOBS ═════════════════════════════════════════════ */
@@ -1189,8 +1144,7 @@ function renderJobs(){
   if(blocked){
     body.innerHTML = '<tr><td colspan="10"><div class="empty">' + blocked + '</div></td></tr>';
   } else if(!pg.items.length){
-    body.innerHTML = '<tr><td colspan="10"><div class="empty">No jobs match <span class="mono">?state=' +
-      esc(jobStateParam()) + '</span> for this partner.</div></td></tr>';
+    body.innerHTML = '<tr><td colspan="10"><div class="empty">No jobs match this filter for this partner.</div></td></tr>';
   } else {
     body.innerHTML = pg.items.map(function(j){
       var retry = j.status==='queued' && j.attempt > 0;
@@ -1240,40 +1194,23 @@ function jobDetail(j){
       '<div class="errbox">' + esc(j.error) + '</div></div>';
   }
   out += '<div class="detfull"><p class="note" style="margin-top:6px">' + jobExplain(j) + '</p></div>';
-  out += '<div class="detfull"><p class="note" style="color:var(--gray2)"><b>Not returned by this endpoint:</b> ' +
-    '<code>cost_cents</code>, the whole <code>spec</code>, <code>requested_by</code>, <code>org_id</code>, ' +
-    '<code>partner_id</code>, <code>updated_at</code>.</p></div>';
   return out + '</div>';
 }
 
 function jobExplain(j){
   if(j.status==='succeeded')
-    return '<b>Succeeded.</b> <code>error</code> was cleared to NULL and ' + j.asset_count +
-      ' asset' + (j.asset_count===1?'':'s') + ' were stored. A succeeded job never has zero assets — a provider ' +
-      'returning 200 with an empty list is converted into a failure.';
+    return '<b>Succeeded.</b> ' + j.asset_count + ' asset' + (j.asset_count===1?'':'s') + ' stored.';
   if(j.status==='running')
-    return '<b>Claimed, provider call in flight.</b> <code>attempt</code> went to ' + j.attempt +
-      ' on the claim. There is no progress, ETA or queue position anywhere in the schema, and no ' +
-      'expected-asset-count column to compute one against.';
+    return '<b>Running.</b> Attempt ' + j.attempt + '. No progress bar or wait time is available.';
   if(j.status==='queued' && j.attempt > 0)
-    return '<b>Requeued after a retryable failure.</b> <code>started_at</code> is set and ' +
-      '<code>finished_at</code> is not — <code>fail()</code> only stamps <code>finished_at</code> when the ' +
-      'status becomes <code>failed</code>. It has been claimed ' + j.attempt + ' time' + (j.attempt===1?'':'s') +
-      ' and will be marked failed on a retryable failure at attempt 3.';
+    return '<b>Retrying.</b> Tried ' + j.attempt + ' time' + (j.attempt===1?'':'s') + '. Failed after three tries.';
   if(j.status==='queued')
-    return '<b>Never claimed.</b> <code>attempt</code> is 0, <code>started_at</code> is NULL and ' +
-      '<code>provider</code> is NULL — the provider column is only written after <code>run()</code> ' +
-      'resolves one.';
+    return '<b>Waiting to start.</b>';
   if(/no active provider configured/.test(j.error||''))
-    return '<b>Permanent failure, not an outage.</b> <code>resolve()</code> threw before the UPDATE that ' +
-      'sets <code>provider</code>, which is why that column is NULL. Marked failed with retryable false: ' +
-      'retrying would not conjure a config row.';
+    return '<b>Failed.</b> No vendor is switched on. Trying again will not help.';
   if(j.error==='provider returned zero assets')
-    return '<b>Failed on an empty result.</b> A 200 with no assets is a failure whatever the provider says — ' +
-      'this is the silent-empty-success case the spec forbids. Retryable, so it took the full three claims.';
-  return '<b>Failed at the ceiling.</b> A retryable failure at attempt 3 stops requeueing: three claims, ' +
-    'each with up to three provider calls at 500ms then 1000ms backoff. <code>finished_at</code> is stamped ' +
-    'because the status became <code>failed</code>.';
+    return '<b>Failed.</b> The vendor returned nothing.';
+  return '<b>Failed.</b> Stopped after three tries.';
 }
 
 /* generic expand/collapse for a table body */
@@ -1320,16 +1257,16 @@ function renderLegend(){
   var jobs = byPartner(JOBS);
   var n = function(f){ return jobs.filter(f).length; };
   var cards = [
-    {sev:'info', n:n(function(j){return j.status==='queued'&&j.attempt===0;}), t:'queued · attempt 0',
-     d:'never started. provider NULL, started_at NULL. waiting for a claim.'},
-    {sev:'warn', n:n(function(j){return j.status==='queued'&&j.attempt>0;}), t:'queued · attempt > 0',
-     d:'retrying after a retryable failure. error preserved, started_at set, finished_at NULL. up to 3 claims.'},
-    {sev:'warn', n:n(function(j){return j.status==='running';}), t:'running',
-     d:'claimed, provider call in flight. attempt was incremented on the claim.'},
-    {sev:'ok', n:n(function(j){return j.status==='succeeded';}), t:'succeeded',
-     d:'at least one asset stored, error cleared to NULL. never zero assets.'},
-    {sev:'bad', n:n(function(j){return j.status==='failed';}), t:'failed',
-     d:'permanent, finished_at stamped, and always with a reason — the CHECK requires it.'}
+    {sev:'info', n:n(function(j){return j.status==='queued'&&j.attempt===0;}), t:'Queued',
+     d:'Waiting to start.'},
+    {sev:'warn', n:n(function(j){return j.status==='queued'&&j.attempt>0;}), t:'Retrying',
+     d:'Tried before and waiting to try again. Up to three tries.'},
+    {sev:'warn', n:n(function(j){return j.status==='running';}), t:'Running',
+     d:'In progress now.'},
+    {sev:'ok', n:n(function(j){return j.status==='succeeded';}), t:'Succeeded',
+     d:'At least one creative was stored.'},
+    {sev:'bad', n:n(function(j){return j.status==='failed';}), t:'Failed',
+     d:'Stopped. Always has a reason.'}
   ];
   document.getElementById('stateLegend').innerHTML = cards.map(function(c){
     return '<button type="button" class="sev-' + c.sev + '">' +
@@ -1404,7 +1341,7 @@ var RATIO = {'1x1':'1 / 1', '4x5':'4 / 5', '9x16':'9 / 16', '16x9':'16 / 9'};
 function assetCard(a){
   var tile = '<div class="tile none" style="aspect-ratio:' + RATIO[a.format] + '">' +
       '<span class="np">no preview available<br>' +
-      (a.kind==='copy' ? 'copy has no stored object' : 'storage_key never leaves the process') + '</span>' +
+      (a.kind==='copy' ? 'copy has no file' : 'no file on this screen') + '</span>' +
       '<span class="fmt" style="background:var(--soft);color:var(--gray);border:1px solid var(--line)">' + esc(a.format) + '</span>' +
       (a.duration_sec ? '<span class="dur" style="background:var(--soft);color:var(--gray);border:1px solid var(--line)">' + esc(a.duration_sec) + 's</span>' : '') +
     '</div>';
@@ -1747,9 +1684,7 @@ function renderKits(){
   if(blocked){
     grid.innerHTML = '<div class="empty" style="grid-column:1/-1">' + blocked + '</div>';
   } else if(!pg.items.length){
-    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">No brand kits with status ' +
-      '<span class="mono">' + esc(S.kitState) + '</span> for this partner. There is no fundhub-owned or ' +
-      'global kit — <span class="mono">brand_kits.partner_id</span> is NOT NULL.</div>';
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">No brand kits match this filter for this partner.</div>';
   } else {
     grid.innerHTML = pg.items.map(function(k){
       var sw = swatches(k.palette);
@@ -1763,13 +1698,12 @@ function renderKits(){
         '</div>' +
         (sw.length
           ? '<div class="sw">' + sw.map(function(s){ return '<i style="background:' + esc(s.v) + '" title="' + esc(s.k + ' ' + s.v) + '"></i>'; }).join('') + '</div>'
-          : '<div class="kk" style="margin-top:8px"><b>palette</b> {} — empty, and the schema defines no keys</div>') +
+          : '<div class="kk" style="margin-top:8px">No colors in this kit.</div>') +
         '<div class="kk">' +
-          '<b>voice_profile.tone</b> ' + (k.voice_profile && k.voice_profile.tone ? esc(k.voice_profile.tone) : '<span class="nul">not set</span>') + '<br>' +
-          '<b>fonts</b> ' + (fontKeys.length ? esc(fontKeys.map(function(f){ return f + ': ' + k.fonts[f]; }).join(' · ')) : '<span class="nul">{}</span>') + '<br>' +
-          '<b>products</b> ' + ((k.products||[]).length ? (k.products.length + ' item' + (k.products.length===1?'':'s')) : '<span class="nul">[]</span>') + '<br>' +
-          '<b>source_url</b> <span class="nul">null</span> · <b>scraped_at</b> <span class="nul">null</span><br>' +
-          '<b>logo_asset_id</b> ' + (k.logo_asset_id ? esc(shortId(k.logo_asset_id)) + ' <span class="nul">(reference, not an image)</span>' : '<span class="nul">null</span>') +
+          '<b>Tone</b> ' + (k.voice_profile && k.voice_profile.tone ? esc(k.voice_profile.tone) : '<span class="nul">not set</span>') + '<br>' +
+          '<b>Fonts</b> ' + (fontKeys.length ? esc(fontKeys.map(function(f){ return f + ': ' + k.fonts[f]; }).join(' · ')) : '<span class="nul">none</span>') + '<br>' +
+          '<b>Products</b> ' + ((k.products||[]).length ? (k.products.length + ' item' + (k.products.length===1?'':'s')) : '<span class="nul">none</span>') + '<br>' +
+          '<b>Logo</b> ' + (k.logo_asset_id ? esc(shortId(k.logo_asset_id)) + ' <span class="nul">(reference, not a picture)</span>' : '<span class="nul">none</span>') +
         '</div>' +
       '</button>';
     }).join('');
@@ -1791,7 +1725,7 @@ function renderKits(){
 function renderStaticTables(){
   document.getElementById('flagBody').innerHTML = PROVIDER_FLAGS.map(function(p){
     var badge = function(v){
-      var cls = v==='always true' ? 'b-ok' : (v==='inherited' ? 'b-info' : (v==='always false' || v==='defaults false' ? 'b-gray' : 'b-accent'));
+      var cls = v==='always' ? 'b-ok' : (v==='same as original' ? 'b-info' : (v==='never' || v==='usually not' ? 'b-gray' : 'b-accent'));
       return '<span class="badge ' + cls + '">' + esc(v) + '</span>';
     };
     return '<tr><td class="mono">' + esc(p.key) + '</td><td>' + badge(p.ai) + '</td><td>' + badge(p.synth) + '</td>' +
@@ -1876,20 +1810,19 @@ function openAsset(a){
     '</div>' +
     '<p class="note" style="margin-top:9px">' + flagExplain(a) + '</p></div>';
 
-  html += '<div class="dw-sec"><h3>blocked_reasons</h3>' +
+  html += '<div class="dw-sec"><h3>Block reasons</h3>' +
     (a.blocked_reasons.length
       ? '<div class="reasons">' + a.blocked_reasons.map(reasonCard).join('') + '</div>' +
         '<p class="note" style="margin-top:9px">A blocked creative always says why. There is no score or risk ' +
         'level, only the reasons listed above.</p>'
-      : '<div class="jsonbox">[]</div><p class="note" style="margin-top:9px">Empty because this creative is not ' +
-        'blocked.</p>') +
+      : '<p class="note">None. This creative is not blocked.</p>') +
   '</div>';
 
   html += '<div class="dw-sec"><h3>What this screen is not told</h3>' +
     '<p class="note">How the advert performed — impressions, clicks, spend — is never sent here. Neither is any ' +
     'review history: there is no record of who checked this creative, or when.</p></div>';
 
-  DW.open('CF-04 <span class="sep">/</span> ASSET DETAIL', a.kind + ' · ' + a.format + ' · ' + shortId(a.id), html);
+  DW.open('Creative detail', a.kind + ' · ' + a.format + ' · ' + shortId(a.id), html);
 }
 
 function flagExplain(a){
@@ -1917,23 +1850,18 @@ function openKit(k){
     ['created_at', k.created_at, 1], ['updated_at', k.updated_at, 1]
   ]) + '</div>';
 
-  html += '<div class="dw-sec"><h3>palette <span class="nul">— free-shape jsonb</span></h3>' +
+  html += '<div class="dw-sec"><h3>Colors</h3>' +
     (sw.length ? '<div class="sw" style="margin-top:0">' + sw.map(function(s){
         return '<i style="background:' + esc(s.v) + '" title="' + esc(s.k) + '"></i>';
       }).join('') + '</div>' : '') +
-    '<div class="jsonbox" style="margin-top:9px">' + esc(JSON.stringify(k.palette, null, 2)) + '</div>' +
-    '<p class="note" style="margin-top:8px">Rendered by walking whatever keys this row happens to hold. No ' +
-    'migration or code defines any inner key, so nothing here assumes primary / secondary / accent.</p></div>';
+    '<div class="jsonbox" style="margin-top:9px">' + esc(JSON.stringify(k.palette, null, 2)) + '</div></div>';
 
-  html += '<div class="dw-sec"><h3>fonts</h3><div class="jsonbox">' + esc(JSON.stringify(k.fonts, null, 2)) + '</div></div>';
+  html += '<div class="dw-sec"><h3>Fonts</h3><div class="jsonbox">' + esc(JSON.stringify(k.fonts, null, 2)) + '</div></div>';
 
-  html += '<div class="dw-sec"><h3>voice_profile</h3><div class="jsonbox">' + esc(JSON.stringify(k.voice_profile, null, 2)) + '</div>' +
-    '<p class="note" style="margin-top:8px">Only the tone is actually used when creative is generated. ' +
-    'Everything else here is stored and never read.</p></div>';
+  html += '<div class="dw-sec"><h3>Voice</h3><div class="jsonbox">' + esc(JSON.stringify(k.voice_profile, null, 2)) + '</div>' +
+    '<p class="note" style="margin-top:8px">Only the tone is used when creative is generated.</p></div>';
 
-  html += '<div class="dw-sec"><h3>products</h3><div class="jsonbox">' + esc(JSON.stringify(k.products, null, 2)) + '</div>' +
-    '<p class="note" style="margin-top:8px">A free-shape jsonb array with no schema — one kit stores strings, ' +
-    'another stores objects, and both are valid.</p></div>';
+  html += '<div class="dw-sec"><h3>Products</h3><div class="jsonbox">' + esc(JSON.stringify(k.products, null, 2)) + '</div></div>';
 
   html += '<div class="dw-sec"><h3>Sources</h3>' +
     '<div class="unwired"><div class="uh"><span>⚠</span><span>no crawl history</span></div>' +
@@ -1977,13 +1905,6 @@ function openKit(k){
     S.libArchived = this.value; S.libOffset = 0; renderLibrary();
   });
 
-  var rt = document.getElementById('reqToggle');
-  rt.addEventListener('click', function(){
-    S.showReq = !S.showReq;
-    rt.setAttribute('aria-pressed', String(S.showReq));
-    rt.textContent = S.showReq ? 'Hide request URLs' : 'Show request URLs';
-    renderJobs(); renderLibrary(); renderApprovals(); renderKits();
-  });
 })();
 
 function renderAll(){
@@ -1996,8 +1917,7 @@ function renderAll(){
   renderKits();
   var p = currentPartner();
   document.getElementById('footNote').textContent =
-    'creative factory · ' + (p ? String(p.name).toLowerCase() : 'no partner selected') +
-    (CF_SRC.length ? ' · ' + CF_SRC.join(' · ') : '');
+    'creative factory · ' + (p ? String(p.name).toLowerCase() : 'no partner selected');
 }
 
 /* ══ API WIRING ══════════════════════════════════════════════════════════
@@ -2139,8 +2059,8 @@ document.getElementById('genBtn').addEventListener('click', function () {
   var kind = document.getElementById('genKind').value;
   var prompt = document.getElementById('genPrompt').value.trim();
   var idem = document.getElementById('genIdem').value.trim();
-  if (!partnerId) { msg.textContent = 'Need partner_id in the URL or picker.'; return; }
-  if (!idem) { msg.textContent = 'idempotency_key required.'; return; }
+  if (!partnerId) { msg.textContent = 'Need a partner first.'; return; }
+  if (!idem) { msg.textContent = 'Need a unique key first.'; return; }
   msg.textContent = 'Enqueueing…';
   var t = '';
   try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
@@ -2193,7 +2113,7 @@ function cfAuthHeaders() {
 document.getElementById('runJobsBtn').addEventListener('click', function () {
   var msg = document.getElementById('genMsg');
   var partnerId = cfPartnerId();
-  if (!partnerId) { msg.textContent = 'Need partner_id.'; return; }
+  if (!partnerId) { msg.textContent = 'Need a partner first.'; return; }
   msg.textContent = 'Running queued jobs…';
   fetch('/api/creative/run', {
     method: 'POST',
@@ -2211,7 +2131,7 @@ document.querySelectorAll('[data-cact]').forEach(function (btn) {
     var msg = document.getElementById('actMsg');
     var partnerId = cfPartnerId();
     var assetId = (document.getElementById('actAsset').value || '').trim();
-    if (!partnerId) { msg.textContent = 'Need partner_id.'; return; }
+    if (!partnerId) { msg.textContent = 'Need a partner first.'; return; }
     if (!assetId) { msg.textContent = 'Choose a creative first.'; return; }
     var action = btn.getAttribute('data-cact');
     var label = document.getElementById('actAsset');

@@ -191,36 +191,6 @@ table.grid tbody tr:hover{background:var(--soft)}
     </div>
 
     <div class="content fh-maxw">
-      <div class="scopebar">
-        <span class="badge b-accent">AF-00 / SCOPED VIEW</span>
-        <span class="st">You are seeing only clients that came through your link, and only your own payouts —
-        permissions <span class="mono">PM-12</span> and <span class="mono">PM-18</span>. Client contact details, credit data
-        and outcome tiers are not part of the Affiliate role.</span>
-      </div>
-
-      <div class="card" id="brainCard" style="margin:14px 0">
-        <div class="hair"></div>
-        <div class="card-hd">
-          <div>
-            <div class="eyebrow">Company Brain</div>
-            <div style="font-weight:600;margin-top:2px">Ask approved partner docs</div>
-          </div>
-        </div>
-        <div class="card-bd">
-          <p style="color:var(--gray);font-size:var(--fs-body);margin-bottom:10px">
-            Only documents the owner explicitly approved for affiliates. Internal staff docs never appear here.
-          </p>
-          <form id="brainForm" style="display:flex;gap:10px;flex-wrap:wrap">
-            <input id="brainQ" autocomplete="off" placeholder="Ask about the partner kit, rates, or onboarding…"
-              style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:7px;padding:10px 12px;font-size:var(--fs-body)">
-            <button class="btn dark" type="submit" id="brainBtn">Ask</button>
-          </form>
-          <p id="brainStatus" class="mono" style="margin-top:10px;font-size:var(--fs-caption);color:var(--gray)"></p>
-          <div id="brainAnswer" style="display:none;margin-top:12px;padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:8px;white-space:pre-wrap"></div>
-          <div id="brainSources" style="margin-top:12px;color:var(--gray);font-size:var(--fs-body)"></div>
-        </div>
-      </div>
-
       <div class="linkbox">
         <div class="lt"></div>
         <div class="lb">
@@ -254,6 +224,33 @@ table.grid tbody tr:hover{background:var(--soft)}
         <div class="stat"><div class="eyebrow">AF-02 <span class="sep">/</span> PAID</div><div class="sv" id="kPaid">—</div><div class="sd">lifetime · comes from past payout runs, not connected to this page yet</div></div>
       </div>
 
+      <div class="scopebar" style="margin-top:14px">
+        <span class="st">You only see people who used your link, and only your own payouts. You do not see their contact details or credit file.</span>
+      </div>
+
+      <div class="card" id="brainCard" style="margin:14px 0">
+        <div class="hair"></div>
+        <div class="card-hd">
+          <div>
+            <div class="eyebrow">Company Brain</div>
+            <div style="font-weight:600;margin-top:2px">Ask approved partner docs</div>
+          </div>
+        </div>
+        <div class="card-bd">
+          <p style="color:var(--gray);font-size:var(--fs-body);margin-bottom:10px">
+            Only documents the owner explicitly approved for affiliates. Internal staff docs never appear here.
+          </p>
+          <form id="brainForm" style="display:flex;gap:10px;flex-wrap:wrap">
+            <input id="brainQ" autocomplete="off" placeholder="Ask about the partner kit, rates, or onboarding…"
+              style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:7px;padding:10px 12px;font-size:var(--fs-body)">
+            <button class="btn dark" type="submit" id="brainBtn">Ask</button>
+          </form>
+          <p id="brainStatus" class="mono" style="margin-top:10px;font-size:var(--fs-caption);color:var(--gray)"></p>
+          <div id="brainAnswer" style="display:none;margin-top:12px;padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:8px;white-space:pre-wrap"></div>
+          <div id="brainSources" style="margin-top:12px;color:var(--gray);font-size:var(--fs-body)"></div>
+        </div>
+      </div>
+
       <div class="card" style="margin-top:14px">
         <div class="card-hd"><div class="eyebrow">AF-03 <span class="sep">/</span> FUNNEL</div>
           <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">LIFETIME · CLICK TO FUNDED</span></div>
@@ -269,14 +266,14 @@ table.grid tbody tr:hover{background:var(--soft)}
 
         <div class="tabpane on" id="tab-leads">
           <div class="card-hd">
-            <div class="eyebrow">AF-04 <span class="sep">/</span> REFERRED LEADS</div>
-            <div class="spacer"></div>
             <select id="stFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:var(--fs-body);background:#fff">
               <option value="">All statuses</option>
               <option>Clicked</option><option>Signed up</option><option>Assessment paid</option>
               <option>Deposit paid</option><option>Funded</option><option>Lost</option>
             </select>
             <input id="q" placeholder="Filter business…" style="border:1px solid var(--line);border-radius:7px;padding:6px 10px;font-size:var(--fs-body);width:180px">
+            <div class="spacer"></div>
+            <div class="eyebrow">AF-04 <span class="sep">/</span> REFERRED LEADS</div>
           </div>
           <div style="overflow-x:auto"><table class="grid">
             <thead><tr><th>Referred</th><th>Business</th><th>Status</th><th>First paid product</th><th>Basis</th><th style="text-align:right">Commission</th><th>Payout</th></tr></thead>
@@ -370,7 +367,7 @@ function renderLeads(){
       '<td class="money">'+(l.basis?money(l.basis):'—')+'</td>'+
       '<td class="money" style="text-align:right">'+(c?money(c):'—')+'</td>'+
       '<td><span class="badge '+PAY_CLS[l.pay]+'">'+l.pay+'</span></td></tr>';
-  }).join('')||'<tr><td colspan="7" class="empty">'+(LEADS.length?'No referrals match that filter.':'No referrals on file here — this page is not connected to the referral list yet.')+'</td></tr>';
+  }).join('')||'<tr><td colspan="7" class="empty">'+(LEADS.length?'No referrals match that filter.':'No referrals on file')+'</td></tr>';
   document.getElementById('leadTotal').textContent=list.length?money(list.reduce(function(a,l){return a+commission(l)},0)):'—';
 }
 

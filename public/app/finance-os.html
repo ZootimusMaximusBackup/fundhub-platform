@@ -167,7 +167,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* alerts */
 .fos-al{padding:11px 15px;border-bottom:1px solid var(--line)}
 .fos-al:last-child{border-bottom:none}
-.fos-al .top{display:flex;align-items:flex-start;gap:10px}
+.fos-al .top{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.fos-al .top > div{min-width:0;flex:1}
 .fos-sw{position:relative;width:33px;height:19px;border-radius:10px;background:var(--gray3);flex:0 0 auto;cursor:pointer;margin-top:1px;border:none}
 .fos-sw::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .18s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .fos-sw[aria-checked="true"]{background:var(--okd)}

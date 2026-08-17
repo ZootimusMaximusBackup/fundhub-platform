@@ -157,15 +157,16 @@
   }
 
   /* ---------- main layout ---------- */
-  /* The two rows are capped at the height of main (minmax(0,…)) so the bottom
-     row cannot be pushed past the fold by the top pane's content — each pane
-     scrolls inside itself instead. overflow-y:auto is the backstop: if the
-     rows ever do outgrow main, the bottom row is still scrollable to rather
-     than clipped away by overflow:hidden, which is how it became unreachable. */
+  /* System / KPI row is first and sizes to its tiles so cash, close rate,
+     show rate, and cost sit above the fold. Pipeline summary is second and
+     takes the leftover height. min-height:0 lets main shrink inside the flex
+     shell — without it the pipeline pane grows the page and the KPI row is
+     clipped off-screen with no way to scroll there. */
   main{
     flex:1;
+    min-height:0;
     display:grid;
-    grid-template-rows: minmax(0,1.55fr) minmax(0,1fr);
+    grid-template-rows: auto minmax(0,1fr);
     gap:1px;
     background:var(--ink);
     overflow-x:hidden;
@@ -756,6 +757,101 @@
 
   <main class="fh-maxw">
 
+    <div class="row-bottom">
+
+      <!-- SYSTEM PANE -->
+      <section class="pane">
+        <div class="pane-head">
+          <div class="pane-title eyebrow">CC-09 / System</div>
+          <!-- Filled with the real clock time the KPI read came back, and left
+               blank until it does. Nothing here may claim a time it did not
+               observe. -->
+          <div class="pane-meta" id="cc-system-meta"></div>
+        </div>
+        <div class="pane-body">
+
+          <div class="kpi-grid">
+            <div class="kpi-tile">
+              <div class="kpi-label">Cash Collected Today</div>
+              <div class="kpi-value"></div>
+              <div class="kpi-sub">no live source yet</div>
+            </div>
+            <div class="kpi-tile">
+              <div class="kpi-label">Pipeline Movement</div>
+              <div class="kpi-value"></div>
+              <div class="kpi-sub">stage changes today</div>
+            </div>
+            <div class="kpi-tile">
+              <div class="kpi-label">Close Rate (30d)</div>
+              <div class="kpi-value"></div>
+              <div class="kpi-sub">booked → decision rendered</div>
+            </div>
+            <div class="kpi-tile">
+              <div class="kpi-label">Show Rate</div>
+              <div class="kpi-value"></div>
+              <div class="kpi-sub">booked calls kept, 7d avg</div>
+            </div>
+            <div class="kpi-tile">
+              <div class="kpi-label">Cost / Funded Client</div>
+              <div class="kpi-value"></div>
+              <div class="kpi-sub">needs ad spend (migration 038)</div>
+            </div>
+            <div class="kpi-tile">
+              <div class="kpi-label">Funded Today</div>
+              <div class="kpi-value"></div>
+              <div class="kpi-sub">Card Stacking + Alt-Fin combined</div>
+            </div>
+          </div>
+
+          <!-- Nothing on this screen reads platform health. There is no status
+               feed for the bureau portals, the job queue, the payment provider
+               or the compliance checks, so this pane states that it has no
+               source rather than showing a number. Do not put a value back here
+               until something fetches one. -->
+          <div class="feed-title eyebrow">CC-10 / Platform Health</div>
+          <div class="empty-rail">Nothing to show yet. Bureau portals, job backlog, error rate and payment status will appear here once this screen reads them from a live source. It does not read one today, so treat no news as no information — not as all clear.</div>
+
+        </div>
+      </section>
+
+      <!-- AGENT PANE -->
+      <section class="pane">
+        <div class="pane-head">
+          <div class="pane-title eyebrow">CC-04 / Agents</div>
+          <div class="pane-meta" id="cc-agents-meta"></div>
+        </div>
+        <div class="pane-body">
+
+          <!-- ══ ROSTER ════════════════════════════════════════════════════
+               Everything in this drawer is drawn from GET /api/read/agents at
+               the bottom of this file. The registry stores a code, a name, a
+               class (client-facing / ops), a channel and a status — so those
+               are the only things a card may say. It records nothing about
+               what an agent is doing right now, how many calls it made, or
+               whether it is stuck, so no card carries a task line, a counter,
+               or a "blocked" state. -->
+          <details class="roster" id="roster">
+            <summary>
+              <span class="rs-chev">›</span>
+              <span class="rs-dot"></span>
+              <span class="rs-main" id="cc-roster-main">Agent registry</span>
+              <span class="rs-sub" id="cc-roster-sub"></span>
+            </summary>
+            <div class="roster-body">
+
+          <div class="feed-title eyebrow" style="margin-bottom:9px">CC-06 / Roster</div>
+          <div id="cc-roster-list">
+            <div class="empty-rail">Loading the agent registry…</div>
+          </div>
+
+            </div>
+          </details>
+
+        </div>
+      </section>
+
+    </div>
+
     <!-- PIPELINE PANE -->
     <section class="pane">
       <div class="pane-head">
@@ -861,101 +957,6 @@
 
       </div>
     </section>
-
-    <div class="row-bottom">
-
-      <!-- AGENT PANE -->
-      <section class="pane">
-        <div class="pane-head">
-          <div class="pane-title eyebrow">CC-04 / Agents</div>
-          <div class="pane-meta" id="cc-agents-meta"></div>
-        </div>
-        <div class="pane-body">
-
-          <!-- ══ ROSTER ════════════════════════════════════════════════════
-               Everything in this drawer is drawn from GET /api/read/agents at
-               the bottom of this file. The registry stores a code, a name, a
-               class (client-facing / ops), a channel and a status — so those
-               are the only things a card may say. It records nothing about
-               what an agent is doing right now, how many calls it made, or
-               whether it is stuck, so no card carries a task line, a counter,
-               or a "blocked" state. -->
-          <details class="roster" id="roster">
-            <summary>
-              <span class="rs-chev">›</span>
-              <span class="rs-dot"></span>
-              <span class="rs-main" id="cc-roster-main">Agent registry</span>
-              <span class="rs-sub" id="cc-roster-sub"></span>
-            </summary>
-            <div class="roster-body">
-
-          <div class="feed-title eyebrow" style="margin-bottom:9px">CC-06 / Roster</div>
-          <div id="cc-roster-list">
-            <div class="empty-rail">Loading the agent registry…</div>
-          </div>
-
-            </div>
-          </details>
-
-        </div>
-      </section>
-
-      <!-- SYSTEM PANE -->
-      <section class="pane">
-        <div class="pane-head">
-          <div class="pane-title eyebrow">CC-09 / System</div>
-          <!-- Filled with the real clock time the KPI read came back, and left
-               blank until it does. Nothing here may claim a time it did not
-               observe. -->
-          <div class="pane-meta" id="cc-system-meta"></div>
-        </div>
-        <div class="pane-body">
-
-          <div class="kpi-grid">
-            <div class="kpi-tile">
-              <div class="kpi-label">Cash Collected Today</div>
-              <div class="kpi-value"></div>
-              <div class="kpi-sub">no live source yet</div>
-            </div>
-            <div class="kpi-tile">
-              <div class="kpi-label">Pipeline Movement</div>
-              <div class="kpi-value"></div>
-              <div class="kpi-sub">stage changes today</div>
-            </div>
-            <div class="kpi-tile">
-              <div class="kpi-label">Close Rate (30d)</div>
-              <div class="kpi-value"></div>
-              <div class="kpi-sub">booked → decision rendered</div>
-            </div>
-            <div class="kpi-tile">
-              <div class="kpi-label">Show Rate</div>
-              <div class="kpi-value"></div>
-              <div class="kpi-sub">booked calls kept, 7d avg</div>
-            </div>
-            <div class="kpi-tile">
-              <div class="kpi-label">Cost / Funded Client</div>
-              <div class="kpi-value"></div>
-              <div class="kpi-sub">needs ad spend (migration 038)</div>
-            </div>
-            <div class="kpi-tile">
-              <div class="kpi-label">Funded Today</div>
-              <div class="kpi-value"></div>
-              <div class="kpi-sub">Card Stacking + Alt-Fin combined</div>
-            </div>
-          </div>
-
-          <!-- Nothing on this screen reads platform health. There is no status
-               feed for the bureau portals, the job queue, the payment provider
-               or the compliance checks, so this pane states that it has no
-               source rather than showing a number. Do not put a value back here
-               until something fetches one. -->
-          <div class="feed-title eyebrow">CC-10 / Platform Health</div>
-          <div class="empty-rail">Nothing to show yet. Bureau portals, job backlog, error rate and payment status will appear here once this screen reads them from a live source. It does not read one today, so treat no news as no information — not as all clear.</div>
-
-        </div>
-      </section>
-
-    </div>
 
   </main>
 
@@ -1066,7 +1067,11 @@ document.querySelectorAll('.rail-toggle').forEach(function(t){
       var val = tiles[i].querySelector(".kpi-value");
       var sub = tiles[i].querySelector(".kpi-sub");
       var v = map[i].value;
-      if (v == null || v === "" || v === "—") v = "0";
+      /* Missing is missing. A dash is not a measured zero. */
+      if (v == null || v === "" || v === "—") {
+        if (val) val.textContent = "—";
+        continue;
+      }
       if (val) val.textContent = String(v);
       if (sub && map[i].sub) sub.textContent = map[i].sub;
     }

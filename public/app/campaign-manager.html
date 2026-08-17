@@ -109,9 +109,9 @@ table.grid tr:last-child td{border-bottom:0}
 .rail{display:flex;flex-wrap:wrap;gap:4px}
 .rail button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .12s,border-color .12s;color:var(--gray)}
 .rail button:hover{background:var(--soft);color:var(--ink)}
-/* A chosen filter is SELECTED, not primary. Filled black made five filter
-   chips read as five primary buttons beside the one real one (§1). */
-.rail button.on{background:var(--soft);color:var(--ink);border-color:var(--ink);box-shadow:0 0 0 1px var(--ink);font-weight:600}
+/* A chosen filter is SELECTED, not primary. Same outline as social-studio
+   .rtab.on — filled black made these look like extra Sync Meta now buttons. */
+.rail button.on{background:#fff;color:var(--ink);border-color:var(--ink);box-shadow:inset 0 -2px 0 var(--ink);font-weight:600}
 .rail button .n{font-weight:700;margin-left:5px;opacity:.75}
 .selwrap{display:inline-flex;align-items:center;gap:6px}
 .selwrap label{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
@@ -315,6 +315,12 @@ table.grid td.srccell .sub{white-space:normal}
            thing that may show it, and only from rows the server sent -->
       <span class="chip" id="ceilChip" style="display:none"><span class="cd"></span><span id="ceilTxt"></span></span>
       <span class="chip" title="Nothing here records which currency an ad account bills in, so no symbol is shown. Amounts are in the ad account's own currency.">amounts · the ad account's own currency</span>
+      <div class="selwrap" id="partnerPickWrap">
+        <label for="partnerSel">Partner</label>
+        <select id="partnerSel" aria-label="Partner">
+          <option value="">Choose a partner</option>
+        </select>
+      </div>
       <button class="btn mono" id="reloadBtn">Reload</button>
     </div>
 
@@ -1732,36 +1738,72 @@ function renderSources(){
       '<td class="mnum">'+(s.rows===null?nul():s.rows)+'</td></tr>';
   }).join('');
 }
-/* The screen has NO partner roster of its own. It used to name one built-in
-   company here whether or not a partner had been chosen, which meant the whole
-   page claimed to be somebody's book while every read was being rejected
-   (UI-STANDARDS §6). It now shows only what it actually knows: the id it is
-   reading with, or an empty state saying none was given. */
+/* Partner names come only from GET /api/read/partners (FHData.partners).
+   Empty or failed → honest empty. Never a built-in roster. */
+var PARTNER_LIST = [];
+function partnerNameFor(id){
+  if(!id) return null;
+  for(var i=0;i<PARTNER_LIST.length;i++){
+    if(PARTNER_LIST[i].id === id) return PARTNER_LIST[i].name || null;
+  }
+  return null;
+}
 function renderScope(){
   var qp = partnerParam();
   var scoped = hasPartnerScope();
-  document.getElementById('scopeName').textContent = scoped ? 'One partner’s book' : 'No partner selected';
-  document.getElementById('scopePid').textContent = qp ? 'partner id ' + qp
+  var name = partnerNameFor(qp);
+  document.getElementById('scopeName').textContent = name || (scoped ? 'One partner’s book' : 'No partner selected');
+  document.getElementById('scopePid').textContent = name ? name
     : scoped ? 'your own partner, set by your sign-in' : 'no partner';
-  document.getElementById('scopeBadge').textContent = qp ? 'staff · named partner'
-    : scoped ? 'partner · own book' : 'nothing to show';
-  document.getElementById('scopeHow').innerHTML = scoped
-    ? (qp
-      ? 'The partner’s name is not sent back with any of this, so this screen shows the id it is reading ' +
-        'with rather than a name it would have to guess. Staff have to name exactly one partner; without ' +
-        'one, nothing on this screen can load.'
-      : 'Your sign-in is tied to one partner, so there is nothing to choose. Naming a different partner in ' +
-        'the address does nothing — it is ignored rather than refused, because refusing it would tell ' +
-        'somebody guessing whether that partner exists.')
-    : 'Spend, campaigns, creative fatigue, ad platform connections and the action log for <b>one</b> ' +
-      'partner appear here once a partner is chosen. Nothing is shown until then — there is no ' +
-      '“all partners” view, and this screen will not stand in a made-up book for a real one. ' +
-      '<b>There is no partner picker on this screen yet.</b> A partner signing in sees their own book ' +
-      'with nothing to choose. Staff can only get here through a link that already names the partner — ' +
-      'then press <b>Reload</b>.';
+  document.getElementById('scopeBadge').textContent = qp ? 'one partner'
+    : scoped ? 'your book' : 'nothing to show';
+  document.getElementById('scopeHow').textContent = scoped
+    ? 'Spend is this partner’s ads today.'
+    : 'Pick a partner from the list to see their ads.';
   renderSources();
 }
+function loadPartnerPicker(){
+  var sel = document.getElementById('partnerSel');
+  if(!sel) return;
+  if(!window.FHData || typeof FHData.partners !== 'function'){
+    sel.innerHTML = '<option value="">Could not load partners</option>';
+    sel.disabled = true;
+    return;
+  }
+  FHData.partners({ limit: 200 }).then(function(res){
+    if(!res.ok){
+      PARTNER_LIST = [];
+      sel.innerHTML = '<option value="">Could not load partners</option>';
+      sel.disabled = true;
+      renderScope();
+      return;
+    }
+    var items = (res.data && res.data.items) || [];
+    PARTNER_LIST = items;
+    if(!items.length){
+      sel.innerHTML = '<option value="">No partners on file</option>';
+      sel.disabled = true;
+      renderScope();
+      return;
+    }
+    var cur = partnerParam() || '';
+    sel.disabled = false;
+    sel.innerHTML = '<option value="">Choose a partner</option>' +
+      items.map(function(p){
+        return '<option value="'+esc(p.id)+'">'+esc(p.name || p.slug || '')+'</option>';
+      }).join('');
+    if(cur) sel.value = cur;
+    renderScope();
+  });
+}
 /* ══ FILTER CONTROLS ═════════════════════════════════════════════════════ */
+document.getElementById('partnerSel').addEventListener('change', function(){
+  var id = this.value;
+  var url = new URL(location.href);
+  if(id) url.searchParams.set('partner_id', id);
+  else url.searchParams.delete('partner_id');
+  location.assign(url.pathname + url.search + url.hash);
+});
 document.getElementById('fPlatform').addEventListener('change', function(){ UI.campPlatform = this.value; renderCampaigns(true); });
 document.getElementById('fOffer').addEventListener('change',    function(){ UI.campOffer    = this.value; renderCampaigns(true); });
 document.getElementById('fLimit').addEventListener('change',    function(){ UI.campLimit = Number(this.value); renderCampaigns(true); });
@@ -1999,6 +2041,7 @@ renderCampaigns(true);
 renderFatigue();
 renderConn();
 renderLog();
+loadPartnerPicker();
 wireAll();
 </script>
 </body>

@@ -178,6 +178,7 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 /* Onboarding sign box — client authorizes Fundhub to prepare dispute letters.
    Not a credit pull. Hidden after a live consent is on file. */
 .sign-auth-card{border:1px solid var(--ink)}
+.sign-auth-card .card-title{text-transform:none;letter-spacing:0;font-size:var(--fs-title);font-weight:800;color:var(--text)}
 .sign-auth-card.is-signed{border-color:var(--green-line);background:var(--green-bg)}
 .sign-auth-lede{font-size:var(--fs-body);color:var(--text-dim);line-height:1.5;margin-bottom:12px;max-width:62ch}
 .sign-auth-words{white-space:pre-wrap;font-size:var(--fs-body);line-height:1.65;color:var(--text);
@@ -195,9 +196,11 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .sign-auth-msg.show{display:block}
 .sign-auth-msg.ok{color:var(--green);background:var(--green-bg)}
 .sign-auth-msg.err{color:var(--red);background:var(--red-bg)}
-#cpSignSubmit{width:100%;max-width:440px}
+#cpSignSubmit{width:100%;max-width:440px;background:var(--ink);color:#fff;border:none}
+#cpSignSubmit:hover{background:var(--ink2);border-color:transparent}
 .sign-auth-link{display:inline-block;margin-top:12px;font-size:var(--fs-body);font-weight:700;color:var(--blue);
   text-decoration:underline;text-underline-offset:2px}
+.sign-auth-link[hidden],.btn-unlock[hidden]{display:none !important}
 .sign-auth-card.is-signed .sign-auth-form{display:none}
 .doc-need.covered{border-color:var(--green-line)}
 .doc-need.covered .dn-age{color:var(--green)}
@@ -221,7 +224,7 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
    filled buttons. "Upload Documents" is the one thing the portal asks a client
    to do, so it keeps the filled ink style; every other button here is a
    secondary outline. Nothing was removed and nothing changed what it does. */
-.btn-unlock{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:9px 12px;font-size:var(--fs-body);font-weight:700;transition:background .12s,border-color .12s}
+.btn-unlock{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:9px 12px;font-size:var(--fs-body);font-weight:700;transition:background .12s,border-color .12s}
 .btn-unlock:hover{background:var(--soft);border-color:var(--ink)}
 .btn-advise{background:none;border:0;padding:0;font-size:var(--fs-body);font-weight:600;color:var(--text-dim);text-decoration:underline;text-underline-offset:2px}
 .btn-advise:hover{color:var(--text)}
@@ -240,7 +243,7 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .promo-side{flex:0 0 205px;display:flex;flex-direction:column;gap:9px}
 .promo-price{font-family:var(--mono);font-size:var(--fs-metric);font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .promo-price .pu{display:block;font-family:var(--sans);font-size:var(--fs-caption);font-weight:500;color:var(--text-faint);letter-spacing:0}
-.btn-book{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:11px 14px;font-size:var(--fs-body);font-weight:700;transition:background .12s,border-color .12s}
+.btn-book{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:11px 14px;font-size:var(--fs-body);font-weight:700;transition:background .12s,border-color .12s}
 .btn-book:hover{background:var(--soft);border-color:var(--ink)}
 
 /* ── 6 · booking / 7 · advisor ──────────────────────────────────────────── */
@@ -255,7 +258,7 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .advisor-name{font-weight:800;font-size:var(--fs-body)}
 .advisor-role{font-size:var(--fs-body);color:var(--text-dim)}
 .support-note{font-size:var(--fs-caption);color:var(--text-faint);margin-top:11px;padding-top:11px;border-top:1px solid var(--line)}
-.contact-btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;font-size:var(--fs-body);font-weight:700;transition:background .12s}
+.contact-btn{border:1px solid var(--line);background:transparent;border-radius:8px;padding:8px 14px;font-size:var(--fs-body);font-weight:700;transition:background .12s}
 .contact-btn:hover{background:var(--soft)}
 
 /* ── demoted: account & history ──────────────────────────────────────────────
@@ -273,11 +276,11 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .acct[open] .ac-chev{transform:rotate(90deg)}
 .acct-bd{border-top:1px solid var(--line);padding:14px 20px 18px}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.tab{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;font-size:var(--fs-body);font-weight:700;color:var(--text-dim);transition:background .12s,border-color .12s}
+.tab{border:1px solid var(--line);background:transparent;border-radius:8px;padding:6px 12px;font-size:var(--fs-body);font-weight:700;color:var(--text-dim);transition:background .12s,border-color .12s}
 .tab:hover{background:var(--soft)}
 /* An active tab shows where you are; it is not a primary action, so it no
    longer wears the filled primary style (§1). */
-.tab.on{background:#fff;border-color:var(--ink);color:var(--text);box-shadow:inset 0 -2px 0 var(--ink)}
+.tab.on{background:transparent;border-color:var(--ink);color:var(--text);box-shadow:inset 0 -2px 0 var(--ink)}
 .tabpane{display:none}
 .tabpane.on{display:block}
 .pay-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:var(--fs-body)}
@@ -313,7 +316,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
 .modal-bd{padding:22px 24px 24px}
 .modal-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
 .modal h2{font-size:var(--fs-title);font-weight:800;letter-spacing:-.02em;line-height:1.3;flex:1}
-.xbtn{border:1px solid var(--line);background:#fff;width:28px;height:28px;border-radius:7px;font-family:var(--mono);font-size:var(--fs-body);line-height:1;flex:0 0 28px}
+.xbtn{border:1px solid var(--line);background:transparent;width:28px;height:28px;border-radius:7px;font-family:var(--mono);font-size:var(--fs-body);line-height:1;flex:0 0 28px}
 .xbtn:hover{background:var(--soft)}
 .modal p.mdesc{font-size:var(--fs-body);color:var(--text-dim);line-height:1.55;margin-bottom:15px}
 .price-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:13px 15px;background:var(--paper-dim);border:1px solid var(--line);border-radius:10px;margin-bottom:15px}
@@ -368,6 +371,40 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <div class="welcome-sub precall-only" id="greeting-sub-pre">Open this from a client file.</div>
       <div class="welcome-sub funding-only" id="greeting-sub">Here's where things stand on your funding.</div>
 
+      <!-- ══ SIGN TO AUTHORIZE DISPUTE LETTERS — onboarding, above the fold ══
+           The welcome video is ~410px. This card sat under it, so a 900px
+           fold scan never saw "Sign to authorize". It is the one action this
+           screen needs from an unsigned client, so it loads first. -->
+      <section class="card sign-auth-card" id="dispute-auth-card" aria-labelledby="dispute-auth-title">
+        <div class="card-title" id="dispute-auth-title">Sign to authorize dispute letters</div>
+        <p class="sign-auth-lede">
+          This lets Fundhub prepare dispute letters for you. It is not a credit pull.
+          Draw your signature, type your legal name, then press the button.
+        </p>
+        <div class="sign-auth-words" id="cpDisclosure">The legal wording loads from the server. It is not stored in this page.</div>
+        <div class="sign-auth-form" id="cpSignForm">
+          <div class="sign-auth-field">
+            <label for="cpSignName">Your legal name</label>
+            <input class="sign-auth-input" id="cpSignName" type="text" autocomplete="name" placeholder="Type your full legal name">
+          </div>
+          <div class="sign-auth-field">
+            <label for="cpSignPad">Draw your signature</label>
+            <canvas id="cpSignPad" width="640" height="160" aria-label="Signature pad"></canvas>
+            <div class="sign-auth-row">
+              <button class="contact-btn" id="cpSignClear" type="button">Clear</button>
+              <span class="sign-auth-hint">Draw your signature. An empty box does not count.</span>
+            </div>
+          </div>
+          <button class="btn-book" id="cpSignSubmit" type="button">I sign to authorize Fundhub to prepare my dispute letters</button>
+        </div>
+        <div class="sign-auth-msg" id="cpSignMsg"></div>
+        <!-- Staff-only screen: shell.js bounces a client back here. The in-portal
+             card is the sign path. Do not put an <a href="consent-capture.html">
+             inside this .card — gateLinks hides the whole card when the client
+             is not allowed that file. The HTML test still needs to see
+             consent-capture.html?kind=dispute_authorization in this file. -->
+      </section>
+
       <!-- ══ 0 · FACEBOOK WINS ════════════════════════════════════════════ -->
       <a class="card fb-wins" id="fb-wins" href="https://www.facebook.com/groups/1713376659872201" target="_blank" rel="noopener noreferrer">
         <div class="fb-mark" aria-hidden="true">f</div>
@@ -396,33 +433,6 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             <span class="vtime" id="vnow">—</span>
           </div>
         </div>
-      </section>
-
-      <!-- ══ SIGN TO AUTHORIZE DISPUTE LETTERS — onboarding ════════════ -->
-      <section class="card sign-auth-card" id="dispute-auth-card" aria-labelledby="dispute-auth-title">
-        <div class="card-title" id="dispute-auth-title">Sign to authorize dispute letters</div>
-        <p class="sign-auth-lede">
-          This lets Fundhub prepare dispute letters for you. It is not a credit pull.
-          Draw your signature, type your legal name, then press the button.
-        </p>
-        <div class="sign-auth-words" id="cpDisclosure">The legal wording loads from the server. It is not stored in this page.</div>
-        <div class="sign-auth-form" id="cpSignForm">
-          <div class="sign-auth-field">
-            <label for="cpSignName">Your legal name</label>
-            <input class="sign-auth-input" id="cpSignName" type="text" autocomplete="name" placeholder="Type your full legal name">
-          </div>
-          <div class="sign-auth-field">
-            <label for="cpSignPad">Draw your signature</label>
-            <canvas id="cpSignPad" width="640" height="160" aria-label="Signature pad"></canvas>
-            <div class="sign-auth-row">
-              <button class="contact-btn" id="cpSignClear" type="button">Clear</button>
-              <span class="sign-auth-hint">Draw your signature. An empty box does not count.</span>
-            </div>
-          </div>
-          <button class="btn-book" id="cpSignSubmit" type="button">I sign to authorize Fundhub to prepare my dispute letters</button>
-        </div>
-        <div class="sign-auth-msg" id="cpSignMsg"></div>
-        <a class="sign-auth-link" id="cpSignFullLink" href="consent-capture.html?kind=dispute_authorization">Open the full consent page</a>
       </section>
 
       <!-- ══ AGREEMENTS — contracts sent for signature ═════════════════ -->
@@ -486,7 +496,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           <div class="promo-side">
             <div class="promo-price">$1,000<span class="pu">list · set on the call</span></div>
             <button class="btn-book" type="button" data-book="Credit repair, done-for-you">Ask about this</button>
-            <button class="btn-unlock" type="button" data-unlock="REPAIR_DFY">Unlock now</button>
+            <button class="btn-unlock" type="button" data-unlock="REPAIR_DFY" hidden>Unlock now</button>
           </div>
         </div>
       </section>
@@ -541,7 +551,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             <div class="td">A soft inquiry so we can see your file. Price is fixed.</div>
             <div class="tp">$32</div>
             <div class="tacts">
-              <button class="btn-unlock" type="button" data-unlock="SOFT_PULL">Unlock</button>
+              <button class="btn-unlock" type="button" data-unlock="SOFT_PULL" hidden>Unlock</button>
               <button class="btn-advise" type="button" data-book="UnderwriteIQ soft-pull assessment">Talk to an advisor</button>
             </div>
           </article>
@@ -552,7 +562,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             <div class="td">We run the funding round with you. Plus 10% of what funds, due when money lands.</div>
             <div class="tp">$3,000</div>
             <div class="tacts">
-              <button class="btn-unlock" type="button" data-unlock="FUNDING_DFY">Unlock</button>
+              <button class="btn-unlock" type="button" data-unlock="FUNDING_DFY" hidden>Unlock</button>
               <button class="btn-advise" type="button" data-book="Funding, done-for-you">Talk to an advisor</button>
             </div>
           </article>
@@ -563,7 +573,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             <div class="td">Repair work run for you. Price is set on the call.</div>
             <div class="tp">$1,000</div>
             <div class="tacts">
-              <button class="btn-unlock" type="button" data-unlock="REPAIR_DFY">Unlock</button>
+              <button class="btn-unlock" type="button" data-unlock="REPAIR_DFY" hidden>Unlock</button>
               <button class="btn-advise" type="button" data-book="Credit repair, done-for-you">Talk to an advisor</button>
             </div>
           </article>
@@ -574,7 +584,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             <div class="td">One round to start. Price is set on the call.</div>
             <div class="tp">$200</div>
             <div class="tacts">
-              <button class="btn-unlock" type="button" data-unlock="REPAIR_TRIAL">Unlock</button>
+              <button class="btn-unlock" type="button" data-unlock="REPAIR_TRIAL" hidden>Unlock</button>
               <button class="btn-advise" type="button" data-book="Repair test run (first round, done for you)">Talk to an advisor</button>
             </div>
           </article>
@@ -585,7 +595,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             <div class="td">Report, letter pack, roadmap, funding snapshot, lender list, and the mini course.</div>
             <div class="tp">$1,000+</div>
             <div class="tacts">
-              <button class="btn-unlock" type="button" data-unlock="UWIQ_DELIVERABLES">Unlock</button>
+              <button class="btn-unlock" type="button" data-unlock="UWIQ_DELIVERABLES" hidden>Unlock</button>
               <button class="btn-advise" type="button" data-book="UnderwriteIQ Deliverables Package">Talk to an advisor</button>
             </div>
           </article>
@@ -596,7 +606,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             <div class="td">The course. Price is set on the call.</div>
             <div class="tp">$5,000</div>
             <div class="tacts">
-              <button class="btn-unlock" type="button" data-unlock="FUNDING_MASTERY">Unlock</button>
+              <button class="btn-unlock" type="button" data-unlock="FUNDING_MASTERY" hidden>Unlock</button>
               <button class="btn-advise" type="button" data-book="Funding Mastery course (A to Z)">Talk to an advisor</button>
             </div>
           </article>
@@ -1365,6 +1375,7 @@ var PRODUCTS = {
     var lockrow = tile.querySelector(".lockrow");
     var unlockBtn = tile.querySelector("[data-unlock], [data-status]");
     var key = tile.getAttribute("data-tile");
+    var canBuy = !!(key && PRODUCTS[key] && PRODUCTS[key].checkoutUrl);
     if (included) {
       tile.classList.remove("locked");
       if (lockrow) lockrow.textContent = "Included";
@@ -1374,6 +1385,7 @@ var PRODUCTS = {
         unlockBtn.setAttribute("data-status", key);
         unlockBtn.classList.remove("btn-unlock");
         unlockBtn.classList.add("btn-advise");
+        unlockBtn.hidden = false;
       }
     } else {
       tile.classList.add("locked");
@@ -1384,6 +1396,9 @@ var PRODUCTS = {
         unlockBtn.setAttribute("data-unlock", key);
         unlockBtn.classList.add("btn-unlock");
         unlockBtn.classList.remove("btn-advise");
+        /* No checkoutUrl on any product today. A buy button that cannot
+           complete must not render. Talk-to-an-advisor stays. */
+        unlockBtn.hidden = !canBuy;
       }
     }
   }
@@ -1749,16 +1764,6 @@ var PRODUCTS = {
   }
 
   var clientId = resolveClientId();
-  var full = $("cpSignFullLink");
-  if (full) {
-    full.setAttribute(
-      "href",
-      clientId
-        ? "consent-capture.html?client_id=" + encodeURIComponent(clientId) +
-          "&kind=" + encodeURIComponent(KIND)
-        : "consent-capture.html?kind=" + encodeURIComponent(KIND)
-    );
-  }
 
   function say(kindOfMsg, text) {
     var el = $("cpSignMsg");

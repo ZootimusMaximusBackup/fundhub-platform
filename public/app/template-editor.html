@@ -231,14 +231,6 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
     </div>
 
     <div class="content fh-maxw">
-      <div class="stats">
-        <div class="stat"><div class="eyebrow">TE-00 <span class="sep">/</span> MESSAGES</div><div class="sv" id="kAll">—</div><div class="sd">pieces of copy you can edit</div></div>
-        <div class="stat"><div class="eyebrow">TE-00 <span class="sep">/</span> TEXTS</div><div class="sv" id="kSms">—</div><div class="sd">sent as SMS</div></div>
-        <div class="stat"><div class="eyebrow">TE-00 <span class="sep">/</span> EMAILS</div><div class="sv" id="kEmail">—</div><div class="sd">sent as email</div></div>
-        <div class="stat"><div class="eyebrow">TE-00 <span class="sep">/</span> SWITCHED OFF</div><div class="sv" id="kOff">—</div><div class="sd">waiting on approval</div></div>
-        <div class="stat" style="border-color:var(--alert)"><div class="eyebrow">TE-00 <span class="sep">/</span> DRAFT HAZARD</div><div class="sv" id="kDraft" style="color:var(--alert)">—</div><div class="sd">placeholder copy — blocked from send</div></div>
-      </div>
-
       <div class="card" id="draftBanner" style="display:none;margin-bottom:14px;border-color:var(--alert)">
         <div class="card-hd"><span class="badge b-alert">DRAFT templates — will not send</span></div>
         <div class="card-bd" style="font-size:var(--fs-body);line-height:1.6;color:var(--gray)">
@@ -246,16 +238,6 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
           <ul id="draftList" class="mono" style="margin-top:8px;font-size:var(--fs-caption);padding-left:18px"></ul>
         </div>
       </div>
-
-      <details class="card" id="explainCard">
-        <summary class="card-hd"><span class="badge b-info">How this works</span></summary>
-        <div class="card-bd" style="font-size:var(--fs-body);line-height:1.7;color:var(--gray)">
-          <p><strong>Editing the words switches the message off.</strong> The system will not send a message whose wording has not been approved. So when you change the copy here and save it, that message stops going out straight away.</p>
-          <p style="margin-top:8px"><strong>An owner or admin turns it back on.</strong> They have to read the new wording on this screen first — there is no way to approve from the list without opening it. Who approved it and when is recorded on the message.</p>
-          <p style="margin-top:8px"><strong>The short name cannot be changed, and nothing can be deleted here.</strong> Automations and journeys find a message by its short name. Change it and the message quietly stops going out with nothing reporting a problem. Each message shows what is using it.</p>
-          <p class="mono" style="margin-top:8px;font-size:var(--fs-caption)">Nothing on this screen sends anything. There is no test-send button because nothing transmits yet.</p>
-        </div>
-      </details>
 
       <div class="layout">
         <div class="alist" id="tplList">
@@ -338,6 +320,24 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
           </div>
         </div>
       </div>
+
+      <div class="stats" style="margin-top:16px">
+        <div class="stat"><div class="eyebrow">TE-00 <span class="sep">/</span> MESSAGES</div><div class="sv" id="kAll">—</div><div class="sd">pieces of copy you can edit</div></div>
+        <div class="stat"><div class="eyebrow">TE-00 <span class="sep">/</span> TEXTS</div><div class="sv" id="kSms">—</div><div class="sd">sent as SMS</div></div>
+        <div class="stat"><div class="eyebrow">TE-00 <span class="sep">/</span> EMAILS</div><div class="sv" id="kEmail">—</div><div class="sd">sent as email</div></div>
+        <div class="stat"><div class="eyebrow">TE-00 <span class="sep">/</span> SWITCHED OFF</div><div class="sv" id="kOff">—</div><div class="sd">waiting on approval</div></div>
+        <div class="stat" style="border-color:var(--alert)"><div class="eyebrow">TE-00 <span class="sep">/</span> DRAFT HAZARD</div><div class="sv" id="kDraft" style="color:var(--alert)">—</div><div class="sd">placeholder copy — blocked from send</div></div>
+      </div>
+
+      <details class="card" id="explainCard" style="margin-top:14px">
+        <summary class="card-hd"><span class="badge b-info">How this works</span></summary>
+        <div class="card-bd" style="font-size:var(--fs-body);line-height:1.7;color:var(--gray)">
+          <p><strong>Editing the words switches the message off.</strong> The system will not send a message whose wording has not been approved. So when you change the copy here and save it, that message stops going out straight away.</p>
+          <p style="margin-top:8px"><strong>An owner or admin turns it back on.</strong> They have to read the new wording on this screen first — there is no way to approve from the list without opening it. Who approved it and when is recorded on the message.</p>
+          <p style="margin-top:8px"><strong>The short name cannot be changed, and nothing can be deleted here.</strong> Automations and journeys find a message by its short name. Change it and the message quietly stops going out with nothing reporting a problem. Each message shows what is using it.</p>
+          <p class="mono" style="margin-top:8px;font-size:var(--fs-caption)">Nothing on this screen sends anything. There is no test-send button because nothing transmits yet.</p>
+        </div>
+      </details>
     </div>
 
     <div class="foot"><span class="pulse"></span><span>systems nominal · fundhub.ai</span></div>
@@ -420,6 +420,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
   }
 
   var rows = [], sel = null, isAdmin = false;
+  var PAGE_SIZE = 25, listPage = 0;
 
   /* Same resolution finance-os.html uses, and for the same reason: shell.js
      writes the role from an async session call, so reading its cached value
@@ -469,10 +470,28 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
       $("draftList").innerHTML = "";
     }
 
+    var items = [];
+    drafts.forEach(function (r) { items.push({ r: r, draft: true }); });
+    groups.forEach(function (g) {
+      rows.filter(function (r) { return r.channel === g.key && !isDraftRow(r); })
+        .forEach(function (r) { items.push({ r: r, draft: false, title: g.title }); });
+    });
+    var pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+    if (listPage > pages - 1) listPage = pages - 1;
+    if (listPage < 0) listPage = 0;
+    var slice = items.slice(listPage * PAGE_SIZE, listPage * PAGE_SIZE + PAGE_SIZE);
     var html = "";
-    if (drafts.length) {
-      html += '<div class="agrp" style="color:var(--alert)">DRAFT — blocked from send · ' + drafts.length + "</div>";
-      drafts.forEach(function (r) {
+    var lastTitle = "";
+    slice.forEach(function (it) {
+      var r = it.r;
+      if (it.draft && lastTitle !== "DRAFT") {
+        lastTitle = "DRAFT";
+        html += '<div class="agrp" style="color:var(--alert)">DRAFT — blocked from send · ' + drafts.length + "</div>";
+      } else if (!it.draft && lastTitle !== it.title) {
+        lastTitle = it.title;
+        html += '<div class="agrp">' + esc(it.title) + "</div>";
+      }
+      if (it.draft) {
         html +=
           '<div class="aitem' + (sel && sel.id === r.id ? " on" : "") + '" data-id="' + esc(r.id) + '">' +
             '<span class="dot" style="background:var(--alert)"></span>' +
@@ -480,13 +499,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
             '<span class="ac" title="Placeholder copy — dispatch refuses this">DRAFT</span>' +
             '<span class="ast">off</span>' +
           "</div>";
-      });
-    }
-    groups.forEach(function (g) {
-      var mine = rows.filter(function (r) { return r.channel === g.key && !isDraftRow(r); });
-      if (!mine.length) return;
-      html += '<div class="agrp">' + esc(g.title) + " · " + mine.length + "</div>";
-      mine.forEach(function (r) {
+      } else {
         var on = r.compliance_passed;
         var used = r.used_by || {};
         html +=
@@ -496,9 +509,20 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
             (used.locked ? '<span class="ac" title="' + esc(used.summary || "") + '">in use</span>' : "") +
             '<span class="ast ' + (on ? "live" : "") + '">' + (on ? "on" : "off") + "</span>" +
           "</div>";
-      });
+      }
     });
+    if (items.length > PAGE_SIZE) {
+      var from = listPage * PAGE_SIZE + 1;
+      var to = Math.min(items.length, (listPage + 1) * PAGE_SIZE);
+      html += '<div class="agrp" id="tplPager" style="justify-content:space-between">' +
+        '<button type="button" id="tplPrev"' + (listPage === 0 ? " disabled" : "") + '>Previous</button>' +
+        '<span>' + from + "–" + to + " of " + items.length + "</span>" +
+        '<button type="button" id="tplNext"' + (listPage >= pages - 1 ? " disabled" : "") + '>Next</button></div>';
+    }
     $("tplList").innerHTML = html || '<div class="agrp">No messages found</div>';
+    var prev = $("tplPrev"); var next = $("tplNext");
+    if (prev) prev.onclick = function () { listPage -= 1; renderList(); };
+    if (next) next.onclick = function () { listPage += 1; renderList(); };
     Array.prototype.forEach.call($("tplList").querySelectorAll(".aitem"), function (el) {
       el.onclick = function () { select(el.getAttribute("data-id")); };
     });
