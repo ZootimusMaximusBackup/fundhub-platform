@@ -1,0 +1,14 @@
+{
+  "agentPrompt": "Name this agent",
+  "staff": {
+    "ok": true,
+    "count": 0,
+    "ownerCount": 0,
+    "demoNameCount": 0,
+    "roles": []
+  },
+  "liveContract": {
+    "hasDeclineBtn": false,
+    "hasDeclineLabel": false
+  }
+}

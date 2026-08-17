@@ -1,0 +1,21 @@
+{
+  "batch": "specialist-desk",
+  "at": "2026-08-17T23:44:55.279Z",
+  "screen": "inquiry-remover.html",
+  "role": "inquiry_specialist (shown as Specialist)",
+  "states": ["loading", "empty", "error", "full"],
+  "widths": [1440, 390],
+  "clicks": "clicks.json",
+  "unitTests": "88/88 repair-cases + cases labels + inquiry-remover-view (incl. FHVIEW match)",
+  "lint": "1279 files parse clean",
+  "lighthouse": "local mocked HTML, mobile 390px Slow 4G + 4x CPU, LCP 496ms (budget 2500ms). Not a live Lighthouse run against fundhub.ai.",
+  "live_playwright": "not run — 100/100 is against https://fundhub.ai after deploy",
+  "humanClick": "UNVERIFIED — needs deploy",
+  "migration_173": "file ready; not applied. Local DATABASE_URL is the app role (permission denied). Netlify MIGRATION_DATABASE_URL is set but CLI masks it.",
+  "notes": [
+    "Inquiries | Repair toggle on the existing Specialist row. No new sidebar href.",
+    "Send letters is the only mail click. Mocked send does not hit PostGrid.",
+    "Empty copy is honest: no fake rows. Open Pipeline is the empty action.",
+    "UI-STANDARDS §1 is one job per page. Owner asked for two jobs on one page so the sidebar stays one row."
+  ]
+}

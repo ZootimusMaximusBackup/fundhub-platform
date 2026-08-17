@@ -28,7 +28,7 @@ flowchart TD
     CAN --> A_social[social — 4 routes]
     CAN --> A_top_level[Everything else — 7 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 120 routes]
+    WHO -->|Yes| CANT[Blocked — 121 routes]
     CANT --> B_auth[Signing in and out — 3 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_chat[chat — 4 blocked]
@@ -43,12 +43,11 @@ flowchart TD
     CANT --> B_partner_brand[partner-brand — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
-    CANT --> B_read[Reading data — 46 blocked]
+    CANT --> B_read[Reading data — 47 blocked]
     CANT --> B_repair[repair — 2 blocked]
     CANT --> B_social[social — 1 blocked]
     CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 24 blocked]
-    WHO -->|Yes| UNV[UNVERIFIED — 1 route whose gate could not be traced]
 ```
 
 ## What they can reach
@@ -112,7 +111,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**120 of 168 routes.**
+**121 of 168 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -222,6 +221,7 @@ flowchart TD
 | `/api/read/portal-summary` | GET | staff, client |
 | `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/proxy-sessions` | GET | owner, funding_advisor |
+| `/api/read/repair-cases` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/sales-floor` | GET | owner, admin, sales_manager |
 | `/api/read/search` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/staff` | GET | owner, admin, sales_manager |
@@ -239,12 +239,7 @@ flowchart TD
 
 ## UNVERIFIED
 
-The gate on these could not be traced from the code, so this page does not claim
-either way whether this journey reaches them. Each one is a question for a human.
-
-| Route | Methods | Who the code lets in |
-|---|---|---|
-| `/api/gifts/message-blaster` | GET, HEAD | — |
+_None — every route's gate was traced to its source._
 
 ## How to check this yourself
 

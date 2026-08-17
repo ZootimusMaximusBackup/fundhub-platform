@@ -274,7 +274,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
         <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
         <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
         <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
-        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Specialist</span></a>
         <a class="navitem" href="company-brain.html"><span class="ico">◎</span><span class="lbl">Company Brain</span></a>
 </div></div>
 
@@ -491,8 +491,8 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
                 <div class="prevtop"><i></i><i></i><i></i><span class="prevurl" id="pvUrl">yourbrand.fundhub-partners.com</span></div>
                 <div class="pv-hero">
                   <div class="pv-wm" id="pvWm">Your Brand</div>
-                  <div class="pv-h1">Financing for your business, <span class="g">matched</span> through review.</div>
-                  <div class="pv-sub">Submit an application, review your options with an advisor, and move forward on your terms.</div>
+                  <div class="pv-h1" id="pvH1">Financing for your business, <span class="g">matched</span> through review.</div>
+                  <div class="pv-sub" id="pvSub">Submit an application, review your options with an advisor, and move forward on your terms.</div>
                   <span class="pv-btn">Start application</span>
                 </div>
                 <div class="pv-body">
@@ -853,6 +853,10 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     if (tools) tools.style.display = SUITE.enabled ? "block" : "none";
     var ownerRow = $("suiteOwnerRow");
     if (ownerRow) ownerRow.style.display = viewerRole === "owner" && MODE === "partner" ? "flex" : "none";
+    var onBtn = $("suiteOnBtn");
+    var offBtn = $("suiteOffBtn");
+    if (onBtn) onBtn.style.display = SUITE.enabled ? "none" : "";
+    if (offBtn) offBtn.style.display = SUITE.enabled ? "" : "none";
   }
 
   function refreshSuite() {
@@ -967,6 +971,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
         var kLive = $("kLive");
         if (kLive) kLive.textContent = String(liveN);
         fillHistorySelects();
+        paintPagePreview(items);
         if (!items.length) {
           list.innerHTML = '<div class="hint">No page drafts yet. Select funnels above, then Create pages.</div>';
           return;
@@ -1088,7 +1093,12 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       body: JSON.stringify({ partner_id: partnerId, name: D.entity || D.name })
     }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
       .then(function (res) {
-        if (!res.ok) { suiteMsg(res.message || res.error || "Wordmark failed"); return; }
+        if (!res.ok) {
+          suiteMsg(res.message || (res.error === "not_found"
+            ? "That partner is not on file."
+            : (res.error || "Wordmark failed")));
+          return;
+        }
         if (res.brand && res.brand.wordmark_url) {
           D.logo = res.brand.wordmark_url;
           paint();

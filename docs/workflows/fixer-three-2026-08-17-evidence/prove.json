@@ -1,0 +1,79 @@
+{
+  "ranAt": "2026-08-17T21:26:03.926Z",
+  "base": "https://fundhub.ai",
+  "email": "owner@fundhub.ai",
+  "items": {
+    "campaigns": {
+      "optionCount": 9,
+      "options": [
+        "Choose a partner",
+        "DEMO Partner — Northlight Capital",
+        "DEMO Partner — Quillcrest White Label",
+        "E2E WL Book LLC",
+        "E2E WL Click Co",
+        "E2E WL Click17 Co",
+        "principalread Alpha",
+        "principalread Bravo",
+        "TEST — White-Label Partner Role"
+      ],
+      "disabled": false,
+      "couldNotLoad": false,
+      "afterPickUrl": "https://fundhub.ai/app/campaign-manager.html?partner_id=94796e0e-d012-4987-8721-676093aaed79",
+      "afterPickHasPartner": true
+    },
+    "commandCenter": {
+      "apiOk": true,
+      "apiDisplay": {
+        "cash": "$0",
+        "funded": "0",
+        "funded_amount": "$0",
+        "close": "—",
+        "show": "—",
+        "cpf": "—",
+        "clients": "3",
+        "pipeline_movement": "1"
+      },
+      "apiKpis": {
+        "cash_collected_cents": 0,
+        "close_rate": null,
+        "funded_count": 0,
+        "booked_count": 0
+      },
+      "painted": [
+        {
+          "label": "Cash Collected Today",
+          "value": "$0"
+        },
+        {
+          "label": "Pipeline Movement",
+          "value": "1"
+        },
+        {
+          "label": "Close Rate (30d)",
+          "value": "—"
+        },
+        {
+          "label": "Show Rate",
+          "value": "—"
+        },
+        {
+          "label": "Cost / Funded Client",
+          "value": "—"
+        },
+        {
+          "label": "Funded Today",
+          "value": "0"
+        }
+      ]
+    },
+    "content": {
+      "apiOk": false,
+      "apiMessage": "Something went wrong saving content.",
+      "tileCount": 0,
+      "saveVisible": false,
+      "uploadVisible": false,
+      "notice": "Something went wrong saving content."
+    }
+  },
+  "loginUrl": "https://fundhub.ai/app/command-center.html"
+}

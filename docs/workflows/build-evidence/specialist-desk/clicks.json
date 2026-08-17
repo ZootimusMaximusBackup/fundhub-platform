@@ -1,0 +1,40 @@
+{
+  "at": "2026-08-17T23:44:55.279Z",
+  "clicks": [
+    {
+      "state": "empty",
+      "sel": "a[href=\"pipeline.html\"]",
+      "disabled": false
+    },
+    {
+      "state": "full",
+      "sel": "[data-repair-row]",
+      "disabled": false
+    },
+    {
+      "state": "full",
+      "sel": "[data-act=repair-send]",
+      "disabled": false
+    },
+    {
+      "state": "full",
+      "sel": "[data-confirm-parse]",
+      "disabled": false
+    },
+    {
+      "state": "full",
+      "sel": "#tab-inquiries",
+      "disabled": false
+    },
+    {
+      "state": "full",
+      "sel": ".bureau-chip",
+      "disabled": false
+    },
+    {
+      "state": "full",
+      "sel": "#tab-repair",
+      "disabled": false
+    }
+  ]
+}

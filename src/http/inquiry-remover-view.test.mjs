@@ -538,7 +538,9 @@ test("VIEW exposes every export the screen calls, so a rename cannot half-land",
     "maskedSsnLabel", "canReveal", "formatRevealed",
     "createRowState", "beginWrite", "settleWrite", "failWrite",
     "attemptsDelta", "pendingLabel",
-    "caseUiStatus", "caseCallState", "buildCaseSendRequest"
+    "caseUiStatus", "caseCallState", "buildCaseSendRequest",
+    "bureauLabel", "repairStagePill", "buildRepairSendRequest",
+    "buildRepairConfirmParseRequest"
   ]) {
     assert.ok(VIEW[name], name + " is missing from VIEW");
   }
@@ -558,6 +560,40 @@ test("buildCaseSendRequest: human send only, portal needs reference", () => {
   });
   assert.equal(p.body.portal_confirmation, "REF-1");
   assert.equal(p.body.mail_service_level, "priority");
+});
+
+test("buildRepairSendRequest: human mail only, letters required", () => {
+  const r = VIEW.buildRepairSendRequest({
+    clientId: CLIENT,
+    mail: true,
+    letters: [{ id: ID, bureau: "EX", html: "<p>Round 1</p>" }]
+  });
+  assert.equal(r.path, "/api/repair/send");
+  assert.equal(r.body.mail, true);
+  assert.equal(r.body.client_id, CLIENT);
+  assert.equal(r.body.letters[0].bureau, "EX");
+  assert.equal(r.body.letters[0].letter_id, ID);
+  assert.throws(
+    () => VIEW.buildRepairSendRequest({ clientId: CLIENT, mail: true, letters: [] }),
+    /no letters ready/
+  );
+  assert.throws(
+    () => VIEW.buildRepairSendRequest({ clientId: CLIENT, letters: [{ bureau: "EX", html: "x" }] }),
+    /press send/
+  );
+});
+
+test("buildRepairConfirmParseRequest: posts the parse id", () => {
+  const r = VIEW.buildRepairConfirmParseRequest({ responseId: ID });
+  assert.equal(r.path, "/api/repair/exceptions");
+  assert.equal(r.body.action, "confirm_parse");
+  assert.equal(r.body.responseId, ID);
+});
+
+test("repair pane calls the copied VIEW, not a missing window.VIEW", () => {
+  assert.match(HTML_SRC, /var V = window\.FHInquiryView;/);
+  assert.match(HTML_SRC, /V\.buildRepairSendRequest/);
+  assert.match(HTML_SRC, /V\.buildRepairConfirmParseRequest/);
 });
 
 /* ── rules that live in the HTML itself ────────────────────────────────────── */

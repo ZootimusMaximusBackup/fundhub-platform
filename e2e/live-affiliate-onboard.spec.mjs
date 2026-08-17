@@ -91,7 +91,7 @@ test.describe("live affiliate onboard", () => {
     await expect(page.locator("#reflink")).toBeVisible();
     await expect(page.locator("#copyLink")).toBeVisible();
     await expect(page.locator("#funnel")).toBeVisible();
-    await expect(page.locator("body")).toContainText(/AF-03/i);
+    await expect(page.locator("#funnel")).toContainText(/clicks|sign-ups|funded/i);
 
     const token = await page.evaluate(() => {
       try { return localStorage.getItem("fh_token") || ""; } catch { return ""; }

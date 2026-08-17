@@ -1,0 +1,11 @@
+{
+  "at": "2026-08-17T23:44:55.263Z",
+  "note": "Playwright LCP on mocked local HTML, mobile 390px, Slow 4G + 4x CPU. Not a live Lighthouse run against fundhub.ai.",
+  "budget_lcp_ms": 2500,
+  "lcp_ms": 496,
+  "pass": true,
+  "nav": {
+    "dcl": 527.8000000119209,
+    "load": 728.4000000059605
+  }
+}

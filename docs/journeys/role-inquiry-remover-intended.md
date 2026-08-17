@@ -14,11 +14,40 @@
 > page's judgment calls with a human's the next time this journey changes on
 > purpose — that is the point of having two files at all.
 
-What a staff member with role `inquiry_specialist` should be able to do.
+What a staff member with role `inquiry_specialist` (shown as **Specialist**) should be able to do.
 
-> **Who this is, in the code:** the screen is the Inquiry Remover (src/http/inquiry-remover-view.mjs); the role key behind it is 'inquiry_specialist' (src/http/read-api.mjs ROLE_SETS.STAFF, and api/pii.mjs IDENTITY_ROLES). The journey is named for the product, the role for the column.
+> **Who this is, in the code:** the screen is the Specialist desk (`public/app/inquiry-remover.html`); the role key is still `inquiry_specialist`. They run inquiry removal and credit repair on one page with a toggle. No second sidebar row.
 
-## In one picture
+## Specialist desk (observable)
+
+The person signs in as Specialist and lands on this page.
+
+1. The side-menu row says **Specialist**. There is no extra row for repair.
+2. A toggle at the top says **Inquiries** and **Repair**. Inquiries is on first.
+3. Top-left number answers **Need me** — how many files need a person today.
+4. **Inquiries** side: the existing inquiry queue. Send on an inquiry case still requires a click. Phone inquiry work stays on hold.
+5. **Repair** side: a list of repair files (stage, round, letters ready). Empty copy: "No repair files yet." Loading shows grey bars. A failed load says the list could not load.
+6. Click a repair row: items and letters. **Send letters** appears only when a letter body is ready. Nothing mails until that click.
+7. Stuck files (stalled cards / bureau answers that need a look) show only if this role may see them. Specialist, owner, and admin may. Confirming a bureau answer is a click.
+
+```mermaid
+flowchart TD
+    START([Specialist opens the desk]) --> AUTH{Signed in as inquiry_specialist?}
+    AUTH -->|No| OUT[Refused]
+    AUTH -->|Yes| TOGGLE{Which side?}
+    TOGGLE -->|Inquiries| INQ[Inquiry queue]
+    INQ --> INQSEND[Person presses Send on a case]
+    TOGGLE -->|Repair| REP[Repair file list]
+    REP --> EMPTY[No files yet]
+    REP --> ROW[Open a file]
+    ROW --> NOSEND[No Send letters if nothing is ready]
+    ROW --> SEND[Person presses Send letters]
+    SEND --> MAIL[Paper mail path]
+```
+
+Ground truth: `GET /api/read/repair-cases` returns the list. `GET /api/read/repair-cases?client_id=` returns letters. `POST /api/repair/send` with `mail: true` is the only mail click. `GET/POST /api/repair/exceptions` is Specialist + owner + admin.
+
+## In one picture (routes)
 
 ```mermaid
 flowchart TD

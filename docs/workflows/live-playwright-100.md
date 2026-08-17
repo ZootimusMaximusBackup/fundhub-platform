@@ -1,6 +1,6 @@
 # Live Playwright 100 — shared board
 
-**Status:** **100/100 PASS** (2026-08-15)
+**Status:** **100/100 PASS** (2026-08-17 re-verify after UI-audit Run 4, commit `17c20bc`)
 **Canonical:** `https://fundhub.ai` · funnel `https://apply.fundhub.ai`
 **Gate law:** No manual review from Chris until AI-run Playwright scores **100/100** against live; then exactly one manual pass.
 **Command:** `npm run test:e2e:live`
@@ -88,6 +88,7 @@ All non-`live-*` specs under `e2e/` use `e2e/harness.mjs` + static server (`npm 
 | 9 | **24/24 = 100** | — | 2026-08-16 Workflow 2 added 5 affiliate ids; full `test:e2e:live` 26/26 |
 | 10 | **31/31 = 100** | — | 2026-08-16 partner sites + Brand Studio writes; added 7 white-label ids after green |
 | 11 | **31/31 = 100** | — | 2026-08-16 Workflow 3 re-ran full `test:e2e:live` **26/26** after partner lockout wait |
+| 12 | **26/26 = 100** (31/31 ids) | first pass 24/26 (`AF-03` gone; Brand Studio in a closed nav group) | honest test updates; re-run green. UI-audit Run 4 live hashes match `17c20bc` |
 
 ## Product fix shipped
 

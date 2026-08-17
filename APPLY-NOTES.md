@@ -2,9 +2,8 @@
 
 Everything below was tested live in a sandbox: real Postgres, all 25 migrations
 applied clean, real login → session → clients → client detail → tasks →
-mark-done, role gates (closer blocked from inquiry, owner passes), 404s. The
-only untested hop is the proxy → production inquiry-removal-ai (sandbox can't
-reach vercel.app; the failure path returns a clean 502).
+mark-done, role gates (closer blocked from inquiry, owner passes), 404s.
+Phone inquiry is on hold. `/api/inquiry` does not call an external host.
 
 ## 1. Commit both deltas
 
@@ -23,18 +22,6 @@ public/fh.css  fh.js  login.html  index.html
 public/closer.html  ops.html  tasks.html  inquiry.html
 ```
 
-**inquiry-removal-ai** — unzip `inquiry-removal-ai-console-api.zip` into that
-repo root. Two new endpoints + vercel.json with their routes added (only
-change to an existing file, verified valid JSON):
-
-```
-api/cases.js         ← GET case list for the console
-api/case-update.js   ← notes / case_status / ai_call_status writeback
-vercel.json          ← + the two routes
-```
-
-Push both to ZootimusMaximusBackup. The IRA Vercel project redeploys itself.
-
 ## 2. Netlify site (one time, ~5 min)
 
 Netlify → **Add new site → Import an existing project → GitHub →
@@ -48,8 +35,7 @@ ZootimusMaximusBackup/fundhub-platform**.
 | Key | Value |
 |---|---|
 | `DATABASE_URL` | Neon **pooled** connection string, with `?sslmode=require` |
-| `INQUIRY_API_SECRET` | the same `API_SECRET` the inquiry-removal-ai project uses |
-| `INQUIRY_API_BASE` | optional — defaults to `https://inquiry-removal-ai-sigma.vercel.app` |
+| `INQUIRY_API_SECRET` | gitignored `.env` / Netlify. Phone inquiry is on hold; this does not turn calls on. |
 | `DASHBOARD_SECRET` | optional — keeps the old `dashboard.html?key=` links working |
 
 Redeploy after setting envs.
@@ -79,9 +65,9 @@ Passwords never print; re-running the same email just updates it.
 3. **Ops** — blockers column shows "Never Pulled" reds; open a client, mark a
    task Done, watch the count drop.
 4. **Tasks** — the whole queue, filter by series.
-5. **Inquiry** (as Alvin or you) — live cases from Airtable. If it says
-   upstream unreachable, `INQUIRY_API_SECRET` is missing/wrong. Launch/Retry
-   fires a real Bland call — test on a test case (QA AX01B) first.
+5. **Inquiry** (as Alvin or you) — the Inquiry Remover screen uses Fundhub’s
+   own case list. Phone launch is on hold. `/api/inquiry` answers not
+   configured until a host is set on purpose.
 6. Sign in as Jordan → no Ops/Inquiry in the nav; hitting /api/inquiry
    directly → 403. That's the access-levels model, live.
 

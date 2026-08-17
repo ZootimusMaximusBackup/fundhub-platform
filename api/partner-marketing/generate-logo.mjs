@@ -30,15 +30,18 @@ export default async function handler(req, res) {
         : { kind: "staff" },
       async (tx) => {
         await assertSuiteEnabled(tx, partnerId);
-        const brand = (await tx.query(
-          `SELECT * FROM partner_brand WHERE partner_id = $1`, [partnerId]
+        const partner = (await tx.query(
+          `SELECT org_id FROM partners WHERE id = $1`, [partnerId]
         )).rows[0];
-        if (!brand) {
-          const e = new Error("brand not found");
+        if (!partner) {
+          const e = new Error("partner not found");
           e.code = "NOT_FOUND";
           throw e;
         }
-        const name = String((req.body || {}).name || brand.entity_name || "").trim();
+        const brand = (await tx.query(
+          `SELECT * FROM partner_brand WHERE partner_id = $1`, [partnerId]
+        )).rows[0];
+        const name = String((req.body || {}).name || brand?.entity_name || "").trim();
         if (!name) {
           const e = new Error("name required");
           e.code = "name_required";
@@ -46,18 +49,22 @@ export default async function handler(req, res) {
         }
         const url = wordmarkDataUrl({
           name,
-          displayFace: brand.display_face,
-          ink: brand.ink,
-          paper: brand.paper
+          displayFace: brand?.display_face,
+          ink: brand?.ink,
+          paper: brand?.paper
         });
         const saved = (await tx.query(
-          `UPDATE partner_brand SET wordmark_url = $2, updated_at = now()
-            WHERE partner_id = $1
-          RETURNING *`,
-          [partnerId, url]
+          `INSERT INTO partner_brand (org_id, partner_id, entity_name, wordmark_url)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (partner_id) DO UPDATE SET
+             wordmark_url = EXCLUDED.wordmark_url,
+             entity_name = COALESCE(NULLIF(EXCLUDED.entity_name, ''), partner_brand.entity_name),
+             updated_at = now()
+           RETURNING *`,
+          [partner.org_id, partnerId, name, url]
         )).rows[0];
         await recordUsage(tx, {
-          orgId: brand.org_id,
+          orgId: partner.org_id,
           partnerId,
           purpose: "logo",
           inputTokens: 0,
@@ -69,7 +76,10 @@ export default async function handler(req, res) {
     );
     return res.status(200).json({ ok: true, brand: redact(out) });
   } catch (err) {
-    if (err.code === "NOT_FOUND") return res.status(404).json({ ok: false, error: "not_found" });
+    if (err.code === "NOT_FOUND") {
+      return res.status(404).json({ ok: false, error: "not_found",
+        message: "That partner is not on file." });
+    }
     if (err.code === "name_required") {
       return res.status(400).json({ ok: false, error: "name_required",
         message: "Save a brand name first." });

@@ -13,11 +13,35 @@ Binding law: `docs/UI-STANDARDS.md`, `docs/PERF-STANDARDS.md`, `fundhub-brand.cs
 
 **Nothing ships without ground truth.** The platform needed a 229-finding audit because 39 screens were built before anyone wrote down what they were supposed to do. A new screen that ships without its `-intended.md` is a future finding, guaranteed. That file is what makes the screen auditable at all.
 
+## How you write to Chris
+
+Third or fourth grade reading level. Short sentences. No jargon. No status
+codes. No cryptic shorthand. If a ten year old could not follow it, rewrite it.
+
+Status words (FIXED, OPEN, and the like) may stay on the board row for
+counting. The sentence to Chris has to explain what is going on.
+
+## Language — never a refusal
+
+Never phrase a handoff as a no. "Will not be built", "BLOCKED", and "cannot"
+sound like you are saying no. Say what is actually happening:
+
+- "This needs new code, so I'm building it now."
+- "Nothing is broken here. The old photo was taken before someone fixed it."
+- "That number isn't in the database yet, so there's nothing to show."
+
+Status words can stay on the board row for counting. The sentence to Chris
+has to explain what is going on.
+
 ## Step 1 — THE PLAN GATE (before any code)
 
-Answer all seven in one block, then STOP and wait for "go." One word from Chris proceeds; anything else revises. Never skip the gate, never guess an answer.
+Answer all seven in one block.
 
-When the gate-relay process is running on this Mac, do not only wait in the IDE. Write `.fundhub-relay/gates/<id>.json` with `{ question, options, context, session }` — `question` must be a one-word decision, never status — then `node scripts/gate-relay/index.mjs wait <id>`. Read the decision file and proceed. The relay never edits app code.
+**Standing GO:** Fixer handed you an endpoint (or other new code) needed to close a named board row. Do not wait. Do not text Chris. Build it.
+
+**Wait for "go"** only on genuinely new scope (a new screen or feature he has not already named), missing data, or a real judgment call. One word from Chris proceeds; anything else revises. Never skip that gate, never guess an answer. That is what reaches his phone.
+
+When the gate-relay process is running on this Mac, do not only wait in the IDE. Write `.fundhub-relay/gates/<id>.json` with `{ question, options, context, session }`. `question` is the full ask in plain English — what is ready and what he is deciding — never a stub like "Build?" and never status. He answers in one word. Example: "Plan ready — closer now-and-next read, one role, no new buttons. Reply GO or REVISE." Then `node scripts/gate-relay/index.mjs wait <id>`. Read the decision file and proceed. The relay never edits app code.
 
 1. **Role** — who is this for? One role. Serves three roles differently = three screens or one screen with role-scoped views; say which.
 2. **One job** — one sentence. Two sentences = two screens.
@@ -48,6 +72,8 @@ Missing any of the five = not done. Do not report done. Chat claims of success c
 
 ## Handoff
 
-State plainly: built, stubbed, unverified. Then stop.
+Tell Chris what is going on in plain English. What you built. What still
+needs data (name what is missing). What you have not checked yet. Never
+"will not be built", "BLOCKED", or "cannot".
 
-Builder never audits its own screen and never turns into Fixer for something it noticed — note it for the board instead. The Auditor grades new work like everything else.
+Builder never audits its own screen. Something it noticed that is a fix → note it for the board (Auditor grades new work). Something it noticed that needs more build to close the same row → keep going.

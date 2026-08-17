@@ -1,0 +1,1381 @@
+{
+  "count": 172,
+  "rows": [
+    {
+      "line": 222,
+      "screen": "PATTERN \u2014 27 shell screens",
+      "role": "all",
+      "standard": "\u00a73 three text sizes, max four",
+      "expected": "\u22644 font sizes per screen",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/pipeline-mlfix/audit.json \u00b7 docs/workflows/ui-audit-evidence/brand-studio-mlfix/audit.json \u00b7 docs/workflows/ui-audit-evidence/affiliat"
+    },
+    {
+      "line": 223,
+      "screen": "PATTERN \u2014 27 shell screens",
+      "role": "all",
+      "standard": "\u00a71 max content width 1280 px, centered",
+      "expected": "content column capped \u22641280 px",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/command-center/restamp/font-layout.json \u00b7 campaign-manager/restamp/font-layout.json"
+    },
+    {
+      "line": 224,
+      "screen": "PATTERN \u2014 every staff/owner screen",
+      "role": "closer, funding_advisor, inquiry_specialist, owner",
+      "standard": "\u00a74 \u22647 top-level nav items; no item the role can't use; two levels max",
+      "expected": "\u22647 items, all usable by the role",
+      "severity": "**HIGH** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/pipeline/restamp/1440-fold.png"
+    },
+    {
+      "line": 226,
+      "screen": "PATTERN \u2014 every shell screen",
+      "role": "all",
+      "standard": "\u00a75 every visible control works (reachable) \u00b7 \u00a78 profile top-right",
+      "expected": "header controls clickable; profile chip sits in the header row",
+      "severity": "**HIGH** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/company-brain/restamp/1440-after-click.png"
+    },
+    {
+      "line": 230,
+      "screen": "PATTERN \u2014 20 screens",
+      "role": "all",
+      "standard": "\u00a72 8 px scale only; 12-column grid, never 5; even card rows",
+      "expected": "8/16/24/32/48/64 spacing; rows of 3/4/6/12",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/campaign-manager-mlfix/1440-fold.png \u00b7 docs/workflows/ui-audit-evidence/social-studio-mlfix/1440-fold.png \u00b7 docs/workflows/ui-audit-ev"
+    },
+    {
+      "line": 231,
+      "screen": "PATTERN \u2014 12 screens",
+      "role": "owner, funding_advisor",
+      "standard": "\u00a79 default view understandable in 10 s \u00b7 \u00a71 one job \u00b7 \u00a710",
+      "expected": "body text is for the role, not for the developer",
+      "severity": "**HIGH** (D verifier confirmed for the SQL/file:line class) \u00b7 the \"agent-facing copy\" sub-class is OPEN-QUESTION (no rule names it) \u00b7 **CONFIRMED-FIXED** (SQL / `file:line` on campaign + creative only"
+    },
+    {
+      "line": 232,
+      "screen": "PATTERN \u2014 campaign-manager, social-studio, creative-factory",
+      "role": "owner",
+      "standard": "\u00a76 never fake sample data as real \u00b7 \u00a75 controls act on real scope",
+      "expected": "partner picker lists real partners; a rejected read shows an error/empty state",
+      "severity": "**CRITICAL** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/campaign-manager/restamp/1440-fold.png \u00b7 social-studio/restamp/1440-fold.png \u00b7 creative-factory/restamp/1440-fold.png"
+    },
+    {
+      "line": 233,
+      "screen": "PATTERN \u2014 campaign-manager, social-studio, creative-factory",
+      "role": "owner",
+      "standard": "\u00a71 one primary action",
+      "expected": "one filled button per screen",
+      "severity": "**HIGH** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/campaign-manager/nonsales-verify/1440-fold.png \u00b7 social-studio/nonsales-verify/1440-fold.png \u00b7 creative-factory/nonsales-verify/1440-fol"
+    },
+    {
+      "line": 234,
+      "screen": "PATTERN \u2014 brand-studio, affiliate, client-portal",
+      "role": "partner, affiliate, client",
+      "standard": "\u00a75 every action answers back truthfully \u00b7 \u00a76 text true",
+      "expected": "success shown only after the server confirms",
+      "severity": "**CRITICAL** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/brand-studio/restamp/1440-after-submit.png \u00b7 affiliate/restamp/probe.json \u00b7 client-portal/restamp/1440-after-unlock.png"
+    },
+    {
+      "line": 235,
+      "screen": "PATTERN \u2014 brand-studio, client-portal",
+      "role": "partner, client",
+      "standard": "\u00a74/\u00a75 no control the role lacks permission for \u00b7 \u00a76 error text true",
+      "expected": "portal screens call routes that admit the portal principal",
+      "severity": "**CRITICAL** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-portal/restamp/client-refused.json"
+    },
+    {
+      "line": 236,
+      "screen": "PATTERN \u2014 brand-studio, affiliate, client-portal (+ every data.js screen)",
+      "role": "partner, affiliate, client, staff",
+      "standard": "\u00a71 primary action above the fold \u00b7 \u00a75 controls fully clickable",
+      "expected": "status strip does not cover controls",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/brand-studio-mlfix/1440-fold.png \u00b7 docs/workflows/ui-audit-evidence/affiliate-mlfix/1440-full.png"
+    },
+    {
+      "line": 275,
+      "screen": "closer-dashboard.html (bare)",
+      "role": "closer",
+      "standard": "\u00a710 closer: 'who am I calling next?' top-left \u00b7 \u00a75 no 'coming soon' UI",
+      "expected": "The screen the rail calls \u2605 Closer Dashboard leads with today's calls; tiles show numbers or do not render.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/closer-dashboard/restamp-fix/1440-fold.png \u00b7 tiles hidden; pipeline from closer-now"
+    },
+    {
+      "line": 276,
+      "screen": "closer-dashboard.html (bare)",
+      "role": "closer",
+      "standard": "\u00a76 states \u2014 empty state is not the full layout \u00b7 \u00a75 controls that do nothing do not render",
+      "expected": "Without a client the calculators are hidden and only the gate shows.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/closer-dashboard/restamp-fix/1440-fold.png \u00b7 calculators hidden without a client"
+    },
+    {
+      "line": 277,
+      "screen": "closer-dashboard.html (bare)",
+      "role": "closer",
+      "standard": "\u00a73 metric value 2\u20133\u00d7 its label \u00b7 11px floor \u00b7 \u00a71 top-left",
+      "expected": "Tile values dominate their labels; nothing under 11px; the number that matters top-left.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/closer-dashboard-mlfix/1440-fold.png"
+    },
+    {
+      "line": 278,
+      "screen": "closer-dashboard.html?client_id=8556bedc-\u2026 (TEST client)",
+      "role": "closer",
+      "standard": "\u00a75 no 'coming soon' UI in production; every control works",
+      "expected": "Inputs change an answer or do not render.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/closer-dashboard-client/restamp-fix/1440-fold.png \u00b7 deal-math-typed.png \u00b7 deal-math-prove.json \u2014 typing deposit 500 changes ne"
+    },
+    {
+      "line": 279,
+      "screen": "closer-dashboard.html?client_id=8556bedc-\u2026 (TEST client)",
+      "role": "closer",
+      "standard": "\u00a71 one job \u00b7 \u00a76 full state",
+      "expected": "With a client loaded the screen says which client it is calculating for.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/closer-dashboard-client/restamp-fix/1440-fold.png \u00b7 heading paints TEST Client Role"
+    },
+    {
+      "line": 281,
+      "screen": "closer-call.html?client_id=8556bedc-\u2026 (TEST client)",
+      "role": "closer",
+      "standard": "\u00a75 controls that do nothing do not render \u00b7 disabled must look disabled",
+      "expected": "'Join call' either opens a link or is not shown; a disabled button is not styled as the primary.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/closer-call/restamp-fix/1440-fold.png \u00b7 Join disabled, grey, not filled"
+    },
+    {
+      "line": 282,
+      "screen": "closer-call.html?client_id=8556bedc-\u2026 (TEST client)",
+      "role": "closer",
+      "standard": "\u00a71 one primary action \u00b7 \u00a75 targets fully clickable",
+      "expected": "One filled button; the primary is not covered by anything.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/closer-call/restamp-fix/1440-fold.png \u00b7 Save right 1368, Chat left 1370, no overlap; Present/Send not filled"
+    },
+    {
+      "line": 283,
+      "screen": "closer-call.html?client_id=8556bedc-\u2026 (TEST client)",
+      "role": "closer",
+      "standard": "\u00a710 closer: today's calls top-left, not company metrics \u00b7 \u00a75 targets \u226540px",
+      "expected": "The next call is the first thing the eye lands on; buttons \u226540px.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/closer-call-mlfix/1440-fold.png"
+    },
+    {
+      "line": 285,
+      "screen": "closer-call.html (bare \u2014 from the nav)",
+      "role": "closer",
+      "standard": "\u00a76 no fake data as real \u00b7 error text true",
+      "expected": "A status chip shows the closer's real shift state; captions never tell a signed-in user they are not signed in.",
+      "severity": "**CRITICAL** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/closer-call-bare/restamp/1440-fold.png"
+    },
+    {
+      "line": 287,
+      "screen": "closer-call.html (bare \u2014 from the nav)",
+      "role": "closer",
+      "standard": "\u00a76 loading state resolves \u00b7 error text visible",
+      "expected": "'Loading\u2026' never sits on screen after settle; the 'needs ?client_id=' notice is readable.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/closer-call-bare/restamp-fix/1440-fold.png"
+    },
+    {
+      "line": 288,
+      "screen": "my-numbers.html",
+      "role": "closer",
+      "standard": "\u00a76 empty/action state \u2014 'one action to make it appear' \u00b7 \u00a75 every list the role must act on has an action",
+      "expected": "'Owed by you' rows open the call to log; the list says how many are shown.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/my-numbers/restamp-fix/1440-full.png \u00b7 owed rows link to closer-call; Showing 10 of 13"
+    },
+    {
+      "line": 289,
+      "screen": "my-numbers.html",
+      "role": "closer",
+      "standard": "\u00a77 timestamps (relative <24h, absolute after) \u00b7 plain language",
+      "expected": "Overdue work says how overdue it is, in words a person reads",
+      "severity": "**HIGH** +verifier-added \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/my-numbers/restamp-fix/1440-full.png \u00b7 5d overdue / Held window ended Aug 12, 5:30 PM \u2014 no GMT object"
+    },
+    {
+      "line": 290,
+      "screen": "my-numbers.html",
+      "role": "closer",
+      "standard": "\u00a77 every metric has a comparison",
+      "expected": "If the screen promises a comparison, the tiles carry one",
+      "severity": "**HIGH** +verifier-added \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/my-numbers/restamp-fix/1440-fold.png \u00b7 label vs last month; Deposits closed was 0"
+    },
+    {
+      "line": 291,
+      "screen": "my-numbers.html",
+      "role": "closer",
+      "standard": "\u00a77 timestamps: relative <24h, absolute 'Aug 14, 3:02 PM'",
+      "expected": "Human dates.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/my-numbers-mlfix/1440-full.png"
+    },
+    {
+      "line": 292,
+      "screen": "my-numbers.html",
+      "role": "closer",
+      "standard": "\u00a77 every metric has a comparison",
+      "expected": "The section that promises 'vs your 90-day average' shows one; comparison data the API sends is used.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/my-numbers-mlfix/1440-full.png"
+    },
+    {
+      "line": 293,
+      "screen": "my-numbers.html",
+      "role": "closer",
+      "standard": "\u00a79 default view understandable \u00b7 \u00a76 empty says what will appear",
+      "expected": "Empty panels tell the closer what will appear; text is not repeated.",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/my-numbers-mlfix/1440-full.png"
+    },
+    {
+      "line": 295,
+      "screen": "contracts.html",
+      "role": "closer",
+      "standard": "\u00a74/\u00a75 no control the role lacks permission for",
+      "expected": "A closer never sees a button whose call the API refuses for the closer.",
+      "severity": "**CRITICAL** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/contracts/restamp/1440-fold.png"
+    },
+    {
+      "line": 296,
+      "screen": "contracts.html",
+      "role": "closer",
+      "standard": "\u00a75 destructive/outbound = confirm with consequence named",
+      "expected": "A button that emails clients confirms first, naming who gets mailed.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/contracts/restamp-fix/audit.md \u00b7 owner confirm names 4 people; closer still cannot see the button"
+    },
+    {
+      "line": 297,
+      "screen": "contracts.html",
+      "role": "closer",
+      "standard": "\u00a79 default view is for the role \u00b7 \u00a71 top-left is the number that matters",
+      "expected": "The first tile and the help card are about what a closer does here (send from the call, watch for signatures).",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/contracts-mlfix/1440-fold.png"
+    },
+    {
+      "line": 299,
+      "screen": "sales-floor.html",
+      "role": "sales_manager",
+      "standard": "\u00a710 sales manager: 'is the floor on pace?' \u2014 held/booked/closed today vs target",
+      "expected": "Top-left says today's held/booked/closed against a target.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/sales-floor/restamp-fix/1440-fold.png \u00b7 hero is Today booked/held/deposits; no daily target in staff_targets (named, not inven"
+    },
+    {
+      "line": 300,
+      "screen": "sales-floor.html",
+      "role": "sales_manager",
+      "standard": "\u00a76 states \u2014 text true",
+      "expected": "A verdict line describes what the numbers show.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/sales-floor/restamp-fix/1440-fold.png \u00b7 No deposits this month"
+    },
+    {
+      "line": 301,
+      "screen": "sales-floor.html",
+      "role": "sales_manager",
+      "standard": "\u00a75 buttons say what happens \u00b7 gate check",
+      "expected": "'Flag to marketing' names what it flags and is not offered when there is nothing to flag; the route admits the role.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/sales-floor-mlfix/1440-full.png"
+    },
+    {
+      "line": 302,
+      "screen": "sales-floor.html",
+      "role": "sales_manager",
+      "standard": "\u00a76 empty state says what will appear",
+      "expected": "Each empty panel explains itself once.",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/sales-floor-mlfix/1440-full.png"
+    },
+    {
+      "line": 304,
+      "screen": "calendar.html",
+      "role": "sales_manager",
+      "standard": "\u00a77 timestamps \u00b7 \u00a76 states true",
+      "expected": "'Then' lists what comes after 'Up next'; past-dated work is not shown as upcoming; anything older than 24h carries a date.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/calendar/restamp-fix/1440-fold.png \u00b7 Then: Nothing else dated after Up Next"
+    },
+    {
+      "line": 305,
+      "screen": "calendar.html",
+      "role": "sales_manager",
+      "standard": "\u00a76 no sample data as real \u00b7 \u00a77 timestamps \u00b7 numbers agree across screens",
+      "expected": "'Who's on today' lists real staff clocked in today; screens agree on who is on shift.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/calendar/restamp-fix/1440-fold.png \u00b7 Who's on today: Nobody clocked in; no DEMO staff"
+    },
+    {
+      "line": 306,
+      "screen": "calendar.html",
+      "role": "sales_manager",
+      "standard": "\u00a75 no demo/'coming soon' UI in production \u00b7 \u00a76 no sample data as real",
+      "expected": "A sales manager sees the live schedule only.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/calendar-mlfix/1440-fold.png"
+    },
+    {
+      "line": 307,
+      "screen": "calendar.html",
+      "role": "sales_manager",
+      "standard": "\u00a75 targets \u226540px \u00b7 controls that do nothing do not render",
+      "expected": "Toolbar controls \u226540px; 'Join Call' shown only when a link exists.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/calendar-mlfix/1440-fold.png"
+    },
+    {
+      "line": 309,
+      "screen": "closer-call.html (both runs)",
+      "role": "closer",
+      "standard": "\u00a75 every visible control works \u00b7 \u226540px targets",
+      "expected": "The \"Before you close\" compliance checklist records what the closer confirmed, or it does not render",
+      "severity": "**HIGH** +verifier-added \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/closer-call/restamp-fix/checklist-prove.json \u00b7 Save POST includes checklist call_recorded/month_14_cliff"
+    },
+    {
+      "line": 310,
+      "screen": "calendar.html vs closer-dashboard.html",
+      "role": "sales_manager\uff0fcloser",
+      "standard": "\u00a77 timestamps \u00b7 \u00a76 text true",
+      "expected": "Two screens in one app agree on what time it is, and an appointment time says which zone it is in",
+      "severity": "**HIGH** +verifier-added \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/calendar/restamp-fix/1440-fold.png \u00b7 both clocks America/New_York + EDT"
+    },
+    {
+      "line": 311,
+      "screen": "present.html?client_id (the screen the client sees)",
+      "role": "closer",
+      "standard": "\u00a76 error text in the user's words \u00b7 \u00a710 plain language",
+      "expected": "The client on a screen-share never reads an internal system name or a build note",
+      "severity": "**HIGH** +verifier-added \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/present-client/restamp-fix/1440-fold.png \u00b7 Your numbers are not on this file yet"
+    },
+    {
+      "line": 312,
+      "screen": "pipeline.html (re-run 16:23Z, after the fix deploy)",
+      "role": "closer",
+      "standard": "\u00a75 every visible control works \u00b7 destructive separated + confirmed",
+      "expected": "Archive renders only when a contact is selected, and is not adjacent to the safe filter controls.",
+      "severity": "**HIGH** (main session) \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/pipeline/restamp-fix/1440-fold.png \u00b7 Archive not in toolbar until a card is picked"
+    },
+    {
+      "line": 313,
+      "screen": "pipeline.html (re-run 16:23Z, after the fix deploy)",
+      "role": "closer",
+      "standard": "\u00a73 three sizes, max four \u2014 RE-CHECK",
+      "expected": "\u22644 sizes",
+      "severity": "**LOW** (main session) \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/pipeline-mlfix/audit.json"
+    },
+    {
+      "line": 317,
+      "screen": "present.html?client_id=8556bedc-\u2026 (TEST client)",
+      "role": "closer",
+      "standard": "\u00a75 big targets (\u226540px) \u00b7 \u00a71 one primary action",
+      "expected": "\u226540px hit areas; one filled button",
+      "severity": "**MEDIUM** (main session) \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/present-client-mlfix/1440-fold.png"
+    },
+    {
+      "line": 346,
+      "screen": "client-control-panel.html (bare)",
+      "role": "funding_advisor",
+      "standard": "\u00a76 empty state has one action / \u00a71 doable from the nav",
+      "expected": "Opening Client Control Panel from the nav offers a way to pick a client (search/select) so the screen can do its job.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-control-panel/nonsales-fix/1440-fold.png"
+    },
+    {
+      "line": 347,
+      "screen": "client-control-panel.html (bare and client)",
+      "role": "funding_advisor",
+      "standard": "\u00a75 no 'coming soon' UI in production",
+      "expected": "Controls that do nothing today do not render.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-control-panel-mlfix/audit.json"
+    },
+    {
+      "line": 348,
+      "screen": "client-control-panel.html (bare and client)",
+      "role": "funding_advisor",
+      "standard": "\u00a75 \u226540px targets / \u00a73 type",
+      "expected": "Section toggles are \u226540px tall; \u22644 text sizes; no 9px labels.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-control-panel-mlfix/audit.json"
+    },
+    {
+      "line": 350,
+      "screen": "client-control-panel.html?client_id=",
+      "role": "funding_advisor",
+      "standard": "\u00a76/\u00a77 empty value in alert colour",
+      "expected": "An empty Next Action reads as empty, not as an alert.",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-control-panel-mlfix/audit.json"
+    },
+    {
+      "line": 352,
+      "screen": "messaging.html",
+      "role": "funding_advisor",
+      "standard": "\u00a75 \u226540px targets",
+      "expected": "Primary 'Send' \u226544px; filter chips \u226540px.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/messaging-mlfix/1440-fold.png"
+    },
+    {
+      "line": 353,
+      "screen": "messaging.html",
+      "role": "funding_advisor",
+      "standard": "\u00a77 timestamps / \u00a710 advisor first question",
+      "expected": "Absolute time after 24h; the advisor's queue ('Needs reply') first.",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/messaging-mlfix/1440-fold.png"
+    },
+    {
+      "line": 356,
+      "screen": "documents.html",
+      "role": "funding_advisor",
+      "standard": "\u00a76/\u00a77 numbers on screen must be true",
+      "expected": "Class cards agree with the KPI tiles and the table.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/documents/restamp/1440-fold.png"
+    },
+    {
+      "line": 357,
+      "screen": "documents.html",
+      "role": "funding_advisor",
+      "standard": "\u00a73 type / \u00a72 spacing / \u00a75 targets",
+      "expected": "\u22644 text sizes; 8px spacing; \u226540px targets; numbers right-aligned.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/documents-mlfix/audit.json"
+    },
+    {
+      "line": 358,
+      "screen": "documents.html",
+      "role": "funding_advisor",
+      "standard": "\u00a75 state-dependent control",
+      "expected": "Already-active 'All' tab is not an enabled click target, or clicking it is harmless.",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/documents-mlfix/audit.json"
+    },
+    {
+      "line": 359,
+      "screen": "lenders.html",
+      "role": "funding_advisor",
+      "standard": "\u00a71 one primary action / \u00a75 targets",
+      "expected": "The filled button is the action the empty state asks for (Import CSV); targets \u226540px.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/lenders-mlfix/1440-fold.png"
+    },
+    {
+      "line": 360,
+      "screen": "lenders.html",
+      "role": "funding_advisor",
+      "standard": "\u00a78 familiarity / consistency (LOW)",
+      "expected": "Same header as other screens.",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/lenders-mlfix/1440-fold.png"
+    },
+    {
+      "line": 363,
+      "screen": "finance-os.html (bare and ?client_id=)",
+      "role": "funding_advisor",
+      "standard": "\u00a76 states \u2014 never a blank screen / \u00a71 fold",
+      "expected": "Screen paints its real layout (client picker, hero, panels) at load; a beta notice, if any, is a bar above the content.",
+      "severity": "**CRITICAL** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/finance-os/restamp/1440-bare-fold.png \u00b7 1440-client-fold.png"
+    },
+    {
+      "line": 364,
+      "screen": "finance-os.html?client_id=",
+      "role": "funding_advisor",
+      "standard": "\u00a75 every control works for THIS role \u2014 FINANCE-only controls must not render",
+      "expected": "Alert-trigger switches (change trigger) are hidden from a funding advisor, like Add account / Add card / Add a bill / Load & Clear sample data are.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/finance-os/nonsales-fix/1440-fold.png \u00b7 1440-full.png"
+    },
+    {
+      "line": 365,
+      "screen": "finance-os.html?client_id=",
+      "role": "funding_advisor",
+      "standard": "\u00a75 every action answers back",
+      "expected": "Clicking 'Ask' with an empty question either is disabled or tells the user to type a question.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/finance-os/restamp/1440-after-click.png"
+    },
+    {
+      "line": 366,
+      "screen": "finance-os.html?client_id=",
+      "role": "funding_advisor",
+      "standard": "\u00a72 layout / \u00a73 type",
+      "expected": "Rule descriptions in 'Text me when' read as normal paragraphs; \u22644 text sizes; no text under ~11px.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/finance-os-mlfix/audit.json"
+    },
+    {
+      "line": 368,
+      "screen": "company-brain.html",
+      "role": "funding_advisor",
+      "standard": "\u00a75 every visible control works",
+      "expected": "The BETA banner's 'Dismiss' button and the shell 'Search \u2318K' button are clickable.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/company-brain/restamp/1440-after-click.png"
+    },
+    {
+      "line": 370,
+      "screen": "inquiry-remover.html",
+      "role": "inquiry_specialist",
+      "standard": "\u00a76 error state says what failed / \u00a77 data-ink",
+      "expected": "No alert box unless there is an alert; a red box always carries a message and a next step.",
+      "severity": "**HIGH** +verifier-added \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/inquiry-remover/restamp/1440-fold.png"
+    },
+    {
+      "line": 371,
+      "screen": "inquiry-remover.html",
+      "role": "inquiry_specialist",
+      "standard": "\u00a76 error state \u2014 no empty/false alert",
+      "expected": "The system alert box is hidden until it has something to say.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/inquiry-remover/restamp/1440-fold.png"
+    },
+    {
+      "line": 372,
+      "screen": "inquiry-remover.html",
+      "role": "inquiry_specialist",
+      "standard": "\u00a77 metrics have comparisons / \u00a73 type",
+      "expected": "Queue Left / Worked / Calls / Confirmed carry a vs-yesterday or vs-target; \u22644 sizes.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** (type snap) \u00b7 **NO-DATA-SOURCE** (comparison \u2014 no vs-yesterday field) docs/workflows/ui-audit-evidence/inquiry-remover-mlfix/1440-fold.png"
+    },
+    {
+      "line": 391,
+      "screen": "command-center.html",
+      "role": "owner",
+      "standard": "\u00a76 no fake data as real",
+      "expected": "Agent pane and platform-health rows show live status or an honest empty/unknown state",
+      "severity": "**CRITICAL** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/command-center/restamp/1440-fold.png"
+    },
+    {
+      "line": 394,
+      "screen": "command-center.html",
+      "role": "owner",
+      "standard": "\u00a75 every control works / renders only if it does something",
+      "expected": "Feed filter chips only render when there is a feed to filter",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/command-center/restamp/1440-fold.png"
+    },
+    {
+      "line": 396,
+      "screen": "command-center.html",
+      "role": "owner",
+      "standard": "\u00a73 \u22644 text sizes, metric 2\u20133\u00d7 label",
+      "expected": "3\u20134 sizes; stage counts dominate labels",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/command-center-mlfix/1440-fold.png"
+    },
+    {
+      "line": 397,
+      "screen": "command-center.html",
+      "role": "owner",
+      "standard": "\u00a75 \u226540px targets",
+      "expected": "Hit areas \u226540px",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/command-center-mlfix/1440-fold.png"
+    },
+    {
+      "line": 398,
+      "screen": "command-center.html",
+      "role": "owner",
+      "standard": "\u00a72 8px scale / even rows",
+      "expected": "8/16/24/32 spacing; equal card widths per row",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/command-center-mlfix/1440-fold.png"
+    },
+    {
+      "line": 400,
+      "screen": "ops-admin.html",
+      "role": "owner",
+      "standard": "\u00a76 states / \u00a77 metrics",
+      "expected": "Company KPIs load and show cash, funded, close rate, cost/funded, new clients for the chosen period",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/ops-admin/restamp/1440-fold.png"
+    },
+    {
+      "line": 401,
+      "screen": "ops-admin.html",
+      "role": "owner",
+      "standard": "\u00a76 error/label text must be true",
+      "expected": "Period pill shows the real range for today (Aug 17)",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/ops-admin/restamp/1440-fold.png"
+    },
+    {
+      "line": 403,
+      "screen": "ops-admin.html",
+      "role": "owner",
+      "standard": "\u00a75 destructive = confirm with consequence",
+      "expected": "'Send what is waiting' and 'Pause sending' confirm what will go out / stop",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/ops-admin/restamp/1440-fold.png"
+    },
+    {
+      "line": 404,
+      "screen": "ops-admin.html",
+      "role": "owner",
+      "standard": "\u00a71 one primary action / \u00a73 type",
+      "expected": "One filled button; styled controls",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/ops-admin-mlfix/1440-fold.png"
+    },
+    {
+      "line": 405,
+      "screen": "ops-admin.html",
+      "role": "owner",
+      "standard": "\u00a72 layout polish",
+      "expected": "Header items fit on one line",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/ops-admin/restamp/header-wrap.json"
+    },
+    {
+      "line": 408,
+      "screen": "staff-teams.html",
+      "role": "owner",
+      "standard": "\u00a76 no fake data as real / \u00a75 every action answers back",
+      "expected": "Permission matrix reads and writes real role permissions",
+      "severity": "**CRITICAL** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/staff-teams/restamp/1440-permissions.png"
+    },
+    {
+      "line": 409,
+      "screen": "staff-teams.html",
+      "role": "owner",
+      "standard": "\u00a75 controls render only when they do something",
+      "expected": "No 'Revoke login' on a person who does not exist yet",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/staff-teams/restamp/1440-after-click.png"
+    },
+    {
+      "line": 410,
+      "screen": "staff-teams.html",
+      "role": "owner",
+      "standard": "\u00a76 no fake data as real",
+      "expected": "The 'New person' drawer shows only values that will exist after save",
+      "severity": "**HIGH** +verifier-added \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/staff-teams/restamp/1440-after-click.png"
+    },
+    {
+      "line": 411,
+      "screen": "staff-teams.html",
+      "role": "owner",
+      "standard": "\u00a78 familiar placement / \u00a71 fold",
+      "expected": "Drawer title and close control visible; footer actions reachable",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/staff-teams-mlfix/1440-fold.png"
+    },
+    {
+      "line": 412,
+      "screen": "staff-teams.html",
+      "role": "owner",
+      "standard": "\u00a77 metrics have a comparison / copy",
+      "expected": "Stat cards with a comparison; caption true",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** (caption is now on the roster) \u00b7 **NO-DATA-SOURCE** (no vs-yesterday) docs/workflows/ui-audit-evidence/staff-teams-mlfix/1440-fold.png"
+    },
+    {
+      "line": 413,
+      "screen": "staff-teams.html",
+      "role": "owner",
+      "standard": "\u00a75 controls do something today",
+      "expected": "'Refresh' appears once a person is picked",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/staff-teams-mlfix/1440-fold.png"
+    },
+    {
+      "line": 416,
+      "screen": "products-commissions.html",
+      "role": "owner",
+      "standard": "\u00a75 no coming-soon UI in production",
+      "expected": "Commission rules tab lists rules the owner can edit and save",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/products-commissions/restamp/1440-after-click.png"
+    },
+    {
+      "line": 417,
+      "screen": "products-commissions.html",
+      "role": "owner",
+      "standard": "\u00a76 label text must be true",
+      "expected": "Dates reflect today (Aug 17, 2026)",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/products-commissions/restamp/1440-fold.png"
+    },
+    {
+      "line": 418,
+      "screen": "products-commissions.html",
+      "role": "owner",
+      "standard": "\u00a77 tables right-align numbers",
+      "expected": "Default price / Min / Max right-aligned tabular",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/products-commissions-mlfix/1440-fold.png"
+    },
+    {
+      "line": 419,
+      "screen": "products-commissions.html",
+      "role": "owner",
+      "standard": "\u00a72 polish",
+      "expected": "Header on one line",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/products-commissions-mlfix/1440-fold.png"
+    },
+    {
+      "line": 421,
+      "screen": "subscriptions.html",
+      "role": "owner",
+      "standard": "\u00a71 the page / \u00a76 states",
+      "expected": "Screen renders its content in the main column with the Beta banner across the top",
+      "severity": "**CRITICAL** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/subscriptions/restamp/1440-fold.png"
+    },
+    {
+      "line": 422,
+      "screen": "subscriptions.html",
+      "role": "owner",
+      "standard": "\u00a74 role-scoped nav / \u00a76 empty state has one action",
+      "expected": "A sidebar item lands on a usable screen; empty state offers an in-app action",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/subscriptions/restamp/1440-fold.png"
+    },
+    {
+      "line": 423,
+      "screen": "subscriptions.html",
+      "role": "owner",
+      "standard": "\u00a71 one primary action",
+      "expected": "One filled button",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/subscriptions-mlfix/1440-fold.png"
+    },
+    {
+      "line": 425,
+      "screen": "hiring.html",
+      "role": "owner",
+      "standard": "\u00a75 every control works / \u00a76 loading state resolves",
+      "expected": "Page finishes loading; Reset filters resets",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/hiring/restamp/1440-fold.png"
+    },
+    {
+      "line": 426,
+      "screen": "hiring.html",
+      "role": "owner",
+      "standard": "\u00a79 default view understandable in 10 s / \u00a710",
+      "expected": "Default view = the daily 20%: who needs a human, bench shortfall",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/hiring/restamp/1440-fold.png"
+    },
+    {
+      "line": 427,
+      "screen": "hiring.html",
+      "role": "owner",
+      "standard": "\u00a76 no sample data as real",
+      "expected": "With Demo Mode OFF ('demo rows are hidden') no demo rows are counted",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/hiring/restamp/1440-fold.png"
+    },
+    {
+      "line": 428,
+      "screen": "hiring.html",
+      "role": "owner",
+      "standard": "\u00a76 empty state",
+      "expected": "Empty tables say what will appear and how",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/hiring-mlfix/1440-fold.png"
+    },
+    {
+      "line": 429,
+      "screen": "hiring.html",
+      "role": "owner",
+      "standard": "\u00a73 \u22644 sizes / \u00a72 grid",
+      "expected": "3\u20134 sizes; even columns",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/hiring-mlfix/1440-fold.png"
+    },
+    {
+      "line": 431,
+      "screen": "sample-data.html",
+      "role": "owner",
+      "standard": "\u00a75 destructive separated + toggle shows only the action that changes state",
+      "expected": "With Demo Mode OFF only 'Turn ON' is actionable; 'Wipe demo data\u2026' sits apart from the safe toggles and its confirm names the count and irreversibility",
+      "severity": "**HIGH** +verifier-added \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/sample-data/restamp/1440-fold.png"
+    },
+    {
+      "line": 432,
+      "screen": "sample-data.html",
+      "role": "owner",
+      "standard": "\u00a75 destructive separated + consequence named",
+      "expected": "Wipe is visually separated from ON/OFF and the confirm names count and irreversibility",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/sample-data/restamp/1440-fold.png"
+    },
+    {
+      "line": 433,
+      "screen": "sample-data.html",
+      "role": "owner",
+      "standard": "\u00a75 controls that do nothing today / \u00a71 one primary",
+      "expected": "Only the state-changing toggle renders; one filled button",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/sample-data/restamp/1440-fold.png"
+    },
+    {
+      "line": 434,
+      "screen": "sample-data.html",
+      "role": "owner",
+      "standard": "\u00a77 data-ink / \u00a73",
+      "expected": "Counts as labelled numbers",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/sample-data-mlfix/1440-fold.png"
+    },
+    {
+      "line": 435,
+      "screen": "agent-editor.html",
+      "role": "owner",
+      "standard": "\u00a76 states must be true",
+      "expected": "A LIVE agent's card shows its real prompt/guardrail state; defaults are not shown as configured",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/agent-editor/nonsales-verify/1440-fold.png \u00b7 1440-full.png \u00b7 verify.md"
+    },
+    {
+      "line": 436,
+      "screen": "agent-editor.html",
+      "role": "owner",
+      "standard": "\u00a75 destructive = confirm with consequence",
+      "expected": "Taking a LIVE agent off real clients ('Return to shadow') asks first and names what stops",
+      "severity": "**HIGH** +verifier-added \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/agent-editor/restamp/probe.json"
+    },
+    {
+      "line": 437,
+      "screen": "agent-editor.html",
+      "role": "owner",
+      "standard": "\u00a75 destructive/pause confirmed",
+      "expected": "Demoting a live agent confirms the consequence",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/agent-editor/restamp/probe.json"
+    },
+    {
+      "line": 438,
+      "screen": "agent-editor.html",
+      "role": "owner",
+      "standard": "\u00a71 primary action / fold",
+      "expected": "One filled primary, reachable without scrolling",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/agent-editor-mlfix/1440-fold.png"
+    },
+    {
+      "line": 456,
+      "screen": "automations.html",
+      "role": "owner",
+      "standard": "\u00a76/\u00a77 truthful status + timestamps",
+      "expected": "A 'LIVE' pill and 'LAST FIRED 19h ago' should mean the workflow ran.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/automations/restamp/1440-fold.png"
+    },
+    {
+      "line": 457,
+      "screen": "automations.html",
+      "role": "owner",
+      "standard": "\u00a73 hierarchy \u2014 metric value 2\u20133\u00d7 label, \u22644 sizes",
+      "expected": "Tile values dominate; \u22644 text sizes.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/automations-mlfix/1440-fold.png"
+    },
+    {
+      "line": 458,
+      "screen": "automations.html",
+      "role": "owner",
+      "standard": "\u00a74 active nav state matches page title",
+      "expected": "Sidebar active item and page title say the same thing.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/automations-mlfix/1440-fold.png"
+    },
+    {
+      "line": 459,
+      "screen": "automations.html",
+      "role": "owner",
+      "standard": "\u00a77 timestamps relative <24h, absolute after",
+      "expected": "'2d ago' should be an absolute date; exact time on tooltip.",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/automations-mlfix/1440-fold.png"
+    },
+    {
+      "line": 463,
+      "screen": "journeys.html",
+      "role": "owner",
+      "standard": "\u00a75 every visible control works (reachable)",
+      "expected": "Beta banner 'Dismiss' and shell 'Search \u2318K' can be clicked at 1440.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/journeys/restamp/1440-fold.png"
+    },
+    {
+      "line": 464,
+      "screen": "journeys.html",
+      "role": "owner",
+      "standard": "\u00a71 one primary action",
+      "expected": "Exactly one filled button.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/journeys/restamp/1440-fold.png"
+    },
+    {
+      "line": 465,
+      "screen": "journeys.html",
+      "role": "owner",
+      "standard": "\u00a75 click answers back / if it does nothing today it does not render",
+      "expected": "'Make the change' is disabled until text is entered, or the click says why nothing happened.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/journeys/restamp/probe.json"
+    },
+    {
+      "line": 466,
+      "screen": "journeys.html",
+      "role": "owner",
+      "standard": "\u00a73 \u22644 text sizes, no tiny text",
+      "expected": "3\u20134 sizes; body text readable.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/journeys-mlfix/1440-fold.png"
+    },
+    {
+      "line": 467,
+      "screen": "journeys.html",
+      "role": "owner",
+      "standard": "\u00a75 \u226540px targets",
+      "expected": "Hit areas \u226540px.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/journeys-mlfix/1440-fold.png"
+    },
+    {
+      "line": 470,
+      "screen": "template-editor.html",
+      "role": "owner",
+      "standard": "\u00a71 fold / \u00a79 default view = daily 20%",
+      "expected": "Pick-and-edit a message is doable without scrolling; help prose collapsed.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/template-editor/nonsales-verify/1440-fold.png \u00b7 verify.md"
+    },
+    {
+      "line": 471,
+      "screen": "template-editor.html",
+      "role": "owner",
+      "standard": "\u00a72 even card rows / 12-col grid",
+      "expected": "Tiles fill a row in 3/4/6/12 spans.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/template-editor-mlfix/1440-fold.png"
+    },
+    {
+      "line": 472,
+      "screen": "template-editor.html",
+      "role": "owner",
+      "standard": "\u00a76 full state at realistic volume (paginate at 25)",
+      "expected": "200 messages need search/filter or paging.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/template-editor-mlfix/1440-fold.png"
+    },
+    {
+      "line": 473,
+      "screen": "template-editor.html",
+      "role": "owner",
+      "standard": "\u00a73 \u22644 sizes",
+      "expected": "3\u20134 sizes.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/template-editor-mlfix/1440-fold.png"
+    },
+    {
+      "line": 476,
+      "screen": "campaign-manager.html",
+      "role": "owner",
+      "standard": "\u00a76 empty state \u2014 NEVER fake sample data presented as real",
+      "expected": "When every read is rejected, the tiles and tables show an error/empty state, not numbers.",
+      "severity": "**CRITICAL** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/campaign-manager/restamp/1440-fold.png"
+    },
+    {
+      "line": 477,
+      "screen": "campaign-manager.html",
+      "role": "owner",
+      "standard": "\u00a76 status text must be true / never fake data as real",
+      "expected": "Header status pill reflects a real read or says the read failed.",
+      "severity": "**CRITICAL** +verifier-added \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/campaign-manager/restamp/1440-fold.png"
+    },
+    {
+      "line": 478,
+      "screen": "campaign-manager.html",
+      "role": "owner",
+      "standard": "\u00a75 API-FAIL \u2014 control wired to a call the screen sends wrong",
+      "expected": "Reload and row-open succeed for the owner.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/campaign-manager/nonsales-verify/1440-fold.png \u00b7 verify.md"
+    },
+    {
+      "line": 479,
+      "screen": "campaign-manager.html",
+      "role": "owner",
+      "standard": "\u00a74 no nav item the role can't use",
+      "expected": "'Campaigns' in the sidebar opens a usable screen for the owner.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/campaign-manager/nonsales-verify/1440-fold.png \u00b7 verify.md"
+    },
+    {
+      "line": 480,
+      "screen": "campaign-manager.html",
+      "role": "owner",
+      "standard": "\u00a75/\u00a76 write controls on sample data, no confirm",
+      "expected": "Write controls appear only on real rows and confirm consequence.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/campaign-manager/restamp/1440-full.png"
+    },
+    {
+      "line": 481,
+      "screen": "campaign-manager.html",
+      "role": "owner",
+      "standard": "\u00a71 one primary action",
+      "expected": "One filled button.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/campaign-manager/nonsales-verify/1440-fold.png \u00b7 1440-full.png \u00b7 verify.md"
+    },
+    {
+      "line": 482,
+      "screen": "campaign-manager.html",
+      "role": "owner",
+      "standard": "\u00a79 progressive disclosure / \u00a71 one job",
+      "expected": "Default view = the daily 20%; derivations one click deeper.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/campaign-manager/nonsales-verify/1440-fold.png \u00b7 1440-full.png \u00b7 verify.md"
+    },
+    {
+      "line": 483,
+      "screen": "campaign-manager.html",
+      "role": "owner",
+      "standard": "\u00a76 error state \u2014 never a raw status code",
+      "expected": "Failed reads say what failed in the owner's words and what to do next (pick a partner).",
+      "severity": "**HIGH** +verifier-added \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/campaign-manager/restamp/1440-fold.png"
+    },
+    {
+      "line": 484,
+      "screen": "campaign-manager.html",
+      "role": "owner",
+      "standard": "\u00a76 error text in the user's words",
+      "expected": "'What failed and what to do next'.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/campaign-manager/restamp/1440-fold.png"
+    },
+    {
+      "line": 485,
+      "screen": "campaign-manager.html",
+      "role": "owner",
+      "standard": "\u00a72/\u00a73 grid + type",
+      "expected": "3/4/6/12 spans; \u22644 sizes; 8px scale.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/campaign-manager-mlfix/audit.json"
+    },
+    {
+      "line": 486,
+      "screen": "campaign-manager.html",
+      "role": "owner",
+      "standard": "\u00a75 NOOP triage (state-dependent)",
+      "expected": "\u2014",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/campaign-manager-mlfix/audit.json"
+    },
+    {
+      "line": 488,
+      "screen": "social-studio.html",
+      "role": "owner",
+      "standard": "\u00a76 NEVER fake sample data presented as real",
+      "expected": "Partner picker lists real partners; header clock is now; composer starts empty.",
+      "severity": "**CRITICAL** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/social-studio/restamp/1440-fold.png"
+    },
+    {
+      "line": 489,
+      "screen": "social-studio.html",
+      "role": "owner",
+      "standard": "\u00a75 API-FAIL + \u00a76 raw error code",
+      "expected": "Connect buttons start OAuth or say what is missing in plain words.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/social-studio/restamp/1440-fold.png"
+    },
+    {
+      "line": 490,
+      "screen": "social-studio.html",
+      "role": "owner",
+      "standard": "\u00a75 destructive/send = confirm with consequence named",
+      "expected": "'Publish due now' names what will be published before it fires.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/social-studio/restamp/1440-after-click.png"
+    },
+    {
+      "line": 491,
+      "screen": "social-studio.html",
+      "role": "owner",
+      "standard": "\u00a75 no 'coming soon' UI in production",
+      "expected": "Unbuilt features do not render.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/social-studio/restamp/1440-fold.png"
+    },
+    {
+      "line": 492,
+      "screen": "social-studio.html",
+      "role": "owner",
+      "standard": "\u00a71 one primary action",
+      "expected": "One filled button.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/social-studio/nonsales-verify/1440-fold.png \u00b7 1440-full.png \u00b7 verify.md"
+    },
+    {
+      "line": 493,
+      "screen": "social-studio.html",
+      "role": "owner",
+      "standard": "\u00a76 status text must be true",
+      "expected": "Empty-state copy agrees with the controls beneath it.",
+      "severity": "**HIGH** +verifier-added \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/social-studio/restamp/1440-fold.png"
+    },
+    {
+      "line": 494,
+      "screen": "social-studio.html",
+      "role": "owner",
+      "standard": "\u00a72 grid / \u00a73 type",
+      "expected": "12-col spans; \u22644 sizes; 8px scale.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/social-studio-mlfix/audit.json"
+    },
+    {
+      "line": 495,
+      "screen": "social-studio.html",
+      "role": "owner",
+      "standard": "\u00a75 NOOP triage",
+      "expected": "\u2014",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/social-studio-mlfix/audit.json"
+    },
+    {
+      "line": 496,
+      "screen": "creative-factory.html",
+      "role": "owner",
+      "standard": "\u00a76 sample data as real / \u00a75 controls act on a fake scope",
+      "expected": "Partner picker lists real partners; reads and writes target a real book.",
+      "severity": "**CRITICAL** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/creative-factory/restamp/1440-fold.png"
+    },
+    {
+      "line": 497,
+      "screen": "creative-factory.html",
+      "role": "owner",
+      "standard": "\u00a75 every visible control works (reachable)",
+      "expected": "Shell 'Search \u2318K' clickable at 1440.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/creative-factory/restamp/1440-fold.png"
+    },
+    {
+      "line": 498,
+      "screen": "creative-factory.html",
+      "role": "owner",
+      "standard": "\u00a75 destructive = confirm with consequence named; big targets",
+      "expected": "Reject/Archive confirm; asset chosen from a list, not a pasted uuid.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/creative-factory/restamp/1440-fold.png"
+    },
+    {
+      "line": 499,
+      "screen": "creative-factory.html",
+      "role": "owner",
+      "standard": "\u00a71 one primary action",
+      "expected": "One filled button.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/creative-factory/nonsales-verify/1440-fold.png \u00b7 1440-full.png \u00b7 verify.md"
+    },
+    {
+      "line": 500,
+      "screen": "creative-factory.html",
+      "role": "owner",
+      "standard": "\u00a79 progressive disclosure / \u00a71 one job",
+      "expected": "Default view = the daily 20%.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/creative-factory/nonsales-verify/1440-fold.png \u00b7 1440-full.png \u00b7 verify.md"
+    },
+    {
+      "line": 501,
+      "screen": "creative-factory.html",
+      "role": "owner",
+      "standard": "\u00a72/\u00a73 grid + type",
+      "expected": "12-col spans; \u22644 sizes; 8px scale.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/creative-factory-mlfix/audit.json"
+    },
+    {
+      "line": 502,
+      "screen": "creative-factory.html",
+      "role": "owner",
+      "standard": "\u00a75 NOOP/GONE triage",
+      "expected": "\u2014",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/creative-factory-mlfix/audit.json"
+    },
+    {
+      "line": 503,
+      "screen": "content-admin.html",
+      "role": "owner",
+      "standard": "\u00a75 no 'coming soon' UI in production / \u00a74 no nav item the role can't use",
+      "expected": "A nav item opens a screen whose primary action works today.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/content-admin/restamp/1440-fold.png"
+    },
+    {
+      "line": 504,
+      "screen": "content-admin.html",
+      "role": "owner",
+      "standard": "\u00a73 \u22644 sizes",
+      "expected": "3\u20134 sizes.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/content-admin-mlfix/1440-fold.png"
+    },
+    {
+      "line": 505,
+      "screen": "content-admin.html",
+      "role": "owner",
+      "standard": "\u00a72 grid / 8px scale",
+      "expected": "12-col spans; 8px scale.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/content-admin-mlfix/1440-fold.png"
+    },
+    {
+      "line": 523,
+      "screen": "brand-studio.html",
+      "role": "partner",
+      "standard": "\u00a75 every control works for this role",
+      "expected": "The 'Verify' domain button (BS-03) works for the partner who owns the brand, or does not render for them.",
+      "severity": "**CRITICAL** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/brand-studio/restamp/1440-full.png"
+    },
+    {
+      "line": 524,
+      "screen": "brand-studio.html",
+      "role": "partner",
+      "standard": "\u00a75 every control works / \u00a76 error text true",
+      "expected": "'Submit for approval' sends the brand for review and only then reports success.",
+      "severity": "**CRITICAL** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/brand-studio/restamp/1440-after-submit.png"
+    },
+    {
+      "line": 525,
+      "screen": "brand-studio.html",
+      "role": "partner",
+      "standard": "\u00a75 every action answers back truthfully / \u00a76 error text true",
+      "expected": "'Save & apply' reports success only after the server accepted the write.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/brand-studio/restamp/1440-after-save.png"
+    },
+    {
+      "line": 526,
+      "screen": "brand-studio.html",
+      "role": "partner",
+      "standard": "\u00a75 click answers back / \u00a76 full state true",
+      "expected": "Funnel cards, the FUNNELS LIVE tile and 'Create pages' agree on which funnels are selected.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/brand-studio/restamp/1440-fold.png"
+    },
+    {
+      "line": 527,
+      "screen": "brand-studio.html",
+      "role": "partner",
+      "standard": "\u00a71 primary action doable above the fold / \u00a75 targets",
+      "expected": "The primary action is fully visible and clickable at 1440\u00d7900.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/brand-studio/restamp/1440-fold.png"
+    },
+    {
+      "line": 528,
+      "screen": "brand-studio.html",
+      "role": "partner",
+      "standard": "\u00a75 every visible control works (BRIEF: wired but no-op in this state, still shown enabled)",
+      "expected": "'Use text' is hidden or disabled when no wordmark is uploaded.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/brand-studio/restamp/1440-fold.png"
+    },
+    {
+      "line": 529,
+      "screen": "brand-studio.html",
+      "role": "partner",
+      "standard": "\u00a75 destructive = confirm with consequence named / every control works (wired but no-op in this state)",
+      "expected": "'Reset' resets the brand to defaults, or does not render for a partner whose brand is saved on the server.",
+      "severity": "**HIGH** +verifier-added \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/brand-studio/nonsales-fix/1440-fold.png"
+    },
+    {
+      "line": 530,
+      "screen": "brand-studio.html",
+      "role": "partner",
+      "standard": "\u00a75 no 'coming soon' UI in production",
+      "expected": "If a control does nothing today it does not render today.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/brand-studio-mlfix/1440-fold.png"
+    },
+    {
+      "line": 531,
+      "screen": "brand-studio.html",
+      "role": "partner",
+      "standard": "\u00a71 one primary action",
+      "expected": "Exactly one filled button per screen.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/brand-studio-mlfix/1440-fold.png"
+    },
+    {
+      "line": 532,
+      "screen": "brand-studio.html",
+      "role": "partner",
+      "standard": "\u00a75 \u226540px targets, primary 44px+",
+      "expected": "All buttons \u226540px tall; primary \u226544px.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/brand-studio-mlfix/1440-fold.png"
+    },
+    {
+      "line": 533,
+      "screen": "brand-studio.html",
+      "role": "partner",
+      "standard": "\u00a72 8px scale / 12-col grid",
+      "expected": "Spacing on 8/16/24/32; columns on 3/4/6/12 of 12.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/brand-studio-mlfix/1440-fold.png"
+    },
+    {
+      "line": 534,
+      "screen": "brand-studio.html",
+      "role": "partner",
+      "standard": "\u00a77 label truth (tile 'FUNNELS LIVE')",
+      "expected": "A tile named 'Funnels live' counts live funnels.",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/brand-studio-mlfix/1440-fold.png"
+    },
+    {
+      "line": 536,
+      "screen": "affiliate.html",
+      "role": "affiliate",
+      "standard": "\u00a75 every control works / \u00a76 error text true",
+      "expected": "'Sign license' opens the partner license for signature (or does not render).",
+      "severity": "**CRITICAL** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/affiliate/restamp/probe.json"
+    },
+    {
+      "line": 537,
+      "screen": "affiliate.html",
+      "role": "affiliate",
+      "standard": "\u00a76 no fake data as real / \u00a77",
+      "expected": "Metric values come from a data source or show '\u2014'.",
+      "severity": "**CRITICAL** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/affiliate/restamp/1440-fold.png"
+    },
+    {
+      "line": 538,
+      "screen": "affiliate.html",
+      "role": "affiliate",
+      "standard": "\u00a71 top-left is the number that matters / \u00a710",
+      "expected": "The affiliate's link, hold status and money are the first thing seen.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/affiliate/nonsales-fix/1440-fold.png"
+    },
+    {
+      "line": 539,
+      "screen": "affiliate.html",
+      "role": "affiliate",
+      "standard": "\u00a71 one primary action / \u00a75 targets",
+      "expected": "One filled button; primary \u226544px.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/affiliate/restamp/probe.json"
+    },
+    {
+      "line": 541,
+      "screen": "affiliate.html",
+      "role": "affiliate",
+      "standard": "\u00a76 empty state has one action",
+      "expected": "'No referrals yet. Share your link.'",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/affiliate-mlfix/1440-fold.png"
+    },
+    {
+      "line": 542,
+      "screen": "affiliate.html",
+      "role": "affiliate",
+      "standard": "\u00a78 filters above the table, left",
+      "expected": "Status filter and business search on the left above the table.",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/affiliate-mlfix/1440-fold.png"
+    },
+    {
+      "line": 544,
+      "screen": "client-portal.html",
+      "role": "client",
+      "standard": "\u00a76 error text true \u2014 a signed-in user must never read 'not signed in'",
+      "expected": "The client's documents load; if they cannot, the message says what failed.",
+      "severity": "**CRITICAL** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-portal/restamp/1440-fold.png"
+    },
+    {
+      "line": 545,
+      "screen": "client-portal.html",
+      "role": "client",
+      "standard": "\u00a75 dead control (not wired at all)",
+      "expected": "'Text' and 'Call' reach the funding advisor.",
+      "severity": "**CRITICAL** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-portal/restamp/1440-full.png"
+    },
+    {
+      "line": 546,
+      "screen": "client-portal.html",
+      "role": "client",
+      "standard": "\u00a75 no 'coming soon' UI / every control works",
+      "expected": "An 'Unlock' button leads to checkout.",
+      "severity": "**HIGH** \u2193verifier (was CRITICAL) \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-portal/nonsales-fix/1440-fold.png"
+    },
+    {
+      "line": 547,
+      "screen": "client-portal.html",
+      "role": "client",
+      "standard": "\u00a75 every control works / \u00a710 one contact action",
+      "expected": "'Book a call' / 'Talk to an advisor' lets the client pick a time or reach someone.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-portal/restamp/1440-after-click.png"
+    },
+    {
+      "line": 548,
+      "screen": "client-portal.html",
+      "role": "client",
+      "standard": "\u00a71 one primary action",
+      "expected": "One filled button.",
+      "severity": "**HIGH** \u2713verified \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-portal/nonsales-fix/1440-fold.png"
+    },
+    {
+      "line": 549,
+      "screen": "client-portal.html",
+      "role": "client",
+      "standard": "\u00a75 every control works / \u00a76 error text true (BRIEF: API-FAIL \u2014 control wired to a call the screen sends wrong)",
+      "expected": "The 'Sign to authorize dispute letters' card loads its legal wording and can record the client's signature.",
+      "severity": "**HIGH** +verifier-added \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-portal/nonsales-fix/1440-fold.png \u00b7 audit.md"
+    },
+    {
+      "line": 550,
+      "screen": "client-portal.html",
+      "role": "client",
+      "standard": "\u00a710 client: where is my money/file, next step, one contact action / \u00a71 top-left",
+      "expected": "Status of their thing top-left, next step, one contact action above the fold.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-portal-mlfix/1440-fold.png"
+    },
+    {
+      "line": 551,
+      "screen": "client-portal.html",
+      "role": "client",
+      "standard": "\u00a75 \u226540px targets",
+      "expected": "All targets \u226540px.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-portal-mlfix/1440-fold.png"
+    },
+    {
+      "line": 552,
+      "screen": "client-portal.html",
+      "role": "client",
+      "standard": "\u00a76 empty state says what will appear + one action",
+      "expected": "A missing video is a small line, not a 410px black block; empty lists say what to do.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-portal-mlfix/1440-fold.png"
+    },
+    {
+      "line": 553,
+      "screen": "client-portal.html",
+      "role": "client",
+      "standard": "\u00a72 8px scale / \u00a72 centered text",
+      "expected": "Spacing on the 8px scale; left-aligned copy.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/client-portal-mlfix/1440-fold.png"
+    },
+    {
+      "line": 556,
+      "screen": "payment-success.html",
+      "role": "client",
+      "standard": "\u00a710 client: next step + one contact action / \u00a75",
+      "expected": "One link back to the portal or to the advisor.",
+      "severity": "**MEDIUM** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/payment-success-mlfix/1440-fold.png"
+    },
+    {
+      "line": 557,
+      "screen": "payment-success.html",
+      "role": "client",
+      "standard": "\u00a76 error/success text true \u2014 never a lie",
+      "expected": "A success page confirms a payment it can verify, or says 'if your payment went through'.",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/payment-success-mlfix/1440-fold.png"
+    },
+    {
+      "line": 558,
+      "screen": "payment-success.html",
+      "role": "client",
+      "standard": "\u00a73 \u22644 text sizes",
+      "expected": "Three sizes, max four.",
+      "severity": "**LOW** \u00b7 **CONFIRMED-FIXED** docs/workflows/ui-audit-evidence/payment-success-mlfix/1440-fold.png"
+    }
+  ]
+}

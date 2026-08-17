@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fundhub — Inquiry Remover</title>
+<title>Fundhub — Specialist</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -81,6 +81,18 @@
      instead of stacking — they stay scannable two-up. Mobile only. */
   @media (max-width:640px){ .stat-tiles{flex-wrap:wrap;} }
   .stat-tile{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:5px 12px;text-align:center;min-width:88px;}
+  .desk-toggle{display:flex;gap:8px;padding:8px 18px;background:var(--surface);border-bottom:1px solid var(--line);flex-shrink:0;}
+  .desk-tab{font:600 var(--fs-body)/1 'Inter',sans-serif;min-height:40px;padding:8px 16px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--text);cursor:pointer;}
+  .desk-tab[aria-selected="true"]{background:var(--ink);color:var(--dark-text);border-color:var(--ink);}
+  .desk-tab:focus-visible{outline:2px solid var(--blue-line);outline-offset:2px;}
+  .sk{height:14px;background:var(--paper-dim);border-radius:4px;max-width:160px;}
+  .repair-empty{padding:28px 16px;text-align:center;color:var(--text-dim);font-size:var(--fs-body);}
+  .repair-empty a{color:var(--text);font-weight:700;}
+  #repairNote{font-size:var(--fs-body);color:var(--text-dim);margin:0 0 10px;}
+  .repair-err{padding:16px;border:1px solid var(--red-line);background:var(--red-bg);color:var(--red);border-radius:8px;font-size:var(--fs-body);}
+  #pane-repair[hidden],#pane-inquiries[hidden],#repair-exceptions[hidden]{display:none;}
+  /* brand.css sets .stat-tiles{display:grid !important}; that beats [hidden]. */
+  .stat-tiles[hidden]{display:none!important;}
   .stat-label{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:2px;}
   .stat-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:var(--fs-metric);font-variant-numeric:tabular-nums;}
 
@@ -273,7 +285,7 @@
         <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
         <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
         <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
-        <a class="navitem on" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Remover</span></a>
+        <a class="navitem on" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Specialist</span></a>
         <a class="navitem" href="company-brain.html"><span class="ico">◎</span><span class="lbl">Company Brain</span></a>
 </div></div>
 
@@ -319,7 +331,7 @@
     <div class="brand">
       <div class="logo inv" role="img" aria-label="Fundhub"></div>
       <div class="sep">/</div>
-      <div class="sub">Inquiry Remover</div>
+      <div class="sub">Specialist</div>
     </div>
     <div class="topbar-right">
       <div class="org-pill">Org: Fundhub</div>
@@ -328,21 +340,33 @@
     </div>
   </header>
 
+  <div class="desk-toggle" role="tablist" aria-label="Specialist desk">
+    <button type="button" class="desk-tab" id="tab-inquiries" role="tab" aria-selected="true" aria-controls="pane-inquiries" data-pane="inquiries">Inquiries</button>
+    <button type="button" class="desk-tab" id="tab-repair" role="tab" aria-selected="false" aria-controls="pane-repair" data-pane="repair">Repair</button>
+  </div>
 
   <div class="stat-head">
     <div class="who">
       <div class="who-name"><span class="av human" id="whoAv">—</span> <span id="whoName">—</span></div>
       <div class="who-role" id="whoRole">—</div>
     </div>
-    <div class="stat-tiles">
-      <div class="stat-tile"><div class="stat-label">Queue Left</div><div class="stat-value" data-stat="left">—</div></div>
+    <div class="stat-tiles" id="inq-stats">
+      <div class="stat-tile"><div class="stat-label">Need me</div><div class="stat-value" data-stat="left">—</div></div>
       <div class="stat-tile"><div class="stat-label">Worked</div><div class="stat-value" data-stat="worked">—</div></div>
       <div class="stat-tile"><div class="stat-label">Calls</div><div class="stat-value" data-stat="calls">—</div></div>
       <div class="stat-tile"><div class="stat-label">Confirmed</div><div class="stat-value" data-stat="confirmed">—</div></div>
     </div>
+    <div class="stat-tiles" id="repair-stats" hidden>
+      <div class="stat-tile"><div class="stat-label">Need me</div><div class="stat-value" id="repairNeedMe">—</div></div>
+      <div class="stat-tile"><div class="stat-label">Ready to send</div><div class="stat-value" id="repairReady">—</div></div>
+      <div class="stat-tile"><div class="stat-label">Waiting</div><div class="stat-value" id="repairWaiting">—</div></div>
+      <div class="stat-tile"><div class="stat-label">Stuck</div><div class="stat-value" id="repairStalled">—</div></div>
+    </div>
   </div>
 
   <main>
+
+    <div id="pane-inquiries" role="tabpanel" aria-labelledby="tab-inquiries">
 
     <div class="section fh-maxw">
       <div class="section-title">Queue by Bureau</div>
@@ -408,10 +432,36 @@
       </table>
     </div>
 
+    </div>
+
+    <div id="pane-repair" role="tabpanel" aria-labelledby="tab-repair" hidden>
+      <div class="section fh-maxw" id="repair-exceptions" hidden>
+        <div class="section-title">Stuck files</div>
+        <div id="repairExceptionsList"></div>
+      </div>
+      <div class="section fh-maxw">
+        <div class="section-title">Repair files</div>
+        <p id="repairNote">Click a row to see letters. Nothing mails until you press Send letters.</p>
+        <div id="repairErr" class="repair-err" hidden></div>
+        <table class="queue" id="repairTable">
+          <thead>
+            <tr>
+              <th>Client</th><th>Round</th><th>Stage</th><th>Letters ready</th><th>Sent</th>
+            </tr>
+          </thead>
+          <tbody id="repairBody">
+            <tr><td colspan="5"><div class="sk"></div></td></tr>
+            <tr><td colspan="5"><div class="sk"></div></td></tr>
+            <tr><td colspan="5"><div class="sk"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </main>
 
   <footer class="statusbar">
-    <span>FUNDHUB-INQUIRY · v1</span>
+    <span>FUNDHUB-SPECIALIST · v1</span>
     <span>ORG: fundhub</span>
     <span><span class="av human" id="whoFootAv">—</span> <span id="whoFoot">—</span></span>
     <span>updates as the queue changes</span>
@@ -955,6 +1005,66 @@ function buildCaseSendRequest(opts) {
   return { method: "POST", path: "/api/inquiry-cases", body: body };
 }
 
+/* ── REPAIR PANE ─────────────────────────────────────────────────────────────
+   Same desk, other toggle. Send is human-only. No letter without an id. */
+
+const BUREAU_NAMES = Object.freeze({ EX: "Experian", EQ: "Equifax", TU: "TransUnion" });
+
+function bureauLabel(code) {
+  const k = String(code || "").toUpperCase();
+  return BUREAU_NAMES[k] || k || "—";
+}
+
+function repairStagePill(stageKey) {
+  const k = String(stageKey || "");
+  if (k === "stalled") return { cls: "noanswer", text: "Stuck" };
+  if (k === "ready_to_send" || k === "letters_generated") return { cls: "new", text: "Ready" };
+  if (k === "program_complete") return { cls: "confirmed", text: "Done" };
+  if (k === "in_transit" || k === "awaiting_response") return { cls: "progress", text: "Waiting" };
+  if (k === "response_received") return { cls: "progress", text: "Answer in" };
+  if (k === "cancelled") return { cls: "", text: "Cancelled" };
+  return { cls: "", text: k ? k.replace(/_/g, " ") : "Unknown" };
+}
+
+function buildRepairSendRequest(opts) {
+  const o = opts || {};
+  requireClientId(o.clientId);
+  if (o.mail !== true) throw new ViewError("mail required — a person has to press send");
+  const letters = Array.isArray(o.letters) ? o.letters : [];
+  if (!letters.length) throw new ViewError("no letters ready to send");
+  const bodyLetters = [];
+  for (const letter of letters) {
+    if (!letter || !letter.bureau) throw new ViewError("each letter needs a bureau");
+    const html = letter.html || letter.body_text || "";
+    if (!html) throw new ViewError("a letter with no body cannot be mailed");
+    const row = {
+      bureau: String(letter.bureau).toUpperCase(),
+      html: html
+    };
+    if (letter.id && isUuid(letter.id)) row.letter_id = letter.id;
+    bodyLetters.push(row);
+  }
+  return {
+    method: "POST",
+    path: "/api/repair/send",
+    body: {
+      mail: true,
+      client_id: o.clientId,
+      letters: bodyLetters
+    }
+  };
+}
+
+function buildRepairConfirmParseRequest(opts) {
+  const o = opts || {};
+  if (!isUuid(o.responseId)) throw new ViewError("response id must be a uuid");
+  return {
+    method: "POST",
+    path: "/api/repair/exceptions",
+    body: { action: "confirm_parse", responseId: o.responseId }
+  };
+}
+
 const VIEW = {
   ATTEMPT_KINDS: ATTEMPT_KINDS,
   COUNTING_KINDS: COUNTING_KINDS,
@@ -986,7 +1096,11 @@ const VIEW = {
   pendingLabel: pendingLabel,
   caseUiStatus: caseUiStatus,
   caseCallState: caseCallState,
-  buildCaseSendRequest: buildCaseSendRequest
+  buildCaseSendRequest: buildCaseSendRequest,
+  bureauLabel: bureauLabel,
+  repairStagePill: repairStagePill,
+  buildRepairSendRequest: buildRepairSendRequest,
+  buildRepairConfirmParseRequest: buildRepairConfirmParseRequest
 };
 /* ==FHVIEW-END== */
 return VIEW;
@@ -1960,7 +2074,9 @@ function initials(name) {
 }
 function paintStaff(staff) {
   var name = (staff && staff.name) || "";
-  var role = staff && staff.role ? String(staff.role).replace(/_/g, " ") : "";
+  var rawRole = staff && staff.role ? String(staff.role) : "";
+  var role = rawRole.replace(/_/g, " ");
+  if (rawRole === "inquiry_specialist") role = "Specialist";
   var av = document.getElementById("whoAv");
   var nm = document.getElementById("whoName");
   var rl = document.getElementById("whoRole");
@@ -1982,6 +2098,253 @@ fetch("/api/auth/session", {
 }).then(function (r) { return r.json(); }).then(function (s) {
   paintStaff(s && s.staff);
 }).catch(function () { paintStaff(null); });
+
+/* Specialist desk: Inquiries / Repair toggle. Repair loads on first open. */
+(function deskToggle() {
+  var tabs = document.querySelectorAll(".desk-tab");
+  var inqPane = document.getElementById("pane-inquiries");
+  var repairPane = document.getElementById("pane-repair");
+  var inqStats = document.getElementById("inq-stats");
+  var repairStats = document.getElementById("repair-stats");
+  var loaded = false;
+
+  function show(pane) {
+    var repair = pane === "repair";
+    tabs.forEach(function (t) {
+      t.setAttribute("aria-selected", t.getAttribute("data-pane") === pane ? "true" : "false");
+    });
+    if (inqPane) inqPane.hidden = repair;
+    if (repairPane) repairPane.hidden = !repair;
+    if (inqStats) inqStats.hidden = repair;
+    if (repairStats) repairStats.hidden = !repair;
+    if (repair && !loaded) {
+      loaded = true;
+      loadRepairDesk();
+    }
+  }
+
+  tabs.forEach(function (t) {
+    t.addEventListener("click", function () { show(t.getAttribute("data-pane")); });
+  });
+})();
+
+function loadRepairDesk() {
+  var V = window.FHInquiryView;
+  var body = document.getElementById("repairBody");
+  var err = document.getElementById("repairErr");
+  var need = document.getElementById("repairNeedMe");
+  var ready = document.getElementById("repairReady");
+  var waiting = document.getElementById("repairWaiting");
+  var stalled = document.getElementById("repairStalled");
+  var tok = "";
+  try { tok = localStorage.getItem("fh_token") || ""; } catch (e) {}
+  function headers(json) {
+    var h = { accept: "application/json" };
+    if (tok) h.authorization = "Bearer " + tok;
+    if (json) h["content-type"] = "application/json";
+    return h;
+  }
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function setTiles(d) {
+    if (need) need.textContent = d.need_me != null ? String(d.need_me) : "0";
+    if (ready) ready.textContent = d.ready != null ? String(d.ready) : "0";
+    if (waiting) waiting.textContent = d.waiting != null ? String(d.waiting) : "0";
+    if (stalled) stalled.textContent = d.stalled != null ? String(d.stalled) : "0";
+  }
+  function showErr(msg) {
+    if (!err) return;
+    err.hidden = false;
+    err.textContent = msg;
+  }
+  if (err) err.hidden = true;
+
+  fetch("/api/read/repair-cases", { headers: headers() }).then(function (r) {
+    return r.json().then(function (d) { return { http: r.status, d: d }; });
+  }).then(function (pack) {
+    if (!pack.d || pack.d.ok !== true) {
+      setTiles({ need_me: "—", ready: "—", waiting: "—", stalled: "—" });
+      if (need) need.textContent = "—";
+      showErr(pack.http === 403
+        ? "This queue is for staff on this desk."
+        : "Could not load repair files. Try again.");
+      if (body) {
+        body.innerHTML = '<tr><td colspan="5" class="repair-empty">The list is empty until the load works.</td></tr>';
+      }
+      return;
+    }
+    setTiles(pack.d);
+    var files = pack.d.files || [];
+    if (!files.length) {
+      if (body) {
+        body.innerHTML = '<tr><td colspan="5" class="repair-empty">No repair files yet. A client shows up here after they start repair. <a href="pipeline.html">Open Pipeline</a></td></tr>';
+      }
+      return;
+    }
+    if (!body) return;
+    body.innerHTML = files.map(function (f) {
+      var pill = (V && V.repairStagePill)
+        ? V.repairStagePill(f.stage_key)
+        : { cls: "", text: f.stage_label || "—" };
+      return '<tr class="case-main" data-repair-row="' + esc(f.client_id) + '" tabindex="0">' +
+        "<td>" + esc(f.name) + "</td>" +
+        "<td>" + esc(f.round || "—") + "</td>" +
+        '<td><span class="status-pill ' + pill.cls + '">' + esc(pill.text) + "</span></td>" +
+        "<td>" + String(f.letters_ready || 0) + "</td>" +
+        "<td>" + String(f.letters_sent || 0) + "</td>" +
+        "</tr>";
+    }).join("");
+    body.querySelectorAll("[data-repair-row]").forEach(function (tr) {
+      tr.addEventListener("click", function () { toggleRepairRow(tr); });
+      tr.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleRepairRow(tr); }
+      });
+    });
+  }).catch(function () {
+    showErr("Could not load repair files. Try again.");
+    if (body) {
+      body.innerHTML = '<tr><td colspan="5" class="repair-empty">The list is empty until the load works.</td></tr>';
+    }
+  });
+
+  fetch("/api/repair/exceptions", { headers: headers() }).then(function (r) {
+    if (r.status === 403) return null;
+    return r.json();
+  }).then(function (d) {
+    var wrap = document.getElementById("repair-exceptions");
+    var list = document.getElementById("repairExceptionsList");
+    if (!d || d.ok !== true || !wrap || !list) return;
+    var stalledRows = d.stalled || [];
+    var parses = d.lowConfidenceParses || [];
+    if (!stalledRows.length && !parses.length) return;
+    wrap.hidden = false;
+    var html = "";
+    stalledRows.forEach(function (row) {
+      html += '<div class="letter-row"><div><div class="lt-name">' +
+        esc(row.email || row.client_id) + '</div><div class="lt-detail">Stuck in repair</div></div></div>';
+    });
+    parses.forEach(function (row) {
+      html += '<div class="letter-row"><div><div class="lt-name">Bureau answer needs a look</div>' +
+        '<div class="lt-detail">Confidence ' + esc(row.confidence) + "</div></div>" +
+        '<div class="case-actions"><button type="button" class="primary" data-confirm-parse="' +
+        esc(row.id) + '">Mark as checked</button></div></div>';
+    });
+    list.innerHTML = html;
+    list.querySelectorAll("[data-confirm-parse]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var req;
+        try {
+          req = V.buildRepairConfirmParseRequest({ responseId: btn.getAttribute("data-confirm-parse") });
+        } catch (e) {
+          btn.textContent = e.message || "invalid";
+          return;
+        }
+        btn.disabled = true;
+        fetch(req.path, { method: req.method, headers: headers(true), body: JSON.stringify(req.body) })
+          .then(function (r) { return r.json(); })
+          .then(function (out) {
+            btn.disabled = false;
+            btn.textContent = out && out.ok ? "Checked" : (out && out.error) || "failed";
+          })
+          .catch(function () {
+            btn.disabled = false;
+            btn.textContent = "failed";
+          });
+      });
+    });
+  }).catch(function () { /* hide stuck panel — role cannot use it */ });
+
+  function toggleRepairRow(tr) {
+    var id = tr.getAttribute("data-repair-row");
+    var open = tr.getAttribute("aria-expanded") === "true";
+    var next = tr.nextElementSibling;
+    if (next && next.classList.contains("case-detail-row")) next.remove();
+    if (open) {
+      tr.setAttribute("aria-expanded", "false");
+      return;
+    }
+    tr.setAttribute("aria-expanded", "true");
+    var detail = document.createElement("tr");
+    detail.className = "case-detail-row";
+    detail.innerHTML = '<td colspan="5"><div class="case-detail">Loading letters…</div></td>';
+    tr.parentNode.insertBefore(detail, tr.nextSibling);
+    fetch("/api/read/repair-cases?client_id=" + encodeURIComponent(id), { headers: headers() })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || d.ok !== true) {
+          detail.innerHTML = '<td colspan="5"><div class="repair-err">Could not load this file.</div></td>';
+          return;
+        }
+        var letters = d.letters || [];
+        var items = d.items || [];
+        var sendable = letters.filter(function (l) { return l.can_send && l.html; });
+        var letterHtml = letters.length
+          ? letters.map(function (l) {
+              var name = (V && V.bureauLabel) ? V.bureauLabel(l.bureau) : l.bureau;
+              return '<div class="letter-row"><div><div class="lt-name">' + esc(name) +
+                " · " + esc(l.round || "") + '</div><div class="lt-detail">' +
+                esc(l.status) + "</div></div></div>";
+            }).join("")
+          : '<div class="repair-empty">No letters ready. Analysis has to finish first.</div>';
+        var itemHtml = items.length
+          ? "<ul>" + items.slice(0, 12).map(function (it) {
+              return "<li>" + esc(it.creditor || it.rule_id) + " · " + esc(it.rule_id) +
+                " · " + esc(it.status) + "</li>";
+            }).join("") + "</ul>"
+          : "<p class=\"lt-detail\">No dispute items on this file yet.</p>";
+        var sendBtn = sendable.length
+          ? '<div class="case-actions"><button type="button" class="primary" data-act="repair-send">Send letters</button></div>'
+          : "";
+        detail.innerHTML = '<td colspan="5"><div class="case-expand">' +
+          '<div class="case-col"><h4>Items</h4>' + itemHtml + "</div>" +
+          '<div class="case-col"><h4>Letters</h4>' + letterHtml + sendBtn +
+          '<p class="lt-detail" data-send-msg></p></div></div></td>';
+        var btn = detail.querySelector("[data-act=repair-send]");
+        if (!btn) return;
+        btn.addEventListener("click", function () {
+          var req;
+          try {
+            req = V.buildRepairSendRequest({
+              clientId: id,
+              mail: true,
+              letters: sendable
+            });
+          } catch (e) {
+            var slot = detail.querySelector("[data-send-msg]");
+            if (slot) slot.textContent = e.message || "invalid";
+            return;
+          }
+          btn.disabled = true;
+          btn.textContent = "Sending…";
+          fetch(req.path, { method: req.method, headers: headers(true), body: JSON.stringify(req.body) })
+            .then(function (r) { return r.json(); })
+            .then(function (out) {
+              btn.disabled = false;
+              if (out && out.ok) {
+                btn.textContent = "Sent";
+                loadRepairDesk();
+              } else {
+                btn.textContent = "Send letters";
+                var slot = detail.querySelector("[data-send-msg]");
+                if (slot) slot.textContent = (out && (out.error || out.message)) || "Send failed";
+              }
+            })
+            .catch(function () {
+              btn.disabled = false;
+              btn.textContent = "Send letters";
+              var slot = detail.querySelector("[data-send-msg]");
+              if (slot) slot.textContent = "Send failed";
+            });
+        });
+      })
+      .catch(function () {
+        detail.innerHTML = '<td colspan="5"><div class="repair-err">Could not load this file.</div></td>';
+      });
+  }
+}
 </script>
 </body>
 </html>
+

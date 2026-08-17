@@ -1,0 +1,515 @@
+{
+  "ranAt": "2026-08-17T21:37:19.430Z",
+  "base": "https://fundhub.ai",
+  "email": "owner@fundhub.ai",
+  "verifier": "fresh-auditor-reverify-2",
+  "deployedCommitExpected": "597df13",
+  "liveHostConfirmed": true,
+  "items": {
+    "campaigns": {
+      "partnersApi": {
+        "httpOk": true,
+        "bodyOk": true,
+        "count": 8,
+        "names": [
+          "DEMO Partner — Northlight Capital",
+          "DEMO Partner — Quillcrest White Label",
+          "E2E WL Book LLC",
+          "E2E WL Click Co",
+          "E2E WL Click17 Co",
+          "principalread Alpha",
+          "principalread Bravo",
+          "TEST — White-Label Partner Role"
+        ],
+        "keys": [
+          "ok",
+          "count",
+          "limit",
+          "offset",
+          "hasMore",
+          "items"
+        ]
+      },
+      "optionCount": 9,
+      "options": [
+        {
+          "text": "Choose a partner",
+          "value": ""
+        },
+        {
+          "text": "DEMO Partner — Northlight Capital",
+          "value": "94796e0e-d012-4987-8721-676093aaed79"
+        },
+        {
+          "text": "DEMO Partner — Quillcrest White Label",
+          "value": "08aaad2e-ea94-4e00-9fe3-1f9e703336f2"
+        },
+        {
+          "text": "E2E WL Book LLC",
+          "value": "c28b0149-b0d2-42ef-9b27-f708afaed436"
+        },
+        {
+          "text": "E2E WL Click Co",
+          "value": "caf277ee-a7f4-4d96-985c-5579908a169b"
+        },
+        {
+          "text": "E2E WL Click17 Co",
+          "value": "068b933c-9f31-4b47-9499-857276d18c07"
+        },
+        {
+          "text": "principalread Alpha",
+          "value": "8f331880-a922-4a81-ac5a-6d003c767bb5"
+        },
+        {
+          "text": "principalread Bravo",
+          "value": "5772f2ac-7360-47a3-ba6c-587ae9900345"
+        },
+        {
+          "text": "TEST — White-Label Partner Role",
+          "value": "9defaf28-47c5-43a0-8f5e-f41ef90f360a"
+        }
+      ],
+      "disabled": false,
+      "couldNotLoadInHtml": false,
+      "couldNotLoadVisible": false,
+      "afterPick": {
+        "partnerName": "DEMO Partner — Northlight Capital",
+        "partnerId": "94796e0e-d012-4987-8721-676093aaed79",
+        "url": "https://fundhub.ai/app/campaign-manager.html?partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "urlHost": "fundhub.ai",
+        "urlHasPartner": true,
+        "urlPartnerMatches": true,
+        "campaignReads": [
+          {
+            "path": "/api/campaigns/spend?state=all&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+            "status": 200,
+            "hasPartnerId": true,
+            "body": {
+              "ok": true,
+              "error": null,
+              "message": null,
+              "detail": null,
+              "keys": [
+                "ok",
+                "count",
+                "limit",
+                "offset",
+                "hasMore",
+                "items"
+              ],
+              "itemCount": 0
+            }
+          },
+          {
+            "path": "/api/campaigns/list?state=all&limit=200&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+            "status": 200,
+            "hasPartnerId": true,
+            "body": {
+              "ok": true,
+              "error": null,
+              "message": null,
+              "detail": null,
+              "keys": [
+                "ok",
+                "count",
+                "limit",
+                "offset",
+                "hasMore",
+                "items"
+              ],
+              "itemCount": 0
+            }
+          },
+          {
+            "path": "/api/campaigns/connections?state=all&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+            "status": 200,
+            "hasPartnerId": true,
+            "body": {
+              "ok": true,
+              "error": null,
+              "message": null,
+              "detail": null,
+              "keys": [
+                "ok",
+                "count",
+                "limit",
+                "offset",
+                "hasMore",
+                "items"
+              ],
+              "itemCount": 0
+            }
+          }
+        ],
+        "readsNamedPartner": true,
+        "anyMissingPartner": false,
+        "refusedMissingPartner": false,
+        "pageMentionsEmpty": true,
+        "pageMentionsRefused": false
+      },
+      "pageApiHits": [
+        {
+          "path": "/api/read/partners?limit=200",
+          "status": 200,
+          "hasPartnerId": false,
+          "body": {
+            "ok": true,
+            "error": null,
+            "message": null,
+            "detail": null,
+            "keys": [
+              "ok",
+              "count",
+              "limit",
+              "offset",
+              "hasMore",
+              "items"
+            ],
+            "itemCount": 8
+          }
+        },
+        {
+          "path": "/api/read/partners?limit=200",
+          "status": 200,
+          "hasPartnerId": false,
+          "body": {
+            "ok": true,
+            "error": null,
+            "message": null,
+            "detail": null,
+            "keys": [
+              "ok",
+              "count",
+              "limit",
+              "offset",
+              "hasMore",
+              "items"
+            ],
+            "itemCount": 8
+          }
+        },
+        {
+          "path": "/api/campaigns/spend?state=all&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+          "status": 200,
+          "hasPartnerId": true,
+          "body": {
+            "ok": true,
+            "error": null,
+            "message": null,
+            "detail": null,
+            "keys": [
+              "ok",
+              "count",
+              "limit",
+              "offset",
+              "hasMore",
+              "items"
+            ],
+            "itemCount": 0
+          }
+        },
+        {
+          "path": "/api/campaigns/list?state=all&limit=200&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+          "status": 200,
+          "hasPartnerId": true,
+          "body": {
+            "ok": true,
+            "error": null,
+            "message": null,
+            "detail": null,
+            "keys": [
+              "ok",
+              "count",
+              "limit",
+              "offset",
+              "hasMore",
+              "items"
+            ],
+            "itemCount": 0
+          }
+        },
+        {
+          "path": "/api/campaigns/connections?state=all&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+          "status": 200,
+          "hasPartnerId": true,
+          "body": {
+            "ok": true,
+            "error": null,
+            "message": null,
+            "detail": null,
+            "keys": [
+              "ok",
+              "count",
+              "limit",
+              "offset",
+              "hasMore",
+              "items"
+            ],
+            "itemCount": 0
+          }
+        },
+        {
+          "path": "/api/read/partners?limit=200",
+          "status": 200,
+          "hasPartnerId": false,
+          "body": {
+            "ok": true,
+            "error": null,
+            "message": null,
+            "detail": null,
+            "keys": [
+              "ok",
+              "count",
+              "limit",
+              "offset",
+              "hasMore",
+              "items"
+            ],
+            "itemCount": 8
+          }
+        }
+      ]
+    },
+    "commandCenter": {
+      "api": {
+        "httpOk": true,
+        "bodyOk": true,
+        "keys": [
+          "ok",
+          "kpis",
+          "display"
+        ],
+        "display": {
+          "cash": "$0",
+          "funded": "0",
+          "funded_amount": "$0",
+          "close": "—",
+          "show": "—",
+          "cpf": "—",
+          "clients": "3",
+          "pipeline_movement": "1"
+        },
+        "kpis": {
+          "cash_collected_cents": 0,
+          "close_rate": null,
+          "funded_count": 0,
+          "booked_count": 0
+        },
+        "missingFromPayload": {
+          "cash": false,
+          "close": false,
+          "funded": false
+        }
+      },
+      "tiles": [
+        {
+          "label": "Cash Collected Today",
+          "value": "$0"
+        },
+        {
+          "label": "Pipeline Movement",
+          "value": "1"
+        },
+        {
+          "label": "Close Rate (30d)",
+          "value": "—"
+        },
+        {
+          "label": "Show Rate",
+          "value": "—"
+        },
+        {
+          "label": "Cost / Funded Client",
+          "value": "—"
+        },
+        {
+          "label": "Funded Today",
+          "value": "0"
+        }
+      ],
+      "match": {
+        "cash": true,
+        "close": true,
+        "funded": true
+      },
+      "blankTiles": []
+    },
+    "content": {
+      "api": {
+        "httpOk": true,
+        "bodyOk": true,
+        "message": null,
+        "error": null,
+        "detail": null,
+        "tileCount": 5,
+        "videoCount": 0,
+        "productCount": 5,
+        "mapKeys": [],
+        "tiles": [
+          {
+            "code": "credit-analysis-report",
+            "name": "Credit Analysis Report",
+            "copy": "The analyzer output the client receives.",
+            "on": true,
+            "price_cents": null
+          },
+          {
+            "code": "credit-optimization-roadmap",
+            "name": "Credit Optimization Roadmap",
+            "copy": "The optimization plan derived from the analysis.",
+            "on": true,
+            "price_cents": null
+          },
+          {
+            "code": "funding-snapshot",
+            "name": "Funding Snapshot",
+            "copy": "Position and prequalification estimate at a point in time.",
+            "on": true,
+            "price_cents": null
+          },
+          {
+            "code": "bank-lender-match-list",
+            "name": "Bank and Lender Match List",
+            "copy": "Which institutions match the client profile.",
+            "on": true,
+            "price_cents": null
+          },
+          {
+            "code": "metro2-letter-pack",
+            "name": "Metro 2 Dispute Letter Pack",
+            "copy": "The paid DIY letter pack. Delivered by ds-02.",
+            "on": true,
+            "price_cents": null
+          }
+        ],
+        "keys": [
+          "ok",
+          "tiles",
+          "videos",
+          "map",
+          "products"
+        ]
+      },
+      "saveProbe": {
+        "httpOk": true,
+        "bodyOk": true,
+        "action": "save",
+        "error": null,
+        "message": null,
+        "detail": null,
+        "tileCount": 5
+      },
+      "videoProbe": {
+        "httpOk": false,
+        "bodyOk": false,
+        "error": "videos_not_stored_yet",
+        "message": "Tile words were saved. Welcome videos are not stored in the database yet.",
+        "detail": null
+      },
+      "saveVisible": true,
+      "saveHiddenAttr": false,
+      "saveTilesVisible": true,
+      "saveTilesHiddenAttr": false,
+      "uploadVisible": true,
+      "uploadHiddenAttr": false,
+      "notice": "",
+      "tileCardCount": 0,
+      "pageMentionsError": false,
+      "deadButtons": false
+    }
+  },
+  "loginPageHost": "fundhub.ai",
+  "loginUrl": "https://fundhub.ai/app/command-center.html",
+  "loginUrlHost": "fundhub.ai",
+  "campaignsHost": "fundhub.ai",
+  "commandCenterHost": "fundhub.ai",
+  "contentHost": "fundhub.ai",
+  "shots": [
+    "shots/00-after-login.png",
+    "shots/01-campaigns-dropdown.png",
+    "shots/01b-campaigns-after-pick.png",
+    "shots/01c-partner-select.png",
+    "shots/01d-direct-partner-url.png",
+    "shots/02-command-center-kpis.png",
+    "shots/03-content.png",
+    "shots/03b-content-prices.png"
+  ],
+  "verdicts": {
+    "campaigns": "CONFIRMED-FIXED",
+    "commandCenter": "CONFIRMED-FIXED",
+    "content": {
+      "tileReadAndWordSave": "CONFIRMED-FIXED",
+      "videoAndPricePersist": "STILL-OPEN",
+      "item": "STILL-OPEN"
+    }
+  },
+  "followUpCampaignReads": {
+    "note": "Landed on campaign-manager with partner already in the address. All five campaign reads named that partner and came back empty.",
+    "hits": [
+      {
+        "path": "/api/campaigns/list?state=all&limit=200&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "hasPartnerId": true,
+        "status": 200,
+        "itemCount": 0
+      },
+      {
+        "path": "/api/campaigns/spend?state=all&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "hasPartnerId": true,
+        "status": 200,
+        "itemCount": 0
+      },
+      {
+        "path": "/api/campaigns/action-log?state=all&limit=200&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "hasPartnerId": true,
+        "status": 200,
+        "itemCount": 0
+      },
+      {
+        "path": "/api/campaigns/connections?state=all&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "hasPartnerId": true,
+        "status": 200,
+        "itemCount": 0
+      },
+      {
+        "path": "/api/campaigns/fatigue?state=all&days=7&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "hasPartnerId": true,
+        "status": 200,
+        "itemCount": 0
+      }
+    ]
+  },
+  "schema": {
+    "source": "information_schema against live DATABASE_URL",
+    "hasContentVideos": false,
+    "hasContentTierMap": false,
+    "hasDisplayPriceCents": false,
+    "tablesFound": [
+      "entitlement_catalog"
+    ],
+    "migration171Applied": false
+  },
+  "priceInputValues": [
+    "",
+    "",
+    "",
+    "",
+    ""
+  ],
+  "livePlaywright": {
+    "command": "npm run test:e2e:live",
+    "tests": 26,
+    "passed": 26,
+    "failed": 0,
+    "skipped": 0,
+    "score": 100,
+    "formula": "passed_required/required * 100",
+    "evidence": "docs/workflows/e2e-verify-run4-evidence/live-playwright-100/last-run.json"
+  },
+  "htmlHashes": {
+    "campaignManager": "cef526a27d9fcc099cd7f47a8f4b3b9e7a5242bcfeacba579801c53b9ee7b4b4",
+    "commandCenter": "f90285ea7513d92194a46e2d1e67dcca3bc3514e63dac3ead0ff5ba1715ca550",
+    "contentAdmin": "a71262132bcae3a998ccccbb207014125996a8a059a06a4484474b4cb6b3a024",
+    "liveMatchesLocal": true,
+    "localCommit": "597df13"
+  }
+}

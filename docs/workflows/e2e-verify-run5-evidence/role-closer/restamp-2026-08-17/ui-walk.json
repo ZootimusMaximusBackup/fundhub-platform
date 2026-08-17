@@ -2,7 +2,7 @@
   "journey": "role-closer",
   "email": "closer@fundhub.ai",
   "base": "https://fundhub.ai",
-  "ranAt": "2026-08-17T20:35:47.493Z",
+  "ranAt": "2026-08-17T20:44:40.510Z",
   "login": {
     "pageShot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/00-login-page.png",
     "ok": true,
@@ -149,16 +149,16 @@
     {
       "href": "ops-admin.html",
       "label": "⚙Ops & AdminBETA",
-      "gated": false,
-      "offered": true,
-      "visible": true
+      "gated": true,
+      "offered": false,
+      "visible": false
     },
     {
       "href": "agent-editor.html",
       "label": "◈Agent EditorBETA",
-      "gated": false,
-      "offered": true,
-      "visible": true
+      "gated": true,
+      "offered": false,
+      "visible": false
     },
     {
       "href": "automations.html",
@@ -212,9 +212,9 @@
     {
       "href": "staff-teams.html",
       "label": "⚇Staff & Teams",
-      "gated": false,
-      "offered": true,
-      "visible": true
+      "gated": true,
+      "offered": false,
+      "visible": false
     },
     {
       "href": "hiring.html",
@@ -226,9 +226,9 @@
     {
       "href": "products-commissions.html",
       "label": "⛁Products & Commissions",
-      "gated": false,
-      "offered": true,
-      "visible": true
+      "gated": true,
+      "offered": false,
+      "visible": false
     },
     {
       "href": "sample-data.html",
@@ -267,9 +267,13 @@
       "finalUrl": "/app/command-center.html",
       "bounced": false,
       "title": "Fundhub — Command Center",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ ⌘ Command Center BETA ✷ Galaxy BETA AUTOMATION ▾ MARKETING ▾ fundhub Beta — under development. Data may be incomplete or inaccurate. Do not use for client decisions. Dismiss Fundhub / Command Center ORG: FUNDHUB Mon, Aug 17, 4:44:50 PM EDT LIVE CC-09 / SYSTEM CASH COLLECTED TODAY no live source yet PIPELINE MOVEMENT stage changes today CLOSE RATE (30D) boo",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/03-command-center.html.png",
       "apiFails": [],
-      "consoleErrors": []
+      "consoleErrors": [
+        "pageerror: FHData is not defined"
+      ]
     },
     {
       "label": "▤Pipeline",
@@ -278,9 +282,13 @@
       "finalUrl": "/app/pipeline.html",
       "bounced": false,
       "title": "Fundhub — Pipeline",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Mon, Aug 17, 4:44:54 PM EDT LIVE R-01 Sales — R-02 Funding: Card Stacking — R-03 Funding: Alt-Fin (Lendflow) — R-04 Optimization (Repair) Rounds — R-05 Inquiry Removal — R-06 AR / Collections — R-08 Affiliates + White Label ",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/04-pipeline.html.png",
       "apiFails": [],
-      "consoleErrors": []
+      "consoleErrors": [
+        "pageerror: FHData is not defined"
+      ]
     },
     {
       "label": "★Closer Dashboard",
@@ -289,6 +297,8 @@
       "finalUrl": "/app/closer-dashboard.html",
       "bounced": false,
       "title": "Fundhub — Closer Dashboard",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub Fundhub / Closer Dashboard ORG: FUNDHUB Mon, Aug 17, 4:44:59 PM EDT LIVE T— TEST — Closer Role closer CD-01 / TODAY'S PIPELINE CLIENT STAGE NEXT WHEN No booked calls for you right now. CD-02 / DEAL CALCULATORS Deal Funding Calculator how much they can acce",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/05-closer-dashboard.html.png",
       "apiFails": [],
       "consoleErrors": []
@@ -300,6 +310,8 @@
       "finalUrl": "/app/closer-call.html",
       "bounced": false,
       "title": "Closer · Call cockpit",
+      "h1": "Rick Rockwell",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub C-01 / CLOSER NO OPEN SHIFT TEST — CLOSER ROLE CASH TODAY $0 0 deposits CALLS HELD 0 0 no-shows CLOSE RATE — this month COMMISSION MTD — Open My numbers PACE TO TARGET — Open My numbers UNLOGGED 14 clear before next call Rick Rockwell Lost — Join call Pres",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/06-closer-call.html.png",
       "apiFails": [],
       "consoleErrors": []
@@ -311,6 +323,8 @@
       "finalUrl": "/app/my-numbers.html",
       "bounced": false,
       "title": "My numbers · Fundhub",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub C-02 / MY NUMBERS OFF SHIFT TEST — CLOSER ROLE CASH COLLECTED · THIS MONTH $0 No monthly deposits target in staff_targets RANK —/— — 0 Target — Stretch — THIS MONTH vs last month DEPOSITS CLOSED 0 was 0 CLOSE RATE — SHOW RATE — DOWNSELLS 0 DEPOSIT → FUNDED",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/07-my-numbers.html.png",
       "apiFails": [],
       "consoleErrors": []
@@ -322,6 +336,8 @@
       "finalUrl": "/app/calendar.html",
       "bounced": false,
       "title": "Fundhub — Calendar",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub Fundhub / Calendar ORG: FUNDHUB Mon, Aug 17, 4:45:12 PM EDT LIVE Day Week ‹ › Today Monday, August 17 BOOKED — DONE — NO-SHOW — SHOW RATE — LEFT TODAY — THIS WEEK · AUG 16 – AUG 22 SUN 16 — MON 17 — TUE 18 — WED 19 — THU 20 — FRI 21 — SAT 22 — TODAY — MOND",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/08-calendar.html.png",
       "apiFails": [],
       "consoleErrors": []
@@ -333,6 +349,8 @@
       "finalUrl": "/app/lenders.html",
       "bounced": false,
       "title": "Fundhub · Lenders",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ▩ Finance OS BETA ✒ Contracts CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub Fundhub / Lenders LIVE Mon, Aug 17, 4:45:17 PM EDT The lender list starts empty on purpose. Export the seven Airtable product tables, then Import CSV here. Do not invent lender names or bureau pulls. LENDER LIST BUREAU MISMATCH QUEUE AI BUREAU CONFIG PRODUCT TABLE All OnlineBizCC InBr",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/09-lenders.html.png",
       "apiFails": [],
       "consoleErrors": []
@@ -344,6 +362,8 @@
       "finalUrl": "/app/finance-os.html",
       "bounced": false,
       "title": "Fundhub — Finance OS",
+      "h1": "Finance OS",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ▩ Finance OS BETA ✒ Contracts CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub Beta — under development. Data may be incomplete or inaccurate. Do not use for client decisions. Dismiss FINANCE Finance OS — pick a client — Loading… systems nominal · fundhub.ai TEST — Closer Role · closer · 19 tabs LIVE Sign out Search ⌘K Chat",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/10-finance-os.html.png",
       "apiFails": [],
       "consoleErrors": []
@@ -355,9 +375,13 @@
       "finalUrl": "/app/contracts.html",
       "bounced": false,
       "title": "Fundhub — Contracts",
+      "h1": "Contracts",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ▩ Finance OS BETA ✒ Contracts CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub WORK Contracts — LOADING CT-00 / WAITING — sent, not signed yet CT-00 / WORDINGS — wordings in use CT-00 / SIGNED — signed and on file CT-00 / DRAFTS — started, not sent HOW THIS WORKS Send from the call. Open Present or the call cockpit for that person. Pick a wording, press Send, th",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/11-contracts.html.png",
       "apiFails": [],
-      "consoleErrors": []
+      "consoleErrors": [
+        "pageerror: FHData is not defined"
+      ]
     },
     {
       "label": "◎Client Control Panel",
@@ -366,9 +390,14 @@
       "finalUrl": "/app/client-control-panel.html",
       "bounced": false,
       "title": "Fundhub — Client Control Panel",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Inquiry Remover ◎ Company Brain BETA WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub / Client Control Panel ORG: FUNDHUB Mon, Aug 17, 4:45:27 PM EDT LIVE Loading… No client open — pick one below. CLIENT Choose a client MAIN STATUS — PREQUAL — TOTAL APPROVED — OPEN INQUIRIES — INQUIRY REMOVAL — SCORES — FUNDING ROUND — NEXT",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/12-client-control-panel.html.png",
       "apiFails": [],
-      "consoleErrors": []
+      "consoleErrors": [
+        "pageerror: FHData is not defined",
+        "pageerror: FHData is not defined"
+      ]
     },
     {
       "label": "✉Messaging",
@@ -377,9 +406,13 @@
       "finalUrl": "/app/messaging.html",
       "bounced": false,
       "title": "Fundhub — Messaging",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Inquiry Remover ◎ Company Brain BETA WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub Fundhub / Messaging ORG: FUNDHUB Mon, Aug 17, 4:45:32 PM EDT LIVE ⌕ All — Needs reply — Loading conversations… — No conversation open Pick one on the left to read it. Pick a conversation on the left to read it. — A reply goes out on the sa",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/13-messaging.html.png",
       "apiFails": [],
-      "consoleErrors": []
+      "consoleErrors": [
+        "pageerror: FHData is not defined"
+      ]
     },
     {
       "label": "▧Documents",
@@ -388,9 +421,13 @@
       "finalUrl": "/app/documents.html",
       "bounced": false,
       "title": "Fundhub — Documents",
+      "h1": "Documents",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Inquiry Remover ◎ Company Brain BETA WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub WORK Documents 0 PAST 14 DAYS PENDING ONLY DC-00 / TOTAL 0 across four classes DC-00 / AWAITING SIGNATURE 0 sent, not signed DC-00 / UNDELIVERED 0 generated, never sent DC-00 / OLDEST PENDING — No documents on file yet DC-A / CLASS Soft-pu",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/14-documents.html.png",
       "apiFails": [],
-      "consoleErrors": []
+      "consoleErrors": [
+        "pageerror: FHData is not defined"
+      ]
     },
     {
       "label": "⊘Inquiry Remover",
@@ -399,6 +436,8 @@
       "finalUrl": "/app/inquiry-remover.html",
       "bounced": false,
       "title": "Fundhub — Inquiry Remover",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Inquiry Remover ◎ Company Brain BETA WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub / Inquiry Remover ORG: FUNDHUB Mon, Aug 17, 4:45:39 PM EDT LIVE T— TEST — Closer Role closer QUEUE LEFT — WORKED — CALLS — CONFIRMED — QUEUE BY BUREAU EQUIFAX 0 none in queue TRANSUNION 0 none in queue EXPERIAN 0 none in queue WORK QUEUE C",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/15-inquiry-remover.html.png",
       "apiFails": [],
       "consoleErrors": []
@@ -410,6 +449,8 @@
       "finalUrl": "/app/company-brain.html",
       "bounced": false,
       "title": "Fundhub — Company Brain",
+      "h1": "Company Brain",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Inquiry Remover ◎ Company Brain BETA WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub Beta — under development. Data may be incomplete or inaccurate. Do not use for client decisions. Dismiss WORK · COMPANY BRAIN Company Brain SEARCH Ask the company docs STAFF Ask Sources 0 Ask a question to see matching Drive files. company",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/16-company-brain.html.png",
       "apiFails": [],
       "consoleErrors": []
@@ -421,53 +462,11 @@
       "finalUrl": "/app/galaxy.html",
       "bounced": false,
       "title": "Fundhub — Galaxy",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ ⌘ Command Center BETA ✷ Galaxy BETA AUTOMATION ▾ MARKETING ▾ fundhub Beta — under development. Data may be incomplete or inaccurate. Do not use for client decisions. Dismiss Fundhub / Galaxy 12 workers · 3 working · 9 idle Mon, Aug 17, 4:45:47 PM EDT LIVE LIVE Open shifts, recent events, and agents · 12 workers GX-01 / READING THE SKY size = output today b",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/17-galaxy.html.png",
       "apiFails": [],
       "consoleErrors": []
-    },
-    {
-      "label": "⚙Ops & AdminBETA",
-      "href": "ops-admin.html",
-      "httpStatus": 200,
-      "finalUrl": "/app/ops-admin.html",
-      "bounced": false,
-      "title": "Fundhub — Ops & Admin",
-      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/18-ops-admin.html.png",
-      "apiFails": [
-        {
-          "url": "/api/read/failed-events?status=pending&limit=200",
-          "status": 403,
-          "method": "GET"
-        },
-        {
-          "url": "/api/read/staff?limit=200",
-          "status": 403,
-          "method": "GET"
-        },
-        {
-          "url": "/api/read/invoices?status=open&limit=50",
-          "status": 403,
-          "method": "GET"
-        }
-      ],
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 403 ()",
-        "Failed to load resource: the server responded with a status of 403 ()",
-        "Failed to load resource: the server responded with a status of 403 ()"
-      ]
-    },
-    {
-      "label": "◈Agent EditorBETA",
-      "href": "agent-editor.html",
-      "httpStatus": 200,
-      "finalUrl": "/app/agent-editor.html",
-      "bounced": false,
-      "title": "Fundhub — Agent Editor",
-      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/19-agent-editor.html.png",
-      "apiFails": [],
-      "consoleErrors": [
-        "pageerror: FHData is not defined"
-      ]
     },
     {
       "label": "⇄Automations",
@@ -476,7 +475,9 @@
       "finalUrl": "/app/automations.html",
       "bounced": false,
       "title": "Fundhub — Automations",
-      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/20-automations.html.png",
+      "h1": "",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ ⇄ Automations ✎ Message Copy MARKETING ▾ fundhub / Automations ORG: FUNDHUB Mon, Aug 17, 4:45:51 PM EDT LIVE WORKFLOWS 51 ENGINE ON EVER TRIGGERED 42 of 51 RAIL All rails AF AI-SET AT BC BS C DPC DS F N OTHER S SYS U ✓ Engine is on. 42 of 51 workflows have had their trigger event recorded at least once. This screen does not track whether a wor",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/18-automations.html.png",
       "apiFails": [],
       "consoleErrors": []
     },
@@ -487,7 +488,9 @@
       "finalUrl": "/app/template-editor.html",
       "bounced": false,
       "title": "Fundhub — Message Copy",
-      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/21-template-editor.html.png",
+      "h1": "Message Copy",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ ⇄ Automations ✎ Message Copy MARKETING ▾ fundhub AUTOMATION Message Copy — LOADING LOADING Pick a message on the left to read or edit it. TE-00 / MESSAGES — pieces of copy you can edit TE-00 / TEXTS — sent as SMS TE-00 / EMAILS — sent as email TE-00 / SWITCHED OFF — waiting on approval TE-00 / DRAFT HAZARD — placeholder copy — blocked from sen",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/19-template-editor.html.png",
       "apiFails": [],
       "consoleErrors": [
         "pageerror: FHData is not defined"
@@ -500,7 +503,9 @@
       "finalUrl": "/app/social-studio.html",
       "bounced": false,
       "title": "Fundhub — Social Studio",
-      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/22-social-studio.html.png",
+      "h1": "Social Studio",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ◉ Social Studio BETA ✳ Creative Factory BETA fundhub Beta — under development. Data may be incomplete or inaccurate. Do not use for client decisions. Dismiss MARKETING Social Studio PARTNER_ID — no partner list — NOW = AUG 17 20:45Z + COMPOSE SS-00 / CHANNELS — no partner selected SS-00 / QUEUED — no partner selected SS-00 / BLOCKE",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/20-social-studio.html.png",
       "apiFails": [],
       "consoleErrors": []
     },
@@ -511,50 +516,21 @@
       "finalUrl": "/app/creative-factory.html",
       "bounced": false,
       "title": "Fundhub — Creative Factory",
-      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/23-creative-factory.html.png",
+      "h1": "Creative Factory",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ◉ Social Studio BETA ✳ Creative Factory BETA fundhub Beta — under development. Data may be incomplete or inaccurate. Do not use for client decisions. Dismiss MARKETING Creative Factory NO PARTNER SELECTED READ ONLY No partner selected. Nothing is loaded. PARTNER SCOPE ONE PARTNER PARTNER No partner selected No partner selected Noth",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/21-creative-factory.html.png",
       "apiFails": [],
       "consoleErrors": []
-    },
-    {
-      "label": "⚇Staff & Teams",
-      "href": "staff-teams.html",
-      "httpStatus": 200,
-      "finalUrl": "/app/staff-teams.html",
-      "bounced": false,
-      "title": "Fundhub — Staff & Teams",
-      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/24-staff-teams.html.png",
-      "apiFails": [
-        {
-          "url": "/api/read/staff?limit=200",
-          "status": 403,
-          "method": "GET"
-        }
-      ],
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 403 ()"
-      ]
-    },
-    {
-      "label": "⛁Products & Commissions",
-      "href": "products-commissions.html",
-      "httpStatus": 200,
-      "finalUrl": "/app/products-commissions.html",
-      "bounced": false,
-      "title": "Fundhub — Products & Commissions",
-      "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/25-products-commissions.html.png",
-      "apiFails": [],
-      "consoleErrors": [
-        "pageerror: FHData is not defined"
-      ]
     }
   ],
   "direct": [
     {
       "href": "/app/ops-admin.html",
       "httpStatus": 200,
-      "finalUrl": "/app/ops-admin.html",
-      "bounced": false,
-      "title": "Fundhub — Ops & Admin",
+      "finalUrl": "/app/closer-dashboard.html",
+      "bounced": true,
+      "title": "Fundhub — Closer Dashboard",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub Fundhub / Closer Dashboard ORG: FUNDHUB Mon, Aug 17, 4:46:03 PM EDT LIVE T— TEST — Closer Role closer CD-01 / TODAY'S PIPELINE CLIENT STAGE NEXT WHEN No booked calls for you right now. CD-02 / DEAL CALCULATORS Deal Funding Calculator how much they can acce",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/direct-_app_ops-admin.html.png",
       "apiFails": [],
       "consoleErrors": [
@@ -565,27 +541,21 @@
     {
       "href": "/app/staff-teams.html",
       "httpStatus": 200,
-      "finalUrl": "/app/staff-teams.html",
-      "bounced": false,
-      "title": "Fundhub — Staff & Teams",
+      "finalUrl": "/app/closer-dashboard.html",
+      "bounced": true,
+      "title": "Fundhub — Closer Dashboard",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub Fundhub / Closer Dashboard ORG: FUNDHUB Mon, Aug 17, 4:46:06 PM EDT LIVE T— TEST — Closer Role closer CD-01 / TODAY'S PIPELINE CLIENT STAGE NEXT WHEN No booked calls for you right now. CD-02 / DEAL CALCULATORS Deal Funding Calculator how much they can acce",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/direct-_app_staff-teams.html.png",
-      "apiFails": [
-        {
-          "url": "/api/read/staff?limit=200",
-          "status": 403,
-          "method": "GET"
-        }
-      ],
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 403 ()"
-      ]
+      "apiFails": [],
+      "consoleErrors": []
     },
     {
       "href": "/app/agent-editor.html",
       "httpStatus": 200,
-      "finalUrl": "/app/agent-editor.html",
-      "bounced": false,
-      "title": "Fundhub — Agent Editor",
+      "finalUrl": "/app/closer-dashboard.html",
+      "bounced": true,
+      "title": "Fundhub — Closer Dashboard",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub Fundhub / Closer Dashboard ORG: FUNDHUB Mon, Aug 17, 4:46:09 PM EDT LIVE T— TEST — Closer Role closer CD-01 / TODAY'S PIPELINE CLIENT STAGE NEXT WHEN No booked calls for you right now. CD-02 / DEAL CALCULATORS Deal Funding Calculator how much they can acce",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/direct-_app_agent-editor.html.png",
       "apiFails": [],
       "consoleErrors": [
@@ -595,9 +565,10 @@
     {
       "href": "/app/products-commissions.html",
       "httpStatus": 200,
-      "finalUrl": "/app/products-commissions.html",
-      "bounced": false,
-      "title": "Fundhub — Products & Commissions",
+      "finalUrl": "/app/closer-dashboard.html",
+      "bounced": true,
+      "title": "Fundhub — Closer Dashboard",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub Fundhub / Closer Dashboard ORG: FUNDHUB Mon, Aug 17, 4:46:12 PM EDT LIVE T— TEST — Closer Role closer CD-01 / TODAY'S PIPELINE CLIENT STAGE NEXT WHEN No booked calls for you right now. CD-02 / DEAL CALCULATORS Deal Funding Calculator how much they can acce",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/direct-_app_products-commissions.html.png",
       "apiFails": [],
       "consoleErrors": [
@@ -610,23 +581,10 @@
       "finalUrl": "/app/closer-dashboard.html",
       "bounced": true,
       "title": "Fundhub — Closer Dashboard",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub Fundhub / Closer Dashboard ORG: FUNDHUB Mon, Aug 17, 4:46:15 PM EDT LIVE T— TEST — Closer Role closer CD-01 / TODAY'S PIPELINE CLIENT STAGE NEXT WHEN No booked calls for you right now. CD-02 / DEAL CALCULATORS Deal Funding Calculator how much they can acce",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/direct-_app_campaign-manager.html.png",
-      "apiFails": [
-        {
-          "url": "/api/campaigns/connections?state=all",
-          "status": 400,
-          "method": "GET"
-        },
-        {
-          "url": "/api/campaigns/spend?state=all",
-          "status": 400,
-          "method": "GET"
-        }
-      ],
-      "consoleErrors": [
-        "Failed to load resource: the server responded with a status of 400 ()",
-        "Failed to load resource: the server responded with a status of 400 ()"
-      ]
+      "apiFails": [],
+      "consoleErrors": []
     },
     {
       "href": "/app/sample-data.html",
@@ -634,6 +592,7 @@
       "finalUrl": "/app/closer-dashboard.html",
       "bounced": true,
       "title": "Fundhub — Closer Dashboard",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub Fundhub / Closer Dashboard ORG: FUNDHUB Mon, Aug 17, 4:46:18 PM EDT LIVE T— TEST — Closer Role closer CD-01 / TODAY'S PIPELINE CLIENT STAGE NEXT WHEN No booked calls for you right now. CD-02 / DEAL CALCULATORS Deal Funding Calculator how much they can acce",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/direct-_app_sample-data.html.png",
       "apiFails": [],
       "consoleErrors": []
@@ -644,6 +603,7 @@
       "finalUrl": "/app/closer-dashboard.html",
       "bounced": true,
       "title": "Fundhub — Closer Dashboard",
+      "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub Fundhub / Closer Dashboard ORG: FUNDHUB Mon, Aug 17, 4:46:20 PM EDT LIVE T— TEST — Closer Role closer CD-01 / TODAY'S PIPELINE CLIENT STAGE NEXT WHEN No booked calls for you right now. CD-02 / DEAL CALCULATORS Deal Funding Calculator how much they can acce",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/direct-_app_hiring.html.png",
       "apiFails": [],
       "consoleErrors": [
@@ -656,6 +616,7 @@
       "finalUrl": "/app/inquiry-remover.html",
       "bounced": false,
       "title": "Fundhub — Inquiry Remover",
+      "bodyText": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Inquiry Remover ◎ Company Brain BETA WATCH ▾ AUTOMATION ▾ MARKETING ▾ fundhub / Inquiry Remover ORG: FUNDHUB Mon, Aug 17, 4:46:23 PM EDT LIVE T— TEST — Closer Role closer QUEUE LEFT — WORKED — CALLS — CONFIRMED — QUEUE BY BUREAU EQUIFAX 0 none in queue TRANSUNION 0 none in queue EXPERIAN 0 none in queue WORK QUEUE C",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/direct-_app_inquiry-remover.html.png",
       "apiFails": [],
       "consoleErrors": []
@@ -666,6 +627,7 @@
       "finalUrl": "/dashboard.html",
       "bounced": false,
       "title": "Fundhub — Not found",
+      "bodyText": "404 · PAGE NOT FOUND That page isn't here. The link may be old or the address slightly off. Everything's reachable from the homepage. /dashboard.html Back to fundhub.ai the public site The CRM sign-in required Sign in staff and demo access fundhub · 404",
       "shot": "docs/workflows/e2e-verify-run5-evidence/role-closer/restamp-2026-08-17/shots/direct-_dashboard.html.png",
       "apiFails": [],
       "consoleErrors": [

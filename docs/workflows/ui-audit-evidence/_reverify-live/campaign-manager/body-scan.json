@@ -1,0 +1,15 @@
+{
+  "slug": "campaign-manager",
+  "url": "/app/campaign-manager.html",
+  "finalUrl": "/app/campaign-manager.html",
+  "chars": 9310,
+  "hits": {
+    "FROM ": 6
+  },
+  "snippets": [
+    {
+      "needle": "FROM ",
+      "around": ". A panel that could not be loaded says so and stays empty. It never keeps rows from an earlier load, and it never stands in numbers of its own. CM-02 / NEEDS ATTENT"
+    }
+  ]
+}

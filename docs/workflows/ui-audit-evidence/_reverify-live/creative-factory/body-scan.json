@@ -1,0 +1,15 @@
+{
+  "slug": "creative-factory",
+  "url": "/app/creative-factory.html",
+  "finalUrl": "/app/creative-factory.html",
+  "chars": 11988,
+  "hits": {
+    "FROM ": 9
+  },
+  "snippets": [
+    {
+      "needle": "FROM ",
+      "around": "V NEXT › count 0 · limit 10 · offset 0 · hasMore false no total — hasMore comes from selecting limit+1 rows Newest first, always. These columns cannot be sorted or s"
+    }
+  ]
+}

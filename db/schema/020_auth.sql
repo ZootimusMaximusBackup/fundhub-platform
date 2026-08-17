@@ -103,7 +103,7 @@ BEGIN
         ('owner',             'Owner',              'Full control. Issues staff invites.',        5),
         ('closer',            'Closer',             'Closes the sale. Earns front end.',         10),
         ('funding_advisor',   'Funding Advisor',    'Works the file to funding. Earns back end.',20),
-        ('inquiry_specialist','Inquiry Specialist', 'Inquiry removal work.',                     30),
+        ('inquiry_specialist','Specialist',         'Inquiry removal and credit repair.',        30),
         ('setter',            'Setter',             'Books the call.',                           40),
         ('admin',             'Admin',              'Operations and oversight.',                 50)
       ) AS v(key, name, description, sort_order)

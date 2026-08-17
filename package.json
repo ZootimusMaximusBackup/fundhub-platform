@@ -21,7 +21,20 @@
     "test:e2e": "playwright test",
     "test:e2e:live": "playwright test -c playwright.live.config.mjs",
     "verify:e2e": "node scripts/run-e2e-verification.mjs",
-    "gate-relay": "node scripts/gate-relay/index.mjs"
+    "gate-relay": "node scripts/gate-relay/index.mjs",
+    "notion:login": "node scripts/notion-legacy-pull.mjs --login",
+    "notion:pull": "node scripts/notion-legacy-pull.mjs --pull",
+    "notion:transcribe": "node scripts/notion-legacy-transcribe.mjs",
+    "notion:organize": "node scripts/notion-legacy-organize.mjs",
+    "notion:vimeo": "node scripts/notion-vimeo-watch.mjs",
+    "notion:retry": "node scripts/notion-retry-failed.mjs",
+    "notion:captions": "node scripts/notion-vimeo-captions.mjs",
+    "notion:sweep": "node scripts/notion-final-sweep.mjs",
+    "notion:finish": "node scripts/notion-finish-pass.mjs",
+    "notion:files": "node scripts/notion-pull-files.mjs",
+    "notion:resume": "node scripts/notion-resume-pull.mjs",
+    "notion:verify": "node scripts/notion-legacy-verify.mjs",
+    "notion:all": "node scripts/notion-legacy-all.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "^10.7.11",

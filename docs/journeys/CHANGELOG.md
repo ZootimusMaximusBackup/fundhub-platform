@@ -1,4 +1,6 @@
-2026-08-17 | white-label | Partner marketing suite (beta): owner switch, token cap, Brand Studio copy/history/wordmark, Social Studio queue, Creative Factory usage. New routes under `/api/partner-marketing/*`, `/api/social/posts`, `/api/social/generate`. COMPLIANCE REVIEW REQUIRED — generated site copy, posts, ads. | Owner: proceed on marketing suite plan | (pending commit)
+2026-08-17 | role-inquiry-remover | Specialist desk: same login (`inquiry_specialist`), badge name Specialist, one page with Inquiries / Repair toggle. New `GET /api/read/repair-cases`. Stuck-file path opened to Specialist. COMPLIANCE REVIEW REQUIRED — dispute letters, human send only. | Owner: GO on repair screen as inquiry role, renamed Specialist, toggle not a new sidebar row | (pending commit)
+
+
 2026-08-17 | role-owner + role-closer + affiliate + white-label | Owner answers from the 2026-08-17 UI audit: beta screens stay on the owner rail; partner Home is partner-galaxy; Content mock is off the rail; owners are off the staff roster; booked never undercounts held; contract sign has no decline button; Present fills the client's first name. | Owner answers on ui-audit-2026-08-17 | (pending commit)
 
 2026-08-17 | affiliate + white-label | Affiliates and white-label partners may download Darwin's Message Blaster for Mac (`GET /api/gifts/message-blaster`). Gift cards on affiliate.html and partner-galaxy.html. Not staff, not clients, not the DIY brokerage. | Owner: gift the Mac blaster to affiliates and WL partners | (pending commit)

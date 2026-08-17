@@ -2,8 +2,8 @@
 // answer "which agents are live", "what is this one allowed to do", and "who owns
 // it".
 //
-// Two agents are running in production out of the inquiry-removal-ai repo on
-// Bland AI: Setter Josh and the Inquiry Removal AI. 037_agent_registry.sql seeds
+// Two agents were recorded as live on Bland AI: Setter Josh and the Inquiry
+// Removal AI. Phone inquiry is on hold. 037_agent_registry.sql seeds
 // those as live with their runtime recorded and everything else as draft — the
 // agent-editor screen shows eleven as live, which is sample data.
 //

@@ -37,7 +37,7 @@ flowchart TD
     CAN --> A_privacy[privacy — 1 route]
     CAN --> A_proxy[proxy — 2 routes]
     CAN --> A_public[public — 3 routes]
-    CAN --> A_read[Reading data — 47 routes]
+    CAN --> A_read[Reading data — 48 routes]
     CAN --> A_repair[repair — 2 routes]
     CAN --> A_social[social — 5 routes]
     CAN --> A_staff[staff — 2 routes]
@@ -46,12 +46,11 @@ flowchart TD
     WHO -->|Yes| CANT[Blocked — 2 routes]
     CANT --> B_chat[chat — 1 blocked]
     CANT --> B_read[Reading data — 1 blocked]
-    WHO -->|Yes| UNV[UNVERIFIED — 1 route whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**165 of 168 routes.**
+**166 of 168 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -200,6 +199,7 @@ flowchart TD
 | `/api/read/portal-summary` | GET | staff, client |
 | `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/proxy-sessions` | GET | owner, funding_advisor |
+| `/api/read/repair-cases` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/sales-floor` | GET | owner, admin, sales_manager |
 | `/api/read/search` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/staff` | GET | owner, admin, sales_manager |
@@ -238,12 +238,7 @@ flowchart TD
 
 ## UNVERIFIED
 
-The gate on these could not be traced from the code, so this page does not claim
-either way whether this journey reaches them. Each one is a question for a human.
-
-| Route | Methods | Who the code lets in |
-|---|---|---|
-| `/api/gifts/message-blaster` | GET, HEAD | — |
+_None — every route's gate was traced to its source._
 
 ## How to check this yourself
 

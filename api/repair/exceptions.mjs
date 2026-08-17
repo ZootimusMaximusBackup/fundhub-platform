@@ -1,12 +1,12 @@
-// /api/repair/exceptions — owner/admin queue for stalled repair cards + low-confidence parses.
-// Extends the inquiry-remover pattern: queue list, confirm action. No specialist role.
+// /api/repair/exceptions — stalled repair cards + low-confidence parses.
+// Owner, admin, and Specialist (inquiry_specialist). Human confirm only.
 
 import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
 import { SUPER_ROLES } from "../../src/http/middleware/requireRole.mjs";
 import { isUuid } from "../../src/http/read-api.mjs";
 
-const ALLOWED = new Set(["owner", "admin", ...SUPER_ROLES]);
+const ALLOWED = new Set(["owner", "admin", "inquiry_specialist", ...SUPER_ROLES]);
 
 export default async function handler(req, res) {
   const principal = await requirePrincipal(req, res, ["staff"], { db });

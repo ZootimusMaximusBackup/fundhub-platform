@@ -1,12 +1,12 @@
 # Inquiry Removal AI
 
-AI-powered outbound calling system for FundHub. Three distinct systems in one Vercel deployment:
+AI-powered outbound calling system for FundHub. Parked copy. Phone inquiry is on hold. Fundhub hosts on Netlify. There is no Vercel app.
 
 1. **AI Setter "Josh"** — outbound Bland AI voice agent that calls leads after they book a Strategy Session
 2. **Bureau Dispute Agents** — Bland AI agents that call Experian, TransUnion, and Equifax to dispute inquiries and fraudulent accounts
 3. **Mailgun Bank Inbox** — inbound email pipeline that classifies bank funding emails and routes events to Airtable + GHL
 
-**Deployed:** `inquiry-removal-ai-sigma.vercel.app`
+**Deployed:** not deployed. On hold.
 
 ---
 
@@ -97,7 +97,7 @@ All three agents follow the same IVR navigation pattern: navigate automated syst
 
 Business hours: **M-F 9am-5pm ET** (bureau lines open ~8am-8pm ET; conservative window used).
 
-Cron schedule in `vercel.json`: `*/15 13-22 * * 1-5` (every 15 min, M-F, 1pm-10pm UTC = 9am-6pm ET).
+Cron window (when this is live again): every 15 min, M-F, 9am-6pm ET. Not hosted today. Phone inquiry is on hold.
 
 ### `POST /api/launch-call` Payload
 
@@ -369,7 +369,7 @@ Tests mock all external dependencies (Bland AI, Airtable, GHL). No real calls ar
 ```bash
 npm install
 cp .env.example .env   # fill in values
-npm run dev            # starts Vercel dev server on :3000
+npm run dev            # local only. Phone inquiry is on hold.
 ```
 
 The test UI is available at `http://localhost:3000/test.html` — select a bureau, enter a phone number, hit fire. Your phone rings when the AI reaches a rep.
@@ -378,11 +378,7 @@ The test UI is available at `http://localhost:3000/test.html` — select a burea
 
 ## Deployment
 
-```bash
-vercel --prod
-```
-
-Set all env vars in Vercel dashboard (Settings → Environment Variables). The cron job (`/api/dispatch-scheduled`) is configured in `vercel.json` and runs automatically on the Vercel Pro plan.
+Not deployed. Phone inquiry is on hold. Fundhub hosts on Netlify. Do not stand this up on another host.
 
 Bland AI webhook URL on each outbound call is:
 - `https://fundhub.ai/api/webhooks/bland` (override with `BLAND_WEBHOOK_URL`)

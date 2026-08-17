@@ -557,6 +557,66 @@ export function buildCaseSendRequest(opts) {
   return { method: "POST", path: "/api/inquiry-cases", body: body };
 }
 
+/* ── REPAIR PANE ─────────────────────────────────────────────────────────────
+   Same desk, other toggle. Send is human-only. No letter without an id. */
+
+const BUREAU_NAMES = Object.freeze({ EX: "Experian", EQ: "Equifax", TU: "TransUnion" });
+
+export function bureauLabel(code) {
+  const k = String(code || "").toUpperCase();
+  return BUREAU_NAMES[k] || k || "—";
+}
+
+export function repairStagePill(stageKey) {
+  const k = String(stageKey || "");
+  if (k === "stalled") return { cls: "noanswer", text: "Stuck" };
+  if (k === "ready_to_send" || k === "letters_generated") return { cls: "new", text: "Ready" };
+  if (k === "program_complete") return { cls: "confirmed", text: "Done" };
+  if (k === "in_transit" || k === "awaiting_response") return { cls: "progress", text: "Waiting" };
+  if (k === "response_received") return { cls: "progress", text: "Answer in" };
+  if (k === "cancelled") return { cls: "", text: "Cancelled" };
+  return { cls: "", text: k ? k.replace(/_/g, " ") : "Unknown" };
+}
+
+export function buildRepairSendRequest(opts) {
+  const o = opts || {};
+  requireClientId(o.clientId);
+  if (o.mail !== true) throw new ViewError("mail required — a person has to press send");
+  const letters = Array.isArray(o.letters) ? o.letters : [];
+  if (!letters.length) throw new ViewError("no letters ready to send");
+  const bodyLetters = [];
+  for (const letter of letters) {
+    if (!letter || !letter.bureau) throw new ViewError("each letter needs a bureau");
+    const html = letter.html || letter.body_text || "";
+    if (!html) throw new ViewError("a letter with no body cannot be mailed");
+    const row = {
+      bureau: String(letter.bureau).toUpperCase(),
+      html: html
+    };
+    if (letter.id && isUuid(letter.id)) row.letter_id = letter.id;
+    bodyLetters.push(row);
+  }
+  return {
+    method: "POST",
+    path: "/api/repair/send",
+    body: {
+      mail: true,
+      client_id: o.clientId,
+      letters: bodyLetters
+    }
+  };
+}
+
+export function buildRepairConfirmParseRequest(opts) {
+  const o = opts || {};
+  if (!isUuid(o.responseId)) throw new ViewError("response id must be a uuid");
+  return {
+    method: "POST",
+    path: "/api/repair/exceptions",
+    body: { action: "confirm_parse", responseId: o.responseId }
+  };
+}
+
 export const VIEW = {
   ATTEMPT_KINDS: ATTEMPT_KINDS,
   COUNTING_KINDS: COUNTING_KINDS,
@@ -588,5 +648,9 @@ export const VIEW = {
   pendingLabel: pendingLabel,
   caseUiStatus: caseUiStatus,
   caseCallState: caseCallState,
-  buildCaseSendRequest: buildCaseSendRequest
+  buildCaseSendRequest: buildCaseSendRequest,
+  bureauLabel: bureauLabel,
+  repairStagePill: repairStagePill,
+  buildRepairSendRequest: buildRepairSendRequest,
+  buildRepairConfirmParseRequest: buildRepairConfirmParseRequest
 };

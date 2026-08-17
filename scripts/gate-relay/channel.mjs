@@ -29,7 +29,8 @@ export function createSmsChannel() {
     send: notWired,
     onReply: notWired,
     downloadVoice: notWired,
-    pollOnce: notWired
+    pollOnce: notWired,
+    answerCallback: notWired
   };
 }
 
@@ -61,19 +62,24 @@ export function createTelegramChannel({
     allowedUserId,
     chatId,
 
-    async send(message, { options } = {}) {
+    async send(message, { options, id } = {}) {
       const payload = { chat_id: chatId, text: String(message) };
       if (Array.isArray(options) && options.length) {
-        payload.reply_markup = optionKeyboard(options);
+        payload.reply_markup = optionKeyboard(options, { id });
       }
       return api("sendMessage", payload);
+    },
+
+    async answerCallback(callbackQueryId) {
+      if (!callbackQueryId) return null;
+      return api("answerCallbackQuery", { callback_query_id: callbackQueryId });
     },
 
     async pollOnce(offset = 0, { timeout = 30 } = {}) {
       const result = await api("getUpdates", {
         offset,
         timeout,
-        allowed_updates: ["message"]
+        allowed_updates: ["message", "callback_query"]
       });
       return Array.isArray(result) ? result : [];
     },
@@ -109,8 +115,31 @@ export function createTelegramChannel({
   };
 }
 
-export function optionKeyboard(options) {
+export function callbackData(id, option) {
+  const data = `${id}|${option}`;
+  return data.length <= 64 ? data : data.slice(0, 64);
+}
+
+export function parseCallbackData(data) {
+  const raw = String(data || "");
+  const i = raw.indexOf("|");
+  if (i <= 0) return null;
+  return { id: raw.slice(0, i), answer: raw.slice(i + 1) };
+}
+
+export function optionKeyboard(options, { id } = {}) {
   const rows = [];
+  if (id) {
+    for (let i = 0; i < options.length; i += 2) {
+      rows.push(
+        options.slice(i, i + 2).map((text) => ({
+          text: String(text),
+          callback_data: callbackData(id, text)
+        }))
+      );
+    }
+    return { inline_keyboard: rows };
+  }
   for (let i = 0; i < options.length; i += 2) {
     rows.push(options.slice(i, i + 2).map((text) => ({ text: String(text) })));
   }
@@ -122,7 +151,26 @@ export function optionKeyboard(options) {
 }
 
 export function extractInbound(update) {
-  const msg = update && (update.message || update.edited_message);
+  if (!update) return null;
+  if (update.callback_query) {
+    const cq = update.callback_query;
+    const parsed = parseCallbackData(cq.data);
+    const from = cq.from || {};
+    const msg = cq.message || {};
+    const chat = msg.chat || {};
+    return {
+      userId: from.id != null ? String(from.id) : "",
+      chatId: chat.id != null ? String(chat.id) : "",
+      text: parsed ? parsed.answer : "",
+      voiceFileId: null,
+      messageId: msg.message_id,
+      updateId: update.update_id,
+      replyToMessageId: msg.message_id != null ? Number(msg.message_id) : null,
+      callbackGateId: parsed ? parsed.id : null,
+      callbackQueryId: cq.id != null ? String(cq.id) : null
+    };
+  }
+  const msg = update.message || update.edited_message;
   if (!msg) return null;
   const userId = msg.from && msg.from.id != null ? String(msg.from.id) : "";
   const chatId = msg.chat && msg.chat.id != null ? String(msg.chat.id) : "";
@@ -131,13 +179,17 @@ export function extractInbound(update) {
     (msg.voice && msg.voice.file_id) ||
     (msg.audio && msg.audio.file_id) ||
     null;
+  const replyTo = msg.reply_to_message && msg.reply_to_message.message_id;
   return {
     userId,
     chatId,
     text,
     voiceFileId,
     messageId: msg.message_id,
-    updateId: update.update_id
+    updateId: update.update_id,
+    replyToMessageId: replyTo != null ? Number(replyTo) : null,
+    callbackGateId: null,
+    callbackQueryId: null
   };
 }
 

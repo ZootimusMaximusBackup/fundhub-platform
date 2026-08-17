@@ -1,8 +1,11 @@
-// /api/inquiry — authed proxy to the inquiry-removal-ai runtime.
+// /api/inquiry — authed proxy to an optional inquiry phone runtime.
 //
-// The Bearer secret for that service stays server-side; the browser only ever
-// holds a staff session. Role-gated: inquiry_specialist / admin (owner passes
-// every gate via SUPER_ROLES).
+// Phone inquiry is on hold. There is no default host. Unset INQUIRY_API_BASE
+// means this route answers not_configured and never calls out.
+//
+// The Bearer secret stays server-side; the browser only ever holds a staff
+// session. Role-gated: inquiry_specialist / admin (owner passes every gate
+// via SUPER_ROLES).
 //
 //   GET  ?action=cases[&status=&all=1]         → GET  {base}/api/cases
 //   GET  ?action=status&call_id=xxx            → GET  {base}/api/call-status
@@ -10,11 +13,9 @@
 //   POST ?action=launch    body per launch-call
 //   POST ?action=update    body { case_id, fields } → case-update (notes/status)
 //
-// Env: INQUIRY_API_BASE (default the production deploy), INQUIRY_API_SECRET.
+// Env: INQUIRY_API_BASE (required to call out; no default), INQUIRY_API_SECRET.
 
 import { requireRole } from "../src/http/middleware/requireRole.mjs";
-
-const DEFAULT_BASE = "https://inquiry-removal-ai-sigma.vercel.app";
 
 const ACTIONS = {
   cases:    { method: "GET",  path: "/api/cases",        pass: ["status", "all", "max"] },
@@ -29,18 +30,17 @@ export default async function handler(req, res) {
   if (!staff) return;
 
   const secret = process.env.INQUIRY_API_SECRET;
-  if (!secret) {
-    /* 503, not 500. Unconfigured is a deployment state, not a crash: the code
-       is fine and there is nothing to retry until an operator sets the variable.
-       A 500 here reads as a bug and sends someone reading logs down the wrong
-       path — this is the single most common local response from this endpoint,
-       because the secret is unset in every developer environment. */
+  const baseRaw = process.env.INQUIRY_API_BASE;
+  if (!secret || !baseRaw) {
+    /* 503, not 500. Unconfigured is a deployment state, not a crash. Phone
+       inquiry is on hold: there is no host to call. A missing secret or base
+       must not fall through to a leftover URL. */
     return res.status(503).json({
       ok: false, error: "not_configured",
-      message: "INQUIRY_API_SECRET is not set — the inquiry runtime is unreachable from this deploy"
+      message: "Inquiry phone runtime is not configured"
     });
   }
-  const base = (process.env.INQUIRY_API_BASE || DEFAULT_BASE).replace(/\/$/, "");
+  const base = baseRaw.replace(/\/$/, "");
 
   const action = ACTIONS[req.query?.action];
   if (!action) {

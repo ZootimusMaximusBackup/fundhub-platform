@@ -1,0 +1,1165 @@
+{
+  "screen": "/app/calendar.html",
+  "slug": "_reverify-live/calendar",
+  "email": "sales@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T20:16:31.546Z",
+  "login": {
+    "ok": true,
+    "cached": true,
+    "landedAt": "/app/sales-floor.html",
+    "role": "sales_manager"
+  },
+  "load": {
+    "httpStatus": 200,
+    "retriesFor503OrBounce": 0,
+    "finalUrl": "/app/calendar.html",
+    "bounced": false,
+    "title": "Fundhub — Calendar",
+    "apiCalls": [
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/shifts?roster=1",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/tasks?done=false&limit=200",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/health",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/org-brand",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/tasks?done=true&limit=200",
+        "status": 200
+      }
+    ],
+    "apiFails": [],
+    "consoleErrors": [],
+    "dialogs": [],
+    "shots": {
+      "fold": "docs/workflows/ui-audit-evidence/_reverify-live/calendar/1440-fold.png",
+      "full": "docs/workflows/ui-audit-evidence/_reverify-live/calendar/1440-full.png"
+    }
+  },
+  "dom": {
+    "vw": 1440,
+    "vh": 900,
+    "docH": 900,
+    "sizes": {
+      "14px": {
+        "count": 2,
+        "examples": [
+          "Fundhub",
+          "Monday, August 17"
+        ]
+      },
+      "16px": {
+        "count": 1,
+        "examples": [
+          "/"
+        ]
+      },
+      "12.5px": {
+        "count": 2,
+        "examples": [
+          "Calendar",
+          "Join Call"
+        ]
+      },
+      "10.5px": {
+        "count": 4,
+        "examples": [
+          "Org: Fundhub",
+          "LIVE",
+          "Strategy session booked"
+        ]
+      },
+      "12px": {
+        "count": 4,
+        "examples": [
+          "Mon, Aug 17, 4:16:37 PM EDT",
+          "Nothing else dated after Up Next.",
+          "Nobody clocked in right now."
+        ]
+      },
+      "11.5px": {
+        "count": 11,
+        "examples": [
+          "Day",
+          "Week",
+          "16"
+        ]
+      },
+      "11px": {
+        "count": 14,
+        "examples": [
+          "‹",
+          "›",
+          "Today"
+        ]
+      },
+      "8.5px": {
+        "count": 6,
+        "examples": [
+          "Booked",
+          "Done",
+          "No-show"
+        ]
+      },
+      "13px": {
+        "count": 8,
+        "examples": [
+          "2",
+          "0",
+          "—"
+        ]
+      },
+      "9.5px": {
+        "count": 14,
+        "examples": [
+          "This week · Aug 16 – Aug 22",
+          "Sun",
+          "Mon"
+        ]
+      },
+      "9px": {
+        "count": 10,
+        "examples": [
+          "3 booked",
+          "2 booked · 2 left",
+          "—"
+        ]
+      },
+      "10px": {
+        "count": 9,
+        "examples": [
+          "1:00 PM",
+          "4:00 PM",
+          "double-booking alert · empty day · open "
+        ]
+      },
+      "22px": {
+        "count": 1,
+        "examples": [
+          "197"
+        ]
+      },
+      "15px": {
+        "count": 1,
+        "examples": [
+          "Rick Rockwell"
+        ]
+      }
+    },
+    "navVisibleCount": 4,
+    "navActive": [
+      "▦Calendar"
+    ],
+    "navGroups": [
+      {
+        "head": "Sales▾",
+        "items": [
+          "▤Pipeline",
+          "★Closer Dashboard",
+          "▣Sales floor",
+          "▦Calendar"
+        ]
+      },
+      {
+        "head": "Funding▾",
+        "items": []
+      },
+      {
+        "head": "Client ops▾",
+        "items": []
+      },
+      {
+        "head": "Watch▾",
+        "items": []
+      },
+      {
+        "head": "Automation▾",
+        "items": []
+      },
+      {
+        "head": "Marketing▾",
+        "items": []
+      },
+      {
+        "head": "Admin▾",
+        "items": []
+      }
+    ],
+    "h1": [],
+    "h2": [],
+    "contentWidth": 1440,
+    "contentSel": "div.app",
+    "sideW": 228,
+    "controlsCount": 31,
+    "controls": [
+      {
+        "idx": 0,
+        "key": "a|||command-center.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "",
+        "id": null,
+        "cls": "logo inv",
+        "href": "command-center.html",
+        "disabled": false,
+        "w": 118,
+        "h": 24,
+        "top": 10,
+        "left": 16,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 238)",
+        "filled": false
+      },
+      {
+        "idx": 1,
+        "key": "button|‹‹|burger|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "‹‹",
+        "id": "burger",
+        "cls": "burger",
+        "href": null,
+        "disabled": false,
+        "w": 26,
+        "h": 26,
+        "top": 9,
+        "left": 186,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 2,
+        "key": "button|Sales▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Sales▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 56,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 3,
+        "key": "a|▤Pipeline||pipeline.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "▤Pipeline",
+        "id": null,
+        "cls": "navitem",
+        "href": "pipeline.html",
+        "disabled": false,
+        "w": 228,
+        "h": 27,
+        "top": 84,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 4,
+        "key": "a|★Closer Dashboard||closer-dashboard.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "★Closer Dashboard",
+        "id": null,
+        "cls": "navitem",
+        "href": "closer-dashboard.html",
+        "disabled": false,
+        "w": 228,
+        "h": 27,
+        "top": 111,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 5,
+        "key": "a|▣Sales floor||sales-floor.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "▣Sales floor",
+        "id": null,
+        "cls": "navitem",
+        "href": "sales-floor.html",
+        "disabled": false,
+        "w": 228,
+        "h": 27,
+        "top": 139,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 6,
+        "key": "a|▦Calendar||calendar.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "▦Calendar",
+        "id": null,
+        "cls": "navitem on",
+        "href": "calendar.html",
+        "disabled": false,
+        "w": 228,
+        "h": 27,
+        "top": 166,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(22, 22, 25)",
+        "color": "rgb(252, 252, 252)",
+        "filled": true
+      },
+      {
+        "idx": 7,
+        "key": "button|Funding▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Funding▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 196,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 8,
+        "key": "button|Client ops▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Client ops▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 227,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 9,
+        "key": "button|Watch▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Watch▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 258,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 10,
+        "key": "button|Automation▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Automation▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 290,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 11,
+        "key": "button|Marketing▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Marketing▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 321,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 12,
+        "key": "button|Admin▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Admin▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 352,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 13,
+        "key": "div|Sun163 booked1:30Karl Elliott3:00Adam Denoto+1 more||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "div",
+        "type": null,
+        "text": "Sun163 booked1:30Karl Elliott3:00Adam Denoto+1 more",
+        "id": null,
+        "cls": "ws-day",
+        "href": null,
+        "disabled": false,
+        "w": 115,
+        "h": 44,
+        "top": 120,
+        "left": 244,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(252, 252, 252)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 14,
+        "key": "div|Mon172 booked · 2 left1:00Rick Rockwell4:00Selwyn Mcintosh||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "div",
+        "type": null,
+        "text": "Mon172 booked · 2 left1:00Rick Rockwell4:00Selwyn Mcintosh",
+        "id": null,
+        "cls": "ws-day today",
+        "href": null,
+        "disabled": false,
+        "w": 115,
+        "h": 44,
+        "top": 120,
+        "left": 365,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 15,
+        "key": "div|Tue18—Nothing booked.||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "div",
+        "type": null,
+        "text": "Tue18—Nothing booked.",
+        "id": null,
+        "cls": "ws-day empty",
+        "href": null,
+        "disabled": false,
+        "w": 115,
+        "h": 44,
+        "top": 120,
+        "left": 487,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 16,
+        "key": "div|Wed19—Nothing booked.||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "div",
+        "type": null,
+        "text": "Wed19—Nothing booked.",
+        "id": null,
+        "cls": "ws-day empty",
+        "href": null,
+        "disabled": false,
+        "w": 115,
+        "h": 44,
+        "top": 120,
+        "left": 608,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 17,
+        "key": "div|Thu20—Nothing booked.||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "div",
+        "type": null,
+        "text": "Thu20—Nothing booked.",
+        "id": null,
+        "cls": "ws-day empty",
+        "href": null,
+        "disabled": false,
+        "w": 115,
+        "h": 44,
+        "top": 120,
+        "left": 729,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 18,
+        "key": "div|Fri21—Nothing booked.||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "div",
+        "type": null,
+        "text": "Fri21—Nothing booked.",
+        "id": null,
+        "cls": "ws-day empty",
+        "href": null,
+        "disabled": false,
+        "w": 115,
+        "h": 44,
+        "top": 120,
+        "left": 850,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 19,
+        "key": "div|Sat22—Nothing booked.||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "div",
+        "type": null,
+        "text": "Sat22—Nothing booked.",
+        "id": null,
+        "cls": "ws-day empty",
+        "href": null,
+        "disabled": false,
+        "w": 115,
+        "h": 44,
+        "top": 120,
+        "left": 972,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 20,
+        "key": "button|Join Call|unJoin|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Join Call",
+        "id": "unJoin",
+        "cls": "un-join",
+        "href": null,
+        "disabled": true,
+        "w": 202,
+        "h": 32,
+        "top": 281,
+        "left": 1130,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 21,
+        "key": "button|Client file|unFile|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Client file",
+        "id": "unFile",
+        "cls": "un-alt",
+        "href": null,
+        "disabled": false,
+        "w": 76,
+        "h": 32,
+        "top": 281,
+        "left": 1338,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(24, 24, 27)",
+        "color": "rgb(252, 252, 252)",
+        "filled": true
+      },
+      {
+        "idx": 22,
+        "key": "button|Demonstration states double-booking alert · empty day · open|demoToggle|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": null,
+        "text": "Demonstration states double-booking alert · empty day · open",
+        "id": "demoToggle",
+        "cls": "demo-div",
+        "href": null,
+        "disabled": false,
+        "w": 1212,
+        "h": 25,
+        "top": 849,
+        "left": 228,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 23,
+        "key": "button|Sign out|fh-shell-out|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": null,
+        "text": "Sign out",
+        "id": "fh-shell-out",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 73,
+        "h": 21,
+        "top": 21,
+        "left": 1340,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(228, 228, 231)",
+        "filled": false
+      },
+      {
+        "idx": 24,
+        "key": "button|Search⌘K|fh-shell-search-btn|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Search⌘K",
+        "id": "fh-shell-search-btn",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 99,
+        "h": 36,
+        "top": 12,
+        "left": 792,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 25,
+        "key": "button|Chat|fh-chat-fab|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Chat",
+        "id": "fh-chat-fab",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 52,
+        "h": 52,
+        "top": 830,
+        "left": 1370,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(10, 10, 10)",
+        "color": "rgb(255, 255, 255)",
+        "filled": true
+      },
+      {
+        "idx": 26,
+        "key": "span|Day||",
+        "ord": 0,
+        "viaCursor": true,
+        "tag": "span",
+        "type": null,
+        "text": "Day",
+        "id": null,
+        "cls": "active",
+        "href": null,
+        "disabled": false,
+        "w": 50,
+        "h": 24,
+        "top": 58,
+        "left": 245,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(10, 10, 10)",
+        "color": "rgb(255, 255, 255)",
+        "filled": true
+      },
+      {
+        "idx": 27,
+        "key": "span|Week||",
+        "ord": 0,
+        "viaCursor": true,
+        "tag": "span",
+        "type": null,
+        "text": "Week",
+        "id": null,
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 60,
+        "h": 24,
+        "top": 58,
+        "left": 295,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(82, 82, 91)",
+        "filled": false
+      },
+      {
+        "idx": 28,
+        "key": "div|‹||",
+        "ord": 0,
+        "viaCursor": true,
+        "tag": "div",
+        "type": null,
+        "text": "‹",
+        "id": null,
+        "cls": "navbtn",
+        "href": null,
+        "disabled": false,
+        "w": 24,
+        "h": 24,
+        "top": 58,
+        "left": 367,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(82, 82, 91)",
+        "filled": false
+      },
+      {
+        "idx": 29,
+        "key": "div|›||",
+        "ord": 0,
+        "viaCursor": true,
+        "tag": "div",
+        "type": null,
+        "text": "›",
+        "id": null,
+        "cls": "navbtn",
+        "href": null,
+        "disabled": false,
+        "w": 24,
+        "h": 24,
+        "top": 58,
+        "left": 399,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(82, 82, 91)",
+        "filled": false
+      },
+      {
+        "idx": 30,
+        "key": "div|Today||",
+        "ord": 0,
+        "viaCursor": true,
+        "tag": "div",
+        "type": null,
+        "text": "Today",
+        "id": null,
+        "cls": "today-btn",
+        "href": null,
+        "disabled": false,
+        "w": 55,
+        "h": 24,
+        "top": 58,
+        "left": 431,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(252, 252, 252)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      }
+    ],
+    "genericLabels": [],
+    "smallTargets": [
+      {
+        "text": "Join Call",
+        "w": 202,
+        "h": 32
+      },
+      {
+        "text": "Client file",
+        "w": 76,
+        "h": 32
+      },
+      {
+        "text": "Demonstration states double-booking alert · empty day · open",
+        "w": 1212,
+        "h": 25
+      },
+      {
+        "text": "Sign out",
+        "w": 73,
+        "h": 21
+      },
+      {
+        "text": "Search⌘K",
+        "w": 99,
+        "h": 36
+      },
+      {
+        "text": "Day",
+        "w": 50,
+        "h": 24
+      },
+      {
+        "text": "Week",
+        "w": 60,
+        "h": 24
+      },
+      {
+        "text": "‹",
+        "w": 24,
+        "h": 24
+      },
+      {
+        "text": "›",
+        "w": 24,
+        "h": 24
+      },
+      {
+        "text": "Today",
+        "w": 55,
+        "h": 24
+      }
+    ],
+    "primaryLooking": [
+      {
+        "text": "Client file",
+        "bg": "rgb(24, 24, 27)",
+        "w": 76,
+        "h": 32,
+        "aboveFold": true
+      },
+      {
+        "text": "Chat",
+        "bg": "rgb(10, 10, 10)",
+        "w": 52,
+        "h": 52,
+        "aboveFold": true
+      }
+    ],
+    "capsRuns": [],
+    "sampleWording": [],
+    "loadingWording": [],
+    "errorWording": [],
+    "emptyWording": [
+      "double-booking alert · empty day · open hour"
+    ],
+    "centeredParas": [],
+    "offScale": {
+      "7px": 3,
+      "11px": 5,
+      "6px": 3,
+      "14px": 1
+    },
+    "unevenRows": [],
+    "tables": [],
+    "metrics": [
+      {
+        "text": "Booked2 Done0 No-show— Show rate— Left today2",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "stat-tiles"
+      },
+      {
+        "text": "Booked2",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "stat"
+      },
+      {
+        "text": "Done0",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "stat"
+      },
+      {
+        "text": "No-show—",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "stat"
+      },
+      {
+        "text": "Show rate—",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "stat"
+      },
+      {
+        "text": "Left today2",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "stat"
+      },
+      {
+        "text": "16",
+        "fontSize": "11.5px",
+        "tabular": false,
+        "cls": "ws-dnum"
+      },
+      {
+        "text": "17",
+        "fontSize": "11.5px",
+        "tabular": false,
+        "cls": "ws-dnum"
+      },
+      {
+        "text": "18",
+        "fontSize": "11.5px",
+        "tabular": false,
+        "cls": "ws-dnum"
+      },
+      {
+        "text": "19",
+        "fontSize": "11.5px",
+        "tabular": false,
+        "cls": "ws-dnum"
+      },
+      {
+        "text": "20",
+        "fontSize": "11.5px",
+        "tabular": false,
+        "cls": "ws-dnum"
+      },
+      {
+        "text": "21",
+        "fontSize": "11.5px",
+        "tabular": false,
+        "cls": "ws-dnum"
+      },
+      {
+        "text": "22",
+        "fontSize": "11.5px",
+        "tabular": false,
+        "cls": "ws-dnum"
+      },
+      {
+        "text": "fundhub-calendar · v1 org: fundhub monday, august 17 · 2 booked · 2 left context",
+        "fontSize": "10px",
+        "tabular": false,
+        "cls": "statusbar"
+      }
+    ],
+    "topLeft": {
+      "tag": "header",
+      "text": "Fundhub / Calendar Org: Fundhub Mon, Aug 17, 4:16:37 PM EDT LIVE"
+    },
+    "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ fundhub Fundhub / Calendar ORG: FUNDHUB Mon, Aug 17, 4:16:37 PM EDT LIVE Day Week ‹ › Today Monday, August 17 BOOKED 2 DONE 0 NO-SHOW — SHOW RATE — LEFT TODAY 2 THIS WEEK · AUG 16 – AUG 22 SUN 16 3 booked MON 17 2 booked · 2 left TUE 18 — WED 19 — THU 20 — FRI 21 — SAT 22 — TODAY — MONDAY, AUGUST 17 1:00 PM 1:00 Rick Rockwell Strategy session booked CLOSER unclaimed 4:00 PM 4:00 Selwyn Mcintosh Strategy session booked CLOSER unclaimed 4:16 UP NEXT 197 minutes overdu"
+  },
+  "mobile": {
+    "scrollWidth": 390,
+    "horizontalOverflow": false,
+    "sideVisible": true,
+    "sideW": 228,
+    "burger": true,
+    "overflowers": [
+      "div.stat-tiles",
+      "div.stat",
+      "div.l",
+      "div#statNoshow.v",
+      "div.stat",
+      "div.l"
+    ],
+    "textUnder11px": 42,
+    "docH": 844,
+    "shots": {
+      "full": "docs/workflows/ui-audit-evidence/_reverify-live/calendar/390-full.png",
+      "fold": "docs/workflows/ui-audit-evidence/_reverify-live/calendar/390-fold.png"
+    },
+    "finalUrl": "/app/calendar.html",
+    "apiFails": []
+  },
+  "clicks": [],
+  "clickSummary": {
+    "skipped": true,
+    "reason": "--no-clicks"
+  }
+}

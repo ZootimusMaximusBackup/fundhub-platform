@@ -7,11 +7,11 @@ Shared board for this batch. Agents claim a row before editing.
 
 | id | unit | owner | status |
 |---|---|---|---|
-| 1 | Switch, meter, cap, tables | this session | done |
-| 2 | Brand Studio partner lane (templates, copy, history, logo) | this session | done |
-| 3 | Live pages on our site | this session | done |
-| 4 | Social Studio generate / queue / list | this session | done |
-| 5 | Creative Factory Anthropic copy + usage | this session | done |
+| 1 | Switch, meter, cap, tables | this session | shipped live 2026-08-17 |
+| 2 | Brand Studio partner lane (templates, copy, history, logo) | this session | shipped live 2026-08-17 |
+| 3 | Live pages on our site | this session | shipped live 2026-08-17 |
+| 4 | Social Studio generate / queue / list | this session | shipped live 2026-08-17 |
+| 5 | Creative Factory Anthropic copy + usage | this session | shipped live 2026-08-17 |
 
 Chris takes none of these in other sessions unless this board says otherwise.
 Content Admin is not a task — leave the client-portal tile screen alone.

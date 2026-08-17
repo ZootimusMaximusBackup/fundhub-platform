@@ -190,6 +190,7 @@ import readLenders from "../../api/read/lenders.mjs";
 import readLenderMatches from "../../api/read/lender-matches.mjs";
 import readLenderObservations from "../../api/read/lender-observations.mjs";
 import readInquiryCases from "../../api/read/inquiry-cases.mjs";
+import readRepairCases from "../../api/read/repair-cases.mjs";
 import readAiBureauConfig from "../../api/read/ai-bureau-config.mjs";
 import proxyLaunch from "../../api/proxy/launch.mjs";
 import proxyEnd from "../../api/proxy/end.mjs";
@@ -294,6 +295,7 @@ export const ROUTES = {
   "read/lender-matches": readLenderMatches,
   "read/lender-observations": readLenderObservations,
   "read/inquiry-cases": readInquiryCases,
+  "read/repair-cases": readRepairCases,
   "read/ai-bureau-config": readAiBureauConfig,
   "read/proxy-sessions": readProxySessions,
   "read/affiliates": readAffiliates,

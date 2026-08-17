@@ -1,0 +1,1242 @@
+{
+  "screen": "/app/command-center.html",
+  "slug": "_reverify-live/command-center",
+  "email": "owner@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T20:09:42.996Z",
+  "login": {
+    "ok": true,
+    "landedAt": "/app/command-center.html",
+    "role": "owner",
+    "loginApiStatus": 200
+  },
+  "load": {
+    "httpStatus": 200,
+    "retriesFor503OrBounce": 0,
+    "finalUrl": "/app/command-center.html",
+    "bounced": false,
+    "title": "Fundhub — Command Center",
+    "apiCalls": [
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/dashboard/kpis?period=today",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/read/agents?limit=200",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/dashboard/pipeline?key=sales",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/health",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/org-brand",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/demo/mode",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/dashboard/pipeline?key=funding_card_stacking",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/dashboard/pipeline?key=funding_altfin",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/dashboard/pipeline?key=optimization",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/dashboard/pipeline?key=inquiry_removal",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/dashboard/pipeline?key=ar_collections",
+        "status": 200
+      }
+    ],
+    "apiFails": [],
+    "consoleErrors": [],
+    "dialogs": [],
+    "shots": {
+      "fold": "docs/workflows/ui-audit-evidence/_reverify-live/command-center/1440-fold.png",
+      "full": "docs/workflows/ui-audit-evidence/_reverify-live/command-center/1440-full.png"
+    }
+  },
+  "dom": {
+    "vw": 1440,
+    "vh": 900,
+    "docH": 900,
+    "sizes": {
+      "14px": {
+        "count": 29,
+        "examples": [
+          "Beta — under development. Data may be in",
+          "Fundhub",
+          "Command Center"
+        ]
+      },
+      "11px": {
+        "count": 210,
+        "examples": [
+          "Dismiss",
+          "Org: Fundhub",
+          "Mon, Aug 17, 4:09:59 PM EDT"
+        ]
+      },
+      "16px": {
+        "count": 1,
+        "examples": [
+          "/"
+        ]
+      },
+      "18px": {
+        "count": 7,
+        "examples": [
+          "Sales",
+          "Funding: Card Stacking",
+          "Funding: Alt-Fin (Lendflow)"
+        ]
+      },
+      "28px": {
+        "count": 59,
+        "examples": [
+          "1",
+          "1",
+          "2"
+        ]
+      },
+      "12px": {
+        "count": 1,
+        "examples": [
+          "Search"
+        ]
+      },
+      "10px": {
+        "count": 1,
+        "examples": [
+          "⌘K"
+        ]
+      },
+      "13px": {
+        "count": 1,
+        "examples": [
+          "Chat"
+        ]
+      }
+    },
+    "navVisibleCount": 3,
+    "navActive": [
+      "⌘Command CenterBETA"
+    ],
+    "navGroups": [
+      {
+        "head": "Sales▾",
+        "items": []
+      },
+      {
+        "head": "Funding▾",
+        "items": []
+      },
+      {
+        "head": "Client ops▾",
+        "items": []
+      },
+      {
+        "head": "Watch▾",
+        "items": [
+          "⌘Command CenterBETA",
+          "✷GalaxyBETA",
+          "⚙Ops & AdminBETA"
+        ]
+      },
+      {
+        "head": "Automation▾",
+        "items": []
+      },
+      {
+        "head": "Marketing▾",
+        "items": []
+      },
+      {
+        "head": "Admin▾",
+        "items": []
+      },
+      {
+        "head": "Portals▾",
+        "items": []
+      }
+    ],
+    "h1": [],
+    "h2": [],
+    "contentWidth": 1440,
+    "contentSel": "div.app",
+    "sideW": 228,
+    "controlsCount": 33,
+    "controls": [
+      {
+        "idx": 0,
+        "key": "a|||command-center.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "",
+        "id": null,
+        "cls": "logo inv",
+        "href": "command-center.html",
+        "disabled": false,
+        "w": 118,
+        "h": 24,
+        "top": 10,
+        "left": 16,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(252, 252, 252)",
+        "filled": false
+      },
+      {
+        "idx": 1,
+        "key": "button|‹‹|burger|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "‹‹",
+        "id": "burger",
+        "cls": "burger",
+        "href": null,
+        "disabled": false,
+        "w": 26,
+        "h": 26,
+        "top": 9,
+        "left": 186,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 2,
+        "key": "button|Sales▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Sales▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 56,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 3,
+        "key": "button|Funding▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Funding▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 87,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 4,
+        "key": "button|Client ops▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Client ops▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 118,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 5,
+        "key": "button|Watch▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Watch▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 150,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 6,
+        "key": "a|⌘Command CenterBETA||command-center.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "⌘Command CenterBETA",
+        "id": null,
+        "cls": "navitem on",
+        "href": "command-center.html",
+        "disabled": false,
+        "w": 228,
+        "h": 29,
+        "top": 178,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(22, 22, 25)",
+        "color": "rgb(252, 252, 252)",
+        "filled": true
+      },
+      {
+        "idx": 7,
+        "key": "a|✷GalaxyBETA||galaxy.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "✷GalaxyBETA",
+        "id": null,
+        "cls": "navitem",
+        "href": "galaxy.html",
+        "disabled": false,
+        "w": 228,
+        "h": 29,
+        "top": 207,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 8,
+        "key": "a|⚙Ops & AdminBETA||ops-admin.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "⚙Ops & AdminBETA",
+        "id": null,
+        "cls": "navitem",
+        "href": "ops-admin.html",
+        "disabled": false,
+        "w": 228,
+        "h": 29,
+        "top": 236,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 9,
+        "key": "button|Automation▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Automation▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 268,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 10,
+        "key": "button|Marketing▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Marketing▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 300,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 11,
+        "key": "button|Admin▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Admin▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 331,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 12,
+        "key": "button|Portals▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Portals▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 28,
+        "top": 362,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 13,
+        "key": "button|Dismiss||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Dismiss",
+        "id": null,
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 64,
+        "h": 19,
+        "top": 10,
+        "left": 1238,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": true,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(253, 233, 196)",
+        "filled": false
+      },
+      {
+        "idx": 14,
+        "key": "a|Open the board ↗||pipeline.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "Open the board ↗",
+        "id": null,
+        "cls": "pane-open",
+        "href": "pipeline.html",
+        "disabled": false,
+        "w": 114,
+        "h": 22,
+        "top": 93,
+        "left": 1312,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 15,
+        "key": "button|▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": null,
+        "text": "▾",
+        "id": null,
+        "cls": "rail-toggle",
+        "href": null,
+        "disabled": false,
+        "w": 7,
+        "h": 14,
+        "top": 216,
+        "left": 242,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 16,
+        "key": "a|Open board ↗||pipeline.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "Open board ↗",
+        "id": null,
+        "cls": "rail-open",
+        "href": "pipeline.html",
+        "disabled": false,
+        "w": 88,
+        "h": 18,
+        "top": 212,
+        "left": 1338,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 17,
+        "key": "button|▾||",
+        "ord": 1,
+        "viaCursor": false,
+        "tag": "button",
+        "type": null,
+        "text": "▾",
+        "id": null,
+        "cls": "rail-toggle",
+        "href": null,
+        "disabled": false,
+        "w": 7,
+        "h": 14,
+        "top": 341,
+        "left": 242,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 18,
+        "key": "a|Open board ↗||pipeline.html",
+        "ord": 1,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "Open board ↗",
+        "id": null,
+        "cls": "rail-open",
+        "href": "pipeline.html",
+        "disabled": false,
+        "w": 88,
+        "h": 18,
+        "top": 337,
+        "left": 1338,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 19,
+        "key": "button|▾||",
+        "ord": 2,
+        "viaCursor": false,
+        "tag": "button",
+        "type": null,
+        "text": "▾",
+        "id": null,
+        "cls": "rail-toggle",
+        "href": null,
+        "disabled": false,
+        "w": 7,
+        "h": 14,
+        "top": 451,
+        "left": 242,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 20,
+        "key": "a|Open board ↗||pipeline.html",
+        "ord": 2,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "Open board ↗",
+        "id": null,
+        "cls": "rail-open",
+        "href": "pipeline.html",
+        "disabled": false,
+        "w": 88,
+        "h": 18,
+        "top": 447,
+        "left": 1338,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 21,
+        "key": "button|▾||",
+        "ord": 3,
+        "viaCursor": false,
+        "tag": "button",
+        "type": null,
+        "text": "▾",
+        "id": null,
+        "cls": "rail-toggle",
+        "href": null,
+        "disabled": false,
+        "w": 7,
+        "h": 14,
+        "top": 561,
+        "left": 242,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 22,
+        "key": "a|Open board ↗||pipeline.html",
+        "ord": 3,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "Open board ↗",
+        "id": null,
+        "cls": "rail-open",
+        "href": "pipeline.html",
+        "disabled": false,
+        "w": 88,
+        "h": 18,
+        "top": 557,
+        "left": 1338,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 23,
+        "key": "button|▾||",
+        "ord": 4,
+        "viaCursor": false,
+        "tag": "button",
+        "type": null,
+        "text": "▾",
+        "id": null,
+        "cls": "rail-toggle",
+        "href": null,
+        "disabled": false,
+        "w": 7,
+        "h": 14,
+        "top": 744,
+        "left": 242,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 24,
+        "key": "a|Open board ↗||pipeline.html",
+        "ord": 4,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "Open board ↗",
+        "id": null,
+        "cls": "rail-open",
+        "href": "pipeline.html",
+        "disabled": false,
+        "w": 88,
+        "h": 18,
+        "top": 740,
+        "left": 1338,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 25,
+        "key": "button|▾||",
+        "ord": 5,
+        "viaCursor": false,
+        "tag": "button",
+        "type": null,
+        "text": "▾",
+        "id": null,
+        "cls": "rail-toggle",
+        "href": null,
+        "disabled": false,
+        "w": 7,
+        "h": 14,
+        "top": 854,
+        "left": 242,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 26,
+        "key": "a|Open board ↗||pipeline.html",
+        "ord": 5,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "Open board ↗",
+        "id": null,
+        "cls": "rail-open",
+        "href": "pipeline.html",
+        "disabled": false,
+        "w": 88,
+        "h": 18,
+        "top": 850,
+        "left": 1338,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 27,
+        "key": "button|▾||",
+        "ord": 6,
+        "viaCursor": false,
+        "tag": "button",
+        "type": null,
+        "text": "▾",
+        "id": null,
+        "cls": "rail-toggle",
+        "href": null,
+        "disabled": false,
+        "w": 7,
+        "h": 14,
+        "top": 964,
+        "left": 242,
+        "aboveFold": false,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 28,
+        "key": "a|Open board ↗||pipeline.html",
+        "ord": 6,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "Open board ↗",
+        "id": null,
+        "cls": "rail-open",
+        "href": "pipeline.html",
+        "disabled": false,
+        "w": 88,
+        "h": 18,
+        "top": 960,
+        "left": 1338,
+        "aboveFold": false,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 29,
+        "key": "summary|› 22 agents 2 active · 12 draft · 8 retired||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "summary",
+        "type": null,
+        "text": "› 22 agents 2 active · 12 draft · 8 retired",
+        "id": null,
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 687,
+        "h": 35,
+        "top": 1146,
+        "left": 243,
+        "aboveFold": false,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 30,
+        "key": "button|Sign out|fh-shell-out|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": null,
+        "text": "Sign out",
+        "id": "fh-shell-out",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 73,
+        "h": 21,
+        "top": 21,
+        "left": 1340,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(228, 228, 231)",
+        "filled": false
+      },
+      {
+        "idx": 31,
+        "key": "button|Search⌘K|fh-shell-search-btn|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Search⌘K",
+        "id": "fh-shell-search-btn",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 99,
+        "h": 36,
+        "top": 12,
+        "left": 908,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 32,
+        "key": "button|Chat|fh-chat-fab|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Chat",
+        "id": "fh-chat-fab",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 52,
+        "h": 52,
+        "top": 830,
+        "left": 1370,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(10, 10, 10)",
+        "color": "rgb(255, 255, 255)",
+        "filled": true
+      }
+    ],
+    "genericLabels": [],
+    "smallTargets": [
+      {
+        "text": "Dismiss",
+        "w": 64,
+        "h": 19
+      },
+      {
+        "text": "Open the board ↗",
+        "w": 114,
+        "h": 22
+      },
+      {
+        "text": "▾",
+        "w": 7,
+        "h": 14
+      },
+      {
+        "text": "Open board ↗",
+        "w": 88,
+        "h": 18
+      },
+      {
+        "text": "▾",
+        "w": 7,
+        "h": 14
+      },
+      {
+        "text": "Open board ↗",
+        "w": 88,
+        "h": 18
+      },
+      {
+        "text": "▾",
+        "w": 7,
+        "h": 14
+      },
+      {
+        "text": "Open board ↗",
+        "w": 88,
+        "h": 18
+      },
+      {
+        "text": "▾",
+        "w": 7,
+        "h": 14
+      },
+      {
+        "text": "Open board ↗",
+        "w": 88,
+        "h": 18
+      },
+      {
+        "text": "▾",
+        "w": 7,
+        "h": 14
+      },
+      {
+        "text": "Open board ↗",
+        "w": 88,
+        "h": 18
+      },
+      {
+        "text": "▾",
+        "w": 7,
+        "h": 14
+      },
+      {
+        "text": "Open board ↗",
+        "w": 88,
+        "h": 18
+      },
+      {
+        "text": "▾",
+        "w": 7,
+        "h": 14
+      }
+    ],
+    "primaryLooking": [
+      {
+        "text": "Chat",
+        "bg": "rgb(10, 10, 10)",
+        "w": 52,
+        "h": 52,
+        "aboveFold": true
+      }
+    ],
+    "capsRuns": [],
+    "sampleWording": [
+      "Beta — under development. Data may be incomplete or inaccurate. Do not use for client decisions."
+    ],
+    "loadingWording": [],
+    "errorWording": [
+      "Nothing to show yet. Bureau portals, job backlog, error rate and payment status will appear here once this screen reads "
+    ],
+    "emptyWording": [],
+    "centeredParas": [],
+    "offScale": {
+      "9px": 23,
+      "10px": 71,
+      "7px": 22,
+      "6px": 47,
+      "2px": 22,
+      "1px": 2
+    },
+    "unevenRows": [
+      {
+        "top": 1104,
+        "widths": [
+          717,
+          494
+        ]
+      },
+      {
+        "top": 1144,
+        "widths": [
+          466,
+          230,
+          230
+        ]
+      }
+    ],
+    "tables": [],
+    "metrics": [
+      {
+        "text": "Cash Collected Today $0 cash collected (transactions) Pipeline Movement 0 stage ",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "kpi-grid"
+      },
+      {
+        "text": "Cash Collected Today $0 cash collected (transactions)",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "kpi-tile"
+      },
+      {
+        "text": "$0",
+        "fontSize": "28px",
+        "tabular": true,
+        "cls": "kpi-value"
+      },
+      {
+        "text": "Pipeline Movement 0 stage changes in window",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "kpi-tile"
+      },
+      {
+        "text": "0",
+        "fontSize": "28px",
+        "tabular": true,
+        "cls": "kpi-value"
+      },
+      {
+        "text": "Close Rate (30d) 0 booked → decision rendered",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "kpi-tile"
+      },
+      {
+        "text": "Close Rate (30d)",
+        "fontSize": "11px",
+        "tabular": false,
+        "cls": "kpi-label"
+      },
+      {
+        "text": "0",
+        "fontSize": "28px",
+        "tabular": true,
+        "cls": "kpi-value"
+      },
+      {
+        "text": "Show Rate 0 booked calls with call.completed",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "kpi-tile"
+      },
+      {
+        "text": "0",
+        "fontSize": "28px",
+        "tabular": true,
+        "cls": "kpi-value"
+      },
+      {
+        "text": "Cost / Funded Client 0 ad spend ÷ funded clients",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "kpi-tile"
+      },
+      {
+        "text": "0",
+        "fontSize": "28px",
+        "tabular": true,
+        "cls": "kpi-value"
+      },
+      {
+        "text": "Funded Today 0 clients marked funded",
+        "fontSize": "16px",
+        "tabular": false,
+        "cls": "kpi-tile"
+      },
+      {
+        "text": "0",
+        "fontSize": "28px",
+        "tabular": true,
+        "cls": "kpi-value"
+      },
+      {
+        "text": "fundhub-cc · v1 org: fundhub 16 active clients a read-only summary — go to the b",
+        "fontSize": "11px",
+        "tabular": false,
+        "cls": "statusbar"
+      }
+    ],
+    "topLeft": {
+      "tag": "div",
+      "text": "Beta — under development. Data may be incomplete or inaccurate. Do not use for c"
+    },
+    "bodyText": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ ⌘ Command Center BETA ✷ Galaxy BETA ⚙ Ops & Admin BETA AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Beta — under development. Data may be incomplete or inaccurate. Do not use for client decisions. Dismiss Fundhub / Command Center ORG: FUNDHUB Mon, Aug 17, 4:09:59 PM EDT LIVE CC-01 / PIPELINE SUMMARY 16 active clients · 0 moved forward today · counts only Open the board ↗ CC-02 / HOLDS No holds. A hold will show here when a file is waiting. ▾R-01Sales 16 Open board ↗ NEW LEAD 1 SURVEY COMPLETE 1 BOOKED 2 CONFIRMED 0 SHOWED 0 DIAGNOSTIC PAID 0 DECI"
+  },
+  "mobile": {
+    "scrollWidth": 390,
+    "horizontalOverflow": false,
+    "sideVisible": true,
+    "sideW": 228,
+    "burger": true,
+    "overflowers": [
+      "div.kpi-tile",
+      "div.kpi-label",
+      "div.kpi-value",
+      "div.kpi-sub",
+      "div.kpi-tile",
+      "div.kpi-label"
+    ],
+    "textUnder11px": 4,
+    "docH": 844,
+    "shots": {
+      "full": "docs/workflows/ui-audit-evidence/_reverify-live/command-center/390-full.png",
+      "fold": "docs/workflows/ui-audit-evidence/_reverify-live/command-center/390-fold.png"
+    },
+    "finalUrl": "/app/command-center.html",
+    "apiFails": []
+  },
+  "clicks": [],
+  "clickSummary": {
+    "skipped": true,
+    "reason": "--no-clicks"
+  }
+}
