@@ -106,7 +106,7 @@
   #calcGate{padding:16px 0 4px;font-size:14px;}
 
   .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
-  .calc-grid[hidden],#breakdown[hidden],.stat-tiles[hidden]{display:none;}
+  .calc-grid[hidden],#breakdown[hidden],.stat-tiles[hidden]{display:none!important;}
   .calc-panel{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:13px 15px 15px;}
   /* LOADING STATE — set only while a /api/read/tradelines request is in flight,
      removed the moment it resolves either way. Nothing else in the design keys
