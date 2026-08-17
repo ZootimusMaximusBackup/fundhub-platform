@@ -217,8 +217,12 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .tile .td{font-size:var(--fs-body);color:var(--text-dim);line-height:1.45;flex:1}
 .tile .tp{font-family:var(--mono);font-size:var(--fs-metric);font-weight:600;letter-spacing:-.01em;color:var(--text);font-variant-numeric:tabular-nums}
 .tile .tacts{display:flex;flex-direction:column;gap:7px;margin-top:2px}
-.btn-unlock{background:var(--ink);color:var(--paper);border:0;border-radius:7px;padding:9px 12px;font-size:var(--fs-body);font-weight:700;transition:background .12s}
-.btn-unlock:hover{background:var(--ink2)}
+/* AUDIT 2026-08-17 §1 — one filled primary per screen. This page had 13
+   filled buttons. "Upload Documents" is the one thing the portal asks a client
+   to do, so it keeps the filled ink style; every other button here is a
+   secondary outline. Nothing was removed and nothing changed what it does. */
+.btn-unlock{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:9px 12px;font-size:var(--fs-body);font-weight:700;transition:background .12s,border-color .12s}
+.btn-unlock:hover{background:var(--soft);border-color:var(--ink)}
 .btn-advise{background:none;border:0;padding:0;font-size:var(--fs-body);font-weight:600;color:var(--text-dim);text-decoration:underline;text-underline-offset:2px}
 .btn-advise:hover{color:var(--text)}
 .tile.hidden{display:none}
@@ -236,8 +240,8 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .promo-side{flex:0 0 205px;display:flex;flex-direction:column;gap:9px}
 .promo-price{font-family:var(--mono);font-size:var(--fs-metric);font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .promo-price .pu{display:block;font-family:var(--sans);font-size:var(--fs-caption);font-weight:500;color:var(--text-faint);letter-spacing:0}
-.btn-book{background:var(--ink);color:var(--paper);border:0;border-radius:7px;padding:11px 14px;font-size:var(--fs-body);font-weight:700;transition:background .12s}
-.btn-book:hover{background:var(--ink2)}
+.btn-book{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:11px 14px;font-size:var(--fs-body);font-weight:700;transition:background .12s,border-color .12s}
+.btn-book:hover{background:var(--soft);border-color:var(--ink)}
 
 /* ── 6 · booking / 7 · advisor ──────────────────────────────────────────── */
 .book-card{border:1px solid var(--line);background:var(--surface)}
@@ -271,7 +275,9 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .tab{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;font-size:var(--fs-body);font-weight:700;color:var(--text-dim);transition:background .12s,border-color .12s}
 .tab:hover{background:var(--soft)}
-.tab.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+/* An active tab shows where you are; it is not a primary action, so it no
+   longer wears the filled primary style (§1). */
+.tab.on{background:#fff;border-color:var(--ink);color:var(--text);box-shadow:inset 0 -2px 0 var(--ink)}
 .tabpane{display:none}
 .tabpane.on{display:block}
 .pay-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:var(--fs-body)}
@@ -316,19 +322,8 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
 .modal-acts{display:flex;flex-direction:column;gap:9px}
 .modal-note{font-size:var(--fs-caption);color:var(--text-faint);text-align:center;margin-top:11px}
 
-/* slot picker */
-.daytabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
-.daytab{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 11px;text-align:center;min-width:66px;transition:border-color .12s,background .12s}
-.daytab .dw{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint)}
-.daytab .dn{font-size:var(--fs-body);font-weight:700;margin-top:2px}
-.daytab:hover{background:var(--soft)}
-.daytab.on{border-color:var(--ink);background:var(--ink);color:var(--paper)}
-.daytab.on .dw{color:var(--dark-text-dim)}
-.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
-.slot{border:1px solid var(--line);background:#fff;border-radius:8px;padding:9px 6px;font-family:var(--mono);font-size:var(--fs-body);letter-spacing:.04em;transition:border-color .12s,background .12s}
-.slot:hover{background:var(--soft)}
-.slot.on{border-color:var(--ink);background:var(--ink);color:var(--paper)}
-.slot.gone{opacity:.36;text-decoration:line-through;cursor:not-allowed}
+/* slot picker CSS removed 2026-08-17 with the markup it styled — the day tabs
+   and time slots were never populated by anything. */
 .booked{display:flex;align-items:flex-start;gap:11px;padding:14px 15px;background:var(--green-bg);border:1px solid var(--green-line);border-radius:10px}
 .booked .bk-t{font-weight:800;font-size:var(--fs-body);color:var(--green);margin-bottom:3px}
 .booked .bk-d{font-size:var(--fs-body);color:var(--text-dim)}
@@ -490,7 +485,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           </div>
           <div class="promo-side">
             <div class="promo-price">$1,000<span class="pu">list · set on the call</span></div>
-            <button class="btn-book" type="button" data-book="Credit repair, done-for-you">Book a call about this</button>
+            <button class="btn-book" type="button" data-book="Credit repair, done-for-you">Ask about this</button>
             <button class="btn-unlock" type="button" data-unlock="REPAIR_DFY">Unlock now</button>
           </div>
         </div>
@@ -694,7 +689,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             <div class="bd">20 minutes on what a bigger approval would take, and what it would cost.</div>
           </div>
           <button class="btn-book" type="button" data-book="More funding — strategy call"
-                  style="margin-top:11px">Book a call</button>
+                  style="margin-top:11px">Ask for a call</button>
         </section>
       </div>
 
@@ -726,10 +721,16 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <span class="prv" id="um-price">$450</span>
     </div>
     <div class="modal-acts">
-      <button class="btn-unlock" id="um-go" type="button">Unlock — pay now</button>
-      <button class="contact-btn" id="um-talk" type="button">Talk to an advisor first</button>
+      <!-- AUDIT 2026-08-17 §5: "Unlock — pay now" was shown filled and enabled
+           for products that have no checkout link, and only admitted after the
+           click that it could not take a payment. It now stays hidden unless a
+           product actually has a checkout link, so the button that is offered
+           is the one that works. No checkout route or payment integration was
+           added — none exists yet. -->
+      <button class="btn-unlock" id="um-go" type="button" hidden>Unlock — pay now</button>
+      <button class="contact-btn" id="um-talk" type="button">Ask an advisor about this</button>
     </div>
-    <p class="modal-note" id="um-pay-msg">Online checkout is not available yet. Talk to an advisor and we will send you a payment link.</p>
+    <p class="modal-note" id="um-pay-msg">Online checkout is not available yet. Ask an advisor in chat and we will send you a payment link.</p>
   </div>
 </div>
 
@@ -738,17 +739,17 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
   <div class="mh"></div>
   <div class="modal-bd">
     <div class="modal-top">
-      <h2 id="bm-title">Book a call</h2>
+      <h2 id="bm-title">Your call</h2>
       <button class="xbtn" id="bm-x" type="button" aria-label="Close">✕</button>
     </div>
-    <p class="mdesc" id="bm-desc">No times to pick here. Ask your advisor if you need a call.</p>
+    <p class="mdesc" id="bm-desc"></p>
 
-    <div id="bm-pick">
-      <div class="daytabs" id="daytabs"></div>
-      <div class="slots" id="slots"></div>
-      <button class="btn-book" id="bm-go" type="button" disabled style="width:100%;opacity:.5">Pick a time</button>
-    </div>
-
+    <!-- AUDIT 2026-08-17 §5: the day tabs and time slots were never filled by
+         anything, and the "Pick a time" button under them was permanently
+         disabled — a control that can never work does not render. There is no
+         booking system wired to this page, so asking for a call goes to chat,
+         which does reach staff. This modal now only opens to show a call that
+         is already on file. -->
     <div class="booked" id="bm-done" hidden>
       <span class="pulse"></span>
       <div>
@@ -829,14 +830,25 @@ var PRODUCTS = {
     document.getElementById('um-title').textContent = p.name;
     document.getElementById('um-desc').textContent  = p.desc;
     document.getElementById('um-price').textContent = p.price;
-    document.getElementById('um-go').textContent    = 'Unlock — ' + p.price;
-    document.getElementById('um-go').disabled = false;
-    document.getElementById('um-go').dataset.product = key;
-    document.getElementById('um-talk').dataset.book = p.name;
+    /* Only offer the pay button when there is something to pay through. Every
+       product in PRODUCTS is currently closer-priced with no checkout link, so
+       in practice this stays hidden and "Ask an advisor about this" is the
+       action. If a checkout link is added later it becomes the pay button
+       again, with no other change. */
+    var go   = document.getElementById('um-go');
+    var talk = document.getElementById('um-talk');
+    var canCheckout = !!p.checkoutUrl;
+    go.hidden = !canCheckout;
+    go.disabled = false;
+    go.dataset.statusClose = '';
+    go.textContent = 'Unlock — ' + p.price;
+    go.dataset.product = canCheckout ? key : '';
+    talk.dataset.book = p.name;
+    talk.textContent = canCheckout ? 'Talk to an advisor first' : 'Ask an advisor about this';
     var msg = document.getElementById('um-pay-msg');
     if (msg) {
-      msg.textContent = 'Online checkout is not available yet. Talk to an advisor and we will send you a payment link.';
-      msg.hidden = false;
+      msg.textContent = 'Online checkout is not available yet. Ask an advisor in chat and we will send you a payment link.';
+      msg.hidden = canCheckout;
     }
     openM(unlockM);
   }
@@ -850,11 +862,13 @@ var PRODUCTS = {
       document.getElementById('um-desc').textContent =
         'This is included on your account. Progress updates will show here when they are available.';
       document.getElementById('um-price').textContent = 'Included';
+      document.getElementById('um-go').hidden = false;
       document.getElementById('um-go').textContent = 'Close';
       document.getElementById('um-go').disabled = false;
       document.getElementById('um-go').dataset.product = '';
       document.getElementById('um-go').dataset.statusClose = '1';
       document.getElementById('um-talk').dataset.book = sp.name;
+      document.getElementById('um-talk').textContent = 'Ask an advisor about this';
       var sm = document.getElementById('um-pay-msg');
       if (sm) sm.hidden = true;
       openM(unlockM);
@@ -893,36 +907,58 @@ var PRODUCTS = {
     setTimeout(function(){ openBook(document.getElementById('um-talk').dataset.book); }, 180);
   });
 
-  /* ── booking — live times only. No invented slots or people. ── */
-  var bmPick  = document.getElementById('bm-pick');
+  /* ── asking for a call ────────────────────────────────────────────────────
+     AUDIT 2026-08-17 §5/§10. "Book a call", the six "Talk to an advisor" links
+     and "Talk to an advisor first" all opened a modal whose only message was
+     that it could not help — no times, and a permanently disabled "Pick a
+     time". Nothing on this page can book a call; there is no booking system
+     behind it and none was added here. Chat does reach staff, so that is where
+     these buttons go, with the topic filled in for the client. The modal is
+     kept for the one case where it has something true to say: a call already
+     on file. ─────────────────────────────────────────────────────────────── */
   var bmDone  = document.getElementById('bm-done');
-  var bmGo    = document.getElementById('bm-go');
 
-  function openBook(topic){
-    var about = topic || 'More funding';
-    document.getElementById('bm-title').textContent = 'Book a call';
-    var live = window.__portalBooking || null;
-    var desc = document.getElementById('bm-desc');
-    if (live && live.when) {
-      desc.textContent = (live.title || 'Booked call') + ' — ' + live.when +
-        (live.status ? ' (' + live.status + ')' : '') + '. About: ' + about + '.';
-    } else {
-      desc.textContent = 'No times to pick here. Ask your advisor if you need a call. About: ' + about + '.';
+  function openChatAbout(about){
+    var fab   = document.getElementById('fh-chat-fab');
+    var panel = document.getElementById('fh-chat-panel');
+    if (!fab || !panel) return false;
+    if (!panel.classList.contains('open')) fab.click();
+    var input = document.getElementById('fh-chat-input');
+    if (input) {
+      if (!input.value) input.value = 'I would like a call about: ' + about;
+      input.focus();
     }
-    if (bmPick) bmPick.hidden = true;
+    return true;
+  }
+
+  function showBookingOnFile(about, live){
+    document.getElementById('bm-title').textContent = 'Your call';
+    document.getElementById('bm-desc').textContent = live
+      ? ((live.title || 'Booked call') + ' — ' + live.when +
+         (live.status ? ' (' + live.status + ')' : '') + '. About: ' + about + '.')
+      : ('Nothing is booked yet. Use the chat button to ask for a call. About: ' + about + '.');
     if (bmDone) {
       bmDone.hidden = false;
       var doneD = document.getElementById('bm-done-d');
       if (doneD) {
-        doneD.textContent = (live && live.when)
+        doneD.textContent = live
           ? ('On file: ' + (live.title || 'Booked call') + ' — ' + live.when + '.')
           : 'No booking is on file.';
       }
-      var pulse = bmDone.querySelector('.bk-t');
-      if (pulse) pulse.textContent = (live && live.when) ? 'Booking on file' : 'No booking yet';
+      var head = bmDone.querySelector('.bk-t');
+      if (head) head.textContent = live ? 'Booking on file' : 'No booking yet';
     }
-    if (bmGo) bmGo.disabled = true;
     openM(bookM);
+  }
+
+  function openBook(topic){
+    var about = topic || 'More funding';
+    var live = window.__portalBooking || null;
+    if (live && live.when) { showBookingOnFile(about, live); return; }
+    /* No call on file — go straight to the one contact action that works.
+       The modal is only the fallback for a browser where chat never mounted. */
+    if (openChatAbout(about)) return;
+    showBookingOnFile(about, null);
   }
   document.addEventListener('click', function(e){
     var t = e.target.closest('[data-book]');
@@ -1730,10 +1766,28 @@ var PRODUCTS = {
     el.textContent = text;
   }
 
+  /* AUDIT 2026-08-17 §5/§6 — COMPLIANCE (consent capture).
+     This helper sent only credentials:"same-origin" and no Authorization
+     header, so every call from this card arrived with no credential and came
+     back 401: the disclosure text never loaded and the signature could never
+     be recorded. A client account login stores its token in localStorage
+     (public/portal-login.html) and gets no fundhub_session cookie — that
+     cookie is set for staff only (api/auth/login.mjs) — which is why the
+     cookie alone was never going to work. The endpoint already admits a client
+     principal (api/consent/capture.mjs) and only ever lets that client act on
+     themself, so nothing here widens a gate, adds a route or grants a
+     permission: it sends the same bearer token the rest of this page already
+     sends (see nameFromSession above, and data.js). */
+  function sessionToken() {
+    try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; }
+  }
+
   function api(path, options) {
     var init = options || {};
     init.headers = init.headers || {};
     init.headers["accept"] = "application/json";
+    var authToken = sessionToken();
+    if (authToken) init.headers["authorization"] = "Bearer " + authToken;
     if (init.body !== undefined) {
       init.headers["content-type"] = "application/json";
       init.body = JSON.stringify(init.body);

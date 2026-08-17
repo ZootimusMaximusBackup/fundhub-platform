@@ -94,13 +94,12 @@
     .convo-col,.thread-col,.ctx-col{max-height:60vh;overflow-y:auto;flex:none;}
   }
   @media (max-width:480px){
-    /* shell.js's role/sign-out chip is fixed at the top of every screen; on
-       most it only has a short header to clear, but this list starts scrolling
-       right under its own header with no gap, so the chip sat over the top of
-       the first conversation row. Padding the list down, not moving the chip —
-       moving it further would just cover more of the row underneath instead
-       of less, since the chip floats over whatever scrolls beneath it. */
-    .convo-list{padding-top:56px;}
+    /* No padding above .convo-list here on purpose. It used to carry
+       padding-top:56px to duck the shell's role/sign-out chip when that chip
+       hung at the top of a phone screen. shell.js now docks the chip to the
+       BOTTOM below 480px (CHIP_BREAKPOINT_CSS), so the 56px cleared nothing —
+       it was just an empty band above the first conversation, and it cost
+       roughly a whole row out of the short list a phone can show. */
     /* .app clips horizontal overflow everywhere (its own overflow:hidden),
        and the fourth filter chip ("Calls") ran past that clip — reachable
        nowhere, not just tight. Same fix as every table/tab-bar elsewhere in

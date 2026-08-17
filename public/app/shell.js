@@ -1431,7 +1431,21 @@
 
     var el = document.createElement("div");
     el.id = "fh-shell-chip";
-    el.style.cssText = "position:fixed;top:12px;right:14px;z-index:2147483000;display:flex;gap:10px;align-items:center;background:#0A0A0A;color:#fff;border:1px solid #26262B;border-radius:10px;padding:8px 12px;font:500 11px/1 'JetBrains Mono',monospace;letter-spacing:.06em;box-shadow:0 10px 30px rgba(0,0,0,.35)";
+    /* pointer-events:none — the chip is a label, not a control surface. It is
+       fixed at z-index 2147483000, above everything a screen can draw, and it
+       is ~337px wide, so anything under it stopped receiving clicks: the beta
+       banner's Dismiss (dead on company-brain, ops-admin, sample-data; "not
+       receiving pointer events" on journeys and creative-factory), header rows
+       on client-control-panel and inquiry-remover, the New-person drawer's
+       title and close on staff-teams, and at phone width whatever sits at the
+       bottom of the screen. Clicks now pass straight through the chip's body
+       to the control underneath. The one thing inside it that IS a control —
+       Sign out — turns pointer events back on for itself below, so it still
+       works and nothing else in here eats a click.
+       Trade-off, deliberate: title tooltips on the two spans no longer appear
+       on hover, because a pointer-events:none element is never hovered. The
+       labels themselves are still visible. */
+    el.style.cssText = "position:fixed;top:12px;right:14px;z-index:2147483000;pointer-events:none;display:flex;gap:10px;align-items:center;background:#0A0A0A;color:#fff;border:1px solid #26262B;border-radius:10px;padding:8px 12px;font:500 11px/1 'JetBrains Mono',monospace;letter-spacing:.06em;box-shadow:0 10px 30px rgba(0,0,0,.35)";
     /* Name the tab count next to the role. The bounce this shell used to cause
        was invisible in the chip: it said "closer" while the sidebar advertised
        19 tabs, six of which that role cannot open. Saying "closer · 6 tabs"
@@ -1448,7 +1462,7 @@
       '<span title="' + esc(roleTitle) + '" style="color:' + (known ? "#A1A1AA" : "#F5CE8F") + '">' +
         esc(staff.name || staff.email) + " · " + esc(roleText) + (known ? "" : " ?") + "</span>" +
       '<span id="fh-shell-src" title="checking the backend…" style="background:#3F3F46;color:#E4E4E7;border-radius:6px;padding:3px 7px;font-weight:700">···</span>' +
-      '<button id="fh-shell-out" style="background:none;border:1px solid #3F3F46;color:#E4E4E7;border-radius:6px;padding:4px 9px;font:inherit;cursor:pointer">Sign out</button>';
+      '<button id="fh-shell-out" style="pointer-events:auto;background:none;border:1px solid #3F3F46;color:#E4E4E7;border-radius:6px;padding:4px 9px;font:inherit;cursor:pointer">Sign out</button>';
     document.body.appendChild(el);
     document.getElementById("fh-shell-out").addEventListener("click", signOut);
 
@@ -1645,7 +1659,13 @@
       "position:relative", "top:0", "z-index:2147482990", "width:100%",
       "flex:0 0 auto", "box-sizing:border-box", "padding:10px 16px",
       "background:#3A2A0A", "color:#FDE9C4",
-      "font:600 13px/1.35 'JetBrains Mono',ui-monospace,monospace",
+      /* §3 four-step type scale. This bar used a literal 13px, a size no other
+         element on the page uses, so every one of the 16 beta screens carried
+         one extra text size purely because of the banner. Read the token
+         instead; the literal is only the fallback if a screen has not loaded
+         fundhub-brand.css. */
+      "font-weight:600", "font-size:var(--fs-body,14px)", "line-height:1.35",
+      "font-family:'JetBrains Mono',ui-monospace,monospace",
       "letter-spacing:.04em", "text-align:center",
       "border-bottom:2px solid var(--warn,#F5CE8F)",
       "display:flex", "gap:12px", "align-items:center", "justify-content:center",

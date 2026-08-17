@@ -346,7 +346,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
       <div class="field"><label>Last name</label><input id="ed_last"></div>
       <div class="field" style="grid-column:1/-1"><label>Email</label><input id="ed_email"></div>
       <div class="field"><label>Phone</label><input id="ed_phone" class="num"></div>
-      <div class="field"><label>Employee code</label><input id="ed_code" class="num" readonly style="background:var(--soft);color:var(--gray)"><span class="hint">ASSIGNED ON CREATE · IMMUTABLE</span></div>
+      <div class="field"><label>Employee code</label><input id="ed_code" class="num" readonly style="background:var(--soft);color:var(--gray)"><span class="hint">NOT ISSUED BY THIS SYSTEM</span></div>
       <div class="field"><label>Role</label><select id="ed_role">
         <option>Owner</option><option>Admin</option><option>Sales Manager</option><option>Closer</option>
         <option>Funding Advisor</option><option>Inquiry Specialist</option><option>Setter</option>
@@ -389,7 +389,7 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 
 /* ══ DATA ════════════════════════════════════════════════════════════════ */
 var PEOPLE=[];
-var nextCode=124, nextId=8;
+var nextId=8;
 
 var ROLES=['Owner','Sales Manager','Closer','Funding Advisor','Inquiry Specialist','Affiliate'];
 var ROLE_KEY={
@@ -615,23 +615,26 @@ function openEditor(id){
   setSw('ed_active',p.active); setSw('ed_consent',p.consent); setSw('ed_clock',p.clock);
   fillPerms(p);
   document.getElementById('edReset').style.display = p.email ? '' : 'none';
+  document.getElementById('edDeact').style.display = '';
   document.getElementById('editor').classList.add('open');
   document.getElementById('scrim').classList.add('on');
   renderRoster();
 }
 function openNew(){
   selId=null;
-  var code='EMP-'+String(nextCode).padStart(6,'0');
   document.getElementById('edMode').textContent='ADD PERSON';
   document.getElementById('edTitle').textContent='New person';
   ['ed_first','ed_last','ed_email','ed_phone'].forEach(function(i){document.getElementById(i).value=''});
-  document.getElementById('ed_code').value=code;
+  /* No employee code is issued anywhere — the invite reply carries none. Show
+     the same unknown marker the roster uses instead of inventing one. */
+  document.getElementById('ed_code').value='—';
   document.getElementById('ed_role').value='Closer';
   document.getElementById('ed_start').value='';
   document.getElementById('ed_email').placeholder='made for you as name@fundhub.ai';
   setSw('ed_active',false); setSw('ed_consent',false); setSw('ed_clock',false);
   fillPerms({role:'Closer'});
   document.getElementById('edReset').style.display='none';   // no account exists yet
+  document.getElementById('edDeact').style.display='none';   // nothing to revoke yet
   document.getElementById('editor').classList.add('open');
   document.getElementById('scrim').classList.add('on');
 }

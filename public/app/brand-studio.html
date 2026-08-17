@@ -230,7 +230,14 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
 .funnel span{font-size:var(--fs-caption);color:var(--gray);line-height:1.45}
 .soon{opacity:.5;pointer-events:none}
 .tag-soon{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.1em;text-transform:uppercase;color:var(--gray2);border:1px solid var(--line);border-radius:20px;padding:2px 7px;margin-left:7px}
-.savebar{position:sticky;bottom:0;background:rgba(252,252,252,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:11px 0;margin-top:16px;display:flex;gap:10px;align-items:center}
+/* --fh-statusbar is the height of data.js's fixed bottom status strip
+   (#fh-data-banner), measured at the foot of this file. It painted over the
+   lower half of this sticky bar, cutting both buttons in two at 1440x900.
+   data.js is shared by every screen, so the save bar moves, not the strip. */
+.savebar{position:sticky;bottom:var(--fh-statusbar,0px);background:rgba(252,252,252,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:11px 0;margin-top:16px;display:flex;gap:10px;align-items:center}
+/* "Use text" is only live when there is a wordmark to clear. */
+#clearLogo:disabled{opacity:.45;cursor:not-allowed}
+#clearLogo:disabled:hover{background:#fff;border-color:var(--line)}
 .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
 .statusline{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray);letter-spacing:.06em}
 
@@ -625,6 +632,15 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     $("subPrev").textContent = slug(D.name)+".fundhub-partners.com";
     $("rampPrev").style.background = rampCss(D.ramp);
 
+    /* "Use text" clears an uploaded wordmark. With no file chosen there is
+       nothing to clear, so the click did nothing while the button looked
+       live. Enabled only when there is a logo. */
+    var cl = $("clearLogo");
+    if (cl) {
+      cl.disabled = !D.logo;
+      cl.title = D.logo ? "" : "No wordmark uploaded — your brand name already renders as text.";
+    }
+
     $("kBrand").textContent = D.name ? (D.logo ? "Logo set" : "Text mark") : "—";
     $("kDomain").textContent = D.domain ? (D.verified ? "Live" : "Pending") : "—";
     $("kDomainSd").textContent = D.domain ? (D.verified ? D.domain : "awaiting DNS") : "not connected";
@@ -770,10 +786,18 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
   $("saveBtn").addEventListener("click", function(){
     if(MODE === "partner" && !D.entity){ $("saveMsg").textContent="Legal entity is required — it goes into every disclosure."; return; }
     save(); applyTokens();
-    $("saveMsg").textContent = MODE === "org"
-      ? "Saved locally. Syncing to the server…"
-      : "Saved. Tokens apply to this partner's funnels.";
-    if (typeof window.__fhBrandPersist === "function") window.__fhBrandPersist();
+    /* This used to print "Saved." here, before the PUT ran. In the audit run
+       the write failed and the screen showed "Saved. Tokens apply to this
+       partner's funnels." beside the button while the bottom strip read
+       "saved LOCALLY only" — two contradictory answers at once. Say only what
+       is true right now; persist() writes the final answer once the server
+       has replied, success or failure. */
+    $("saveMsg").textContent = "Saving…";
+    if (typeof window.__fhBrandPersist === "function") {
+      window.__fhBrandPersist();
+    } else {
+      $("saveMsg").textContent = "Not saved to the server — your changes are kept in this browser only.";
+    }
   });
 
   function authHeaders() {
@@ -892,7 +916,14 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     $("saveMsg").textContent = "Nothing was sent — brand review is not set up yet. Your brand stays a draft.";
   });
   $("resetBtn").addEventListener("click", function(){
-    if(!confirm(MODE === "org" ? "Reset CRM brand to fundhub defaults?" : "Reset brand to fundhub defaults?")) return;
+    /* The confirm used to say "Reset brand to fundhub defaults?" — but this
+       handler only drops the local draft key and reloads. Nothing is sent to
+       /api/partner-brand or /api/org-brand, and there is no route that resets
+       a saved brand (adding one is not this fix). On reload the saved brand is
+       re-hydrated from the server, so for anyone whose brand is saved the
+       confirmed "reset" visibly did nothing. Name the consequence that
+       actually happens. */
+    if(!confirm("Discard unsaved brand changes in this browser?\n\nYour saved brand is not changed — this only clears edits that were never written to the server.")) return;
     localStorage.removeItem(KEY);
     location.reload();
   });
@@ -919,7 +950,13 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     if (Array.isArray(b.selected_funnels)) D.funnels = b.selected_funnels.slice();
     if (b.approval_status) D.status = b.approval_status === "review" ? "submitted" : b.approval_status;
     if (!D.name && b.entity_name) D.name = b.entity_name;
-    hydrate(); loadFonts(); applyTokens(); paint();
+    /* renderFunnels() must run here. This replaces D.funnels with the server's
+       list, but the funnel cards were drawn once at load from the default
+       ["apply"] and never redrawn — so a partner with no funnels on file saw a
+       ticked "Application funnel" card while the FUNNELS LIVE tile read 0 and
+       "Create pages" answered "Select at least one supported funnel". Three
+       answers to one question, two of them wrong. */
+    hydrate(); loadFonts(); applyTokens(); renderFunnels(); paint();
   };
 })();
 </script>
@@ -939,6 +976,14 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
 
   function banner(kind, msg) {
     if (typeof FHData !== "undefined" && FHData.banner) FHData.banner(kind, msg, "brand");
+  }
+
+  /* The line beside the Save button is the answer the partner reads. It must
+     never disagree with the bottom status strip, so every branch below writes
+     to both. */
+  function setSaveMsg(text) {
+    var el = document.getElementById("saveMsg");
+    if (el) el.textContent = text;
   }
 
   function bodyFromDraft() {
@@ -975,6 +1020,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     var body = bodyFromDraft();
     if (MODE === "partner" && !partnerId) {
       banner("error", "saved LOCALLY only — no partner id");
+      setSaveMsg("Not saved — this screen was opened without a partner, so there is nothing to save to. Your changes are kept in this browser only.");
       return;
     }
     fetch(url, {
@@ -990,16 +1036,18 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
         var d = x.d;
         if (d && d.ok) {
           banner("real", MODE === "org" ? "CRM brand saved" : "partner brand saved");
-          var msg = document.getElementById("saveMsg");
-          if (msg) msg.textContent = MODE === "org"
+          setSaveMsg(MODE === "org"
             ? "Saved. Applied across the CRM."
-            : "Saved. Tokens apply to this partner's funnels.";
+            : "Saved. Tokens apply to this partner's funnels.");
         } else {
-          banner("error", "saved LOCALLY only — " +
-            ((d && d.problems ? d.problems.join("; ") : d && d.error) || "write failed"));
+          var why = (d && d.problems ? d.problems.join("; ") : d && d.error) || "write failed";
+          banner("error", "saved LOCALLY only — " + why);
+          setSaveMsg("Not saved — the server refused the change (" + why +
+            "). Your changes are kept in this browser only.");
         }
       }).catch(function () {
         banner("error", "saved LOCALLY only — server unreachable");
+        setSaveMsg("Not saved — we could not reach the server. Your changes are kept in this browser only.");
       });
   }
 
@@ -1036,6 +1084,36 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       }
       return "partner brand · " + (b.entity_name || "unnamed") + " · " + b.approval_status;
     });
+})();
+
+/* Keep the sticky save bar clear of data.js's fixed bottom status strip.
+   The strip (#fh-data-banner) is created lazily, can carry several sources at
+   once and wraps to two lines, so its height is measured rather than guessed.
+   Nothing outside this screen is touched: the bar moves up, the strip stays. */
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  var watched = null;
+  var ro = window.ResizeObserver ? new ResizeObserver(sync) : null;
+
+  function sync() {
+    root.style.setProperty("--fh-statusbar", (watched ? watched.offsetHeight : 0) + "px");
+  }
+  function check() {
+    var el = document.getElementById("fh-data-banner");
+    if (el !== watched) {
+      if (ro && watched) ro.unobserve(watched);
+      watched = el;
+      if (ro && el) ro.observe(el);
+    }
+    sync();
+  }
+
+  check();
+  if (window.MutationObserver) {
+    new MutationObserver(check).observe(document.body, { childList: true });
+  }
+  window.addEventListener("resize", check);
 })();
 </script>
 </body>

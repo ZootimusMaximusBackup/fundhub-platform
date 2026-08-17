@@ -532,7 +532,15 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
   // clock
   (function tick() {
     var el = document.getElementById("clock");
-    if (el) el.textContent = new Date().toLocaleString();
+    // Same header clock every other screen shows ("Mon, Aug 17, 2:15 AM EDT"),
+    // not the browser's local numeric one ("8/16/2026, 11:15:52 PM"). Same
+    // moment, one wording, and the zone is named so a west-coast browser does
+    // not read an east-coast operation's clock as its own.
+    if (el) el.textContent = new Date().toLocaleString("en-US", {
+      weekday: "short", month: "short", day: "numeric",
+      hour: "numeric", minute: "2-digit", second: "2-digit",
+      timeZone: "America/New_York", timeZoneName: "short"
+    });
     setTimeout(tick, 1000);
   })();
 

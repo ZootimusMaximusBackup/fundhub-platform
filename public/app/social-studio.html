@@ -198,11 +198,13 @@ button.stat:focus-visible{outline:2px solid var(--info);outline-offset:2px}
   border:1px solid var(--line);border-radius:7px;padding:6px 12px;display:inline-flex;align-items:center;gap:8px;
   transition:background .12s,color .12s,border-color .12s}
 .rtab:hover{border-color:var(--gray2);color:var(--ink)}
-.rtab.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+/* the selected tab is a selected tab, not a primary button — §1 keeps exactly one
+   filled control on the screen, and that one is "Queue post" in SS-03. */
+.rtab.on{background:#fff;border-color:var(--ink);color:var(--ink);box-shadow:inset 0 -2px 0 var(--ink)}
 .rtab:focus-visible{outline:2px solid var(--info);outline-offset:2px}
 .rtab .rn{font-family:var(--mono);font-size:var(--fs-caption);font-weight:600;border-radius:9px;padding:0 6px;
   background:var(--soft);color:var(--gray)}
-.rtab.on .rn{background:#26262B;color:var(--paper)}
+.rtab.on .rn{background:var(--soft);color:var(--ink)}
 .filters{display:flex;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap}
 /* the shared label+select pair, byte-identical to Campaigns / Creative Factory
    / Hiring so the same control does not change shape between screens. */
@@ -261,13 +263,6 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
   color:#22415F;border-radius:5px;padding:1px 6px}
 .slot.next{background:rgba(168,216,176,.30);border-color:var(--ok);color:#2C5138;font-weight:600}
 .btrow .none{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2)}
-
-/* ── the "cannot do yet" panel — structural, not decorative ─────────────── */
-.gapgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:12px;padding:16px}
-.gap{border:1px solid var(--line);border-radius:9px;padding:12px 14px;background:var(--soft)}
-.gap .gt{font-size:var(--fs-body);font-weight:600;display:flex;gap:8px;align-items:center}
-.gap .gb{font-size:var(--fs-caption);color:var(--gray);line-height:1.55;margin-top:6px}
-.gap .gs{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.04em;margin-top:7px;word-break:break-word}
 
 /* ── drawer ──────────────────────────────────────────────────────────────── */
 .scrim{position:fixed;inset:0;background:rgba(10,10,10,.34);z-index:40;opacity:0;pointer-events:none;transition:opacity .16s}
@@ -395,7 +390,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
       <span class="selwrap"><label for="partnerSel">partner_id</label>
         <select id="partnerSel"></select></span>
       <span class="chip" id="nowChip"><span class="cd" style="background:var(--info)"></span><span id="nowTxt">now</span></span>
-      <button class="btn dark mono" id="composeTop">+ Compose</button>
+      <button class="btn mono" id="composeTop">+ Compose</button>
     </div>
 
     <div class="content fh-maxw">
@@ -427,9 +422,8 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
           The partner picker in the header has no list to read. It used to offer three partners that were
           made up, and every read and write on this screen was sent with one of their ids — against a
           partner that does not exist. Those are gone, and nothing is sent until a real partner can be picked.
-          <code>/api/social/oauth</code>, <code>schedule</code> and <code>publish</code> are routed; there is
-          still no list endpoint for <code>social_posts</code> / <code>social_channels</code>. Section
-          <b>SS-12</b> lists what is left to build.
+          Connecting a channel, queueing a post and publishing all work once a partner can be picked. The
+          channel and post lists below stay empty until the read that fills them is built.
         </span>
       </div>
 
@@ -461,7 +455,14 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
             <button type="button" class="btn" data-oauth="instagram" id="oauthIg">Connect Instagram</button>
             <button type="button" class="btn" data-oauth="linkedin" id="oauthLi">Connect LinkedIn</button>
           </div>
-          <div id="oauthMsg" style="margin-top:8px;font-size:var(--fs-caption);color:var(--ink2)">Needs META_APP_ID / LINKEDIN_CLIENT_ID when unset — the API names the missing env var.</div>
+          <!-- LinkedIn needs an organisation id before the connect can start. It used to be
+               asked for with a browser prompt() box; it is a field on the screen now. -->
+          <div class="field" style="margin-top:8px;max-width:320px">
+            <label for="liOrg">LinkedIn organization ID — LinkedIn only</label>
+            <input id="liOrg" type="text" autocomplete="off" placeholder="12345678">
+            <span class="hint">LinkedIn will not connect without it. Facebook and Instagram do not use it.</span>
+          </div>
+          <div id="oauthMsg" style="margin-top:8px;font-size:var(--fs-caption);color:var(--ink2)">Connecting opens that channel's own sign-in page. If a channel is not set up yet, this line will say so and nothing is sent.</div>
         </div>
       </div>
 
@@ -518,10 +519,12 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
               </div>
 
               <div style="display:flex;gap:9px;margin-top:14px;align-items:center;flex-wrap:wrap">
-                <button class="btn dark mono" id="runScreen">Run guardrail preview</button>
-                <button class="btn mono" id="queueBtn"
+                <!-- §1: exactly one filled button on this screen, and it is the one that does
+                     the screen's job — queue the post. Preview and publish are secondary. -->
+                <button class="btn mono" id="runScreen">Run guardrail preview</button>
+                <button class="btn dark mono" id="queueBtn"
                   title="POST /api/social/schedule → src/social/scheduler.mjs schedule()">Queue post</button>
-                <button class="btn dark mono" id="publishDueBtn" type="button"
+                <button class="btn mono" id="publishDueBtn" type="button"
                   title="POST /api/social/publish → publishDue">Publish due now</button>
                 <button class="btn mono" id="clearComposer">Clear</button>
                 <span class="hint mono" id="queueMsg" style="font-size:var(--fs-caption);color:var(--gray2)">Queues into social_posts. Cron social-publish-sweeper runs publishDue every 5 minutes.</span>
@@ -675,62 +678,9 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
         </div>
       </div>
 
-      <!-- ══ SS-12 · WHAT THIS SCREEN CANNOT DO YET ══════════════════════ -->
-      <div class="card" style="margin-top:14px">
-        <div class="card-hd">
-          <div class="eyebrow">SS-12 <span class="sep">/</span> NOT BUILT YET</div>
-          <div class="spacer"></div>
-          <span class="badge b-alert mono">3 gaps</span>
-        </div>
-        <div class="gapgrid">
-          <div class="gap">
-            <div class="gt"><span class="badge b-alert mono">blocking</span>No social list API</div>
-            <div class="gb"><code class="mono">oauth</code>, <code class="mono">schedule</code>, and
-              <code class="mono">publish</code> are routed. There is still no list endpoint for
-              <code class="mono">social_posts</code> / <code class="mono">social_channels</code>, so those
-              panes render empty on purpose — not invented rows.
-              <code class="mono">/api/campaigns/action-log?target_type=social_post</code> is live for the
-              audit table.</div>
-            <div class="gs">netlify/functions/api.mjs ROUTES · api/campaigns/action-log.mjs · empty SOCIAL_CHANNELS/POSTS in this page</div>
-          </div>
-          <div class="gap">
-            <div class="gt"><span class="badge b-ok mono">wired</span>Channel adapters + publishDue cron</div>
-            <div class="gb"><code class="mono">src/social/adapters.mjs</code> registers facebook/instagram/others.
-              Live Graph needs channel tokens; otherwise set <code class="mono">SOCIAL_PUBLISH_DRY_RUN=1</code>.
-              <code class="mono">netlify/functions/social-publish-sweeper.mjs</code> runs every 5 minutes.</div>
-            <div class="gs">src/social/adapters.mjs · netlify/functions/social-publish-sweeper.mjs</div>
-          </div>
-          <div class="gap">
-            <div class="gt"><span class="badge b-ok mono">wired</span> OAuth connect (controls live in SS-02 above)</div>
-            <div class="gb"><code class="mono">api/social/oauth.mjs</code> now handles the connect flow: HMAC-signed
-              state, provider token exchange, and an <code class="mono">ON CONFLICT</code> UPSERT into
-              <code class="mono">social_channels</code> respecting the
-              <code class="mono">(partner_id, channel, external_account_id)</code> unique index. The buttons above call
-              it live and show whatever reason the API gives back — including
-              <code class="mono">not_configured</code> with the exact env var name — rather than pretending a
-              connection exists. Still needs <code class="mono">META_APP_ID</code>/<code class="mono">META_APP_SECRET</code>
-              or <code class="mono">LINKEDIN_CLIENT_ID</code>/<code class="mono">LINKEDIN_CLIENT_SECRET</code>
-              provisioned before either app can be used for real — see <code class="mono">docs/STILL-MISSING.md</code>.</div>
-            <div class="gs">api/social/oauth.mjs · src/social/oauth.mjs · db/migrations/049_social.sql:51–52</div>
-          </div>
-          <div class="gap">
-            <div class="gt"><span class="badge b-warn mono">missing</span>No organic engagement data</div>
-            <div class="gb">Likes, comments, shares, saves, reach, follower growth and best-performing-post cannot be
-              shown because there is nowhere to put them. The only metrics table is keyed on
-              <code class="mono">ad_id</code>. Adding an engagement panel would mean inventing numbers.</div>
-            <div class="gs">db/migrations/046_ad_platforms.sql:432–467</div>
-          </div>
-          <div class="gap">
-            <div class="gt"><span class="badge b-warn mono">missing</span>No approval workflow</div>
-            <div class="gb"><code class="mono">social_posts</code> has no
-              <code class="mono">approval_state</code>, <code class="mono">approved_at</code>,
-              <code class="mono">approved_by</code> or reviewer column. <code class="mono">needs_approval</code> lives
-              only on the <code class="mono">compliance_screenings</code> row, and the post is queued regardless — so
-              there is nothing here to approve or reject <i>yet</i>.</div>
-            <div class="gs">db/migrations/049_social.sql:56–96 · src/social/scheduler.mjs:82–84</div>
-          </div>
-        </div>
-      </div>
+      <!-- SS-12 "NOT BUILT YET" panel removed 2026-08-17 (UI-STANDARDS §5: no
+           coming-soon UI in production). What it listed is recorded in the fix
+           manifest, not on the owner's screen. -->
 
     </div>
 
@@ -1009,8 +959,7 @@ function hasPartner(){ return !!partner(); }
    painting a tile, a row or a count for a partner nobody has chosen. */
 function noPartner(what){
   return '<div class="empty">'+what+' appears here once a partner is selected.<br>'+
-    'No partner can be selected yet: this screen has no partner list to read, so nothing is loaded and nothing is sent. '+
-    'SS-12 at the bottom of the page lists what is still missing.</div>';
+    'No partner can be selected yet: this screen has no partner list to read, so nothing is loaded and nothing is sent.</div>';
 }
 function channels(){ return SOCIAL_CHANNELS.filter(function(c){ return c.partner === P; }); }
 function chById(id){ return SOCIAL_CHANNELS.filter(function(c){ return c.id === id; })[0] || null; }
@@ -1729,7 +1678,7 @@ function renderAll(){
 function syncWriteControls(){
   var on = hasPartner();
   var why = 'No partner selected — nothing can be queued, published or connected from this screen yet.';
-  ['queueBtn','publishDueBtn','oauthFb','oauthIg','oauthLi'].forEach(function(id){
+  ['queueBtn','publishDueBtn','oauthFb','oauthIg','oauthLi','liOrg'].forEach(function(id){
     var el = document.getElementById(id);
     if(!el) return;
     if(el._title0 === undefined) el._title0 = el.getAttribute('title') || '';
@@ -1930,6 +1879,15 @@ document.getElementById('publishDueBtn').addEventListener('click', function () {
     msg.textContent = 'No partner selected — nothing was sent.';
     return;
   }
+  /* §5 — a send asks first and names what it does. No count is given: this screen
+     has no read for the queue, so a number here would be invented. */
+  if (!window.confirm(
+    'Publish every post that is already due for ' + (p.name || 'this partner') + '?\n\n' +
+    'They go out on that partner\'s connected social accounts right away, in public. ' +
+    'Posting cannot be undone from this screen.')) {
+    msg.textContent = 'Nothing was published.';
+    return;
+  }
   msg.textContent = 'Publishing due posts…';
   var t = '';
   try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
@@ -1973,32 +1931,64 @@ document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDr
   function token() {
     try { return localStorage.getItem('fh_token') || ''; } catch (e) { return ''; }
   }
+  /* §6 — the screen never shows the API's raw code. Every reason it can send back
+     is said in words, and each one ends with what to do next. Anything unmapped
+     falls through to a plain sentence, never to the code itself. */
+  var LABEL = { facebook:'Facebook', instagram:'Instagram', linkedin:'LinkedIn' };
+  function plainReason(code, channel) {
+    var name = LABEL[channel] || 'that channel';
+    switch (String(code || '')) {
+      case 'partner_id_required':
+        return 'Pick a partner in the bar at the top first. Nothing was sent.';
+      case 'partner_not_found':
+        return 'That partner is not in the system, so nothing was connected. Pick a different partner.';
+      case 'needs_org':
+        return 'LinkedIn needs the organization ID. Type it in the box above and click Connect LinkedIn again.';
+      case 'not_configured':
+        return name + ' is not set up yet, so it cannot be connected. Nothing was sent. Someone has to finish setting up the ' + name + ' app first.';
+      case 'invalid_channel':
+        return name + ' cannot be connected from this screen.';
+      case 'forbidden':
+      case 'unauthorized':
+        return 'Your account is not allowed to connect social accounts. Nothing was sent.';
+      default:
+        return 'The ' + name + ' connection did not start, and nothing was changed. Try again in a moment.';
+    }
+  }
   function start(channel) {
     var pid = partnerId();
     if (!pid) {
-      if (msg) msg.textContent = 'Pick a partner in the topbar before connecting.';
+      if (msg) msg.textContent = 'Pick a partner in the bar at the top before connecting.';
       return;
     }
     var url = '/api/social/oauth?action=start&channel=' + encodeURIComponent(channel) +
       '&partner_id=' + encodeURIComponent(pid);
     if (channel === 'linkedin') {
-      var org = window.prompt('LinkedIn organization id or URN (required)');
-      if (!org) { if (msg) msg.textContent = 'LinkedIn connect cancelled — org URN required.'; return; }
+      var orgEl = document.getElementById('liOrg');
+      var org = orgEl ? orgEl.value.trim() : '';
+      if (!org) {
+        if (msg) msg.textContent = 'LinkedIn needs the organization ID. Type it in the box above, then click Connect LinkedIn. Nothing was sent.';
+        if (orgEl) orgEl.focus();
+        return;
+      }
       url += '&external_account_id=' + encodeURIComponent(org);
     }
     var t = token();
-    if (msg) msg.textContent = 'Starting ' + channel + ' connect…';
+    if (msg) msg.textContent = 'Starting the ' + (LABEL[channel] || channel) + ' connection…';
     fetch(url, {
       headers: Object.assign({ accept: 'application/json' },
         (t && t !== 'demo') ? { authorization: 'Bearer ' + t } : {})
     }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
       .then(function (res) {
         if (!res.ok) {
-          var reason = res.message || res.error || 'not_configured';
-          if (msg) msg.textContent = reason;
+          if (msg) msg.textContent = plainReason(res.error, channel);
           return;
         }
         if (res.url) location.href = res.url;
+        else if (msg) msg.textContent = plainReason(null, channel);
+      })
+      .catch(function () {
+        if (msg) msg.textContent = 'The connection could not be started — the site could not be reached. Nothing was changed. Try again in a moment.';
       });
   }
   ['oauthFb', 'oauthIg', 'oauthLi'].forEach(function (id) {

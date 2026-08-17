@@ -157,13 +157,19 @@
   }
 
   /* ---------- main layout ---------- */
+  /* The two rows are capped at the height of main (minmax(0,…)) so the bottom
+     row cannot be pushed past the fold by the top pane's content — each pane
+     scrolls inside itself instead. overflow-y:auto is the backstop: if the
+     rows ever do outgrow main, the bottom row is still scrollable to rather
+     than clipped away by overflow:hidden, which is how it became unreachable. */
   main{
     flex:1;
     display:grid;
-    grid-template-rows: 1.55fr 1fr;
+    grid-template-rows: minmax(0,1.55fr) minmax(0,1fr);
     gap:1px;
     background:var(--ink);
-    overflow:hidden;
+    overflow-x:hidden;
+    overflow-y:auto;
   }
   .row-bottom{
     display:grid;
@@ -416,15 +422,6 @@
     display:flex;align-items:center;
     margin-bottom:6px;
   }
-  .feed-filters{display:flex;gap:5px;margin-left:auto;}
-  .ffilter{
-    background:var(--surface);border:1px solid var(--line);border-radius:20px;
-    padding:2px 8px;cursor:pointer;
-    font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;
-    color:var(--text-dim);
-  }
-  .ffilter:hover{border-color:var(--gray2);}
-  .ffilter.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
   /* six entries tall, scroll for the rest — a feed that grows without limit
      pushes everything above it off the screen */
   .feed{
@@ -852,7 +849,10 @@
           <div class="empty-rail">No affiliate referrals or applicants in this summary yet.</div>
         </div>
 
-        <div class="feed-title eyebrow">CC-03 / Live Feed<span class="feed-filters"><button class="ffilter on" data-f="all">All</button><button class="ffilter" data-f="money">Money</button><button class="ffilter" data-f="move">Moves</button><button class="ffilter" data-f="agent">Agents</button><button class="ffilter" data-f="hold">Holds</button></span></div>
+        <!-- The All/Money/Moves/Agents/Holds chips are gone. Nothing on this
+             page fills the feed, so the chips filtered an empty list: clicking
+             them did nothing. They come back with the feed, not before it. -->
+        <div class="feed-title eyebrow">CC-03 / Live Feed</div>
         <div class="feed">
           <div class="feed-item">
             <span class="fi-text" style="color:var(--text-faint)">No live feed yet</span>
@@ -1023,23 +1023,8 @@ setInterval(tickClock, 1000);
   });
 })();
 
-/* ── live feed: type filters ─────────────────────────────────────────────── */
-(function(){
-  var btns=[].slice.call(document.querySelectorAll('.ffilter[data-f]'));
-  var items=[].slice.call(document.querySelectorAll('.feed-item'));
-  btns.forEach(function(b){
-    b.addEventListener('click',function(){
-      btns.forEach(function(x){x.classList.remove('on')});
-      b.classList.add('on');
-      var f=b.getAttribute('data-f');
-      items.forEach(function(it){
-        var d=it.querySelector('.fi-dot');
-        var k=d?d.className.replace('fi-dot','').trim():'';
-        it.classList.toggle('hide', f!=='all'&&k!==f);
-      });
-    });
-  });
-})();
+/* The live-feed type filters went with the chips above — they hid and showed
+   .feed-item rows, and there are none to hide. */
 
 /* The roster status filter chips (All / Active / Idle / Done) went with the
    hardcoded cards they filtered. "Done" was never a registry state, and the

@@ -95,6 +95,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 .swrow .swl{flex:1;min-width:0}
 .swrow .swl .n{font-size:var(--fs-body);font-weight:500}
 .swrow .swl .d{font-size:var(--fs-caption);color:var(--gray);line-height:1.4}
+/* An unset guardrail is not a configured one. Nothing stored for this flag =
+   the switch reads off and this tag says why, so an ON switch always means a
+   human turned it on and saved it. */
+.unset{display:none;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em}
+.unset.show{display:inline}
 
 .layout{display:grid;grid-template-columns:296px minmax(0,1fr);gap:14px;align-items:start}
 .alist{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;position:sticky;top:71px}
@@ -281,10 +286,10 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
               <div class="guard"><div class="gh">Hard constraints · evaluated before every send</div>
                 <textarea id="a_guard" spellcheck="false"></textarea></div>
               <div style="margin-top:13px">
-                <div class="swrow"><div class="swl"><div class="n">Never state a funding amount</div><div class="d">Only a closer or the Funding Advisor may quote a number.</div></div><div class="sw on" id="g_noamount"></div></div>
-                <div class="swrow"><div class="swl"><div class="n">Never promise a score outcome</div><div class="d">Blocks "we'll get you to 700" style claims outright.</div></div><div class="sw on" id="g_noscore"></div></div>
-                <div class="swrow"><div class="swl"><div class="n">Stop on the word "attorney"</div><div class="d">Hands to a human immediately and halts the thread.</div></div><div class="sw on" id="g_attorney"></div></div>
-                <div class="swrow"><div class="swl"><div class="n">Honor quiet hours</div><div class="d">No outbound between 9pm and 8am in the client's timezone.</div></div><div class="sw on" id="g_quiet"></div></div>
+                <div class="swrow"><div class="swl"><div class="n">Never state a funding amount</div><div class="d">Only a closer or the Funding Advisor may quote a number.</div></div><span class="unset" id="u_noamount">NOT SET</span><div class="sw" id="g_noamount"></div></div>
+                <div class="swrow"><div class="swl"><div class="n">Never promise a score outcome</div><div class="d">Blocks "we'll get you to 700" style claims outright.</div></div><span class="unset" id="u_noscore">NOT SET</span><div class="sw" id="g_noscore"></div></div>
+                <div class="swrow"><div class="swl"><div class="n">Stop on the word "attorney"</div><div class="d">Hands to a human immediately and halts the thread.</div></div><span class="unset" id="u_attorney">NOT SET</span><div class="sw" id="g_attorney"></div></div>
+                <div class="swrow"><div class="swl"><div class="n">Honor quiet hours</div><div class="d">No outbound between 9pm and 8am in the client's timezone.</div></div><span class="unset" id="u_quiet">NOT SET</span><div class="sw" id="g_quiet"></div></div>
               </div>
             </div>
           </div>
@@ -377,7 +382,8 @@ function A(o){
     chan:'SMS',cls:'Client-facing',owner:'',mode:'shadow',
     triggers:[],prompt:'',guard:'',esc:'',escAfter:'1 hour',escWhen:'',
     disc:0,msgcap:3,pay:false,contract:false,book:false,pull:false,
-    g:{noamount:true,noscore:true,attorney:true,quiet:true},
+    g:{noamount:false,noscore:false,attorney:false,quiet:false},
+    gSet:{noamount:false,noscore:false,attorney:false,quiet:false},
     runs:0,breaches:0,log:[]
   },o);
 }
@@ -424,11 +430,21 @@ function guardFromRow(g){
     contract: !!(auth.contract != null ? auth.contract : g.contract),
     book: !!(auth.book != null ? auth.book : g.book),
     pull: !!(auth.pull != null ? auth.pull : g.pull),
+    /* Only a stored true is on. `!== false` used to paint all four switches on
+       for an agent with nothing stored, which read as "guarded" when the row
+       held no guardrails at all. Unset is unset — gSet says which ones the
+       database actually holds so the screen can label the rest NOT SET. */
     g: {
-      noamount: flags.noamount !== false,
-      noscore: flags.noscore !== false,
-      attorney: flags.attorney !== false,
-      quiet: flags.quiet !== false
+      noamount: flags.noamount === true,
+      noscore: flags.noscore === true,
+      attorney: flags.attorney === true,
+      quiet: flags.quiet === true
+    },
+    gSet: {
+      noamount: typeof flags.noamount === 'boolean',
+      noscore: typeof flags.noscore === 'boolean',
+      attorney: typeof flags.attorney === 'boolean',
+      quiet: typeof flags.quiet === 'boolean'
     }
   };
 }
@@ -462,6 +478,7 @@ function agentFromRow(real){
     disc: g.disc, msgcap: g.msgcap,
     pay: g.pay, contract: g.contract, book: g.book, pull: g.pull,
     g: g.g,
+    gSet: g.gSet,
     promptMissing: !!real.prompt_missing,
     guardMissing: !!real.guardrails_missing,
     // No agent_runs table yet — do not invent counters or block promote on them.
@@ -517,6 +534,15 @@ function renderEvents(){
 }
 function setSw(id,on){document.getElementById(id).classList.toggle('on',!!on)}
 function getSw(id){return document.getElementById(id).classList.contains('on')}
+/* Label every guardrail flag the database does not hold. Off-and-NOT-SET means
+   nobody has decided; off with no tag means a human turned it off and saved. */
+function setUnset(gSet){
+  var s=gSet||{};
+  ['noamount','noscore','attorney','quiet'].forEach(function(k){
+    var el=document.getElementById('u_'+k);
+    if(el) el.classList.toggle('show', s[k]!==true);
+  });
+}
 
 function renderLog(){
   var l=cur.log||[];
@@ -628,6 +654,7 @@ function select(id){
   setSw('l_pay',cur.pay); setSw('l_contract',cur.contract); setSw('l_book',cur.book); setSw('l_pull',cur.pull);
   setSw('g_noamount',cur.g.noamount); setSw('g_noscore',cur.g.noscore);
   setSw('g_attorney',cur.g.attorney); setSw('g_quiet',cur.g.quiet);
+  setUnset(cur.gSet);
   dirty=false; document.getElementById('saveNote').textContent='';
   renderList(); renderEvents(); renderGate(); renderLog(); syncLens();
   loadShadowLog(cur.id);
@@ -679,7 +706,12 @@ function collect(){
   document.getElementById(id).addEventListener('change',function(){collect();markDirty();renderGate();renderList()});
 });
 document.querySelectorAll('.sw').forEach(function(s){
-  s.addEventListener('click',function(){s.classList.toggle('on');collect();markDirty();renderGate()});
+  s.addEventListener('click',function(){
+    s.classList.toggle('on');
+    // Clicking the switch is the decision — drop the NOT SET tag on that flag.
+    if(cur && cur.gSet && s.id.indexOf('g_')===0){ cur.gSet[s.id.slice(2)]=true; setUnset(cur.gSet); }
+    collect();markDirty();renderGate();
+  });
 });
 
 function saveNote(msg){ document.getElementById('saveNote').textContent=msg||''; }
@@ -717,6 +749,9 @@ document.getElementById('promoteBtn').addEventListener('click',function(){
   });
 });
 document.getElementById('demoteBtn').addEventListener('click',function(){
+  // Taking an agent off real clients is a destructive change to live behavior:
+  // name what stops before it stops. Promote already confirms; this now matches.
+  if(!confirm('Return '+cur.name+' to shadow?\n\nIt stops acting on real clients over '+cur.chan+' immediately. From then on it only logs what it would have sent — nothing leaves the building.')) return;
   FHData.write('/api/agents', { action:'demote', code:cur.id }).then(function(res){
     if(!res || !res.ok){ writeFail(res, 'Could not demote'); return; }
     var agent = res.data && res.data.agent;

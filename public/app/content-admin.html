@@ -267,20 +267,15 @@ table.grid tr:last-child td{border-bottom:0}
       <span class="crumb">Setup</span><h1>Content</h1>
       <div class="spacer"></div>
       <span class="chip on" id="liveChip"><span class="cd"></span><span id="liveTxt">local draft · not saved</span></span>
-      <button class="btn dark mono" id="uploadTop" disabled title="Not available yet — no api/content/* route or storage upload path.">+ Upload video (not available yet)</button>
     </div>
 
     <div class="content fh-maxw">
 
       <div class="notice" id="noBackendNotice" style="display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:8px;background:rgba(169,198,232,.16);border:1px solid var(--info);color:#22415F;font-size:var(--fs-body);margin-bottom:14px">
         <span>◉</span>
-        <span><b>No backend exists for this screen.</b> There is no <code>api/content/*</code> route in
-          <code>netlify/functions/api.mjs</code> — no videos table, no tier-mapping storage, no locked-tile config
-          table. Every number below reflects only what is in this browser tab right now: the video library starts
-          empty, uploading does not send or store a file anywhere, and the tier/tile edits below are lost on reload.
-          Building this for real would need: an <code>api/content/*</code> handler, a <code>content_videos</code>
-          table (or similar) plus a tier→video mapping, a <code>content_locked_tiles</code> config table, and a real
-          upload path (signed URL + storage, like <code>documents.html</code> uses) behind the "Upload video" button.</span>
+        <span><b>Nothing on this screen is saved.</b> It is a preview of what a client sees in their portal — the
+          welcome video and the “Unlock More” tiles. Anything you change here stays in this browser tab and is gone
+          when you reload it.</span>
       </div>
 
       <div class="stats">
@@ -300,33 +295,6 @@ table.grid tr:last-child td{border-bottom:0}
               <div class="spacer"></div>
               <span class="badge b-gray mono" id="libCount">0 videos</span>
             </div>
-            <div class="card-bd">
-              <div class="drop" id="drop" style="opacity:.55;pointer-events:none" title="Not available yet — no api/content/* or storage upload.">
-                <div class="di">▶</div>
-                <div class="dt">
-                  <div class="n">Upload not available yet</div>
-                  <div class="d">Needs api/content/* handler, content_videos table, and a signed-URL storage path (like documents.html).</div>
-                </div>
-                <button class="btn mono" id="chooseBtn" disabled title="Not available yet — no upload backend.">Choose file (not available yet)</button>
-                <input type="file" id="vfile" hidden accept="video/mp4,video/quicktime,.mp4,.mov,.m4v" disabled>
-              </div>
-
-              <div class="picked" id="picked"></div>
-              <div class="upmeta" id="upmeta">
-                <div class="field"><label>Title</label><input id="upTitle" placeholder="Welcome video title"></div>
-                <div class="field"><label>Duration</label><input id="upDur" class="num" placeholder="0:00"></div>
-                <div class="field"><label>Assign to tier</label>
-                  <select id="upTier"></select>
-                </div>
-              </div>
-              <div class="upbar" id="upbar"><i></i></div>
-              <div style="display:flex;gap:9px;margin-top:12px;align-items:center">
-                <button class="btn dark mono" id="doUpload" disabled title="Not available yet — no api/content/* or storage upload path.">Upload (not available yet)</button>
-                <button class="btn mono" id="clearUpload" hidden>Clear</button>
-                <span class="hint mono" id="upHint" style="font-size:var(--fs-caption);color:var(--gray2)"></span>
-              </div>
-            </div>
-
             <div id="vlist"></div>
           </div>
 
@@ -452,8 +420,8 @@ function tierById(id){ for(var i=0;i<TIERS.length;i++){ if(TIERS[i].id===id) ret
 function renderVideos(){
   var host = document.getElementById('vlist');
   if(!VIDEOS.length){
-    host.innerHTML = '<div class="empty">No videos in the library. There is no api/content/* endpoint to read from — ' +
-      'upload one above and it will appear here, in this tab, until you reload.</div>';
+    host.innerHTML = '<div class="empty">No videos yet. There is no way to add one from this screen — ' +
+      'the video library has not been built. When it is, your videos will be listed here.</div>';
   } else {
     host.innerHTML = VIDEOS.map(function(v){
       /* which tiers point at this video */
@@ -631,24 +599,12 @@ function renderStats(){
   }
 }
 
-/* ══ UPLOAD — honest disable (no backend) ══════════════════════════════════
-   There is no api/content/* route and no storage signed-URL path for videos.
-   The old handler faked a progress bar and pushed into an in-memory VIDEOS[]
-   array — that looked like an upload and lost everything on reload. Do not
-   invent an endpoint here; leave controls disabled until those pieces exist. */
-(function(){
-  var choose = document.getElementById('chooseBtn');
-  var top = document.getElementById('uploadTop');
-  var go = document.getElementById('doUpload');
-  var hint = document.getElementById('upHint');
-  var input = document.getElementById('vfile');
-  if (choose) { choose.disabled = true; choose.title = 'Not available yet — no api/content/* or storage upload path.'; }
-  if (top) { top.disabled = true; top.title = 'Not available yet — no api/content/* or storage upload path.'; }
-  if (go) { go.disabled = true; go.textContent = 'Upload (not available yet)'; go.title = 'Not available yet — no api/content/* or storage upload path.'; }
-  if (input) { input.disabled = true; }
-  if (hint) hint.textContent = 'not available yet — needs api/content/* + storage upload';
-  // No file pickers, no drop handlers, no fake progress.
-})();
+/* ══ UPLOAD — removed, not hidden ══════════════════════════════════════════
+   There is no api/content/* route and no storage signed-URL path for videos,
+   so the upload controls do not render at all (UI-STANDARDS §5). An earlier
+   version faked a progress bar and pushed into VIDEOS[]; the version after
+   that left the same buttons on screen, disabled, labelled "not available
+   yet". Both are out. Do not invent an endpoint here. */
 
 /* ══ BOOT ════════════════════════════════════════════════════════════════ */
 renderVideos();

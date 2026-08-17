@@ -123,6 +123,8 @@ header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;ba
 .sendbtn{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;
   background:var(--ink);color:var(--paper);border-radius:8px;padding:9px 16px;transition:opacity .15s}
 .sendbtn:hover{opacity:.86}
+.sendbtn:disabled{opacity:.35;cursor:default}
+.sendbtn:disabled:hover{opacity:.35}
 .egs{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
 .eg{font-size:var(--fs-body);color:var(--gray);border:1px solid var(--line);border-radius:20px;padding:5px 12px;transition:border-color .13s,color .13s}
 .eg:hover{border-color:var(--ink);color:var(--ink)}
@@ -456,7 +458,12 @@ body.running .lane.notaken{opacity:.25}
       <button class="hbtn" id="undo">Undo</button>
       <button class="hbtn" id="savever">Save version</button>
       <button class="hbtn" id="runreal">Test against the code</button>
-      <button class="hbtn p" id="apply">Apply to code</button>
+      <!-- §1 one primary action: this was a second filled button competing with
+           the canvas "Make the change", which is the action this screen exists
+           for. Apply is secondary here — with nothing changed it can only toast
+           "Nothing to apply", and once something IS changed the dark bar at the
+           bottom of the canvas carries its own prominent "Apply to code". -->
+      <button class="hbtn" id="apply">Apply to code</button>
     </div>
   </header>
 
@@ -923,7 +930,7 @@ function askHTML(){
   return '<div class="ask"><div class="askbox">'+
     '<textarea id="askin" rows="2" placeholder="Describe the change — &ldquo;if they go quiet for two days, send one more text&rdquo;">'+esc(askText)+'</textarea>'+
     '<div class="askrow"><span class="lbl">Changes this journey</span>'+
-    '<button class="sendbtn" id="asksend">Make the change</button></div>'+
+    '<button class="sendbtn" id="asksend"'+(askText.trim()?'':' disabled')+'>Make the change</button></div>'+
     (askErr?'<div class="askerr">'+esc(askErr)+'</div>':'')+'</div>'+
     '<div class="egs">'+egs.map(e=>'<button class="eg">'+esc(e)+'</button>').join('')+'</div></div>';
 }
@@ -1112,7 +1119,11 @@ function openMenu(btn,path,idx){
 }
 function wireCanvas(){
   const inp=document.getElementById('askin');
-  if(inp){ inp.oninput=()=>{askText=inp.value};
+  /* §5 every action answers back: this button used to render filled and enabled
+     with the box empty, and fire() below returned silently — click, nothing.
+     It is disabled until there is something to send, and enables as you type. */
+  if(inp){ inp.oninput=()=>{askText=inp.value;
+      const s=document.getElementById('asksend'); if(s) s.disabled=!inp.value.trim()};
     inp.onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();fire()}} }
   const send=document.getElementById('asksend'); if(send) send.onclick=fire;
   document.querySelectorAll('.eg').forEach(b=>b.onclick=()=>{askText=b.textContent;askClaude(askText,null)});

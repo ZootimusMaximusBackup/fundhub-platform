@@ -288,27 +288,6 @@
   .rm-foot{padding:6px 12px 8px;border-top:1px solid var(--line);background:var(--paper);
     font-size:var(--fs-body);color:var(--text-dim);}
 
-  /* ---------- demonstration states — collapsed, zero cost on the default view ---------- */
-  .demozone{flex-shrink:0;background:var(--surface);border-top:1px solid var(--line);}
-  .demo-div{width:100%;display:flex;align-items:center;gap:10px;background:transparent;border:0;cursor:pointer;
-    padding:6px 14px;text-align:left;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;
-    text-transform:uppercase;color:var(--text-faint);}
-  .demo-div:hover{color:var(--text-dim);background:var(--paper);}
-  .demo-div .dd-sub{letter-spacing:.06em;text-transform:none;font-size:var(--fs-caption);color:var(--text-faint);}
-  .demo-div .dd-chev{margin-left:auto;font-size:var(--fs-caption);transition:transform .16s;}
-  .demozone.open .demo-div .dd-chev{transform:rotate(180deg);}
-  .demo-body{border-top:1px dashed var(--line);background:var(--paper);padding:12px 14px 14px;
-    max-height:42vh;overflow:auto;display:flex;flex-direction:column;gap:14px;}
-  .demo-body[hidden]{display:none;}
-  .demo-cap{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;
-    color:var(--text-faint);margin-bottom:6px;}
-  .demo-item .errbar{border:1px solid var(--alert-line);border-radius:7px;}
-  .demo-stage{position:relative;height:164px;background:var(--board);border:1px solid var(--line);
-    border-radius:8px;overflow:hidden;}
-  .demo-stage .col{position:absolute;top:8px;height:116px;}
-  .demo-stage .drag-card{position:absolute;top:34px;left:268px;}
-  .demo-stage .drag-hint{position:absolute;top:118px;left:290px;}
-
   footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;align-items:center;
     padding:0 14px;gap:16px;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.06em;
     text-transform:lowercase;color:var(--gray);position:relative;overflow:hidden;}
@@ -542,63 +521,6 @@
       </div>
     </div>
   </div>
-
-  <!-- ══ DEMONSTRATION STATES — collapsed by default, costs one divider row ══ -->
-  <section class="demozone" id="demozone">
-    <button class="demo-div" id="demoToggle" aria-expanded="false">
-      <span>Demonstration states</span>
-      <span class="dd-sub">mid-drag preview · blocked move · empty rail</span>
-      <span class="dd-chev">▾</span>
-    </button>
-    <div class="demo-body" id="demoBody" hidden>
-
-      <div class="demo-item">
-        <div class="demo-cap">Mid-drag — card lifted, destination column armed</div>
-        <div class="demo-stage">
-          <section class="col" style="left:10px;width:210px;">
-            <div class="col-head">
-              <div class="col-head-top"><div class="col-name">Survey Complete</div><div class="col-count">18</div></div>
-            </div>
-            <div class="col-body">
-              <div class="drop-placeholder">moving Dana Whitlock</div>
-            </div>
-          </section>
-          <section class="col drop-target" style="left:238px;width:210px;">
-            <div class="col-head">
-              <div class="col-head-top"><div class="col-name">Booked</div><div class="col-count">11</div></div>
-            </div>
-            <div class="col-body"><div class="drop-line"></div></div>
-          </section>
-          <div class="drag-card">
-            <div class="card" style="cursor:grabbing;">
-              <div class="c-top">
-                <div class="av agent">SJ</div>
-                <div class="c-name">Dana Whitlock</div>
-              </div>
-              <div class="c-amt">$6,500 <span class="unit">est.</span></div>
-              <div class="c-age">1d 2h in stage</div>
-            </div>
-          </div>
-          <div class="drag-hint">Drop to move into <b>Booked</b></div>
-        </div>
-      </div>
-
-      <div class="demo-item">
-        <div class="demo-cap">Blocked move — the funding rail sent the card back</div>
-        <div class="errbar">
-          <span class="ic">⚠</span>
-          <span><b>Gustavo Rincón didn't move to Card Stacking.</b> He hasn't paid the $3,000 deposit yet, so the funding rail sent him back. His card is where you left it.</span>
-          <span class="dismiss">Dismiss</span>
-        </div>
-      </div>
-
-      <div class="demo-item">
-        <div class="demo-cap">Empty rail — no cards on the board</div>
-        <div class="empty-rail-note" style="margin:0;">Sample empty-rail note — a rail with no cards yet shows this instead of a blank board.</div>
-      </div>
-
-    </div>
-  </section>
 
   <footer class="statusbar">
     <span class="ghost"></span>
@@ -1005,16 +927,6 @@ function wrapScrollHide(){
   });
 }
 
-/* ---------- demonstration states ---------- */
-var dz=document.getElementById('demozone'), dTog=document.getElementById('demoToggle'),
-    dBody=document.getElementById('demoBody');
-dTog.addEventListener('click',function(){
-  var open=dBody.hidden;
-  dBody.hidden=!open;
-  dz.classList.toggle('open',open);
-  dTog.setAttribute('aria-expanded',String(open));
-});
-
 /* ---------- rail tabs ----------
    Every rail is wired: data-rail (R-01..R-06, R-08, R-09) maps to the pipeline
    `key` the backend knows it by (see db/seed/002_pipelines.sql plus
@@ -1037,10 +949,6 @@ tabs.forEach(function(t){
     if(window.FHPipelineBoard) window.FHPipelineBoard.load(t.dataset.rail,name);
   });
 });
-
-/* ---------- the demo error banner still dismisses like the real one ---------- */
-var edz=document.querySelector('.errbar .dismiss');
-if(edz) edz.addEventListener('click',function(){ edz.closest('.errbar').style.opacity='.25'; });
 
 restore();
 })();

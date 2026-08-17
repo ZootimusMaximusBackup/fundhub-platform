@@ -814,10 +814,24 @@ button,input,select,textarea{font:inherit;color:inherit}
     var triggers = (t && t.triggers) || [];
     var rows = triggers.map(function (rule) {
       var on = !!rule.enabled;
-      return '<div class="fos-al' + (isFinance ? "" : " [disabled]") + '"><div class="top">' +
-        '<button class="fos-sw" role="switch" aria-checked="' + on + '" data-rule="' + esc(rule.rule) + '" data-enabled="' + on + '"' + (isFinance ? "" : " disabled") + '></button>' +
+      /* Changing a trigger is an owner/admin write. A role that cannot make
+         that write does not get the switch at all — same treatment as Add
+         account / Add card / Add a bill / Load & Clear sample data. It used
+         to render as a disabled toggle, and the wrapper carried the literal
+         class "[disabled]", which is two class names, not the attribute the
+         .fos-al[disabled] rule looks for, so it was not even dimmed. The
+         switch was also the only thing showing whether a rule was on, so for
+         a read-only role that state is spelled out in the text instead. */
+      var desc = rule.measures ? esc(rule.measures) : "";
+      var body = isFinance
+        ? (desc || (on ? "on" : "off"))
+        : (on ? "On" : "Off") + (desc ? " — " + desc : "");
+      return '<div class="fos-al"><div class="top">' +
+        (isFinance
+          ? '<button class="fos-sw" role="switch" aria-checked="' + on + '" data-rule="' + esc(rule.rule) + '" data-enabled="' + on + '"></button>'
+          : "") +
         '<div><div class="t">' + esc(rule.rule.replace(/_/g, " ")) + '</div>' +
-        '<div class="b">' + (rule.measures ? esc(rule.measures) : (on ? "on" : "off")) + '</div></div></div></div>';
+        '<div class="b">' + body + '</div></div></div></div>';
     }).join("");
     // "Could not read" is reserved for an actual failed read (S.triggers is
     // null). A successful read that simply found no configured triggers is a
@@ -910,8 +924,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 
   function runAsk() {
     var q = ($("askIn").value || "").trim();
-    if (!q) return;
     var out = $("askOut");
+    /* Ask used to return silently on an empty box: no request, no message,
+       nothing moved. Every click answers back (§5), so say what is missing. */
+    if (!q) {
+      out.innerHTML = '<div class="fos-answer">Type a question in the box first, then press Ask.</div>';
+      $("askIn").focus();
+      return;
+    }
     out.innerHTML = '<div class="fos-answer">Reading the numbers…</div>';
     FHData.write("/api/read/finance-ask", { question: q, client_id: clientId }).then(function (res) {
       if (!res.ok) { out.innerHTML = '<div class="fos-answer">' + esc(res.error || res.source) + '</div>'; return; }

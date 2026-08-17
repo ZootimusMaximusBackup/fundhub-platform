@@ -327,9 +327,8 @@ pre.json .b{color:#C4B3E5}
             Turning it <strong>off</strong> hides those rows. Real money totals never include them. Wipe removes the rows.
           </p>
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
-            <button type="button" id="btnOn" style="background:var(--ink);color:var(--paper);border:0;padding:10px 14px;border-radius:6px;cursor:pointer;font-weight:600">Turn Demo Mode ON</button>
-            <button type="button" id="btnOff" style="background:transparent;border:1px solid var(--line);padding:10px 14px;border-radius:6px;cursor:pointer;font-weight:600">Turn OFF (hide)</button>
-            <button type="button" id="btnWipe" style="background:#7A2E0E;color:#FFF7ED;border:0;padding:10px 14px;border-radius:6px;cursor:pointer;font-weight:600">Wipe demo data…</button>
+            <button type="button" id="btnOn" style="display:none;background:var(--ink);color:var(--paper);border:0;padding:10px 14px;border-radius:6px;cursor:pointer;font-weight:600">Turn Demo Mode ON</button>
+            <button type="button" id="btnOff" style="display:none;background:transparent;border:1px solid var(--line);padding:10px 14px;border-radius:6px;cursor:pointer;font-weight:600">Turn Demo Mode OFF (hide the rows)</button>
           </div>
           <div id="demoStatus" class="mono" style="font-size:var(--fs-body);color:var(--gray2)">Loading status…</div>
           <div id="demoMsg" style="margin-top:12px;font-size:var(--fs-body);color:var(--gray)"></div>
@@ -338,6 +337,15 @@ pre.json .b{color:#C4B3E5}
       <div class="card">
         <div class="card-hd"><div class="eyebrow">DEMO <span class="sep">/</span> COUNTS</div></div>
         <div class="card-bd"><div id="demoCounts" class="mono" style="font-size:var(--fs-body);line-height:1.8;color:var(--gray)">—</div></div>
+      </div>
+      <div class="card" id="wipeCard" style="display:none;margin-top:48px;border-color:#F2A69B">
+        <div class="card-hd"><div class="eyebrow">DEMO <span class="sep">/</span> DELETE THE ROWS</div></div>
+        <div class="card-bd">
+          <p style="font-size:var(--fs-body);color:var(--gray);line-height:1.55;max-width:68ch;margin:0 0 14px">
+            Deletes the demo rows counted above and the demo records linked to them, and turns Demo Mode off. This cannot be undone.
+          </p>
+          <button type="button" id="btnWipe" style="background:#fff;color:#7A2E0E;border:1px solid #7A2E0E;padding:10px 14px;border-radius:6px;cursor:pointer;font-weight:600">Wipe demo data…</button>
+        </div>
       </div>
     </div>
   </div>
@@ -348,6 +356,13 @@ pre.json .b{color:#C4B3E5}
   var countsEl = document.getElementById("demoCounts");
   var msgEl = document.getElementById("demoMsg");
   var pill = document.getElementById("demoPill");
+  var btnOn = document.getElementById("btnOn");
+  var btnOff = document.getElementById("btnOff");
+  var wipeCard = document.getElementById("wipeCard");
+  /* The eight rows the COUNTS panel shows. The wipe confirm quotes these and
+     nothing else — never a number the screen does not have (UI-STANDARDS §5). */
+  var COUNT_KEYS = ["clients", "lenders", "call_outcomes", "sales", "tasks", "documents", "bank_accounts", "subscriptions"];
+  var lastCounts = null;
   function headers() {
     var h = { "Accept": "application/json", "Content-Type": "application/json" };
     var t = localStorage.getItem("fh_token"); if (t) h.Authorization = "Bearer " + t;
@@ -358,17 +373,35 @@ pre.json .b{color:#C4B3E5}
     var on = !!(d && d.demo_mode_enabled);
     statusEl.textContent = on ? "Demo Mode is ON — CRM screens show seeded sample data with a banner." : "Demo Mode is OFF — demo rows are hidden.";
     pill.innerHTML = on ? '<span class="dot" style="background:#FDBA74"></span>DEMO MODE ON' : '<span class="dot" style="background:var(--gray2)"></span>Demo Mode off';
-    var c = (d && d.counts) || {};
-    countsEl.textContent = [
-      "clients: "+(c.clients||0),
-      "lenders: "+(c.lenders||0),
-      "call_outcomes: "+(c.call_outcomes||0),
-      "sales: "+(c.sales||0),
-      "tasks: "+(c.tasks||0),
-      "documents: "+(c.documents||0),
-      "bank_accounts: "+(c.bank_accounts||0),
-      "subscriptions: "+(c.subscriptions||0)
-    ].join("\n");
+    lastCounts = (d && d.counts) || null;
+    countsEl.textContent = lastCounts
+      ? COUNT_KEYS.map(function (k) { return k + ": " + (lastCounts[k] || 0); }).join("\n")
+      : "—";
+    /* Only the action that changes the state renders (UI-STANDARDS §5). */
+    btnOn.style.display = on ? "none" : "inline-block";
+    btnOff.style.display = on ? "inline-block" : "none";
+    wipeCard.style.display = "";
+  }
+  function wipeConfirmText() {
+    if (!lastCounts) {
+      return "Delete all demo data for this org?\n\n"
+        + "The counts have not loaded, so this screen cannot say how many rows will go. "
+        + "Demo Mode also turns off.\n\nThis cannot be undone.";
+    }
+    var total = 0, parts = [];
+    COUNT_KEYS.forEach(function (k) {
+      var n = Number(lastCounts[k] || 0);
+      if (!n) return;
+      total += n;
+      parts.push(n + " " + k.replace(/_/g, " "));
+    });
+    if (!total) {
+      return "Delete all demo data for this org?\n\n"
+        + "The counts show 0 demo rows. Demo Mode also turns off.\n\nThis cannot be undone.";
+    }
+    return "Delete " + total + " demo " + (total === 1 ? "row" : "rows") + " for this org?\n\n"
+      + parts.join(", ") + ". The demo records linked to them go too, and Demo Mode turns off."
+      + "\n\nThis cannot be undone.";
   }
   function load() {
     /* api/demo/mode.mjs is owner/admin only. Say so up front for every other
@@ -388,13 +421,13 @@ pre.json .b{color:#C4B3E5}
     setMsg(enabled ? "Seeding…" : "Hiding…");
     return fetch("/api/demo/mode", { method: "POST", credentials: "same-origin", headers: headers(), body: JSON.stringify({ enabled: !!enabled }) })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-      .then(function (x) { if (!x.ok) { setMsg((x.j && (x.j.message||x.j.error)) || "Failed", false); return; } paint(x.j); setMsg(enabled ? "Demo Mode on." : "Demo Mode off.", true); })
+      .then(function (x) { if (!x.ok) { setMsg((x.j && (x.j.message||x.j.error)) || "Failed", false); return; } paint(x.j); setMsg(enabled ? "Demo Mode on." : "Demo Mode off.", true); return load(); })
       .catch(function (e) { setMsg(String(e), false); });
   }
-  document.getElementById("btnOn").onclick = function () { post(true); };
-  document.getElementById("btnOff").onclick = function () { post(false); };
+  btnOn.onclick = function () { post(true); };
+  btnOff.onclick = function () { post(false); };
   document.getElementById("btnWipe").onclick = function () {
-    if (!confirm("Wipe ALL demo data for this org?")) return;
+    if (!confirm(wipeConfirmText())) return;
     if (prompt('Type WIPE_DEMO_DATA to confirm:') !== "WIPE_DEMO_DATA") { setMsg("Wipe cancelled.", false); return; }
     setMsg("Wiping…");
     fetch("/api/demo/mode", { method: "DELETE", credentials: "same-origin", headers: headers(), body: JSON.stringify({ confirm: "WIPE_DEMO_DATA" }) })

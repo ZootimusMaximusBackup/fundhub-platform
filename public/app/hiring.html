@@ -351,8 +351,6 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <span class="crumb">Setup</span><h1>Hiring</h1>
       <div class="spacer"></div>
       <span class="chip" id="benchChip"><span class="cd"></span><span id="benchChipTxt">bench</span></span>
-      <span class="chip" title="Every api/hiring/* route is a readHandler — a non-GET is answered 405 method_not_allowed (src/http/read-api.mjs:157). Nothing on this screen writes.">read-only · GET</span>
-      <span class="chip" title="ROLE_SETS.HIRING = {owner, admin} exactly. closer, setter, funding_advisor and inquiry_specialist cannot open these endpoints at all.">owner + admin only</span>
       <button class="btn mono" id="resetBtn">Reset filters</button>
     </div>
 
@@ -369,32 +367,26 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           <div class="eyebrow">HR-01 <span class="sep">/</span> THE HUMAN GATE</div>
           <div class="spacer"></div>
           <span class="badge b-accent">advisory only</span>
-          <span class="badge b-gray">read-only · GET</span>
         </div>
         <div class="gbd">
           <div>
             <h3>Scores are advice. People decide.</h3>
             <div class="quote">Scores are advisory. No candidate may be rejected without a named human and a written reason; the database enforces this.</div>
             <div class="note" style="margin-top:8px">
-              That sentence is the <span class="k">scoring_notice</span> string
-              <span class="k">api/hiring/application.mjs</span> returns on every application, and it is
-              printed again beside the score history in the review drawer. Every row on the board
-              carries its own <span class="k">recommendation_status</span> — the literal
-              <b>“advisory — a human decides”</b> — for the same reason.
+              That sentence is shown again beside the score history when you open a candidate, and
+              every row on the board is captioned <b>“advisory — a human decides”</b>.
             </div>
           </div>
           <div>
-            <h3>Enforced in three places, not one</h3>
-            <ol>
-              <li><code>reject()</code> refuses without <code>decidedByStaffId</code> and a non-blank reason — <span class="k">src/hiring/pipeline.mjs:212-227</span></li>
-              <li><code>hiring_decisions_human_ck</code> requires both on <code>reject</code> and <code>offer_declined</code>; <code>hiring_decisions_offer_ck</code> requires a named human on <code>offer</code> — <span class="k">051 §H</span></li>
-              <li><code>trg_application_terminal</code> refuses <code>status='rejected'</code> unless a reject decision naming a human already exists — <span class="k">051 §H</span></li>
-            </ol>
+            <h3>Nothing here turns anyone down on its own</h3>
+            <div class="note">
+              A rejection needs a named person and a reason written out. Without both, the system
+              refuses to record it. No score closes an application, and there is no list of
+              canned reasons to pick from.
+            </div>
             <div class="note" style="margin-top:8px">
-              There is no auto-reject, no score threshold that closes an application and no
-              rejection-reason picklist: <span class="k">reason</span> is free text. Recommendation
-              pills on this screen are deliberately all one colour — a traffic light turns advice
-              into a verdict, which is exactly what the grader refuses to be.
+              Recommendations are all one colour on purpose. A red-amber-green light would turn
+              advice into a verdict, which is the one thing this screen must not do.
             </div>
           </div>
         </div>
@@ -419,18 +411,14 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </table>
         </div>
         <div class="cap">
-          <b>bench = open applications at 1:1 Interview or Offer.</b> Nothing earlier counts —
-          <span class="k">v_hiring_bench</span> (051 §J) filters
-          <span class="k">status = 'open' AND s.key IN ('one_on_one','offer')</span>, so a column of
-          unscreened applications can never read as a healthy bench.
-          <span class="k">bench_shortfall = greatest(bench_target − bench_count, 0)</span>;
-          <span class="k">bench_target</span> defaults to <b>4</b> per role.
+          <b>The bench is open applications sitting at 1:1 Interview or Offer.</b> Nothing earlier
+          counts, so a stack of unscreened applications can never read as a healthy bench.
+          Shortfall is the target minus the bench, and never goes below zero. The target is
+          <b>4</b> people per role unless it was changed for that role.
         </div>
         <div class="cap">
-          <b>unrouted</b> means <span class="k">hiring_manager_staff_id IS NULL</span> — the req has no owner.
-          The bench monitor in <span class="k">src/hiring/bench.mjs</span> opens one task per role per day
-          (dedupe body <span class="k">hiring:bench:&lt;role_key&gt;:&lt;YYYY-MM-DD&gt;</span>), but nothing in the
-          repo schedules it, so no “last checked” time is shown here — there is nothing that would populate one.
+          <b>Unrouted</b> means the role has no hiring manager — nobody owns it. Nothing checks the
+          bench on a schedule yet, so there is no “last checked” time to show.
         </div>
       </div>
 
@@ -449,43 +437,25 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         </div>
         <div class="board" id="board"></div>
         <div class="cap">
-          Columns are the eleven seeded rows of <span class="k">pipeline_stages</span> where
-          <span class="k">pipelines.key = 'hiring'</span>, in <span class="k">sort_order</span> (051 §A).
-          <b>mock_call is not among them</b> — doc 9 retired it and the migration deliberately does not seed it,
-          though it survives as a legal <span class="k">hiring_rubrics.stage_key</span>.
-          The board is not draggable: the API has no route that moves a card.
+          The columns are the eleven hiring stages, in order. <b>The board is not draggable</b> —
+          nothing on this screen can move a candidate from one stage to another.
         </div>
         <div class="cap">
-          <b>Stage and status are different columns and they legitimately disagree.</b> The
-          <span class="k">?state=</span> filter matches the stage key, never
-          <span class="k">candidate_applications.status</span>; there is no way to filter on status at all.
+          <b>Stage and status are two different things, and they can disagree.</b> The stage filter
+          filters the stage. There is no way to filter on status.
         </div>
         <div class="cap">
-          <b>The Hired stage is a trap, and the board shows it.</b>
-          <span class="k">advance(toStageKey:'hired')</span> flips status to <span class="k">hired</span>
-          (<span class="k">pipeline.mjs:196-199</span>) and <span class="k">advance()</span> then refuses any
-          application whose status is not <span class="k">'open'</span>
-          (<span class="k">pipeline.mjs:179-181</span>) — so a row that enters <b>Hired</b> is frozen there
-          permanently. Nothing else in the repo writes <span class="k">status</span> or
-          <span class="k">stage_id</span>; the only two writers are
-          <span class="k">pipeline.mjs:196</span> and <span class="k">:249</span>.
-          Onboarding, Ramp and Performing are therefore reachable <i>only</i> by advancing straight past the
-          Hired stage, which leaves status <b>open</b> — which is exactly what the three rows there show, and
-          why <span class="k">rampReview</span>’s <span class="k">status = 'open'</span> gate can ever match.
-          Bethany Cole is the other case: she went through Hired and cannot be moved again.
-          <b>Do not count “active employees” from either column.</b>
+          <b>The Hired stage is a trap.</b> A candidate who is moved into <b>Hired</b> is frozen there
+          and cannot be moved again. Onboarding, Ramp and Performing can only be reached by skipping
+          straight past Hired, which leaves the status showing <b>open</b>.
+          <b>So neither column is a count of the people working here — do not read it as one.</b>
         </div>
         <div class="cap">
-          <b>The score block always travels together</b> — average, recommendation, rubric version and flag
-          count in one place, captioned with the row’s own <span class="k">recommendation_status</span>.
-          The board carries the <b>latest</b> score only (a <span class="k">LATERAL … LIMIT 1</span>);
-          the full history is on the application, so there is no trend line here to draw.
-          <span class="k">has_video</span> and <span class="k">has_resume</span> are booleans <b>on this
-          endpoint</b> — <span class="k">candidates.mjs:48-49</span> reduces both to
-          <span class="k">IS NOT NULL</span>, so the board has no thumbnail, no transcript and no duration.
-          The review drawer is built from <span class="k">api/hiring/application.mjs</span>, which returns
-          <span class="k">a.video_url</span> in full and links it; the resume stays a boolean everywhere
-          because <span class="k">resume_document_id</span> is never returned by either endpoint.
+          <b>The score block always travels together</b> — average, recommendation, rubric version and
+          flag count in one place, captioned as advice. The card shows the <b>latest</b> score only;
+          the full history is on the candidate, so there is no trend line to draw here.
+          The card knows only whether a video and a resume exist. Open the candidate to watch the
+          video; the resume itself cannot be opened from anywhere on this screen.
         </div>
         <div class="pager" id="boardPager"></div>
       </div>
@@ -496,7 +466,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           <div class="eyebrow">HR-04 <span class="sep">/</span> NEEDS A HUMAN</div>
           <div class="spacer"></div>
           <span class="badge b-warn" id="rqCount">—</span>
-          <span class="badge b-gray mono">?flagged=1</span>
+          <span class="badge b-gray mono">flagged or not scored</span>
         </div>
         <div class="tblscroll">
           <table class="grid" id="rqTbl">
@@ -508,21 +478,15 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </table>
         </div>
         <div class="cap">
-          The endpoint predicate is exactly
-          <span class="k">jsonb_array_length(COALESCE(sc.flags,'[]'::jsonb)) &gt; 0 OR sc.average IS NULL</span>
-          — flagged, <b>or</b> unscorable. The <span class="k">COALESCE</span> is load-bearing: the score
-          arrives through a <span class="k">LEFT JOIN LATERAL</span>, so without it an application with no
-          score at all would make the first arm NULL rather than false.
-          A null average is rendered as <b>not scored</b>, never as a low score:
-          <span class="k">grade()</span> returns <span class="k">average: null</span> and
-          <span class="k">recommendation: 'incomplete'</span> the moment any category is unrated, because
-          banding the three categories somebody happened to fill in is how a candidate gets “below bar”
-          from one answered question.
+          A candidate lands here for one of two reasons: the grader flagged something, <b>or</b> it could
+          not produce a score at all. A missing score is shown as <b>not scored</b>, never as a low score.
+          The moment one part of the scorecard is left blank, the whole score is withheld — averaging the
+          three answers somebody happened to fill in is how a good candidate gets marked “below bar” off
+          one question.
         </div>
         <div class="cap">
-          <b>?flagged has no status filter</b>, so closed applications keep appearing here until someone
-          re-scores or the window moves. They are dimmed rather than hidden — the endpoint returns them and
-          pretending otherwise would misreport the queue.
+          Closed applications keep showing up here until someone scores them again. They are dimmed
+          rather than hidden, because hiding them would make this queue look shorter than it is.
         </div>
         <div class="cap" id="rqInsight"></div>
       </div>
@@ -545,50 +509,25 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </table>
         </div>
         <div class="cap">
-          <b>⚠ CONFIRM BEFORE THIS RUNS LIVE.</b> Both <span class="k">src/hiring/linkedin.mjs</span> and
-          051 §I carry that marker: Talent Solutions is partner-gated and the payload shapes are
-          <b>unverified against a real account</b>. Treat every LinkedIn row as an unconfirmed integration,
-          not a working one. There are no impressions, views, clicks or apply-rate numbers anywhere —
-          LinkedIn analytics are not modelled.
+          <b>⚠ Posting to LinkedIn has never been tested against a real LinkedIn account.</b> Treat every
+          LinkedIn row here as unconfirmed. There are no views, clicks or apply-rate numbers on this
+          screen because LinkedIn does not send them back.
         </div>
         <div class="cap">
-          <b>Applications and Last 7d count job_posting_id, not source.</b> Both are correlated subqueries on
-          <span class="k">candidate_applications.job_posting_id</span>
-          (<span class="k">api/hiring/postings.mjs:36-40</span>), the second one narrowed to
-          <span class="k">applied_at &gt; now() - interval '7 days'</span>. They reconcile row-for-row with
-          HR-03 — and they are small, because only <b>6</b> of the <b>24</b> applications on the board came
-          through a posting at all. Referrals, ads and the client base arrive with
-          <span class="k">job_posting_id</span> NULL and are counted here nowhere.
-          The two columns are independent: A-1064 applied through
-          <span class="k">fundhub.ai/careers/closer</span>, which is P-002’s
-          <span class="k">apply_url</span>, so he counts against a LinkedIn-channel posting while his
-          <span class="k">candidates.source</span> reads <span class="k">inbound</span>. A posting with a
-          zero here is not broken — nobody has applied to that req.
+          <b>Applications and Last 7d count only the people who applied through that posting.</b>
+          Referrals, ads and past clients arrive without a posting, so they are counted in neither
+          column — which is why these numbers are smaller than the board. A posting showing zero is
+          not broken; nobody has applied to it.
         </div>
         <div class="cap">
-          <span class="k">last_error</span> is the platform’s own message, token-scrubbed and sliced to
-          1000 characters, and it is shown <b>verbatim</b> — paraphrasing it into “posting failed” removes the
-          one detail that makes it fixable. It is the <b>response body alone</b>:
-          <span class="k">postJob</span> stores <span class="k">err.platformMessage</span>
-          (<span class="k">linkedin.mjs:140</span>), which is set from the raw body
-          (<span class="k">:85</span>) and wins over the prefixed
-          <span class="k">err.message</span> whenever there was one — so no
-          <span class="k">LinkedIn &lt;status&gt;:</span> prefix is ever stored, and the HTTP status only
-          appears if the platform put it in its own JSON, or as the literal
-          <span class="k">HTTP &lt;status&gt;</span> fallback when the body was empty.
-          That also means <span class="k">retryable</span> is not persisted anywhere: it is computed as
-          HTTP 429 or ≥ 500 (<span class="k">linkedin.mjs:87</span>) and returned to the caller, so a
-          <b>failed</b> row here cannot tell you on its own whether a retry is worth it.
+          When a posting fails, the message shown is the platform’s own words, kept word for word.
+          Rewriting it as “posting failed” would throw away the one detail that makes it fixable.
+          It cannot tell you whether trying again would work.
         </div>
         <div class="cap">
-          <b>No connection panel.</b> <span class="k">hiring_channel_connections</span> is joined by no endpoint —
-          <span class="k">connection_state</span>, <span class="k">token_expires_at</span> and
-          <span class="k">scopes</span> are unavailable here, and the connection’s own
-          <span class="k">last_error</span> is a different column from the posting’s. Postings also return no
-          description and no <span class="k">external_id</span>, only <span class="k">is_published</span>, so
-          there is no job body to render and no deep link to the live post. Nothing schedules
-          <span class="k">postJob</span> / <span class="k">closeJob</span> / <span class="k">ingestApplications</span>,
-          so there is no “auto-posting” or “next sync” to report.
+          <b>There is no account-connection panel here</b>, no link to the live post, and no job
+          description. Nothing posts, closes or pulls in applications on a schedule, so there is no
+          “next sync” to report.
         </div>
       </div>
 
@@ -617,25 +556,16 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </table>
         </div>
         <div class="cap">
-          <b>These are current-stage counts, not historical progression.</b> The endpoint filters on the
-          application’s <b>present</b> <span class="k">sort_order</span> —
-          <span class="k">&gt;= 2</span>, <span class="k">&gt;= 3</span>, and
-          <span class="k">&gt;= 4 AND stage_key &lt;&gt; 'rejected'</span> — so someone sitting in Not Moving
-          Forward (sort_order 9) is counted in both “at or past group interview” and “at or past 1:1”.
-          Calling these stage conversion rates would be a lie, so the headers say what the SQL says.
+          <b>These count where people are standing right now, not how far they got.</b> Someone who was
+          turned down is still counted in “at or past group interview” and “at or past 1:1”, because that
+          is where they sit. <b>These are not conversion rates</b>, and the headers say so on purpose.
         </div>
         <div class="cap">
-          <span class="k">hired</span> and <span class="k">rejected</span> come from
-          <span class="k">candidate_applications.status</span>, not from a stage — and
-          <span class="k">status = 'hired'</span> is set by exactly one thing,
-          <span class="k">advance(toStageKey:'hired')</span>. Anyone advanced past the offer without passing
-          through the Hired stage keeps status <span class="k">open</span> (see HR-03), so
-          <b>this column undercounts hires</b> and is a count of applications parked in the Hired stage rather
-          than of people working here.
-          <span class="k">hire_rate_pct</span> is <span class="k">round(100 · hired / applications, 1)</span>
-          and is NULL when applications = 0. <span class="k">?days</span> defaults to 90 and is clamped to 1–730.
-          No stage-by-stage drop-off chart exists: <span class="k">v_hiring_funnel</span> has no endpoint and
-          nothing records stage-entry history, so time-in-stage across the funnel cannot be computed.
+          <b>Hired counts applications parked in the Hired stage, not people working here.</b> Anyone moved
+          past the offer without passing through Hired keeps the status open, so this column undercounts
+          hires. Hire rate is hired divided by applications, and is blank when there are no applications.
+          There is no stage-by-stage drop-off chart: nothing records when a candidate entered each stage,
+          so time-in-stage across the funnel cannot be worked out.
         </div>
         <div class="cap" id="fnInsight"></div>
       </div>
@@ -663,40 +593,25 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </table>
         </div>
         <div class="cap">
-          <b>Advances are logged too, not just rejections.</b> An audit that only records rejections cannot
-          answer how differently similar candidates were treated, so
-          <span class="k">advance()</span> writes a <span class="k">hiring_decisions</span> row as well
-          (<span class="k">src/hiring/pipeline.mjs:186-193</span>). Neither
-          <span class="k">application_scores</span> nor <span class="k">hiring_decisions</span> can be deleted —
-          <span class="k">hiring_no_delete</span> raises on any DELETE.
+          <b>Moves forward are recorded here too, not just rejections.</b> A record that only keeps
+          rejections cannot show whether two similar people were treated differently. Nothing in this
+          log can be deleted.
         </div>
         <div class="cap">
-          <span class="k">followed_recommendation</span> is defined only for
-          <b>reject</b>, <b>advance</b> and <b>offer</b>, and is NULL whenever
-          <span class="k">recommendation_at_decision</span> is NULL. It is NULL by design for
-          <span class="k">offer_accepted</span>, <span class="k">offer_declined</span>,
-          <span class="k">withdraw</span> and <span class="k">hold</span> — and those four, plus the
-          <b>Withdrawn</b> stage and status, have no producing code path in
-          <span class="k">pipeline.mjs</span> at all, so expect them to stay empty.
+          <b>“Followed?”</b> only means something for <b>reject</b>, <b>advance</b> and <b>offer</b>, and is
+          blank when there was no recommendation at the time. It is blank by design for the other decision
+          types — and nothing in the system produces those yet, so expect them to stay empty.
         </div>
         <div class="cap">
-          <span class="k">score_at_decision</span> and <span class="k">rubric_version</span> resolve through
-          <span class="k">d.score_id</span>, which <span class="k">pipeline.mjs</span> leaves NULL unless the
-          caller passes one — blanks here are normal, not missing data.
-          <span class="k">candidate_notified_at</span> exists but nothing ever sets it; the feedback
-          obligation becomes a task (<span class="k">hiring:feedback:&lt;applicationId&gt;</span>,
-          source_workflow <span class="k">hiring-candidate-feedback</span>) that no hiring endpoint exposes.
+          The score and rubric version are blank unless whoever recorded the decision attached one.
+          <b>Blank here is normal, not missing data.</b> Nothing yet records that a candidate was told
+          the outcome.
         </div>
         <div class="cap">
-          <b>No row here can be traced to a candidate.</b> The projection
-          (<span class="k">api/hiring/decisions.mjs:41-58</span>) carries no
-          <span class="k">d.application_id</span> and no name from
-          <span class="k">candidates</span> — only <span class="k">c.source</span> and
-          <span class="k">r.key</span>, which are the columns an adverse-impact comparison needs and the
-          smallest set that identifies nobody. So there is no “open this application” control in the expanded
-          row: the join runs the other way, from
-          <span class="k">api/hiring/application.mjs</span> (<span class="k">WHERE d.application_id = $1</span>),
-          and HR-08.6 in the drawer is where the two meet.
+          <b>No row here names a candidate.</b> The log carries only the source and the role — the two
+          things a fairness check needs, and the smallest set that identifies nobody. That is why there is
+          no “open this application” link in an expanded row. Open the candidate from the board instead;
+          their decisions are listed there.
         </div>
       </div>
 
@@ -705,7 +620,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
     <div class="foot">
       <span class="pulse"></span><span>systems nominal · fundhub.ai</span>
       <span class="spacer"></span>
-      <span id="footNote">hr · api/hiring/* · read-only · org: fundhub</span>
+      <span id="footNote">hiring · read-only</span>
     </div>
   </div>
 </div>
@@ -1614,6 +1529,13 @@ var OUT_CLS   ={yes:'b-ok', maybe:'b-warn', no:'b-alert'};
 var DEC_CLS   ={advance:'b-info', offer:'b-accent', reject:'b-alert',
                 offer_accepted:'b-gray', offer_declined:'b-gray', withdraw:'b-gray', hold:'b-gray'};
 
+/* A role that is not one of the three seeded ones has no display name on this
+   page. Show the key itself rather than stopping the render — an unknown name is
+   an unknown, not a reason for the screen to fail to load. */
+function roleName(key){
+  var r = ROLE_BY_KEY[key];
+  return r ? r.name : (key || 'unknown role');
+}
 function badge(cls,txt,title){
   return '<span class="badge '+cls+'"'+(title?' title="'+esc(title)+'"':'')+'>'+esc(txt)+'</span>';
 }
@@ -1625,14 +1547,14 @@ function recPill(rec){
 }
 function avgCell(avg){
   return avg===null||avg===undefined
-    ? '<span class="nul mono" title="grade() returned average: null — a partial rubric is never banded">not scored</span>'
+    ? '<span class="nul mono" title="Not scored — a scorecard with any part left blank is never averaged.">not scored</span>'
     : '<span class="mnum" style="font-weight:600">'+num(avg)+'</span><span class="nul mono" style="font-size:var(--fs-caption)"> / 4</span>';
 }
 function flagList(flags){
   if(!flags||!flags.length) return '<span class="nul mono">—</span>';
   return flags.map(function(f){
-    return '<div style="margin-bottom:4px"><span class="k">'+esc(f.key)+'</span>'+
-      (f.unevaluated?' <span class="badge b-warn" style="font-size:var(--fs-caption);padding:1px 5px">unevaluated</span>':'')+
+    return '<div style="margin-bottom:4px">'+
+      (f.unevaluated?'<span class="badge b-warn" style="font-size:var(--fs-caption);padding:1px 5px">rule not checked yet</span>':'')+
       '<div style="font-size:var(--fs-body);color:var(--gray);line-height:1.45;margin-top:2px">'+esc(f.label)+'</div></div>';
   }).join('');
 }
@@ -1675,19 +1597,19 @@ function renderBench(rows){
     var mcls = b.bench_shortfall===0 ? '' : (b.bench_shortfall>=3 ? ' bad' : ' warn');
     var scls = b.bench_shortfall===0 ? 'stripe-ok' : (b.bench_shortfall>=3 ? 'stripe-bad' : 'stripe-warn');
     var flags=[];
-    if(b.short) flags.push(badge('b-warn','short','bench_shortfall > 0'));
-    if(b.unrouted) flags.push(badge('b-alert','unrouted','hiring_manager_staff_id IS NULL'));
+    if(b.short) flags.push(badge('b-warn','short','fewer people on the bench than this role targets'));
+    if(b.unrouted) flags.push(badge('b-alert','unrouted','no hiring manager on this role'));
     if(!flags.length) flags.push('<span class="nul mono">—</span>');
     return '<tr class="'+scls+'">'+
-      '<td><b>'+esc(b.role_name)+'</b><span class="sub">'+esc(b.role_key)+'</span></td>'+
+      '<td><b>'+esc(b.role_name)+'</b></td>'+
       '<td><span class="meter'+mcls+'"><i style="width:'+pct+'%"></i></span>'+
         '<span class="mnum" style="font-weight:600">'+b.bench_count+'</span>'+
         '<span class="nul mono"> / '+b.bench_target+'</span>'+
-        '<span class="sub">target from hiring_roles.bench_target</span></td>'+
+        '<span class="sub">target for this role</span></td>'+
       '<td><span class="mnum" style="font-weight:600'+(b.bench_shortfall?';color:#6E2A22':'')+'">'+b.bench_shortfall+'</span></td>'+
       '<td class="mnum">'+b.open_applications+'</td>'+
-      '<td class="mnum">'+b.awaiting_screen+'<span class="sub">stage applied</span></td>'+
-      '<td class="mnum">'+b.awaiting_group_interview+'<span class="sub">stage group_interview</span></td>'+
+      '<td class="mnum">'+b.awaiting_screen+'<span class="sub">not screened yet</span></td>'+
+      '<td class="mnum">'+b.awaiting_group_interview+'<span class="sub">at group interview</span></td>'+
       '<td>'+(b.hiring_manager?esc(b.hiring_manager):'<span class="nul mono">unassigned</span>')+'</td>'+
       '<td>'+flags.join(' ')+'</td>'+
     '</tr>';
@@ -1695,15 +1617,48 @@ function renderBench(rows){
 }
 
 /* ══ HR-00 · SUMMARY + DERIVATION ════════════════════════════════════════ */
+/* Demo Mode's seeded candidates are counted nowhere on this screen. The bench
+   numbers arrive already totalled by the server, which counts a demo application
+   with the real ones, so the demo rows this screen can see are taken back off
+   again here. Subtraction only ever removes rows we positively identified, so a
+   demo row this screen cannot see leaves the number too high, never too low. */
+function demoApps(){ return APPS.filter(function(a){ return a.is_demo_row; }); }
+
+function benchLessDemo(rows){
+  var demo = demoApps().filter(function(a){ return a.status==='open'; });
+  if(!demo.length) return rows;
+  return rows.map(function(b){
+    var mine = demo.filter(function(a){ return a.role_key===b.role_key; });
+    if(!mine.length) return b;
+    var onBench = mine.filter(function(a){ return a.stage_key==='one_on_one'||a.stage_key==='offer'; }).length;
+    var count = Math.max((b.bench_count||0)-onBench, 0);
+    var out = Object.assign({}, b);
+    out.bench_count       = count;
+    out.bench_shortfall   = Math.max((b.bench_target||0)-count, 0);
+    out.open_applications = Math.max((b.open_applications||0)-mine.length, 0);
+    out.awaiting_screen   = Math.max((b.awaiting_screen||0)-
+      mine.filter(function(a){ return a.stage_key==='applied'; }).length, 0);
+    out.awaiting_group_interview = Math.max((b.awaiting_group_interview||0)-
+      mine.filter(function(a){ return a.stage_key==='group_interview'; }).length, 0);
+    return out;
+  });
+}
+
 function renderStats(){
-  var bench = BENCH_ROWS || benchRows();
+  var bench = benchLessDemo(BENCH_ROWS || benchRows());
   var benchCount = bench.reduce(function(n,b){return n+b.bench_count;},0);
   var benchTarget= bench.reduce(function(n,b){return n+b.bench_target;},0);
   var shortfall  = bench.reduce(function(n,b){return n+b.bench_shortfall;},0);
   var openApps   = bench.reduce(function(n,b){return n+b.open_applications;},0);
 
-  var queue = APPS.filter(function(a){ return a.needs_human; });
+  var queue = APPS.filter(function(a){ return a.needs_human && !a.is_demo_row; });
   var queueOpen = queue.filter(function(a){ return a.status==='open'; }).length;
+
+  var demoOpen  = demoApps().filter(function(a){ return a.status==='open'; }).length;
+  var demoQueue = demoApps().filter(function(a){ return a.needs_human; }).length;
+  function demoNote(n){
+    return n ? ' · '+n+' demo row'+(n===1?'':'s')+' not counted' : '';
+  }
 
   var posted = POSTINGS.filter(function(p){return p.status==='posted';}).length;
   var failed = POSTINGS.filter(function(p){return p.status==='failed';}).length;
@@ -1715,39 +1670,40 @@ function renderStats(){
   document.getElementById('statRow').innerHTML =
     '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> BENCH</div>'+
       '<div class="sv">'+benchCount+' <span class="nul" style="font-size:var(--fs-title)">/ '+benchTarget+'</span></div>'+
-      '<div class="sd">shortfall '+shortfall+' across '+bench.length+' active roles</div></div>'+
+      '<div class="sd">shortfall '+shortfall+' across '+bench.length+' active roles'+demoNote(demoOpen)+'</div></div>'+
     '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> OPEN APPLICATIONS</div>'+
       '<div class="sv">'+openApps+'</div>'+
-      '<div class="sd">status = open · from v_hiring_bench</div></div>'+
+      '<div class="sd">still open, across all roles'+demoNote(demoOpen)+'</div></div>'+
     '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> NEEDS A HUMAN</div>'+
       '<div class="sv">'+queue.length+'</div>'+
-      '<div class="sd">flagged or unscored · '+queueOpen+' still open</div></div>'+
+      '<div class="sd">flagged or not scored · '+queueOpen+' still open'+demoNote(demoQueue)+'</div></div>'+
     '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> POSTINGS POSTED</div>'+
       '<div class="sv">'+posted+' <span class="nul" style="font-size:var(--fs-title)">/ '+POSTINGS.length+'</span></div>'+
-      '<div class="sd">'+failed+' failed · LinkedIn unverified</div></div>'+
+      '<div class="sd">'+failed+' failed · LinkedIn posting unconfirmed</div></div>'+
     '<div class="stat"><div class="eyebrow">HR-00 <span class="sep">/</span> HUMAN OVERRIDE RATE</div>'+
       '<div class="sv small">'+(orate===null?'—':orate.toFixed(1)+'%')+'</div>'+
       '<div class="sd">'+overrides.length+' of '+judged.length+' decisions differed</div></div>';
 
   var benchInputs = bench.map(function(b){
-    return '<b>'+b.role_key+'</b> '+b.bench_count+'/'+b.bench_target+' (short '+b.bench_shortfall+')';
+    return '<b>'+esc(b.role_name)+'</b> '+b.bench_count+'/'+b.bench_target+' (short '+b.bench_shortfall+')';
   }).join(' · ');
 
   document.getElementById('deriv').innerHTML =
-    '<div class="dcell"><div class="dk">bench count</div>'+
-      '<div class="formula">count(applications) WHERE status = \'open\' AND stage_key IN (\'one_on_one\',\'offer\')</div>'+
+    '<div class="dcell"><div class="dk">what the bench counts</div>'+
+      '<div class="formula">open applications sitting at 1:1 Interview or Offer</div>'+
       '<div class="inputs">'+benchInputs+'<br>total <b>'+benchCount+'</b> against target <b>'+benchTarget+'</b>, shortfall <b>'+shortfall+'</b></div></div>'+
-    '<div class="dcell"><div class="dk">shortfall</div>'+
-      '<div class="formula">greatest(bench_target − bench_count, 0)</div>'+
-      '<div class="inputs">bench_target defaults to <b>4</b> per role (hiring_roles.bench_target, CHECK &gt;= 0).<br>'+
-      'Applications at applied / screening / group_interview count <b>zero</b> toward it.</div></div>'+
-    '<div class="dcell"><div class="dk">human override rate</div>'+
-      '<div class="formula">count(followed_recommendation = false) ÷ count(followed_recommendation IS NOT NULL)</div>'+
+    '<div class="dcell"><div class="dk">what the shortfall counts</div>'+
+      '<div class="formula">target minus bench, never below zero</div>'+
+      '<div class="inputs">The target is <b>4</b> people per role unless it was changed for that role.<br>'+
+      'Candidates still at applied, screening or group interview count <b>zero</b> toward it.</div></div>'+
+    '<div class="dcell"><div class="dk">what the override rate counts</div>'+
+      '<div class="formula">decisions that went against the advice ÷ decisions that had advice</div>'+
       '<div class="inputs"><b>'+overrides.length+'</b> ÷ <b>'+judged.length+'</b> = <b>'+(orate===null?'—':orate.toFixed(1)+'%')+'</b><br>'+
-      DECISIONS.length+' decisions on this page, unwindowed — only HR-07 applies <b>?days</b>; <b>'+
-      (DECISIONS.length-judged.length)+'</b> excluded because recommendation_at_decision is NULL.</div></div>'+
-    '<div class="src">v_hiring_bench + api/hiring/bench.mjs · api/hiring/decisions.mjs (the followed_recommendation CASE) · '+
-      'averages and recommendations re-derived in page by a port of src/hiring/grading.mjs grade(), 1-4 scale, weighted mean to 2dp</div>';
+      (DECISIONS.length-judged.length)+' of the '+DECISIONS.length+' decisions shown had no recommendation at the time, so they are left out.</div></div>'+
+    (demoApps().length
+      ? '<div class="src">'+demoApps().length+' Demo Mode row'+(demoApps().length===1?' is':'s are')+
+        ' shown on the board with a demo label and counted in none of the numbers above</div>'
+      : '');
 
   var chip=document.getElementById('benchChip');
   chip.className = 'chip ' + (shortfall===0?'on':(shortfall>=5?'bad':'wip'));
@@ -1778,7 +1734,7 @@ function renderStageRail(){
     var n=counts[s.key]||0;
     var cls=[]; if(boardState.stage===s.key) cls.push('on'); if(!n) cls.push('zero');
     return '<button type="button" data-stage="'+s.key+'"'+(cls.length?' class="'+cls.join(' ')+'"':'')+
-      ' title="stage key '+s.key+' · sort_order '+s.sort+'">'+esc(s.name)+'<span class="n">'+n+'</span></button>';
+      '>'+esc(s.name)+'<span class="n">'+n+'</span></button>';
   }).join('');
   host.innerHTML=html;
   host.querySelectorAll('button').forEach(function(b){
@@ -1790,10 +1746,11 @@ function cardHTML(a){
   var d = daysSince(a.entered_stage_at);
   var cls='ccard'+(a.needs_human?' needs':'')+(a.status!=='open'?' closed':'');
   var chips=[];
-  chips.push('<span class="tag'+(a.has_video?' has':' off')+'" title="has_video — the board&#39;s boolean, (video_url IS NOT NULL). No thumbnail, transcript or duration exists here; the URL itself is returned only by api/hiring/application.mjs and is linked in the drawer.">video</span>');
-  chips.push('<span class="tag'+(a.has_resume?' has':' off')+'" title="has_resume — a boolean. resume_document_id is never returned and storage keys are stripped by redact().">resume</span>');
-  if(a.disc_profile) chips.push('<span class="tag" title="disc_profile is free text — a bonus, never a filter and never an auto-disqualifier (051 §C).">DISC '+esc(a.disc_profile)+'</span>');
-  if(a.linkedin_profile_url) chips.push('<span class="tag has" title="linkedin_profile_url only. No photo, headline, employer, school or connections are stored or fetched.">li url</span>');
+  if(a.is_demo_row) chips.push('<span class="tag" title="Seeded by Demo Mode. Counted in none of the numbers on this screen.">demo row</span>');
+  chips.push('<span class="tag'+(a.has_video?' has':' off')+'" title="Whether a video was submitted. Open the candidate to watch it.">video</span>');
+  chips.push('<span class="tag'+(a.has_resume?' has':' off')+'" title="Whether a resume was submitted. The file itself cannot be opened from this screen.">resume</span>');
+  if(a.disc_profile) chips.push('<span class="tag" title="A note, never a filter and never a reason to turn someone down.">DISC '+esc(a.disc_profile)+'</span>');
+  if(a.linkedin_profile_url) chips.push('<span class="tag has" title="A LinkedIn link only. No photo, job history or connections are stored.">li url</span>');
 
   var s='<div class="sblk">';
   if(a.average===null){
@@ -1830,11 +1787,10 @@ function renderBoard(){
     var mine = rows.filter(function(a){ return a.stage_key===s.key; });
     var body = mine.length ? mine.map(cardHTML).join('')
       : '<div class="col-empty">'+(s.key==='withdrawn'
-          ? 'no code path in pipeline.mjs<br>produces this stage'
+          ? 'nothing puts a candidate<br>in this stage yet'
           : 'nothing here')+'</div>';
     return '<div class="col"><div class="col-hd">'+
-      '<div class="cn"><span>'+esc(s.name)+'</span><span class="cc">'+mine.length+'</span></div>'+
-      '<div class="ck">'+esc(s.key)+' · sort_order '+s.sort+'</div></div>'+
+      '<div class="cn"><span>'+esc(s.name)+'</span><span class="cc">'+mine.length+'</span></div></div>'+
       '<div class="col-bd">'+body+'</div></div>';
   }).join('');
 
@@ -1842,12 +1798,15 @@ function renderBoard(){
     b.addEventListener('click',function(){ openDrawer(b.dataset.app); });
   });
 
+  var realShown = rows.filter(function(a){ return !a.is_demo_row; }).length;
+  var demoShown = rows.length - realShown;
   document.getElementById('boardCount').textContent =
-    rows.length+' application'+(rows.length===1?'':'s')+' shown';
+    realShown+' application'+(realShown===1?'':'s')+' shown'+
+    (demoShown? ' · '+demoShown+' demo':'');
   document.getElementById('boardPager').innerHTML =
-    'showing '+rows.length+' of '+APPS.length+' sample rows · limit defaults to 50, caps at 200 · '+
-    'the envelope’s <span class="k">count</span> is the page size, not a table count — '+
-    '<span class="k">hasMore</span> is the only signal, so no screen-wide total is shown';
+    'showing '+rows.length+' of '+APPS.length+' loaded application'+(APPS.length===1?'':'s')+
+    (demoShown? ' · '+demoShown+' of them seeded by Demo Mode, labelled on the card and counted nowhere':'')+
+    ' · up to 200 are loaded at a time, and no screen-wide total is available';
   var t=document.getElementById('fFlagged');
   t.classList.toggle('on', boardState.flagged);
   t.setAttribute('aria-pressed', boardState.flagged?'true':'false');
@@ -1863,18 +1822,28 @@ function renderReviewQueue(){
   var tb=document.querySelector('#rqTbl tbody');
   tb.innerHTML = rows.length ? rows.map(function(a){
     var st=inStageCell(a);
-    var why = a.average===null
-      ? '<div><span class="k">average IS NULL</span><div style="font-size:var(--fs-body);color:var(--gray);line-height:1.45;margin-top:2px">'+
-        esc(a.latest.label)+'</div></div>'
+    /* A sample row carries a fully graded `latest` score object. A live row does
+       not: the board read returns the number, the recommendation and the flags,
+       and no score label or scorecard stage. Those two are genuinely unknown on
+       a live row, so they are printed as unknown instead of being invented — and
+       reaching into a score that is not there is what used to stop this whole
+       page from loading. */
+    var latest = a.latest || null;
+    var why = (a.average===null || a.average===undefined)
+      ? '<div><b>Not scored</b><div style="font-size:var(--fs-body);color:var(--gray);line-height:1.45;margin-top:2px">'+
+        (latest && latest.label ? esc(latest.label) : 'No reason for the missing score was recorded.')+'</div></div>'
       : flagList(a.flags);
     return '<tr class="'+st.cls+(a.status!=='open'?' dim':'')+'" data-app="'+esc(a.id)+'" tabindex="0" style="cursor:pointer">'+
-      '<td><b>'+esc(a.full_name)+'</b><span class="sub">'+esc(a.id)+' · '+esc(a.source)+'</span></td>'+
+      '<td><b>'+esc(a.full_name)+'</b>'+
+        (a.is_demo_row?' '+badge('b-gray','demo row','Seeded by Demo Mode. Counted in none of the numbers on this screen.'):'')+
+        '<span class="sub">'+esc(a.id)+' · '+esc(a.source)+'</span></td>'+
       '<td>'+esc(a.role_name)+'</td>'+
-      '<td>'+esc(a.stage_name)+'<span class="sub">'+esc(a.stage_key)+'</span></td>'+
+      '<td>'+esc(a.stage_name)+'</td>'+
       '<td>'+badge(STATUS_CLS[a.status],a.status)+'</td>'+
       '<td>'+avgCell(a.average)+'</td>'+
       '<td>'+recPill(a.recommendation)+'<span class="sub">'+esc(a.recommendation_status)+'</span></td>'+
-      '<td class="mono">v'+esc(a.rubric_version)+'<span class="sub">'+esc(a.latest.rubric_stage)+'</span></td>'+
+      '<td class="mono">'+(a.rubric_version?'v'+esc(a.rubric_version):'<span class="nul">no rubric</span>')+
+        (latest && latest.rubric_stage?'<span class="sub">'+esc(latest.rubric_stage)+'</span>':'')+'</td>'+
       '<td style="max-width:340px">'+why+'</td>'+
       '<td>'+st.html+'</td>'+
     '</tr>';
@@ -1886,29 +1855,32 @@ function renderReviewQueue(){
       if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openDrawer(tr.dataset.app); }
     });
   });
+  /* Demo Mode rows stay visible and labelled, and are counted in nothing. */
+  var real = rows.filter(function(a){ return !a.is_demo_row; });
+  var demoWaiting = rows.length - real.length;
   document.getElementById('rqCount').textContent =
-    rows.length+' waiting · '+rows.filter(function(a){return a.status==='open';}).length+' open';
+    real.length+' waiting · '+real.filter(function(a){return a.status==='open';}).length+' open'+
+    (demoWaiting? ' · '+demoWaiting+' demo not counted':'');
 
   /* Why the queue is the size it is — the honest reading of the flag mix.
-     `only` = rows that would not be in the queue at all if the unevaluated flag
-     were not emitted: they have a number, and every flag on them is unevaluated. */
-  var carrying = rows.filter(function(a){
+     `only` = rows that would not be in the queue at all if the unchecked rule
+     were not raised: they have a number, and every flag on them is unchecked. */
+  var carrying = real.filter(function(a){
     return a.flags.some(function(f){ return f.unevaluated; });
   });
   var only = carrying.filter(function(a){
-    return a.average !== null && a.flags.every(function(f){ return f.unevaluated===true; });
+    return a.average !== null && a.average !== undefined &&
+           a.flags.every(function(f){ return f.unevaluated===true; });
   });
-  var unKeys={}; carrying.forEach(function(a){ a.flags.forEach(function(f){ if(f.unevaluated) unKeys[f.key]=1; }); });
-  var keys=Object.keys(unKeys);
-  document.getElementById('rqInsight').innerHTML = keys.length
-    ? '<b>Read the mix before you read the count.</b> '+carrying.length+' of these '+rows.length+
-      ' carry <span class="k">'+esc(keys.join(', '))+'</span>, and '+only.length+
-      ' of those are here for no other reason — a rubric flag with no '+
-      '<span class="k">when</span> condition implemented in <span class="k">flagsFor()</span>. The grader emits it '+
-      'with <span class="k">unevaluated:true</span> on <b>every</b> score taken under that rubric version rather than '+
-      'skipping it silently, because a rule everyone believes is running and nothing is checking is worse than a noisy queue. '+
-      'That is one rubric to fix, not '+only.length+' extra candidate'+(only.length===1?'':'s')+' to read.'
-    : '<b>Every row here was flagged by a condition the grader actually evaluated.</b>';
+  document.getElementById('rqInsight').innerHTML = carrying.length
+    ? '<b>Read the mix before you read the count.</b> '+carrying.length+' of these '+real.length+
+      ' are here because of a scorecard rule the grader cannot check yet, and '+only.length+
+      ' of those are here for no other reason. The grader raises that rule on every candidate scored '+
+      'against that scorecard instead of skipping it quietly, because a rule everyone believes is '+
+      'running and nothing is checking is worse than a noisy queue. '+
+      'That is one scorecard to fix, not '+only.length+' extra candidate'+(only.length===1?'':'s')+' to read.'
+    : '<b>Nothing here is waiting on a scorecard rule the grader cannot check.</b> Every row is here because it was '+
+      'flagged by a check that ran, or because it has no score at all.';
 }
 
 /* ══ HR-05 · JOB POSTINGS ════════════════════════════════════════════════ */
@@ -1949,16 +1921,15 @@ function renderPostings(){
 
   var tb=document.querySelector('#postTbl tbody');
   tb.innerHTML = rows.length ? rows.map(function(p,i){
-    var role=ROLE_BY_KEY[p.role_key];
     var scls = p.status==='failed' ? 'stripe-bad' : (p.status==='paused' ? 'stripe-warn' : (p.status==='posted' ? 'stripe-ok' : ''));
     var main='<tr class="rowbtn '+scls+'" data-p="'+i+'" tabindex="0" aria-expanded="false">'+
       '<td><span class="chev">▸</span><b>'+esc(p.title)+'</b><span class="sub">'+esc(p.id)+'</span></td>'+
-      '<td>'+esc(role.name)+'<span class="sub">'+esc(p.role_key)+'</span></td>'+
+      '<td>'+esc(roleName(p.role_key))+'</td>'+
       '<td>'+badge('b-gray',p.channel)+'</td>'+
       '<td>'+(p.location?esc(p.location):'<span class="nul mono">—</span>')+'</td>'+
       '<td>'+badge(POST_CLS[p.status],p.status)+'</td>'+
-      '<td>'+(p.is_published?badge('b-info','published','external_id IS NOT NULL')
-                            :'<span class="nul mono">no external id</span>')+'</td>'+
+      '<td>'+(p.is_published?badge('b-info','published','Live on the channel it was posted to.')
+                            :'<span class="nul mono">not live</span>')+'</td>'+
       '<td class="mono">'+(p.posted_at?esc(fdate(p.posted_at)):'<span class="nul">—</span>')+
         (p.closed_at?'<span class="sub">closed '+esc(fdate(p.closed_at))+'</span>':'')+'</td>'+
       '<td class="mnum">'+p.applications+'<span class="sub">lifetime</span></td>'+
@@ -1971,15 +1942,13 @@ function renderPostings(){
       '<div class="detcol"><div class="dk">created</div><div class="dv mono">'+esc(fdatey(p.created_at))+'</div></div>'+
       '<div class="detcol"><div class="dk">last synced</div><div class="dv mono">'+
         (p.last_synced_at?esc(ftime(p.last_synced_at)):'<span class="nul">never</span>')+'</div></div>'+
-      '<div class="detcol"><div class="dk">description</div><div class="dv nul mono" style="font-size:var(--fs-caption)">not returned by the endpoint</div></div>'+
+      '<div class="detcol"><div class="dk">description</div><div class="dv nul mono" style="font-size:var(--fs-caption)">not available here</div></div>'+
       (p.last_error
-        ? '<div class="detcol wide"><div class="dk">last_error — verbatim, token-scrubbed, 1000 chars</div>'+
+        ? '<div class="detcol wide"><div class="dk">what the channel said when it failed</div>'+
           '<div class="errbox">'+esc(p.last_error)+'</div>'+
-          '<div class="note" style="margin-top:7px">HTTP 422 is <b>not</b> retryable — <span class="k">linkedin.mjs:87</span> '+
-          'marks a failure <span class="k">retryable</span> only on 429 or ≥ 500, and nothing in the repo acts on that flag. '+
-          'The posting stays <span class="k">status=\'failed\'</span> until the apply URL is '+
-          'changed, and nothing in the repo re-runs <span class="k">postJob</span> on a schedule.</div></div>'
-        : '<div class="detcol wide"><div class="dk">last_error</div><div class="dv nul mono">none</div></div>')+
+          '<div class="note" style="margin-top:7px">The posting stays failed until someone fixes what the '+
+          'message describes. Nothing tries it again on its own.</div></div>'
+        : '<div class="detcol wide"><div class="dk">last failure</div><div class="dv nul mono">none</div></div>')+
     '</div></td></tr>';
     return main+det;
   }).join('') : '<tr><td colspan="10"><div class="empty">No postings match this filter.</div></td></tr>';
@@ -2037,9 +2006,8 @@ function paintFunnel(rows, days, roleKey){
   tb.innerHTML = rows.length ? rows.map(function(g){
     var src=SOURCES.filter(function(s){return s.key===g.source;})[0];
     return '<tr>'+
-      '<td><b>'+esc(src?src.label:g.source)+'</b><span class="sub">'+esc(g.source)+
-        (src&&src.rank?' · doc 10 order #'+src.rank:'')+'</span></td>'+
-      '<td>'+esc(ROLE_BY_KEY[g.role_key].name)+'</td>'+
+      '<td><b>'+esc(src?src.label:g.source)+'</b></td>'+
+      '<td>'+esc(roleName(g.role_key))+'</td>'+
       '<td class="mnum" style="font-weight:600">'+g.applications+'</td>'+
       '<td class="mnum">'+g.reached_group_interview+'</td>'+
       '<td class="mnum">'+g.reached_one_on_one+'</td>'+
@@ -2060,14 +2028,14 @@ function paintFunnel(rows, days, roleKey){
     return a.stage_key==='rejected' && pd(a.applied_at)>cutoff && (!roleKey||a.role_key===roleKey);
   }).length;
   document.getElementById('fnInsight').innerHTML =
-    '<b>Worked example, so the column headers are believable:</b> '+rejCount+
-    ' application'+(rejCount===1?' is':'s are')+' currently in <b>Not Moving Forward</b> (sort_order 9) in this window, and '+
-    'each one is counted in <i>currently at or past group interview</i> <b>and</b> in <i>currently at or past 1:1</i> — '+
-    'because 9 ≥ 2 and 9 ≥ 3. They are excluded from <i>at or past offer</i> only because that filter adds '+
-    '<span class="k">stage_key &lt;&gt; \'rejected\'</span>. '+
+    '<b>What the columns really mean:</b> '+rejCount+
+    ' application'+(rejCount===1?' is':'s are')+' currently in <b>Not Moving Forward</b> in this window, and '+
+    'each one is still counted in <i>currently at or past group interview</i> <b>and</b> in <i>currently at or past 1:1</i> — '+
+    'not because they got that far, but because Not Moving Forward sits after those stages in the order. '+
+    'They are left out of <i>at or past offer</i>. '+
     'Across the window: <span class="mono">'+totalHired+' hired ÷ '+totalApps+' applications = '+
-    (totalApps? (Math.round(1000*totalHired/totalApps)/10).toFixed(1) : '0.0')+'%</span> — computed over the rows shown, '+
-    'not over the table, because no endpoint here returns a table count.';
+    (totalApps? (Math.round(1000*totalHired/totalApps)/10).toFixed(1) : '0.0')+'%</span> — worked out over the rows '+
+    'shown here, because no screen-wide total is available.';
 }
 
 /* renderFunnel — live first. api/hiring/funnel takes the same ?days/?role this
@@ -2114,7 +2082,7 @@ function renderDcRail(){
     var n=counts[v]||0, cls=[]; if(dcState.state===v) cls.push('on'); if(!n) cls.push('zero');
     var unreachable = DECISION_UNREACHABLE.indexOf(v)>=0;
     return '<button type="button" data-v="'+v+'"'+(cls.length?' class="'+cls.join(' ')+'"':'')+
-      (unreachable?' title="Valid in hiring_decisions_decision_ck, but no code path in pipeline.mjs produces it."':'')+
+      (unreachable?' title="A valid kind of decision that nothing in the system produces yet."':'')+
       '>'+esc(v)+(unreachable?' ∅':'')+'<span class="n">'+n+'</span></button>';
   }).join('');
   host.innerHTML=html;
@@ -2136,28 +2104,26 @@ function renderDecisions(){
   document.getElementById('dcSummary').innerHTML =
     '<div class="deriv" style="margin-top:0;margin-bottom:14px">'+
       '<div class="dcell"><div class="dk">override rate</div>'+
-        '<div class="formula">followed_recommendation = false ÷ followed_recommendation IS NOT NULL</div>'+
+        '<div class="formula">decisions that went against the advice ÷ decisions that had advice</div>'+
         '<div class="inputs"><b>'+overrides.length+'</b> ÷ <b>'+judged.length+'</b> = <b>'+
           (rate===null?'—':rate.toFixed(1)+'%')+'</b> · '+(rows.length-judged.length)+
-          ' row'+((rows.length-judged.length)===1?'':'s')+' excluded (no recommendation at decision)</div></div>'+
-      '<div class="dcell"><div class="dk">named human on the row</div>'+
-        '<div class="formula">decided_by IS NOT NULL</div>'+
-        '<div class="inputs"><b>'+byHuman+'</b> of <b>'+rows.length+'</b>. Adverse outcomes cannot be otherwise: '+
-          'the CHECK refuses a reject or an offer_declined without a name and a reason.</div></div>'+
-      '<div class="dcell"><div class="dk">what the override rate is for</div>'+
+          ' row'+((rows.length-judged.length)===1?'':'s')+' left out, because there was no advice at the time</div></div>'+
+      '<div class="dcell"><div class="dk">a person named on the row</div>'+
+        '<div class="formula">someone is on the record for the call</div>'+
+        '<div class="inputs"><b>'+byHuman+'</b> of <b>'+rows.length+'</b>. A rejection cannot be recorded any '+
+          'other way: without a name and a reason, the system refuses it.</div></div>'+
+      '<div class="dcell"><div class="dk">why the override rate matters</div>'+
         '<div class="formula">a reviewer who always agrees is not a safeguard</div>'+
-        '<div class="inputs">The per-row <b>followed_recommendation</b> CASE is derived in '+
-          '<b>api/hiring/decisions.mjs:51-58</b> rather than left to a spreadsheet. The <i>ratio</i> is not '+
-          'returned by any endpoint — it is summed here over the rows on this page (DEFAULT_LIMIT 50, '+
-          'MAX_LIMIT 200 in src/http/read-api.mjs), because no decisions endpoint returns a table count.</div></div>'+
-      '<div class="src">no protected characteristic is available here or anywhere else on this screen — none is collected, '+
-        'so an adverse-impact analysis by race or sex cannot be run from this data and needs a separate voluntary survey held apart from the hiring record</div>'+
+        '<div class="inputs">It is worked out over the decisions shown on this page, because no screen-wide '+
+          'total is available.</div></div>'+
+      '<div class="src">nothing here records race, sex or any other protected characteristic — none is collected, '+
+        'so a fairness check by those groups cannot be run from this data and would need a separate voluntary survey kept apart from the hiring record</div>'+
     '</div>';
 
   var tb=document.querySelector('#dcTbl tbody');
   tb.innerHTML = rows.length ? rows.map(function(d,i){
     var fr = d.followed_recommendation===null
-      ? '<span class="nul mono" title="NULL — recommendation_at_decision is NULL, or the decision is not reject/advance/offer">not defined</span>'
+      ? '<span class="nul mono" title="There was no recommendation at the time, or this kind of decision has none to follow.">not defined</span>'
       : (d.followed_recommendation ? badge('b-gray','followed') : badge('b-warn','override'));
     var scls = d.followed_recommendation===false ? 'stripe-warn' : (d.decision==='reject' ? 'stripe-bad' : '');
     var main='<tr class="rowbtn '+scls+'" data-d="'+i+'" tabindex="0" aria-expanded="false">'+
@@ -2165,33 +2131,32 @@ function renderDecisions(){
         '<span class="sub">'+esc(d.id)+'</span></td>'+
       '<td>'+badge(DEC_CLS[d.decision],d.decision)+'</td>'+
       '<td class="mono" style="font-size:var(--fs-caption)">'+esc(d.from_stage_key||'—')+' → '+esc(d.to_stage_key||'—')+'</td>'+
-      '<td>'+esc(ROLE_BY_KEY[d.role_key].name)+'</td>'+
+      '<td>'+esc(roleName(d.role_key))+'</td>'+
       '<td>'+esc(d.source)+'</td>'+
       '<td>'+(d.decided_by_name
         ? '<b>'+esc(d.decided_by_name)+'</b>'
-        : '<span class="nul mono">not a human</span>')+
-        '<span class="sub">human_decided '+(d.human_decided?'true':'false')+'</span></td>'+
+        : '<span class="nul mono">no person named</span>')+
+        '<span class="sub">'+(d.human_decided?'a person decided':'not decided by a person')+'</span></td>'+
       '<td>'+(d.recommendation_at_decision?recPill(d.recommendation_at_decision):'<span class="nul mono">—</span>')+'</td>'+
       '<td class="mnum">'+(d.score_at_decision===null?'<span class="nul">—</span>':num(d.score_at_decision))+
-        (d.rubric_version?'<span class="sub">rubric v'+d.rubric_version+'</span>':'<span class="sub">score_id null</span>')+'</td>'+
+        (d.rubric_version?'<span class="sub">rubric v'+d.rubric_version+'</span>':'<span class="sub">no score attached</span>')+'</td>'+
       '<td>'+fr+'</td>'+
     '</tr>';
     var det='<tr class="det" data-detd="'+i+'" hidden><td colspan="9"><div class="detwrap">'+
-      '<div class="detcol wide"><div class="dk">reason — free text, no picklist exists</div>'+
+      '<div class="detcol wide"><div class="dk">reason — written out, not picked from a list</div>'+
         '<div class="dv" style="font-weight:400;line-height:1.6">'+
-        (d.reason?esc(d.reason):'<span class="nul mono">none recorded — permitted on advance, refused by CHECK on reject and offer_declined</span>')+
+        (d.reason?esc(d.reason):'<span class="nul mono">none recorded — allowed when someone is moved forward, never when they are turned down</span>')+
         '</div></div>'+
       '<div class="detcol"><div class="dk">decided at</div><div class="dv mono">'+esc(ftime(d.created_at))+'</div></div>'+
       '<div class="detcol"><div class="dk">candidate notified</div><div class="dv nul mono">'+
-        (d.candidate_notified_at?esc(ftime(d.candidate_notified_at)):'never — no code path sets this')+'</div></div>'+
+        (d.candidate_notified_at?esc(ftime(d.candidate_notified_at)):'nothing records this yet')+'</div></div>'+
       '<div class="detcol"><div class="dk">which application / who</div>'+
-        '<div class="dv nul mono" style="font-size:var(--fs-caption);line-height:1.55">not returned — the projection carries no '+
-        'application_id and no candidate name</div></div>'+
+        '<div class="dv nul mono" style="font-size:var(--fs-caption);line-height:1.55">not shown here — this log names '+
+        'no candidate</div></div>'+
       (d.decision==='reject'
         ? '<div class="detcol wide"><div class="dk">what this row had to satisfy</div>'+
-          '<div class="note">A reject needs <span class="k">decided_by</span> and a non-blank '+
-          '<span class="k">reason</span> at three separate layers, and it queues the candidate-feedback obligation as a '+
-          'task (<span class="k">hiring:feedback:&lt;applicationId&gt;</span>). Task failure never blocks the rejection.</div></div>'
+          '<div class="note">Turning someone down needs a named person and a reason written out. '+
+          'It also raises the job of telling the candidate, which is tracked as a task.</div></div>'
         : '')+
     '</div></td></tr>';
     return main+det;
@@ -2235,9 +2200,8 @@ function scorePanel(a){
           '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:9px">'+
             avgCell(s.average)+recPill(s.recommendation)+
           '</div>'+
-          '<div class="note">No local rubric definition for <span class="k">'+esc(s.rubric)+'</span> — the category '+
-          'breakdown and the weighted-average arithmetic are not shown, but the server’s own average and '+
-          'recommendation are.</div>'+
+          '<div class="note">This screen does not hold a copy of that scorecard version, so the breakdown by category '+
+          'and the arithmetic behind the average are not shown. The recorded average and recommendation are.</div>'+
           (s.flags&&s.flags.length?'<div style="margin-top:11px">'+flagList(s.flags)+'</div>':'')+
         '</div></div>';
     }
@@ -2262,8 +2226,8 @@ function scorePanel(a){
     return '<div class="panel">'+
       '<div class="panel-hd"><span>Score '+(i+1)+' of '+a.scores.length+'</span>'+
         badge('b-gray',s.rubric_stage+' rubric v'+s.rubric_version)+
-        (s.is_automated?badge('b-gray','automated','is_automated = true; scored_by_staff_id must be NULL')
-                       :badge('b-info','scored by '+s.scored_by_name,'is_automated = false; a staff id is required'))+
+        (s.is_automated?badge('b-gray','automated','Scored by the grader. No person is named on an automated score.')
+                       :badge('b-info','scored by '+s.scored_by_name,'Scored by a person, who is named on the score.'))+
         '<span class="spacer"></span><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2)">'+esc(ftime(s.created_at))+'</span>'+
       '</div>'+
       '<div class="panel-bd">'+
@@ -2282,15 +2246,14 @@ function scorecardPanel(role){
   function metrics(list){
     return list.map(function(m){
       return '<div class="cl">'+esc(m.label)+'<small>'+esc(m.key)+' · '+esc(m.unit)+'</small></div>'+
-             '<div class="cvv un" title="target is null in 052 §E by design">—</div>';
+             '<div class="cvv un" title="No target has been set for this measure.">—</div>';
     }).join('');
   }
   return '<div class="panel"><div class="panel-hd"><span>Scorecard — '+esc(role.name)+'</span>'+
       badge('b-warn','targets not set')+'</div>'+
     '<div class="panel-bd">'+
-      '<div class="warnbox" style="margin-bottom:11px"><b>STRUCTURE ONLY.</b> Every outcome and leading-indicator target '+
-        'is null. Inferred here from the scorecard jsonb on this application — <span class="k">v_hiring_config_gaps</span> '+
-        'says the same thing but has no endpoint, so this is the only place it can be read. '+
+      '<div class="warnbox" style="margin-bottom:11px"><b>STRUCTURE ONLY.</b> The scorecard lists what this role is '+
+        'measured on, but not one target number has been set. This is the only screen that shows that. '+
         '<b>Do not extend an offer against a scorecard with no targets.</b></div>'+
       '<div class="dk" style="font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:5px">outcomes — lagging</div>'+
       '<div class="catgrid">'+metrics(role.scorecard.outcomes)+'</div>'+
@@ -2301,9 +2264,9 @@ function scorecardPanel(role){
     '<div class="panel"><div class="panel-hd"><span>Comp — '+esc(role.name)+'</span>'+
       badge('b-warn','figures null')+'</div>'+
     '<div class="panel-bd">'+
-      '<div class="warnbox" style="margin-bottom:11px">Every figure on this role is null, so <b>no OTE can be quoted to a '+
-        'candidate</b>. <span class="k">hiring_decisions</span> has no amount column either — there is no salary, base, '+
-        'commission, equity, start date, expiry or offer letter anywhere in this schema.</div>'+
+      '<div class="warnbox" style="margin-bottom:11px">Every pay figure on this role is blank, so <b>no earnings number '+
+        'can be quoted to a candidate</b>. There is no salary, base, commission, equity, start date, expiry or offer '+
+        'letter held anywhere in this system.</div>'+
       jsonBlock(role.comp)+
     '</div></div>';
 }
@@ -2311,13 +2274,12 @@ function scorecardPanel(role){
 function interviewPanel(a){
   if(!a.interviews.length)
     return '<div class="panel"><div class="panel-bd"><div class="empty" style="padding:14px 8px">'+
-      'No interviews on this application. There is no upcoming-interviews list anywhere — '+
-      '<span class="k">hiring_interviews</span> is reachable only per application, and '+
-      '<span class="k">duration_min</span> is returned by nothing.</div></div></div>';
+      'No interviews on this application. There is no list of upcoming interviews anywhere on this screen — '+
+      'interviews can only be seen one candidate at a time.</div></div></div>';
   return '<div class="panel"><div class="panel-bd"><div class="tl">'+a.interviews.map(function(iv){
-    var att = iv.attended===null ? badge('b-gray','attended: unknown','attended is a NULLABLE boolean — three states')
+    var att = iv.attended===null ? badge('b-gray','attended: unknown','Nobody has recorded whether they turned up.')
             : (iv.attended ? badge('b-ok','attended') : badge('b-alert','did not attend'));
-    var out = iv.outcome===null ? badge('b-gray','not graded','outcome stays NULL until the interview is graded')
+    var out = iv.outcome===null ? badge('b-gray','not graded','Stays blank until somebody grades the interview.')
             : badge(OUT_CLS[iv.outcome], 'outcome: '+iv.outcome);
     return '<div class="ti'+(iv.status==='held'?' human':'')+'">'+
       '<div class="tt">'+esc(ftime(iv.scheduled_for))+' · '+esc(iv.kind)+' · host '+esc(iv.host_name||'—')+'</div>'+
@@ -2326,10 +2288,9 @@ function interviewPanel(a){
         (iv.meeting_url?'<div class="mono" style="font-size:var(--fs-caption);color:var(--gray2);margin-top:4px">'+esc(iv.meeting_url)+'</div>':'')+
       '</div></div>';
   }).join('')+'</div>'+
-  '<div class="note" style="margin-top:10px">A group-interview outcome of <b>yes</b> or <b>maybe</b> both auto-advance to '+
-  '1:1 per doc 11. A <b>no</b> does <b>not</b> auto-reject: it queues '+
-  '<span class="k">hiring:gi-no:&lt;interviewId&gt;:&lt;applicationId&gt;</span> for a person and leaves the application open '+
-  'at Group Interview.</div></div></div>';
+  '<div class="note" style="margin-top:10px">A group-interview result of <b>yes</b> or <b>maybe</b> both move the '+
+  'candidate on to the 1:1. A <b>no</b> does <b>not</b> turn anyone down on its own: it raises a task for a person '+
+  'and leaves the candidate where they are.</div></div></div>';
 }
 
 function decisionPanel(decisions){
@@ -2358,8 +2319,7 @@ function renderDrawerBody(a){
   document.getElementById('dwBody').innerHTML =
     '<div class="dw-sec"><div class="notice"><b>Scores are advisory. No candidate may be rejected without a named human '+
       'and a written reason; the database enforces this.</b><br>'+
-      'That is the <span class="k">scoring_notice</span> string this endpoint returns. This drawer is read-only — '+
-      '<span class="k">api/hiring/application.mjs</span> is a GET and answers anything else with 405.</div></div>'+
+      'Nothing in this panel can be changed — it only shows what was recorded.</div></div>'+
 
     '<div class="dw-sec"><div class="eyebrow">HR-08.1 <span class="sep">/</span> CANDIDATE</div>'+
       '<div class="kv">'+
@@ -2368,50 +2328,48 @@ function renderDrawerBody(a){
         '<div><div class="k2">source</div><div class="v">'+esc(a.source)+
           '<span class="sub">'+esc(a.source_detail||'no detail')+'</span></div></div>'+
         '<div><div class="k2">DISC profile</div><div class="v">'+(a.disc_profile?esc(a.disc_profile):'<span class="nul mono">not set</span>')+
-          '<span class="sub">free text · never a filter</span></div></div>'+
+          '<span class="sub">a note · never a filter</span></div></div>'+
         '<div><div class="k2">LinkedIn</div><div class="v" style="font-size:var(--fs-caption)">'+
           (a.linkedin_profile_url?esc(a.linkedin_profile_url):'<span class="nul mono">none</span>')+
-          '<span class="sub">url only · linkedin_urn is never projected</span></div></div>'+
+          '<span class="sub">the link only · no profile is pulled in</span></div></div>'+
         '<div><div class="k2">video</div><div class="v" style="font-size:var(--fs-caption)">'+
           (a.video_url?'<a class="mono" style="text-decoration:underline;word-break:break-all" '+
                         'href="'+esc(a.video_url)+'" target="_blank" rel="noopener noreferrer">'+esc(a.video_url)+'</a>'
                       :'<span class="nul mono">none submitted</span>')+
-          '<span class="sub">video_url · returned in full here · the board gets only has_video</span></div></div>'+
+          '<span class="sub">the full link · the board only shows whether one exists</span></div></div>'+
         '<div><div class="k2">resume</div><div class="v">'+
           (a.has_resume?'resume ✓':'resume ✗')+
-          '<span class="sub">has_resume is a boolean · resume_document_id is never returned, so there is no download</span></div></div>'+
+          '<span class="sub">whether one was submitted · the file cannot be opened from here</span></div></div>'+
         '<div><div class="k2">entered stage</div><div class="v">'+esc(fdatey(a.entered_stage_at))+
-          '<span class="sub">'+daysSince(a.entered_stage_at)+' days ago · derived here, no aging column exists</span></div></div>'+
+          '<span class="sub">'+daysSince(a.entered_stage_at)+' days ago</span></div></div>'+
         '<div><div class="k2">posting</div><div class="v" style="font-size:var(--fs-body)">'+
           (a.posting_title?esc(a.posting_title)+'<span class="sub">channel '+esc(a.posting_channel)+'</span>'
                           :'<span class="nul mono">not from a posting</span>')+'</div></div>'+
         '<div><div class="k2">status</div><div class="v">'+badge(STATUS_CLS[a.status],a.status)+
-          '<span class="sub">stage and status are separate columns</span></div></div>'+
+          '<span class="sub">status and stage are separate, and can disagree</span></div></div>'+
       '</div>'+
       (a.notes?'<div class="note" style="margin-top:9px"><b>notes:</b> '+esc(a.notes)+'</div>':'')+
     '</div>'+
 
     '<div class="dw-sec"><div class="eyebrow">HR-08.2 <span class="sep">/</span> ANSWERS AS SUBMITTED</div>'+
       '<div class="panel"><div class="panel-hd"><span>'+answerKeys.length+' field'+(answerKeys.length===1?'':'s')+'</span>'+
-        badge('b-gray','verbatim jsonb')+'</div><div class="panel-bd">'+
+        badge('b-gray','exactly as submitted')+'</div><div class="panel-bd">'+
         (answerKeys.length?'<div class="catgrid" style="grid-template-columns:180px minmax(0,1fr)">'+
           answerKeys.map(function(k){
             return '<div class="cl mono" style="font-size:var(--fs-caption);color:var(--gray)">'+esc(k)+'</div>'+
                    '<div class="cl">'+esc(a.answers[k])+'</div>';
           }).join('')+'</div>':'<div class="empty">No answers stored.</div>')+
-        '<div class="note" style="margin-top:11px"><b>Nothing was redacted here — there was nothing to redact.</b> '+
-        'Protected characteristics are stripped at <i>intake</i>, not merely left unscored: 25 whole-word terms and 16 prefix '+
-        'stems, camelCase split first (<span class="k">src/hiring/grading.mjs:41-83</span>). Scoring a protected category key '+
-        'throws rather than being quietly dropped. Answers are retained verbatim so a bias audit can re-derive the score from '+
-        'the same inputs the grader saw.</div>'+
+        '<div class="note" style="margin-top:11px"><b>Nothing was hidden here — there was nothing to hide.</b> '+
+        'Anything that names a protected characteristic is stripped out when the application arrives, not merely left '+
+        'unscored, and the grader refuses to score one rather than quietly ignoring it. Answers are kept word for word '+
+        'so a fairness check can re-run the score on exactly what the grader saw.</div>'+
       '</div></div></div>'+
 
     '<div class="dw-sec"><div class="eyebrow">HR-08.3 <span class="sep">/</span> SCORE HISTORY — '+a.scores.length+' ENTR'+(a.scores.length===1?'Y':'IES')+'</div>'+
       scorePanel(a)+
-      '<div class="note" style="margin-top:9px">The list is the <b>full</b> history, oldest first. A re-score appends a row; '+
-      'it never replaces one, and <span class="k">application_scores</span> cannot be deleted (<span class="k">trg_application_scores_no_delete</span>; '+
-      'nothing blocks an UPDATE — the append-only discipline is the code path, not a constraint) — an override that '+
-      'hid the original would defeat the audit this endpoint exists for. The board shows only the latest entry.</div>'+
+      '<div class="note" style="margin-top:9px">This is the <b>full</b> history, oldest first. Scoring somebody again adds '+
+      'a new entry, it never replaces the old one, and a score cannot be deleted — an override that hid the original '+
+      'would defeat the whole point of keeping the record. The board shows only the latest entry.</div>'+
     '</div>'+
 
     '<div class="dw-sec"><div class="eyebrow">HR-08.4 <span class="sep">/</span> ROLE SCORECARD &amp; COMP</div>'+
@@ -2569,11 +2527,23 @@ function apiGet(path){
 /* candidates.mjs aliases the application id as application_id (it is the
    pipeline card's id everywhere on this screen) and needs_human is this
    screen's own derived field, not something the endpoint returns. */
+
+/* Demo Mode's seeded candidates come back from the same endpoint as real ones —
+   the read carries no is_demo column, so the screen identifies them by the two
+   marks the seeder puts on the row itself: source_detail 'platform_demo' and the
+   'DEMO ' name prefix. Nothing else is guessed; a row without either mark counts
+   as real. These rows stay visible and labelled, and are left out of every count
+   on this screen. */
+function isDemoRow(r){
+  return r.source_detail === 'platform_demo' ||
+         /^DEMO[\s—-]/.test(String(r.full_name || ''));
+}
 function mapCandidateRow(r){
   var c = Object.assign({}, r);
   c.id = r.application_id;
   c.flags = r.flags || [];
   c.needs_human = (r.flags && r.flags.length > 0) || r.average === null || r.average === undefined;
+  c.is_demo_row = isDemoRow(r);
   return c;
 }
 
@@ -2587,7 +2557,7 @@ function wireHiring(){
     var sampleIdx = deriveSample(APPS, DECISIONS);
     APP_BY_ID = sampleIdx.appById; DECISION_BY_ID = sampleIdx.decisionById;
     boot();
-    document.getElementById('footNote').textContent = 'hr · api/hiring/* · read-only · demo session, sample markup';
+    document.getElementById('footNote').textContent = 'hiring · read-only · demo session, sample rows';
     FHData.banner('sample','sample hiring pipeline — demo session, the backend was not queried','hiring');
     return;
   }
@@ -2625,15 +2595,15 @@ function wireHiring(){
     ['candidates','postings','decisions','bench'].forEach(function(k){
       var res=HIRING_SRC[k];
       if(!res) return;
-      if(res.ok){ parts.push(k+':api'); }
+      if(res.ok){ parts.push(k+': loaded'); }
       else {
-        parts.push(k+':'+res.source+(res.error?' ('+res.error+')':''));
+        parts.push(k+': not loaded'+(res.error?' ('+res.error+')':''));
         var badTone = (res.source==='nodb'||res.source==='server'||res.source==='offline') ? 'error' : 'sample';
         if(badTone==='error') worst='error'; else if(worst!=='error') worst='sample';
       }
     });
     document.getElementById('footNote').textContent =
-      'hr · api/hiring/* · read-only · '+(parts.length?parts.join(' · '):'empty');
+      'hiring · read-only · '+(parts.length?parts.join(' · '):'nothing loaded');
     FHData.banner(worst, 'hiring · '+(parts.length?parts.join(' · '):'no rows yet'), 'hiring');
   });
 }

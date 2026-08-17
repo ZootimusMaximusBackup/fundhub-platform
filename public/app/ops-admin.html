@@ -305,7 +305,9 @@
       <div class="org-pill">Org: Fundhub</div>
       <div class="period-wrap">
         <button type="button" class="period-pill" id="period-btn" aria-expanded="false" aria-haspopup="true">
-          <span id="period-label">Last 7 Days — Jul 20–26</span><span class="pchev">▾</span>
+          <!-- No date in the markup. The dates are computed at runtime by the
+               DATE RANGE block so the pill can never go stale. -->
+          <span id="period-label">Last 7 Days</span><span class="pchev">▾</span>
         </button>
         <div class="period-menu" id="period-menu" role="menu" hidden></div>
       </div>
@@ -325,8 +327,10 @@
             <div id="fhDemoModeStatus" style="font-size:var(--fs-body);line-height:1.45;color:#7C2D12">Checking…</div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <button type="button" id="fhDemoModeOn" style="background:#9A3412;color:#FFF7ED;border:0;padding:10px 14px;border-radius:6px;cursor:pointer;font-weight:700;font-size:var(--fs-body)">Turn ON</button>
-            <button type="button" id="fhDemoModeOff" style="background:transparent;border:1px solid #9A3412;color:#9A3412;padding:10px 14px;border-radius:6px;cursor:pointer;font-weight:700;font-size:var(--fs-body)">Turn OFF</button>
+            <!-- Both start hidden. Once the state is read, exactly ONE of them
+                 is shown: the action that actually changes it. -->
+            <button type="button" id="fhDemoModeOn" style="display:none;background:#9A3412;color:#FFF7ED;border:0;padding:10px 14px;border-radius:6px;cursor:pointer;font-weight:700;font-size:var(--fs-body)">Turn ON</button>
+            <button type="button" id="fhDemoModeOff" style="display:none;background:transparent;border:1px solid #9A3412;color:#9A3412;padding:10px 14px;border-radius:6px;cursor:pointer;font-weight:700;font-size:var(--fs-body)">Turn OFF</button>
             <a href="sample-data.html" style="font-size:var(--fs-body);font-weight:700;color:#9A3412;text-decoration:underline">Open Demo Mode screen →</a>
           </div>
         </div>
@@ -396,9 +400,11 @@
         <div id="outboxSummary" style="font-size:var(--fs-body);line-height:1.6">Checking…</div>
         <div id="outboxDetail" style="font-size:var(--fs-caption);color:var(--gray,#6b7280);margin-top:6px"></div>
         <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
-          <button id="outboxSend" type="button" style="font-size:var(--fs-body)">Send what is waiting</button>
-          <button id="outboxToggle" type="button" style="font-size:var(--fs-body)">Pause sending</button>
-          <button id="outboxInvoices" type="button" style="font-size:var(--fs-body)">Email unsent invoices</button>
+          <!-- All three start hidden. They appear only after the queue has been
+               read — until then the screen cannot say what would go out. -->
+          <button id="outboxSend" type="button" style="display:none;font-size:var(--fs-body)">Send what is waiting</button>
+          <button id="outboxToggle" type="button" style="display:none;font-size:var(--fs-body)">Pause sending</button>
+          <button id="outboxInvoices" type="button" style="display:none;font-size:var(--fs-body)">Email unsent invoices</button>
         </div>
         <div id="outboxMsg" style="font-size:var(--fs-body);margin-top:8px"></div>
       </div>
@@ -483,6 +489,12 @@
 })();
 </script>
 
+<!-- data.js defines window.FHData and MUST load before any block that reads it.
+     It used to sit after the DATE RANGE block below, so loadKpis() hit its
+     `typeof FHData === 'undefined'` guard on every call and the five Company
+     KPIs stayed '—' forever. -->
+<script src="data.js"></script>
+
 <script>
 /* ───────────────────────────────────────────────────────────────────────────
    Ops & Admin — wireframe behaviour. No backend.
@@ -525,9 +537,9 @@
     { id:'today', label:'Today',           range:'today',        foot:'today',
       meta:'today',          kpi:{cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—'} },
     { id:'7d',    label:'Last 7 Days',     range:'last 7 days',  foot:'last 7 days',
-      meta:'week to date',   kpi:{cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—'} },
+      meta:'last 7 days',    kpi:{cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—'} },
     { id:'30d',   label:'Last 30 Days',    range:'last 30 days', foot:'last 30 days',
-      meta:'month to date',  kpi:{cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—'} },
+      meta:'last 30 days',   kpi:{cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—'} },
     { id:'qtd',   label:'Quarter to Date', range:'quarter',     foot:'quarter to date',
       meta:'quarter to date',kpi:{cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—'} }
   ];
@@ -556,6 +568,30 @@
   function open(){ menu.hidden=false; btn.setAttribute('aria-expanded','true'); mark(); }
   function close(){ menu.hidden=true;  btn.setAttribute('aria-expanded','false'); }
 
+  /* The dates in the pill are COMPUTED, never written down. This mirrors the
+     look-back the server actually measures (src/dashboard/kpis.mjs
+     daysForPeriod): N days back, today included; 'qtd' from the 1st of the
+     current quarter. Label and meta therefore describe the same window. */
+  function windowFor(id){
+    var end = new Date(); end.setHours(0,0,0,0);
+    var start = new Date(end);
+    if(id === 'today')      { /* one day: start === end */ }
+    else if(id === '30d')   { start.setDate(end.getDate() - 29); }
+    else if(id === 'qtd')   { start = new Date(end.getFullYear(), Math.floor(end.getMonth()/3)*3, 1); }
+    else                    { start.setDate(end.getDate() - 6); }
+    return { start:start, end:end };
+  }
+  function rangeText(id){
+    var w = windowFor(id), md = { month:'short', day:'numeric' };
+    var s = w.start.toLocaleDateString('en-US', md);
+    var e = w.end.toLocaleDateString('en-US', md);
+    if(s === e) return e;
+    if(w.start.getFullYear() === w.end.getFullYear() && w.start.getMonth() === w.end.getMonth()){
+      return s + '–' + w.end.toLocaleDateString('en-US', { day:'numeric' });
+    }
+    return s + ' – ' + e;
+  }
+
   function applyDisplay(display){
     if(!display) return;
     Object.keys(display).forEach(function(k){
@@ -564,14 +600,22 @@
     });
   }
 
+  var BLANK = { cash:'—', funded:'—', close:'—', show:'—', cpf:'—', clients:'—' };
+
   function loadKpis(period){
-    if(typeof FHData === 'undefined' || !FHData.kpis) return;
+    if(typeof FHData === 'undefined' || !FHData.kpis){ applyDisplay(BLANK); return; }
     grid.classList.add('swapping');
     FHData.kpis(period).then(function(res){
       grid.classList.remove('swapping');
       if(res && res.ok && res.data && res.data.display){
         applyDisplay(res.data.display);
+        return;
       }
+      /* The read did not come back. Clear the tiles so no number from the
+         previous period is left standing under the new one, and let the shared
+         data layer word the reason. */
+      applyDisplay(BLANK);
+      if(FHData.explain) FHData.explain(res, 'the Company KPIs');
     });
   }
 
@@ -580,13 +624,19 @@
     if(!r) return;
     if(id===current && id !== '7d') return;
     current = id;
-    label.textContent = r.label + ' — ' + r.range;
-    meta.textContent  = r.meta;
-    foot.textContent  = r.foot;
+    paintPeriod(r);
     loadKpis(id);
   }
 
-  // Initial live paint (do not wait for a period click).
+  function paintPeriod(r){
+    label.textContent = r.label + ' — ' + rangeText(r.id);
+    meta.textContent  = r.meta;
+    foot.textContent  = r.foot;
+  }
+
+  // Paint the real dates for the default period, then read live. Do not wait
+  // for a period click — the pill shipped with a hardcoded range for weeks.
+  paintPeriod(RANGES.filter(function(x){ return x.id === current; })[0]);
   loadKpis(current);
 
   btn.addEventListener('click', function(e){
@@ -735,7 +785,6 @@
   });
 })();
 </script>
-<script src="data.js"></script>
 <script>
 /* The outbound mail panel. Every action goes through /api/messages-outbound, which is
    ROLE_SETS.STAFF to look and owner/admin to act — so a narrower role sees the
@@ -749,6 +798,9 @@
   if (!$("outboxCard")) return;
 
   var state = null;
+
+  function show(id, on) { var el = $(id); if (el) el.style.display = on ? "" : "none"; }
+  function queued() { return Number((state && state.counts && state.counts.queued) || 0); }
 
   function paint(d) {
     state = d;
@@ -765,7 +817,11 @@
         : "");
     $("outboxToggle").textContent =
       d.settings && d.settings.outbound_enabled ? "Pause sending" : "Turn sending on";
-    $("outboxInvoices").style.display = d.invoices_never_emailed ? "" : "none";
+    // "Send what is waiting" with nothing waiting is a control that does
+    // nothing, so it only appears when there is something to send.
+    show("outboxSend", queued() > 0);
+    show("outboxToggle", true);
+    show("outboxInvoices", !!d.invoices_never_emailed);
   }
 
   function say(kind, text) {
@@ -789,14 +845,37 @@
 
   function refresh() {
     return FHData.write("/api/messages-outbound", { action: "status" }).then(function (res) {
-      if (res.ok) paint(res.data);
-      else $("outboxSummary").textContent = "Could not read the outbound queue.";
+      if (res.ok) { paint(res.data); return; }
+      /* The queue could not be read, so nothing here can say what would go out
+         or what would stop. Buttons that cannot name their consequence do not
+         render. */
+      state = null;
+      show("outboxSend", false);
+      show("outboxToggle", false);
+      show("outboxInvoices", false);
+      $("outboxSummary").textContent =
+        "Could not read the outbound queue, so this panel cannot show what is waiting or send it. Refresh this page.";
+      $("outboxDetail").textContent = "";
     });
   }
 
-  $("outboxSend").onclick = function () { say("ok", "sending…"); call({ action: "dispatch" }); };
+  $("outboxSend").onclick = function () {
+    var n = queued();
+    if (!n) { say("err", "Nothing is waiting to send."); return; }
+    if (!window.confirm(
+      "Send the " + n + " message(s) waiting now? They go out to real clients and cannot be pulled back."
+    )) return;
+    say("ok", "sending…");
+    call({ action: "dispatch" });
+  };
   $("outboxToggle").onclick = function () {
     var on = !(state && state.settings && state.settings.outbound_enabled);
+    var n = queued();
+    if (!window.confirm(on
+      ? "Turn sending on? Queued messages start going out to real clients. " + n + " message(s) waiting now."
+      : "Pause sending? Nothing goes out to clients until you turn sending back on. " +
+        n + " message(s) will sit in the queue."
+    )) return;
     call({ action: "settings", outbound_enabled: on });
   };
   $("outboxInvoices").onclick = function () {
@@ -990,6 +1069,13 @@
     statusEl.textContent = on
       ? "ON — CRM shows seeded demo data (banner on every screen). Clients: " + (c.clients || 0) + ", lenders: " + (c.lenders || 0) + "."
       : "OFF — demo rows are hidden. Turn on to seed fictional clients for demos and training.";
+    /* Offer only the action that changes state. "Turn OFF" used to sit here
+       enabled while the org was already OFF and posted {enabled:false} to no
+       effect — a live-looking control that did nothing. */
+    var onBtnEl = document.getElementById("fhDemoModeOn");
+    var offBtnEl = document.getElementById("fhDemoModeOff");
+    if (onBtnEl) onBtnEl.style.display = on ? "none" : "";
+    if (offBtnEl) offBtnEl.style.display = on ? "" : "none";
   }
   function load() {
     /* api/demo/mode.mjs is owner/admin only. Hide the panel up front for every
@@ -1030,7 +1116,14 @@
   }
   var onBtn = document.getElementById("fhDemoModeOn");
   var offBtn = document.getElementById("fhDemoModeOff");
-  if (onBtn) onBtn.onclick = function () { post(true); };
+  if (onBtn) onBtn.onclick = function () {
+    // Turning this on writes fictional people into the live org. Name that.
+    if (!window.confirm(
+      "Turn Demo Mode ON? This seeds fictional clients and lenders into this live org, " +
+      "and every screen shows them until you turn it back off."
+    )) return;
+    post(true);
+  };
   if (offBtn) offBtn.onclick = function () { post(false); };
   load();
 })();

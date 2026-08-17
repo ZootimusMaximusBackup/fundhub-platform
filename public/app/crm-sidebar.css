@@ -107,7 +107,7 @@ html.fh-side-mini .app-shell {
   border-radius: 5px;
   cursor: pointer;
   font-family: var(--mono, ui-monospace, monospace);
-  font-size: 12px;
+  font-size: var(--fs-caption, 11px);
   line-height: 1;
   display: flex;
   align-items: center;
@@ -137,13 +137,13 @@ html.fh-side-mini .app-shell {
   gap: 8px;
   padding: 9px 18px 6px;
   font-family: var(--mono, ui-monospace, monospace);
-  font-size: 10px;
+  font-size: var(--fs-caption, 11px);
   letter-spacing: .18em;
   text-transform: uppercase;
   color: #71717A;
 }
 .navhead:hover { color: var(--gray2, #A1A1AA); }
-.navhead .chev { margin-left: auto; font-size: 9px; transition: transform .16s; color: var(--gray, #52525B); }
+.navhead .chev { margin-left: auto; font-size: var(--fs-caption, 11px); transition: transform .16s; color: var(--gray, #52525B); }
 .navgroup.closed .chev { transform: rotate(-90deg); }
 .navgroup.closed .navlist { display: none; }
 .side.mini .navhead {
@@ -169,7 +169,7 @@ html.fh-side-mini .app-shell {
   align-items: center;
   gap: 11px;
   padding: 7px 18px;
-  font-size: 12.5px;
+  font-size: var(--fs-caption, 11px);
   color: var(--gray2, #A1A1AA);
   text-decoration: none;
   position: relative;
@@ -178,7 +178,7 @@ html.fh-side-mini .app-shell {
 .navitem:hover { color: var(--paper, #FCFCFC); background: #161619; }
 .navitem .ico {
   font-family: var(--mono, ui-monospace, monospace);
-  font-size: 12px;
+  font-size: var(--fs-caption, 11px);
   width: 16px;
   flex: 0 0 16px;
   text-align: center;
@@ -206,7 +206,7 @@ html.fh-side-mini .app-shell {
   padding: 1px 5px;
   border-radius: 3px;
   font-family: var(--mono, ui-monospace, monospace);
-  font-size: 8.5px;
+  font-size: var(--fs-caption, 11px);
   font-weight: 700;
   letter-spacing: .04em;
   color: #3A2A0A;
@@ -218,7 +218,7 @@ html.fh-side-mini .app-shell {
   padding: 10px 16px;
   border-top: 1px solid var(--dark-line, #26262B);
   font-family: var(--mono, ui-monospace, monospace);
-  font-size: 10px;
+  font-size: var(--fs-caption, 11px);
   color: var(--gray, #52525B);
   letter-spacing: .08em;
   display: flex;
@@ -278,7 +278,7 @@ html.fh-side-mini .app-shell {
   .side.mini .side-foot .who { display: initial; }
   .side.mini .side-top .logo { display: inline-block; }
   .side.mini .navitem { justify-content: flex-start; padding: 7px 18px; }
-  .side.mini .navhead { justify-content: flex-start; padding: 9px 18px 6px; font-size: 10px; letter-spacing: .18em; }
+  .side.mini .navhead { justify-content: flex-start; padding: 9px 18px 6px; font-size: var(--fs-caption, 11px); letter-spacing: .18em; }
   .side.mini .navhead::after { display: none; }
   .side.mini .navhead .chev { display: initial; }
   .side.mini .side-foot { justify-content: flex-start; padding: 10px 16px; }
@@ -323,7 +323,7 @@ html.fh-side-mini .app-shell {
     border-radius: 7px;
     cursor: pointer;
     font-family: var(--mono, ui-monospace, monospace);
-    font-size: 15px;
+    font-size: var(--fs-body, 14px);
     line-height: 1;
     box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
   }

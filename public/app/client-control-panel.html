@@ -396,7 +396,7 @@
   <div class="record-head">
     <div class="record-id">
       <div class="record-name" id="ccp-name">Loading…</div>
-      <div class="record-key" id="ccp-key">Open with ?id=&lt;client id&gt;</div>
+      <div class="record-key" id="ccp-key">No client open — <a href="pipeline.html" style="color:var(--blue);font-weight:700;">pick a client on Pipeline</a> to load their file here.</div>
     </div>
     <div class="record-fields">
       <div class="rf-tile"><div class="rf-label">Main Status</div><div><span class="status-badge-lg" id="ccp-status">—</span></div></div>
@@ -444,7 +444,7 @@
           <p style="font-size:var(--fs-caption);color:var(--muted,#666);margin:0 0 10px;">
             Read-only. Same facts the agent runtime injects into every reply prompt.
           </p>
-          <pre id="agent-context-pre" class="mono" style="white-space:pre-wrap;font-size:var(--fs-caption);line-height:1.45;background:var(--surface,#fff);border:1px solid var(--line,#ddd);border-radius:6px;padding:12px;margin:0;max-height:320px;overflow:auto;">Open with ?id=&lt;client id&gt; to load.</pre>
+          <pre id="agent-context-pre" class="mono" style="white-space:pre-wrap;font-size:var(--fs-caption);line-height:1.45;background:var(--surface,#fff);border:1px solid var(--line,#ddd);border-radius:6px;padding:12px;margin:0;max-height:320px;overflow:auto;">Fills in when a client file is open. Pick a client on Pipeline to open one.</pre>
         </div>
       </div>
 
@@ -515,7 +515,7 @@
       <div class="side-title">Funding · Apply</div>
       <div id="fh-funding-apply" style="margin-bottom:14px;padding:10px 12px;border:1px solid var(--line,#E4E4E7);border-radius:10px;background:#fff">
         <div style="font:700 var(--fs-caption)/1 var(--mono,ui-monospace);letter-spacing:.1em;text-transform:uppercase;color:var(--gray,#71717A)">Apply door</div>
-        <div id="fh-funding-apply-status" style="margin-top:6px;font-size:var(--fs-body);color:var(--gray,#71717A)">Open with ?id=&lt;client&gt; to load matching lenders.</div>
+        <div id="fh-funding-apply-status" style="margin-top:6px;font-size:var(--fs-body);color:var(--gray,#71717A)">Lenders that fit a client's file appear here. Pick a client on Pipeline to open one.</div>
         <div id="fh-funding-apply-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
         <p style="margin:8px 0 0;font-size:var(--fs-caption);color:var(--gray,#71717A)">Shows lenders that fit this file. Apply opens the bank page when a URL is on file.</p>
       </div>
@@ -784,7 +784,7 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     if (res.ok) { render(res.data); return; }
     setText("ccp-name", "");
     if (res.source === "nodata") {
-      banner("empty", "open with ?id=<client id> to load a live file");
+      banner("empty", "no client open — pick a client on Pipeline to load their file here");
     } else if (res.source === "demo") {
       banner("empty", "demo mode — this screen did not query a live file");
     } else if (res.source === "notfound") {
@@ -842,7 +842,7 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
   }
 
   if (!clientId) {
-    say("open this screen with ?id=<client id> to upload for a real client", false);
+    say("no client open — pick a client on Pipeline to upload for them", false);
     zone.setAttribute("aria-disabled", "true");
   }
 

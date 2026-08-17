@@ -235,7 +235,9 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
     <div class="topbar">
       <span class="crumb">Setup</span><h1>Products &amp; Commissions</h1>
       <div class="spacer"></div>
-      <span class="chip on"><span class="cd"></span>Effective 2026-07-27</span>
+      <!-- §6: an "Effective <date>" chip used to sit here with the date typed in.
+           Nothing this screen loads carries an effective date, so the claim is gone
+           rather than guessed. -->
       <!-- The ledger is a report, not part of editing a rule. It leaves the tab
            row and becomes a link out of this screen. -->
       <button class="btn mono" id="ledgerLink">View payout ledger →</button>
@@ -247,7 +249,7 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
         <div class="stat"><div class="eyebrow">PC-00 <span class="sep">/</span> PRODUCTS</div><div class="sv" id="kProd">5</div><div class="sd">3 with variable pricing</div></div>
         <div class="stat"><div class="eyebrow">PC-00 <span class="sep">/</span> ACTIVE RULES</div><div class="sv" id="kRules">6</div><div class="sd">front-end and back-end</div></div>
         <div class="stat"><div class="eyebrow">PC-00 <span class="sep">/</span> ACCRUED</div><div class="sv" id="kAccrued">$0</div><div class="sd">owed, not yet paid</div></div>
-        <div class="stat"><div class="eyebrow">PC-00 <span class="sep">/</span> PAID MTD</div><div class="sv" id="kPaid">$0</div><div class="sd">july 2026</div></div>
+        <div class="stat"><div class="eyebrow">PC-00 <span class="sep">/</span> PAID MTD</div><div class="sv" id="kPaid">$0</div><div class="sd" id="kPaidMonth">—</div></div>
       </div>
 
       <div class="card" style="margin-top:14px">
@@ -268,12 +270,11 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
 
         <!-- RULES -->
         <div class="tabpane" id="tab-rules">
+          <!-- §5: the scope filter and the "CLICK TO EXPAND" hint are gone. There is
+               no rule source on this screen, so both sat over a permanently empty
+               list — a control that can never do anything does not render. -->
           <div class="card-hd"><div class="eyebrow">PC-02 <span class="sep">/</span> COMMISSION RULES</div>
-            <div class="spacer"></div>
-            <select id="scopeFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:var(--fs-body);background:#fff">
-              <option value="">All scopes</option><option>Front-end</option><option>Back-end</option>
-            </select>
-            <span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">CLICK TO EXPAND</span></div>
+            <div class="spacer"></div></div>
           <div id="ruleList"></div>
           <div style="padding:13px 16px;border-top:1px solid var(--line);background:var(--soft)">
             <div class="eyebrow" style="margin-bottom:7px">PC-03 <span class="sep">/</span> WHY RATES ARE NEVER OVERWRITTEN</div>
@@ -281,13 +282,14 @@ table.grid tbody tr.clik:hover{background:var(--soft)}
               A commission rate is a dated fact, not a setting. Changing one <strong>closes the current version</strong>
               — its effective-to date is stamped the day before the new rate starts — and <strong>opens a new version</strong>.
               Nothing is destroyed. A payout that already accrued keeps pointing at the version that was open the day it
-              was earned, so re-running last quarter's ledger produces last quarter's numbers. Every ledger row below
-              names the exact rule version it was computed from.
+              was earned, so re-running last quarter's ledger produces last quarter's numbers.
             </div>
-            <div class="note" id="rulesLocalNote" style="max-width:80ch;color:var(--warn, #B45309)">
-              Rate and product edits on this screen stay in this browser only — they are not saved to the server yet.
-              The payout ledger below is live from /api/read/commissions.
-            </div>
+            <!-- §5/§6: dropped two false lines here. One claimed every payout row names
+                 the rule version it came from — the ledger's Rule column is "—" on every
+                 row because no rule id comes back with a payout. The other said rate and
+                 product edits "are not saved to the server yet", which is coming-soon
+                 wording and was wrong about products besides: product edits DO save
+                 through /api/products. -->
           </div>
         </div>
 
@@ -381,7 +383,11 @@ document.getElementById('ledgerLink').addEventListener('click',function(){showLe
 document.getElementById('ledgerBack').addEventListener('click',function(){showLedger(false)});
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
 function money(n){return '$'+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2})}
-var TODAY='2026-07-27';
+var TODAY=new Date().toISOString().slice(0,10);   /* §6: read, not typed */
+/* §6: "PAID MTD" must name the month it actually is. Read off the clock, never
+   typed in — MONTH_START also bounds the month-to-date sum below. */
+var MONTH_START=(function(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-01'})();
+var MONTH_LABEL=new Date().toLocaleDateString('en-US',{month:'long',year:'numeric'}).toLowerCase();
 function dayBefore(iso){
   var p=iso.split('-').map(Number);
   var d=new Date(Date.UTC(p[0],p[1]-1,p[2]));
@@ -445,8 +451,7 @@ function renderProducts(){
 }
 
 function renderRules(){
-  var f=document.getElementById('scopeFilter').value;
-  var list=RULES.filter(function(r){return !f||r.side===f});
+  var list=RULES;
   document.getElementById('ruleList').innerHTML=list.map(function(r){
     var av=activeV(r);
     var vrows=r.versions.slice().reverse().map(function(v){
@@ -506,7 +511,7 @@ function renderRules(){
             '<button class="btn sm mono" data-cancel="'+r.id+'">Cancel</button></div>'+
         '</div>'+
       '</div></div>';
-  }).join('')||'<div class="empty">No commission rules loaded on this screen yet. The ledger tab still shows live payouts.</div>';
+  }).join('')||'<div class="empty">Commission rules are not held on this screen. Payouts already earned are on the payout ledger — use "View payout ledger" at the top of the page.</div>';
 
   document.querySelectorAll('.rule-hd').forEach(function(h){
     h.addEventListener('click',function(){h.parentElement.classList.toggle('open')});
@@ -574,7 +579,7 @@ function renderLedger(){
 
 function renderStats(){
   document.getElementById('kAccrued').textContent=money(LEDGER.filter(function(l){return l.st!=='Paid'}).reduce(function(a,l){return a+l.amt},0));
-  document.getElementById('kPaid').textContent=money(LEDGER.filter(function(l){return l.st==='Paid'&&l.d>='2026-07-01'}).reduce(function(a,l){return a+l.amt},0));
+  document.getElementById('kPaid').textContent=money(LEDGER.filter(function(l){return l.st==='Paid'&&l.d>=MONTH_START}).reduce(function(a,l){return a+l.amt},0));
 }
 
 /* product editor */
@@ -680,7 +685,6 @@ document.getElementById('edSave').addEventListener('click',function(){
   });
 });
 
-document.getElementById('scopeFilter').addEventListener('change',renderRules);
 document.getElementById('statFilter').addEventListener('change',renderLedger);
 document.getElementById('perFilter').addEventListener('change',renderLedger);
 function fillPersonFilter(){
@@ -693,6 +697,7 @@ function fillPersonFilter(){
 }
 fillPersonFilter();
 
+(function(){var pm=document.getElementById('kPaidMonth'); if(pm) pm.textContent=MONTH_LABEL;})();
 renderProducts(); renderRules(); renderLedger(); renderStats();
 </script>
 <script src="data.js"></script>
@@ -726,7 +731,7 @@ renderProducts(); renderRules(); renderLedger(); renderStats();
         PRODUCTS.length = 0;
         if (typeof renderProducts === "function") try { renderProducts(); } catch (e) {}
       }
-      return "no products on file yet · rate edits stay in this browser only";
+      return "no products on file yet";
     }
     set("kProd", rows.length);
     set("kRules", rows.reduce(function (a, p) { return a + (p.active_rules || 0); }, 0));
@@ -761,7 +766,7 @@ renderProducts(); renderRules(); renderLedger(); renderStats();
     Array.prototype.push.apply(PRODUCTS, mapped);
     try { renderProducts(); } catch (e) { return null; }
 
-    return "live product ladder · " + rows.length + " products · rails have no source · rate edits stay in this browser only";
+    return "live product ladder · " + rows.length + " products · rails have no source";
   });
 
   function ledgerFromApi(r) {
@@ -796,7 +801,12 @@ renderProducts(); renderRules(); renderLedger(); renderStats();
     if (!rows.length) return "no commission rows yet";
     var accrued = rows.filter(function (r) { return r.status !== "paid" && r.status !== "void"; })
                       .reduce(function (a, r) { return a + Number(r.amount || 0); }, 0);
-    var paid = rows.filter(function (r) { return r.status === "paid"; })
+    /* The tile is labelled PAID MTD, so it counts this month only. Without the
+       bound it summed every paid row ever and the label was false. */
+    var paid = rows.filter(function (r) {
+                     var when = String(r.earned_at || r.created_at || "").slice(0, 10);
+                     return r.status === "paid" && when >= MONTH_START;
+                   })
                    .reduce(function (a, r) { return a + Number(r.amount || 0); }, 0);
     set("kAccrued", usd(accrued));
     set("kPaid", usd(paid));

@@ -91,9 +91,6 @@ table.grid tr:last-child td{border-bottom:0}
 .empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:var(--fs-body)}
 
 /* ══ CREATIVE FACTORY — page specific ════════════════════════════════════ */
-.stat.pick{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
-.stat.pick:hover{border-color:var(--gray2)}
-.stat.pick.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
 .stat .sv.bad{color:#6E2A22}
 .stat .sv.warn{color:#6B4A12}
 
@@ -116,7 +113,8 @@ table.grid tr:last-child td{border-bottom:0}
 .rail{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .rail button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 9px;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .12s,border-color .12s;color:var(--gray)}
 .rail button:hover{background:var(--soft);color:var(--ink)}
-.rail button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+/* §1 — a selected filter is not a primary action, so it never renders filled. */
+.rail button.on{background:var(--soft);color:var(--ink);border-color:var(--ink);font-weight:700}
 .rail button .n{font-weight:700;margin-left:5px;opacity:.75}
 .rail .rl{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-right:2px}
 .selwrap{display:inline-flex;align-items:center;gap:6px}
@@ -380,7 +378,6 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 
       <!-- ══ CF-00 · SUMMARY ═══════════════════════════════════════════════ -->
       <div class="stats" id="stats"></div>
-      <div class="deriv" id="deriv"></div>
 
       <!-- ══ CF-01 · PARTNER SCOPE ═════════════════════════════════════════ -->
       <div class="card">
@@ -394,7 +391,6 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
             <div class="field">
               <label for="partnerSel">Partner</label>
               <select id="partnerSel"></select>
-              <span class="hint">sets <code>?partner_id=</code> on all four reads</span>
             </div>
             <div class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.05em;margin-top:10px" id="scopePid">—</div>
             <div style="margin-top:9px" id="scopeOffers"></div>
@@ -402,19 +398,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           <div>
             <p class="note" id="scopeHow"></p>
             <p class="note" style="margin-top:9px">
-              Every query runs inside <code>withPartnerScope</code>, so the RLS policies from 045
-              supply the <code>partner_id</code> predicate — the SQL in <code>api/creative/*</code>
-              carries none. Outside that scope the same SQL returns <b>zero rows</b> rather than
-              every partner's, which is why there is no roll-up, no leaderboard and no
-              partner-vs-partner view anywhere on this screen.
+              This screen only ever shows one partner at a time. There is no roll-up, no
+              leaderboard and no partner-vs-partner view.
             </p>
           </div>
-        </div>
-        <div class="cap">
-          <b>A partner session cannot name another partner.</b> <code>resolvePartnerId</code> pins a
-          partner principal to its own id and <b>ignores</b> a query-string <code>partner_id</code>
-          rather than rejecting it — rejecting would confirm a guessed id to a prober. A staff
-          session with no <code>?partner_id=</code> gets HTTP 400 <code>partner_id_required</code>.
         </div>
       </div>
 
@@ -439,16 +426,8 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         <div class="pager" id="jobPager"></div>
         <div class="req" id="jobReq"></div>
         <div class="cap">
-          <b>Ordering is fixed at <code>created_at DESC</code>.</b> The endpoint accepts no
-          <code>sort</code>, <code>order</code>, <code>q</code>, <code>from</code> or <code>to</code>
-          — the column headers here are labels, not sort controls.
-        </div>
-        <div class="cap">
-          <b>No cost, ever.</b> <code>generation_jobs.cost_cents</code> exists and is written on every
-          job, success or failure, but <code>api/creative/jobs.mjs</code> deliberately omits it —
-          "showing the raw cost would publish the markup" — and
-          <code>creative-endpoints.pg.test.mjs:148</code> asserts it is <code>undefined</code> on every
-          row. Any per-job dollar figure on this screen would be fabricated.
+          <b>Newest first, always.</b> These columns cannot be sorted or searched, and there is no
+          cost per job — that figure is not sent to this screen, so it is not shown.
         </div>
       </div>
 
@@ -461,55 +440,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         </div>
         <div class="card-bd">
           <div class="attn" id="stateLegend"></div>
-          <div class="deriv" style="margin-top:12px">
-            <div>
-              <div class="dk">Retry, as the engine actually models it</div>
-              <div class="formula">
-                claim() → attempt = attempt + 1, status = 'running'<br>
-                fail(retryable) → status = (retryable AND attempt &lt; 3) ? 'queued' : 'failed'<br>
-                finished_at := now() ONLY when status becomes 'failed'<br>
-                run() success → error := NULL, status := 'succeeded'
-              </div>
-            </div>
-            <div>
-              <div class="dk">Constants</div>
-              <div class="inputs">
-                DEFAULT_MAX_ATTEMPTS = <b>3</b> · provider calls per claimed job<br>
-                BASE_BACKOFF_MS = <b>500</b> · doubling → 500ms, then 1000ms<br>
-                job-level ceiling = <b>3 claims</b> before 'failed'<br>
-                concurrency fallback = <b>3</b> when no settings row exists
-              </div>
-            </div>
-            <div class="src">
-              src/creative/generate.mjs:31-32 (constants) · :102 (claim increments attempt) ·
-              :136-149 (in-process backoff) · :151-157 (degrade to queued) · :172 (error cleared) ·
-              :253-267 (fail / finished_at) — db/migrations/045_creative_factory.sql:319
-              (generation_jobs_error_ck)
-            </div>
-          </div>
         </div>
         <div class="cap">
-          <b>A queued job may carry <code>started_at</code> and an <code>error</code>.</b> That is a
-          retry, not a run in flight — <code>fail()</code> only stamps <code>finished_at</code> when
-          the status becomes <code>failed</code>. Treating a non-null <code>started_at</code> as
-          "currently running" mislabels every requeued job, so this screen keys the pill off
-          <code>status</code> alone.
-        </div>
-        <div class="cap">
-          <b><code>attempt</code> is not "retries remaining".</b> It counts claims, and the in-process
-          provider retry loop (3 calls, 500ms then 1000ms) is a separate count that is never
-          persisted. There is no progress, ETA, percentage or queue position column —
-          <code>spec-&gt;'variants'</code> is frequently NULL, so there is nothing to compute progress
-          against.
-        </div>
-        <div class="cap">
-          <b>The per-partner concurrency cap is not readable here.</b>
-          <code>claim()</code> reads <code>partner_module_settings.max_concurrent_jobs</code>
-          (column default 3, CHECK 1–20) and falls back to 3 when the row is missing, but none of the
-          four creative endpoints returns that table — so the cap is shown above as the <i>engine
-          fallback</i>, not as this partner's configured value. Same for
-          <code>weekly_asset_target</code> (default 15, CHECK ≥ 15), which no code in the repo reads
-          at all.
+          <b>A job is tried up to three times before it is marked failed.</b> "Attempt" counts those
+          tries, not tries left. There is no progress bar, no time estimate and no queue position.
         </div>
       </div>
 
@@ -536,42 +470,8 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         <div class="pager" id="libPager"></div>
         <div class="req" id="libReq"></div>
         <div class="cap">
-          <b>There is no preview and there never will be from this endpoint.</b>
-          <code>storage_key</code> is not selected, there is no signed-URL route in
-          <code>api/</code>, and <code>storeAsset()</code> throws away the provider's
-          <code>source_url</code> — <code>creative_assets</code> has no url, thumbnail or meta
-          column.
-        </div>
-        <div class="cap">
-          <b>Not even the boolean arrives.</b> <code>library.mjs:40</code> selects
-          <code>(storage_key IS NOT NULL) AS has_storage_key</code>, but
-          <code>partnerReadHandler</code> returns <code>page()</code>, <code>page()</code> runs
-          <code>redact()</code> over every item, and <code>FORBIDDEN_KEY</code>
-          (<code>read-api.mjs:18</code>) carries an unanchored <code>storage_key</code> alternative
-          that matches the substring inside <code>has_storage_key</code>. <code>ALLOWED_EXACT</code>
-          (<code>:22</code>) whitelists only <code>ssn_present</code> and <code>has_ssn</code>. So
-          the derived boolean is stripped along with the column it describes: <b>this screen cannot
-          tell whether an object exists for a row</b>, and every tile below is the same placeholder
-          rather than two placeholders pretending to know the difference.
-          <code>creative-endpoints.pg.test.mjs:107-118</code> asserts the boolean is a boolean, but
-          it calls <code>fetchRows</code> directly and never goes through <code>redact()</code> —
-          which is why CI is green on a field no screen can receive.
-        </div>
-        <div class="cap">
-          <b>A copy card cannot show its copy.</b> <code>storageKeyFor()</code> returns NULL for
-          <code>kind = 'copy'</code> because copy lives in the row, not object storage — the tile
-          says so from <code>kind</code>, which <i>is</i> returned, not from a storage flag. And
-          there is no text column on <code>creative_assets</code>: the generated words exist only in
-          <code>compliance_screenings.screened_text</code>, which no endpoint returns.
-        </div>
-        <div class="cap">
-          <b><code>?kind=</code> and <code>?format=</code> fail silently by design</b>
-          (<code>library.mjs:29-32</code> — "a stray value should not blank the screen"). An
-          unrecognised value is dropped and the unfiltered result comes back with HTTP 200, so an
-          unchanged result set is not proof the filter applied. <code>?state=</code> is different: an
-          invalid value throws <code>BAD_STATE</code>, which
-          <code>partnerReadHandler</code>'s generic catch turns into HTTP <b>500</b>
-          <code>{ok:false, error:'query_failed'}</code> — not a 400.
+          <b>No previews here.</b> The picture or video file itself is never sent to this screen, and
+          the words in a copy asset are not sent either. Every tile shows a placeholder.
         </div>
       </div>
 
@@ -592,12 +492,8 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </div>
         </div>
         <div class="cap">
-          <b>A synthetic performer always implies AI-generated.</b> CHECK
-          <code>creative_assets_synthetic_ck</code> (045:218) is
-          <code>NOT synthetic_performer OR ai_generated</code>, and the engine independently blocks
-          the pair with reason <code>synthetic_without_ai_flag</code> — "an asset with a synthetic
-          performer must also be marked ai_generated". The badge pair below a tile is therefore never
-          "synthetic, not AI".
+          <b>A synthetic performer always implies AI-generated.</b> An asset can never be labelled
+          "synthetic performer" without also being labelled AI-generated.
         </div>
       </div>
 
@@ -622,45 +518,9 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         <div class="pager" id="apprPager"></div>
         <div class="req" id="apprReq"></div>
         <div class="cap">
-          <b>Two shapes in one list, and the row is asymmetric.</b> For an
-          <code>creative_asset</code> row, <code>subtype</code> is the kind and <code>detail</code>
-          is the format; <code>budget_cents</code>, <code>offer_type</code> and
-          <code>platform</code> are NULL. For a <code>campaign</code> row, <code>subtype</code> is
-          the (nullable) <code>strategy_key</code> and <code>detail</code> is the campaign
-          <i>name</i>; <code>ai_generated</code> and <code>synthetic_performer</code> are NULL. Nulls
-          are rendered blank here, never as <code>false</code> or <code>$0</code>. <b>Updated</b> is
-          <code>updated_at</code> on both branches — the asset branch selects no
-          <code>created_at</code> at all, and the whole UNION is ordered
-          <code>q.updated_at DESC</code>, so these are not the timestamps CF-04 shows.
-        </div>
-        <div class="cap">
-          <b>A campaign's <code>reasons</code> is not a reason list.</b> It is a synthesised
-          <code>jsonb_agg</code> of <code>{code: &lt;screening state&gt;, message: &lt;the whole
-          reasons ARRAY&gt;}</code> — one element per <code>compliance_screenings</code> row, with a
-          <i>nested array</i> where a string would be. A naive renderer prints
-          <code>[object Object]</code>; this one unwraps it. Asset rows carry the real
-          <code>blocked_reasons</code> array instead.
-        </div>
-        <div class="cap">
-          <b>This filter fails silently.</b> <code>approvals.mjs</code> does not use
-          <code>stateFilter</code> — an unrecognised <code>?state=</code> makes both branch
-          predicates false and returns an empty list with HTTP 200. There is no 400 to react to, so
-          "empty" and "wrong filter" look identical.
-        </div>
-        <div class="cap">
-          <b>Approval is tracked on the campaign, not the asset</b> (generate.mjs:233-235). There is
-          no per-asset approve or reject — and no route to perform either; the queue is a worklist,
-          and the decision is recorded against <code>campaigns.approval_state</code> elsewhere.
-        </div>
-        <div class="cap">
-          <b><code>approval_state</code> is a workflow value, not a verdict.</b> The campaign branch
-          selects on <code>approval_state = 'awaiting_approval'</code>, which says a human has not
-          moved the row yet — it does not say what compliance thought. A partner with
-          <code>approve_before_launch</code> off gets screenings that come back <code>passed</code>
-          and campaigns that still sit here until someone clicks; a partner with it on gets
-          <code>needs_approval</code> on <i>every</i> non-credit-repair subject, because
-          <code>screen.mjs:215</code> reads one per-partner boolean and cannot disagree with itself
-          between two campaigns of the same partner.
+          <b>Two kinds of row share this list</b> — single creatives and whole campaigns — so some
+          columns are blank on one kind and filled on the other. Blank means "does not apply", never
+          zero. "Awaiting approval" means nobody has decided yet; it is not a compliance verdict.
         </div>
       </div>
 
@@ -678,52 +538,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </table>
         </div>
         <div class="cap">
-          <b>Every code this screen can render, from all three sources.</b> Twelve are
-          <code>compliance_rules</code> rows seeded by 047. Eight are built in code by
-          <code>src/compliance/screen.mjs</code>. Nine more come from
-          <code>src/compliance/targeting.mjs</code>, which <code>screen.mjs:154-157</code> splices into
-          the verdict for a <b>meta campaign payload</b> — those nine reach this screen through the
-          campaign screenings in CF-06 and can never appear in an asset's
-          <code>blocked_reasons</code>, because <code>generate.mjs</code> screens an asset with no
-          <code>targeting</code> key. Seventeen of the twenty-nine exist in no table at all. A reason
-          object is <code>{code, rule_set, message, citation?, severity?, detail?}</code> — <b>no
-          timestamp, no reviewer, no id, no resolved flag</b>. There is nothing to build a
-          review-history timeline from.
-        </div>
-        <div class="cap">
-          <b>Only a <code>compliance_rules</code> row has a severity.</b> The column is CHECKed to
-          <code>block</code> or <code>warn</code> (047:75) and all twelve seeded rows ship as
-          <code>block</code>. The seventeen code-built reasons have <b>no severity key at all</b> —
-          <code>r()</code> (screen.mjs:251) and <code>reason()</code> (targeting.mjs:162) do not set
-          one — so the Severity column reads <code>null</code> for them rather than guessing a value.
-          What decides the outcome is <code>hardBlocks</code> (screen.mjs:200), which counts anything
-          whose severity is not <code>warn</code>: an absent severity blocks. There is no
-          <code>gate</code> severity anywhere in the schema or the engine; the two approval codes are
-          returned from a different <i>branch</i>, not with a different severity.
-        </div>
-        <div class="cap">
-          <b>Two gates are structural and have no override.</b> TikTok + credit_repair is rejected
-          before any rule row is read (screen.mjs:132), by CHECK
-          <code>campaigns_tiktok_credit_repair_ck</code>, and by a rule row that exists only to
-          produce a readable message — deactivating the rule does not open the door. Credit-repair
-          creative always requires a human whatever <code>approve_before_launch</code> says; that
-          branch does not consult the setting at all.
-        </div>
-        <div class="cap">
-          <b><code>screen_error</code> is a platform fault, not a copy fault.</b> Screening fails
-          closed on any error — no database, bad regex, malformed subject — and returns
-          <code>blocked</code> with the partner-safe message
-          "Compliance screening could not complete, so this is blocked. Try again; if it persists this
-          is a platform fault, not your copy." Treat it as an incident, not a rewrite.
-        </div>
-        <div class="cap">
-          <b>Eleven codes will never appear on an asset.</b> The two approval codes come back with
-          state <code>needs_approval</code>, and generate.mjs writes <code>blocked_reasons</code> only
-          when the verdict is <code>blocked</code> — otherwise <code>[]</code>. The nine targeting
-          codes are never evaluated for an asset at all. All eleven live in
-          <code>compliance_screenings.reasons</code>, which has no endpoint of its own; the only way
-          they reach a screen is the <code>jsonb_agg</code> the approvals query builds for a campaign
-          row. Likewise no <code>warn</code> bucket: all twelve seeded rules are <code>block</code>.
+          <b>Every reason a creative or campaign can be blocked for.</b> Nothing here is a warning —
+          each one stops the work. Two of them cannot be switched off: credit-repair creative always
+          needs a person to approve it, and credit-repair adverts can never run on TikTok. There is
+          no record of who reviewed what or when, so no review history can be shown.
         </div>
       </div>
 
@@ -738,68 +556,9 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         <div class="pager" id="kitPager"></div>
         <div class="req" id="kitReq"></div>
         <div class="cap">
-          <b><code>palette</code>, <code>fonts</code>, <code>voice_profile</code> and
-          <code>products</code> have no schema.</b> They default to <code>{}</code> / <code>[]</code>
-          and no migration or code defines their inner keys, so the cards below render whatever keys
-          each row happens to hold rather than assuming primary/secondary/accent or heading/body. The
-          only jsonb key any code in this module reads is <code>voice_profile.tone</code>
-          (copy.mjs:83, static.mjs:77).
-        </div>
-        <div class="cap">
-          <b><code>source_url</code> and <code>scraped_at</code> are NULL in practice.</b> Nothing
-          outside tests writes <code>brand_kits</code> or <code>brand_kit_sources</code> — there is
-          no scraper, no re-scrape route, and <code>brand_kit_sources</code> has no endpoint (and a
-          delete-guard trigger). So there is no crawl history, no freshness indicator, no version
-          history, no diff and no restore.
-        </div>
-        <div class="cap">
-          <b><code>logo_asset_id</code> is a reference, not an image.</b> It points at a
-          <code>creative_assets</code> row whose <code>storage_key</code> never leaves the process.
-          And <code>asset_count</code> counts <b>non-archived</b> assets only, so it will not match a
-          library count taken with <code>?include_archived=1</code>.
-        </div>
-      </div>
-
-      <!-- ══ CF-09 · READING CONTRACT ══════════════════════════════════════ -->
-      <div class="card">
-        <div class="card-hd">
-          <div class="eyebrow">CF-09 <span class="sep">/</span> READING CONTRACT</div>
-          <div class="spacer"></div>
-          <span class="badge b-gray mono">limit · offset · hasMore</span>
-        </div>
-        <div class="card-bd">
-          <div class="deriv" style="margin-top:0">
-            <div>
-              <div class="dk">How a page is built</div>
-              <div class="formula">
-                rows := SELECT … LIMIT (limit + 1) OFFSET offset<br>
-                hasMore := rows.length &gt; limit<br>
-                items := rows.slice(0, limit)<br>
-                count := items.length &nbsp;<span style="color:var(--gray2)">/* this page, not the table */</span>
-              </div>
-            </div>
-            <div>
-              <div class="dk">Bounds</div>
-              <div class="inputs">
-                DEFAULT_LIMIT = <b>50</b> · MAX_LIMIT = <b>200</b><br>
-                offset &lt; 0 clamps to <b>0</b><br>
-                total row count = <b>never returned</b><br>
-                order = created_at DESC (jobs / library / kits),<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;updated_at DESC (approvals)
-              </div>
-            </div>
-            <div class="src">
-              src/http/read-api.mjs:38-39 (bounds) · :78-95 — hasMore is derived by selecting
-              limit+1 rows <b>deliberately instead of a count query</b>, so "Showing 1–50 of 312" and
-              a numbered pager cannot be built on any of these four endpoints.
-            </div>
-          </div>
-          <div class="tblscroll" style="margin-top:12px">
-            <table class="grid">
-              <thead><tr><th>Endpoint</th><th>?state=</th><th>Other params</th><th>Bad value behaviour</th></tr></thead>
-              <tbody id="contractBody"></tbody>
-            </table>
-          </div>
+          <b>Brand kits are read-only here.</b> Nothing on this screen creates, edits or re-scrapes
+          one, so there is no version history and no restore. A kit's logo shows as a reference, not
+          as a picture.
         </div>
       </div>
 
@@ -808,19 +567,15 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         <div class="card-hd">
           <div class="eyebrow">CF-10 <span class="sep">/</span> READINESS &amp; CONFIG GAPS</div>
           <div class="spacer"></div>
-          <span class="badge b-warn mono">needs a new endpoint</span>
-          <span class="badge b-gray mono">org-level · not partner-scoped</span>
+          <span class="badge b-gray mono">company-wide · not this partner</span>
         </div>
         <div class="card-bd">
-          <div class="unwired" style="margin-bottom:13px">
-            <div class="uh"><span>⚠</span><span>not wired — no HTTP handler exists</span></div>
+          <div class="unwired" style="margin-bottom:16px">
+            <div class="uh"><span>⚠</span><span>not a live reading</span></div>
             <div class="ub">
-              <code>v_creative_config_gaps</code> (048:262, redefined in 052) carries exactly the
-              columns below, but <code>api/</code> contains only the four creative GET files and none
-              of them selects from it. The rows here reproduce the view's shipped
-              <code>status</code> strings verbatim so the shape is reviewable; they are not a live
-              read. This panel is staff-only by nature — the view is org-level, and RLS does not
-              scope it to a partner.
+              These are the settings the creative engine ships with, shown so they can be reviewed.
+              They are not read back from the running system, so this table will not change when
+              somebody changes a setting.
             </div>
           </div>
           <div class="tblscroll">
@@ -831,20 +586,8 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </div>
         </div>
         <div class="cap">
-          <b>Generation cannot run at zero providers.</b> <code>resolve()</code> takes the active
-          <code>creative_providers</code> row for <code>(org_id, asset_kind)</code> with the
-          <i>lowest</i> priority and <b>throws</b> when there is none, rather than falling back to an
-          arbitrary vendor — "falling back would spend the partner's money at a vendor nobody chose".
-          048 ships with no active row, so that is the state of a fresh database, and a job that hits
-          it fails <b>permanently</b> (retryable false): retrying would not conjure a config row.
-        </div>
-        <div class="cap">
-          <b>No vendor names, endpoints, models or keys.</b> The only provider identifiers that exist
-          anywhere are <code>static</code>, <code>ugc-video</code>, <code>product-video</code>,
-          <code>copy</code> and <code>resize</code>. <code>creative_providers.config</code> is
-          CHECK-blocked from holding <code>api_key</code>/<code>apiKey</code>/<code>secret</code>/
-          <code>token</code>/<code>password</code>/<code>access_token</code>, keys live in env, and no
-          endpoint returns the table at all.
+          <b>Nothing can be generated until a vendor is switched on.</b> Until then a job fails
+          straight away, and trying again will not help. Vendor names and keys are never shown here.
         </div>
       </div>
 
@@ -858,14 +601,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         </div>
         <div class="card-bd">
           <div class="unwired">
-            <div class="uh"><span>⚠</span><span>empty on any real database — and that is correct</span></div>
+            <div class="uh"><span>⚠</span><span>empty on purpose — nothing is metered yet</span></div>
             <div class="ub">
-              <code>creative_usage_events</code> and <code>v_partner_creative_usage</code> exist, but
-              no endpoint serves either, and <code>accrue_creative_usage()</code> is called only from
-              <code>src/social/social.pg.test.mjs</code> — <b>no application code path writes a usage
-              row</b>. So there is nothing to show, and a populated usage panel here would be
-              invented. The grain, if it is ever exposed, is <b>monthly</b>
-              (<code>date_trunc</code>): there is no daily or weekly rollup.
+              Nothing in the live system records creative usage today, so there is nothing to show.
+              Any number here would be made up.
             </div>
           </div>
           <div class="tblscroll" style="margin-top:13px">
@@ -873,59 +612,35 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
               <thead><tr><th>event_type</th><th>period</th><th>events</th><th>quantity</th><th>billable_cents</th><th>voided_cents</th></tr></thead>
               <tbody>
                 <tr><td colspan="6"><div class="empty">
-                  No rows. <span class="mono">v_partner_creative_usage</span> has no HTTP endpoint and
-                  nothing accrues against it.
+                  No rows. Nothing records creative usage yet.
                 </div></td></tr>
               </tbody>
             </table>
           </div>
           <div class="tblscroll" style="margin-top:13px">
             <table class="grid">
-              <thead><tr><th>rate_key</th><th>rate</th><th>signed_off_at</th><th>status per v_creative_config_gaps</th></tr></thead>
+              <thead><tr><th>rate_key</th><th>rate</th><th>signed_off_at</th><th>status</th></tr></thead>
               <tbody id="ratesBody"></tbody>
             </table>
           </div>
         </div>
         <div class="cap">
-          <b>The rates are not a partner-facing number.</b> <code>creative_billing_rates</code> is
-          org-level and unscoped by RLS, and the whole reason <code>cost_cents</code> is withheld from
-          the jobs endpoint is to avoid publishing the markup. Rendering a markup percentage, a vendor
-          cost or a derived "you were charged" figure on a partner surface would publish a commercial
-          term that <b>no human has signed</b> — both rates ship with <code>signed_off_at</code> NULL
-          and notes marked PLACEHOLDER.
-        </div>
-        <div class="cap">
-          <b>Billing raises rather than guessing.</b> <code>accrue_creative_usage()</code> raises
-          "<code>creative_billing_rates.&lt;key&gt; is not set — refusing to accrue usage against an
-          unchosen rate</code>" when the rate is NULL. On accrual the rate and unit cost are copied
-          onto the row (<code>rate_pct_applied</code>, <code>unit_cost_cents</code>) so a later rate
-          change cannot restate history; accrual is idempotent on
-          <code>(org_id, partner_id, source_event_id)</code>; and a record is <b>voided with a
-          reason</b>, never deleted.
+          <b>Both rates are placeholders nobody has signed off.</b> They are internal figures and
+          must not be shown to a partner or put on an invoice until someone approves them.
         </div>
       </div>
 
-      <!-- ══ CF-12 · ENDPOINT LEDGER ═══════════════════════════════════════ -->
+      <!-- ══ CF-12 · GENERATE &amp; DECIDE ═══════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">CF-12 <span class="sep">/</span> ENDPOINT LEDGER</div>
-          <div class="spacer"></div>
-          <span class="badge b-gray mono">what this screen can and cannot read</span>
-        </div>
-        <div class="tblscroll">
-          <table class="grid">
-            <thead><tr><th>Surface</th><th>Source</th><th>State</th><th>Note</th></tr></thead>
-            <tbody id="ledgerBody"></tbody>
-          </table>
+          <div class="eyebrow">CF-12 <span class="sep">/</span> GENERATE &amp; DECIDE</div>
         </div>
         <div class="cap">
-          <b>Generate + run are live.</b> <code>POST /api/creative/generate</code> enqueues;
-          <code>POST /api/creative/run</code> (and the <code>creative-job-runner</code> cron every 2 minutes)
-          claim and run jobs. Provider credentials (<code>CREATIVE_*</code>) must be set for assets
-          to render — otherwise the job fails or requeues with a clear error.
+          <b>Ask for new creative.</b> Queued work is picked up automatically every couple of
+          minutes; "Run queued jobs now" starts it straight away.
         </div>
-        <div class="card-bd" style="padding:14px 16px;border-top:1px solid var(--line)">
-          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:end">
+        <div class="card-bd" style="padding:16px;border-top:1px solid var(--line)">
+          <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:end">
             <div class="selwrap"><label for="genKind">asset_kind</label>
               <select id="genKind"><option>static</option><option>copy</option><option>video</option><option>resize</option></select>
             </div>
@@ -941,39 +656,25 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </div>
         </div>
         <div class="cap">
-          <b>Approve / Reject / Archive</b> — expand a row in the review queue (CF-06) or use asset
-          id below. Writes <code>POST /api/creative/actions</code>.
+          <b>Decide on one creative.</b> Pick it from the library above, then approve, reject or
+          archive it. Each of the three asks you to confirm first.
         </div>
-        <div class="card-bd" style="padding:14px 16px;border-top:1px solid var(--line)">
-          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:end">
-            <div class="selwrap" style="min-width:260px"><label for="actAsset">asset_id</label>
-              <input id="actAsset" class="mono" placeholder="uuid from library / approvals" style="width:260px">
+        <div class="card-bd" style="padding:16px;border-top:1px solid var(--line)">
+          <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:end">
+            <div class="selwrap" style="min-width:320px"><label for="actAsset">Creative</label>
+              <select id="actAsset" class="mono" style="width:320px;min-height:40px"></select>
             </div>
-            <button class="btn mono" type="button" data-cact="approve">Approve</button>
-            <button class="btn mono" type="button" data-cact="reject">Reject</button>
-            <button class="btn mono" type="button" data-cact="archive">Archive</button>
+            <button class="btn mono" type="button" data-cact="approve" style="min-height:44px">Approve</button>
+            <span style="width:32px"></span>
+            <button class="btn mono" type="button" data-cact="reject" style="min-height:44px">Reject</button>
+            <button class="btn mono" type="button" data-cact="archive" style="min-height:44px">Archive</button>
             <span class="hint mono" id="actMsg" style="font-size:var(--fs-caption);color:var(--gray2)"></span>
           </div>
         </div>
         <div class="cap">
-          <b>Archive sets <code>archived_at</code></b> — library <code>?include_archived=1</code> then
-          includes those rows. Approve sets <code>compliance_state='approved'</code>; reject sets
-          <code>blocked</code> with a reason.
-        </div>
-        <div class="cap">
-          <b>No human names.</b> <code>requested_by</code>, <code>approved_by</code> and
-          <code>created_by_agent_id</code> are uuids, and none of the four endpoints joins
-          <code>accounts</code> or <code>agents</code> — <code>jobs.mjs</code> does not even return
-          <code>requested_by</code>, and <code>library.mjs</code> does not return
-          <code>created_by_agent_id</code>. "Requested by Jane" cannot be rendered, so it is not.
-        </div>
-        <div class="cap">
-          <b>No performance data on a creative.</b> <code>creative_assets</code> has no impressions,
-          clicks, CTR, spend, ROAS, frequency or conversions — ad performance lives in
-          <code>ad_metrics_daily</code> keyed by <code>ad_id</code> (046) and no creative endpoint
-          joins it. A "top performing creative" panel cannot be built from these APIs; the fatigue
-          and spend surfaces on <a href="campaign-manager.html" style="text-decoration:underline">Campaigns</a>
-          are where that data lives.
+          <b>No names and no performance figures on a creative.</b> This screen is never told who
+          asked for or approved a creative, and it is never told how an advert performed. Spend and
+          fatigue live on <a href="campaign-manager.html" style="text-decoration:underline">Campaigns</a>.
         </div>
       </div>
 
@@ -982,7 +683,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
     <div class="foot">
       <span class="pulse"></span><span>systems nominal · fundhub.ai</span>
       <span class="spacer"></span>
-      <span id="footNote">cf · api/creative/* · read-only · one partner</span>
+      <span id="footNote">creative factory · one partner</span>
     </div>
   </div>
 </div>
@@ -1207,15 +908,15 @@ var RULES = [
 /* ══ PROVIDER DISCLOSURE BEHAVIOUR (CF-05) ═══════════════════════════════ */
 var PROVIDER_FLAGS = [
   {key:'static', ai:'always true', synth:'from the spec',
-   how:'static.mjs:58 hardcodes aiGenerated: true — everything this provider emits is machine-made. Only syntheticPerformer comes from the caller (static.mjs:62), because a prompt may or may not ask for a person, and it is never inferred.'},
+   how:'Everything this provider makes is machine-made, so it is always marked AI-generated. Whether it shows a synthetic person depends on what was asked for; it is never guessed.'},
   {key:'ugc-video', ai:'always true', synth:'always true',
-   how:'ugc-video.mjs:55 hardcodes syntheticPerformer: true and ignores a caller-supplied false — there is no configuration of this provider that produces a video without one.'},
+   how:'Always marked as showing a synthetic person. There is no setting that makes this provider produce a video without one.'},
   {key:'product-video', ai:'always true', synth:'defaults false',
-   how:'product-video.mjs:55 hardcodes aiGenerated: true — the footage is machine-made either way. :56 defaults syntheticPerformer to false and lets the caller set it.'},
+   how:'The footage is machine-made either way, so it is always marked AI-generated. It is treated as having no synthetic person unless the request says otherwise.'},
   {key:'copy', ai:'always true', synth:'always false',
-   how:'copy.mjs sets aiGenerated: true, syntheticPerformer: false — copy has no performer and no canvas. Its format is `spec.format || "1x1"` (copy.mjs:50): 1x1 is the default a caller who names nothing gets, not a fixed value.'},
+   how:'Written copy is always machine-made and never has a performer.'},
   {key:'resize', ai:'inherited', synth:'inherited',
-   how:'resize.mjs:64-65 inherits both from the parent — a crop of an AI image is still AI, and a crop of a synthetic presenter still shows one. Recomputing them would drop both flags on every derived asset.'}
+   how:'Both labels are carried over from the original: a crop of an AI image is still AI, and a crop of a synthetic presenter still shows one.'}
 ];
 
 /* ══ v_creative_config_gaps — status strings verbatim (048 / 052) ═════════ */
@@ -1256,49 +957,6 @@ var RATES = [
    status:'PLACEHOLDER set in 052 — AWAITING SIGN-OFF'},
   {rate_key:'managed_spend_pct', rate:'10', signed_off_at:null,
    status:'PLACEHOLDER set in 052 — AWAITING SIGN-OFF'}
-];
-
-/* ══ CF-09 reading contract / CF-12 ledger ═══════════════════════════════ */
-var CONTRACT = [
-  {ep:'GET /api/creative/jobs', state:"queued | running | succeeded | failed | all — comma-separated multi-value supported ('succeeded,failed')",
-   other:'limit, offset', bad:'stateFilter throws BAD_STATE → HTTP 500 {ok:false, error:"query_failed"}, not 400'},
-  {ep:'GET /api/creative/library', state:'pending | passed | blocked | approved | all',
-   other:'kind, format, brand_kit_id, include_archived=1, limit, offset',
-   bad:'bad ?state= → HTTP 500. Bad ?kind= / ?format= are silently IGNORED by design.'},
-  {ep:'GET /api/creative/approvals', state:'blocked | pending | awaiting_approval | all',
-   other:'limit, offset',
-   bad:'NOT run through stateFilter — an unknown value returns an EMPTY list with HTTP 200'},
-  {ep:'GET /api/creative/brand-kits', state:'draft | active | archived | all',
-   other:'limit, offset', bad:'stateFilter throws BAD_STATE → HTTP 500, not 400'}
-];
-
-var LEDGER = [
-  /* st/tone for these four are placeholders overwritten by updateLedgerLive()
-     the moment wireCreative()'s Promise.all resolves — this board used to claim
-     "readable / ok" here unconditionally, without ever making the call. It no
-     longer does; see wireCreative() and updateLedgerLive() near the bottom. */
-  {s:'CF-02 Generation jobs', src:'api/creative/jobs.mjs', st:'checking…', tone:'warn',
-   note:'error is returned on purpose — scrub() strips anything key-shaped before it is stored. cost_cents is not.'},
-  {s:'CF-04 Creative library', src:'api/creative/library.mjs', st:'checking…', tone:'warn',
-   note:'No storage_key, no url, no text, no width/height/file_size — and has_storage_key is selected but stripped by redact(), so previews are impossible in both directions.'},
-  {s:'CF-06 Review queue', src:'api/creative/approvals.mjs', st:'checking…', tone:'warn',
-   note:'creative_asset (pending|blocked) + campaign (awaiting_approval). No ads, ad sets or social posts.'},
-  {s:'CF-08 Brand kits', src:'api/creative/brand-kits.mjs', st:'checking…', tone:'warn',
-   note:'asset_count counts non-archived assets. Nothing outside tests writes this table.'},
-  {s:'CF-10 Config gaps', src:'v_creative_config_gaps', st:'no endpoint', tone:'warn',
-   note:'org-level view, no HTTP handler. Rows here are the shipped status strings, not a live read.'},
-  {s:'CF-11 Usage & metering', src:'v_partner_creative_usage · creative_usage_events', st:'no endpoint', tone:'warn',
-   note:'monthly grain, no endpoint, and accrue_creative_usage() is called only from tests.'},
-  {s:'Screening audit trail', src:'compliance_screenings', st:'not readable', tone:'bad',
-   note:'state, reasons, screened_text (8000 chars) and created_at all exist. No endpoint, so no per-asset screening history and no re-screen.'},
-  {s:'Partner module settings', src:'partner_module_settings', st:'not readable', tone:'bad',
-   note:'approve_before_launch, weekly_asset_target, max_concurrent_jobs, autopilot_enabled, launch_enabled — none of the four endpoints selects them.'},
-  {s:'Provider config', src:'creative_providers', st:'not readable', tone:'bad',
-   note:'org-level, no partner_id, no endpoint. Ships with no active row, and config is CHECK-blocked from holding credentials.'},
-  {s:'Brand kit sources', src:'brand_kit_sources', st:'not readable', tone:'bad',
-   note:'delete-guarded, no endpoint, and nothing outside tests ever inserts into it.'},
-  {s:'Creative performance', src:'ad_metrics_daily (046)', st:'not joined', tone:'bad',
-   note:'keyed by ad_id. No creative endpoint joins it, so there is no CTR, spend, ROAS or frequency per asset.'}
 ];
 
 /* ══ HELPERS ═════════════════════════════════════════════════════════════ */
@@ -1362,7 +1020,6 @@ var S = {
   apprState: 'all', apprLimit: 10, apprOffset: 0,
   kitState: 'all', kitOffset: 0, kitLimit: 6,
   ruleSet: 'all',
-  statPick: 'flight',
   showReq: false
 };
 
@@ -1381,11 +1038,8 @@ function renderScope(){
   document.getElementById('scopeChipTxt').textContent = p ? p.name : 'no partner selected';
   document.getElementById('scopeOffers').innerHTML = '';
   document.getElementById('scopeHow').innerHTML = p
-    ? 'Reading as <b>staff</b>, so every request carries <code>?partner_id=' + esc(p.id) + '</code>, taken from ' +
-      'this page’s own address. One partner per address: there is no roster here and no endpoint that lists ' +
-      'partners, so this screen never shows more than the one it was opened for. A partner principal reading ' +
-      'the same four endpoints is pinned to its own id by <code>resolvePartnerId</code>, which discards the ' +
-      'query string.'
+    ? 'Showing <b>' + esc(p.name) + '</b> only, taken from this page’s own address. There is no partner list ' +
+      'to pick from here, so this screen never shows more than the one partner it was opened for.'
     : '<b>Nothing is loaded yet.</b> Generation jobs, the creative library, the review queue and brand kits ' +
       'appear here once this screen is opened for one partner — add <code>?partner_id=&lt;id&gt;</code> to this ' +
       'page’s address and reload. Until then no request is sent and the buttons below are switched off, because ' +
@@ -1430,74 +1084,6 @@ function statModel(){
           failed:failed, retrying:retrying, live:live, blocked:blocked, pending:pending, active:active};
 }
 
-var DERIVS = {
-  flight: function(m){ return {
-    title:'Jobs in flight',
-    formula:'count(status = \'queued\') + count(status = \'running\')<br>= ' + m.queued.length + ' + ' + m.running.length + ' = <b>' + (m.queued.length + m.running.length) + '</b>',
-    inputs:'queued = <b>' + m.queued.length + '</b> · of which retrying (attempt &gt; 0) = <b>' + m.retrying.length + '</b><br>' +
-           'running = <b>' + m.running.length + '</b><br>' +
-           'never claimed (queued, attempt 0) = <b>' + (m.queued.length - m.retrying.length) + '</b>',
-    src:'GET /api/creative/jobs?partner_id=…&amp;state=queued,running&amp;limit=200 — this tile\'s own read at ' +
-        'MAX_LIMIT, not the CF-02 page below, which runs at whatever limit that card is set to. The endpoint ' +
-        'returns no total, so this counts the rows that response carried: exact while hasMore is false, and it ' +
-        'would saturate at 200.'};},
-  failed: function(m){
-    var withErr = m.failed.filter(function(j){ return j.error; }).length;
-    var perm = m.failed.filter(function(j){ return /no active provider configured/.test(j.error||''); }).length;
-    return {
-    title:'Failed jobs',
-    formula:'count(status = \'failed\') = <b>' + m.failed.length + '</b><br>' +
-            'every one of them carries an error: ' + withErr + ' / ' + m.failed.length,
-    inputs:'permanent — no provider configured = <b>' + perm + '</b><br>' +
-           'reached the 3-claim ceiling = <b>' + m.failed.filter(function(j){return j.attempt>=3;}).length + '</b><br>' +
-           'zero-asset responses = <b>' + m.failed.filter(function(j){return j.error==='provider returned zero assets';}).length + '</b>',
-    src:'GET /api/creative/jobs?state=failed&amp;limit=200 — again one MAX_LIMIT read, counted from what came ' +
-        'back and exact while hasMore is false. CHECK generation_jobs_error_ck (045:319) guarantees the ' +
-        'error is non-null on a failed row — a failed job that does not say why cannot exist.'};},
-  review: function(m){
-    var camp = m.camps.length;
-    return {
-    title:'Awaiting review',
-    formula:'asset rows (compliance_state IN (\'pending\',\'blocked\') AND archived_at IS NULL)<br>' +
-            '&nbsp;&nbsp;+ campaign rows (approval_state = \'awaiting_approval\')<br>' +
-            '= (' + m.pending.length + ' + ' + m.blocked.length + ') + ' + camp + ' = <b>' + (m.pending.length + m.blocked.length + camp) + '</b>',
-    inputs:'pending assets = <b>' + m.pending.length + '</b><br>' +
-           'blocked assets = <b>' + m.blocked.length + '</b><br>' +
-           'campaigns awaiting approval = <b>' + camp + '</b>',
-    src:'GET /api/creative/approvals?state=all&amp;limit=200 — a UNION ALL of two shapes ordered updated_at DESC, ' +
-        'counted from that one response and exact while hasMore is false; the CF-06 table below is a smaller ' +
-        'page of the same list. The asset branch is fixed to pending|blocked; \'passed\' and \'approved\' are ' +
-        'excluded by the WHERE clause.'};},
-  library: function(m){ return {
-    title:'Library assets',
-    formula:'count(rows) WHERE archived_at IS NULL = <b>' + m.live.length + '</b><br>' +
-            'passed ' + m.live.filter(function(a){return a.compliance_state==='passed';}).length +
-            ' · pending ' + m.pending.length + ' · blocked ' + m.blocked.length + ' · approved 0',
-    inputs:'static = <b>' + m.live.filter(function(a){return a.kind==='static';}).length + '</b><br>' +
-           'video = <b>' + m.live.filter(function(a){return a.kind==='video';}).length + '</b><br>' +
-           'copy = <b>' + m.live.filter(function(a){return a.kind==='copy';}).length + '</b><br>' +
-           'derived (parent_asset_id set) = <b>' + m.live.filter(function(a){return a.parent_asset_id;}).length + '</b>',
-    src:'GET /api/creative/library?state=all&amp;limit=200 — archived rows are hidden unless include_archived=1. ' +
-        'The number is the row count of that one MAX_LIMIT response, exact while hasMore is false; the grid ' +
-        'below is a separate, smaller page and is expected to show fewer. ' +
-        '\'approved\' is 0 and always will be: it is in the CHECK constraint and in the ?state= allowlist, ' +
-        'but no code in the repo ever writes it.'};},
-  kits: function(m){
-    var counted = m.active.reduce(function(n,k){ return n + k.asset_count; }, 0);
-    return {
-    title:'Active brand kits',
-    formula:'count(status = \'active\') = <b>' + m.active.length + '</b><br>' +
-            'sum(asset_count) across them = <b>' + counted + '</b>',
-    inputs:'draft = <b>' + m.kits.filter(function(k){return k.status==='draft';}).length + '</b><br>' +
-           'active = <b>' + m.active.length + '</b><br>' +
-           'archived = <b>' + m.kits.filter(function(k){return k.status==='archived';}).length + '</b>',
-    src:'GET /api/creative/brand-kits?state=all&amp;limit=200 — state=all, not state=active, because the ' +
-        'draft/active/archived split beside this and the "of N total" on the tile are counted client-side from ' +
-        'that one response; a ?state=active read carries no draft or archived row to count. asset_count itself ' +
-        'is different: a correlated subquery over ALL non-archived assets for the kit, so it is a full count ' +
-        'rather than a page count — unlike every other number on this strip. The two are allowed to disagree.'};}
-};
-
 /* One message per distinct reason, so "no partner" does not print four times. */
 function blockersFor(keys){
   var out = [];
@@ -1509,18 +1095,14 @@ function blockersFor(keys){
 }
 
 function renderStats(){
-  var deriv = document.getElementById('deriv');
   /* §6 — the strip is fed by all four reads. If any of them did not answer, the
      totals would be wrong, so the strip says so instead of printing numbers. */
   var blockers = blockersFor(['jobs','assets','approvals','kits']);
   if(blockers.length){
     document.getElementById('stats').innerHTML =
       '<div class="empty" style="grid-column:1/-1">' + blockers.join('<br>') + '</div>';
-    deriv.innerHTML = '';
-    deriv.style.display = 'none';
     return;
   }
-  deriv.style.display = '';
   var m = statModel();
   var tiles = [
     {k:'flight',  label:'JOBS IN FLIGHT', v:(m.queued.length + m.running.length),
@@ -1529,24 +1111,18 @@ function renderStats(){
      d:'all carry a reason', cls:m.failed.length ? 'bad' : ''},
     {k:'review',  label:'AWAITING REVIEW', v:(m.pending.length + m.blocked.length + m.camps.length),
      d:m.blocked.length + ' blocked · ' + m.camps.length + ' campaigns', cls:m.blocked.length ? 'warn' : ''},
-    {k:'library', label:'LIBRARY ASSETS', v:m.live.length, d:'non-archived · one limit-200 read', cls:''},
+    {k:'library', label:'LIBRARY ASSETS', v:m.live.length, d:'not archived', cls:''},
     {k:'kits',    label:'ACTIVE BRAND KITS', v:m.active.length, d:'of ' + m.kits.length + ' total', cls:''}
   ];
+  /* Plain tiles, not buttons: the derivation strip they used to open is gone, and
+     §5 does not allow a control that does nothing. */
   document.getElementById('stats').innerHTML = tiles.map(function(t){
-    return '<button type="button" class="stat pick' + (S.statPick===t.k?' on':'') + '" data-stat="' + t.k + '" aria-pressed="' + (S.statPick===t.k) + '">' +
+    return '<div class="stat">' +
       '<div class="eyebrow">CF-00 <span class="sep">/</span> ' + t.label + '</div>' +
       '<div class="sv ' + t.cls + '">' + t.v + '</div>' +
       '<div class="sd">' + esc(t.d) + '</div>' +
-    '</button>';
+    '</div>';
   }).join('');
-  document.getElementById('stats').querySelectorAll('[data-stat]').forEach(function(b){
-    b.addEventListener('click', function(){ S.statPick = b.dataset.stat; renderStats(); });
-  });
-  var d = DERIVS[S.statPick](m);
-  document.getElementById('deriv').innerHTML =
-    '<div><div class="dk">' + esc(d.title) + ' — how it is counted</div><div class="formula">' + d.formula + '</div></div>' +
-    '<div><div class="dk">Inputs</div><div class="inputs">' + d.inputs + '</div></div>' +
-    '<div class="src">' + d.src + '</div>';
 }
 
 /* ══ PAGER — prev/next off limit, offset and hasMore. No page numbers. ════ */
@@ -1580,7 +1156,7 @@ function renderJobRail(){
   /* a chip count is a claim about the response — none is shown until there is one */
   var blocked = panelState('jobs');
   var cnt = function(n){ return blocked ? '' : '<span class="n">' + n + '</span>'; };
-  var html = '<span class="rl">?state=</span>' +
+  var html = '<span class="rl">State</span>' +
     '<button data-js="" class="' + (S.jobStates.length?'':'on') + '">all' + cnt(jobs.length) + '</button>';
   html += JOB_STATES.map(function(st){
     var n = jobs.filter(function(j){ return j.status===st; }).length;
@@ -1789,17 +1365,17 @@ function renderLibFilters(){
   /* counts are omitted, not zeroed, while the library read has not answered */
   var off = !!panelState('assets');
 
-  document.getElementById('libStateRail').innerHTML = railHtml('?state=', 'ls',
+  document.getElementById('libStateRail').innerHTML = railHtml('State', 'ls',
     [{k:'all',t:'all'}].concat(LIB_STATES.map(function(s){ return {k:s,t:s}; })),
     S.libState,
     off ? null : function(k){ return k==='all' ? all.length : all.filter(function(a){ return a.compliance_state===k; }).length; });
 
-  document.getElementById('libKindRail').innerHTML = railHtml('?kind=', 'lk',
+  document.getElementById('libKindRail').innerHTML = railHtml('Kind', 'lk',
     [{k:'',t:'any'}].concat(ASSET_KINDS.map(function(s){ return {k:s,t:s}; })),
     S.libKind,
     off ? null : function(k){ return k==='' ? all.length : all.filter(function(a){ return a.kind===k; }).length; });
 
-  document.getElementById('libFormatRail').innerHTML = railHtml('?format=', 'lf',
+  document.getElementById('libFormatRail').innerHTML = railHtml('Format', 'lf',
     [{k:'',t:'any'}].concat(FORMATS.map(function(s){ return {k:s,t:s}; })),
     S.libFormat,
     off ? null : function(k){ return k==='' ? all.length : all.filter(function(a){ return a.format===k; }).length; });
@@ -1878,17 +1454,36 @@ function renderLibrary(){
     kind: S.libKind, format: S.libFormat, brand_kit_id: S.libKit,
     include_archived: S.libArchived, limit: S.libLimit, offset: S.libOffset
   });
+  renderActionPicker();
 }
 
+/* §5/§8 — approve / reject / archive act on a creative chosen from the library
+   this screen already read, never on a uuid a human retyped. No extra read: the
+   options are the rows already in hand, so an unread library offers none. */
+function renderActionPicker(){
+  var sel = document.getElementById('actAsset');
+  if(!sel) return;
+  var keep = sel.value;
+  var rows = panelState('assets') ? [] : byPartner(ASSETS);
+  if(!rows.length){
+    sel.innerHTML = '<option value="">No creatives loaded for this partner</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">Choose a creative…</option>' + rows.map(function(a){
+    var label = a.kind + ' · ' + a.format + ' · ' + a.compliance_state +
+      (a.archived_at ? ' · archived' : '') + ' · ' + shortId(a.id);
+    return '<option value="' + esc(a.id) + '"' + (keep===a.id?' selected':'') + '>' + esc(label) + '</option>';
+  }).join('');
+}
+
+/* The exact consequence of each write, named before it is sent. */
+var ACTION_CONFIRM = {
+  approve: 'Approve this creative? It will be marked approved for this partner.',
+  reject: 'Reject this creative? It will be marked blocked and cannot be used.',
+  archive: 'Archive this creative? It will be hidden from the library unless archived items are shown.'
+};
+
 function libEmptyMsg(){
-  if(S.libState === 'approved')
-    return 'Nothing. <span class="mono">compliance_state = \'approved\'</span> is in the CHECK constraint and in ' +
-      'this endpoint\'s allowlist, but <b>no code in the repo ever writes it</b> — generate.mjs maps both ' +
-      '\'passed\' and \'needs_approval\' to \'passed\'. This tab is empty on a real database too.';
-  if(S.libArchived === '1')
-    return 'Same rows as before. <span class="mono">archived_at</span> exists and the library hides those rows by ' +
-      'default, but <b>no code path ever sets it</b> — and hard delete is impossible ' +
-      '(<span class="mono">trg_creative_assets_no_delete</span>). So this filter changes nothing on a real database.';
   return 'No assets match this filter for this partner.';
 }
 
@@ -1930,7 +1525,7 @@ function renderApprRail(){
   var host = document.getElementById('apprRail');
   var opts = [{k:'all',t:'all'},{k:'blocked',t:'blocked'},{k:'pending',t:'pending'},{k:'awaiting_approval',t:'awaiting_approval'}];
   var off = !!panelState('approvals');
-  host.innerHTML = '<span class="rl">?state=</span>' + opts.map(function(o){
+  host.innerHTML = '<span class="rl">State</span>' + opts.map(function(o){
     var saved = S.apprState; S.apprState = o.k;
     var n = apprRows().length; S.apprState = saved;
     return '<button data-as="' + o.k + '" class="' + (S.apprState===o.k?'on':'') + '">' + o.t +
@@ -2067,7 +1662,7 @@ function apprDetail(r){
 function renderRules(){
   var sets = ['all','croa','claims','disclosure','platform','approval','engine'];
   var host = document.getElementById('ruleRail');
-  host.innerHTML = '<span class="rl">rule_set</span>' + sets.map(function(s){
+  host.innerHTML = '<span class="rl">Rule set</span>' + sets.map(function(s){
     var n = s==='all' ? RULES.length : RULES.filter(function(r){ return r.rule_set===s; }).length;
     return '<button data-rs="' + s + '" class="' + (S.ruleSet===s?'on':'') + '">' + s + '<span class="n">' + n + '</span></button>';
   }).join('');
@@ -2081,13 +1676,13 @@ function renderRules(){
        only compliance_rules rows have a severity at all. */
     var gate = r.verdict === 'needs_approval';
     var stripe = gate ? 'stripe-info' : 'stripe-bad';
-    var origin = r.src==='seeded' ? 'compliance_rules row'
-               : (r.src==='targeting' ? 'targeting.mjs · in no table' : 'screen.mjs · in no table');
+    var origin = r.src==='seeded' ? 'editable rule'
+               : (r.src==='targeting' ? 'platform term · not editable' : 'built in · not editable');
     /* severity is NULL for every non-row code — r() and reason() never set it. */
     var sevCell = r.severity
-      ? '<span class="badge b-alert">' + esc(r.severity) + '</span><span class="sub">compliance_rules.severity</span>'
-      : '<span class="nul">null</span><span class="sub">' +
-        (gate ? 'no severity key · state needs_approval' : 'no severity key · counts as a hard block') +
+      ? '<span class="badge b-alert">' + esc(r.severity) + '</span>'
+      : '<span class="nul">—</span><span class="sub">' +
+        (gate ? 'needs a person to approve' : 'counts as a hard block') +
         '</span>';
     return '<tr class="rowbtn ' + stripe + '" data-rule="' + esc(r.code) + '" tabindex="0" aria-expanded="false">' +
       '<td><span class="chev">▸</span><span class="mono">' + esc(r.code) + '</span>' +
@@ -2104,26 +1699,14 @@ function renderRules(){
     return '<div class="detwrap"><div class="detfull">' + reasonCard(r) +
       '<p class="note" style="margin-top:8px">' +
       (r.src==='seeded'
-        ? 'A <code>compliance_rules</code> row, and the only kind of code on this table with a real ' +
-          '<code>severity</code>. Rule edits take effect within <b>60 seconds</b> ' +
-          '(<code>RULE_TTL_MS = 60_000</code>) without a cache flush. Patterns are compiled by both Postgres ' +
-          'and JavaScript, so boundaries are written as explicit character classes rather than <code>\\y</code> ' +
-          'or <code>\\b</code> — a rule that reports clean because it cannot match is worse than no rule.'
+        ? 'A rule someone can edit. A change takes effect within a minute.'
         : (r.src==='targeting'
-          ? 'Built by <code>src/compliance/targeting.mjs</code> and spliced into the result by ' +
-            '<code>screen.mjs:154-157</code> for a <b>meta campaign payload only</b>. ' +
-            '<code>reason()</code> (targeting.mjs:162) sets <code>{code, message, rule_set}</code> and no ' +
-            '<code>severity</code>, so <code>hardBlocks</code> counts it as a block. It exists in no table — ' +
-            'these are Meta\'s terms for advertising credit at all, not a fundhub preference, so they are not ' +
-            'editable and there is no override. An asset never carries one: generate.mjs screens it with no ' +
-            '<code>targeting</code> key.'
-          : 'Generated by <code>src/compliance/screen.mjs</code>. <code>r()</code> (screen.mjs:251) sets ' +
-            '<code>{code, rule_set, message}</code> and no <code>severity</code>. It exists in no table, so it ' +
-            'cannot be edited, deactivated or re-worded by an operator.')) +
+          ? 'A Meta advertising term, not a fundhub preference. It cannot be edited or overridden, and it ' +
+            'only ever applies to a campaign, never to a single creative.'
+          : 'Built into the compliance engine. It cannot be edited, switched off or re-worded.')) +
       (r.verdict==='needs_approval'
-        ? ' <b>This is an approval gate, not a block</b> — it comes back with state <code>needs_approval</code>, ' +
-          'which generate.mjs maps to asset state <code>passed</code>. It will never appear in an asset\'s ' +
-          '<code>blocked_reasons</code>.'
+        ? ' <b>This is an approval gate, not a block</b> — the work waits for a person rather than being ' +
+          'stopped outright.'
         : '') +
       '</p></div></div>';
   }, function(tr){
@@ -2147,7 +1730,7 @@ function renderKits(){
   var host = document.getElementById('kitRail');
   var mine = byPartner(KITS);
   var off = !!panelState('kits');
-  host.innerHTML = '<span class="rl">?state=</span>' + ['all'].concat(KIT_STATES).map(function(s){
+  host.innerHTML = '<span class="rl">State</span>' + ['all'].concat(KIT_STATES).map(function(s){
     var n = s==='all' ? mine.length : mine.filter(function(k){ return k.status===s; }).length;
     return '<button data-ks="' + s + '" class="' + (S.kitState===s?'on':'') + '">' + s +
       (off ? '' : '<span class="n">' + n + '</span>') + '</button>';
@@ -2215,11 +1798,6 @@ function renderStaticTables(){
       '<td class="note">' + esc(p.how) + '</td></tr>';
   }).join('');
 
-  document.getElementById('contractBody').innerHTML = CONTRACT.map(function(c){
-    return '<tr><td class="mono">' + esc(c.ep) + '</td><td class="mono" style="font-size:var(--fs-caption)">' + esc(c.state) + '</td>' +
-      '<td class="mono" style="font-size:var(--fs-caption)">' + esc(c.other) + '</td><td class="note">' + esc(c.bad) + '</td></tr>';
-  }).join('');
-
   document.getElementById('gapsBody').innerHTML = GAPS.map(function(g){
     var badge = g.tone==='bad' ? 'b-alert' : (g.tone==='warn' ? 'b-warn' : 'b-ok');
     return '<tr class="stripe-' + g.tone + '"><td class="mono">' + esc(g.config) + '</td>' +
@@ -2234,14 +1812,6 @@ function renderStaticTables(){
       '<td class="mnum">' + esc(r.rate) + '</td>' +
       '<td class="mono">' + nul('null') + '</td>' +
       '<td><span class="badge b-warn" style="white-space:normal">' + esc(r.status) + '</span></td></tr>';
-  }).join('');
-
-  document.getElementById('ledgerBody').innerHTML = LEDGER.map(function(l){
-    var badge = l.tone==='ok' ? 'b-ok' : (l.tone==='warn' ? 'b-warn' : 'b-alert');
-    return '<tr class="stripe-' + l.tone + '"><td><b>' + esc(l.s) + '</b></td>' +
-      '<td class="mono" style="font-size:var(--fs-caption)">' + esc(l.src) + '</td>' +
-      '<td><span class="badge ' + badge + '">' + esc(l.st) + '</span></td>' +
-      '<td class="note">' + esc(l.note) + '</td></tr>';
   }).join('');
 }
 
@@ -2288,24 +1858,14 @@ function openAsset(a){
     '<div class="tile none" style="aspect-ratio:' + RATIO[a.format] + ';border-radius:9px;border:1px solid var(--line)"><span class="np">no preview available</span></div>' +
     '</div>' +
     '<p class="note" style="margin-top:9px">' +
-      'Whether an object was stored for this row is <b>not knowable from the response</b>. ' +
-      '<code>library.mjs</code> does not select <code>storage_key</code>, and the boolean it does select — ' +
-      '<code>(storage_key IS NOT NULL) AS has_storage_key</code> — is removed by <code>redact()</code> before ' +
-      'the body is written, because <code>FORBIDDEN_KEY</code> matches <code>storage_key</code> anywhere in a ' +
-      'key name and <code>ALLOWED_EXACT</code> lists only <code>ssn_present</code> and <code>has_ssn</code>. ' +
-      'There is no signed-URL endpoint either, and the provider\'s own CDN url was discarded by ' +
-      '<code>storeAsset()</code>: <code>creative_assets</code> has no url column.' +
+      'The file itself is never sent to this screen, so no preview can be shown and this screen cannot even ' +
+      'tell whether a file was saved.' +
       (a.kind==='copy'
-        ? ' For this row the answer is knowable anyway, from <code>kind</code> rather than from a flag: ' +
-          '<code>storageKeyFor()</code> returns NULL for <code>kind = \'copy\'</code>, so no object was ever ' +
-          'stored. The words are not on the row either — there is no text, body, headline or caption column. ' +
-          'They exist only in <code>compliance_screenings.screened_text</code>, truncated to 8000 characters, ' +
-          'and no endpoint returns that table.'
+        ? ' This is written copy, so there is no file at all — and the words themselves are not sent here either.'
         : '') +
     '</p>' +
-    '<p class="note" style="margin-top:7px;color:var(--gray2)">Aspect ratio <b>' + esc(a.format) +
-      '</b> is the stored <code>format</code> enum. Pixel dimensions are not stored anywhere — the size map is a ' +
-      'private constant inside <code>static.mjs</code> and is never persisted.</p>' +
+    '<p class="note" style="margin-top:7px;color:var(--gray2)">Shape <b>' + esc(a.format) +
+      '</b>. Exact pixel sizes are not recorded.</p>' +
   '</div>';
 
   html += '<div class="dw-sec"><h3>Disclosure flags</h3>' +
@@ -2319,50 +1879,32 @@ function openAsset(a){
   html += '<div class="dw-sec"><h3>blocked_reasons</h3>' +
     (a.blocked_reasons.length
       ? '<div class="reasons">' + a.blocked_reasons.map(reasonCard).join('') + '</div>' +
-        '<p class="note" style="margin-top:9px">CHECK <code>creative_assets_blocked_reason_ck</code> requires a ' +
-        'blocked asset to carry at least one reason — a blocked asset without its reasons is the same as dropping ' +
-        'it. There is no score, confidence or risk level: the engine returns a discrete state and a list.</p>'
-      : '<div class="jsonbox">[]</div><p class="note" style="margin-top:9px">Written as <code>[]</code> whenever ' +
-        'the verdict is not <code>blocked</code>. Approval-gate reasons never land here.</p>') +
+        '<p class="note" style="margin-top:9px">A blocked creative always says why. There is no score or risk ' +
+        'level, only the reasons listed above.</p>'
+      : '<div class="jsonbox">[]</div><p class="note" style="margin-top:9px">Empty because this creative is not ' +
+        'blocked.</p>') +
   '</div>';
 
-  html += '<div class="dw-sec"><h3>What is not on this row</h3>' +
-    '<p class="note"><code>storage_key</code>, <code>has_storage_key</code> (selected, then stripped by ' +
-    '<code>redact()</code>), <code>org_id</code>, <code>partner_id</code>, ' +
-    '<code>provider_asset_id</code>, <code>created_by_agent_id</code> and <code>updated_at</code> are not ' +
-    'returned by <code>library.mjs</code> — <code>updated_at</code> reaches CF-06 through ' +
-    '<code>approvals.mjs</code> instead. There is no impressions, clicks, CTR, spend or ROAS column on <code>creative_assets</code> at ' +
-    'all, and no screening history — <code>blocked_reasons</code> carries no timestamp, reviewer or resolution ' +
-    'field, and <code>compliance_screenings</code> has no endpoint. There is also no approve, reject, re-screen ' +
-    'or archive route: every <code>api/creative/*</code> file answers non-GET with 405.</p></div>';
+  html += '<div class="dw-sec"><h3>What this screen is not told</h3>' +
+    '<p class="note">How the advert performed — impressions, clicks, spend — is never sent here. Neither is any ' +
+    'review history: there is no record of who checked this creative, or when.</p></div>';
 
   DW.open('CF-04 <span class="sep">/</span> ASSET DETAIL', a.kind + ' · ' + a.format + ' · ' + shortId(a.id), html);
 }
 
 function flagExplain(a){
   if(a.provider==='ugc-video')
-    return '<code>ugc-video</code> hardcodes <code>synthetic_performer = true</code> and ignores a caller-supplied ' +
-      'false — there is no configuration of it that produces a video without one. A synthetic performer always ' +
-      'implies AI-generated: CHECK <code>creative_assets_synthetic_ck</code> forbids the other combination and the ' +
-      'engine blocks it as <code>synthetic_without_ai_flag</code>.';
+    return 'This kind of video always shows a synthetic person, and anything showing one is always marked ' +
+      'AI-generated as well.';
   if(a.provider==='resize')
-    return 'Both flags are <b>inherited from the parent</b>, not re-derived — a crop of an AI image is still AI, and ' +
-      'a crop of a synthetic presenter still shows one. This row also carries the parent\'s <code>kind</code>: ' +
-      '<code>resize</code> is a provider key, never a kind. Lineage cannot cross partners ' +
-      '(<code>trg_creative_asset_lineage</code>), even in a staff context.';
+    return 'Both labels are carried over from the original creative: a crop of an AI image is still AI, and a ' +
+      'crop of a synthetic presenter still shows one.';
   if(a.provider==='copy')
-    return '<code>copy</code> sets <code>ai_generated: true</code> and <code>synthetic_performer: false</code> — ' +
-      'there is no performer in a line of text. <code>format</code> is <code>spec.format || \'1x1\'</code> ' +
-      '(copy.mjs:50) — the column is NOT NULL and the library filters on it, so 1x1 is the neutral default a ' +
-      'caller who names no format gets, not a value copy is pinned to.';
+    return 'Written copy is always machine-made, and a line of text has no performer.';
   if(!a.ai_generated)
-    return 'Not AI-generated — a state <b>no provider in this module can produce</b>. Every adapter sets ' +
-      '<code>aiGenerated: true</code> (or inherits a true parent), and <code>storeAsset()</code> stores ' +
-      '<code>a.ai_generated !== false</code>. <code>generate.mjs</code> is the only writer of ' +
-      '<code>creative_assets</code> in the repo, so a false row could only arrive from outside it.';
-  return '<code>ai_generated</code> is <b>hardcoded true</b> by every provider — <code>static.mjs:58</code>, ' +
-    '<code>product-video.mjs:55</code>, <code>ugc-video.mjs:53</code>, <code>copy.mjs:53</code> — and ' +
-    '<code>resize.mjs:64</code> inherits it. Only <code>synthetic_performer</code> is ever caller-supplied.';
+    return 'Marked as not AI-generated. Nothing on this screen can produce that, so it came from somewhere else.';
+  return 'Everything generated here is machine-made, so it is always marked AI-generated. Only "synthetic ' +
+    'performer" varies with what was asked for.';
 }
 
 function openKit(k){
@@ -2386,9 +1928,8 @@ function openKit(k){
   html += '<div class="dw-sec"><h3>fonts</h3><div class="jsonbox">' + esc(JSON.stringify(k.fonts, null, 2)) + '</div></div>';
 
   html += '<div class="dw-sec"><h3>voice_profile</h3><div class="jsonbox">' + esc(JSON.stringify(k.voice_profile, null, 2)) + '</div>' +
-    '<p class="note" style="margin-top:8px"><code>voice_profile.tone</code> is the <b>only</b> jsonb key any code in ' +
-    'this module reads (<code>copy.mjs:83</code>, <code>static.mjs:77</code>). Everything else on this object is ' +
-    'stored and never consulted.</p></div>';
+    '<p class="note" style="margin-top:8px">Only the tone is actually used when creative is generated. ' +
+    'Everything else here is stored and never read.</p></div>';
 
   html += '<div class="dw-sec"><h3>products</h3><div class="jsonbox">' + esc(JSON.stringify(k.products, null, 2)) + '</div>' +
     '<p class="note" style="margin-top:8px">A free-shape jsonb array with no schema — one kit stores strings, ' +
@@ -2396,10 +1937,8 @@ function openKit(k){
 
   html += '<div class="dw-sec"><h3>Sources</h3>' +
     '<div class="unwired"><div class="uh"><span>⚠</span><span>no crawl history</span></div>' +
-    '<div class="ub"><code>brand_kit_sources</code> holds source_url, content_type, http_status, payload, ' +
-    'payload_sha256 and fetched_at, is delete-guarded, and has <b>no endpoint</b> — nothing outside tests ever ' +
-    'inserts into it. There is no scraper, no re-scrape action, no freshness indicator, no version history and no ' +
-    'restore. <code>source_url</code> and <code>scraped_at</code> on this row are NULL for the same reason.</div></div></div>';
+    '<div class="ub">Nothing crawls a partner\'s website today, so there is no source list, no freshness date, ' +
+    'no version history and no restore.</div></div></div>';
 
   html += '<div class="dw-sec"><h3>Counting</h3><p class="note"><code>asset_count = ' + k.asset_count +
     '</code> is a correlated subquery over every <b>non-archived</b> asset with this <code>brand_kit_id</code>. ' +
@@ -2457,7 +1996,7 @@ function renderAll(){
   renderKits();
   var p = currentPartner();
   document.getElementById('footNote').textContent =
-    'cf · api/creative/* · read-only · ' + (p ? String(p.name).toLowerCase() : 'no partner selected') +
+    'creative factory · ' + (p ? String(p.name).toLowerCase() : 'no partner selected') +
     (CF_SRC.length ? ' · ' + CF_SRC.join(' · ') : '');
 }
 
@@ -2530,7 +2069,6 @@ function wireCreative(){
     };
     CF_SRC = ['demo session — nothing read'];
     if(window.FHData) FHData.banner('sample','creative factory — demo session, the backend was not queried and nothing is shown','creative');
-    updateLedgerLive();
     renderAll();
     return;
   }
@@ -2541,7 +2079,6 @@ function wireCreative(){
     KITS=[]; JOBS=[]; ASSETS=[]; APPROVALS_LIVE=null;
     CF_ENDPOINT_RES = {};
     CF_SRC = ['no partner selected — nothing requested'];
-    updateLedgerLive();
     renderAll();
     if(window.FHData) FHData.banner('sample','creative factory · no partner selected — no request was sent','creative');
     return;
@@ -2570,7 +2107,6 @@ function wireCreative(){
       if(res && res.ok) CF_SRC.push(k+':api');
       else if(res) CF_SRC.push(k+':'+res.source);
     });
-    updateLedgerLive();
     renderAll();
     var worst='real';
     ['jobs','assets','kits','approvals'].forEach(function(k){
@@ -2580,32 +2116,6 @@ function wireCreative(){
     });
     if(window.FHData) FHData.banner(worst, 'creative factory · '+CF_SRC.join(' · '), 'creative');
   });
-}
-
-/* CF-12's ledger used to hardcode "readable / ok" for these four rows — true
-   only in the sense that the code compiles, never verified by an actual call.
-   This replaces those four with what wireCreative() just observed; the seven
-   genuinely-no-endpoint rows below them are untouched, because that fact does
-   not depend on the network. */
-function updateLedgerLive(){
-  var BY_SRC = {
-    'api/creative/jobs.mjs':'jobs', 'api/creative/library.mjs':'assets',
-    'api/creative/approvals.mjs':'approvals', 'api/creative/brand-kits.mjs':'kits'
-  };
-  LEDGER.forEach(function(l){
-    var key = BY_SRC[l.src];
-    if(!key) return; // one of the seven rows with no endpoint at all — leave as documented
-    if(l._baseNote===undefined) l._baseNote = l.note;
-    var res = CF_ENDPOINT_RES[key];
-    if(!res){ l.st='not yet checked'; l.tone='warn'; l.note=l._baseNote; return; }
-    if(res.ok){ l.st='verified reachable just now'; l.tone='ok'; l.note=l._baseNote; }
-    else {
-      l.tone = (res.source==='demo') ? 'warn' : 'bad';
-      l.st = res.source==='demo' ? 'not checked — demo session' : 'unreachable just now (' + res.source + ')';
-      l.note = l._baseNote + ' Last check: ' + (res.error || res.source) + '.';
-    }
-  });
-  renderStaticTables();
 }
 
 /* ══ BOOT ════════════════════════════════════════════════════════════════ */
@@ -2702,8 +2212,11 @@ document.querySelectorAll('[data-cact]').forEach(function (btn) {
     var partnerId = cfPartnerId();
     var assetId = (document.getElementById('actAsset').value || '').trim();
     if (!partnerId) { msg.textContent = 'Need partner_id.'; return; }
-    if (!assetId) { msg.textContent = 'asset_id required.'; return; }
+    if (!assetId) { msg.textContent = 'Choose a creative first.'; return; }
     var action = btn.getAttribute('data-cact');
+    var label = document.getElementById('actAsset');
+    label = label.options[label.selectedIndex] ? label.options[label.selectedIndex].text : '';
+    if (!window.confirm(ACTION_CONFIRM[action] + '\n\n' + label)) { msg.textContent = ''; return; }
     msg.textContent = action + '…';
     fetch('/api/creative/actions', {
       method: 'POST',

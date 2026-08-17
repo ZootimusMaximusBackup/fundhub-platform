@@ -247,15 +247,15 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
         </div>
       </div>
 
-      <div class="card" id="explainCard">
-        <div class="card-hd"><span class="badge b-info">How this works</span></div>
+      <details class="card" id="explainCard">
+        <summary class="card-hd"><span class="badge b-info">How this works</span></summary>
         <div class="card-bd" style="font-size:var(--fs-body);line-height:1.7;color:var(--gray)">
           <p><strong>Editing the words switches the message off.</strong> The system will not send a message whose wording has not been approved. So when you change the copy here and save it, that message stops going out straight away.</p>
           <p style="margin-top:8px"><strong>An owner or admin turns it back on.</strong> They have to read the new wording on this screen first — there is no way to approve from the list without opening it. Who approved it and when is recorded on the message.</p>
           <p style="margin-top:8px"><strong>The short name cannot be changed, and nothing can be deleted here.</strong> Automations and journeys find a message by its short name. Change it and the message quietly stops going out with nothing reporting a problem. Each message shows what is using it.</p>
           <p class="mono" style="margin-top:8px;font-size:var(--fs-caption)">Nothing on this screen sends anything. There is no test-send button because nothing transmits yet.</p>
         </div>
-      </div>
+      </details>
 
       <div class="layout">
         <div class="alist" id="tplList">

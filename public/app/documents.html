@@ -391,12 +391,22 @@ renderTabs(); renderClassbar(); render();
   var day = function (d) { return d ? new Date(d).toLocaleDateString("en-US",
     { month:"short", day:"numeric", year:"2-digit" }) : "—"; };
 
+  /* Every redraw of DOCS must redraw the class cards too. render() only rebuilds
+     the table and the KPI tiles; the four class cards are built by
+     renderClassbar(), which the loader never called — so the cards kept their
+     first, empty count while the tiles and the table showed the live rows. One
+     screen, two different answers to the same question. Redraw both together. */
+  var redraw = function () {
+    if (typeof renderClassbar === "function") renderClassbar();
+    if (typeof render === "function") render();
+  };
+
   try {
     var demo = false;
     try { demo = localStorage.getItem("fh_demo") === "1"; } catch (e) {}
     if (!demo && typeof DOCS !== "undefined") {
       DOCS.length = 0;
-      if (typeof render === "function") try { render(); } catch (e) {}
+      try { redraw(); } catch (e) {}
       FHData.banner("sample", "loading documents…", "documents");
     }
   } catch (e) {}
@@ -406,7 +416,7 @@ renderTabs(); renderClassbar(); render();
     if (!rows.length) {
       if (typeof DOCS !== "undefined") {
         DOCS.length = 0;
-        if (typeof render === "function") try { render(); } catch (e) {}
+        try { redraw(); } catch (e) {}
       }
       return "no documents on file yet";
     }
@@ -464,7 +474,7 @@ renderTabs(); renderClassbar(); render();
 
     DOCS.length = 0;
     Array.prototype.push.apply(DOCS, mapped);
-    try { render(); } catch (e) { return null; }   // render() also does renderStats()
+    try { redraw(); } catch (e) { return null; }   // class cards + table + tiles, all from DOCS
 
     return "live documents · " + rows.length + " records" +
            (data.hasMore ? " (first 200)" : "") +

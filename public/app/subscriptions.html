@@ -951,16 +951,55 @@ button,input,select,textarea{font:inherit;color:inherit}
 
   if (!clientId) {
     /* No client named. NOT a backend failure, and nothing is invented to fill
-       the space — the page says what is missing and how to fix it. */
+       the space — the page says what is missing and gives one action that
+       actually works.
+
+       That action is the CRM search the shell already mounts on every staff
+       screen (shell.js mountSearch / #fh-shell-search-btn): it finds a client by
+       name, email or phone and opens their control panel. shell.js then
+       remembers that client (CLIENT_KEY) and rewrites the sidebar's
+       Subscriptions link through withClient(), so the next click lands here
+       already loaded. No new route, no client list, no picker built here.
+
+       The button stays hidden until that search is on the page — a control the
+       user cannot act on must not render (UI-STANDARDS §5). */
     sourceBadge.textContent = "no client";
     linksSourceBadge.textContent = "no client";
     mount.innerHTML = '<div class="fh-panel"><div class="fh-empty">' +
-      "Open this screen with a client in the address bar — " +
-      "<code>subscriptions.html?client_id=&lt;id&gt;</code>. Nothing is shown without one, " +
-      "because a plan and a card belong to a named person." +
+      "No client is open, so nothing is shown here — a plan and a card belong to a " +
+      "named person. Find the client by name, email or phone. Opening them keeps them " +
+      "open, and <b>Subscriptions</b> in the sidebar then comes straight back to this " +
+      "screen for that person." +
+      '<div style="margin-top:16px">' +
+      '<button type="button" class="fh-btn" id="subsFindClient" hidden>Find a client</button>' +
+      "</div>" +
+      '<p style="margin-top:12px;font-size:var(--fs-caption)">A link that already names ' +
+      "the client works too — <code>subscriptions.html?client_id=&lt;id&gt;</code>.</p>" +
       "</div></div>";
-    linksMount.innerHTML = mount.innerHTML;
-    FHData.banner("sample", "no client named — open with ?client_id=<id>", "subscription");
+    linksMount.innerHTML = '<div class="fh-panel"><div class="fh-empty">' +
+      "No client is open, so there are no payment links to show — a link is always " +
+      "raised against one client." +
+      "</div></div>";
+    FHData.banner("sample", "no client named", "subscription");
+
+    (function armFindClient() {
+      var tries = 0;
+      function arm() {
+        var searchBtn = document.getElementById("fh-shell-search-btn");
+        var findBtn = document.getElementById("subsFindClient");
+        if (!findBtn) return;
+        if (!searchBtn) {
+          /* The shell mounts search after it knows the role. Wait for it, then
+             give up quietly rather than showing a button that does nothing. */
+          if (++tries > 20) return;
+          setTimeout(arm, 250);
+          return;
+        }
+        findBtn.hidden = false;
+        findBtn.addEventListener("click", function () { searchBtn.click(); });
+      }
+      arm();
+    })();
     return;
   }
 
