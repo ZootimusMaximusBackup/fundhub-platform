@@ -1186,3 +1186,42 @@ No regression found in any journey. Every route probe was status-for-status iden
 **Board rows:** Findings L35 and ticket table row 1 → CONFIRMED-FIXED (live), one human click left.
 
 **Left undone:** nothing on this ticket. Pre-existing red unit tests above are not this ticket — the stale `-actual.md` needs `npm run journeys` after the 2b1eed0 gate change (the ticket-6 Fixer skipped it). **Waiting on:** Chris's one click — sign in as closer, open /app/ops-admin.html, no red console error, no Demo Mode panel.
+
+---
+
+## Restamp + Fixer — 2026-08-17 (this session)
+
+**Live at walk time:** fundhub.ai `shell.js` hash matched local `a277622`.
+**Evidence:** `docs/workflows/e2e-verify-run5-evidence/_restamp-2026-08-17/` (api-probe + ROLLUP) and `<journey>/restamp-2026-08-17/ui-walk.json`. Screenshots with client names were not committed.
+
+### What was already true (no code this pass)
+
+Demo Mode calls for non-owners are gone. Campaigns and Demo Mode are off the staff rail and bounce home. `/dashboard.html` is a 404 — the closer “+ Sample data” button is gone with it. Pipeline no longer prints “DEMONSTRATION STATES”. Inquiry blocked-messages now answers. The inquiry red strip is gone. Affiliate Ask is reachable.
+
+### What was still broken — shipped this pass
+
+Did **not** grant any new permission.
+
+1. **Ops & Admin** — hidden from everyone but owner and admin. Closer, advisor, inquiry, and sales manager were opening a screen whose reads refuse them.
+2. **Staff & Teams, Agent Editor, Products & Commissions** — hidden from anyone who is not owner, admin, or sales manager. Those three reads are finance-only. Sales manager still has them.
+3. **Hiring paint** — the hire-rate number comes back as text from the database. The page no longer crashes. The yellow “loading hiring…” bar can finish.
+4. **Campaigns (owner)** — no partner picked means no five failed reads. The screen says pick a partner. A partner login still reads their own book.
+5. **Client portal** — a signed-in client no longer calls the two staff-only reads. Name comes from the session. Files say the advisor sends them.
+
+### Still not a broken button
+
+- Phone inquiry remover is on hold. The secret is not set.
+- Plaid is not turned on, so there is no bank surface.
+- Journey docs overstate who can open my-numbers and repair exceptions. Live is stricter. That is a doc gap.
+- Intended vs actual group counts are still a doc gap.
+- Partner/affiliate still get “not signed in” on staff routes. The door is shut. Nothing leaked.
+- Older UNFINISHED-AUDIT / STILL-MISSING owner holds (outbox paused, Inngest key, hiring writes, content-admin with no backend) are unchanged.
+
+### Count
+
+Open user-facing Findings rows before restamp: **24**.
+Already gone on live: **10**.
+Fixed this pass: **6 clusters**.
+Left as missing data / owner hold / doc drift: **the rest**.
+
+**Waiting on:** Chris’s one click — sign in as closer. Ops & Admin, Staff & Teams, and Products should not be in the rail. Sign in as owner, open Hiring — no crash, bar should clear. Open Campaigns with no partner picked — it should ask you to pick one, not show a fake book.

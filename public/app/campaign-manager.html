@@ -1926,10 +1926,39 @@ function readFatigue(){
   });
 }
 
+function isPartnerLogin(){
+  try { return localStorage.getItem('fh_role') === 'partner'; } catch(e){ return false; }
+}
+
 function wireAll(){
   PANELS.forEach(function(p){ SRC[p.key] = { source:'…', note:'reading', rows:null }; });
   SRC.detail = { source:'…', note:'read on demand, when a row is opened', rows:null };
   renderSources();
+
+  /* Staff with no partner in the address: do not call the five reads.
+     They answer 400 and the panels used to look like a broken book.
+     A partner login has no partner_id in the address — the server pins
+     their book — so they still read. */
+  if (!partnerParam() && !isPartnerLogin()) {
+    var pick = 'Nothing can be shown until a partner is chosen — this screen reads one partner’s book at a time.';
+    PANELS.forEach(function(p){
+      PANEL_MSG[p.key] = pick;
+      SRC[p.key] = { source:'badrequest', note:pick, rows:null };
+    });
+    try { renderSpend(); } catch(e){}
+    try { renderCampaigns(true); } catch(e){}
+    try { renderFatigue(); } catch(e){}
+    try { renderConn(); } catch(e){}
+    try { renderLog(); } catch(e){}
+    try { renderTiles(); } catch(e){}
+    try { renderAttention(); } catch(e){}
+    renderSources();
+    renderScope();
+    syncScopeUi();
+    document.getElementById('footNote').textContent = '0 of 5 panels loaded';
+    if (window.FHData && FHData.banner) FHData.banner('sample', 'Campaigns — pick a partner to load their ads.', 'campaigns');
+    return;
+  }
 
   Promise.all([
     wirePanel('spend', '/api/campaigns/spend?state=all', function(items){

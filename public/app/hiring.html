@@ -2020,7 +2020,7 @@ function paintFunnel(rows, days, roleKey){
       '<td class="mnum">'+g.reached_offer+'</td>'+
       '<td class="mnum">'+g.hired+'</td>'+
       '<td class="mnum">'+g.rejected+'</td>'+
-      '<td class="mnum">'+(g.hire_rate_pct===null?'<span class="nul">—</span>':g.hire_rate_pct.toFixed(1)+'%')+'</td>'+
+      '<td class="mnum">'+(Number.isFinite(Number(g.hire_rate_pct))?Number(g.hire_rate_pct).toFixed(1)+'%':'<span class="nul">—</span>')+'</td>'+
     '</tr>';
   }).join('') : '<tr><td colspan="9"><div class="empty">No applications in this window. Change the role, source, or days filter to look again.</div></td></tr>';
 

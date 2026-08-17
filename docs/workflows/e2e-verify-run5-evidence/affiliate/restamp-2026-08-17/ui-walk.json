@@ -1,0 +1,380 @@
+{
+  "journey": "affiliate",
+  "email": "affiliate@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T20:32:53.021Z",
+  "login": {
+    "pageShot": "docs/workflows/e2e-verify-run5-evidence/affiliate/restamp-2026-08-17/shots/00-login-page.png",
+    "ok": true,
+    "apiFails": [],
+    "consoleErrors": [],
+    "roleStored": "affiliate"
+  },
+  "landing": {
+    "url": "/app/affiliate.html",
+    "title": "Fundhub — Affiliate",
+    "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/restamp-2026-08-17/shots/01-landing.png",
+    "apiFails": [],
+    "consoleErrors": [],
+    "appShellUrl": "/app/affiliate.html",
+    "appShellShot": "docs/workflows/e2e-verify-run5-evidence/affiliate/restamp-2026-08-17/shots/02-app-shell.png"
+  },
+  "sidebar": [
+    {
+      "href": "/app/affiliate.html",
+      "label": "",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "pipeline.html",
+      "label": "▤Pipeline",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "closer-dashboard.html",
+      "label": "★Closer Dashboard",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "closer-call.html",
+      "label": "☎Call cockpit",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "my-numbers.html",
+      "label": "＃My numbers",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "sales-floor.html",
+      "label": "▣Sales floor",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "calendar.html",
+      "label": "▦Calendar",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "lenders.html",
+      "label": "⬡Lenders",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "finance-os.html",
+      "label": "▩Finance OSBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "contracts.html",
+      "label": "✒Contracts",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "subscriptions.html",
+      "label": "◍SubscriptionsBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "client-control-panel.html",
+      "label": "◎Client Control Panel",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "messaging.html",
+      "label": "✉Messaging",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "documents.html",
+      "label": "▧Documents",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "inquiry-remover.html",
+      "label": "⊘Inquiry Remover",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "company-brain.html",
+      "label": "◎Company BrainBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "command-center.html",
+      "label": "⌘Command CenterBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "galaxy.html",
+      "label": "✷GalaxyBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "ops-admin.html",
+      "label": "⚙Ops & AdminBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "agent-editor.html",
+      "label": "◈Agent EditorBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "automations.html",
+      "label": "⇄Automations",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "journeys.html",
+      "label": "⇝JourneysBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "template-editor.html",
+      "label": "✎Message Copy",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "campaign-manager.html",
+      "label": "◇CampaignsBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "social-studio.html",
+      "label": "◉Social StudioBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "creative-factory.html",
+      "label": "✳Creative FactoryBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "content-admin.html",
+      "label": "▶ContentBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "staff-teams.html",
+      "label": "⚇Staff & Teams",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "hiring.html",
+      "label": "⊕HiringBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "products-commissions.html",
+      "label": "⛁Products & Commissions",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "sample-data.html",
+      "label": "⌗Demo ModeBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "brand-studio.html",
+      "label": "◆Brand StudioBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "client-portal.html",
+      "label": "◐Client Portal",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "affiliate.html",
+      "label": "⇗AffiliateBETA",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    }
+  ],
+  "screens": [
+    {
+      "label": "",
+      "href": "/app/affiliate.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/affiliate.html",
+      "bounced": false,
+      "title": "Fundhub — Affiliate",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/restamp-2026-08-17/shots/03-_app_affiliate.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "⇗AffiliateBETA",
+      "href": "affiliate.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/affiliate.html",
+      "bounced": false,
+      "title": "Fundhub — Affiliate",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/restamp-2026-08-17/shots/04-affiliate.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    }
+  ],
+  "direct": [
+    {
+      "href": "/app/ops-admin.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/affiliate.html",
+      "bounced": true,
+      "title": "Fundhub — Affiliate",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/restamp-2026-08-17/shots/direct-_app_ops-admin.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/staff-teams.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/affiliate.html",
+      "bounced": true,
+      "title": "Fundhub — Affiliate",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/restamp-2026-08-17/shots/direct-_app_staff-teams.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/agent-editor.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/affiliate.html",
+      "bounced": true,
+      "title": "Fundhub — Affiliate",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/restamp-2026-08-17/shots/direct-_app_agent-editor.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/products-commissions.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/affiliate.html",
+      "bounced": true,
+      "title": "Fundhub — Affiliate",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/restamp-2026-08-17/shots/direct-_app_products-commissions.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/campaign-manager.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/affiliate.html",
+      "bounced": true,
+      "title": "Fundhub — Affiliate",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/restamp-2026-08-17/shots/direct-_app_campaign-manager.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/sample-data.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/affiliate.html",
+      "bounced": true,
+      "title": "Fundhub — Affiliate",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/restamp-2026-08-17/shots/direct-_app_sample-data.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/hiring.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/affiliate.html",
+      "bounced": true,
+      "title": "Fundhub — Affiliate",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/restamp-2026-08-17/shots/direct-_app_hiring.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/inquiry-remover.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/affiliate.html",
+      "bounced": true,
+      "title": "Fundhub — Affiliate",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/restamp-2026-08-17/shots/direct-_app_inquiry-remover.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/dashboard.html",
+      "httpStatus": 404,
+      "finalUrl": "/dashboard.html",
+      "bounced": false,
+      "title": "Fundhub — Not found",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/affiliate/restamp-2026-08-17/shots/direct-_dashboard.html.png",
+      "apiFails": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ]
+    }
+  ]
+}

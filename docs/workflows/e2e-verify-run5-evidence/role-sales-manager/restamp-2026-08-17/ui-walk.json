@@ -1,0 +1,616 @@
+{
+  "journey": "role-sales-manager",
+  "email": "sales@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T20:32:53.021Z",
+  "login": {
+    "pageShot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/00-login-page.png",
+    "ok": true,
+    "apiFails": [],
+    "consoleErrors": [],
+    "roleStored": "sales_manager"
+  },
+  "landing": {
+    "url": "/app/sales-floor.html",
+    "title": "Sales floor · Fundhub",
+    "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/01-landing.png",
+    "apiFails": [],
+    "consoleErrors": [],
+    "appShellUrl": "/app/sales-floor.html",
+    "appShellShot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/02-app-shell.png"
+  },
+  "sidebar": [
+    {
+      "href": "command-center.html",
+      "label": "",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "pipeline.html",
+      "label": "▤Pipeline",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "closer-dashboard.html",
+      "label": "★Closer Dashboard",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "closer-call.html",
+      "label": "☎Call cockpit",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "my-numbers.html",
+      "label": "＃My numbers",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "sales-floor.html",
+      "label": "▣Sales floor",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "calendar.html",
+      "label": "▦Calendar",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "lenders.html",
+      "label": "⬡Lenders",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "finance-os.html",
+      "label": "▩Finance OSBETA",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "contracts.html",
+      "label": "✒Contracts",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "subscriptions.html",
+      "label": "◍SubscriptionsBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "client-control-panel.html",
+      "label": "◎Client Control Panel",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "messaging.html",
+      "label": "✉Messaging",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "documents.html",
+      "label": "▧Documents",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "inquiry-remover.html",
+      "label": "⊘Inquiry Remover",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "company-brain.html",
+      "label": "◎Company BrainBETA",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "command-center.html",
+      "label": "⌘Command CenterBETA",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "galaxy.html",
+      "label": "✷GalaxyBETA",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "ops-admin.html",
+      "label": "⚙Ops & AdminBETA",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "agent-editor.html",
+      "label": "◈Agent EditorBETA",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "automations.html",
+      "label": "⇄Automations",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "journeys.html",
+      "label": "⇝JourneysBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "template-editor.html",
+      "label": "✎Message Copy",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "campaign-manager.html",
+      "label": "◇CampaignsBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "social-studio.html",
+      "label": "◉Social StudioBETA",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "creative-factory.html",
+      "label": "✳Creative FactoryBETA",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "content-admin.html",
+      "label": "▶ContentBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "staff-teams.html",
+      "label": "⚇Staff & Teams",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "hiring.html",
+      "label": "⊕HiringBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "products-commissions.html",
+      "label": "⛁Products & Commissions",
+      "gated": false,
+      "offered": true,
+      "visible": true
+    },
+    {
+      "href": "sample-data.html",
+      "label": "⌗Demo ModeBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "brand-studio.html",
+      "label": "◆Brand StudioBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "client-portal.html",
+      "label": "◐Client Portal",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    },
+    {
+      "href": "affiliate.html",
+      "label": "⇗AffiliateBETA",
+      "gated": true,
+      "offered": false,
+      "visible": false
+    }
+  ],
+  "screens": [
+    {
+      "label": "",
+      "href": "command-center.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/command-center.html",
+      "bounced": false,
+      "title": "Fundhub — Command Center",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/03-command-center.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "▤Pipeline",
+      "href": "pipeline.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/pipeline.html",
+      "bounced": false,
+      "title": "Fundhub — Pipeline",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/04-pipeline.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "★Closer Dashboard",
+      "href": "closer-dashboard.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/closer-dashboard.html",
+      "bounced": false,
+      "title": "Fundhub — Closer Dashboard",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/05-closer-dashboard.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "▣Sales floor",
+      "href": "sales-floor.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/sales-floor.html",
+      "bounced": false,
+      "title": "Sales floor · Fundhub",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/06-sales-floor.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "▦Calendar",
+      "href": "calendar.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/calendar.html",
+      "bounced": false,
+      "title": "Fundhub — Calendar",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/07-calendar.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "⬡Lenders",
+      "href": "lenders.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/lenders.html",
+      "bounced": false,
+      "title": "Fundhub · Lenders",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/08-lenders.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "▩Finance OSBETA",
+      "href": "finance-os.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/finance-os.html",
+      "bounced": false,
+      "title": "Fundhub — Finance OS",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/09-finance-os.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "✒Contracts",
+      "href": "contracts.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/contracts.html",
+      "bounced": false,
+      "title": "Fundhub — Contracts",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/10-contracts.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "◎Client Control Panel",
+      "href": "client-control-panel.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/client-control-panel.html",
+      "bounced": false,
+      "title": "Fundhub — Client Control Panel",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/11-client-control-panel.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "✉Messaging",
+      "href": "messaging.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/messaging.html",
+      "bounced": false,
+      "title": "Fundhub — Messaging",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/12-messaging.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "▧Documents",
+      "href": "documents.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/documents.html",
+      "bounced": false,
+      "title": "Fundhub — Documents",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/13-documents.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "⊘Inquiry Remover",
+      "href": "inquiry-remover.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/inquiry-remover.html",
+      "bounced": false,
+      "title": "Fundhub — Inquiry Remover",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/14-inquiry-remover.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "◎Company BrainBETA",
+      "href": "company-brain.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/company-brain.html",
+      "bounced": false,
+      "title": "Fundhub — Company Brain",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/15-company-brain.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "✷GalaxyBETA",
+      "href": "galaxy.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/galaxy.html",
+      "bounced": false,
+      "title": "Fundhub — Galaxy",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/16-galaxy.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "⚙Ops & AdminBETA",
+      "href": "ops-admin.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/ops-admin.html",
+      "bounced": false,
+      "title": "Fundhub — Ops & Admin",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/17-ops-admin.html.png",
+      "apiFails": [
+        {
+          "url": "/api/read/failed-events?status=pending&limit=200",
+          "status": 403,
+          "method": "GET"
+        }
+      ],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "label": "◈Agent EditorBETA",
+      "href": "agent-editor.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/agent-editor.html",
+      "bounced": false,
+      "title": "Fundhub — Agent Editor",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/18-agent-editor.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "⇄Automations",
+      "href": "automations.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/automations.html",
+      "bounced": false,
+      "title": "Fundhub — Automations",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/19-automations.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "✎Message Copy",
+      "href": "template-editor.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/template-editor.html",
+      "bounced": false,
+      "title": "Fundhub — Message Copy",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/20-template-editor.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "◉Social StudioBETA",
+      "href": "social-studio.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/social-studio.html",
+      "bounced": false,
+      "title": "Fundhub — Social Studio",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/21-social-studio.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "✳Creative FactoryBETA",
+      "href": "creative-factory.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/creative-factory.html",
+      "bounced": false,
+      "title": "Fundhub — Creative Factory",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/22-creative-factory.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "⚇Staff & Teams",
+      "href": "staff-teams.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/staff-teams.html",
+      "bounced": false,
+      "title": "Fundhub — Staff & Teams",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/23-staff-teams.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "⛁Products & Commissions",
+      "href": "products-commissions.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/products-commissions.html",
+      "bounced": false,
+      "title": "Fundhub — Products & Commissions",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/24-products-commissions.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    }
+  ],
+  "direct": [
+    {
+      "href": "/app/ops-admin.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/ops-admin.html",
+      "bounced": false,
+      "title": "Fundhub — Ops & Admin",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/direct-_app_ops-admin.html.png",
+      "apiFails": [
+        {
+          "url": "/api/read/failed-events?status=pending&limit=200",
+          "status": 403,
+          "method": "GET"
+        }
+      ],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "href": "/app/staff-teams.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/staff-teams.html",
+      "bounced": false,
+      "title": "Fundhub — Staff & Teams",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/direct-_app_staff-teams.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/agent-editor.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/agent-editor.html",
+      "bounced": false,
+      "title": "Fundhub — Agent Editor",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/direct-_app_agent-editor.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/products-commissions.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/products-commissions.html",
+      "bounced": false,
+      "title": "Fundhub — Products & Commissions",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/direct-_app_products-commissions.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/campaign-manager.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/sales-floor.html",
+      "bounced": true,
+      "title": "Sales floor · Fundhub",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/direct-_app_campaign-manager.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/sample-data.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/sales-floor.html",
+      "bounced": true,
+      "title": "Sales floor · Fundhub",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/direct-_app_sample-data.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/hiring.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/sales-floor.html",
+      "bounced": true,
+      "title": "Sales floor · Fundhub",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/direct-_app_hiring.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/inquiry-remover.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/inquiry-remover.html",
+      "bounced": false,
+      "title": "Fundhub — Inquiry Remover",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/direct-_app_inquiry-remover.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/dashboard.html",
+      "httpStatus": 404,
+      "finalUrl": "/dashboard.html",
+      "bounced": false,
+      "title": "Fundhub — Not found",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-sales-manager/restamp-2026-08-17/shots/direct-_dashboard.html.png",
+      "apiFails": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ]
+    }
+  ]
+}

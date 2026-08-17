@@ -160,7 +160,22 @@
        When #13/#14 are answered: give the screen a working read and move the
        entry back onto the staff surface, or delete the row for good. */
     "campaign-manager.html",
-    "content-admin.html"
+    "content-admin.html",
+    /* ops-admin.html — its reads are owner/admin (failed-events is ROLE_SETS.OPS)
+       or finance (staff, invoices). Every non-owner who opened it got a 403
+       and a sample footer that blamed "not signed in". Hide the row. Do not
+       widen those gates. (Fable board 2026-08-16, restamp 2026-08-17.) */
+    "ops-admin.html"
+  ];
+
+  /* Screens whose reads are ROLE_SETS.FINANCE (owner, admin, sales_manager).
+     staff-teams and agent-editor call /api/read/staff; products-commissions
+     calls /api/read/commissions. Closer / advisor / inquiry got 403 and a
+     "not signed in" footer while signed in. Nav matches the gate. */
+  var FINANCE_ONLY = [
+    "staff-teams.html",
+    "agent-editor.html",
+    "products-commissions.html"
   ];
 
   /* Closer desk — call cockpit + personal numbers. In every sidebar so the
@@ -199,7 +214,8 @@
         && CLOSER_DESK_ONLY.indexOf(s) === -1
         && SALES_FLOOR_ONLY.indexOf(s) === -1
         && PORTAL_ONLY.indexOf(s) === -1
-        && HIRING_ONLY.indexOf(s) === -1;
+        && HIRING_ONLY.indexOf(s) === -1
+        && FINANCE_ONLY.indexOf(s) === -1;
     });
   }
 
@@ -235,9 +251,9 @@
     closer: "closer",
     inquiry_specialist: "staff",
     setter: "staff",
-    /* Sales manager gets the shared staff surface plus the sales floor.
-       Commission screens stay on the staff surface (not OWNER_ADMIN_ONLY),
-       matching ROLE_SETS.FINANCE. "sales_manager" resolves in allowedFor(). */
+    /* Sales manager gets the shared staff surface plus the sales floor
+       and the finance-gated screens (staff-teams, agent-editor,
+       products-commissions). "sales_manager" resolves in allowedFor(). */
     sales_manager: "sales_manager",
     /* Principal types, not staff roles — they are gated here on staff.role only
        because no principals table exists yet. 'partner' is seeded into the
@@ -291,7 +307,7 @@
     var m = ROLE_TABS[role];
     if (m === "*") return ALL.slice();
     if (m === "closer") return staffTabs().concat(CLOSER_DESK_ONLY);
-    if (m === "sales_manager") return staffTabs().concat(SALES_FLOOR_ONLY);
+    if (m === "sales_manager") return staffTabs().concat(SALES_FLOOR_ONLY).concat(FINANCE_ONLY);
     if (m === "staff" || !m) return staffTabs();
     return m.slice();
   }

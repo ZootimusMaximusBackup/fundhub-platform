@@ -1,0 +1,734 @@
+{
+  "ranAt": "2026-08-17T20:31:08.710Z",
+  "base": "https://fundhub.ai",
+  "roles": {
+    "closer": {
+      "loginStatus": 200,
+      "loginOk": true,
+      "role": "closer",
+      "hits": [
+        {
+          "method": "GET",
+          "path": "/api/read/my-numbers",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/repair/exceptions",
+          "status": 403,
+          "ok": false,
+          "error": "role_forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/banking-surface",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/inquiry?action=cases",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/staff?limit=5",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/invoices?limit=5",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/failed-events?limit=5",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/commissions?limit=5",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/messages?status=blocked&limit=5",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/demo/mode",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/campaigns/list",
+          "status": 400,
+          "ok": false,
+          "error": "partner_id_required"
+        },
+        {
+          "method": "POST",
+          "path": "/api/read/company-brain-affiliate",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        }
+      ]
+    },
+    "funding_advisor": {
+      "loginStatus": 200,
+      "loginOk": true,
+      "role": "funding_advisor",
+      "hits": [
+        {
+          "method": "GET",
+          "path": "/api/read/my-numbers",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/repair/exceptions",
+          "status": 403,
+          "ok": false,
+          "error": "role_forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/banking-surface",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/inquiry?action=cases",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/staff?limit=5",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/invoices?limit=5",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/failed-events?limit=5",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/commissions?limit=5",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/messages?status=blocked&limit=5",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/demo/mode",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/campaigns/list",
+          "status": 400,
+          "ok": false,
+          "error": "partner_id_required"
+        },
+        {
+          "method": "POST",
+          "path": "/api/read/company-brain-affiliate",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        }
+      ]
+    },
+    "inquiry_specialist": {
+      "loginStatus": 200,
+      "loginOk": true,
+      "role": "inquiry_specialist",
+      "hits": [
+        {
+          "method": "GET",
+          "path": "/api/read/my-numbers",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/repair/exceptions",
+          "status": 403,
+          "ok": false,
+          "error": "role_forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/banking-surface",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/inquiry?action=cases",
+          "status": 503,
+          "ok": false,
+          "error": "not_configured"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/staff?limit=5",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/invoices?limit=5",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/failed-events?limit=5",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/commissions?limit=5",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/messages?status=blocked&limit=5",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/demo/mode",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/campaigns/list",
+          "status": 400,
+          "ok": false,
+          "error": "partner_id_required"
+        },
+        {
+          "method": "POST",
+          "path": "/api/read/company-brain-affiliate",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        }
+      ]
+    },
+    "sales_manager": {
+      "loginStatus": 200,
+      "loginOk": true,
+      "role": "sales_manager",
+      "hits": [
+        {
+          "method": "GET",
+          "path": "/api/read/my-numbers",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/repair/exceptions",
+          "status": 403,
+          "ok": false,
+          "error": "role_forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/banking-surface",
+          "status": 403,
+          "ok": false,
+          "error": "banking surface requires plaid configuration"
+        },
+        {
+          "method": "GET",
+          "path": "/api/inquiry?action=cases",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/staff?limit=5",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/invoices?limit=5",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/failed-events?limit=5",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/commissions?limit=5",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/messages?status=blocked&limit=5",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/demo/mode",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/campaigns/list",
+          "status": 400,
+          "ok": false,
+          "error": "partner_id_required"
+        },
+        {
+          "method": "POST",
+          "path": "/api/read/company-brain-affiliate",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        }
+      ]
+    },
+    "owner": {
+      "loginStatus": 200,
+      "loginOk": true,
+      "role": "owner",
+      "hits": [
+        {
+          "method": "GET",
+          "path": "/api/read/my-numbers",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/repair/exceptions",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/banking-surface",
+          "status": 403,
+          "ok": false,
+          "error": "banking surface requires plaid configuration"
+        },
+        {
+          "method": "GET",
+          "path": "/api/inquiry?action=cases",
+          "status": 503,
+          "ok": false,
+          "error": "not_configured"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/staff?limit=5",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/invoices?limit=5",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/failed-events?limit=5",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/commissions?limit=5",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/messages?status=blocked&limit=5",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/demo/mode",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "GET",
+          "path": "/api/campaigns/list",
+          "status": 400,
+          "ok": false,
+          "error": "partner_id_required"
+        },
+        {
+          "method": "POST",
+          "path": "/api/read/company-brain-affiliate",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        }
+      ]
+    },
+    "client": {
+      "loginStatus": 200,
+      "loginOk": true,
+      "role": "client",
+      "hits": [
+        {
+          "method": "GET",
+          "path": "/api/read/my-numbers",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/repair/exceptions",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/banking-surface",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/inquiry?action=cases",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/staff?limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/invoices?limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/failed-events?limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/commissions?limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/messages?status=blocked&limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/demo/mode",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/campaigns/list",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "POST",
+          "path": "/api/read/company-brain-affiliate",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        }
+      ]
+    },
+    "affiliate": {
+      "loginStatus": 200,
+      "loginOk": true,
+      "role": "affiliate",
+      "hits": [
+        {
+          "method": "GET",
+          "path": "/api/read/my-numbers",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/repair/exceptions",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/banking-surface",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/inquiry?action=cases",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/staff?limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/invoices?limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/failed-events?limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/commissions?limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/messages?status=blocked&limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/demo/mode",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/campaigns/list",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "POST",
+          "path": "/api/read/company-brain-affiliate",
+          "status": 400,
+          "ok": false,
+          "error": "question_required"
+        }
+      ]
+    },
+    "partner": {
+      "loginStatus": 200,
+      "loginOk": true,
+      "role": "partner",
+      "hits": [
+        {
+          "method": "GET",
+          "path": "/api/read/my-numbers",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/repair/exceptions",
+          "status": 403,
+          "ok": false,
+          "error": "forbidden"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/banking-surface",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/inquiry?action=cases",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/staff?limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/invoices?limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/failed-events?limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/commissions?limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/read/messages?status=blocked&limit=5",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/demo/mode",
+          "status": 401,
+          "ok": false,
+          "error": "unauthorized"
+        },
+        {
+          "method": "GET",
+          "path": "/api/campaigns/list",
+          "status": 200,
+          "ok": true,
+          "error": null
+        },
+        {
+          "method": "POST",
+          "path": "/api/read/company-brain-affiliate",
+          "status": 400,
+          "ok": false,
+          "error": "question_required"
+        }
+      ]
+    }
+  }
+}

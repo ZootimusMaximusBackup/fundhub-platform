@@ -54,6 +54,7 @@ const CLOSER_DESK_ONLY = shellList("CLOSER_DESK_ONLY");
 const SALES_FLOOR_ONLY = shellList("SALES_FLOOR_ONLY");
 const PORTAL_ONLY = shellList("PORTAL_ONLY");
 const HIRING_ONLY = shellList("HIRING_ONLY");
+const FINANCE_ONLY = shellList("FINANCE_ONLY");
 
 /** staffTabs — shell.js's own staffTabs(), the shared employee surface.
     Role-narrow extras stack on top in allowedFor(). */
@@ -64,11 +65,12 @@ const STAFF_TABS = ALL.filter(
     !CLOSER_DESK_ONLY.includes(s) &&
     !SALES_FLOOR_ONLY.includes(s) &&
     !PORTAL_ONLY.includes(s) &&
-    !HIRING_ONLY.includes(s)
+    !HIRING_ONLY.includes(s) &&
+    !FINANCE_ONLY.includes(s)
 );
 
 const CLOSER_TABS = [...STAFF_TABS, ...CLOSER_DESK_ONLY];
-const SALES_MANAGER_TABS = [...STAFF_TABS, ...SALES_FLOOR_ONLY];
+const SALES_MANAGER_TABS = [...STAFF_TABS, ...SALES_FLOOR_ONLY, ...FINANCE_ONLY];
 
 /* ── the screens on disk ──────────────────────────────────────────────────── */
 
@@ -115,6 +117,10 @@ describe("app shell — the lists this test reads", () => {
     assert.deepEqual(SALES_FLOOR_ONLY, ["sales-floor.html"]);
     assert.deepEqual([...PORTAL_ONLY].sort(), ["affiliate.html", "client-portal.html"].sort());
     assert.deepEqual(HIRING_ONLY, ["hiring.html"]);
+    assert.deepEqual(
+      [...FINANCE_ONLY].sort(),
+      ["agent-editor.html", "products-commissions.html", "staff-teams.html"].sort()
+    );
     assert.ok(WITH_SIDEBAR.length >= 20,
       `only ${WITH_SIDEBAR.length} screens were found to carry a sidebar`);
   });
@@ -176,7 +182,7 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
     const visible = visibleFor(STAFF_TABS);
     assert.equal(visible.length, STAFF_TABS.length);
     assert.deepEqual([...visible].sort(), [...STAFF_TABS].sort());
-    for (const h of [...CLOSER_DESK_ONLY, ...SALES_FLOOR_ONLY, ...OWNER_ADMIN_ONLY]) {
+    for (const h of [...CLOSER_DESK_ONLY, ...SALES_FLOOR_ONLY, ...OWNER_ADMIN_ONLY, ...FINANCE_ONLY]) {
       assert.ok(!visible.includes(h), `generic staff must not see ${h}`);
     }
   });
@@ -193,8 +199,11 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
     const visible = visibleFor(SALES_MANAGER_TABS);
     assert.deepEqual([...visible].sort(), [...SALES_MANAGER_TABS].sort());
     assert.ok(visible.includes("sales-floor.html"));
+    assert.ok(visible.includes("staff-teams.html"));
+    assert.ok(visible.includes("products-commissions.html"));
     assert.ok(!visible.includes("closer-call.html"));
     assert.ok(!visible.includes("my-numbers.html"));
+    assert.ok(!visible.includes("ops-admin.html"));
   });
 
   test("owner/admin keep every non-partner sidebar row", () => {

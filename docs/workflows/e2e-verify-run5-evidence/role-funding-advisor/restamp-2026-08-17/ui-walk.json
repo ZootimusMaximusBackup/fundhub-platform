@@ -1,0 +1,387 @@
+{
+  "journey": "role-funding-advisor",
+  "email": "advisor@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T20:31:08.928Z",
+  "login": {
+    "pageShot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/00-login-page.png",
+    "ok": true,
+    "apiFails": [],
+    "consoleErrors": [],
+    "roleStored": "funding_advisor"
+  },
+  "landing": {
+    "url": "/app/command-center.html",
+    "title": "Fundhub — Command Center",
+    "shot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/01-landing.png",
+    "apiFails": [],
+    "consoleErrors": [],
+    "appShellUrl": "/app/command-center.html",
+    "appShellShot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/02-app-shell.png"
+  },
+  "sidebar": [
+    {
+      "href": "command-center.html",
+      "label": "",
+      "visible": true
+    },
+    {
+      "href": "pipeline.html",
+      "label": "▤Pipeline",
+      "visible": false
+    },
+    {
+      "href": "closer-dashboard.html",
+      "label": "★Closer Dashboard",
+      "visible": false
+    },
+    {
+      "href": "closer-call.html",
+      "label": "☎Call cockpit",
+      "visible": false
+    },
+    {
+      "href": "my-numbers.html",
+      "label": "＃My numbers",
+      "visible": false
+    },
+    {
+      "href": "sales-floor.html",
+      "label": "▣Sales floor",
+      "visible": false
+    },
+    {
+      "href": "calendar.html",
+      "label": "▦Calendar",
+      "visible": false
+    },
+    {
+      "href": "lenders.html",
+      "label": "⬡Lenders",
+      "visible": false
+    },
+    {
+      "href": "finance-os.html",
+      "label": "▩Finance OSBETA",
+      "visible": false
+    },
+    {
+      "href": "contracts.html",
+      "label": "✒Contracts",
+      "visible": false
+    },
+    {
+      "href": "subscriptions.html",
+      "label": "◍SubscriptionsBETA",
+      "visible": false
+    },
+    {
+      "href": "client-control-panel.html",
+      "label": "◎Client Control Panel",
+      "visible": false
+    },
+    {
+      "href": "messaging.html",
+      "label": "✉Messaging",
+      "visible": false
+    },
+    {
+      "href": "documents.html",
+      "label": "▧Documents",
+      "visible": false
+    },
+    {
+      "href": "inquiry-remover.html",
+      "label": "⊘Inquiry Remover",
+      "visible": false
+    },
+    {
+      "href": "company-brain.html",
+      "label": "◎Company BrainBETA",
+      "visible": false
+    },
+    {
+      "href": "command-center.html",
+      "label": "⌘Command CenterBETA",
+      "visible": true
+    },
+    {
+      "href": "galaxy.html",
+      "label": "✷GalaxyBETA",
+      "visible": true
+    },
+    {
+      "href": "ops-admin.html",
+      "label": "⚙Ops & AdminBETA",
+      "visible": true
+    },
+    {
+      "href": "agent-editor.html",
+      "label": "◈Agent EditorBETA",
+      "visible": false
+    },
+    {
+      "href": "automations.html",
+      "label": "⇄Automations",
+      "visible": false
+    },
+    {
+      "href": "journeys.html",
+      "label": "⇝JourneysBETA",
+      "visible": false
+    },
+    {
+      "href": "template-editor.html",
+      "label": "✎Message Copy",
+      "visible": false
+    },
+    {
+      "href": "campaign-manager.html",
+      "label": "◇CampaignsBETA",
+      "visible": false
+    },
+    {
+      "href": "social-studio.html",
+      "label": "◉Social StudioBETA",
+      "visible": false
+    },
+    {
+      "href": "creative-factory.html",
+      "label": "✳Creative FactoryBETA",
+      "visible": false
+    },
+    {
+      "href": "content-admin.html",
+      "label": "▶ContentBETA",
+      "visible": false
+    },
+    {
+      "href": "staff-teams.html",
+      "label": "⚇Staff & Teams",
+      "visible": false
+    },
+    {
+      "href": "hiring.html",
+      "label": "⊕HiringBETA",
+      "visible": false
+    },
+    {
+      "href": "products-commissions.html",
+      "label": "⛁Products & Commissions",
+      "visible": false
+    },
+    {
+      "href": "sample-data.html",
+      "label": "⌗Demo ModeBETA",
+      "visible": false
+    },
+    {
+      "href": "brand-studio.html",
+      "label": "◆Brand StudioBETA",
+      "visible": false
+    },
+    {
+      "href": "client-portal.html",
+      "label": "◐Client Portal",
+      "visible": false
+    },
+    {
+      "href": "affiliate.html",
+      "label": "⇗AffiliateBETA",
+      "visible": false
+    }
+  ],
+  "screens": [
+    {
+      "label": "",
+      "href": "command-center.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/command-center.html",
+      "bounced": false,
+      "title": "Fundhub — Command Center",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/03-command-center.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "✷GalaxyBETA",
+      "href": "galaxy.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/galaxy.html",
+      "bounced": false,
+      "title": "Fundhub — Galaxy",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/04-galaxy.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "label": "⚙Ops & AdminBETA",
+      "href": "ops-admin.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/ops-admin.html",
+      "bounced": false,
+      "title": "Fundhub — Ops & Admin",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/05-ops-admin.html.png",
+      "apiFails": [
+        {
+          "url": "/api/read/failed-events?status=pending&limit=200",
+          "status": 403,
+          "method": "GET"
+        },
+        {
+          "url": "/api/read/invoices?status=open&limit=50",
+          "status": 403,
+          "method": "GET"
+        },
+        {
+          "url": "/api/read/staff?limit=200",
+          "status": 403,
+          "method": "GET"
+        }
+      ],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    }
+  ],
+  "direct": [
+    {
+      "href": "/app/ops-admin.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/ops-admin.html",
+      "bounced": false,
+      "title": "Fundhub — Ops & Admin",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/direct-_app_ops-admin.html.png",
+      "apiFails": [
+        {
+          "url": "/api/read/failed-events?status=pending&limit=200",
+          "status": 403,
+          "method": "GET"
+        },
+        {
+          "url": "/api/read/invoices?status=open&limit=50",
+          "status": 403,
+          "method": "GET"
+        },
+        {
+          "url": "/api/read/staff?limit=200",
+          "status": 403,
+          "method": "GET"
+        }
+      ],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "href": "/app/staff-teams.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/staff-teams.html",
+      "bounced": false,
+      "title": "Fundhub — Staff & Teams",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/direct-_app_staff-teams.html.png",
+      "apiFails": [
+        {
+          "url": "/api/read/staff?limit=200",
+          "status": 403,
+          "method": "GET"
+        }
+      ],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "href": "/app/agent-editor.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/agent-editor.html",
+      "bounced": false,
+      "title": "Fundhub — Agent Editor",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/direct-_app_agent-editor.html.png",
+      "apiFails": [
+        {
+          "url": "/api/read/staff?limit=200",
+          "status": 403,
+          "method": "GET"
+        }
+      ],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "href": "/app/products-commissions.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/products-commissions.html",
+      "bounced": false,
+      "title": "Fundhub — Products & Commissions",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/direct-_app_products-commissions.html.png",
+      "apiFails": [
+        {
+          "url": "/api/read/commissions?limit=200",
+          "status": 403,
+          "method": "GET"
+        }
+      ],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "href": "/app/campaign-manager.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/command-center.html",
+      "bounced": true,
+      "title": "Fundhub — Command Center",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/direct-_app_campaign-manager.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/sample-data.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/command-center.html",
+      "bounced": true,
+      "title": "Fundhub — Command Center",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/direct-_app_sample-data.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/hiring.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/command-center.html",
+      "bounced": true,
+      "title": "Fundhub — Command Center",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/direct-_app_hiring.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/app/inquiry-remover.html",
+      "httpStatus": 200,
+      "finalUrl": "/app/inquiry-remover.html",
+      "bounced": false,
+      "title": "Fundhub — Inquiry Remover",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/direct-_app_inquiry-remover.html.png",
+      "apiFails": [],
+      "consoleErrors": []
+    },
+    {
+      "href": "/dashboard.html",
+      "httpStatus": 404,
+      "finalUrl": "/dashboard.html",
+      "bounced": false,
+      "title": "Fundhub — Not found",
+      "shot": "docs/workflows/e2e-verify-run5-evidence/role-funding-advisor/restamp-2026-08-17/shots/direct-_dashboard.html.png",
+      "apiFails": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 ()"
+      ]
+    }
+  ]
+}

@@ -1613,25 +1613,34 @@ var PRODUCTS = {
   document.body.classList.add("no-docs");
   setOwnVisible(false);
 
-  FHData.client(clientId).then(function (res) {
-    if (res.ok && res.data && res.data.client) {
-      var c = res.data.client;
-      var name = [c.first_name, c.last_name].filter(Boolean).join(" ");
-      paintIdentity(name, advisorFromClient(c));
-      paintBooking(res.data.latest_booking);
-      paintMessages(res.data.messages);
-      paintPays(res.data.transactions);
-      return;
-    }
-    paintIdentity("", "");
-    if (res.source === "unauthorized") {
-      nameFromSession().then(function (nm) {
-        paintIdentity(nm, "");
-      });
-      return;
-    }
-    if (res.source === "nodata") paintEmptyIdentity();
-  });
+  /* GET /api/dashboard/client is staff-only. A client calling it always
+     fails and the page used to look unsigned-in. Staff keep the read.
+     Clients take their name from the session and skip the call. */
+  if (STAFF_ROLES[roleHint()]) {
+    FHData.client(clientId).then(function (res) {
+      if (res.ok && res.data && res.data.client) {
+        var c = res.data.client;
+        var name = [c.first_name, c.last_name].filter(Boolean).join(" ");
+        paintIdentity(name, advisorFromClient(c));
+        paintBooking(res.data.latest_booking);
+        paintMessages(res.data.messages);
+        paintPays(res.data.transactions);
+        return;
+      }
+      paintIdentity("", "");
+      if (res.source === "unauthorized") {
+        nameFromSession().then(function (nm) {
+          paintIdentity(nm, "");
+        });
+        return;
+      }
+      if (res.source === "nodata") paintEmptyIdentity();
+    });
+  } else {
+    nameFromSession().then(function (nm) {
+      paintIdentity(nm, "");
+    });
+  }
 
   FHData.wire(FHData.portalContracts(clientId ? { client_id: clientId } : {}),
     "agreements", function (data) {
@@ -1670,24 +1679,24 @@ var PRODUCTS = {
      gets the honest state instead of a red strip. No gate widened, no route
      added — whether a client should be able to read their own documents is the
      owner's call and is on the board as an open question. */
-  FHData.documents({ client_id: clientId, limit: 200 }).then(function (res) {
-    if (res && res.ok && res.data) {
-      var items = res.data.items || [];
-      paintDocs(items);
-      FHData.banner("real", items.length
-        ? "live documents · " + items.length + " on file"
-        : "live documents · none on file", "documents");
-      return;
-    }
-    if (res && res.source === "unauthorized" && !STAFF_ROLES[roleHint()]) {
-      paintDocsNotListed();
-      FHData.banner("sample", "your files are not listed here — your advisor sends them", "documents");
-      return;
-    }
-    FHData.explain(res, "documents");
-  }, function (e) {
-    FHData.explain({ source: "offline", error: (e && e.message) || "read failed" }, "documents");
-  });
+  if (STAFF_ROLES[roleHint()]) {
+    FHData.documents({ client_id: clientId, limit: 200 }).then(function (res) {
+      if (res && res.ok && res.data) {
+        var items = res.data.items || [];
+        paintDocs(items);
+        FHData.banner("real", items.length
+          ? "live documents · " + items.length + " on file"
+          : "live documents · none on file", "documents");
+        return;
+      }
+      FHData.explain(res, "documents");
+    }, function (e) {
+      FHData.explain({ source: "offline", error: (e && e.message) || "read failed" }, "documents");
+    });
+  } else {
+    paintDocsNotListed();
+    FHData.banner("sample", "your files are not listed here — your advisor sends them", "documents");
+  }
 
   FHData.wire(FHData.entitlements({ client_id: clientId, limit: 200 }),
     "entitlements", function (data) {
