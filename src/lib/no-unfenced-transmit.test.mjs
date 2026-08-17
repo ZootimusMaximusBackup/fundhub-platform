@@ -79,6 +79,8 @@ const ALLOWED_RAW_FETCH = {
   // ── Conduits. Default a fetch and hand it to a module listed above ───────
   "src/agents/runtime.mjs":
     "Defaults fetchImpl and passes it to src/agents/model.mjs. Never calls it.",
+  "src/creative/providers/copy.mjs":
+    "Passes ctx.fetch to src/agents/model.mjs. Never calls fetch itself.",
   "src/company-brain/sync.mjs":
     "Defaults fetchImpl and passes it to the Drive client. Never calls it.",
   "src/company-brain/walk.mjs":

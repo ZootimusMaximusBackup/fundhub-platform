@@ -7,6 +7,7 @@ import { withPartnerScope } from "../../src/partners/rls.mjs";
 import { resolvePartnerId } from "../../src/http/partner-read-api.mjs";
 import { enqueue } from "../../src/creative/generate.mjs";
 import { safeError } from "../../src/http/health.mjs";
+import { assertSuiteEnabled, SUITE_OFF } from "../../src/brand/meter.mjs";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -45,6 +46,7 @@ export default async function handler(req, res) {
         e.code = "NOT_FOUND";
         throw e;
       }
+      await assertSuiteEnabled(tx, partnerId);
       return enqueue(tx, {
         orgId: org.org_id,
         partnerId,
@@ -68,6 +70,10 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     if (err.code === "NOT_FOUND") return res.status(404).json({ ok: false, error: err.message });
+    if (err.code === SUITE_OFF) {
+      return res.status(403).json({ ok: false, error: "suite_off",
+        message: "The owner has not turned this on for this partner." });
+    }
     return res.status(500).json({ ok: false, error: safeError(err) });
   }
 }

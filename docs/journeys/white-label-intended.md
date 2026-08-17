@@ -18,6 +18,19 @@ What a principal of kind `partner` should be able to do.
 
 > **Who this is, in the code:** db/migrations/036_partner_role.sql — "External white-label partner"; db/migrations/044_accounts.sql — "partner — white-label operator, sees their own book only"
 
+## Marketing suite (beta)
+
+This is extra on top of the route list below. The owner turns it on **per partner**. Default is off. Nothing here charges money.
+
+Ground truth you can see:
+
+1. **Off.** Brand Studio still lets the partner save colors and a logo. Write page copy, make a wordmark, publish a new page, write social posts, and enqueue creative stay off. The screen says the owner has not turned this on. Buttons do not sit live and then fail.
+2. **Owner flip.** Only the owner can POST `/api/partner-marketing/enable` with `enabled: true` or `false` for that partner. An admin, a closer, or the partner cannot turn it on.
+3. **On.** Brand Studio can write unlocked page copy (Anthropic), keep a history, restore a version, and make a type wordmark from the name. Locked legal blocks never go to the writer and a PATCH cannot overwrite them. Live pages sit at `/sites/{partnerId}/{slug}` plus a verified custom domain.
+4. **Social Studio.** The partner can write posts into a queue, set a time, or throw one away. Facebook / Instagram / LinkedIn connect is for staff once those apps exist. The partner does not see a Connect button that will refuse them.
+5. **Creative Factory.** Ads still generate through the existing factory. Copy uses the same writing robot. Meta and Google send stay stubbed. The usage card shows tokens used this month vs a 250,000 cap. Hitting the cap stops more writing. It does not send a bill.
+6. **Content Admin is not this.** That screen still edits client-portal tiles and welcome videos. Partners do not get a Content row.
+
 ## In one picture
 
 ```mermaid

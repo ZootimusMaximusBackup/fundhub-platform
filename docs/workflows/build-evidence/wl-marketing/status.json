@@ -1,0 +1,15 @@
+{
+  "batch": "wl-marketing",
+  "at": "2026-08-17T23:06:44.872Z",
+  "screens": ["brand-studio.html", "social-studio.html", "creative-factory.html"],
+  "states": ["loading", "empty", "error", "full"],
+  "widths": [1440, 390],
+  "clicks": "clicks.json",
+  "lighthouse": "not run — live site does not have this build yet; CRM budget is 2.5s LCP on mobile Slow 4G",
+  "live_playwright": "not run — 100/100 is against https://fundhub.ai after deploy",
+  "notes": [
+    "Shots are local static HTML with mocked /api. Demo furniture still shows on Brand Studio identity fields.",
+    "Connect Facebook is hidden for role=partner.",
+    "Write/generate stays off until usage says the owner switch is on."
+  ]
+}

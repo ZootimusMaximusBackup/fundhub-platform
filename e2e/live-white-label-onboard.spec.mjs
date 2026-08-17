@@ -87,7 +87,7 @@ test.describe("live white-label own access and studio", () => {
 
     const galaxy = await page.locator("body").innerText();
     expect(galaxy).toMatch(/Your Galaxy|your book only/i);
-    expect(galaxy).toMatch(/Brand Studio/i);
+    await expect(page.locator('aside a[href*="brand-studio.html"]')).toHaveCount(1);
 
     await page.goto(`${BASE}/app/brand-studio.html?partner_id=${encodeURIComponent(partnerId)}`, {
       waitUntil: "domcontentloaded"

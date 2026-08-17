@@ -147,7 +147,9 @@ export const PARTNER_SCOPED_TABLES = new Set([
   // 049_social.sql
   "social_channels", "social_posts",
   // 050_creative_metering.sql
-  "creative_usage_events"
+  "creative_usage_events",
+  // 172_wl_marketing.sql
+  "partner_ai_usage", "partner_page_section_versions", "marketing_content_queue"
 ]);
 
 /* assertCanReadRow — the generic form of assertCanReadClient, for the creative

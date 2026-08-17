@@ -87,12 +87,17 @@ test("model: with key, posts to Anthropic and returns text", async () => {
       assert.equal(opts.headers["x-api-key"], "test-key");
       return {
         ok: true,
-        json: async () => ({ content: [{ type: "text", text: "Book Thursday at 2?" }] })
+        json: async () => ({
+          content: [{ type: "text", text: "Book Thursday at 2?" }],
+          usage: { input_tokens: 3, output_tokens: 9 }
+        })
       };
     }
   });
   assert.equal(res.mode, "live");
   assert.equal(res.text, "Book Thursday at 2?");
+  assert.equal(res.usage.input_tokens, 3);
+  assert.equal(res.usage.output_tokens, 9);
 });
 
 test("select: channel compatibility and bland exclusion", () => {

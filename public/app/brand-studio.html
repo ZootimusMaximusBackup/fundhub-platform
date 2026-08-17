@@ -413,7 +413,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
                   </tbody>
                 </table>
               </div>
-              <div class="hint" style="margin-top:9px">No domain yet? You launch on <span class="mono" id="subPrev">yourbrand.fundhub-partners.com</span> today and swap to your own domain any time — links and tracking carry over.</div>
+              <div class="hint" style="margin-top:9px">No domain yet? Pages go live at <span class="mono" id="subPrev">/sites/…/apply</span> on fundhub.ai. Add your own domain when you are ready.</div>
             </div>
           </div>
 
@@ -639,7 +639,9 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
   function paint(){
     var name = D.name || "Your Brand";
     var entity = D.entity || "Your Entity LLC";
-    var host = D.domain && D.verified ? D.domain : (D.domain || slug(D.name)+".fundhub-partners.com");
+    var host = D.domain && D.verified
+      ? D.domain
+      : (MODE === "partner" && partnerId ? ("fundhub.ai/sites/" + partnerId) : (D.domain || "fundhub.ai"));
 
     $("pvWm").innerHTML = D.logo
       ? '<img src="'+D.logo+'" alt="" style="height:22px;display:block;filter:invert(1)">'
@@ -647,7 +649,9 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     $("pvUrl").textContent = MODE === "org" ? "CRM · internal" : host;
     $("pvLegal").textContent = "© 2026 "+entity+". Not a direct lender. All financing decisions, amounts, and terms are determined by funding partners.";
     $("entEcho").textContent = entity;
-    $("subPrev").textContent = slug(D.name)+".fundhub-partners.com";
+    $("subPrev").textContent = MODE === "partner" && partnerId
+      ? ("/sites/" + partnerId + "/apply")
+      : "fundhub.ai";
     $("rampPrev").style.background = rampCss(D.ramp);
 
     /* "Use text" clears an uploaded wordmark. With no file chosen there is

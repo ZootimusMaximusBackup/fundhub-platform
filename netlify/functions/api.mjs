@@ -120,6 +120,8 @@ import campaignsWrite from "../../api/campaigns/write.mjs";
 import socialSchedule from "../../api/social/schedule.mjs";
 import socialPublish from "../../api/social/publish.mjs";
 import socialOauth from "../../api/social/oauth.mjs";
+import socialPosts from "../../api/social/posts.mjs";
+import socialGenerate from "../../api/social/generate.mjs";
 import chatAsk from "../../api/chat/ask.mjs";
 import chatMessages from "../../api/chat/messages.mjs";
 import chatPortalMessage from "../../api/chat/portal-message.mjs";
@@ -128,6 +130,11 @@ import demoSimulate from "../../api/demo/simulate.mjs";
 import demoMode from "../../api/demo/mode.mjs";
 import partnerPages from "../../api/partner-pages.mjs";
 import partnerBrandVerifyDomain from "../../api/partner-brand/verify-domain.mjs";
+import partnerMarketingEnable from "../../api/partner-marketing/enable.mjs";
+import partnerMarketingUsage from "../../api/partner-marketing/usage.mjs";
+import partnerMarketingGenerateCopy from "../../api/partner-marketing/generate-copy.mjs";
+import partnerMarketingCopyHistory from "../../api/partner-marketing/copy-history.mjs";
+import partnerMarketingGenerateLogo from "../../api/partner-marketing/generate-logo.mjs";
 import publicPartnerPage from "../../api/public/partner-page.mjs";
 import publicSurveySubmit from "../../api/public/survey-submit.mjs";
 import publicPartnerApply from "../../api/public/partner-apply.mjs";
@@ -476,6 +483,8 @@ export const ROUTES = {
   "social/schedule": socialSchedule,
   "social/publish": socialPublish,
   "social/oauth": socialOauth,
+  "social/posts": socialPosts,
+  "social/generate": socialGenerate,
   "chat/ask": chatAsk,
   "chat/messages": chatMessages,
   "chat/portal-message": chatPortalMessage,
@@ -484,6 +493,11 @@ export const ROUTES = {
   "demo/mode": demoMode,
   "partner-pages": partnerPages,
   "partner-brand/verify-domain": partnerBrandVerifyDomain,
+  "partner-marketing/enable": partnerMarketingEnable,
+  "partner-marketing/usage": partnerMarketingUsage,
+  "partner-marketing/generate-copy": partnerMarketingGenerateCopy,
+  "partner-marketing/copy-history": partnerMarketingCopyHistory,
+  "partner-marketing/generate-logo": partnerMarketingGenerateLogo,
   "public/partner-page": publicPartnerPage,
   "public/survey-submit": publicSurveySubmit,
   "public/partner-apply": publicPartnerApply,

@@ -8,26 +8,11 @@ import { db } from "../src/db.mjs";
 import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
 import { requireRole, isUuid } from "../src/http/read-api.mjs";
 import { safeError } from "../src/http/health.mjs";
+import { FUNNELS, defaultBody, mergeBodyJson } from "../src/brand/templates.mjs";
+import { assertSuiteEnabled, SUITE_OFF } from "../src/brand/meter.mjs";
+import { withPartnerScope } from "../src/partners/rls.mjs";
 
 const ROLES = new Set(["owner", "admin"]);
-const FUNNELS = {
-  apply: { title: "Application funnel", slug: "apply" },
-  diag: { title: "Diagnostic funnel", slug: "diagnostic" },
-  edu: { title: "Education funnel", slug: "education" },
-  aff: { title: "Affiliate recruit", slug: "affiliate" },
-  book: { title: "Booking funnel", slug: "book" }
-};
-
-function defaultBody(funnelKey) {
-  const meta = FUNNELS[funnelKey] || { title: funnelKey };
-  return {
-    template: funnelKey,
-    sections: [
-      { type: "hero", headline: meta.title, sub: "Edit this page in Brand Studio." },
-      { type: "cta", label: "Start", href: "#apply" }
-    ]
-  };
-}
 
 function orgIdOf(principal) {
   if (principal.kind === "staff") return principal.staff?.org_id || principal.orgId || null;
@@ -105,6 +90,9 @@ export default async function handler(req, res) {
       );
       if (!partner.rows[0]) return res.status(404).json({ ok: false, error: "partner_not_found" });
 
+      const brand = (await db.query(
+        `SELECT entity_name FROM partner_brand WHERE partner_id = $1`, [partnerId]
+      )).rows[0] || {};
       const meta = FUNNELS[funnelKey];
       const title = String(body.title || meta.title).trim();
       const slug = String(body.slug || meta.slug).toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 63);
@@ -115,7 +103,7 @@ export default async function handler(req, res) {
            title = EXCLUDED.title,
            updated_at = now()
          RETURNING *`,
-        [orgId, partnerId, funnelKey, title, slug, JSON.stringify(body.body_json || defaultBody(funnelKey))]
+        [orgId, partnerId, funnelKey, title, slug, JSON.stringify(body.body_json || defaultBody(funnelKey, brand))]
       );
       // Also ensure selected_funnels includes this key on partner_brand.
       await db.query(
@@ -137,6 +125,22 @@ export default async function handler(req, res) {
     if (req.method === "PATCH") {
       const body = req.body || {};
       if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "id_required" });
+      const existing = (await db.query(
+        `SELECT * FROM partner_pages WHERE id = $1 AND org_id = $2`,
+        [body.id, orgId]
+      )).rows[0];
+      if (!existing) return res.status(404).json({ ok: false, error: "not_found" });
+      if (principal.kind === "partner" && existing.partner_id !== principal.partnerId) {
+        return res.status(404).json({ ok: false, error: "not_found" });
+      }
+      if (String(body.status) === "published") {
+        await withPartnerScope(
+          principal.kind === "partner"
+            ? { kind: "partner", partnerId: principal.partnerId }
+            : { kind: "staff" },
+          (tx) => assertSuiteEnabled(tx, existing.partner_id)
+        );
+      }
       const sets = [];
       const params = [body.id, orgId];
       if (body.title != null) {
@@ -153,7 +157,8 @@ export default async function handler(req, res) {
         sets.push(`status = $${params.length}`);
       }
       if (body.body_json != null) {
-        params.push(JSON.stringify(body.body_json));
+        const merged = mergeBodyJson(existing.body_json, body.body_json);
+        params.push(JSON.stringify(merged));
         sets.push(`body_json = $${params.length}::jsonb`);
       }
       if (!sets.length) return res.status(400).json({ ok: false, error: "nothing_to_update" });
@@ -189,6 +194,10 @@ export default async function handler(req, res) {
     res.setHeader("allow", "GET, POST, PATCH");
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
   } catch (err) {
+    if (err.code === SUITE_OFF) {
+      return res.status(403).json({ ok: false, error: "suite_off",
+        message: "The owner has not turned this on for this partner." });
+    }
     if (String(err.message || "").includes("partner_pages_partner_funnel_uq")) {
       return res.status(409).json({ ok: false, error: "funnel_page_exists" });
     }

@@ -138,7 +138,8 @@ export async function run(tx, job, ctx = {}) {
       result = await provider.module.generate(spec, {
         ...ctx,
         config: provider.config,
-        partnerId: job.partner_id
+        partnerId: job.partner_id,
+        tx
       });
       break;
     } catch (err) {

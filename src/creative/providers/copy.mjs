@@ -14,29 +14,54 @@
 // If this prompt and screen.mjs ever disagree, screen.mjs is right by
 // construction, because a prompt is a request and a regex is a rule.
 
-import { callProvider, requireKey, assetFrom } from "./_http.mjs";
+import { assetFrom } from "./_http.mjs";
+import { callModel, DEFAULT_MODEL } from "../../agents/model.mjs";
+import { assertSuiteEnabled, assertUnderCap, recordUsage } from "../../brand/meter.mjs";
 
 export const PROVIDER_KEY = "copy";
 export const ASSET_KIND = "copy";
 
 export async function generate(spec = {}, ctx = {}) {
-  const key = requireKey("CREATIVE_COPY_API_KEY", ctx);
+  const env = ctx.env || process.env;
+  if (!env.ANTHROPIC_API_KEY) {
+    throw new Error("ANTHROPIC_API_KEY is not set — the copy provider cannot run.");
+  }
   const variants = Math.max(1, Number(spec.variants) || 1);
+  const tx = ctx.tx;
+  if (tx && ctx.partnerId) {
+    await assertSuiteEnabled(tx, ctx.partnerId);
+    await assertUnderCap(tx, ctx.partnerId);
+  }
 
-  const res = await callProvider({
-    url: ctx.config?.endpoint || "https://api.example-llm.com/v1/messages",
-    key,
-    body: {
-      model: ctx.config?.model || "claude-sonnet-5",
-      max_tokens: Number(ctx.config?.max_tokens || 2000),
-      system: systemPrompt(spec),
-      messages: [{ role: "user", content: userPrompt(spec, variants) }]
-    },
-    ctx
+  const model = await callModel({
+    system: systemPrompt(spec),
+    user: userPrompt(spec, variants),
+    env,
+    fetchImpl: ctx.fetch,
+    model: ctx.config?.model || DEFAULT_MODEL,
+    maxTokens: Number(ctx.config?.max_tokens || 2000)
   });
 
-  const text = extractText(res);
-  if (!text) throw new Error("copy provider returned no text");
+  if (tx && ctx.partnerId) {
+    const org = (await tx.query(
+      `SELECT org_id FROM partners WHERE id = $1`, [ctx.partnerId]
+    )).rows[0];
+    if (org) {
+      await recordUsage(tx, {
+        orgId: org.org_id,
+        partnerId: ctx.partnerId,
+        purpose: "creative",
+        inputTokens: model.usage?.input_tokens,
+        outputTokens: model.usage?.output_tokens,
+        model: model.request?.model
+      });
+    }
+  }
+
+  if (model.mode === "shadow" || model.error || !model.text) {
+    throw new Error(model.error || "copy provider returned no text");
+  }
+  const text = model.text;
 
   const variantsOut = splitVariants(text, variants);
   if (!variantsOut.length) throw new Error("copy provider returned no usable variants");
@@ -53,7 +78,7 @@ export async function generate(spec = {}, ctx = {}) {
       aiGenerated: true,
       syntheticPerformer: false
     })),
-    cost_cents: Number(res?.cost_cents ?? ctx.config?.unit_cost_cents ?? 0)
+    cost_cents: Number(ctx.config?.unit_cost_cents ?? 0)
   };
 }
 
@@ -97,14 +122,6 @@ function userPrompt(spec, variants) {
     `Each must use a DIFFERENT angle. Available angles: ${angles.join(", ")}.`,
     "Do not reword one idea. Separate each variant with a line containing only ---."
   ].join("\n");
-}
-
-function extractText(res) {
-  if (typeof res?.content === "string") return res.content;
-  if (Array.isArray(res?.content)) {
-    return res.content.map((c) => c?.text || "").filter(Boolean).join("\n");
-  }
-  return res?.choices?.[0]?.message?.content || res?.text || "";
 }
 
 function splitVariants(text, want) {

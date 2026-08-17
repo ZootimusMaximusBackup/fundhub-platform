@@ -300,8 +300,9 @@ describe("creative generation", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
        VALUES ($1,$2,$3,'active',now()) RETURNING id`, [org, name, slug]);
     const id = rows[0].id;
     await asStaff((tx) => tx.query(
-      `INSERT INTO partner_module_settings (org_id, partner_id, approve_before_launch, max_concurrent_jobs)
-       VALUES ($1,$2,true,$3) ON CONFLICT (partner_id) DO NOTHING`, [org, id, maxConcurrent]));
+      `INSERT INTO partner_module_settings
+         (org_id, partner_id, approve_before_launch, max_concurrent_jobs, marketing_suite_enabled)
+       VALUES ($1,$2,true,$3,true) ON CONFLICT (partner_id) DO NOTHING`, [org, id, maxConcurrent]));
     return id;
   }
 
@@ -324,7 +325,7 @@ describe("creative generation", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
     // the next run fail on a unique index for reasons that look unrelated.
     await asStaff(async (tx) => {
       for (const t of ["generation_job_assets", "compliance_screenings", "creative_assets",
-                       "generation_jobs", "partner_module_settings"]) {
+                       "generation_jobs", "partner_ai_usage", "partner_module_settings"]) {
         await tx.query(`DELETE FROM ${t} WHERE partner_id = ANY($1)`, [ids]);
       }
     });
@@ -340,15 +341,24 @@ function fakeProviderCtx({ ok = false, throwRetryable = false, empty = false, co
   return {
     env: {
       CREATIVE_STATIC_API_KEY: "test-key",
-      CREATIVE_COPY_API_KEY: "test-key"
+      ANTHROPIC_API_KEY: "test-key"
     },
     sleep: async () => {},
     maxAttempts: 2,
     fetch: async (url) => {
       if (throwRetryable) throw new Error("ECONNRESET");
       if (empty) return jsonRes({ data: [] });
-      if (url.includes("llm")) {
-        return jsonRes({ content: [{ text: copyText || "Business funding for qualified applicants." }], cost_cents: 25 });
+      if (String(url).includes("anthropic") || String(url).includes("llm")) {
+        const body = {
+          content: [{ type: "text", text: copyText || "Business funding for qualified applicants." }],
+          usage: { input_tokens: 12, output_tokens: 8 }
+        };
+        return {
+          ok: true,
+          status: 200,
+          json: async () => body,
+          text: async () => JSON.stringify(body)
+        };
       }
       return ok
         ? jsonRes({ data: [{ id: "prov-" + Math.random().toString(36).slice(2), url: "https://cdn/x.png" }], cost_cents: 25 })

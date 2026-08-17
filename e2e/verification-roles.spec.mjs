@@ -88,7 +88,7 @@ const ROLES = {
   partner: {
     ok: true,
     staff: { id: "staff-p", name: "Partner", email: "pat@partner.test", role: "partner", org_id: "org-1", status: "active", partner_id: "pppppppp-1111-4111-8111-111111111111" },
-    screens: ["partner-galaxy.html", "brand-studio.html"],
+    screens: ["partner-galaxy.html", "brand-studio.html", "social-studio.html", "creative-factory.html"],
     forbidden: ["pipeline.html", "finance-os.html", "hiring.html"]
   }
 };

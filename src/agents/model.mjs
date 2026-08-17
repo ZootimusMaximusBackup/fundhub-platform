@@ -42,7 +42,8 @@ export async function callModel({
       raw: null,
       request,
       error: null,
-      detail: "ANTHROPIC_API_KEY unset — shadow mode, no model call"
+      detail: "ANTHROPIC_API_KEY unset — shadow mode, no model call",
+      usage: { input_tokens: 0, output_tokens: 0 }
     };
   }
 
@@ -53,7 +54,8 @@ export async function callModel({
       raw: null,
       request,
       error: "fetch unavailable",
-      detail: "no fetch implementation"
+      detail: "no fetch implementation",
+      usage: { input_tokens: 0, output_tokens: 0 }
     };
   }
 
@@ -74,25 +76,28 @@ export async function callModel({
     });
 
     const raw = await res.json().catch(() => null);
+    const usage = usageOf(raw);
     if (!res.ok) {
       return {
         mode: "live",
         text: null,
         raw,
         request,
-        error: `anthropic ${res.status}: ${JSON.stringify(raw).slice(0, 300)}`
+        error: `anthropic ${res.status}: ${JSON.stringify(raw).slice(0, 300)}`,
+        usage
       };
     }
 
     const text = extractText(raw);
-    return { mode: "live", text, raw, request, error: null };
+    return { mode: "live", text, raw, request, error: null, usage };
   } catch (err) {
     return {
       mode: "live",
       text: null,
       raw: null,
       request,
-      error: String((err && err.message) || err).slice(0, 300)
+      error: String((err && err.message) || err).slice(0, 300),
+      usage: { input_tokens: 0, output_tokens: 0 }
     };
   }
 }
@@ -104,6 +109,14 @@ function extractText(raw) {
     .map((b) => b.text);
   const joined = parts.join("\n").trim();
   return joined || null;
+}
+
+function usageOf(raw) {
+  const u = raw && raw.usage;
+  return {
+    input_tokens: Math.max(0, Number(u && u.input_tokens) || 0),
+    output_tokens: Math.max(0, Number(u && u.output_tokens) || 0)
+  };
 }
 
 export default callModel;

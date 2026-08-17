@@ -27,7 +27,7 @@ flowchart TD
     CAN --> A_read[Reading data — 3 routes]
     CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 134 routes]
+    WHO -->|Yes| CANT[Blocked — 141 routes]
     CANT --> B_auth[Signing in and out — 3 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_campaigns[Campaigns — 8 blocked]
@@ -41,18 +41,20 @@ flowchart TD
     CANT --> B_hiring[Hiring — 6 blocked]
     CANT --> B_journeys[journeys — 2 blocked]
     CANT --> B_partner_brand[partner-brand — 1 blocked]
+    CANT --> B_partner_marketing[partner-marketing — 5 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
     CANT --> B_read[Reading data — 45 blocked]
     CANT --> B_repair[repair — 2 blocked]
-    CANT --> B_social[social — 3 blocked]
+    CANT --> B_social[social — 5 blocked]
     CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 25 blocked]
+    WHO -->|Yes| UNV[UNVERIFIED — 1 route whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**26 of 160 routes.**
+**26 of 168 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -90,7 +92,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**134 of 160 routes.**
+**141 of 168 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -166,6 +168,11 @@ flowchart TD
 | `/api/messages-outbound` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/partner-brand` | GET, PUT | employees: owner, admin<br>plus: partner |
 | `/api/partner-brand/verify-domain` | POST | owner, admin |
+| `/api/partner-marketing/copy-history` | GET, POST | staff, partner |
+| `/api/partner-marketing/enable` | GET, POST | staff, partner |
+| `/api/partner-marketing/generate-copy` | POST | staff, partner |
+| `/api/partner-marketing/generate-logo` | POST | staff, partner |
+| `/api/partner-marketing/usage` | GET | staff, partner |
 | `/api/partner-pages` | GET, PATCH, POST | employees: owner, admin<br>plus: partner |
 | `/api/payment-links` | GET, POST | owner, admin, sales_manager |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
@@ -222,7 +229,9 @@ flowchart TD
 | `/api/repair/exceptions` | GET, POST | staff |
 | `/api/repair/send` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
+| `/api/social/generate` | POST | partner, staff |
 | `/api/social/oauth` | — | staff |
+| `/api/social/posts` | GET, POST | partner, staff |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
 | `/api/staff/monitoring-consent` | POST | owner |
@@ -231,7 +240,12 @@ flowchart TD
 
 ## UNVERIFIED
 
-_None — every route's gate was traced to its source._
+The gate on these could not be traced from the code, so this page does not claim
+either way whether this journey reaches them. Each one is a question for a human.
+
+| Route | Methods | Who the code lets in |
+|---|---|---|
+| `/api/gifts/message-blaster` | GET, HEAD | — |
 
 ## How to check this yourself
 

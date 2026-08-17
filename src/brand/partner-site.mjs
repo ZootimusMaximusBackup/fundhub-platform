@@ -19,16 +19,32 @@ export function renderPartnerPageHtml({ page, brand }) {
   const name = brand?.entity_name || brand?.wordmark || page.title || "Partner";
   const fonts = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(display)}:wght@500;700&family=${encodeURIComponent(mono)}:wght@400;500&display=swap`;
 
+  const ramp = Array.isArray(brand?.ramp) ? brand.ramp.filter((c) => /^#[0-9a-fA-F]{6}$/.test(c)) : [];
+  const spectrum = ramp.length === 6 ? ramp.join(",") : "";
+  const logo = brand?.wordmark_url && /^https:|^data:image\//i.test(brand.wordmark_url)
+    ? `<img class="logo" src="${esc(brand.wordmark_url)}" alt="${esc(name)}">`
+    : `<div class="wm">${esc(name)}</div>`;
+
   const sectionHtml = sections.map((s) => {
     if (s.type === "hero") {
       return `<section class="hero"><h1>${esc(s.headline || page.title)}</h1>` +
         `<p>${esc(s.sub || "")}</p></section>`;
     }
     if (s.type === "cta") {
-      return `<p><a class="cta" href="${esc(s.href || "#")}">${esc(s.label || "Continue")}</a></p>`;
+      return `<p><a class="cta" href="${esc(s.href || "#apply")}">${esc(s.label || "Continue")}</a></p>`;
     }
-    return `<section><p>${esc(s.text || s.headline || "")}</p></section>`;
+    if (s.type === "legal") {
+      return `<section class="legal-block" data-locked="true"><h2>${esc(s.headline || "")}</h2>` +
+        `<p>${esc(s.text || "")}</p></section>`;
+    }
+    return `<section class="block"><h2>${esc(s.headline || "")}</h2>` +
+      `<p>${esc(s.text || s.sub || "")}</p></section>`;
   }).join("\n");
+
+  const legalFallback = sections.some((s) => s.type === "legal")
+    ? ""
+    : `<div class="legal">© ${new Date().getUTCFullYear()} ${esc(name)}. Not a direct lender.
+      Financing decisions are made by funding partners.</div>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -38,27 +54,31 @@ export function renderPartnerPageHtml({ page, brand }) {
   <title>${esc(page.title)}</title>
   <link rel="stylesheet" href="${fonts}">
   <style>
-    :root { --ink:${esc(ink)}; --paper:${esc(paper)}; }
+    :root { --ink:${esc(ink)}; --paper:${esc(paper)};${spectrum ? ` --spectrum:linear-gradient(90deg,${spectrum});` : ""} }
     * { box-sizing: border-box; }
     body { margin:0; font-family:${JSON.stringify(display)}, Georgia, serif;
       background:var(--paper); color:var(--ink); line-height:1.45; }
     .wrap { max-width:720px; margin:0 auto; padding:48px 24px 80px; }
     .wm { font-family:${JSON.stringify(mono)}, monospace; font-size:12px;
       letter-spacing:.08em; text-transform:uppercase; opacity:.7; margin-bottom:28px; }
+    .logo { height:40px; width:auto; max-width:220px; margin-bottom:28px; display:block; }
     h1 { font-size:clamp(2rem,5vw,3.2rem); font-weight:700; line-height:1.1; margin:0 0 16px; }
+    h2 { font-size:1.25rem; margin:28px 0 8px; }
     .hero p { font-size:1.15rem; opacity:.85; margin:0 0 28px; }
     .cta { display:inline-block; background:var(--ink); color:var(--paper);
       text-decoration:none; padding:14px 22px; font-family:${JSON.stringify(mono)}, monospace;
       font-size:13px; letter-spacing:.04em; }
-    .legal { margin-top:64px; font-size:12px; opacity:.55; font-family:${JSON.stringify(mono)}, monospace; }
+    .legal, .legal-block { margin-top:48px; font-size:12px; opacity:.7;
+      font-family:${JSON.stringify(mono)}, monospace; }
+    .hair { height:2px; background:var(--spectrum, var(--ink)); border-radius:1px; margin:24px 0; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="wm">${esc(name)}</div>
+    ${logo}
+    <div class="hair"></div>
     ${sectionHtml || `<section class="hero"><h1>${esc(page.title)}</h1></section>`}
-    <div class="legal">© ${new Date().getUTCFullYear()} ${esc(name)}. Not a direct lender.
-      Financing decisions are made by funding partners.</div>
+    ${legalFallback}
   </div>
 </body>
 </html>`;
