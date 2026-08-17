@@ -1,0 +1,46 @@
+{
+  "ranAt": "2026-08-17T04:03:54.172Z",
+  "note": "no login used (budget spent); unauthenticated GETs on -actual.md reach rows whose method column is — and gate is anyone; auth/session shows the no-token answer",
+  "results": [
+    {
+      "route": "/api/health",
+      "method": "GET",
+      "auth": "none",
+      "status": 200,
+      "error": "",
+      "keys": [
+        "ok",
+        "db",
+        "state",
+        "migrations",
+        "expected",
+        "pending",
+        "error",
+        "checkedAt"
+      ]
+    },
+    {
+      "route": "/api/climate/config",
+      "method": "GET",
+      "auth": "none",
+      "status": 200,
+      "error": "",
+      "keys": [
+        "ok",
+        "mapsKey",
+        "applyUrl"
+      ]
+    },
+    {
+      "route": "/api/auth/session",
+      "method": "GET",
+      "auth": "none",
+      "status": 401,
+      "error": "unauthorized",
+      "keys": [
+        "ok",
+        "error"
+      ]
+    }
+  ]
+}

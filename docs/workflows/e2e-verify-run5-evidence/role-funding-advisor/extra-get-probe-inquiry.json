@@ -1,0 +1,21 @@
+{
+  "ranAt": "2026-08-17T03:44:02.283Z",
+  "email": "advisor@fundhub.ai",
+  "note": "GET-only follow-up on routes -actual.md lists with no method; no bodies sent",
+  "results": [
+    {
+      "route": "/api/inquiry?action=cases",
+      "method": "GET",
+      "status": 403,
+      "shape": "{ok:boolean, error:string, required:array(2)}",
+      "error": "forbidden"
+    },
+    {
+      "route": "/api/inquiry",
+      "method": "GET",
+      "status": 403,
+      "shape": "{ok:boolean, error:string, required:array(2)}",
+      "error": "forbidden"
+    }
+  ]
+}

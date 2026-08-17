@@ -1,0 +1,46 @@
+{
+  "ranAt": "2026-08-17T04:04:15.311Z",
+  "note": "anonymous GET follow-ups only (no login budget left; probe tool does not persist a token). Routes are gate=anyone per -actual.md.",
+  "results": [
+    {
+      "route": "/api/health",
+      "method": "GET",
+      "auth": "none",
+      "status": 200,
+      "error": "",
+      "bodyKeys": [
+        "ok",
+        "db",
+        "state",
+        "migrations",
+        "expected",
+        "pending",
+        "error",
+        "checkedAt"
+      ]
+    },
+    {
+      "route": "/api/climate/config",
+      "method": "GET",
+      "auth": "none",
+      "status": 200,
+      "error": "",
+      "bodyKeys": [
+        "ok",
+        "mapsKey",
+        "applyUrl"
+      ]
+    },
+    {
+      "route": "/api/auth/session",
+      "method": "GET",
+      "auth": "none",
+      "status": 401,
+      "error": "unauthorized",
+      "bodyKeys": [
+        "ok",
+        "error"
+      ]
+    }
+  ]
+}
