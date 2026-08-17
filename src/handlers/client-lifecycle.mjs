@@ -442,8 +442,8 @@ export async function onDecisionRendered(event, db) {
     //
     // Both mirror one figure: decision.rendered carries a single dollar amount
     // (crs.mjs:mapToCanonical → payload.fundingEstimate), so both are written from it.
-    // Stored raw, like total_funding_estimate — consumers format (public/dashboard.html
-    // uses fmtMoney). Display formatting for the merge tag belongs with the AI-SET copy
+    // Stored raw, like total_funding_estimate — consumers format it themselves.
+    // Display formatting for the merge tag belongs with the AI-SET copy
     // rewrite, not invented here.
     await mergeCustomFields(db, clientId, {
       total_funding_estimate: p.fundingEstimate,

@@ -366,15 +366,16 @@ describe("shell.js — a query string does not open a hole in the gate", () => {
     assert.equal(r.click(a).defaultPrevented, false);
   });
 
-  test("closer bounced off a forbidden screen lands on /dashboard.html", async () => {
-    // Closer home is /dashboard.html (outside /app/, not in CLIENT_SCREENS),
-    // so the bounce does not append client_id. Absolute /app/ + client carry
-    // is still covered by the gateLinks rewrite tests in this file.
+  test("closer bounced off a forbidden screen lands on the closer dashboard", async () => {
+    // Closer home is closer-dashboard.html, inside /app/ and in CLIENT_SCREENS,
+    // so the bounce carries client_id through. It used to be /dashboard.html
+    // outside /app/, which could not carry it; that page was deleted
+    // (owner-set 2026-08-17).
     const r = await runShell({
       role: "closer", page: "subscriptions.html", search: "?client_id=" + CID
     });
     assert.ok(r.navigations.length > 0, "a forbidden screen was not routed away from");
-    assert.equal(r.navigations[0].to, "/dashboard.html");
+    assert.equal(r.navigations[0].to, "/app/closer-dashboard.html?client_id=" + CID);
   });
 
   test("an allowed row keeps its client and stays visible", async () => {

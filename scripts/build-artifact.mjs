@@ -24,7 +24,6 @@ const GROUPS = [
     note: "What a business owner sees before there is an account.",
     pages: [
       ["index.html", "Home"],
-      ["dashboard.html", "Applicant dashboard"],
       ["login.html", "Sign in"],
       ["affiliates/index.html", "Affiliates"],
       ["education/index.html", "Education"],

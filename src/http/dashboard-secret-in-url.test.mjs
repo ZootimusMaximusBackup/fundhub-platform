@@ -18,9 +18,9 @@
  * The master secret is strictly more dangerous than one session token, so it
  * cannot be held to a weaker standard.
  *
- * The header remains the only accepted carrier. public/dashboard.html already
- * sends the header on every API call, so nothing about the transport changes —
- * only where the page is allowed to pick the key up from.
+ * The header remains the only accepted carrier. Callers already send the header
+ * on every API call, so nothing about the transport changes — only where a
+ * caller is allowed to pick the key up from.
  *
  * WHY THIS FILE LIVES UNDER src/http/. package.json's test glob is "src/**" and
  * "scripts/**"; a test placed under api/ is silently never collected.
@@ -28,16 +28,10 @@
 
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { checkDashboardAuth, requireDashboardAccess } from "./dashboard-auth.mjs";
 import { db } from "../db.mjs";
 import clientsHandler from "../../api/dashboard/clients.mjs";
-
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const DASHBOARD_HTML = path.resolve(HERE, "../../public/dashboard.html");
 
 const SECRET = "sup3r-s3cret-master-key";
 
@@ -178,38 +172,9 @@ describe("M2: GET /api/dashboard/clients with the secret in the URL", () => {
   });
 });
 
-/* The page is the other half of the finding: as long as dashboard.html tells
-   people to put the secret in the address bar, the secret keeps ending up in
-   history, bookmarks and Referer headers even after the server stops honouring
-   it. Source-level assertions, because the key pickup runs before any fetch. */
-describe("M2: public/dashboard.html does not carry the secret in the URL", () => {
-  const SRC = fs.readFileSync(DASHBOARD_HTML, "utf8");
-
-  test("the key is not read out of the query string", () => {
-    assert.ok(
-      !/URLSearchParams\s*\(\s*location\.search\s*\)[\s\S]{0,80}?\.get\(\s*['"]key['"]\s*\)/.test(SRC),
-      "dashboard.html still lifts the master secret out of location.search"
-    );
-    assert.ok(
-      !/location\.search[\s\S]{0,120}?['"]key['"]/.test(SRC),
-      "dashboard.html still reads the master secret from the URL query string"
-    );
-  });
-
-  test("the page no longer instructs people to paste the secret into the address bar", () => {
-    assert.ok(
-      !/\?key=/.test(SRC),
-      "dashboard.html still tells the user to add ?key=… to the URL"
-    );
-  });
-
-  test("the key is still sent as the x-dashboard-key header", () => {
-    assert.ok(/x-dashboard-key/.test(SRC),
-      "dashboard.html no longer sends the key as a header, so the dashboard cannot authenticate at all");
-  });
-
-  test("the key is held in sessionStorage, which is not written to history or Referer", () => {
-    assert.ok(/sessionStorage/.test(SRC),
-      "dashboard.html has no replacement carrier for the key");
-  });
-});
+/* The page half of this finding is gone: public/dashboard.html was deleted
+   (owner-set 2026-08-17), so there is no longer a page that could lift the
+   master secret out of the address bar. The four source-level assertions that
+   guarded it were removed with their subject. The server-side guards above —
+   which are the ones that actually refuse the secret from a URL — still run,
+   and still matter, because /api/dashboard/* is live and used by pipeline.html. */

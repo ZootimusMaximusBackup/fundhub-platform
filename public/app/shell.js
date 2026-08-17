@@ -257,7 +257,7 @@
     owner: "command-center.html",
     admin: "command-center.html",
     funding_advisor: "command-center.html",
-    closer: "/dashboard.html",
+    closer: "closer-dashboard.html",
     inquiry_specialist: "inquiry-remover.html",
     setter: "pipeline.html",
     // The Sales pipeline is the thing they own, so it is where they land.
@@ -299,8 +299,10 @@
   function homeFor(role, ok) {
     var h = HOME[role];
     if (!h) return ok[0];
-    /* Absolute homes (e.g. /dashboard.html) are landing pages outside /app/,
-       not gated tabs — do not require them in the role's screen list. */
+    /* An absolute home is a landing page outside /app/, not a gated tab — do
+       not require it in the role's screen list. No role uses one today; the
+       branch stays as a guard so a future absolute home does not fall through
+       to ok[0]. */
     if (h.charAt(0) === "/") return h;
     return ok.indexOf(h) !== -1 ? h : ok[0];
   }

@@ -516,10 +516,11 @@ describe("GET /api/auth/login — the switcher's roster, gated server-side", () 
   test("every home is a real screen file that exists on disk", async () => {
     // shell.js:isScreen() only checks the SHAPE of the href. A typo'd filename
     // passes that and 404s in the browser, so the file is checked here.
-    // Closer lands outside /app/ on /dashboard.html (read-only client list).
+    // Every role lands on a screen inside /app/. The closer used to land on
+    // /dashboard.html outside it; that page was deleted (owner-set 2026-08-17).
     const { logins } = (await getOptions("1")).body.demo;
     for (const d of logins) {
-      assert.match(d.home, /^\/(?:app\/[a-z0-9-]+|dashboard)\.html$/,
+      assert.match(d.home, /^\/app\/[a-z0-9-]+\.html$/,
         `${d.home} is not an allowed home path`);
       assert.ok(fs.existsSync(path.join(ROOT, "public", d.home.replace(/^\//, ""))),
         `${d.role} opens ${d.home}, which does not exist`);
