@@ -67,6 +67,104 @@
 }
 
 /* UI-STANDARDS.md §1 MAX CONTENT WIDTH — 1280px, centered. */
-:root{ --fh-maxw:1280px; }
+:root{ --fh-maxw:1280px; --fh-statusbar:0px; }
 /* Put .fh-maxw on the content column only, never on a table or its scroll wrapper — tables stay wider inside their own overflow-x container (§1). */
 .fh-maxw{max-width:var(--fh-maxw);margin-inline:auto}
+
+/* ── UI-STANDARDS.md §3 TYPE SNAP ──────────────────────────────────────────
+   Screen CSS loads AFTER this file, so leftover 7.5–13px sizes win unless we
+   force the four tokens. Scoped to the CRM shells so a client-facing deck
+   (present.html) keeps its own type. */
+.app, .shell, .main, .fh-maxw{
+  font-size:var(--fs-body);
+}
+.app *, .shell *, .main *, .fh-maxw *{
+  font-size:inherit !important;
+}
+.app h1, .shell h1, .main h1, .fh-maxw h1,
+.app h2, .shell h2, .main h2, .fh-maxw h2{
+  font-size:var(--fs-title) !important;
+}
+.app .sv, .shell .sv, .main .sv, .fh-maxw .sv,
+.app .vl, .shell .vl, .main .vl, .fh-maxw .vl,
+.app .big, .shell .big, .main .big,
+.app .big-tile .val, .app .kpi .vl, .app .band .bv,
+.app .un-mins, .app .fh-num, .app .fos-value{
+  font-size:var(--fs-metric) !important;
+  font-variant-numeric:tabular-nums;
+}
+.app .chip, .shell .chip, .main .chip,
+.app .eyebrow, .shell .eyebrow, .main .eyebrow,
+.app .badge, .app .tag, .app .av, .app .stat-label,
+.app .kpi .lb, .app .kpi .sb, .app .band .bl,
+.app .sd, .app .cmp, .app .note, .app .hint,
+.app .statusline, .app .statusbar, .app .mono,
+.app label, .app th, .app .caption, .app .sub,
+.app .card-title, .app .rail-code{
+  font-size:var(--fs-caption) !important;
+}
+
+/* ── UI-STANDARDS.md §5 TAP TARGETS — 40px floor ───────────────────────────
+   min-height is a different property than later padding rules, so it sticks
+   without !important on most screens. !important wins where a screen sets height. */
+button, [type="button"], [type="submit"], .btn,
+.seg span, .link-btn, .tab, .ctab, .filter-btn, .fchip,
+.rail-tab, .group-title.tog, .rail-open, .un-join, a.btn,
+.navbtn, .today-btn{
+  min-height:40px;
+  min-width:40px;
+  box-sizing:border-box;
+}
+input[type="checkbox"]{
+  width:20px;
+  height:20px;
+}
+label:has(> input[type="checkbox"]){
+  min-height:40px;
+  display:inline-flex;
+  align-items:center;
+}
+
+/* ── UI-STANDARDS.md §2 — never five tiles in one row. Fifth wraps. ──────── */
+.stats, .kpi-grid, #stateLegend, .funnel, .stat-tiles{
+  grid-template-columns:repeat(4, 1fr) !important;
+}
+.stat-tiles{
+  display:grid !important;
+}
+
+/* ── UI-STANDARDS.md §5 — coming-soon / inert placeholders do not render ─── */
+.soon,
+.card:has(.tag-soon),
+#demozone,
+.demozone,
+button.link-btn:disabled,
+#unJoin:disabled{
+  display:none !important;
+}
+
+/* Empty welcome-video block: one line, not a 410px hole */
+.player:has(.video-empty){
+  aspect-ratio:auto;
+  max-height:none;
+  min-height:0;
+  height:auto;
+  padding:16px;
+  background:var(--soft, #F4F4F5);
+}
+.player:has(.video-empty) .ghost{display:none}
+
+/* Money columns — right-align tabular figures (§7) */
+td.money, th.money, td .age, th[data-s="age"]{
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+
+/* Empty Next Action is not an alert — coral only when a blocker list has rows */
+.blockers-panel:has(#ccp-blocker-list:empty){
+  background:var(--soft,#F4F4F5);
+  border-color:var(--line);
+}
+
+/* data.js status strip is fixed; pad the page so it cannot cover controls */
+body{padding-bottom:var(--fh-statusbar)}

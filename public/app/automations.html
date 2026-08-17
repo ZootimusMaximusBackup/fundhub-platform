@@ -393,8 +393,9 @@
     if(m < 60) return m + 'm ago';
     var h = Math.floor(m / 60);
     if(h < 24) return h + 'h ago';
-    var d = Math.floor(h / 24);
-    return d + 'd ago';
+    var dt = new Date(iso);
+    if(!isFinite(dt.getTime())) return null;
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   }
 
   function statusBadge(row){

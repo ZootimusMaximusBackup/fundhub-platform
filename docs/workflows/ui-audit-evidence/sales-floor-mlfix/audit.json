@@ -1,0 +1,710 @@
+{
+  "screen": "/app/sales-floor.html",
+  "slug": "sales-floor-mlfix",
+  "email": "sales@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T19:37:59.424Z",
+  "login": {
+    "ok": true,
+    "cached": true,
+    "landedAt": "/app/sales-floor.html",
+    "role": "sales_manager"
+  },
+  "load": {
+    "httpStatus": 200,
+    "retriesFor503OrBounce": 0,
+    "finalUrl": "/app/sales-floor.html",
+    "bounced": false,
+    "title": "Sales floor · Fundhub",
+    "apiCalls": [
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/health",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/org-brand",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/read/sales-floor",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      }
+    ],
+    "apiFails": [],
+    "consoleErrors": [],
+    "dialogs": [],
+    "shots": {
+      "fold": "docs/workflows/ui-audit-evidence/sales-floor-mlfix/1440-fold.png",
+      "full": "docs/workflows/ui-audit-evidence/sales-floor-mlfix/1440-full.png"
+    }
+  },
+  "dom": {
+    "vw": 1440,
+    "vh": 900,
+    "docH": 1881,
+    "sizes": {
+      "11.5px": {
+        "count": 1,
+        "examples": [
+          "M-01 / Sales floor"
+        ]
+      },
+      "9px": {
+        "count": 2,
+        "examples": [
+          "0 closers on shift",
+          "TEST — Sales Manager Role"
+        ]
+      },
+      "14px": {
+        "count": 80,
+        "examples": [
+          "Today",
+          "Booked 0 · Held 0 · No daily sales_manag",
+          "Funded, not just sold"
+        ]
+      },
+      "28px": {
+        "count": 7,
+        "examples": [
+          "0",
+          "—",
+          "0"
+        ]
+      },
+      "11px": {
+        "count": 6,
+        "examples": [
+          "Where the funnel leaks",
+          "Your closers",
+          "13"
+        ]
+      },
+      "12px": {
+        "count": 1,
+        "examples": [
+          "Search"
+        ]
+      },
+      "10px": {
+        "count": 1,
+        "examples": [
+          "⌘K"
+        ]
+      },
+      "13px": {
+        "count": 1,
+        "examples": [
+          "Chat"
+        ]
+      }
+    },
+    "navVisibleCount": 4,
+    "navActive": [
+      "▣Sales floor"
+    ],
+    "navGroups": [
+      {
+        "head": "Sales▾",
+        "items": [
+          "▤Pipeline",
+          "★Closer Dashboard",
+          "▣Sales floor",
+          "▦Calendar"
+        ]
+      },
+      {
+        "head": "Funding▾",
+        "items": []
+      },
+      {
+        "head": "Client ops▾",
+        "items": []
+      },
+      {
+        "head": "Watch▾",
+        "items": []
+      },
+      {
+        "head": "Automation▾",
+        "items": []
+      },
+      {
+        "head": "Marketing▾",
+        "items": []
+      },
+      {
+        "head": "Admin▾",
+        "items": []
+      }
+    ],
+    "h1": [],
+    "h2": [],
+    "contentWidth": 1440,
+    "contentSel": "div.app-shell",
+    "sideW": 228,
+    "controlsCount": 18,
+    "controls": [
+      {
+        "idx": 0,
+        "key": "a|||command-center.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "",
+        "id": null,
+        "cls": "logo inv",
+        "href": "command-center.html",
+        "disabled": false,
+        "w": 118,
+        "h": 24,
+        "top": 10,
+        "left": 16,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 238)",
+        "filled": false
+      },
+      {
+        "idx": 1,
+        "key": "button|‹‹|burger|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "‹‹",
+        "id": "burger",
+        "cls": "burger",
+        "href": null,
+        "disabled": false,
+        "w": 40,
+        "h": 40,
+        "top": 2,
+        "left": 172,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 2,
+        "key": "button|Sales▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Sales▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 56,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 3,
+        "key": "a|▤Pipeline||pipeline.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "▤Pipeline",
+        "id": null,
+        "cls": "navitem",
+        "href": "pipeline.html",
+        "disabled": false,
+        "w": 228,
+        "h": 27,
+        "top": 96,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 4,
+        "key": "a|★Closer Dashboard||closer-dashboard.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "★Closer Dashboard",
+        "id": null,
+        "cls": "navitem",
+        "href": "closer-dashboard.html",
+        "disabled": false,
+        "w": 228,
+        "h": 27,
+        "top": 123,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 5,
+        "key": "a|▣Sales floor||sales-floor.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "▣Sales floor",
+        "id": null,
+        "cls": "navitem on",
+        "href": "sales-floor.html",
+        "disabled": false,
+        "w": 228,
+        "h": 27,
+        "top": 150,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(22, 22, 25)",
+        "color": "rgb(252, 252, 252)",
+        "filled": true
+      },
+      {
+        "idx": 6,
+        "key": "a|▦Calendar||calendar.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "▦Calendar",
+        "id": null,
+        "cls": "navitem",
+        "href": "calendar.html",
+        "disabled": false,
+        "w": 228,
+        "h": 27,
+        "top": 178,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 7,
+        "key": "button|Funding▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Funding▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 208,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 8,
+        "key": "button|Client ops▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Client ops▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 251,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 9,
+        "key": "button|Watch▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Watch▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 294,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 10,
+        "key": "button|Automation▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Automation▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 337,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 11,
+        "key": "button|Marketing▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Marketing▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 380,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 12,
+        "key": "button|Admin▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Admin▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 423,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 13,
+        "key": "button|Today's recordings|fh-recordings-jump|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Today's recordings",
+        "id": "fh-recordings-jump",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 155,
+        "h": 40,
+        "top": 1044,
+        "left": 861,
+        "aboveFold": false,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(252, 252, 252)",
+        "color": "rgb(0, 0, 0)",
+        "filled": false
+      },
+      {
+        "idx": 14,
+        "key": "button|Refresh from Drive|fh-drive-refresh|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Refresh from Drive",
+        "id": "fh-drive-refresh",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 152,
+        "h": 40,
+        "top": 1384,
+        "left": 269,
+        "aboveFold": false,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(252, 252, 252)",
+        "color": "rgb(0, 0, 0)",
+        "filled": false
+      },
+      {
+        "idx": 15,
+        "key": "button|Sign out|fh-shell-out|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": null,
+        "text": "Sign out",
+        "id": "fh-shell-out",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 73,
+        "h": 40,
+        "top": 21,
+        "left": 1340,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(228, 228, 231)",
+        "filled": false
+      },
+      {
+        "idx": 16,
+        "key": "button|Search⌘K|fh-shell-search-btn|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Search⌘K",
+        "id": "fh-shell-search-btn",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 99,
+        "h": 40,
+        "top": 12,
+        "left": 785,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 17,
+        "key": "button|Chat|fh-chat-fab|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Chat",
+        "id": "fh-chat-fab",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 52,
+        "h": 52,
+        "top": 830,
+        "left": 1370,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(10, 10, 10)",
+        "color": "rgb(255, 255, 255)",
+        "filled": true
+      }
+    ],
+    "genericLabels": [],
+    "smallTargets": [],
+    "primaryLooking": [
+      {
+        "text": "Chat",
+        "bg": "rgb(10, 10, 10)",
+        "w": 52,
+        "h": 52,
+        "aboveFold": true
+      }
+    ],
+    "capsRuns": [],
+    "sampleWording": [],
+    "loadingWording": [],
+    "errorWording": [
+      "Which belief failed"
+    ],
+    "emptyWording": [
+      "0 of 0 deposits funded",
+      "Live objection counts load here. Empty means none logged this month."
+    ],
+    "centeredParas": [],
+    "offScale": {
+      "17px": 6,
+      "18px": 6
+    },
+    "unevenRows": [],
+    "tables": [],
+    "metrics": [
+      {
+        "text": "0",
+        "fontSize": "28px",
+        "tabular": true,
+        "cls": "big"
+      },
+      {
+        "text": "—",
+        "fontSize": "28px",
+        "tabular": true,
+        "cls": "big"
+      },
+      {
+        "text": "5",
+        "fontSize": "14px",
+        "tabular": true,
+        "cls": "num c2"
+      },
+      {
+        "text": "0%",
+        "fontSize": "14px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "—",
+        "fontSize": "14px",
+        "tabular": true,
+        "cls": "num c4"
+      },
+      {
+        "text": "$5",
+        "fontSize": "14px",
+        "tabular": true,
+        "cls": "num c5"
+      },
+      {
+        "text": "5",
+        "fontSize": "14px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "0%",
+        "fontSize": "14px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "0",
+        "fontSize": "14px",
+        "tabular": true,
+        "cls": "num"
+      }
+    ],
+    "topLeft": {
+      "tag": "header",
+      "text": "M-01 / Sales floor 0 closers on shift TEST — Sales Manager Role"
+    },
+    "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ fundhub M-01 / SALES FLOOR 0 CLOSERS ON SHIFT TEST — SALES MANAGER ROLE TODAY 0 Booked 0 · Held 0 · No daily sales_manager target in staff_targets FUNDED, NOT JUST SOLD — 0 of 0 deposits funded 0 No daily sales_manager target in staff_targets WHERE THE FUNNEL LEAKS This month BOOKED 0 HELD 5 DEPOSITS 0 0% of held FUNDED 0 DOWNSELLS 5 $5 No deposits this month. The funnel above is the month so far. YOUR CLOSERS Cash · close rate · funded rate · what to do CLOSER CALL"
+  },
+  "mobile": {
+    "scrollWidth": 390,
+    "horizontalOverflow": false,
+    "sideVisible": true,
+    "sideW": 228,
+    "burger": true,
+    "overflowers": [
+      "div.f",
+      "div.lb",
+      "div.vl",
+      "div.cv"
+    ],
+    "textUnder11px": 1,
+    "docH": 2905,
+    "shots": {
+      "full": "docs/workflows/ui-audit-evidence/sales-floor-mlfix/390-full.png",
+      "fold": "docs/workflows/ui-audit-evidence/sales-floor-mlfix/390-fold.png"
+    },
+    "finalUrl": "/app/sales-floor.html",
+    "apiFails": []
+  },
+  "clicks": [],
+  "clickSummary": {
+    "skipped": true,
+    "reason": "--no-clicks"
+  }
+}

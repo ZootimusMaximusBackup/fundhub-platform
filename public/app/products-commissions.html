@@ -41,7 +41,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
-.topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+.topbar{min-height:57px;flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:8px 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20;flex-wrap:nowrap}
+.topbar h1,.topbar .btn{white-space:nowrap}
 /* Clear Search + Sign-out chip so "+ Add product" is actually clickable.
    --fh-shell-top-clearance is set by shell.js layoutShellChrome(). */
 @media (min-width:1201px){ .topbar{padding-right:var(--fh-shell-top-clearance, 520px)} }
@@ -81,7 +82,8 @@ table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:va
 table.grid tr:last-child td{border-bottom:0}
 table.grid tbody tr.clik{cursor:pointer}
 table.grid tbody tr.clik:hover{background:var(--soft)}
-.money{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:500}
+.money{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:500;text-align:right}
+table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6){text-align:right}
 .field{display:flex;flex-direction:column;gap:5px}
 .field label{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
 .field input,.field select{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:var(--fs-body);width:100%}

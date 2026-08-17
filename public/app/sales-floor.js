@@ -114,7 +114,7 @@
           '<span class="num">' + pct(c.close_rate) + "</span>" +
           '<span class="num c4">' + pct(c.funded_rate) + "</span>" +
           '<span class="num c5">' + (c.cash_display || money(c.cash_cents)) + "</span>" +
-          '<span class="act"><b>' + (c.action || "—") + "</b></span></div>";
+          '<span class="act"><b>' + (c.action || "Nothing assigned") + "</b></span></div>";
       }).join("") || '<div class="rrow"><span class="nm"><b>No closers on this board</b><em>Live staff only</em></span></div>';
       rost.querySelectorAll(".rrow").forEach(function (n) { n.remove(); });
       if (head) head.insertAdjacentHTML("afterend", rows);
@@ -226,8 +226,7 @@
       var panel = h.parentElement;
       var reason = (d.compliance && d.compliance.reason) ||
         "Call recording and transcription do not exist yet.";
-      panel.innerHTML = "<h3>Compliance</h3><p class=\"note\">" + reason + "</p>" +
-        "<p class=\"note\">Table <code>call_compliance_flags</code> is ready for flagged phrases and missed disclosures.</p>";
+      panel.innerHTML = "<h3>Compliance</h3><p class=\"note\">" + reason + "</p>";
     });
 
     // Cold deals

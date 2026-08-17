@@ -430,11 +430,16 @@ window.dispatchEvent(new Event("pdfjs-ready"));
     var m = STATE[s] || STATE.draft;
     return '<span class="badge ' + m.cls + '">' + m.word + "</span>";
   }
+  function whenDay(iso) {
+    var d = new Date(iso);
+    if (!iso || !isFinite(d.getTime())) return "—";
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  }
   function when(c) {
-    if (c.signed_at) return "signed " + String(c.signed_at).slice(0, 10);
-    if (c.viewed_at) return "opened " + String(c.viewed_at).slice(0, 10);
-    if (c.sent_at) return "sent " + String(c.sent_at).slice(0, 10);
-    return "made " + String(c.created_at).slice(0, 10);
+    if (c.signed_at) return "signed " + whenDay(c.signed_at);
+    if (c.viewed_at) return "opened " + whenDay(c.viewed_at);
+    if (c.sent_at) return "sent " + whenDay(c.sent_at);
+    return "made " + whenDay(c.created_at);
   }
   function say(el, kind, text) {
     el.innerHTML = '<span class="badge ' + kind + '">' +

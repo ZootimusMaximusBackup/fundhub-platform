@@ -1847,7 +1847,7 @@ function renderReviewQueue(){
       '<td style="max-width:340px">'+why+'</td>'+
       '<td>'+st.html+'</td>'+
     '</tr>';
-  }).join('') : '<tr><td colspan="9"><div class="empty">Nothing is waiting on a person.</div></td></tr>';
+  }).join('') : '<tr><td colspan="9"><div class="empty">Nothing is waiting on a person. A row appears when an application needs a review.</div></td></tr>';
 
   tb.querySelectorAll('tr[data-app]').forEach(function(tr){
     tr.addEventListener('click',function(){ openDrawer(tr.dataset.app); });
@@ -1951,7 +1951,7 @@ function renderPostings(){
         : '<div class="detcol wide"><div class="dk">last failure</div><div class="dv nul mono">none</div></div>')+
     '</div></td></tr>';
     return main+det;
-  }).join('') : '<tr><td colspan="10"><div class="empty">No postings match this filter.</div></td></tr>';
+  }).join('') : '<tr><td colspan="10"><div class="empty">No postings match this filter. Add a posting or clear the filter to see the list.</div></td></tr>';
 
   tb.querySelectorAll('tr.rowbtn').forEach(function(tr){
     function toggle(){
@@ -2016,7 +2016,7 @@ function paintFunnel(rows, days, roleKey){
       '<td class="mnum">'+g.rejected+'</td>'+
       '<td class="mnum">'+(g.hire_rate_pct===null?'<span class="nul">—</span>':g.hire_rate_pct.toFixed(1)+'%')+'</td>'+
     '</tr>';
-  }).join('') : '<tr><td colspan="9"><div class="empty">No applications in this window.</div></td></tr>';
+  }).join('') : '<tr><td colspan="9"><div class="empty">No applications in this window. Change the role, source, or days filter to look again.</div></td></tr>';
 
   var totalApps=rows.reduce(function(n,g){return n+g.applications;},0);
 
@@ -2160,7 +2160,7 @@ function renderDecisions(){
         : '')+
     '</div></td></tr>';
     return main+det;
-  }).join('') : '<tr><td colspan="9"><div class="empty">No decisions in this window.</div></td></tr>';
+  }).join('') : '<tr><td colspan="9"><div class="empty">No decisions in this window. A row appears when someone records a hire or reject.</div></td></tr>';
 
   tb.querySelectorAll('tr.rowbtn').forEach(function(tr){
     function toggle(){

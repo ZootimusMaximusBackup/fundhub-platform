@@ -494,6 +494,7 @@ window.FHData = (function () {
         "background:" + (TONE[tone] || TONE.error) + ";color:#0A0A0A;" +
         "font:600 11px/1.4 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.05em;text-align:center";
       el.textContent = text;
+      document.documentElement.style.setProperty("--fh-statusbar", (el.offsetHeight || 32) + "px");
       return el;
     },
 

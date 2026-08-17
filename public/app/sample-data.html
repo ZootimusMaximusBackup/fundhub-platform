@@ -374,8 +374,9 @@ pre.json .b{color:#C4B3E5}
     statusEl.textContent = on ? "Demo Mode is ON — CRM screens show seeded sample data with a banner." : "Demo Mode is OFF — demo rows are hidden.";
     pill.innerHTML = on ? '<span class="dot" style="background:#FDBA74"></span>DEMO MODE ON' : '<span class="dot" style="background:var(--gray2)"></span>Demo Mode off';
     lastCounts = (d && d.counts) || null;
+    var LABELS = { clients:"Clients", lenders:"Lenders", call_outcomes:"Call outcomes", sales:"Sales", tasks:"Tasks", documents:"Documents", bank_accounts:"Bank accounts", subscriptions:"Subscriptions" };
     countsEl.textContent = lastCounts
-      ? COUNT_KEYS.map(function (k) { return k + ": " + (lastCounts[k] || 0); }).join("\n")
+      ? COUNT_KEYS.map(function (k) { return (LABELS[k] || k) + "  " + (lastCounts[k] || 0); }).join("\n")
       : "—";
     /* Only the action that changes the state renders (UI-STANDARDS §5). */
     btnOn.style.display = on ? "none" : "inline-block";

@@ -81,7 +81,7 @@ describe("messaging.html — what a conversation row says", () => {
     assert.equal(V.shortWhen(ago(30 * 1000), NOW), "now");
     assert.equal(V.shortWhen(ago(5 * 60 * 1000), NOW), "5m");
     assert.equal(V.shortWhen(ago(3 * 3600 * 1000), NOW), "3h");
-    assert.equal(V.shortWhen(ago(2 * 86400 * 1000), NOW), "2d");
+    assert.equal(V.shortWhen(ago(2 * 86400 * 1000), NOW), "Jul 31");
     assert.equal(V.shortWhen(null, NOW), "");
     assert.equal(V.shortWhen("not a date", NOW), "");
     // A row stamped a second in the future (clock skew) must not read "-1m".

@@ -436,11 +436,12 @@
       <div class="convo-head">
         <div class="search"><span>&#8981;</span><input id="q" placeholder="Search people and messages" autocomplete="off"></div>
         <div class="convo-tabs">
-          <button class="ctab active" data-filter="all">All <span class="n" id="nAll">&mdash;</span></button>
+          <button class="ctab" data-filter="all">All <span class="n" id="nAll">&mdash;</span></button>
           <!-- "Needs reply", not "Unread". Nothing in this system records who
                has READ a thread, so the count is "the client spoke last and
-               nobody has answered". See the header of api/read/inbox.mjs. -->
-          <button class="ctab" data-filter="reply">Needs reply <span class="n" id="nReply">&mdash;</span></button>
+               nobody has answered". See the header of api/read/inbox.mjs.
+               Default is the advisor's queue. -->
+          <button class="ctab active" data-filter="reply">Needs reply <span class="n" id="nReply">&mdash;</span></button>
         </div>
       </div>
 
@@ -643,9 +644,7 @@
     if (mins < 60) return mins + "m";
     var hrs = Math.floor(mins / 60);
     if (hrs < 24) return hrs + "h";
-    var days = Math.floor(hrs / 24);
-    if (days < 30) return days + "d";
-    return Math.floor(days / 30) + "mo";
+    return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
   }
 
   /* The one-line preview. A thread with no messages says so rather than
@@ -898,7 +897,7 @@
   var V = window.FHInbox;
   var $ = function (id) { return document.getElementById(id); };
 
-  var state = { rows: [], hasMore: false, selected: null, filter: "all", q: "", sending: false };
+  var state = { rows: [], hasMore: false, selected: null, filter: "reply", q: "", sending: false };
 
   /* How often the inbox re-reads itself while somebody is sitting on it.
 
