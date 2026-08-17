@@ -1,0 +1,389 @@
+{
+  "screen": "/app/my-numbers.html",
+  "slug": "_test-local-my-numbers",
+  "email": "closer@fundhub.ai",
+  "base": "http://localhost:8888",
+  "ranAt": "2026-08-17T06:55:10.867Z",
+  "login": {
+    "ok": true,
+    "landedAt": "/dashboard.html",
+    "role": "closer",
+    "loginApiStatus": 200
+  },
+  "load": {
+    "httpStatus": 200,
+    "retriesFor503OrBounce": 5,
+    "finalUrl": "/login.html?next=/app/my-numbers.html",
+    "bounced": false,
+    "title": "Sign in | fundhub",
+    "apiCalls": [
+      {
+        "method": "GET",
+        "url": "/api/read/my-numbers",
+        "status": 503
+      },
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 503
+      },
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 503
+      },
+      {
+        "method": "GET",
+        "url": "/api/auth/login",
+        "status": 200
+      }
+    ],
+    "apiFails": [
+      {
+        "method": "GET",
+        "url": "/api/read/my-numbers",
+        "status": 503
+      },
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 503
+      },
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 503
+      }
+    ],
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+      "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+      "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    ],
+    "dialogs": [],
+    "shots": {
+      "fold": "docs/workflows/ui-audit-evidence/_test-local-my-numbers/1440-fold.png",
+      "full": "docs/workflows/ui-audit-evidence/_test-local-my-numbers/1440-full.png"
+    }
+  },
+  "dom": {
+    "vw": 1440,
+    "vh": 900,
+    "docH": 900,
+    "sizes": {
+      "15px": {
+        "count": 1,
+        "examples": [
+          "fundhub"
+        ]
+      },
+      "13px": {
+        "count": 1,
+        "examples": [
+          "Sign in to your account"
+        ]
+      },
+      "12.5px": {
+        "count": 1,
+        "examples": [
+          "Sign in"
+        ]
+      },
+      "12px": {
+        "count": 4,
+        "examples": [
+          "Need help?",
+          "support@fundhub.ai",
+          "Forgot your password?"
+        ]
+      }
+    },
+    "navVisibleCount": 0,
+    "navActive": [],
+    "navGroups": [],
+    "h1": [
+      "fundhub"
+    ],
+    "h2": [],
+    "contentWidth": 1440,
+    "contentSel": "div.spectrum",
+    "sideW": 0,
+    "controlsCount": 6,
+    "controls": [
+      {
+        "idx": 0,
+        "key": "input|Email address|email|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "input",
+        "type": "email",
+        "text": "Email address",
+        "id": "email",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 266,
+        "h": 34,
+        "top": 186,
+        "left": 587,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": true,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 1,
+        "key": "input|Password|pw|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "input",
+        "type": "password",
+        "text": "Password",
+        "id": "pw",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 266,
+        "h": 34,
+        "top": 230,
+        "left": 587,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": true,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 2,
+        "key": "button|Sign in|go|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "submit",
+        "text": "Sign in",
+        "id": "go",
+        "cls": "btn primary",
+        "href": null,
+        "disabled": false,
+        "w": 266,
+        "h": 33,
+        "top": 274,
+        "left": 587,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(10, 10, 10)",
+        "color": "rgb(255, 255, 255)",
+        "filled": true
+      },
+      {
+        "idx": 3,
+        "key": "a|support@fundhub.ai||mailto:support@fundhub.ai",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "support@fundhub.ai",
+        "id": null,
+        "cls": null,
+        "href": "mailto:support@fundhub.ai",
+        "disabled": false,
+        "w": 116,
+        "h": 15,
+        "top": 322,
+        "left": 655,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(82, 82, 91)",
+        "filled": false
+      },
+      {
+        "idx": 4,
+        "key": "a|Forgot your password?|fh-forgot-link|#",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "Forgot your password?",
+        "id": "fh-forgot-link",
+        "cls": null,
+        "href": "#",
+        "disabled": false,
+        "w": 130,
+        "h": 15,
+        "top": 352,
+        "left": 587,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(82, 82, 91)",
+        "filled": false
+      },
+      {
+        "idx": 5,
+        "key": "a|← Back to fundhub.ai||/",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "← Back to fundhub.ai",
+        "id": null,
+        "cls": null,
+        "href": "/",
+        "disabled": false,
+        "w": 121,
+        "h": 15,
+        "top": 382,
+        "left": 587,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(82, 82, 91)",
+        "filled": false
+      }
+    ],
+    "genericLabels": [],
+    "smallTargets": [
+      {
+        "text": "Sign in",
+        "w": 266,
+        "h": 33
+      },
+      {
+        "text": "support@fundhub.ai",
+        "w": 116,
+        "h": 15
+      },
+      {
+        "text": "Forgot your password?",
+        "w": 130,
+        "h": 15
+      },
+      {
+        "text": "← Back to fundhub.ai",
+        "w": 121,
+        "h": 15
+      }
+    ],
+    "primaryLooking": [
+      {
+        "text": "Sign in",
+        "bg": "rgb(10, 10, 10)",
+        "w": 266,
+        "h": 33,
+        "aboveFold": true
+      }
+    ],
+    "capsRuns": [],
+    "sampleWording": [],
+    "loadingWording": [],
+    "errorWording": [],
+    "emptyWording": [],
+    "centeredParas": [],
+    "offScale": {
+      "26px": 2
+    },
+    "unevenRows": [],
+    "tables": [],
+    "metrics": [],
+    "topLeft": null,
+    "bodyText": "fundhub Sign in to your account Sign in Need help? support@fundhub.ai Forgot your password? ← Back to fundhub.ai"
+  },
+  "mobile": {
+    "scrollWidth": 390,
+    "horizontalOverflow": false,
+    "sideVisible": true,
+    "sideW": 228,
+    "burger": true,
+    "overflowers": [],
+    "textUnder11px": 52,
+    "docH": 3339,
+    "shots": {
+      "full": "docs/workflows/ui-audit-evidence/_test-local-my-numbers/390-full.png",
+      "fold": "docs/workflows/ui-audit-evidence/_test-local-my-numbers/390-fold.png"
+    },
+    "finalUrl": "/app/my-numbers.html",
+    "apiFails": []
+  },
+  "clicks": [
+    {
+      "n": 1,
+      "tag": "button",
+      "text": "Sign in",
+      "id": "go",
+      "cls": "btn primary",
+      "href": null,
+      "w": 266,
+      "h": 33,
+      "aboveFold": true,
+      "urlChanged": null,
+      "api": [],
+      "intercepted": [],
+      "dialogs": [],
+      "consoleErrors": [],
+      "domChanged": false,
+      "result": "NOOP",
+      "shot": "docs/workflows/ui-audit-evidence/_test-local-my-numbers/clicks/01-NOOP-Sign_in.png"
+    },
+    {
+      "n": 2,
+      "tag": "a",
+      "text": "Forgot your password?",
+      "id": "fh-forgot-link",
+      "cls": null,
+      "href": "#",
+      "w": 130,
+      "h": 15,
+      "aboveFold": true,
+      "urlChanged": null,
+      "api": [],
+      "intercepted": [],
+      "dialogs": [],
+      "consoleErrors": [],
+      "domChanged": true,
+      "result": "OK"
+    },
+    {
+      "n": 3,
+      "tag": "a",
+      "text": "← Back to fundhub.ai",
+      "id": null,
+      "cls": null,
+      "href": "/",
+      "w": 121,
+      "h": 15,
+      "aboveFold": true,
+      "urlChanged": "/",
+      "api": [],
+      "intercepted": [],
+      "dialogs": [],
+      "consoleErrors": [],
+      "domChanged": true,
+      "result": "NAV"
+    }
+  ],
+  "clickSummary": {
+    "candidates": 3,
+    "attempted": 3,
+    "skippedForCap": 0,
+    "tally": {
+      "NOOP": 1,
+      "OK": 1,
+      "NAV": 1
+    },
+    "loadRetriesTotal": 9
+  }
+}

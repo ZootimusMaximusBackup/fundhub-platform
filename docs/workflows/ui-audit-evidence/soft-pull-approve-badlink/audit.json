@@ -1,0 +1,126 @@
+{
+  "screen": "/app/soft-pull-approve.html?org=00000000-0000-0000-0000-000000000000&client=8556bedc-46e1-4d85-b0cd-a24adfee1521&exp=1&sig=x",
+  "slug": "soft-pull-approve-badlink",
+  "email": "client@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-17T06:22:37.744Z",
+  "login": {
+    "ok": true,
+    "cached": true,
+    "landedAt": "/app/client-portal.html",
+    "role": "client"
+  },
+  "load": {
+    "httpStatus": 200,
+    "finalUrl": "/app/soft-pull-approve.html?org=00000000-0000-0000-0000-000000000000&client=8556bedc-46e1-4d85-b0cd-a24adfee1521&exp=1&sig=x",
+    "bounced": false,
+    "title": "Fundhub · Soft-pull approval",
+    "apiCalls": [
+      {
+        "method": "GET",
+        "url": "/api/soft-pull-approve?org=00000000-0000-0000-0000-000000000000&client=8556bedc-46e1-4d85-b0cd-a24adfee1521&exp=1&sig=x",
+        "status": 401
+      }
+    ],
+    "apiFails": [
+      {
+        "method": "GET",
+        "url": "/api/soft-pull-approve?org=00000000-0000-0000-0000-000000000000&client=8556bedc-46e1-4d85-b0cd-a24adfee1521&exp=1&sig=x",
+        "status": 401
+      }
+    ],
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 401 ()"
+    ],
+    "dialogs": [],
+    "shots": {
+      "fold": "docs/workflows/ui-audit-evidence/soft-pull-approve-badlink/1440-fold.png",
+      "full": "docs/workflows/ui-audit-evidence/soft-pull-approve-badlink/1440-full.png"
+    }
+  },
+  "dom": {
+    "vw": 1440,
+    "vh": 900,
+    "docH": 900,
+    "sizes": {
+      "10px": {
+        "count": 1,
+        "examples": [
+          "Fundhub · soft pull"
+        ]
+      },
+      "24px": {
+        "count": 1,
+        "examples": [
+          "Link problem"
+        ]
+      },
+      "12.5px": {
+        "count": 1,
+        "examples": [
+          "This approval link is invalid or has exp"
+        ]
+      },
+      "13.5px": {
+        "count": 1,
+        "examples": [
+          "Stay on the call and ask your advisor to"
+        ]
+      }
+    },
+    "navVisibleCount": 0,
+    "navActive": [],
+    "navGroups": [],
+    "h1": [
+      "Link problem"
+    ],
+    "h2": [],
+    "contentWidth": 560,
+    "contentSel": "div#app.wrap",
+    "sideW": 0,
+    "controlsCount": 0,
+    "controls": [],
+    "genericLabels": [],
+    "smallTargets": [],
+    "primaryLooking": [],
+    "capsRuns": [],
+    "sampleWording": [],
+    "loadingWording": [],
+    "errorWording": [],
+    "emptyWording": [],
+    "centeredParas": [],
+    "offScale": {},
+    "unevenRows": [],
+    "tables": [],
+    "metrics": [],
+    "topLeft": null,
+    "bodyText": "FUNDHUB · SOFT PULL Link problem This approval link is invalid or has expired. Ask your advisor to send a new one. Stay on the call and ask your advisor to send a fresh link."
+  },
+  "mobile": {
+    "scrollWidth": 390,
+    "horizontalOverflow": false,
+    "sideVisible": false,
+    "sideW": 0,
+    "burger": false,
+    "overflowers": [],
+    "textUnder11px": 1,
+    "docH": 844,
+    "shots": {
+      "full": "docs/workflows/ui-audit-evidence/soft-pull-approve-badlink/390-full.png",
+      "fold": "docs/workflows/ui-audit-evidence/soft-pull-approve-badlink/390-fold.png"
+    },
+    "finalUrl": "/app/soft-pull-approve.html?org=00000000-0000-0000-0000-000000000000&client=8556bedc-46e1-4d85-b0cd-a24adfee1521&exp=1&sig=x",
+    "apiFails": [
+      {
+        "method": "GET",
+        "url": "/api/soft-pull-approve?org=00000000-0000-0000-0000-000000000000&client=8556bedc-46e1-4d85-b0cd-a24adfee1521&exp=1&sig=x",
+        "status": 401
+      }
+    ]
+  },
+  "clicks": [],
+  "clickSummary": {
+    "skipped": true,
+    "reason": "--no-clicks"
+  }
+}

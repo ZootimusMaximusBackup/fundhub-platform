@@ -1,0 +1,182 @@
+CC-01 / PIPELINE SUMMARY
+16 active clients · 0 moved forward today · counts only
+Open the board ↗
+CC-02 / HOLDS
+No holds. A hold will show here when a file is waiting.
+▾R-01Sales
+16
+Open board ↗
+NEW LEAD
+1
+SURVEY COMPLETE
+1
+BOOKED
+3
+CONFIRMED
+0
+SHOWED
+0
+DIAGNOSTIC PAID
+0
+DECISION RENDERED
+1
+$50,000
+CLOSED WON (DEPOSIT)
+0
+DOWNSELL
+0
+LOST
+10
+▾R-02Funding: Card Stacking
+0
+Open board ↗
+APPLY NOW
+0
+ROUND SUBMITTED
+0
+APPROVED
+0
+ACTION REQUIRED
+0
+FUNDED
+0
+CLOSED
+0
+▾R-03Funding: Alt-Fin (Lendflow)
+0
+Open board ↗
+APP CREATED
+0
+DOCS/STIPS
+0
+UNDERWRITING
+0
+OFFERS
+0
+OFFER ACCEPTED
+0
+FUNDED
+0
+CLOSED
+0
+▾R-04Optimization (Repair) Rounds
+0
+Open board ↗
+INTAKE
+0
+AWAITING DOCUMENTS
+0
+ANALYSIS
+0
+LETTERS GENERATED
+0
+ROUND COMPLETE
+0
+READY TO SEND
+0
+IN TRANSIT
+0
+AWAITING RESPONSE
+0
+RESPONSE RECEIVED
+0
+PROGRAM COMPLETE
+0
+ON HOLD
+0
+STALLED
+0
+CANCELLED
+0
+ROUND SENT
+0
+BUREAU PROCESSING
+0
+PORTAL UPDATED
+0
+UPGRADE INVITE
+0
+▾R-05Inquiry Removal
+0
+Open board ↗
+REQUESTED
+0
+SPECIALIST ASSIGNED
+0
+AWAITING DOCUMENTS
+0
+LETTERS SENT
+0
+CALLS IN PROGRESS
+0
+REMOVED
+0
+RESUME FUNDING
+0
+HOLD
+0
+▾R-06AR + Collections
+0
+Open board ↗
+INVOICE SENT
+0
+REMINDER
+0
+ESCALATION
+0
+PAID
+0
+WRITTEN OFF
+0
+▾R-07Affiliates + Hiring
+Open board ↗
+No affiliate referrals or applicants in this summary yet.
+CC-03 / LIVE FEED
+ALL
+MONEY
+MOVES
+AGENTS
+HOLDS
+No live feed yet
+CC-04 / AGENTS — EXCEPTIONS
+1 blocked · 13 nominal
+CC-05 / NEEDS A HUMAN
+⚠ 1 agent blocked
+IR AG-09Inquiry Removal AI
+ACTIVE
+Equifax portal timeout — 3 retries failed
+Queue backed up: 11 waiting
+›
+13 agents nominal
+8 active · 3 idle · 2 done
+CC-09 / SYSTEM
+as of 2:47 PM
+CASH COLLECTED TODAY
+$0
+cash collected (transactions)
+PIPELINE MOVEMENT
+0
+stage changes in window
+CLOSE RATE (30D)
+0
+booked → decision rendered
+SHOW RATE
+0
+booked calls with call.completed
+COST / FUNDED CLIENT
+0
+ad spend ÷ funded clients
+FUNDED TODAY
+0
+clients marked funded
+CC-10 / PLATFORM HEALTH
+Bureau portal (Equifax)
+down since 1:30 PM
+Live updates delay
+1.2s
+Jobs waiting to run
+3
+Error rate (24h)
+0.4%
+›
+ALL SYSTEMS
