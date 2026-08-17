@@ -1,0 +1,150 @@
+{
+  "ranAt": "2026-08-17T08:17:37.892Z",
+  "base": "http://127.0.0.1:48123",
+  "roles": [
+    {
+      "role": "closer",
+      "totalDemoModeRequests": 0,
+      "screens": [
+        {
+          "screen": "/app/closer-dashboard.html",
+          "finalUrl": "/app/closer-dashboard.html",
+          "demoModeRequests": 0
+        },
+        {
+          "screen": "/app/closer-call.html",
+          "finalUrl": "/app/closer-call.html",
+          "demoModeRequests": 0
+        },
+        {
+          "screen": "/app/finance-os.html",
+          "finalUrl": "/app/finance-os.html",
+          "demoModeRequests": 0
+        },
+        {
+          "screen": "/app/client-control-panel.html",
+          "finalUrl": "/app/client-control-panel.html",
+          "demoModeRequests": 0
+        },
+        {
+          "screen": "/app/documents.html",
+          "finalUrl": "/app/documents.html",
+          "demoModeRequests": 0
+        },
+        {
+          "screen": "/app/ops-admin.html",
+          "finalUrl": "/app/ops-admin.html",
+          "demoModeRequests": 0,
+          "demoPanelDisplay": "none"
+        },
+        {
+          "screen": "/app/sample-data.html",
+          "finalUrl": "/dashboard.html",
+          "demoModeRequests": 0,
+          "msg": null
+        },
+        {
+          "screen": "/app/pipeline.html",
+          "finalUrl": "/app/pipeline.html",
+          "demoModeRequests": 0
+        }
+      ]
+    },
+    {
+      "role": "sales_manager",
+      "totalDemoModeRequests": 0,
+      "screens": [
+        {
+          "screen": "/app/closer-dashboard.html",
+          "finalUrl": "/app/closer-dashboard.html",
+          "demoModeRequests": 0
+        },
+        {
+          "screen": "/app/closer-call.html",
+          "finalUrl": "/app/sales-floor.html",
+          "demoModeRequests": 0
+        },
+        {
+          "screen": "/app/finance-os.html",
+          "finalUrl": "/app/finance-os.html",
+          "demoModeRequests": 0
+        },
+        {
+          "screen": "/app/client-control-panel.html",
+          "finalUrl": "/app/client-control-panel.html",
+          "demoModeRequests": 0
+        },
+        {
+          "screen": "/app/documents.html",
+          "finalUrl": "/app/documents.html",
+          "demoModeRequests": 0
+        },
+        {
+          "screen": "/app/ops-admin.html",
+          "finalUrl": "/app/ops-admin.html",
+          "demoModeRequests": 0,
+          "demoPanelDisplay": "none"
+        },
+        {
+          "screen": "/app/sample-data.html",
+          "finalUrl": "/app/sales-floor.html",
+          "demoModeRequests": 0,
+          "msg": "Ask how to use Fundhub — e.g. “how do I send a contract?” If I do not know from product help, I will say so."
+        },
+        {
+          "screen": "/app/pipeline.html",
+          "finalUrl": "/app/pipeline.html",
+          "demoModeRequests": 0
+        }
+      ]
+    },
+    {
+      "role": "owner",
+      "totalDemoModeRequests": 15,
+      "screens": [
+        {
+          "screen": "/app/closer-dashboard.html",
+          "finalUrl": "/app/closer-dashboard.html",
+          "demoModeRequests": 2
+        },
+        {
+          "screen": "/app/closer-call.html",
+          "finalUrl": "/app/closer-call.html",
+          "demoModeRequests": 2
+        },
+        {
+          "screen": "/app/finance-os.html",
+          "finalUrl": "/app/finance-os.html",
+          "demoModeRequests": 2
+        },
+        {
+          "screen": "/app/client-control-panel.html",
+          "finalUrl": "/app/client-control-panel.html",
+          "demoModeRequests": 2
+        },
+        {
+          "screen": "/app/documents.html",
+          "finalUrl": "/app/documents.html",
+          "demoModeRequests": 2
+        },
+        {
+          "screen": "/app/ops-admin.html",
+          "finalUrl": "/app/ops-admin.html",
+          "demoModeRequests": 2,
+          "demoPanelDisplay": "block"
+        },
+        {
+          "screen": "/app/sample-data.html",
+          "finalUrl": "/app/sample-data.html",
+          "demoModeRequests": 2,
+          "msg": ""
+        },
+        {
+          "screen": "/app/pipeline.html",
+          "finalUrl": "/app/pipeline.html",
+          "demoModeRequests": 1
+        }
+      ]
+    }
+  ]
+}
