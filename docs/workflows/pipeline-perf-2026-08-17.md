@@ -348,3 +348,41 @@ migration, no new dependency, no env var.
   this change, so the generated journey pages needed no edit.
 * **W2's R2 and R4** (31MB eager function import; a session UPDATE on every
   read) are real and measured but are platform-wide, not pipeline-only.
+
+
+### LIVE before/after — fundhub.ai/app/pipeline.html, signed in as owner@
+
+Same tool both times (`w1-live-owner/measure.mjs`), 3 cold + 3 warm each.
+"Before" was captured on the deployed code prior to the push; "after" on the
+deploy that came out of it (local and live file hashes verified identical).
+
+| | before | after |
+|---|---|---|
+| Time to first card, cold (median) | **never appeared** | **801ms** (1129 / 801 / 732) |
+| Time to first card, warm (median) | **never appeared** | **614ms** (555 / 4671 / 614) |
+| Cards rendered | 0 | 16 |
+| Columns | 0 | 10 |
+| Largest Contentful Paint, cold | 1296ms | 388ms |
+| API calls | 4 | 6 |
+| Board reads (`/api/dashboard/pipeline`) | **0** | 1 |
+| Counts reads | 0 | 1 |
+| Page errors | board never requested | none |
+
+Live API bodies on a signed-in owner load, after:
+`/api/dashboard/pipeline?key=sales` 200 (6046B) and
+`/api/dashboard/pipeline-counts` 200 (172B) — one of each, as designed.
+
+16 cards matches W2's independent production count exactly.
+
+Honest note: one warm run came in at 4671ms against 555ms and 614ms for the
+other two. That is a single outlier on a shared serverless function, not a
+pattern, but it is in the raw data rather than smoothed away.
+
+### Deploy note
+
+`netlify deploy --build --prod` builds LOCALLY and cannot read env vars marked
+`--secret`, so `MIGRATION_DATABASE_URL` arrives masked and `db/migrate.mjs`
+fails with `getaddrinfo ENOTFOUND base` before anything is uploaded. Nothing
+shipped from those attempts. The push to `main` triggers Netlify's own cloud
+build, which does hold the real secret values, and that is what deployed.
+CLAUDE.md §11 still prescribes the local command — worth correcting there.

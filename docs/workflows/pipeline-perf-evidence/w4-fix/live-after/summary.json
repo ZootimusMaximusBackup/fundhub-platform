@@ -1,0 +1,3322 @@
+{
+  "tool": "docs/workflows/pipeline-perf-evidence/w1-live-owner/measure.mjs",
+  "label": "after",
+  "ranAt": "2026-08-18T04:18:39.283Z",
+  "base": "https://fundhub.ai",
+  "screen": "/app/pipeline.html",
+  "role": "owner@fundhub.ai",
+  "viewport": "1440x900",
+  "browser": "chromium (playwright, headless)",
+  "network": "no throttling — real network from the machine that ran this",
+  "loginMode": "cached-session",
+  "runs": {
+    "cold": 3,
+    "warm": 3,
+    "quietWindowMs": 1500
+  },
+  "cold": {
+    "domContentLoadedMs": {
+      "median": 378,
+      "all": [
+        491,
+        378,
+        345
+      ]
+    },
+    "loadMs": {
+      "median": 728,
+      "all": [
+        825,
+        728,
+        555
+      ]
+    },
+    "ttfbMs": {
+      "median": 181,
+      "all": [
+        280,
+        181,
+        146
+      ]
+    },
+    "fcpMs": {
+      "median": 376,
+      "all": [
+        492,
+        376,
+        344
+      ]
+    },
+    "lcpMs": {
+      "median": 388,
+      "all": [
+        500,
+        388,
+        352
+      ]
+    },
+    "firstCardMs": {
+      "median": 801,
+      "all": [
+        1129,
+        801,
+        732
+      ]
+    },
+    "allCardsInMs": {
+      "median": 801,
+      "all": [
+        1129,
+        801,
+        732
+      ]
+    },
+    "spinnerGoneMs": {
+      "median": 801,
+      "all": [
+        1129,
+        801,
+        732
+      ]
+    },
+    "longTasksOver50": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "longestTaskMs": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "totalBlockingMs": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "blockingBeforeCardsMs": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "blockingAfterCardsMs": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "apiCallCount": {
+      "median": 6,
+      "all": [
+        6,
+        6,
+        6
+      ]
+    },
+    "apiBytesTotal": {
+      "median": 7089,
+      "all": [
+        7089,
+        7089,
+        7089
+      ]
+    },
+    "apiTransferBytesTotal": {
+      "median": 4473,
+      "all": [
+        4473,
+        4473,
+        4474
+      ]
+    },
+    "cardsRendered": {
+      "median": 16,
+      "all": [
+        16,
+        16,
+        16
+      ]
+    },
+    "columns": {
+      "median": 10,
+      "all": [
+        10,
+        10,
+        10
+      ]
+    }
+  },
+  "warm": {
+    "domContentLoadedMs": {
+      "median": 184,
+      "all": [
+        158,
+        1159,
+        184
+      ]
+    },
+    "loadMs": {
+      "median": 184,
+      "all": [
+        159,
+        1160,
+        184
+      ]
+    },
+    "ttfbMs": {
+      "median": 62,
+      "all": [
+        40,
+        927,
+        62
+      ]
+    },
+    "fcpMs": {
+      "median": 120,
+      "all": [
+        96,
+        1044,
+        120
+      ]
+    },
+    "lcpMs": {
+      "median": 120,
+      "all": [
+        96,
+        1044,
+        120
+      ]
+    },
+    "firstCardMs": {
+      "median": 614,
+      "all": [
+        555,
+        4671,
+        614
+      ]
+    },
+    "allCardsInMs": {
+      "median": 614,
+      "all": [
+        555,
+        4671,
+        614
+      ]
+    },
+    "spinnerGoneMs": {
+      "median": 614,
+      "all": [
+        555,
+        4671,
+        614
+      ]
+    },
+    "longTasksOver50": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "longestTaskMs": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "totalBlockingMs": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "blockingBeforeCardsMs": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "blockingAfterCardsMs": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "apiCallCount": {
+      "median": 6,
+      "all": [
+        6,
+        6,
+        6
+      ]
+    },
+    "apiBytesTotal": {
+      "median": 7089,
+      "all": [
+        7089,
+        7089,
+        7089
+      ]
+    },
+    "apiTransferBytesTotal": {
+      "median": 4431,
+      "all": [
+        4430,
+        4472,
+        4431
+      ]
+    },
+    "cardsRendered": {
+      "median": 16,
+      "all": [
+        16,
+        16,
+        16
+      ]
+    },
+    "columns": {
+      "median": 10,
+      "all": [
+        10,
+        10,
+        10
+      ]
+    }
+  },
+  "representativeColdRun": {
+    "index": 1,
+    "settledReason": "cards-stable",
+    "apiCriticalPath": {
+      "links": [
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "startMs": 490,
+          "endMs": 699,
+          "durMs": 209
+        },
+        {
+          "url": "/api/org-brand",
+          "status": 200,
+          "startMs": 701,
+          "endMs": 1261,
+          "durMs": 560
+        }
+      ],
+      "sumDurationMs": 769,
+      "wallSpanMs": 771,
+      "gapMs": 2,
+      "linkCount": 2
+    },
+    "allResourceCriticalPath": {
+      "links": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+          "status": 200,
+          "startMs": 291,
+          "endMs": 459,
+          "durMs": 168
+        },
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "startMs": 490,
+          "endMs": 699,
+          "durMs": 209
+        },
+        {
+          "url": "/api/org-brand",
+          "status": 200,
+          "startMs": 701,
+          "endMs": 1261,
+          "durMs": 560
+        }
+      ],
+      "sumDurationMs": 937,
+      "wallSpanMs": 970,
+      "gapMs": 33,
+      "linkCount": 3
+    },
+    "apiOverlap": [
+      {
+        "url": "/api/auth/session",
+        "startMs": 490,
+        "endMs": 699,
+        "durMs": 209,
+        "concurrentWith": 2
+      },
+      {
+        "url": "/api/dashboard/pipeline?key=sales",
+        "startMs": 491,
+        "endMs": 1123,
+        "durMs": 632,
+        "concurrentWith": 5
+      },
+      {
+        "url": "/api/dashboard/pipeline-counts",
+        "startMs": 491,
+        "endMs": 1204,
+        "durMs": 713,
+        "concurrentWith": 5
+      },
+      {
+        "url": "/api/health",
+        "startMs": 701,
+        "endMs": 927,
+        "durMs": 226,
+        "concurrentWith": 4
+      },
+      {
+        "url": "/api/org-brand",
+        "startMs": 701,
+        "endMs": 1261,
+        "durMs": 560,
+        "concurrentWith": 4
+      },
+      {
+        "url": "/api/demo/mode",
+        "startMs": 701,
+        "endMs": 1209,
+        "durMs": 508,
+        "concurrentWith": 4
+      }
+    ],
+    "apiBodies": [
+      {
+        "url": "/api/dashboard/pipeline?key=sales",
+        "status": 200,
+        "method": "GET",
+        "bytes": 6046,
+        "stages": 10,
+        "cards": 16,
+        "headerCountTotal": 16
+      },
+      {
+        "url": "/api/org-brand",
+        "status": 200,
+        "method": "GET",
+        "bytes": 285,
+        "keys": 2
+      },
+      {
+        "url": "/api/demo/mode",
+        "status": 200,
+        "method": "GET",
+        "bytes": 234,
+        "keys": 5
+      },
+      {
+        "url": "/api/auth/session",
+        "status": 200,
+        "method": "GET",
+        "bytes": 222,
+        "keys": 3
+      },
+      {
+        "url": "/api/dashboard/pipeline-counts",
+        "status": 200,
+        "method": "GET",
+        "bytes": 172,
+        "keys": 2
+      },
+      {
+        "url": "/api/health",
+        "status": 200,
+        "method": "GET",
+        "bytes": 130,
+        "keys": 8
+      }
+    ],
+    "columns": [
+      {
+        "stage": "New Lead",
+        "stageKey": "new_lead",
+        "headerCount": "1",
+        "cardsRendered": 1
+      },
+      {
+        "stage": "Survey Complete",
+        "stageKey": "survey_complete",
+        "headerCount": "1",
+        "cardsRendered": 1
+      },
+      {
+        "stage": "Booked",
+        "stageKey": "booked",
+        "headerCount": "1",
+        "cardsRendered": 1
+      },
+      {
+        "stage": "Confirmed",
+        "stageKey": "confirmed",
+        "headerCount": "0",
+        "cardsRendered": 0
+      },
+      {
+        "stage": "Showed",
+        "stageKey": "showed",
+        "headerCount": "0",
+        "cardsRendered": 0
+      },
+      {
+        "stage": "Diagnostic Paid",
+        "stageKey": "diagnostic_paid",
+        "headerCount": "0",
+        "cardsRendered": 0
+      },
+      {
+        "stage": "Decision Rendered",
+        "stageKey": "decision_rendered",
+        "headerCount": "1",
+        "cardsRendered": 1
+      },
+      {
+        "stage": "Closed Won (deposit)",
+        "stageKey": "closed_won",
+        "headerCount": "0",
+        "cardsRendered": 0
+      },
+      {
+        "stage": "Downsell",
+        "stageKey": "downsell",
+        "headerCount": "0",
+        "cardsRendered": 0
+      },
+      {
+        "stage": "Lost",
+        "stageKey": "lost",
+        "headerCount": "12",
+        "cardsRendered": 12
+      }
+    ],
+    "cardCountTimeline": [
+      {
+        "atMs": 460,
+        "cards": 0,
+        "cols": 0
+      },
+      {
+        "atMs": 1129,
+        "cards": 16,
+        "cols": 10
+      }
+    ],
+    "longTasks": [],
+    "errors": [],
+    "repeatedRequests": []
+  },
+  "notes": [],
+  "allRuns": [
+    {
+      "kind": "cold",
+      "index": 1,
+      "ranAt": "2026-08-18T04:17:44.734Z",
+      "finalUrl": "/app/pipeline.html",
+      "settledReason": "cards-stable",
+      "metrics": {
+        "domContentLoadedMs": 491,
+        "loadMs": 825,
+        "ttfbMs": 280,
+        "fcpMs": 492,
+        "lcpMs": 500,
+        "firstCardMs": 1129,
+        "allCardsInMs": 1129,
+        "spinnerGoneMs": 1129,
+        "spinnerFirstSeenMs": 460,
+        "longTasksOver50": 0,
+        "longestTaskMs": 0,
+        "totalBlockingMs": 0,
+        "blockingBeforeCardsMs": 0,
+        "blockingAfterCardsMs": 0,
+        "apiCallCount": 6,
+        "apiBytesTotal": 7089,
+        "apiTransferBytesTotal": 4473,
+        "cardsRendered": 16,
+        "columns": 10
+      },
+      "board": {
+        "hidden": false,
+        "noteText": null,
+        "columns": [
+          {
+            "stage": "New Lead",
+            "stageKey": "new_lead",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Survey Complete",
+            "stageKey": "survey_complete",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Booked",
+            "stageKey": "booked",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Confirmed",
+            "stageKey": "confirmed",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Showed",
+            "stageKey": "showed",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Diagnostic Paid",
+            "stageKey": "diagnostic_paid",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Decision Rendered",
+            "stageKey": "decision_rendered",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Closed Won (deposit)",
+            "stageKey": "closed_won",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Downsell",
+            "stageKey": "downsell",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Lost",
+            "stageKey": "lost",
+            "headerCount": "12",
+            "cardsRendered": 12
+          }
+        ],
+        "cardCountTimeline": [
+          {
+            "atMs": 460,
+            "cards": 0,
+            "cols": 0
+          },
+          {
+            "atMs": 1129,
+            "cards": 16,
+            "cols": 10
+          }
+        ],
+        "spinnerTimeline": [
+          {
+            "atMs": 460,
+            "spinner": true
+          },
+          {
+            "atMs": 1129,
+            "spinner": false
+          }
+        ]
+      },
+      "longTasks": [],
+      "apiCriticalPath": {
+        "links": [
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 490,
+            "endMs": 699,
+            "durMs": 209
+          },
+          {
+            "url": "/api/org-brand",
+            "status": 200,
+            "startMs": 701,
+            "endMs": 1261,
+            "durMs": 560
+          }
+        ],
+        "sumDurationMs": 769,
+        "wallSpanMs": 771,
+        "gapMs": 2,
+        "linkCount": 2
+      },
+      "allResourceCriticalPath": {
+        "links": [
+          {
+            "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+            "status": 200,
+            "startMs": 291,
+            "endMs": 459,
+            "durMs": 168
+          },
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 490,
+            "endMs": 699,
+            "durMs": 209
+          },
+          {
+            "url": "/api/org-brand",
+            "status": 200,
+            "startMs": 701,
+            "endMs": 1261,
+            "durMs": 560
+          }
+        ],
+        "sumDurationMs": 937,
+        "wallSpanMs": 970,
+        "gapMs": 33,
+        "linkCount": 3
+      },
+      "apiOverlap": [
+        {
+          "url": "/api/auth/session",
+          "startMs": 490,
+          "endMs": 699,
+          "durMs": 209,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "startMs": 491,
+          "endMs": 1123,
+          "durMs": 632,
+          "concurrentWith": 5
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "startMs": 491,
+          "endMs": 1204,
+          "durMs": 713,
+          "concurrentWith": 5
+        },
+        {
+          "url": "/api/health",
+          "startMs": 701,
+          "endMs": 927,
+          "durMs": 226,
+          "concurrentWith": 4
+        },
+        {
+          "url": "/api/org-brand",
+          "startMs": 701,
+          "endMs": 1261,
+          "durMs": 560,
+          "concurrentWith": 4
+        },
+        {
+          "url": "/api/demo/mode",
+          "startMs": 701,
+          "endMs": 1209,
+          "durMs": 508,
+          "concurrentWith": 4
+        }
+      ],
+      "apiBodies": [
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "status": 200,
+          "method": "GET",
+          "bytes": 6046,
+          "stages": 10,
+          "cards": 16,
+          "headerCountTotal": 16
+        },
+        {
+          "url": "/api/org-brand",
+          "status": 200,
+          "method": "GET",
+          "bytes": 285,
+          "keys": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "status": 200,
+          "method": "GET",
+          "bytes": 234,
+          "keys": 5
+        },
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "method": "GET",
+          "bytes": 222,
+          "keys": 3
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "status": 200,
+          "method": "GET",
+          "bytes": 172,
+          "keys": 2
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "method": "GET",
+          "bytes": 130,
+          "keys": 8
+        }
+      ],
+      "resources": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 291,
+          "endMs": 459,
+          "durMs": 168,
+          "ttfbMs": 167,
+          "transferBytes": 1158,
+          "encodedBytes": 858,
+          "decodedBytes": 10056,
+          "fromCache": false
+        },
+        {
+          "url": "/app/crm-sidebar.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 291,
+          "endMs": 416,
+          "durMs": 125,
+          "ttfbMs": 124,
+          "transferBytes": 3867,
+          "encodedBytes": 3567,
+          "decodedBytes": 11302,
+          "fromCache": false
+        },
+        {
+          "url": "/app/fundhub-brand.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 291,
+          "endMs": 421,
+          "durMs": 130,
+          "ttfbMs": 130,
+          "transferBytes": 7165,
+          "encodedBytes": 6865,
+          "decodedBytes": 15756,
+          "fromCache": false
+        },
+        {
+          "url": "/app/proxy-apply.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 291,
+          "endMs": 432,
+          "durMs": 141,
+          "ttfbMs": 141,
+          "transferBytes": 4520,
+          "encodedBytes": 4220,
+          "decodedBytes": 14242,
+          "fromCache": false
+        },
+        {
+          "url": "/app/shell.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 291,
+          "endMs": 433,
+          "durMs": 141,
+          "ttfbMs": 130,
+          "transferBytes": 28709,
+          "encodedBytes": 28409,
+          "decodedBytes": 95213,
+          "fromCache": false
+        },
+        {
+          "url": "/app/data.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 291,
+          "endMs": 453,
+          "durMs": 162,
+          "ttfbMs": 141,
+          "transferBytes": 10054,
+          "encodedBytes": 9754,
+          "decodedBytes": 32252,
+          "fromCache": false
+        },
+        {
+          "url": "/api/auth/session",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 490,
+          "endMs": 699,
+          "durMs": 209,
+          "ttfbMs": 209,
+          "transferBytes": 470,
+          "encodedBytes": 170,
+          "decodedBytes": 222,
+          "fromCache": false
+        },
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 491,
+          "endMs": 1123,
+          "durMs": 632,
+          "ttfbMs": 631,
+          "transferBytes": 2229,
+          "encodedBytes": 1929,
+          "decodedBytes": 6046,
+          "fromCache": false
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 491,
+          "endMs": 1204,
+          "durMs": 713,
+          "ttfbMs": 713,
+          "transferBytes": 414,
+          "encodedBytes": 114,
+          "decodedBytes": 172,
+          "fromCache": false
+        },
+        {
+          "url": "/api/health",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 701,
+          "endMs": 927,
+          "durMs": 226,
+          "ttfbMs": 226,
+          "transferBytes": 400,
+          "encodedBytes": 100,
+          "decodedBytes": 130,
+          "fromCache": false
+        },
+        {
+          "url": "/api/org-brand",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 701,
+          "endMs": 1261,
+          "durMs": 560,
+          "ttfbMs": 560,
+          "transferBytes": 510,
+          "encodedBytes": 210,
+          "decodedBytes": 285,
+          "fromCache": false
+        },
+        {
+          "url": "/app/chat-widget.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 701,
+          "endMs": 824,
+          "durMs": 123,
+          "ttfbMs": 123,
+          "transferBytes": 4376,
+          "encodedBytes": 4076,
+          "decodedBytes": 15062,
+          "fromCache": false
+        },
+        {
+          "url": "/api/demo/mode",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 701,
+          "endMs": 1209,
+          "durMs": 508,
+          "ttfbMs": 508,
+          "transferBytes": 450,
+          "encodedBytes": 150,
+          "decodedBytes": 234,
+          "fromCache": false
+        }
+      ],
+      "errors": [],
+      "repeatedRequests": [],
+      "writesObserved": [],
+      "requestCount": 16
+    },
+    {
+      "kind": "cold",
+      "index": 2,
+      "ranAt": "2026-08-18T04:17:53.121Z",
+      "finalUrl": "/app/pipeline.html",
+      "settledReason": "cards-stable",
+      "metrics": {
+        "domContentLoadedMs": 378,
+        "loadMs": 728,
+        "ttfbMs": 181,
+        "fcpMs": 376,
+        "lcpMs": 388,
+        "firstCardMs": 801,
+        "allCardsInMs": 801,
+        "spinnerGoneMs": 801,
+        "spinnerFirstSeenMs": 346,
+        "longTasksOver50": 0,
+        "longestTaskMs": 0,
+        "totalBlockingMs": 0,
+        "blockingBeforeCardsMs": 0,
+        "blockingAfterCardsMs": 0,
+        "apiCallCount": 6,
+        "apiBytesTotal": 7089,
+        "apiTransferBytesTotal": 4473,
+        "cardsRendered": 16,
+        "columns": 10
+      },
+      "board": {
+        "hidden": false,
+        "noteText": null,
+        "columns": [
+          {
+            "stage": "New Lead",
+            "stageKey": "new_lead",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Survey Complete",
+            "stageKey": "survey_complete",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Booked",
+            "stageKey": "booked",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Confirmed",
+            "stageKey": "confirmed",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Showed",
+            "stageKey": "showed",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Diagnostic Paid",
+            "stageKey": "diagnostic_paid",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Decision Rendered",
+            "stageKey": "decision_rendered",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Closed Won (deposit)",
+            "stageKey": "closed_won",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Downsell",
+            "stageKey": "downsell",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Lost",
+            "stageKey": "lost",
+            "headerCount": "12",
+            "cardsRendered": 12
+          }
+        ],
+        "cardCountTimeline": [
+          {
+            "atMs": 346,
+            "cards": 0,
+            "cols": 0
+          },
+          {
+            "atMs": 801,
+            "cards": 16,
+            "cols": 10
+          }
+        ],
+        "spinnerTimeline": [
+          {
+            "atMs": 346,
+            "spinner": true
+          },
+          {
+            "atMs": 801,
+            "spinner": false
+          }
+        ]
+      },
+      "longTasks": [],
+      "apiCriticalPath": {
+        "links": [
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 377,
+            "endMs": 588,
+            "durMs": 212
+          },
+          {
+            "url": "/api/health",
+            "status": 200,
+            "startMs": 589,
+            "endMs": 1157,
+            "durMs": 568
+          }
+        ],
+        "sumDurationMs": 780,
+        "wallSpanMs": 780,
+        "gapMs": 0,
+        "linkCount": 2
+      },
+      "allResourceCriticalPath": {
+        "links": [
+          {
+            "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+            "status": 200,
+            "startMs": 183,
+            "endMs": 345,
+            "durMs": 162
+          },
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 377,
+            "endMs": 588,
+            "durMs": 212
+          },
+          {
+            "url": "/api/health",
+            "status": 200,
+            "startMs": 589,
+            "endMs": 1157,
+            "durMs": 568
+          }
+        ],
+        "sumDurationMs": 942,
+        "wallSpanMs": 974,
+        "gapMs": 32,
+        "linkCount": 3
+      },
+      "apiOverlap": [
+        {
+          "url": "/api/auth/session",
+          "startMs": 377,
+          "endMs": 588,
+          "durMs": 212,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "startMs": 378,
+          "endMs": 767,
+          "durMs": 390,
+          "concurrentWith": 5
+        },
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "startMs": 378,
+          "endMs": 798,
+          "durMs": 420,
+          "concurrentWith": 5
+        },
+        {
+          "url": "/api/health",
+          "startMs": 589,
+          "endMs": 1157,
+          "durMs": 568,
+          "concurrentWith": 4
+        },
+        {
+          "url": "/api/org-brand",
+          "startMs": 589,
+          "endMs": 887,
+          "durMs": 298,
+          "concurrentWith": 4
+        },
+        {
+          "url": "/api/demo/mode",
+          "startMs": 590,
+          "endMs": 1009,
+          "durMs": 419,
+          "concurrentWith": 4
+        }
+      ],
+      "apiBodies": [
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "status": 200,
+          "method": "GET",
+          "bytes": 6046,
+          "stages": 10,
+          "cards": 16,
+          "headerCountTotal": 16
+        },
+        {
+          "url": "/api/org-brand",
+          "status": 200,
+          "method": "GET",
+          "bytes": 285,
+          "keys": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "status": 200,
+          "method": "GET",
+          "bytes": 234,
+          "keys": 5
+        },
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "method": "GET",
+          "bytes": 222,
+          "keys": 3
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "status": 200,
+          "method": "GET",
+          "bytes": 172,
+          "keys": 2
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "method": "GET",
+          "bytes": 130,
+          "keys": 8
+        }
+      ],
+      "resources": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 183,
+          "endMs": 345,
+          "durMs": 162,
+          "ttfbMs": 162,
+          "transferBytes": 1158,
+          "encodedBytes": 858,
+          "decodedBytes": 10056,
+          "fromCache": false
+        },
+        {
+          "url": "/app/crm-sidebar.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 183,
+          "endMs": 235,
+          "durMs": 52,
+          "ttfbMs": 45,
+          "transferBytes": 3867,
+          "encodedBytes": 3567,
+          "decodedBytes": 11302,
+          "fromCache": false
+        },
+        {
+          "url": "/app/fundhub-brand.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 183,
+          "endMs": 235,
+          "durMs": 53,
+          "ttfbMs": 52,
+          "transferBytes": 7165,
+          "encodedBytes": 6865,
+          "decodedBytes": 15756,
+          "fromCache": false
+        },
+        {
+          "url": "/app/shell.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 188,
+          "endMs": 320,
+          "durMs": 132,
+          "ttfbMs": 121,
+          "transferBytes": 28709,
+          "encodedBytes": 28409,
+          "decodedBytes": 95213,
+          "fromCache": false
+        },
+        {
+          "url": "/app/data.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 194,
+          "endMs": 321,
+          "durMs": 126,
+          "ttfbMs": 126,
+          "transferBytes": 10054,
+          "encodedBytes": 9754,
+          "decodedBytes": 32252,
+          "fromCache": false
+        },
+        {
+          "url": "/app/proxy-apply.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 194,
+          "endMs": 310,
+          "durMs": 115,
+          "ttfbMs": 115,
+          "transferBytes": 4520,
+          "encodedBytes": 4220,
+          "decodedBytes": 14242,
+          "fromCache": false
+        },
+        {
+          "url": "/api/auth/session",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 377,
+          "endMs": 588,
+          "durMs": 212,
+          "ttfbMs": 212,
+          "transferBytes": 470,
+          "encodedBytes": 170,
+          "decodedBytes": 222,
+          "fromCache": false
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 378,
+          "endMs": 767,
+          "durMs": 390,
+          "ttfbMs": 390,
+          "transferBytes": 414,
+          "encodedBytes": 114,
+          "decodedBytes": 172,
+          "fromCache": false
+        },
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 378,
+          "endMs": 798,
+          "durMs": 420,
+          "ttfbMs": 420,
+          "transferBytes": 2229,
+          "encodedBytes": 1929,
+          "decodedBytes": 6046,
+          "fromCache": false
+        },
+        {
+          "url": "/api/health",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 589,
+          "endMs": 1157,
+          "durMs": 568,
+          "ttfbMs": 567,
+          "transferBytes": 400,
+          "encodedBytes": 100,
+          "decodedBytes": 130,
+          "fromCache": false
+        },
+        {
+          "url": "/api/org-brand",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 589,
+          "endMs": 887,
+          "durMs": 298,
+          "ttfbMs": 292,
+          "transferBytes": 510,
+          "encodedBytes": 210,
+          "decodedBytes": 285,
+          "fromCache": false
+        },
+        {
+          "url": "/app/chat-widget.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 590,
+          "endMs": 726,
+          "durMs": 137,
+          "ttfbMs": 136,
+          "transferBytes": 4376,
+          "encodedBytes": 4076,
+          "decodedBytes": 15062,
+          "fromCache": false
+        },
+        {
+          "url": "/api/demo/mode",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 590,
+          "endMs": 1009,
+          "durMs": 419,
+          "ttfbMs": 419,
+          "transferBytes": 450,
+          "encodedBytes": 150,
+          "decodedBytes": 234,
+          "fromCache": false
+        }
+      ],
+      "errors": [],
+      "repeatedRequests": [],
+      "writesObserved": [],
+      "requestCount": 16
+    },
+    {
+      "kind": "cold",
+      "index": 3,
+      "ranAt": "2026-08-18T04:18:01.097Z",
+      "finalUrl": "/app/pipeline.html",
+      "settledReason": "cards-stable",
+      "metrics": {
+        "domContentLoadedMs": 345,
+        "loadMs": 555,
+        "ttfbMs": 146,
+        "fcpMs": 344,
+        "lcpMs": 352,
+        "firstCardMs": 732,
+        "allCardsInMs": 732,
+        "spinnerGoneMs": 732,
+        "spinnerFirstSeenMs": 313,
+        "longTasksOver50": 0,
+        "longestTaskMs": 0,
+        "totalBlockingMs": 0,
+        "blockingBeforeCardsMs": 0,
+        "blockingAfterCardsMs": 0,
+        "apiCallCount": 6,
+        "apiBytesTotal": 7089,
+        "apiTransferBytesTotal": 4474,
+        "cardsRendered": 16,
+        "columns": 10
+      },
+      "board": {
+        "hidden": false,
+        "noteText": null,
+        "columns": [
+          {
+            "stage": "New Lead",
+            "stageKey": "new_lead",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Survey Complete",
+            "stageKey": "survey_complete",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Booked",
+            "stageKey": "booked",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Confirmed",
+            "stageKey": "confirmed",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Showed",
+            "stageKey": "showed",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Diagnostic Paid",
+            "stageKey": "diagnostic_paid",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Decision Rendered",
+            "stageKey": "decision_rendered",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Closed Won (deposit)",
+            "stageKey": "closed_won",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Downsell",
+            "stageKey": "downsell",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Lost",
+            "stageKey": "lost",
+            "headerCount": "12",
+            "cardsRendered": 12
+          }
+        ],
+        "cardCountTimeline": [
+          {
+            "atMs": 313,
+            "cards": 0,
+            "cols": 0
+          },
+          {
+            "atMs": 732,
+            "cards": 16,
+            "cols": 10
+          }
+        ],
+        "spinnerTimeline": [
+          {
+            "atMs": 313,
+            "spinner": true
+          },
+          {
+            "atMs": 732,
+            "spinner": false
+          }
+        ]
+      },
+      "longTasks": [],
+      "apiCriticalPath": {
+        "links": [
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 344,
+            "endMs": 573,
+            "durMs": 229
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 575,
+            "endMs": 942,
+            "durMs": 368
+          }
+        ],
+        "sumDurationMs": 597,
+        "wallSpanMs": 598,
+        "gapMs": 1,
+        "linkCount": 2
+      },
+      "allResourceCriticalPath": {
+        "links": [
+          {
+            "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+            "status": 200,
+            "startMs": 148,
+            "endMs": 312,
+            "durMs": 164
+          },
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 344,
+            "endMs": 573,
+            "durMs": 229
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 575,
+            "endMs": 942,
+            "durMs": 368
+          }
+        ],
+        "sumDurationMs": 761,
+        "wallSpanMs": 794,
+        "gapMs": 33,
+        "linkCount": 3
+      },
+      "apiOverlap": [
+        {
+          "url": "/api/auth/session",
+          "startMs": 344,
+          "endMs": 573,
+          "durMs": 229,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "startMs": 345,
+          "endMs": 730,
+          "durMs": 386,
+          "concurrentWith": 5
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "startMs": 345,
+          "endMs": 717,
+          "durMs": 372,
+          "concurrentWith": 5
+        },
+        {
+          "url": "/api/health",
+          "startMs": 574,
+          "endMs": 777,
+          "durMs": 203,
+          "concurrentWith": 4
+        },
+        {
+          "url": "/api/org-brand",
+          "startMs": 574,
+          "endMs": 862,
+          "durMs": 287,
+          "concurrentWith": 4
+        },
+        {
+          "url": "/api/demo/mode",
+          "startMs": 575,
+          "endMs": 942,
+          "durMs": 368,
+          "concurrentWith": 4
+        }
+      ],
+      "apiBodies": [
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "status": 200,
+          "method": "GET",
+          "bytes": 6046,
+          "stages": 10,
+          "cards": 16,
+          "headerCountTotal": 16
+        },
+        {
+          "url": "/api/org-brand",
+          "status": 200,
+          "method": "GET",
+          "bytes": 285,
+          "keys": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "status": 200,
+          "method": "GET",
+          "bytes": 234,
+          "keys": 5
+        },
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "method": "GET",
+          "bytes": 222,
+          "keys": 3
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "status": 200,
+          "method": "GET",
+          "bytes": 172,
+          "keys": 2
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "method": "GET",
+          "bytes": 130,
+          "keys": 8
+        }
+      ],
+      "resources": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 148,
+          "endMs": 312,
+          "durMs": 164,
+          "ttfbMs": 164,
+          "transferBytes": 1158,
+          "encodedBytes": 858,
+          "decodedBytes": 10056,
+          "fromCache": false
+        },
+        {
+          "url": "/app/crm-sidebar.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 148,
+          "endMs": 208,
+          "durMs": 60,
+          "ttfbMs": 60,
+          "transferBytes": 3867,
+          "encodedBytes": 3567,
+          "decodedBytes": 11302,
+          "fromCache": false
+        },
+        {
+          "url": "/app/fundhub-brand.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 148,
+          "endMs": 208,
+          "durMs": 60,
+          "ttfbMs": 60,
+          "transferBytes": 7165,
+          "encodedBytes": 6865,
+          "decodedBytes": 15756,
+          "fromCache": false
+        },
+        {
+          "url": "/app/shell.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 156,
+          "endMs": 272,
+          "durMs": 116,
+          "ttfbMs": 116,
+          "transferBytes": 28709,
+          "encodedBytes": 28409,
+          "decodedBytes": 95213,
+          "fromCache": false
+        },
+        {
+          "url": "/app/proxy-apply.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 158,
+          "endMs": 276,
+          "durMs": 118,
+          "ttfbMs": 118,
+          "transferBytes": 4520,
+          "encodedBytes": 4220,
+          "decodedBytes": 14242,
+          "fromCache": false
+        },
+        {
+          "url": "/app/data.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 158,
+          "endMs": 284,
+          "durMs": 126,
+          "ttfbMs": 118,
+          "transferBytes": 10054,
+          "encodedBytes": 9754,
+          "decodedBytes": 32252,
+          "fromCache": false
+        },
+        {
+          "url": "/api/auth/session",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 344,
+          "endMs": 573,
+          "durMs": 229,
+          "ttfbMs": 229,
+          "transferBytes": 470,
+          "encodedBytes": 170,
+          "decodedBytes": 222,
+          "fromCache": false
+        },
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 345,
+          "endMs": 730,
+          "durMs": 386,
+          "ttfbMs": 385,
+          "transferBytes": 2229,
+          "encodedBytes": 1929,
+          "decodedBytes": 6046,
+          "fromCache": false
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 345,
+          "endMs": 717,
+          "durMs": 372,
+          "ttfbMs": 372,
+          "transferBytes": 414,
+          "encodedBytes": 114,
+          "decodedBytes": 172,
+          "fromCache": false
+        },
+        {
+          "url": "/api/health",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 574,
+          "endMs": 777,
+          "durMs": 203,
+          "ttfbMs": 203,
+          "transferBytes": 401,
+          "encodedBytes": 101,
+          "decodedBytes": 130,
+          "fromCache": false
+        },
+        {
+          "url": "/api/org-brand",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 574,
+          "endMs": 862,
+          "durMs": 287,
+          "ttfbMs": 287,
+          "transferBytes": 510,
+          "encodedBytes": 210,
+          "decodedBytes": 285,
+          "fromCache": false
+        },
+        {
+          "url": "/app/chat-widget.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 574,
+          "endMs": 683,
+          "durMs": 108,
+          "ttfbMs": 108,
+          "transferBytes": 4376,
+          "encodedBytes": 4076,
+          "decodedBytes": 15062,
+          "fromCache": false
+        },
+        {
+          "url": "/api/demo/mode",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 575,
+          "endMs": 942,
+          "durMs": 368,
+          "ttfbMs": 368,
+          "transferBytes": 450,
+          "encodedBytes": 150,
+          "decodedBytes": 234,
+          "fromCache": false
+        }
+      ],
+      "errors": [],
+      "repeatedRequests": [],
+      "writesObserved": [],
+      "requestCount": 16
+    },
+    {
+      "kind": "warm",
+      "index": 1,
+      "ranAt": "2026-08-18T04:18:08.740Z",
+      "finalUrl": "/app/pipeline.html",
+      "settledReason": "cards-stable",
+      "metrics": {
+        "domContentLoadedMs": 158,
+        "loadMs": 159,
+        "ttfbMs": 40,
+        "fcpMs": 96,
+        "lcpMs": 96,
+        "firstCardMs": 555,
+        "allCardsInMs": 555,
+        "spinnerGoneMs": 555,
+        "spinnerFirstSeenMs": 86,
+        "longTasksOver50": 0,
+        "longestTaskMs": 0,
+        "totalBlockingMs": 0,
+        "blockingBeforeCardsMs": 0,
+        "blockingAfterCardsMs": 0,
+        "apiCallCount": 6,
+        "apiBytesTotal": 7089,
+        "apiTransferBytesTotal": 4430,
+        "cardsRendered": 16,
+        "columns": 10
+      },
+      "board": {
+        "hidden": false,
+        "noteText": null,
+        "columns": [
+          {
+            "stage": "New Lead",
+            "stageKey": "new_lead",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Survey Complete",
+            "stageKey": "survey_complete",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Booked",
+            "stageKey": "booked",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Confirmed",
+            "stageKey": "confirmed",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Showed",
+            "stageKey": "showed",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Diagnostic Paid",
+            "stageKey": "diagnostic_paid",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Decision Rendered",
+            "stageKey": "decision_rendered",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Closed Won (deposit)",
+            "stageKey": "closed_won",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Downsell",
+            "stageKey": "downsell",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Lost",
+            "stageKey": "lost",
+            "headerCount": "12",
+            "cardsRendered": 12
+          }
+        ],
+        "cardCountTimeline": [
+          {
+            "atMs": 86,
+            "cards": 0,
+            "cols": 0
+          },
+          {
+            "atMs": 555,
+            "cards": 16,
+            "cols": 10
+          }
+        ],
+        "spinnerTimeline": [
+          {
+            "atMs": 86,
+            "spinner": true
+          },
+          {
+            "atMs": 555,
+            "spinner": false
+          }
+        ]
+      },
+      "longTasks": [],
+      "apiCriticalPath": {
+        "links": [
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 157,
+            "endMs": 364,
+            "durMs": 207
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 365,
+            "endMs": 761,
+            "durMs": 396
+          }
+        ],
+        "sumDurationMs": 603,
+        "wallSpanMs": 604,
+        "gapMs": 1,
+        "linkCount": 2
+      },
+      "allResourceCriticalPath": {
+        "links": [
+          {
+            "url": "/app/proxy-apply.js",
+            "status": 304,
+            "startMs": 43,
+            "endMs": 155,
+            "durMs": 112
+          },
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 157,
+            "endMs": 364,
+            "durMs": 207
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 365,
+            "endMs": 761,
+            "durMs": 396
+          }
+        ],
+        "sumDurationMs": 715,
+        "wallSpanMs": 718,
+        "gapMs": 3,
+        "linkCount": 3
+      },
+      "apiOverlap": [
+        {
+          "url": "/api/auth/session",
+          "startMs": 157,
+          "endMs": 364,
+          "durMs": 207,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "startMs": 158,
+          "endMs": 514,
+          "durMs": 356,
+          "concurrentWith": 5
+        },
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "startMs": 158,
+          "endMs": 547,
+          "durMs": 389,
+          "concurrentWith": 5
+        },
+        {
+          "url": "/api/health",
+          "startMs": 365,
+          "endMs": 570,
+          "durMs": 205,
+          "concurrentWith": 4
+        },
+        {
+          "url": "/api/org-brand",
+          "startMs": 365,
+          "endMs": 622,
+          "durMs": 256,
+          "concurrentWith": 4
+        },
+        {
+          "url": "/api/demo/mode",
+          "startMs": 365,
+          "endMs": 761,
+          "durMs": 396,
+          "concurrentWith": 4
+        }
+      ],
+      "apiBodies": [
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "status": 200,
+          "method": "GET",
+          "bytes": 6046,
+          "stages": 10,
+          "cards": 16,
+          "headerCountTotal": 16
+        },
+        {
+          "url": "/api/org-brand",
+          "status": 200,
+          "method": "GET",
+          "bytes": 285,
+          "keys": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "status": 200,
+          "method": "GET",
+          "bytes": 234,
+          "keys": 5
+        },
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "method": "GET",
+          "bytes": 222,
+          "keys": 3
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "status": 200,
+          "method": "GET",
+          "bytes": 172,
+          "keys": 2
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "method": "GET",
+          "bytes": 130,
+          "keys": 8
+        }
+      ],
+      "resources": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 43,
+          "endMs": 43,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 858,
+          "decodedBytes": 10056,
+          "fromCache": true
+        },
+        {
+          "url": "/app/fundhub-brand.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 43,
+          "endMs": 85,
+          "durMs": 42,
+          "ttfbMs": 42,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/crm-sidebar.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 43,
+          "endMs": 85,
+          "durMs": 42,
+          "ttfbMs": 42,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/data.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 43,
+          "endMs": 149,
+          "durMs": 106,
+          "ttfbMs": 106,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/proxy-apply.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 43,
+          "endMs": 155,
+          "durMs": 112,
+          "ttfbMs": 112,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/shell.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 43,
+          "endMs": 155,
+          "durMs": 112,
+          "ttfbMs": 112,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+          "type": "css",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 86,
+          "endMs": 86,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 48432,
+          "decodedBytes": 48432,
+          "fromCache": true
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2",
+          "type": "css",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 86,
+          "endMs": 86,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 31340,
+          "decodedBytes": 31340,
+          "fromCache": true
+        },
+        {
+          "url": "/api/auth/session",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 157,
+          "endMs": 364,
+          "durMs": 207,
+          "ttfbMs": 207,
+          "transferBytes": 470,
+          "encodedBytes": 170,
+          "decodedBytes": 222,
+          "fromCache": false
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 158,
+          "endMs": 514,
+          "durMs": 356,
+          "ttfbMs": 355,
+          "transferBytes": 414,
+          "encodedBytes": 114,
+          "decodedBytes": 172,
+          "fromCache": false
+        },
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 158,
+          "endMs": 547,
+          "durMs": 389,
+          "ttfbMs": 383,
+          "transferBytes": 2186,
+          "encodedBytes": 1886,
+          "decodedBytes": 6046,
+          "fromCache": false
+        },
+        {
+          "url": "/api/health",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 365,
+          "endMs": 570,
+          "durMs": 205,
+          "ttfbMs": 205,
+          "transferBytes": 400,
+          "encodedBytes": 100,
+          "decodedBytes": 130,
+          "fromCache": false
+        },
+        {
+          "url": "/api/org-brand",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 365,
+          "endMs": 622,
+          "durMs": 256,
+          "ttfbMs": 256,
+          "transferBytes": 510,
+          "encodedBytes": 210,
+          "decodedBytes": 285,
+          "fromCache": false
+        },
+        {
+          "url": "/app/chat-widget.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 365,
+          "endMs": 472,
+          "durMs": 107,
+          "ttfbMs": 106,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/api/demo/mode",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 365,
+          "endMs": 761,
+          "durMs": 396,
+          "ttfbMs": 396,
+          "transferBytes": 450,
+          "encodedBytes": 150,
+          "decodedBytes": 234,
+          "fromCache": false
+        }
+      ],
+      "errors": [],
+      "repeatedRequests": [],
+      "writesObserved": [],
+      "requestCount": 16
+    },
+    {
+      "kind": "warm",
+      "index": 2,
+      "ranAt": "2026-08-18T04:18:16.517Z",
+      "finalUrl": "/app/pipeline.html",
+      "settledReason": "cards-stable",
+      "metrics": {
+        "domContentLoadedMs": 1159,
+        "loadMs": 1160,
+        "ttfbMs": 927,
+        "fcpMs": 1044,
+        "lcpMs": 1044,
+        "firstCardMs": 4671,
+        "allCardsInMs": 4671,
+        "spinnerGoneMs": 4671,
+        "spinnerFirstSeenMs": 1035,
+        "longTasksOver50": 0,
+        "longestTaskMs": 0,
+        "totalBlockingMs": 0,
+        "blockingBeforeCardsMs": 0,
+        "blockingAfterCardsMs": 0,
+        "apiCallCount": 6,
+        "apiBytesTotal": 7089,
+        "apiTransferBytesTotal": 4472,
+        "cardsRendered": 16,
+        "columns": 10
+      },
+      "board": {
+        "hidden": false,
+        "noteText": null,
+        "columns": [
+          {
+            "stage": "New Lead",
+            "stageKey": "new_lead",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Survey Complete",
+            "stageKey": "survey_complete",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Booked",
+            "stageKey": "booked",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Confirmed",
+            "stageKey": "confirmed",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Showed",
+            "stageKey": "showed",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Diagnostic Paid",
+            "stageKey": "diagnostic_paid",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Decision Rendered",
+            "stageKey": "decision_rendered",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Closed Won (deposit)",
+            "stageKey": "closed_won",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Downsell",
+            "stageKey": "downsell",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Lost",
+            "stageKey": "lost",
+            "headerCount": "12",
+            "cardsRendered": 12
+          }
+        ],
+        "cardCountTimeline": [
+          {
+            "atMs": 1035,
+            "cards": 0,
+            "cols": 0
+          },
+          {
+            "atMs": 4671,
+            "cards": 16,
+            "cols": 10
+          }
+        ],
+        "spinnerTimeline": [
+          {
+            "atMs": 1035,
+            "spinner": true
+          },
+          {
+            "atMs": 4671,
+            "spinner": false
+          }
+        ]
+      },
+      "longTasks": [],
+      "apiCriticalPath": {
+        "links": [
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 1155,
+            "endMs": 4689,
+            "durMs": 3534
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 4690,
+            "endMs": 5219,
+            "durMs": 529
+          }
+        ],
+        "sumDurationMs": 4063,
+        "wallSpanMs": 4064,
+        "gapMs": 1,
+        "linkCount": 2
+      },
+      "allResourceCriticalPath": {
+        "links": [
+          {
+            "url": "/app/shell.js",
+            "status": 304,
+            "startMs": 990,
+            "endMs": 1119,
+            "durMs": 129
+          },
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 1155,
+            "endMs": 4689,
+            "durMs": 3534
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 4690,
+            "endMs": 5219,
+            "durMs": 529
+          }
+        ],
+        "sumDurationMs": 4192,
+        "wallSpanMs": 4229,
+        "gapMs": 37,
+        "linkCount": 3
+      },
+      "apiOverlap": [
+        {
+          "url": "/api/auth/session",
+          "startMs": 1155,
+          "endMs": 4689,
+          "durMs": 3534,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "startMs": 1159,
+          "endMs": 4665,
+          "durMs": 3505,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "startMs": 1159,
+          "endMs": 4351,
+          "durMs": 3192,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/health",
+          "startMs": 4690,
+          "endMs": 4905,
+          "durMs": 216,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/org-brand",
+          "startMs": 4690,
+          "endMs": 4982,
+          "durMs": 292,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "startMs": 4690,
+          "endMs": 5219,
+          "durMs": 529,
+          "concurrentWith": 2
+        }
+      ],
+      "apiBodies": [
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "status": 200,
+          "method": "GET",
+          "bytes": 6046,
+          "stages": 10,
+          "cards": 16,
+          "headerCountTotal": 16
+        },
+        {
+          "url": "/api/org-brand",
+          "status": 200,
+          "method": "GET",
+          "bytes": 285,
+          "keys": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "status": 200,
+          "method": "GET",
+          "bytes": 234,
+          "keys": 5
+        },
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "method": "GET",
+          "bytes": 222,
+          "keys": 3
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "status": 200,
+          "method": "GET",
+          "bytes": 172,
+          "keys": 2
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "method": "GET",
+          "bytes": 130,
+          "keys": 8
+        }
+      ],
+      "resources": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 929,
+          "endMs": 929,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 858,
+          "decodedBytes": 10056,
+          "fromCache": true
+        },
+        {
+          "url": "/app/fundhub-brand.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 929,
+          "endMs": 1035,
+          "durMs": 106,
+          "ttfbMs": 106,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/crm-sidebar.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 929,
+          "endMs": 1035,
+          "durMs": 106,
+          "ttfbMs": 106,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+          "type": "css",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 930,
+          "endMs": 930,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 48432,
+          "decodedBytes": 48432,
+          "fromCache": true
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2",
+          "type": "css",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 930,
+          "endMs": 930,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 31340,
+          "decodedBytes": 31340,
+          "fromCache": true
+        },
+        {
+          "url": "/app/shell.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 990,
+          "endMs": 1119,
+          "durMs": 129,
+          "ttfbMs": 129,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/proxy-apply.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 1031,
+          "endMs": 1154,
+          "durMs": 123,
+          "ttfbMs": 123,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/data.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 1031,
+          "endMs": 1159,
+          "durMs": 128,
+          "ttfbMs": 128,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/api/auth/session",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1155,
+          "endMs": 4689,
+          "durMs": 3534,
+          "ttfbMs": 3534,
+          "transferBytes": 470,
+          "encodedBytes": 170,
+          "decodedBytes": 222,
+          "fromCache": false
+        },
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1159,
+          "endMs": 4665,
+          "durMs": 3505,
+          "ttfbMs": 3505,
+          "transferBytes": 2228,
+          "encodedBytes": 1928,
+          "decodedBytes": 6046,
+          "fromCache": false
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1159,
+          "endMs": 4351,
+          "durMs": 3192,
+          "ttfbMs": 3191,
+          "transferBytes": 414,
+          "encodedBytes": 114,
+          "decodedBytes": 172,
+          "fromCache": false
+        },
+        {
+          "url": "/api/health",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 4690,
+          "endMs": 4905,
+          "durMs": 216,
+          "ttfbMs": 210,
+          "transferBytes": 400,
+          "encodedBytes": 100,
+          "decodedBytes": 130,
+          "fromCache": false
+        },
+        {
+          "url": "/api/org-brand",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 4690,
+          "endMs": 4982,
+          "durMs": 292,
+          "ttfbMs": 292,
+          "transferBytes": 510,
+          "encodedBytes": 210,
+          "decodedBytes": 285,
+          "fromCache": false
+        },
+        {
+          "url": "/app/chat-widget.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 4690,
+          "endMs": 4817,
+          "durMs": 127,
+          "ttfbMs": 127,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/api/demo/mode",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 4690,
+          "endMs": 5219,
+          "durMs": 529,
+          "ttfbMs": 529,
+          "transferBytes": 450,
+          "encodedBytes": 150,
+          "decodedBytes": 234,
+          "fromCache": false
+        }
+      ],
+      "errors": [],
+      "repeatedRequests": [],
+      "writesObserved": [],
+      "requestCount": 16
+    },
+    {
+      "kind": "warm",
+      "index": 3,
+      "ranAt": "2026-08-18T04:18:28.365Z",
+      "finalUrl": "/app/pipeline.html",
+      "settledReason": "cards-stable",
+      "metrics": {
+        "domContentLoadedMs": 184,
+        "loadMs": 184,
+        "ttfbMs": 62,
+        "fcpMs": 120,
+        "lcpMs": 120,
+        "firstCardMs": 614,
+        "allCardsInMs": 614,
+        "spinnerGoneMs": 614,
+        "spinnerFirstSeenMs": 111,
+        "longTasksOver50": 0,
+        "longestTaskMs": 0,
+        "totalBlockingMs": 0,
+        "blockingBeforeCardsMs": 0,
+        "blockingAfterCardsMs": 0,
+        "apiCallCount": 6,
+        "apiBytesTotal": 7089,
+        "apiTransferBytesTotal": 4431,
+        "cardsRendered": 16,
+        "columns": 10
+      },
+      "board": {
+        "hidden": false,
+        "noteText": null,
+        "columns": [
+          {
+            "stage": "New Lead",
+            "stageKey": "new_lead",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Survey Complete",
+            "stageKey": "survey_complete",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Booked",
+            "stageKey": "booked",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Confirmed",
+            "stageKey": "confirmed",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Showed",
+            "stageKey": "showed",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Diagnostic Paid",
+            "stageKey": "diagnostic_paid",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Decision Rendered",
+            "stageKey": "decision_rendered",
+            "headerCount": "1",
+            "cardsRendered": 1
+          },
+          {
+            "stage": "Closed Won (deposit)",
+            "stageKey": "closed_won",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Downsell",
+            "stageKey": "downsell",
+            "headerCount": "0",
+            "cardsRendered": 0
+          },
+          {
+            "stage": "Lost",
+            "stageKey": "lost",
+            "headerCount": "12",
+            "cardsRendered": 12
+          }
+        ],
+        "cardCountTimeline": [
+          {
+            "atMs": 111,
+            "cards": 0,
+            "cols": 0
+          },
+          {
+            "atMs": 614,
+            "cards": 16,
+            "cols": 10
+          }
+        ],
+        "spinnerTimeline": [
+          {
+            "atMs": 111,
+            "spinner": true
+          },
+          {
+            "atMs": 614,
+            "spinner": false
+          }
+        ]
+      },
+      "longTasks": [],
+      "apiCriticalPath": {
+        "links": [
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 183,
+            "endMs": 392,
+            "durMs": 209
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 393,
+            "endMs": 890,
+            "durMs": 497
+          }
+        ],
+        "sumDurationMs": 706,
+        "wallSpanMs": 707,
+        "gapMs": 1,
+        "linkCount": 2
+      },
+      "allResourceCriticalPath": {
+        "links": [
+          {
+            "url": "/app/data.js",
+            "status": 304,
+            "startMs": 64,
+            "endMs": 183,
+            "durMs": 119
+          },
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 183,
+            "endMs": 392,
+            "durMs": 209
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 393,
+            "endMs": 890,
+            "durMs": 497
+          }
+        ],
+        "sumDurationMs": 825,
+        "wallSpanMs": 826,
+        "gapMs": 1,
+        "linkCount": 3
+      },
+      "apiOverlap": [
+        {
+          "url": "/api/auth/session",
+          "startMs": 183,
+          "endMs": 392,
+          "durMs": 209,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "startMs": 184,
+          "endMs": 607,
+          "durMs": 423,
+          "concurrentWith": 5
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "startMs": 184,
+          "endMs": 527,
+          "durMs": 343,
+          "concurrentWith": 5
+        },
+        {
+          "url": "/api/health",
+          "startMs": 393,
+          "endMs": 600,
+          "durMs": 207,
+          "concurrentWith": 4
+        },
+        {
+          "url": "/api/org-brand",
+          "startMs": 393,
+          "endMs": 673,
+          "durMs": 280,
+          "concurrentWith": 4
+        },
+        {
+          "url": "/api/demo/mode",
+          "startMs": 393,
+          "endMs": 890,
+          "durMs": 497,
+          "concurrentWith": 4
+        }
+      ],
+      "apiBodies": [
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "status": 200,
+          "method": "GET",
+          "bytes": 6046,
+          "stages": 10,
+          "cards": 16,
+          "headerCountTotal": 16
+        },
+        {
+          "url": "/api/org-brand",
+          "status": 200,
+          "method": "GET",
+          "bytes": 285,
+          "keys": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "status": 200,
+          "method": "GET",
+          "bytes": 234,
+          "keys": 5
+        },
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "method": "GET",
+          "bytes": 222,
+          "keys": 3
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "status": 200,
+          "method": "GET",
+          "bytes": 172,
+          "keys": 2
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "method": "GET",
+          "bytes": 130,
+          "keys": 8
+        }
+      ],
+      "resources": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 64,
+          "endMs": 64,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 858,
+          "decodedBytes": 10056,
+          "fromCache": true
+        },
+        {
+          "url": "/app/fundhub-brand.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 64,
+          "endMs": 111,
+          "durMs": 47,
+          "ttfbMs": 47,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/crm-sidebar.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 64,
+          "endMs": 111,
+          "durMs": 47,
+          "ttfbMs": 47,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/proxy-apply.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 64,
+          "endMs": 177,
+          "durMs": 113,
+          "ttfbMs": 113,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/data.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 64,
+          "endMs": 183,
+          "durMs": 119,
+          "ttfbMs": 119,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/shell.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 64,
+          "endMs": 183,
+          "durMs": 119,
+          "ttfbMs": 119,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+          "type": "css",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 112,
+          "endMs": 112,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 48432,
+          "decodedBytes": 48432,
+          "fromCache": true
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2",
+          "type": "css",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 112,
+          "endMs": 112,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 31340,
+          "decodedBytes": 31340,
+          "fromCache": true
+        },
+        {
+          "url": "/api/auth/session",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 183,
+          "endMs": 392,
+          "durMs": 209,
+          "ttfbMs": 209,
+          "transferBytes": 470,
+          "encodedBytes": 170,
+          "decodedBytes": 222,
+          "fromCache": false
+        },
+        {
+          "url": "/api/dashboard/pipeline?key=sales",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 184,
+          "endMs": 607,
+          "durMs": 423,
+          "ttfbMs": 423,
+          "transferBytes": 2186,
+          "encodedBytes": 1886,
+          "decodedBytes": 6046,
+          "fromCache": false
+        },
+        {
+          "url": "/api/dashboard/pipeline-counts",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 184,
+          "endMs": 527,
+          "durMs": 343,
+          "ttfbMs": 338,
+          "transferBytes": 414,
+          "encodedBytes": 114,
+          "decodedBytes": 172,
+          "fromCache": false
+        },
+        {
+          "url": "/api/health",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 393,
+          "endMs": 600,
+          "durMs": 207,
+          "ttfbMs": 207,
+          "transferBytes": 401,
+          "encodedBytes": 101,
+          "decodedBytes": 130,
+          "fromCache": false
+        },
+        {
+          "url": "/api/org-brand",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 393,
+          "endMs": 673,
+          "durMs": 280,
+          "ttfbMs": 280,
+          "transferBytes": 510,
+          "encodedBytes": 210,
+          "decodedBytes": 285,
+          "fromCache": false
+        },
+        {
+          "url": "/app/chat-widget.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 393,
+          "endMs": 505,
+          "durMs": 111,
+          "ttfbMs": 111,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/api/demo/mode",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 393,
+          "endMs": 890,
+          "durMs": 497,
+          "ttfbMs": 497,
+          "transferBytes": 450,
+          "encodedBytes": 150,
+          "decodedBytes": 234,
+          "fromCache": false
+        }
+      ],
+      "errors": [],
+      "repeatedRequests": [],
+      "writesObserved": [],
+      "requestCount": 16
+    }
+  ],
+  "shotRun": {
+    "metrics": {
+      "domContentLoadedMs": 415,
+      "loadMs": 757,
+      "ttfbMs": 181,
+      "fcpMs": 412,
+      "lcpMs": 428,
+      "firstCardMs": 827,
+      "allCardsInMs": 827,
+      "spinnerGoneMs": 827,
+      "spinnerFirstSeenMs": 382,
+      "longTasksOver50": 0,
+      "longestTaskMs": 0,
+      "totalBlockingMs": 0,
+      "blockingBeforeCardsMs": 0,
+      "blockingAfterCardsMs": 0,
+      "apiCallCount": 6,
+      "apiBytesTotal": 7089,
+      "apiTransferBytesTotal": 4430,
+      "cardsRendered": 16,
+      "columns": 10
+    },
+    "settledReason": "cards-stable",
+    "files": [
+      "shot-first-paint.png",
+      "shot-all-cards-in.png"
+    ]
+  }
+}
