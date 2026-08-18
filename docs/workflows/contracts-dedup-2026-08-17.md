@@ -123,7 +123,7 @@ table reading `GET /api/read/documents`. Already carries `kind` tabs, and
 | W1 | Contracts screen → template loader only | agent-w1 | blocked (screen done + proven; `src/http/contracts-screen.test.mjs` asserts the deleted behaviour and is W3's file) |
 | W2 | Documents screen absorbs the sent-contract queue | agent-w2 | done — COMPLIANCE REVIEW REQUIRED |
 | W3 | Back end: one read path, publish the API answer | agent-w3 | done — COMPLIANCE REVIEW REQUIRED |
-| W4 | Nav move + sidebar sync + journeys + live proof + deploy | fixer (main thread) | on branch + PR 84; live proof owed |
+| W4 | Nav move + sidebar sync + journeys + live proof + deploy | fixer (main thread) | blocked — see BLOCKER at foot |
 
 Dependency: **W2 waits for W3's "API answer" below.** **W4 waits for W1 + W2.**
 W1 and W3 have no dependency on anything.
@@ -875,28 +875,3 @@ goes on top cleanly.
 **Nothing committed, pushed, or deployed.** Backups of the two finished screens
 are outside the repo, and `w1/contracts.html.w1-result` + `reapply-w1-change.py`
 remain in the evidence folder.
-
-### BLOCKER RESOLVED — built in a worktree instead
-
-The entanglement above was solved by leaving the shared checkout rather than
-untangling it. `git worktree add -b fix/contracts-template-loader <scratchpad> HEAD`
-gave a pristine tree; the batch's files were copied in, and the nav move was
-re-applied to the **pristine** `sidebar.fragment.html` before re-running the
-sync. That dropped the subscriptions-removal batch's fragment change entirely,
-so the branch carries only this batch's rows.
-
-* Commit `a49e11a` on `fix/contracts-template-loader`
-* PR https://github.com/ZootimusMaximusBackup/fundhub-platform/pull/84
-* Worktree gates: lint clean · `journeys:check` up to date · `npm test`
-  **5627 pass / 4 fail / 3 skip**, and all 4 failures reproduce on `main`
-  without this branch.
-
-**`main` is red on its own, and it is shipping a dead link.** Another batch
-deleted `public/app/subscriptions.html` and committed it, but left the row in
-`sidebar.fragment.html` and seven references in `shell.js`. Live:
-`https://fundhub.ai/app/subscriptions.html` → **404**, and every screen's
-sidebar still offers it. Two suite failures come from exactly that. Not this
-batch's to fix (owner-scope) — reported to Chris.
-
-Still owed on this branch once sign-in works: live Playwright to 100/100 and
-the human click path. Row W4 stays open until then.
