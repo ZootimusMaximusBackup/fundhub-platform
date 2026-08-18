@@ -39,18 +39,18 @@ have no automation tree at all. See `src/journeys/seed-journeys.mjs`'s header.
 
 | Journey | Who that is in the code | Reach |
 |---|---|---|
-| [client](./client-actual.md) ([intended](./client-intended.md)) | `client` | reaches 26 of 170 routes |
-| [role-owner](./role-owner-actual.md) ([intended](./role-owner-intended.md)) | `owner` | reaches 167 of 170 routes |
-| [role-sales-manager](./role-sales-manager-actual.md) ([intended](./role-sales-manager-intended.md)) | `sales_manager` | reaches 135 of 170 routes |
-| [role-closer](./role-closer-actual.md) ([intended](./role-closer-intended.md)) | `closer` | reaches 118 of 170 routes |
-| [role-funding-advisor](./role-funding-advisor-actual.md) ([intended](./role-funding-advisor-intended.md)) | `funding_advisor` | reaches 121 of 170 routes |
-| [role-inquiry-remover](./role-inquiry-remover-actual.md) ([intended](./role-inquiry-remover-intended.md)) | `inquiry_specialist` | reaches 116 of 170 routes |
-| [affiliate](./affiliate-actual.md) ([intended](./affiliate-intended.md)) | `affiliate` | reaches 21 of 170 routes |
-| [white-label](./white-label-actual.md) ([intended](./white-label-intended.md)) | `partner` | reaches 47 of 170 routes |
+| [client](./client-actual.md) ([intended](./client-intended.md)) | `client` | reaches 26 of 173 routes |
+| [role-owner](./role-owner-actual.md) ([intended](./role-owner-intended.md)) | `owner` | reaches 170 of 173 routes |
+| [role-sales-manager](./role-sales-manager-actual.md) ([intended](./role-sales-manager-intended.md)) | `sales_manager` | reaches 134 of 173 routes |
+| [role-closer](./role-closer-actual.md) ([intended](./role-closer-intended.md)) | `closer` | reaches 117 of 173 routes |
+| [role-funding-advisor](./role-funding-advisor-actual.md) ([intended](./role-funding-advisor-intended.md)) | `funding_advisor` | reaches 124 of 173 routes |
+| [role-inquiry-remover](./role-inquiry-remover-actual.md) ([intended](./role-inquiry-remover-intended.md)) | `inquiry_specialist` | reaches 115 of 173 routes |
+| [affiliate](./affiliate-actual.md) ([intended](./affiliate-intended.md)) | `affiliate` | reaches 21 of 173 routes |
+| [white-label](./white-label-actual.md) ([intended](./white-label-intended.md)) | `partner` | reaches 47 of 173 routes |
 
 ## What was found while generating these
 
-- **170 routes** are reachable in total.
+- **173 routes** are reachable in total.
 - **1 route has a gate that could not be traced.** Each is marked UNVERIFIED on the pages that touch it.
 - **15 routes are genuinely open** (signing in, signing out, "who am I", and the health check).
 - **3 routes need no sign-in but are not open** — a signed link, a provider signature, and Inngest's own request signing. Anyone may call them; the wrong signature is refused.
@@ -69,6 +69,7 @@ Endpoints name a set like `ROLE_SETS.FINANCE`. Those names mean:
 | `STAFF` | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `OPS` | owner, admin |
 | `HIRING` | owner, admin |
+| `LENDERS` | owner, admin, funding_advisor |
 
 > **There is no automatic super-role on the read path.** An owner reaches these routes
 > only because `owner` is written into each set by hand. Remove it from one and the owner

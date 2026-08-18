@@ -23,7 +23,11 @@ test("closer-dashboard.html default markup has no sample people", () => {
   assert.match(html, /id="whoName"/);
   assert.match(html, /\/api\/auth\/session/);
   assert.match(html, /\.calc-grid\[hidden\]/);
-  assert.match(html, /class="stat-tiles" hidden/);
+  // The four shift tiles (Calls Today / Kept / Collected / Pace) were cut from the
+  // call surface 2026-08-17 — owner-set. They were `hidden` and never unhidden, so
+  // this is stricter than the assertion it replaces: they may not come back at all.
+  assert.ok(!/stat-tile/.test(html), "the closer shift tiles are back on the dashboard");
+  assert.ok(!/id="todayPipe"/.test(html), "Today's Pipeline is back — the cockpit owns booked calls");
   assert.match(html, /id="calcClientName"/);
   assert.match(html, /FHData\.read\("closer-call"/);
   assert.match(html, /FHData\.read\("deal-math"/);

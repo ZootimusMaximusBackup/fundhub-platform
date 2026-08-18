@@ -20,19 +20,6 @@
       style: "currency", currency: "USD", maximumFractionDigits: 0
     });
   }
-  function pct(r) {
-    if (r == null || !Number.isFinite(Number(r))) return "—";
-    return Math.round(Number(r) * 100) + "%";
-  }
-  function humanNote(s) {
-    if (s == null || s === "") return "";
-    var t = String(s);
-    if (/\/api\/|_cents|staff_targets|commission_ledger|payload|band field|numbered field/i.test(t)) {
-      return "";
-    }
-    return t;
-  }
-
   function elapsed(ms) {
     if (!ms) return "";
     var m = Math.floor(ms / 60000);
@@ -74,7 +61,6 @@
   function paint(data) {
     state.data = data;
     var staff = data.staff || {};
-    var kpis = data.kpis || {};
     var client = data.client || {};
     var credit = data.credit || {};
     var precall = data.precall || {};
@@ -93,24 +79,6 @@
     }
     var nameChip = $("header .hr .chip");
     if (nameChip) nameChip.innerHTML = '<span class="cd" style="background:var(--info)"></span>' + (staff.name || "Closer");
-
-    var kpiEls = document.querySelectorAll(".kpis .kpi");
-    function kpi(i, label, value, sub) {
-      var el = kpiEls[i];
-      if (!el) return;
-      var lb = el.querySelector(".lb"); var vl = el.querySelector(".vl"); var sb = el.querySelector(".sb");
-      if (lb) lb.textContent = label;
-      if (vl) vl.textContent = value;
-      if (sb) sb.textContent = humanNote(sub) || "";
-    }
-    var today = kpis.cash_today_cents || {};
-    kpi(0, "Cash today", today.display || money(today.cents), (today.deposits || 0) + " deposits");
-    kpi(1, "Calls held", String(kpis.calls_held != null ? kpis.calls_held : "—"), (kpis.no_shows || 0) + " no-shows");
-    kpi(2, "Close rate", pct(kpis.close_rate), "this month");
-    kpi(3, "Commission MTD", "—", humanNote(kpis.commission_reason) || "Open My numbers");
-    kpi(4, "Pace to target", "—", "Open My numbers");
-    kpi(5, "Unlogged", String(kpis.unlogged != null ? kpis.unlogged : "—"), "clear before next call");
-    if (kpiEls[5] && kpis.unlogged > 0) kpiEls[5].querySelector(".vl").style.color = "#C25B4E";
 
     text($(".who h1"), client.name);
     var meta = client.business_name || "";
@@ -195,7 +163,7 @@
       }
     }
 
-    // Up next / gone quiet
+    // Up next
     var sections = document.querySelectorAll("aside.rail section");
     if (sections[0]) {
       var next = (data.up_next || []).map(function (u) {
@@ -205,14 +173,6 @@
       }).join("") || '<div class="q"><span class="t">—</span><div><b>No upcoming booked calls</b><em>Calendar tasks with due times will show here</em></div></div>';
       sections[0].querySelectorAll(".q").forEach(function (n) { n.remove(); });
       sections[0].insertAdjacentHTML("beforeend", next);
-    }
-    if (sections[1]) {
-      var quiet = ((data.gone_quiet && data.gone_quiet.quiet_deposits) || []).map(function (u) {
-        return '<div class="q"><span class="t">' + (u.quiet_days || "?") + "d</span><div><b>" + (u.name || "Client") +
-          "</b><em>" + money(u.cash_collected_cents) + " deposit</em></div></div>";
-      }).join("") || '<div class="q"><span class="t">—</span><div><b>None quiet</b><em>Deposits over 7 days without funding</em></div></div>';
-      sections[1].querySelectorAll(".q").forEach(function (n) { n.remove(); });
-      sections[1].insertAdjacentHTML("beforeend", quiet);
     }
 
     // Remap objection row to seven beliefs

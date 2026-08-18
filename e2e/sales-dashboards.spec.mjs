@@ -220,7 +220,9 @@ test("closer-dashboard without a client is honest empty", async ({ page }) => {
   await expect(page.locator("#calcGate")).toBeVisible();
   await expect(page.locator("#calcGate")).toHaveText("Open from a client.");
   await expect(page.locator("#whoName")).toHaveText("Casey Reed");
-  await expect(page.locator("#todayPipe")).toContainText("No booked calls for you right now");
+  // Today's Pipeline was cut 2026-08-17 (owner-set): the Call cockpit's "Up next"
+  // is the same tasks table, five rows deep instead of two.
+  await expect(page.locator("#todayPipe")).toHaveCount(0);
   await expect(page.locator("body")).not.toContainText("no closer shift endpoint");
   await expect(page.locator("body")).not.toContainText("No closer-day pipeline endpoint");
   await expect(page.locator("body")).not.toContainText("Jordan Blake");
@@ -228,29 +230,3 @@ test("closer-dashboard without a client is honest empty", async ({ page }) => {
   await expect(page.locator(".clock")).not.toContainText("Jul 26");
 });
 
-test("closer-dashboard lists current and next from closer-now", async ({ page }) => {
-  await freezeClock(page, "2026-08-17T18:00:00Z");
-  await openScreen(page, "/app/closer-dashboard.html", CLOSER, {
-    ...salesHandlers(),
-    "/api/read/closer-now": {
-      ok: true,
-      current: {
-        task_id: "t-now",
-        client_id: CLIENT_ID,
-        name: "Dana Whitfield",
-        due_at: "2026-08-17T17:00:00.000Z",
-        title: "Close"
-      },
-      next: {
-        task_id: "t-next",
-        client_id: "bbbbbbbb-2222-4222-8222-222222222222",
-        name: "Riley Chen",
-        due_at: "2026-08-17T20:00:00.000Z",
-        title: "Close"
-      }
-    }
-  });
-  await expect(page.locator("#todayPipe")).toContainText("Dana Whitfield");
-  await expect(page.locator("#todayPipe")).toContainText("Riley Chen");
-  await expect(page.locator("#todayPipe")).not.toContainText("No booked calls");
-});

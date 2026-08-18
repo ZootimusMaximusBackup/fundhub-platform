@@ -21,22 +21,22 @@ flowchart TD
     CAN --> A_campaigns[Campaigns — 8 routes]
     CAN --> A_chat[chat — 3 routes]
     CAN --> A_climate[climate — 2 routes]
-    CAN --> A_company_brain[company-brain — 1 route]
+    CAN --> A_company_brain[company-brain — 3 routes]
     CAN --> A_contracts[contracts — 1 route]
     CAN --> A_creative[Creative Factory — 7 routes]
-    CAN --> A_dashboard[The dashboard — 6 routes]
+    CAN --> A_dashboard[The dashboard — 7 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 9 routes]
     CAN --> A_journeys[journeys — 1 route]
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
     CAN --> A_public[public — 3 routes]
-    CAN --> A_read[Reading data — 46 routes]
+    CAN --> A_read[Reading data — 44 routes]
     CAN --> A_repair[repair — 2 routes]
     CAN --> A_social[social — 5 routes]
     CAN --> A_staff[staff — 1 route]
-    CAN --> A_top_level[Everything else — 25 routes]
+    CAN --> A_top_level[Everything else — 23 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 34 routes]
+    WHO -->|Yes| CANT[Blocked — 38 routes]
     CANT --> B_auth[Signing in and out — 4 blocked]
     CANT --> B_banking[banking — 1 blocked]
     CANT --> B_chat[chat — 1 blocked]
@@ -50,15 +50,15 @@ flowchart TD
     CANT --> B_partner_brand[partner-brand — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
-    CANT --> B_read[Reading data — 3 blocked]
+    CANT --> B_read[Reading data — 5 blocked]
     CANT --> B_staff[staff — 1 blocked]
-    CANT --> B_top_level[Everything else — 6 blocked]
+    CANT --> B_top_level[Everything else — 8 blocked]
     WHO -->|Yes| UNV[UNVERIFIED — 1 route whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**135 of 170 routes.**
+**134 of 173 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -89,6 +89,8 @@ flowchart TD
 | `/api/climate/geocode` | OPTIONS | anyone |
 | `/api/closer-deck` | POST | closer, sales_manager, owner, admin |
 | `/api/company-brain/sync` | GET, POST | owner, admin, sales_manager |
+| `/api/company-brain/threads` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/company-brain/upload` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/contracts` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/contracts/sign` | GET, POST | anyone |
 | `/api/creative/actions` | POST | partner, staff |
@@ -104,6 +106,7 @@ flowchart TD
 | `/api/dashboard/clients` | — | staff |
 | `/api/dashboard/kpis` | — | staff |
 | `/api/dashboard/pipeline` | — | staff |
+| `/api/dashboard/pipeline-counts` | — | staff |
 | `/api/dashboard/seed` | — | staff |
 | `/api/documents-upload` | POST | staff, client |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
@@ -121,8 +124,6 @@ flowchart TD
 | `/api/inquiries` | GET, POST | staff |
 | `/api/inquiry-cases` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/journeys/run` | POST | owner, admin, sales_manager |
-| `/api/lender-observations` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
-| `/api/lenders` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/marketing-flags` | POST | owner, admin, sales_manager |
 | `/api/message-templates` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/messages` | POST | staff |
@@ -167,8 +168,6 @@ flowchart TD
 | `/api/read/inquiry-cases` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/invoices` | GET | owner, admin, sales_manager |
 | `/api/read/lender-matches` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
-| `/api/read/lender-observations` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
-| `/api/read/lenders` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/message-templates` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/messages` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -200,13 +199,13 @@ flowchart TD
 
 ### Worth knowing
 
-- **6 routes also accept a shared secret instead of a sign-in** (`DASHBOARD_SECRET`), so a caller holding that value reaches them without being anybody in particular: `/api/dashboard/client`, `/api/dashboard/client-archive`, `/api/dashboard/clients`, `/api/dashboard/kpis`, `/api/dashboard/pipeline`, `/api/dashboard/seed`.
+- **7 routes also accept a shared secret instead of a sign-in** (`DASHBOARD_SECRET`), so a caller holding that value reaches them without being anybody in particular: `/api/dashboard/client`, `/api/dashboard/client-archive`, `/api/dashboard/clients`, `/api/dashboard/kpis`, `/api/dashboard/pipeline`, `/api/dashboard/pipeline-counts`, `/api/dashboard/seed`.
 - **15 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/contracts/sign`, `/api/health`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/survey-submit`, `/api/soft-pull-approve`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**34 of 170 routes.**
+**38 of 173 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -233,6 +232,8 @@ flowchart TD
 | `/api/inquiry` | — | inquiry_specialist, admin, owner |
 | `/api/journeys` | GET, PUT | owner, admin |
 | `/api/journeys/ask` | POST | owner, admin |
+| `/api/lender-observations` | POST | owner, admin, funding_advisor |
+| `/api/lenders` | POST | owner, admin, funding_advisor |
 | `/api/partner-brand` | GET, PUT | employees: owner, admin<br>plus: partner |
 | `/api/partner-brand/verify-domain` | POST | owner, admin |
 | `/api/partner-pages` | GET, PATCH, POST | employees: owner, admin<br>plus: partner |
@@ -242,6 +243,8 @@ flowchart TD
 | `/api/proxy/launch` | POST | owner, funding_advisor |
 | `/api/read/company-brain-affiliate` | POST | employees: affiliate, partner<br>plus: affiliate, partner |
 | `/api/read/failed-events` | GET | owner, admin |
+| `/api/read/lender-observations` | GET | owner, admin, funding_advisor |
+| `/api/read/lenders` | GET | owner, admin, funding_advisor |
 | `/api/read/proxy-sessions` | GET | owner, funding_advisor |
 | `/api/staff/monitoring-consent` | POST | owner |
 
