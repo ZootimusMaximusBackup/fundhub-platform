@@ -1,0 +1,43 @@
+{
+  "at": "2026-08-18T02:50:16.319Z",
+  "commit": "6f41ca4",
+  "hashes": {
+    "staff-teams.html": "match",
+    "login.html": "match",
+    "reset-password.html": "match"
+  },
+  "login": {
+    "ok": true,
+    "role": "owner"
+  },
+  "invite": {
+    "ok": true,
+    "mailed": true,
+    "login_email_domain": "fundhub.ai",
+    "has_copy_link": true,
+    "staff_id": "302963c8-a0d2-49db-8dd0-e3aa6ed9a3e4",
+    "role_at_create": "closer"
+  },
+  "role_write": {
+    "ok": true,
+    "role": "funding_advisor"
+  },
+  "roster": {
+    "ok": true,
+    "hiddenCount": 23,
+    "found": true,
+    "persisted_role": "funding_advisor",
+    "names": [
+      "Prove Staffmail"
+    ]
+  },
+  "reset": {
+    "ok": true,
+    "mailed": true,
+    "message": "Check that inbox. The reset link lasts 1 hour.",
+    "leaked_token": false
+  },
+  "cleanup": {
+    "deleted": 1
+  }
+}
